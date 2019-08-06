@@ -1,0 +1,68 @@
+<resources>
+    <string name="app_name">YubiKey Android SDK Demo app</string>
+    <string name="title_activity_main">Yubico SDK Demo</string>
+    <string name="title_activity_login">Sign in</string>
+
+    <string name="settings">Settings</string>
+    <string name="yubico_otp_demo">Yubico OTP demo</string>
+    <string name="raw_commands_demo">Smartcard demo</string>
+    <string name="fido2_demo">FIDO2 demo</string>
+    <string name="fido2_demo_web">FIDO2 demo in web view</string>
+    <string name="yubico_mgmt_demo">YubiKey Setting</string>
+    <string name="company_name">yubico</string>
+    <string name="coming_soon">This feature is under development and coming soon</string>
+    <string name="run_raw_data_demo">To run this demo, a certificate must be loaded on the key PIV application in slot 9C.</string>
+    <string name="run_demo">Run demo</string>
+    <string name="run_yubico_otp_demo">This demo captures and validates a Yubico OTP credential. To capture a credential tap on Read OTP, to validate tap Validate OTP.</string>
+    <string name="otp">One-time code</string>
+    <string name="validate_otp">Validate OTP</string>
+    <string name="read_otp">Read OTP</string>
+    <string name="no_key">The key is not plugged in</string>
+    <string name="clear_cache">table</string>
+    <string name="enable">Enable</string>
+    <string name="need_yubikey">Plug in you yubikey or tap over NFC reader</string>
+    <string name="oath_demo">Oath demo</string>
+    <string name="oath_no_authenticators">This yubikey contains no credentials. To add credential tap FAB button. \n
+    Usage of TOTP can be tested with https://demo.yubico.com/playground. Add authenticator application as 2nd factor auth. \n
+        Or any other service that allows 2nd factor auth with authenticator app.
+    Additionally QR codes for testing purposes can be generated on https://stefansundin.github.io/2fa-qr/</string>
+    <string name="issuer">Issuer</string>
+    <string name="copied">Code copied to clipboard</string>
+    <string name="not_copied">No code to copy</string>
+    <string name="issuer_format">Name: %s Issuer: %s</string>
+    <string name="type_format">Type: %s</string>
+    <string name="auth_required">Authentication required</string>
+    <string name="oath_reset">Reset</string>
+    <string name="set_password">Set password</string>
+    <string name="password">Password</string>
+    <string name="old_password">Old password</string>
+    <string name="new_password">New password</string>
+
+    <string name="about">About</string>
+    <string name="about_app">This application is a demo of YubiKit. YubiKit is a library provided by Yubico for interacting with YubiKeys.\nIt shows different scenarios and cases how you can use YubiKeys for authentication process.\n\nRead about YubiKey, application and its advantages at https://www.yubico.com\n\nWeb version of demo is implemented on https://demo.yubico.com/playground and for FIDO2/WebauthN https://demo.yubico.com/webauthn\n\niOS version of demo and YubiKit: https://github.com/YubicoLabs/yubikit-ios\n</string>
+    <string name="version">Version %s (%d)</string>
+    <string name="copyright">Copyright © 2019 Yubico.</string>
+
+    <string name="run_yubico_management_demo">Configure your YubiKey. Turn on/off applications.</string>
+    <string name="configure_device">Save</string>
+    <string name="transport_usb">Usb</string>
+    <string name="transport_nfc">Nfc</string>
+    <string name="interface_otp">OTP</string>
+    <string name="interface_u2f">FIDO U2F</string>
+    <string name="interface_piv">PIV</string>
+    <string name="interface_fido">FIDO2</string>
+    <string name="interface_pgp">OpenPGP</string>
+    <string name="interface_oath">OATH</string>
+
+    <string name="use_default">Use default</string>
+    <string name="piv_change_pin">Change PIN</string>
+    <string name="piv_change_puk">Change PUK</string>
+    <string name="piv_change_mgmt_key">Change Management Key</string>
+    <string name="piv_pin">Current PIN</string>
+    <string name="piv_new_pin">New PIN</string>
+    <string name="piv_puk">Current PUK</string>
+    <string name="piv_new_puk">New PUK</string>
+    <string name="piv_mgmt_key">Current Management Key</string>
+    <string name="piv_new_mgmt_key">New Management Key</string>
+
+</resources>

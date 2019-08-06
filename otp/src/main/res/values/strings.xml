@@ -1,0 +1,9 @@
+<resources>
+    <string name="yubikit_otp_activity_title">Use your YubiKey</string>
+    <string name="yubikit_otp_activity_subtitle">To get one-time password.</string>
+    <string name="yubikit_otp_touch">Tap a button or a gold disk on your YubiKey.</string>
+    <string name="yubikit_otp_plug_in">Connect your YubiKey to the USB port.</string>
+    <string name="yubikit_otp_plug_in_or_tap">Hold your key flat against the back of your device until it stops vibrating or connect your YubiKey to the USB port.</string>
+    <string name="yubikit_otp_received_nfc_tag">NFC tag was received. Please take your YubiKey away from NFC reader.</string>
+    <string name="yubikit_otp_enable_nfc">Enable</string>
+</resources>

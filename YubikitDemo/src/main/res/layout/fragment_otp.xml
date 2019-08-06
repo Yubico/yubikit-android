@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:orientation="vertical"
+    android:padding="@dimen/text_margin"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <TextView
+        android:id="@+id/text"
+        android:layout_margin="@dimen/card_view_margin"
+        android:scrollbars = "vertical"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/run_yubico_otp_demo"/>
+
+    <com.google.android.material.textfield.TextInputLayout
+        style="@style/LoginTextInputLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <androidx.appcompat.widget.AppCompatEditText
+            android:id="@+id/output"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/otp"
+            android:imeActionId="6"
+            android:imeOptions="actionDone"
+            android:inputType="textMultiLine"
+            style="@style/LoginTextInput"
+            tools:text="ccccccjehedvvcnfbnnjbbicenfbhvnulkrflcbitifv"/>
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <Button
+        style="@style/LoginScreenButton"
+        android:id="@+id/start_demo"
+        android:text="@string/read_otp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <Button
+        style="@style/LoginTextSignIn"
+        android:id="@+id/validate_otp"
+        android:text="@string/validate_otp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <ListView
+        android:id="@+id/otp_log"
+        android:layout_margin="@dimen/card_view_margin"
+        android:padding="@dimen/text_margin"
+        android:textColor="@color/colorGrey"
+        android:background="@drawable/green_rectangle_border_line"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+</LinearLayout>

@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <group
+        android:id="@+id/menu_top"
+        android:checkableBehavior="single">
+        <item
+            android:id="@+id/smartcard_fragment"
+            android:icon="@drawable/ic_simcard"
+            android:orderInCategory="1"
+            android:title="@string/raw_commands_demo"/>
+
+        <item
+            android:id="@+id/login_fragment"
+            android:icon="@drawable/ic_fingerprint"
+            android:orderInCategory="2"
+            android:title="@string/fido2_demo"/>
+
+        <item
+            android:id="@+id/webview_fragment"
+            android:icon="@drawable/ic_web_24dp"
+            android:orderInCategory="3"
+            android:title="@string/fido2_demo_web"/>
+
+        <item
+            android:id="@+id/oath_fragment"
+            android:icon="@drawable/ic_time"
+            android:orderInCategory="4"
+            android:title="@string/oath_demo"/>
+
+        <item
+            android:id="@+id/yubico_otp_fragment"
+            android:icon="@drawable/ic_shield"
+            android:orderInCategory="5"
+            android:title="@string/yubico_otp_demo"/>
+
+        <item
+            android:id="@+id/mgmt_fragment"
+            android:iconTint="@color/colorGrey"
+            android:icon="@android:drawable/ic_menu_preferences"
+            android:orderInCategory="10"
+            android:title="@string/yubico_mgmt_demo"/>
+
+    </group>
+
+    <group
+        android:id="@+id/menu_bottom"
+        android:checkableBehavior="none">
+
+        <item
+            android:id="@+id/settings_fragment"
+            android:icon="@drawable/ic_settings"
+            android:orderInCategory="20"
+            android:title="@string/settings"/>
+
+        <item
+            android:id="@+id/about_fragment"
+            android:icon="@drawable/ic_info_24dp"
+            android:orderInCategory="20"
+            android:title="@string/about"/>
+    </group>
+</menu>

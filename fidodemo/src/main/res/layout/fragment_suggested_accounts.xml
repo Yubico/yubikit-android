@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="center_horizontal"
+    android:orientation="vertical"
+    android:padding="@dimen/activity_margin"
+    tools:context=".fido.signin.LoginFragment">
+
+    <ScrollView
+        android:id="@+id/login_form"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <LinearLayout
+            android:id="@+id/email_login_form"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingTop="@dimen/text_margin"
+            android:orientation="vertical">
+
+            <include layout="@layout/company_logo"/>
+
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="@dimen/card_view_margin"
+                android:padding="@dimen/card_view_margin">
+
+                <TextView
+                    android:layout_margin="@dimen/text_margin"
+                    android:id="@+id/username"
+                    android:textColor="@color/colorGrey"
+                    android:drawableStart="@drawable/ic_account_circle"
+                    android:drawablePadding="@dimen/text_margin"
+                    android:drawableTint="@color/colorGrey"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:tint="@color/colorGrey"
+                    android:clickable="true"
+                    android:focusable="true"
+                    tools:text="User"/>
+
+            </androidx.cardview.widget.CardView>
+
+            <Button
+                android:id="@+id/sign_in_button"
+                style="@style/LoginScreenButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/action_sign_in_suggested" />
+
+        </LinearLayout>
+    </ScrollView>
+
+    <!-- Login progress -->
+    <ProgressBar
+        android:id="@+id/login_progress"
+        style="?android:attr/progressBarStyleLarge"
+        android:indeterminateTint="?colorAccent"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:visibility="gone" />
+</FrameLayout>

@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/mobile_navigation"
+    app:startDestination="@id/splash_fragment">
+
+    <fragment
+        android:id="@+id/splash_fragment"
+        android:name="com.yubico.yubikit.demo.SplashFragment"
+        android:label="@string/app_name"
+        tools:layout="@layout/fragment_layout_splash">
+        <action
+            android:id="@+id/to_login"
+            app:destination="@id/login_fragment"
+            app:popUpTo="@id/splash_fragment"
+            app:popUpToInclusive="true"/>
+        <action
+            android:id="@+id/to_yubico_otp"
+            app:destination="@+id/yubico_otp_fragment"
+            app:popUpTo="@+id/splash_fragment"
+            app:popUpToInclusive="true" />
+    </fragment>
+    <fragment
+        android:id="@+id/suggested_accounts_fragment"
+        android:name="com.yubico.yubikit.demo.fido.signin.SuggestedAccountsFragment"
+        android:label="@string/sign_in_as"
+        tools:layout="@layout/fragment_suggested_accounts">
+        <action
+            android:id="@+id/suggested_to_login"
+            app:destination="@id/login_fragment" />
+        <argument
+            android:name="userData"
+            app:argType="com.yubico.yubikit.demo.fido.communication.User" />
+        <action
+            android:id="@+id/suggested_to_list"
+            app:destination="@id/main_fragment"
+            app:popUpTo="@id/suggested_accounts_fragment"
+            app:popUpToInclusive="true"/>
+    </fragment>
+
+    <fragment
+        android:id="@+id/login_fragment"
+        android:name="com.yubico.yubikit.demo.fido.signin.LoginFragment"
+        android:label="@string/action_sign_in"
+        tools:layout="@layout/fragment_login" >
+        <action
+            android:id="@+id/login_to_list"
+            app:destination="@id/main_fragment"
+            app:popUpTo="@id/login_fragment"
+            app:popUpToInclusive="true" />
+        <action
+            android:id="@+id/login_to_suggested"
+            app:destination="@id/suggested_accounts_fragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/main_fragment"
+        android:name="com.yubico.yubikit.demo.fido.listview.AuthenticatorListFragment"
+        android:label="@string/title_activity_main"
+        tools:layout="@layout/fragment_authenticator_list">
+        <action
+            android:id="@+id/list_to_login"
+            app:destination="@id/login_fragment"
+            app:popUpTo="@id/login_fragment"
+            app:popUpToInclusive="true" />
+        <argument
+            android:name="userData"
+            app:argType="com.yubico.yubikit.demo.fido.communication.User" />
+    </fragment>
+    <fragment
+        android:id="@+id/settings_fragment"
+        android:name="com.yubico.yubikit.demo.settings.SettingsFragment"
+        android:label="@string/settings"/>
+
+    <fragment
+        android:id="@+id/about_fragment"
+        android:name="com.yubico.yubikit.demo.settings.AboutFragment"
+        android:label="@string/about"/>
+
+    <fragment
+        android:id="@+id/smartcard_fragment"
+        android:name="com.yubico.yubikit.demo.raw.YubikeySmartcardFragment"
+        android:label="@string/raw_commands_demo"
+        tools:layout="@layout/fragment_smartcard"/>
+
+    <fragment
+        android:id="@+id/webview_fragment"
+        android:name="com.yubico.yubikit.demo.webview.WebViewFragment"
+        android:label="@string/fido2_demo_web"
+        tools:layout="@layout/fragment_webview"/>
+
+    <fragment
+        android:id="@+id/oath_fragment"
+        android:name="com.yubico.yubikit.demo.oath.OathFragment"
+        android:label="@string/oath_demo"
+        tools:layout="@layout/fragment_oath"/>
+
+    <fragment
+        android:id="@+id/yubico_otp_fragment"
+        android:name="com.yubico.yubikit.demo.otp.OtpFragment"
+        android:label="@string/yubico_otp_demo"
+        tools:layout="@layout/fragment_otp" />
+
+    <fragment
+        android:id="@+id/mgmt_fragment"
+        android:name="com.yubico.yubikit.demo.mgmt.ManagementFragment"
+        android:label="@string/yubico_mgmt_demo"
+        tools:layout="@layout/fragment_management" />
+
+</navigation>

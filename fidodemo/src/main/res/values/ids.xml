@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="login_fragment" type="id"/>
+    <item name="suggested_accounts_fragment" type="id"/>
+    <item name="main_fragment" type="id"/>
+    <item name="authenticator_list_fragment" type="id"/>
+</resources>

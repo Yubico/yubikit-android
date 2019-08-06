@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center"
+    android:background="?colorPrimary">
+    <!--androidx.appcompat.widget.AppCompatTextView
+        app:autoSizeTextType="uniform"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:maxLines="1"
+        android:letterSpacing="0.2"
+        android:layout_marginLeft="@dimen/text_margin"
+        android:layout_marginStart="@dimen/text_margin"
+        android:layout_marginRight="@dimen/text_margin"
+        android:layout_marginEnd="@dimen/text_margin"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/drawer_header_size"
+        android:textColor="@android:color/white"
+        android:text="@string/company_name"/-->
+    <ImageView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="@dimen/text_margin"
+        android:tint="@color/colorLightGreen"
+        app:srcCompat="@drawable/big_logo"/>
+
+</LinearLayout>

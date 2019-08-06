@@ -1,0 +1,1 @@
+include ':YubikitDemo', ':fido', ':yubikit', ':fidodemo', ':oath', ':otp', ':management'

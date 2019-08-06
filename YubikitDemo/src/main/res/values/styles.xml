@@ -1,0 +1,52 @@
+<resources>
+    <!-- Main application theme different for day and night mode-->
+    <style name="AppTheme" parent="AppTheme.White">
+        <item name="textInputStyle">@style/LoginTextSignIn</item>
+    </style>
+
+    <style name="AppTheme.White" parent="Theme.AppCompat.Light">
+        <!-- Customize your theme here. -->
+        <item name="colorPrimary">@android:color/white</item>
+        <item name="colorPrimaryDark">@android:color/white</item>
+        <item name="colorAccent">@color/colorLightGreen</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="preferenceTheme">@style/PreferenceThemeOverlay</item>
+
+        <item name="android:textColor">@color/colorGrey</item>
+        <item name="android:textColorPrimary">@color/colorGrey</item>
+        <item name="android:textColorSecondary">@color/colorGrey</item>
+
+    </style>
+
+    <!-- ToolBar -->
+    <style name="ToolBarStyle" parent="ThemeOverlay.AppCompat.Light">
+        <item name="android:textColor">@color/colorGrey</item>
+        <item name="android:textColorPrimary">@color/colorGrey</item>
+        <item name="android:textColorSecondary">@color/colorGrey</item>
+        <item name="actionMenuTextColor">@color/colorGrey</item>
+    </style>
+
+    <!-- The launcher theme. It sets the main window background to the launch_screen drawable -->
+    <style name="AppTheme.Launcher" parent="AppTheme">
+        <item name="android:windowBackground">@drawable/launch_screen</item>
+    <!-- Optional, on Android 5+ you can modify the colorPrimaryDark color to match the windowBackground color for further branding-->
+        <item name="colorPrimaryDark">@color/colorDarkGreen</item>
+    </style>
+
+    <style name="AppTheme.NoActionBar" parent="AppTheme">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+    </style>
+
+    <style name="AppTheme.AppBarOverlay" parent="ThemeOverlay.AppCompat.Light" />
+
+    <style name="AppTheme.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
+
+    <style name="AlertDialogTheme" parent="Theme.AppCompat.Light.Dialog.Alert">
+        <!--buttons color-->
+        <item name="colorAccent">@color/colorLightGreen</item>
+        <!--dialog background-->
+        <item name="android:windowBackground">@drawable/background_dialog</item>
+    </style>
+
+</resources>
