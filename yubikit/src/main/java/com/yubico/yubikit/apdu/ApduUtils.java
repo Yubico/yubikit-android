@@ -146,7 +146,11 @@ public class ApduUtils {
         return readBuffer.toByteArray();
     }
 
-
+    /**
+     * If APDU type is SHORT than we need to split outcoming data into chunks that are not longer than 255 bytes
+     * @param command APDU command with any length of data
+     * @return list of APDU commands with length of data <= 255
+     */
     private static List<Apdu> splitDataInChunks(Apdu command) {
         List<Apdu> list = new ArrayList<>();
 

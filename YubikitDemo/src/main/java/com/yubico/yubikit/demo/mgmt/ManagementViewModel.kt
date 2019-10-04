@@ -71,12 +71,10 @@ class ManagementViewModel(yubiKitManager: YubiKitManager) : YubikeyViewModel(yub
     private fun YubiKeySession.executeOnBackgroundThread(runCommand: (managementApplication: ManagementApplication) -> Unit) {
         executorService.execute {
             try {
-                openIso7816Connection().use {
-                    // select Management application
-                    Logger.d("Select MGMT application")
-                    val application = ManagementApplication(it)
+                Logger.d("Select MGMT application")
+                ManagementApplication(this).use {
                     // run provided command/operation (read or write config)
-                    runCommand(application)
+                    runCommand(it)
                 }
             } catch (e: IOException) {
                 postError(e)

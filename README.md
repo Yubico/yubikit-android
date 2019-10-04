@@ -15,6 +15,10 @@ Please note, **YubiKit** consumes data from the token and translates to the appl
 
 [FIDO2](./fido/README.md) supports a subset of FIDO2
 
+[PIV](./piv/README.md) provides implementation of Personal Identity Verification (PIV) 
+
+[MGMT](./mgmt/README.md) provides subset of API for personal customization of YubiKey
+
 All **YubiKit** modules has javadoc and sources deployed with the library archive. Use this documentation for a more detailed explanation of all the methods, properties and parameters from the API.
 
 This library comes with a demo application named **YubikitDemo**. The application is implemented in Kotlin.

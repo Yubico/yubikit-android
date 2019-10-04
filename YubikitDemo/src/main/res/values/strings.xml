@@ -39,7 +39,7 @@
     <string name="new_password">New password</string>
 
     <string name="about">About</string>
-    <string name="about_app">This application is a demo of YubiKit. YubiKit is a library provided by Yubico for interacting with YubiKeys.\nIt shows different scenarios and cases how you can use YubiKeys for authentication process.\n\nRead about YubiKey, application and its advantages at https://www.yubico.com\n\nWeb version of demo is implemented on https://demo.yubico.com/playground and for FIDO2/WebauthN https://demo.yubico.com/webauthn\n\niOS version of demo and YubiKit: https://github.com/YubicoLabs/yubikit-ios\n</string>
+    <string name="about_app">This application is a demo of YubiKit. YubiKit is a library provided by Yubico for interacting with YubiKeys.\nIt shows different scenarios and cases how you can use YubiKeys for authentication process.\n\nRead about YubiKey, application and its advantages at https://www.yubico.com\n\nWeb version of demo is implemented on https://demo.yubico.com/playground and for FIDO2/WebauthN https://demo.yubico.com/webauthn\n\niOS version of demo and YubiKit: https://github.com/Yubico/yubikit-ios\n</string>
     <string name="version">Version %s (%d)</string>
     <string name="copyright">Copyright © 2019 Yubico.</string>
 
@@ -54,7 +54,7 @@
     <string name="interface_pgp">OpenPGP</string>
     <string name="interface_oath">OATH</string>
 
-    <string name="use_default">Use default</string>
+    <string name="piv_reset">Reset application</string>
     <string name="piv_change_pin">Change PIN</string>
     <string name="piv_change_puk">Change PUK</string>
     <string name="piv_change_mgmt_key">Change Management Key</string>
@@ -64,5 +64,35 @@
     <string name="piv_new_puk">New PUK</string>
     <string name="piv_mgmt_key">Current Management Key</string>
     <string name="piv_new_mgmt_key">New Management Key</string>
+    <string name="piv_protect_with_pin">Protect with PIN</string>
+    <string name="piv_demo">PIV demo</string>
 
+    <string name="piv_authentication">Authentication</string>
+    <string name="piv_signature">Digital Signature</string>
+    <string name="piv_key_mgmt">Key Management</string>
+    <string name="piv_card_auth">Card Authentication</string>
+    <string name="no_certificate_loaded">No certificate loaded</string>
+    <string name="piv_delete">Delete certificate</string>
+    <string name="piv_export">Export certificate to a file</string>
+    <string name="piv_generate">Generate Key</string>
+    <string name="piv_import">Import Key</string>
+    <string name="piv_attest">Attest</string>
+    <string name="piv_generate_cert">Generate Certificate</string>
+    <string name="piv_import_cert">Import Certificate</string>
+    <string name="algorithm_prompt">Algorithm</string>
+    <string name="hold_key">Hold your key flat until operation is completed</string>
+    <string name="generate_key">Generate key pair on YubiKey or import private key that was generated on your phone</string>
+    <string name="generate_key_android">Generate key pair using Android API and import to YubiKey</string>
+    <string name="use_default">Use default</string>
+    <string name="piv_change_retries">Change number of PIN retries</string>
+    <string name="piv_unblock_pin">Unblock PIN</string>
+    <string name="piv_change_retries_description">Use settings page to pick number of retries to set</string>
+    <string name="piv_reset_description">Resets PIV application to initial state</string>
+    <string name="piv_sign">Sign</string>
+    <string name="sign_desc">Sign message with private key on YubiKey</string>
+    <string name="piv_pin_retries">PIN retries</string>
+    <string name="piv_puk_retries">PUK retries</string>
+    <string name="piv_pin_set_retries">Set the PIN retries</string>
+    <string name="piv_pin_set_retries_desc">Set the PIN retries for PIN and PUK. Both PIN and PUK will be reset to default values when this is executed.</string>
+    <string name="use_default_pin">Use default PIN</string>
 </resources>

@@ -22,6 +22,7 @@ import android.util.SparseArray;
 
 import androidx.annotation.Nullable;
 
+import com.yubico.yubikit.Iso7816Application;
 import com.yubico.yubikit.apdu.Apdu;
 import com.yubico.yubikit.apdu.ApduCodeException;
 import com.yubico.yubikit.apdu.ApduException;
@@ -30,8 +31,10 @@ import com.yubico.yubikit.apdu.Tlv;
 import com.yubico.yubikit.apdu.TlvUtils;
 import com.yubico.yubikit.exceptions.ApplicationNotFound;
 import com.yubico.yubikit.transport.Iso7816Connection;
+import com.yubico.yubikit.transport.YubiKeySession;
 
 import java.io.ByteArrayOutputStream;
+import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -55,7 +58,7 @@ import javax.crypto.spec.SecretKeySpec;
  * Implements all OATH protocol instruction set that Yubikey supports
  * https://developers.yubico.com/OATH/YKOATH_Protocol.html
  */
-public class OathApplication {
+public class OathApplication  extends Iso7816Application {
 
     public static final short AUTHENTICATION_REQUIRED_ERROR = 0x6982;
     public static final short WRONG_SYNTAX = 0x6a80;
@@ -99,11 +102,6 @@ public class OathApplication {
     private static final int DEFAULT_PERIOD = 30;
 
     /**
-     * Open ISO 7816 connection to YubiKey
-     */
-    private Iso7816Connection connection;
-
-    /**
      * Version, ID and a challenge if authentication is configured
      */
     private OathApplicationInfo applicationInfo;
@@ -112,15 +110,14 @@ public class OathApplication {
     /**
      * Create new instance of {@link OathApplication}
      * and selects the application for use
-     * @param connection open connection to YubiKey
+     * @param session session with YubiKey
      * @throws IOException in case of connection error
      * @throws ApduException in case of communication error
      */
-    public OathApplication(Iso7816Connection connection) throws IOException, ApduException {
-        this.connection = connection;
-        connection.getAtr();
+    public OathApplication(YubiKeySession session) throws IOException, ApduException {
+        super(session);
         try {
-            applicationInfo = new OathApplicationInfo(sendAndReceive(connection, new Apdu(0, INS_SELECT, 0x04, 0, AID)));
+            applicationInfo = new OathApplicationInfo(sendAndReceive(new Apdu(0, INS_SELECT, 0x04, 0, AID)));
         } catch (ApduCodeException e) {
             if (e.getStatusCode() == APPLICATION_NOT_FOUND_ERROR) {
                 throw new ApplicationNotFound("OATH application is disabled on this device");
@@ -143,7 +140,7 @@ public class OathApplication {
      * @throws ApduException in case of communication error
      */
     public void reset() throws IOException, ApduException {
-        sendAndReceive(connection, new Apdu(0, INS_RESET, 0xde, 0xad, null));
+        sendAndReceive(new Apdu(0, INS_RESET, 0xde, 0xad, null));
     }
 
     /**
@@ -155,6 +152,7 @@ public class OathApplication {
      * @param password user-supplied password
      * @throws IOException in case of connection error
      * @throws ApduException in case of communication error
+     * @return true if password valid
      */
     public boolean validate(String password) throws IOException, ApduException {
         // null password fail validation fast
@@ -200,7 +198,7 @@ public class OathApplication {
             byte[] challenge = generateChallenge();
             requestTlv.add(new Tlv(TAG_CHALLENGE, challenge));
 
-            byte[] data = sendAndReceive(connection, new Apdu(0, INS_VALIDATE, 0, 0, TlvUtils.TlvToData(requestTlv)));
+            byte[] data = sendAndReceive(new Apdu(0, INS_VALIDATE, 0, 0, TlvUtils.TlvToData(requestTlv)));
             SparseArray<byte[]> map = TlvUtils.parseTlvMap(data);
             // return false if response from validation does not match verification
             return (Arrays.equals(signer.sign(challenge), map.get(TAG_RESPONSE)));
@@ -267,7 +265,7 @@ public class OathApplication {
             // if secret passed null or empty remove password
             data = new byte[] {TAG_KEY, 0};
         }
-        sendAndReceive(connection, new Apdu(0, INS_SET_CODE, 0, 0, data));
+        sendAndReceive(new Apdu(0, INS_SET_CODE, 0, 0, data));
     }
 
     /**
@@ -277,7 +275,7 @@ public class OathApplication {
      * @throws ApduException in case of communication error
      */
     public List<Credential> listCredentials() throws IOException, ApduException {
-        byte[] response = sendAndReceive(connection, new Apdu(0, INS_LIST, 0, 0, null));
+        byte[] response = sendAndReceive(new Apdu(0, INS_LIST, 0, 0, null));
         List<Tlv> list = TlvUtils.parseTlvList(response);
         List<Credential> result = new ArrayList<>();
         for (Tlv tlv : list) {
@@ -310,7 +308,7 @@ public class OathApplication {
 
         // using default period to 30 second for all _credentials and then recalculate those that have different period
         requestTlv.add(new Tlv(TAG_CHALLENGE, challenge));
-        byte[] data = sendAndReceive(connection, new Apdu(0, INS_CALCULATE_ALL, 0, 1, TlvUtils.TlvToData(requestTlv)));
+        byte[] data = sendAndReceive(new Apdu(0, INS_CALCULATE_ALL, 0, 1, TlvUtils.TlvToData(requestTlv)));
         Iterator<Tlv> responseTlv = TlvUtils.parseTlvList(data).iterator();
         Map<Credential, Code> map = new HashMap<>();
         while (responseTlv.hasNext()) {
@@ -372,7 +370,7 @@ public class OathApplication {
         requestTlv.add(new Tlv(TAG_NAME, credential.getId().getBytes(StandardCharsets.UTF_8)));
         requestTlv.add(new Tlv(TAG_CHALLENGE, challenge));
         boolean truncate = credential.isTruncated();
-        byte[] data = sendAndReceive(connection, new Apdu(0, INS_CALCULATE, 0, truncate ? 1 : 0, TlvUtils.TlvToData(requestTlv)));
+        byte[] data = sendAndReceive(new Apdu(0, INS_CALCULATE, 0, truncate ? 1 : 0, TlvUtils.TlvToData(requestTlv)));
         Tlv responseTlv = new Tlv(data, 0);
         String value;
         if (truncate) {
@@ -431,7 +429,7 @@ public class OathApplication {
             }
 
             Apdu apdu = new Apdu(0x00, INS_PUT, 0,0, output.toByteArray());
-            sendAndReceive(connection, apdu);
+            sendAndReceive(apdu);
         } catch (NoSuchAlgorithmException e) {
             throw new ApduException("Failed to use hash algorithm", e);
         }
@@ -447,7 +445,7 @@ public class OathApplication {
         List<Tlv> list = new ArrayList<>();
         list.add(new Tlv(TAG_NAME, credential.getId().getBytes(StandardCharsets.UTF_8)));
         Apdu apdu = new Apdu(0x00, INS_DELETE, 0,0, TlvUtils.TlvToData(list));
-        sendAndReceive(connection, apdu);
+        sendAndReceive(apdu);
     }
 
     /**
@@ -555,13 +553,13 @@ public class OathApplication {
 
     /**
      * Uses ApduUtils.sendAndReceive method with specific ins byte for "send remaining data" command
-     * @param connection iso7816 connection
      * @param command apdu command that will be sent
      * @return data that received from command execution
      * @throws IOException in case of connection error
      * @throws ApduException in case of communication error
      */
-    private static byte[] sendAndReceive(Iso7816Connection connection, Apdu command) throws IOException, ApduCodeException {
-        return ApduUtils.sendAndReceive(connection, command, INS_SEND_REMAINING);
+    @Override
+    public byte[] sendAndReceive(Apdu command) throws IOException, ApduCodeException {
+        return super.sendAndReceive(command, INS_SEND_REMAINING);
     }
 }

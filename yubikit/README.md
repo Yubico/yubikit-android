@@ -16,14 +16,14 @@ dependencies {
 ```
 And in `gradle.properties` set latest version. Example:
 ```gradle
-yubikitVersion=1.0.0-beta01
+yubikitVersion=1.0.0-beta02
 ```
 #### Maven:
 ```xml
 <dependency>
   <groupId>com.yubico.yubikit</groupId>
   <artifactId>yubikit</artifactId>
-  <version>1.0.0-beta01</version>
+  <version>1.0.0-beta02</version>
 </dependency>
 ```
 ###Using Library <a name="using_lib"></a>
@@ -58,16 +58,13 @@ for NFC session discoveries
         void onSessionReceived(@NonNull final NfcSession session) {
             // Tag was discovered
         }
-        void onError(@NonNull final Throwable error) {
-            // NFC setting is not ON
-        }
     }
 ```
 -3. Start discovery for key over USB or NFC. Note: discovery over NFC requires `Activity` that is in foreground (we recommend starting discovery over NFC in `onResume()`). Discovery over USB does not require Activity.
 ```java
     yubiKitManager.startUsbDiscovery(true, new UsbListener());
 ```
-or
+and/or
 ```java
     @Override
     public void onResume() {

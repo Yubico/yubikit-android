@@ -66,7 +66,8 @@ class MainActivity : FidoActivity() {
                 R.id.oath_fragment,
                 R.id.smartcard_fragment,
                 R.id.yubico_otp_fragment,
-                R.id.mgmt_fragment), drawer_layout)
+                R.id.mgmt_fragment,
+                R.id.piv_fragment), drawer_layout)
 
         toolbar.setupWithNavController(navController, appBarConfiguration)
 

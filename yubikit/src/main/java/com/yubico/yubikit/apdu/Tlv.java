@@ -69,19 +69,23 @@ public class Tlv {
         }
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
         stream.write(tag);
-        if (length < LENGTH_REQUIRES_EXTRA_BYTE) {
+        if (length <= 0x7F) {
+            // length that less than 128 requires only 1 byte
             offset = 2;
             stream.write((byte) length);
-        } else if (value.length < 0xFF) {
+        } else if (value.length <= 0xFF) {
+            // length that more than 127 but less than 256 requires 2 bytes (flags that length > 127 and length itself)
             offset = 3;
             stream.write((byte) LENGTH_REQUIRES_EXTRA_BYTE);
             stream.write((byte) length);
         } else if (value.length <= 0xFFFF) {
+            // length that more than 255 but less than 65536 requires 3 bytes (flags that length > 256 and 2 bytes for length itself)
             offset = 4;
             stream.write((byte) LENGTH_REQUIRES_EXTRA_TWO_BYTES);
             stream.write((byte) (value.length >> 8));
             stream.write((byte) length);
         } else {
+            // length that more than 65536 is not supported within this protocol
             throw new IllegalArgumentException("Length of value is too large.");
         }
         if (value != null) {

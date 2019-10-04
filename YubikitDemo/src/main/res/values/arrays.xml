@@ -12,4 +12,10 @@
         <item>@drawable/ic_content_copy_24dp</item>
     </integer-array>
 
+    <string-array name="piv_algorithms">
+        <item>RSA1024</item>
+        <item>RSA2048</item>
+        <item>ECCP256</item>
+        <item>ECCP384</item>
+    </string-array>
 </resources>

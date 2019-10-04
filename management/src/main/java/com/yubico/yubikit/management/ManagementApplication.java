@@ -16,6 +16,7 @@
 
 package com.yubico.yubikit.management;
 
+import com.yubico.yubikit.Iso7816Application;
 import com.yubico.yubikit.apdu.Apdu;
 import com.yubico.yubikit.apdu.ApduCodeException;
 import com.yubico.yubikit.apdu.ApduException;
@@ -26,8 +27,10 @@ import com.yubico.yubikit.apdu.Version;
 import com.yubico.yubikit.exceptions.ApplicationNotFound;
 import com.yubico.yubikit.exceptions.NotSupportedOperation;
 import com.yubico.yubikit.transport.Iso7816Connection;
+import com.yubico.yubikit.transport.YubiKeySession;
 import com.yubico.yubikit.utils.Logger;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
@@ -36,7 +39,7 @@ import java.util.List;
  * Implements management API to YubiKey interface
  * https://developers.yubico.com/yubikey-manager/Config_Reference.html
  */
-public class ManagementApplication {
+public class ManagementApplication extends Iso7816Application {
 
     private static final byte[] AID = new byte[]{(byte) 0xa0, 0x00, 0x00, 0x05, 0x27, 0x47, 0x11, 0x17};
     private static final byte[] OTP_AID = new byte[]{(byte) 0xa0, 0x00, 0x00, 0x05, 0x27, 0x20, 0x01};
@@ -56,24 +59,20 @@ public class ManagementApplication {
     private static final short APPLICATION_NOT_FOUND_ERROR = 0x6a82;
 
     /**
-     * Open ISO 7816 connection to yubikey
-     */
-    private Iso7816Connection connection;
-
-    /**
      * Firmware version
      */
     private Version version;
 
     /**
      * Create new instance of {@link ManagementApplication}
-     * @param connection
+     * @param session session with YubiKey
+     * @throws IOException in case of connection error
+     * @throws ApduException in case of communication error
      */
-    public ManagementApplication(Iso7816Connection connection)  throws IOException, ApduException {
-        this.connection = connection;
-        connection.getAtr();
+    public ManagementApplication(YubiKeySession session)  throws IOException, ApduException {
+        super(session);
         try {
-            byte[] response = ApduUtils.sendAndReceive(connection, new Apdu(0, INS_SELECT, 0x04, 0, AID));
+            byte[] response = sendAndReceive(new Apdu(0, INS_SELECT, 0x04, 0, AID));
             // last part of message is firmware version
             version = Version.parse(new String(response));
         } catch (ApduCodeException e) {
@@ -81,7 +80,7 @@ public class ManagementApplication {
                 // application is not found, most probably we have old firmware but let's make sure with OTP application
                 try {
                     Logger.d("select OTP application to determine if management application is supported");
-                    byte[] response = ApduUtils.sendAndReceive(connection, new Apdu(0, INS_SELECT, 0x04, 0, OTP_AID));
+                    byte[] response = sendAndReceive(new Apdu(0, INS_SELECT, 0x04, 0, OTP_AID));
                     Version otpVersion = Version.parse(response);
                     if ((int)otpVersion.major < 4) {
                         throw new NotSupportedOperation("Management application API supported only from version 4 and above");
@@ -116,7 +115,7 @@ public class ManagementApplication {
         if (version.major < 4) {
             throw new NotSupportedOperation("Operation is not supported on versions below 4");
         }
-        byte[] response = ApduUtils.sendAndReceive(connection, new Apdu(0, INS_READ_CONFIG, 0, 0, null));
+        byte[] response = sendAndReceive(new Apdu(0, INS_READ_CONFIG, 0, 0, null));
         if (response.length == 0 || (response[0] & 0xff) != response.length - 1) {
             throw new IOException("Invalid response");
         }
@@ -144,7 +143,7 @@ public class ManagementApplication {
         }
         byte[] configBytes = TlvUtils.TlvToData(output);
         byte[] data = ByteBuffer.allocate(1 + configBytes.length).put((byte) configBytes.length).put(configBytes).array();
-        ApduUtils.sendAndReceive(connection, new Apdu(0, INS_WRITE_CONFIG, 0, 0, data));
+        sendAndReceive(new Apdu(0, INS_WRITE_CONFIG, 0, 0, data));
         config.dataChanged();
     }
 
@@ -163,7 +162,7 @@ public class ManagementApplication {
         }
 
         // this method doesn't turn off CCID to keep ability to change settings with this application
-        ApduUtils.sendAndReceive(connection, new Apdu(0, INS_SET_MODE, P1_DEVICE_CONFIG, 0, new byte[] { getModeType(config).value }));
+        sendAndReceive(new Apdu(0, INS_SET_MODE, P1_DEVICE_CONFIG, 0, new byte[] { getModeType(config).value }));
     }
 
     private static ModeType getModeType(DeviceConfiguration config) {

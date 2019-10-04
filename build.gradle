@@ -26,7 +26,6 @@ allprojects {
             options.compilerArgs << "-Xlint:deprecation"
         }
     }
-
     project.ext {
         compileSdkVersion = 29
         minFidoSdkVersion = 24

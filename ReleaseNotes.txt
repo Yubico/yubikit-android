@@ -2,4 +2,14 @@ This application is a demo of YubiKit. YubiKit is a library provided by Yubico f
 It shows different scenarios and cases for how you can use YubiKeys for authentication process.
 Read about YubiKey and its advantages at https://www.yubico.com/
 Web version of demo is implemented on https://demo.yubico.com/playground and for FIDO2/WebauthN https://demo.yubico.com/webauthn
-iOS version of demo and YubiKit: https://github.com/YubicoLabs/yubikit-ios
+iOS version of demo and YubiKit: https://github.com/Yubico/yubikit-ios
+
+version 1.0.0-beta01
+Supports raw APDU communication with YubiKey over NFC and USB.
+OATH implementation
+FIDO2 wrappers
+Yubico OTP
+
+version 1.0.0-beta02
+PIV implementation
+Management API

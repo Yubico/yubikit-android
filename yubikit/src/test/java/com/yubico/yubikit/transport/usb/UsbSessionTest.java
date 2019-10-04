@@ -3,6 +3,7 @@ package com.yubico.yubikit.transport.usb;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbEndpoint;
+import android.hardware.usb.UsbInterface;
 import android.hardware.usb.UsbManager;
 
 import androidx.annotation.NonNull;
@@ -149,6 +150,7 @@ public class UsbSessionTest {
     private class UsbSessionMock extends UsbSession {
         final static int MAX_BLOB_SIZE = 16;
         final UsbDeviceConnection connection = Mockito.mock(UsbDeviceConnection.class);
+        final UsbInterface usbInterface = Mockito.mock(UsbInterface.class);
         final UsbEndpoint endpointIn = Mockito.mock(UsbEndpoint.class);
         final UsbEndpoint endpointOut = Mockito.mock(UsbEndpoint.class);
 
@@ -161,7 +163,7 @@ public class UsbSessionTest {
         @NonNull
         @Override
         public Iso7816Connection openIso7816Connection() throws YubikeyCommunicationException {
-            return new UsbIso7816Connection(connection, endpointIn, endpointOut);
+            return new UsbIso7816Connection(connection, usbInterface, endpointIn, endpointOut);
         }
 
         public void mockOutError(){

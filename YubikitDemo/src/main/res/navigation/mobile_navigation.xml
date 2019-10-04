@@ -107,4 +107,10 @@
         android:label="@string/yubico_mgmt_demo"
         tools:layout="@layout/fragment_management" />
 
+    <fragment
+        android:id="@+id/piv_fragment"
+        android:name="com.yubico.yubikit.demo.piv.PivFragment"
+        android:label="@string/piv_demo"
+        tools:layout="@layout/fragment_piv"/>
+
 </navigation>

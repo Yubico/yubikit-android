@@ -34,6 +34,12 @@
             android:title="@string/yubico_otp_demo"/>
 
         <item
+            android:id="@+id/piv_fragment"
+            android:icon="@drawable/ic_account_box"
+            android:orderInCategory="6"
+            android:title="@string/piv_demo"/>
+
+        <item
             android:id="@+id/mgmt_fragment"
             android:iconTint="@color/colorGrey"
             android:icon="@android:drawable/ic_menu_preferences"

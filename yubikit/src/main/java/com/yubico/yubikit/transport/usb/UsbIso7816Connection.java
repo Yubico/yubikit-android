@@ -18,6 +18,7 @@ package com.yubico.yubikit.transport.usb;
 
 import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbEndpoint;
+import android.hardware.usb.UsbInterface;
 
 import com.yubico.yubikit.apdu.Apdu;
 import com.yubico.yubikit.apdu.ApduResponse;
@@ -64,8 +65,9 @@ public class UsbIso7816Connection implements Iso7816Connection {
 
     private static final byte STATUS_TIME_EXTENSION = (byte) 0x80;
 
-    private UsbDeviceConnection connection;
-    private UsbEndpoint endpointOut, endpointIn;
+    private final UsbDeviceConnection connection;
+    private final UsbInterface ccidInterface;
+    private final UsbEndpoint endpointOut, endpointIn;
     private byte sequence = 0;
 
     private int timeoutMs = TIMEOUT;
@@ -75,13 +77,16 @@ public class UsbIso7816Connection implements Iso7816Connection {
      * if ATR is invalid then throws YubikeyCommunicationException
      * Note: this method is protected to allow dependency injection for UT
      * @param connection open usb connection
+     * @param ccidInterface ccid interface that was claimed
      * @param endpointIn channel for sending data over USB.
      * @param endpointOut channel for receiving data over USB.
      */
-    UsbIso7816Connection(UsbDeviceConnection connection, UsbEndpoint endpointIn, UsbEndpoint endpointOut){
+    UsbIso7816Connection(UsbDeviceConnection connection, UsbInterface ccidInterface, UsbEndpoint endpointIn, UsbEndpoint endpointOut){
         this.connection = connection;
+        this.ccidInterface = ccidInterface;
         this.endpointIn = endpointIn;
         this.endpointOut = endpointOut;
+        Logger.d("usb connection opened");
     }
 
     @Override
@@ -104,6 +109,7 @@ public class UsbIso7816Connection implements Iso7816Connection {
 
     @Override
     public void close() {
+        connection.releaseInterface(ccidInterface);
         connection.close();
         Logger.d("usb connection closed");
     }

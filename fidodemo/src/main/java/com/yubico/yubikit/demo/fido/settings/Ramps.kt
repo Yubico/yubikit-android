@@ -18,7 +18,7 @@ package com.yubico.yubikit.demo.fido.settings
 
 import android.content.Context
 import android.os.Build
-import android.preference.PreferenceManager
+import androidx.preference.PreferenceManager
 import java.lang.NumberFormatException
 
 

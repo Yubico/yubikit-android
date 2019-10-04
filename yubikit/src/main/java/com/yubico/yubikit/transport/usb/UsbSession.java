@@ -61,7 +61,7 @@ public class UsbSession implements YubiKeySession {
     @Override
     public @NonNull
     Iso7816Connection openIso7816Connection() throws YubikeyCommunicationException {
-        UsbInterface ccidInterface = getInterface();
+        UsbInterface ccidInterface = getInterface(UsbConstants.USB_CLASS_CSCID);
         if (ccidInterface == null) {
             throw new YubikeyCommunicationException("No CCID interface found!");
         }
@@ -70,7 +70,17 @@ public class UsbSession implements YubiKeySession {
             throw new YubikeyCommunicationException("Unable to find endpoints!");
         }
 
-        return new UsbIso7816Connection(getConnection(ccidInterface), endpointPair.first, endpointPair.second);
+        UsbDeviceConnection connection = openConnection();
+        if (connection == null) {
+            throw new YubikeyCommunicationException("exception in UsbManager.openDevice");
+        }
+
+        if (!connection.claimInterface(ccidInterface, true)) {
+            connection.close();
+            throw new YubikeyCommunicationException("Interface couldn't be claimed");
+        }
+
+        return new UsbIso7816Connection(connection, ccidInterface, endpointPair.first, endpointPair.second);
     }
 
     @Override
@@ -89,33 +99,26 @@ public class UsbSession implements YubiKeySession {
 
     /**
      * Sets up connection to usb device and claims ccid interface
-     * @param ccidInterface ccid interface to claim
      * @return connection that is used for sending and receiving data and control messages to a USB device
      * @throws NoPermissionsException in case if user did't grant permissions for device
-     * Note: it's protected for UTs to mock connection
      */
-    private UsbDeviceConnection getConnection(UsbInterface ccidInterface) throws YubikeyCommunicationException {
+    private UsbDeviceConnection openConnection() throws NoPermissionsException {
         if (!usbManager.hasPermission(usbDevice)) {
             throw new NoPermissionsException(usbDevice);
         }
-        UsbDeviceConnection connection = usbManager.openDevice(usbDevice);
-        Logger.d("usb connection opened");
-        if (connection == null) {
-            throw new YubikeyCommunicationException("exception in UsbManager.openDevice");
-        }
-        connection.claimInterface(ccidInterface, true);
-        return connection;
+        return usbManager.openDevice(usbDevice);
     }
 
     /**
-     * Gets ccid interface
-     * @return ccid interface of device
+     * Gets interface of a specified class
+     * @param usbClass UsbConstants that identifies interface class (e.g. UsbConstants.USB_CLASS_CSCID or UsbConstants.USB_CLASS_HID)
+     * @return interface of device
      */
-    private UsbInterface getInterface() {
+    private UsbInterface getInterface(int usbClass) {
         UsbInterface ccidInterface = null;
         for (int i = 0; i < usbDevice.getInterfaceCount(); i++) {
             UsbInterface usbInterface = usbDevice.getInterface(i);
-            if (usbInterface.getInterfaceClass() == UsbConstants.USB_CLASS_CSCID) {
+            if (usbInterface.getInterfaceClass() == usbClass) {
                 ccidInterface = usbInterface;
                 break;
             }
@@ -124,16 +127,16 @@ public class UsbSession implements YubiKeySession {
     }
 
     /**
-     * Gets bulkin and bulkout endpoints of CCID interface
-     * @param ccidInterface CCID interface
+     * Gets bulkin and bulkout endpoints of specified interface
+     * @param usbInterface interface of usb device
      * @return the pair of endpoints: in and out
      */
-    private Pair<UsbEndpoint, UsbEndpoint> findEndpoints(UsbInterface ccidInterface) {
+    private Pair<UsbEndpoint, UsbEndpoint> findEndpoints(UsbInterface usbInterface) {
         UsbEndpoint endpointIn = null;
         UsbEndpoint endpointOut = null;
 
-        for (int i = 0; i < ccidInterface.getEndpointCount(); i++) {
-            UsbEndpoint endpoint = ccidInterface.getEndpoint(i);
+        for (int i = 0; i < usbInterface.getEndpointCount(); i++) {
+            UsbEndpoint endpoint = usbInterface.getEndpoint(i);
             if (endpoint.getType() == UsbConstants.USB_ENDPOINT_XFER_BULK) {
                 if (endpoint.getDirection() == UsbConstants.USB_DIR_IN) {
                     endpointIn = endpoint;

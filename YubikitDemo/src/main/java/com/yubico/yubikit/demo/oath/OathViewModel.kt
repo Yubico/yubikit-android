@@ -156,10 +156,8 @@ class OathViewModel(yubikitManager: YubiKitManager) : YubikeyViewModel(yubikitMa
                                 }
                                 if (credEntry.value == null) {
                                     // codes that returned null needs individual calculation
-                                    // HOTP or require touch
-                                    if (credential.oathType == OathType.HOTP) {
-                                        map[credential] = calculate(credential, oathApplication)
-                                    } else if (SPECIAL_ISSUER_THAT_DOES_NOT_TRUNCATE_CODE == credential.issuer) {
+                                    // e.g. require touch (HOTP potentially can have require touch but it's not returned from YubiKey)
+                                    if (SPECIAL_ISSUER_THAT_DOES_NOT_TRUNCATE_CODE == credential.issuer) {
                                         map[credential] = calculate(credential, oathApplication)
                                     } else {
                                         // note: these codes can be calculated using {@link OathViewModel#calculate()}
@@ -227,13 +225,12 @@ class OathViewModel(yubikitManager: YubiKitManager) : YubikeyViewModel(yubikitMa
             }
 
             try {
-                openIso7816Connection().use {
-                    // send atr and select OATH application
-                    Logger.d("Select OATH application")
-                    val oathApplication = OathApplication(it)
+                // send atr and select OATH application
+                Logger.d("Select OATH application")
+                OathApplication(this).use {
                     // run provided command/operation (put/calculate/delete/etc)
-                    requireAuthentication = oathApplication.applicationInfo.isAuthenticationRequired
-                    runCommand(oathApplication)
+                    requireAuthentication = it.applicationInfo.isAuthenticationRequired
+                    runCommand(it)
                 }
             } catch (e: IOException) {
                 postError(e)

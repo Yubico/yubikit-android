@@ -110,7 +110,7 @@ open class YubikeyViewModel(private val yubikitManager: YubiKitManager) : ViewMo
 
         Logger.getInstance().setLogger(object : ILogger {
             override fun logDebug(message: String?) {
-                Log.d(TAG, message)
+                Log.d(TAG, message ?: "")
             }
 
             override fun logError(message: String?, throwable: Throwable?) {

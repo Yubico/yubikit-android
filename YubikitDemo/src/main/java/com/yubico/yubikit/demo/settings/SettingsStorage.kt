@@ -17,7 +17,7 @@
 package com.yubico.yubikit.demo.settings
 
 import android.content.Context
-import android.preference.PreferenceManager
+import androidx.preference.PreferenceManager
 import com.yubico.yubikit.demo.fido.R
 
 /**

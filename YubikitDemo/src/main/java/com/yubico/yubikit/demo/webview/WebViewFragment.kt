@@ -94,7 +94,7 @@ class WebViewFragment : Fragment() {
     private class WebViewHandler : WebViewClient() {
         override fun onPageFinished(view: WebView?, url: String?) {
             super.onPageFinished(view, url)
-            Log.d(TAG, url)
+            Log.d(TAG, url ?: "Empty URL")
         }
 
         override fun onReceivedError(view: WebView?, request: WebResourceRequest?, error: WebResourceError?) {

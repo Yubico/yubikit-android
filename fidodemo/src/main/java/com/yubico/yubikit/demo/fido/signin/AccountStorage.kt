@@ -17,9 +17,9 @@
 package com.yubico.yubikit.demo.fido.signin
 
 import android.content.Context
-import android.preference.PreferenceManager
 import android.text.TextUtils
 import android.util.Log
+import androidx.preference.PreferenceManager
 import com.squareup.moshi.Json
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
@@ -109,7 +109,7 @@ class AccountStorage(context: Context) {
         if (TextUtils.isEmpty(credIdString)) {
             return null
         }
-        return moshi.adapter(ByteArray::class.java).fromJson(credIdString)
+        return moshi.adapter(ByteArray::class.java).fromJson(credIdString!!)
     }
 
     fun getDeviceId() : String {

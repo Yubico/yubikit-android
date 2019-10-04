@@ -61,7 +61,7 @@ abstract class BaseYubikeyFragment(private val logTag: String) : Fragment() {
             it ?: return@Observer
             when (it) {
                 null -> {} // do nothing if there is no error
-                is NfcNotFoundException -> Log.e(logTag, it.message)
+                is NfcNotFoundException -> Log.e(logTag, it.message ?: "NFC is not found")
                 is NfcDisabledException -> showSnackBar(SnackBarType.ENABLE_NFC, true)
                 is NoPermissionsException -> showSnackBar(SnackBarType.PERMISSIONS, true)
                 is UsbDeviceNotFoundException -> showSnackBar(SnackBarType.TAP_NFC, !hasConnection)

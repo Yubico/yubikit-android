@@ -70,9 +70,8 @@ public final class Version {
      * Parses from string format "Firmware version 5.2.1"
      * @param nameAndVersion string that contains version at the end
      * @return the firmware version
-     * @throws ApduException
      */
-    public static Version parse(String nameAndVersion){
+    public static Version parse(String nameAndVersion) {
         if (TextUtils.isEmpty(nameAndVersion)) {
             return UNKNOWN;
         }

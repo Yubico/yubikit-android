@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:layout_margin="@dimen/activity_margin">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/title"
+            android:layout_margin="@dimen/card_view_margin"
+            android:textAppearance="@android:style/TextAppearance.Large"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            tools:text="Key Management (Slot 9d)" />
+
+        <TextView
+            android:id="@+id/cert_info"
+            android:layout_margin="@dimen/card_view_margin"
+            android:scrollbars="vertical"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            tools:text="Issuer: yubico.com\nSubject name: yubico.com\nExpiration date:2019-11-01" />
+
+        <TextView
+            android:id="@+id/no_cert"
+            android:visibility="gone"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="@color/colorLightGrey"
+            android:text="@string/no_certificate_loaded" />
+
+        <TableLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:shrinkColumns="*"
+            android:measureWithLargestChild="true">
+
+            <TableRow
+                android:layout_weight="1"
+                android:gravity="center"
+                android:weightSum="2">
+
+                <Button
+                    android:id="@+id/delete"
+                    style="@style/LoginScreenButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:backgroundTint="@drawable/button_selector"
+                    android:text="@string/piv_delete" />
+
+                <Button
+                    android:id="@+id/export"
+                    style="@style/LoginScreenButton"
+                    android:layout_weight="1"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:backgroundTint="@drawable/button_selector"
+                    android:text="@string/piv_export" />
+
+            </TableRow>
+            <TableRow
+                android:layout_weight="1"
+                android:gravity="center"
+                android:weightSum="2">
+
+                <Button
+                    android:id="@+id/attest"
+                    style="@style/LoginScreenButton"
+                    android:layout_weight="1"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:backgroundTint="@drawable/button_selector"
+                    android:text="@string/piv_attest" />
+
+                <Button
+                    android:id="@+id/importCert"
+                    style="@style/LoginScreenButton"
+                    android:layout_weight="1"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:backgroundTint="@drawable/button_selector"
+                    android:text="@string/piv_import_cert" />
+            </TableRow>
+            <TableRow
+                android:layout_marginTop="@dimen/card_view_margin"
+                android:layout_weight="1">
+                <TextView
+                    android:layout_marginTop="@dimen/card_view_margin"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="@dimen/card_view_margin"
+                    android:text="@string/generate_key"
+                    />
+
+            </TableRow>
+
+            <TableRow
+                android:layout_weight="1"
+                android:gravity="center"
+                android:weightSum="3">
+
+                <Spinner
+                    android:id="@+id/algorithm"
+                    android:layout_weight="2"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:entries="@array/piv_algorithms"
+                    android:prompt="@string/algorithm_prompt"
+                    android:spinnerMode="dropdown"/>
+
+                <Button
+                    android:id="@+id/generateKey"
+                    style="@style/LoginScreenButton"
+                    android:layout_weight="1"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:backgroundTint="@drawable/button_selector"
+                    android:text="@string/piv_generate" />
+            </TableRow>
+
+            <TableRow
+                android:layout_weight="1"
+                android:gravity="center"
+                android:weightSum="3">
+                <TextView
+                    android:layout_marginStart="@dimen/card_view_margin"
+                    android:text="@string/generate_key_android"
+                    android:layout_weight="2"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"/>
+                <Button
+                    android:id="@+id/importKey"
+                    style="@style/LoginScreenButton"
+                    android:layout_weight="1"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:backgroundTint="@drawable/button_selector"
+                    android:text="@string/piv_import" />
+            </TableRow>
+
+            <TableRow
+                android:layout_weight="1">
+
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/LoginTextInputLayout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <AutoCompleteTextView
+                        android:id="@+id/message"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:inputType="text"
+                        style="@style/LoginTextInput" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+
+            </TableRow>
+
+            <TableRow
+                android:layout_weight="1"
+                android:gravity="center"
+                android:weightSum="3">
+                <TextView
+                    android:layout_marginStart="@dimen/card_view_margin"
+                    android:text="@string/sign_desc"
+                    android:layout_weight="2"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"/>
+                <Button
+                    android:id="@+id/sign"
+                    style="@style/LoginScreenButton"
+                    android:layout_weight="1"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:backgroundTint="@drawable/button_selector"
+                    android:text="@string/piv_sign" />
+            </TableRow>
+
+        </TableLayout>
+    </LinearLayout>
+</ScrollView>

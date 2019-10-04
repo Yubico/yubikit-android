@@ -118,13 +118,9 @@ class CredentialListAdapter(
                     oldItem == newItem
         }
 
-
-
         private const val STEAM_CHARS = "23456789BCDFGHJKMNPQRTVWXY"
         private fun formatSteam(code: Code): String {
-            val response = code.value.toByteArray()
-            val offs = 0xf and response[response.size - 1].toInt()
-            var intCode = 0x7fffffff and ByteBuffer.wrap(response.copyOfRange(offs, offs + 4)).int
+            var intCode = Integer.parseInt(code.value)
             return StringBuilder().apply {
                 for (i in 0..4) {
                     append(STEAM_CHARS[intCode % STEAM_CHARS.length])

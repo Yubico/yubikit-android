@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingLeft="?dialogPreferredPadding"
+    android:paddingRight="?dialogPreferredPadding"
+    >
+
+    <TextView
+        android:text="@string/piv_pin_set_retries_desc"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <com.google.android.material.textfield.TextInputLayout
+        style="@style/LoginTextInputLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <AutoCompleteTextView
+            android:id="@+id/pin"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:imeActionId="6"
+            android:hint="@string/piv_pin"
+            android:imeOptions="actionDone"
+            android:inputType="textPassword"
+            style="@style/LoginTextInput" />
+
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.textfield.TextInputLayout
+        style="@style/LoginTextInputLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <AutoCompleteTextView
+            android:id="@+id/retries_pin"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:imeActionId="6"
+            android:hint="@string/piv_pin_retries"
+            android:imeOptions="actionDone"
+            android:inputType="numberDecimal"
+            style="@style/LoginTextInput" />
+
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.textfield.TextInputLayout
+        style="@style/LoginTextInputLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <AutoCompleteTextView
+            android:id="@+id/retries_puk"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:imeActionId="6"
+            android:hint="@string/piv_puk_retries"
+            android:imeOptions="actionDone"
+            android:inputType="numberDecimal"
+            style="@style/LoginTextInput" />
+
+    </com.google.android.material.textfield.TextInputLayout>
+
+
+    <CheckBox
+        android:id="@+id/use_default"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="@color/colorTextGrey"
+        android:text="@string/use_default_pin"
+        android:visibility="gone"/>
+</LinearLayout>

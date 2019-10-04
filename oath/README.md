@@ -17,30 +17,30 @@ dependencies {
 ```
 And in `gradle.properties` set latest version. Example:  
 ```gradle
-yubikitVersion=1.0.0-beta01
+yubikitVersion=1.0.0-beta02
 ```
 #### Maven:
 ```xml
 <dependency>
   <groupId>com.yubico.yubikit</groupId>
   <artifactId>yubikit</artifactId>
-  <version>1.0.0-beta01</version>
+  <version>1.0.0-beta02</version>
 </dependency>
 
 <dependency>
   <groupId>com.yubico.yubikit</groupId>
   <artifactId>oath</artifactId>
-  <version>1.0.0-beta01</version>
+  <version>1.0.0-beta02</version>
 </dependency>
 ```
 
 ###Using Library <a name="using_lib"></a>
 
 This module requires usage of yubikit core library to detect `YubikeySession` (see [Using YubiKit](../yubikit/README.md))  
-When you open an ISO/IEC 7816 connection, you need to create `OathApplication` to select OATH applet on YubiKey  
+And use it to create `OathApplication` to select OATH applet on YubiKey  
 ```java
 
-    OathApplication oathApplication = new OathApplication(connection);
+    OathApplication oathApplication = new OathApplication(session);
     // run provided command/operation (put/calculate/delete/etc)
     // example:
     //    try {
