@@ -24,12 +24,14 @@ android {
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    implementation project(path:':yubikit', configuration: 'default')
+    compileOnly project(':yubikit')
 
-    implementation 'androidx.appcompat:appcompat:1.0.2'
-    implementation 'com.google.android.material:material:1.0.0'
-    implementation 'com.google.android.gms:play-services-vision:18.0.0'
+    implementation "androidx.appcompat:appcompat:$appcompatVersion"
+    implementation "com.google.android.material:material:$snackbarVersion"
     implementation 'commons-codec:commons-codec:1.11'
+
+    // adding this service as optional in case if user don't need QR reader
+    compileOnly 'com.google.android.gms:play-services-vision:18.0.0'
 
     testImplementation 'junit:junit:4.12'
     testImplementation 'androidx.test.ext:junit:1.1.1'

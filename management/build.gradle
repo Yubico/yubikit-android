@@ -24,8 +24,8 @@ android {
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    implementation project(path:':yubikit', configuration: 'default')
-    implementation 'androidx.appcompat:appcompat:1.0.2'
+    compileOnly project(':yubikit')
+    implementation "androidx.appcompat:appcompat:$appcompatVersion"
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'androidx.test:runner:1.2.0'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'

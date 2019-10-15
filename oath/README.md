@@ -13,24 +13,27 @@ dependencies {
   implementation 'com.yubico.yubikit:yubikit:$yubikitVersion'
   // OATH
   implementation 'com.yubico.yubikit:oath:$yubikitVersion'
+  
+  // Optional: dependency required for  QR scan code functionality (QrActivity)
+  implementation 'com.google.android.gms:play-services-vision:18.0.0'
 }
 ```
 And in `gradle.properties` set latest version. Example:  
 ```gradle
-yubikitVersion=1.0.0-beta02
+yubikitVersion=1.0.0-beta03
 ```
 #### Maven:
 ```xml
 <dependency>
   <groupId>com.yubico.yubikit</groupId>
   <artifactId>yubikit</artifactId>
-  <version>1.0.0-beta02</version>
+  <version>1.0.0-beta03</version>
 </dependency>
 
 <dependency>
   <groupId>com.yubico.yubikit</groupId>
   <artifactId>oath</artifactId>
-  <version>1.0.0-beta02</version>
+  <version>1.0.0-beta03</version>
 </dependency>
 ```
 

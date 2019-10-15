@@ -13,3 +13,6 @@ Yubico OTP
 version 1.0.0-beta02
 PIV implementation
 Management API
+
+version 1.0.0-beta03
+Making QR/play-services-vision dependency optional

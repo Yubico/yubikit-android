@@ -32,14 +32,13 @@ dependencies {
     implementation project(':fido')
 
     // ui libraries
-    def appcompatVersion = "1.0.2"
-    implementation "androidx.appcompat:appcompat:$appcompatVersion"
+    api "androidx.appcompat:appcompat:$appcompatVersion"
     def androidxuiVersion = "1.0.0"
     implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxuiVersion"
     implementation 'androidx.constraintlayout:constraintlayout:1.1.3'
     implementation "androidx.recyclerview:recyclerview:$androidxuiVersion"
     implementation "androidx.cardview:cardview:$androidxuiVersion"
-    implementation "com.google.android.material:material:$androidxuiVersion"
+    implementation "com.google.android.material:material:$snackbarVersion"
 
     // preference
     api "androidx.preference:preference:1.1.0"
@@ -54,7 +53,7 @@ dependencies {
     implementation "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
 
     // network
-    def retrofitVersion = "2.4.0"
+    def retrofitVersion = "2.5.0"
     def okhttpVersion = "3.11.0"
     def moshiVersion = "1.8.0"
     api "com.squareup.moshi:moshi:$moshiVersion"

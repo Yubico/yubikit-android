@@ -45,18 +45,21 @@ If you are using [App Signing](https://support.google.com/googleplay/android-dev
 dependencies {  
   // core library, connection detection, and raw commands communication with yubikey
   implementation 'com.yubico.yubikit:fido:$yubikitVersion'
+  
+  // google play services for FIDO
+  implementation 'com.google.android.gms:play-services-fido:18.0.0'
 }
 ```
 And in `gradle.properties` set latest version. Example:
 ```gradle
-yubikitVersion=1.0.0-beta02
+yubikitVersion=1.0.0-beta03
 ```
 ####Maven:
 ```xml
 <dependency>
   <groupId>com.yubico.yubikit</groupId>
   <artifactId>fido</artifactId>
-  <version>1.0.0-beta02</version>
+  <version>1.0.0-beta03</version>
 </dependency>
 ```
 

@@ -65,22 +65,12 @@ dependencies {
 
     // yubikit
     implementation project(':yubikit')
-    implementation (project(':oath')) {
-        exclude module:'yubikit'
-    }
-    implementation (project(':otp')) {
-        exclude module:'yubikit'
-    }
-    implementation (project(':management')) {
-        exclude module:'yubikit'
-    }
-    implementation (project(':piv')) {
-        exclude module:'yubikit'
-    }
+    implementation (project(':oath'))
+    implementation (project(':otp'))
+    implementation (project(':management'))
+    implementation (project(':piv'))
 
     // ui libraries
-    def appcompatVersion = "1.1.0"
-    implementation "androidx.appcompat:appcompat:$appcompatVersion"
     implementation 'androidx.constraintlayout:constraintlayout:1.1.3'
 
     // webview
@@ -88,6 +78,9 @@ dependencies {
 
     // decoders
     implementation 'commons-codec:commons-codec:1.11'
+
+    // QR scanning for oath demo
+    implementation 'com.google.android.gms:play-services-vision:18.0.0'
 
     // unit tests
     def mockito_version = "2.11.0"
