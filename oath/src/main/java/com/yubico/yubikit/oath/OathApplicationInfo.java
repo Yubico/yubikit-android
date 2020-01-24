@@ -19,8 +19,6 @@ package com.yubico.yubikit.oath;
 import android.util.Base64;
 import android.util.SparseArray;
 
-import com.yubico.yubikit.apdu.ApduException;
-import com.yubico.yubikit.apdu.Tlv;
 import com.yubico.yubikit.apdu.TlvUtils;
 import com.yubico.yubikit.apdu.Version;
 

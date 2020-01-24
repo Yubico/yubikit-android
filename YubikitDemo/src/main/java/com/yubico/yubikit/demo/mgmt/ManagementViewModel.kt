@@ -21,7 +21,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.yubico.yubikit.YubiKitManager
 import com.yubico.yubikit.apdu.ApduException
-import com.yubico.yubikit.apdu.Version
 import com.yubico.yubikit.demo.YubikeyViewModel
 import com.yubico.yubikit.demo.fido.arch.SingleLiveEvent
 import com.yubico.yubikit.management.DeviceConfiguration

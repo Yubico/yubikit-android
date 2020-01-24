@@ -22,6 +22,7 @@
     <string name="require_platform_authenticators_title">Register platform authenticator</string>
     <string name="require_platform_authenticators">Do you want to add passwordless authentication with platform authenticator?</string>
     <string name="retry">Retry</string>
+    <string name="request">Request</string>
     <string name="sign_out">Sign out</string>
     <string name="password_less_sign_in">Sign in with username:</string>
     <string name="added_format">Added: %1$s</string>

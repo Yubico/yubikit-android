@@ -65,7 +65,7 @@ public class UsbSession implements YubiKeySession {
         if (ccidInterface == null) {
             throw new YubikeyCommunicationException("No CCID interface found!");
         }
-        Pair<UsbEndpoint, UsbEndpoint> endpointPair = findEndpoints(ccidInterface);
+        Pair<UsbEndpoint, UsbEndpoint> endpointPair = findEndpoints(ccidInterface, UsbConstants.USB_ENDPOINT_XFER_BULK);
         if (endpointPair.first == null || endpointPair.second == null) {
             throw new YubikeyCommunicationException("Unable to find endpoints!");
         }
@@ -82,6 +82,38 @@ public class UsbSession implements YubiKeySession {
 
         return new UsbIso7816Connection(connection, ccidInterface, endpointPair.first, endpointPair.second);
     }
+
+
+
+    /**
+     * Creates and starts session for communication with yubikey using HID interface
+     * @return session for communication with yubikey (supported over USB only)
+     * @throws YubikeyCommunicationException if CCID interface or endpoints are not found
+     */
+    public @NonNull
+    UsbHidConnection openHidKeyboardConnection() throws YubikeyCommunicationException {
+        UsbInterface hidInterface = getInterface(UsbConstants.USB_CLASS_HID);
+        if (hidInterface == null) {
+            throw new YubikeyCommunicationException("No HID interface found");
+        }
+
+        if (hidInterface.getInterfaceSubclass() != UsbConstants.USB_INTERFACE_SUBCLASS_BOOT) {
+            throw new YubikeyCommunicationException("No expected HID interface");
+        }
+
+        UsbDeviceConnection connection = openConnection();
+        if (connection == null) {
+            throw new YubikeyCommunicationException("exception in UsbManager.openDevice");
+        }
+
+        if (!connection.claimInterface(hidInterface, true)) {
+            connection.close();
+            throw new YubikeyCommunicationException("Interface couldn't be claimed");
+        }
+
+        return new UsbHidConnection(connection, hidInterface);
+    }
+
 
     @Override
     public boolean equals(Object o) {
@@ -115,15 +147,15 @@ public class UsbSession implements YubiKeySession {
      * @return interface of device
      */
     private UsbInterface getInterface(int usbClass) {
-        UsbInterface ccidInterface = null;
+        UsbInterface selectedInterface = null;
         for (int i = 0; i < usbDevice.getInterfaceCount(); i++) {
             UsbInterface usbInterface = usbDevice.getInterface(i);
             if (usbInterface.getInterfaceClass() == usbClass) {
-                ccidInterface = usbInterface;
+                selectedInterface = usbInterface;
                 break;
             }
         }
-        return ccidInterface;
+        return selectedInterface;
     }
 
     /**
@@ -131,13 +163,13 @@ public class UsbSession implements YubiKeySession {
      * @param usbInterface interface of usb device
      * @return the pair of endpoints: in and out
      */
-    private Pair<UsbEndpoint, UsbEndpoint> findEndpoints(UsbInterface usbInterface) {
+    private Pair<UsbEndpoint, UsbEndpoint> findEndpoints(UsbInterface usbInterface, int type) {
         UsbEndpoint endpointIn = null;
         UsbEndpoint endpointOut = null;
 
         for (int i = 0; i < usbInterface.getEndpointCount(); i++) {
             UsbEndpoint endpoint = usbInterface.getEndpoint(i);
-            if (endpoint.getType() == UsbConstants.USB_ENDPOINT_XFER_BULK) {
+            if (endpoint.getType() == type) {
                 if (endpoint.getDirection() == UsbConstants.USB_DIR_IN) {
                     endpointIn = endpoint;
                 } else {

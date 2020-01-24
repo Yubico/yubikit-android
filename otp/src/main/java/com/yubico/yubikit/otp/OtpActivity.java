@@ -73,7 +73,7 @@ public class OtpActivity extends AppCompatActivity {
         manager = new YubiKitManager(this);
         manager.startUsbDiscovery(false, new UsbSessionListener() {
             @Override
-            public void onSessionReceived(@NonNull UsbSession session) {
+            public void onSessionReceived(@NonNull UsbSession session, boolean hasPermission) {
                 usbSessionCounter++;
                 textView.setText(R.string.yubikit_otp_touch);
             }
@@ -88,11 +88,6 @@ public class OtpActivity extends AppCompatActivity {
                         textView.setText(R.string.yubikit_otp_plug_in);
                     }
                 }
-            }
-
-            @Override
-            public void onError(@NonNull UsbSession session, @NonNull Throwable error) {
-                // not going to be invoked because we don't ask permissions to connect to device
             }
         });
     }

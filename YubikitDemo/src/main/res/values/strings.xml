@@ -11,7 +11,7 @@
     <string name="yubico_mgmt_demo">YubiKey Setting</string>
     <string name="company_name">yubico</string>
     <string name="coming_soon">This feature is under development and coming soon</string>
-    <string name="run_raw_data_demo">To run this demo, a certificate must be loaded on the key PIV application in slot 9C.</string>
+    <string name="run_raw_data_demo">To run this demo, a certificate must be loaded on the key PIV application in yubiKeySlot 9C.</string>
     <string name="run_demo">Run demo</string>
     <string name="run_yubico_otp_demo">This demo captures and validates a Yubico OTP credential. To capture a credential tap on Read OTP, to validate tap Validate OTP.</string>
     <string name="otp">One-time code</string>
@@ -95,4 +95,23 @@
     <string name="piv_pin_set_retries">Set the PIN retries</string>
     <string name="piv_pin_set_retries_desc">Set the PIN retries for PIN and PUK. Both PIN and PUK will be reset to default values when this is executed.</string>
     <string name="use_default_pin">Use default PIN</string>
+
+
+    <string name="chresp_run_yubico_demo">This demo exchanges challenge for response from YubiKey. Use text editor to provide HEX challenge and tap Read button.</string>
+    <string name="chresp_read">Read</string>
+    <string name="chresp_challenge">Challenge</string>
+    <string name="chresp_demo">Challenge-response demo</string>
+
+    <string name="configure_demo">Configure OTP</string>
+    <string name="configure_run_yubico_demo">This demo allows to program YubiKey what it will print/type on touch or returns in NDEF tag</string>
+    <string name="configure_prompt">Configure to use</string>
+    <string name="configure_generate">Generate</string>
+    <string name="configure_swap">Swap slots</string>
+    <string name="configure_button">Configure</string>
+    <string name="configure_success">Successfully configured</string>
+    <string name="configure_require_touch">Require touch</string>
+    <string name="configure_secret">Secret key</string>
+    <string name="configure_private_id">Private ID</string>
+    <string name="configure_public_id">Public ID</string>
+
 </resources>

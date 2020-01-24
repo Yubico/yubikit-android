@@ -28,7 +28,6 @@ import android.widget.Toast
 import androidx.lifecycle.*
 import com.yubico.yubikit.YubiKitManager
 import com.yubico.yubikit.apdu.ApduCodeException
-import com.yubico.yubikit.apdu.ApduException
 import com.yubico.yubikit.demo.BaseYubikeyFragment
 import com.yubico.yubikit.demo.R
 import com.yubico.yubikit.demo.YubikeyViewModel
@@ -36,7 +35,6 @@ import com.yubico.yubikit.management.ApplicationType
 import com.yubico.yubikit.management.DeviceConfiguration
 import com.yubico.yubikit.management.TransportType
 import kotlinx.android.synthetic.main.fragment_management.*
-import java.io.IOException
 
 private const val TAG = "ManagementFragment"
 class ManagementFragment : BaseYubikeyFragment(TAG) {
@@ -100,10 +98,7 @@ class ManagementFragment : BaseYubikeyFragment(TAG) {
                 Log.e(TAG, "Status code : ${Integer.toHexString(throwable.statusCode)} ")
                 Toast.makeText(context, throwable.message, Toast.LENGTH_LONG).show()
             }
-            is ApduException -> {
-                Toast.makeText(context, throwable.message, Toast.LENGTH_LONG).show()
-            }
-            is IOException -> {
+            else -> {
                 Toast.makeText(context, throwable.message, Toast.LENGTH_LONG).show()
             }
         }

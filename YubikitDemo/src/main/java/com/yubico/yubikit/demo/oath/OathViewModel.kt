@@ -32,7 +32,6 @@ import com.yubico.yubikit.oath.*
 import com.yubico.yubikit.transport.YubiKeySession
 import com.yubico.yubikit.utils.Logger
 import java.io.IOException
-import java.nio.ByteBuffer
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.Executors
 

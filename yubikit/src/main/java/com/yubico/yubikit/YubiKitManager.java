@@ -143,12 +143,12 @@ public final class YubiKitManager {
 
     private final class UsbInternalListener implements UsbSessionListener {
         @Override
-        public void onSessionReceived(@NonNull final UsbSession session) {
+        public void onSessionReceived(@NonNull final UsbSession session, final boolean hasPermissions) {
             handler.post(new Runnable() {
                 @Override
                 public void run() {
                     if (usbListener != null) {
-                        usbListener.onSessionReceived(session);
+                        usbListener.onSessionReceived(session, hasPermissions);
                     }
                 }
             });
@@ -161,18 +161,6 @@ public final class YubiKitManager {
                 public void run() {
                     if (usbListener != null) {
                         usbListener.onSessionRemoved(session);
-                    }
-                }
-            });
-        }
-
-        @Override
-        public void onError(@NonNull final UsbSession session, @NonNull final Throwable error) {
-            handler.post(new Runnable() {
-                @Override
-                public void run() {
-                    if (usbListener != null) {
-                        usbListener.onError(session, error);
                     }
                 }
             });

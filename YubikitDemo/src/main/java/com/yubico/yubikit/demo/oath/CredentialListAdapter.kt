@@ -32,7 +32,6 @@ import com.yubico.yubikit.oath.Code
 import com.yubico.yubikit.oath.Credential
 import com.yubico.yubikit.oath.OathType
 import kotlinx.android.synthetic.main.oath_item_authenticator_list.view.*
-import java.nio.ByteBuffer
 import java.util.*
 
 private const val MILLS_IN_SECOND = 1000.toLong()

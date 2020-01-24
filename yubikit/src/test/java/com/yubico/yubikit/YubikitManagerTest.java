@@ -126,17 +126,15 @@ public class YubikitManagerTest {
 
     private class UsbListener implements UsbSessionListener {
         @Override
-        public void onSessionReceived(@NonNull UsbSession session) {
+        public void onSessionReceived(@NonNull UsbSession session, boolean hasPermission) {
+            if (!hasPermission) {
+                Assert.fail();
+            }
             signal.countDown();
         }
 
         @Override
         public void onSessionRemoved(@NonNull UsbSession session) {
-            Assert.fail();
-        }
-
-        @Override
-        public void onError(@NonNull UsbSession session, @NonNull Throwable error) {
             Assert.fail();
         }
     }
@@ -162,7 +160,7 @@ public class YubikitManagerTest {
                 new Timer().schedule(new TimerTask() {
                     @Override
                     public void run() {
-                        internalListener.onSessionReceived((UsbSession)session);
+                        internalListener.onSessionReceived((UsbSession)session, true);
                     }
                 }, 100); // emulating that discovery of session took some time
             } else if (invocation.getArgument(0) instanceof NfcSessionListener) {

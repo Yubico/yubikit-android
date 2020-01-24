@@ -18,8 +18,6 @@ package com.yubico.yubikit.oath.qr;
 
 import android.Manifest;
 import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.util.SparseArray;
 import android.view.SurfaceHolder;

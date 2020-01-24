@@ -16,14 +16,14 @@ dependencies {
 ```
 And in `gradle.properties` set latest version. Example:
 ```gradle
-yubikitVersion=1.0.0-beta03
+yubikitVersion=1.0.0-beta04
 ```
 #### Maven:
 ```xml
 <dependency>
   <groupId>com.yubico.yubikit</groupId>
   <artifactId>yubikit</artifactId>
-  <version>1.0.0-beta03</version>
+  <version>1.0.0-beta04</version>
 </dependency>
 ```
 ###Using Library <a name="using_lib"></a>

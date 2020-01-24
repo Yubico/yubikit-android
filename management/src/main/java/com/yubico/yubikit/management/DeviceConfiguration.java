@@ -115,6 +115,9 @@ public final class DeviceConfiguration {
      * @return true if set
      */
     public boolean isConfigLocked() {
+        if (configurationLock == null) {
+            return false;
+        }
         for (byte b : configurationLock) {
             if (b != 0) {
                 return true;
