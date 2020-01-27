@@ -158,7 +158,8 @@ public class YubiKeyConfigurationApplication implements Closeable {
 
         ConfigurationBuilder configurationBuilder = new ConfigurationBuilder();
         configurationBuilder.setKey(ConfigurationBuilder.HMAC_SHA1_MODE, secret);
-        configurationBuilder.setTktFlags(ConfigurationBuilder.TKTFLAG_CHAL_RESP);
+        configurationBuilder.setTktFlags((byte)(ConfigurationBuilder.TKTFLAG_UPDATE_MASK | ConfigurationBuilder.TKTFLAG_CHAL_RESP));
+        configurationBuilder.setExtFlags(ConfigurationBuilder.EXTFLAG_UPDATE_MASK);
 
         int cfgFlags = ConfigurationBuilder.CFGFLAG_IS_CHAL_RESP | ConfigurationBuilder.CFGFLAG_CHAL_HMAC | ConfigurationBuilder.CFGFLAG_HMAC_LT64;
         if (requireTouch) {
@@ -195,6 +196,8 @@ public class YubiKeyConfigurationApplication implements Closeable {
 
         ConfigurationBuilder configurationBuilder = new ConfigurationBuilder();
         configurationBuilder.setCfgFlags(ConfigurationBuilder.CFGFLAG_SHORT_TICKET);
+        configurationBuilder.setTktFlags(ConfigurationBuilder.TKTFLAG_UPDATE_MASK);
+        configurationBuilder.setExtFlags(ConfigurationBuilder.EXTFLAG_UPDATE_MASK);
         configurationBuilder.setKey(ConfigurationBuilder.STATIC_MODE, stream.toByteArray());
         sendConfiguration(slot, configurationBuilder);
     }
@@ -223,6 +226,8 @@ public class YubiKeyConfigurationApplication implements Closeable {
         configurationBuilder.setFixed(ModHexUtils.convertModHexToHex(publicId));
         configurationBuilder.setUid(privateId);
         configurationBuilder.setKey(ConfigurationBuilder.AES_MODE, key);
+        configurationBuilder.setTktFlags(ConfigurationBuilder.TKTFLAG_UPDATE_MASK);
+        configurationBuilder.setExtFlags(ConfigurationBuilder.EXTFLAG_UPDATE_MASK);
         sendConfiguration(slot, configurationBuilder);
     }
 
@@ -259,7 +264,6 @@ public class YubiKeyConfigurationApplication implements Closeable {
      * Method allows to swap data between 1st and 2nd slot of the YubiKey
      * @throws IOException in case of communication error
      * @throws ApduException in case of unexpected usage or error response from YubiKey
-     * NOTE: this operation doesn't work reliably below version 5.3
      */
     public void swapSlots() throws IOException, ApduException {
         if (getVersion().compare(new Version(2,3,0)) < 0) {

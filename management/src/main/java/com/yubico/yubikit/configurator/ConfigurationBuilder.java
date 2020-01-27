@@ -92,9 +92,8 @@ class ConfigurationBuilder {
     static public final byte EXTFLAG_ALLOW_UPDATE =     0x20;       // Allow update of existing configuration (selected flags + access code)
     static public final byte EXTFLAG_DORMANT =          0x40;       // Dormant configuration (can be woken up and flag removed = requires update flag)
 
-    static public final byte TKTFLAG_UPDATE_MASK =      (byte) (TKTFLAG_TAB_FIRST | TKTFLAG_APPEND_TAB1 | TKTFLAG_APPEND_TAB2 | TKTFLAG_APPEND_DELAY1 | TKTFLAG_APPEND_DELAY2 | TKTFLAG_APPEND_CR);
-    static public final byte CFGFLAG_UPDATE_MASK =      (byte) (CFGFLAG_PACING_10MS | CFGFLAG_PACING_20MS);
-    static public final byte EXTFLAG_UPDATE_MASK =      (byte) (EXTFLAG_SERIAL_BTN_VISIBLE | EXTFLAG_SERIAL_USB_VISIBLE |  EXTFLAG_SERIAL_API_VISIBLE | EXTFLAG_USE_NUMERIC_KEYPAD | EXTFLAG_FAST_TRIG | EXTFLAG_ALLOW_UPDATE | EXTFLAG_DORMANT);
+    static public final byte TKTFLAG_UPDATE_MASK =      (byte) (TKTFLAG_APPEND_CR);
+    static public final byte EXTFLAG_UPDATE_MASK =      (byte) (EXTFLAG_SERIAL_API_VISIBLE | EXTFLAG_ALLOW_UPDATE);
 
 
     static public final int AES_MODE = 0;
