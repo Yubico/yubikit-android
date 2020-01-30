@@ -37,7 +37,7 @@ abstract class BaseYubikeyFragment(private val logTag: String) : Fragment() {
     private lateinit var tapNfcSnackBar: Snackbar
     private lateinit var enableNfcSnackBar: Snackbar
     private lateinit var permissionSnackBar: Snackbar
-    private var hasConnection = false
+    protected var hasConnection = false
 
     abstract fun getViewModel() : YubikeyViewModel
     abstract fun onError(throwable : Throwable)
@@ -49,7 +49,7 @@ abstract class BaseYubikeyFragment(private val logTag: String) : Fragment() {
         activity?.lifecycle?.addObserver(ActivityLifecycleObserver())
 
         tapNfcSnackBar = Snackbar.make(view, R.string.need_yubikey, Snackbar.LENGTH_INDEFINITE)
-        permissionSnackBar = Snackbar.make(view, "Permissions are required to communicate with Usb device", Snackbar.LENGTH_INDEFINITE).setAction(R.string.retry) {
+        permissionSnackBar = Snackbar.make(view, "Permissions are required to communicate with Usb device", Snackbar.LENGTH_INDEFINITE).setAction(R.string.request) {
             showSnackBar(permissionSnackBar, false)
             getViewModel().executeDemoCommands()
         }
@@ -73,8 +73,8 @@ abstract class BaseYubikeyFragment(private val logTag: String) : Fragment() {
         })
 
         getViewModel().sessionUsb.observe(viewLifecycleOwner, Observer {
-            hasConnection = it != null
-            if (hasConnection && getViewModel().hasPermission(it)) {
+            hasConnection = it != null && getViewModel().hasPermission(it)
+            if (hasConnection) {
                 onUsbSession(true)
             } else {
                 hideAllSnackBars()

@@ -17,7 +17,7 @@ Please note, **YubiKit** consumes data from the token and translates to the appl
 
 [PIV](./piv/README.md) provides implementation of Personal Identity Verification (PIV) 
 
-[MGMT](./mgmt/README.md) provides subset of API for personal customization of YubiKey
+[MGMT](./management/README.md) provides subset of API for personal customization of YubiKey and HMAC-SHA1 challenge-response
 
 All **YubiKit** modules has javadoc and sources deployed with the library archive. Use this documentation for a more detailed explanation of all the methods, properties and parameters from the API.
 
@@ -35,7 +35,7 @@ Yubico typically tests and support n-1 per https://en.wikipedia.org/wiki/Android
 
 You can set up adb debugging over WiFi: https://developer.android.com/studio/command-line/adb#wireless
 
-## 6. Additional resources <a name="additional_resources"></a>
+## Additional resources <a name="additional_resources"></a>
 1. Yubico - [Developers website](https://developers.yubico.com)
 2. Yubico - [Online Demo](https://demo.yubico.com) 
 ![]()

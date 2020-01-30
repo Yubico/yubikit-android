@@ -114,13 +114,14 @@ public class UsbDeviceManager {
      */
     private void checkPermissions(UsbDevice device, boolean requestPermissions) {
         if (device != null) {
+            // return to user that device was discovered and whether permissions are granted or not
+            listener.onSessionReceived(new UsbSession(usbManager, device), usbManager.hasPermission(device));
+
             if (!usbManager.hasPermission(device) && requestPermissions) {
                 // show permissions dialog and wait for response with broadcast receiver
                 PendingIntent pendingUsbPermissionIntent = PendingIntent.getBroadcast(context, 0, new Intent(ACTION_USB_PERMISSION), 0);
                 context.registerReceiver(new UsbPermissionsBroadcastReceiver(), new IntentFilter(ACTION_USB_PERMISSION));
                 usbManager.requestPermission(device, pendingUsbPermissionIntent);
-            } else {
-                listener.onSessionReceived(new UsbSession(usbManager, device));
             }
         }
     }
@@ -162,11 +163,7 @@ public class UsbDeviceManager {
                     return;
                 }
 
-                if (!usbManager.hasPermission(device)) {
-                    listener.onError(new UsbSession(usbManager, device), new NoPermissionsException(device));
-                } else {
-                    listener.onSessionReceived(new UsbSession(usbManager, device));
-                }
+                listener.onSessionReceived(new UsbSession(usbManager, device), usbManager.hasPermission(device));
             }
         }
     }

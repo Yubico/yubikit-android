@@ -38,13 +38,8 @@ import com.yubico.yubikit.demo.YubikeyViewModel
 import com.yubico.yubikit.demo.oath.AuthRequiredException
 import com.yubico.yubikit.demo.oath.PasswordDialogFragment
 import com.yubico.yubikit.demo.raw.ISettings
-import com.yubico.yubikit.demo.raw.UsbDeviceNotFoundException
 import com.yubico.yubikit.demo.settings.Ramps
-import com.yubico.yubikit.exceptions.NfcDisabledException
-import com.yubico.yubikit.exceptions.NfcNotFoundException
-import com.yubico.yubikit.exceptions.NoPermissionsException
 import com.yubico.yubikit.piv.Slot
-import java.io.IOException
 
 private const val TAG = "PivFragment"
 class PivFragment : BaseYubikeyFragment(TAG), PasswordDialogFragment.DialogListener, RetriesDialogFragment.DialogListener {
@@ -63,7 +58,6 @@ class PivFragment : BaseYubikeyFragment(TAG), PasswordDialogFragment.DialogListe
                 PivViewModel.Factory(YubiKitManager(context), Settings(context)))
                 .get(PivViewModel::class.java)
     }
-    private var hasConnection = false
 
     override fun getViewModel(): YubikeyViewModel {
         return viewModel
@@ -126,7 +120,7 @@ class PivFragment : BaseYubikeyFragment(TAG), PasswordDialogFragment.DialogListe
             is ApduException -> {
                 Toast.makeText(context, throwable.message, Toast.LENGTH_LONG).show()
             }
-            is IOException -> {
+            else -> {
                 Toast.makeText(context, throwable.message, Toast.LENGTH_LONG).show()
             }
         }

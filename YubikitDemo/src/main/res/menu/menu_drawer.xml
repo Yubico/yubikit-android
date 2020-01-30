@@ -40,6 +40,18 @@
             android:title="@string/piv_demo"/>
 
         <item
+            android:id="@+id/configure_otp_fragment"
+            android:icon="@android:drawable/ic_menu_compass"
+            android:orderInCategory="6"
+            android:title="@string/configure_demo"/>
+
+        <item
+            android:id="@+id/challenge_fragment"
+            android:icon="@drawable/ic_refresh_24dp"
+            android:orderInCategory="6"
+            android:title="@string/chresp_demo"/>
+
+        <item
             android:id="@+id/mgmt_fragment"
             android:iconTint="@color/colorGrey"
             android:icon="@android:drawable/ic_menu_preferences"

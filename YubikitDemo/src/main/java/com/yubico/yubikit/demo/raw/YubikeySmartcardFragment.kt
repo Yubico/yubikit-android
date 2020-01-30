@@ -89,7 +89,7 @@ class YubikeySmartcardFragment : BaseYubikeyFragment(TAG) {
         when (throwable) {
             is ApduCodeException -> log.text = StringBuilder(log.text).append("\n Error: ").append(Integer.toHexString(throwable.statusCode)).toString()
             is ApduException -> log.text = StringBuilder(log.text).append("\n Error: ").append(throwable.message).toString()
-            is IOException -> {
+            else -> {
                 val message = throwable.message ?: "No connection found"
                 log.text = message
             }

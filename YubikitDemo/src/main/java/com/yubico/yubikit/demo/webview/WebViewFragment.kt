@@ -38,7 +38,6 @@ import kotlinx.android.synthetic.main.fragment_webview.*
 private const val TAG = "WebViewFragment"
 class WebViewFragment : Fragment() {
 
-    private var customTabsClient: CustomTabsClient? = null
     private val uri = Uri.parse(BuildConfig.getServerUrl()).buildUpon().appendPath("webauthn").build()
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
@@ -68,12 +67,11 @@ class WebViewFragment : Fragment() {
     private fun launchCustomTabs(context: Context, uri: Uri) {
         val packageName = CustomTabsClient.getPackageName(context, null) ?: "com.android.chrome"
         CustomTabsClient.bindCustomTabsService(context, packageName, object : CustomTabsServiceConnection() {
-            override fun onCustomTabsServiceConnected(name: ComponentName?, client: CustomTabsClient?) {
+            override fun onCustomTabsServiceConnected(name: ComponentName, client: CustomTabsClient) {
                 Log.d(TAG, "onCustomTabsServiceConnected $packageName")
-                customTabsClient = client
-                customTabsClient?.warmup(0)
+                client.warmup(0)
 
-                val session = customTabsClient?.newSession(object: CustomTabsCallback() {
+                val session = client.newSession(object: CustomTabsCallback() {
                     override fun onNavigationEvent(navigationEvent: Int, extras: Bundle?) {
                         super.onNavigationEvent(navigationEvent, extras)
                         Log.d(TAG, "onNavigationEvent: Code = $navigationEvent")
@@ -85,8 +83,7 @@ class WebViewFragment : Fragment() {
             }
 
             override fun onServiceDisconnected(name: ComponentName?) {
-                Log.d(TAG, "onServiceDisconnected")
-                customTabsClient = null
+                Log.d(TAG, "onServiceDisconnected $packageName")
             }
         })
     }

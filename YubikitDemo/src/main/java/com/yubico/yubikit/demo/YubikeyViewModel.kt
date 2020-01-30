@@ -63,15 +63,25 @@ open class YubikeyViewModel(private val yubikitManager: YubiKitManager) : ViewMo
      * Listeners for yubikey discovery (over USB and NFC)
      */
     private val usbListener = object: UsbSessionListener {
-        override fun onSessionReceived(session: UsbSession) {
+        override fun onSessionReceived(session: UsbSession, hasPermission: Boolean) {
             val hadPermissions = sessions[session] != false
-            // latest connection becomes active one
-            sessions[session] = true
-            _sessionUsb.value = session
+            sessions[session] = hasPermission
+
+            if (hasPermission) {
+                // latest connection becomes active one
+                _sessionUsb.value = session
+            } else if (_sessionUsb.value == null) {
+                // if there is no other active session use the one that has no permissions
+                // otherwise we prefer to keep active session that has granted permission
+                _sessionUsb.value = session
+            }
 
             // if user has granted permissions we should execute command as button was clicked already
-            if (!hadPermissions) {
+            if (!hadPermissions && hasPermission) {
                 session.executeDemoCommands()
+            } else if (!hasPermission) {
+                _error.value = NoPermissionsException(session.usbDevice)
+
             }
         }
 
@@ -81,18 +91,6 @@ open class YubikeyViewModel(private val yubikitManager: YubiKitManager) : ViewMo
             if (session ==_sessionUsb.value) {
                 _sessionUsb.value = if(sessions.isEmpty()) null else sessions.keys.last()
             }
-        }
-
-        override fun onError(session: UsbSession, error: Throwable) {
-            if (error is NoPermissionsException) {
-                sessions[session] = false
-
-                // if there is no other active session use the one that has no permissions
-                if (_sessionUsb.value == null) {
-                    _sessionUsb.value = session
-                }
-            }
-            _error.value = error
         }
     }
 

@@ -1,7 +1,8 @@
 # OTP Module for YubiKit Android
 **OTP** is module of Android YubiKit library provided Yubico that provides classes to parse Yubikey OTP from NFC tag, UI dialog to show user that OTP reading requires his action and detecting OTP from device connected over NFC or USB.
+About Yubico OTP and advantages of using it please read on [Yubico developers website](https://developers.yubico.com/OTP/OTPs_Explained.html)
 
-**OTP** requires at minimum  Java 7 or Android 4.4, future versions may require a later baseline. Anything lower than Android 8.0 may receive less testing by Yubico.
+**OTP** module requires at minimum  Java 7 or Android 4.4, future versions may require a later baseline. Anything lower than Android 8.0 may receive less testing by Yubico.
 
 ## Integration Steps <a name="integration_steps"></a>
 ###Download
@@ -17,20 +18,20 @@ dependencies {
 ```
 And in `gradle.properties` set latest version. Example:
 ```gradle
-yubikitVersion=1.0.0-beta03
+yubikitVersion=1.0.0-beta04
 ```
 #### Maven:
 ```xml
 <dependency>
   <groupId>com.yubico.yubikit</groupId>
   <artifactId>yubikit</artifactId>
-  <version>1.0.0-beta03</version>
+  <version>1.0.0-beta04</version>
 </dependency>
 
 <dependency>
   <groupId>com.yubico.yubikit</groupId>
   <artifactId>otp</artifactId>
-  <version>1.0.0-beta03</version>
+  <version>1.0.0-beta04</version>
 </dependency>
 ```
 ###Using Library <a name="using_lib"></a>

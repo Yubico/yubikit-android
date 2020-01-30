@@ -8,7 +8,7 @@
     <uses-permission android:name="android.permission.CAMERA" />
     <application>
         <meta-data android:name="com.google.android.gms.vision.DEPENDENCIES" android:value="barcode"/>
-        <activity android:name=".qr.QrActivity">
+        <activity android:name="com.yubico.yubikit.oath.qr.QrActivity">
         </activity>
     </application>
 </manifest>

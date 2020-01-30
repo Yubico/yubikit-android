@@ -26,15 +26,12 @@ import com.yubico.yubikit.Iso7816Application;
 import com.yubico.yubikit.apdu.Apdu;
 import com.yubico.yubikit.apdu.ApduCodeException;
 import com.yubico.yubikit.apdu.ApduException;
-import com.yubico.yubikit.apdu.ApduUtils;
 import com.yubico.yubikit.apdu.Tlv;
 import com.yubico.yubikit.apdu.TlvUtils;
 import com.yubico.yubikit.exceptions.ApplicationNotFound;
-import com.yubico.yubikit.transport.Iso7816Connection;
 import com.yubico.yubikit.transport.YubiKeySession;
 
 import java.io.ByteArrayOutputStream;
-import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;

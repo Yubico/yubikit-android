@@ -18,6 +18,7 @@
     </style>
 
     <style name="LoginScreenButton" parent="Base.TextAppearance.AppCompat.Button">
+        <item name="android:padding">@dimen/text_margin</item>
         <item name="android:layout_marginStart">@dimen/card_view_margin</item>
         <item name="android:layout_marginEnd">@dimen/card_view_margin</item>
         <item name="android:layout_marginTop">@dimen/text_margin</item>

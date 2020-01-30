@@ -38,7 +38,6 @@ import com.yubico.yubikit.demo.R
 import com.yubico.yubikit.demo.YubikeyViewModel
 import com.yubico.yubikit.demo.fido.listview.OnRecyclerViewItemClickListener
 import com.yubico.yubikit.demo.fido.listview.OperationsListDialogFragment
-import com.yubico.yubikit.demo.raw.UsbDeviceNotFoundException
 import com.yubico.yubikit.demo.settings.Ramps
 import com.yubico.yubikit.oath.OathApplication
 import com.yubico.yubikit.oath.qr.QrActivity
@@ -47,7 +46,6 @@ import kotlinx.android.synthetic.main.fragment_oath.empty_list
 import kotlinx.android.synthetic.main.fragment_oath.fab_button
 import kotlinx.android.synthetic.main.fragment_oath.list
 import kotlinx.android.synthetic.main.fragment_oath.swiperefresh
-import java.io.IOException
 
 private const val REQUEST_SCAN_QR = 3
 private const val TAG = "OathFragment"
@@ -127,7 +125,7 @@ class OathFragment : BaseYubikeyFragment(TAG), OnRecyclerViewItemClickListener, 
             is ApduException -> {
                 Toast.makeText(context, throwable.message, Toast.LENGTH_LONG).show()
             }
-            is IOException -> {
+            else -> {
                 Toast.makeText(context, throwable.message, Toast.LENGTH_LONG).show()
             }
         }

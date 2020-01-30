@@ -65,34 +65,4 @@
 
     </PreferenceCategory>
 
-    <PreferenceCategory
-        app:title="OATH features">
-
-        <SwitchPreferenceCompat
-            android:key="use_touch"
-            android:title="Use touch button on YubiKey to generate TOTP"
-            android:summary="Used when creating new oath credentials from QR code"/>
-
-        <SwitchPreferenceCompat
-            android:key="truncate_totp"
-            android:title="Truncate TOTP"
-            android:summary="When it's off generated result won't be truncated to digits number and full Integer value will be provided. Used when creating new oath credentials from QR code. May be used for authenticators that accept TOTP in non-standard form" />
-
-    </PreferenceCategory>
-
-    <PreferenceCategory
-        app:title="OATH features">
-
-        <SwitchPreferenceCompat
-            android:key="use_touch"
-            android:title="Use touch button on YubiKey to generate TOTP"
-            android:summary="Used when creating new oath credentials from QR code"/>
-
-        <SwitchPreferenceCompat
-            android:key="truncate_totp"
-            android:title="Truncate TOTP"
-            android:summary="When it's off generated result won't be truncated to digits number and full Integer value will be provided. Used when creating new oath credentials from QR code. May be used for authenticators that accept TOTP in non-standard form" />
-
-    </PreferenceCategory>
-
 </androidx.preference.PreferenceScreen>

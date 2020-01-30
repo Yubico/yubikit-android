@@ -20,17 +20,14 @@ import com.yubico.yubikit.Iso7816Application;
 import com.yubico.yubikit.apdu.Apdu;
 import com.yubico.yubikit.apdu.ApduCodeException;
 import com.yubico.yubikit.apdu.ApduException;
-import com.yubico.yubikit.apdu.ApduUtils;
 import com.yubico.yubikit.apdu.Tlv;
 import com.yubico.yubikit.apdu.TlvUtils;
 import com.yubico.yubikit.apdu.Version;
 import com.yubico.yubikit.exceptions.ApplicationNotFound;
 import com.yubico.yubikit.exceptions.NotSupportedOperation;
-import com.yubico.yubikit.transport.Iso7816Connection;
 import com.yubico.yubikit.transport.YubiKeySession;
 import com.yubico.yubikit.utils.Logger;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
@@ -42,7 +39,7 @@ import java.util.List;
 public class ManagementApplication extends Iso7816Application {
 
     private static final byte[] AID = new byte[]{(byte) 0xa0, 0x00, 0x00, 0x05, 0x27, 0x47, 0x11, 0x17};
-    private static final byte[] OTP_AID = new byte[]{(byte) 0xa0, 0x00, 0x00, 0x05, 0x27, 0x20, 0x01};
+    private static final byte[] YUBIKEY_AID = new byte[]{(byte) 0xa0, 0x00, 0x00, 0x05, 0x27, 0x20, 0x01, 0x01};
 
     /**
      * Instruction set for MGMT application
@@ -80,8 +77,14 @@ public class ManagementApplication extends Iso7816Application {
                 // application is not found, most probably we have old firmware but let's make sure with OTP application
                 try {
                     Logger.d("select OTP application to determine if management application is supported");
-                    byte[] response = sendAndReceive(new Apdu(0, INS_SELECT, 0x04, 0, OTP_AID));
+                    byte[] response = sendAndReceive(new Apdu(0, INS_SELECT, 0x04, 0, YUBIKEY_AID));
                     Version otpVersion = Version.parse(response);
+
+                    // workaround for firmware versions that were not detected correctly
+                    if (otpVersion.major < 1) {
+                        otpVersion = new Version(5,version.minor,version.micro);
+                    }
+
                     if ((int)otpVersion.major < 4) {
                         throw new NotSupportedOperation("Management application API supported only from version 4 and above");
                     }

@@ -19,7 +19,6 @@ package com.yubico.yubikit.transport.usb;
 import androidx.annotation.NonNull;
 
 public interface UsbSessionListener {
-    void onSessionReceived(@NonNull final UsbSession session);
+    void onSessionReceived(@NonNull final UsbSession session, boolean hasPermission);
     void onSessionRemoved(@NonNull final UsbSession session);
-    void onError(@NonNull final UsbSession session, @NonNull final Throwable error);
 }

@@ -18,4 +18,16 @@
         <item>ECCP256</item>
         <item>ECCP384</item>
     </string-array>
+
+    <string-array name="otp_programming">
+        <item>OTP</item>
+        <item>Static Password</item>
+        <item>Challenge response</item>
+        <item>HOTP</item>
+    </string-array>
+
+    <string-array name="otp_slots">
+        <item>Slot 1 (short touch)</item>
+        <item>Slot 2 (long touch)</item>
+    </string-array>
 </resources>

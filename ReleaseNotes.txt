@@ -16,3 +16,7 @@ Management API
 
 version 1.0.0-beta03
 Making QR/play-services-vision dependency optional
+
+version 1.0.0-beta04
+Adding YubiKey configuration capabilities, programming OTP slots
+HMAC-SHA1 challenge-response
