@@ -76,10 +76,7 @@ open class YubikeyViewModel(private val yubikitManager: YubiKitManager) : ViewMo
                 _sessionUsb.value = session
             }
 
-            // if user has granted permissions we should execute command as button was clicked already
-            if (!hadPermissions && hasPermission) {
-                session.executeDemoCommands()
-            } else if (!hasPermission) {
+            if (!hasPermission) {
                 _error.value = NoPermissionsException(session.usbDevice)
 
             }
