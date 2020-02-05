@@ -134,17 +134,21 @@ public class PivApplication extends Iso7816Application {
 
         try {
             sendAndReceive(new Apdu(0, INS_SELECT, 0x04, 0, AID));
+
+            byte[] versionResponse = sendAndReceive(new Apdu(0, INS_GET_VERSION, 0, 0, null));
+            // get firmware version
+            version = Version.parse(versionResponse);
         } catch (ApduCodeException e) {
             if (e.getStatusCode() == APPLICATION_NOT_FOUND_ERROR) {
                 throw new ApplicationNotFound("PIV application is disabled on this device");
             } else {
                 throw e;
             }
+        } finally {
+            if (version == null) {
+                close();
+            }
         }
-        byte[] versionResponse = sendAndReceive(new Apdu(0, INS_GET_VERSION, 0, 0, null));
-
-        // get firmware version
-        version = Version.parse(versionResponse);
     }
 
     /**

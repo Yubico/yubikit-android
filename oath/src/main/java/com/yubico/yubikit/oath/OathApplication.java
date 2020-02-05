@@ -121,6 +121,10 @@ public class OathApplication  extends Iso7816Application {
             } else {
                 throw e;
             }
+        } finally {
+            if (applicationInfo == null) {
+                close();
+            }
         }
     }
 
