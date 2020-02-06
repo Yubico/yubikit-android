@@ -28,6 +28,7 @@ import android.widget.Toast
 import androidx.lifecycle.*
 import com.yubico.yubikit.YubiKitManager
 import com.yubico.yubikit.apdu.ApduCodeException
+import com.yubico.yubikit.apdu.Version
 import com.yubico.yubikit.demo.BaseYubikeyFragment
 import com.yubico.yubikit.demo.R
 import com.yubico.yubikit.demo.YubikeyViewModel
@@ -76,6 +77,10 @@ class ManagementFragment : BaseYubikeyFragment(TAG) {
             }
         })
 
+        viewModel.version.observe(viewLifecycleOwner) {
+            showFirmwareVersion(it)
+        }
+
         viewModel.updated.observe(viewLifecycleOwner, Observer {
             if (it == true) {
                 val config = viewModel.deviceConfiguration.value
@@ -119,6 +124,7 @@ class ManagementFragment : BaseYubikeyFragment(TAG) {
     override fun onStart() {
         super.onStart()
         showInterfaceTable(viewModel.deviceConfiguration.value)
+        showFirmwareVersion(viewModel.version.value)
     }
 
     /**
@@ -148,6 +154,13 @@ class ManagementFragment : BaseYubikeyFragment(TAG) {
                 updateConfig(config)
                 viewModel.saveConfig(config)
             }
+        }
+    }
+
+    private fun showFirmwareVersion(version: Version?) {
+        version?.run {
+            info.visibility = View.VISIBLE
+            info.text = "Firmaware: ${this}"
         }
     }
 

@@ -93,6 +93,10 @@ public class YubiKeyConfigurationApplication implements Closeable {
                 } else {
                     throw e;
                 }
+            } finally {
+                if (status == null) {
+                    close();
+                }
             }
         }
     }

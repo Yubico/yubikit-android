@@ -98,9 +98,7 @@ class YubikeySmartcardFragment : BaseYubikeyFragment(TAG) {
     }
 
     override fun onUsbSession(hasPermissions: Boolean) {
-        if (hasPermissions) {
-            log.text = "discovered yubikey via usb"
-        }
+        log.text = if (hasPermissions) "discovered yubikey via usb" else ""
     }
 
     override fun onNfcSession() {

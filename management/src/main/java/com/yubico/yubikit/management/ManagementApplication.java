@@ -97,6 +97,10 @@ public class ManagementApplication extends Iso7816Application {
             } else {
                 throw e;
             }
+        } finally {
+            if (version == null) {
+                close();
+            }
         }
     }
 

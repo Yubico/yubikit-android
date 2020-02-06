@@ -21,8 +21,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.yubico.yubikit.YubiKitManager
 import com.yubico.yubikit.apdu.ApduException
+import com.yubico.yubikit.apdu.Version
+import com.yubico.yubikit.configurator.YubiKeyConfigurationApplication
 import com.yubico.yubikit.demo.YubikeyViewModel
 import com.yubico.yubikit.demo.fido.arch.SingleLiveEvent
+import com.yubico.yubikit.exceptions.NotSupportedOperation
 import com.yubico.yubikit.management.DeviceConfiguration
 import com.yubico.yubikit.management.ManagementApplication
 import com.yubico.yubikit.transport.YubiKeySession
@@ -40,6 +43,9 @@ class ManagementViewModel(yubiKitManager: YubiKitManager) : YubikeyViewModel(yub
 
     private val _deviceConfiguration = SingleLiveEvent<DeviceConfiguration>()
     val deviceConfiguration : LiveData<DeviceConfiguration> = _deviceConfiguration
+
+    private val _version = SingleLiveEvent<Version>()
+    val version : LiveData<Version> = _version
 
     private val _updated = SingleLiveEvent<Boolean>()
     val updated : LiveData<Boolean> = _updated
@@ -63,22 +69,41 @@ class ManagementViewModel(yubiKitManager: YubiKitManager) : YubikeyViewModel(yub
                 }
             } else {
                 _deviceConfiguration.postValue(application.readConfiguration())
+                _version.postValue(null)
             }
         }
     }
 
     private fun YubiKeySession.executeOnBackgroundThread(runCommand: (managementApplication: ManagementApplication) -> Unit) {
         executorService.execute {
+            var isSupported = true
             try {
                 Logger.d("Select MGMT application")
                 ManagementApplication(this).use {
                     // run provided command/operation (read or write config)
                     runCommand(it)
                 }
+            } catch (e: NotSupportedOperation) {
+                isSupported = false
+                postError(e)
             } catch (e: IOException) {
                 postError(e)
             } catch (e: ApduException) {
                 postError(e)
+            }
+
+            // we don't show interface list for NEO, but we can show at least firmware version
+            if (!isSupported) {
+                try {
+                    YubiKeyConfigurationApplication(this).use {
+                        _deviceConfiguration.postValue(null)
+                        _version.postValue(it.version)
+                    }
+                } catch (e: IOException) {
+                    postError(e)
+                } catch (e: ApduException) {
+                    postError(e)
+                }
             }
         }
     }
@@ -92,6 +117,7 @@ class ManagementViewModel(yubiKitManager: YubiKitManager) : YubikeyViewModel(yub
     fun releaseConfig() {
         _deviceConfiguration.postValue(null)
         _updated.postValue(false)
+        _version.postValue(null)
     }
 
     /**
