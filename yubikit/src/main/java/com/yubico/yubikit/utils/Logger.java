@@ -16,6 +16,11 @@
 
 package com.yubico.yubikit.utils;
 
+/**
+ * Helper singleton class allows to customize logs within SDK
+ * SDK has only 2 levels of logging: debug information and error
+ * If logger is not provided SDK won't produce any logs
+ */
 public class Logger {
     private static final Logger ourInstance = new Logger();
 

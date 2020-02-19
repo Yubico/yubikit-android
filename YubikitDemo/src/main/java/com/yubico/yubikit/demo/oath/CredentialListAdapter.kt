@@ -33,6 +33,7 @@ import com.yubico.yubikit.oath.Credential
 import com.yubico.yubikit.oath.OathType
 import kotlinx.android.synthetic.main.oath_item_authenticator_list.view.*
 import java.util.*
+import kotlin.math.abs
 
 private const val MILLS_IN_SECOND = 1000.toLong()
 class CredentialListAdapter(
@@ -122,7 +123,7 @@ class CredentialListAdapter(
             var intCode = Integer.parseInt(code.value)
             return StringBuilder().apply {
                 for (i in 0..4) {
-                    append(STEAM_CHARS[intCode % STEAM_CHARS.length])
+                    append(STEAM_CHARS[abs(intCode % STEAM_CHARS.length)])
                     intCode /= STEAM_CHARS.length
                 }
 

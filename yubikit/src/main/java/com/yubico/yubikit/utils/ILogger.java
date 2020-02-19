@@ -16,7 +16,21 @@
 
 package com.yubico.yubikit.utils;
 
+/**
+ * Interface that needs to be implemented in order to customize logging within SDK
+ * it's up to user whether to send logs to logcat, file or network
+ */
 public interface ILogger {
+    /**
+     * Logs message (debug level)
+     * @param message the message can to be logged
+     */
     void logDebug(String message);
+
+    /**
+     * Logs message (error level)
+     * @param message the message can to be logged
+     * @param throwable the exception that can to be logged or counted
+     */
     void logError(String message, Throwable throwable);
 }

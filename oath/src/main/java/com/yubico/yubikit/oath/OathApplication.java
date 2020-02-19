@@ -101,7 +101,7 @@ public class OathApplication  extends Iso7816Application {
     /**
      * Version, ID and a challenge if authentication is configured
      */
-    private OathApplicationInfo applicationInfo;
+    private final OathApplicationInfo applicationInfo;
 
 
     /**
@@ -116,15 +116,15 @@ public class OathApplication  extends Iso7816Application {
         try {
             applicationInfo = new OathApplicationInfo(sendAndReceive(new Apdu(0, INS_SELECT, 0x04, 0, AID)));
         } catch (ApduCodeException e) {
+            close();
             if (e.getStatusCode() == APPLICATION_NOT_FOUND_ERROR) {
                 throw new ApplicationNotFound("OATH application is disabled on this device");
             } else {
                 throw e;
             }
-        } finally {
-            if (applicationInfo == null) {
-                close();
-            }
+        } catch (IOException e){
+            close();
+            throw e;
         }
     }
 

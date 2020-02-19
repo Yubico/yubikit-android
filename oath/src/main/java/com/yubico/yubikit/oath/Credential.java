@@ -19,6 +19,8 @@ import android.net.Uri;
 import android.text.TextUtils;
 import android.util.Pair;
 
+import androidx.annotation.Nullable;
+
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Base32;
 import org.apache.commons.codec.binary.Hex;
@@ -36,7 +38,7 @@ public class Credential implements Serializable {
      */
     public final String name;
     private final int period;
-    private final String issuer;
+    private final @Nullable String issuer;
     private final OathType oathType;
 
     /**
@@ -202,7 +204,7 @@ public class Credential implements Serializable {
             issuer = nameAndIssuer.second;
         } else {
             name = data;
-            issuer = "";
+            issuer = null;
         }
 
         if (codeValue != null && codeValue.length > 0) {
@@ -245,7 +247,7 @@ public class Credential implements Serializable {
             longName += String.format(Locale.ROOT,"%d/", period);
         }
 
-        if (!TextUtils.isEmpty(issuer)) {
+        if (issuer != null) {
             longName += String.format(Locale.ROOT,"%s:", issuer);
         }
         longName += name;

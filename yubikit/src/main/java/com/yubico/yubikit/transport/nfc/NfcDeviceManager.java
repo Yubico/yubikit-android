@@ -64,15 +64,15 @@ public class NfcDeviceManager {
     /**
      * Enable discovery of nfc tags for foreground activity
      * @param activity activity that is going to dispatch nfc tags
-     * @param handleUnavailableNfc show permissions dialog in case if permissions are not present
+     * @param nfcConfiguration additional configurations for NFC discovery
      * @throws NfcDisabledException in case if NFC turned off
      * @throws NfcNotFoundException in case if NFC not available on android device
      */
-    public void enable(final @NonNull Activity activity, final boolean handleUnavailableNfc) throws NfcDisabledException, NfcNotFoundException {
-        if (checkAvailability(handleUnavailableNfc)) {
+    public void enable(final @NonNull Activity activity, final NfcConfiguration nfcConfiguration) throws NfcDisabledException, NfcNotFoundException {
+        if (checkAvailability(nfcConfiguration.isHandleUnavailableNfc())) {
             // restart nfc watching services
             disableReaderMode(activity);
-            enableReaderMode(activity);
+            enableReaderMode(activity, nfcConfiguration);
         }
     }
 
@@ -113,7 +113,7 @@ public class NfcDeviceManager {
      * @param activity activity that is going to receive nfc events
      * Note: invoke that while activity is in foreground
      */
-    private void enableReaderMode(Activity activity) {
+    private void enableReaderMode(Activity activity, final NfcConfiguration nfcConfiguration) {
         NfcAdapter.ReaderCallback callback = new NfcAdapter.ReaderCallback() {
             public void onTagDiscovered(Tag tag) {
                 listener.onSessionReceived(new NfcSession(tag));
@@ -122,6 +122,13 @@ public class NfcDeviceManager {
         Bundle options = new Bundle();
         options.putInt(NfcAdapter.EXTRA_READER_PRESENCE_CHECK_DELAY, 50);
         int READER_FLAGS = NfcAdapter.FLAG_READER_NFC_A | NfcAdapter.FLAG_READER_NFC_B;
+        if (nfcConfiguration.isDisableNfcDiscoverySound()) {
+            READER_FLAGS |= NfcAdapter.FLAG_READER_NO_PLATFORM_SOUNDS;
+        }
+
+        if (nfcConfiguration.isSkipNdefCheck()) {
+            READER_FLAGS |= NfcAdapter.FLAG_READER_SKIP_NDEF_CHECK;
+        }
         adapter.enableReaderMode(activity, callback, READER_FLAGS, options);
     }
 

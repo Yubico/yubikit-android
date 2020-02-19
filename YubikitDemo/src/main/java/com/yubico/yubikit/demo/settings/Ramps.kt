@@ -25,6 +25,7 @@ class Ramps {
         val USE_CUSTOM_TABS = Ramps.Ramp("customtabs", true)
         val OATH_USE_TOUCH = Ramps.Ramp("use_touch", false)
         val OATH_TRUNCATE = Ramps.Ramp("truncate_totp", true)
+        val OATH_NFC_SOUND = Ramps.Ramp("nfc_sound", true)
         val PIV_NUM_RETRIES = Ramps.Ramp("pin_retries", 10)
         val PIV_USE_DEFAULT_MGMT = Ramps.Ramp("mgmt_key", true)
     }

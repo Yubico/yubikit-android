@@ -74,7 +74,7 @@ abstract class BaseYubikeyFragment(private val logTag: String) : Fragment() {
 
         getViewModel().sessionUsb.observe(viewLifecycleOwner, Observer {
             hideAllSnackBars()
-            onUsbSession(it != null && getViewModel().hasPermission(it))
+            onUsbSession(getViewModel().hasConnection)
         })
 
         getViewModel().sessionNfc.observe(viewLifecycleOwner, Observer {
@@ -86,11 +86,10 @@ abstract class BaseYubikeyFragment(private val logTag: String) : Fragment() {
 
     override fun onStart() {
         super.onStart()
-        val currentUsbSession = getViewModel().sessionUsb.value
-        if (currentUsbSession!= null && getViewModel().hasPermission(currentUsbSession)) {
+        if (getViewModel().hasConnection) {
             onUsbSession(true)
         } else {
-            showSnackBar(SnackBarType.PERMISSIONS, currentUsbSession != null)
+            showSnackBar(SnackBarType.PERMISSIONS, getViewModel().sessionUsb.value != null)
         }
     }
 

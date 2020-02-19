@@ -65,11 +65,11 @@ public class UsbDeviceManager {
 
     /**
      * Registers receiver on usb connection event
-     * @param requirePermission if true also registers receiver on permissions grant from user
+     * @param usbConfiguration contains information if device manager also registers receiver on permissions grant from user
      */
-    public void enable(final boolean requirePermission) {
+    public void enable(final UsbConfiguration usbConfiguration) {
         disable();
-        isPermissionRequired = requirePermission;
+        isPermissionRequired = usbConfiguration.isHandlePermissions();
 
         receiver = new UsbBroadcastReceiver();
         IntentFilter intentFilter = new IntentFilter(UsbManager.ACTION_USB_DEVICE_ATTACHED);
