@@ -44,7 +44,7 @@ public class Code {
      * @param validFrom timestamp that was used to generate code
      * @param validUntil timestamp when one-time password becomes invalid/expired
      */
-    Code(@NonNull String value, long validFrom, long validUntil) {
+    public Code(@NonNull String value, long validFrom, long validUntil) {
         this.value = value;
         this.validFrom = validFrom;
         this.validUntil = validUntil;

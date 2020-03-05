@@ -24,6 +24,8 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.nio.charset.StandardCharsets;
+
 @RunWith(AndroidJUnit4.class)
 public class CredentialDataTest {
 
@@ -50,6 +52,36 @@ public class CredentialDataTest {
         Assert.assertEquals(usingSeparator.getIssuer(), "Issuer");
         Credential usingBoth = Credential.parseUri(Uri.parse("otpauth://totp/IssuerA:account?secret=abba&issuer=IssuerB"));
         Assert.assertEquals(usingBoth.getIssuer(), "IssuerA");
+    }
+
+    @Test
+    public void testParseData() throws ParseUriException {
+        int tagName = 0x71;
+        final String issuer = "issuer";
+        String accountId = "20/issuer:account";
+        Credential credential = new Credential(accountId.getBytes(StandardCharsets.UTF_8), tagName, null, 0);
+        Assert.assertEquals(issuer, credential.getIssuer());
+        Assert.assertEquals(20, credential.getPeriod());
+
+        String accountWithSlash = "this/account";
+        credential = new Credential(accountWithSlash.getBytes(StandardCharsets.UTF_8), tagName, null, 0);
+        Assert.assertNull(credential.getIssuer());
+        Assert.assertEquals(accountWithSlash, credential.name);
+
+        String accountWithSlashAndIssuer = "issuer:this/account";
+        credential = new Credential(accountWithSlashAndIssuer.getBytes(StandardCharsets.UTF_8), tagName, null, 0);
+        Assert.assertEquals(issuer, credential.getIssuer());
+        Assert.assertEquals(accountWithSlash, credential.name);
+
+        String issuerAndAccountWithSlash = "this/issuer:this/account";
+        credential = new Credential(issuerAndAccountWithSlash.getBytes(StandardCharsets.UTF_8), tagName, null, 0);
+        Assert.assertEquals("this/issuer", credential.getIssuer());
+        Assert.assertEquals(accountWithSlash, credential.name);
+
+        String accountWithSlashAndColon = "issuer:this:account";
+        credential = new Credential(accountWithSlashAndColon.getBytes(StandardCharsets.UTF_8), tagName, null, 0);
+        Assert.assertEquals(issuer, credential.getIssuer());
+        Assert.assertEquals("this:account", credential.name);
     }
 
     @Test(expected = IllegalArgumentException.class)

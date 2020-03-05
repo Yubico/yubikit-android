@@ -88,6 +88,11 @@ public class Credential implements Serializable {
     private static final String NOT_TRUNCATED_CODE_PREFIX = "full_";
 
     /**
+     * Default period for all TOTP codes
+     */
+    public static final int DEFAULT_PERIOD = 30;
+
+    /**
      * Parse credential properties from uri
      * @param uri Uri that received from QR reader or manually from server that requires TOTP/HOTP
      * Format example: otpauth://totp/Example:alice@google.com?secret=JBSWY3DPEHPK3PXP&issuer=Example
@@ -135,7 +140,7 @@ public class Credential implements Serializable {
             throw new ParseUriException("Digits must be in range 6-8");
         }
 
-        Integer period = parseInt(uri.getQueryParameter("period"), 30);
+        Integer period = parseInt(uri.getQueryParameter("period"), DEFAULT_PERIOD);
         if (period == null) {
             throw new ParseUriException("Invalid value for period");
         }
@@ -191,11 +196,15 @@ public class Credential implements Serializable {
 
         if (data.contains("/")) {
             String[] parts = data.split("/",  2);
-            data = parts[1];
-            Integer periodInt = parseInt(parts[0], 30);
-            period = periodInt != null ? periodInt : 30;
+            Integer periodInt = parseInt(parts[0], DEFAULT_PERIOD);
+            if (periodInt != null) {
+                data = parts[1];
+                period = periodInt;
+            } else {
+                period = DEFAULT_PERIOD;
+            }
         } else {
-            period = 30;
+            period = DEFAULT_PERIOD;
         }
 
         if (data.contains(":")) {
@@ -243,7 +252,7 @@ public class Credential implements Serializable {
      */
     public String getId() {
         String longName = "";
-        if (oathType == OathType.TOTP && period != 30) {
+        if (oathType == OathType.TOTP && period != DEFAULT_PERIOD) {
             longName += String.format(Locale.ROOT,"%d/", period);
         }
 
