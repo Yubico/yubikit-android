@@ -2,7 +2,7 @@ apply plugin: 'com.android.library'
 
 android {
     compileSdkVersion project.compileSdkVersion
-
+    testOptions.unitTests.includeAndroidResources = true
     defaultConfig {
         minSdkVersion project.minSdkVersion
         targetSdkVersion project.targetSdkVersion
@@ -32,8 +32,8 @@ dependencies {
     testImplementation "org.robolectric:robolectric:4.2"
     testImplementation "org.mockito:mockito-core:2.11.0"
 
-    androidTestImplementation 'com.android.support.test:runner:1.0.2'
-    androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
+    androidTestImplementation 'androidx.test:runner:1.2.0'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
 }
 
 apply from: rootProject.file('release.gradle')

@@ -19,6 +19,8 @@ import android.net.Uri;
 import android.text.TextUtils;
 import android.util.Pair;
 
+import androidx.annotation.Nullable;
+
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Base32;
 import org.apache.commons.codec.binary.Hex;
@@ -36,7 +38,7 @@ public class Credential implements Serializable {
      */
     public final String name;
     private final int period;
-    private final String issuer;
+    private final @Nullable String issuer;
     private final OathType oathType;
 
     /**
@@ -86,6 +88,11 @@ public class Credential implements Serializable {
     private static final String NOT_TRUNCATED_CODE_PREFIX = "full_";
 
     /**
+     * Default period for all TOTP codes
+     */
+    public static final int DEFAULT_PERIOD = 30;
+
+    /**
      * Parse credential properties from uri
      * @param uri Uri that received from QR reader or manually from server that requires TOTP/HOTP
      * Format example: otpauth://totp/Example:alice@google.com?secret=JBSWY3DPEHPK3PXP&issuer=Example
@@ -133,7 +140,7 @@ public class Credential implements Serializable {
             throw new ParseUriException("Digits must be in range 6-8");
         }
 
-        Integer period = parseInt(uri.getQueryParameter("period"), 30);
+        Integer period = parseInt(uri.getQueryParameter("period"), DEFAULT_PERIOD);
         if (period == null) {
             throw new ParseUriException("Invalid value for period");
         }
@@ -189,11 +196,15 @@ public class Credential implements Serializable {
 
         if (data.contains("/")) {
             String[] parts = data.split("/",  2);
-            data = parts[1];
-            Integer periodInt = parseInt(parts[0], 30);
-            period = periodInt != null ? periodInt : 30;
+            Integer periodInt = parseInt(parts[0], DEFAULT_PERIOD);
+            if (periodInt != null) {
+                data = parts[1];
+                period = periodInt;
+            } else {
+                period = DEFAULT_PERIOD;
+            }
         } else {
-            period = 30;
+            period = DEFAULT_PERIOD;
         }
 
         if (data.contains(":")) {
@@ -202,7 +213,7 @@ public class Credential implements Serializable {
             issuer = nameAndIssuer.second;
         } else {
             name = data;
-            issuer = "";
+            issuer = null;
         }
 
         if (codeValue != null && codeValue.length > 0) {
@@ -241,11 +252,11 @@ public class Credential implements Serializable {
      */
     public String getId() {
         String longName = "";
-        if (oathType == OathType.TOTP && period != 30) {
+        if (oathType == OathType.TOTP && period != DEFAULT_PERIOD) {
             longName += String.format(Locale.ROOT,"%d/", period);
         }
 
-        if (!TextUtils.isEmpty(issuer)) {
+        if (issuer != null) {
             longName += String.format(Locale.ROOT,"%s:", issuer);
         }
         longName += name;

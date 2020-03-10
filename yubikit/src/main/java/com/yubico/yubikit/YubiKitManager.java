@@ -23,9 +23,11 @@ import android.os.Looper;
 
 import com.yubico.yubikit.exceptions.NfcDisabledException;
 import com.yubico.yubikit.exceptions.NfcNotFoundException;
+import com.yubico.yubikit.transport.nfc.NfcConfiguration;
 import com.yubico.yubikit.transport.nfc.NfcDeviceManager;
 import com.yubico.yubikit.transport.nfc.NfcSession;
 import com.yubico.yubikit.transport.nfc.NfcSessionListener;
+import com.yubico.yubikit.transport.usb.UsbConfiguration;
 import com.yubico.yubikit.transport.usb.UsbDeviceManager;
 import com.yubico.yubikit.transport.usb.UsbSession;
 import com.yubico.yubikit.transport.usb.UsbSessionListener;
@@ -76,15 +78,14 @@ public final class YubiKitManager {
      * Subscribe on changes that happen via USB and detect if there any Yubikeys got connected
      *
      * This registers broadcast receivers, to unsubscribe from receiver use {@link YubiKitManager#stopUsbDiscovery()}
-     * @param handlePermissions true to show dialog for permissions or nfc enabling setting,
-     *                          otherwise it will return error in callback if no permissions/setting
+     * @param usbConfiguration additional configurations on how USB discovery should be handled
      * @param listener  listener that is going to be invoked upon successful discovery of key session
      *                  or failure to detect any session (lack of permissions)
      */
-    public void startUsbDiscovery(boolean handlePermissions, @NonNull UsbSessionListener listener) {
+    public void startUsbDiscovery(final UsbConfiguration usbConfiguration, @NonNull UsbSessionListener listener) {
         usbListener = listener;
         usbDeviceManager.setListener(new UsbInternalListener());
-        usbDeviceManager.enable(handlePermissions);
+        usbDeviceManager.enable(usbConfiguration);
     }
 
     /**
@@ -92,19 +93,18 @@ public final class YubiKitManager {
      *
      * This registers broadcast receivers and blocks Ndef tags to be passed to activity,
      * to unsubscribe use {@link YubiKitManager#stopNfcDiscovery(Activity)}
-     * @param handleUnavailableNfc true to show dialog for permissions or nfc enabling setting,
-     *                          otherwise it will return error in callback if no permissions/setting
+     * @param nfcConfiguration additional configurations on how NFC discovery should be handled
      * @param listener  listener that is going to be invoked upon successful discovery of key session
      *                  or failure to detect any session (setting if off or no nfc adapter on device)
      * @param activity active (not finished) activity required for nfc foreground dispatch
      * @throws NfcDisabledException in case if NFC not activated
      * @throws NfcNotFoundException in case if NFC not available on android device
      */
-    public void startNfcDiscovery(boolean handleUnavailableNfc, @NonNull Activity activity, @NonNull NfcSessionListener listener)
+    public void startNfcDiscovery(final NfcConfiguration nfcConfiguration, @NonNull Activity activity, @NonNull NfcSessionListener listener)
             throws NfcDisabledException, NfcNotFoundException {
         nfcListener = listener;
         nfcDeviceManager.setListener(new NfcInternalListener());
-        nfcDeviceManager.enable(activity, handleUnavailableNfc);
+        nfcDeviceManager.enable(activity, nfcConfiguration);
     }
 
     /**
@@ -161,6 +161,18 @@ public final class YubiKitManager {
                 public void run() {
                     if (usbListener != null) {
                         usbListener.onSessionRemoved(session);
+                    }
+                }
+            });
+        }
+
+        @Override
+        public void onRequestPermissionsResult(@NonNull final UsbSession session, final boolean isGranted) {
+            handler.post(new Runnable() {
+                @Override
+                public void run() {
+                    if (usbListener != null) {
+                        usbListener.onRequestPermissionsResult(session, isGranted);
                     }
                 }
             });

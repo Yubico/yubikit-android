@@ -33,9 +33,11 @@ import com.google.android.material.snackbar.Snackbar;
 import com.yubico.yubikit.YubiKitManager;
 import com.yubico.yubikit.exceptions.NfcDisabledException;
 import com.yubico.yubikit.exceptions.NfcNotFoundException;
+import com.yubico.yubikit.transport.nfc.NfcConfiguration;
 import com.yubico.yubikit.transport.nfc.NfcDeviceManager;
 import com.yubico.yubikit.transport.nfc.NfcSession;
 import com.yubico.yubikit.transport.nfc.NfcSessionListener;
+import com.yubico.yubikit.transport.usb.UsbConfiguration;
 import com.yubico.yubikit.transport.usb.UsbSession;
 import com.yubico.yubikit.transport.usb.UsbSessionListener;
 
@@ -71,7 +73,7 @@ public class OtpActivity extends AppCompatActivity {
         }));
 
         manager = new YubiKitManager(this);
-        manager.startUsbDiscovery(false, new UsbSessionListener() {
+        manager.startUsbDiscovery(new UsbConfiguration().setHandlePermissions(false), new UsbSessionListener() {
             @Override
             public void onSessionReceived(@NonNull UsbSession session, boolean hasPermission) {
                 usbSessionCounter++;
@@ -89,6 +91,11 @@ public class OtpActivity extends AppCompatActivity {
                     }
                 }
             }
+
+            @Override
+            public void onRequestPermissionsResult(@NonNull UsbSession session, boolean isGranted) {
+                // We don't need permissions to handle YubiOTP
+            }
         });
     }
 
@@ -96,7 +103,7 @@ public class OtpActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         try {
-            manager.startNfcDiscovery(true, this, new NfcSessionListener() {
+            manager.startNfcDiscovery(new NfcConfiguration(), this, new NfcSessionListener() {
                 @Override
                 public void onSessionReceived(@NonNull NfcSession session) {
                     try {

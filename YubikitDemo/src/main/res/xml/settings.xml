@@ -50,6 +50,12 @@
             android:title="Truncate TOTP"
             android:summary="When it's off generated result won't be truncated to digits number and full Integer value will be provided. Used when creating new oath credentials from QR code. May be used for authenticators that accept TOTP in non-standard form" />
 
+        <SwitchPreferenceCompat
+            android:key="nfc_sound"
+            app:defaultValue="true"
+            android:title="Tag discovery sound"
+            android:summary="When it's off tag reading will to be silent - no sound and vibration"/>
+
         <EditTextPreference
             android:inputType="numberDecimal"
             android:digits="0123456789"

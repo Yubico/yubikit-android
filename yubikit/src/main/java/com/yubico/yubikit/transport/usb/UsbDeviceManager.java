@@ -24,8 +24,6 @@ import android.content.IntentFilter;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
 
-import com.yubico.yubikit.exceptions.NoPermissionsException;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
@@ -42,7 +40,7 @@ public class UsbDeviceManager {
     private final UsbManager usbManager;
     private boolean isPermissionRequired = false;
     private UsbBroadcastReceiver receiver;
-
+    private UsbConfiguration configuration = null;
 
     private transient UsbSessionListener listener = null;
 
@@ -65,11 +63,12 @@ public class UsbDeviceManager {
 
     /**
      * Registers receiver on usb connection event
-     * @param requirePermission if true also registers receiver on permissions grant from user
+     * @param usbConfiguration contains information if device manager also registers receiver on permissions grant from user
      */
-    public void enable(final boolean requirePermission) {
+    public void enable(final UsbConfiguration usbConfiguration) {
         disable();
-        isPermissionRequired = requirePermission;
+        configuration = usbConfiguration;
+        isPermissionRequired = usbConfiguration.isHandlePermissions();
 
         receiver = new UsbBroadcastReceiver();
         IntentFilter intentFilter = new IntentFilter(UsbManager.ACTION_USB_DEVICE_ATTACHED);
@@ -100,7 +99,7 @@ public class UsbDeviceManager {
     private List<UsbDevice> findDevices() {
         List<UsbDevice> yubikeys = new ArrayList<>();
         for (UsbDevice device : usbManager.getDeviceList().values()) {
-            if (device.getVendorId() == YUBICO_VENDOR_ID) {
+            if (!configuration.isFilterYubicoDevices() || device.getVendorId() == YUBICO_VENDOR_ID) {
                 yubikeys.add(device);
             }
         }
@@ -163,7 +162,7 @@ public class UsbDeviceManager {
                     return;
                 }
 
-                listener.onSessionReceived(new UsbSession(usbManager, device), usbManager.hasPermission(device));
+                listener.onRequestPermissionsResult(new UsbSession(usbManager, device), usbManager.hasPermission(device));
             }
         }
     }

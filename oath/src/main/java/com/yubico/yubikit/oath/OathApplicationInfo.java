@@ -82,9 +82,10 @@ public class OathApplicationInfo {
 
     /**
      * @return device id hash string
+     * @param deviceId pass device id received from YubiKit when selected OATH applet
      * @throws NoSuchAlgorithmException if SHA256 is not found
      */
-    public String getDeviceIdString() throws NoSuchAlgorithmException {
+    public static String getDeviceIdString(byte[] deviceId) throws NoSuchAlgorithmException {
         MessageDigest messageDigest = null;
         messageDigest = MessageDigest.getInstance("SHA256");
         messageDigest.update(deviceId);

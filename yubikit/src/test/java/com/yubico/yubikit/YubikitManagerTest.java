@@ -6,9 +6,11 @@ import android.os.Handler;
 import com.yubico.yubikit.exceptions.NfcDisabledException;
 import com.yubico.yubikit.exceptions.NfcNotFoundException;
 import com.yubico.yubikit.transport.YubiKeySession;
+import com.yubico.yubikit.transport.nfc.NfcConfiguration;
 import com.yubico.yubikit.transport.nfc.NfcDeviceManager;
 import com.yubico.yubikit.transport.nfc.NfcSession;
 import com.yubico.yubikit.transport.nfc.NfcSessionListener;
+import com.yubico.yubikit.transport.usb.UsbConfiguration;
 import com.yubico.yubikit.transport.usb.UsbDeviceManager;
 import com.yubico.yubikit.transport.usb.UsbSession;
 import com.yubico.yubikit.transport.usb.UsbSessionListener;
@@ -62,8 +64,8 @@ public class YubikitManagerTest {
 
     @Test
     public void discoverSession() throws NfcDisabledException, NfcNotFoundException {
-        yubiKitManager.startNfcDiscovery(true, mockActivity, new NfcListener());
-        yubiKitManager.startUsbDiscovery(true, new UsbListener());
+        yubiKitManager.startNfcDiscovery(new NfcConfiguration(), mockActivity, new NfcListener());
+        yubiKitManager.startUsbDiscovery(new UsbConfiguration(), new UsbListener());
 
         // wait until listener will be invoked
         try {
@@ -83,10 +85,11 @@ public class YubikitManagerTest {
 
     @Test
     public void discoverUsbSession() throws NfcNotFoundException, NfcDisabledException {
-        yubiKitManager.startUsbDiscovery(true, new UsbListener());
+        UsbConfiguration configuration = new UsbConfiguration();
+        yubiKitManager.startUsbDiscovery(configuration, new UsbListener());
 
-        Mockito.verify(mockUsb).enable(true);
-        Mockito.verify(mockNfc, Mockito.never()).enable(mockActivity, true);
+        Mockito.verify(mockUsb).enable(configuration);
+        Mockito.verify(mockNfc, Mockito.never()).enable(mockActivity, new NfcConfiguration());
 
         // wait until listener will be invoked
         try {
@@ -105,9 +108,10 @@ public class YubikitManagerTest {
 
     @Test
     public void discoverNfcSession() throws NfcNotFoundException, NfcDisabledException {
-        yubiKitManager.startNfcDiscovery(true, mockActivity, new NfcListener());
-        Mockito.verify(mockUsb, Mockito.never()).enable(true);
-        Mockito.verify(mockNfc).enable(mockActivity, true);
+        NfcConfiguration configuration = new NfcConfiguration();
+        yubiKitManager.startNfcDiscovery(configuration, mockActivity, new NfcListener());
+        Mockito.verify(mockUsb, Mockito.never()).enable(new UsbConfiguration());
+        Mockito.verify(mockNfc).enable(mockActivity, configuration);
 
         // wait until listener will be invoked
         try {

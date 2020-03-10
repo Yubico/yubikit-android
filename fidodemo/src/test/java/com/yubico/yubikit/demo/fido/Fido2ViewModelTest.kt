@@ -32,7 +32,7 @@ import org.mockito.*
 
 @RunWith(AndroidJUnit4::class)
 //@RunWith(RobolectricTestRunner.class)
-@Config(manifest = Config.NONE)
+//@Config(manifest = Config.NONE)
 class Fido2ViewModelTest {
 
     private val fidoApi = Fido2ClientApi(ApplicationProvider.getApplicationContext<Context>())
