@@ -46,8 +46,8 @@ yubikitVersion=1.0.0-beta04
         }
 
         @Override
-        public void onError(@NonNull UsbSession session, @NonNull Throwable error) {
-            // user didn't grant permissions to specific yubikey
+        public void onRequestPermissionsResult(@NonNull UsbSession session, Boolean isGranted) {
+            // whether user granted permissions to specific yubikey
         }
     }
 ```
@@ -62,7 +62,7 @@ for NFC session discoveries
 ```
 -3. Start discovery for key over USB or NFC. Note: discovery over NFC requires `Activity` that is in foreground (we recommend starting discovery over NFC in `onResume()`). Discovery over USB does not require Activity.
 ```java
-    yubiKitManager.startUsbDiscovery(true, new UsbListener());
+    yubiKitManager.startUsbDiscovery(UsbConfiguration(), new UsbListener());
 ```
 and/or
 ```java
@@ -70,7 +70,7 @@ and/or
     public void onResume() {
         super.onResume()
         try {
-            yubiKitManager.startNfcDiscovery(false, activity, new NfcListener);
+            yubiKitManager.startNfcDiscovery(NfcConfiguration(), activity, new NfcListener);
         } catch (NfcDisabledException e) {
             // show Snackbar message that user needs to turn on NFC for this feature
         } catch (NfcNotFoundException e) {
@@ -110,7 +110,7 @@ and/or
 ```
 Discovery over USB can be kept as long as `YubiKitManager` instance is alive (we recommend stopping discovery over USB before yubiKitManager is destroyed).
 ```java
-    yubiKitManager.stopUsbDiscovery(activity)
+    yubiKitManager.stopUsbDiscovery()
 ```
 -6. Optional. Turn on verbose logging from **YubiKit** for debugging purposes:
 ```java
