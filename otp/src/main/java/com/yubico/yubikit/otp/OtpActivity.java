@@ -91,6 +91,11 @@ public class OtpActivity extends AppCompatActivity {
                     }
                 }
             }
+
+            @Override
+            public void onRequestPermissionsResult(@NonNull UsbSession session, boolean isGranted) {
+                // We don't need permissions to handle YubiOTP
+            }
         });
     }
 

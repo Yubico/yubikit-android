@@ -165,5 +165,17 @@ public final class YubiKitManager {
                 }
             });
         }
+
+        @Override
+        public void onRequestPermissionsResult(@NonNull final UsbSession session, final boolean isGranted) {
+            handler.post(new Runnable() {
+                @Override
+                public void run() {
+                    if (usbListener != null) {
+                        usbListener.onRequestPermissionsResult(session, isGranted);
+                    }
+                }
+            });
+        }
     }
 }

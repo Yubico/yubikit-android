@@ -8,8 +8,15 @@ public class UsbConfiguration {
     // whether to prompt permissions when application needs them
     private boolean handlePermissions = true;
 
+    // whether manager should discover only devices with Yubico as vendor
+    private boolean filterYubicoDevices = true;
+
     boolean isHandlePermissions() {
         return handlePermissions;
+    }
+
+    boolean isFilterYubicoDevices() {
+        return filterYubicoDevices;
     }
 
     /**
@@ -23,4 +30,7 @@ public class UsbConfiguration {
         return this;
     }
 
+    public void setFilterYubicoDevices(boolean filterYubicoDevices) {
+        this.filterYubicoDevices = filterYubicoDevices;
+    }
 }

@@ -80,7 +80,6 @@ open class YubikeyViewModel(private val yubikitManager: YubiKitManager) : ViewMo
 
             if (!hasPermission) {
                 _error.value = NoPermissionsException(session.usbDevice)
-
             }
         }
 
@@ -90,6 +89,10 @@ open class YubikeyViewModel(private val yubikitManager: YubiKitManager) : ViewMo
             if (session ==_sessionUsb.value) {
                 _sessionUsb.value = if(sessions.isEmpty()) null else sessions.keys.last()
             }
+        }
+
+        override fun onRequestPermissionsResult(session: UsbSession, isGranted: Boolean) {
+            onSessionReceived(session, isGranted)
         }
     }
 

@@ -21,4 +21,5 @@ import androidx.annotation.NonNull;
 public interface UsbSessionListener {
     void onSessionReceived(@NonNull final UsbSession session, boolean hasPermission);
     void onSessionRemoved(@NonNull final UsbSession session);
+    void onRequestPermissionsResult(@NonNull final UsbSession session, boolean isGranted);
 }

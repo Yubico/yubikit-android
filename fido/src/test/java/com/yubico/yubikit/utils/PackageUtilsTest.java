@@ -9,6 +9,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
+import org.robolectric.annotation.Config;
 import org.robolectric.shadows.ShadowPackageManager;
 
 import java.util.List;
@@ -35,6 +36,7 @@ public class PackageUtilsTest {
 
     }
     @Test
+    @Config(sdk = 27)
     public void getCertSHA256() {
         shadowPackageManager.installPackage(
                 newPackageInfo(TEST_PACKAGE_NAME, new Signature("00000000"), new Signature("FFFFFFFF")));
