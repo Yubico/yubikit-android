@@ -182,7 +182,7 @@ public class UsbIso7816Connection implements Iso7816Connection {
                     // 4. parse received data and make sure it's proper format
                     messageHeader = new MessageHeader(bufferRead);
                     responseRequiresTimeExtension = (messageHeader.status & STATUS_TIME_EXTENSION) == STATUS_TIME_EXTENSION;
-                    if (messageHeader.verify(sequence - 1)) {
+                    if (messageHeader.verify((byte) (sequence - 1))) {
                         // if we received expected prefix we can save the rest of received data without verification
                         receivedExpectedPrefix = true;
                         stream.write(bufferRead, 0, bytesRead);
@@ -269,7 +269,7 @@ public class UsbIso7816Connection implements Iso7816Connection {
          * @param sequence Bulk-OUT message sequence
          * @return true if prefix has expected format
          */
-        private boolean verify(int sequence) {
+        private boolean verify(byte sequence) {
             if (this.type != RESPONSE_DATA_BLOCK) {
                 return false;
             }
