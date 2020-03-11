@@ -102,14 +102,68 @@ public class OtpParser {
             throw new ParseTagException("Couldn't read ndef message");
         }
 
-        for (NdefRecord record : message.getRecords()) {
+        String parsedData = parseNdefMessage(message);
+        if (parsedData != null) {
+            return parsedData;
+        }
+        throw new ParseTagException("Tag doesn't have YK OTP payload");
+    }
+
+    /**
+     * Parses nfc tag and extracts otp credential from it
+     * @param ndefMessage an NDEF message from tag
+     * @return OTP data
+     * @throws ParseTagException if tag has no NDEF Tag Technology or there is no YK OTP payload
+     */
+    public static @Nullable String parseNdefMessage(NdefMessage ndefMessage) throws ParseTagException {
+        for (NdefRecord record : ndefMessage.getRecords()) {
             String parsedData = parseNdefRecord(record);
             if (parsedData != null) {
                 return parsedData;
             }
         }
-        throw new ParseTagException("Tag doesn't have YK OTP payload");
+        return null;
     }
+
+    public static @Nullable String parseUri(@NonNull Uri uri) {
+        if (uri.getScheme() == null) {
+            return null;
+        }
+
+        final UriFormat format = getFormat(uri);
+
+        String otpCode = null;
+        if (format == UriFormat.YK_5) {
+            otpCode = uri.getFragment();
+        } else if (format == UriFormat.YK_NEO) {
+            otpCode = uri.getLastPathSegment();
+        } else {
+            return null;
+        }
+
+        // if there is nothing in payload (only scheme and prefix) than otpCode data is empty
+        // without this check we might take last path segment of YK_NEO format (/neo)
+        if (uri.toString().length() == uri.getScheme().length() + format.prefix.length() + "://".length()) {
+            otpCode = "";
+        }
+
+        if (otpCode != null) {
+            if (otpCode.matches(OTP_MODHEX_PATTERN)) {
+                // default OTP Application (NDEF tag) set up on the key is YK OTP
+                // https://developers.yubico.com/OTP/
+                return otpCode;
+            } else if (otpCode.matches(OTP_HOTP_NUMERIC_PATTERN)) {
+                // HOTP
+                return otpCode;
+            } else {
+                // static password or HOTP (8 digits HOTP also using scan codes)
+                // use Yubico Manager to set up your key to return static password or HOTP
+                return parseKeyboardCodes(otpCode.getBytes());
+            }
+        }
+        return null;
+    }
+
 
     /**
      * Parse ndef record if it provides uri or text
@@ -123,22 +177,8 @@ public class OtpParser {
         }
 
         if (record.getType().length > 0 && record.getType()[0] == TYPE_URI) {
-            final UriFormat format = getFormat(record.toUri());
-            final String otpCode = parseUri(format, record.toUri());
-            if (otpCode != null) {
-                if (otpCode.matches(OTP_MODHEX_PATTERN)) {
-                    // default OTP Application (NDEF tag) set up on the key is YK OTP
-                    // https://developers.yubico.com/OTP/
-                    return otpCode;
-                } else if (otpCode.matches(OTP_HOTP_NUMERIC_PATTERN)) {
-                    // HOTP
-                    return otpCode;
-                } else {
-                    // static password or HOTP (8 digits HOTP also using scan codes)
-                    // use Yubico Manager to set up your key to return static password or HOTP
-                    return parseKeyboardCodes(format, record.getPayload());
-                }
-            }
+            Uri uri = record.toUri();
+            return parseUri(uri);
         } else if (record.getType().length > 0 && record.getType()[0] == TYPE_TEXT){
             String payload = new String(record.getPayload(), StandardCharsets.UTF_8);
             // returning last item in path
@@ -154,34 +194,14 @@ public class OtpParser {
         return null;
     }
 
-
-    /**
-     * Parses OTP code out of uri
-     *
-     * @param format what type of uri was received
-     * @param ndefUri uri from NDEF message
-     * @return YK OTP code
-     */
-    private static @Nullable String parseUri(UriFormat format, Uri ndefUri) {
-        if (format == UriFormat.YK_5) {
-            return ndefUri.getFragment();
-        } else if (format == UriFormat.YK_NEO) {
-            return ndefUri.getLastPathSegment();
-        }
-        return null;
-    }
-
     /**
      * In case of static password or HOTP yubikey returns HID codes which needs to be mapped to Android KeyEvent codes
      * Using KeyEvent codes KeyCharacterMap returns charecters
-     * @param format what type of uri was received
-     * @param payload payload from NDEF message
+     * @param data part of payload from NDEF message that contains only otp data
+     *             NOTE: Format of initial payload: first byte of payload is 0x04, then uri prefix and than data that contains otp
      * @return value without Uri prefix
      */
-    private static String parseKeyboardCodes(UriFormat format, byte[] payload) {
-        // first byte of payload is 0x04, then uri prefix and than data that we want to retrieve
-        byte[] data = Arrays.copyOfRange(payload, 1 + format.prefix.length(), payload.length);
-
+    private static String parseKeyboardCodes(byte[] data) {
         // For specific layouts and locales Android supports device specific key layout files with InputDevice
         // https://source.android.com/devices/input/key-character-map-files
         // but external peripheral can be attached only to the USB or Bluetooth bus (Not NFC)
