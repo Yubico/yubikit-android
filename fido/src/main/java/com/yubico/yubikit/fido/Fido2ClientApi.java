@@ -17,6 +17,7 @@
 package com.yubico.yubikit.fido;
 
 import android.app.Activity;
+import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentSender;
@@ -26,7 +27,6 @@ import android.util.Log;
 
 import com.google.android.gms.fido.Fido;
 import com.google.android.gms.fido.fido2.Fido2ApiClient;
-import com.google.android.gms.fido.fido2.Fido2PendingIntent;
 import com.google.android.gms.fido.fido2.api.common.AuthenticatorAssertionResponse;
 import com.google.android.gms.fido.fido2.api.common.AuthenticatorAttestationResponse;
 import com.google.android.gms.fido.fido2.api.common.AuthenticatorErrorResponse;
@@ -59,6 +59,7 @@ import java.util.List;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
 
 /**
  * Api that represents communication with secure hardware for FIDO2
@@ -76,7 +77,7 @@ public class Fido2ClientApi {
      * 2 possible values: MAKE_CREDENTIAL_REQUEST_CODE or GET_ASSERTION_REQUEST_CODE
      */
     private Integer requestCode;
-    private Fido2PendingIntent pendingIntent;
+    private PendingIntent pendingIntent;
 
     private String rpId;
 
@@ -103,9 +104,9 @@ public class Fido2ClientApi {
         if (!validateRpId(rpId)) {
             callback.onError(new IllegalArgumentException("The RP ID specified uses an invalid syntax: \"" + rpId + "\"."));
         }
-        prepareMakeCredentialTask(options).addOnSuccessListener(new OnSuccessListener<Fido2PendingIntent>() {
+        prepareMakeCredentialTask(options).addOnSuccessListener(new OnSuccessListener<PendingIntent>() {
             @Override
-            public void onSuccess(Fido2PendingIntent fido2PendingIntent) {
+            public void onSuccess(PendingIntent fido2PendingIntent) {
                 pendingIntent = fido2PendingIntent;
                 requestCode = MAKE_CREDENTIAL_REQUEST_CODE;
                 callback.onSuccess();
@@ -132,15 +133,52 @@ public class Fido2ClientApi {
      * Invoke that when pending intent prepared and requestCode set to value
      *
      * @param parent activity that used to launch pending intent, it's going to stay on back stack when Authenticator activity is visible
+     *               this activity should handle onActivityResult()
      * @throws IntentSender.SendIntentException if intent was not properly constructed
      */
     public void launch(Activity parent) throws IntentSender.SendIntentException {
         if (pendingIntent == null) {
             throw new IllegalStateException("This call needs to be invoked after registerKey or authenticateWithKey");
         }
-        if (pendingIntent.hasPendingIntent()) {
-            pendingIntent.launchPendingIntent(parent, requestCode);
+
+        // Start a FIDO2 registration/authentication request.
+        parent.startIntentSenderForResult(
+                pendingIntent.getIntentSender(),
+                requestCode,
+                null,
+                0,
+                0,
+                0,
+                null);
+
+    }
+
+    /**
+     * Launch User Verification Activity
+     * where authenticator locally authorizes the invocation of the authenticatorMakeCredential and authenticatorGetAssertion operations.
+     * User verification MAY be instigated through various authorization gesture modalities;
+     * for example, through a touch plus pin code, password entry, or biometric recognition (e.g., presenting a fingerprint) [ISOBiometricVocabulary].
+     * <p>
+     * Invoke that when pending intent prepared and requestCode set to value
+     *
+     * @param parent fragment that used to launch pending intent, it's going to stay on back stack when Authenticator activity is visible
+     *               this fragment should handle onActivityResult()
+     * @throws IntentSender.SendIntentException if intent was not properly constructed
+     */
+    public void launch(Fragment parent) throws IntentSender.SendIntentException {
+        if (pendingIntent == null) {
+            throw new IllegalStateException("This call needs to be invoked after registerKey or authenticateWithKey");
         }
+
+        // Start a FIDO2 registration/authentication request.
+        parent.startIntentSenderForResult(
+                pendingIntent.getIntentSender(),
+                requestCode,
+                null,
+                0,
+                0,
+                0,
+                null);
     }
 
     /**
@@ -154,9 +192,9 @@ public class Fido2ClientApi {
         if (!validateRpId(rpId)) {
             callback.onError(new IllegalArgumentException("The RP ID specified uses an invalid syntax: \"" + rpId + "\"."));
         }
-        prepareGetAssertionTask(options).addOnSuccessListener(new OnSuccessListener<Fido2PendingIntent>() {
+        prepareGetAssertionTask(options).addOnSuccessListener(new OnSuccessListener<PendingIntent>() {
             @Override
-            public void onSuccess(Fido2PendingIntent fido2PendingIntent) {
+            public void onSuccess(PendingIntent fido2PendingIntent) {
                 pendingIntent = fido2PendingIntent;
                 requestCode = GET_ASSERTION_REQUEST_CODE;
                 callback.onSuccess();
@@ -291,7 +329,7 @@ public class Fido2ClientApi {
      * @param options data received from backend (registration_begin request)
      * @return task that will provide pending intent of authenticator activity upon successful completion
      */
-    private Task<Fido2PendingIntent> prepareMakeCredentialTask(@NonNull MakeCredentialOptions options) {
+    private Task<PendingIntent> prepareMakeCredentialTask(@NonNull MakeCredentialOptions options) {
 
         PublicKeyCredentialCreationOptions.Builder builder = new PublicKeyCredentialCreationOptions.Builder()
                 .setRp(new PublicKeyCredentialRpEntity(options.rp.id, options.rp.name, options.rp.icon))
@@ -321,7 +359,7 @@ public class Fido2ClientApi {
             builder.setAuthenticatorSelection(new AuthenticatorSelectionCriteria.Builder().setAttachment(options.attachment.toAttachment()).build());
         }
 
-        return fido2ApiClient.getRegisterIntent(builder.build());
+        return fido2ApiClient.getRegisterPendingIntent(builder.build());
     }
 
     /**
@@ -330,7 +368,7 @@ public class Fido2ClientApi {
      * @param options data received from backend (authentication_begin request)
      * @return task that will provide pending intent of authenticator activity upon successful completion
      */
-    private Task<Fido2PendingIntent> prepareGetAssertionTask(@NonNull GetAssertionOptions options) {
+    private Task<PendingIntent> prepareGetAssertionTask(@NonNull GetAssertionOptions options) {
 
         PublicKeyCredentialRequestOptions.Builder builder = new PublicKeyCredentialRequestOptions.Builder()
                 .setRpId(options.rpId)
@@ -343,7 +381,7 @@ public class Fido2ClientApi {
         }
         builder.setAllowList(descriptors);
 
-        return fido2ApiClient.getSignIntent(builder.build());
+        return fido2ApiClient.getSignPendingIntent(builder.build());
     }
 }
 

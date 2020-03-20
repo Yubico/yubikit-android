@@ -87,9 +87,7 @@ open class UserDataFragment(private val registerFidoObserver: Boolean = true) : 
 
             fido2ViewModel.requestCode.observe(viewLifecycleOwner, Observer {
                 it?.run {
-                    activity?.run {
-                        fido2ViewModel.launch(this)
-                    }
+                    fido2ViewModel.launch(this@UserDataFragment)
                 }
             })
 
