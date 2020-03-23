@@ -29,6 +29,8 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.gms.vision.barcode.Barcode;
 import com.google.android.material.snackbar.Snackbar;
 import com.yubico.yubikit.oath.R;
@@ -40,6 +42,11 @@ import java.io.IOException;
  * Activity that has camera view that detects QR codes and returns results in intent upon success
  */
 public class QrActivity extends AppCompatActivity {
+
+    public final static int GOOGLE_PLAY_SERVICES_UNAVAILABLE = 2;
+    public final static int SURFACE_HOLDER_UNAVAILABLE = 3;
+    public final static int BARCODE_NOT_OPERATIONAL = 3;
+
     private final static int PERMISSION_CAMERA = 1;
     private SurfaceView surfaceView;
 
@@ -59,7 +66,13 @@ public class QrActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.yubikit_oath_camera_activity);
         surfaceView = findViewById(R.id.surfaceView);
-        initQrReader();
+        if (GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(this) == ConnectionResult.SUCCESS) {
+            initQrReader();
+        } else {
+            setResult(GOOGLE_PLAY_SERVICES_UNAVAILABLE);
+            finish();
+        }
+
         if (qrReader != null) {
             if (ActivityCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
                 ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, PERMISSION_CAMERA);
@@ -112,10 +125,20 @@ public class QrActivity extends AppCompatActivity {
         try {
             qrReader = new QrReader(surfaceView);
         } catch (QrReader.NotOperationalBarcode e) {
-            Snackbar.make(surfaceView, e.getMessage(), Snackbar.LENGTH_LONG).setAction(R.string.yubikit_oath_retry, new View.OnClickListener() {
+            Logger.e(e.getMessage(), e);
+            String message = e.getMessage() != null && !e.getMessage().isEmpty() ?
+                    e.getMessage() : getString(R.string.yubikit_oath_barcode_not_operational);
+            // retry operation might help, because all dynamic barcode recognition libraries get downloaded
+            Snackbar.make(surfaceView, message, Snackbar.LENGTH_INDEFINITE).setAction(R.string.yubikit_oath_retry, new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    initQrReader();
+                    try {
+                        qrReader = new QrReader(surfaceView);
+                    } catch (QrReader.NotOperationalBarcode e) {
+                        // if second attempt failed we return from activity with error results
+                        setResult(BARCODE_NOT_OPERATIONAL);
+                        finish();
+                    }
                 }
             }).show();
         }
@@ -125,7 +148,10 @@ public class QrActivity extends AppCompatActivity {
         try {
             qrReader.start(qrReaderCallback);
         } catch (IOException e) {
+            // if the supplied surface holder could not be used as the preview display
             Logger.e(e.getMessage(), e);
+            setResult(SURFACE_HOLDER_UNAVAILABLE);
+            finish();
         }
     }
 }
