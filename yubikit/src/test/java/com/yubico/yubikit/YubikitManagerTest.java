@@ -141,6 +141,10 @@ public class YubikitManagerTest {
         public void onSessionRemoved(@NonNull UsbSession session) {
             Assert.fail();
         }
+
+        @Override
+        public void onRequestPermissionsResult(@NonNull UsbSession session, boolean isGranted) {
+        }
     }
 
     private class NfcListener implements NfcSessionListener {
