@@ -25,6 +25,7 @@ import com.yubico.yubikit.YubiKitManager
 import com.yubico.yubikit.apdu.ApduException
 import com.yubico.yubikit.configurator.ModHexUtils
 import com.yubico.yubikit.configurator.Slot
+import com.yubico.yubikit.configurator.UnexpectedSymbolException
 import com.yubico.yubikit.configurator.YubiKeyConfigurationApplication
 import com.yubico.yubikit.demo.YubikeyViewModel
 import com.yubico.yubikit.demo.fido.arch.SingleLiveEvent
@@ -60,7 +61,7 @@ class YubiKeyConfigViewModel(yubiKitManager: YubiKitManager) : YubikeyViewModel(
         pos -> ints[pos].toByte()
     }
 
-    @Throws(IOException::class, ApduException::class)
+    @Throws(IOException::class, ApduException::class, UnexpectedSymbolException::class)
     override fun YubiKeySession.executeDemoCommands() {
         executeOnBackgroundThread { application ->
             _success.postValue(false)
@@ -94,6 +95,8 @@ class YubiKeyConfigViewModel(yubiKitManager: YubiKitManager) : YubikeyViewModel(
             } catch (e: IOException) {
                 postError(e)
             } catch (e: ApduException) {
+                postError(e)
+            } catch (e: UnexpectedSymbolException) {
                 postError(e)
             }
         }
