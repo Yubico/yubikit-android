@@ -52,7 +52,7 @@ public class OtpParserTest {
     public void parseInvalidFormatPayload() {
         NdefRecord record = new NdefRecord((short) 1, new byte[]{0x55},  null, createNdefData(NEO_PREFIX, new byte[0]));
         String code = OtpParser.parseNdefRecord(record);
-        Assert.assertEquals(code, "");
+        Assert.assertEquals("", code);
 
         record = new NdefRecord((short) 1, new byte[]{0x55},  null, null);
         code = OtpParser.parseNdefRecord(record);

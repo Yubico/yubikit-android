@@ -17,6 +17,7 @@
 package com.yubico.yubikit.demo
 
 import android.os.Bundle
+import androidx.appcompat.app.AppCompatActivity
 
 import androidx.core.view.GravityCompat
 import androidx.navigation.NavController
@@ -26,11 +27,10 @@ import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.setupWithNavController
 import kotlinx.android.synthetic.main.activity_main.*
 import androidx.navigation.ui.onNavDestinationSelected
-import com.yubico.yubikit.demo.fido.FidoActivity
 import com.yubico.yubikit.demo.settings.SettingsStorage
 
 
-class MainActivity : FidoActivity() {
+class MainActivity : AppCompatActivity() {
 
     private lateinit var navController: NavController
     private lateinit var settingsStorage: SettingsStorage

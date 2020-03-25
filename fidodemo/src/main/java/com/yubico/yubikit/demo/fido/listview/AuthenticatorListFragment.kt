@@ -109,10 +109,8 @@ class AuthenticatorListFragment : UserDataFragment(), OperationsListDialogFragme
             showProgress(false)
 
             val localDeviceId = accountStorage.getDeviceId()
-            if(it.map { item -> item.id }.contains(localDeviceId)) {
-                // we've got current platform authenticator, let's allow to add only cross-platform authenticators
-                fab_button.makeExpandable(false)
-            }
+            // we've got current platform authenticator, let's allow to add only cross-platform authenticators
+            fab_button.makeExpandable(!it.map { item -> item.id }.contains(localDeviceId))
         })
 
         viewModel.authResultRequest.observe(viewLifecycleOwner, Observer {

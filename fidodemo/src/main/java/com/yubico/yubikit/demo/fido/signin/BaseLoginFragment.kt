@@ -90,9 +90,7 @@ abstract class BaseLoginFragment : Fragment() {
 
         fido2ViewModel.requestCode.observe(viewLifecycleOwner, Observer {
             it?.run {
-                activity?.run {
-                    fido2ViewModel.launch(this)
-                }
+                fido2ViewModel.launch(this@BaseLoginFragment)
             }
         })
 

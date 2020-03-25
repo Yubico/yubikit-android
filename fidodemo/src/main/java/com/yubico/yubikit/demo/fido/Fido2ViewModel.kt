@@ -20,6 +20,7 @@ import android.app.Activity
 import android.content.Intent
 import android.content.IntentSender
 import android.util.Log
+import androidx.fragment.app.Fragment
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -108,7 +109,7 @@ class Fido2ViewModel(private val clientApi: Fido2ClientApi) : ViewModel() {
      * Invoke that when pending intent prepared and requestCode set to value
      * @param parent activity that used to launch pending intent, it's going to stay on back stack when Authenticator activity is visible
      */
-    fun launch(parent: Activity) {
+    fun launch(parent: Fragment) {
         try {
             clientApi.launch(parent)
         } catch (e: IntentSender.SendIntentException) {

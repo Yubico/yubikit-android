@@ -36,7 +36,7 @@ yubikitVersion=1.0.0-beta04
 ```java
     private class UsbListener implements UsbSessionListener {
         @Override
-        public void onSessionReceived(@NonNull UsbSession session) {
+        public void onSessionReceived(@NonNull UsbSession session, Boolean hasPermissions) {
             // yubikey was plugged in
         }
 

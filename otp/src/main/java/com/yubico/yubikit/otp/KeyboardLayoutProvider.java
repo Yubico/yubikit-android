@@ -47,7 +47,7 @@ package com.yubico.yubikit.otp;
  * Since we cam skip 2 conversion HID_SCAN_CODE->KEY_CODE->CHARACTER
  * we can create mapping directly from HID_SCAN_CODES to CHARACTERS
  */
-public class ScanCodeCharacterMap {
+public class KeyboardLayoutProvider {
 
     public static KeyboardLayout getKeyboardLayout() {
         return DEFAULT_CHARACTER_MAP;
