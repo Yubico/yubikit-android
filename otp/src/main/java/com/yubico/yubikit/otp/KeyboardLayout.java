@@ -1,10 +1,13 @@
 package com.yubico.yubikit.otp;
 
-class KeyboardLayout {
+/**
+ * Mapping of keys/HID scan codes from YubiKey (as keyboard) to Unicode characters
+ */
+public class KeyboardLayout {
     private final int[] characterMap;
     private final int[] characterShiftedMap;
 
-    KeyboardLayout(int[] characterMap, int[] characterShiftedMap) {
+    public KeyboardLayout(int[] characterMap, int[] characterShiftedMap) {
         this.characterMap = characterMap;
         this.characterShiftedMap = characterShiftedMap;
     }
