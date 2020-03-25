@@ -83,7 +83,7 @@ public class OtpParserTest {
     private static byte[] createNdefData(String prefix, @NonNull byte[] data) {
         ByteBuffer buffer = ByteBuffer.allocate(prefix.length() + data.length + 1);
         buffer.put((byte) 0x04);
-        buffer.put(prefix.getBytes(` `));
+        buffer.put(prefix.getBytes(StandardCharsets.UTF_8));
         buffer.put(data);
         return buffer.array();
     }
