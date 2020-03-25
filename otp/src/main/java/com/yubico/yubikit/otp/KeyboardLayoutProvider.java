@@ -44,7 +44,7 @@ package com.yubico.yubikit.otp;
  *
  * The best way to support another layout, we will have to create our own KeyCharacterMap
  * and another mapping to convert key_event into unicode character
- * Since we cam skip 2 conversion HID_SCAN_CODE->KEY_CODE->CHARACTER
+ * Since we can skip 2 conversion HID_SCAN_CODE to KEY_CODE then to CHARACTER
  * we can create mapping directly from HID_SCAN_CODES to CHARACTERS
  */
 public class KeyboardLayoutProvider {
@@ -55,8 +55,8 @@ public class KeyboardLayoutProvider {
 
     /**
      * Return keyboard layout specific to input source/language
-     * @param inputSource
-     * @return
+     * @param inputSource type of keyboard layout
+     * @return map from HID scan codes to characters
      */
     public static KeyboardLayout getKeyboardLayout(InputSource inputSource) {
         switch (inputSource) {
@@ -74,12 +74,12 @@ public class KeyboardLayoutProvider {
             0, 0, 0, 0, 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', //0x0f
             'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '1', '2', //0x1f
             '3', '4', '5', '6', '7', '8', '9', '0', '\n', 0, 0, '\t', ' ', '-', '=', '[', //0x2f
-            ']', 0, '\\', ';', '\'', '`', ',', '.', '/' // 0x39
+            ']', 0, '\\', ';', '\'', '`', ',', '.', '/' // 0x38
         }, new int[] {
             0, 0, 0, 0, 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', //0x8f
             'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '!', '@', // 0x9f
             '#', '$', '%', '^', '&', '*', '(', ')', 0, 0, 0, 0, 0, '_', '+', '{', //0xaf
-            '}', 0, '|', ':', '\'', '~', '<', '>', '?' //0xb9
+            '}', 0, '|', ':', '\"', '~', '<', '>', '?' //0xb8
     });
 
 
@@ -88,12 +88,12 @@ public class KeyboardLayoutProvider {
             0, 0, 0, 0, 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', //0x0f
             'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '1', '2', //0x1f
             '3', '4', '5', '6', '7', '8', '9', '0', '\n', 0, 0, '\t', ' ', 'ß', '´', 'ü',  //0x2f
-            '+', 0, '#', 'ö', '\'', '^', ',', '.', '-' //0x39
+            '+', 0, '#', 'ö', '\'', '^', ',', '.', '-' //0x38
         }, new int[] {
             0, 0, 0, 0, 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', //0x8f
-            'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '!', '\'', //0x9f
+            'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '!', '\"', //0x9f
             '§', '$', '%', '&', '/', '(', ')', '=', 0, 0, 0, 0, 0, '?', '`', 'Ü', // 0xaf
-            '*', 0, '>', 'Ö', 'Ä', '\'', ';', ':', '_' //0xb9
+            '*', 0, '>', 'Ö', 'Ä', 0, ';', ':', '_' //0xb8
     });
 
 
@@ -102,12 +102,12 @@ public class KeyboardLayoutProvider {
             0, 0, 0, 0, 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', //0x0f
             'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '1', '2', //0x1f
             '3', '4', '5', '6', '7', '8', '9', '0', '\n', 0, 0,  '\t', ' ', 'ß', '´', 'ü', //0x2f
-            '+', 0, '#', 'ö', '\'', '^', ',', '.', '-' //0x39
+            '+', 0, '#', 'ö', '\'', '^', ',', '.', '-' //0x38
         }, new int[] {
             0, 0, 0, 0, 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', //0x8f
             'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '!', '\"', //0x9f
             '§', '$', '%', '&', '/', '(', ')', '=', 0, 0, 0, 0, 0, '?', '`', 'Ü', // 0xaf
-            '*', 0, '>', 'Ö', 'Ä', '\'', ';', ':', '_' //0xb9
+            '*', 0, '>', 'Ö', 'Ä', 0, ';', ':', '_' //0xb8
     });
 
     public enum InputSource {
