@@ -110,9 +110,4 @@ public class KeyboardLayoutProvider {
             '*', 0, '>', 'Ö', 'Ä', 0, ';', ':', '_' //0xb8
     });
 
-    public enum InputSource {
-        US,
-        DE,
-        DECH
-    }
 }
