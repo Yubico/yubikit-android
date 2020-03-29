@@ -16,7 +16,7 @@
 
 package com.yubico.yubikit.demo.raw
 
-import com.yubico.yubikit.apdu.ApduException
+import com.yubico.yubikit.demo.exceptions.InvalidCertDataException
 import com.yubico.yubikit.utils.StringUtils
 import java.security.*
 import java.util.*
@@ -102,10 +102,6 @@ class SecCertificate(keyData: ByteArray) {
             }
             tag = data[0].toInt().and(0xff)
         }
-    }
-
-    class InvalidCertDataException(message: String, cause: Throwable?) : ApduException(message, cause) {
-        constructor(message: String) : this(message, null)
     }
 
     companion object {

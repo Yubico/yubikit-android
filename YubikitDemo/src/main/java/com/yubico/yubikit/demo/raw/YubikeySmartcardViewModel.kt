@@ -25,6 +25,7 @@ import com.yubico.yubikit.apdu.ApduException
 
 import com.yubico.yubikit.apdu.Apdu
 import com.yubico.yubikit.demo.YubikeyViewModel
+import com.yubico.yubikit.demo.exceptions.InvalidCertDataException
 import com.yubico.yubikit.demo.fido.arch.SingleLiveEvent
 import com.yubico.yubikit.transport.Iso7816Connection
 import com.yubico.yubikit.transport.YubiKeySession
@@ -102,7 +103,7 @@ open class YubikeySmartcardViewModel(yubikitManager: YubiKitManager, private val
             val signedData = signedString.toByteArray(Charsets.UTF_8)
             val signatureIsValid = certificate.verify(signedData, signatureData)
             _log.postValue(if (signatureIsValid) "Signature is valid." else "Signature is not valid.")
-        } catch (e: SecCertificate.InvalidCertDataException) {
+        } catch (e: InvalidCertDataException) {
             postError(e)
             return
         }
