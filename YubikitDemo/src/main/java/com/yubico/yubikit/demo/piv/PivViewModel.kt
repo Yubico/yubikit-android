@@ -167,7 +167,9 @@ class PivViewModel(yubiKitManager: YubiKitManager, private val settings: ISettin
                             val certificate = _certificates.value?.get(slot.value)
                             if(certificate != null) {
                                 val signatureIsValid = verifySignature(data, signature, certificate)
-                                Logger.d(if (signatureIsValid) "Signature is valid. " else "Signature is not valid. ")
+                                if (!signatureIsValid) {
+                                    throw InvalidCertDataException("Verification of signature failed. Make sure your imported certificate contains the data about key pair on this slot")
+                                }
                             }
                             _operationCompleted.postValue("Signature: " + Base64.encodeToString(signature, Base64.DEFAULT))
                         }
