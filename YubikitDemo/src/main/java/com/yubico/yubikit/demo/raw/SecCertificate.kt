@@ -18,10 +18,16 @@ package com.yubico.yubikit.demo.raw
 
 import com.yubico.yubikit.demo.exceptions.InvalidCertDataException
 import com.yubico.yubikit.utils.StringUtils
-import java.security.*
-import java.util.*
-import javax.security.cert.CertificateException
-import javax.security.cert.X509Certificate
+import java.io.ByteArrayInputStream
+import java.io.InputStream
+import java.security.InvalidKeyException
+import java.security.NoSuchAlgorithmException
+import java.security.Signature
+import java.security.SignatureException
+import java.security.cert.CertificateException
+import java.security.cert.CertificateFactory
+import java.security.cert.X509Certificate
+import java.util.Locale
 
 class SecCertificate(keyData: ByteArray) {
 
@@ -58,7 +64,9 @@ class SecCertificate(keyData: ByteArray) {
 
         // 3. instantiates an X509Certificate object with provided byte array
         try {
-            certificate = X509Certificate.getInstance(mutableData)
+            val stream: InputStream = ByteArrayInputStream(mutableData)
+            val cf = CertificateFactory.getInstance("X.509")
+            certificate = cf.generateCertificate(stream) as X509Certificate
         } catch (e: CertificateException) {
             throw InvalidCertDataException("Can't parse certificate data", e)
         }

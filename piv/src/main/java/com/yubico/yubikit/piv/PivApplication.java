@@ -694,6 +694,12 @@ public class PivApplication extends Iso7816Application {
         return stream.toByteArray();
     }
 
+    /**
+     * Generates x509 certificate object from byte array
+     * @param data contains certificate data
+     * @return java.security.cert.X509Certificate representation of certificate
+     * @throws CertificateException
+     */
     private X509Certificate parseCertificate(byte[] data) throws CertificateException {
         InputStream stream = new ByteArrayInputStream(data);
         CertificateFactory cf = CertificateFactory.getInstance("X.509");
