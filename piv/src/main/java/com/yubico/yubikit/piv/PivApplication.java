@@ -23,19 +23,19 @@ import com.yubico.yubikit.Iso7816Application;
 import com.yubico.yubikit.apdu.Apdu;
 import com.yubico.yubikit.apdu.ApduCodeException;
 import com.yubico.yubikit.apdu.ApduException;
-import com.yubico.yubikit.apdu.ApduUtils;
 import com.yubico.yubikit.apdu.Tlv;
 import com.yubico.yubikit.apdu.TlvUtils;
 import com.yubico.yubikit.apdu.Version;
 import com.yubico.yubikit.exceptions.ApplicationNotFound;
 import com.yubico.yubikit.exceptions.NotSupportedOperation;
-import com.yubico.yubikit.transport.Iso7816Connection;
 import com.yubico.yubikit.transport.YubiKeySession;
 import com.yubico.yubikit.utils.Logger;
 import com.yubico.yubikit.utils.StringUtils;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.nio.charset.Charset;
@@ -45,6 +45,10 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SecureRandom;
+import java.security.cert.CertificateEncodingException;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.RSAPrivateCrtKey;
 import java.security.spec.InvalidKeySpecException;
@@ -58,9 +62,6 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
-import javax.security.cert.CertificateEncodingException;
-import javax.security.cert.CertificateException;
-import javax.security.cert.X509Certificate;
 
 import static com.yubico.yubikit.piv.CryptoUtils.publicEccKey;
 import static com.yubico.yubikit.piv.CryptoUtils.publicRsaKey;
@@ -115,7 +116,7 @@ public class PivApplication extends Iso7816Application {
     private static final byte PUK_P2 = (byte)0x81;
 
     private static final List<Algorithm> SUPPORTED_ALGORITHMS = Arrays.asList(Algorithm.RSA1024, Algorithm.RSA2048, Algorithm.ECCP256, Algorithm.ECCP384);
-    private static final byte[] RSA_HASH_SHA256_PREFIX = new byte[] {0x30, 0x32, 0x30, 0x0d, 0x06, 0x09, 0x60, (byte)0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x01, 0x05, 0x00, 0x04, 0x20};
+    private static final byte[] RSA_HASH_SHA256_PREFIX = new byte[] {0x30, 0x31, 0x30, 0x0d, 0x06, 0x09, 0x60, (byte)0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x01, 0x05, 0x00, 0x04, 0x20};
     private static final byte TDES = 0x03;
 
 
@@ -231,7 +232,7 @@ public class PivApplication extends Iso7816Application {
 
         byte[] requestMessage;
         if (algorithm == Algorithm.RSA1024 || algorithm == Algorithm.RSA2048) {
-            requestMessage = addPkcsPadding(algorithm == Algorithm.RSA1024 ? 128 : 256, hash);
+            requestMessage = addPkcs1_15Padding(algorithm == Algorithm.RSA1024 ? 128 : 256, hash);
         } else {
             requestMessage = hash;
         }
@@ -239,7 +240,6 @@ public class PivApplication extends Iso7816Application {
         boolean lengthCondition;
         switch (algorithm) {
             case RSA1024:
-                // TODO: this case doesn't work
                 lengthCondition = requestMessage.length == 128;
                 break;
             case RSA2048:
@@ -404,7 +404,7 @@ public class PivApplication extends Iso7816Application {
         }
 
         try {
-            return X509Certificate.getInstance(certData.get(TAG_CERTIFICATE));
+            return parseCertificate(certData.get(TAG_CERTIFICATE));
         } catch (CertificateException e) {
             throw new ApduException("Failed to parse certificate", e);
         }
@@ -452,7 +452,7 @@ public class PivApplication extends Iso7816Application {
         }
         try {
             byte[] responseData = sendAndReceive(new Apdu(0, INS_ATTEST, slot.value, 0, null));
-            return X509Certificate.getInstance(responseData);
+            return parseCertificate(responseData);
         } catch (ApduCodeException e){
             if (INCORRECT_VALUES_ERROR == e.getStatusCode()) {
                 throw new NotSupportedOperation(String.format(Locale.ROOT, "Make sure that key is generated on slot %02X", slot.value));
@@ -562,7 +562,6 @@ public class PivApplication extends Iso7816Application {
                     length = 64;
                     break;
                 case 2048:
-                    // TODO: this case doesn't work
                     algorithm = Algorithm.RSA2048;
                     length = 128;
                     break;
@@ -675,7 +674,7 @@ public class PivApplication extends Iso7816Application {
      * @return padded hash message to requested length
      * @throws IOException never occurs because we do only memory stream writing
      */
-    private byte[] addPkcsPadding(int length, byte[] hash) throws IOException {
+    private byte[] addPkcs1_15Padding(int length, byte[] hash) throws IOException {
         int paddingLength = length - (RSA_HASH_SHA256_PREFIX.length + hash.length) - 3;
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
 
@@ -693,6 +692,18 @@ public class PivApplication extends Iso7816Application {
         stream.write(RSA_HASH_SHA256_PREFIX);
         stream.write(hash);
         return stream.toByteArray();
+    }
+
+    /**
+     * Generates x509 certificate object from byte array
+     * @param data contains certificate data
+     * @return java.security.cert.X509Certificate representation of certificate
+     * @throws CertificateException
+     */
+    private X509Certificate parseCertificate(byte[] data) throws CertificateException {
+        InputStream stream = new ByteArrayInputStream(data);
+        CertificateFactory cf = CertificateFactory.getInstance("X.509");
+        return (X509Certificate)cf.generateCertificate(stream);
     }
 
     /**

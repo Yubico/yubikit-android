@@ -27,7 +27,7 @@ import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.Observer
 import androidx.lifecycle.OnLifecycleEvent
 import com.google.android.material.snackbar.Snackbar
-import com.yubico.yubikit.demo.raw.UsbDeviceNotFoundException
+import com.yubico.yubikit.demo.exceptions.UsbDeviceNotFoundException
 import com.yubico.yubikit.exceptions.NfcDisabledException
 import com.yubico.yubikit.exceptions.NfcNotFoundException
 import com.yubico.yubikit.exceptions.NoPermissionsException

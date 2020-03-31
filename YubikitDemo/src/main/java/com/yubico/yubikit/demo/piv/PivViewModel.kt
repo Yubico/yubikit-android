@@ -18,6 +18,7 @@ package com.yubico.yubikit.demo.piv
 
 import android.os.Build
 import android.os.Bundle
+import android.util.Base64
 import android.util.SparseArray
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -27,6 +28,7 @@ import com.yubico.yubikit.YubiKitManager
 import com.yubico.yubikit.apdu.ApduCodeException
 import com.yubico.yubikit.apdu.ApduException
 import com.yubico.yubikit.demo.YubikeyViewModel
+import com.yubico.yubikit.demo.exceptions.InvalidCertDataException
 import com.yubico.yubikit.demo.fido.arch.SingleLiveEvent
 import com.yubico.yubikit.demo.oath.AuthRequiredException
 import com.yubico.yubikit.demo.oath.PasswordDialogFragment
@@ -38,15 +40,15 @@ import com.yubico.yubikit.transport.YubiKeySession
 import com.yubico.yubikit.utils.Logger
 import com.yubico.yubikit.utils.StringUtils
 import org.apache.commons.codec.binary.Hex
-import java.io.File
-import java.io.IOException
+import java.io.*
 import java.nio.charset.StandardCharsets
-import java.security.PrivateKey
+import java.security.*
+import java.security.cert.CertificateEncodingException
+import java.security.cert.CertificateException
+import java.security.cert.CertificateFactory
+import java.security.cert.X509Certificate
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.Executors
-import javax.security.cert.CertificateEncodingException
-import javax.security.cert.CertificateException
-import javax.security.cert.X509Certificate
 
 private const val OPERATION_ID = "operationId"
 private const val PASSWORD = "password"
@@ -158,10 +160,18 @@ class PivViewModel(yubiKitManager: YubiKitManager, private val settings: ISettin
                         }
                         Operations.SIGN -> {
                             _operationStarted.postValue("Signing message")
-                            val signature = pivApplication.sign(request.getSerializable(SLOT_ID) as Slot,
-                                    request.getSerializable(ALGO) as Algorithm,
-                                    request.getString(DATA)!!.toByteArray(StandardCharsets.UTF_8))
-                            _operationCompleted.postValue("Received signature " + StringUtils.convertBytesToString(signature))
+                            val data = request.getString(DATA)!!.toByteArray(StandardCharsets.UTF_8)
+                            val slot = request.getSerializable(SLOT_ID) as Slot
+                            val algorithm = request.getSerializable(ALGO) as Algorithm
+                            val signature = pivApplication.sign(slot, algorithm, data)
+                            val certificate = _certificates.value?.get(slot.value)
+                            if(certificate != null) {
+                                val signatureIsValid = verifySignature(data, signature, certificate)
+                                if (!signatureIsValid) {
+                                    throw InvalidCertDataException("Verification of signature failed. Make sure your imported certificate contains the data about key pair on this slot")
+                                }
+                            }
+                            _operationCompleted.postValue("Signature: " + Base64.encodeToString(signature, Base64.DEFAULT))
                         }
                         Operations.CHANGE_PIN -> {
                             _operationStarted.postValue("Changing pin")
@@ -421,9 +431,33 @@ class PivViewModel(yubiKitManager: YubiKitManager, private val settings: ISettin
         executeDemoCommands()
     }
 
+    /**
+     * Helper method to verify that signature is authentic (provided using key pair within Certificate)
+     */
+    private fun verifySignature(data: ByteArray, signature: ByteArray, certificate: X509Certificate) : Boolean {
+        try {
+            val privateSignature = Signature.getInstance(certificate.sigAlgName)
+            privateSignature.initVerify(certificate)
+            privateSignature.update(data)
+            return privateSignature.verify(signature)
+        } catch (e: NoSuchAlgorithmException) {
+            throw InvalidCertDataException("Cert algorithm " + certificate.sigAlgName + " is not valid", e)
+        } catch (e: InvalidKeyException) {
+            throw InvalidCertDataException("Cert key " + StringUtils.convertBytesToString(certificate.publicKey.encoded) + " is not valid", e)
+        } catch (e: SignatureException) {
+            throw InvalidCertDataException("Signature " + StringUtils.convertBytesToString(signature) + " is not valid", e)
+        }
+    }
+
+    /**
+     * Reads certificate from file
+     */
     private fun readCertificateFromFile(fileName: String): X509Certificate {
-        return try {
-            X509Certificate.getInstance(File(fileName).readBytes())
+        try {
+            FileInputStream(fileName).use { inStream ->
+                val cf = CertificateFactory.getInstance("X.509")
+                return cf.generateCertificate(inStream) as X509Certificate
+            }
         } catch (e: CertificateException) {
             throw IOException("Failed to read cert from file $fileName", e)
         }
