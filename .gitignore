@@ -68,3 +68,6 @@ fastlane/readme.md
 
 #extra
 *.DS_Store
+
+#VS Code
+.project
