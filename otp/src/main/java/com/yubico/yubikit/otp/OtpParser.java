@@ -226,6 +226,10 @@ public class OtpParser {
     private static String parseKeyboardCodes(byte[] data, KeyboardLayout keyboardLayout) {
         StringBuilder sb = new StringBuilder();
         for (byte hid_key_code : data) {
+            if (hid_key_code == 0) {
+                // end of the message
+                break;
+            }
             // make unsigned byte value
             boolean shiftOn = (0x80 & hid_key_code) == 0x80;
             int code = 0x7f & hid_key_code;
