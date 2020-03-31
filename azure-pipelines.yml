@@ -144,4 +144,4 @@ jobs:
       appSlug: Yubico/YubikitDemo
       appFile: '**/?(*.apk)'
       releaseNotesOption: 'file' # Options: input, file
-      releaseNotesFile: ReleaseNotes.txt # Required when releaseNotesOption == File
+      releaseNotesFile: Changelog.md # Required when releaseNotesOption == File
