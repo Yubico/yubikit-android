@@ -96,4 +96,3 @@ Authenticators often use QR codes to pass the URL for setting up the credentials
 
 ## Additional Resources <a name="additional_resources"></a>
 * [YKOATH Protocol Specification](https://developers.yubico.com/OATH/YKOATH_Protocol.html)
-* [Yubico Authenticator for Android open source project](https://github.com/Yubico/yubioath-android)
