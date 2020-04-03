@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.yubico.yubikit.demo.raw;
+package com.yubico.yubikit.demo.exceptions;
 
 import com.yubico.yubikit.exceptions.YubikeyCommunicationException;
 

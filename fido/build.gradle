@@ -8,7 +8,7 @@ android {
         minSdkVersion project.minFidoSdkVersion
         targetSdkVersion project.targetSdkVersion
         versionCode 1
-        versionName "${yubikitVersion}"
+        versionName "1.0"
 
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
 

@@ -52,14 +52,14 @@ dependencies {
 ```
 And in `gradle.properties` set latest version. Example:
 ```gradle
-yubikitVersion=1.0.0-beta04
+yubikitVersion=1.0.0-beta05
 ```
 ####Maven:
 ```xml
 <dependency>
   <groupId>com.yubico.yubikit</groupId>
   <artifactId>fido</artifactId>
-  <version>1.0.0-beta04</version>
+  <version>1.0.0-beta05</version>
 </dependency>
 ```
 

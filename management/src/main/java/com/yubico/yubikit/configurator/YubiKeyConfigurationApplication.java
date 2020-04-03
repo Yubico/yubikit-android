@@ -16,6 +16,9 @@
 
 package com.yubico.yubikit.configurator;
 
+import android.view.KeyCharacterMap;
+import android.view.KeyEvent;
+
 import com.yubico.yubikit.HidApplication;
 import com.yubico.yubikit.Iso7816Application;
 import com.yubico.yubikit.apdu.Apdu;
@@ -36,6 +39,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.Map;
 
 /**
  * Application that allows to calculate HMAC SHA1 using YubiKey
@@ -180,7 +184,20 @@ public class YubiKeyConfigurationApplication implements Closeable {
      * @throws IOException in case of communication error
      * @throws ApduException in case of unexpected usage or error response from YubiKey
      */
-    public void setStaticPassword(String password, Slot slot) throws IOException, ApduException {
+    public void setStaticPassword(String password, Slot slot) throws IOException, ApduException, UnexpectedSymbolException {
+        setStaticPassword(password, slot, KeyboardScanCodes.getScanCodes());
+    }
+
+    /**
+     * Configures YubiKey to return static password on touch
+     * @param password the password to store on YubiKey
+     * @param slot the slot on YubiKey that will be configured with provided password (One - short touch, Two - long touch)
+     * @param scancodes provide your own Character to ScanCode mapping
+     *                  or use the one that provided by library in KeyboardScanCodes.getScanCodes()
+     * @throws IOException in case of communication error
+     * @throws ApduException in case of unexpected usage or error response from YubiKey
+     */
+    public void setStaticPassword(String password, Slot slot, Map<Character, Integer> scancodes) throws IOException, ApduException, UnexpectedSymbolException {
         if (getVersion().compare(new Version(2,2,0)) < 0) {
             throw new NotSupportedOperation("This operation is supported for version 2.2+");
         }
@@ -190,10 +207,11 @@ public class YubiKeyConfigurationApplication implements Closeable {
 
         // convert each symbol to HID keyboard code
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
+
         for (char symbol : password.toCharArray()) {
-            Integer code = KeyboardScanCodes.SCAN_CODES.get(symbol);
+            Integer code = scancodes.get(symbol);
             if (code == null) {
-                throw new IllegalArgumentException("Unexpected symbol");
+                throw new UnexpectedSymbolException("Unexpected symbol was provided");
             }
             stream.write(code);
         }
@@ -205,6 +223,7 @@ public class YubiKeyConfigurationApplication implements Closeable {
         configurationBuilder.setKey(ConfigurationBuilder.STATIC_MODE, stream.toByteArray());
         sendConfiguration(slot, configurationBuilder);
     }
+
 
     /**
      * Configures YubiKey to return YubiOTP (one-time password) on touch

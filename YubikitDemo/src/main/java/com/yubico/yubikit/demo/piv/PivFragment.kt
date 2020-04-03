@@ -124,6 +124,7 @@ class PivFragment : BaseYubikeyFragment(TAG), PasswordDialogFragment.DialogListe
                 Toast.makeText(context, throwable.message, Toast.LENGTH_LONG).show()
             }
         }
+        showProgress(false)
         activity?.invalidateOptionsMenu()
     }
 
