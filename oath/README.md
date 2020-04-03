@@ -39,7 +39,9 @@ yubikitVersion=1.0.0-beta05
 
 ### Using Library <a name="using_lib"></a>
 
-This module requires the yubikit core module to detect the `YubikeySession` (see [Using YubiKit](../yubikit/README.md)) and to create an `OathApplication` to select OATH applet on YubiKey.  
+This module requires the yubikit core module to detect the `YubikeySession` (see [Using YubiKit](../yubikit/README.md))
+
+First, create an `OathApplication` to select OATH applet on YubiKey.  
 ```java
 
     OathApplication oathApplication = new OathApplication(session);
@@ -53,7 +55,12 @@ This module requires the yubikit core module to detect the `YubikeySession` (see
     
 ```
 
-The `OathApplication` provides a method for every command from the [YKOATH protocol](https://developers.yubico.com/OATH/YKOATH_Protocol.html) to add, remove, list and calculate credentials. In addition to these requests, the `OathApplication` provides an interface for setting/validating a password on credential storage, calculating all credentials and resetting the OATH application to its default state. For the complete list of methods look at the [`OathApplication` class documentation](src/main/java/com/yubico/yubikit/oath/OathApplication.java).  
+Next, use the `OathApplication` to add, remove, list, and calculate credentials.
+
+The `OathApplication` implements the YKOATH protocol. Refer to the [YKOATH protocol specification](https://developers.yubico.com/OATH/YKOATH_Protocol.html) for the details. 
+
+In addition, the `OathApplication` provides an interface for setting/validating a password on credential storage, calculating all credentials and resetting the OATH application to its default state. For the complete list of methods look at the [`OathApplication` class documentation](src/main/java/com/yubico/yubikit/oath/OathApplication.java).  
+
 The **OATH** module also provides a class for defining an OATH `Credential`, which has a convenience initializer `Credential.parseUri` which can parse the credential parameters from Uri of [Key Uri Format](https://github.com/google/google-authenticator/wiki/Key-Uri-Format).
 
 Authenticators often use QR codes to pass the URL for setting up the credentials. The built-in QR Code reader from YubiKit can be used to read the credential URL.
