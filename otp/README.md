@@ -6,7 +6,7 @@ The **OTP** module provides classes and resources to accelerate Yubico OTP authe
 
 This module is intended to be used with a Yubico OTP validation server, such as the [YubiCloud service](https://www.yubico.com/products/services-software/yubicloud/). To learn more about the Yubico OTP authentication mechanism, go to the [Yubico developer website](https://developers.yubico.com/OTP/OTPs_Explained.html)
 
-The **OTP** module requires at minimum  Java 7 or Android 4.4, future versions may require a later baseline. Anything lower than Android 8.0 may receive less testing by Yubico.
+The **OTP** module requires at minimum Java 7 or Android 4.4. Future versions may require a later baseline. Anything lower than Android 8.0 may receive less testing by Yubico.
 
 ## Integration Steps <a name="integration_steps"></a>
 ### Download

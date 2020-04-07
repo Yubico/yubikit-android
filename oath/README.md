@@ -1,7 +1,7 @@
 # OATH Module
 The **OATH** module enables applications, such as an authenticator app, to store OATH TOTP and HOTP secrets on a YubiKey, and to retrieve one-time passwords.
 
-It requires at minimum Java 7 or Android 4.4, future versions may require a later baseline. Anything lower than Android 8.0 may receive less testing by Yubico.
+It requires at minimum Java 7 or Android 4.4. Future versions may require a later baseline. Anything lower than Android 8.0 may receive less testing by Yubico.
 
 ## Integration Steps <a name="integration_steps"></a>
 ### Download
