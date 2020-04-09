@@ -1,18 +1,38 @@
-# FIDO Module for YubiKit Android
-**FIDO** is a lightweight wrapper around the existing [Android APIs](https://developers.google.com/android/reference/com/google/android/gms/fido/Fido).
-It supports a subset of FIDO2. However, PIN is not yet supported in the Android platform.
+# FIDO Module
+The **FIDO** module is a lightweight wrapper around the existing [Android APIs](https://developers.google.com/android/reference/com/google/android/gms/fido/Fido).
+The current Android APIs support a subset of FIDO2 specification. For example, PIN support for external authenticators is not yet available.
 
 ## Prerequisites <a name="prerequisites"></a>
 
 **YubiKit** requires at minimum Java 7 and Android 7.0. Future versions may require a later baseline. Anything lower than Android 8.0 may receive less testing by Yubico.
 
-In order to allow an Android app to use the FIDO2 APIs to register and sign credentials, your WebAuthn server (relying party) needs to host an assetlinks.json file on https://<rp_id>/.well-known/assetlinks.json.  
-[Here is a sample of assetlinks.json](https://demo.yubico.com/.well-known/assetlinks.json).  
-The property `package_name` matches the `applicationId` in `build.gradle` and the `sha256_cert_fingerprints` matches the fingerprint of my signing key.
+### Interoperability with your WebAuthn server
+Use the [Digital Asset Links JSON file](https://developers.google.com/identity/fido/android/native-apps) to enable users to share WebAuthn credentials across your website and Android app. You must declare an association by hosting the `assetlinks.json` on your WebAuthn server, and adding a link to the JSON file in your app's manifest.
 
-###Some of the ways to find the fingerprint:
+For example, if you want to associate `https://demo.yubico.com` with the YubiKit demo app `com.yubico.yubikit.demo` you must create and host the JSON file at `https://demo.yubico.com/.well-known/assetlinks.json`. 
+
+The property `package_name` must match the `applicationId` in `build.gradle` and the `sha256_cert_fingerprints` must match the fingerprint of the signing key. If you need help finding the app fingerprint then go to the `Find your application's fingerprint` section below.
+    
+See the following sample from `assetlinks.json` the Yubico demo site:
+    
+```json
+[{
+"relation": ["delegate_permission/common.handle_all_urls"],
+"target": {
+    "namespace": "android_app",
+    "package_name": "com.yubico.yubikit.demo",
+    "sha256_cert_fingerprints": [
+    "4D:FF:F8:BA:C0:0C:6E:27:BC:C8:9C:64:DC:83:44:AE:A7:75:EE:38:BE:DB:0C:60:1F:A4:E1:66:4A:CD:C2:03"
+    ]
+}
+}]
+```
+
+### Find the application fingerprint
+You can find the app fingerprint in the terminal or in Android Studio.
+
 #### Terminal 
-Open Terminal and type the command:
+Open the terminal and type the following command:
 ```
 keytool -list -v -keystore <your_keystore_name> -alias <your_alias_name>
 ```
@@ -38,8 +58,8 @@ keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -sto
 If you are using [App Signing](https://support.google.com/googleplay/android-developer/answer/7384423?hl=en), you will find it on the app signing page of the Play Console.
 
 ## Integration steps <a name="integration_steps"></a>
-###Download
-####Gradle:
+### Download
+#### Gradle:
 
 ```gradle
 dependencies {  
@@ -54,7 +74,7 @@ And in `gradle.properties` set latest version. Example:
 ```gradle
 yubikitVersion=1.0.0-beta05
 ```
-####Maven:
+#### Maven:
 ```xml
 <dependency>
   <groupId>com.yubico.yubikit</groupId>
@@ -63,12 +83,12 @@ yubikitVersion=1.0.0-beta05
 </dependency>
 ```
 
-###Using Library <a name="using_lib"></a>
+### Using Library <a name="using_lib"></a>
 1. Create an instance of `Fido2ClientApi` and provide the application context:
 ```java
     Fido2ClientApi clientApi = new Fido2ClientApi(context);
 ```
-2. Invoke `registerKey` when received request from auth server to make credential
+2. Invoke `registerKey` when the server requests to make a credential a.k.a. register.
 ```java
     // this method should be invoked when received all properties from server:
     // userId, relying party, supported algorithms, etc
@@ -77,7 +97,7 @@ yubikitVersion=1.0.0-beta05
         clientApi.registerKey(options, clientApiCallback);        
     }
 ```
-3. Invoke `authenticateWithKey` when received request from auth server to get assertion
+3. Invoke `authenticateWithKey` when the server requests an assertion a.k.a. authenticate
 ```java
     // this method should be invoked when all properties are received from server:
     // relying party, credentials id, challenge
@@ -86,7 +106,7 @@ yubikitVersion=1.0.0-beta05
         clientApi.authenticateWithKey(options, clientApiCallback);        
     }
 ```
-4. Both methods `registerKey` and `authenticateWithKey` requires callback that needs to launch special Fido activity that will handle communication with authenticator (platform or cross-platform). Provide parent activity that is going to handle onActivityResult
+4. Both methods `registerKey` and `authenticateWithKey` requires callback that needs to launch special Fido activity that will handle communication with the authenticator (platform or cross-platform). Provide parent activity that is going to handle onActivityResult.
 ```java
     private Callback clientApiCallback = new Callback() {
             @Override
@@ -105,7 +125,7 @@ yubikitVersion=1.0.0-beta05
         };
 
 ```
-5. Within `onActivityResult` handle results from Fido activity with method `getAuthenticatorResponse` and send it back to server
+5. Within `onActivityResult` method, get the `AuthenticatorResponse` from FIDO2 activity and send it back to the server to complete the WebAuthn operation.
 ```java
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
@@ -127,14 +147,17 @@ yubikitVersion=1.0.0-beta05
 ```
 
 ### Using the Demo Application <a name="using_demo"></a>
-FIDO 2 demo shows a complete example of how to use the library and FIDO2 including requests from server and validation.
+The FIDO 2 demo shows a complete example of how to use the library and FIDO2 including server requests and validation.
 
-Just run app, select FIDO2 demo pivot in navigation drawer, create an account (this account lives only 24 hours) and tap FAB button to add 2nd factor authentication with fingerprint or YubiKey. On next login you will have to use that authenticator to be able to sign in.  
-Our [demo web service](https://demo.yubico.com/webauthn) provides the same functionality
+1. Run app
+1. Select FIDO2 demo pivot in navigation drawer
+1. Create an account (this account lives only 24 hours) and tap FAB button to add 2nd factor authentication with a fingerprint or YubiKey. On the next login you must use that factor to sign in.  
+
+Yubico's [WebAuthn demo site](https://demo.yubico.com/webauthn) provides similar functionality
 
 ## Additional Resources <a name="additional_resources"></a>
-Yubico - [What is FIDO2 and Web Authentication](https://developers.yubico.com/FIDO2/)  
-W3C - [Web Authentication specification](https://www.w3.org/TR/webauthn)  
-FIDO - [FIDO2](https://fidoalliance.org/fido2/)  
-FIDO - [CTAP](https://fidoalliance.org/specs/fido-v2.0-id-20180227/fido-client-to-authenticator-protocol-v2.0-id-20180227.html)  
-![]()
+* [Yubico - What is FIDO2 and Web Authentication](https://developers.yubico.com/FIDO2/)  
+* [W3C Web Authentication specification](https://www.w3.org/TR/webauthn)  
+* [FIDO Alliance FIDO2 resources](https://fidoalliance.org/fido2/)  
+* [FIDO Alliance CTAP2 specification](https://fidoalliance.org/specs/fido-v2.0-id-20180227/fido-client-to-authenticator-protocol-v2.0-id-20180227.html)  
+

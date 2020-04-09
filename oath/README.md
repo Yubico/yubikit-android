@@ -1,11 +1,11 @@
-# OATH Module for YubiKit Android
-**OATH** allows applications, such as an authenticator app, to store OATH TOTP and HOTP secrets on a YubiKey, and to retrieve one-time passwords.
+# OATH Module
+The **OATH** module enables applications, such as an authenticator app, to store OATH TOTP and HOTP secrets on a YubiKey, and to retrieve one-time passwords.
 
-**OATH** requires at minimum  Java 7 or Android 4.4, future versions may require a later baseline. Anything lower than Android 8.0 may receive less testing by Yubico.
+It requires at minimum Java 7 or Android 4.4. Future versions may require a later baseline. Anything lower than Android 8.0 may receive less testing by Yubico.
 
 ## Integration Steps <a name="integration_steps"></a>
-###Download
-####Gradle:
+### Download
+#### Gradle:
 
 ```gradle
 dependencies {  
@@ -37,10 +37,11 @@ yubikitVersion=1.0.0-beta05
 </dependency>
 ```
 
-###Using Library <a name="using_lib"></a>
+### Using Library <a name="using_lib"></a>
 
-This module requires usage of yubikit core library to detect `YubikeySession` (see [Using YubiKit](../yubikit/README.md))  
-And use it to create `OathApplication` to select OATH applet on YubiKey  
+This module requires the yubikit core module to detect the `YubikeySession` (see [Using YubiKit](../yubikit/README.md))
+
+First, create an `OathApplication` to select OATH applet on YubiKey.  
 ```java
 
     OathApplication oathApplication = new OathApplication(session);
@@ -54,8 +55,13 @@ And use it to create `OathApplication` to select OATH applet on YubiKey
     
 ```
 
-The `OathApplication` provides a method for every command from the [YK OATH protocol](https://developers.yubico.com/OATH/YKOATH_Protocol.html) to add, remove, list and calculate credentials. In addition to these requests, the `OathApplication` provides an interface for setting/validating a password on credential storage, calculating all credentials and resetting the OATH application to its default state. For the complete list of methods look at the `OathApplication` code level documentation.  
-**OATH YubiKit** also provides a class for defining an OATH `Credential`, which has a convenience initializer `Credential.parseUri` which can parse the credential parameters from Uri of [Key Uri Format](https://github.com/google/google-authenticator/wiki/Key-Uri-Format).
+Next, use the `OathApplication` to add, remove, list, and calculate credentials.
+
+The `OathApplication` implements the YKOATH protocol. Refer to the [YKOATH protocol specification](https://developers.yubico.com/OATH/YKOATH_Protocol.html) for more details. 
+
+In addition, the `OathApplication` provides an interface for setting/validating a password on credential storage, calculating all credentials and resetting the OATH application to its default state. For the complete list of methods look at the [`OathApplication` class documentation](src/main/java/com/yubico/yubikit/oath/OathApplication.java).  
+
+The **OATH** module also provides a class for defining an OATH `Credential`. Use its convenience initializer `Credential.parseUri` to parse the credential parameters from Uri of [Key Uri Format](https://github.com/google/google-authenticator/wiki/Key-Uri-Format).
 
 Authenticators often use QR codes to pass the URL for setting up the credentials. The built-in QR Code reader from YubiKit can be used to read the credential URL.
 
@@ -81,10 +87,12 @@ Authenticators often use QR codes to pass the URL for setting up the credentials
 ```
 
 ### Using the Demo Application <a name="using_demo"></a>
-Run demo app, select "OATH demo" pivot in navigation drawer. Plug in YubiKey and click + FAB button to add credential.  
-To test, use one of the services that provides QR codes and authentication with TOTP as 2nd factor auth.  
-For example, [https://demo.yubico.com/playground](https://demo.yubico.com/playground)  
-Or such services as Facebook, Google, Amazon, Microsoft, etc. All provide 2nd factor authentication with Authenticator app. This demo can be used as such.
+1. Run demo app
+2. Select "OATH demo" pivot in navigation drawer
+3. Plug in YubiKey and click + FAB button to add credential.  
+   To test, use one of the services that provides QR codes and authentication with TOTP as 2nd factor auth.  
+   For example, [https://demo.yubico.com/playground](https://demo.yubico.com/playground)  
+   Or such services as Facebook, Google, Amazon, Microsoft, etc. All provide 2nd factor authentication with Authenticator app. This demo can be used as such.
 
 ## Additional Resources <a name="additional_resources"></a>
-OATH - [YK OATH protocol](https://developers.yubico.com/OATH/YKOATH_Protocol.html)
+* [YKOATH Protocol Specification](https://developers.yubico.com/OATH/YKOATH_Protocol.html)

@@ -1,12 +1,16 @@
-# OTP Module for YubiKit Android
-**OTP** is module of Android YubiKit library provided Yubico that provides classes to parse Yubikey OTP from NFC tag, UI dialog to show user that OTP reading requires his action and detecting OTP from device connected over NFC or USB.
-About Yubico OTP and advantages of using it please read on [Yubico developers website](https://developers.yubico.com/OTP/OTPs_Explained.html)
+# OTP Module
+The **OTP** module provides classes and resources to accelerate Yubico OTP authentication integrations. The **OTP** module can: 
+* Detect if a YubiKey is connected over NFC or USB
+* Show a UI Dialog to request the user take action to produce a Yubico OTP
+* Parse a Yubico OTP
 
-**OTP** module requires at minimum  Java 7 or Android 4.4, future versions may require a later baseline. Anything lower than Android 8.0 may receive less testing by Yubico.
+This module is intended to be used with a Yubico OTP validation server, such as the [YubiCloud service](https://www.yubico.com/products/services-software/yubicloud/). To learn more about the Yubico OTP authentication mechanism, go to the [Yubico developer website](https://developers.yubico.com/OTP/OTPs_Explained.html)
+
+The **OTP** module requires at minimum Java 7 or Android 4.4. Future versions may require a later baseline. Anything lower than Android 8.0 may receive less testing by Yubico.
 
 ## Integration Steps <a name="integration_steps"></a>
-###Download
-####Gradle:
+### Download
+#### Gradle:
 
 ```gradle
 dependencies {  
@@ -34,14 +38,14 @@ yubikitVersion=1.0.0-beta05
   <version>1.0.0-beta05</version>
 </dependency>
 ```
-###Using Library <a name="using_lib"></a>
+### Using Library <a name="using_lib"></a>
 
-1. Launch dialog that obtains YK OTP from NFC or USB device
+1. Launch dialog that obtains Yubico OTP from the NFC or USB device
 ```java
     startActivityForResult(new Intent(context, OtpActivity.class), OTP_REQUEST_CODE)
 ```
 
-2. Check results from that OtpActivity
+2. Check the results from that OtpActivity
 ```java
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
@@ -58,8 +62,10 @@ yubikitVersion=1.0.0-beta05
     }
 ```
 
-If this dialog does not meet your requirements you can check implementation of OtpActivity class and implement it using **YubiKit** core methods to detect NFC tag or USB connection.
+Note: You can create a custom dialog to meet your UX requirements. Review the implementation of OtpActivity class and detect the NFC tag or USB connection using **YubiKit** core methods.
 
 ### Using the Demo Application <a name="using_demo"></a>
-Run demo app, select "OTP demo" pivot in navigation drawer, tap "Read OTP" button and follow instructions on screen.
-To validate retrieved OTP tap on "Validate OTP" button 
+1. Run demo app
+2. Select "OTP demo" pivot in navigation drawer
+3. Tap "Read OTP" button and follow instructions on screen
+4. Validate the obtained Yubico OTP via the "Validate OTP" button 
