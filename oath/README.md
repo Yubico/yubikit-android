@@ -61,7 +61,7 @@ The `OathApplication` implements the YKOATH protocol. Refer to the [YKOATH proto
 
 In addition, the `OathApplication` provides an interface for setting/validating a password on credential storage, calculating all credentials and resetting the OATH application to its default state. For the complete list of methods look at the [`OathApplication` class documentation](src/main/java/com/yubico/yubikit/oath/OathApplication.java).  
 
-The **OATH** module also provides a class for defining an OATH `Credential`, which has a convenience initializer `Credential.parseUri` which can parse the credential parameters from Uri of [Key Uri Format](https://github.com/google/google-authenticator/wiki/Key-Uri-Format).
+The **OATH** module also provides a class for defining an OATH `Credential`. Use its convenience initializer `Credential.parseUri` to parse the credential parameters from Uri of [Key Uri Format](https://github.com/google/google-authenticator/wiki/Key-Uri-Format).
 
 Authenticators often use QR codes to pass the URL for setting up the credentials. The built-in QR Code reader from YubiKit can be used to read the credential URL.
 

@@ -66,6 +66,6 @@ Note: You can create a custom dialog to meet your UX requirements. Review the im
 
 ### Using the Demo Application <a name="using_demo"></a>
 1. Run demo app
-2. elect "OTP demo" pivot in navigation drawer
+2. Select "OTP demo" pivot in navigation drawer
 3. Tap "Read OTP" button and follow instructions on screen
 4. Validate the obtained Yubico OTP via the "Validate OTP" button 
