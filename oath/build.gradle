@@ -33,11 +33,11 @@ dependencies {
     implementation 'commons-codec:commons-codec:1.11'
 
     // adding this service as optional in case if user don't need QR reader
-    compileOnly 'com.google.android.gms:play-services-vision:19.0.0'
+    compileOnly 'com.google.android.gms:play-services-vision:20.0.0'
 
-    testImplementation 'junit:junit:4.12'
+    testImplementation 'junit:junit:4.13'
     testImplementation 'androidx.test.ext:junit:1.1.1'
-    testImplementation "org.robolectric:robolectric:4.2"
+    testImplementation "org.robolectric:robolectric:4.3.1"
 
     androidTestImplementation 'androidx.test:runner:1.2.0'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'

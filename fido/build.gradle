@@ -26,10 +26,10 @@ dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation 'com.google.android.gms:play-services-fido:18.1.0'
 
-    testImplementation 'junit:junit:4.12'
+    testImplementation 'junit:junit:4.13'
     testImplementation 'androidx.test.ext:junit:1.1.1'
-    testImplementation "org.robolectric:robolectric:4.2"
-    testImplementation "org.mockito:mockito-core:2.11.0"
+    testImplementation "org.robolectric:robolectric:4.3.1"
+    testImplementation "org.mockito:mockito-core:3.3.3"
     androidTestImplementation 'androidx.test:runner:1.2.0'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
 }
