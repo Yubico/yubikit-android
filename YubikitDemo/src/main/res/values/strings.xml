@@ -114,4 +114,9 @@
     <string name="configure_private_id">Private ID</string>
     <string name="configure_public_id">Public ID</string>
 
+    <string name="yubikit_oath_header_qr">Point the camera at the QR code</string>
+    <string name="yubikit_oath_no_permissions">Camera permissions are required to use QR scanner</string>
+    <string name="yubikit_oath_retry">Retry</string>
+    <string name="yubikit_oath_low_storage_error">Bar code detector dependencies cannot be downloaded due to low device storage</string>
+    <string name="yubikit_oath_barcode_not_operational">"Bar code detector dependencies is not downloaded yet, please try again later."</string>
 </resources>

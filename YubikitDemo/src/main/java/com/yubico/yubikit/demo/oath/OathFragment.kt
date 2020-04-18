@@ -37,9 +37,9 @@ import com.yubico.yubikit.demo.R
 import com.yubico.yubikit.demo.YubikeyViewModel
 import com.yubico.yubikit.demo.fido.listview.OnRecyclerViewItemClickListener
 import com.yubico.yubikit.demo.fido.listview.OperationsListDialogFragment
+import com.yubico.yubikit.demo.oath.qr.QrActivity
 import com.yubico.yubikit.demo.settings.Ramps
 import com.yubico.yubikit.oath.OathApplication
-import com.yubico.yubikit.oath.qr.QrActivity
 import com.yubico.yubikit.utils.Logger
 import kotlinx.android.synthetic.main.fragment_oath.empty_list
 import kotlinx.android.synthetic.main.fragment_oath.fab_button
