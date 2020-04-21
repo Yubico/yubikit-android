@@ -21,7 +21,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.nfc.NfcAdapter;
 import android.nfc.Tag;
-import android.os.Bundle;
 
 import com.yubico.yubikit.exceptions.NfcDisabledException;
 import com.yubico.yubikit.exceptions.NfcNotFoundException;
@@ -41,16 +40,26 @@ public class NfcDeviceManager {
     public static final String NFC_SETTINGS_ACTION = "android.settings.NFC_SETTINGS";
 
     private final Context context;
+    private final NfcDispatcher dispatcher;
     private final NfcAdapter adapter;
 
     private NfcSessionListener listener;
     /**
      * Creates instance of {@link NfcDeviceManager}
      * @param context the application context
+     * @param dispatcher optional implementation of NfcDispatcher to use instead of the default.
      */
-    public NfcDeviceManager(Context context) {
+    public NfcDeviceManager(Context context, NfcDispatcher dispatcher) {
         this.context = context;
         adapter = NfcAdapter.getDefaultAdapter(this.context);
+        if (dispatcher == null) {
+            dispatcher = new NfcReaderDispatcher(adapter);
+        }
+        this.dispatcher = dispatcher;
+    }
+
+    public NfcDeviceManager(Context context) {
+        this(context, null);
     }
 
     /**
@@ -58,7 +67,12 @@ public class NfcDeviceManager {
      * @param listener the listener
      */
     public void setListener(final @NonNull NfcSessionListener listener) {
-        this.listener = listener;
+        dispatcher.setOnTagHandler(new NfcDispatcher.OnTagHandler() {
+            @Override
+            public void onTag(Tag tag) {
+                listener.onSessionReceived(new NfcSession(tag));
+            }
+        });
     }
 
     /**
@@ -70,9 +84,7 @@ public class NfcDeviceManager {
      */
     public void enable(final @NonNull Activity activity, final NfcConfiguration nfcConfiguration) throws NfcDisabledException, NfcNotFoundException {
         if (checkAvailability(nfcConfiguration.isHandleUnavailableNfc())) {
-            // restart nfc watching services
-            disableReaderMode(activity);
-            enableReaderMode(activity, nfcConfiguration);
+            dispatcher.enable(activity, nfcConfiguration);
         }
     }
 
@@ -84,7 +96,7 @@ public class NfcDeviceManager {
         if (adapter == null) {
             return;
         }
-        disableReaderMode(activity);
+        dispatcher.disable(activity);
     }
 
     /**
@@ -108,36 +120,4 @@ public class NfcDeviceManager {
         }
     }
 
-    /**
-     * Start intercepting nfc events
-     * @param activity activity that is going to receive nfc events
-     * Note: invoke that while activity is in foreground
-     */
-    private void enableReaderMode(Activity activity, final NfcConfiguration nfcConfiguration) {
-        NfcAdapter.ReaderCallback callback = new NfcAdapter.ReaderCallback() {
-            public void onTagDiscovered(Tag tag) {
-                listener.onSessionReceived(new NfcSession(tag));
-            }
-        };
-        Bundle options = new Bundle();
-        options.putInt(NfcAdapter.EXTRA_READER_PRESENCE_CHECK_DELAY, 50);
-        int READER_FLAGS = NfcAdapter.FLAG_READER_NFC_A | NfcAdapter.FLAG_READER_NFC_B;
-        if (nfcConfiguration.isDisableNfcDiscoverySound()) {
-            READER_FLAGS |= NfcAdapter.FLAG_READER_NO_PLATFORM_SOUNDS;
-        }
-
-        if (nfcConfiguration.isSkipNdefCheck()) {
-            READER_FLAGS |= NfcAdapter.FLAG_READER_SKIP_NDEF_CHECK;
-        }
-        adapter.enableReaderMode(activity, callback, READER_FLAGS, options);
-    }
-
-    /**
-     * Stop intercepting nfc events
-     * @param activity activity that was receiving nfc events
-     * Note: invoke that while activity is still in foreground
-     */
-    private void disableReaderMode(Activity activity) {
-        adapter.disableReaderMode(activity);
-    }
 }

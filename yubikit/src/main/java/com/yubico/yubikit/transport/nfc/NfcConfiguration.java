@@ -15,15 +15,15 @@ public class NfcConfiguration {
     private boolean handleUnavailableNfc = false;
 
 
-    boolean isDisableNfcDiscoverySound() {
+    public boolean isDisableNfcDiscoverySound() {
         return disableNfcDiscoverySound;
     }
 
-    boolean isSkipNdefCheck() {
+    public boolean isSkipNdefCheck() {
         return skipNdefCheck;
     }
 
-    boolean isHandleUnavailableNfc() {
+    public boolean isHandleUnavailableNfc() {
         return handleUnavailableNfc;
     }
 

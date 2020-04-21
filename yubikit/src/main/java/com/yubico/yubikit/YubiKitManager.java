@@ -65,9 +65,11 @@ public final class YubiKitManager {
 
     /**
      * Initialize instance of {@link YubiKitManager}
-     * Note: this is package visible only for injection dependency within UT
+     * @param handler on which callbacks will be invoked (default is main thread)
+     * @param usbDeviceManager UsbDeviceManager instance to use for USB communication
+     * @param nfcDeviceManager NfcDeviceManager instance to use for NFC communication
      */
-    YubiKitManager(@Nullable Handler handler, UsbDeviceManager usbDeviceManager, NfcDeviceManager nfcDeviceManager) {
+    public YubiKitManager(@Nullable Handler handler, UsbDeviceManager usbDeviceManager, NfcDeviceManager nfcDeviceManager) {
         this.handler = handler != null ? handler : new Handler(Looper.getMainLooper());
         this.usbDeviceManager = usbDeviceManager;
         this.nfcDeviceManager = nfcDeviceManager;
