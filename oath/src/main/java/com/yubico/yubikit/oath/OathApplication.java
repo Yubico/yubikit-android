@@ -199,7 +199,7 @@ public class OathApplication  extends Iso7816Application {
             byte[] challenge = generateChallenge();
             requestTlv.add(new Tlv(TAG_CHALLENGE, challenge));
 
-            byte[] data = sendAndReceive(new Apdu(0, INS_VALIDATE, 0, 0, TlvUtils.TlvToData(requestTlv)));
+            byte[] data = sendAndReceive(new Apdu(0, INS_VALIDATE, 0, 0, TlvUtils.packTlvList(requestTlv)));
             SparseArray<byte[]> map = TlvUtils.parseTlvMap(data);
             // return false if response from validation does not match verification
             return (Arrays.equals(signer.sign(challenge), map.get(TAG_RESPONSE)));
@@ -258,7 +258,7 @@ public class OathApplication  extends Iso7816Application {
             requestTlv.add(new Tlv(TAG_CHALLENGE, challenge));
             try {
                 requestTlv.add(new Tlv(TAG_RESPONSE, calculateResponse(secret, challenge)));
-                data = TlvUtils.TlvToData(requestTlv);
+                data = TlvUtils.packTlvList(requestTlv);
             } catch (NoSuchAlgorithmException | InvalidKeyException e) {
                 throw new ApduException("Failed to use HmacSHA1 algorithm", e);
             }
@@ -309,7 +309,7 @@ public class OathApplication  extends Iso7816Application {
 
         // using default period to 30 second for all _credentials and then recalculate those that have different period
         requestTlv.add(new Tlv(TAG_CHALLENGE, challenge));
-        byte[] data = sendAndReceive(new Apdu(0, INS_CALCULATE_ALL, 0, 1, TlvUtils.TlvToData(requestTlv)));
+        byte[] data = sendAndReceive(new Apdu(0, INS_CALCULATE_ALL, 0, 1, TlvUtils.packTlvList(requestTlv)));
         Iterator<Tlv> responseTlv = TlvUtils.parseTlvList(data).iterator();
         Map<Credential, Code> map = new HashMap<>();
         while (responseTlv.hasNext()) {
@@ -371,7 +371,7 @@ public class OathApplication  extends Iso7816Application {
         requestTlv.add(new Tlv(TAG_NAME, credential.getId().getBytes(StandardCharsets.UTF_8)));
         requestTlv.add(new Tlv(TAG_CHALLENGE, challenge));
         boolean truncate = credential.isTruncated();
-        byte[] data = sendAndReceive(new Apdu(0, INS_CALCULATE, 0, truncate ? 1 : 0, TlvUtils.TlvToData(requestTlv)));
+        byte[] data = sendAndReceive(new Apdu(0, INS_CALCULATE, 0, truncate ? 1 : 0, TlvUtils.packTlvList(requestTlv)));
         Tlv responseTlv = new Tlv(data, 0);
         String value;
         if (truncate) {
@@ -416,7 +416,7 @@ public class OathApplication  extends Iso7816Application {
             list.add(new Tlv(TAG_KEY, stream.toByteArray()));
 
             ByteArrayOutputStream output = new ByteArrayOutputStream();
-            output.write(TlvUtils.TlvToData(list));
+            output.write(TlvUtils.packTlvList(list));
 
             if (credential.isTouch()) {
                 output.write(TAG_PROPERTY);
@@ -445,7 +445,7 @@ public class OathApplication  extends Iso7816Application {
     public void deleteCredential(Credential credential) throws IOException, ApduException {
         List<Tlv> list = new ArrayList<>();
         list.add(new Tlv(TAG_NAME, credential.getId().getBytes(StandardCharsets.UTF_8)));
-        Apdu apdu = new Apdu(0x00, INS_DELETE, 0,0, TlvUtils.TlvToData(list));
+        Apdu apdu = new Apdu(0x00, INS_DELETE, 0,0, TlvUtils.packTlvList(list));
         sendAndReceive(apdu);
     }
 

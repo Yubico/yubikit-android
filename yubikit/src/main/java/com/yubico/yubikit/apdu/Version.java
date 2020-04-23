@@ -18,13 +18,16 @@ package com.yubico.yubikit.apdu;
 
 import android.text.TextUtils;
 
+import androidx.annotation.NonNull;
+
 import java.util.Locale;
+import java.util.Objects;
 
 /**
  * Class that allows to parse version of yubikey
  */
-public final class Version {
-    public static final Version UNKNOWN = new Version((byte)0,(byte)0,(byte)0);
+public final class Version implements Comparable<Version> {
+    public static final Version UNKNOWN = new Version((byte) 0, (byte) 0, (byte) 0);
 
     public final byte major;
     public final byte minor;
@@ -41,21 +44,44 @@ public final class Version {
     }
 
     public byte[] getBytes() {
-        return new byte[] {major, minor, micro};
+        return new byte[]{major, minor, micro};
     }
 
-    public int compare(Version version) {
-        for (int i = 0; i < 3; i++) {
-            byte v1 = this.getBytes()[i];
-            byte v2 = version.getBytes()[i];
-            if (v1 < v2) {
-                return -1;
-            }
-            if (v1 > v2) {
-                return 1;
-            }
-        }
-        return 0;
+    private int compareToVersion(int major, int minor, int micro) {
+        return Integer.compare(this.major << 16 | this.minor << 8 | this.micro, major << 16 | minor << 8 | micro);
+    }
+
+    @Override
+    public int compareTo(@NonNull Version other) {
+        return compareToVersion(other.major, other.minor, other.micro);
+    }
+
+    public boolean isLessThan(int major, int minor, int micro) {
+        return compareToVersion(major, minor, micro) < 0;
+    }
+
+    public boolean isAtLeast(int major, int minor, int micro) {
+        return compareToVersion(major, minor, micro) >= 0;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Version version = (Version) o;
+        return major == version.major &&
+                minor == version.minor &&
+                micro == version.micro;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(major, minor, micro);
+    }
+
+    @Override
+    public String toString() {
+        return String.format(Locale.ROOT, "%d.%d.%d", 0xff & major, 0xff & minor, 0xff & micro);
     }
 
     public static Version parse(byte[] bytes) {
@@ -68,6 +94,7 @@ public final class Version {
 
     /**
      * Parses from string format "Firmware version 5.2.1"
+     *
      * @param nameAndVersion string that contains version at the end
      * @return the firmware version
      */
@@ -89,15 +116,10 @@ public final class Version {
         byte[] versionBytes = new byte[3];
         for (int i = 0; i < 3; i++) {
             try {
-                versionBytes[i] = (byte)Integer.parseInt(parts[i]);
+                versionBytes[i] = (byte) Integer.parseInt(parts[i]);
             } catch (NumberFormatException ignore) {
             }
         }
         return new Version(versionBytes[0], versionBytes[1], versionBytes[2]);
-    }
-
-    @Override
-    public String toString() {
-        return String.format(Locale.ROOT, "%d.%d.%d", 0xff & major, 0xff & minor, 0xff & micro);
     }
 }

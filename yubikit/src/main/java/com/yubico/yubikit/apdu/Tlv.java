@@ -20,11 +20,13 @@ import java.io.ByteArrayOutputStream;
 import java.util.Arrays;
 
 /**
- * Tag, length, value structure that helps to parse APDU response data
+ * Tag, length, Value structure that helps to parse APDU response data.
+ * This class handles simple BER-TLV encoded values where the tag consists of 1-2 bytes.
  */
 public class Tlv {
     private static int LENGTH_REQUIRES_EXTRA_BYTE = 0x81;
     private static int LENGTH_REQUIRES_EXTRA_TWO_BYTES = 0x82;
+
     private final int tag;
     private final int length;
     private final byte[] data;
@@ -32,62 +34,74 @@ public class Tlv {
 
     /**
      * Creates instance of {@link Tlv}
-     * @param data raw bytes that needs to be converted into Tlv
+     *
+     * @param data       raw bytes that needs to be converted into Tlv
      * @param dataOffset offset within data byte array
      */
     public Tlv(byte[] data, int dataOffset) {
         int pointer = 0;
-        tag = data[dataOffset + pointer++] & 0xFF;
+        int tagData = data[dataOffset + pointer++] & 0xFF;
+        if ((tagData & 0x1f) == 0x1f) {
+            tagData = tagData << 8 | data[dataOffset + pointer++];
+        }
+        tag = tagData;
+
         int checkByte = data[dataOffset + pointer++] & 0xFF;
         if (checkByte < LENGTH_REQUIRES_EXTRA_BYTE) {
-            offset = 2;
             length = checkByte;
-        } else if (checkByte == LENGTH_REQUIRES_EXTRA_BYTE)  {
-            offset = 3;
-            length = data[dataOffset + pointer] & 0xFF;
+        } else if (checkByte == LENGTH_REQUIRES_EXTRA_BYTE) {
+            length = data[dataOffset + pointer++] & 0xFF;
         } else if (checkByte == LENGTH_REQUIRES_EXTRA_TWO_BYTES) {
-            offset = 4;
-            length = ((data[dataOffset + pointer++] & 0xFF) << 8) + (data[dataOffset + pointer] & 0xFF);
+            length = ((data[dataOffset + pointer++] & 0xFF) << 8) + (data[dataOffset + pointer++] & 0xFF);
         } else {
             length = 0;
-            offset = 0;
         }
+        offset = pointer;
+
         this.data = Arrays.copyOfRange(data, dataOffset, dataOffset + offset + length);
     }
 
     /**
      * Creates instance of {@link Tlv}
-     * @param tag the tag of structure
+     *
+     * @param tag   the tag of structure
      * @param value the value of structure
      */
-    public Tlv(byte tag, byte[] value) {
-        this.tag = tag & 0xFF;
+    public Tlv(int tag, byte[] value) {
+        this.tag = tag;
+        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+
+        if (tag <= 0xFF) {
+            stream.write(tag);
+        } else if (((tag >> 8) & 0x1F) == 0x1F) {
+            stream.write(tag >> 8);
+            stream.write(tag & 0xFF);
+        } else {
+            throw new IllegalArgumentException("Unsupported tag format!");
+        }
+
         if (value != null) {
             length = value.length;
         } else {
             length = 0;
         }
-        ByteArrayOutputStream stream = new ByteArrayOutputStream();
-        stream.write(tag);
         if (length <= 0x7F) {
             // length that less than 128 requires only 1 byte
-            offset = 2;
-            stream.write((byte) length);
+            stream.write(length);
         } else if (value.length <= 0xFF) {
             // length that more than 127 but less than 256 requires 2 bytes (flags that length > 127 and length itself)
-            offset = 3;
-            stream.write((byte) LENGTH_REQUIRES_EXTRA_BYTE);
-            stream.write((byte) length);
+            stream.write(LENGTH_REQUIRES_EXTRA_BYTE);
+            stream.write(length);
         } else if (value.length <= 0xFFFF) {
             // length that more than 255 but less than 65536 requires 3 bytes (flags that length > 256 and 2 bytes for length itself)
-            offset = 4;
-            stream.write((byte) LENGTH_REQUIRES_EXTRA_TWO_BYTES);
-            stream.write((byte) (value.length >> 8));
-            stream.write((byte) length);
+            stream.write(LENGTH_REQUIRES_EXTRA_TWO_BYTES);
+            stream.write(value.length >> 8);
+            stream.write(length & 0xFF);
         } else {
             // length that more than 65536 is not supported within this protocol
             throw new IllegalArgumentException("Length of value is too large.");
         }
+        offset = stream.size();
         if (value != null) {
             stream.write(value, 0, length);
         }

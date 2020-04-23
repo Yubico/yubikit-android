@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 
-package com.yubico.yubikit.piv;
-
-import com.yubico.yubikit.apdu.ApduException;
+package com.yubico.yubikit.apdu;
 
 import java.util.Locale;
 

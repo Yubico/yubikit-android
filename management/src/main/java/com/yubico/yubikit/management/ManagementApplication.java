@@ -148,7 +148,7 @@ public class ManagementApplication extends Iso7816Application {
         if (reboot) {
             output.add(new Tlv(TAG_REBOOT, new byte[0]));
         }
-        byte[] configBytes = TlvUtils.TlvToData(output);
+        byte[] configBytes = TlvUtils.packTlvList(output);
         byte[] data = ByteBuffer.allocate(1 + configBytes.length).put((byte) configBytes.length).put(configBytes).array();
         sendAndReceive(new Apdu(0, INS_WRITE_CONFIG, 0, 0, data));
         config.dataChanged();
