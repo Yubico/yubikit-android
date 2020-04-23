@@ -16,6 +16,7 @@
 
 package com.yubico.yubikit.management;
 
+import com.yubico.yubikit.HidApplication;
 import com.yubico.yubikit.Iso7816Application;
 import com.yubico.yubikit.apdu.Apdu;
 import com.yubico.yubikit.apdu.ApduCodeException;
@@ -23,11 +24,16 @@ import com.yubico.yubikit.apdu.ApduException;
 import com.yubico.yubikit.apdu.Tlv;
 import com.yubico.yubikit.apdu.TlvUtils;
 import com.yubico.yubikit.apdu.Version;
+import com.yubico.yubikit.configurator.Status;
 import com.yubico.yubikit.exceptions.ApplicationNotFound;
+import com.yubico.yubikit.exceptions.NoDataException;
 import com.yubico.yubikit.exceptions.NotSupportedOperation;
 import com.yubico.yubikit.transport.YubiKeySession;
+import com.yubico.yubikit.transport.usb.UsbSession;
+import com.yubico.yubikit.utils.ChecksumUtils;
 import com.yubico.yubikit.utils.Logger;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
@@ -36,7 +42,7 @@ import java.util.List;
  * Implements management API to YubiKey interface
  * https://developers.yubico.com/yubikey-manager/Config_Reference.html
  */
-public class ManagementApplication extends Iso7816Application {
+public class ManagementApplication implements Closeable {
 
     private static final byte[] AID = new byte[]{(byte) 0xa0, 0x00, 0x00, 0x05, 0x27, 0x47, 0x11, 0x17};
     private static final byte[] YUBIKEY_AID = new byte[]{(byte) 0xa0, 0x00, 0x00, 0x05, 0x27, 0x20, 0x01, 0x01};
@@ -56,56 +62,59 @@ public class ManagementApplication extends Iso7816Application {
     private static final short APPLICATION_NOT_FOUND_ERROR = 0x6a82;
 
     /**
+     * This applet is implemented on 2 interfaces: CCID and HID
+     */
+    private Iso7816Application ccidApplication;
+    private HidApplication hidApplication;
+
+    /**
      * Firmware version
      */
     private Version version;
 
     /**
      * Create new instance of {@link ManagementApplication}
+     *
      * @param session session with YubiKey
-     * @throws IOException in case of connection error
+     * @throws IOException   in case of connection error
      * @throws ApduException in case of communication error
      */
-    public ManagementApplication(YubiKeySession session)  throws IOException, ApduException {
-        super(session);
+    public ManagementApplication(YubiKeySession session) throws IOException, ApduException {
         try {
-            byte[] response = sendAndReceive(new Apdu(0, INS_SELECT, 0x04, 0, AID));
-            // last part of message is firmware version
+            ccidApplication = new Iso7816Application(session);
+            byte[] response = ccidApplication.sendAndReceive(new Apdu(0, INS_SELECT, 0x04, 0, AID));
             version = Version.parse(new String(response));
-        } catch (ApduCodeException e) {
-            if (e.getStatusCode() == APPLICATION_NOT_FOUND_ERROR) {
-                // application is not found, most probably we have old firmware but let's make sure with OTP application
+        } catch (IOException | ApduCodeException e) {
+            // Unable to connect to CCID applet, attempt to fallback to HID.
+            if (session instanceof UsbSession) {
                 try {
-                    Logger.d("select OTP application to determine if management application is supported");
-                    byte[] response = sendAndReceive(new Apdu(0, INS_SELECT, 0x04, 0, YUBIKEY_AID));
-                    Version otpVersion = Version.parse(response);
-
-                    // workaround for firmware versions that were not detected correctly
-                    if (otpVersion.major < 1) {
-                        otpVersion = new Version(5,version.minor,version.micro);
-                    }
-
-                    if ((int)otpVersion.major < 4) {
-                        throw new NotSupportedOperation("Management application API supported only from version 4 and above");
-                    }
-                } catch (ApduCodeException ignore) {
-                    // do nothing if this application is not found, we use it only to detect firmware version on old devices
-                    Logger.d("OTP application is not enabled on this device");
+                    hidApplication = new HidApplication((UsbSession) session);
+                    Status status = Status.parse(hidApplication.getStatus());
+                    version = status.getVersion();
+                } catch (IOException ignore) {
+                    // if HID interface is not found we will fallthrough to close
                 }
+            }
+        }
+        if (version == null) {
+            close();
+            throw new ApplicationNotFound("Management application couldn't be accessed");
+        }
+    }
 
-                throw new ApplicationNotFound("Management application is disabled on this device");
-            } else {
-                throw e;
-            }
-        } finally {
-            if (version == null) {
-                close();
-            }
+    @Override
+    public void close() throws IOException {
+        if (ccidApplication != null) {
+            ccidApplication.close();
+        }
+        if (hidApplication != null) {
+            hidApplication.close();
         }
     }
 
     /**
      * Firmware version
+     *
      * @return Yubikey firmware version
      */
     public Version getVersion() {
@@ -114,27 +123,39 @@ public class ManagementApplication extends Iso7816Application {
 
     /**
      * Reads configurations from device
+     *
      * @return configurations
-     * @throws IOException in case of connection error
+     * @throws IOException   in case of connection error
      * @throws ApduException in case of communication or not supported operation error
      */
     public DeviceConfiguration readConfiguration() throws IOException, ApduException {
         if (version.major < 4) {
             throw new NotSupportedOperation("Operation is not supported on versions below 4");
         }
-        byte[] response = sendAndReceive(new Apdu(0, INS_READ_CONFIG, 0, 0, null));
-        if (response.length == 0 || (response[0] & 0xff) != response.length - 1) {
-            throw new IOException("Invalid response");
-        }
+        if (ccidApplication != null) {
+            byte[] response = ccidApplication.sendAndReceive(new Apdu(0, INS_READ_CONFIG, 0, 0, null));
+            if (response.length == 0 || (response[0] & 0xff) != response.length - 1) {
+                throw new IOException("Invalid response");
+            }
 
-        return new DeviceConfiguration(response, version);
+            return new DeviceConfiguration(response, version);
+        } else {
+            hidApplication.send((byte) 0x13, new byte[0]); // SLOT_YK4_CAPABILITIES
+            byte[] response = hidApplication.receive(0);
+            if (response.length == 0 || !ChecksumUtils.checkCrc(response, response.length)) {
+                throw new IOException("Invalid response");
+            }
+
+            return new DeviceConfiguration(response, version);
+        }
     }
 
     /**
      * Writes updates
+     *
      * @param config updated configurations
      * @param reboot require reboot
-     * @throws IOException in case of connection error
+     * @throws IOException   in case of connection error
      * @throws ApduException in case of communication or not supported operation error
      */
     public void writeConfiguration(DeviceConfiguration config, boolean reboot) throws IOException, ApduException {
@@ -150,14 +171,25 @@ public class ManagementApplication extends Iso7816Application {
         }
         byte[] configBytes = TlvUtils.packTlvList(output);
         byte[] data = ByteBuffer.allocate(1 + configBytes.length).put((byte) configBytes.length).put(configBytes).array();
-        sendAndReceive(new Apdu(0, INS_WRITE_CONFIG, 0, 0, data));
+
+        if (ccidApplication != null) {
+            byte[] response = ccidApplication.sendAndReceive(new Apdu(0, INS_WRITE_CONFIG, 0, 0, data));
+        } else {
+            hidApplication.send((byte) 0x15, data); //SLOT_YK4_SET_DEVICE_INFO
+            try {
+                hidApplication.receive(0);
+            } catch (NoDataException ignore) {
+                //we don't expect any data to be returned but wait status to be updated
+            }
+        }
         config.dataChanged();
     }
 
     /**
      * Enables/disables USB capability on the key
+     *
      * @param config updated configurations
-     * @throws IOException in case of connection error
+     * @throws IOException   in case of connection error
      * @throws ApduException in case of communication or not supported operation error
      */
     public void setMode(DeviceConfiguration config) throws IOException, ApduException {
@@ -169,7 +201,7 @@ public class ManagementApplication extends Iso7816Application {
         }
 
         // this method doesn't turn off CCID to keep ability to change settings with this application
-        sendAndReceive(new Apdu(0, INS_SET_MODE, P1_DEVICE_CONFIG, 0, new byte[] { getModeType(config).value }));
+        ccidApplication.sendAndReceive(new Apdu(0, INS_SET_MODE, P1_DEVICE_CONFIG, 0, new byte[]{getModeType(config).value}));
     }
 
     private static ModeType getModeType(DeviceConfiguration config) {
@@ -187,6 +219,6 @@ public class ManagementApplication extends Iso7816Application {
     }
 
     private static boolean isUsbApplicationEnabled(DeviceConfiguration config, ApplicationType appType) {
-       return config.getEnabled(TransportType.USB, appType);
+        return config.getEnabled(TransportType.USB, appType);
     }
 }

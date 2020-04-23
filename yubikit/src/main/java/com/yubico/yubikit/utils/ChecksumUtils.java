@@ -26,7 +26,7 @@ public class ChecksumUtils {
     /**
      * <p>When verifying a checksum the CRC_OK_RESIDUAL should be the remainder</p>
      */
-    public static final short CRC_OK_RESIDUAL = (short) 0xf0b8;
+    private static final short CRC_OK_RESIDUAL = (short) 0xf0b8;
 
     /**
      * <p>Method for calculating a CRC13239 checksum over a byte buffer.</p>
@@ -34,7 +34,6 @@ public class ChecksumUtils {
      * @param length how much of the buffer should be checksummed
      * @return CRC13239 checksum
      */
-
     static public short calculateCrc(byte[] data, int length) {
         int crc = 0xffff;
 
@@ -51,5 +50,16 @@ public class ChecksumUtils {
         }
 
         return (short) (crc & 0xFFFF);
+    }
+
+    /**
+     * Verify a checksum.
+     *
+     * @param data the data, ending in the 2 byte CRC checksum to verify
+     * @param length The length of the data, including the checksum at the end
+     * @return true if the checksum is correct, false if not
+     */
+    static public boolean checkCrc(byte[] data, int length) {
+        return calculateCrc(data, length) == CRC_OK_RESIDUAL;
     }
 }

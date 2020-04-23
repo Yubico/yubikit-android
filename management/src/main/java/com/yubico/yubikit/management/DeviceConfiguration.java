@@ -77,7 +77,8 @@ public final class DeviceConfiguration {
      * @param versionFromSelect version of firmware that was parsed within select operation
      */
     DeviceConfiguration(byte[] data, Version versionFromSelect){
-        byte[] configBytes = Arrays.copyOfRange(data, 1, data.length);
+        int length = data[0] % 0xff;
+        byte[] configBytes = Arrays.copyOfRange(data, 1, length);
         initialData = TlvUtils.parseTlvMap(configBytes);
 
         configurationLock = initialData.get(TAG_CONFIG_LOCKED);

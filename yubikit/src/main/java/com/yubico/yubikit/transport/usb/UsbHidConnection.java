@@ -200,8 +200,7 @@ public class UsbHidConnection implements Closeable {
                 throw new YubikeyCommunicationException("Received data only partially");
             }
             byte[] output = stream.toByteArray();
-            short crc = ChecksumUtils.calculateCrc(output, expectedSize);
-            if (crc != ChecksumUtils.CRC_OK_RESIDUAL) {
+            if (!ChecksumUtils.checkCrc(output, expectedSize)) {
                 throw new YubikeyCommunicationException("Error checksum of returned data");
             }
         }
