@@ -22,7 +22,7 @@ import android.hardware.usb.UsbInterface;
 
 import com.yubico.yubikit.exceptions.NoDataException;
 import com.yubico.yubikit.exceptions.YubikeyCommunicationException;
-import com.yubico.yubikit.utils.CheckSumUtils;
+import com.yubico.yubikit.utils.ChecksumUtils;
 import com.yubico.yubikit.utils.Logger;
 import com.yubico.yubikit.utils.StringUtils;
 
@@ -130,7 +130,7 @@ public class UsbHidConnection implements Closeable {
         frame.slot = slot;
 
         /* Append slot checksum */
-        frame.crc = CheckSumUtils.calculateCRC(frame.payload, frame.payload.length);
+        frame.crc = ChecksumUtils.calculateCrc(frame.payload, frame.payload.length);
 
 	    // Chop up the data into parts that fits into the payload of a feature report.
 	    // Set the sequence number | 0x80 in the end of the feature report.
@@ -200,8 +200,8 @@ public class UsbHidConnection implements Closeable {
                 throw new YubikeyCommunicationException("Received data only partially");
             }
             byte[] output = stream.toByteArray();
-            short crc = CheckSumUtils.calculateCRC(output, expectedSize);
-            if (crc != CheckSumUtils.CRC_OK_RESIDUAL) {
+            short crc = ChecksumUtils.calculateCrc(output, expectedSize);
+            if (crc != ChecksumUtils.CRC_OK_RESIDUAL) {
                 throw new YubikeyCommunicationException("Error checksum of returned data");
             }
         }

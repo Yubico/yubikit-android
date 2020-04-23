@@ -22,7 +22,7 @@ package com.yubico.yubikit.utils;
  *   for YubiKeys.
  * </p>
  */
-public class CheckSumUtils {
+public class ChecksumUtils {
     /**
      * <p>When verifying a checksum the CRC_OK_RESIDUAL should be the remainder</p>
      */
@@ -34,23 +34,22 @@ public class CheckSumUtils {
      * @param length how much of the buffer should be checksummed
      * @return CRC13239 checksum
      */
-    static public short calculateCRC(byte[] data, int length) {
+
+    static public short calculateCrc(byte[] data, int length) {
         int crc = 0xffff;
 
         for(int index = 0; index < length; index++) {
             int i, j;
             crc ^= data[index] & 0xFF;
-            crc &= 0xffff;
             for (i = 0; i < 8; i++) {
                 j = crc & 1;
                 crc >>= 1;
-                if (j == 1)
+                if (j == 1) {
                     crc ^= 0x8408;
+                }
             }
         }
 
-        crc &= 0xffff;
-        return (short)crc;
+        return (short) (crc & 0xFFFF);
     }
-
 }

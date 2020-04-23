@@ -16,7 +16,7 @@
 
 package com.yubico.yubikit.configurator;
 
-import com.yubico.yubikit.utils.CheckSumUtils;
+import com.yubico.yubikit.utils.ChecksumUtils;
 
 import java.util.Arrays;
 
@@ -205,7 +205,7 @@ class ConfigurationBuilder {
         cfg[CFG_TKT_FLAGS_OFFS] = tktFlags;
         cfg[CFG_CFG_FLAGS_OFFS] = cfgFlags;
 
-        short crc = (short) ~CheckSumUtils.calculateCRC(cfg, CFG_SIZE - 2);
+        short crc = (short) ~ChecksumUtils.calculateCrc(cfg, CFG_SIZE - 2);
         cfg[CFG_CRC_OFFS] = (byte) crc;
         cfg[CFG_CRC_OFFS + 1] = (byte) (crc >> 8);
 
