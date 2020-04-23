@@ -39,6 +39,7 @@ import java.util.concurrent.Executors
 const val SPECIAL_ISSUER_THAT_DOES_NOT_TRUNCATE_CODE = "Steam"
 private const val OPERATION_ID = "operationId"
 private const val CREDENTIAL = "credential"
+private const val CREDENTIAL_DATA = "credentialData"
 private const val PASSWORD = "password"
 private const val FIVE_SECONDS = 5000.toLong()
 
@@ -128,15 +129,15 @@ class OathViewModel(yubikitManager: YubiKitManager) : YubikeyViewModel(yubikitMa
                             // OathApplication.calculateSecret() can be used to encrypt password
                         }
                         Operations.ADD_CREDENTIAL -> {
-                            val credential = request.getSerializable(CREDENTIAL) as Credential
-                            Logger.d("Add credential = ${credential.getId()}")
-                            if (oathApplication.listCredentials().contains(credential)) {
-                                throw BadRequestException("Credential for ${credential.getId()} already exists")
+                            val credentialData = request.getSerializable(CREDENTIAL_DATA) as CredentialData
+                            Logger.d("Add credential = ${credentialData.id}")
+                            if (oathApplication.listCredentials().map { it.id }.contains(credentialData.id)) {
+                                throw BadRequestException("Credential for ${credentialData.id} already exists")
                             }
-                            oathApplication.putCredential(credential)
+                            val credential = oathApplication.putCredential(credentialData)
 
                             val map = _credentials.value.orEmpty().toMutableMap()
-                            if (credential.isTouch) {
+                            if (credentialData.isTouchRequired) {
                                 map[credential] = null
                             } else {
                                 map[credential] = calculate(credential, oathApplication)
@@ -181,7 +182,7 @@ class OathViewModel(yubikitManager: YubiKitManager) : YubikeyViewModel(yubikitMa
                         Operations.REMOVE_CREDENTIAL -> {
                             val credential = request.getSerializable(CREDENTIAL) as Credential
                             Logger.d("Remove credential = ${credential.name}")
-                            oathApplication.deleteCredential(credential)
+                            oathApplication.deleteCredential(credential.id)
                             val map = _credentials.value.orEmpty().toMutableMap()
                             map.remove(credential)
                             _credentials.postValue(map)
@@ -260,14 +261,13 @@ class OathViewModel(yubikitManager: YubiKitManager) : YubikeyViewModel(yubikitMa
         }
     }
 
-    fun addCredential(uri : Uri, isTouch: Boolean = false, isTruncated: Boolean = true) {
+    fun addCredential(uri : Uri, isTouch: Boolean = false) {
         try {
-            val credentialToAdd = Credential.parseUri(uri)
-            credentialToAdd.isTouch = isTouch
-            credentialToAdd.isTruncated = isTruncated
+            val credentialData = CredentialData.parseUri(uri)
+            credentialData.isTouchRequired = isTouch
             requestQueue.add(Bundle().apply {
                 putSerializable(OPERATION_ID, Operations.ADD_CREDENTIAL)
-                putSerializable(CREDENTIAL, credentialToAdd)
+                putSerializable(CREDENTIAL_DATA, credentialData)
             })
             executeDemoCommands()
         } catch (e: ParseUriException) {
@@ -323,10 +323,6 @@ class OathViewModel(yubikitManager: YubiKitManager) : YubikeyViewModel(yubikitMa
         val existingCode = map[credential]
 
         Logger.d("Get code for credential ${credential.id}")
-
-        if (SPECIAL_ISSUER_THAT_DOES_NOT_TRUNCATE_CODE == credential.issuer) {
-            credential.isTruncated = false
-        }
 
         // recalculate code if it was never calculated or it's expired
         if (existingCode == null || !existingCode.isValid) {

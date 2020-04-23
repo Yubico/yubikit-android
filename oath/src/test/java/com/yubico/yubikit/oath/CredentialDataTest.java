@@ -34,83 +34,52 @@ public class CredentialDataTest {
         String[] goodUris = new String[] {
                 "otpauth://totp/Example:alice@google.com?secret=JBSWY3DPEHPK3PXP&issuer=Example",
                 "otpauth://hotp/foobar:bob@example.com?secret=blahonga2",
-                "otpauth://hotp/foobar:bob@example.com?secret=ab16f9",
                 "otpauth://totp/foobar:bob@example.com?secret=secret"
         };
         for (String uri : goodUris) {
-            Credential.parseUri(Uri.parse(uri));
+            CredentialData.parseUri(Uri.parse(uri));
         }
     }
 
     @Test
     public void testParseIssuer() throws ParseUriException {
-        Credential noIssuer = Credential.parseUri(Uri.parse("otpauth://totp/account?secret=abba"));
+        CredentialData noIssuer = CredentialData.parseUri(Uri.parse("otpauth://totp/account?secret=abba"));
         Assert.assertNull(noIssuer.getIssuer());
-        Credential usingParam = Credential.parseUri(Uri.parse("otpauth://totp/account?secret=abba&issuer=Issuer"));
+        CredentialData usingParam = CredentialData.parseUri(Uri.parse("otpauth://totp/account?secret=abba&issuer=Issuer"));
         Assert.assertEquals(usingParam.getIssuer(), "Issuer");
-        Credential usingSeparator = Credential.parseUri(Uri.parse("otpauth://totp/Issuer:account?secret=abba"));
+        CredentialData usingSeparator = CredentialData.parseUri(Uri.parse("otpauth://totp/Issuer:account?secret=abba"));
         Assert.assertEquals(usingSeparator.getIssuer(), "Issuer");
-        Credential usingBoth = Credential.parseUri(Uri.parse("otpauth://totp/IssuerA:account?secret=abba&issuer=IssuerB"));
+        CredentialData usingBoth = CredentialData.parseUri(Uri.parse("otpauth://totp/IssuerA:account?secret=abba&issuer=IssuerB"));
         Assert.assertEquals(usingBoth.getIssuer(), "IssuerA");
-    }
-
-    @Test
-    public void testParseData() throws ParseUriException {
-        int tagName = 0x71;
-        final String issuer = "issuer";
-        String accountId = "20/issuer:account";
-        Credential credential = new Credential(accountId.getBytes(StandardCharsets.UTF_8), tagName, null, 0);
-        Assert.assertEquals(issuer, credential.getIssuer());
-        Assert.assertEquals(20, credential.getPeriod());
-
-        String accountWithSlash = "this/account";
-        credential = new Credential(accountWithSlash.getBytes(StandardCharsets.UTF_8), tagName, null, 0);
-        Assert.assertNull(credential.getIssuer());
-        Assert.assertEquals(accountWithSlash, credential.name);
-
-        String accountWithSlashAndIssuer = "issuer:this/account";
-        credential = new Credential(accountWithSlashAndIssuer.getBytes(StandardCharsets.UTF_8), tagName, null, 0);
-        Assert.assertEquals(issuer, credential.getIssuer());
-        Assert.assertEquals(accountWithSlash, credential.name);
-
-        String issuerAndAccountWithSlash = "this/issuer:this/account";
-        credential = new Credential(issuerAndAccountWithSlash.getBytes(StandardCharsets.UTF_8), tagName, null, 0);
-        Assert.assertEquals("this/issuer", credential.getIssuer());
-        Assert.assertEquals(accountWithSlash, credential.name);
-
-        String accountWithSlashAndColon = "issuer:this:account";
-        credential = new Credential(accountWithSlashAndColon.getBytes(StandardCharsets.UTF_8), tagName, null, 0);
-        Assert.assertEquals(issuer, credential.getIssuer());
-        Assert.assertEquals("this:account", credential.name);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testParseNull() throws ParseUriException {
-        Credential.parseUri(null);
+        CredentialData.parseUri(null);
     }
 
     @Test(expected = ParseUriException.class)
     public void testParseHttpUri() throws ParseUriException {
-        Credential.parseUri(Uri.parse("http://example.com/"));
+        CredentialData.parseUri(Uri.parse("http://example.com/"));
     }
 
     @Test(expected = ParseUriException.class)
     public void testParseWrongPath() throws ParseUriException {
-        Credential.parseUri(Uri.parse("otpauth://foobar?secret=kaka"));
+        CredentialData.parseUri(Uri.parse("otpauth://foobar?secret=kaka"));
     }
 
     @Test(expected = ParseUriException.class)
     public void testParseNonUri() throws ParseUriException {
-        Credential.parseUri(Uri.parse("foobar"));
+        CredentialData.parseUri(Uri.parse("foobar"));
     }
 
     @Test(expected = ParseUriException.class)
     public void testParseSecretNotBase32() throws ParseUriException {
-        Credential.parseUri(Uri.parse("otpauth://totp/Example:alice@google.com?secret=balhonga1&issuer=Example"));
+        CredentialData.parseUri(Uri.parse("otpauth://totp/Example:alice@google.com?secret=balhonga1&issuer=Example"));
     }
 
     @Test(expected = ParseUriException.class)
     public void testParseMissingAlgorithm() throws ParseUriException {
-        Credential.parseUri(Uri.parse("otpauth:///foo:mallory@example.com?secret=kaka"));
+        CredentialData.parseUri(Uri.parse("otpauth:///foo:mallory@example.com?secret=kaka"));
     }
 }

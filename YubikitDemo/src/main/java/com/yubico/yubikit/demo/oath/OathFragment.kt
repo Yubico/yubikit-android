@@ -146,7 +146,7 @@ class OathFragment : BaseYubikeyFragment(TAG), OnRecyclerViewItemClickListener, 
             val uri = data?.data
             Logger.d(uri?.toString() ?: "No Uri")
             if (uri != null) {
-                viewModel.addCredential(uri, Ramps.OATH_USE_TOUCH.getValue(context) == true, Ramps.OATH_TRUNCATE.getValue(context) != false)
+                viewModel.addCredential(uri, Ramps.OATH_USE_TOUCH.getValue(context) == true)
             } else {
                 Toast.makeText(context, "No Uri", Toast.LENGTH_LONG).show()
             }

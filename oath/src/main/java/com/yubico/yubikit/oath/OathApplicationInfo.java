@@ -36,9 +36,10 @@ public class OathApplicationInfo {
     private static final byte TAG_CHALLENGE = 0x74;
     private static final byte TAG_VERSION = 0x79;
 
-    private Version version;
-    private byte[] deviceId;
-    private byte[] challenge;
+    private final Version version;
+    private final byte[] salt;
+    private final byte[] challenge;
+    private final String deviceId;
 
     /**
      * Creates an instance of OATH application info from SELECT response
@@ -47,8 +48,9 @@ public class OathApplicationInfo {
     OathApplicationInfo(byte[] response) {
         SparseArray<byte[]> map = TlvUtils.parseTlvMap(response);
         version = Version.parse(map.get(TAG_VERSION));
-        deviceId = map.get(TAG_NAME);
+        salt = map.get(TAG_NAME);
         challenge = map.get(TAG_CHALLENGE);
+        deviceId = getDeviceIdString(salt);
     }
 
     /**
@@ -59,10 +61,17 @@ public class OathApplicationInfo {
     }
 
     /**
-     * @return device id/name
+     * @return device identifier
      */
-    public byte[] getDeviceId() {
+    public String getDeviceId() {
         return deviceId;
+    }
+
+    /**
+     * @return device salt
+     */
+    public byte[] getSalt() {
+        return salt;
     }
 
     /**
@@ -80,15 +89,15 @@ public class OathApplicationInfo {
         return challenge != null && challenge.length != 0;
     }
 
-    /**
-     * @return device id hash string
-     * @param deviceId pass device id received from YubiKit when selected OATH applet
-     * @throws NoSuchAlgorithmException if SHA256 is not found
-     */
-    public static String getDeviceIdString(byte[] deviceId) throws NoSuchAlgorithmException {
+    private static String getDeviceIdString(byte[] salt) {
         MessageDigest messageDigest = null;
-        messageDigest = MessageDigest.getInstance("SHA256");
-        messageDigest.update(deviceId);
+        try {
+            messageDigest = MessageDigest.getInstance("SHA256");
+        } catch (NoSuchAlgorithmException e) {
+            // Shouldn't happen.
+            throw new IllegalStateException(e);
+        }
+        messageDigest.update(salt);
         byte[] digest = messageDigest.digest();
         return Base64.encodeToString(Arrays.copyOfRange(digest, 0, 16), Base64.NO_PADDING | Base64.NO_WRAP);
     }

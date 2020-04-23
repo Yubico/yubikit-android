@@ -73,7 +73,7 @@ class CredentialListAdapter(
             }
         } else {
             holder.progressBar.visibility = View.GONE
-            holder.touchImage.visibility = if(item.first.isTouch) View.VISIBLE else View.GONE
+            holder.touchImage.visibility = if(item.first.isTouchRequired) View.VISIBLE else View.GONE
         }
         with(holder.view) {
             setOnClickListener {
