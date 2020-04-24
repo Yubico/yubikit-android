@@ -205,7 +205,7 @@ class PivViewModel(yubiKitManager: YubiKitManager, private val settings: ISettin
                             val key = pivApplication.generateKey(request.getSerializable(SLOT_ID) as Slot,
                                     algorithm,
                                     PinPolicy.DEFAULT, TouchPolicy.DEFAULT)
-                            _operationCompleted.postValue("Generated on YubiKey ${algorithm.name} public key: " + StringUtils.convertBytesToString(key.encoded))
+                            _operationCompleted.postValue("Generated on YubiKey ${algorithm.name} public key: " + StringUtils.bytesToHex(key.encoded))
                         }
                         Operations.IMPORT_KEY -> {
                             _operationStarted.postValue("Importing key")
@@ -443,9 +443,9 @@ class PivViewModel(yubiKitManager: YubiKitManager, private val settings: ISettin
         } catch (e: NoSuchAlgorithmException) {
             throw InvalidCertDataException("Cert algorithm " + certificate.sigAlgName + " is not valid", e)
         } catch (e: InvalidKeyException) {
-            throw InvalidCertDataException("Cert key " + StringUtils.convertBytesToString(certificate.publicKey.encoded) + " is not valid", e)
+            throw InvalidCertDataException("Cert key " + StringUtils.bytesToHex(certificate.publicKey.encoded) + " is not valid", e)
         } catch (e: SignatureException) {
-            throw InvalidCertDataException("Signature " + StringUtils.convertBytesToString(signature) + " is not valid", e)
+            throw InvalidCertDataException("Signature " + StringUtils.bytesToHex(signature) + " is not valid", e)
         }
     }
 

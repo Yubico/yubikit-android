@@ -173,7 +173,7 @@ class PivCertificateFragment : Fragment() {
         }
 
         val keyPair = keygen.generateKeyPair()
-        Toast.makeText(context, "Generated key ${algorithm.name} pair with public key: ${StringUtils.convertBytesToString(keyPair.public.encoded)}", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, "Generated key ${algorithm.name} pair with public key: ${StringUtils.bytesToHex(keyPair.public.encoded)}", Toast.LENGTH_SHORT).show()
         return keyPair.private
     }
 

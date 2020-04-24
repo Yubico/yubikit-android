@@ -23,18 +23,8 @@ public class StringUtils {
      * @param byteArray array of bytes
      * @return string representation of byte array
      */
-    public static String convertBytesToString(byte[] byteArray) {
-        return convertBytesToString(byteArray, 0, byteArray.length);
-    }
-
-    /**
-     * Helper method that convert byte array into string for logging
-     * @param byteArray array of bytes
-     * @param size the size of array
-     * @return string representation of byte array
-     */
-    public static String convertBytesToString(byte[] byteArray, int size) {
-        return convertBytesToString(byteArray, 0, size);
+    public static String bytesToHex(byte[] byteArray) {
+        return bytesToHex(byteArray, 0, byteArray.length);
     }
 
     /**
@@ -44,25 +34,11 @@ public class StringUtils {
      * @param size the size of array
      * @return string representation of byte array
      */
-    public static String convertBytesToString(byte[] byteArray, int offset, int size) {
+    public static String bytesToHex(byte[] byteArray, int offset, int size) {
         StringBuilder sb = new StringBuilder();
         for (int i = offset; i < size; i++) {
             sb.append(String.format("%02x ", byteArray[i]));
         }
         return sb.toString();
     }
-
-    /**
-     * Helper method that converts int array into bytes array
-     * @param ints array of ints
-     * @return array of bytes
-     */
-    public static byte[] byteArrayOfInts(int[] ints) {
-        byte[] bytes = new byte[ints.length];
-        for (int i = 0; i < ints.length; i++) {
-            bytes[i] = (byte)ints[i];
-        }
-        return bytes;
-    }
-
 }

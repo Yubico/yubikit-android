@@ -143,7 +143,7 @@ class YubiKeyConfigViewModel(yubiKitManager: YubiKitManager) : YubikeyViewModel(
 
     fun generateRandomHexString(sizeInBytes: Int): String {
         val randomByteArray = generateRandomHex(sizeInBytes)
-        return StringUtils.convertBytesToString(randomByteArray).replace(" ", "")
+        return StringUtils.bytesToHex(randomByteArray).replace(" ", "")
     }
 
     fun generateRandomModhexString(sizeInBytes: Int) : String {

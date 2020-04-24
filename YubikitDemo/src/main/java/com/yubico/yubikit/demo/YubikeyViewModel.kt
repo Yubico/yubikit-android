@@ -35,7 +35,6 @@ import com.yubico.yubikit.transport.nfc.NfcSessionListener
 import com.yubico.yubikit.transport.usb.UsbConfiguration
 import com.yubico.yubikit.transport.usb.UsbSession
 import com.yubico.yubikit.transport.usb.UsbSessionListener
-import com.yubico.yubikit.utils.ILogger
 import com.yubico.yubikit.utils.Logger
 
 private const val TAG = "YubikeyViewModel"
@@ -108,7 +107,7 @@ open class YubikeyViewModel(private val yubikitManager: YubiKitManager) : ViewMo
     init {
         yubikitManager.startUsbDiscovery(UsbConfiguration(), usbListener)
 
-        Logger.getInstance().setLogger(object : ILogger {
+        Logger.setLogger(object : Logger() {
             override fun logDebug(message: String?) {
                 Log.d(TAG, message ?: "")
             }

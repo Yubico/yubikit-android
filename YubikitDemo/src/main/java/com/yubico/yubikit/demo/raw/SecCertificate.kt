@@ -82,9 +82,9 @@ class SecCertificate(keyData: ByteArray) {
         } catch (e: NoSuchAlgorithmException) {
             throw InvalidCertDataException("Cert algorithm " + certificate.sigAlgName + " is not valid", e)
         } catch (e: InvalidKeyException) {
-            throw InvalidCertDataException("Cert key " + StringUtils.convertBytesToString(certificate.publicKey.encoded) + " is not valid", e)
+            throw InvalidCertDataException("Cert key " + StringUtils.bytesToHex(certificate.publicKey.encoded) + " is not valid", e)
         } catch (e: SignatureException) {
-            throw InvalidCertDataException("Signature " + StringUtils.convertBytesToString(signature) + " is not valid", e)
+            throw InvalidCertDataException("Signature " + StringUtils.bytesToHex(signature) + " is not valid", e)
         }
     }
 

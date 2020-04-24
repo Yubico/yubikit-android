@@ -55,7 +55,7 @@ class ChallengeResponseFragment : BaseYubikeyFragment(TAG) {
 
         generate.setOnClickListener {
             viewModel.resetResponse()
-            challenge.setText(StringUtils.convertBytesToString(viewModel.generateChallenge(8)).replace(" ", ""))
+            challenge.setText(StringUtils.bytesToHex(viewModel.generateChallenge(8)).replace(" ", ""))
         }
 
         start_demo.setOnClickListener {
@@ -72,7 +72,7 @@ class ChallengeResponseFragment : BaseYubikeyFragment(TAG) {
                 if (it.isEmpty()) {
                     Toast.makeText(context, "Response is empty. Make sure you configured secret for HMAC-SHA1 challenge-response", Toast.LENGTH_LONG).show()
                 }
-                response.text = StringUtils.convertBytesToString(it)
+                response.text = StringUtils.bytesToHex(it)
             }
         })
 

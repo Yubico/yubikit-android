@@ -86,7 +86,7 @@ public class YubiKeyConfigurationApplication implements Closeable {
             try {
                 ccidApplication = new Iso7816Application(session);
                 byte[] response = ccidApplication.sendAndReceive(new Apdu(0, INS_SELECT, 0x04, 0, AID));
-                Logger.d("Select OTP applet: " + StringUtils.convertBytesToString(response));
+                Logger.d("Select OTP applet: " + StringUtils.bytesToHex(response));
                 status = Status.parse(response);
             } catch (ApduCodeException e) {
                 if (e.getStatusCode() == APPLICATION_NOT_FOUND_ERROR) {

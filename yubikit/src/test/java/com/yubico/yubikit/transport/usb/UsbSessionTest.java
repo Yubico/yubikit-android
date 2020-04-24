@@ -44,28 +44,36 @@ import java.util.Map;
 public class UsbSessionTest {
     private static final short SUCCESS_CODE = (short)0x9000;
 
-    private static final byte[] RESET_REQUEST = StringUtils.byteArrayOfInts(new int[] {0x62, 0, 0, 0, 0, 0, 0, 0, 0, 0});
-    private static final byte[] ANSWER_TO_RESET = StringUtils.byteArrayOfInts(new int[] {0x80, 0x16, 0, 0, 0, 0, 0, 0, 0, 0, 0x3b, 0xfc, 0x13, 0, 0, 0x81, 0x31, 0xfe, 0x15, 0x59, 0x75, 0x62, 0x69, 0x6b, 0x65, 0x79, 0x4e, 0x45 ,0x4f ,0x72, 0x33});
+    private static final byte[] RESET_REQUEST = byteArrayOfInts(new int[] {0x62, 0, 0, 0, 0, 0, 0, 0, 0, 0});
+    private static final byte[] ANSWER_TO_RESET = byteArrayOfInts(new int[] {0x80, 0x16, 0, 0, 0, 0, 0, 0, 0, 0, 0x3b, 0xfc, 0x13, 0, 0, 0x81, 0x31, 0xfe, 0x15, 0x59, 0x75, 0x62, 0x69, 0x6b, 0x65, 0x79, 0x4e, 0x45 ,0x4f ,0x72, 0x33});
 
-    private static final byte[] SELECT_REQUEST = StringUtils.byteArrayOfInts(new int[] {0x6f, 0x0a, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0xa4, 0x04, 0x00, 0x05, 0xa0, 0x00, 0x00, 0x03, 0x08});
-    private static final byte[] SELECT_RESPONSE = StringUtils.byteArrayOfInts(new int[] {0x80, 0x15, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x61, 0x11, 0x4f, 0x06, 0x00, 0x00, 0x10, 0x00, 0x01, 0x00, 0x79, 0x07, 0x4f, 0x05, 0xa0, 0x00, 0x00, 0x03, 0x08, 0x90, 0x00});
+    private static final byte[] SELECT_REQUEST = byteArrayOfInts(new int[] {0x6f, 0x0a, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0xa4, 0x04, 0x00, 0x05, 0xa0, 0x00, 0x00, 0x03, 0x08});
+    private static final byte[] SELECT_RESPONSE = byteArrayOfInts(new int[] {0x80, 0x15, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x61, 0x11, 0x4f, 0x06, 0x00, 0x00, 0x10, 0x00, 0x01, 0x00, 0x79, 0x07, 0x4f, 0x05, 0xa0, 0x00, 0x00, 0x03, 0x08, 0x90, 0x00});
 
-    private static final byte[] PACKAGE_16_BYTES = StringUtils.byteArrayOfInts(new int[] {0x6f, 0x06, 0, 0, 0, 0, 0x01, 0, 0, 0, 0, 0, 0, 0, 0, 0});
-    private static final byte[] PACKAGE_16_BYTES_RESPONSE = StringUtils.byteArrayOfInts(new int[] {0x80, 0x06, 0, 0, 0, 0, 0x01, 0, 0, 0, 0, 0, 0, 0, 0, 0});
+    private static final byte[] PACKAGE_16_BYTES = byteArrayOfInts(new int[] {0x6f, 0x06, 0, 0, 0, 0, 0x01, 0, 0, 0, 0, 0, 0, 0, 0, 0});
+    private static final byte[] PACKAGE_16_BYTES_RESPONSE = byteArrayOfInts(new int[] {0x80, 0x06, 0, 0, 0, 0, 0x01, 0, 0, 0, 0, 0, 0, 0, 0, 0});
 
     private static final byte STATUS_TIME_EXTENSION = (byte) 0x80;
     private static final int STATUS_BYTE_POSISION = 7;
     private static final int ERROR_BYTE_POSITION = 8;
     private static final int CCID_HEADER_SIZE = 10;
 
+    private static byte[] byteArrayOfInts(int[] ints) {
+        byte[] bytes = new byte[ints.length];
+        for (int i = 0; i < ints.length; i++) {
+            bytes[i] = (byte)ints[i];
+        }
+        return bytes;
+    }
+
     private Iso7816Connection usbConnection;
     private UsbSessionMock mock = new UsbSessionMock(Mockito.mock(UsbManager.class), Mockito.mock(UsbDevice.class));;
     private Map<String, byte[]> commandResponses = new HashMap<>();
     @Before
     public void setUp() {
-        commandResponses.put(StringUtils.convertBytesToString(RESET_REQUEST), ANSWER_TO_RESET);
-        commandResponses.put(StringUtils.convertBytesToString(SELECT_REQUEST), SELECT_RESPONSE);
-        commandResponses.put(StringUtils.convertBytesToString(PACKAGE_16_BYTES), PACKAGE_16_BYTES_RESPONSE);
+        commandResponses.put(StringUtils.bytesToHex(RESET_REQUEST), ANSWER_TO_RESET);
+        commandResponses.put(StringUtils.bytesToHex(SELECT_REQUEST), SELECT_RESPONSE);
+        commandResponses.put(StringUtils.bytesToHex(PACKAGE_16_BYTES), PACKAGE_16_BYTES_RESPONSE);
         mock.setResponseMap(commandResponses);
     }
 
@@ -76,12 +84,12 @@ public class UsbSessionTest {
 
     @Test
     public void executeCommand() throws IOException {
-        byte[] selectPIVCommand = StringUtils.byteArrayOfInts(new int[] {0x00, 0xA4, 0x04, 0x00, 0x05, 0xA0, 0x00, 0x00, 0x03, 0x08});
+        byte[] selectPIVCommand = byteArrayOfInts(new int[] {0x00, 0xA4, 0x04, 0x00, 0x05, 0xA0, 0x00, 0x00, 0x03, 0x08});
         usbConnection = mock.openIso7816Connection();
         byte[] atr = usbConnection.getAtr();
         Assert.assertNotNull(atr);
         ApduResponse response = usbConnection.execute(new Apdu(selectPIVCommand));
-        byte[] selectPIVResponse = StringUtils.byteArrayOfInts(new int[] {0x61, 0x11, 0x4f, 0x06, 0x00, 0x00, 0x10, 0x00, 0x01, 0x00, 0x79, 0x07, 0x4f, 0x05, 0xa0, 0x00, 0x00, 0x03, 0x08, 0x90, 0x00});
+        byte[] selectPIVResponse = byteArrayOfInts(new int[] {0x61, 0x11, 0x4f, 0x06, 0x00, 0x00, 0x10, 0x00, 0x01, 0x00, 0x79, 0x07, 0x4f, 0x05, 0xa0, 0x00, 0x00, 0x03, 0x08, 0x90, 0x00});
         Assert.assertTrue(response.hasStatusCode(SUCCESS_CODE));
         Assert.assertNotNull(response.responseData());
         Assert.assertArrayEquals(selectPIVResponse, response.getData());
@@ -89,7 +97,7 @@ public class UsbSessionTest {
 
     @Test
     public void executeCommandMultiplyOfPackageSize() throws IOException {
-        byte[] alignedCommand = StringUtils.byteArrayOfInts(new int[] {0x00, 0x00, 0x00, 0x00, 0x00, 0x00});
+        byte[] alignedCommand = byteArrayOfInts(new int[] {0x00, 0x00, 0x00, 0x00, 0x00, 0x00});
         usbConnection = mock.openIso7816Connection();
         byte[] atr = usbConnection.getAtr();
         Assert.assertNotNull(atr);
@@ -99,8 +107,8 @@ public class UsbSessionTest {
 
     @Test
     public void executeCommandWithExtendedWaiting() throws IOException {
-        commandResponses.put(StringUtils.convertBytesToString(PACKAGE_16_BYTES), changeByte(PACKAGE_16_BYTES_RESPONSE, STATUS_BYTE_POSISION, STATUS_TIME_EXTENSION));
-        byte[] commandThatRequiresWaiting = StringUtils.byteArrayOfInts(new int[] {0x00, 0x00, 0x00, 0x00, 0x00, 0x00});
+        commandResponses.put(StringUtils.bytesToHex(PACKAGE_16_BYTES), changeByte(PACKAGE_16_BYTES_RESPONSE, STATUS_BYTE_POSISION, STATUS_TIME_EXTENSION));
+        byte[] commandThatRequiresWaiting = byteArrayOfInts(new int[] {0x00, 0x00, 0x00, 0x00, 0x00, 0x00});
         usbConnection = mock.openIso7816Connection();
         usbConnection.getAtr();
         usbConnection.execute(new Apdu(commandThatRequiresWaiting));
@@ -123,8 +131,8 @@ public class UsbSessionTest {
     @Test(expected = YubikeyCommunicationException.class)
     public void readWithCCIDStatus() throws IOException  {
         // change status flag to some value different from STATUS_TIME_EXTENSION
-        commandResponses.put(StringUtils.convertBytesToString(PACKAGE_16_BYTES), changeByte(PACKAGE_16_BYTES_RESPONSE, STATUS_BYTE_POSISION, (byte)0x10));
-        byte[] commandThatReturnsStatusCode = StringUtils.byteArrayOfInts(new int[] {0x00, 0x00, 0x00, 0x00, 0x00, 0x00});
+        commandResponses.put(StringUtils.bytesToHex(PACKAGE_16_BYTES), changeByte(PACKAGE_16_BYTES_RESPONSE, STATUS_BYTE_POSISION, (byte)0x10));
+        byte[] commandThatReturnsStatusCode = byteArrayOfInts(new int[] {0x00, 0x00, 0x00, 0x00, 0x00, 0x00});
         usbConnection = mock.openIso7816Connection();
         usbConnection.getAtr();
         usbConnection.execute(new Apdu(commandThatReturnsStatusCode));
@@ -134,8 +142,8 @@ public class UsbSessionTest {
     public void readWithCCIDErrorNoStatus() throws IOException  {
         // change error flag to some value different from STATUS_TIME_EXTENSION
         // it will be ignored because status is 0
-        commandResponses.put(StringUtils.convertBytesToString(PACKAGE_16_BYTES), changeByte(PACKAGE_16_BYTES_RESPONSE, ERROR_BYTE_POSITION, (byte)0x10));
-        byte[] commandThatReturnsStatusCode = StringUtils.byteArrayOfInts(new int[] {0x00, 0x00, 0x00, 0x00, 0x00, 0x00});
+        commandResponses.put(StringUtils.bytesToHex(PACKAGE_16_BYTES), changeByte(PACKAGE_16_BYTES_RESPONSE, ERROR_BYTE_POSITION, (byte)0x10));
+        byte[] commandThatReturnsStatusCode = byteArrayOfInts(new int[] {0x00, 0x00, 0x00, 0x00, 0x00, 0x00});
         usbConnection = mock.openIso7816Connection();
         usbConnection.getAtr();
         usbConnection.execute(new Apdu(commandThatReturnsStatusCode));
@@ -143,7 +151,7 @@ public class UsbSessionTest {
 
     @Test(expected = YubikeyCommunicationException.class)
     public void executeCommandWithEmptyResponse() throws IOException {
-        byte[] unknownCommand = StringUtils.byteArrayOfInts(new int[] {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00});
+        byte[] unknownCommand = byteArrayOfInts(new int[] {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00});
         usbConnection = mock.openIso7816Connection();
         usbConnection.getAtr();
         usbConnection.execute(new Apdu(unknownCommand));
@@ -239,7 +247,7 @@ public class UsbSessionTest {
                     int size = invocation.getArgument(2);
                     int timeout = invocation.getArgument(3);
                     if (endpoint == endpointIn) {
-                        String request = StringUtils.convertBytesToString(currentCommand);
+                        String request = StringUtils.bytesToHex(currentCommand);
                         byte[] response = map.get(request);
                         if (response == null) {
                             return 0;

@@ -52,7 +52,7 @@ open class YubikeySmartcardViewModel(yubikitManager: YubiKitManager, private val
                         it.setTimeout(settings.connectionTimeout)
                     }
                     // ATR
-                    _log.postValue("ATR: " + StringUtils.convertBytesToString(it.atr))
+                    _log.postValue("ATR: " + StringUtils.bytesToHex(it.atr))
                     // read certificate and verify
                     it.checkCertificate()
                 }

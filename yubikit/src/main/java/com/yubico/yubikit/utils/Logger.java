@@ -16,40 +16,56 @@
 
 package com.yubico.yubikit.utils;
 
+import androidx.annotation.Nullable;
+
 /**
- * Helper singleton class allows to customize logs within SDK
+ * Helper class allows to customize logs within the SDK
  * SDK has only 2 levels of logging: debug information and error
- * If logger is not provided SDK won't produce any logs
+ * If a Logger implementation is not provided the SDK won't produce any logs
  */
-public class Logger {
-    private static final Logger ourInstance = new Logger();
-
-    public static Logger getInstance() {
-        return ourInstance;
+public abstract class Logger {
+    /**
+     * Logs message (debug level)
+     *
+     * @param message the message can to be logged
+     */
+    protected void logDebug(String message) {
     }
 
-    private Logger() {
+    ;
+
+    /**
+     * Logs message (error level)
+     *
+     * @param message   the message can to be logged
+     * @param throwable the exception that can to be logged or counted
+     */
+    protected void logError(String message, Throwable throwable) {
     }
 
-    private ILogger logger;
-    public void setLogger(ILogger logger) {
-        this.logger = logger;
+    ;
+
+    private static Logger instance = null;
+
+    /**
+     * Set the Logger implementation to use. Override the logDebug and logError methods to produce
+     * logs. Call with null to disable logging.
+     *
+     * @param logger
+     */
+    public static void setLogger(@Nullable Logger logger) {
+        instance = logger;
     }
 
     public static void d(String message) {
-        ILogger logger = getInstance().logger;
-        if (logger == null) {
-            return;
+        if (instance != null) {
+            instance.logDebug(message);
         }
-        logger.logDebug(message);
     }
 
     public static void e(String message, Throwable throwable) {
-        ILogger logger = getInstance().logger;
-        if (logger == null) {
-            return;
+        if (instance != null) {
+            instance.logError(message, throwable);
         }
-        logger.logError(message, throwable);
     }
-
 }

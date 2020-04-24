@@ -151,7 +151,7 @@ public class UsbIso7816Connection implements Iso7816Connection {
         while (bytesSent < bufferOut.length || bytesSentPackage == endpointOut.getMaxPacketSize()) {
             bytesSentPackage = connection.bulkTransfer(endpointOut, bufferOut, bytesSent, bufferOut.length - bytesSent, timeoutMs);
             if (bytesSentPackage > 0) {
-                Logger.d(bytesSentPackage + " bytes sent over ccid: " + StringUtils.convertBytesToString(bufferOut, bytesSent, bytesSentPackage));
+                Logger.d(bytesSentPackage + " bytes sent over ccid: " + StringUtils.bytesToHex(bufferOut, bytesSent, bytesSentPackage));
                 bytesSent += bytesSentPackage;
             } else if (bytesSentPackage < 0) {
                 throw new YubikeyCommunicationException("Failed to send " + (bufferOut.length - bytesSent) + " bytes");
@@ -174,7 +174,7 @@ public class UsbIso7816Connection implements Iso7816Connection {
         do {
             bytesRead = connection.bulkTransfer(endpointIn, bufferRead, bufferRead.length, timeoutMs);
             if (bytesRead > 0) {
-                Logger.d(bytesRead + " bytes received: " + StringUtils.convertBytesToString(bufferRead, bytesRead));
+                Logger.d(bytesRead + " bytes received: " + StringUtils.bytesToHex(bufferRead, 0, bytesRead));
 
                 if (receivedExpectedPrefix) {
                     stream.write(bufferRead, 0, bytesRead);

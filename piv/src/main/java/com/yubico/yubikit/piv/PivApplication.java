@@ -207,8 +207,8 @@ public class PivApplication extends Iso7816Application {
             byte[] expectedData = CryptoUtils.encryptDESede(key, challenge);
             if (!Arrays.equals(encryptedData, expectedData)) {
                 Logger.d(String.format(Locale.ROOT, "Expected response: %s and Actual response %s",
-                        StringUtils.convertBytesToString(expectedData),
-                        StringUtils.convertBytesToString(encryptedData)));
+                        StringUtils.bytesToHex(expectedData),
+                        StringUtils.bytesToHex(encryptedData)));
                 throw new ApduException("Calculated response for challenge is incorrect");
             }
         } catch (NoSuchAlgorithmException | InvalidKeyException | NoSuchPaddingException | BadPaddingException | IllegalBlockSizeException e) {
@@ -545,7 +545,7 @@ public class PivApplication extends Iso7816Application {
                 return publicRsaKey(modulus, exponent);
             } else {
                 byte[] encoded = dataObjects.get(0x86);
-                return publicEccKey(algorithm == Algorithm.ECCP256 ? CryptoUtils.EccPrime.P256 : CryptoUtils.EccPrime.P384, encoded);
+                return publicEccKey(algorithm == Algorithm.ECCP256 ? CryptoUtils.Curve.P256 : CryptoUtils.Curve.P384, encoded);
             }
         } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
             throw new ApduException("Key is generated but failed to be parsed", e);

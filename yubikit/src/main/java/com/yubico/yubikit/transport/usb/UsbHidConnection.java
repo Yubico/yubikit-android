@@ -104,7 +104,7 @@ public class UsbHidConnection implements Closeable {
         byte[] featureReport = readFeatureReport();
         // disregards the first byte in each feature report
         byte[] status = Arrays.copyOfRange(featureReport, 1, featureReport.length);
-        Logger.d("status received over hid: " + StringUtils.convertBytesToString(status));
+        Logger.d("status received over hid: " + StringUtils.bytesToHex(status));
         return status;
     }
 
@@ -142,7 +142,7 @@ public class UsbHidConnection implements Closeable {
 
         // buffer is always 70 bytes, sent by 7 byte blobs + 1 byte flags/sequence
         byte[] bufferToSend = frame.toByteArray();
-        Logger.d(bufferToSend.length + " bytes sent over hid: " + StringUtils.convertBytesToString(bufferToSend));
+        Logger.d(bufferToSend.length + " bytes sent over hid: " + StringUtils.bytesToHex(bufferToSend));
         int numPackages = bufferToSend.length / FEATURE_RPT_DATA_SIZE;
         boolean packageSent = false;
 	    do {
@@ -205,7 +205,7 @@ public class UsbHidConnection implements Closeable {
             }
         }
 
-        Logger.d(stream.size() + " bytes received over hid: " + StringUtils.convertBytesToString(stream.toByteArray()));
+        Logger.d(stream.size() + " bytes received over hid: " + StringUtils.bytesToHex(stream.toByteArray()));
         return stream.toByteArray();
     }
 
