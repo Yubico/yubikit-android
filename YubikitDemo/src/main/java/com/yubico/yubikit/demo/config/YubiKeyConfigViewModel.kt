@@ -23,7 +23,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.yubico.yubikit.YubiKitManager
 import com.yubico.yubikit.exceptions.ApduException
-import com.yubico.yubikit.configurator.ModHexUtils
+import com.yubico.yubikit.utils.Modhex
 import com.yubico.yubikit.configurator.Slot
 import com.yubico.yubikit.configurator.UnexpectedSymbolException
 import com.yubico.yubikit.configurator.YubiKeyConfigurationApplication
@@ -32,7 +32,6 @@ import com.yubico.yubikit.demo.fido.arch.SingleLiveEvent
 import com.yubico.yubikit.exceptions.YubiKeyCommunicationException
 import com.yubico.yubikit.transport.YubiKeySession
 import com.yubico.yubikit.utils.Logger
-import com.yubico.yubikit.utils.StringUtils
 import org.apache.commons.codec.DecoderException
 import org.apache.commons.codec.binary.Hex
 import java.io.IOException
@@ -41,7 +40,6 @@ import java.security.NoSuchAlgorithmException
 import java.security.SecureRandom
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.Executors
-import kotlin.math.absoluteValue
 
 class YubiKeyConfigViewModel(yubiKitManager: YubiKitManager) : YubikeyViewModel(yubiKitManager) {
     /**
@@ -54,13 +52,6 @@ class YubiKeyConfigViewModel(yubiKitManager: YubiKitManager) : YubikeyViewModel(
     val success : LiveData<Boolean> = _success
 
     private val programmingQueue = ConcurrentLinkedQueue<Bundle>()
-
-    /**
-     * Convert int array to byte array
-     */
-    private fun byteArrayOfInts(vararg ints: Int) = ByteArray(ints.size) {
-        pos -> ints[pos].toByte()
-    }
 
     @Throws(IOException::class, ApduException::class, UnexpectedSymbolException::class)
     override fun YubiKeySession.executeDemoCommands() {
@@ -122,7 +113,7 @@ class YubiKeyConfigViewModel(yubiKitManager: YubiKitManager) : YubikeyViewModel(
 
             operation.putSerializable(OPERATION_TYPE, type)
             operation.putByteArray(PRIVATE_ID, Hex.decodeHex(privateId))
-            operation.putByteArray(PUBLIC_ID, publicId.toByteArray(Charsets.UTF_8))
+            operation.putByteArray(PUBLIC_ID, Modhex.decode(publicId))
             operation.putSerializable(SLOT, slot)
             operation.putBoolean(REQUIRE_TOUCH, requireTouch)
 
@@ -140,23 +131,11 @@ class YubiKeyConfigViewModel(yubiKitManager: YubiKitManager) : YubikeyViewModel(
         executeDemoCommands()
     }
 
-    fun generateRandomHexString(sizeInBytes: Int): String {
-        val randomByteArray = generateRandomHex(sizeInBytes)
-        return StringUtils.bytesToHex(randomByteArray).replace(" ", "")
-    }
+    fun generateRandomHexString(sizeInBytes: Int): String = Hex.encodeHexString(generateRandomBytes(sizeInBytes))
 
-    fun generateRandomModhexString(sizeInBytes: Int) : String {
-        val randomByteArray = generateRandomHex(sizeInBytes*2)
-        var modhexString = ""
-        for (symbol in randomByteArray) {
-            val code = ModHexUtils.MODHEX_ALPHABET[symbol.toInt().absoluteValue%ModHexUtils.MODHEX_ALPHABET.size]
-            modhexString += code
-        }
+    fun generateRandomModhexString(sizeInBytes: Int) : String = Modhex.encode(generateRandomBytes(sizeInBytes))
 
-        return modhexString
-    }
-
-    private fun generateRandomHex(size: Int): ByteArray {
+    private fun generateRandomBytes(size: Int): ByteArray {
         val randomByteArray = ByteArray(size)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             try {

@@ -225,7 +225,7 @@ public class YubiKeyConfigurationApplication implements Closeable {
     /**
      * Configures YubiKey to return YubiOTP (one-time password) on touch
      *
-     * @param publicId  public id (suggestion: use serial number)
+     * @param publicId public id
      * @param privateId private id
      * @param key       the secret key to store on YubiKey
      * @param slot      the slot on YubiKey that will be configured with OTP (One - short touch, Two - long touch)
@@ -243,7 +243,7 @@ public class YubiKeyConfigurationApplication implements Closeable {
         }
 
         ConfigurationBuilder configurationBuilder = new ConfigurationBuilder();
-        configurationBuilder.setFixed(ModHexUtils.convertModHexToHex(publicId));
+        configurationBuilder.setFixed(publicId);
         configurationBuilder.setUid(privateId);
         configurationBuilder.setKey(ConfigurationBuilder.AES_MODE, key);
         configurationBuilder.setTktFlags(ConfigurationBuilder.TKTFLAG_UPDATE_MASK);
