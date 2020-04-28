@@ -43,7 +43,6 @@ import java.util.Map;
  */
 public class YubiKeyConfigurationApplication implements Closeable {
 
-    private static final byte INS_SELECT = (byte) 0xa4;
     private static final byte INS_CONFIG = (byte) 0x01;
     private static final byte[] AID = new byte[]{(byte) 0xa0, 0x00, 0x00, 0x05, 0x27, 0x20, 0x01, 0x01};
 
@@ -84,8 +83,8 @@ public class YubiKeyConfigurationApplication implements Closeable {
 
         if (hidApplication == null) {
             try {
-                ccidApplication = new Iso7816Application(session);
-                byte[] response = ccidApplication.sendAndReceive(new Apdu(0, INS_SELECT, 0x04, 0, AID));
+                ccidApplication = new Iso7816Application(AID, session);
+                byte[] response = ccidApplication.select();
                 Logger.d("Select OTP applet: " + StringUtils.bytesToHex(response));
                 status = Status.parse(response);
             } catch (ApduCodeException e) {

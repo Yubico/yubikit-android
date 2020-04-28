@@ -24,12 +24,21 @@ import com.yubico.yubikit.transport.YubiKeySession;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.Arrays;
 
 /**
  * Class that allows to open ISO 7816 connection to YubiKey
  * and communicate using APDUs
  */
 public class Iso7816Application implements Closeable {
+    private static final byte INS_SELECT = (byte) 0xa4;
+    private static final byte P1_SELECT = (byte) 0x04;
+    private static final byte P2_SELECT = (byte) 0x00;
+
+    /**
+     * Application Identified used when selecting the application.
+     */
+    private byte[] aid;
 
     /**
      * Open ISO 7816 connection to yubikey
@@ -48,9 +57,10 @@ public class Iso7816Application implements Closeable {
      * @param session session with YubiKey
      * @throws IOException   in case of connection error
      */
-    public Iso7816Application(YubiKeySession session) throws IOException {
+    public Iso7816Application(byte[] aid, YubiKeySession session) throws IOException {
         this.connection = session.openIso7816Connection();
         atr = connection.getAtr();
+        this.aid = Arrays.copyOf(aid, aid.length);
     }
 
 
@@ -75,6 +85,9 @@ public class Iso7816Application implements Closeable {
         return atr;
     }
 
+    public byte[] getAid() {
+        return aid;
+    }
 
     /**
      * Sends APDU command and receives byte array from connection
@@ -91,17 +104,12 @@ public class Iso7816Application implements Closeable {
     }
 
     /**
-     * Sends APDU command and receives byte array from connection
-     * In case if length of output blob is bigger than 255 than it splits into set of APDU commands
-     * In case if output has status code that it has remaining info sends another APDU command to receive what's remaining
-     *
-     * @param command          well structured command that needs to be send
-     * @param insSentRemaining instruction byte for APDU command to receive remaining data blob (default is 0xc0)
-     * @return data blob concatenated from all APDU commands that were sent *set of output commands and send remaining commands)
-     * @throws IOException       in case of connection and communication error
+     * Sends an APDU to SELECT the Application.
+     * @return the response data from selecting the Application
+     * @throws IOException in case of connection and communication error
      * @throws ApduCodeException in case if received error in APDU response
      */
-    protected byte[] sendAndReceive(Apdu command, byte insSentRemaining) throws IOException, ApduCodeException {
-        return ApduUtils.sendAndReceive(connection, command, insSentRemaining);
+    public byte[] select() throws IOException, ApduCodeException {
+        return sendAndReceive(new Apdu(0, INS_SELECT, P1_SELECT, P2_SELECT, aid));
     }
 }

@@ -45,12 +45,10 @@ import java.util.List;
 public class ManagementApplication implements Closeable {
 
     private static final byte[] AID = new byte[]{(byte) 0xa0, 0x00, 0x00, 0x05, 0x27, 0x47, 0x11, 0x17};
-    private static final byte[] YUBIKEY_AID = new byte[]{(byte) 0xa0, 0x00, 0x00, 0x05, 0x27, 0x20, 0x01, 0x01};
 
     /**
      * Instruction set for MGMT application
      */
-    private static final byte INS_SELECT = (byte) 0xa4;
     private static final byte INS_READ_CONFIG = 0x1d;
     private static final byte INS_WRITE_CONFIG = 0x1c;
     private static final byte INS_SET_MODE = 0x16;
@@ -81,8 +79,8 @@ public class ManagementApplication implements Closeable {
      */
     public ManagementApplication(YubiKeySession session) throws IOException, ApduException {
         try {
-            ccidApplication = new Iso7816Application(session);
-            byte[] response = ccidApplication.sendAndReceive(new Apdu(0, INS_SELECT, 0x04, 0, AID));
+            ccidApplication = new Iso7816Application(AID, session);
+            byte[] response = ccidApplication.select();
             version = Version.parse(new String(response));
         } catch (IOException | ApduCodeException e) {
             // Unable to connect to CCID applet, attempt to fallback to HID.

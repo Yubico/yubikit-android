@@ -97,9 +97,6 @@ public class ApduUtils {
      */
     public static byte[] sendAndReceive(Iso7816Connection connection, Apdu command, byte insSentRemaining) throws IOException, ApduCodeException {
         List<Apdu> listCommands = splitDataInChunks(command);
-        if (listCommands == null || listCommands.size() == 0) {
-            throw new IllegalArgumentException("list of commands to send should not be empty");
-        }
         int i;
         for (i = 0; i < listCommands.size() - 1; i++) {
             Apdu apdu = listCommands.get(i);

@@ -26,6 +26,7 @@ import com.yubico.yubikit.Iso7816Application;
 import com.yubico.yubikit.apdu.Apdu;
 import com.yubico.yubikit.apdu.ApduCodeException;
 import com.yubico.yubikit.apdu.ApduException;
+import com.yubico.yubikit.apdu.ApduUtils;
 import com.yubico.yubikit.apdu.Tlv;
 import com.yubico.yubikit.apdu.TlvUtils;
 import com.yubico.yubikit.exceptions.ApplicationNotFound;
@@ -76,7 +77,6 @@ public class OathApplication  extends Iso7816Application {
     /**
      * Instruction bytes for APDU commands
      */
-    private static final byte INS_SELECT = (byte) 0xa4;
     private static final byte INS_LIST = (byte) 0xa1;
     private static final byte INS_PUT = 0x01;
     private static final byte INS_DELETE = 0x02;
@@ -112,9 +112,9 @@ public class OathApplication  extends Iso7816Application {
      * @throws ApduException in case of communication error
      */
     public OathApplication(YubiKeySession session) throws IOException, ApduException {
-        super(session);
+        super(AID, session);
         try {
-            applicationInfo = new OathApplicationInfo(sendAndReceive(new Apdu(0, INS_SELECT, 0x04, 0, AID)));
+            applicationInfo = new OathApplicationInfo(select());
         } catch (ApduCodeException e) {
             close();
             if (e.getStatusCode() == APPLICATION_NOT_FOUND_ERROR) {
@@ -561,6 +561,7 @@ public class OathApplication  extends Iso7816Application {
      */
     @Override
     public byte[] sendAndReceive(Apdu command) throws IOException, ApduCodeException {
-        return super.sendAndReceive(command, INS_SEND_REMAINING);
+        //YKOATH uses a non-standard INS for SEND_REMAINING.
+        return ApduUtils.sendAndReceive(getConnection(), command, INS_SEND_REMAINING);
     }
 }

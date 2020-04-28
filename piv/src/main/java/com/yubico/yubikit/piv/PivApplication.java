@@ -83,7 +83,6 @@ public class PivApplication extends Iso7816Application {
     private static final byte[] AID = new byte[]{(byte) 0xa0, 0x00, 0x00, 0x03, 0x08};
 
     // Instruction set
-    private static final byte INS_SELECT = (byte) 0xa4;
     private static final byte INS_VERIFY = 0x20;
     private static final byte INS_CHANGE_REFERENCE = 0x24;
     private static final byte INS_RESET_RETRY = 0x2c;
@@ -132,10 +131,10 @@ public class PivApplication extends Iso7816Application {
      * @throws ApduException in case of communication error
      */
     public PivApplication(YubiKeySession session) throws IOException, ApduException {
-        super(session);
+        super(AID, session);
 
         try {
-            sendAndReceive(new Apdu(0, INS_SELECT, 0x04, 0, AID));
+            select();
 
             byte[] versionResponse = sendAndReceive(new Apdu(0, INS_GET_VERSION, 0, 0, null));
             // get firmware version
