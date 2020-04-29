@@ -21,7 +21,6 @@
 
     <string-array name="otp_programming">
         <item>OTP</item>
-        <item>Static Password</item>
         <item>Challenge response</item>
         <item>HOTP</item>
     </string-array>

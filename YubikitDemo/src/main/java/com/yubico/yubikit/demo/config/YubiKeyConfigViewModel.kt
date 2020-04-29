@@ -64,7 +64,6 @@ class YubiKeyConfigViewModel(yubiKitManager: YubiKitManager) : YubikeyViewModel(
                 when(type) {
                     SecretType.OTP -> application.setOtpKey(operation.getByteArray(PUBLIC_ID),
                             operation.getByteArray(PRIVATE_ID), operation.getByteArray(SECRET), slot)
-                    SecretType.STATIC_PASSWORD -> application.setStaticPassword(operation.getString(SECRET), slot)
                     SecretType.CHALRESP -> application.setHmacSha1ChallengeResponseSecret(operation.getByteArray(SECRET),
                             slot, operation.getBoolean(REQUIRE_TOUCH, false))
                     SecretType.HOTP -> application.setHotpKey(operation.getByteArray(SECRET),
@@ -101,15 +100,8 @@ class YubiKeyConfigViewModel(yubiKitManager: YubiKitManager) : YubikeyViewModel(
         }
 
         try {
-            when(type) {
-                SecretType.STATIC_PASSWORD -> {
-                    operation.putString(SECRET, secret)
-                }
-                else -> {
-                    val encodedSecret = Hex.decodeHex(formattedSecret)
-                    operation.putByteArray(SECRET, encodedSecret)
-                }
-            }
+            val encodedSecret = Hex.decodeHex(formattedSecret)
+            operation.putByteArray(SECRET, encodedSecret)
 
             operation.putSerializable(OPERATION_TYPE, type)
             operation.putByteArray(PRIVATE_ID, Hex.decodeHex(privateId))
@@ -163,7 +155,6 @@ class YubiKeyConfigViewModel(yubiKitManager: YubiKitManager) : YubikeyViewModel(
 
     enum class SecretType {
         OTP,
-        STATIC_PASSWORD,
         CHALRESP,
         HOTP,
         SWAP

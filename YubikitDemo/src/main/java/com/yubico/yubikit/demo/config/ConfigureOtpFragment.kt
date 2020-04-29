@@ -58,12 +58,7 @@ class ConfigureOtpFragment : BaseYubikeyFragment(TAG) {
 
         generate.setOnClickListener {
             val index = config_type.selectedItemPosition
-            val size = when(index) {
-                0 -> 16
-                1 -> 16 // password is max 38 symbols
-                2 -> 20
-                else -> 16
-            }
+            val size = if(index == 1) 20 else 16
             secret.setText(viewModel.generateRandomHexString(size))
         }
 
@@ -81,7 +76,7 @@ class ConfigureOtpFragment : BaseYubikeyFragment(TAG) {
             }
 
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                require_touch.visibility = if (position == 2) View.VISIBLE else View.GONE
+                require_touch.visibility = if (position == 1) View.VISIBLE else View.GONE
                 privateid_wrapper.visibility = if (position == 0) View.VISIBLE else View.GONE
                 publicid_wrapper.visibility = if (position == 0) View.VISIBLE else View.GONE
                 if (config_type.selectedItemPosition != position) {
@@ -101,8 +96,7 @@ class ConfigureOtpFragment : BaseYubikeyFragment(TAG) {
 
             val type = when(config_type.selectedItemPosition) {
                 0 -> YubiKeyConfigViewModel.SecretType.OTP
-                1 -> YubiKeyConfigViewModel.SecretType.STATIC_PASSWORD
-                2 -> YubiKeyConfigViewModel.SecretType.CHALRESP
+                1 -> YubiKeyConfigViewModel.SecretType.CHALRESP
                 else -> YubiKeyConfigViewModel.SecretType.HOTP
             }
             val slot = when(config_slot.selectedItemPosition) {
