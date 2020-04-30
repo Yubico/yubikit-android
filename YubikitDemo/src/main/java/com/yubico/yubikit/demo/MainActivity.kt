@@ -64,7 +64,6 @@ class MainActivity : AppCompatActivity() {
                 R.id.main_fragment,
                 R.id.webview_fragment,
                 R.id.oath_fragment,
-                R.id.smartcard_fragment,
                 R.id.yubico_otp_fragment,
                 R.id.mgmt_fragment,
                 R.id.piv_fragment,

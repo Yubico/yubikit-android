@@ -10,9 +10,6 @@
     <string name="fido2_demo_web">FIDO2 demo in web view</string>
     <string name="yubico_mgmt_demo">YubiKey Setting</string>
     <string name="company_name">yubico</string>
-    <string name="coming_soon">This feature is under development and coming soon</string>
-    <string name="run_raw_data_demo">To run this demo, a certificate must be loaded on the key PIV application in yubiKeySlot 9C.</string>
-    <string name="run_demo">Run demo</string>
     <string name="run_yubico_otp_demo">This demo captures and validates a Yubico OTP credential. To capture a credential tap on Read OTP, to validate tap Validate OTP.</string>
     <string name="otp">One-time code</string>
     <string name="validate_otp">Validate OTP</string>

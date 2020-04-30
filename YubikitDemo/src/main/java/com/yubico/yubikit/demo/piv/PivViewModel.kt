@@ -32,7 +32,6 @@ import com.yubico.yubikit.demo.fido.arch.SingleLiveEvent
 import com.yubico.yubikit.demo.oath.AuthRequiredException
 import com.yubico.yubikit.demo.oath.PasswordDialogFragment
 import com.yubico.yubikit.demo.oath.WrongPasswordException
-import com.yubico.yubikit.demo.raw.ISettings
 import com.yubico.yubikit.exceptions.NotSupportedOperation
 import com.yubico.yubikit.exceptions.YubiKeyCommunicationException
 import com.yubico.yubikit.piv.*
