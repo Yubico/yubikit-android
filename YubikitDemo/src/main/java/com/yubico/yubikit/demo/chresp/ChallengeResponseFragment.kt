@@ -24,7 +24,7 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.lifecycle.*
 import com.yubico.yubikit.YubiKitManager
-import com.yubico.yubikit.apdu.ApduCodeException
+import com.yubico.yubikit.exceptions.ApduException
 import com.yubico.yubikit.demo.BaseYubikeyFragment
 import com.yubico.yubikit.demo.R
 import com.yubico.yubikit.demo.YubikeyViewModel
@@ -86,7 +86,7 @@ class ChallengeResponseFragment : BaseYubikeyFragment(TAG) {
     override fun onError(throwable: Throwable) {
         showProgress(false)
         when (throwable) {
-            is ApduCodeException -> {
+            is ApduException -> {
                 Log.e(TAG, "Status code : ${Integer.toHexString(throwable.statusCode)} ")
                 Toast.makeText(activity, throwable.message, Toast.LENGTH_LONG).show()
             }

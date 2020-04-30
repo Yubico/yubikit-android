@@ -1,6 +1,8 @@
 package com.yubico.yubikit.configurator;
 
-public class UnexpectedSymbolException extends Exception {
+import com.yubico.yubikit.exceptions.BadRequestException;
+
+public class UnexpectedSymbolException extends BadRequestException {
     static final long serialVersionUID = 1L;
     public UnexpectedSymbolException(String message) {
         super(message);

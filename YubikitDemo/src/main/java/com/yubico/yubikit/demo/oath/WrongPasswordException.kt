@@ -16,6 +16,6 @@
 
 package com.yubico.yubikit.demo.oath
 
-import com.yubico.yubikit.apdu.ApduException
+import com.yubico.yubikit.exceptions.YubiKeyCommunicationException
 
-class WrongPasswordException(message: String) : ApduException(message)
+class WrongPasswordException(message: String) : YubiKeyCommunicationException(message)

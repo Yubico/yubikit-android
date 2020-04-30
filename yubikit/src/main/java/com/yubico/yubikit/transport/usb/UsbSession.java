@@ -27,11 +27,10 @@ import android.util.Pair;
 import androidx.annotation.NonNull;
 
 import com.yubico.yubikit.exceptions.NoPermissionsException;
-import com.yubico.yubikit.exceptions.YubikeyCommunicationException;
 import com.yubico.yubikit.transport.Iso7816Connection;
 import com.yubico.yubikit.transport.YubiKeySession;
-import com.yubico.yubikit.utils.Logger;
 
+import java.io.IOException;
 import java.util.Objects;
 
 public class UsbSession implements YubiKeySession {
@@ -60,24 +59,24 @@ public class UsbSession implements YubiKeySession {
 
     @Override
     public @NonNull
-    Iso7816Connection openIso7816Connection() throws YubikeyCommunicationException {
+    Iso7816Connection openIso7816Connection() throws IOException {
         UsbInterface ccidInterface = getInterface(UsbConstants.USB_CLASS_CSCID);
         if (ccidInterface == null) {
-            throw new YubikeyCommunicationException("No CCID interface found!");
+            throw new IOException("No CCID interface found!");
         }
         Pair<UsbEndpoint, UsbEndpoint> endpointPair = findEndpoints(ccidInterface, UsbConstants.USB_ENDPOINT_XFER_BULK);
         if (endpointPair.first == null || endpointPair.second == null) {
-            throw new YubikeyCommunicationException("Unable to find endpoints!");
+            throw new IOException("Unable to find endpoints!");
         }
 
         UsbDeviceConnection connection = openConnection();
         if (connection == null) {
-            throw new YubikeyCommunicationException("exception in UsbManager.openDevice");
+            throw new IOException("exception in UsbManager.openDevice");
         }
 
         if (!connection.claimInterface(ccidInterface, true)) {
             connection.close();
-            throw new YubikeyCommunicationException("Interface couldn't be claimed");
+            throw new IOException("Interface couldn't be claimed");
         }
 
         return new UsbIso7816Connection(connection, ccidInterface, endpointPair.first, endpointPair.second);
@@ -88,27 +87,27 @@ public class UsbSession implements YubiKeySession {
     /**
      * Creates and starts session for communication with yubikey using HID interface
      * @return session for communication with yubikey (supported over USB only)
-     * @throws YubikeyCommunicationException if CCID interface or endpoints are not found
+     * @throws IOException if Keyboard HID interface or endpoints are not found
      */
     public @NonNull
-    UsbHidConnection openHidKeyboardConnection() throws YubikeyCommunicationException {
+    UsbHidConnection openHidKeyboardConnection() throws IOException {
         UsbInterface hidInterface = getInterface(UsbConstants.USB_CLASS_HID);
         if (hidInterface == null) {
-            throw new YubikeyCommunicationException("No HID interface found");
+            throw new IOException("No HID interface found");
         }
 
         if (hidInterface.getInterfaceSubclass() != UsbConstants.USB_INTERFACE_SUBCLASS_BOOT) {
-            throw new YubikeyCommunicationException("No expected HID interface");
+            throw new IOException("No expected HID interface");
         }
 
         UsbDeviceConnection connection = openConnection();
         if (connection == null) {
-            throw new YubikeyCommunicationException("exception in UsbManager.openDevice");
+            throw new IOException("exception in UsbManager.openDevice");
         }
 
         if (!connection.claimInterface(hidInterface, true)) {
             connection.close();
-            throw new YubikeyCommunicationException("Interface couldn't be claimed");
+            throw new IOException("Interface couldn't be claimed");
         }
 
         return new UsbHidConnection(connection, hidInterface);

@@ -19,19 +19,17 @@ package com.yubico.yubikit.management;
 import com.yubico.yubikit.HidApplication;
 import com.yubico.yubikit.Iso7816Application;
 import com.yubico.yubikit.apdu.Apdu;
-import com.yubico.yubikit.apdu.ApduCodeException;
-import com.yubico.yubikit.apdu.ApduException;
+import com.yubico.yubikit.exceptions.ApduException;
 import com.yubico.yubikit.apdu.Tlv;
 import com.yubico.yubikit.apdu.TlvUtils;
 import com.yubico.yubikit.apdu.Version;
 import com.yubico.yubikit.configurator.Status;
 import com.yubico.yubikit.exceptions.ApplicationNotFound;
-import com.yubico.yubikit.exceptions.NoDataException;
+import com.yubico.yubikit.transport.usb.NoDataException;
 import com.yubico.yubikit.exceptions.NotSupportedOperation;
 import com.yubico.yubikit.transport.YubiKeySession;
 import com.yubico.yubikit.transport.usb.UsbSession;
 import com.yubico.yubikit.utils.ChecksumUtils;
-import com.yubico.yubikit.utils.Logger;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -77,12 +75,12 @@ public class ManagementApplication implements Closeable {
      * @throws IOException   in case of connection error
      * @throws ApduException in case of communication error
      */
-    public ManagementApplication(YubiKeySession session) throws IOException, ApduException {
+    public ManagementApplication(YubiKeySession session) throws IOException, ApplicationNotFound {
         try {
             ccidApplication = new Iso7816Application(AID, session);
             byte[] response = ccidApplication.select();
             version = Version.parse(new String(response));
-        } catch (IOException | ApduCodeException e) {
+        } catch (IOException | ApduException e) {
             // Unable to connect to CCID applet, attempt to fallback to HID.
             if (session instanceof UsbSession) {
                 try {
@@ -126,7 +124,7 @@ public class ManagementApplication implements Closeable {
      * @throws IOException   in case of connection error
      * @throws ApduException in case of communication or not supported operation error
      */
-    public DeviceConfiguration readConfiguration() throws IOException, ApduException {
+    public DeviceConfiguration readConfiguration() throws IOException, ApduException, NotSupportedOperation {
         if (version.major < 4) {
             throw new NotSupportedOperation("Operation is not supported on versions below 4");
         }
@@ -156,7 +154,7 @@ public class ManagementApplication implements Closeable {
      * @throws IOException   in case of connection error
      * @throws ApduException in case of communication or not supported operation error
      */
-    public void writeConfiguration(DeviceConfiguration config, boolean reboot) throws IOException, ApduException {
+    public void writeConfiguration(DeviceConfiguration config, boolean reboot) throws IOException, ApduException, NotSupportedOperation {
         if (config.getFirmwareVersion().major < 4) {
             throw new NotSupportedOperation("Operation is not supported on versions below 5");
         }
@@ -190,7 +188,7 @@ public class ManagementApplication implements Closeable {
      * @throws IOException   in case of connection error
      * @throws ApduException in case of communication or not supported operation error
      */
-    public void setMode(DeviceConfiguration config) throws IOException, ApduException {
+    public void setMode(DeviceConfiguration config) throws IOException, ApduException, NotSupportedOperation {
         if (version.major > 4) {
             throw new NotSupportedOperation("Use writeConfiguration() for versions 5 and above");
         }

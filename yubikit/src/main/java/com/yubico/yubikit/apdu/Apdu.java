@@ -16,6 +16,8 @@
 
 package com.yubico.yubikit.apdu;
 
+import androidx.annotation.Nullable;
+
 import java.io.ByteArrayOutputStream;
 import java.util.Arrays;
 
@@ -100,11 +102,11 @@ public class Apdu {
      * @param data The command data.
      * @param type The type of the APDU, short or extended.
      */
-    public Apdu(int cla, int ins, int p1, int p2, byte[] data, Type type) {
-        this(validateByte(cla, "cla"),
-                validateByte( ins, "ins"),
-                validateByte( p1, "p1"),
-                validateByte( p2, "p2"),
+    public Apdu(int cla, int ins, int p1, int p2, @Nullable byte[] data, Type type) {
+        this(validateByte(cla, "CLA"),
+                validateByte( ins, "INS"),
+                validateByte( p1, "P1"),
+                validateByte( p2, "P2"),
                 data,
                 type);
     }
@@ -118,7 +120,7 @@ public class Apdu {
      * @param p2   The second instruction parameter byte.
      * @param data The command data.
      */
-    public Apdu(int cla, int ins, int p1, int p2, byte[] data) {
+    public Apdu(int cla, int ins, int p1, int p2, @Nullable byte[] data) {
         this(cla, ins, p1, p2, data, Type.SHORT);
     }
 
@@ -221,7 +223,7 @@ public class Apdu {
      */
     private static byte validateByte(int byteInt, String name) {
         if (byteInt > 255) {
-            throw new IllegalArgumentException(name);
+            throw new IllegalArgumentException("Invalid value for " + name + ", must fit in a byte");
         }
         return (byte) byteInt;
     }

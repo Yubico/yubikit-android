@@ -18,8 +18,6 @@ package com.yubico.yubikit.transport;
 
 import androidx.annotation.NonNull;
 
-import com.yubico.yubikit.exceptions.YubikeyCommunicationException;
-
 import java.io.IOException;
 
 /**
@@ -31,7 +29,7 @@ public interface YubiKeySession {
     /**
      * Creates and starts session for communication with yubikey using protocol ISO-7816 if it's supported by connected device
      * @return session for communication with yubikey using protocol ISO-7816 (Smart card)
-     * @throws YubikeyCommunicationException if CCID interface or endpoints are not found
+     * @throws IOException if CCID interface or endpoints are not found
      */
     @NonNull
     Iso7816Connection openIso7816Connection() throws IOException;

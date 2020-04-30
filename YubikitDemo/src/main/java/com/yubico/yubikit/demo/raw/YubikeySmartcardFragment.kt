@@ -16,31 +16,20 @@
 
 package com.yubico.yubikit.demo.raw
 
-import android.app.Activity
 import android.content.Context
-import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
-import androidx.fragment.app.Fragment
 import androidx.lifecycle.*
-import com.google.android.material.snackbar.Snackbar
 import com.yubico.yubikit.YubiKitManager
-import com.yubico.yubikit.apdu.ApduCodeException
-import com.yubico.yubikit.apdu.ApduException
+import com.yubico.yubikit.exceptions.ApduException
 import com.yubico.yubikit.demo.BaseYubikeyFragment
 import com.yubico.yubikit.demo.R
 import com.yubico.yubikit.demo.YubikeyViewModel
 import com.yubico.yubikit.demo.settings.Ramps
-import com.yubico.yubikit.exceptions.NfcDisabledException
-import com.yubico.yubikit.exceptions.NfcNotFoundException
-import com.yubico.yubikit.exceptions.NoPermissionsException
-import com.yubico.yubikit.transport.nfc.NfcDeviceManager
 import kotlinx.android.synthetic.main.fragment_smartcard.*
-import java.io.IOException
 import java.lang.StringBuilder
 
 /**
@@ -87,7 +76,7 @@ class YubikeySmartcardFragment : BaseYubikeyFragment(TAG) {
 
     override fun onError(throwable: Throwable) {
         when (throwable) {
-            is ApduCodeException -> log.text = StringBuilder(log.text).append("\n Error: ").append(Integer.toHexString(throwable.statusCode)).toString()
+            is ApduException -> log.text = StringBuilder(log.text).append("\n Error: ").append(Integer.toHexString(throwable.statusCode)).toString()
             is ApduException -> log.text = StringBuilder(log.text).append("\n Error: ").append(throwable.message).toString()
             else -> {
                 val message = throwable.message ?: "No connection found"

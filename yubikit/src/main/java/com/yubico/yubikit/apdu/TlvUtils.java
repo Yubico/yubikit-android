@@ -18,6 +18,8 @@ package com.yubico.yubikit.apdu;
 
 import android.util.SparseArray;
 
+import com.yubico.yubikit.exceptions.UnexpectedTagException;
+
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.List;

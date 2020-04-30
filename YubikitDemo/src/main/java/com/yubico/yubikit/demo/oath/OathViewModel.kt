@@ -24,10 +24,11 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.yubico.yubikit.YubiKitManager
-import com.yubico.yubikit.apdu.ApduCodeException
+import com.yubico.yubikit.exceptions.ApduException
 import com.yubico.yubikit.demo.YubikeyViewModel
-import com.yubico.yubikit.apdu.ApduException
 import com.yubico.yubikit.demo.fido.arch.SingleLiveEvent
+import com.yubico.yubikit.exceptions.BadRequestException
+import com.yubico.yubikit.exceptions.YubiKeyCommunicationException
 import com.yubico.yubikit.oath.*
 import com.yubico.yubikit.transport.YubiKeySession
 import com.yubico.yubikit.utils.Logger
@@ -130,7 +131,7 @@ class OathViewModel(yubikitManager: YubiKitManager) : YubikeyViewModel(yubikitMa
                             val credential = request.getSerializable(CREDENTIAL) as Credential
                             Logger.d("Add credential = ${credential.getId()}")
                             if (oathApplication.listCredentials().contains(credential)) {
-                                throw ApduException("Credential for ${credential.getId()} already exists")
+                                throw BadRequestException("Credential for ${credential.getId()} already exists")
                             }
                             oathApplication.putCredential(credential)
 
@@ -197,7 +198,7 @@ class OathViewModel(yubikitManager: YubiKitManager) : YubikeyViewModel(yubikitMa
                             oathApplication.reset()
                         }
                     }
-                } catch (e : ApduCodeException) {
+                } catch (e : ApduException) {
                     // if user required to input password notify user about error and stop executing requests
                     // and do not remove from queue as they will be executed after validation
                     if (oathApplication.applicationInfo.isAuthenticationRequired && e.statusCode == OathApplication.AUTHENTICATION_REQUIRED_ERROR.toInt()) {
@@ -205,7 +206,7 @@ class OathViewModel(yubikitManager: YubiKitManager) : YubikeyViewModel(yubikitMa
                         break
                     }
                     postError(e)
-                } catch (e : ApduException) {
+                } catch (e : YubiKeyCommunicationException) {
                     postError(e)
                 } catch (e : IOException) {
                     postError(e)
@@ -233,7 +234,7 @@ class OathViewModel(yubikitManager: YubiKitManager) : YubikeyViewModel(yubikitMa
                 }
             } catch (e: IOException) {
                 postError(e)
-            } catch (e: ApduException) {
+            } catch (e: YubiKeyCommunicationException) {
                 postError(e)
             }
         }

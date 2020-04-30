@@ -21,12 +21,14 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.yubico.yubikit.YubiKitManager
-import com.yubico.yubikit.apdu.ApduException
+import com.yubico.yubikit.exceptions.ApduException
 
 import com.yubico.yubikit.apdu.Apdu
 import com.yubico.yubikit.demo.YubikeyViewModel
 import com.yubico.yubikit.demo.exceptions.InvalidCertDataException
 import com.yubico.yubikit.demo.fido.arch.SingleLiveEvent
+import com.yubico.yubikit.exceptions.BadResponseException
+import com.yubico.yubikit.exceptions.YubiKeyCommunicationException
 import com.yubico.yubikit.transport.Iso7816Connection
 import com.yubico.yubikit.transport.YubiKeySession
 import com.yubico.yubikit.utils.StringUtils
@@ -58,7 +60,7 @@ open class YubikeySmartcardViewModel(yubikitManager: YubiKitManager, private val
                 }
             } catch (e: IOException) {
                 postError(e)
-            } catch (e: ApduException) {
+            } catch (e: YubiKeyCommunicationException) {
                 postError(e)
             }
         }
@@ -80,7 +82,7 @@ open class YubikeySmartcardViewModel(yubikitManager: YubiKitManager, private val
         val readCommandData = byteArrayOfInts(0x5C, 0x03, 0x5F, 0xC1, 0x0A)
         val readBuffer = transceive(Apdu(0x00, 0xCB, 0x3F, 0xFF, readCommandData))
         if (readBuffer.isEmpty()) {
-            throw ApduException("Could not read the certificate from the slot. The slot seems to be empty.")
+            throw BadResponseException("Could not read the certificate from the slot. The slot seems to be empty.")
         }
         _log.postValue("reading certificate successful")
 

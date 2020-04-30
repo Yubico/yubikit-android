@@ -27,7 +27,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.lifecycle.*
 import com.yubico.yubikit.YubiKitManager
-import com.yubico.yubikit.apdu.ApduCodeException
+import com.yubico.yubikit.exceptions.ApduException
 import com.yubico.yubikit.apdu.Version
 import com.yubico.yubikit.demo.BaseYubikeyFragment
 import com.yubico.yubikit.demo.R
@@ -99,7 +99,7 @@ class ManagementFragment : BaseYubikeyFragment(TAG) {
 
     override fun onError(throwable: Throwable) {
         when (throwable) {
-            is ApduCodeException -> {
+            is ApduException -> {
                 Log.e(TAG, "Status code : ${Integer.toHexString(throwable.statusCode)} ")
                 Toast.makeText(context, throwable.message, Toast.LENGTH_LONG).show()
             }

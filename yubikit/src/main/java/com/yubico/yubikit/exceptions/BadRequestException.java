@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Yubico.
+ * Copyright (C) 2020 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,11 @@
 
 package com.yubico.yubikit.exceptions;
 
-import java.io.IOException;
-
-public class YubikeyCommunicationException extends IOException {
-    static final long serialVersionUID = 1L;
-
-    public YubikeyCommunicationException(String message) {
+/**
+ * The data provided to create a request to send to the YubiKey is invalid.
+ */
+public class BadRequestException extends YubiKeyCommunicationException {
+    public BadRequestException(String message) {
         super(message);
     }
 }

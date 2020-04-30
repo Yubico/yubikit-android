@@ -16,7 +16,7 @@
 
 package com.yubico.yubikit;
 
-import com.yubico.yubikit.exceptions.YubikeyCommunicationException;
+import com.yubico.yubikit.transport.usb.NoDataException;
 import com.yubico.yubikit.transport.usb.UsbHidConnection;
 import com.yubico.yubikit.transport.usb.UsbSession;
 
@@ -37,7 +37,7 @@ public class HidApplication implements Closeable {
      * and selects the application for use
      *
      * @param session session with YubiKey
-     * @throws IOException   in case of connection error
+     * @throws IOException in case of connection error
      */
     public HidApplication(UsbSession session) throws IOException {
         this.connection = session.openHidKeyboardConnection();
@@ -57,33 +57,35 @@ public class HidApplication implements Closeable {
     }
 
 
-
     /**
      * Receive status bytes from YubiKey
+     *
      * @return status bytes (first 3 bytes are the firmware version)
-     * @throws YubikeyCommunicationException
+     * @throws IOException
      */
-    public byte[] getStatus() throws YubikeyCommunicationException {
+    public byte[] getStatus() throws IOException {
         return connection.getStatus();
     }
 
     /**
      * Send data to YubiKey
-     * @param slot slot that command targets
+     *
+     * @param slot   slot that command targets
      * @param buffer data that needs to be sent
      * @return number of bytes that has been sent
-     * @throws YubikeyCommunicationException
+     * @throws IOException
      */
-    public int send(byte slot, byte[] buffer) throws YubikeyCommunicationException {
+    public int send(byte slot, byte[] buffer) throws IOException {
         return connection.send(slot, buffer);
     }
 
     /**
      * Read data from YubiKey
+     *
      * @return data that received
-     * @throws YubikeyCommunicationException in case of communication error or no data was received
+     * @throws IOException in case of communication error or no data was received
      */
-    public byte[] receive(int expectedSize) throws YubikeyCommunicationException {
+    public byte[] receive(int expectedSize) throws IOException {
         return connection.receive(expectedSize);
     }
 }

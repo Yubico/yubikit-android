@@ -18,10 +18,12 @@ package com.yubico.yubikit.exceptions;
 
 import android.hardware.usb.UsbDevice;
 
+import java.io.IOException;
+
 /**
  * Exception that thrown when user didn't provide permissions to connect to USB device
  */
-public class NoPermissionsException extends YubikeyCommunicationException {
+public class NoPermissionsException extends IOException {
     static final long serialVersionUID = 1L;
 
     public NoPermissionsException(UsbDevice usbDevice) {

@@ -22,12 +22,12 @@ import android.hardware.usb.UsbInterface;
 
 import com.yubico.yubikit.apdu.Apdu;
 import com.yubico.yubikit.apdu.ApduResponse;
-import com.yubico.yubikit.exceptions.YubikeyCommunicationException;
 import com.yubico.yubikit.transport.Iso7816Connection;
-import com.yubico.yubikit.utils.StringUtils;
 import com.yubico.yubikit.utils.Logger;
+import com.yubico.yubikit.utils.StringUtils;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
@@ -76,12 +76,13 @@ public class UsbIso7816Connection implements Iso7816Connection {
      * Sets endpoints and connection and sends power on command
      * if ATR is invalid then throws YubikeyCommunicationException
      * Note: this method is protected to allow dependency injection for UT
-     * @param connection open usb connection
+     *
+     * @param connection    open usb connection
      * @param ccidInterface ccid interface that was claimed
-     * @param endpointIn channel for sending data over USB.
-     * @param endpointOut channel for receiving data over USB.
+     * @param endpointIn    channel for sending data over USB.
+     * @param endpointOut   channel for receiving data over USB.
      */
-    UsbIso7816Connection(UsbDeviceConnection connection, UsbInterface ccidInterface, UsbEndpoint endpointIn, UsbEndpoint endpointOut){
+    UsbIso7816Connection(UsbDeviceConnection connection, UsbInterface ccidInterface, UsbEndpoint endpointIn, UsbEndpoint endpointOut) {
         this.connection = connection;
         this.ccidInterface = ccidInterface;
         this.endpointIn = endpointIn;
@@ -95,13 +96,13 @@ public class UsbIso7816Connection implements Iso7816Connection {
     }
 
     @Override
-    public ApduResponse execute(Apdu command) throws YubikeyCommunicationException {
-        byte[] output =  transceive(REQUEST_MESSAGE_TYPE, command.getCommandData());
+    public ApduResponse execute(Apdu command) throws IOException {
+        byte[] output = transceive(REQUEST_MESSAGE_TYPE, command.getCommandData());
         return new ApduResponse(output);
     }
 
     @Override
-    public byte[] getAtr()  throws YubikeyCommunicationException {
+    public byte[] getAtr() throws IOException {
         // PC_to_RDR_IccPowerOn command makes the slot “active” if it was “inactive”
         // if atr is not valid/had error status it throws YubikeyCommunicationException
         return transceive(POWER_ON_MESSAGE_TYPE, new byte[0]);
@@ -117,27 +118,28 @@ public class UsbIso7816Connection implements Iso7816Connection {
     /**
      * Does the data exchange between phone and connected usb device with bulk messages
      * All bulk messages begin with a 10-bytes header, followed by message-specific data.
+     *
      * @param type the message type identifies the message
-     * Message Name                             type
-     * PC_to_RDR_IccPowerOn                     62h
-     * PC_to_RDR_IccPowerOff                    63h
-     * PC_to_RDR_GetSlotStatus                  65h
-     * PC_to_RDR_XfrBlock                       6Fh
-     * PC_to_RDR_GetParameters                  6Ch
-     * PC_to_RDR_ResetParameters                6Dh
-     * PC_to_RDR_SetParameters                  61h
-     * PC_to_RDR_Escape                         6Bh
-     * PC_to_RDR_IccClock                       6Eh
-     * PC_to_RDR_T0APDU                         6Ah
-     * PC_to_RDR_Secure                         69h
-     * PC_to_RDR_Mechanical                     71h
-     * PC_to_RDR_Abort                          72h
-     * PC_to_RDR_SetDataRateAndClockFrequency   73h
+     *             Message Name                             type
+     *             PC_to_RDR_IccPowerOn                     62h
+     *             PC_to_RDR_IccPowerOff                    63h
+     *             PC_to_RDR_GetSlotStatus                  65h
+     *             PC_to_RDR_XfrBlock                       6Fh
+     *             PC_to_RDR_GetParameters                  6Ch
+     *             PC_to_RDR_ResetParameters                6Dh
+     *             PC_to_RDR_SetParameters                  61h
+     *             PC_to_RDR_Escape                         6Bh
+     *             PC_to_RDR_IccClock                       6Eh
+     *             PC_to_RDR_T0APDU                         6Ah
+     *             PC_to_RDR_Secure                         69h
+     *             PC_to_RDR_Mechanical                     71h
+     *             PC_to_RDR_Abort                          72h
+     *             PC_to_RDR_SetDataRateAndClockFrequency   73h
      * @param data message-specific data that needs to be sent to usb device
      * @return received message-specific data from usb device
-     * @throws YubikeyCommunicationException in case if there is communication error occurs or received data is invalid
+     * @throws IOException in case if there is communication error occurs or received data is invalid
      */
-    private byte[] transceive(byte type, byte[] data) throws YubikeyCommunicationException {
+    private byte[] transceive(byte type, byte[] data) throws IOException {
         // 1. prepare data for sending
         MessageHeader prefix = new MessageHeader(type, data.length, sequence++);
         ByteBuffer byteBuffer = ByteBuffer.allocate(prefix.size() + data.length).order(ByteOrder.LITTLE_ENDIAN)
@@ -154,7 +156,7 @@ public class UsbIso7816Connection implements Iso7816Connection {
                 Logger.d(bytesSentPackage + " bytes sent over ccid: " + StringUtils.bytesToHex(bufferOut, bytesSent, bytesSentPackage));
                 bytesSent += bytesSentPackage;
             } else if (bytesSentPackage < 0) {
-                throw new YubikeyCommunicationException("Failed to send " + (bufferOut.length - bytesSent) + " bytes");
+                throw new IOException("Failed to send " + (bufferOut.length - bytesSent) + " bytes");
             } else {
                 // 0 is still considered as success in bulkTransfer description
                 // Scenario: if last package size was equal to endpointOut.getMaxPacketSize()
@@ -189,11 +191,11 @@ public class UsbIso7816Connection implements Iso7816Connection {
                     } else if (messageHeader.error != 0 && !responseRequiresTimeExtension) {
                         Logger.d(String.format(
                                 Locale.ROOT, "Invalid response from card reader bStatus=0x%02X and bError=0x%02X", messageHeader.status, messageHeader.error));
-                        throw new YubikeyCommunicationException("Invalid response from card reader");
+                        throw new IOException("Invalid response from card reader");
                     }
                 }
             } else if (bytesRead < 0) {
-                throw new YubikeyCommunicationException("Failed to read response");
+                throw new IOException("Failed to read response");
             }
         } while ((bytesRead > 0 && bytesRead == bufferRead.length) || responseRequiresTimeExtension);
 
@@ -201,7 +203,7 @@ public class UsbIso7816Connection implements Iso7816Connection {
         // 5. prepare data for returning to user
         byte[] output = stream.toByteArray();
         if (messageHeader == null || output.length < messageHeader.size()) {
-            throw new YubikeyCommunicationException("Response is invalid");
+            throw new IOException("Response is invalid");
         }
         int dataLength = Math.min(output.length - messageHeader.size(), messageHeader.dataLength);
         return Arrays.copyOfRange(output, messageHeader.size(), messageHeader.size() + dataLength);
@@ -266,6 +268,7 @@ public class UsbIso7816Connection implements Iso7816Connection {
          * The response (Bulk-IN message) always contains the exact same slot number, and
          * sequence number fields from the header that was contained in the Bulk-OUT command
          * message.
+         *
          * @param sequence Bulk-OUT message sequence
          * @return true if prefix has expected format
          */

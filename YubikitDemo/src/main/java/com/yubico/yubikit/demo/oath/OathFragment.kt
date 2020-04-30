@@ -31,8 +31,7 @@ import androidx.navigation.fragment.findNavController
 import androidx.navigation.ui.onNavDestinationSelected
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.yubico.yubikit.YubiKitManager
-import com.yubico.yubikit.apdu.ApduCodeException
-import com.yubico.yubikit.apdu.ApduException
+import com.yubico.yubikit.exceptions.ApduException
 import com.yubico.yubikit.demo.BaseYubikeyFragment
 import com.yubico.yubikit.demo.R
 import com.yubico.yubikit.demo.YubikeyViewModel
@@ -110,7 +109,7 @@ class OathFragment : BaseYubikeyFragment(TAG), OnRecyclerViewItemClickListener, 
 
     override fun onError(throwable: Throwable) {
         when (throwable) {
-            is ApduCodeException -> {
+            is ApduException -> {
                 Log.e(TAG, "Status code : ${Integer.toHexString(throwable.statusCode)} ")
                 when {
                     throwable.statusCode == OathApplication.AUTHENTICATION_REQUIRED_ERROR.toInt() -> Toast.makeText(context, "Operation requires touch. Please try operation again and tap button on yubikey to confirm it.", Toast.LENGTH_LONG).show()

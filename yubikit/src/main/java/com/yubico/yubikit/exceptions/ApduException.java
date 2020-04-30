@@ -14,19 +14,27 @@
  * limitations under the License.
  */
 
-package com.yubico.yubikit.apdu;
+package com.yubico.yubikit.exceptions;
+
+import com.yubico.yubikit.apdu.ApduResponse;
+
+import java.util.Locale;
 
 /**
  * Exception is thrown if used APDU utils to parse received data and it has unexpected status code (not equal success == 0x9000)
  */
-public class ApduCodeException extends ApduException {
+public class ApduException extends YubiKeyCommunicationException {
     static final long serialVersionUID = 1L;
 
-    private int statusCode;
+    private ApduResponse apdu;
 
-    public ApduCodeException(int statusCode) {
-        super("Unexpected response received from the key");
-        this.statusCode = statusCode;
+    public ApduException(ApduResponse apdu) {
+        this(apdu, String.format(Locale.ROOT, "APDU error: 0x%04x", apdu.getSw()));
+    }
+
+    public ApduException(ApduResponse apdu, String message) {
+        super(message);
+        this.apdu = apdu;
     }
 
     /**
@@ -34,6 +42,14 @@ public class ApduCodeException extends ApduException {
      * @return error code
      */
     public int getStatusCode() {
-        return statusCode;
+        return apdu.getSw();
+    }
+
+    /**
+     * Get the ResponseApdu.
+     * @return the response APDU that generated the error
+     */
+    public ApduResponse getApdu() {
+        return apdu;
     }
 }

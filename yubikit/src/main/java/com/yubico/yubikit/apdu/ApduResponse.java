@@ -37,7 +37,7 @@ public class ApduResponse {
     /**
      * @return the SW from a key response.
      */
-    public short statusCode() {
+    public short getSw() {
         if (size < 2) {
             return 0x00;
         }
@@ -59,23 +59,5 @@ public class ApduResponse {
      */
     public byte[] getData() {
         return data;
-    }
-
-    /**
-     * Verifies that first byte of received status code equal to
-     * @param status expected status code
-     * @return true if first byte of status code equal to expected status code
-     */
-    public boolean hasStatusCode(byte status) {
-        return statusCode() >> 8 == status;
-    }
-
-    /**
-     * Verifies that received status code equal to
-     * @param status expected status code
-     * @return true if received status code equal to expected status code
-     */
-    public boolean hasStatusCode(short status) {
-        return statusCode() == status;
     }
 }

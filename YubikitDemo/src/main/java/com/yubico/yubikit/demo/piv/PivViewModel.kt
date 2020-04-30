@@ -25,8 +25,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.yubico.yubikit.YubiKitManager
-import com.yubico.yubikit.apdu.ApduCodeException
-import com.yubico.yubikit.apdu.ApduException
+import com.yubico.yubikit.exceptions.ApduException
 import com.yubico.yubikit.demo.YubikeyViewModel
 import com.yubico.yubikit.demo.exceptions.InvalidCertDataException
 import com.yubico.yubikit.demo.fido.arch.SingleLiveEvent
@@ -35,6 +34,7 @@ import com.yubico.yubikit.demo.oath.PasswordDialogFragment
 import com.yubico.yubikit.demo.oath.WrongPasswordException
 import com.yubico.yubikit.demo.raw.ISettings
 import com.yubico.yubikit.exceptions.NotSupportedOperation
+import com.yubico.yubikit.exceptions.YubiKeyCommunicationException
 import com.yubico.yubikit.piv.*
 import com.yubico.yubikit.transport.YubiKeySession
 import com.yubico.yubikit.utils.Logger
@@ -143,7 +143,7 @@ class PivViewModel(yubiKitManager: YubiKitManager, private val settings: ISettin
                                         counter++
                                     }
                                     certificateList.put(slot.value, certificate)
-                                } catch (e: ApduCodeException) {
+                                } catch (e: ApduException) {
                                     // file not found error means that certificate is not found
                                     if (PivApplication.FILE_NOT_FOUND_ERROR.toInt() != e.statusCode) {
                                         throw e
@@ -245,7 +245,7 @@ class PivViewModel(yubiKitManager: YubiKitManager, private val settings: ISettin
                             _operationCompleted.postValue("PIV application has been reset")
                         }
                     }
-                } catch (e : ApduCodeException) {
+                } catch (e : ApduException) {
                     // if user required to input password notify user about error and stop executing requests
                     // and do not remove from queue as they will be executed after validation
                     if (e.statusCode == PivApplication.AUTHENTICATION_REQUIRED_ERROR.toInt()) {
@@ -286,7 +286,7 @@ class PivViewModel(yubiKitManager: YubiKitManager, private val settings: ISettin
                 }
             } catch (e: IOException) {
                 postError(e)
-            } catch (e: ApduException) {
+            } catch (e: YubiKeyCommunicationException) {
                 postError(e)
             }
         }

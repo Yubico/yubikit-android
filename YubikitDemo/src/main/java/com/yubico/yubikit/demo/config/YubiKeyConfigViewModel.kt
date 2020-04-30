@@ -22,13 +22,14 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.yubico.yubikit.YubiKitManager
-import com.yubico.yubikit.apdu.ApduException
+import com.yubico.yubikit.exceptions.ApduException
 import com.yubico.yubikit.configurator.ModHexUtils
 import com.yubico.yubikit.configurator.Slot
 import com.yubico.yubikit.configurator.UnexpectedSymbolException
 import com.yubico.yubikit.configurator.YubiKeyConfigurationApplication
 import com.yubico.yubikit.demo.YubikeyViewModel
 import com.yubico.yubikit.demo.fido.arch.SingleLiveEvent
+import com.yubico.yubikit.exceptions.YubiKeyCommunicationException
 import com.yubico.yubikit.transport.YubiKeySession
 import com.yubico.yubikit.utils.Logger
 import com.yubico.yubikit.utils.StringUtils
@@ -94,9 +95,7 @@ class YubiKeyConfigViewModel(yubiKitManager: YubiKitManager) : YubikeyViewModel(
                 }
             } catch (e: IOException) {
                 postError(e)
-            } catch (e: ApduException) {
-                postError(e)
-            } catch (e: UnexpectedSymbolException) {
+            } catch (e: YubiKeyCommunicationException) {
                 postError(e)
             }
         }

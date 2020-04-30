@@ -16,9 +16,9 @@
 
 package com.yubico.yubikit.piv;
 
-import com.yubico.yubikit.apdu.ApduException;
+import com.yubico.yubikit.exceptions.YubiKeyCommunicationException;
 
-public class InvalidPinException extends ApduException {
+public class InvalidPinException extends YubiKeyCommunicationException {
     private final int retryCounter;
 
     public InvalidPinException(int retryCounter) {

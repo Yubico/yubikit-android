@@ -25,7 +25,6 @@ import androidx.annotation.NonNull;
 
 import com.yubico.yubikit.apdu.Apdu;
 import com.yubico.yubikit.apdu.ApduResponse;
-import com.yubico.yubikit.exceptions.YubikeyCommunicationException;
 import com.yubico.yubikit.transport.Iso7816Connection;
 import com.yubico.yubikit.utils.StringUtils;
 
@@ -90,7 +89,7 @@ public class UsbSessionTest {
         Assert.assertNotNull(atr);
         ApduResponse response = usbConnection.execute(new Apdu(selectPIVCommand));
         byte[] selectPIVResponse = byteArrayOfInts(new int[] {0x61, 0x11, 0x4f, 0x06, 0x00, 0x00, 0x10, 0x00, 0x01, 0x00, 0x79, 0x07, 0x4f, 0x05, 0xa0, 0x00, 0x00, 0x03, 0x08, 0x90, 0x00});
-        Assert.assertTrue(response.hasStatusCode(SUCCESS_CODE));
+        Assert.assertEquals(SUCCESS_CODE, response.getSw());
         Assert.assertNotNull(response.responseData());
         Assert.assertArrayEquals(selectPIVResponse, response.getData());
     }
@@ -114,21 +113,21 @@ public class UsbSessionTest {
         usbConnection.execute(new Apdu(commandThatRequiresWaiting));
     }
 
-    @Test(expected = YubikeyCommunicationException.class)
+    @Test(expected = IOException.class)
     public void failToSend() throws IOException {
         mock.mockOutError();
         usbConnection = mock.openIso7816Connection();
         usbConnection.getAtr();
     }
 
-    @Test(expected = YubikeyCommunicationException.class)
+    @Test(expected = IOException.class)
     public void failToRead() throws IOException  {
         mock.mockInError();
         usbConnection = mock.openIso7816Connection();
         usbConnection.getAtr();
     }
 
-    @Test(expected = YubikeyCommunicationException.class)
+    @Test(expected = IOException.class)
     public void readWithCCIDStatus() throws IOException  {
         // change status flag to some value different from STATUS_TIME_EXTENSION
         commandResponses.put(StringUtils.bytesToHex(PACKAGE_16_BYTES), changeByte(PACKAGE_16_BYTES_RESPONSE, STATUS_BYTE_POSISION, (byte)0x10));
@@ -149,7 +148,7 @@ public class UsbSessionTest {
         usbConnection.execute(new Apdu(commandThatReturnsStatusCode));
     }
 
-    @Test(expected = YubikeyCommunicationException.class)
+    @Test(expected = IOException.class)
     public void executeCommandWithEmptyResponse() throws IOException {
         byte[] unknownCommand = byteArrayOfInts(new int[] {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00});
         usbConnection = mock.openIso7816Connection();
@@ -185,7 +184,7 @@ public class UsbSessionTest {
 
         @NonNull
         @Override
-        public Iso7816Connection openIso7816Connection() throws YubikeyCommunicationException {
+        public Iso7816Connection openIso7816Connection() throws IOException {
             return new UsbIso7816Connection(connection, usbInterface, endpointIn, endpointOut);
         }
 

@@ -20,12 +20,12 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.yubico.yubikit.YubiKitManager
-import com.yubico.yubikit.apdu.ApduException
 import com.yubico.yubikit.apdu.Version
 import com.yubico.yubikit.configurator.YubiKeyConfigurationApplication
 import com.yubico.yubikit.demo.YubikeyViewModel
 import com.yubico.yubikit.demo.fido.arch.SingleLiveEvent
 import com.yubico.yubikit.exceptions.NotSupportedOperation
+import com.yubico.yubikit.exceptions.YubiKeyCommunicationException
 import com.yubico.yubikit.management.DeviceConfiguration
 import com.yubico.yubikit.management.ManagementApplication
 import com.yubico.yubikit.transport.YubiKeySession
@@ -88,7 +88,7 @@ class ManagementViewModel(yubiKitManager: YubiKitManager) : YubikeyViewModel(yub
                 postError(e)
             } catch (e: IOException) {
                 postError(e)
-            } catch (e: ApduException) {
+            } catch (e: YubiKeyCommunicationException) {
                 postError(e)
             }
 
@@ -101,7 +101,7 @@ class ManagementViewModel(yubiKitManager: YubiKitManager) : YubikeyViewModel(yub
                     }
                 } catch (e: IOException) {
                     postError(e)
-                } catch (e: ApduException) {
+                } catch (e: YubiKeyCommunicationException) {
                     postError(e)
                 }
             }

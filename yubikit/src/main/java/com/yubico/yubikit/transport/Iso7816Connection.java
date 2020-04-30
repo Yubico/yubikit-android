@@ -18,7 +18,6 @@ package com.yubico.yubikit.transport;
 
 import com.yubico.yubikit.apdu.Apdu;
 import com.yubico.yubikit.apdu.ApduResponse;
-import com.yubico.yubikit.exceptions.YubikeyCommunicationException;
 
 import java.io.Closeable;
 import java.io.IOException;

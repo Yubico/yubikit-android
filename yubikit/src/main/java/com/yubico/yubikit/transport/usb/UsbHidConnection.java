@@ -20,14 +20,13 @@ import android.hardware.usb.UsbConstants;
 import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbInterface;
 
-import com.yubico.yubikit.exceptions.NoDataException;
-import com.yubico.yubikit.exceptions.YubikeyCommunicationException;
 import com.yubico.yubikit.utils.ChecksumUtils;
 import com.yubico.yubikit.utils.Logger;
 import com.yubico.yubikit.utils.StringUtils;
 
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
@@ -98,9 +97,9 @@ public class UsbHidConnection implements Closeable {
     /**
      * Receive status bytes from YubiKey
      * @return status bytes (first 3 bytes are the firmware version)
-     * @throws YubikeyCommunicationException
+     * @throws IOException
      */
-    public byte[] getStatus() throws YubikeyCommunicationException {
+    public byte[] getStatus() throws IOException {
         byte[] featureReport = readFeatureReport();
         // disregards the first byte in each feature report
         byte[] status = Arrays.copyOfRange(featureReport, 1, featureReport.length);
@@ -113,14 +112,14 @@ public class UsbHidConnection implements Closeable {
      * @param slot slot that command targets (or command that is going to be sent)
      * @param buffer data that needs to be sent
      * @return number of bytes that has been sent
-     * @throws YubikeyCommunicationException
+     * @throws IOException
      */
-    public int send(byte slot, byte[] buffer) throws YubikeyCommunicationException {
+    public int send(byte slot, byte[] buffer) throws IOException {
         if (buffer == null) {
             buffer = new byte[0];
         }
         if (buffer.length > SLOT_DATA_SIZE) {
-            throw new YubikeyCommunicationException("Size of buffer is bigger than 64");
+            throw new IOException("Size of buffer is bigger than 64");
         }
 
         Frame frame = new Frame();
@@ -167,9 +166,9 @@ public class UsbHidConnection implements Closeable {
     /**
      * Read data from YubiKey
      * @return data that received
-     * @throws YubikeyCommunicationException in case of communication error or no data was received
+     * @throws IOException in case of communication error or no data was received
      */
-    public byte[] receive(int expectedSize) throws YubikeyCommunicationException {
+    public byte[] receive(int expectedSize) throws IOException {
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
         // wait for
         stream.write(readFirstFeatureReport(), 0,  FEATURE_RPT_DATA_SIZE);
@@ -197,11 +196,11 @@ public class UsbHidConnection implements Closeable {
             // received data should also contain 2 extra bytes (the CRC)
             expectedSize += 2;
             if (stream.size() < expectedSize) {
-                throw new YubikeyCommunicationException("Received data only partially");
+                throw new IOException("Received data only partially");
             }
             byte[] output = stream.toByteArray();
             if (!ChecksumUtils.checkCrc(output, expectedSize)) {
-                throw new YubikeyCommunicationException("Error checksum of returned data");
+                throw new IOException("Error checksum of returned data");
             }
         }
 
@@ -212,7 +211,7 @@ public class UsbHidConnection implements Closeable {
     /**
      * Reset the state of YubiKey from reading/means that there won't be any data returned
      */
-    private void resetState() throws YubikeyCommunicationException {
+    private void resetState() throws IOException {
         byte [] buffer = new byte[FEATURE_RPT_SIZE];
         buffer[FEATURE_RPT_SIZE - 1] = (byte)DUMMY_REPORT_WRITE; /* Invalid sequence = update only */
         writeFeatureReport(buffer);
@@ -222,9 +221,9 @@ public class UsbHidConnection implements Closeable {
      * Wait for the Yubikey to clear the SLOT_WRITE_FLAG bits in mask.
      * Which means it's ready to receive new blob of data
      * @return true if it's allowed to send new blob of data, otherwise false
-     * @throws YubikeyCommunicationException in case of communication error
+     * @throws IOException in case of communication error
      */
-    private boolean isReadyToWrite() throws YubikeyCommunicationException  {
+    private boolean isReadyToWrite() throws IOException  {
         long startTimestamp = System.currentTimeMillis();
         boolean isReadyToWrite = false;
         int sleepInterval = 1;
@@ -246,9 +245,9 @@ public class UsbHidConnection implements Closeable {
     /**
      * Wait for YubiKey to notify that it has data to sent
      * @return first blob that received from YubiKey
-     * @throws YubikeyCommunicationException in case of communication error
+     * @throws IOException in case of communication error
      */
-    private byte[] readFirstFeatureReport() throws YubikeyCommunicationException  {
+    private byte[] readFirstFeatureReport() throws IOException  {
         // do/ while not timeout
         long startTimestamp = System.currentTimeMillis();
         boolean responseRequiresTimeExtension = false;
@@ -275,7 +274,7 @@ public class UsbHidConnection implements Closeable {
 
         resetState();
         if (responseRequiresTimeExtension) {
-            throw new YubikeyCommunicationException("YubiKey timed out waiting for user interaction");
+            throw new IOException("YubiKey timed out waiting for user interaction");
         } else {
             throw new NoDataException("YubiKey doesn't return any data within expected time frame");
         }
@@ -301,17 +300,17 @@ public class UsbHidConnection implements Closeable {
     /**
      * Read single feature report
      * @return blob size of FEATURE_RPT_SIZE
-     * @throws YubikeyCommunicationException
+     * @throws IOException
      */
-    private byte[] readFeatureReport() throws YubikeyCommunicationException {
+    private byte[] readFeatureReport() throws IOException {
         byte[] bufferRead = new byte[FEATURE_RPT_SIZE];
         int bytesRead = connection.controlTransfer(UsbConstants.USB_DIR_IN | TYPE_CLASS | RECEIPIENT_INTERFACE, HID_GET_REPORT,
                 REPORT_TYPE_FEATURE << 8, hidInterface.getId(), bufferRead, bufferRead.length, TIMEOUT);
         if (bytesRead < 0) {
-            throw new YubikeyCommunicationException("Can't read the data");
+            throw new IOException("Can't read the data");
         }
         if (bytesRead < FEATURE_RPT_SIZE) {
-            throw new YubikeyCommunicationException("Size of blob is smaller than expected");
+            throw new IOException("Size of blob is smaller than expected");
         }
         return bufferRead;
     }
@@ -320,7 +319,7 @@ public class UsbHidConnection implements Closeable {
      * Write single feature report
      * @param buffer blob size of FEATURE_RPT_SIZE
      */
-    private void writeFeatureReport(byte[] buffer) throws YubikeyCommunicationException {
+    private void writeFeatureReport(byte[] buffer) throws IOException {
         int bytesSentPackage = connection.controlTransfer(
                 UsbConstants.USB_DIR_OUT | TYPE_CLASS | RECEIPIENT_INTERFACE,
                 HID_SET_REPORT, REPORT_TYPE_FEATURE << 8,
@@ -328,10 +327,10 @@ public class UsbHidConnection implements Closeable {
                 buffer,
                 buffer.length, TIMEOUT);
         if (bytesSentPackage < 0) {
-            throw new YubikeyCommunicationException("Can't write the data");
+            throw new IOException("Can't write the data");
         }
         if (bytesSentPackage < FEATURE_RPT_SIZE) {
-            throw new YubikeyCommunicationException("Some of the data was not sent");
+            throw new IOException("Some of the data was not sent");
         }
 
     }

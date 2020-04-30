@@ -17,10 +17,16 @@
 package com.yubico.yubikit.exceptions;
 
 /**
- * Thrown when an operation is not supported on the connected device.
+ * General error in communicating with a YubiKey.
  */
-public class NotSupportedOperation extends BadRequestException {
-    public NotSupportedOperation(String message) {
+public class YubiKeyCommunicationException extends Exception {
+    static final long serialVersionUID = 1L;
+
+    public YubiKeyCommunicationException(String message) {
         super(message);
+    }
+
+    public YubiKeyCommunicationException(String message, Throwable cause) {
+        super(message, cause);
     }
 }

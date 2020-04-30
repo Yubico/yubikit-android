@@ -31,8 +31,7 @@ import androidx.lifecycle.ViewModelProviders
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.ui.onNavDestinationSelected
 import com.yubico.yubikit.YubiKitManager
-import com.yubico.yubikit.apdu.ApduCodeException
-import com.yubico.yubikit.apdu.ApduException
+import com.yubico.yubikit.exceptions.ApduException
 import com.yubico.yubikit.demo.BaseYubikeyFragment
 import com.yubico.yubikit.demo.YubikeyViewModel
 import com.yubico.yubikit.demo.oath.AuthRequiredException
@@ -109,7 +108,7 @@ class PivFragment : BaseYubikeyFragment(TAG), PasswordDialogFragment.DialogListe
 
     override fun onError(throwable: Throwable) {
         when (throwable) {
-            is ApduCodeException -> {
+            is ApduException -> {
                 Log.e(TAG, "Status code : ${Integer.toHexString(throwable.statusCode)} ")
                 Toast.makeText(context, throwable.message, Toast.LENGTH_LONG).show()
             }

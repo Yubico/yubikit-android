@@ -25,12 +25,11 @@ import android.widget.AdapterView
 import android.widget.Toast
 import androidx.lifecycle.*
 import com.yubico.yubikit.YubiKitManager
-import com.yubico.yubikit.apdu.ApduCodeException
+import com.yubico.yubikit.exceptions.ApduException
 import com.yubico.yubikit.configurator.Slot
 import com.yubico.yubikit.demo.BaseYubikeyFragment
 import com.yubico.yubikit.demo.R
 import com.yubico.yubikit.demo.YubikeyViewModel
-import com.yubico.yubikit.utils.StringUtils
 import kotlinx.android.synthetic.main.fragment_configuration.*
 
 private const val TAG = "ConfigureOtpFragment"
@@ -124,7 +123,7 @@ class ConfigureOtpFragment : BaseYubikeyFragment(TAG) {
     override fun onError(throwable: Throwable) {
         showProgress(false)
         when (throwable) {
-            is ApduCodeException -> {
+            is ApduException -> {
                 Log.e(TAG, "Status code : ${Integer.toHexString(throwable.statusCode)} ")
                 Toast.makeText(activity, throwable.message, Toast.LENGTH_LONG).show()
             }

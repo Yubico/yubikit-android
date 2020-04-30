@@ -24,12 +24,12 @@ import androidx.annotation.Nullable;
 
 import com.yubico.yubikit.Iso7816Application;
 import com.yubico.yubikit.apdu.Apdu;
-import com.yubico.yubikit.apdu.ApduCodeException;
-import com.yubico.yubikit.apdu.ApduException;
+import com.yubico.yubikit.exceptions.ApduException;
 import com.yubico.yubikit.apdu.ApduUtils;
 import com.yubico.yubikit.apdu.Tlv;
 import com.yubico.yubikit.apdu.TlvUtils;
 import com.yubico.yubikit.exceptions.ApplicationNotFound;
+import com.yubico.yubikit.exceptions.NotSupportedOperation;
 import com.yubico.yubikit.transport.YubiKeySession;
 
 import java.io.ByteArrayOutputStream;
@@ -109,20 +109,19 @@ public class OathApplication  extends Iso7816Application {
      * and selects the application for use
      * @param session session with YubiKey
      * @throws IOException in case of connection error
-     * @throws ApduException in case of communication error
      */
-    public OathApplication(YubiKeySession session) throws IOException, ApduException {
+    public OathApplication(YubiKeySession session) throws IOException, ApduException, ApplicationNotFound {
         super(AID, session);
         try {
             applicationInfo = new OathApplicationInfo(select());
-        } catch (ApduCodeException e) {
+        } catch (ApduException e) {
             close();
             if (e.getStatusCode() == APPLICATION_NOT_FOUND_ERROR) {
                 throw new ApplicationNotFound("OATH application is disabled on this device");
             } else {
                 throw e;
             }
-        } catch (IOException e){
+        } catch (IOException e) {
             close();
             throw e;
         }
@@ -138,7 +137,6 @@ public class OathApplication  extends Iso7816Application {
     /**
      * Resets the application to just-installed state.
      * @throws IOException in case of connection error
-     * @throws ApduException in case of communication error
      */
     public void reset() throws IOException, ApduException {
         sendAndReceive(new Apdu(0, INS_RESET, 0xde, 0xad, null));
@@ -152,7 +150,6 @@ public class OathApplication  extends Iso7816Application {
      * The application will then respond with a similar calculation that the host software can verify.
      * @param password user-supplied password
      * @throws IOException in case of connection error
-     * @throws ApduException in case of communication error
      * @return true if password valid
      */
     public boolean validate(String password) throws IOException, ApduException {
@@ -165,7 +162,7 @@ public class OathApplication  extends Iso7816Application {
         try {
             secret = calculateSecret(password, applicationInfo.getDeviceId());
         } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
-            throw new ApduException("Couldn't calculate secret ", e);
+            throw new RuntimeException(e); // This shouldn't happend.
         }
 
         return validate(new ChallengeSigner() {
@@ -184,7 +181,6 @@ public class OathApplication  extends Iso7816Application {
      * The application will then respond with a similar calculation that the host software can verify.
      * @param signer the provide of HMAC calculation
      * @throws IOException in case of connection error
-     * @throws ApduException in case of communication error
      */
     public boolean validate(ChallengeSigner signer) throws IOException, ApduException {
         // if no validation/authentication required we consider that validation was successful
@@ -203,14 +199,14 @@ public class OathApplication  extends Iso7816Application {
             SparseArray<byte[]> map = TlvUtils.parseTlvMap(data);
             // return false if response from validation does not match verification
             return (Arrays.equals(signer.sign(challenge), map.get(TAG_RESPONSE)));
-        } catch (ApduCodeException e) {
+        } catch (ApduException e) {
             if (e.getStatusCode() == WRONG_SYNTAX) {
                 // key didn't recognize secret
                 return false;
             }
             throw e;
         } catch (InvalidKeyException | NoSuchAlgorithmException e) {
-            throw new ApduException("Failed to use HmacSHA1 algorithm", e);
+            throw new RuntimeException(e); // This shouldn't happen
         }
 
     }
@@ -219,14 +215,13 @@ public class OathApplication  extends Iso7816Application {
      * Configures Authentication.
      * @param password user-supplied password. If null or empty, authentication is removed.
      * @throws IOException in case of connection error
-     * @throws ApduException in case of communication error
      */
     public void setPassword(String password) throws IOException, ApduException {
         final byte[] secret;
         try {
             secret = calculateSecret(password, applicationInfo.getDeviceId());
         } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
-            throw new ApduException("Couldn't calculate secret ", e);
+            throw new RuntimeException(e); // This shouldn't happen
         }
         setSecret(secret);
     }
@@ -243,7 +238,6 @@ public class OathApplication  extends Iso7816Application {
      * @param secret 16 bytes of user-supplied UTF-8 encoded password passed through 1000 rounds of PBKDF2
      *               with the ID from select used as salt
      * @throws IOException in case of connection error
-     * @throws ApduException in case of communication error
      */
     public void setSecret(byte[] secret) throws IOException, ApduException {
         final byte[] data;
@@ -260,7 +254,7 @@ public class OathApplication  extends Iso7816Application {
                 requestTlv.add(new Tlv(TAG_RESPONSE, calculateResponse(secret, challenge)));
                 data = TlvUtils.packTlvList(requestTlv);
             } catch (NoSuchAlgorithmException | InvalidKeyException e) {
-                throw new ApduException("Failed to use HmacSHA1 algorithm", e);
+                throw new RuntimeException(e); // This shouldn't happen
             }
         } else {
             // if secret passed null or empty remove password
@@ -273,7 +267,6 @@ public class OathApplication  extends Iso7816Application {
      * Lists configured credentials.
      * @return list of credentials on device
      * @throws IOException in case of connection error
-     * @throws ApduException in case of communication error
      */
     public List<Credential> listCredentials() throws IOException, ApduException {
         byte[] response = sendAndReceive(new Apdu(0, INS_LIST, 0, 0, null));
@@ -289,7 +282,6 @@ public class OathApplication  extends Iso7816Application {
      * Performs CALCULATE for all available credentials,
      * @return returns credential + response for TOTP and just credential with null code for HOTP and credentials requiring touch.
      * @throws IOException in case of connection error
-     * @throws ApduException in case of communication error
      */
     public Map<Credential, Code> calculateAll() throws IOException, ApduException {
         return calculateAll(System.currentTimeMillis());
@@ -300,7 +292,6 @@ public class OathApplication  extends Iso7816Application {
      * @param timestamp the timestamp which is used as start point for TOTP
      * @return returns credential + response for TOTP and just credential for HOTP and credentials requiring touch.
      * @throws IOException in case of connection error
-     * @throws ApduException in case of communication error
      */
     public Map<Credential, Code> calculateAll(long timestamp) throws IOException, ApduException {
         List<Tlv> requestTlv = new ArrayList<>();
@@ -345,7 +336,6 @@ public class OathApplication  extends Iso7816Application {
      * @param credential credential that will get new code
      * @return calculated code
      * @throws IOException in case of connection error
-     * @throws ApduException in case of communication error
      */
     public Code calculate(Credential credential) throws IOException, ApduException {
         return calculate(credential, System.currentTimeMillis());
@@ -357,7 +347,6 @@ public class OathApplication  extends Iso7816Application {
      * @param timestamp the timestamp which is used as start point for TOTP, can be null for HOTP
      * @return calculated code
      * @throws IOException in case of connection error
-     * @throws ApduException in case of communication error
      */
     public Code calculate(Credential credential, @Nullable Long timestamp) throws IOException, ApduException {
         List<Tlv> requestTlv = new ArrayList<>();
@@ -397,11 +386,10 @@ public class OathApplication  extends Iso7816Application {
      * Adds a new (or overwrites) OATH credential.
      * @param credential credential data to add
      * @throws IOException in case of connection error
-     * @throws ApduException in case of communication error
      */
-    public void putCredential(Credential credential) throws IOException, ApduException {
+    public void putCredential(Credential credential) throws IOException, ApduException, NotSupportedOperation {
         if (credential.isTouch() && applicationInfo.getVersion().major < 4) {
-            throw new ApduException("Touch feature requires YubiKey 4 or later");
+            throw new NotSupportedOperation("Touch feature requires YubiKey 4 or later");
         }
 
         try {
@@ -432,7 +420,7 @@ public class OathApplication  extends Iso7816Application {
             Apdu apdu = new Apdu(0x00, INS_PUT, 0,0, output.toByteArray());
             sendAndReceive(apdu);
         } catch (NoSuchAlgorithmException e) {
-            throw new ApduException("Failed to use hash algorithm", e);
+            throw new RuntimeException(e);  //This shouldn't happen
         }
     }
 
@@ -440,7 +428,6 @@ public class OathApplication  extends Iso7816Application {
      * Deletes an existing credential.
      * @param credential credential data to remove
      * @throws IOException in case of connection error
-     * @throws ApduException in case of communication error
      */
     public void deleteCredential(Credential credential) throws IOException, ApduException {
         List<Tlv> list = new ArrayList<>();
@@ -557,10 +544,9 @@ public class OathApplication  extends Iso7816Application {
      * @param command apdu command that will be sent
      * @return data that received from command execution
      * @throws IOException in case of connection error
-     * @throws ApduException in case of communication error
      */
     @Override
-    public byte[] sendAndReceive(Apdu command) throws IOException, ApduCodeException {
+    public byte[] sendAndReceive(Apdu command) throws IOException, ApduException {
         //YKOATH uses a non-standard INS for SEND_REMAINING.
         return ApduUtils.sendAndReceive(getConnection(), command, INS_SEND_REMAINING);
     }

@@ -21,7 +21,6 @@ import android.nfc.tech.IsoDep;
 
 import androidx.annotation.NonNull;
 
-import com.yubico.yubikit.exceptions.YubikeyCommunicationException;
 import com.yubico.yubikit.transport.Iso7816Connection;
 import com.yubico.yubikit.transport.YubiKeySession;
 
@@ -55,7 +54,7 @@ public class NfcSession implements YubiKeySession {
     Iso7816Connection openIso7816Connection() throws IOException {
         IsoDep card = IsoDep.get(tag);
         if (card == null) {
-            throw new YubikeyCommunicationException("the tag does not support ISO-DEP");
+            throw new IOException("the tag does not support ISO-DEP");
         }
         card.connect();
         return new NfcIso7816Connection(card);

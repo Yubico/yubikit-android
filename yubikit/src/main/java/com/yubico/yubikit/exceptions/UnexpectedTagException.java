@@ -14,12 +14,15 @@
  * limitations under the License.
  */
 
-package com.yubico.yubikit.apdu;
+package com.yubico.yubikit.exceptions;
 
 import java.util.Locale;
 
-public class UnexpectedTagException extends ApduException {
+/**
+ * Unexpected TLV tag in a response from a YubiKey.
+ */
+public class UnexpectedTagException extends BadResponseException {
     public UnexpectedTagException(int expectedValue, int receivedValue) {
-        super(String.format(Locale.ROOT, "Unexpected response in response. Expected: 0x%02x got: 0x%02x", expectedValue, receivedValue));
+        super(String.format(Locale.ROOT, "Unexpected tag in response. Expected: 0x%02x got: 0x%02x", expectedValue, receivedValue));
     }
 }

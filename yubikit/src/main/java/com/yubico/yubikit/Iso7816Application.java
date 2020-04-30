@@ -17,7 +17,7 @@
 package com.yubico.yubikit;
 
 import com.yubico.yubikit.apdu.Apdu;
-import com.yubico.yubikit.apdu.ApduCodeException;
+import com.yubico.yubikit.exceptions.ApduException;
 import com.yubico.yubikit.apdu.ApduUtils;
 import com.yubico.yubikit.transport.Iso7816Connection;
 import com.yubico.yubikit.transport.YubiKeySession;
@@ -97,9 +97,9 @@ public class Iso7816Application implements Closeable {
      * @param command well structured command that needs to be send
      * @return data blob concatenated from all APDU commands that were sent *set of output commands and send remaining commands)
      * @throws IOException       in case of connection and communication error
-     * @throws ApduCodeException in case if received error in APDU response
+     * @throws ApduException in case if received error in APDU response
      */
-    public byte[] sendAndReceive(Apdu command) throws IOException, ApduCodeException {
+    public byte[] sendAndReceive(Apdu command) throws IOException, ApduException {
         return ApduUtils.sendAndReceive(connection, command);
     }
 
@@ -107,9 +107,9 @@ public class Iso7816Application implements Closeable {
      * Sends an APDU to SELECT the Application.
      * @return the response data from selecting the Application
      * @throws IOException in case of connection and communication error
-     * @throws ApduCodeException in case if received error in APDU response
+     * @throws ApduException in case if received error in APDU response
      */
-    public byte[] select() throws IOException, ApduCodeException {
+    public byte[] select() throws IOException, ApduException {
         return sendAndReceive(new Apdu(0, INS_SELECT, P1_SELECT, P2_SELECT, aid));
     }
 }

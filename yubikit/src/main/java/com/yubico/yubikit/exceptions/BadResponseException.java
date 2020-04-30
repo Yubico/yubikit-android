@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Yubico.
+ * Copyright (C) 2020 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,19 +14,17 @@
  * limitations under the License.
  */
 
-package com.yubico.yubikit.apdu;
+package com.yubico.yubikit.exceptions;
 
 /**
- * Thrown when received response has no valid/expected data or requested operation with arguments that don't meet requirements
+ * The data contained in a YubiKey response was invalid.
  */
-public class ApduException extends Exception {
-    static final long serialVersionUID = 1L;
-
-    public ApduException(String message) {
+public class BadResponseException extends YubiKeyCommunicationException {
+    public BadResponseException(String message) {
         super(message);
     }
 
-    public ApduException(String message, Throwable cause) {
+    public BadResponseException(String message, Throwable cause) {
         super(message, cause);
     }
 }

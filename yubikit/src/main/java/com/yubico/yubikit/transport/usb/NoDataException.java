@@ -14,12 +14,14 @@
  * limitations under the License.
  */
 
-package com.yubico.yubikit.exceptions;
+package com.yubico.yubikit.transport.usb;
+
+import java.io.IOException;
 
 /**
  * Exception returned when no data was received from YubiKey
  */
-public class NoDataException extends YubikeyCommunicationException {
+public class NoDataException extends IOException {
     static final long serialVersionUID = 1L;
 
     public NoDataException(String message) {

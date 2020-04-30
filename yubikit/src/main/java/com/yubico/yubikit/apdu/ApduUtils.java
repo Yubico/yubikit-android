@@ -16,6 +16,7 @@
 
 package com.yubico.yubikit.apdu;
 
+import com.yubico.yubikit.exceptions.ApduException;
 import com.yubico.yubikit.transport.Iso7816Connection;
 
 import java.io.ByteArrayOutputStream;
@@ -63,8 +64,8 @@ public class ApduUtils {
      6a86	Incorrect P1/P2
      6985	Conditions of use not satisfied
      */
-    private static final short SUCCESS_CODE = (short)0x9000;
-    private static final byte HAS_MORE_DATA = 0x61;
+    private static final short SW_SUCCESS = (short)0x9000;
+    private static final byte SW1_HAS_MORE_DATA = 0x61;
 
     private static final int MAX_CHUNK = 0xff;
     private static final byte INS_SEND_REMAINING = (byte) 0xc0;
@@ -78,9 +79,9 @@ public class ApduUtils {
      * @param command well structured command that needs to be send
      * @return data blob concatenated from all APDU commands that were sent *set of output commands and send remaining commands)
      * @throws IOException in case of connection and communication error
-     * @throws ApduCodeException in case if received error in APDU response
+     * @throws ApduException in case if received error in APDU response
      */
-    public static byte[] sendAndReceive(Iso7816Connection connection, Apdu command) throws IOException, ApduCodeException {
+    public static byte[] sendAndReceive(Iso7816Connection connection, Apdu command) throws IOException, ApduException {
         return sendAndReceive(connection, command, INS_SEND_REMAINING);
     }
 
@@ -93,17 +94,17 @@ public class ApduUtils {
      * @param insSentRemaining instruction byte for APDU command to receive remaining data blob (default is 0xc0)
      * @return data blob concatenated from all APDU commands that were sent *set of output commands and send remaining commands)
      * @throws IOException in case of connection and communication error
-     * @throws ApduCodeException in case if received error in APDU response
+     * @throws ApduException in case if received error in APDU response
      */
-    public static byte[] sendAndReceive(Iso7816Connection connection, Apdu command, byte insSentRemaining) throws IOException, ApduCodeException {
+    public static byte[] sendAndReceive(Iso7816Connection connection, Apdu command, byte insSentRemaining) throws IOException, ApduException {
         List<Apdu> listCommands = splitDataInChunks(command);
         int i;
         for (i = 0; i < listCommands.size() - 1; i++) {
             Apdu apdu = listCommands.get(i);
             ApduResponse readResponse = connection.execute(apdu);
             // every time we send a chunk we should receive success code
-            if (!readResponse.hasStatusCode(SUCCESS_CODE)) {
-                throw new ApduCodeException(readResponse.statusCode());
+            if (readResponse.getSw() != SW_SUCCESS) {
+                throw new ApduException(readResponse);
             }
         }
 
@@ -119,22 +120,22 @@ public class ApduUtils {
      * @param insSentRemaining instruction byte for APDU command to receive remaining data blob (default is 0xc0)
      * @return data blob concatenated from all APDU commands that were sent *set of output commands and send remaining commands)
      * @throws IOException in case of connection and communication error
-     * @throws ApduCodeException in case if received error in APDU response
+     * @throws ApduException in case if received error in APDU response
      */
-    private static byte[] sendAndReceiveWithRemaining(Iso7816Connection connection, Apdu command, byte insSentRemaining) throws IOException, ApduCodeException {
+    private static byte[] sendAndReceiveWithRemaining(Iso7816Connection connection, Apdu command, byte insSentRemaining) throws IOException, ApduException {
         ByteArrayOutputStream readBuffer = new ByteArrayOutputStream();
         Apdu apdu = command;
         boolean sendRemaining = true;
         while (sendRemaining) {
             ApduResponse readResponse = connection.execute(apdu);
-            short statusCode = readResponse.statusCode();
+            short statusCode = readResponse.getSw();
             byte[] responseData = readResponse.responseData();
-            if (readResponse.hasStatusCode(SUCCESS_CODE)) {
+            if (readResponse.getSw() == SW_SUCCESS) {
                 sendRemaining = false;
-            } else if (readResponse.hasStatusCode(HAS_MORE_DATA)) {
+            } else if (readResponse.getSw() >> 8 == SW1_HAS_MORE_DATA) {
                 apdu = new Apdu(0x00, insSentRemaining, 0x00, 0x00, null, Apdu.Type.SHORT);
             } else {
-                throw new ApduCodeException(statusCode);
+                throw new ApduException(readResponse);
             }
             if (responseData!= null) {
                 readBuffer.write(responseData);

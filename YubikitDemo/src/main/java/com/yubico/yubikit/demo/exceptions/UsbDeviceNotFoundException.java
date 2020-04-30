@@ -16,12 +16,12 @@
 
 package com.yubico.yubikit.demo.exceptions;
 
-import com.yubico.yubikit.exceptions.YubikeyCommunicationException;
+import com.yubico.yubikit.exceptions.YubiKeyCommunicationException;
 
 /**
  * Exception that used when execute command without key device plugged in
  */
-public class UsbDeviceNotFoundException extends YubikeyCommunicationException {
+public class UsbDeviceNotFoundException extends YubiKeyCommunicationException {
     static final long serialVersionUID = 1L;
 
     public UsbDeviceNotFoundException(String message) {

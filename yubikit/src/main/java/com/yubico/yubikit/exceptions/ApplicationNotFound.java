@@ -16,12 +16,10 @@
 
 package com.yubico.yubikit.exceptions;
 
-import com.yubico.yubikit.apdu.ApduException;
-
 /**
  * Thrown when specific applet is not found/disabled on device
  */
-public class ApplicationNotFound extends ApduException {
+public class ApplicationNotFound extends NotSupportedOperation {
     public ApplicationNotFound(String message) {
         super(message);
     }
