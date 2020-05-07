@@ -54,15 +54,11 @@ class MainActivity : AppCompatActivity() {
                 settingsStorage.saveNavigationDestination(it.itemId)
             }
 
-            val popupId = navController.currentDestination?.id ?: R.id.main_fragment
+            val popupId = navController.currentDestination?.id ?: R.id.piv_fragment
             navController.navigate(it.itemId, null, NavOptions.Builder().setPopUpTo(popupId, true).build())
             it.onNavDestinationSelected(navController)
         }
         val appBarConfiguration = AppBarConfiguration(setOf(
-                R.id.suggested_accounts_fragment,
-                R.id.login_fragment,
-                R.id.main_fragment,
-                R.id.webview_fragment,
                 R.id.oath_fragment,
                 R.id.yubico_otp_fragment,
                 R.id.mgmt_fragment,

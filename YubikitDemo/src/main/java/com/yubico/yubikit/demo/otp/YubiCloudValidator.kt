@@ -16,38 +16,15 @@
 
 package com.yubico.yubikit.demo.otp
 
-import android.content.Context
-import android.os.AsyncTask
-import android.text.TextUtils
 import com.squareup.moshi.Json
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
-import com.yubico.yubikit.demo.fido.network.DataException
-import com.yubico.yubikit.demo.fido.network.ServiceCallback
 
-import com.yubico.yubikit.otp.R
-import okhttp3.OkHttpClient
-
-import org.json.JSONException
-import org.json.JSONObject
 import retrofit2.Call
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import retrofit2.http.Body
 import retrofit2.http.Headers
-
-import java.io.BufferedReader
-import java.io.IOException
-import java.io.InputStream
-import java.io.InputStreamReader
-import java.io.OutputStream
-import java.net.MalformedURLException
-import java.net.URL
-import java.nio.charset.StandardCharsets
-import java.util.concurrent.atomic.AtomicReference
-
-import javax.net.ssl.HttpsURLConnection
-
 import retrofit2.http.POST
 
 /**

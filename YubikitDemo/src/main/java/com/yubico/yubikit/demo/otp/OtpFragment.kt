@@ -20,7 +20,6 @@ import android.text.TextWatcher
 import android.widget.TextView
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
-import com.yubico.yubikit.demo.fido.network.DataException
 
 private const val OTP_REQUEST_CODE = 1
 private const val VALID = "VALID"

@@ -23,7 +23,7 @@ import com.yubico.yubikit.YubiKitManager
 import com.yubico.yubikit.apdu.Version
 import com.yubico.yubikit.configurator.YubiKeyConfigurationApplication
 import com.yubico.yubikit.demo.YubikeyViewModel
-import com.yubico.yubikit.demo.fido.arch.SingleLiveEvent
+import com.yubico.yubikit.demo.arch.SingleLiveEvent
 import com.yubico.yubikit.exceptions.NotSupportedOperation
 import com.yubico.yubikit.exceptions.YubiKeyCommunicationException
 import com.yubico.yubikit.management.DeviceConfiguration

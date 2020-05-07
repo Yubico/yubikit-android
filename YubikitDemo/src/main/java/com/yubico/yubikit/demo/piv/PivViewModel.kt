@@ -28,7 +28,7 @@ import com.yubico.yubikit.YubiKitManager
 import com.yubico.yubikit.exceptions.ApduException
 import com.yubico.yubikit.demo.YubikeyViewModel
 import com.yubico.yubikit.demo.exceptions.InvalidCertDataException
-import com.yubico.yubikit.demo.fido.arch.SingleLiveEvent
+import com.yubico.yubikit.demo.arch.SingleLiveEvent
 import com.yubico.yubikit.demo.oath.AuthRequiredException
 import com.yubico.yubikit.demo.oath.PasswordDialogFragment
 import com.yubico.yubikit.demo.oath.WrongPasswordException
