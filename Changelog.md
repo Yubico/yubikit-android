@@ -1,3 +1,17 @@
+### 1.0.0-beta06
+General improvements to YubiKit:
+- Various naming changes to classes and methods to better represent what they do.
+- Various additional refactorings and minor changes to improve readability and consistency.
+- Make the NFC backend extensible so that it can be customized to provide better compatibility.
+- Restructure Exception classes to be more consistent.
+- OATH module improvements.
+- OTP module improvements.
+- QR code functionality moved to the demo application.
+- FIDO2 module removed.
+- 'Smartcard demo' removed.
+
+---
+
 ### 1.0.0-beta05
 - yubikit: Provides callback to users on whether permissions (for USB plug in device) from user were accepted on denied
 - yubikit: Provides configurations mechanism for NFC discovery (e.g. play sound, read NDEF tag, etc)
