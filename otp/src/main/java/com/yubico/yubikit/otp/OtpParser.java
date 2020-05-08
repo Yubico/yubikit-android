@@ -39,34 +39,12 @@ public class OtpParser {
     private static final byte TYPE_TEXT = 0x54;
 
     /**
-     *  Modhex mapping: https://developers.yubico.com/yubico-c/Manuals/modhex.1.html
-     *  Used for OTP codes encoding
-     */
-    private static final String MODHEX_ALPHABET = "cbdefghijklnrtuv";
-    private static final String OTP_MODHEX_PATTERN = "([" + MODHEX_ALPHABET + "]{32,64})";
-
-    private static final String OTP_HOTP_NUMERIC_PATTERN = "([\\d]{6,8})";
-
-    /**
      * Parses nfc tag and extracts otp credential from it
      * @param tag an NDEF compatible tag
      * @return OTP data
      * @throws ParseTagException if tag has no NDEF Tag Technology or there is no YK OTP payload
      */
     public static @NonNull String parseTag(Tag tag) throws ParseTagException {
-        return parseTag(tag, KeyboardLayoutProvider.getKeyboardLayout());
-    }
-
-    /**
-     * Parses nfc tag and extracts otp credential from it
-     * @param tag an NDEF compatible tag
-     * @param keyboardLayout provide your own ScanCode to Character mapping for static password parsing
-     *                  or use the one that provided by library in KeyboardLayoutProvider.getKeyboardLayout()
-     *                  in case if user wants to use other languages/layouts
-     * @return OTP data
-     * @throws ParseTagException if tag has no NDEF Tag Technology or there is no YK OTP payload
-     */
-    public static @NonNull String parseTag(Tag tag, KeyboardLayout keyboardLayout) throws ParseTagException {
         Ndef ndef = Ndef.get(tag);
         if (ndef == null) {
             throw new ParseTagException("Tag is not NDEF formatted");
@@ -88,7 +66,7 @@ public class OtpParser {
             throw new ParseTagException("Couldn't read ndef message");
         }
 
-        String parsedData = parseNdefMessage(message, keyboardLayout);
+        String parsedData = parseNdefMessage(message);
         if (parsedData != null) {
             return parsedData;
         }
@@ -101,21 +79,8 @@ public class OtpParser {
      * @return OTP data
      */
     public static @Nullable String parseNdefMessage(NdefMessage ndefMessage) {
-        return parseNdefMessage(ndefMessage, KeyboardLayoutProvider.getKeyboardLayout());
-    }
-
-
-    /**
-     * Parses nfc tag and extracts otp credential from it
-     * @param ndefMessage an NDEF message from tag
-     * @param keyboardLayout provide your own ScanCode to Character mapping for static password parsing
-     *                  or use the one that provided by library in KeyboardLayoutProvider.getKeyboardLayout()
-     *                  in case if user wants to use other languages/layouts
-     * @return OTP data
-     */
-    public static @Nullable String parseNdefMessage(NdefMessage ndefMessage, KeyboardLayout keyboardLayout) {
         for (NdefRecord record : ndefMessage.getRecords()) {
-            String parsedData = parseNdefRecord(record, keyboardLayout);
+            String parsedData = parseNdefRecord(record);
             if (parsedData != null) {
                 return parsedData;
             }
@@ -124,23 +89,11 @@ public class OtpParser {
     }
 
     /**
-     * Parses Uri from NDEF tag message and extracts otp credential from it
-     * @param uri Generally uri format is https://my.yubico.com/yk/#
-     * @return parsed OTP data (OTP, HOTP or static password)
+     * Parses Uri from NDEF tag message and extracts the payload of it.
+     * @param uri uri Generally uri format is https://my.yubico.com/yk/#&lt;payload&gt;
+     * @return parsed OTP payload
      */
     public static @Nullable String parseUri(@NonNull Uri uri) {
-        return parseUri(uri, KeyboardLayoutProvider.getKeyboardLayout());
-    }
-
-    /**
-     * Parses Uri from NDEF tag message and extracts otp credential from it
-     * @param uri uri Generally uri format is https://my.yubico.com/yk/#
-     * @param keyboardLayout provide your own ScanCode to Character mapping for static password parsing
-     *                  or use the one that provided by library in KeyboardLayoutProvider.getKeyboardLayout()
-     *                  in case if user wants to use other languages/layouts
-     * @return parsed OTP data (OTP, HOTP or static password)
-     */
-    public static @Nullable String parseUri(@NonNull Uri uri, KeyboardLayout keyboardLayout) {
         if (uri.getScheme() == null) {
             return null;
         }
@@ -159,24 +112,26 @@ public class OtpParser {
         // if there is nothing in payload (only scheme and prefix) than otpCode data is empty
         // without this check we might take last path segment of YK_NEO format (/neo)
         if (uri.toString().length() == uri.getScheme().length() + format.prefix.length() + "://".length()) {
-            otpCode = "";
+            return "";
         }
 
-        if (otpCode != null) {
-            if (otpCode.matches(OTP_MODHEX_PATTERN)) {
-                // default OTP Application (NDEF tag) set up on the key is YK OTP
-                // https://developers.yubico.com/OTP/
-                return otpCode;
-            } else if (otpCode.matches(OTP_HOTP_NUMERIC_PATTERN)) {
-                // HOTP
-                return otpCode;
-            } else {
-                // static password or HOTP (8 digits HOTP also using scan codes)
-                // use Yubico Manager to set up your key to return static password or HOTP
-                return parseKeyboardCodes(otpCode.getBytes(), keyboardLayout);
+        if (otpCode != null && otpCode.length() == 8) {
+            // Some YubiKeys output 8 digit HOTP as scan codes, which need to be translated
+            StringBuilder hotp = new StringBuilder();
+            for (byte code : otpCode.getBytes()) {
+                if (code >= 0x1e && code < 0x27) {
+                    hotp.append(code - 0x1d);
+                } else if (code == 0x27) {
+                    hotp.append("0");
+                } else {
+                    // Unknown character, not HOTP.
+                    return otpCode;
+                }
             }
+            return hotp.toString();
         }
-        return null;
+
+        return otpCode;
     }
 
 
@@ -186,10 +141,6 @@ public class OtpParser {
      * @return OTP application code, HOTP code or static password
      */
     static @Nullable String parseNdefRecord(NdefRecord record) {
-        return parseNdefRecord(record, KeyboardLayoutProvider.getKeyboardLayout());
-    }
-
-    static @Nullable String parseNdefRecord(NdefRecord record, KeyboardLayout keyboardLayout) {
         // not valid record or payload
         if (record == null || record.getPayload() == null || record.getPayload().length == 0) {
             return null;
@@ -197,7 +148,7 @@ public class OtpParser {
 
         if (record.getType().length > 0 && record.getType()[0] == TYPE_URI) {
             Uri uri = record.toUri();
-            return parseUri(uri, keyboardLayout);
+            return parseUri(uri);
         } else if (record.getType().length > 0 && record.getType()[0] == TYPE_TEXT){
             String payload = new String(record.getPayload(), StandardCharsets.UTF_8);
             // returning last item in path
@@ -211,32 +162,6 @@ public class OtpParser {
 
         // unexpected type of record
         return null;
-    }
-
-    /**
-     * In case of static password or HOTP yubikey returns HID codes which needs to be mapped to Android KeyEvent codes
-     * Using KeyEvent codes KeyCharacterMap returns charecters
-     * @param data part of payload from NDEF message that contains only otp data
-     *             NOTE: Format of initial payload: first byte of payload is 0x04, then uri prefix and than data that contains otp
-     * @param keyboardLayout provide your own ScanCode to Character mapping
-     *                  or use the one that provided by library in KeyboardLayoutProvider.getKeyboardLayout()
-     * @return value without Uri prefix
-     */
-
-    private static String parseKeyboardCodes(byte[] data, KeyboardLayout keyboardLayout) {
-        StringBuilder sb = new StringBuilder();
-        for (byte hid_key_code : data) {
-            if (hid_key_code == 0) {
-                // end of the message
-                break;
-            }
-            // make unsigned byte value
-            boolean shiftOn = (0x80 & hid_key_code) == 0x80;
-            int code = 0x7f & hid_key_code;
-            sb.append((char)keyboardLayout.get(code, shiftOn));
-        }
-
-        return sb.toString();
     }
 
     /**

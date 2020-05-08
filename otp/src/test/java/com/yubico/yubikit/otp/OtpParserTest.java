@@ -67,17 +67,17 @@ public class OtpParserTest {
     }
 
     @Test
-    public void parseStaticPassword() {
-        NdefRecord record = new NdefRecord((short) 1, new byte[]{0x55},  null, createNdefData(YK_PREFIX, new byte[]{23, 23, 23}));
+    public void parseHotp() {
+        NdefRecord record = new NdefRecord((short) 1, new byte[]{0x55},  null, createNdefData(YK_PREFIX, "543210".getBytes(StandardCharsets.UTF_8)));
         String code = OtpParser.parseNdefRecord(record);
-        Assert.assertEquals("ttt", code);
+        Assert.assertEquals("543210", code);
     }
 
     @Test
-    public void parseHOTP() {
-        NdefRecord record = new NdefRecord((short) 1, new byte[]{0x55},  null, createNdefData(YK_PREFIX, new byte[]{39, 30, 31, 32, 33, 34}));
+    public void parseHotp8Scancodes() {
+        NdefRecord record = new NdefRecord((short) 1, new byte[]{0x55},  null, createNdefData(YK_PREFIX, new byte[]{39, 30, 31, 32, 33, 34, 35, 36}));
         String code = OtpParser.parseNdefRecord(record);
-        Assert.assertEquals("012345", code);
+        Assert.assertEquals("01234567", code);
     }
 
     private static byte[] createNdefData(String prefix, @NonNull byte[] data) {

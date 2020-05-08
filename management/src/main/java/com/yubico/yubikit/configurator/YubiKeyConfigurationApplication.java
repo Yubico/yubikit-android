@@ -22,6 +22,7 @@ import com.yubico.yubikit.apdu.Apdu;
 import com.yubico.yubikit.exceptions.ApduException;
 import com.yubico.yubikit.apdu.Version;
 import com.yubico.yubikit.exceptions.ApplicationNotFound;
+import com.yubico.yubikit.exceptions.BadRequestException;
 import com.yubico.yubikit.exceptions.BadResponseException;
 import com.yubico.yubikit.transport.usb.NoDataException;
 import com.yubico.yubikit.exceptions.NotSupportedOperation;
@@ -177,47 +178,24 @@ public class YubiKeyConfigurationApplication implements Closeable {
     /**
      * Configures YubiKey to return static password on touch
      *
-     * @param password the password to store on YubiKey
-     * @param slot     the slot on YubiKey that will be configured with provided password (One - short touch, Two - long touch)
-     * @throws IOException   in case of communication error
+     * @param scanCodes the password to store on YubiKey as an array of keyboard scan codes.
+     * @param slot the slot on YubiKey that will be configured with provided password (One - short touch, Two - long touch)
+     * @throws IOException in case of communication error
+     * @throws ApduException in case of unexpected usage or error response from YubiKey
      */
-    public void setStaticPassword(String password, Slot slot) throws IOException, NotSupportedOperation, UnexpectedSymbolException, BadResponseException, ApduException {
-        setStaticPassword(password, slot, KeyboardScanCodes.getScanCodes());
-    }
-
-    /**
-     * Configures YubiKey to return static password on touch
-     *
-     * @param password  the password to store on YubiKey
-     * @param slot      the slot on YubiKey that will be configured with provided password (One - short touch, Two - long touch)
-     * @param scancodes provide your own Character to ScanCode mapping
-     *                  or use the one that provided by library in KeyboardScanCodes.getScanCodes()
-     * @throws IOException   in case of communication error
-     */
-    public void setStaticPassword(String password, Slot slot, Map<Character, Integer> scancodes) throws IOException, NotSupportedOperation, UnexpectedSymbolException, BadResponseException, ApduException {
+    public void setStaticPassword(byte[] scanCodes, Slot slot) throws IOException, ApduException, BadRequestException, BadResponseException {
         if (getVersion().isLessThan(2, 2, 0)) {
             throw new NotSupportedOperation("This operation is supported for version 2.2+");
         }
-        if (password == null || password.length() > 38) {
-            throw new NotSupportedOperation("password lengths >38 characters is not supported");
-        }
-
-        // convert each symbol to HID keyboard code
-        ByteArrayOutputStream stream = new ByteArrayOutputStream();
-
-        for (char symbol : password.toCharArray()) {
-            Integer code = scancodes.get(symbol);
-            if (code == null) {
-                throw new UnexpectedSymbolException("Unexpected symbol was provided");
-            }
-            stream.write(code);
+        if (scanCodes == null || scanCodes.length > 38) {
+            throw new BadRequestException("password lengths >38 characters is not supported");
         }
 
         ConfigurationBuilder configurationBuilder = new ConfigurationBuilder();
         configurationBuilder.setCfgFlags(ConfigurationBuilder.CFGFLAG_SHORT_TICKET);
         configurationBuilder.setTktFlags(ConfigurationBuilder.TKTFLAG_UPDATE_MASK);
         configurationBuilder.setExtFlags(ConfigurationBuilder.EXTFLAG_UPDATE_MASK);
-        configurationBuilder.setKey(ConfigurationBuilder.STATIC_MODE, stream.toByteArray());
+        configurationBuilder.setKey(ConfigurationBuilder.STATIC_MODE, scanCodes);
         sendConfiguration(slot, configurationBuilder);
     }
 
@@ -225,7 +203,7 @@ public class YubiKeyConfigurationApplication implements Closeable {
     /**
      * Configures YubiKey to return YubiOTP (one-time password) on touch
      *
-     * @param publicId  public id (suggestion: use serial number)
+     * @param publicId public id
      * @param privateId private id
      * @param key       the secret key to store on YubiKey
      * @param slot      the slot on YubiKey that will be configured with OTP (One - short touch, Two - long touch)
@@ -243,7 +221,7 @@ public class YubiKeyConfigurationApplication implements Closeable {
         }
 
         ConfigurationBuilder configurationBuilder = new ConfigurationBuilder();
-        configurationBuilder.setFixed(ModHexUtils.convertModHexToHex(publicId));
+        configurationBuilder.setFixed(publicId);
         configurationBuilder.setUid(privateId);
         configurationBuilder.setKey(ConfigurationBuilder.AES_MODE, key);
         configurationBuilder.setTktFlags(ConfigurationBuilder.TKTFLAG_UPDATE_MASK);
