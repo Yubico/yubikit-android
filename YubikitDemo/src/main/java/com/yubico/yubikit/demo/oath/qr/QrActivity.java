@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.yubico.yubikit.oath.qr;
+package com.yubico.yubikit.demo.oath.qr;
 
 import android.Manifest;
 import android.content.Intent;
@@ -33,7 +33,7 @@ import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
 import com.google.android.gms.vision.barcode.Barcode;
 import com.google.android.material.snackbar.Snackbar;
-import com.yubico.yubikit.oath.R;
+import com.yubico.yubikit.demo.R;
 import com.yubico.yubikit.utils.Logger;
 
 import java.io.IOException;
@@ -64,7 +64,7 @@ public class QrActivity extends AppCompatActivity {
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.yubikit_oath_camera_activity);
+        setContentView(R.layout.activity_qr_scan);
         surfaceView = findViewById(R.id.surfaceView);
         if (GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(this) == ConnectionResult.SUCCESS) {
             initQrReader();

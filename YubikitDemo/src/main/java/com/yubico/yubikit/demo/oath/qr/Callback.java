@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.yubico.yubikit.oath.qr;
+package com.yubico.yubikit.demo.oath.qr;
 
 import com.google.android.gms.vision.barcode.Barcode;
 

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.yubico.yubikit.oath.qr;
+package com.yubico.yubikit.demo.oath.qr;
 
 import android.Manifest;
 import android.content.Context;
@@ -29,7 +29,7 @@ import com.google.android.gms.vision.CameraSource;
 import com.google.android.gms.vision.Detector;
 import com.google.android.gms.vision.barcode.Barcode;
 import com.google.android.gms.vision.barcode.BarcodeDetector;
-import com.yubico.yubikit.oath.R;
+import com.yubico.yubikit.demo.R;
 import com.yubico.yubikit.utils.Logger;
 
 import java.io.IOException;
