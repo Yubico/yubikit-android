@@ -30,7 +30,7 @@ public class Apdu {
     private static int APDU_EXTENDED_MIN_LEN = 6;
 
     /** Raw array of command bytes that contains all command bytes (cla, ins, p1, p2), length and data bytes */
-    private byte[] command;
+    private byte[] bytes;
 
     /** Class of an APDU as defined in GlobalPlatform Card Specification */
     private byte cla;
@@ -65,7 +65,7 @@ public class Apdu {
         this.ins = ins;
         this.p1 = p1;
         this.p2 = p2;
-        this.data = data;
+        this.data = data == null ? new byte[0] : data;
         this.type = type;
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
         stream.write(cla);
@@ -89,7 +89,7 @@ public class Apdu {
                 stream.write(0x00); // lengthLow
             }
         }
-        command = stream.toByteArray();
+        bytes = stream.toByteArray();
     }
 
     /**
@@ -127,48 +127,48 @@ public class Apdu {
     /**
      * Creates a new APDU with pre-built data.
      * This initializer checks for the data integrity.
-     * @param data The pre-built APDU data.
+     * @param apduBytes The pre-built APDU data.
      */
-    public Apdu(byte[] data) {
-        this(data, Type.SHORT);
+    public Apdu(byte[] apduBytes) {
+        this(apduBytes, Type.SHORT);
     }
 
 
     /**
      * Creates a new APDU with pre-built data.
      * This initializer checks for the data integrity.
-     * @param data The pre-built APDU data.
+     * @param apduBytes The pre-built APDU data.
      * @param type The type of the APDU, short or extended.
      */
-    public Apdu(byte[] data, Type type) {
-        command = data;
-        if (data.length < APDU_MIN_LEN) {
+    public Apdu(byte[] apduBytes, Type type) {
+        bytes = apduBytes;
+        if (apduBytes.length < APDU_MIN_LEN) {
             throw new IllegalArgumentException("apdu command should have at least 4 bytes");
         }
         int pointer = 0;
-        this.cla = data[pointer++];
-        this.ins = data[pointer++];
-        this.p1 = data[pointer++];
-        this.p2 = data[pointer++];
+        this.cla = apduBytes[pointer++];
+        this.ins = apduBytes[pointer++];
+        this.p1 = apduBytes[pointer++];
+        this.p2 = apduBytes[pointer++];
         this.type = type;
         if (type == Type.SHORT) {
-            int length = data.length == APDU_MIN_LEN ? 0 : data[pointer];
-            this.data = length != 0 ? Arrays.copyOfRange(data, 5, data.length) : null;
+            int length = apduBytes.length == APDU_MIN_LEN ? 0 : apduBytes[pointer];
+            this.data = length != 0 ? Arrays.copyOfRange(apduBytes, 5, apduBytes.length) : null;
         } else {
-            if (data.length < APDU_EXTENDED_MIN_LEN) {
+            if (apduBytes.length < APDU_EXTENDED_MIN_LEN) {
                 throw new IllegalArgumentException("extended apdu command should have at least 6 bytes");
             }
-            int length = (data[pointer++] << 8) + data[pointer];
-            this.data = length != 0 ? Arrays.copyOfRange(data, 6, data.length) : null;
+            int length = (apduBytes[pointer++] << 8) + apduBytes[pointer];
+            this.data = length != 0 ? Arrays.copyOfRange(apduBytes, 6, apduBytes.length) : null;
         }
     }
 
     /**
      * Byte stream of APDU command
-     * @return byte array of all APDU data (including cla, ins, p1, p1, length)
+     * @return byte array of all APDU data (cla, ins, p1, p2, length, and data)
      */
-    public byte[] getCommandData() {
-        return command;
+    public byte[] getBytes() {
+        return bytes;
     }
 
     /**

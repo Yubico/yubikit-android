@@ -129,7 +129,7 @@ public class ApduUtils {
         while (sendRemaining) {
             ApduResponse readResponse = connection.execute(apdu);
             short statusCode = readResponse.getSw();
-            byte[] responseData = readResponse.responseData();
+            byte[] responseData = readResponse.getData();
             if (readResponse.getSw() == SW_SUCCESS) {
                 sendRemaining = false;
             } else if (readResponse.getSw() >> 8 == SW1_HAS_MORE_DATA) {

@@ -34,12 +34,12 @@ public class TlvUtilsTest {
         tlv = new Tlv(0x7F49, null);
         Assert.assertEquals(0x7F49, tlv.getTag());
         Assert.assertEquals(3, tlv.getOffset());
-        Assert.assertArrayEquals(new byte[]{0x7F, 0x49, 0}, tlv.getData());
+        Assert.assertArrayEquals(new byte[]{0x7F, 0x49, 0}, tlv.getBytes());
 
         tlv = new Tlv(0x80, null);
         Assert.assertEquals(0x80, tlv.getTag());
         Assert.assertEquals(2, tlv.getOffset());
-        Assert.assertArrayEquals(new byte[]{(byte) 0x80, 0}, tlv.getData());
+        Assert.assertArrayEquals(new byte[]{(byte) 0x80, 0}, tlv.getBytes());
     }
 
     @Test

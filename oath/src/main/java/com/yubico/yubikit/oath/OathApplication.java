@@ -279,7 +279,7 @@ public class OathApplication extends Iso7816Application {
      * If the application is protected with a password, this password is removed.
      */
     public void unsetSecret() throws IOException, ApduException {
-        sendAndReceive(new Apdu(0, INS_SET_CODE, 0, 0, new Tlv(TAG_KEY, null).getData()));
+        sendAndReceive(new Apdu(0, INS_SET_CODE, 0, 0, new Tlv(TAG_KEY, null).getBytes()));
     }
 
     /**

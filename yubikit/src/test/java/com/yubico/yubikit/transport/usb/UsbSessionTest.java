@@ -90,8 +90,8 @@ public class UsbSessionTest {
         ApduResponse response = usbConnection.execute(new Apdu(selectPIVCommand));
         byte[] selectPIVResponse = byteArrayOfInts(new int[] {0x61, 0x11, 0x4f, 0x06, 0x00, 0x00, 0x10, 0x00, 0x01, 0x00, 0x79, 0x07, 0x4f, 0x05, 0xa0, 0x00, 0x00, 0x03, 0x08, 0x90, 0x00});
         Assert.assertEquals(SUCCESS_CODE, response.getSw());
-        Assert.assertNotNull(response.responseData());
-        Assert.assertArrayEquals(selectPIVResponse, response.getData());
+        Assert.assertArrayEquals(Arrays.copyOfRange(response.getBytes(), 0, response.getBytes().length - 2), response.getData());
+        Assert.assertArrayEquals(selectPIVResponse, response.getBytes());
     }
 
     @Test
@@ -101,7 +101,7 @@ public class UsbSessionTest {
         byte[] atr = usbConnection.getAtr();
         Assert.assertNotNull(atr);
         ApduResponse response = usbConnection.execute(new Apdu(alignedCommand));
-        Assert.assertNotNull(response.getData());
+        Assert.assertNotNull(response.getBytes());
     }
 
     @Test

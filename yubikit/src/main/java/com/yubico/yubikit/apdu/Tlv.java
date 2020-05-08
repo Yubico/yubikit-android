@@ -29,36 +29,36 @@ public class Tlv {
 
     private final int tag;
     private final int length;
-    private final byte[] data;
+    private final byte[] bytes;
     private final int offset;
 
     /**
      * Creates instance of {@link Tlv}
      *
-     * @param data       raw bytes that needs to be converted into Tlv
+     * @param bytes       raw bytes that needs to be converted into Tlv
      * @param dataOffset offset within data byte array
      */
-    public Tlv(byte[] data, int dataOffset) {
+    public Tlv(byte[] bytes, int dataOffset) {
         int pointer = 0;
-        int tagData = data[dataOffset + pointer++] & 0xFF;
+        int tagData = bytes[dataOffset + pointer++] & 0xFF;
         if ((tagData & 0x1f) == 0x1f) {
-            tagData = tagData << 8 | data[dataOffset + pointer++];
+            tagData = tagData << 8 | bytes[dataOffset + pointer++];
         }
         tag = tagData;
 
-        int checkByte = data[dataOffset + pointer++] & 0xFF;
+        int checkByte = bytes[dataOffset + pointer++] & 0xFF;
         if (checkByte < LENGTH_REQUIRES_EXTRA_BYTE) {
             length = checkByte;
         } else if (checkByte == LENGTH_REQUIRES_EXTRA_BYTE) {
-            length = data[dataOffset + pointer++] & 0xFF;
+            length = bytes[dataOffset + pointer++] & 0xFF;
         } else if (checkByte == LENGTH_REQUIRES_EXTRA_TWO_BYTES) {
-            length = ((data[dataOffset + pointer++] & 0xFF) << 8) + (data[dataOffset + pointer++] & 0xFF);
+            length = ((bytes[dataOffset + pointer++] & 0xFF) << 8) + (bytes[dataOffset + pointer++] & 0xFF);
         } else {
             length = 0;
         }
         offset = pointer;
 
-        this.data = Arrays.copyOfRange(data, dataOffset, dataOffset + offset + length);
+        this.bytes = Arrays.copyOfRange(bytes, dataOffset, dataOffset + offset + length);
     }
 
     /**
@@ -105,7 +105,7 @@ public class Tlv {
         if (value != null) {
             stream.write(value, 0, length);
         }
-        data = stream.toByteArray();
+        bytes = stream.toByteArray();
     }
 
     /**
@@ -119,7 +119,7 @@ public class Tlv {
      * @return value bytes
      */
     public byte[] getValue() {
-        return Arrays.copyOfRange(data, offset, offset + length);
+        return Arrays.copyOfRange(bytes, offset, offset + length);
     }
 
     /**
@@ -139,8 +139,7 @@ public class Tlv {
     /**
      * @return raw data of tlv blob
      */
-    public byte[] getData() {
-        return data;
+    public byte[] getBytes() {
+        return bytes;
     }
-
 }

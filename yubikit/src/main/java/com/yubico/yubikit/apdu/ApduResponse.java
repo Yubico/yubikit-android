@@ -22,42 +22,38 @@ import java.util.Arrays;
  * Parses response to APDU from a key
  */
 public class ApduResponse {
-    private byte[] data;
-    private int size;
+    private final byte[] bytes;
 
     /**
      * Creates a new response from a key
-     * @param data data received from key within session/service provider
+     *
+     * @param bytes data received from key within session/service provider
      */
-    public ApduResponse(byte[] data) {
-        this.data = data;
-        size = data != null ? data.length : 0;
+    public ApduResponse(byte[] bytes) {
+        if (bytes.length < 2) {
+            throw new IllegalArgumentException("Invalid APDU response data");
+        }
+        this.bytes = bytes;
     }
 
     /**
      * @return the SW from a key response.
      */
     public short getSw() {
-        if (size < 2) {
-            return 0x00;
-        }
-        return (short)(((0xff & data[size-2]) << 8) | (0xff & data[size-1]));
+        return (short) (((0xff & bytes[bytes.length - 2]) << 8) | (0xff & bytes[bytes.length - 1]));
     }
 
     /**
      * @return the data from a key response without the SW.
      */
-    public byte[] responseData() {
-        if (size < 3) {
-            return null;
-        }
-        return Arrays.copyOfRange(this.data, 0, size - 2);
+    public byte[] getData() {
+        return Arrays.copyOfRange(bytes, 0, bytes.length - 2);
     }
 
     /**
      * @return raw data from a key response
      */
-    public byte[] getData() {
-        return data;
+    public byte[] getBytes() {
+        return bytes;
     }
 }

@@ -97,7 +97,7 @@ public class UsbIso7816Connection implements Iso7816Connection {
 
     @Override
     public ApduResponse execute(Apdu command) throws IOException {
-        byte[] output = transceive(REQUEST_MESSAGE_TYPE, command.getCommandData());
+        byte[] output = transceive(REQUEST_MESSAGE_TYPE, command.getBytes());
         return new ApduResponse(output);
     }
 

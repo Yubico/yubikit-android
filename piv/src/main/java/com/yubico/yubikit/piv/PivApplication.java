@@ -186,7 +186,7 @@ public class PivApplication extends Iso7816Application {
      */
     public void authenticate(byte[] managementKey) throws IOException, ApduException, BadResponseException {
         // An empty witness is a request for a witness.
-        byte[] request = new Tlv(TAG_DYN_AUTH, new Tlv(TAG_AUTH_WITNESS, null).getData()).getData();
+        byte[] request = new Tlv(TAG_DYN_AUTH, new Tlv(TAG_AUTH_WITNESS, null).getBytes()).getBytes();
         byte[] response = sendAndReceive(new Apdu(0, INS_AUTHENTICATE, TDES, Slot.CARD_MANAGEMENT.value, request));
 
         // Witness (tag '80') contains encrypted data (unrevealed fact).
@@ -200,7 +200,7 @@ public class PivApplication extends Iso7816Application {
             byte[] challenge = generateChallenge();
             dataTlv.add(new Tlv(TAG_AUTH_CHALLENGE, challenge));
 
-            request = new Tlv(TAG_DYN_AUTH, TlvUtils.packTlvList(dataTlv)).getData();
+            request = new Tlv(TAG_DYN_AUTH, TlvUtils.packTlvList(dataTlv)).getBytes();
             response = sendAndReceive(new Apdu(0, INS_AUTHENTICATE, TDES, Slot.CARD_MANAGEMENT.value, request));
 
             // (tag '82') contains either the decrypted data from tag '80' or the encrypted data from tag '81'.
@@ -268,7 +268,7 @@ public class PivApplication extends Iso7816Application {
         List<Tlv> dataTlv = new ArrayList<>();
         dataTlv.add(new Tlv(TAG_AUTH_RESPONSE, null));
         dataTlv.add(new Tlv(TAG_AUTH_CHALLENGE, requestMessage));
-        byte[] request = new Tlv(TAG_DYN_AUTH, TlvUtils.packTlvList(dataTlv)).getData();
+        byte[] request = new Tlv(TAG_DYN_AUTH, TlvUtils.packTlvList(dataTlv)).getBytes();
 
         try {
             byte[] response = sendAndReceive(new Apdu(0, INS_AUTHENTICATE, algorithm.value, slot.value, request));
@@ -295,7 +295,7 @@ public class PivApplication extends Iso7816Application {
 
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
         stream.write(TDES);
-        stream.write(new Tlv(Slot.CARD_MANAGEMENT.value, managementKey).getData());
+        stream.write(new Tlv(Slot.CARD_MANAGEMENT.value, managementKey).getBytes());
 
         // NOTE: if p2=0xfe key requires touch
         // Require touch is only available on YubiKey 4 & 5.
@@ -523,7 +523,7 @@ public class PivApplication extends Iso7816Application {
             tlvs.add(new Tlv(TAG_TOUCH_POLICY, new byte[]{(byte) touchPolicy.value}));
         }
 
-        byte[] response = sendAndReceive(new Apdu(0, INS_GENERATE_ASYMMETRIC, 0, slot.value, new Tlv((byte) 0xac, TlvUtils.packTlvList(tlvs)).getData()));
+        byte[] response = sendAndReceive(new Apdu(0, INS_GENERATE_ASYMMETRIC, 0, slot.value, new Tlv((byte) 0xac, TlvUtils.packTlvList(tlvs)).getBytes()));
 
         // Tag '7F49' contains data objects for RSA or ECC
         SparseArray<byte[]> dataObjects = TlvUtils.parseTlvMap(TlvUtils.unwrapTlv(response, 0x7F49));
@@ -633,7 +633,7 @@ public class PivApplication extends Iso7816Application {
      * @throws IOException in case of connection error
      */
     public byte[] getObject(byte[] objectId) throws IOException, ApduException, UnexpectedTagException {
-        byte[] requestData = new Tlv(TAG_OBJ_ID, objectId).getData();
+        byte[] requestData = new Tlv(TAG_OBJ_ID, objectId).getBytes();
         byte[] responseData = sendAndReceive(new Apdu(0, INS_GET_DATA, 0x3f, 0xff, requestData));
         return TlvUtils.unwrapTlv(responseData, TAG_OBJ_DATA);
     }

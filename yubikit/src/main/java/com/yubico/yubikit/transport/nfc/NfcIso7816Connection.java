@@ -56,8 +56,8 @@ public class NfcIso7816Connection implements Iso7816Connection {
 
     @Override
     public ApduResponse execute(Apdu command) throws IOException {
-        Logger.d("sent: " + StringUtils.bytesToHex(command.getCommandData()));
-        byte[] received = card.transceive(command.getCommandData());
+        Logger.d("sent: " + StringUtils.bytesToHex(command.getBytes()));
+        byte[] received = card.transceive(command.getBytes());
         Logger.d("received: " + StringUtils.bytesToHex(received));
         return new ApduResponse(received);
     }

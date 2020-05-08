@@ -69,7 +69,7 @@ public class TlvUtils {
     public static byte[] packTlvList(List<Tlv> list) {
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
         for (Tlv tlv : list) {
-            stream.write(tlv.getData(), 0, tlv.getData().length);
+            stream.write(tlv.getBytes(), 0, tlv.getBytes().length);
         }
         return stream.toByteArray();
     }
@@ -77,15 +77,15 @@ public class TlvUtils {
     /**
      * Helper method extracts tlv data from another byte array and verifies tag
      *
-     * @param data   the tlv data
-     * @param tag    tag that expected within provided Tlv
+     * @param tlvData   the tlv data
+     * @param expectedTag    tag that expected within provided Tlv
      * @return the value of the Tlv.
      * @throws UnexpectedTagException if tag is not found
      */
-    public static byte[] unwrapTlv(byte[] data, int tag) throws UnexpectedTagException {
-        Tlv tlv = new Tlv(data, 0);
-        if (tlv.getTag() != tag) {
-            throw new UnexpectedTagException(tag, tlv.getTag());
+    public static byte[] unwrapTlv(byte[] tlvData, int expectedTag) throws UnexpectedTagException {
+        Tlv tlv = new Tlv(tlvData, 0);
+        if (tlv.getTag() != expectedTag) {
+            throw new UnexpectedTagException(expectedTag, tlv.getTag());
         }
         return tlv.getValue();
     }
