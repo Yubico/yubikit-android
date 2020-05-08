@@ -26,8 +26,9 @@ dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 
     compileOnly project(':yubikit')
+    api "androidx.lifecycle:lifecycle-viewmodel:2.2.0" // TODO: Remove this if Android Studio stops complaining about OtpActivity.
     implementation "androidx.appcompat:appcompat:$appcompatVersion"
-    implementation "com.google.android.material:material:$snackbarVersion"
+    implementation "com.google.android.material:material:1.0.0"
 
     testImplementation 'junit:junit:4.13'
     testImplementation 'androidx.test.ext:junit:1.1.1'

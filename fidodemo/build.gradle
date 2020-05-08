@@ -39,7 +39,7 @@ dependencies {
     implementation "androidx.recyclerview:recyclerview:$androidxuiVersion"
     implementation "androidx.cardview:cardview:1.0.0"
     implementation "androidx.swiperefreshlayout:swiperefreshlayout:1.0.0"
-    implementation "com.google.android.material:material:$snackbarVersion"
+    implementation "com.google.android.material:material:1.0.0"
 
     // preference
     api "androidx.preference:preference:1.1.1"

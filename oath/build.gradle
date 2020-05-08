@@ -25,9 +25,7 @@ android {
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     compileOnly project(':yubikit')
-
-    implementation "androidx.appcompat:appcompat:$appcompatVersion"
-    implementation "com.google.android.material:material:$snackbarVersion"
+    compileOnly "androidx.annotation:annotation:$annotationVersion"
 
     // Hex.decodeHex method
     implementation 'commons-codec:commons-codec:1.11'

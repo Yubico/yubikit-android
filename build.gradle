@@ -33,7 +33,7 @@ allprojects {
         targetSdkVersion = 28
 
         appcompatVersion = "1.1.0"
-        snackbarVersion = "1.0.0"
+        annotationVersion = "1.0.0"
     }
 }
 
