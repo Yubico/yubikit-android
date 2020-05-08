@@ -36,7 +36,6 @@ import com.yubico.yubikit.demo.BaseYubikeyFragment
 import com.yubico.yubikit.demo.YubikeyViewModel
 import com.yubico.yubikit.demo.oath.AuthRequiredException
 import com.yubico.yubikit.demo.oath.PasswordDialogFragment
-import com.yubico.yubikit.demo.raw.ISettings
 import com.yubico.yubikit.demo.settings.Ramps
 import com.yubico.yubikit.piv.Slot
 

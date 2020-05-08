@@ -3,11 +3,6 @@
     <group
         android:id="@+id/menu_top"
         android:checkableBehavior="single">
-        <item
-            android:id="@+id/smartcard_fragment"
-            android:icon="@drawable/ic_simcard"
-            android:orderInCategory="1"
-            android:title="@string/raw_commands_demo"/>
 
         <item
             android:id="@+id/login_fragment"

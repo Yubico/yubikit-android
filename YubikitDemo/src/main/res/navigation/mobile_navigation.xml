@@ -78,12 +78,6 @@
         android:label="@string/about"/>
 
     <fragment
-        android:id="@+id/smartcard_fragment"
-        android:name="com.yubico.yubikit.demo.raw.YubikeySmartcardFragment"
-        android:label="@string/raw_commands_demo"
-        tools:layout="@layout/fragment_smartcard"/>
-
-    <fragment
         android:id="@+id/webview_fragment"
         android:name="com.yubico.yubikit.demo.webview.WebViewFragment"
         android:label="@string/fido2_demo_web"
