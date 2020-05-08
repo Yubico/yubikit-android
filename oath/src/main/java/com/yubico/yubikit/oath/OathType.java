@@ -36,7 +36,7 @@ public enum OathType {
                 return type;
             }
         }
-        throw new IllegalArgumentException("Not a valid OathType :" + value);
+        throw new IllegalArgumentException("Not a valid OathType: " + value);
     }
 
     public static OathType fromString(String value) {
@@ -45,6 +45,6 @@ public enum OathType {
         } else if ("totp".equalsIgnoreCase(value)) {
             return TOTP;
         }
-        return null;
+        throw new IllegalArgumentException("Not a valid OathType: " + value);
     }
 }

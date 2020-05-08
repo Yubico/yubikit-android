@@ -70,6 +70,6 @@ public enum HashAlgorithm {
         if ("sha512".equalsIgnoreCase(value)) {
             return HashAlgorithm.SHA512;
         }
-        return null;
+        throw new IllegalArgumentException("Not a valid HashAlgorithm");
     }
 }
