@@ -19,10 +19,9 @@
     <string name="enable">Enable</string>
     <string name="need_yubikey">Plug in you yubikey or tap over NFC reader</string>
     <string name="oath_demo">Oath demo</string>
-    <string name="oath_no_authenticators">This yubikey contains no credentials. To add credential tap FAB button. \n
-    Usage of TOTP can be tested with https://demo.yubico.com/playground. Add authenticator application as 2nd factor auth. \n
-        Or any other service that allows 2nd factor auth with authenticator app.
-    Additionally QR codes for testing purposes can be generated on https://stefansundin.github.io/2fa-qr/</string>
+    <string name="oath_no_authenticators">This yubikey contains no credentials. To add credential tap the + button near the bottom right. \n\n
+        Usage of TOTP can be tested by creating an account at https://demo.yubico.com/playground and adding an authenticator application.
+    </string>
     <string name="issuer">Issuer</string>
     <string name="copied">Code copied to clipboard</string>
     <string name="not_copied">No code to copy</string>
@@ -36,7 +35,11 @@
     <string name="new_password">New password</string>
 
     <string name="about">About</string>
-    <string name="about_app">This application is a demo of YubiKit. YubiKit is a library provided by Yubico for interacting with YubiKeys.\nIt shows different scenarios and cases how you can use YubiKeys for authentication process.\n\nRead about YubiKey, application and its advantages at https://www.yubico.com\n\nWeb version of demo is implemented on https://demo.yubico.com/playground and for FIDO2/WebauthN https://demo.yubico.com/webauthn\n\niOS version of demo and YubiKit: https://github.com/Yubico/yubikit-ios\n</string>
+    <string name="about_app">YubiKit is a library provided by Yubico for interacting with YubiKeys.
+        This demo app showcases some of the capabilities of the library.
+        \n\nTo read more about the YubiKey and its supported application, visit https://www.yubico.com
+        \n\nFor the iOS version of YubiKit, visit https://github.com/Yubico/yubikit-ios
+    </string>
     <string name="version">Version %s (%d)</string>
     <string name="copyright">Copyright © 2019 Yubico.</string>
 
