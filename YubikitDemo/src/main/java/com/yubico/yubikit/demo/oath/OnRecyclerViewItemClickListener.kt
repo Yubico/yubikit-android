@@ -14,14 +14,11 @@
  * limitations under the License.
  */
 
-package com.yubico.yubikit.demo
-import android.app.Application
-import androidx.appcompat.app.AppCompatDelegate
+package com.yubico.yubikit.demo.oath
 
-class DemoApplication : Application() {
-    override fun onCreate() {
-        super.onCreate()
-
-        AppCompatDelegate.setCompatVectorFromResourcesEnabled(true)
-    }
+/**
+ * This interface needs to be implemented in order to listen to event when item in list view selected by click
+ */
+interface OnRecyclerViewItemClickListener {
+    fun onRecyclerViewItemClicked(position: Int)
 }

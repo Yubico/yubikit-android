@@ -5,17 +5,12 @@
 
     <string name="settings">Settings</string>
     <string name="yubico_otp_demo">Yubico OTP demo</string>
-    <string name="raw_commands_demo">Smartcard demo</string>
-    <string name="fido2_demo">FIDO2 demo</string>
-    <string name="fido2_demo_web">FIDO2 demo in web view</string>
     <string name="yubico_mgmt_demo">YubiKey Setting</string>
-    <string name="company_name">yubico</string>
     <string name="run_yubico_otp_demo">This demo captures and validates a Yubico OTP credential. To capture a credential tap on Read OTP, to validate tap Validate OTP.</string>
     <string name="otp">One-time code</string>
     <string name="validate_otp">Validate OTP</string>
     <string name="read_otp">Read OTP</string>
     <string name="no_key">The key is not plugged in</string>
-    <string name="clear_cache">table</string>
     <string name="enable">Enable</string>
     <string name="need_yubikey">Plug in you yubikey or tap over NFC reader</string>
     <string name="oath_demo">Oath demo</string>
@@ -119,4 +114,7 @@
     <string name="yubikit_oath_retry">Retry</string>
     <string name="yubikit_oath_low_storage_error">Bar code detector dependencies cannot be downloaded due to low device storage</string>
     <string name="yubikit_oath_barcode_not_operational">"Bar code detector dependencies is not downloaded yet, please try again later."</string>
+
+    <string name="request">Request</string>
+
 </resources>

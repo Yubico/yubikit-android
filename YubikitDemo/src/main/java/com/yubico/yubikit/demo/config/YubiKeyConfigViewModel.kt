@@ -28,7 +28,7 @@ import com.yubico.yubikit.configurator.Slot
 import com.yubico.yubikit.configurator.UnexpectedSymbolException
 import com.yubico.yubikit.configurator.YubiKeyConfigurationApplication
 import com.yubico.yubikit.demo.YubikeyViewModel
-import com.yubico.yubikit.demo.fido.arch.SingleLiveEvent
+import com.yubico.yubikit.demo.arch.SingleLiveEvent
 import com.yubico.yubikit.exceptions.YubiKeyCommunicationException
 import com.yubico.yubikit.transport.YubiKeySession
 import com.yubico.yubikit.utils.Logger

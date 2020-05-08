@@ -3,29 +3,6 @@
     xmlns:android="http://schemas.android.com/apk/res/android">
 
     <PreferenceCategory
-        app:title="FIDO2 features">
-
-        <SwitchPreferenceCompat
-            app:key="expiration"
-            app:title="Expire session on app start"
-            app:defaultValue="true"/>
-
-        <SwitchPreferenceCompat
-            app:key="passwordless"
-            app:title="Passwordless experience"/>
-
-        <Preference
-            android:key="@string/clear_cache"
-            android:title="Clear cache"
-            android:summary="Remove list of authenticators from local cache"/>
-
-        <SwitchPreferenceCompat
-            app:key="customtabs"
-            app:title="Use custom tabs for web view"
-            app:defaultValue="true"/>
-    </PreferenceCategory>
-
-    <PreferenceCategory
         app:title="Smartcard and PIV features">
 
         <EditTextPreference

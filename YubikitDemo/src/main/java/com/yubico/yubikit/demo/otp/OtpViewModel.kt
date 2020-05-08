@@ -19,8 +19,8 @@ package com.yubico.yubikit.demo.otp
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import com.yubico.yubikit.demo.fido.arch.ErrorLiveEvent
-import com.yubico.yubikit.demo.fido.arch.SingleLiveEvent
+import com.yubico.yubikit.demo.arch.ErrorLiveEvent
+import com.yubico.yubikit.demo.arch.SingleLiveEvent
 
 private const val TAG = "OtpViewModel"
 class OtpViewModel(private val validator: YubiCloudValidator) : ViewModel() {

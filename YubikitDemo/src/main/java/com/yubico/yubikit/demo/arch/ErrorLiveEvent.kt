@@ -14,14 +14,15 @@
  * limitations under the License.
  */
 
-package com.yubico.yubikit.demo
-import android.app.Application
-import androidx.appcompat.app.AppCompatDelegate
+package com.yubico.yubikit.demo.arch
 
-class DemoApplication : Application() {
-    override fun onCreate() {
-        super.onCreate()
+import android.util.Log
 
-        AppCompatDelegate.setCompatVectorFromResourcesEnabled(true)
+class ErrorLiveEvent(private val tag: String) : SingleLiveEvent<Throwable>() {
+    override fun setValue(t: Throwable?) {
+        super.setValue(t)
+        t?.run {
+            Log.e(tag, t.message, t)
+        }
     }
 }

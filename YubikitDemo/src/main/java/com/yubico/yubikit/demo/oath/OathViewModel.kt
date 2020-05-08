@@ -26,7 +26,7 @@ import androidx.lifecycle.ViewModelProvider
 import com.yubico.yubikit.YubiKitManager
 import com.yubico.yubikit.exceptions.ApduException
 import com.yubico.yubikit.demo.YubikeyViewModel
-import com.yubico.yubikit.demo.fido.arch.SingleLiveEvent
+import com.yubico.yubikit.demo.arch.SingleLiveEvent
 import com.yubico.yubikit.exceptions.BadRequestException
 import com.yubico.yubikit.exceptions.YubiKeyCommunicationException
 import com.yubico.yubikit.oath.*

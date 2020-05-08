@@ -38,7 +38,7 @@ class SplashFragment : Fragment() {
             findNavController().navigate(destination, null,
                     NavOptions.Builder().setPopUpTo(R.id.splash_fragment, true).build())
         } catch (e: IllegalArgumentException) {
-            findNavController().navigate(R.id.login_fragment, null,
+            findNavController().navigate(R.id.piv_fragment, null,
                     NavOptions.Builder().setPopUpTo(R.id.splash_fragment, true).build())
         }
     }

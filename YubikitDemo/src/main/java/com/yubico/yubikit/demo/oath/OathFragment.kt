@@ -35,8 +35,6 @@ import com.yubico.yubikit.exceptions.ApduException
 import com.yubico.yubikit.demo.BaseYubikeyFragment
 import com.yubico.yubikit.demo.R
 import com.yubico.yubikit.demo.YubikeyViewModel
-import com.yubico.yubikit.demo.fido.listview.OnRecyclerViewItemClickListener
-import com.yubico.yubikit.demo.fido.listview.OperationsListDialogFragment
 import com.yubico.yubikit.demo.oath.qr.QrActivity
 import com.yubico.yubikit.demo.settings.Ramps
 import com.yubico.yubikit.oath.OathApplication

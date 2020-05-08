@@ -1,1 +1,1 @@
-include ':YubikitDemo', ':fido', ':yubikit', ':fidodemo', ':oath', ':otp', ':management', ':piv'
+include ':YubikitDemo', ':yubikit', ':oath', ':otp', ':management', ':piv'

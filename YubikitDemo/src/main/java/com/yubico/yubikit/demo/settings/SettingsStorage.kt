@@ -18,7 +18,7 @@ package com.yubico.yubikit.demo.settings
 
 import android.content.Context
 import androidx.preference.PreferenceManager
-import com.yubico.yubikit.demo.fido.R
+import com.yubico.yubikit.demo.R
 
 /**
  * Storage for settings and flags that need to be preserved in app after restart
@@ -35,7 +35,7 @@ class SettingsStorage(context: Context) {
     }
 
     fun getNavigationDestination() : Int {
-        return preferences.getInt(PREF_DESTINATION, R.id.login_fragment)
+        return preferences.getInt(PREF_DESTINATION, R.id.piv_fragment)
     }
 
     /**

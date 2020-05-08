@@ -5,18 +5,6 @@
         android:checkableBehavior="single">
 
         <item
-            android:id="@+id/login_fragment"
-            android:icon="@drawable/ic_fingerprint"
-            android:orderInCategory="2"
-            android:title="@string/fido2_demo"/>
-
-        <item
-            android:id="@+id/webview_fragment"
-            android:icon="@drawable/ic_web_24dp"
-            android:orderInCategory="3"
-            android:title="@string/fido2_demo_web"/>
-
-        <item
             android:id="@+id/oath_fragment"
             android:icon="@drawable/ic_time"
             android:orderInCategory="4"

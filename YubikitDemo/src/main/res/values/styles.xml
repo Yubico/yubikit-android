@@ -49,4 +49,32 @@
         <item name="android:windowBackground">@drawable/background_dialog</item>
     </style>
 
+    <style name="LoginTextSignIn" parent="@android:style/TextAppearance">
+        <item name="android:layout_margin">@dimen/card_view_margin</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">?colorAccent</item>
+    </style>
+
+    <style name="LoginTextInputLayout" parent="Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+        <item name="android:layout_margin">@dimen/card_view_margin</item>
+        <item name="boxBackgroundColor">@android:color/white</item>
+    </style>
+
+    <style name="LoginTextInput" parent="ThemeOverlay.MaterialComponents.TextInputEditText">
+        <item name="android:paddingStart">@dimen/text_margin</item>
+        <item name="android:paddingEnd">@dimen/text_margin</item>
+        <item name="android:singleLine">true</item>
+    </style>
+
+    <style name="LoginScreenButton" parent="Base.TextAppearance.AppCompat.Button">
+        <item name="android:padding">@dimen/text_margin</item>
+        <item name="android:layout_marginStart">@dimen/card_view_margin</item>
+        <item name="android:layout_marginEnd">@dimen/card_view_margin</item>
+        <item name="android:layout_marginTop">@dimen/text_margin</item>
+        <item name="android:layout_marginBottom">@dimen/card_view_margin</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:background">?colorAccent</item>
+        <item name="android:textColor">?colorPrimary</item>
+    </style>
+
 </resources>

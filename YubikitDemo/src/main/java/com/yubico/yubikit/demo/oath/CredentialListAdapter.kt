@@ -27,7 +27,6 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.yubico.yubikit.demo.R
-import com.yubico.yubikit.demo.fido.listview.OnRecyclerViewItemClickListener
 import com.yubico.yubikit.oath.Code
 import com.yubico.yubikit.oath.Credential
 import com.yubico.yubikit.oath.OathType

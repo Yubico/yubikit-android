@@ -14,14 +14,8 @@
  * limitations under the License.
  */
 
-package com.yubico.yubikit.demo
-import android.app.Application
-import androidx.appcompat.app.AppCompatDelegate
+package com.yubico.yubikit.demo.otp
 
-class DemoApplication : Application() {
-    override fun onCreate() {
-        super.onCreate()
+import java.lang.Exception
 
-        AppCompatDelegate.setCompatVectorFromResourcesEnabled(true)
-    }
-}
+class DataException(message: String): Exception(message)

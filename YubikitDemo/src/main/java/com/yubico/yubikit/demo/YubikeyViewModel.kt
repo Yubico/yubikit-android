@@ -21,8 +21,8 @@ import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.ViewModel
 import com.yubico.yubikit.YubiKitManager
-import com.yubico.yubikit.demo.fido.arch.ErrorLiveEvent
-import com.yubico.yubikit.demo.fido.arch.SingleLiveEvent
+import com.yubico.yubikit.demo.arch.ErrorLiveEvent
+import com.yubico.yubikit.demo.arch.SingleLiveEvent
 import com.yubico.yubikit.demo.exceptions.UsbDeviceNotFoundException
 import com.yubico.yubikit.demo.settings.Ramps
 import com.yubico.yubikit.exceptions.NfcDisabledException
