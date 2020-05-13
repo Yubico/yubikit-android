@@ -18,8 +18,7 @@ jobs:
     steps:
     - uses: actions/checkout@master
 
-    - name: Scan and but continue if warnings
-      continue-on-error: true
+    - name: Scan and fail if warnings
       run: |
         if [ "${SECRET}" != "" ]; then
           docker login yes-docker-local.artifactory.in.yubico.org/ \
