@@ -50,15 +50,15 @@ The YubiKit SDK is available as a library and can be added to any new or existin
 
 #### Q1. Does the YubiKit work with all versions of Android?
 
-All YubiKit modules should work on Android API 19+. Yubico typically tests and supports n-1 per https://en.wikipedia.org/wiki/Android_version_history.
+A1. All YubiKit modules should work on Android API 19+. Yubico typically tests and supports n-1 per https://en.wikipedia.org/wiki/Android_version_history.
 
 #### Q2. How can I debug my app on Android when a YubiKey takes up the USB port?
 
-You can set up Android Debug Bridge (adb) debugging over WiFi: https://developer.android.com/studio/command-line/adb#wireless
+A2. You can set up Android Debug Bridge (adb) debugging over WiFi: https://developer.android.com/studio/command-line/adb#wireless
 
-#### Q3.  Why is the USB device permissions prompt being shown too often, i.e., every time the YubiKey is connected)?
+#### Q3.  Why is the USB device permissions prompt being shown every time the YubiKey is connected?
 
-This is an Android limitation. Android deals with this permission at the OS level, and the only workaround is to use an intent filter as described in the Android Developers "USB Host Overview": https://developer.android.com/guide/topics/connectivity/usb/host.html#using-intents. Note, however, that while this gets rid of the permission prompt, it also causes your app to launch automatically whenever the YubiKey is connected.
+A3. This is an Android limitation. Android deals with these permissions at the OS level, and the only workaround is to use an intent filter as described in the Android Developers Guide [USB Host Overview](https://developer.android.com/guide/topics/connectivity/usb/host.html#using-intents). However, while this gets rid of the permissions prompt, it also causes your app to launch automatically whenever the YubiKey is connected.
 
 
 ## **Additional resources**
@@ -70,4 +70,4 @@ This is an Android limitation. Android deals with this permission at the OS leve
 5. Yubico - [YKOATH Protocol Specifications](https://developers.yubico.com/OATH/YKOATH_Protocol.html)
 6. FIDO Alliance - [CTAP2 specifications](https://fidoalliance.org/specs/fido-v2.0-ps-20190130/fido-client-to-authenticator-protocol-v2.0-ps-20190130.html)
 7. W3.org - [Web Authentication: An API for accessing Public Key Credentials](https://www.w3.org/TR/webauthn/)
-8. [Android Developers](https://developer.android.com)
+8. Android Developers site - [developer.android.com](https://developer.android.com)
