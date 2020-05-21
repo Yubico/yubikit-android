@@ -1,12 +1,12 @@
 # YubiKit Module
-The **YubiKit** module is the core library which detects the plugged in YubiKey or a YubiKey in close proximity to the NFC reader, and opens an ISO/IEC 7816 connection to send raw APDU commands to the YubiKey.
-It also provides a set of utility methods to simplify communication with YubiKey, e.g. preparing payloads and parssing responses.
+The **YubiKit** module is the core library. It detects the plugged-in YubiKey or one in close proximity to the NFC reader and opens an ISO/IEC 7816 connection to send raw APDU commands to the YubiKey. It also provides a set of utility methods to simplify communication with the YubiKey, methods such as preparing payloads and parsing responses.
 
-The **YubiKit** requires at minimum Java 7 or Android 4.4, future versions may require a later baseline. Anything lower than Android 8.0 may receive less testing by Yubico.
+## Requirements
+The **YubiKit** module requires at minimum Java 7 or Android 4.4. Anything lower than Android 8.0 may have been tested by Yubico to a lesser extent.
 
-## Integration Steps <a name="integration_steps"></a>
-### Download
-#### Gradle:
+## Integrating the YubiKit Module <a name="integration_steps"></a>
+### Downloading the Module
+#### With Gradle
 
 ```gradle
 dependencies {
@@ -14,11 +14,14 @@ dependencies {
   implementation 'com.yubico.yubikit:yubikit:$yubikitVersion'
 }
 ```
-And in `gradle.properties` set latest version. Example:
+
+And in `gradle.properties` set latest version; for example:
 ```gradle
 yubikitVersion=1.0.0-beta05
 ```
-#### Maven:
+
+#### With Maven
+
 ```xml
 <dependency>
   <groupId>com.yubico.yubikit</groupId>
@@ -26,13 +29,15 @@ yubikitVersion=1.0.0-beta05
   <version>1.0.0-beta05</version>
 </dependency>
 ```
-### Using Library <a name="using_lib"></a>
 
-1. Create instance of `YubikitManager`
+
+### Using the Module Library <a name="using_lib"></a>
+
+**Step 1** Create an instance of `YubikitManager`:
     ```java
-    YubiKitManager yubiKitManager = new YubiKitManager(context);
+   YubiKitManager yubiKitManager = new YubiKitManager(context);
     ```
-2. Create a listener to react to USB session events
+**Step 2** Create a listener to react to USB session events:
     ```java
     private class UsbListener implements UsbSessionListener {
         @Override
@@ -51,7 +56,7 @@ yubikitVersion=1.0.0-beta05
         }
     }
     ```
-3. Create a listener to react to NFC session events
+**Step 3** Create a listener to react to NFC session events:
     ```java
     private class NfcListener implements NfcSessionListener {
         void onSessionReceived(@NonNull final NfcSession session) {
@@ -59,13 +64,14 @@ yubikitVersion=1.0.0-beta05
         }
     }
     ```
-4. Subscribe to USB YubiKey session events.
+**Step 4** Subscribe to USB YubiKey session events:
     ```java
     yubiKitManager.startUsbDiscovery(UsbConfiguration(), new UsbListener());
     ```
-5. Subscribe to NFC YubiKey session events
+**Step 5** Subscribe to NFC YubiKey session events:
 
-   Note: Discovery over NFC requires an `Activity` that is in foreground (we recommend starting discovery over NFC in the `onResume()` method). Discovery over USB does not require an Activity.
+   **Note**: Discovery over NFC requires an `Activity` in the foreground (we recommend starting discovery over NFC in the `onResume()` method). Discovery over USB does not require an Activity.
+
     ```java
     @Override
     public void onResume() {
@@ -79,9 +85,10 @@ yubikitVersion=1.0.0-beta05
         }
     }
     ```
-6. Open an ISO/IEC 7816 connection from YubiKey session (NfcSession or UsbSession), check ATR, create APDU, and then execute it.
+**Step 6** Open an ISO/IEC 7816 connection from YubiKey session (`NfcSession` or `UsbSession`), check ATR, create APDU, and then execute it.
 
-   Note: the API that sends the APDU commands to YubiKey is a blocking function. Use a background thread to provide the expected user experience.
+   **Note**: The API that sends the APDU commands to the YubiKey is a blocking function. Use a background thread to provide the expected user experience.
+
     ```java
     executorService.execute {
         try {
@@ -103,9 +110,10 @@ yubikitVersion=1.0.0-beta05
         }
     }
     ```
-7. Stop discovery.
+**Step 7** Stop discovery.
 
-   Note: NFC discovery should be stopped before activity goes to background (we recommend stopping discovery over NFC in the `onPause()` method).
+   **Note**: NFC discovery should be stopped before activity goes to background (we recommend stopping discovery over NFC in the `onPause()` method).
+
     ```java
     @Override
     public void onPause() {
@@ -113,11 +121,13 @@ yubikitVersion=1.0.0-beta05
         super.onPause();
     }
     ```
-   USB discovery can be kept open as long as the `YubiKitManager` instance is alive (we recommend stopping discovery over USB before yubiKitManager is destroyed).
+
+USB discovery can be kept open as long as the `YubiKitManager` instance is alive (we recommend stopping discovery over USB before YubiKitManager is destroyed).
+
     ```java
     yubiKitManager.stopUsbDiscovery();
     ```
-8. Optional. Turn on verbose logging from **YubiKit** for debugging purposes.
+**Step 8** (Optional) For debugging, turn on verbose logging from **YubiKit**.
     ```java
     Logger.setLogger(new Logger() {
         @Override
@@ -133,7 +143,7 @@ yubikitVersion=1.0.0-beta05
     ```
 
 ### Using the Demo Application <a name="using_demo"></a>
-The library comes with a demo application named **YubikitDemo**.
+The library comes with a demo application named **YubiKitDemo**.
 This demo application showcases what this module, as well as the others, can do.
 The source code for the demo application is provided as an example of library
 usage.
@@ -144,5 +154,4 @@ USB
 
 PIV
 - [Interfaces for Personal Identity Verification](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-73-4.pdf)
-- [Information and examples of what you can do with a PIV enabled YubiKey](https://developers.yubico.com/PIV/)
-
+- [Information and examples of what you can do with a PIV-enabled YubiKey](https://developers.yubico.com/PIV/)
