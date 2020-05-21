@@ -33,15 +33,47 @@ The **YubiKit** consumes data from the token and translates it to the applicatio
 
 ## Getting Started
 
+To get started, you can try the [YubiKit Demo App](./yubikit-android/tree/master/YubikitDemo) as part of this library or start integrating the library into your own application. The YubiKit requires a physical key to test its features. Before starting to look at the SDK, make sure you have downloaded the zip file containing all the necessary assets for using the library.
+
 #### Try the Demo
 
-Use the [Quick Start Guide](./yubikit-android/blob/master/YubikitDemo/QuickStart.md) and the [YubiKit Demo App](./yubikit-android/tree/master/YubikitDemo) to learn how to integrate the YubiKit for Android with your app.
+Use the [YubiKit Demo App](./yubikit-android/tree/master/YubikitDemo) to learn how to integrate the YubiKit for Android with your app. The Demo app, which is implemented in Kotlin, shows several examples of how to use YubiKit, including WebAuthn/FIDO2 over the accessory or NFC YubiKeys. It shows how the library is linked with a project so it can be used for a side-by-side comparison when adding the library to your own project.
 
-The YubiKit Demo app shows how the library is linked with a project so it can be used for a side-by-side comparison when adding the library to your own project.
+Open the YubiKitDemo Android Studio project and run it on a real device or an emulator to see the features.
 
 #### Integrate the Library
 
-The YubiKit SDK is available as a library and can be added to any new or existing Android project through the [Android Studio](https://developer.android.com/studio/intro), IntelliJ, or Eclipse.
+The YubiKit SDK is available as a set of libraries and can be added as a dependency to your Android project. To add it using Android Studio or to add it manually, see [StackOverflow on adding a library project](https://stackoverflow.com/questions/16588064/how-do-i-add-a-library-project-to-android-studio).
+
+
+###### Adding the Library
+
+To add an external Android library to your project (called for these purposes "MyProject" and assuming your project structure created by Android Studio is as follows:
+
+....
+MyProject/
+      app/
+           - build.gradle  // local Gradle configuration (for app only)
+           ...
+      - build.gradle // Global Gradle configuration (for whole project)
+      - settings.gradle
+      - gradle.properties
+....
+
+*Step 1* (Optional) In the root directory (MyProject/), create new folder to keep a clean project structure: `/libs` into which the external libraries will be placed.
+
+*Step 2* Download the Android SDK YubiKit ZIP from GitHub, rename the library directory if desired, and paste your library into the newly created `/libs` folder. The project's new structure is thus:
+MyProject/
+      app/
+           - build.gradle  // Local Gradle configuration (for app only)
+           ...
+      libs/
+           PagerSlidingTabStrip/
+                - build.gradle // Local Gradle configuration (for library only)
+      - build.gradle // Global Gradle configuration (for whole project)
+      - settings.gradle
+      - gradle.properties
+      ...
 
 #### Use the Library
 
