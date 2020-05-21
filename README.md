@@ -41,41 +41,9 @@ Use the [YubiKit Demo App](./yubikit-android/tree/master/YubikitDemo) to learn h
 
 Open the YubiKitDemo Android Studio project and run it on a real device or an emulator to see the features.
 
-#### Integrate the Library
+#### Integrating and Using the Library
 
-The YubiKit SDK is available as a set of libraries and can be added as a dependency to your Android project. To add it using Android Studio or to add it manually, see [StackOverflow on adding a library project](https://stackoverflow.com/questions/16588064/how-do-i-add-a-library-project-to-android-studio).
-
-
-###### Adding the Library
-
-To add an external Android library to your project (called for these purposes "MyProject" and assuming your project structure created by Android Studio is as follows:
-
-....
-MyProject/
-      app/
-           - build.gradle  // local Gradle configuration (for app only)
-           ...
-      - build.gradle // Global Gradle configuration (for whole project)
-      - settings.gradle
-      - gradle.properties
-....
-
-*Step 1* (Optional) In the root directory (MyProject/), create new folder to keep a clean project structure: `/libs` into which the external libraries will be placed.
-
-*Step 2* Download the Android SDK YubiKit ZIP from GitHub, rename the library directory if desired, and paste your library into the newly created `/libs` folder. The project's new structure is thus:
-MyProject/
-      app/
-           - build.gradle  // Local Gradle configuration (for app only)
-           ...
-      libs/
-           PagerSlidingTabStrip/
-                - build.gradle // Local Gradle configuration (for library only)
-      - build.gradle // Global Gradle configuration (for whole project)
-      - settings.gradle
-      - gradle.properties
-      ...
-
-#### Use the Library
+The YubiKit SDK is available as a multi-module library to be added as a dependency to your Android project. The instructions for integrating and using each module are in the README for each of the modules listed above in the About section, which also provides a link to each README.
 
 
 ## FAQ <a name="faq"></a>
