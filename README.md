@@ -11,13 +11,13 @@ Changes to this library are documented in this [changelog](./yubikit-android/blo
 
 ## About
 
-YubiKit requires a physical key to test its features. In order to run the included [demo application](./yubikit-android/tree/master/YubikitDemo) and to integrate the YubiKit into your own app, get a YubiKey or a Security Key by Yubico to test functionality.
+YubiKit requires a physical key to test its features. In order to run the included [demo application](./yubikit-android/tree/master/YubikitDemo) and to integrate the YubiKit into your own app, get a YubiKey to test functionality.
 
 YubiKit is a multi-module library with the following components:
 
 [Yubikit](./yubikit/README.md) provides functionality to detect whether a YubiKey is plugged in or connected over NFC.
 
-[OATH](./oath/README.md) enables applications such as an authenticator app to store OATH TOTP and HOTP secrets on a YubiKey and generate one-time passwords.
+[OATH](./oath/README.md) provides functionality to store OATH TOTP and HOTP credentials and obtain one-time codes.
 
 [OTP](./otp/README.md) provides implementation classes to obtain Yubico OTPs via USB or NFC.
 
@@ -66,7 +66,7 @@ A3. This is an Android limitation. Android deals with these permissions at the O
 ## Additional Resources
 
 * Yubico - [Developers' website](https://developers.yubico.com)
-* Yubico - [Online Demo](https://demo.yubico.com) for OTP and U2F
+* Yubico - [Online Demo](https://demo.yubico.com) for YubiOTP, OATH, and WebAuthn
 * Yubico - [OTP documentation](https://developers.yubico.com/OTP)
 * Yubico - [What is U2F?](https://developers.yubico.com/U2F)
 * Yubico - [YKOATH Protocol Specifications](https://developers.yubico.com/OATH/YKOATH_Protocol.html)

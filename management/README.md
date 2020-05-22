@@ -74,7 +74,7 @@ YubiKey Series 5+ required. Use this demo to emulate various YubiKey configurati
 #### Programming OTP slots
 Before running this demo, be aware that:
 * By default slot ONE is programmed with the YubiOTP secret. Overwriting this first slot means losing this secret.
-* YubiOTP codes that were generated on the YubiKey can be read using the *Yubico OTP demo* pivot. Refer to the [OTP Module](../otp/README.md) to learn more.
+* YubiOTP codes that were generated on the YubiKey can be read using the *Yubico OTP demo*. Refer to the [OTP Module](../otp/README.md) to learn more.
 * The recommendation for programming HOTP secrets is to use the [OATH module](../oath/README.md) and an Authenticator application. This method allows the storage of multiple HOTP secrets. The Authenticator app can then calculate them whenever needed.
 
 To program an OTP slot:
