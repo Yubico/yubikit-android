@@ -41,7 +41,7 @@ public class KeyListener implements View.OnKeyListener {
      * Creates instance of {@link KeyListener}
      * @param listener the listener that will be invoked upon detection of OTP code from YubiKey emitting button
      */
-    public KeyListener(OtpListener listener) {
+    KeyListener(OtpListener listener) {
         this.listener = listener;
     }
 
