@@ -1,41 +1,45 @@
 # Yubico Mobile Android SDK (YubiKit)
 
-**YubiKit** is an Android library provided by Yubico to interact with YubiKeys on Android devices. The library supports NFC-enabled and USB YubiKeys.
+**YubiKit** is an Android library provided by Yubico to enable interaction between YubiKeys and Android devices. The library supports NFC-enabled and USB YubiKeys.
 
-The library includes a demo application implemented in Kotlin, the [YubiKit Demo App](./yubikit-android/tree/master/YubikitDemo), which provides a complete example of integrating and using all the features of the library in an Android project.
+The library includes a demo application implemented in the Kotlin playground, the [YubiKit Demo App](./yubikit-android/tree/master/YubikitDemo) provides a complete example of integrating and using all the features of the library in an Android project.
 
-Changes to this library are documented in this [changelog](./yubikit-android/blob/master/Changelog.md).
+Changes to this library are documented in [changelog](./yubikit-android/blob/master/Changelog.md).
 
-**NOTE** The pre-release version of YubiKit Android SDK supported a subset of FIDO2 functionality. In this general availability (GA) version, that FIDO2 module has been removed. We recommend developers use the official [FIDO2 API for Android](https://developers.google.com/identity/fido/android/native-apps) provided by Google.
+**NOTE** The pre-release version of YubiKit Android SDK supported a subset of FIDO2 functionality. In this general availability (GA) version, that FIDO2 module has been removed. If you require the FIDO2 module, we recommend developers use the official [FIDO2 API for Android](https://developers.google.com/identity/fido/android/native-apps) provided by Google.
 
 
 ## About
 
-YubiKit requires a physical key to test its features. In order to run the included [demo application](./yubikit-android/tree/master/YubikitDemo) and to integrate the YubiKit into your own app, get a YubiKey to test functionality.
+YubiKit requires a physical key to test its features. Running the included [demo application](./yubikit-android/tree/master/YubikitDemo) and integrating YubiKit into your app requires a YubiKey in order to test functionality.
 
 YubiKit is a multi-module library with the following components:
 
-[Yubikit](./yubikit/README.md) provides functionality to detect whether a YubiKey is plugged in or connected over NFC.
+[Yubikit](./yubikit/README.md) provides functionality for detecting whether a YubiKey is plugged into a device or connected to a device over NFC.
 
 [OATH](./oath/README.md) provides functionality to store OATH TOTP and HOTP credentials and obtain one-time codes.
 
-[OTP](./otp/README.md) provides implementation classes to obtain Yubico OTPs via USB or NFC.
+[OTP](./otp/README.md) provides implementation classes to obtain Yubico OTPs using either USB or NFC.
 
 [PIV](./piv/README.md) provides an implementation of the Personal Identity Verification (PIV) interface.
 
-[MGMT](./management/README.md) provides YubiKey management functionality, a subset of the API for personal customization of the YubiKey and the HMAC-SHA1 challenge-response.
+[MGMT](./management/README.md) provides YubiKey management functionality. This includes a subset of the API for personal customization of the YubiKey and the HMAC-SHA1 challenge-response.
 
-All YubiKit modules have javadoc and sources deployed with the library archive. Use that documentation for a more detailed explanation of all the APIs methods, properties and parameters.
+All YubiKit modules include javadoc and additional resources deployed with the library archive. Refer to the javadoc documentation detailed about the API's methods, properties, and parameters.
 
 
 ### Note
 
-YubiKit consumes data from the token and translates it to the application for further processing. YubiKit performs data validation for the purposes of creating valid responses to the application; however, content/logical validation and security decisions are outside YubiKit's scope and must therefore be handled by the application.
+YubiKit consumes data from the token and translates it to the application for further processing. YubiKit performs data validation for the purposes of creating valid responses to the application. Neither content validation nor logical validation are included in YubiKit, and nor are security decisions. These tasks must be handled by your application.
 
 
 ## Getting Started
 
-To get started, you can try the [YubiKit Demo App](./yubikit-android/tree/master/YubikitDemo) as part of this library or start integrating the library into your own application. Before starting to look at the SDK, make sure you have downloaded the zip file containing all the necessary assets for using the library.
+To get started:
+
+1. Download the zip file containing all the required library assets.
+2. Try the [YubiKit Demo App](./yubikit-android/tree/master/YubikitDemo). This is included with the library.
+3. Start integrating the library into your own application.
 
 ### Try the Demo
 
@@ -45,7 +49,7 @@ Open the YubiKitDemo Android Studio project and run it on a real device or an em
 
 ### Integrating and Using the Library
 
-YubiKit SDK is available as a multi-module library to be added as a dependency to your Android project. The instructions for integrating and using each module are in the README for each of the modules listed above in the About section, which also provides a link to each README.
+YubiKit SDK is available as a multi-module library. Add each module as a dependency to your Android project. Each module has a README that provides the instructions for integrating and using that module. See the About section above for a list of the modules with links to their associated READMEs.
 
 
 ## FAQ <a name="faq"></a>
