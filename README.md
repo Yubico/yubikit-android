@@ -2,7 +2,7 @@
 
 **YubiKit** is an Android library provided by Yubico to enable interaction between YubiKeys and Android devices. The library supports NFC-enabled and USB YubiKeys.
 
-The library includes a demo application implemented in the Kotlin playground, the [YubiKit Demo App](./yubikit-android/tree/master/YubikitDemo) provides a complete example of integrating and using all the features of the library in an Android project.
+The library includes a demo application implemented in the Kotlin playground, the [YubiKit Demo App](./yubikit-android/tree/master/YubikitDemo), which provides a complete example of integrating and using all the features of the library in an Android project.
 
 Changes to this library are documented in [changelog](./yubikit-android/blob/master/Changelog.md).
 
@@ -49,7 +49,7 @@ Open the YubiKitDemo Android Studio project and run it on a real device or an em
 
 ### Integrating and Using the Library
 
-YubiKit SDK is available as a multi-module library. Add each module as a dependency to your Android project. Each module has a README that provides the instructions for integrating and using that module. See the About section above for a list of the modules with links to their associated READMEs.
+YubiKit SDK is available as a multi-module library. Add each module as a dependency to your Android project. Each module has a README that provides the instructions for integrating and using that module. See the *About* section above for a list of the modules with links to their associated READMEs.
 
 
 ## FAQ <a name="faq"></a>
@@ -60,11 +60,11 @@ A1. All YubiKit modules should work on Android API 19+. Yubico typically tests a
 
 ### Q2. How can I debug my app on Android when a YubiKey takes up the USB port?
 
-A2. You can set up Android Debug Bridge (adb) debugging over WiFi: https://developer.android.com/studio/command-line/adb#wireless
+A2. Set up Android Debug Bridge (adb) debugging over WiFi: https://developer.android.com/studio/command-line/adb#wireless
 
-### Q3.  Why is the USB device permissions prompt being shown every time the YubiKey is connected?
+### Q3.  Why is the USB device permissions prompt shown every time the YubiKey is connected?
 
-A3. This is an Android limitation. Android deals with these permissions at the OS level, and the only workaround is to use an intent filter as described in the Android Developers Guide [USB Host Overview](https://developer.android.com/guide/topics/connectivity/usb/host.html#using-intents). However, while this gets rid of the permissions prompt, it also causes your app to launch automatically whenever the YubiKey is connected.
+A3. This is an Android limitation. Android handles these permissions at the OS level. The only workaround is to use an intent filter, as described in the Android Developers Guide [USB Host Overview](https://developer.android.com/guide/topics/connectivity/usb/host.html#using-intents). However, if you apply this filter to remove the permissions prompt, then you cannot prevent your app from launching automatically whenever the YubiKey is connected.
 
 
 ## Additional Resources
