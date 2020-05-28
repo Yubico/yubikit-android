@@ -2,11 +2,11 @@
 The **YubiKit** module is the core library. It detects the plugged-in YubiKey or one in close proximity to the NFC reader and opens an ISO/IEC 7816 connection to send raw APDU commands to the YubiKey. It also provides a set of utility methods to simplify communication with the YubiKey, methods such as preparing payloads and parsing responses.
 
 ## Requirements
-The **YubiKit** module requires at minimum Java 7 or Android 4.4. Anything lower than Android 8.0 may have been tested by Yubico to a lesser extent.
+The **YubiKit** module requires at minimum Java 7 or Android 4.4. Anything lower than Android 8.0 may have been tested to a lesser extent.
 
 ## Integrating the YubiKit Module <a name="integration_steps"></a>
 ### Downloading the Module
-#### With Gradle
+#### Gradle
 
 ```gradle
 dependencies {
@@ -15,12 +15,12 @@ dependencies {
 }
 ```
 
-And in `gradle.properties` set latest version; for example:
+And in `gradle.properties` set the latest version; for example:
 ```gradle
 yubikitVersion=1.0.0-beta05
 ```
 
-#### With Maven
+#### Maven
 
 ```xml
 <dependency>
@@ -42,17 +42,17 @@ yubikitVersion=1.0.0-beta05
     private class UsbListener implements UsbSessionListener {
         @Override
         public void onSessionReceived(@NonNull UsbSession session, Boolean hasPermissions) {
-            // yubikey was plugged in
+            // YubiKey was plugged in
         }
 
         @Override
         public void onSessionRemoved(@NonNull UsbSession session) {
-            // yubikey was unplugged
+            // YubiKey was unplugged
         }
 
         @Override
         public void onRequestPermissionsResult(@NonNull UsbSession session, Boolean isGranted) {
-            // whether user granted permissions to specific yubikey
+            // whether user granted permissions to specific YubiKey
         }
     }
     ```
@@ -81,7 +81,7 @@ yubikitVersion=1.0.0-beta05
         } catch (NfcDisabledException e) {
             // show Snackbar message that user needs to turn on NFC for this feature
         } catch (NfcNotFoundException e) {
-            // NFC is not available so this feature doesn't work on this device
+            // NFC is not available so this feature does not work on this device
         }
     }
     ```
@@ -101,7 +101,7 @@ yubikitVersion=1.0.0-beta05
             // byte[] aid = StringUtils.byteArrayOfInts(new int[] {0xA0, 0x00, 0x00, 0x03, 0x08});
             // connection.execute(new Apdu(0x00, 0xA4, 0x04, 0x00, aid)));
         } catch (IOException e) {
-            // handle error that occured during communication with key
+            // handle error that occurred during communication with key
         } finally {
             try {
                 connection.close();
@@ -144,7 +144,8 @@ USB discovery can be kept open as long as the `YubiKitManager` instance is alive
 
 ### Using the Demo Application <a name="using_demo"></a>
 The library comes with a demo application named **YubiKitDemo**.
-This demo application showcases what this module, as well as the others, can do.
+This demo application showcases what this module can do as well as what the other
+modules can do.
 The source code for the demo application is provided as an example of library
 usage.
 
