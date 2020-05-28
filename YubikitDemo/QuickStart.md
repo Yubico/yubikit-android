@@ -1,17 +1,19 @@
 # Quick Start Guide
 
---
+**YubiKit** is an Android library provided by Yubico to enable interaction between YubiKeys and Android devices. The library supports NFC-enabled and USB YubiKeys. The library includes a demo application implemented in the Kotlin playground. The [YubiKit Demo App](./yubikit-android/tree/master/YubikitDemo) provides a complete example for integrating and using all the features of the library in an Android project.
 
-This guide provides a few steps to follow before starting with YubiKit:
+To get started:
 
-1. YubiKit requires a physical key to test its features.
+1. Download the zip file containing all the required library assets.
+2. Acquire a supported YubiKey: YubiKit requires a physical key to test its features.
+3. Try the [YubiKit Demo App](./yubikit-android/tree/master/YubikitDemo) that is included with the library.
 
-2. Before starting to look at the SDK make sure you have the zip file containing all the necessary assets for using the library. The most important ones are:
-	- The **YubiKitDemo** folder containing the SDK Demo application.
-	- The **Readme.md** which contains detailed information on how to use the library.
+4. Start integrating the library into your own application. The YubiKit SDK is available as a multi-module library.
 
-3. Have a quick look at the **Readme.md** file to familiarise with the features of the YubiKit.
+ - Each module has a README that provides the instructions for integrating and using that module. See the About section in the top-level [README](./yubikit-android/README.md) for a list of the modules and links to their associated READMEs.
+ - Add each module as a dependency to your Android project as needed.
 
-4. Open the YubiKitDemo Android Studio project and run it on a real device (not emulator). FIDO2 API are not supported on emulator so a real device is required to see the features. 
+5. Set up Android Debug Bridge (adb) debugging over WiFi: https://developer.android.com/studio/command-line/adb#wireless
+
 
 ---
