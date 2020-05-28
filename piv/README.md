@@ -4,9 +4,9 @@ This standard specifies how to perform RSA or ECC sign/decrypt operations using 
 
 The **PIV** module requires at minimum Java 7 or Android 4.4. Future versions may require a later baseline. Anything lower than Android 8.0 may have been tested to a lesser extent.
 
-## Integration Steps <a name="integration_steps"></a>
+## Integrating PIV Module <a name="integration_steps"></a>
 ### Download
-#### Gradle:
+#### Gradle
 
 ```gradle
 dependencies {  
@@ -20,7 +20,7 @@ And in `gradle.properties` set the latest version; for example:
 ```gradle
 yubikitVersion=1.0.0-beta05
 ```
-#### Maven:
+#### Maven
 ```xml
 <dependency>
   <groupId>com.yubico.yubikit</groupId>
@@ -34,7 +34,7 @@ yubikitVersion=1.0.0-beta05
   <version>1.0.0-beta05</version>
 </dependency>
 ```
-### Using Library <a name="using_lib"></a>
+### Using PIV Library <a name="using_lib"></a>
 
 The **PIV** module requires the YubiKit core library to detect a `YubikeySession` (see the [YubiKit README](../yubikit/README.md)). Use this session to create a `PivApplication` to select the PIV applet on the YubiKey.  
 ```java
@@ -44,8 +44,8 @@ The **PIV** module requires the YubiKit core library to detect a `YubikeySession
 
 ```
 
-### Using the Demo Application <a name="using_demo"></a>
-1. Run the [demo app](../YubikitDemo).
+### Using Demo Application <a name="using_demo"></a>
+1. Run the [demo app](./YubikitDemo).
 2. Select "PIV demo" in the navigation drawer.
 3. Plug in the YubiKey or use its NFC connection and check the current certificates. You can generate a new key and sign data with that key.
 

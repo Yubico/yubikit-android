@@ -11,7 +11,7 @@ Changes to this library are documented in the [changelog](./yubikit-android/blob
 
 ## About
 
-YubiKit requires a physical key to test its features. Running the included [demo application](./YubikitDemo/README.md) and integrating YubiKit into your app requires a YubiKey in order to test functionality.
+YubiKit requires a physical key to test its features. Running the included [demo application](./YubikitDemo/QuickStart.md) and integrating YubiKit into your app requires a YubiKey in order to test functionality.
 
 YubiKit is a multi-module library with the following components:
 
@@ -28,9 +28,7 @@ YubiKit is a multi-module library with the following components:
 All YubiKit modules include javadoc and additional resources deployed with the library archive. Refer to the javadoc documentation detailed about the API's methods, properties, and parameters.
 
 
-### Note
-
-YubiKit consumes data from the token and translates it to the application for further processing. YubiKit performs data validation for the purposes of creating valid responses to the application. Neither content validation nor logical validation are included in YubiKit, and nor are security decisions. These tasks must be handled by your application.
+**NOTE** YubiKit consumes data from the token and translates it to the application for further processing. YubiKit performs data validation for the purposes of creating valid responses to the application. Neither content validation nor logical validation are included in YubiKit, and nor are security decisions. These tasks must be handled by your application.
 
 
 ## Getting Started
@@ -77,7 +75,7 @@ A4. The current state of the Google FIDO2 API provided by Google Play Services i
 
 ### Q5. Does the YubiKit support both USB and NFC?
 
-A5. Yes. The core library, the **YubiKit** module [README](./yubikit/README.md), provides the functionality to detect the plugged-in YubiKey (USB) or one in close proximity to the NFC reader and opens an ISO/IEC 7816 connection to send raw APDU commands to the YubiKey. 
+A5. Yes. The core library, the **YubiKit** module [README](./yubikit/README.md), provides the functionality to detect the plugged-in YubiKey (USB) or YubiKey NFC sufficiently close to the NFC reader and opens an ISO/IEC 7816 connection to send raw APDU commands to the YubiKey.
 
 
 ## Additional Resources

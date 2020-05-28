@@ -10,7 +10,7 @@ To get started:
 
 4. Start integrating the library into your own application. The YubiKit SDK is available as a multi-module library.
 
- - Each module has a README that provides the instructions for integrating and using that module. See the About section in the top-level [README](./yubikit-android/README.md) for a list of the modules and links to their associated READMEs.
+ - Each module has a README that provides the instructions for integrating and using that module. See the About section in the [top-level README](./yubikit-android/README.md) for a list of the modules and links to their associated READMEs.
  - Add each module as a dependency to your Android project as needed.
 
 5. Set up Android Debug Bridge (adb) debugging over WiFi: https://developer.android.com/studio/command-line/adb#wireless
