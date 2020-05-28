@@ -143,7 +143,7 @@ USB discovery can be kept open as long as the `YubiKitManager` instance is alive
     ```
 
 ### Using the Demo Application <a name="using_demo"></a>
-The library comes with a demo application named **YubiKitDemo**.
+The library comes with a demo application, the [**YubiKitDemo**](./YubikitDemo).
 This demo application showcases what this module can do as well as what the other
 modules can do.
 The source code for the demo application is provided as an example of library
