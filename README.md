@@ -11,7 +11,7 @@ Changes to this library are documented in the [changelog](./yubikit-android/blob
 
 ## About
 
-YubiKit requires a physical key to test its features. Running the included [demo application](./YubikitDemo/QuickStart.md) and integrating YubiKit into your app requires a YubiKey in order to test functionality.
+YubiKit requires a physical key to test its features. Running the included [demo application](./YubikitDemo/README.md) and integrating YubiKit into your app requires a YubiKey in order to test functionality.
 
 YubiKit is a multi-module library with the following components:
 
