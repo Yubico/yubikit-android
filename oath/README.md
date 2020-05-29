@@ -87,7 +87,7 @@ Authenticators often use QR codes to pass the URL for setting up the credentials
 ```
 
 ### Using Demo Application <a name="using_demo"></a>
-1. Run the [demo app](./YubikitDemo).
+1. Run the [demo app](../YubikitDemo).
 2. Select "OATH demo" in the navigation drawer.
 3. Plug in the YubiKey and click the + FAB button to add a credential.  
 4. To test, use one of the services that provides QR codes and authentication with TOTP as second factor authentication; for example, [https://demo.yubico.com/playground](https://demo.yubico.com/playground), or other services that provide second factor authentication with an authenticator app, such as Facebook, Google, Amazon, Microsoft, etc.

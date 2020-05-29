@@ -45,7 +45,7 @@ The **PIV** module requires the YubiKit core library to detect a `YubikeySession
 ```
 
 ### Using Demo Application <a name="using_demo"></a>
-1. Run the [demo app](./YubikitDemo).
+1. Run the [demo app](../YubikitDemo).
 2. Select "PIV demo" in the navigation drawer.
 3. Plug in the YubiKey or use its NFC connection and check the current certificates. You can generate a new key and sign data with that key.
 

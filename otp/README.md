@@ -65,7 +65,7 @@ yubikitVersion=1.0.0-beta05
 **Note**: You can create a custom dialog to meet your UX requirements. Review the implementation of the `OtpActivity` class and detect the NFC tag or USB connection using **YubiKit** core methods.
 
 ### Using Demo Application <a name="using_demo"></a>
-1. Run the [demo app](./YubikitDemo).
+1. Run the [demo app](../YubikitDemo).
 2. Select "OTP demo" in the navigation drawer.
 3. Click the "Read OTP" button and follow the instructions on screen.
 4. Validate the Yubico OTP obtained by clicking the "Validate OTP" button.

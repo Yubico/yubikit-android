@@ -42,7 +42,7 @@ yubikitVersion=1.0.0-beta05
 ```
 ### Using MGMT Library <a name="using_lib"></a>
 
-The **MGMT** module requires the YubiKit core library to detect a `YubikeySession` (see [YubiKit Module](../yubikit/README.md)). Use the session to create:
+The **MGMT** module requires the YubiKit core library to detect a `YubikeySession` (see [YubiKit Module README](../yubikit/README.md)). Use the session to create:
 
 a) a `ManagementApplication` to select the MGMT applet,
 
@@ -74,8 +74,8 @@ Requires YubiKey Series 5+. Use this demo to emulate various YubiKey configurati
 #### Programming OTP Slots
 Before running this demo, be aware that:
 * By default slot ONE is programmed with the YubiOTP secret. Overwriting this first slot will delete this secret.
-* YubiOTP codes that were generated on the YubiKey can be read using the *Yubico OTP demo*. Refer to the [OTP Module](./otp/README.md) to learn more.
-* The recommendation for programming HOTP secrets is to use the [OATH module](./oath/README.md) and an Authenticator application. This method allows the storage of multiple HOTP secrets. The Authenticator app can then calculate them whenever needed.
+* YubiOTP codes that were generated on the YubiKey can be read using the *Yubico OTP demo*. Refer to the [OTP Module](../otp/README.md) to learn more.
+* The recommendation for programming HOTP secrets is to use the [OATH module](../oath/README.md) and an Authenticator application. This method allows the storage of multiple HOTP secrets. The Authenticator app can then calculate them whenever needed.
 
 To program an OTP slot:
 

@@ -4,7 +4,7 @@
 
 The library includes a demo application implemented in Kotlin, the [YubiKit Demo App](./YubikitDemo), which provides a complete example of integrating and using all the features of the library in an Android project.
 
-Changes to this library are documented in the [changelog](./yubikit-android/blob/master/Changelog.md).
+Changes to this library are documented in the [Changelog](./Changelog.md).
 
 **NOTE** The pre-release version of YubiKit Android SDK supported a subset of FIDO2 functionality. In this general availability (GA) version, that FIDO2 module has been removed. If you require the FIDO2 module, we recommend developers use the official [FIDO2 API for Android](https://developers.google.com/identity/fido/android/native-apps) provided by Google.
 
@@ -15,7 +15,7 @@ YubiKit requires a physical key to test its features. Running the included [demo
 
 YubiKit is a multi-module library with the following components:
 
-[Yubikit](./yubikit/README.md) provides functionality for detecting whether a YubiKey is plugged into a device or connected to a device over NFC.
+[YubiKit](./yubikit/README.md) provides functionality for detecting whether a YubiKey is plugged into a device or connected to a device over NFC.
 
 [OATH](./oath/README.md) provides functionality to store OATH TOTP and HOTP credentials and obtain one-time codes.
 
@@ -36,12 +36,12 @@ All YubiKit modules include javadoc and additional resources deployed with the l
 To get started:
 
 1. Download the zip file containing all the required library assets.
-2. Try the [YubiKit Demo App](./yubikit-android/tree/master/YubikitDemo). This is included with the library.
+2. Try the [YubiKit Demo App](./YubikitDemo). This is included with the library.
 3. Start integrating the library into your own application.
 
 ### Try the Demo
 
-Use the [YubiKit Demo App](./yubikit-android/tree/master/YubikitDemo) to learn how to integrate YubiKit for Android with your app. The Demo app shows several examples of how to use YubiKit, including WebAuthn/FIDO2 over the accessory or NFC YubiKeys. It shows how the library is linked with a project so it can be used for a side-by-side comparison when adding the library to your own project.
+Use the [YubiKit Demo App](./YubikitDemo) to learn how to integrate YubiKit for Android with your app. The Demo app shows several examples of how to use YubiKit, including WebAuthn/FIDO2 over the accessory or NFC YubiKeys. It shows how the library is linked with a project so it can be used for a side-by-side comparison when adding the library to your own project.
 
 Open the YubiKitDemo Android Studio project and run it on a real device or an emulator to see the features.
 
@@ -75,12 +75,12 @@ A4. The current state of the Google FIDO2 API provided by Google Play Services i
 
 ### Q5. Does the YubiKit support both USB and NFC?
 
-A5. Yes. The core library, the **YubiKit** module [README](./yubikit/README.md), provides the functionality to detect the plugged-in YubiKey (USB) or YubiKey NFC sufficiently close to the NFC reader and opens an ISO/IEC 7816 connection to send raw APDU commands to the YubiKey.
+A5. Yes. The core library, the **YubiKit** module [YubiKit README](/yubikit/README.md), provides the functionality to detect the plugged-in YubiKey (USB) or YubiKey NFC sufficiently close to the NFC reader and opens an ISO/IEC 7816 connection to send raw APDU commands to the YubiKey.
 
 
 ## Additional Resources
 
-* Yubico - [Developers' website](https://developers.yubico.com)
+* Yubico - [developers.yubico.com](https://developers.yubico.com)
 * Yubico - [Online Demo](https://demo.yubico.com) for YubiOTP, OATH, and WebAuthn
 * Yubico - [OTP documentation](https://developers.yubico.com/OTP)
 * Yubico - [What is U2F?](https://developers.yubico.com/U2F)
