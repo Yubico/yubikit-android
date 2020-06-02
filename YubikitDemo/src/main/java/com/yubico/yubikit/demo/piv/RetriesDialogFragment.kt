@@ -43,7 +43,7 @@ class RetriesDialogFragment : DialogFragment() {
 
         alert.setTitle(R.string.piv_pin_set_retries)
 
-        val input = activity!!.layoutInflater.inflate(R.layout.pin_retries_dialog, null)
+        val input = requireActivity().layoutInflater.inflate(R.layout.pin_retries_dialog, null)
 
         if (!TextUtils.isEmpty(defaultValue)) {
             input.use_default.visibility = View.VISIBLE

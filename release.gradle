@@ -18,9 +18,9 @@ ext {
 
     libraryVersion = POM_VERSION
 
-    developerId = 'imakhalova'
-    developerName = 'Irina Makhalova'
-    developerEmail = 'i.makhalova@yubico.com'
+    developerId = 'irinaRakh'
+    developerName = 'Irina Rakhmanova'
+    developerEmail = 'irina.rakhmanova@yubico.com'
 
     licenseName = 'Apache License, Version 2.0'
     licenseUrl = 'http://www.apache.org/licenses/LICENSE-2.0'

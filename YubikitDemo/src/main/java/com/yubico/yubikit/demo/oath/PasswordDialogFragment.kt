@@ -57,7 +57,7 @@ class PasswordDialogFragment : DialogFragment() {
         }
         alert.setTitle(title)
 
-        val input = activity!!.layoutInflater.inflate(R.layout.password_dialog, null)
+        val input = requireActivity().layoutInflater.inflate(R.layout.password_dialog, null)
 
         if (isValidation) {
             input.new_password.visibility = View.GONE

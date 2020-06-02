@@ -29,13 +29,13 @@ yubikitVersion=1.0.0-beta05
 <dependency>
   <groupId>com.yubico.yubikit</groupId>
   <artifactId>yubikit</artifactId>
-  <version>1.0.0-beta05</version>
+  <version>1.0.0-beta06</version>
 </dependency>
 
 <dependency>
   <groupId>com.yubico.yubikit</groupId>
   <artifactId>otp</artifactId>
-  <version>1.0.0-beta05</version>
+  <version>1.0.0-beta06</version>
 </dependency>
 ```
 ### Using Library <a name="using_lib"></a>

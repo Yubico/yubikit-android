@@ -53,12 +53,12 @@ class PivCertificateFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        slot = Slot.fromValue(arguments!!.getInt(ARG_SLOT))
-        title.text = getString(arguments!!.getInt(ARG_TITLE))
+        slot = Slot.fromValue(requireArguments().getInt(ARG_SLOT))
+        title.text = getString(requireArguments().getInt(ARG_TITLE))
         showCerts(false)
 
         // this view shared between fragments
-        viewModel = ViewModelProviders.of(activity!!,
+        viewModel = ViewModelProviders.of(requireActivity(),
                 PivViewModel.Factory(YubiKitManager(view.context.applicationContext)))
                 .get(PivViewModel::class.java)
 

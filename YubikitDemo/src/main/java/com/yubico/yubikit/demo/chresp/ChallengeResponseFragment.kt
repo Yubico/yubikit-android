@@ -37,7 +37,7 @@ class ChallengeResponseFragment : BaseYubikeyFragment(TAG) {
     // this view model can be per fragment because we're not sharing it's data with any other activity or fragment
     private val viewModel: ChallengeResponseViewModel by lazy {
         ViewModelProviders.of(this,
-                ChallengeResponseViewModel.Factory(YubiKitManager(activity!!.applicationContext)))
+                ChallengeResponseViewModel.Factory(YubiKitManager(requireActivity().applicationContext)))
                 .get(ChallengeResponseViewModel::class.java)
     }
 

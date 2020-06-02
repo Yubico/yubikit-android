@@ -51,7 +51,7 @@ class OathFragment : BaseYubikeyFragment(TAG), OnRecyclerViewItemClickListener, 
     // this view model can be per fragment because we're not sharing it's data with any other activity or fragment
     private val viewModel: OathViewModel by lazy {
         ViewModelProviders.of(this,
-                OathViewModel.Factory(YubiKitManager(activity!!.applicationContext)))
+                OathViewModel.Factory(YubiKitManager(requireActivity().applicationContext)))
                 .get(OathViewModel::class.java)
     }
     private lateinit var listAdapter : CredentialListAdapter

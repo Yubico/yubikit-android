@@ -51,8 +51,8 @@ class PivFragment : BaseYubikeyFragment(TAG), PasswordDialogFragment.DialogListe
 
     // this view model shared between fragments
     private val viewModel: PivViewModel by lazy {
-        val context = activity!!.applicationContext
-        ViewModelProviders.of(activity!!,
+        val context = requireActivity().applicationContext
+        ViewModelProviders.of(requireActivity(),
                 PivViewModel.Factory(YubiKitManager(context), Settings(context)))
                 .get(PivViewModel::class.java)
     }
