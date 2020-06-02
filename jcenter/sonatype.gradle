@@ -16,7 +16,7 @@ project.ext {
 //project.ext."signing.secretKeyRingFile"=properties.getProperty("signing.secretKeyRingFile")
 project.ext."signing.gnupg.keyName"=properties.getProperty("signing.gnupg.keyName")
 project.ext."signing.gnupg.optionsFile"=properties.getProperty("signing.gnupg.optionsFile")
-project.ext."signing.gnupg.homeDir"=properties.getProperty("signing.gnupg.optionsFile")
+project.ext."signing.gnupg.homeDir"=properties.getProperty("signing.gnupg.homeDir")
 
 publishing {
     repositories {
