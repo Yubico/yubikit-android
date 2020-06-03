@@ -37,9 +37,9 @@ signing {
             gradle.taskGraph.hasTask it
         }
     }
-    def signingKey = System.getenv("GPG_PRIVATE_KEY")
-    def signingPassword = System.getenv("GPG_PASSPHRASE")
-    useInMemoryPgpKeys(signingKey, signingPassword)
-    //useGpgCmd()
+    def signingKeyId = properties.getProperty("GPG_KEY_ID")
+    def signingKey = properties.getProperty("GPG_PRIVATE_KEY") //System.getenv("GPG_PRIVATE_KEY")
+    def signingPassword = properties.getProperty("GPG_PASSPHRASE") //System.getenv("GPG_PASSPHRASE")
+    useInMemoryPgpKeys(signingKeyId, signingKey, signingPassword)
     sign publishing.publications.aar
 }
