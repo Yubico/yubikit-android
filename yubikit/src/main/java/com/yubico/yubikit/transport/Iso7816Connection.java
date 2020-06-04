@@ -58,7 +58,6 @@ public interface Iso7816Connection extends Closeable {
     /**
      * Retrieve Answer to reset (or answer to select for NFC)
      * @return data block returned for reset command
-     * @throws IOException in case of communication error
      */
-    byte[] getAtr() throws IOException;
+    byte[] getAtr();
 }

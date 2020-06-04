@@ -68,6 +68,7 @@ public class UsbIso7816Connection implements Iso7816Connection {
     private final UsbDeviceConnection connection;
     private final UsbInterface ccidInterface;
     private final UsbEndpoint endpointOut, endpointIn;
+    private final byte[] atr;
     private byte sequence = 0;
 
     private int timeoutMs = TIMEOUT;
@@ -82,12 +83,14 @@ public class UsbIso7816Connection implements Iso7816Connection {
      * @param endpointIn    channel for sending data over USB.
      * @param endpointOut   channel for receiving data over USB.
      */
-    UsbIso7816Connection(UsbDeviceConnection connection, UsbInterface ccidInterface, UsbEndpoint endpointIn, UsbEndpoint endpointOut) {
+    UsbIso7816Connection(UsbDeviceConnection connection, UsbInterface ccidInterface, UsbEndpoint endpointIn, UsbEndpoint endpointOut) throws IOException {
         this.connection = connection;
         this.ccidInterface = ccidInterface;
         this.endpointIn = endpointIn;
         this.endpointOut = endpointOut;
         Logger.d("usb connection opened");
+        // PC_to_RDR_IccPowerOn command makes the slot "active" if it was "inactive"
+        atr = transceive(POWER_ON_MESSAGE_TYPE, new byte[0]);
     }
 
     @Override
@@ -102,10 +105,8 @@ public class UsbIso7816Connection implements Iso7816Connection {
     }
 
     @Override
-    public byte[] getAtr() throws IOException {
-        // PC_to_RDR_IccPowerOn command makes the slot “active” if it was “inactive”
-        // if atr is not valid/had error status it throws YubikeyCommunicationException
-        return transceive(POWER_ON_MESSAGE_TYPE, new byte[0]);
+    public byte[] getAtr() {
+        return atr;
     }
 
     @Override

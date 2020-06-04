@@ -38,17 +38,12 @@ public class Iso7816Application implements Closeable {
     /**
      * Application Identified used when selecting the application.
      */
-    private byte[] aid;
+    private final byte[] aid;
 
     /**
      * Open ISO 7816 connection to yubikey
      */
     private Iso7816Connection connection;
-
-    /**
-     * Answer to reset
-     */
-    private byte[] atr;
 
     /**
      * Create new instance of {@link Iso7816Application}
@@ -59,7 +54,6 @@ public class Iso7816Application implements Closeable {
      */
     public Iso7816Application(byte[] aid, YubiKeySession session) throws IOException {
         this.connection = session.openIso7816Connection();
-        atr = connection.getAtr();
         this.aid = Arrays.copyOf(aid, aid.length);
     }
 
@@ -82,7 +76,7 @@ public class Iso7816Application implements Closeable {
      * @return response to identify card reader
      */
     public byte[] getAtr() {
-        return atr;
+        return connection.getAtr();
     }
 
     public byte[] getAid() {
