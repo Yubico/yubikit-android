@@ -3,12 +3,4 @@
   -->
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.yubico.yubikit.oath" >
-    <uses-feature android:name="android.hardware.camera" android:required="false"/>
-    <uses-permission android:name="android.permission.CAMERA" />
-    <application>
-        <meta-data android:name="com.google.android.gms.vision.DEPENDENCIES" android:value="barcode"/>
-        <activity android:name="com.yubico.yubikit.oath.qr.QrActivity">
-        </activity>
-    </application>
-</manifest>
+    package="com.yubico.yubikit.oath" />
