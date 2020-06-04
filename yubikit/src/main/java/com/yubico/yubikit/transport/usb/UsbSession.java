@@ -57,6 +57,14 @@ public class UsbSession implements YubiKeySession {
         return usbDevice;
     }
 
+    /**
+     * Get the UsbManager service used to interact with the YubiKey device.
+     * @return The Android UsbManager system service.
+     */
+    public UsbManager getUsbManager() {
+        return usbManager;
+    }
+
     @Override
     public @NonNull
     Iso7816Connection openIso7816Connection() throws IOException {
@@ -81,8 +89,6 @@ public class UsbSession implements YubiKeySession {
 
         return new UsbIso7816Connection(connection, ccidInterface, endpointPair.first, endpointPair.second);
     }
-
-
 
     /**
      * Creates and starts session for communication with yubikey using HID interface
