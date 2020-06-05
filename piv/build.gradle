@@ -24,9 +24,9 @@ android {
 }
 
 dependencies {
-    implementation fileTree(dir: 'libs', include: ['*.jar'])
-    compileOnly project(':yubikit')
     compileOnly "androidx.annotation:annotation:$annotationVersion"
+
+    api project(':yubikit')
 
     testImplementation 'junit:junit:4.13'
     androidTestImplementation 'androidx.test:runner:1.2.0'

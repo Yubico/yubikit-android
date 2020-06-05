@@ -23,8 +23,7 @@ android {
 }
 
 dependencies {
-    implementation fileTree(dir: 'libs', include: ['*.jar'])
-    compileOnly project(':yubikit')
+    api project(':yubikit')
     implementation "androidx.appcompat:appcompat:$appcompatVersion"
 
     testImplementation project(':yubikit')

@@ -71,29 +71,30 @@ dependencies {
     // ui libraries
     implementation 'androidx.constraintlayout:constraintlayout:1.1.3'
     implementation "androidx.swiperefreshlayout:swiperefreshlayout:1.0.0"
+    implementation 'androidx.lifecycle:lifecycle-extensions:2.2.0'
 
     // preference
-    api "androidx.preference:preference:1.1.1"
+    implementation "androidx.preference:preference:1.1.1"
 
     // navigation
-    def nav_version = "2.3.0-alpha06"
-    api "androidx.navigation:navigation-fragment-ktx:$nav_version" // For Kotlin use navigation-fragment-ktx
-    api "androidx.navigation:navigation-ui-ktx:$nav_version" // For Kotlin use navigation-ui-ktx
+    def nav_version = "2.3.0-beta01"
+    implementation "androidx.navigation:navigation-fragment-ktx:$nav_version" // For Kotlin use navigation-fragment-ktx
+    implementation "androidx.navigation:navigation-ui-ktx:$nav_version" // For Kotlin use navigation-ui-ktx
 
     // network
     def retrofitVersion = "2.5.0"
     def moshiVersion = "1.8.0"
-    api "com.squareup.moshi:moshi:$moshiVersion"
-    api "com.squareup.moshi:moshi-kotlin:$moshiVersion"
+    implementation "com.squareup.moshi:moshi:$moshiVersion"
+    implementation "com.squareup.moshi:moshi-kotlin:$moshiVersion"
     implementation "com.squareup.moshi:moshi-adapters:$moshiVersion"
-    api "com.squareup.retrofit2:converter-moshi:$retrofitVersion"
-    api "com.squareup.retrofit2:retrofit:$retrofitVersion"
+    implementation "com.squareup.retrofit2:converter-moshi:$retrofitVersion"
+    implementation "com.squareup.retrofit2:retrofit:$retrofitVersion"
 
     // decoders
-    implementation 'commons-codec:commons-codec:1.11'
+    implementation 'commons-codec:commons-codec:1.14'
 
     // QR scanning for oath demo
-    implementation 'com.google.android.gms:play-services-vision:20.0.0'
+    implementation 'com.google.android.gms:play-services-vision:20.1.0'
 
 
     // unit tests
@@ -123,5 +124,4 @@ dependencies {
     def espresso_version = "3.2.0"
     androidTestImplementation "androidx.test.espresso:espresso-core:$espresso_version"
     androidTestImplementation "androidx.test.espresso:espresso-contrib:$espresso_version"
-    implementation 'androidx.lifecycle:lifecycle-extensions:2.2.0'
 }
