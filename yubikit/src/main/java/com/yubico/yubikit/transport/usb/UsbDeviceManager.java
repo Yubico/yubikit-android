@@ -25,7 +25,6 @@ import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -95,7 +94,6 @@ public class UsbDeviceManager {
      * Checks if there are yubico device connected to device list
      * @return the object that contains property of device connected over USB
      */
-    @Nullable
     private List<UsbDevice> findDevices() {
         List<UsbDevice> yubikeys = new ArrayList<>();
         for (UsbDevice device : usbManager.getDeviceList().values()) {

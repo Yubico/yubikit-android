@@ -56,7 +56,7 @@ public class UsbHidConnection implements Closeable {
     private final UsbInterface hidInterface;
 
     private static final int TYPE_CLASS = 0x20;
-    private static final int RECEIPIENT_INTERFACE = 0x01;
+    private static final int RECIPIENT_INTERFACE = 0x01;
     private static final int HID_GET_REPORT = 0x01;
     private static final int HID_SET_REPORT = 0x09;
     private static final int REPORT_TYPE_FEATURE = 0x03;
@@ -304,7 +304,7 @@ public class UsbHidConnection implements Closeable {
      */
     private byte[] readFeatureReport() throws IOException {
         byte[] bufferRead = new byte[FEATURE_RPT_SIZE];
-        int bytesRead = connection.controlTransfer(UsbConstants.USB_DIR_IN | TYPE_CLASS | RECEIPIENT_INTERFACE, HID_GET_REPORT,
+        int bytesRead = connection.controlTransfer(UsbConstants.USB_DIR_IN | TYPE_CLASS | RECIPIENT_INTERFACE, HID_GET_REPORT,
                 REPORT_TYPE_FEATURE << 8, hidInterface.getId(), bufferRead, bufferRead.length, TIMEOUT);
         if (bytesRead < 0) {
             throw new IOException("Can't read the data");
@@ -321,7 +321,7 @@ public class UsbHidConnection implements Closeable {
      */
     private void writeFeatureReport(byte[] buffer) throws IOException {
         int bytesSentPackage = connection.controlTransfer(
-                UsbConstants.USB_DIR_OUT | TYPE_CLASS | RECEIPIENT_INTERFACE,
+                UsbConstants.USB_DIR_OUT | TYPE_CLASS | RECIPIENT_INTERFACE,
                 HID_SET_REPORT, REPORT_TYPE_FEATURE << 8,
                 hidInterface.getId(),
                 buffer,

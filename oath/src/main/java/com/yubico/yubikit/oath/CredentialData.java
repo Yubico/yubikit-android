@@ -196,6 +196,7 @@ public class CredentialData implements Serializable {
      *
      * @return the issuer
      */
+    @Nullable
     public String getIssuer() {
         return issuer;
     }

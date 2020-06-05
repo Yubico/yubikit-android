@@ -26,7 +26,7 @@ public class Credential implements Serializable {
      * Properties that identify credential
      */
     private final byte[] id;
-    public final String name;
+    private final String name;
     private final int period;
     private final @Nullable String issuer;
     private final OathType oathType;
@@ -110,8 +110,17 @@ public class Credential implements Serializable {
      * Name of credential issuer (e.g. Google, Amazon, Facebook, etc)
      * @return the issuer
      */
+    @Nullable
     public String getIssuer() {
         return issuer;
+    }
+
+    /**
+     * Name of the account (typically a username or email address)
+     * @return the account name
+     */
+    public String getName() {
+        return name;
     }
 
     /**
