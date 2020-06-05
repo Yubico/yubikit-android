@@ -27,8 +27,7 @@ dependencies {
     compileOnly project(':yubikit')
     compileOnly "androidx.annotation:annotation:$annotationVersion"
 
-    // Hex.decodeHex method
-    implementation 'commons-codec:commons-codec:1.11'
+    implementation 'commons-codec:commons-codec:1.14'
 
     testImplementation 'junit:junit:4.13'
     testImplementation 'androidx.test.ext:junit:1.1.1'
