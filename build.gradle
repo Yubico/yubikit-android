@@ -28,7 +28,6 @@ allprojects {
     }
     project.ext {
         compileSdkVersion = 29
-        minFidoSdkVersion = 24
         minSdkVersion = 19
         targetSdkVersion = 28
 

@@ -10,7 +10,7 @@ android {
     compileSdkVersion project.compileSdkVersion
     defaultConfig {
         applicationId "com.yubico.yubikit.demo"
-        minSdkVersion project.minFidoSdkVersion
+        minSdkVersion 24
         targetSdkVersion project.targetSdkVersion
         versionCode 1
         versionName "1.0"
