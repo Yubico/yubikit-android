@@ -24,10 +24,6 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
 
-        buildConfigField "String", "APP_NAME", "\"YubikitDemo\""
-        buildConfigField "String", "NAMESPACE", "\"webauthnflow\""
-        buildConfigField "String", "SERVER_URL", "\"https://demo.yubico.com\""
-        buildConfigField "String", "TABLE_NAME", "\"authenticators\""
     }
 
     compileOptions {
