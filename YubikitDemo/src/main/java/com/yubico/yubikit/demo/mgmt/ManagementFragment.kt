@@ -136,7 +136,7 @@ class ManagementFragment : BaseYubikeyFragment(TAG) {
         info.visibility = if (config == null) View.GONE else View.VISIBLE
         save.isEnabled = config != null
         if (config != null) {
-            info.text = "Device type: ${config.formFactor.name} \nFirmaware: ${config.firmwareVersion} \nSerial: ${config.serial}"
+            info.text = "Device type: ${config.formFactor.name} \nFirmware: ${config.firmwareVersion} \nSerial: ${config.serial}"
             interface_table.removeAllViews()
             addTextView(TransportType.USB)
             addTextView(TransportType.NFC)
@@ -160,7 +160,7 @@ class ManagementFragment : BaseYubikeyFragment(TAG) {
     private fun showFirmwareVersion(version: Version?) {
         version?.run {
             info.visibility = View.VISIBLE
-            info.text = "Firmaware: ${this}"
+            info.text = "Firmware: $this"
         }
     }
 
