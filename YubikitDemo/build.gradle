@@ -1,11 +1,18 @@
 apply plugin: 'com.android.application'
-
 apply plugin: 'kotlin-android'
-
 apply plugin: 'kotlin-android-extensions'
-
 apply plugin: 'kotlin-kapt'
 
+buildscript {
+    repositories {
+        google()
+        jcenter()
+    }
+    ext.kotlin_version = '1.3.72'
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+    }
+}
 android {
     compileSdkVersion project.compileSdkVersion
     defaultConfig {
