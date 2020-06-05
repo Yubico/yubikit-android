@@ -24,21 +24,23 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.nio.charset.StandardCharsets;
-
 @RunWith(AndroidJUnit4.class)
 public class CredentialDataTest {
 
     @Test
     public void testParseUriGood() throws ParseUriException {
-        String[] goodUris = new String[] {
-                "otpauth://totp/Example:alice@google.com?secret=JBSWY3DPEHPK3PXP&issuer=Example",
-                "otpauth://hotp/foobar:bob@example.com?secret=blahonga2",
-                "otpauth://totp/foobar:bob@example.com?secret=secret"
-        };
-        for (String uri : goodUris) {
-            CredentialData.parseUri(Uri.parse(uri));
-        }
+        Assert.assertArrayEquals(
+                new byte[]{0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x21, (byte) 0xde, (byte) 0xad, (byte) 0xbe, (byte) 0xef},
+                CredentialData.parseUri(Uri.parse("otpauth://totp/Example:alice@google.com?secret=JBSWY3DPEHPK3PXP&issuer=Example")).getSecret()
+        );
+        Assert.assertArrayEquals(
+                new byte[]{0x0a, (byte) 0xc0, 0x77, 0x34, (byte) 0xc0},
+                CredentialData.parseUri(Uri.parse("otpauth://hotp/foobar:bob@example.com?secret=blahonga")).getSecret()
+        );
+        Assert.assertArrayEquals(
+                new byte[]{0x00, 0x42},
+                CredentialData.parseUri(Uri.parse("otpauth://totp/foobar:bob@example.com?secret=abba")).getSecret()
+        );
     }
 
     @Test
