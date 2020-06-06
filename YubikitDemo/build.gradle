@@ -102,7 +102,7 @@ dependencies {
 
     // unit tests
     def mockito_version = "2.11.0"
-    def robolectric_version = "4.2"
+    def robolectric_version = "4.3.1"
     def junit_version = "1.1.1"
     testImplementation 'junit:junit:4.13'
     testImplementation "androidx.test.ext:junit:$junit_version"
