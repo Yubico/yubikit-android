@@ -1,3 +1,12 @@
+### 1.0.0
+- Documentation improvements.
+- Removal of unused code and properties.
+- Dependencies updated.
+- yubikit: ATR is read upon opening an Iso7816Connection (USB).
+- otp: The KeyListener interface is no longer public.
+
+---
+
 ### 1.0.0-beta06
 General improvements to YubiKit:
 - Various naming changes to classes and methods to better represent what they do.

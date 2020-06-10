@@ -9,7 +9,7 @@ The **PIV** module requires at minimum Java 7 or Android 4.4. Future versions ma
 #### Gradle
 
 ```gradle
-dependencies {  
+dependencies {
   // core library, connection detection, and raw APDU commands for communication with YubiKey
   implementation 'com.yubico.yubikit:yubikit:$yubikitVersion'
   // PIV
@@ -18,25 +18,25 @@ dependencies {
 ```
 And in `gradle.properties` set the latest version; for example:
 ```gradle
-yubikitVersion=1.0.0-beta05
+yubikitVersion=1.0.0
 ```
 #### Maven
 ```xml
 <dependency>
   <groupId>com.yubico.yubikit</groupId>
   <artifactId>yubikit</artifactId>
-  <version>1.0.0-beta05</version>
+  <version>1.0.0</version>
 </dependency>
 
 <dependency>
   <groupId>com.yubico.yubikit</groupId>
   <artifactId>piv</artifactId>
-  <version>1.0.0-beta05</version>
+  <version>1.0.0</version>
 </dependency>
 ```
 ### Using PIV Library <a name="using_lib"></a>
 
-The **PIV** module requires the YubiKit core library to detect a `YubikeySession` (see the [YubiKit README](../yubikit/README.md)). Use this session to create a `PivApplication` to select the PIV applet on the YubiKey.  
+The **PIV** module requires the YubiKit core library to detect a `YubikeySession` (see the [YubiKit README](../yubikit/README.md)). Use this session to create a `PivApplication` to select the PIV applet on the YubiKey.
 ```java
 
     PivApplication application = new PivApplication(session);

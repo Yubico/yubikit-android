@@ -13,7 +13,7 @@ The **OTP** module requires at minimum Java 7 or Android 4.4. Versions earlier t
 #### Gradle
 
 ```gradle
-dependencies {  
+dependencies {
   // core library, connection detection, and raw APDU commands communication with YubiKey
   implementation 'com.yubico.yubikit:yubikit:$yubikitVersion'
   // OTP
@@ -22,20 +22,20 @@ dependencies {
 ```
 And in `gradle.properties` set the latest version; for example:
 ```gradle
-yubikitVersion=1.0.0-beta05
+yubikitVersion=1.0.0
 ```
 #### Maven
 ```xml
 <dependency>
   <groupId>com.yubico.yubikit</groupId>
   <artifactId>yubikit</artifactId>
-  <version>1.0.0-beta05</version>
+  <version>1.0.0</version>
 </dependency>
 
 <dependency>
   <groupId>com.yubico.yubikit</groupId>
   <artifactId>otp</artifactId>
-  <version>1.0.0-beta05</version>
+  <version>1.0.0</version>
 </dependency>
 ```
 ### Using OTP Library <a name="using_lib"></a>

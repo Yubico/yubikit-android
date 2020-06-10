@@ -17,7 +17,7 @@ dependencies {
 
 And in `gradle.properties` set the latest version; for example:
 ```gradle
-yubikitVersion=1.0.0-beta05
+yubikitVersion=1.0.0
 ```
 
 #### Maven
@@ -26,7 +26,7 @@ yubikitVersion=1.0.0-beta05
 <dependency>
   <groupId>com.yubico.yubikit</groupId>
   <artifactId>yubikit</artifactId>
-  <version>1.0.0-beta05</version>
+  <version>1.0.0</version>
 </dependency>
 ```
 

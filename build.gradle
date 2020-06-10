@@ -31,6 +31,7 @@ allprojects {
         appcompatVersion = "1.1.0"
         annotationVersion = "1.0.0"
     }
+    group = 'com.yubico.yubikit'
 }
 
 task clean(type: Delete) {

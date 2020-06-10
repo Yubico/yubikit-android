@@ -13,14 +13,14 @@ ext {
 
     libraryDescription = POM_DESCRIPTION
 
-    siteUrl = 'https://github.com/YubicoLabs/yubikit-android'
-    gitUrl = 'https://github.com/YubicoLabs/yubikit-android.git'
+    siteUrl = 'https://github.com/Yubico/yubikit-android'
+    gitUrl = 'https://github.com/Yubico/yubikit-android.git'
 
     libraryVersion = POM_VERSION
 
-    developerId = 'imakhalova'
-    developerName = 'Irina Makhalova'
-    developerEmail = 'i.makhalova@yubico.com'
+    developerId = 'dainnilsson'
+    developerName = 'Dain Nilsson'
+    developerEmail = 'dain@yubico.com'
 
     licenseName = 'Apache License, Version 2.0'
     licenseUrl = 'http://www.apache.org/licenses/LICENSE-2.0'

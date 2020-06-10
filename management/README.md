@@ -14,7 +14,7 @@ The **MGMT** module requires at minimum Java 7 or Android 4.4. Versions earlier 
 #### Gradle
 
 ```gradle
-dependencies {  
+dependencies {
   // core library, connection detection, and raw commands communication with YubiKey
   implementation 'com.yubico.yubikit:yubikit:$yubikitVersion'
   // mgmt
@@ -23,7 +23,7 @@ dependencies {
 ```
 And in `gradle.properties` set the latest version; for example:
 ```gradle
-yubikitVersion=1.0.0-beta05
+yubikitVersion=1.0.0
 ```
 
 #### Maven
@@ -31,13 +31,13 @@ yubikitVersion=1.0.0-beta05
 <dependency>
   <groupId>com.yubico.yubikit</groupId>
   <artifactId>yubikit</artifactId>
-  <version>1.0.0-beta05</version>
+  <version>1.0.0</version>
 </dependency>
 
 <dependency>
   <groupId>com.yubico.yubikit</groupId>
   <artifactId>mgmt</artifactId>
-  <version>1.0.0-beta05</version>
+  <version>1.0.0</version>
 </dependency>
 ```
 ### Using MGMT Library <a name="using_lib"></a>

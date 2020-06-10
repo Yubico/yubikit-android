@@ -23,7 +23,7 @@ android {
 }
 
 dependencies {
-    api project(':yubikit')
+    compileOnly project(':yubikit')
     implementation "androidx.appcompat:appcompat:$appcompatVersion"
 
     testImplementation project(':yubikit')

@@ -23,7 +23,7 @@ android {
 }
 
 dependencies {
-    api project(':yubikit')
+    compileOnly project(':yubikit')
 
     implementation "androidx.appcompat:appcompat:$appcompatVersion"
     implementation "com.google.android.material:material:1.0.0"

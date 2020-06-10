@@ -25,7 +25,7 @@ android {
 dependencies {
     compileOnly "androidx.annotation:annotation:$annotationVersion"
 
-    api project(':yubikit')
+    compileOnly project(':yubikit')
     implementation 'commons-codec:commons-codec:1.14'
 
     testImplementation 'junit:junit:4.13'
