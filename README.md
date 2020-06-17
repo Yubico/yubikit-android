@@ -41,7 +41,7 @@ To get started:
 
 ### Try the Demo
 
-Use the [YubiKit Demo App](./YubikitDemo) to learn how to integrate YubiKit for Android with your app. The Demo app shows several examples of how to use YubiKit, including WebAuthn/FIDO2 over the accessory or NFC YubiKeys. It shows how the library is linked with a project so it can be used for a side-by-side comparison when adding the library to your own project.
+Use the [YubiKit Demo App](./YubikitDemo) to learn how to integrate YubiKit for Android with your app. The Demo app shows several examples of how to use YubiKit. It shows how the library is linked with a project so it can be used for a side-by-side comparison when adding the library to your own project.
 
 Open the YubiKitDemo Android Studio project and run it on a real device or an emulator to see the features.
 
