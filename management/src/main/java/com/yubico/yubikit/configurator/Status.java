@@ -49,12 +49,6 @@ public class Status {
     public static Status parse(byte[] bytes) {
         Version version = Version.parse(bytes);
 
-        // there is bug in firmware 5.* which can return incorrect value
-        // workaround to have some generated version to pass version checks
-        if (version.major < 1) {
-            version = new Version(5, version.minor, version.micro);
-        }
-
         if (bytes.length < 6) {
             return new Status(version, (byte)0, (short)0);
         }
