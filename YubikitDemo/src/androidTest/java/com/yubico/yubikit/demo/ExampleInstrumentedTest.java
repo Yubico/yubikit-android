@@ -1,4 +1,4 @@
-package com.yubico.yubikit.fido;
+package com.yubico.yubikit.demo;
 
 import android.content.Context;
 
