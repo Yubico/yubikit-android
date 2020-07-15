@@ -34,4 +34,7 @@ dependencies {
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
 }
 
-apply from: rootProject.file('release.gradle')
+ext.pomName = "Yubico YubiKit core module"
+description = "This YubiKit is the core library and provides functionality to detect a YubiKey plugged in or tapped over NFC and to open an ISO/IEC 7816 connection that allows sending raw APDU commands to the key."
+
+apply from: rootProject.file('publish.gradle')

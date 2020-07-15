@@ -25,7 +25,8 @@ android {
 dependencies {
     compileOnly "androidx.annotation:annotation:$annotationVersion"
 
-    compileOnly project(':yubikit')
+    api project(':yubikit')
+
     implementation 'commons-codec:commons-codec:1.14'
 
     testImplementation 'junit:junit:4.13'
@@ -36,4 +37,7 @@ dependencies {
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
 }
 
-apply from: rootProject.file('release.gradle')
+ext.pomName = "Yubico YubiKit ${project.name.capitalize()}"
+description = "This library provides OATH functionality of YubiKey which allows to have an authenticator application and store secrets on YubiKey. Provides TOTP or HOTP."
+
+apply from: rootProject.file('publish.gradle')

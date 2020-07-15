@@ -35,4 +35,7 @@ dependencies {
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
 }
 
-apply from: rootProject.file('release.gradle')
+ext.pomName = "Yubico YubiKit Management"
+description = "This library provides management functionality of YubiKey which allows to enable or disable applets/slots/transport"
+
+apply from: rootProject.file('publish.gradle')

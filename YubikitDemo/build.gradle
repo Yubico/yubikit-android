@@ -66,10 +66,10 @@ configurations.all {
 dependencies {
     // yubikit
     implementation project(':yubikit')
-    implementation (project(':oath'))
-    implementation (project(':otp'))
-    implementation (project(':management'))
-    implementation (project(':piv'))
+    implementation project(':oath')
+    implementation project(':otp')
+    implementation project(':mgmt')
+    implementation project(':piv')
 
     // ui libraries
     implementation 'androidx.constraintlayout:constraintlayout:1.1.3'

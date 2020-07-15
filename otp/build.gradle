@@ -36,4 +36,7 @@ dependencies {
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
 }
 
-apply from: rootProject.file('release.gradle')
+ext.pomName = "Yubico YubiKit ${project.name.capitalize()}"
+description = "This library provides a way to parse Yubikey OTP from NFC tag, UI dialog to show user that OTP reading requires his action and detecting OTP from device than connected over NFC or USB. And also provides method for validation of OTP on server."
+
+apply from: rootProject.file('publish.gradle')
