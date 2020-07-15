@@ -78,6 +78,7 @@ public class YubiKeyConfigurationApplication implements Closeable {
             try {
                 hidApplication = new HidApplication((UsbSession) session);
                 status = Status.parse(hidApplication.getStatus());
+                version = status.getVersion();
             } catch (IOException ignore) {
                 // if HID interface is not found we will try to connect using CCID
             }
