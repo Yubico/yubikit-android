@@ -23,7 +23,7 @@ YubiKit is a multi-module library with the following components:
 
 [PIV](./piv/README.md) provides an implementation of the Personal Identity Verification (PIV) interface.
 
-[MGMT](./management/README.md) provides YubiKey management functionality. This includes a subset of the API for personal customization of the YubiKey and the HMAC-SHA1 challenge-response.
+[MGMT](./mgmt/README.md) provides YubiKey management functionality. This includes a subset of the API for personal customization of the YubiKey and the HMAC-SHA1 challenge-response.
 
 All YubiKit modules include javadoc and additional resources deployed with the library archive. Refer to the javadoc documentation detailed about the API's methods, properties, and parameters.
 
