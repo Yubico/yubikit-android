@@ -443,7 +443,7 @@ public class PivApplication extends Iso7816Application {
      * This feature is only available in YubiKey 4.3 and newer.
      * A high level description of the thinking and how this can be used can be found at
      * https://developers.yubico.com/PIV/Introduction/PIV_attestation.html
-     * Attestation works through a special key slot called “f9” this comes pre-loaded from factory with a key and cert signed by Yubico,
+     * Attestation works through a special key slot called "f9" this comes pre-loaded from factory with a key and cert signed by Yubico,
      * but can be overwritten. After a key has been generated in a normal slot it can be attested by this special key
      * <p>
      * This method requires authentication {@link PivApplication#authenticate(byte[])}

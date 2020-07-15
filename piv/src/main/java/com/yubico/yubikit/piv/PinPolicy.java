@@ -17,7 +17,7 @@
 package com.yubico.yubikit.piv;
 
 /**
- * PIN policy to be used for a key, valid for generate and import. Only available in YubiKey 4 & 5.
+ * PIN policy to be used for a key, valid for generate and import. Only available in YubiKey 4 and later.
  */
 public enum PinPolicy {
     /**

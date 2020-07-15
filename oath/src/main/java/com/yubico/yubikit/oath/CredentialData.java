@@ -49,7 +49,7 @@ public class CredentialData implements Serializable {
     /**
      * Parse credential properties from an otpauth:// URI, as specified by
      * https://github.com/google/google-authenticator/wiki/Key-Uri-Format
-     * Format example: otpauth://totp/Example:alice@google.com?secret=JBSWY3DPEHPK3PXP&issuer=Example
+     * Format example: otpauth://totp/Example:alice@google.com?secret=JBSWY3DPEHPK3PXP&amp;issuer=Example
      *
      * @param uri Uri that received from QR reader or manually from server that requires TOTP/HOTP
      * @return Credential object that needs to be sent to yubikey to store and generate codes

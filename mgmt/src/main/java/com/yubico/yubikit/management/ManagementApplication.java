@@ -19,15 +19,15 @@ package com.yubico.yubikit.management;
 import com.yubico.yubikit.HidApplication;
 import com.yubico.yubikit.Iso7816Application;
 import com.yubico.yubikit.apdu.Apdu;
-import com.yubico.yubikit.exceptions.ApduException;
 import com.yubico.yubikit.apdu.Tlv;
 import com.yubico.yubikit.apdu.TlvUtils;
 import com.yubico.yubikit.apdu.Version;
 import com.yubico.yubikit.configurator.Status;
+import com.yubico.yubikit.exceptions.ApduException;
 import com.yubico.yubikit.exceptions.ApplicationNotFound;
-import com.yubico.yubikit.transport.usb.NoDataException;
 import com.yubico.yubikit.exceptions.NotSupportedOperation;
 import com.yubico.yubikit.transport.YubiKeySession;
+import com.yubico.yubikit.transport.usb.NoDataException;
 import com.yubico.yubikit.transport.usb.UsbSession;
 import com.yubico.yubikit.utils.ChecksumUtils;
 
@@ -72,8 +72,8 @@ public class ManagementApplication implements Closeable {
      * Create new instance of {@link ManagementApplication}
      *
      * @param session session with YubiKey
-     * @throws IOException   in case of connection error
-     * @throws ApduException in case of communication error
+     * @throws IOException         in case of connection error
+     * @throws ApplicationNotFound in case the application is disabled or missing
      */
     public ManagementApplication(YubiKeySession session) throws IOException, ApplicationNotFound {
         try {
