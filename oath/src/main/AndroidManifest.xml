@@ -1,6 +1,0 @@
-<!--
-  ~ Copyright © 2019 Yubico inc. All rights reserved.
-  -->
-
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.yubico.yubikit.oath" />

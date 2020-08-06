@@ -16,37 +16,33 @@
 
 package com.yubico.yubikit.oath;
 
-import android.os.Build;
-import android.text.TextUtils;
-import android.util.SparseArray;
-
-import androidx.annotation.Nullable;
-
 import com.yubico.yubikit.Iso7816Application;
+import com.yubico.yubikit.Iso7816Connection;
 import com.yubico.yubikit.apdu.Apdu;
-import com.yubico.yubikit.exceptions.ApduException;
 import com.yubico.yubikit.apdu.ApduUtils;
 import com.yubico.yubikit.apdu.Tlv;
 import com.yubico.yubikit.apdu.TlvUtils;
+import com.yubico.yubikit.exceptions.ApduException;
 import com.yubico.yubikit.exceptions.ApplicationNotFound;
 import com.yubico.yubikit.exceptions.BadRequestException;
 import com.yubico.yubikit.exceptions.NotSupportedOperation;
-import com.yubico.yubikit.transport.YubiKeySession;
+import com.yubico.yubikit.utils.RandomUtils;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.annotation.Nullable;
 import javax.crypto.Mac;
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
@@ -66,12 +62,12 @@ public class OathApplication extends Iso7816Application {
     /**
      * Tlv tags for credential data
      */
-    private static final byte TAG_NAME = 0x71;
-    private static final byte TAG_KEY = 0x73;
-    private static final byte TAG_RESPONSE = 0x75;
-    private static final byte TAG_PROPERTY = 0x78;
-    private static final byte TAG_IMF = 0x7a;
-    private static final byte TAG_CHALLENGE = 0x74;
+    private static final int TAG_NAME = 0x71;
+    private static final int TAG_KEY = 0x73;
+    private static final int TAG_RESPONSE = 0x75;
+    private static final int TAG_PROPERTY = 0x78;
+    private static final int TAG_IMF = 0x7a;
+    private static final int TAG_CHALLENGE = 0x74;
 
     /**
      * Instruction bytes for APDU commands
@@ -93,9 +89,9 @@ public class OathApplication extends Iso7816Application {
      */
     private static final byte[] AID = new byte[]{(byte) 0xa0, 0x00, 0x00, 0x05, 0x27, 0x21, 0x01, 0x01};
 
-
     private static final long MILLS_IN_SECOND = 1000;
     private static final int DEFAULT_PERIOD = 30;
+    private static final int CHALLENGE_LEN = 8;
 
     /**
      * Version, ID and a challenge if authentication is configured
@@ -107,25 +103,15 @@ public class OathApplication extends Iso7816Application {
      * Create new instance of {@link OathApplication}
      * and selects the application for use
      *
-     * @param session session with YubiKey
-     * @throws IOException   in case of connection error
-     * @throws ApduException in case of communication error
+     * @param connection to the YubiKey
+     * @throws IOException         in case of connection error
+     * @throws ApduException       in case of communication error
+     * @throws ApplicationNotFound in case the application is missing/disabled
      */
-    public OathApplication(YubiKeySession session) throws IOException, ApduException, ApplicationNotFound {
-        super(AID, session);
-        try {
-            applicationInfo = new OathApplicationInfo(select());
-        } catch (ApduException e) {
-            close();
-            if (e.getStatusCode() == APPLICATION_NOT_FOUND_ERROR) {
-                throw new ApplicationNotFound("OATH application is disabled on this device");
-            } else {
-                throw e;
-            }
-        } catch (IOException e) {
-            close();
-            throw e;
-        }
+    public OathApplication(Iso7816Connection connection) throws IOException, ApduException, ApplicationNotFound {
+        super(AID, connection);
+
+        applicationInfo = new OathApplicationInfo(select());
     }
 
     /**
@@ -157,25 +143,17 @@ public class OathApplication extends Iso7816Application {
      * @throws IOException   in case of connection error
      * @throws ApduException in case of communication error
      */
-    public boolean validate(String password) throws IOException, ApduException {
-        // null password fail validation fast
-        if (applicationInfo.isAuthenticationRequired() && TextUtils.isEmpty(password)) {
+    public boolean validate(char[] password) throws IOException, ApduException {
+        if (applicationInfo.isAuthenticationRequired() && (password.length == 0)) {
             return false;
         }
 
-        final byte[] secret;
         try {
-            secret = calculateSecret(password, applicationInfo.getSalt());
+            byte[] secret = calculateSecret(password, applicationInfo.getSalt());
+            return validate(challenge -> calculateResponse(secret, challenge));
         } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
-            throw new RuntimeException(e); // This shouldn't happend.
+            throw new RuntimeException(e); // This shouldn't happen.
         }
-
-        return validate(new ChallengeSigner() {
-            @Override
-            public byte[] sign(byte[] challenge) throws InvalidKeyException, NoSuchAlgorithmException {
-                return calculateResponse(secret, challenge);
-            }
-        });
     }
 
     /**
@@ -186,6 +164,7 @@ public class OathApplication extends Iso7816Application {
      * The application will then respond with a similar calculation that the host software can verify.
      *
      * @param signer the provide of HMAC calculation
+     * @return if the command was successful or not
      * @throws IOException   in case of connection error
      * @throws ApduException in case of communication error
      */
@@ -196,14 +175,14 @@ public class OathApplication extends Iso7816Application {
         }
 
         try {
-            List<Tlv> requestTlv = new ArrayList<>();
-            requestTlv.add(new Tlv(TAG_RESPONSE, signer.sign(applicationInfo.getChallenge())));
+            Map<Integer, byte[]> request = new LinkedHashMap<>();
+            request.put(TAG_RESPONSE, signer.sign(applicationInfo.getChallenge()));
 
-            byte[] challenge = generateChallenge();
-            requestTlv.add(new Tlv(TAG_CHALLENGE, challenge));
+            byte[] challenge = RandomUtils.getRandomBytes(CHALLENGE_LEN);
+            request.put(TAG_CHALLENGE, challenge);
 
-            byte[] data = sendAndReceive(new Apdu(0, INS_VALIDATE, 0, 0, TlvUtils.packTlvList(requestTlv)));
-            SparseArray<byte[]> map = TlvUtils.parseTlvMap(data);
+            byte[] data = sendAndReceive(new Apdu(0, INS_VALIDATE, 0, 0, TlvUtils.packTlvMap(request)));
+            Map<Integer, byte[]> map = TlvUtils.parseTlvMap(data);
             // return false if response from validation does not match verification
             return (Arrays.equals(signer.sign(challenge), map.get(TAG_RESPONSE)));
         } catch (ApduException e) {
@@ -221,20 +200,16 @@ public class OathApplication extends Iso7816Application {
     /**
      * Configures Authentication.
      *
-     * @param password user-supplied password. If null or empty, authentication is removed.
-     * @throws IOException in case of connection error
+     * @param password user-supplied password to set
+     * @throws IOException   in case of connection error
      * @throws ApduException in case of communication error
      */
-    public void setPassword(String password) throws IOException, ApduException {
-        if (TextUtils.isEmpty(password)) {
-            unsetSecret();
-        } else {
-            try {
-                final byte[] secret = calculateSecret(password, applicationInfo.getSalt());
-                setSecret(secret);
-            } catch (NoSuchAlgorithmException | InvalidKeySpecException | BadRequestException e) {
-                throw new RuntimeException(e); // this shouldn't happen.
-            }
+    public void setPassword(char[] password) throws IOException, ApduException {
+        try {
+            final byte[] secret = calculateSecret(password, applicationInfo.getSalt());
+            setSecret(secret);
+        } catch (NoSuchAlgorithmException | InvalidKeySpecException | BadRequestException e) {
+            throw new RuntimeException(e); // this shouldn't happen.
         }
     }
 
@@ -249,34 +224,38 @@ public class OathApplication extends Iso7816Application {
      *
      * @param secret 16 bytes of user-supplied UTF-8 encoded password passed through 1000 rounds of PBKDF2
      *               with the ID from select used as salt
-     * @throws IOException   in case of connection error
-     * @throws ApduException in case of communication error
+     * @throws IOException         in case of connection error
+     * @throws ApduException       in case of communication error
+     * @throws BadRequestException in case of invalid parameters
      */
     public void setSecret(byte[] secret) throws IOException, ApduException, BadRequestException {
         if (secret.length != 16) {
             throw new BadRequestException("Secret should be 16 bytes");
         }
 
-        List<Tlv> requestTlvs = new ArrayList<>();
-        requestTlvs.add(new Tlv(TAG_KEY, ByteBuffer.allocate(1 + secret.length)
+        Map<Integer, byte[]> request = new LinkedHashMap<>();
+        request.put(TAG_KEY, ByteBuffer.allocate(1 + secret.length)
                 .put((byte) (OathType.TOTP.value | HashAlgorithm.SHA1.value))
                 .put(secret)
-                .array()));
+                .array());
 
-        byte[] challenge = generateChallenge();
-        requestTlvs.add(new Tlv(TAG_CHALLENGE, challenge));
+        byte[] challenge = RandomUtils.getRandomBytes(CHALLENGE_LEN);
+        request.put(TAG_CHALLENGE, challenge);
         try {
-            requestTlvs.add(new Tlv(TAG_RESPONSE, calculateResponse(secret, challenge)));
+            request.put(TAG_RESPONSE, calculateResponse(secret, challenge));
         } catch (NoSuchAlgorithmException | InvalidKeyException e) {
             throw new RuntimeException(e); //This shouldn't happen
         }
 
-        sendAndReceive(new Apdu(0, INS_SET_CODE, 0, 0, TlvUtils.packTlvList(requestTlvs)));
+        sendAndReceive(new Apdu(0, INS_SET_CODE, 0, 0, TlvUtils.packTlvMap(request)));
     }
 
     /**
      * Removes authentication.
      * If the application is protected with a password, this password is removed.
+     *
+     * @throws IOException   in case of connection error
+     * @throws ApduException in case of communication error
      */
     public void unsetSecret() throws IOException, ApduException {
         sendAndReceive(new Apdu(0, INS_SET_CODE, 0, 0, new Tlv(TAG_KEY, null).getBytes()));
@@ -319,13 +298,11 @@ public class OathApplication extends Iso7816Application {
      * @throws ApduException in case of communication error
      */
     public Map<Credential, Code> calculateAll(long timestamp) throws IOException, ApduException {
-        List<Tlv> requestTlv = new ArrayList<>();
         long timeStep = (timestamp / MILLS_IN_SECOND / DEFAULT_PERIOD);
-        byte[] challenge = ByteBuffer.allocate(8).putLong(timeStep).array();
+        byte[] challenge = ByteBuffer.allocate(CHALLENGE_LEN).putLong(timeStep).array();
 
         // using default period to 30 second for all _credentials and then recalculate those that have different period
-        requestTlv.add(new Tlv(TAG_CHALLENGE, challenge));
-        byte[] data = sendAndReceive(new Apdu(0, INS_CALCULATE_ALL, 0, 1, TlvUtils.packTlvList(requestTlv)));
+        byte[] data = sendAndReceive(new Apdu(0, INS_CALCULATE_ALL, 0, 1, new Tlv(TAG_CHALLENGE, challenge).getBytes()));
         Iterator<Tlv> responseTlvs = TlvUtils.parseTlvList(data).iterator();
         Map<Credential, Code> map = new HashMap<>();
         while (responseTlvs.hasNext()) {
@@ -362,10 +339,10 @@ public class OathApplication extends Iso7816Application {
      * @throws ApduException in case of communication error
      */
     public byte[] calculate(byte[] credentialId, byte[] challenge) throws IOException, ApduException {
-        List<Tlv> requestTlv = new ArrayList<>();
-        requestTlv.add(new Tlv(TAG_NAME, credentialId));
-        requestTlv.add(new Tlv(TAG_CHALLENGE, challenge));
-        byte[] data = sendAndReceive(new Apdu(0, INS_CALCULATE, 0, 0, TlvUtils.packTlvList(requestTlv)));
+        Map<Integer, byte[]> request = new LinkedHashMap<>();
+        request.put(TAG_NAME, credentialId);
+        request.put(TAG_CHALLENGE, challenge);
+        byte[] data = sendAndReceive(new Apdu(0, INS_CALCULATE, 0, 0, TlvUtils.packTlvMap(request)));
         Tlv responseTlv = new Tlv(data, 0);
         return Arrays.copyOfRange(responseTlv.getValue(), 1, responseTlv.getLength());
     }
@@ -394,16 +371,16 @@ public class OathApplication extends Iso7816Application {
     public Code calculate(Credential credential, @Nullable Long timestamp) throws IOException, ApduException {
         byte[] challenge;
         if (timestamp == null || credential.getPeriod() == 0) {
-            challenge = new byte[8];
+            challenge = new byte[CHALLENGE_LEN];
         } else {
             long timeStep = (timestamp / MILLS_IN_SECOND / credential.getPeriod());
-            challenge = ByteBuffer.allocate(8).putLong(timeStep).array();
+            challenge = ByteBuffer.allocate(CHALLENGE_LEN).putLong(timeStep).array();
         }
 
-        List<Tlv> requestTlv = new ArrayList<>();
-        requestTlv.add(new Tlv(TAG_NAME, credential.getId()));
-        requestTlv.add(new Tlv(TAG_CHALLENGE, challenge));
-        byte[] data = sendAndReceive(new Apdu(0, INS_CALCULATE, 0, 1, TlvUtils.packTlvList(requestTlv)));
+        Map<Integer, byte[]> requestTlv = new LinkedHashMap<>();
+        requestTlv.put(TAG_NAME, credential.getId());
+        requestTlv.put(TAG_CHALLENGE, challenge);
+        byte[] data = sendAndReceive(new Apdu(0, INS_CALCULATE, 0, 1, TlvUtils.packTlvMap(requestTlv)));
         Tlv responseTlv = new Tlv(data, 0);
         String value = formatTruncated(new CalculateResponse(responseTlv));
 
@@ -421,8 +398,10 @@ public class OathApplication extends Iso7816Application {
      * Adds a new (or overwrites) OATH credential.
      *
      * @param credential credential data to add
-     * @throws IOException in case of connection error
-     * @throws ApduException in case of communication error
+     * @return the newly added Credential
+     * @throws IOException           in case of connection error
+     * @throws ApduException         in case of communication error
+     * @throws NotSupportedOperation if the configuration is not supported for this YubiKey
      */
     public Credential putCredential(CredentialData credential) throws IOException, ApduException, NotSupportedOperation {
         if (credential.isTouchRequired() && applicationInfo.getVersion().isLessThan(4, 0, 0)) {
@@ -431,17 +410,17 @@ public class OathApplication extends Iso7816Application {
 
         try {
             byte[] key = credential.getHashAlgorithm().prepareKey(credential.getSecret());
-            List<Tlv> requestTlvs = new ArrayList<>();
-            requestTlvs.add(new Tlv(TAG_NAME, credential.getId()));
+            Map<Integer, byte[]> requestTlvs = new LinkedHashMap<>();
+            requestTlvs.put(TAG_NAME, credential.getId());
 
-            requestTlvs.add(new Tlv(TAG_KEY, ByteBuffer.allocate(2 + key.length)
+            requestTlvs.put(TAG_KEY, ByteBuffer.allocate(2 + key.length)
                     .put((byte) (credential.getOathType().value | credential.getHashAlgorithm().value))
                     .put((byte) credential.getDigits())
                     .put(key)
-                    .array()));
+                    .array());
 
             ByteArrayOutputStream output = new ByteArrayOutputStream();
-            output.write(TlvUtils.packTlvList(requestTlvs));
+            output.write(TlvUtils.packTlvMap(requestTlvs));
 
             if (credential.isTouchRequired()) {
                 output.write(TAG_PROPERTY);
@@ -470,9 +449,7 @@ public class OathApplication extends Iso7816Application {
      * @throws ApduException in case of communication error
      */
     public void deleteCredential(byte[] credentialId) throws IOException, ApduException {
-        List<Tlv> list = new ArrayList<>();
-        list.add(new Tlv(TAG_NAME, credentialId));
-        Apdu apdu = new Apdu(0x00, INS_DELETE, 0, 0, TlvUtils.packTlvList(list));
+        Apdu apdu = new Apdu(0x00, INS_DELETE, 0, 0, new Tlv(TAG_NAME, credentialId).getBytes());
         sendAndReceive(apdu);
     }
 
@@ -486,9 +463,9 @@ public class OathApplication extends Iso7816Application {
      * @throws InvalidKeySpecException  in case of crypto operation error
      * @throws NoSuchAlgorithmException in case of crypto operation error
      */
-    public static byte[] calculateSecret(String password, byte[] salt) throws NoSuchAlgorithmException, InvalidKeySpecException {
+    public static byte[] calculateSecret(char[] password, byte[] salt) throws NoSuchAlgorithmException, InvalidKeySpecException {
         SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
-        PBEKeySpec keyspec = new PBEKeySpec(password.toCharArray(), salt, 1000, 128);
+        PBEKeySpec keyspec = new PBEKeySpec(password, salt, 1000, 128);
         try {
             return factory.generateSecret(keyspec).getEncoded();
         } finally {
@@ -553,25 +530,6 @@ public class OathApplication extends Iso7816Application {
             value = result;
         }
         return value;
-    }
-
-    /**
-     * Generated random 8 bytes that can be used as challenge for authentication
-     *
-     * @return random 8 bytes
-     */
-    private static byte[] generateChallenge() {
-        byte[] challenge = new byte[8];
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            try {
-                SecureRandom.getInstanceStrong().nextBytes(challenge);
-            } catch (NoSuchAlgorithmException e) {
-                new SecureRandom().nextBytes(challenge);
-            }
-        } else {
-            new SecureRandom().nextBytes(challenge);
-        }
-        return challenge;
     }
 
     /**

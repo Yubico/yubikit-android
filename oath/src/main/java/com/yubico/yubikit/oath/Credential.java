@@ -16,25 +16,19 @@
 
 package com.yubico.yubikit.oath;
 
-import androidx.annotation.Nullable;
-
 import java.io.Serializable;
 import java.util.Arrays;
 
+import javax.annotation.Nullable;
+
 public class Credential implements Serializable {
-    /**
-     * Properties that identify credential
-     */
     private final byte[] id;
     private final String name;
     private final int period;
-    private final @Nullable String issuer;
+    @Nullable
+    private final String issuer;
     private final OathType oathType;
 
-    /**
-     * These properties are used to create credential on key
-     * But can be unknown/not received from yubikey during enlisting or calculation
-     */
     private boolean touchRequired = false;
 
     /**
@@ -49,6 +43,7 @@ public class Credential implements Serializable {
 
     /**
      * Construct a Credential using response data from a LIST call.
+     *
      * @param response The parsed response from the YubiKey.
      */
     Credential(OathApplication.ListResponse response) {
@@ -63,7 +58,8 @@ public class Credential implements Serializable {
 
     /**
      * Construct a Credential using response data from a CALCULATE/CALCULATE_ALL call.
-     * @param id The ID of the Credential
+     *
+     * @param id       The ID of the Credential
      * @param response The parsed response from the YubiKey for the Credential.
      */
     Credential(byte[] id, OathApplication.CalculateResponse response) {
@@ -79,6 +75,7 @@ public class Credential implements Serializable {
 
     /**
      * Creates an instance of {@link Credential} from CredentialData successfully added to a YubiKey
+     *
      * @param credentialData the data used to create the Credential
      */
     Credential(CredentialData credentialData) {
@@ -92,6 +89,7 @@ public class Credential implements Serializable {
 
     /**
      * Gets id of credential that used as unique identifier
+     *
      * @return period + issuer + name
      */
     public byte[] getId() {
@@ -100,6 +98,7 @@ public class Credential implements Serializable {
 
     /**
      * Oath type {@link OathType}
+     *
      * @return HOTP or TOTP
      */
     public OathType getOathType() {
@@ -108,6 +107,7 @@ public class Credential implements Serializable {
 
     /**
      * Name of credential issuer (e.g. Google, Amazon, Facebook, etc)
+     *
      * @return the issuer
      */
     @Nullable
@@ -117,6 +117,7 @@ public class Credential implements Serializable {
 
     /**
      * Name of the account (typically a username or email address)
+     *
      * @return the account name
      */
     public String getName() {
@@ -125,6 +126,7 @@ public class Credential implements Serializable {
 
     /**
      * Period in seconds for how long code is valid from its calculation/generation time
+     *
      * @return the period (in seconds)
      */
     public int getPeriod() {

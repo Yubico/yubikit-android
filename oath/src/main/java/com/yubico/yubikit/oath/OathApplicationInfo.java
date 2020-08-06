@@ -16,15 +16,15 @@
 
 package com.yubico.yubikit.oath;
 
-import android.util.Base64;
-import android.util.SparseArray;
-
 import com.yubico.yubikit.apdu.TlvUtils;
 import com.yubico.yubikit.apdu.Version;
+
+import org.apache.commons.codec.binary.Base64;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
+import java.util.Map;
 
 /**
  * Result of SELECT OATH operation.
@@ -32,9 +32,9 @@ import java.util.Arrays;
  */
 public class OathApplicationInfo {
 
-    private static final byte TAG_NAME = 0x71;
-    private static final byte TAG_CHALLENGE = 0x74;
-    private static final byte TAG_VERSION = 0x79;
+    private static final int TAG_NAME = 0x71;
+    private static final int TAG_CHALLENGE = 0x74;
+    private static final int TAG_VERSION = 0x79;
 
     private final Version version;
     private final byte[] salt;
@@ -46,7 +46,7 @@ public class OathApplicationInfo {
      * @param response the response from OATH SELECT command
      */
     OathApplicationInfo(byte[] response) {
-        SparseArray<byte[]> map = TlvUtils.parseTlvMap(response);
+        Map<Integer, byte[]> map = TlvUtils.parseTlvMap(response);
         version = Version.parse(map.get(TAG_VERSION));
         salt = map.get(TAG_NAME);
         challenge = map.get(TAG_CHALLENGE);
@@ -92,13 +92,13 @@ public class OathApplicationInfo {
     private static String getDeviceIdString(byte[] salt) {
         MessageDigest messageDigest = null;
         try {
-            messageDigest = MessageDigest.getInstance("SHA256");
+            messageDigest = MessageDigest.getInstance("SHA-256");
         } catch (NoSuchAlgorithmException e) {
             // Shouldn't happen.
             throw new IllegalStateException(e);
         }
         messageDigest.update(salt);
         byte[] digest = messageDigest.digest();
-        return Base64.encodeToString(Arrays.copyOfRange(digest, 0, 16), Base64.NO_PADDING | Base64.NO_WRAP);
+        return Base64.encodeBase64String(Arrays.copyOfRange(digest, 0, 16)).replaceAll("=", "");
     }
 }

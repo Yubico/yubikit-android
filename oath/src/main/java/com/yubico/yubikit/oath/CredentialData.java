@@ -16,17 +16,18 @@
 
 package com.yubico.yubikit.oath;
 
-import android.net.Uri;
-import android.text.TextUtils;
-import android.util.Pair;
-
-import androidx.annotation.Nullable;
+import com.yubico.yubikit.utils.Pair;
 
 import org.apache.commons.codec.binary.Base32;
 
 import java.io.Serializable;
+import java.net.URI;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
+
+import javax.annotation.Nullable;
 
 public class CredentialData implements Serializable {
     private final int period;
@@ -51,25 +52,28 @@ public class CredentialData implements Serializable {
      * https://github.com/google/google-authenticator/wiki/Key-Uri-Format
      * Format example: otpauth://totp/Example:alice@google.com?secret=JBSWY3DPEHPK3PXP&amp;issuer=Example
      *
-     * @param uri Uri that received from QR reader or manually from server that requires TOTP/HOTP
+     * @param uri Url that received from QR reader or manually from server that requires TOTP/HOTP
      * @return Credential object that needs to be sent to yubikey to store and generate codes
      * @throws ParseUriException in case if Uri format is incorrect
      */
-    public static CredentialData parseUri(Uri uri) throws ParseUriException {
-        if (uri == null) {
-            throw new IllegalArgumentException("Uri must be not null");
-        }
 
-        if (!uri.isHierarchical() || !"otpauth".equalsIgnoreCase(uri.getScheme())) {
+    public static CredentialData parseUri(URI uri) throws ParseUriException {
+        if (!"otpauth".equals(uri.getScheme())) {
             throw new ParseUriException("Uri scheme must be otpauth://");
         }
 
         String path = uri.getPath();
-        if (TextUtils.isEmpty(path)) {
+        if (path.isEmpty()) {
             throw new ParseUriException("Path must contain name");
         }
 
-        Pair<String, String> nameAndIssuer = parseNameAndIssuer(path, uri.getQueryParameter("issuer"));
+        Map<String, String> params = new HashMap<>();
+        for (String line : uri.getQuery().split("&")) {
+            String[] parts = line.split("=", 2);
+            params.put(parts[0], parts[1]);
+        }
+
+        Pair<String, String> nameAndIssuer = parseNameAndIssuer(path, params.get("issuer"));
 
         OathType oathType;
         try {
@@ -80,23 +84,24 @@ public class CredentialData implements Serializable {
 
         HashAlgorithm hashAlgorithm;
         try {
-            hashAlgorithm = HashAlgorithm.fromString(uri.getQueryParameter("algorithm"));
+            hashAlgorithm = HashAlgorithm.fromString(params.get("algorithm"));
         } catch (IllegalArgumentException e) {
             throw new ParseUriException("Invalid HMAC algorithm");
         }
 
-        byte[] secret = decodeSecret(uri.getQueryParameter("secret"));
+        byte[] secret = decodeSecret(params.get("secret"));
 
-        int digits = getIntParam(uri, "digits", DEFAULT_DIGITS);
+        int digits = getIntParam(params, "digits", DEFAULT_DIGITS);
         if (digits < 6 || digits > 8) {
             throw new ParseUriException("digits must be in range 6-8");
         }
 
-        int period = getIntParam(uri, "period", DEFAULT_PERIOD);
-        int counter = getIntParam(uri, "counter", DEFAULT_COUNTER);
+        int period = getIntParam(params, "period", DEFAULT_PERIOD);
+        int counter = getIntParam(params, "counter", DEFAULT_COUNTER);
 
         return new CredentialData(nameAndIssuer.first, oathType, hashAlgorithm, secret, digits, period, counter, nameAndIssuer.second);
     }
+
 
     /**
      * Creates instance of {@link Credential}
@@ -123,6 +128,7 @@ public class CredentialData implements Serializable {
 
     /**
      * Set the issuer for the Credential, typically the name of the service.
+     *
      * @param issuer the name of the issuer.
      */
     public void setIssuer(@Nullable String issuer) {
@@ -131,6 +137,7 @@ public class CredentialData implements Serializable {
 
     /**
      * Set the name of the Credential, typically a username.
+     *
      * @param name the name of the Credential.
      */
     public void setName(String name) {
@@ -258,6 +265,7 @@ public class CredentialData implements Serializable {
         return result;
     }
 
+
     /**
      * Parses name and issuer from string value from an otpauth:// URI.
      *
@@ -289,16 +297,16 @@ public class CredentialData implements Serializable {
     /**
      * Parse an int from a Uri query parameter.
      *
-     * @param uri Uri to get query parameter from.
-     * @param name query parameter name.
+     * @param params       Query parameter map.
+     * @param name         query parameter name.
      * @param defaultValue default value in case query paramater is omitted.
      * @return the parsed value, or the default value, if missing.
      * @throws ParseUriException if the value exists and is malformed.
      */
-    private static int getIntParam(Uri uri, String name, int defaultValue) throws ParseUriException {
-        String value = uri.getQueryParameter(name);
+    private static int getIntParam(Map<String, String> params, String name, int defaultValue) throws ParseUriException {
+        String value = params.get(name);
         int result = defaultValue;
-        if (!TextUtils.isEmpty(value)) {
+        if (!(value == null || value.isEmpty())) {
             value = value.replaceAll("\\+", "");
             try {
                 result = Integer.parseInt(value);
@@ -317,9 +325,6 @@ public class CredentialData implements Serializable {
      * @throws ParseUriException in case of not proper format
      */
     private static byte[] decodeSecret(String secret) throws ParseUriException {
-        if (secret == null) {
-            throw new ParseUriException("secret must not be null");
-        }
         secret = secret.toUpperCase();
         Base32 base32 = new Base32();
         if (base32.isInAlphabet(secret)) {

@@ -16,7 +16,6 @@
 
 package com.yubico.yubikit.oath;
 
-import androidx.annotation.NonNull;
 
 /**
  * Code generated on yubikey using OATH application
@@ -25,7 +24,6 @@ public class Code {
     /**
      * one-time generated password
      */
-    @NonNull
     private final String value;
 
     /**
@@ -44,7 +42,7 @@ public class Code {
      * @param validFrom timestamp that was used to generate code
      * @param validUntil timestamp when one-time password becomes invalid/expired
      */
-    public Code(@NonNull String value, long validFrom, long validUntil) {
+    public Code(String value, long validFrom, long validUntil) {
         this.value = value;
         this.validFrom = validFrom;
         this.validUntil = validUntil;
@@ -53,7 +51,6 @@ public class Code {
     /**
      * @return one-time generated password
      */
-    @NonNull
     public final String getValue() {
         return this.value;
     }

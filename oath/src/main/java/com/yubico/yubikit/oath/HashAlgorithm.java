@@ -16,8 +16,6 @@
 
 package com.yubico.yubikit.oath;
 
-import android.text.TextUtils;
-
 import java.nio.ByteBuffer;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -58,7 +56,7 @@ public enum HashAlgorithm {
     }
 
     public static HashAlgorithm fromString(String value) {
-        if (TextUtils.isEmpty(value)) {
+        if (value == null || value.isEmpty()) {
             return HashAlgorithm.SHA1;  //This is the default value
         }
         if ("sha1".equalsIgnoreCase(value)) {
