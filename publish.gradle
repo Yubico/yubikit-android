@@ -3,49 +3,18 @@ apply plugin: 'signing'
 
 ext.isReleaseVersion = !version.endsWith("SNAPSHOT")
 
-task javadoc(type: Javadoc) {
-    source = android.sourceSets.main.java.srcDirs
-    classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
-    android.libraryVariants.all { variant ->
-        if (variant.name == 'release') {
-            owner.classpath += variant.javaCompileProvider.get().classpath
-        }
-    }
-    exclude '**/R.html', '**/R.*.html', '**/index.html'
+java {
+    withJavadocJar()
+    withSourcesJar()
 }
 
-// build a jar with javadoc
-task javadocJar(type: Jar, dependsOn: javadoc) {
-    archiveClassifier.set('javadoc')
-    from javadoc.destinationDir
-}
+publishing {
+    publications {
+        maven(MavenPublication) {
+            from components.java
 
-// build a jar with source
-task sourcesJar(type: Jar) {
-    archiveClassifier.set('sources')
-    from android.sourceSets.main.java.srcDirs
-}
-
-artifacts {
-    archives javadocJar
-    archives sourcesJar
-}
-
-afterEvaluate {
-    publishing {
-        publications {
-            maven(MavenPublication) {
-                from components.release
-                artifact javadocJar
-                artifact sourcesJar
-
-                groupId = rootProject.group
-                artifactId = project.name
-                version = project.version
-
-                apply from: rootProject.file('pom.gradle')
-                pom(pomData)
-            }
+            apply from: rootProject.file('pom.gradle')
+            pom(pomData)
         }
     }
     tasks.withType(Sign) {

@@ -1,1 +1,1 @@
-include ':YubikitDemo', ':yubikit', ':oath', ':otp', ':mgmt', ':piv'
+include ':YubikitDemo', ':core', ':android', ':oath', ':otp', ':mgmt', ':piv', ':testing'
