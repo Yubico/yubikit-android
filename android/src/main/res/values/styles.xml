@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="OtpDialogTheme" parent="android:Theme.Dialog">
+        <item name="android:background">@color/dialog_background</item>
+        <item name="android:textColorPrimary">@color/text_color_primary</item>
+        <item name="android:textColorSecondary">@color/text_color_secondary</item>
+        <item name="android:windowTitleStyle">@style/OtpDialogWindowTitle</item>
+        <item name="android:buttonStyle">@style/OtpDialogButton</item>
+    </style>
+
+    <style name="OtpDialogWindowTitle" parent="android:TextAppearance.DialogWindowTitle">
+        <item name="android:padding">24dp</item>
+        <item name="android:textSize">20sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:fontFamily">sans-serif-light</item>
+    </style>
+
+    <style name="OtpDialogButton" parent="android:Widget.Button">
+        <item name="android:background">@android:color/transparent</item>
+        <item name="android:padding">18dp</item>
+        <item name="android:textAllCaps">true</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:fontFamily">sans-serif-light</item>
+    </style>
+</resources>

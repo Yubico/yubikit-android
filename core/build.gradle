@@ -1,0 +1,13 @@
+apply plugin: 'java-library'
+
+dependencies {
+    compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
+
+    testImplementation 'junit:junit:4.13'
+    testImplementation project(':testing')
+}
+
+sourceCompatibility = "1.8"
+targetCompatibility = "1.8"
+
+apply from: rootProject.file('publish.gradle')

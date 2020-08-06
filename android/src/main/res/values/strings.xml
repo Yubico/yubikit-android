@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="yubikit_otp_activity_title">Authenticate</string>
+    <string name="yubikit_otp_image_desc">YubiKey image</string>
+    <string name="yubikit_otp_touch">Touch the sensor on your YubiKey.</string>
+    <string name="yubikit_otp_plug_in">Connect your YubiKey.</string>
+    <string name="yubikit_otp_plug_in_or_tap">Hold your YubiKey flat against the back of your device, or connect it via USB.</string>
+    <string name="yubikit_otp_remove">Remove your YubiKey.</string>
+    <string name="yubikit_otp_wait">Please wait…</string>
+    <string name="yubikit_otp_enable_nfc">Enable NFC</string>
+</resources>
