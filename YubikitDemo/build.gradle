@@ -14,11 +14,11 @@ buildscript {
     }
 }
 android {
-    compileSdkVersion project.compileSdkVersion
+    compileSdkVersion 29
     defaultConfig {
         applicationId "com.yubico.yubikit.demo"
         minSdkVersion 24
-        targetSdkVersion project.targetSdkVersion
+        targetSdkVersion 29
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
@@ -50,7 +50,7 @@ configurations.all {
 
 dependencies {
     // yubikit
-    implementation project(':yubikit')
+    implementation project(':android')
     implementation project(':oath')
     implementation project(':otp')
     implementation project(':mgmt')
