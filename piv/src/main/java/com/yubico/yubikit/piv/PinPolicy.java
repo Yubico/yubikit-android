@@ -47,10 +47,8 @@ public enum PinPolicy {
     }
 
     public static PinPolicy fromValue(int value) {
-        for (PinPolicy type : PinPolicy.values()) {
-            if (type.value == value) {
-                return type;
-            }
+        if (value >= 0 && value < PinPolicy.values().length) {
+            return PinPolicy.values()[value];
         }
         throw new IllegalArgumentException("Not a valid PinPolicy :" + value);
     }

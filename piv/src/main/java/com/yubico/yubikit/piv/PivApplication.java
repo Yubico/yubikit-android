@@ -16,12 +16,9 @@
 
 package com.yubico.yubikit.piv;
 
-import android.os.Build;
-import android.util.SparseArray;
-
-import androidx.annotation.Nullable;
 
 import com.yubico.yubikit.Iso7816Application;
+import com.yubico.yubikit.Iso7816Connection;
 import com.yubico.yubikit.apdu.Apdu;
 import com.yubico.yubikit.apdu.Tlv;
 import com.yubico.yubikit.apdu.TlvUtils;
@@ -33,8 +30,8 @@ import com.yubico.yubikit.exceptions.BadResponseException;
 import com.yubico.yubikit.exceptions.NotSupportedOperation;
 import com.yubico.yubikit.exceptions.UnexpectedTagException;
 import com.yubico.yubikit.exceptions.YubiKeyCommunicationException;
-import com.yubico.yubikit.transport.YubiKeySession;
 import com.yubico.yubikit.utils.Logger;
+import com.yubico.yubikit.utils.RandomUtils;
 import com.yubico.yubikit.utils.StringUtils;
 
 import java.io.ByteArrayInputStream;
@@ -43,33 +40,38 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
-import java.security.MessageDigest;
+import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.security.SecureRandom;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.ECPrivateKey;
+import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAPrivateCrtKey;
 import java.security.spec.InvalidKeySpecException;
+import java.security.spec.RSAPublicKeySpec;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
+import javax.annotation.Nullable;
 import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
-
-import static com.yubico.yubikit.piv.CryptoUtils.publicEccKey;
-import static com.yubico.yubikit.piv.CryptoUtils.publicRsaKey;
 
 /**
  * Personal Identity Verification (PIV) interface specified in NIST SP 800-73 document "Cryptographic Algorithms and Key Sizes for PIV".
@@ -82,7 +84,8 @@ public class PivApplication extends Iso7816Application {
     public static final short INCORRECT_VALUES_ERROR = 0x6a80;
     public static final short AUTH_METHOD_BLOCKED = 0x6983;
 
-    private static final int PIN_SIZE = 8;
+    private static final int PIN_LEN = 8;
+    private static final int CHALLENGE_LEN = 8;
 
     // Select aid
     private static final byte[] AID = new byte[]{(byte) 0xa0, 0x00, 0x00, 0x03, 0x08};
@@ -106,6 +109,7 @@ public class PivApplication extends Iso7816Application {
     private static final int TAG_AUTH_WITNESS = 0x80;
     private static final int TAG_AUTH_CHALLENGE = 0x81;
     private static final int TAG_AUTH_RESPONSE = 0x82;
+    private static final int TAG_AUTH_EXPONENTIATION = 0x85;
     private static final int TAG_GEN_ALGORITHM = 0x80;
     private static final int TAG_OBJ_DATA = 0x53;
     private static final int TAG_OBJ_ID = 0x5c;
@@ -119,41 +123,27 @@ public class PivApplication extends Iso7816Application {
     private static final byte PIN_P2 = (byte) 0x80;
     private static final byte PUK_P2 = (byte) 0x81;
 
-    private static final List<Algorithm> SUPPORTED_ALGORITHMS = Arrays.asList(Algorithm.RSA1024, Algorithm.RSA2048, Algorithm.ECCP256, Algorithm.ECCP384);
-    private static final byte[] RSA_HASH_SHA256_PREFIX = new byte[]{0x30, 0x31, 0x30, 0x0d, 0x06, 0x09, 0x60, (byte) 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x01, 0x05, 0x00, 0x04, 0x20};
     private static final byte TDES = 0x03;
 
+    private static final byte[] KEY_PREFIX_P256 = new byte[]{0x30, 0x59, 0x30, 0x13, 0x06, 0x07, 0x2a, (byte) 0x86, 0x48, (byte) 0xce, 0x3d, 0x02, 0x01, 0x06, 0x08, 0x2a, (byte) 0x86, 0x48, (byte) 0xce, 0x3d, 0x03, 0x01, 0x07, 0x03, 0x42, 0x00};
+    private static final byte[] KEY_PREFIX_P384 = new byte[]{0x30, 0x76, 0x30, 0x10, 0x06, 0x07, 0x2a, (byte) 0x86, 0x48, (byte) 0xce, 0x3d, 0x02, 0x01, 0x06, 0x05, 0x2b, (byte) 0x81, 0x04, 0x00, 0x22, 0x03, 0x62, 0x00};
 
     private Version version;
-
+    private int currentPinRetries = 3;  // Internal guess as to number of PIN retries.
+    private int maxPinRetries = 3; // Internal guess as to max number of PIN retries.
 
     /**
      * Create new instance of {@link PivApplication}
      * and selects the application for use
      *
-     * @param session session with YubiKey
+     * @param connection connection with YubiKey
      * @throws IOException in case of communication error
      */
-    public PivApplication(YubiKeySession session) throws IOException, ApduException, ApplicationNotFound {
-        super(AID, session);
+    public PivApplication(Iso7816Connection connection) throws IOException, ApduException, ApplicationNotFound {
+        super(AID, connection);
 
-        try {
-            select();
-
-            byte[] versionResponse = sendAndReceive(new Apdu(0, INS_GET_VERSION, 0, 0, null));
-            // get firmware version
-            version = Version.parse(versionResponse);
-        } catch (ApduException e) {
-            if (e.getStatusCode() == APPLICATION_NOT_FOUND_ERROR) {
-                throw new ApplicationNotFound("PIV application is disabled on this device");
-            } else {
-                throw e;
-            }
-        } finally {
-            if (version == null) {
-                close();
-            }
-        }
+        select();
+        version = Version.parse(sendAndReceive(new Apdu(0, INS_GET_VERSION, 0, 0, null)));
     }
 
     /**
@@ -175,6 +165,8 @@ public class PivApplication extends Iso7816Application {
         blockPin();
         blockPuk();
         sendAndReceive(new Apdu(0, INS_RESET, 0, 0, null));
+        currentPinRetries = 3;
+        maxPinRetries = 3;
     }
 
     /**
@@ -193,19 +185,22 @@ public class PivApplication extends Iso7816Application {
         byte[] witness = TlvUtils.unwrapTlv(TlvUtils.unwrapTlv(response, TAG_DYN_AUTH), TAG_AUTH_WITNESS);
         SecretKey key = new SecretKeySpec(managementKey, "DESede");
         try {
-            List<Tlv> dataTlv = new ArrayList<>();
+            Cipher cipher = Cipher.getInstance("DESede/ECB/NoPadding");
+            Map<Integer, byte[]> dataTlvs = new LinkedHashMap<>();
             // This decrypted witness
-            dataTlv.add(new Tlv(TAG_AUTH_WITNESS, CryptoUtils.decryptDESede(key, witness)));
+            cipher.init(Cipher.DECRYPT_MODE, key);
+            dataTlvs.put(TAG_AUTH_WITNESS, cipher.doFinal(witness));
             //  The challenge (tag '81') contains clear data (byte sequence),
-            byte[] challenge = generateChallenge();
-            dataTlv.add(new Tlv(TAG_AUTH_CHALLENGE, challenge));
+            byte[] challenge = RandomUtils.getRandomBytes(CHALLENGE_LEN);
+            dataTlvs.put(TAG_AUTH_CHALLENGE, challenge);
 
-            request = new Tlv(TAG_DYN_AUTH, TlvUtils.packTlvList(dataTlv)).getBytes();
+            request = new Tlv(TAG_DYN_AUTH, TlvUtils.packTlvMap(dataTlvs)).getBytes();
             response = sendAndReceive(new Apdu(0, INS_AUTHENTICATE, TDES, Slot.CARD_MANAGEMENT.value, request));
 
             // (tag '82') contains either the decrypted data from tag '80' or the encrypted data from tag '81'.
             byte[] encryptedData = TlvUtils.unwrapTlv(TlvUtils.unwrapTlv(response, TAG_DYN_AUTH), TAG_AUTH_RESPONSE);
-            byte[] expectedData = CryptoUtils.encryptDESede(key, challenge);
+            cipher.init(Cipher.ENCRYPT_MODE, key);
+            byte[] expectedData = cipher.doFinal(challenge);
             if (!Arrays.equals(encryptedData, expectedData)) {
                 Logger.d(String.format(Locale.ROOT, "Expected response: %s and Actual response %s",
                         StringUtils.bytesToHex(expectedData),
@@ -219,63 +214,88 @@ public class PivApplication extends Iso7816Application {
     }
 
     /**
-     * Sign message with private key on YubiKey
-     * This method requires verification with pin {@link PivApplication#verify(String)}}
+     * Create a signature for a given message.
+     * <p>
+     * The algorithm must be compatible with the given key type.
      *
-     * @param slot      slot on the YubiKey that stores private key
-     * @param algorithm which algorithm is used for signing {@link Algorithm}
-     * @param message   the message that needs to be signed
-     * @return signature
-     * @throws IOException in case of connection error
+     * @param slot      the slot containing the private key to use
+     * @param keyType   the type of the key stored in the slot
+     * @param message   the message to hash
+     * @param algorithm the signing algorithm to use
+     * @return the signature
+     * @throws IOException
+     * @throws ApduException
+     * @throws UnexpectedTagException
+     * @throws NoSuchAlgorithmException
+     * @throws InvalidKeyException
      */
-    public byte[] sign(Slot slot, Algorithm algorithm, byte[] message) throws IOException, ApduException {
-        byte[] hash;
-        try {
-            hash = getMessageHash(message);
-        } catch (NoSuchAlgorithmException e) {
-            throw new UnsupportedEncodingException(e.getMessage());
-        }
+    public byte[] sign(Slot slot, KeyType keyType, byte[] message, String algorithm) throws IOException, ApduException, UnexpectedTagException, NoSuchAlgorithmException, InvalidKeyException {
+        byte[] payload = Padding.pad(keyType, message, algorithm);
+        return usePrivateKey(slot, keyType, payload, false);
+    }
 
-        byte[] requestMessage;
-        if (algorithm == Algorithm.RSA1024 || algorithm == Algorithm.RSA2048) {
-            requestMessage = addPkcs1_15Padding(algorithm == Algorithm.RSA1024 ? 128 : 256, hash);
-        } else {
-            requestMessage = hash;
-        }
-
-        boolean lengthCondition;
-        switch (algorithm) {
-            case RSA1024:
-                lengthCondition = requestMessage.length == 128;
+    /**
+     * Decrypt an RSA-encrypted message.
+     *
+     * @param slot       the slot containing the RSA private key to use
+     * @param cipherText the encrypted payload to decrypt
+     * @param algorithm  the algorithm used for encryption
+     * @return the decrypted plaintext
+     * @throws UnexpectedTagException
+     * @throws IOException
+     * @throws ApduException
+     * @throws NoSuchAlgorithmException
+     * @throws NoSuchPaddingException
+     */
+    public byte[] decrypt(Slot slot, byte[] cipherText, String algorithm) throws UnexpectedTagException, IOException, ApduException, NoSuchAlgorithmException, NoSuchPaddingException {
+        KeyType keyType;
+        switch (cipherText.length) {
+            case 1024 / 8:
+                keyType = KeyType.RSA1024;
                 break;
-            case RSA2048:
-                lengthCondition = requestMessage.length == 256;
-                break;
-            case ECCP256:
-                lengthCondition = requestMessage.length <= 32;
-                break;
-            case ECCP384:
-                lengthCondition = requestMessage.length <= 48;
+            case 2048 / 8:
+                keyType = KeyType.RSA2048;
                 break;
             default:
-                throw new UnsupportedEncodingException("Not supported algorithm " + algorithm.name());
-        }
-        if (!lengthCondition) {
-            throw new UnsupportedEncodingException("Input has invalid length " + requestMessage.length + " for algorithm " + algorithm.name());
+                throw new IllegalArgumentException("Invalid length of ciphertext");
         }
 
+        return Padding.unpad(usePrivateKey(slot, keyType, cipherText, false), algorithm);
+    }
+
+    /**
+     * Perform an ECDH operation with a given public key to compute a shared secret.
+     *
+     * @param slot          the slot containing the private EC key
+     * @param peerPublicKey the peer public key for the operation
+     * @return the shared secret, comprising the x-coordinate of the ECDH result point.
+     * @throws UnexpectedTagException
+     * @throws IOException
+     * @throws ApduException
+     */
+    public byte[] calculateSecret(Slot slot, ECPublicKey peerPublicKey) throws UnexpectedTagException, IOException, ApduException {
+        KeyType keyType = KeyType.fromKey(peerPublicKey);
+        int byteLength = keyType.params.bitLength / 8;
+        return usePrivateKey(slot, keyType, ByteBuffer.allocate(1 + 2 * byteLength)
+                .put((byte) 0x04)
+                .put(bytesToLength(peerPublicKey.getW().getAffineX(), byteLength))
+                .put(bytesToLength(peerPublicKey.getW().getAffineY(), byteLength))
+                .array(), true);
+    }
+
+    private byte[] usePrivateKey(Slot slot, KeyType keyType, byte[] message, boolean exponentiation) throws IOException, ApduException, UnexpectedTagException {
         // using generic authentication for sign requests
-        List<Tlv> dataTlv = new ArrayList<>();
-        dataTlv.add(new Tlv(TAG_AUTH_RESPONSE, null));
-        dataTlv.add(new Tlv(TAG_AUTH_CHALLENGE, requestMessage));
-        byte[] request = new Tlv(TAG_DYN_AUTH, TlvUtils.packTlvList(dataTlv)).getBytes();
+        Map<Integer, byte[]> dataTlvs = new LinkedHashMap<>();
+        dataTlvs.put(TAG_AUTH_RESPONSE, null);
+        dataTlvs.put(exponentiation ? TAG_AUTH_EXPONENTIATION : TAG_AUTH_CHALLENGE, message);
+        byte[] request = new Tlv(TAG_DYN_AUTH, TlvUtils.packTlvMap(dataTlvs)).getBytes();
 
         try {
-            byte[] response = sendAndReceive(new Apdu(0, INS_AUTHENTICATE, algorithm.value, slot.value, request));
-            return new Tlv(new Tlv(response, 0).getValue(), 0).getValue();
+            byte[] response = sendAndReceive(new Apdu(0, INS_AUTHENTICATE, keyType.value, slot.value, request));
+            return TlvUtils.unwrapTlv(TlvUtils.unwrapTlv(response, TAG_DYN_AUTH), TAG_AUTH_RESPONSE);
         } catch (ApduException e) {
             if (INCORRECT_VALUES_ERROR == e.getStatusCode()) {
-                throw new ApduException(e.getApdu(), String.format(Locale.ROOT, "Make sure that %s key is generated on slot %02X", algorithm.name(), slot.value));
+                throw new ApduException(e.getApdu(), String.format(Locale.ROOT, "Make sure that %s key is generated on slot %02X", keyType.name(), slot.value));
             }
             throw e;
         }
@@ -304,21 +324,22 @@ public class PivApplication extends Iso7816Application {
 
     /**
      * Authenticate with pin
-     * Verify without PIN gives number of tries left without using this attempts
      * 0  - PIN authentication blocked.
      * Note: that 15 is the highest value that will be returned even if remaining tries is higher.
      *
-     * @param pin string with pin (UTF-8), can be null for getting number of attempts only
+     * @param pin string with pin (UTF-8)
      *            The default PIN code is 123456.
      * @throws IOException         in case of connection error
      * @throws InvalidPinException in case if pin is invalid
      */
-    public void verify(String pin) throws IOException, ApduException, BadRequestException, InvalidPinException {
+    public void verify(char[] pin) throws IOException, ApduException, BadRequestException, InvalidPinException {
         try {
-            sendAndReceive(new Apdu(0, INS_VERIFY, 0, PIN_P2, pin != null ? pinBytes(pin) : null));
+            sendAndReceive(new Apdu(0, INS_VERIFY, 0, PIN_P2, pinBytes(pin)));
+            currentPinRetries = maxPinRetries;
         } catch (ApduException e) {
             int retries = getRetriesFromCode(e.getStatusCode());
             if (retries >= 0) {
+                currentPinRetries = retries;
                 throw new InvalidPinException(retries);
             } else {
                 // status code returned error, not number of retries
@@ -329,18 +350,28 @@ public class PivApplication extends Iso7816Application {
 
     /**
      * Receive number of attempts left for PIN from YubiKey
+     * <p>
+     * NOTE: If this command is run in a session where the correct PIN has already been verified,
+     * the correct value will not be retrievable, and the value returned may be incorrect.
      *
      * @return number of attempts left
      * @throws IOException in case of connection error
      */
     public int getPinAttempts() throws IOException, ApduException {
         try {
-            verify(null);
-            throw new IllegalStateException("Verification with null pin never returns success status");
-        } catch (InvalidPinException e) {
-            return e.getRetryCounter();
-        } catch (BadRequestException e) {
-            throw new RuntimeException(e);  //This shouldn't happen
+            // Null as data will not cause actual tries to decrement
+            sendAndReceive(new Apdu(0, INS_VERIFY, 0, PIN_P2, null));
+            // Already verified, no way to know true count
+            return currentPinRetries;
+        } catch (ApduException e) {
+            int retries = getRetriesFromCode(e.getStatusCode());
+            if (retries >= 0) {
+                currentPinRetries = retries;
+                return retries;
+            } else {
+                // status code returned error, not number of retries
+                throw e;
+            }
         }
     }
 
@@ -352,7 +383,7 @@ public class PivApplication extends Iso7816Application {
      * @throws IOException         in case of connection error
      * @throws InvalidPinException in case if pin is invalid
      */
-    public void changePin(String oldPin, String newPin) throws IOException, ApduException, InvalidPinException, BadRequestException {
+    public void changePin(char[] oldPin, char[] newPin) throws IOException, ApduException, InvalidPinException, BadRequestException {
         changeReference(INS_CHANGE_REFERENCE, PIN_P2, oldPin, newPin);
     }
 
@@ -364,7 +395,7 @@ public class PivApplication extends Iso7816Application {
      * @throws IOException         in case of connection error
      * @throws InvalidPinException in case if puk is invalid
      */
-    public void changePuk(String oldPuk, String newPuk) throws IOException, ApduException, BadRequestException, InvalidPinException {
+    public void changePuk(char[] oldPuk, char[] newPuk) throws IOException, ApduException, BadRequestException, InvalidPinException {
         changeReference(INS_CHANGE_REFERENCE, PUK_P2, oldPuk, newPuk);
     }
 
@@ -377,14 +408,14 @@ public class PivApplication extends Iso7816Application {
      * @throws IOException         in case of connection error
      * @throws InvalidPinException in case if puk is invalid
      */
-    public void unblockPin(String puk, String newPin) throws IOException, ApduException, BadRequestException, InvalidPinException {
+    public void unblockPin(char[] puk, char[] newPin) throws IOException, ApduException, BadRequestException, InvalidPinException {
         changeReference(INS_RESET_RETRY, PIN_P2, puk, newPin);
     }
 
     /**
      * Set pin and puk reties
      * This method requires authentication {@link PivApplication#authenticate(byte[])}
-     * and verification with pin {@link PivApplication#verify(String)}}
+     * and verification with pin {@link PivApplication#verify(char[])}}
      *
      * @param pinRetries sets attempts to pin
      * @param pukRetries sets attempts to puk
@@ -392,6 +423,8 @@ public class PivApplication extends Iso7816Application {
      */
     public void setPinRetries(int pinRetries, int pukRetries) throws IOException, ApduException {
         sendAndReceive(new Apdu(0, INS_SET_PIN_RETRIES, pinRetries, pukRetries, null));
+        maxPinRetries = pinRetries;
+        currentPinRetries = pinRetries;
     }
 
     /**
@@ -404,7 +437,7 @@ public class PivApplication extends Iso7816Application {
     public X509Certificate getCertificate(Slot slot) throws IOException, ApduException, BadResponseException {
         byte[] objectData = getObject(slot.object);
 
-        SparseArray<byte[]> certData = TlvUtils.parseTlvMap(objectData);
+        Map<Integer, byte[]> certData = TlvUtils.parseTlvMap(objectData);
         byte[] certInfo = certData.get(TAG_CERT_INFO);
         if (certInfo != null && certInfo.length > 0 && certInfo[0] != 0) {
             throw new BadResponseException("Compressed certificates are not supported");
@@ -432,11 +465,11 @@ public class PivApplication extends Iso7816Application {
         } catch (CertificateEncodingException e) {
             throw new IllegalArgumentException("Failed to get encoded version of certificate", e);
         }
-        List<Tlv> requestTlv = new ArrayList<>();
-        requestTlv.add(new Tlv(TAG_CERTIFICATE, certBytes));
-        requestTlv.add(new Tlv(TAG_CERT_INFO, new byte[]{0}));
-        requestTlv.add(new Tlv(TAG_LRC, null));
-        putObject(slot.object, TlvUtils.packTlvList(requestTlv));
+        Map<Integer, byte[]> requestTlv = new LinkedHashMap<>();
+        requestTlv.put(TAG_CERTIFICATE, certBytes);
+        requestTlv.put(TAG_CERT_INFO, new byte[1]);
+        requestTlv.put(TAG_LRC, null);
+        putObject(slot.object, TlvUtils.packTlvMap(requestTlv));
     }
 
     /**
@@ -447,7 +480,7 @@ public class PivApplication extends Iso7816Application {
      * but can be overwritten. After a key has been generated in a normal slot it can be attested by this special key
      * <p>
      * This method requires authentication {@link PivApplication#authenticate(byte[])}
-     * This method requires key to be generated on slot {@link PivApplication#generateKey(Slot, Algorithm, PinPolicy, TouchPolicy)}
+     * This method requires key to be generated on slot {@link PivApplication#generateKey(Slot, KeyType, PinPolicy, TouchPolicy)}
      *
      * @param slot Key reference '9A', '9C', '9D', or '9E'. {@link Slot}.
      * @return X.509 certificate for the key that is to be attested
@@ -483,27 +516,24 @@ public class PivApplication extends Iso7816Application {
 
     /**
      * Generate public key (for example for Certificate Signing Request)
-     * This method requires verification with pin {@link PivApplication#verify(String)}}
+     * This method requires verification with pin {@link PivApplication#verify(char[])}}
      * and authentication with management key {@link PivApplication#authenticate(byte[])}
      *
      * @param slot        Key reference '9A', '9C', '9D', or '9E'. {@link Slot}.
-     * @param algorithm   which algorithm is used for key generation {@link Algorithm}
+     * @param keyType     which algorithm is used for key generation {@link KeyType}
      * @param pinPolicy   pin policy {@link PinPolicy}
      * @param touchPolicy touch policy {@link TouchPolicy}
      * @return public key for generated pair
      * @throws IOException in case of connection error
      */
-    public PublicKey generateKey(Slot slot, Algorithm algorithm, PinPolicy pinPolicy, TouchPolicy touchPolicy) throws IOException, ApduException, BadResponseException {
-        if (!SUPPORTED_ALGORITHMS.contains(algorithm)) {
-            throw new IllegalArgumentException(String.format(Locale.ROOT, "Unsupported algorithm: 0x%02x", algorithm.value));
-        }
-        boolean isRsa = algorithm == Algorithm.RSA1024 || algorithm == Algorithm.RSA2048;
+    public PublicKey generateKey(Slot slot, KeyType keyType, PinPolicy pinPolicy, TouchPolicy touchPolicy) throws IOException, ApduException, BadResponseException {
+        boolean isRsa = keyType == KeyType.RSA1024 || keyType == KeyType.RSA2048;
 
         if (isRsa && version.isAtLeast(4, 2, 0) && version.isLessThan(4, 3, 5)) {
             throw new UnsupportedOperationException("RSA key generation is not supported on this YubiKey");
         }
         if (version.isLessThan(4, 0, 0)) {
-            if (algorithm == Algorithm.ECCP384) {
+            if (keyType == KeyType.ECCP384) {
                 throw new UnsupportedOperationException("Elliptic curve P384 is not supported on this YubiKey");
             }
             if (touchPolicy != TouchPolicy.DEFAULT || pinPolicy != PinPolicy.DEFAULT) {
@@ -514,19 +544,19 @@ public class PivApplication extends Iso7816Application {
             throw new UnsupportedOperationException("Cached touch policy is not supported on this YubiKey");
         }
 
-        List<Tlv> tlvs = new ArrayList<>();
-        tlvs.add(new Tlv(TAG_GEN_ALGORITHM, new byte[]{(byte) algorithm.value}));
+        Map<Integer, byte[]> tlvs = new LinkedHashMap<>();
+        tlvs.put(TAG_GEN_ALGORITHM, new byte[]{(byte) keyType.value});
         if (pinPolicy != PinPolicy.DEFAULT) {
-            tlvs.add(new Tlv(TAG_PIN_POLICY, new byte[]{(byte) pinPolicy.value}));
+            tlvs.put(TAG_PIN_POLICY, new byte[]{(byte) pinPolicy.value});
         }
         if (touchPolicy != TouchPolicy.DEFAULT) {
-            tlvs.add(new Tlv(TAG_TOUCH_POLICY, new byte[]{(byte) touchPolicy.value}));
+            tlvs.put(TAG_TOUCH_POLICY, new byte[]{(byte) touchPolicy.value});
         }
 
-        byte[] response = sendAndReceive(new Apdu(0, INS_GENERATE_ASYMMETRIC, 0, slot.value, new Tlv((byte) 0xac, TlvUtils.packTlvList(tlvs)).getBytes()));
+        byte[] response = sendAndReceive(new Apdu(0, INS_GENERATE_ASYMMETRIC, 0, slot.value, new Tlv((byte) 0xac, TlvUtils.packTlvMap(tlvs)).getBytes()));
 
         // Tag '7F49' contains data objects for RSA or ECC
-        SparseArray<byte[]> dataObjects = TlvUtils.parseTlvMap(TlvUtils.unwrapTlv(response, 0x7F49));
+        Map<Integer, byte[]> dataObjects = TlvUtils.parseTlvMap(TlvUtils.unwrapTlv(response, 0x7F49));
 
         try {
             if (isRsa) {
@@ -535,7 +565,7 @@ public class PivApplication extends Iso7816Application {
                 return publicRsaKey(modulus, exponent);
             } else {
                 byte[] encoded = dataObjects.get(0x86);
-                return publicEccKey(algorithm == Algorithm.ECCP256 ? CryptoUtils.Curve.P256 : CryptoUtils.Curve.P384, encoded);
+                return publicEccKey(keyType, encoded);
             }
         } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
             throw new RuntimeException(e); // This shouldn't happen
@@ -553,67 +583,59 @@ public class PivApplication extends Iso7816Application {
      * @return type of algorithm that was parsed from key
      * @throws IOException in case of connection error
      */
-    public Algorithm importKey(Slot slot, PrivateKey key, PinPolicy pinPolicy, TouchPolicy touchPolicy) throws IOException, ApduException {
-        Algorithm algorithm;
-        List<Tlv> tlvs = new ArrayList<>();
-        if (!"PKCS#8".equals(key.getFormat())) {
-            throw new UnsupportedEncodingException("Unsupported private key encoding");
-        }
+    public KeyType importKey(Slot slot, PrivateKey key, PinPolicy pinPolicy, TouchPolicy touchPolicy) throws IOException, ApduException {
+        KeyType keyType = KeyType.fromKey(key);
+        KeyType.KeyParams params = keyType.params;
+        Map<Integer, byte[]> tlvs = new LinkedHashMap<>();
 
-        if ("RSA".equals(key.getAlgorithm())) {
-            RSAPrivateCrtKey rsaPrivateKey = (RSAPrivateCrtKey) key;
-            int length;
-            switch (rsaPrivateKey.getModulus().bitLength()) {
-                case 1024:
-                    algorithm = Algorithm.RSA1024;
-                    length = 64;
-                    break;
-                case 2048:
-                    algorithm = Algorithm.RSA2048;
-                    length = 128;
-                    break;
-                default:
-                    throw new UnsupportedEncodingException("Unsupported RSA key size = " + rsaPrivateKey.getModulus().bitLength());
-            }
+        switch (params.algorithm) {
+            case RSA:
+                List<BigInteger> values;
+                if (key instanceof RSAPrivateCrtKey) {
+                    RSAPrivateCrtKey rsaPrivateKey = (RSAPrivateCrtKey) key;
+                    values = Arrays.asList(
+                            rsaPrivateKey.getModulus(),
+                            rsaPrivateKey.getPublicExponent(),
+                            rsaPrivateKey.getPrivateExponent(),
+                            rsaPrivateKey.getPrimeP(),
+                            rsaPrivateKey.getPrimeQ(),
+                            rsaPrivateKey.getPrimeExponentP(),
+                            rsaPrivateKey.getPrimeExponentQ(),
+                            rsaPrivateKey.getCrtCoefficient()
+                    );
+                } else if ("PKCS#8".equals(key.getFormat())) {
+                    values = parsePkcs8RsaKeyValues(key.getEncoded());
+                } else {
+                    throw new UnsupportedEncodingException("Unsupported private key encoding");
+                }
 
-            if (rsaPrivateKey.getPublicExponent().intValue() != 65537) {
-                throw new UnsupportedEncodingException("Unsupported RSA public exponent");
-            }
+                if (values.get(1).intValue() != 65537) {
+                    throw new UnsupportedEncodingException("Unsupported RSA public exponent");
+                }
 
-            tlvs.add(new Tlv((byte) 0x01, bytesToLength(rsaPrivateKey.getPrimeP(), length)));         // p
-            tlvs.add(new Tlv((byte) 0x02, bytesToLength(rsaPrivateKey.getPrimeQ(), length)));         // q
-            tlvs.add(new Tlv((byte) 0x03, bytesToLength(rsaPrivateKey.getPrimeExponentP(), length)));      // dmp1
-            tlvs.add(new Tlv((byte) 0x04, bytesToLength(rsaPrivateKey.getPrimeExponentQ(), length)));      // dmq1
-            tlvs.add(new Tlv((byte) 0x05, bytesToLength(rsaPrivateKey.getCrtCoefficient(), length)));    // iqmp
-        } else if ("EC".equals(key.getAlgorithm())) {
-            ECPrivateKey ecPrivateKey = (ECPrivateKey) key;
-            int length;
-            switch (ecPrivateKey.getParams().getCurve().getField().getFieldSize()) {
-                case 256:
-                    algorithm = Algorithm.ECCP256;
-                    length = 32;
-                    break;
-                case 384:
-                    algorithm = Algorithm.ECCP384;
-                    length = 48;
-                    break;
-                default:
-                    throw new UnsupportedEncodingException("Unsupported curve");
-            }
-            tlvs.add(new Tlv((byte) 0x06, bytesToLength(ecPrivateKey.getS(), length)));  // s
-        } else {
-            throw new UnsupportedEncodingException("Unsupported private key algorithm");
+                int length = params.bitLength / 8 / 2;
+
+                tlvs.put(0x01, bytesToLength(values.get(3), length));    // p
+                tlvs.put(0x02, bytesToLength(values.get(4), length));    // q
+                tlvs.put(0x03, bytesToLength(values.get(5), length));    // dmp1
+                tlvs.put(0x04, bytesToLength(values.get(6), length));    // dmq1
+                tlvs.put(0x05, bytesToLength(values.get(7), length));    // iqmp
+                break;
+            case EC:
+                ECPrivateKey ecPrivateKey = (ECPrivateKey) key;
+                tlvs.put(0x06, bytesToLength(ecPrivateKey.getS(), params.bitLength / 8));  // s
+                break;
         }
 
         if (pinPolicy != PinPolicy.DEFAULT) {
-            tlvs.add(new Tlv(TAG_PIN_POLICY, new byte[]{(byte) pinPolicy.value}));
+            tlvs.put(TAG_PIN_POLICY, new byte[]{(byte) pinPolicy.value});
         }
         if (touchPolicy != TouchPolicy.DEFAULT) {
-            tlvs.add(new Tlv(TAG_TOUCH_POLICY, new byte[]{(byte) touchPolicy.value}));
+            tlvs.put(TAG_TOUCH_POLICY, new byte[]{(byte) touchPolicy.value});
         }
 
-        sendAndReceive(new Apdu(0, INS_IMPORT_KEY, algorithm.value, slot.value, TlvUtils.packTlvList(tlvs)));
-        return algorithm;
+        sendAndReceive(new Apdu(0, INS_IMPORT_KEY, keyType.value, slot.value, TlvUtils.packTlvMap(tlvs)));
+        return keyType;
     }
 
     /**
@@ -654,53 +676,11 @@ public class PivApplication extends Iso7816Application {
      * @param objectData data to write
      * @throws IOException in case of connection error
      */
-    public void putObject(byte[] objectId, byte[] objectData) throws IOException, ApduException {
-        List<Tlv> requestTlv = new ArrayList<>();
-        requestTlv.add(new Tlv(TAG_OBJ_ID, objectId));
-        requestTlv.add(new Tlv(TAG_OBJ_DATA, objectData));
-        sendAndReceive(new Apdu(0, INS_PUT_DATA, 0x3f, 0xff, TlvUtils.packTlvList(requestTlv)));
-    }
-
-    /**
-     * Calculate message SHA256
-     *
-     * @param message the message
-     * @return hash of the input message
-     * @throws NoSuchAlgorithmException
-     */
-    private byte[] getMessageHash(byte[] message) throws NoSuchAlgorithmException {
-        MessageDigest messageDigest = MessageDigest.getInstance("SHA256");
-        messageDigest.update(message);
-        return messageDigest.digest();
-
-    }
-
-    /**
-     * Adding padding and prefix to hash message
-     *
-     * @param length required length of hash message specific to algorithm
-     * @param hash   hash of message
-     * @return padded hash message to requested length
-     * @throws IOException never occurs because we do only memory stream writing
-     */
-    private byte[] addPkcs1_15Padding(int length, byte[] hash) throws IOException {
-        int paddingLength = length - (RSA_HASH_SHA256_PREFIX.length + hash.length) - 3;
-        ByteArrayOutputStream stream = new ByteArrayOutputStream();
-
-        // pkcs1 BT01 padding
-        stream.write(new byte[]{0x00, 0x01});
-        // Fill padding with 0xff.
-        // The same with
-        // byte[] padding = new byte[paddingLength];
-        // Arrays.fill(padding, (byte)0xff);
-        // stream,write(padding)
-        while (paddingLength-- > 0) {
-            stream.write((byte) 0xff);
-        }
-        stream.write(0x00);
-        stream.write(RSA_HASH_SHA256_PREFIX);
-        stream.write(hash);
-        return stream.toByteArray();
+    public void putObject(byte[] objectId, @Nullable byte[] objectData) throws IOException, ApduException {
+        Map<Integer, byte[]> tlvs = new LinkedHashMap<>();
+        tlvs.put(TAG_OBJ_ID, objectId);
+        tlvs.put(TAG_OBJ_DATA, objectData);
+        sendAndReceive(new Apdu(0, INS_PUT_DATA, 0x3f, 0xff, TlvUtils.packTlvMap(tlvs)));
     }
 
     /**
@@ -725,7 +705,6 @@ public class PivApplication extends Iso7816Application {
      */
     private static byte[] bytesToLength(BigInteger value, int length) {
         byte[] data = value.toByteArray();
-        Logger.d("Changing byte array from " + data.length + " to " + length);
         if (data.length == length) {
             return data;
         } else if (data.length > length) {
@@ -737,17 +716,22 @@ public class PivApplication extends Iso7816Application {
         }
     }
 
-    private void changeReference(byte instruction, byte p2, @Nullable String value1, @Nullable String value2) throws IOException, ApduException, BadRequestException, InvalidPinException {
-        byte[] pinBytes = pinBytes(value1 != null ? value1 : "", value2 != null ? value2 : "");
+    private void changeReference(byte instruction, byte p2, @Nullable char[] value1, @Nullable char[] value2) throws IOException, ApduException, BadRequestException, InvalidPinException {
+        byte[] pinBytes = pinBytes(value1 != null ? value1 : new char[0], value2 != null ? value2 : new char[0]);
         try {
             sendAndReceive(new Apdu(0, instruction, 0, p2, pinBytes));
         } catch (ApduException e) {
             int retries = getRetriesFromCode(e.getStatusCode());
             if (retries >= 0) {
+                if (p2 == PIN_P2) {
+                    currentPinRetries = retries;
+                }
                 throw new InvalidPinException(retries);
             } else {
                 throw e;
             }
+        } finally {
+            Arrays.fill(pinBytes, (byte) 0);
         }
     }
 
@@ -756,7 +740,7 @@ public class PivApplication extends Iso7816Application {
         int counter = getPinAttempts();
         while (counter > 0) {
             try {
-                verify("");
+                verify(new char[0]);
             } catch (InvalidPinException e) {
                 counter = e.getRetryCounter();
             } catch (BadRequestException e) {
@@ -772,7 +756,7 @@ public class PivApplication extends Iso7816Application {
         int counter = 1;
         while (counter > 0) {
             try {
-                unblockPin(null, null);
+                changeReference(INS_RESET_RETRY, PIN_P2, null, null);
             } catch (InvalidPinException e) {
                 counter = e.getRetryCounter();
             } catch (BadRequestException e) {
@@ -782,22 +766,33 @@ public class PivApplication extends Iso7816Application {
         Logger.d("PUK is blocked");
     }
 
-    private static byte[] pinBytes(String pin) throws BadRequestException {
-        byte[] pinBytes = pin.getBytes(StandardCharsets.UTF_8);
-        if (pinBytes.length > PIN_SIZE) {
-            throw new BadRequestException("PIN/PUK must be no longer than 8 bytes");
+    private static byte[] pinBytes(char[] pin) throws BadRequestException {
+        ByteBuffer byteBuffer = StandardCharsets.UTF_8.encode(CharBuffer.wrap(pin));
+        try {
+            int byteLen = byteBuffer.limit() - byteBuffer.position();
+            if (byteLen > PIN_LEN) {
+                throw new BadRequestException("PIN/PUK must be no longer than 8 bytes");
+            }
+            byte[] alignedPinByte = Arrays.copyOf(byteBuffer.array(), PIN_LEN);
+            Arrays.fill(alignedPinByte, byteLen, PIN_LEN, (byte) 0xff);
+            return alignedPinByte;
+        } finally {
+            Arrays.fill(byteBuffer.array(), (byte) 0); // clear sensitive data
         }
-
-        byte[] alignedPinByte = Arrays.copyOf(pinBytes, PIN_SIZE);
-        Arrays.fill(alignedPinByte, pin.length(), PIN_SIZE, (byte) 0xff);
-        return alignedPinByte;
     }
 
-    private static byte[] pinBytes(String pin1, String pin2) throws IOException, BadRequestException {
+    private static byte[] pinBytes(char[] pin1, char[] pin2) throws IOException, BadRequestException {
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
-        stream.write(pinBytes(pin1));
-        stream.write(pinBytes(pin2));
-        return stream.toByteArray();
+        byte[] pinBytes1 = pinBytes(pin1);
+        byte[] pinBytes2 = pinBytes(pin2);
+        try {
+            stream.write(pinBytes1);
+            stream.write(pinBytes2);
+            return stream.toByteArray();
+        } finally {
+            Arrays.fill(pinBytes1, (byte) 0); // clear sensitive data
+            Arrays.fill(pinBytes2, (byte) 0); // clear sensitive data
+        }
     }
 
     /**
@@ -822,22 +817,57 @@ public class PivApplication extends Iso7816Application {
         return -1;
     }
 
-    /**
-     * Generated random 8 bytes that can be used as challenge for authentication
-     *
-     * @return random 8 bytes
-     */
-    private static byte[] generateChallenge() {
-        byte[] challenge = new byte[8];
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            try {
-                SecureRandom.getInstanceStrong().nextBytes(challenge);
-            } catch (NoSuchAlgorithmException e) {
-                new SecureRandom().nextBytes(challenge);
-            }
-        } else {
-            new SecureRandom().nextBytes(challenge);
+    static PublicKey publicEccKey(KeyType keyType, byte[] encoded) throws NoSuchAlgorithmException, InvalidKeySpecException {
+        byte[] prefix;
+        switch (keyType) {
+            case ECCP256:
+                prefix = KEY_PREFIX_P256;
+                break;
+            case ECCP384:
+                prefix = KEY_PREFIX_P384;
+                break;
+            default:
+                throw new IllegalArgumentException("Unsupported key type");
         }
-        return challenge;
+        KeyFactory keyFactory = KeyFactory.getInstance(keyType.params.algorithm.name());
+        return keyFactory.generatePublic(
+                new X509EncodedKeySpec(
+                        ByteBuffer.allocate(prefix.length + encoded.length)
+                                .put(prefix)
+                                .put(encoded)
+                                .array()
+                )
+        );
+    }
+
+    static PublicKey publicRsaKey(BigInteger modulus, BigInteger publicExponent) throws NoSuchAlgorithmException, InvalidKeySpecException {
+        KeyFactory factory = KeyFactory.getInstance(KeyType.Algorithm.RSA.name());
+        return factory.generatePublic(new RSAPublicKeySpec(modulus, publicExponent));
+    }
+
+    /*
+    Parse a DER encoded PKCS#8 RSA key
+     */
+    static List<BigInteger> parsePkcs8RsaKeyValues(byte[] derKey) throws UnsupportedEncodingException {
+        try {
+            List<Tlv> numbers = TlvUtils.parseTlvList(
+                    TlvUtils.parseTlvMap(
+                            TlvUtils.parseTlvMap(
+                                    TlvUtils.unwrapTlv(derKey, 0x30)
+                            ).get(0x04)
+                    ).get(0x30)
+            );
+            List<BigInteger> values = new ArrayList<>();
+            for (Tlv number : numbers) {
+                values.add(new BigInteger(number.getValue()));
+            }
+            BigInteger first = values.remove(0);
+            if (first.intValue() != 0) {
+                throw new UnsupportedEncodingException("Expected value 0");
+            }
+            return values;
+        } catch (UnexpectedTagException e) {
+            throw new UnsupportedEncodingException(e.getMessage());
+        }
     }
 }
