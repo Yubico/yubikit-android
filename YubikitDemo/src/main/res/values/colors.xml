@@ -2,7 +2,4 @@
 <resources xmlns:tools="http://schemas.android.com">
     <color name="colorLightGreen">#9aca3c</color>
     <color name="colorDarkGreen">#689900</color>
-    <color name="colorGrey">#7e7e7e</color>
-    <color name="colorLightGrey">#d8d8d8</color>
-    <color name="colorTextGrey">@android:color/darker_gray</color>
 </resources>

@@ -1,33 +1,78 @@
 <resources>
-    <string name="app_name">YubiKey Android SDK Demo app</string>
-    <string name="title_activity_main">Yubico SDK Demo</string>
-    <string name="title_activity_login">Sign in</string>
 
-    <string name="settings">Settings</string>
-    <string name="yubico_otp_demo">Yubico OTP demo</string>
-    <string name="yubico_mgmt_demo">YubiKey Setting</string>
-    <string name="run_yubico_otp_demo">This demo captures and validates a Yubico OTP credential. To capture a credential tap on Read OTP, to validate tap Validate OTP.</string>
-    <string name="otp">One-time code</string>
-    <string name="validate_otp">Validate OTP</string>
-    <string name="read_otp">Read OTP</string>
-    <string name="no_key">The key is not plugged in</string>
-    <string name="enable">Enable</string>
-    <string name="need_yubikey">Plug in you yubikey or tap over NFC reader</string>
-    <string name="oath_demo">Oath demo</string>
-    <string name="oath_no_authenticators">This yubikey contains no credentials. To add credential tap the + button near the bottom right. \n\n
-        Usage of TOTP can be tested by creating an account at https://demo.yubico.com/playground and adding an authenticator application.
-    </string>
-    <string name="issuer">Issuer</string>
-    <string name="copied">Code copied to clipboard</string>
-    <string name="not_copied">No code to copy</string>
-    <string name="issuer_format">Name: %s Issuer: %s</string>
-    <string name="type_format">Type: %s</string>
-    <string name="auth_required">Authentication required</string>
-    <string name="oath_reset">Reset</string>
-    <string name="set_password">Set password</string>
+    <string name="app_name">YubiKit Sample</string>
+    <string name="nav_header_title">YubiKit Sample</string>
+    <string name="nav_header_subtitle">YubiKit SDK demo application</string>
+    <string name="nav_header_desc">Navigation header</string>
+
+    <string name="menu_mgmt">Device Configuration</string>
+    <string name="menu_otp">YubiOTP</string>
+    <string name="menu_piv">PIV</string>
+    <string name="menu_oath">OATH</string>
+
+    <string name="need_yubikey">Plug in you YubiKey or tap over NFC reader</string>
+    <string name="hold_key">Hold your key flat until operation is completed</string>
+    <string name="remove_key">Remove YubiKey now</string>
+    <string name="app_missing">Application missing or disabled</string>
+
+    <string name="pin">PIN</string>
+    <string name="enter_pin">Enter PIN</string>
     <string name="password">Password</string>
-    <string name="old_password">Old password</string>
-    <string name="new_password">New password</string>
+    <string name="enter_password">Enter Password</string>
+    <string name="placeholder_text">Lorem ipsum dolor sit amet</string>
+    <string name="save">Save</string>
+    <string name="randomize">randomize</string>
+
+    <string name="transport_usb">USB</string>
+    <string name="transport_nfc">NFC</string>
+
+    <string name="application_otp">OTP</string>
+    <string name="application_u2f">FIDO U2F</string>
+    <string name="application_piv">PIV</string>
+    <string name="application_fido2">FIDO2</string>
+    <string name="application_pgp">OpenPGP</string>
+    <string name="application_oath">OATH</string>
+
+    <string name="piv_enter_mgmt_key">Enter Management Key</string>
+    <string name="piv_mgmt_key_hint">Management Key (hex)</string>
+    <string name="piv_no_cert">No certificate loaded</string>
+    <string name="piv_authentication">Authentication</string>
+    <string name="piv_signature">Digital Signature</string>
+    <string name="piv_key_mgmt">Key Management</string>
+    <string name="piv_card_auth">Card Authentication</string>
+    <string name="piv_delete">Delete</string>
+    <string name="piv_attest">Attest</string>
+    <string name="piv_generate_cert">Generate</string>
+    <string name="piv_import_cert">Import</string>
+    <string name="piv_message_hint">Message</string>
+    <string name="piv_sign">Sign</string>
+    <string name="piv_sign_desc">Sign a message with the private key</string>
+    <string name="piv_certificate_desc">Certificate actions</string>
+
+    <string name="mgmt_subtitle">Enable/disable applications</string>
+
+    <string name="otp_yubiotp">Yubico OTP</string>
+    <string name="otp_chalresp">Challenge-response</string>
+    <string name="otp_public_id">Public ID (modhex)</string>
+    <string name="otp_yubiotp_desc">Program a Yubico OTP.\nWARNING: Overwriting a slot can NOT be undone!</string>
+    <string name="otp_private_id">Private ID (hex)</string>
+    <string name="otp_aes_key">AES key (hex)</string>
+    <string name="otp_hmac_key">HMAC-SHA1 key (hex)</string>
+    <string name="otp_hmac_challenge">Challenge (hex)</string>
+    <string name="otp_read_yubiotp">Read a Yubico OTP from a YubiKey over USB or NFC</string>
+    <string name="otp_slot_1">Slot 1 (short press)</string>
+    <string name="otp_slot_2">Slot 2 (long press)</string>
+    <string name="otp_chalresp_desc">Program a challenge-response credential.\nWARNING: Overwriting a slot can NOT be undone!</string>
+    <string name="otp_calculate_response">Calculate response</string>
+    <string name="otp_chalresp_desc_2">Calculate a response from a slot</string>
+    <string name="otp_require_touch">Require touch</string>
+    <string name="otp_program">Program</string>
+    <string name="otp_use">Use</string>
+
+    <string name="oath_credentials">Credentials</string>
+    <string name="oath_key">Secret (hex)</string>
+    <string name="oath_issuer">Credential issuer</string>
+    <string name="oath_add">Add new credential</string>
 
     <string name="about">About</string>
     <string name="about_app">YubiKit is a library provided by Yubico for interacting with YubiKeys.
@@ -35,86 +80,7 @@
         \n\nTo read more about the YubiKey and its supported application, visit https://www.yubico.com
         \n\nFor the iOS version of YubiKit, visit https://github.com/Yubico/yubikit-ios
     </string>
-    <string name="version">Version %s (%d)</string>
-    <string name="copyright">Copyright © 2019 Yubico.</string>
-
-    <string name="run_yubico_management_demo">Configure your YubiKey. Turn on/off applications.</string>
-    <string name="configure_device">Save</string>
-    <string name="transport_usb">Usb</string>
-    <string name="transport_nfc">Nfc</string>
-    <string name="interface_otp">OTP</string>
-    <string name="interface_u2f">FIDO U2F</string>
-    <string name="interface_piv">PIV</string>
-    <string name="interface_fido">FIDO2</string>
-    <string name="interface_pgp">OpenPGP</string>
-    <string name="interface_oath">OATH</string>
-
-    <string name="piv_reset">Reset application</string>
-    <string name="piv_change_pin">Change PIN</string>
-    <string name="piv_change_puk">Change PUK</string>
-    <string name="piv_change_mgmt_key">Change Management Key</string>
-    <string name="piv_pin">Current PIN</string>
-    <string name="piv_new_pin">New PIN</string>
-    <string name="piv_puk">Current PUK</string>
-    <string name="piv_new_puk">New PUK</string>
-    <string name="piv_mgmt_key">Current Management Key</string>
-    <string name="piv_new_mgmt_key">New Management Key</string>
-    <string name="piv_protect_with_pin">Protect with PIN</string>
-    <string name="piv_demo">PIV demo</string>
-
-    <string name="piv_authentication">Authentication</string>
-    <string name="piv_signature">Digital Signature</string>
-    <string name="piv_key_mgmt">Key Management</string>
-    <string name="piv_card_auth">Card Authentication</string>
-    <string name="no_certificate_loaded">No certificate loaded</string>
-    <string name="piv_delete">Delete certificate</string>
-    <string name="piv_export">Export certificate to a file</string>
-    <string name="piv_generate">Generate Key</string>
-    <string name="piv_import">Import Key</string>
-    <string name="piv_attest">Attest</string>
-    <string name="piv_generate_cert">Generate Certificate</string>
-    <string name="piv_import_cert">Import Certificate</string>
-    <string name="algorithm_prompt">Algorithm</string>
-    <string name="hold_key">Hold your key flat until operation is completed</string>
-    <string name="generate_key">Generate key pair on YubiKey or import private key that was generated on your phone</string>
-    <string name="generate_key_android">Generate key pair using Android API and import to YubiKey</string>
-    <string name="use_default">Use default</string>
-    <string name="piv_change_retries">Change number of PIN retries</string>
-    <string name="piv_unblock_pin">Unblock PIN</string>
-    <string name="piv_change_retries_description">Use settings page to pick number of retries to set</string>
-    <string name="piv_reset_description">Resets PIV application to initial state</string>
-    <string name="piv_sign">Sign</string>
-    <string name="sign_desc">Sign message with private key on YubiKey</string>
-    <string name="piv_pin_retries">PIN retries</string>
-    <string name="piv_puk_retries">PUK retries</string>
-    <string name="piv_pin_set_retries">Set the PIN retries</string>
-    <string name="piv_pin_set_retries_desc">Set the PIN retries for PIN and PUK. Both PIN and PUK will be reset to default values when this is executed.</string>
-    <string name="use_default_pin">Use default PIN</string>
-
-
-    <string name="chresp_run_yubico_demo">This demo exchanges challenge for response from YubiKey. Use text editor to provide HEX challenge and tap Read button.</string>
-    <string name="chresp_read">Read</string>
-    <string name="chresp_challenge">Challenge</string>
-    <string name="chresp_demo">Challenge-response demo</string>
-
-    <string name="configure_demo">Configure OTP</string>
-    <string name="configure_run_yubico_demo">This demo allows to program YubiKey what it will print/type on touch or returns in NDEF tag</string>
-    <string name="configure_prompt">Configure to use</string>
-    <string name="configure_generate">Generate</string>
-    <string name="configure_swap">Swap slots</string>
-    <string name="configure_button">Configure</string>
-    <string name="configure_success">Successfully configured</string>
-    <string name="configure_require_touch">Require touch</string>
-    <string name="configure_secret">Secret key</string>
-    <string name="configure_private_id">Private ID</string>
-    <string name="configure_public_id">Public ID</string>
-
-    <string name="yubikit_oath_header_qr">Point the camera at the QR code</string>
-    <string name="yubikit_oath_no_permissions">Camera permissions are required to use QR scanner</string>
-    <string name="yubikit_oath_retry">Retry</string>
-    <string name="yubikit_oath_low_storage_error">Bar code detector dependencies cannot be downloaded due to low device storage</string>
-    <string name="yubikit_oath_barcode_not_operational">"Bar code detector dependencies is not downloaded yet, please try again later."</string>
-
-    <string name="request">Request</string>
+    <string name="version">Version %s</string>
+    <string name="copyright">Copyright © 2019–2020 Yubico.</string>
 
 </resources>

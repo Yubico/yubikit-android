@@ -2,65 +2,29 @@
 <navigation xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/mobile_navigation"
-    app:startDestination="@id/splash_fragment">
+    app:startDestination="@+id/nav_mgmt">
 
     <fragment
-        android:id="@+id/splash_fragment"
-        android:name="com.yubico.yubikit.demo.SplashFragment"
-        android:label="@string/app_name"
-        tools:layout="@layout/fragment_layout_splash">
-        <action
-            android:id="@+id/to_yubico_otp"
-            app:destination="@+id/yubico_otp_fragment"
-            app:popUpTo="@+id/splash_fragment"
-            app:popUpToInclusive="true" />
-    </fragment>
+        android:id="@+id/nav_mgmt"
+        android:name="com.yubico.yubikit.android.app.ui.mgmt.MgmtFragment"
+        android:label="@string/menu_mgmt"
+        tools:layout="@layout/fragment_mgmt" />
 
     <fragment
-        android:id="@+id/settings_fragment"
-        android:name="com.yubico.yubikit.demo.settings.SettingsFragment"
-        android:label="@string/settings"/>
-
-    <fragment
-        android:id="@+id/about_fragment"
-        android:name="com.yubico.yubikit.demo.settings.AboutFragment"
-        android:label="@string/about"/>
-
-    <fragment
-        android:id="@+id/oath_fragment"
-        android:name="com.yubico.yubikit.demo.oath.OathFragment"
-        android:label="@string/oath_demo"
-        tools:layout="@layout/fragment_oath"/>
-
-    <fragment
-        android:id="@+id/yubico_otp_fragment"
-        android:name="com.yubico.yubikit.demo.otp.OtpFragment"
-        android:label="@string/yubico_otp_demo"
+        android:id="@+id/nav_otp"
+        android:name="com.yubico.yubikit.android.app.ui.otp.OtpFragment"
+        android:label="@string/menu_otp"
         tools:layout="@layout/fragment_otp" />
 
     <fragment
-        android:id="@+id/mgmt_fragment"
-        android:name="com.yubico.yubikit.demo.mgmt.ManagementFragment"
-        android:label="@string/yubico_mgmt_demo"
-        tools:layout="@layout/fragment_management" />
+        android:id="@+id/nav_piv"
+        android:name="com.yubico.yubikit.android.app.ui.piv.PivFragment"
+        android:label="@string/menu_piv"
+        tools:layout="@layout/fragment_piv" />
 
     <fragment
-        android:id="@+id/piv_fragment"
-        android:name="com.yubico.yubikit.demo.piv.PivFragment"
-        android:label="@string/piv_demo"
-        tools:layout="@layout/fragment_piv"/>
-
-    <fragment
-        android:id="@+id/configure_otp_fragment"
-        android:name="com.yubico.yubikit.demo.config.ConfigureOtpFragment"
-        android:label="@string/configure_demo"
-        tools:layout="@layout/fragment_configuration"/>
-
-    <fragment
-        android:id="@+id/challenge_fragment"
-        android:name="com.yubico.yubikit.demo.chresp.ChallengeResponseFragment"
-        android:label="@string/chresp_demo"
-        tools:layout="@layout/fragment_challenge_response"/>
-
+        android:id="@+id/nav_oath"
+        android:name="com.yubico.yubikit.android.app.ui.oath.OathFragment"
+        android:label="@string/menu_oath"
+        tools:layout="@layout/fragment_oath" />
 </navigation>

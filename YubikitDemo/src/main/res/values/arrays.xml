@@ -1,32 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string-array name="oath_credential_operations">
-        <item>Refresh</item>
-        <item>Delete</item>
-        <item>Copy</item>
-    </string-array>
 
-    <integer-array name="oath_credential_operations_logo">
-        <item>@drawable/ic_refresh_24dp</item>
-        <item>@drawable/ic_delete_24dp</item>
-        <item>@drawable/ic_content_copy_24dp</item>
-    </integer-array>
-
-    <string-array name="piv_algorithms">
-        <item>RSA1024</item>
-        <item>RSA2048</item>
-        <item>ECCP256</item>
-        <item>ECCP384</item>
-    </string-array>
-
-    <string-array name="otp_programming">
-        <item>OTP</item>
-        <item>Challenge response</item>
-        <item>HOTP</item>
-    </string-array>
-
-    <string-array name="otp_slots">
-        <item>Slot 1 (short touch)</item>
-        <item>Slot 2 (long touch)</item>
-    </string-array>
 </resources>
