@@ -1,41 +1,14 @@
-apply plugin: 'com.android.library'
-
-android {
-    compileSdkVersion project.compileSdkVersion
-
-    defaultConfig {
-        minSdkVersion project.minSdkVersion
-        targetSdkVersion project.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
-
-        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
-
-    }
-
-    buildTypes {
-        release {
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-        }
-    }
-
-}
+apply plugin: 'java-library'
 
 dependencies {
-    compileOnly project(':yubikit')
-    implementation "androidx.appcompat:appcompat:$appcompatVersion"
+    api project(':core')
 
-    testImplementation project(':yubikit')
-    testImplementation 'junit:junit:4.13'
-    testImplementation 'androidx.test.ext:junit:1.1.1'
-    testImplementation "org.robolectric:robolectric:4.3.1"
-
-    androidTestImplementation 'androidx.test:runner:1.2.0'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
+    compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
 }
 
+sourceCompatibility = "1.8"
+targetCompatibility = "1.8"
+
 ext.pomName = "Yubico YubiKit Management"
-description = "This library provides management functionality of YubiKey which allows to enable or disable applets/slots/transport"
 
 apply from: rootProject.file('publish.gradle')

@@ -14,24 +14,14 @@
  * limitations under the License.
  */
 
-package com.yubico.yubikit.configurator;
+package com.yubico.yubikit.otp;
 
-import androidx.test.ext.junit.runners.AndroidJUnit4;
-
-import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 import static org.junit.Assert.assertEquals;
 
-@RunWith(AndroidJUnit4.class)
 public class ConfigurationBuilderTest {
-    ConfigurationBuilder cfg;
 
-    @Before
-    public void setup() {
-        cfg = new ConfigurationBuilder();
-    }
     @Test
     public void testStructure() {
         byte[] fixed = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06};
@@ -39,23 +29,15 @@ public class ConfigurationBuilderTest {
         byte[] key = {0x20, 0x21, 0x22, 0x23, 0x24, 0x25,
                 0x26, 0x27, 0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f};
         byte tktFlags = ConfigurationBuilder.TKTFLAG_APPEND_CR;
-        cfg.setFixed(fixed);
-        cfg.setUid(uid);
-        cfg.setKey(ConfigurationBuilder.AES_MODE, key);
-        cfg.setTktFlags(tktFlags);
-        byte[] config = cfg.build();
+        byte[] config = new ConfigurationBuilder()
+                .fixed(fixed)
+                .uid(uid)
+                .key(ConfigurationBuilder.MODE_AES, key)
+                .tktFlags(tktFlags)
+                .build();
 
         assertEquals(58, config.length);
         assertEquals(fixed.length, config[ConfigurationBuilder.CFG_FIXED_SIZE_OFFS]);
         assertEquals(tktFlags, config[ConfigurationBuilder.CFG_TKT_FLAGS_OFFS]);
-    }
-
-    @SuppressWarnings("unused")
-    private void dumpHex(byte[] bytes) {
-        String out = "";
-        for(byte b : bytes) {
-            out += String.format("%02x", b);
-        }
-        System.out.println(out);
     }
 }

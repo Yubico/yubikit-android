@@ -17,11 +17,33 @@
 package com.yubico.yubikit.otp;
 
 /**
- * Thrown when nfc tag couldn't be parsed
+ * Enumaration of slots on YubiKey (used as commands to program/configure YubiKey)
  */
-public class ParseTagException extends Exception {
-    static final long serialVersionUID = 1L;
-    public ParseTagException(String message) {
-        super(message);
+enum YubiKeySlot {
+    DUMMY(0x0),
+    CONFIG_1(0x1),
+    NAV(0x2),
+    CONFIG_2( 0x3),
+    UPDATE_1( 0x4),
+    UPDATE_2(0x5),
+    SWAP( 0x6),
+    NDEF_1(0x8),
+    NDEF_2( 0x9),
+    DEVICE_SERIAL(0x10),
+    DEVICE_CONFIGURATION(0x11),
+    SCAN_MAP(0x12),
+    YUBIKEY_4_CAPABILITIES(0x13),
+    CHALLENGE_OTP_1(0x20),
+    CHALLENGE_OTP_2(0x28),
+    CHALLENGE_HMAC_1(0x30),
+    CHALLENGE_HMAC_2(0x38);
+
+    /**
+     * The one-byte address of a slot.
+     */
+    public final byte value;
+
+    YubiKeySlot(final int value) {
+        this.value = (byte) value;
     }
 }

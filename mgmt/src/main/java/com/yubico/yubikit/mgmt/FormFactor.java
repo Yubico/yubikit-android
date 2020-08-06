@@ -14,28 +14,29 @@
  * limitations under the License.
  */
 
-package com.yubico.yubikit.management;
+package com.yubico.yubikit.mgmt;
 
 /**
- * Capabilities/Applications that supported by YubiKey
+ * Form factor is set during manufacturing and returned as a one-Byte value
  */
-public enum ApplicationType {
+public enum FormFactor {
     UNKNOWN(0x00),
-    OTP(0x01),
-    U2F(0x02),
-    CCID(0x04),
-    OPGP(0x08),
-    PIV(0x10),
-    OATH(0x20),
-    CTAP2(0x0200);
+    USB_A_KEYCHAIN(0x01),
+    USB_A_NANO(0x02),
+    USB_C_KEYCHAIN(0x03),
+    USB_C_NANO(0x04),
+    USB_C_LIGHTNING(0x05);
 
-    public final short value;
+    public final int value;
 
-    ApplicationType(int value) {
-        this.value = (short)value;
+    FormFactor(int value) {
+        this.value = value;
     }
 
-    public static ApplicationType valueOf(int appType) {
-        return ApplicationType.values()[appType];
+    public static FormFactor valueOf(int value) {
+        if (value >= 0 && value < FormFactor.values().length) {
+            return FormFactor.values()[value];
+        }
+        return UNKNOWN;
     }
 }

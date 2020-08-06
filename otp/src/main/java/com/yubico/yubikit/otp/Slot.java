@@ -14,18 +14,36 @@
  * limitations under the License.
  */
 
-package com.yubico.yubikit.configurator;
+package com.yubico.yubikit.otp;
 
 /**
  * Slots on YubiKey (Yubico OTP/YubiKey/Configuration interface).
  */
 public enum Slot {
     /**
-     * Slot one (Yubico OTP will be printed on short touch of YubiKey button)
+     * Slot one (short touch of YubiKey sensor)
      */
     ONE,
     /**
-     * Slot two (Yubico OTP will be printed on long touch of YubiKey button)
+     * Slot two (long touch of YubiKey sensor)
      */
-    TWO
+    TWO;
+
+    /**
+     * Maps a Slot value to one of two values.
+     *
+     * @param one the value to use for slot 1
+     * @param two the value to use for slot 2
+     * @param <T> The type of the value to return
+     * @return either one or two, depending on the slot.
+     */
+    <T> T map(T one, T two) {
+        switch (this) {
+            case ONE:
+                return one;
+            case TWO:
+                return two;
+        }
+        throw new IllegalStateException("Invalid enum value");
+    }
 }

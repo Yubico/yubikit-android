@@ -1,42 +1,16 @@
-apply plugin: 'com.android.library'
-
-android {
-    compileSdkVersion project.compileSdkVersion
-
-    defaultConfig {
-        minSdkVersion project.minSdkVersion
-        targetSdkVersion project.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
-
-        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
-
-    }
-
-    buildTypes {
-        release {
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-        }
-    }
-
-}
+apply plugin: 'java-library'
 
 dependencies {
-    compileOnly project(':yubikit')
+    api project(':core')
 
-    implementation "androidx.appcompat:appcompat:$appcompatVersion"
-    implementation "com.google.android.material:material:1.0.0"
-    implementation "androidx.lifecycle:lifecycle-viewmodel:2.2.0" // TODO: Remove this if Android Studio stops complaining about OtpActivity.
+    compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
 
     testImplementation 'junit:junit:4.13'
-    testImplementation 'androidx.test.ext:junit:1.1.1'
-    testImplementation "org.robolectric:robolectric:4.3.1"
-    androidTestImplementation 'androidx.test:runner:1.2.0'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
 }
 
+sourceCompatibility = "1.8"
+targetCompatibility = "1.8"
+
 ext.pomName = "Yubico YubiKit ${project.name.capitalize()}"
-description = "This library provides a way to parse Yubikey OTP from NFC tag, UI dialog to show user that OTP reading requires his action and detecting OTP from device than connected over NFC or USB. And also provides method for validation of OTP on server."
 
 apply from: rootProject.file('publish.gradle')
