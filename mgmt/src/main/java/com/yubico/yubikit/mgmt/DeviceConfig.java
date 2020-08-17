@@ -1,12 +1,9 @@
 package com.yubico.yubikit.mgmt;
 
-import com.yubico.yubikit.Interface;
-import com.yubico.yubikit.apdu.Tlv;
-import com.yubico.yubikit.apdu.TlvUtils;
+import com.yubico.yubikit.utils.Interface;
+import com.yubico.yubikit.utils.TlvUtils;
 import com.yubico.yubikit.exceptions.BadRequestException;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.LinkedHashMap;

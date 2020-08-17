@@ -22,7 +22,7 @@ import android.nfc.Tag;
 import android.nfc.tech.IsoDep;
 import android.nfc.tech.Ndef;
 
-import com.yubico.yubikit.Iso7816Connection;
+import com.yubico.yubikit.iso7816.Iso7816Connection;
 import com.yubico.yubikit.android.YubiKeySession;
 
 import java.io.IOException;

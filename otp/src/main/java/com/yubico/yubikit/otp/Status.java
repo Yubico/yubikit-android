@@ -16,13 +16,12 @@
 
 package com.yubico.yubikit.otp;
 
-import com.yubico.yubikit.apdu.Version;
+import com.yubico.yubikit.utils.Version;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 public class Status {
-
     private static short CONFIG1_VALID = 0x01;        /* Bit in touchLevel indicating that configuration 1 is valid (from firmware 2.1) */
     private static short CONFIG2_VALID = 0x02;        /* Bit in touchLevel indicating that configuration 2 is valid (from firmware 2.1) */
     private static short CONFIG1_TOUCH = 0x04;       /* Bit in touchLevel indicating that configuration 1 requires touch (from firmware 3.0) */
@@ -56,6 +55,10 @@ public class Status {
         return (touchLevel & CONFIG_LED_INV) != 0;
     }
 
+    public byte getProgrammingSequence() {
+        return pgmSeq;
+    }
+
     /**
      * Parse status response returned by YubiKey (select OTP applet)
      *
@@ -64,18 +67,10 @@ public class Status {
      */
     static Status parse(byte[] bytes) {
         ByteBuffer data = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN);
-        Version version = new Version(data.get(), data.get(), data.get());
-        if (data.remaining() < 3) {
-            return new Status(version, (byte) 0, (short) 0);
-        }
-        return new Status(version, data.get(), data.getShort());
+        return new Status(new Version(data.get(), data.get(), data.get()), data.get(), data.getShort());
     }
 
     Version getVersion() {
         return version;
-    }
-
-    byte getProgrammingSequence() {
-        return pgmSeq;
     }
 }

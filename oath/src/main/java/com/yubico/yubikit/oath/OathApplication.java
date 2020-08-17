@@ -16,13 +16,13 @@
 
 package com.yubico.yubikit.oath;
 
-import com.yubico.yubikit.Iso7816Application;
-import com.yubico.yubikit.Iso7816Connection;
-import com.yubico.yubikit.apdu.Apdu;
-import com.yubico.yubikit.apdu.ApduUtils;
-import com.yubico.yubikit.apdu.Tlv;
-import com.yubico.yubikit.apdu.TlvUtils;
-import com.yubico.yubikit.exceptions.ApduException;
+import com.yubico.yubikit.iso7816.Iso7816Application;
+import com.yubico.yubikit.iso7816.Iso7816Connection;
+import com.yubico.yubikit.iso7816.Apdu;
+import com.yubico.yubikit.iso7816.ApduUtils;
+import com.yubico.yubikit.utils.Tlv;
+import com.yubico.yubikit.utils.TlvUtils;
+import com.yubico.yubikit.iso7816.ApduException;
 import com.yubico.yubikit.exceptions.ApplicationNotFound;
 import com.yubico.yubikit.exceptions.BadRequestException;
 import com.yubico.yubikit.exceptions.NotSupportedOperation;

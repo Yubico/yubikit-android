@@ -16,22 +16,23 @@
 
 package com.yubico.yubikit.otp;
 
-import com.yubico.yubikit.Interface;
-import com.yubico.yubikit.Iso7816Application;
-import com.yubico.yubikit.Iso7816Connection;
-import com.yubico.yubikit.OtpConnection;
-import com.yubico.yubikit.apdu.Apdu;
-import com.yubico.yubikit.apdu.Version;
-import com.yubico.yubikit.exceptions.ApduException;
+import com.yubico.yubikit.utils.Interface;
+import com.yubico.yubikit.iso7816.Iso7816Application;
+import com.yubico.yubikit.iso7816.Iso7816Connection;
+import com.yubico.yubikit.keyboard.OtpApplication;
+import com.yubico.yubikit.keyboard.OtpConnection;
+import com.yubico.yubikit.iso7816.Apdu;
+import com.yubico.yubikit.utils.Version;
+import com.yubico.yubikit.iso7816.ApduException;
 import com.yubico.yubikit.exceptions.ApplicationNotFound;
 import com.yubico.yubikit.exceptions.BadResponseException;
 import com.yubico.yubikit.exceptions.NotSupportedOperation;
+import com.yubico.yubikit.keyboard.ChecksumUtils;
 
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-
-import javax.annotation.Nullable;
+import java.util.Arrays;
 
 /**
  * Application to use and configure the OTP application of the YubiKey.
@@ -88,7 +89,12 @@ public class YubiKeyConfigurationApplication implements Closeable {
         this.version = version;
         backend = new Backend<Iso7816Application>(ccidApplication) {
             @Override
-            byte[] sendConfig(byte slot, byte[] data, int expectedResponseLength) throws IOException, ApduException {
+            byte[] writeUpdate(byte slot, byte[] data) throws IOException, ApduException {
+                return delegate.sendAndReceive(new Apdu(0, INS_CONFIG, slot, 0, data));
+            }
+
+            @Override
+            byte[] transceive(byte slot, byte[] data, int expectedResponseLength, boolean mayBlock) throws IOException, ApduException {
                 byte[] response = delegate.sendAndReceive(new Apdu(0, INS_CONFIG, slot, 0, data));
                 if (expectedResponseLength > 0 && expectedResponseLength != response.length) {
                     throw new IOException("Unexpected response length");
@@ -105,17 +111,22 @@ public class YubiKeyConfigurationApplication implements Closeable {
      * @throws IOException in case of connection error
      */
     public YubiKeyConfigurationApplication(OtpConnection connection) throws IOException {
-        status = Status.parse(connection.readStatus());
+        OtpApplication application = new OtpApplication(connection);
+        status = Status.parse(application.readStatus());
         version = status.getVersion();
-        backend = new Backend<OtpConnection>(connection) {
+        backend = new Backend<OtpApplication>(application) {
             @Override
-            byte[] sendConfig(byte slot, byte[] data, int expectedResponseLength) throws IOException {
-                byte[] response = delegate.transceive(slot, data, expectedResponseLength);
-                if (expectedResponseLength > 0) {
-                    return response;
-                } else {
-                    return delegate.readStatus();
+            byte[] writeUpdate(byte slot, byte[] data) throws IOException {
+                return delegate.transceive(slot, data, false);
+            }
+
+            @Override
+            byte[] transceive(byte slot, byte[] data, int expectedResponseLength, boolean mayBlock) throws IOException {
+                byte[] response = delegate.transceive(slot, data, mayBlock);
+                if (ChecksumUtils.checkCrc(response, expectedResponseLength + 2)) {
+                    return Arrays.copyOf(response, expectedResponseLength);
                 }
+                throw new IOException("Invalid CRC");
             }
         };
     }
@@ -143,12 +154,13 @@ public class YubiKeyConfigurationApplication implements Closeable {
      *
      * @param challenge generated challenge that will be sent
      * @param slot      the slot on YubiKey that configured with challenge response secret
+     * @param mayBlock  if false, the command will be aborted in case the credential requires user touch
      * @return response on challenge returned from YubiKey
      * @throws IOException           in case of communication error, or no key configured in slot
      * @throws ApduException         in case of an error response from the YubiKey
      * @throws NotSupportedOperation if the command is not supported for this YubiKey
      */
-    public byte[] calculateHmacSha1(byte[] challenge, Slot slot) throws IOException, ApduException, NotSupportedOperation {
+    public byte[] calculateHmacSha1(byte[] challenge, Slot slot, boolean mayBlock) throws IOException, ApduException, NotSupportedOperation {
         // works on version above 2.2
         if (version.isLessThan(2, 2, 0)) {
             throw new NotSupportedOperation("This operation is supported for version 2.2+");
@@ -156,7 +168,7 @@ public class YubiKeyConfigurationApplication implements Closeable {
 
         YubiKeySlot ykSlot = slot.map(YubiKeySlot.CHALLENGE_HMAC_1, YubiKeySlot.CHALLENGE_HMAC_2);
         // response for HMAC-SHA1 challenge response is always 20 bytes
-        return backend.sendConfig(ykSlot.value, challenge, 20);
+        return backend.transceive(ykSlot.value, challenge, 20, mayBlock);
     }
 
     /**
@@ -292,7 +304,7 @@ public class YubiKeyConfigurationApplication implements Closeable {
      * @throws BadResponseException  in case of an invalid response from the YubiKey
      * @throws NotSupportedOperation if the command is not supported for this YubiKey
      */
-    public void swapSlots() throws IOException, NotSupportedOperation, BadResponseException, ApduException {
+    public void swapSlots() throws IOException, NotSupportedOperation, ApduException {
         if (version.isLessThan(2, 3, 0)) {
             throw new NotSupportedOperation("This operation is supported for version 2.3+");
         }
@@ -300,16 +312,11 @@ public class YubiKeyConfigurationApplication implements Closeable {
         sendConfiguration(YubiKeySlot.SWAP, new byte[ConfigurationBuilder.CFG_SIZE]);
     }
 
-    private void sendConfiguration(YubiKeySlot slot, byte[] configuration) throws IOException, ApduException, BadResponseException {
-        Status newStatus = Status.parse(backend.sendConfig(slot.value, configuration, 0));
-        if (status.getProgrammingSequence() == newStatus.getProgrammingSequence()) {
-            // if programming sequence is not updated it means that new configuration wasn't saved
-            throw new BadResponseException("Failed to change configuration");
-        }
-        status = newStatus;
+    private void sendConfiguration(YubiKeySlot slot, byte[] configuration) throws IOException, ApduException {
+        status = Status.parse(backend.writeUpdate(slot.value, configuration));
     }
 
-    private void sendConfiguration(Slot slot, byte[] config) throws IOException, BadResponseException, ApduException {
+    private void sendConfiguration(Slot slot, byte[] config) throws IOException, ApduException {
         sendConfiguration(slot.map(YubiKeySlot.CONFIG_1, YubiKeySlot.CONFIG_2), config);
     }
 
@@ -320,7 +327,9 @@ public class YubiKeyConfigurationApplication implements Closeable {
             this.delegate = delegate;
         }
 
-        abstract byte[] sendConfig(byte slot, byte[] data, int expectedResponseLength) throws IOException, ApduException;
+        abstract byte[] writeUpdate(byte slot, byte[] data) throws IOException, ApduException;
+
+        abstract byte[] transceive(byte slot, byte[] data, int expectedResponseLength, boolean mayBlock) throws IOException, ApduException;
 
         @Override
         public void close() throws IOException {

@@ -23,8 +23,8 @@ import android.hardware.usb.UsbManager;
 
 import androidx.annotation.NonNull;
 
-import com.yubico.yubikit.Iso7816Connection;
-import com.yubico.yubikit.apdu.ApduResponse;
+import com.yubico.yubikit.iso7816.Iso7816Connection;
+import com.yubico.yubikit.iso7816.ApduResponse;
 import com.yubico.yubikit.utils.StringUtils;
 
 import org.junit.Assert;

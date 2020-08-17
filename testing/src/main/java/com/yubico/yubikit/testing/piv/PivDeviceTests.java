@@ -1,6 +1,6 @@
 package com.yubico.yubikit.testing.piv;
 
-import com.yubico.yubikit.exceptions.ApduException;
+import com.yubico.yubikit.iso7816.ApduException;
 import com.yubico.yubikit.exceptions.BadRequestException;
 import com.yubico.yubikit.exceptions.BadResponseException;
 import com.yubico.yubikit.exceptions.UnexpectedTagException;

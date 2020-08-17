@@ -1,8 +1,8 @@
 package com.yubico.yubikit.mgmt;
 
-import com.yubico.yubikit.Interface;
-import com.yubico.yubikit.apdu.TlvUtils;
-import com.yubico.yubikit.apdu.Version;
+import com.yubico.yubikit.utils.Interface;
+import com.yubico.yubikit.utils.TlvUtils;
+import com.yubico.yubikit.utils.Version;
 import com.yubico.yubikit.exceptions.BadResponseException;
 
 import java.util.Arrays;

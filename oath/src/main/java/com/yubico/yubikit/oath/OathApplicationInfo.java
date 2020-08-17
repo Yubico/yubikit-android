@@ -16,8 +16,8 @@
 
 package com.yubico.yubikit.oath;
 
-import com.yubico.yubikit.apdu.TlvUtils;
-import com.yubico.yubikit.apdu.Version;
+import com.yubico.yubikit.utils.TlvUtils;
+import com.yubico.yubikit.utils.Version;
 
 import org.apache.commons.codec.binary.Base64;
 

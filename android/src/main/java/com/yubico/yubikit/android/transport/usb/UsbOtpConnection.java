@@ -20,18 +20,10 @@ import android.hardware.usb.UsbConstants;
 import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbInterface;
 
-import com.yubico.yubikit.OtpConnection;
-import com.yubico.yubikit.utils.ChecksumUtils;
+import com.yubico.yubikit.keyboard.OtpConnection;
 import com.yubico.yubikit.utils.Logger;
-import com.yubico.yubikit.utils.StringUtils;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.util.Arrays;
-
-import javax.annotation.Nullable;
 
 /**
  * Class that provides interface to read and send data over YubiKey HID (keyboard) interface
@@ -43,17 +35,6 @@ public class UsbOtpConnection implements OtpConnection {
      */
     private static final int TIMEOUT = 1000;
 
-    /**
-     * Timeout to wait for flag write to be cleared for next blob
-     * Yubikey low-level interface section 2.4 (Report arbitration polling) specifies
-     * a 600 ms timeout for a Yubikey to process something written to it.
-     * Where can that document be found?
-     * It has been discovered that for swap 600 is not enough, swapping can worst
-     * case take 920 ms, which we then add 25% to for safety margin, arriving at
-     * 1150 ms.
-     */
-    private static final int WAIT_FOR_WRITE_FLAG_TIMEOUT = 1150;
-
     private final UsbDeviceConnection connection;
     private final UsbInterface hidInterface;
 
@@ -62,15 +43,6 @@ public class UsbOtpConnection implements OtpConnection {
     private static final int HID_GET_REPORT = 0x01;
     private static final int HID_SET_REPORT = 0x09;
     private static final int REPORT_TYPE_FEATURE = 0x03;
-    private static final int FEATURE_RPT_SIZE = 8;
-    private static final int FEATURE_RPT_DATA_SIZE = FEATURE_RPT_SIZE - 1;
-
-    private static final int SLOT_DATA_SIZE = 64;
-
-    private static final int RESP_PENDING_FLAG = 0x40;    /* Response pending flag */
-    private static final int SLOT_WRITE_FLAG = 0x80;    /* Write flag - set by app - cleared by device */
-    private static final int RESP_TIMEOUT_WAIT_FLAG = 0x20;    /* Waiting for timeout operation - seconds left in lower 5 bits */
-    private static final int DUMMY_REPORT_WRITE = 0x8f;    /* Write a dummy report to force update or abort */
 
     /**
      * Sets endpoints and connection
@@ -97,303 +69,26 @@ public class UsbOtpConnection implements OtpConnection {
         Logger.d("usb connection closed");
     }
 
-    /**
-     * Receive status bytes from YubiKey
-     *
-     * @return status bytes (first 3 bytes are the firmware version)
-     * @throws IOException in case of communication error
-     */
     @Override
-    public byte[] readStatus() throws IOException {
-        byte[] featureReport = readFeatureReport();
-        // disregards the first byte in each feature report
-        byte[] status = Arrays.copyOfRange(featureReport, 1, featureReport.length);
-        Logger.d("status received over hid: " + StringUtils.bytesToHex(status));
-        return status;
-    }
-
-    @Override
-    public byte[] transceive(byte slot, @Nullable byte[] payload, int expectedResponseLength) throws IOException {
-        send(slot, payload == null ? new byte[0] : payload);
-        try {
-            return receive(expectedResponseLength);
-        } catch (NoDataException e) {
-            if (expectedResponseLength == 0) {
-                return new byte[0];
-            }
-            throw e;
-        }
-    }
-
-    /**
-     * Send data to YubiKey
-     *
-     * @param slot   slot that command targets (or command that is going to be sent)
-     * @param buffer data that needs to be sent
-     * @return number of bytes that has been sent
-     * @throws IOException in case of communication error
-     */
-    private int send(byte slot, byte[] buffer) throws IOException {
-        if (buffer.length > SLOT_DATA_SIZE) {
-            throw new IOException("Size of buffer is bigger than 64");
-        }
-
-        Frame frame = new Frame();
-
-        /* Insert data and set slot # */
-        System.arraycopy(buffer, 0, frame.payload, 0, buffer.length);
-        frame.slot = slot;
-
-        /* Append slot checksum */
-        frame.crc = ChecksumUtils.calculateCrc(frame.payload, frame.payload.length);
-
-        // Chop up the data into parts that fits into the payload of a feature report.
-        // Set the sequence number | 0x80 in the end of the feature report.
-        // When the Yubikey has processed it,  it will clear this byte, signaling that the next part can be sent */
-
-        int bytesSent = 0;
-        int sequence = 0;
-        int offset = 0;
-
-        // buffer is always 70 bytes, sent by 7 byte blobs + 1 byte flags/sequence
-        byte[] bufferToSend = frame.toByteArray();
-        Logger.d(bufferToSend.length + " bytes sent over hid: " + StringUtils.bytesToHex(bufferToSend));
-        int numPackages = bufferToSend.length / FEATURE_RPT_DATA_SIZE;
-        boolean packageSent = false;
-        do {
-            if (!packageSent || isReadyToWrite()) {
-                byte[] packageToSend = Arrays.copyOfRange(bufferToSend, offset, offset + FEATURE_RPT_DATA_SIZE);
-                offset += FEATURE_RPT_DATA_SIZE;
-                /* Ignore parts that are all zeroes except first and last to speed up the transfer */
-                packageSent = sequence == 0 || sequence == numPackages - 1 || !allZeros(packageToSend);
-                if (packageSent) {
-                    ByteArrayOutputStream stream = new ByteArrayOutputStream();
-                    stream.write(packageToSend, 0, FEATURE_RPT_DATA_SIZE);
-                    stream.write(sequence | SLOT_WRITE_FLAG);
-                    writeFeatureReport(stream.toByteArray());
-                    bytesSent += FEATURE_RPT_SIZE;
-                }
-                sequence++;
-            }
-        } while (offset + FEATURE_RPT_DATA_SIZE <= bufferToSend.length);
-        return bytesSent;
-    }
-
-    /**
-     * Read data from YubiKey
-     *
-     * @return data that received
-     * @throws IOException in case of communication error or no data was received
-     */
-    private byte[] receive(int expectedSize) throws IOException {
-        ByteArrayOutputStream stream = new ByteArrayOutputStream();
-        // wait for
-        stream.write(readFirstFeatureReport(), 0, FEATURE_RPT_DATA_SIZE);
-
-        // read data from device until we receive non-full packet/blob or unexpected sequence
-        int sequence = 1;
-        do {
-            byte[] bufferRead = readFeatureReport();
-            if ((bufferRead[FEATURE_RPT_DATA_SIZE] & RESP_PENDING_FLAG) == RESP_PENDING_FLAG) {
-                /* The lower five bits of the status byte has the response sequence
-                 * number. If that gets reset to zero we are done.
-                 */
-                if ((bufferRead[FEATURE_RPT_DATA_SIZE] & 31) != sequence++) {
-                    break;
-                }
-                stream.write(bufferRead, 0, FEATURE_RPT_DATA_SIZE);
-            }
-        } while ((sequence + 1) * FEATURE_RPT_DATA_SIZE <= SLOT_DATA_SIZE);
-
-        // finished reading, reset state of YubiKey back to writing mode
-        resetState();
-
-        Logger.d(stream.size() + " bytes received over hid: " + StringUtils.bytesToHex(stream.toByteArray()));
-
-        // parse received data and make sure it's proper checksum
-        if (expectedSize > 0) {
-            // received data should also contain 2 extra bytes (the CRC)
-            int fullSize = expectedSize + 2;
-            if (stream.size() < fullSize) {
-                throw new IOException("Received data only partially");
-            }
-            byte[] output = stream.toByteArray();
-            if (!ChecksumUtils.checkCrc(output, fullSize)) {
-                throw new IOException("Error checksum of returned data");
-            }
-            return Arrays.copyOf(output, expectedSize);
-        }
-
-        return stream.toByteArray();
-    }
-
-    /**
-     * Reset the state of YubiKey from reading/means that there won't be any data returned
-     */
-    private void resetState() throws IOException {
-        byte[] buffer = new byte[FEATURE_RPT_SIZE];
-        buffer[FEATURE_RPT_SIZE - 1] = (byte) DUMMY_REPORT_WRITE; /* Invalid sequence = update only */
-        writeFeatureReport(buffer);
-    }
-
-    /**
-     * Wait for the Yubikey to clear the SLOT_WRITE_FLAG bits in mask.
-     * Which means it's ready to receive new blob of data
-     *
-     * @return true if it's allowed to send new blob of data, otherwise false
-     * @throws IOException in case of communication error
-     */
-    private boolean isReadyToWrite() throws IOException {
-        long startTimestamp = System.currentTimeMillis();
-        boolean isReadyToWrite = false;
-        int sleepInterval = 1;
-        do {
-            // wait until we get flag cleared or it is timeouts
-            byte[] featureReport = readFeatureReport();
-            if ((featureReport[FEATURE_RPT_DATA_SIZE] & SLOT_WRITE_FLAG) == 0) {
-                isReadyToWrite = true;
-                break;
-            }
-
-            // throttling requests to device
-            // if flag was not cleared we wait before checking status again
-            sleepInterval = sleep(sleepInterval);
-        } while (startTimestamp + WAIT_FOR_WRITE_FLAG_TIMEOUT < System.currentTimeMillis());
-        return isReadyToWrite;
-    }
-
-    /**
-     * Wait for YubiKey to notify that it has data to sent
-     *
-     * @return first blob that received from YubiKey
-     * @throws IOException in case of communication error
-     */
-    private byte[] readFirstFeatureReport() throws IOException {
-        // do/ while not timeout
-        long startTimestamp = System.currentTimeMillis();
-        boolean responseRequiresTimeExtension = false;
-        // initial delay is 1 ms before checking status
-        int sleepInterval = 1;
-        int timeout = TIMEOUT;
-        do {
-            // wait before checking status,
-            // because it takes some time for device to process received data and prepare data for output
-            // also allows to control number of requests sent to YubiKey
-            sleepInterval = sleep(sleepInterval);
-            byte[] featureReport = readFeatureReport();
-            if ((featureReport[FEATURE_RPT_DATA_SIZE] & RESP_PENDING_FLAG) == RESP_PENDING_FLAG) {
-                return featureReport;
-            }
-            // check if Yubikey says it will wait for user interaction than extend timeout
-            // to allow user time to touch the button
-            else if ((featureReport[FEATURE_RPT_DATA_SIZE] & RESP_TIMEOUT_WAIT_FLAG) == RESP_TIMEOUT_WAIT_FLAG
-                    && !responseRequiresTimeExtension) {
-                responseRequiresTimeExtension = true;
-                timeout += 256 * TIMEOUT;
-            }
-        } while (startTimestamp + timeout > System.currentTimeMillis());
-
-        resetState();
-        if (responseRequiresTimeExtension) {
-            throw new IOException("YubiKey timed out waiting for user interaction");
-        } else {
-            throw new NoDataException("Timed out waiting for response");
-        }
-    }
-
-    /**
-     * Block the thread for some period of time and return valud of new interval for sleeping
-     *
-     * @param sleepInterval timeout in milli seconds how long the thread will be sleeping
-     * @return new interval (exponential increase until it reaches half of the second)
-     */
-    private int sleep(int sleepInterval) {
-        try {
-            Thread.sleep(sleepInterval);
-            sleepInterval *= 2;
-            if (sleepInterval > 500) {
-                sleepInterval = 500;
-            }
-        } catch (InterruptedException ignore) {
-        }
-        return sleepInterval;
-    }
-
-    /**
-     * Read single feature report
-     *
-     * @return blob size of FEATURE_RPT_SIZE
-     * @throws IOException in case of communication error
-     */
-    private byte[] readFeatureReport() throws IOException {
-        byte[] bufferRead = new byte[FEATURE_RPT_SIZE];
-        int bytesRead = connection.controlTransfer(UsbConstants.USB_DIR_IN | TYPE_CLASS | RECIPIENT_INTERFACE, HID_GET_REPORT,
-                REPORT_TYPE_FEATURE << 8, hidInterface.getId(), bufferRead, bufferRead.length, TIMEOUT);
-        if (bytesRead < 0) {
-            throw new IOException("Can't read the data");
-        }
-        if (bytesRead < FEATURE_RPT_SIZE) {
-            throw new IOException("Size of blob is smaller than expected");
-        }
-        return bufferRead;
+    public int readFeatureReport(byte[] report) {
+        return connection.controlTransfer(UsbConstants.USB_DIR_IN | TYPE_CLASS | RECIPIENT_INTERFACE, HID_GET_REPORT,
+                REPORT_TYPE_FEATURE << 8, hidInterface.getId(), report, report.length, TIMEOUT);
     }
 
     /**
      * Write single feature report
      *
-     * @param buffer blob size of FEATURE_RPT_SIZE
+     * @param report blob size of FEATURE_RPT_SIZE
      */
-    private void writeFeatureReport(byte[] buffer) throws IOException {
-        int bytesSentPackage = connection.controlTransfer(
+    @Override
+    public int writeFeatureReport(byte[] report) throws IOException {
+        return connection.controlTransfer(
                 UsbConstants.USB_DIR_OUT | TYPE_CLASS | RECIPIENT_INTERFACE,
                 HID_SET_REPORT, REPORT_TYPE_FEATURE << 8,
                 hidInterface.getId(),
-                buffer,
-                buffer.length, TIMEOUT);
-        if (bytesSentPackage < 0) {
-            throw new IOException("Can't write the data");
-        }
-        if (bytesSentPackage < FEATURE_RPT_SIZE) {
-            throw new IOException("Some of the data was not sent");
-        }
-
-    }
-
-    /**
-     * Checks if array of bytes only zeros
-     *
-     * @param array buffer that gets checked
-     * @return true if all zeros and false otherwise
-     */
-    private static boolean allZeros(byte[] array) {
-        for (byte b : array) {
-            if (b != 0) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    /**
-     * HID frame structure
-     */
-    private static class Frame {
-        byte[] payload = new byte[SLOT_DATA_SIZE]; /* Frame payload */
-        byte slot;                 /* Slot # field */
-        short crc;                 /* CRC field */
-        byte[] filler = new byte[3];            /* Filler */
-
-        byte[] toByteArray() {
-            ByteBuffer byteBuffer = ByteBuffer.allocate(SLOT_DATA_SIZE + 6);
-            byteBuffer.put(payload);
-            if (payload.length < SLOT_DATA_SIZE) {
-                byteBuffer.put(new byte[SLOT_DATA_SIZE - payload.length], 0, SLOT_DATA_SIZE - payload.length);
-            }
-            byteBuffer.put(slot);
-            // swap bytes for CRC (requires little endian byte order)
-            byteBuffer.put(ByteBuffer.allocate(2).order(ByteOrder.LITTLE_ENDIAN).putShort(crc).array());
-            byteBuffer.put(filler);
-            return byteBuffer.array();
-        }
+                report,
+                report.length,
+                TIMEOUT
+        );
     }
 }

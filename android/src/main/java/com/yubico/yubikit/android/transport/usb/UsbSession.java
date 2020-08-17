@@ -24,8 +24,8 @@ import android.hardware.usb.UsbInterface;
 import android.hardware.usb.UsbManager;
 import android.util.Pair;
 
-import com.yubico.yubikit.Iso7816Connection;
-import com.yubico.yubikit.OtpConnection;
+import com.yubico.yubikit.iso7816.Iso7816Connection;
+import com.yubico.yubikit.keyboard.OtpConnection;
 import com.yubico.yubikit.android.YubiKeySession;
 
 import java.io.IOException;

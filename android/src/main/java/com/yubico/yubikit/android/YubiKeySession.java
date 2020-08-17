@@ -1,7 +1,6 @@
 package com.yubico.yubikit.android;
 
-import com.yubico.yubikit.Iso7816Connection;
-import com.yubico.yubikit.OtpConnection;
+import com.yubico.yubikit.iso7816.Iso7816Connection;
 
 import java.io.IOException;
 

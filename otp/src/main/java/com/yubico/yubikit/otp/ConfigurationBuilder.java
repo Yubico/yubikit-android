@@ -16,7 +16,7 @@
 
 package com.yubico.yubikit.otp;
 
-import com.yubico.yubikit.utils.ChecksumUtils;
+import com.yubico.yubikit.keyboard.ChecksumUtils;
 
 import java.util.Arrays;
 
