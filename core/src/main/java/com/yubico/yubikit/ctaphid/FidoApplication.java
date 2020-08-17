@@ -6,7 +6,6 @@
 package com.yubico.yubikit.ctaphid;
 
 import com.yubico.yubikit.utils.Version;
-import com.yubico.yubikit.exceptions.YubiKeyCommunicationException;
 import com.yubico.yubikit.utils.Logger;
 import com.yubico.yubikit.utils.StringUtils;
 
@@ -38,7 +37,7 @@ public class FidoApplication implements Closeable {
     private final Version version;
     private int channelId;
 
-    public FidoApplication(FidoConnection connection) throws YubiKeyCommunicationException, IOException {
+    public FidoApplication(FidoConnection connection) throws IOException {
         this.connection = connection;
 
         // init
@@ -50,7 +49,7 @@ public class FidoApplication implements Closeable {
         byte[] responseNonce = new byte[nonce.length];
         buffer.get(responseNonce);
         if (!MessageDigest.isEqual(nonce, responseNonce)) {
-            throw new YubiKeyCommunicationException("Got wrong nonce!");
+            throw new IOException("Got wrong nonce!");
         }
 
         channelId = buffer.getInt();
@@ -62,7 +61,7 @@ public class FidoApplication implements Closeable {
         Logger.d(String.format("fido connection set up with channel ID: 0x%08x", channelId));
     }
 
-    public byte[] sendAndReceive(byte cmd, byte[] payload, @Nullable CommandState state) throws YubiKeyCommunicationException, IOException {
+    public byte[] sendAndReceive(byte cmd, byte[] payload, @Nullable CommandState state) throws IOException {
         ByteBuffer toSend = ByteBuffer.wrap(payload);
         byte[] buffer = new byte[PACKET_SIZE];
         ByteBuffer packet = ByteBuffer.wrap(buffer);
@@ -95,12 +94,12 @@ public class FidoApplication implements Closeable {
 
             int recvLength = connection.readPacket(buffer);
             if (recvLength < 0) {
-                throw new YubiKeyCommunicationException("Unable to read from endpoint");
+                throw new IOException("Unable to read from endpoint");
             }
             Logger.d(recvLength + " bytes received over fido: " + StringUtils.bytesToHex(buffer));
             int responseChannel = packet.getInt();
             if (responseChannel != channelId) {
-                throw new YubiKeyCommunicationException(String.format("Wrong Channel ID. Expecting: %d, Got: %d", channelId, responseChannel));
+                throw new IOException(String.format("Wrong Channel ID. Expecting: %d, Got: %d", channelId, responseChannel));
             }
             if (response == null) {
                 byte responseCmd = packet.get();
@@ -114,14 +113,14 @@ public class FidoApplication implements Closeable {
                     }
                     continue;
                 } else if (responseCmd == STATUS_ERROR) {
-                    throw new CtapError(packet.get());
+                    throw new IOException(String.format("CTAPHID error: %02x", packet.get()));
                 } else {
-                    throw new YubiKeyCommunicationException(String.format("Wrong response command. Expecting: %x, Got: %x", cmd, responseCmd));
+                    throw new IOException(String.format("Wrong response command. Expecting: %x, Got: %x", cmd, responseCmd));
                 }
             } else {
                 byte responseSeq = packet.get();
                 if (responseSeq != seq++) {
-                    throw new YubiKeyCommunicationException(String.format("Wrong sequence number. Expecting %d, Got: %d", seq - 1, responseSeq));
+                    throw new IOException(String.format("Wrong sequence number. Expecting %d, Got: %d", seq - 1, responseSeq));
                 }
             }
             response.put(buffer, packet.position(), Math.min(packet.remaining(), response.remaining()));

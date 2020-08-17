@@ -16,17 +16,15 @@
 
 package com.yubico.yubikit.oath;
 
+import com.yubico.yubikit.exceptions.NotSupportedOperation;
+import com.yubico.yubikit.iso7816.Apdu;
+import com.yubico.yubikit.iso7816.ApduException;
+import com.yubico.yubikit.iso7816.ApduUtils;
 import com.yubico.yubikit.iso7816.Iso7816Application;
 import com.yubico.yubikit.iso7816.Iso7816Connection;
-import com.yubico.yubikit.iso7816.Apdu;
-import com.yubico.yubikit.iso7816.ApduUtils;
+import com.yubico.yubikit.utils.RandomUtils;
 import com.yubico.yubikit.utils.Tlv;
 import com.yubico.yubikit.utils.TlvUtils;
-import com.yubico.yubikit.iso7816.ApduException;
-import com.yubico.yubikit.exceptions.ApplicationNotFound;
-import com.yubico.yubikit.exceptions.BadRequestException;
-import com.yubico.yubikit.exceptions.NotSupportedOperation;
-import com.yubico.yubikit.utils.RandomUtils;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -104,11 +102,10 @@ public class OathApplication extends Iso7816Application {
      * and selects the application for use
      *
      * @param connection to the YubiKey
-     * @throws IOException         in case of connection error
-     * @throws ApduException       in case of communication error
-     * @throws ApplicationNotFound in case the application is missing/disabled
+     * @throws IOException   in case of connection error
+     * @throws ApduException in case of communication error
      */
-    public OathApplication(Iso7816Connection connection) throws IOException, ApduException, ApplicationNotFound {
+    public OathApplication(Iso7816Connection connection) throws IOException, ApduException {
         super(AID, connection);
 
         applicationInfo = new OathApplicationInfo(select());
@@ -206,9 +203,8 @@ public class OathApplication extends Iso7816Application {
      */
     public void setPassword(char[] password) throws IOException, ApduException {
         try {
-            final byte[] secret = calculateSecret(password, applicationInfo.getSalt());
-            setSecret(secret);
-        } catch (NoSuchAlgorithmException | InvalidKeySpecException | BadRequestException e) {
+            setSecret(calculateSecret(password, applicationInfo.getSalt()));
+        } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
             throw new RuntimeException(e); // this shouldn't happen.
         }
     }
@@ -224,13 +220,12 @@ public class OathApplication extends Iso7816Application {
      *
      * @param secret 16 bytes of user-supplied UTF-8 encoded password passed through 1000 rounds of PBKDF2
      *               with the ID from select used as salt
-     * @throws IOException         in case of connection error
-     * @throws ApduException       in case of communication error
-     * @throws BadRequestException in case of invalid parameters
+     * @throws IOException   in case of connection error
+     * @throws ApduException in case of communication error
      */
-    public void setSecret(byte[] secret) throws IOException, ApduException, BadRequestException {
+    public void setSecret(byte[] secret) throws IOException, ApduException {
         if (secret.length != 16) {
-            throw new BadRequestException("Secret should be 16 bytes");
+            throw new IllegalArgumentException("Secret should be 16 bytes");
         }
 
         Map<Integer, byte[]> request = new LinkedHashMap<>();
@@ -399,11 +394,10 @@ public class OathApplication extends Iso7816Application {
      *
      * @param credential credential data to add
      * @return the newly added Credential
-     * @throws IOException           in case of connection error
-     * @throws ApduException         in case of communication error
-     * @throws NotSupportedOperation if the configuration is not supported for this YubiKey
+     * @throws IOException   in case of connection error
+     * @throws ApduException in case of communication error
      */
-    public Credential putCredential(CredentialData credential) throws IOException, ApduException, NotSupportedOperation {
+    public Credential putCredential(CredentialData credential) throws IOException, ApduException {
         if (credential.isTouchRequired() && applicationInfo.getVersion().isLessThan(4, 0, 0)) {
             throw new NotSupportedOperation("Require touch available on YubiKey 4 or later");
         }

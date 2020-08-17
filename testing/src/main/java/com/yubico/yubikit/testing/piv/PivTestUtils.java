@@ -1,7 +1,7 @@
 package com.yubico.yubikit.testing.piv;
 
+import com.yubico.yubikit.exceptions.BadResponseException;
 import com.yubico.yubikit.iso7816.ApduException;
-import com.yubico.yubikit.exceptions.UnexpectedTagException;
 import com.yubico.yubikit.piv.KeyType;
 import com.yubico.yubikit.piv.PivApplication;
 import com.yubico.yubikit.piv.Slot;
@@ -25,7 +25,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.math.BigInteger;
 import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
 import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -238,6 +237,7 @@ public class PivTestUtils {
 
         X509CertificateHolder holder = serverCertGen.build(new ContentSigner() {
             ByteArrayOutputStream messageBuffer = new ByteArrayOutputStream();
+
             @Override
             public AlgorithmIdentifier getAlgorithmIdentifier() {
                 return new AlgorithmIdentifier(algorithmId);
@@ -252,7 +252,7 @@ public class PivTestUtils {
             public byte[] getSignature() {
                 try {
                     return piv.sign(slot, keyType, messageBuffer.toByteArray(), algorithm);
-                } catch (IOException | ApduException | UnexpectedTagException | NoSuchAlgorithmException | InvalidKeyException e) {
+                } catch (IOException | ApduException | NoSuchAlgorithmException | BadResponseException e) {
                     throw new RuntimeException(e);
                 }
             }

@@ -5,7 +5,7 @@
  */
 package com.yubico.yubikit.ctaphid;
 
-import com.yubico.yubikit.exceptions.YubiKeyCommunicationException;
+import com.yubico.yubikit.exceptions.CommandException;
 
 import java.util.Locale;
 
@@ -15,7 +15,7 @@ import java.util.Locale;
  * These error codes are defined by the CTAP2 specification:
  * https://fidoalliance.org/specs/fido-v2.0-id-20180227/fido-client-to-authenticator-protocol-v2.0-id-20180227.html#error-responses
  */
-public class CtapError extends YubiKeyCommunicationException {
+public class CtapException extends CommandException {
     public static final byte ERR_SUCCESS = 0x00;
     public static final byte ERR_INVALID_COMMAND = 0x01;
     public static final byte ERR_INVALID_PARAMETER = 0x02;
@@ -67,7 +67,7 @@ public class CtapError extends YubiKeyCommunicationException {
 
     private final byte ctapError;
 
-    public CtapError(byte ctapError) {
+    public CtapException(byte ctapError) {
         super(String.format(Locale.ROOT, "CTAP error: 0x%02x", ctapError));
 
         this.ctapError = ctapError;

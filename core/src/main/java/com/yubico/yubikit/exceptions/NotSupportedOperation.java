@@ -17,9 +17,9 @@
 package com.yubico.yubikit.exceptions;
 
 /**
- * Thrown when an operation is not supported on the connected device.
+ * Thrown when an operation is not supported by the connected YubiKey.
  */
-public class NotSupportedOperation extends BadRequestException {
+public class NotSupportedOperation extends IllegalArgumentException {
     public NotSupportedOperation(String message) {
         super(message);
     }

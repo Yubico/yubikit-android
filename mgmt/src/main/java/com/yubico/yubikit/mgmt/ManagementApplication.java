@@ -18,11 +18,8 @@ package com.yubico.yubikit.mgmt;
 
 import com.yubico.yubikit.ctaphid.FidoApplication;
 import com.yubico.yubikit.ctaphid.FidoConnection;
-import com.yubico.yubikit.exceptions.ApplicationNotFound;
-import com.yubico.yubikit.exceptions.BadRequestException;
-import com.yubico.yubikit.exceptions.BadResponseException;
+import com.yubico.yubikit.exceptions.CommandException;
 import com.yubico.yubikit.exceptions.NotSupportedOperation;
-import com.yubico.yubikit.exceptions.YubiKeyCommunicationException;
 import com.yubico.yubikit.iso7816.Apdu;
 import com.yubico.yubikit.iso7816.ApduException;
 import com.yubico.yubikit.iso7816.Iso7816Application;
@@ -83,26 +80,25 @@ public class ManagementApplication implements Closeable {
      * Create new instance of {@link ManagementApplication} over an {@link Iso7816Connection}.
      *
      * @param connection connection with YubiKey
-     * @throws IOException         in case of connection error
-     * @throws ApduException       in case of communication error
-     * @throws ApplicationNotFound in case the application is missing or disabled
+     * @throws IOException   in case of connection error
+     * @throws ApduException in case of communication error
      */
-    public ManagementApplication(Iso7816Connection connection) throws IOException, ApduException, ApplicationNotFound {
+    public ManagementApplication(Iso7816Connection connection) throws IOException, ApduException {
         Iso7816Application app = new Iso7816Application(AID, connection);
         version = Version.parse(new String(app.select()));
         backend = new Backend<Iso7816Application>(app) {
             @Override
-            byte[] readConfig() throws IOException, ApduException {
+            byte[] readConfig() throws IOException, CommandException {
                 return delegate.sendAndReceive(new Apdu(0, INS_READ_CONFIG, 0, 0, null));
             }
 
             @Override
-            void writeConfig(byte[] config) throws IOException, ApduException {
+            void writeConfig(byte[] config) throws IOException, CommandException {
                 delegate.sendAndReceive(new Apdu(0, INS_WRITE_CONFIG, 0, 0, config));
             }
 
             @Override
-            void setMode(byte[] data) throws IOException, ApduException {
+            void setMode(byte[] data) throws IOException, CommandException {
                 delegate.sendAndReceive(new Apdu(0, INS_SET_MODE, P1_DEVICE_CONFIG, 0, data));
             }
         };
@@ -140,23 +136,29 @@ public class ManagementApplication implements Closeable {
         };
     }
 
-    public ManagementApplication(FidoConnection connection) throws IOException, YubiKeyCommunicationException {
+    /**
+     * Create new instance of a ManagementApplication over a FidoConnection.
+     *
+     * @param connection a connection over the FIDO USB transport with a YubiKey
+     * @throws IOException in case of connection error
+     */
+    public ManagementApplication(FidoConnection connection) throws IOException {
         FidoApplication app = new FidoApplication(connection);
         version = app.getVersion();
         backend = new Backend<FidoApplication>(app) {
             @Override
-            byte[] readConfig() throws IOException, YubiKeyCommunicationException {
+            byte[] readConfig() throws IOException {
                 Logger.d("Reading fido config...");
                 return delegate.sendAndReceive(CTAP_READ_CONFIG, new byte[0], null);
             }
 
             @Override
-            void writeConfig(byte[] config) throws IOException, YubiKeyCommunicationException {
+            void writeConfig(byte[] config) throws IOException {
                 delegate.sendAndReceive(CTAP_WRITE_CONFIG, config, null);
             }
 
             @Override
-            void setMode(byte[] data) throws IOException, YubiKeyCommunicationException {
+            void setMode(byte[] data) throws IOException {
                 delegate.sendAndReceive(CTAP_YUBIKEY_DEVICE_CONFIG, data, null);
             }
         };
@@ -176,9 +178,9 @@ public class ManagementApplication implements Closeable {
         return version;
     }
 
-    public DeviceInfo readDeviceInfo() throws IOException, YubiKeyCommunicationException, BadResponseException, NotSupportedOperation {
+    public DeviceInfo readDeviceInfo() throws IOException, CommandException {
         if (version.isLessThan(4, 1, 0)) {
-            //TODO: Provide fallback
+            //TODO: Provide fallback?
             throw new NotSupportedOperation("Operation is not supported on versions below 4");
         }
 
@@ -192,13 +194,12 @@ public class ManagementApplication implements Closeable {
      * @param reboot          if true cause the YubiKey to immediately reboot, applying the new configuration
      * @param currentLockCode required if a configuration lock code is set
      * @param newLockCode     changes or removes (if 16 byte all-zero) the configuration lock code
-     * @throws BadRequestException in case of invalid configuration
-     * @throws IOException         in case of connection error
-     * @throws ApduException       in case of communication or not supported operation error
+     * @throws IOException      in case of connection error
+     * @throws CommandException in case of error response
      */
-    public void writeDeviceConfig(DeviceConfig config, boolean reboot, @Nullable byte[] currentLockCode, @Nullable byte[] newLockCode) throws BadRequestException, IOException, YubiKeyCommunicationException {
+    public void writeDeviceConfig(DeviceConfig config, boolean reboot, @Nullable byte[] currentLockCode, @Nullable byte[] newLockCode) throws IOException, CommandException {
         if (version.isLessThan(5, 0, 0)) {
-            throw new NotSupportedOperation("Operation is not supported on versions below 5");
+            throw new NotSupportedOperation("Requires YubiKey 5.0.0 or later");
         }
         byte[] data = config.getBytes(reboot, currentLockCode, newLockCode);
         backend.writeConfig(data);
@@ -214,7 +215,10 @@ public class ManagementApplication implements Closeable {
      * @throws ApduException         in case of communication or not supported operation error
      * @throws NotSupportedOperation if this command is not supported for this YubiKey
      */
-    public void setMode(UsbTransport.Mode mode, byte chalrespTimeout, short autoejectTimeout) throws IOException, YubiKeyCommunicationException, BadRequestException {
+    public void setMode(UsbTransport.Mode mode, byte chalrespTimeout, short autoejectTimeout) throws IOException, CommandException {
+        if (version.isLessThan(3, 0, 0)) {
+            throw new NotSupportedOperation("Requires YubiKey 3.0.0 or later");
+        }
         if (version.isAtLeast(5, 0, 0)) {
             //Translate into DeviceConfig and set using writeDeviceConfig
             int usbEnabled = 0;
@@ -247,11 +251,11 @@ public class ManagementApplication implements Closeable {
             this.delegate = delegate;
         }
 
-        abstract byte[] readConfig() throws IOException, YubiKeyCommunicationException;
+        abstract byte[] readConfig() throws IOException, CommandException;
 
-        abstract void writeConfig(byte[] config) throws IOException, YubiKeyCommunicationException;
+        abstract void writeConfig(byte[] config) throws IOException, CommandException;
 
-        abstract void setMode(byte[] data) throws IOException, YubiKeyCommunicationException;
+        abstract void setMode(byte[] data) throws IOException, CommandException;
 
         @Override
         public void close() throws IOException {

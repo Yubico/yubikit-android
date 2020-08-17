@@ -16,9 +16,6 @@
 
 package com.yubico.yubikit.iso7816;
 
-import com.yubico.yubikit.exceptions.ApplicationNotFound;
-import com.yubico.yubikit.utils.StringUtils;
-
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Arrays;
@@ -48,7 +45,7 @@ public class Iso7816Application implements Closeable {
      * Create new instance of {@link Iso7816Application}
      * and selects the application for use
      *
-     * @param aid the AID of the application
+     * @param aid        the AID of the application
      * @param connection connection to the YubiKey
      */
     public Iso7816Application(byte[] aid, Iso7816Connection connection) {
@@ -100,19 +97,10 @@ public class Iso7816Application implements Closeable {
      * Sends an APDU to SELECT the Application.
      *
      * @return the response data from selecting the Application
-     * @throws IOException         in case of connection or communication error
-     * @throws ApduException       in case an error was received in the APDU response
-     * @throws ApplicationNotFound in case the application is missing or disabled
+     * @throws IOException   in case of connection or communication error
+     * @throws ApduException in case an error was received in the APDU response
      */
-    public byte[] select() throws IOException, ApduException, ApplicationNotFound {
-        try {
-            return sendAndReceive(new Apdu(0, INS_SELECT, P1_SELECT, P2_SELECT, aid));
-        } catch (ApduException e) {
-            if (e.getStatusCode() == SW_FILE_NOT_FOUND) {
-                throw new ApplicationNotFound("Missing application with AID: " + StringUtils.bytesToHex(aid));
-            } else {
-                throw e;
-            }
-        }
+    public byte[] select() throws IOException, ApduException {
+        return sendAndReceive(new Apdu(0, INS_SELECT, P1_SELECT, P2_SELECT, aid));
     }
 }

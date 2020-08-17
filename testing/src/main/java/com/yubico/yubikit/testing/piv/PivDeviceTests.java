@@ -1,9 +1,7 @@
 package com.yubico.yubikit.testing.piv;
 
-import com.yubico.yubikit.iso7816.ApduException;
-import com.yubico.yubikit.exceptions.BadRequestException;
 import com.yubico.yubikit.exceptions.BadResponseException;
-import com.yubico.yubikit.exceptions.UnexpectedTagException;
+import com.yubico.yubikit.iso7816.ApduException;
 import com.yubico.yubikit.piv.InvalidPinException;
 import com.yubico.yubikit.piv.KeyType;
 import com.yubico.yubikit.piv.PinPolicy;
@@ -70,7 +68,7 @@ public class PivDeviceTests {
         piv.setManagementKey(DEFAULT_MANAGEMENT_KEY);
     }
 
-    public static void testPin(PivApplication piv) throws ApduException, BadRequestException, InvalidPinException, IOException, BadResponseException {
+    public static void testPin(PivApplication piv) throws ApduException, InvalidPinException, IOException, BadResponseException {
         // Ensure we only try this if the default management key is set.
         piv.authenticate(DEFAULT_MANAGEMENT_KEY);
 
@@ -114,7 +112,7 @@ public class PivDeviceTests {
         piv.changePin(pin2, DEFAULT_PIN);
     }
 
-    public static void testPuk(PivApplication piv) throws ApduException, BadRequestException, InvalidPinException, IOException, BadResponseException {
+    public static void testPuk(PivApplication piv) throws ApduException, InvalidPinException, IOException, BadResponseException {
         // Ensure we only try this if the default management key is set.
         piv.authenticate(DEFAULT_MANAGEMENT_KEY);
 
@@ -163,13 +161,13 @@ public class PivDeviceTests {
         piv.changePuk(puk2, DEFAULT_PUK);
     }
 
-    public static void testSignAllHashes(PivApplication piv, Slot slot, KeyType keyType, PublicKey publicKey) throws ApduException, BadRequestException, NoSuchAlgorithmException, UnexpectedTagException, InvalidPinException, IOException, InvalidKeyException, BadPaddingException, NoSuchPaddingException, IllegalBlockSizeException, SignatureException {
+    public static void testSignAllHashes(PivApplication piv, Slot slot, KeyType keyType, PublicKey publicKey) throws ApduException, NoSuchAlgorithmException, InvalidPinException, IOException, InvalidKeyException, BadResponseException {
         for (String hash : MESSAGE_DIGESTS) {
             testSign(piv, slot, keyType, publicKey, hash);
         }
     }
 
-    public static void testSign(PivApplication piv, Slot slot, KeyType keyType, PublicKey publicKey, String digest) throws NoSuchAlgorithmException, UnexpectedTagException, IOException, ApduException, BadRequestException, InvalidPinException, IllegalBlockSizeException, NoSuchPaddingException, BadPaddingException, SignatureException, InvalidKeyException {
+    public static void testSign(PivApplication piv, Slot slot, KeyType keyType, PublicKey publicKey, String digest) throws NoSuchAlgorithmException, IOException, ApduException, InvalidPinException, InvalidKeyException, BadResponseException {
         byte[] message = "Hello world!".getBytes();
 
         String signatureAlgorithm = digest.replace("-", "") + "With";
@@ -195,7 +193,7 @@ public class PivDeviceTests {
         }
     }
 
-    public static void testDecrypt(PivApplication piv, KeyType keyType) throws BadResponseException, IOException, ApduException, NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException, BadRequestException, InvalidPinException {
+    public static void testDecrypt(PivApplication piv, KeyType keyType) throws BadResponseException, IOException, ApduException, NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException, InvalidPinException {
         if (keyType.params.algorithm != KeyType.Algorithm.RSA) {
             throw new IllegalArgumentException("Unsupported");
         }
@@ -217,7 +215,7 @@ public class PivDeviceTests {
         Assert.assertArrayEquals(message, pt);
     }
 
-    public static void testEcdh(PivApplication piv, KeyType keyType) throws BadResponseException, IOException, ApduException, NoSuchAlgorithmException, InvalidKeyException, BadRequestException, InvalidPinException {
+    public static void testEcdh(PivApplication piv, KeyType keyType) throws BadResponseException, IOException, ApduException, NoSuchAlgorithmException, InvalidKeyException, InvalidPinException {
         if (keyType.params.algorithm != KeyType.Algorithm.EC) {
             throw new IllegalArgumentException("Unsupported");
         }
@@ -237,14 +235,14 @@ public class PivDeviceTests {
         Assert.assertArrayEquals(expected, secret);
     }
 
-    public static void testImportKeys(PivApplication piv) throws BadRequestException, ApduException, BadResponseException, NoSuchAlgorithmException, IOException, InvalidPinException, InvalidKeyException, BadPaddingException, NoSuchPaddingException, IllegalBlockSizeException, SignatureException {
+    public static void testImportKeys(PivApplication piv) throws ApduException, BadResponseException, NoSuchAlgorithmException, IOException, InvalidPinException, InvalidKeyException, BadPaddingException, NoSuchPaddingException, IllegalBlockSizeException, SignatureException {
         for (KeyType keyType : KeyType.values()) {
             testImportKey(piv, PivTestUtils.loadKey(keyType));
             testImportKey(piv, PivTestUtils.generateKey(keyType));
         }
     }
 
-    public static void testImportKey(PivApplication piv, KeyPair keyPair) throws BadResponseException, IOException, ApduException, NoSuchAlgorithmException, BadRequestException, InvalidPinException, IllegalBlockSizeException, BadPaddingException, NoSuchPaddingException, InvalidKeyException, SignatureException {
+    public static void testImportKey(PivApplication piv, KeyPair keyPair) throws BadResponseException, IOException, ApduException, NoSuchAlgorithmException, InvalidPinException, IllegalBlockSizeException, BadPaddingException, NoSuchPaddingException, InvalidKeyException, SignatureException {
         Slot slot = Slot.AUTHENTICATION;
         piv.authenticate(DEFAULT_MANAGEMENT_KEY);
 
@@ -254,13 +252,13 @@ public class PivDeviceTests {
         testSignAllHashes(piv, slot, keyType, keyPair.getPublic());
     }
 
-    public static void testGenerateKeys(PivApplication piv) throws BadResponseException, IOException, ApduException, BadRequestException, InvalidPinException, SignatureException, NoSuchAlgorithmException, InvalidKeyException, BadPaddingException, NoSuchPaddingException, IllegalBlockSizeException {
+    public static void testGenerateKeys(PivApplication piv) throws BadResponseException, IOException, ApduException, InvalidPinException, NoSuchAlgorithmException, InvalidKeyException {
         for (KeyType keyType : KeyType.values()) {
             testGenerateKey(piv, keyType);
         }
     }
 
-    public static void testGenerateKey(PivApplication piv, KeyType keyType) throws BadResponseException, IOException, ApduException, BadRequestException, InvalidPinException, SignatureException, NoSuchAlgorithmException, IllegalBlockSizeException, BadPaddingException, NoSuchPaddingException, InvalidKeyException {
+    public static void testGenerateKey(PivApplication piv, KeyType keyType) throws BadResponseException, IOException, ApduException, InvalidPinException, NoSuchAlgorithmException, InvalidKeyException {
         Slot slot = Slot.AUTHENTICATION;
         piv.authenticate(DEFAULT_MANAGEMENT_KEY);
 

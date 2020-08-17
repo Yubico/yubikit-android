@@ -15,7 +15,7 @@
  */
 package com.yubico.yubikit.utils;
 
-import com.yubico.yubikit.exceptions.UnexpectedTagException;
+import com.yubico.yubikit.exceptions.BadResponseException;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -43,7 +43,7 @@ public class TlvUtilsTest {
     }
 
     @Test
-    public void testUnwrap() throws UnexpectedTagException {
+    public void testUnwrap() throws BadResponseException {
         TlvUtils.unwrapTlv(new byte[]{(byte) 0x80, 0}, 0x80);
 
         TlvUtils.unwrapTlv(new byte[]{0x7F, 0x49, 0}, 0x7F49);

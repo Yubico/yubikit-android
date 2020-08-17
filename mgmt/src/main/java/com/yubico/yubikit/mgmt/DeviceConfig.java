@@ -2,7 +2,6 @@ package com.yubico.yubikit.mgmt;
 
 import com.yubico.yubikit.utils.Interface;
 import com.yubico.yubikit.utils.TlvUtils;
-import com.yubico.yubikit.exceptions.BadRequestException;
 
 import java.nio.ByteBuffer;
 import java.util.HashMap;
@@ -55,7 +54,7 @@ public class DeviceConfig {
         return deviceFlags;
     }
 
-    byte[] getBytes(boolean reboot, @Nullable byte[] currentLockCode, @Nullable byte[] newLockCode) throws BadRequestException {
+    byte[] getBytes(boolean reboot, @Nullable byte[] currentLockCode, @Nullable byte[] newLockCode) {
         Map<Integer, byte[]> values = new LinkedHashMap<>();
         if (reboot) {
             values.put(TAG_REBOOT, null);
@@ -86,7 +85,7 @@ public class DeviceConfig {
         byte[] data = TlvUtils.packTlvMap(values);
 
         if (data.length > 0xff) {
-            throw new BadRequestException("DeviceConfiguration too large");
+            throw new IllegalStateException("DeviceConfiguration too large");
         }
         return ByteBuffer.allocate(data.length + 1).put((byte) data.length).put(data).array();
     }

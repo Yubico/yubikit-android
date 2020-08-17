@@ -27,10 +27,9 @@ public class Padding {
      * @param message   the message to sign
      * @param algorithm the signature algorithm to use
      * @return the payload ready to be signed
-     * @throws InvalidKeyException      if the keyType isn't valid for the algorithm specified
      * @throws NoSuchAlgorithmException if the algorithm isn't supported
      */
-    public static byte[] pad(KeyType keyType, byte[] message, String algorithm) throws InvalidKeyException, NoSuchAlgorithmException {
+    public static byte[] pad(KeyType keyType, byte[] message, String algorithm) throws NoSuchAlgorithmException {
         KeyType.KeyParams params = keyType.params;
         byte[] payload;
         switch (params.algorithm) {
@@ -40,14 +39,14 @@ public class Padding {
                 kpg.initialize(params.bitLength);
                 KeyPair kp = kpg.generateKeyPair();
                 Signature signature = Signature.getInstance(algorithm);
-                signature.initSign(kp.getPrivate());
                 try {
                     // Do a "raw encrypt" of the signature to get the padded message
+                    signature.initSign(kp.getPrivate());
                     signature.update(message);
                     Cipher rsa = Cipher.getInstance(RAW_RSA);
                     rsa.init(Cipher.ENCRYPT_MODE, kp.getPublic());
                     payload = rsa.doFinal(signature.sign());
-                } catch (SignatureException | BadPaddingException | IllegalBlockSizeException e) {
+                } catch (SignatureException | BadPaddingException | IllegalBlockSizeException | InvalidKeyException e) {
                     throw new IllegalStateException(e); // Shouldn't happen
                 } catch (NoSuchPaddingException e) {
                     throw new UnsupportedOperationException("SecurityProvider doesn't support RSA without padding", e);
@@ -56,7 +55,7 @@ public class Padding {
             case EC:
                 Matcher matcher = ECDSA_HASH_PATTERN.matcher(algorithm);
                 if (!matcher.find()) {
-                    throw new InvalidKeyException("Invalid algorithm for given key");
+                    throw new IllegalArgumentException("Invalid algorithm for given key");
                 }
                 String md = matcher.group(1) + "-" + matcher.group(2);
                 byte[] hash = MessageDigest.getInstance(md).digest(message);
@@ -85,10 +84,11 @@ public class Padding {
      * @param decrypted the decrypted (but still padded) payload
      * @param algorithm the cipher algorithm used for encryption
      * @return the un-padded plaintext
-     * @throws NoSuchPaddingException   in case the padding algorithms isn't supported
+     * @throws NoSuchPaddingException   in case the padding algorithm isn't supported
      * @throws NoSuchAlgorithmException in case the algorithm isn't supported
+     * @throws BadPaddingException      in case of a padding error
      */
-    public static byte[] unpad(byte[] decrypted, String algorithm) throws NoSuchPaddingException, NoSuchAlgorithmException {
+    public static byte[] unpad(byte[] decrypted, String algorithm) throws NoSuchPaddingException, NoSuchAlgorithmException, BadPaddingException {
         Cipher cipher = Cipher.getInstance(algorithm);
         Cipher rsa = Cipher.getInstance(RAW_RSA);
 
@@ -98,11 +98,9 @@ public class Padding {
         KeyPair kp = kpg.generateKeyPair();
         try {
             rsa.init(Cipher.ENCRYPT_MODE, kp.getPublic());
-            byte[] ct = rsa.doFinal(decrypted);
-
             cipher.init(Cipher.DECRYPT_MODE, kp.getPrivate());
-            return cipher.doFinal(ct);
-        } catch (InvalidKeyException | IllegalBlockSizeException | BadPaddingException e) {
+            return cipher.doFinal(rsa.doFinal(decrypted));
+        } catch (InvalidKeyException | IllegalBlockSizeException e) {
             throw new IllegalStateException(e); // Shouldn't happen
         }
     }

@@ -35,8 +35,8 @@ public class UsbConfiguration {
     /**
      * Allow discovery of non-Yubico devices
      *
-     * @param filterYubicoDevices
-     * @return
+     * @param filterYubicoDevices true to only handle Yubico devices
+     * @return the UsbConfiguration, for chaining
      */
     public UsbConfiguration filterYubicoDevices(boolean filterYubicoDevices) {
         this.filterYubicoDevices = filterYubicoDevices;

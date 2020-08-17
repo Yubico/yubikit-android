@@ -16,7 +16,7 @@
 
 package com.yubico.yubikit.utils;
 
-import com.yubico.yubikit.exceptions.UnexpectedTagException;
+import com.yubico.yubikit.exceptions.BadResponseException;
 
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
@@ -101,12 +101,12 @@ public class TlvUtils {
      * @param tlvData     the TLV data
      * @param expectedTag the expected tag value of the given TLV data
      * @return the value of the TLV
-     * @throws UnexpectedTagException if the TLV tag differs from expectedTag
+     * @throws BadResponseException if the TLV tag differs from expectedTag
      */
-    public static byte[] unwrapTlv(byte[] tlvData, int expectedTag) throws UnexpectedTagException {
+    public static byte[] unwrapTlv(byte[] tlvData, int expectedTag) throws BadResponseException {
         Tlv tlv = new Tlv(tlvData, 0);
         if (tlv.getTag() != expectedTag) {
-            throw new UnexpectedTagException(expectedTag, tlv.getTag());
+            throw new BadResponseException(String.format("Expected tag: %02x, got %02x", expectedTag, tlv.getTag()));
         }
         return tlv.getValue();
     }

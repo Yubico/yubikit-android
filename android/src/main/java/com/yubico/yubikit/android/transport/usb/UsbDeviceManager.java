@@ -62,6 +62,7 @@ public class UsbDeviceManager {
      * Registers receiver on usb connection event
      *
      * @param usbConfiguration contains information if device manager also registers receiver on permissions grant from user
+     * @param listener         the UsbSessionListener to react to changes
      */
     public void enable(UsbConfiguration usbConfiguration, UsbSessionListener listener) {
         disable();
@@ -99,7 +100,7 @@ public class UsbDeviceManager {
         public void stop() {
             context.unregisterReceiver(this);
             pendingPermission.clear();
-            for (UsbSession  session : sessions.values()) {
+            for (UsbSession session : sessions.values()) {
                 listener.onSessionRemoved(session);
             }
         }
@@ -158,7 +159,7 @@ public class UsbDeviceManager {
                 if (ACTION_USB_PERMISSION.equals(intent.getAction())) {
                     context.unregisterReceiver(this);
                     UsbDevice device = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
-                    if(pendingPermission.remove(device)) {
+                    if (pendingPermission.remove(device)) {
                         // device is not plugged in anymore, we're not interested in it's permissions
                         if (device == null || !listDevices().contains(device)) {
                             return;

@@ -16,15 +16,14 @@
 
 package com.yubico.yubikit.iso7816;
 
-import com.yubico.yubikit.exceptions.YubiKeyCommunicationException;
-import com.yubico.yubikit.iso7816.ApduResponse;
+import com.yubico.yubikit.exceptions.CommandException;
 
 import java.util.Locale;
 
 /**
  * Exception is thrown if used APDU utils to parse received data and it has unexpected status code (not equal success == 0x9000)
  */
-public class ApduException extends YubiKeyCommunicationException {
+public class ApduException extends CommandException {
     static final long serialVersionUID = 1L;
 
     private ApduResponse apdu;

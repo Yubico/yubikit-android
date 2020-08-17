@@ -17,22 +17,18 @@
 package com.yubico.yubikit.piv;
 
 
-import com.yubico.yubikit.iso7816.Iso7816Application;
-import com.yubico.yubikit.iso7816.Iso7816Connection;
-import com.yubico.yubikit.iso7816.Apdu;
-import com.yubico.yubikit.utils.Tlv;
-import com.yubico.yubikit.utils.TlvUtils;
-import com.yubico.yubikit.utils.Version;
-import com.yubico.yubikit.iso7816.ApduException;
-import com.yubico.yubikit.exceptions.ApplicationNotFound;
-import com.yubico.yubikit.exceptions.BadRequestException;
 import com.yubico.yubikit.exceptions.BadResponseException;
 import com.yubico.yubikit.exceptions.NotSupportedOperation;
-import com.yubico.yubikit.exceptions.UnexpectedTagException;
-import com.yubico.yubikit.exceptions.YubiKeyCommunicationException;
+import com.yubico.yubikit.iso7816.Apdu;
+import com.yubico.yubikit.iso7816.ApduException;
+import com.yubico.yubikit.iso7816.Iso7816Application;
+import com.yubico.yubikit.iso7816.Iso7816Connection;
 import com.yubico.yubikit.utils.Logger;
 import com.yubico.yubikit.utils.RandomUtils;
 import com.yubico.yubikit.utils.StringUtils;
+import com.yubico.yubikit.utils.Tlv;
+import com.yubico.yubikit.utils.TlvUtils;
+import com.yubico.yubikit.utils.Version;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -137,9 +133,10 @@ public class PivApplication extends Iso7816Application {
      * and selects the application for use
      *
      * @param connection connection with YubiKey
-     * @throws IOException in case of communication error
+     * @throws IOException   in case of communication error
+     * @throws ApduException in case of an error response from the YubiKey
      */
-    public PivApplication(Iso7816Connection connection) throws IOException, ApduException, ApplicationNotFound {
+    public PivApplication(Iso7816Connection connection) throws IOException, ApduException {
         super(AID, connection);
 
         select();
@@ -159,7 +156,8 @@ public class PivApplication extends Iso7816Application {
     /**
      * Resets the application to just-installed state.
      *
-     * @throws IOException in case of connection error
+     * @throws IOException   in case of connection error
+     * @throws ApduException in case of an error response from the YubiKey
      */
     public void reset() throws IOException, ApduException {
         blockPin();
@@ -174,7 +172,9 @@ public class PivApplication extends Iso7816Application {
      *
      * @param managementKey management key as byte array
      *                      The default 3DES management key (9B) is 010203040506070801020304050607080102030405060708.
-     * @throws IOException in case of connection error
+     * @throws IOException          in case of connection error
+     * @throws ApduException        in case of an error response from the YubiKey
+     * @throws BadResponseException in case of incorrectYubiKey response
      */
     public void authenticate(byte[] managementKey) throws IOException, ApduException, BadResponseException {
         // An empty witness is a request for a witness.
@@ -223,13 +223,12 @@ public class PivApplication extends Iso7816Application {
      * @param message   the message to hash
      * @param algorithm the signing algorithm to use
      * @return the signature
-     * @throws IOException
-     * @throws ApduException
-     * @throws UnexpectedTagException
-     * @throws NoSuchAlgorithmException
-     * @throws InvalidKeyException
+     * @throws IOException              in case of connection error
+     * @throws ApduException            in case of an error response from the YubiKey
+     * @throws BadResponseException     in case of incorrectYubiKey response
+     * @throws NoSuchAlgorithmException if the algorithm isn't supported
      */
-    public byte[] sign(Slot slot, KeyType keyType, byte[] message, String algorithm) throws IOException, ApduException, UnexpectedTagException, NoSuchAlgorithmException, InvalidKeyException {
+    public byte[] sign(Slot slot, KeyType keyType, byte[] message, String algorithm) throws IOException, ApduException, BadResponseException, NoSuchAlgorithmException {
         byte[] payload = Padding.pad(keyType, message, algorithm);
         return usePrivateKey(slot, keyType, payload, false);
     }
@@ -241,13 +240,14 @@ public class PivApplication extends Iso7816Application {
      * @param cipherText the encrypted payload to decrypt
      * @param algorithm  the algorithm used for encryption
      * @return the decrypted plaintext
-     * @throws UnexpectedTagException
-     * @throws IOException
-     * @throws ApduException
-     * @throws NoSuchAlgorithmException
-     * @throws NoSuchPaddingException
+     * @throws IOException              in case of connection error
+     * @throws ApduException            in case of an error response from the YubiKey
+     * @throws BadResponseException     in case of incorrectYubiKey response
+     * @throws NoSuchPaddingException   in case the padding algorithm isn't supported
+     * @throws NoSuchAlgorithmException in case the algorithm isn't supported
+     * @throws BadPaddingException      in case of a padding error
      */
-    public byte[] decrypt(Slot slot, byte[] cipherText, String algorithm) throws UnexpectedTagException, IOException, ApduException, NoSuchAlgorithmException, NoSuchPaddingException {
+    public byte[] decrypt(Slot slot, byte[] cipherText, String algorithm) throws IOException, ApduException, BadResponseException, NoSuchAlgorithmException, NoSuchPaddingException, BadPaddingException {
         KeyType keyType;
         switch (cipherText.length) {
             case 1024 / 8:
@@ -269,11 +269,11 @@ public class PivApplication extends Iso7816Application {
      * @param slot          the slot containing the private EC key
      * @param peerPublicKey the peer public key for the operation
      * @return the shared secret, comprising the x-coordinate of the ECDH result point.
-     * @throws UnexpectedTagException
-     * @throws IOException
-     * @throws ApduException
+     * @throws IOException          in case of connection error
+     * @throws ApduException        in case of an error response from the YubiKey
+     * @throws BadResponseException in case of incorrectYubiKey response
      */
-    public byte[] calculateSecret(Slot slot, ECPublicKey peerPublicKey) throws UnexpectedTagException, IOException, ApduException {
+    public byte[] calculateSecret(Slot slot, ECPublicKey peerPublicKey) throws IOException, ApduException, BadResponseException {
         KeyType keyType = KeyType.fromKey(peerPublicKey);
         int byteLength = keyType.params.bitLength / 8;
         return usePrivateKey(slot, keyType, ByteBuffer.allocate(1 + 2 * byteLength)
@@ -283,7 +283,7 @@ public class PivApplication extends Iso7816Application {
                 .array(), true);
     }
 
-    private byte[] usePrivateKey(Slot slot, KeyType keyType, byte[] message, boolean exponentiation) throws IOException, ApduException, UnexpectedTagException {
+    private byte[] usePrivateKey(Slot slot, KeyType keyType, byte[] message, boolean exponentiation) throws IOException, ApduException, BadResponseException {
         // using generic authentication for sign requests
         Map<Integer, byte[]> dataTlvs = new LinkedHashMap<>();
         dataTlvs.put(TAG_AUTH_RESPONSE, null);
@@ -295,6 +295,7 @@ public class PivApplication extends Iso7816Application {
             return TlvUtils.unwrapTlv(TlvUtils.unwrapTlv(response, TAG_DYN_AUTH), TAG_AUTH_RESPONSE);
         } catch (ApduException e) {
             if (INCORRECT_VALUES_ERROR == e.getStatusCode()) {
+                //TODO: Replace with new CommandException subclass, wrapping e.
                 throw new ApduException(e.getApdu(), String.format(Locale.ROOT, "Make sure that %s key is generated on slot %02X", keyType.name(), slot.value));
             }
             throw e;
@@ -306,7 +307,8 @@ public class PivApplication extends Iso7816Application {
      * This method requires authentication {@link PivApplication#authenticate(byte[])}
      *
      * @param managementKey new value of management key
-     * @throws IOException in case of connection error
+     * @throws IOException   in case of connection error
+     * @throws ApduException in case of an error response from the YubiKey
      */
     public void setManagementKey(byte[] managementKey) throws IOException, ApduException {
         if (managementKey.length != 24) {
@@ -330,9 +332,10 @@ public class PivApplication extends Iso7816Application {
      * @param pin string with pin (UTF-8)
      *            The default PIN code is 123456.
      * @throws IOException         in case of connection error
+     * @throws ApduException       in case of an error response from the YubiKey
      * @throws InvalidPinException in case if pin is invalid
      */
-    public void verify(char[] pin) throws IOException, ApduException, BadRequestException, InvalidPinException {
+    public void verify(char[] pin) throws IOException, ApduException, InvalidPinException {
         try {
             sendAndReceive(new Apdu(0, INS_VERIFY, 0, PIN_P2, pinBytes(pin)));
             currentPinRetries = maxPinRetries;
@@ -355,7 +358,8 @@ public class PivApplication extends Iso7816Application {
      * the correct value will not be retrievable, and the value returned may be incorrect.
      *
      * @return number of attempts left
-     * @throws IOException in case of connection error
+     * @throws IOException   in case of connection error
+     * @throws ApduException in case of an error response from the YubiKey
      */
     public int getPinAttempts() throws IOException, ApduException {
         try {
@@ -381,9 +385,10 @@ public class PivApplication extends Iso7816Application {
      * @param oldPin old pin for verification
      * @param newPin new pin to set
      * @throws IOException         in case of connection error
+     * @throws ApduException       in case of an error response from the YubiKey
      * @throws InvalidPinException in case if pin is invalid
      */
-    public void changePin(char[] oldPin, char[] newPin) throws IOException, ApduException, InvalidPinException, BadRequestException {
+    public void changePin(char[] oldPin, char[] newPin) throws IOException, ApduException, InvalidPinException {
         changeReference(INS_CHANGE_REFERENCE, PIN_P2, oldPin, newPin);
     }
 
@@ -393,9 +398,10 @@ public class PivApplication extends Iso7816Application {
      * @param oldPuk old puk for verification
      * @param newPuk new puk to set
      * @throws IOException         in case of connection error
+     * @throws ApduException       in case of an error response from the YubiKey
      * @throws InvalidPinException in case if puk is invalid
      */
-    public void changePuk(char[] oldPuk, char[] newPuk) throws IOException, ApduException, BadRequestException, InvalidPinException {
+    public void changePuk(char[] oldPuk, char[] newPuk) throws IOException, ApduException, InvalidPinException {
         changeReference(INS_CHANGE_REFERENCE, PUK_P2, oldPuk, newPuk);
     }
 
@@ -406,9 +412,10 @@ public class PivApplication extends Iso7816Application {
      *               The default PUK code is 12345678.
      * @param newPin new pin to set
      * @throws IOException         in case of connection error
+     * @throws ApduException       in case of an error response from the YubiKey
      * @throws InvalidPinException in case if puk is invalid
      */
-    public void unblockPin(char[] puk, char[] newPin) throws IOException, ApduException, BadRequestException, InvalidPinException {
+    public void unblockPin(char[] puk, char[] newPin) throws IOException, ApduException, InvalidPinException {
         changeReference(INS_RESET_RETRY, PIN_P2, puk, newPin);
     }
 
@@ -419,7 +426,8 @@ public class PivApplication extends Iso7816Application {
      *
      * @param pinRetries sets attempts to pin
      * @param pukRetries sets attempts to puk
-     * @throws IOException in case of connection error
+     * @throws IOException   in case of connection error
+     * @throws ApduException in case of an error response from the YubiKey
      */
     public void setPinRetries(int pinRetries, int pukRetries) throws IOException, ApduException {
         sendAndReceive(new Apdu(0, INS_SET_PIN_RETRIES, pinRetries, pukRetries, null));
@@ -432,7 +440,9 @@ public class PivApplication extends Iso7816Application {
      *
      * @param slot Key reference '9A', '9C', '9D', or '9E'. {@link Slot}.
      * @return certificate instance
-     * @throws IOException in case of connection error
+     * @throws IOException          in case of connection error
+     * @throws ApduException        in case of an error response from the YubiKey
+     * @throws BadResponseException in case of incorrectYubiKey response
      */
     public X509Certificate getCertificate(Slot slot) throws IOException, ApduException, BadResponseException {
         byte[] objectData = getObject(slot.object);
@@ -456,7 +466,8 @@ public class PivApplication extends Iso7816Application {
      *
      * @param slot        Key reference '9A', '9C', '9D', or '9E'. {@link Slot}.
      * @param certificate certificate instance
-     * @throws IOException in case of connection error
+     * @throws IOException   in case of connection error
+     * @throws ApduException in case of an error response from the YubiKey
      */
     public void putCertificate(Slot slot, X509Certificate certificate) throws IOException, ApduException {
         byte[] certBytes;
@@ -484,9 +495,11 @@ public class PivApplication extends Iso7816Application {
      *
      * @param slot Key reference '9A', '9C', '9D', or '9E'. {@link Slot}.
      * @return X.509 certificate for the key that is to be attested
-     * @throws IOException in case of connection error
+     * @throws IOException          in case of connection error
+     * @throws ApduException        in case of an error response from the YubiKey
+     * @throws BadResponseException in case of incorrectYubiKey response
      */
-    public X509Certificate attest(Slot slot) throws IOException, YubiKeyCommunicationException {
+    public X509Certificate attest(Slot slot) throws IOException, ApduException, BadResponseException {
         if (version.isLessThan(4, 3, 0)) {
             throw new NotSupportedOperation("This operation is supported for version 4.3+");
         }
@@ -508,7 +521,8 @@ public class PivApplication extends Iso7816Application {
      * This method requires authentication {@link PivApplication#authenticate(byte[])}
      *
      * @param slot Key reference '9A', '9C', '9D', or '9E'. {@link Slot}.
-     * @throws IOException in case of connection error
+     * @throws IOException   in case of connection error
+     * @throws ApduException in case of an error response from the YubiKey
      */
     public void deleteCertificate(Slot slot) throws IOException, ApduException {
         putObject(slot.object, null);
@@ -524,7 +538,9 @@ public class PivApplication extends Iso7816Application {
      * @param pinPolicy   pin policy {@link PinPolicy}
      * @param touchPolicy touch policy {@link TouchPolicy}
      * @return public key for generated pair
-     * @throws IOException in case of connection error
+     * @throws IOException          in case of connection error
+     * @throws ApduException        in case of an error response from the YubiKey
+     * @throws BadResponseException in case of incorrectYubiKey response
      */
     public PublicKey generateKey(Slot slot, KeyType keyType, PinPolicy pinPolicy, TouchPolicy touchPolicy) throws IOException, ApduException, BadResponseException {
         boolean isRsa = keyType == KeyType.RSA1024 || keyType == KeyType.RSA2048;
@@ -581,7 +597,8 @@ public class PivApplication extends Iso7816Application {
      * @param pinPolicy   pin policy {@link PinPolicy}
      * @param touchPolicy touch policy {@link TouchPolicy}
      * @return type of algorithm that was parsed from key
-     * @throws IOException in case of connection error
+     * @throws IOException   in case of connection error
+     * @throws ApduException in case of an error response from the YubiKey
      */
     public KeyType importKey(Slot slot, PrivateKey key, PinPolicy pinPolicy, TouchPolicy touchPolicy) throws IOException, ApduException {
         KeyType keyType = KeyType.fromKey(key);
@@ -652,9 +669,11 @@ public class PivApplication extends Iso7816Application {
      *                 KEY_HISTORY = 0x5fc10c
      *                 IRIS = 0x5fc121
      * @return data that read from YubiKey
-     * @throws IOException in case of connection error
+     * @throws IOException          in case of connection error
+     * @throws ApduException        in case of an error response from the YubiKey
+     * @throws BadResponseException in case of incorrectYubiKey response
      */
-    public byte[] getObject(byte[] objectId) throws IOException, ApduException, UnexpectedTagException {
+    public byte[] getObject(byte[] objectId) throws IOException, ApduException, BadResponseException {
         byte[] requestData = new Tlv(TAG_OBJ_ID, objectId).getBytes();
         byte[] responseData = sendAndReceive(new Apdu(0, INS_GET_DATA, 0x3f, 0xff, requestData));
         return TlvUtils.unwrapTlv(responseData, TAG_OBJ_DATA);
@@ -674,7 +693,8 @@ public class PivApplication extends Iso7816Application {
      *                   KEY_HISTORY = 0x5fc10c
      *                   IRIS = 0x5fc121
      * @param objectData data to write
-     * @throws IOException in case of connection error
+     * @throws IOException   in case of connection error
+     * @throws ApduException in case of an error response from the YubiKey
      */
     public void putObject(byte[] objectId, @Nullable byte[] objectData) throws IOException, ApduException {
         Map<Integer, byte[]> tlvs = new LinkedHashMap<>();
@@ -683,12 +703,8 @@ public class PivApplication extends Iso7816Application {
         sendAndReceive(new Apdu(0, INS_PUT_DATA, 0x3f, 0xff, TlvUtils.packTlvMap(tlvs)));
     }
 
-    /**
-     * Generates x509 certificate object from byte array
-     *
-     * @param data contains certificate data
-     * @return java.security.cert.X509Certificate representation of certificate
-     * @throws CertificateException
+    /*
+     * Parses x509 certificate object from byte array
      */
     private X509Certificate parseCertificate(byte[] data) throws CertificateException {
         InputStream stream = new ByteArrayInputStream(data);
@@ -696,12 +712,8 @@ public class PivApplication extends Iso7816Application {
         return (X509Certificate) cf.generateCertificate(stream);
     }
 
-    /**
-     * Doing data formatting/padding to provided length (shortens to length or fills with 0 rest of array)
-     *
-     * @param value  data to be padded
-     * @param length length of new array
-     * @return array of bytes sized by provided length
+    /*
+     * Shortens to length or left-pads with 0.
      */
     private static byte[] bytesToLength(BigInteger value, int length) {
         byte[] data = value.toByteArray();
@@ -716,7 +728,7 @@ public class PivApplication extends Iso7816Application {
         }
     }
 
-    private void changeReference(byte instruction, byte p2, @Nullable char[] value1, @Nullable char[] value2) throws IOException, ApduException, BadRequestException, InvalidPinException {
+    private void changeReference(byte instruction, byte p2, @Nullable char[] value1, @Nullable char[] value2) throws IOException, ApduException, InvalidPinException {
         byte[] pinBytes = pinBytes(value1 != null ? value1 : new char[0], value2 != null ? value2 : new char[0]);
         try {
             sendAndReceive(new Apdu(0, instruction, 0, p2, pinBytes));
@@ -743,8 +755,6 @@ public class PivApplication extends Iso7816Application {
                 verify(new char[0]);
             } catch (InvalidPinException e) {
                 counter = e.getRetryCounter();
-            } catch (BadRequestException e) {
-                throw new RuntimeException(e);  // This shouldn't happen
             }
         }
 
@@ -759,19 +769,17 @@ public class PivApplication extends Iso7816Application {
                 changeReference(INS_RESET_RETRY, PIN_P2, null, null);
             } catch (InvalidPinException e) {
                 counter = e.getRetryCounter();
-            } catch (BadRequestException e) {
-                throw new RuntimeException(e);  // This shouldn't happen
             }
         }
         Logger.d("PUK is blocked");
     }
 
-    private static byte[] pinBytes(char[] pin) throws BadRequestException {
+    private static byte[] pinBytes(char[] pin) {
         ByteBuffer byteBuffer = StandardCharsets.UTF_8.encode(CharBuffer.wrap(pin));
         try {
             int byteLen = byteBuffer.limit() - byteBuffer.position();
             if (byteLen > PIN_LEN) {
-                throw new BadRequestException("PIN/PUK must be no longer than 8 bytes");
+                throw new IllegalArgumentException("PIN/PUK must be no longer than 8 bytes");
             }
             byte[] alignedPinByte = Arrays.copyOf(byteBuffer.array(), PIN_LEN);
             Arrays.fill(alignedPinByte, byteLen, PIN_LEN, (byte) 0xff);
@@ -781,7 +789,7 @@ public class PivApplication extends Iso7816Application {
         }
     }
 
-    private static byte[] pinBytes(char[] pin1, char[] pin2) throws IOException, BadRequestException {
+    private static byte[] pinBytes(char[] pin1, char[] pin2) {
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
         byte[] pinBytes1 = pinBytes(pin1);
         byte[] pinBytes2 = pinBytes(pin2);
@@ -789,17 +797,16 @@ public class PivApplication extends Iso7816Application {
             stream.write(pinBytes1);
             stream.write(pinBytes2);
             return stream.toByteArray();
+        } catch (IOException e) {
+            throw new RuntimeException(e);  // This shouldn't happen
         } finally {
             Arrays.fill(pinBytes1, (byte) 0); // clear sensitive data
             Arrays.fill(pinBytes2, (byte) 0); // clear sensitive data
         }
     }
 
-    /**
+    /*
      * Parses number of left attempts from status code
-     *
-     * @param statusCode received within response from YubiKey
-     * @return number of retries
      */
     private int getRetriesFromCode(int statusCode) {
         if (statusCode == AUTH_METHOD_BLOCKED) {
@@ -866,7 +873,7 @@ public class PivApplication extends Iso7816Application {
                 throw new UnsupportedEncodingException("Expected value 0");
             }
             return values;
-        } catch (UnexpectedTagException e) {
+        } catch (BadResponseException e) {
             throw new UnsupportedEncodingException(e.getMessage());
         }
     }

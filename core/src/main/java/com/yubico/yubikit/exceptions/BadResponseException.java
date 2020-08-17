@@ -19,7 +19,7 @@ package com.yubico.yubikit.exceptions;
 /**
  * The data contained in a YubiKey response was invalid.
  */
-public class BadResponseException extends YubiKeyCommunicationException {
+public class BadResponseException extends CommandException {
     public BadResponseException(String message) {
         super(message);
     }

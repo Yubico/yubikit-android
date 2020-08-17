@@ -16,18 +16,18 @@
 
 package com.yubico.yubikit.otp;
 
-import com.yubico.yubikit.utils.Interface;
+import com.yubico.yubikit.exceptions.BadResponseException;
+import com.yubico.yubikit.exceptions.CommandException;
+import com.yubico.yubikit.exceptions.NotSupportedOperation;
+import com.yubico.yubikit.iso7816.Apdu;
+import com.yubico.yubikit.iso7816.ApduException;
 import com.yubico.yubikit.iso7816.Iso7816Application;
 import com.yubico.yubikit.iso7816.Iso7816Connection;
+import com.yubico.yubikit.keyboard.ChecksumUtils;
 import com.yubico.yubikit.keyboard.OtpApplication;
 import com.yubico.yubikit.keyboard.OtpConnection;
-import com.yubico.yubikit.iso7816.Apdu;
+import com.yubico.yubikit.utils.Interface;
 import com.yubico.yubikit.utils.Version;
-import com.yubico.yubikit.iso7816.ApduException;
-import com.yubico.yubikit.exceptions.ApplicationNotFound;
-import com.yubico.yubikit.exceptions.BadResponseException;
-import com.yubico.yubikit.exceptions.NotSupportedOperation;
-import com.yubico.yubikit.keyboard.ChecksumUtils;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -60,11 +60,10 @@ public class YubiKeyConfigurationApplication implements Closeable {
      * Create new instance of {@link YubiKeyConfigurationApplication} using an {@link Iso7816Connection}.
      *
      * @param connection an Iso7816Connection with a YubiKey
-     * @throws IOException         in case of connection error
-     * @throws ApplicationNotFound if the application is missing or disabled.
-     * @throws ApduException       in case of an error response from the YubiKey
+     * @throws IOException   in case of connection error
+     * @throws ApduException in case of an error response from the YubiKey
      */
-    public YubiKeyConfigurationApplication(Iso7816Connection connection) throws IOException, ApplicationNotFound, ApduException {
+    public YubiKeyConfigurationApplication(Iso7816Connection connection) throws IOException, ApduException {
         // for configuration via USB use HID interface rather than CCID
         // bcz on YK5+ this app is disabled (or partially disabled)
         // NEO has a bug when challenge-response with touch returns 0x6985 error code
@@ -89,15 +88,15 @@ public class YubiKeyConfigurationApplication implements Closeable {
         this.version = version;
         backend = new Backend<Iso7816Application>(ccidApplication) {
             @Override
-            byte[] writeUpdate(byte slot, byte[] data) throws IOException, ApduException {
+            byte[] writeUpdate(byte slot, byte[] data) throws IOException, CommandException {
                 return delegate.sendAndReceive(new Apdu(0, INS_CONFIG, slot, 0, data));
             }
 
             @Override
-            byte[] transceive(byte slot, byte[] data, int expectedResponseLength, boolean mayBlock) throws IOException, ApduException {
+            byte[] transceive(byte slot, byte[] data, int expectedResponseLength, boolean mayBlock) throws IOException, CommandException {
                 byte[] response = delegate.sendAndReceive(new Apdu(0, INS_CONFIG, slot, 0, data));
                 if (expectedResponseLength > 0 && expectedResponseLength != response.length) {
-                    throw new IOException("Unexpected response length");
+                    throw new BadResponseException("Unexpected response length");
                 }
                 return response;
             }
@@ -156,11 +155,10 @@ public class YubiKeyConfigurationApplication implements Closeable {
      * @param slot      the slot on YubiKey that configured with challenge response secret
      * @param mayBlock  if false, the command will be aborted in case the credential requires user touch
      * @return response on challenge returned from YubiKey
-     * @throws IOException           in case of communication error, or no key configured in slot
-     * @throws ApduException         in case of an error response from the YubiKey
-     * @throws NotSupportedOperation if the command is not supported for this YubiKey
+     * @throws IOException      in case of communication error, or no key configured in slot
+     * @throws CommandException in case of an error response from the YubiKey
      */
-    public byte[] calculateHmacSha1(byte[] challenge, Slot slot, boolean mayBlock) throws IOException, ApduException, NotSupportedOperation {
+    public byte[] calculateHmacSha1(byte[] challenge, Slot slot, boolean mayBlock) throws IOException, CommandException {
         // works on version above 2.2
         if (version.isLessThan(2, 2, 0)) {
             throw new NotSupportedOperation("This operation is supported for version 2.2+");
@@ -178,12 +176,10 @@ public class YubiKeyConfigurationApplication implements Closeable {
      * @param secret       the 20 bytes HMAC key to store
      * @param slot         the slot on YubiKey that will be configured with challenge response
      * @param requireTouch whether or not the YubiKey should require touch to use this key
-     * @throws IOException           in case of communication error
-     * @throws ApduException         in case of an error response from the YubiKey
-     * @throws NotSupportedOperation if the command is not supported for this YubiKey
-     * @throws BadResponseException  in case of an invalid response from the YubiKey
+     * @throws IOException      in case of communication error
+     * @throws CommandException in case of an error response from the YubiKey
      */
-    public void setHmacSha1ChallengeResponseSecret(byte[] secret, Slot slot, boolean requireTouch) throws IOException, NotSupportedOperation, BadResponseException, ApduException {
+    public void setHmacSha1ChallengeResponseSecret(byte[] secret, Slot slot, boolean requireTouch) throws IOException, CommandException {
         if (version.isLessThan(2, 2, 0)) {
             throw new NotSupportedOperation("This operation is supported for version 2.2+");
         }
@@ -211,12 +207,10 @@ public class YubiKeyConfigurationApplication implements Closeable {
      *
      * @param scanCodes the password to store on YubiKey as an array of keyboard scan codes.
      * @param slot      the slot on YubiKey that will be configured with provided password (One - short touch, Two - long touch)
-     * @throws IOException           in case of communication error
-     * @throws ApduException         in case of unexpected usage or error response from YubiKey
-     * @throws BadResponseException  in case of an invalid response from the YubiKey
-     * @throws NotSupportedOperation if the command is not supported for this YubiKey
+     * @throws IOException      in case of communication error
+     * @throws CommandException in case of an error response from the YubiKey
      */
-    public void setStaticPassword(byte[] scanCodes, Slot slot) throws IOException, ApduException, NotSupportedOperation, BadResponseException {
+    public void setStaticPassword(byte[] scanCodes, Slot slot) throws IOException, CommandException {
         if (version.isLessThan(2, 2, 0)) {
             throw new NotSupportedOperation("This operation is supported for version 2.2+");
         }
@@ -240,11 +234,10 @@ public class YubiKeyConfigurationApplication implements Closeable {
      * @param privateId private id
      * @param key       the secret key to store on YubiKey
      * @param slot      the slot on YubiKey that will be configured with OTP (One - short touch, Two - long touch)
-     * @throws IOException          in case of communication error
-     * @throws ApduException        in case of unexpected usage or error response from YubiKey
-     * @throws BadResponseException in case of an invalid response from the YubiKey
+     * @throws IOException      in case of communication error
+     * @throws CommandException in case of an error response from the YubiKey
      */
-    public void setOtpKey(byte[] publicId, byte[] privateId, byte[] key, Slot slot) throws IOException, BadResponseException, ApduException {
+    public void setOtpKey(byte[] publicId, byte[] privateId, byte[] key, Slot slot) throws IOException, CommandException {
         if (key.length != 16) {
             throw new IllegalArgumentException("key must be 16 bytes");
         }
@@ -270,12 +263,10 @@ public class YubiKeyConfigurationApplication implements Closeable {
      * @param secret      the 20 bytes secret for YubiKey to store
      * @param slot        the slot on YubiKey that will be configured with HOTP (slot 1 - short touch, slot 2 - long touch)
      * @param hotp8digits if true will generate 8 digits code (default is 6)
-     * @throws IOException           in case of communication error
-     * @throws ApduException         in case of unexpected usage or error response from YubiKey
-     * @throws BadResponseException  in case of an invalid response from the YubiKey
-     * @throws NotSupportedOperation if the command is not supported for this YubiKey
+     * @throws IOException      in case of communication error
+     * @throws CommandException in case of an error response from the YubiKey
      */
-    public void setHotpKey(byte[] secret, Slot slot, boolean hotp8digits) throws IOException, NotSupportedOperation, BadResponseException, ApduException {
+    public void setHotpKey(byte[] secret, Slot slot, boolean hotp8digits) throws IOException, CommandException {
         if (version.isLessThan(2, 1, 0)) {
             throw new NotSupportedOperation("This operation is supported for version 2.1+");
         }
@@ -299,12 +290,10 @@ public class YubiKeyConfigurationApplication implements Closeable {
     /**
      * Method allows to swap data between 1st and 2nd slot of the YubiKey
      *
-     * @throws IOException           in case of communication error
-     * @throws ApduException         in case of unexpected usage or error response from YubiKey
-     * @throws BadResponseException  in case of an invalid response from the YubiKey
-     * @throws NotSupportedOperation if the command is not supported for this YubiKey
+     * @throws IOException      in case of communication error
+     * @throws CommandException in case of an error response from the YubiKey
      */
-    public void swapSlots() throws IOException, NotSupportedOperation, ApduException {
+    public void swapSlots() throws IOException, CommandException {
         if (version.isLessThan(2, 3, 0)) {
             throw new NotSupportedOperation("This operation is supported for version 2.3+");
         }
@@ -312,11 +301,11 @@ public class YubiKeyConfigurationApplication implements Closeable {
         sendConfiguration(YubiKeySlot.SWAP, new byte[ConfigurationBuilder.CFG_SIZE]);
     }
 
-    private void sendConfiguration(YubiKeySlot slot, byte[] configuration) throws IOException, ApduException {
+    private void sendConfiguration(YubiKeySlot slot, byte[] configuration) throws IOException, CommandException {
         status = Status.parse(backend.writeUpdate(slot.value, configuration));
     }
 
-    private void sendConfiguration(Slot slot, byte[] config) throws IOException, ApduException {
+    private void sendConfiguration(Slot slot, byte[] config) throws IOException, CommandException {
         sendConfiguration(slot.map(YubiKeySlot.CONFIG_1, YubiKeySlot.CONFIG_2), config);
     }
 
@@ -327,9 +316,9 @@ public class YubiKeyConfigurationApplication implements Closeable {
             this.delegate = delegate;
         }
 
-        abstract byte[] writeUpdate(byte slot, byte[] data) throws IOException, ApduException;
+        abstract byte[] writeUpdate(byte slot, byte[] data) throws IOException, CommandException;
 
-        abstract byte[] transceive(byte slot, byte[] data, int expectedResponseLength, boolean mayBlock) throws IOException, ApduException;
+        abstract byte[] transceive(byte slot, byte[] data, int expectedResponseLength, boolean mayBlock) throws IOException, CommandException;
 
         @Override
         public void close() throws IOException {
