@@ -5,6 +5,7 @@
  */
 package com.yubico.yubikit.ctaphid;
 
+import com.yubico.yubikit.utils.CommandState;
 import com.yubico.yubikit.utils.Version;
 import com.yubico.yubikit.utils.Logger;
 import com.yubico.yubikit.utils.StringUtils;
@@ -31,6 +32,8 @@ public class FidoApplication implements Closeable {
 
     private static final byte STATUS_ERROR = TYPE_INIT | 0x3f;
     private static final byte STATUS_KEEPALIVE = TYPE_INIT | 0x3b;
+
+    private final CommandState defaultState = new CommandState();
 
     private final FidoConnection connection;
 
@@ -62,6 +65,8 @@ public class FidoApplication implements Closeable {
     }
 
     public byte[] sendAndReceive(byte cmd, byte[] payload, @Nullable CommandState state) throws IOException {
+        state = state != null ? state : defaultState;
+
         ByteBuffer toSend = ByteBuffer.wrap(payload);
         byte[] buffer = new byte[PACKET_SIZE];
         ByteBuffer packet = ByteBuffer.wrap(buffer);
@@ -83,7 +88,7 @@ public class FidoApplication implements Closeable {
         ByteBuffer response = null;
         do {
             packet.clear();
-            if (state != null && state.isCancelled()) {
+            if (state.waitForCancel(0)) {
                 Logger.d("sending CTAP cancel...");
                 Arrays.fill(buffer, (byte) 0);
                 packet.putInt(channelId).put(CMD_CANCEL);
@@ -106,11 +111,7 @@ public class FidoApplication implements Closeable {
                 if (responseCmd == cmd) {
                     response = ByteBuffer.allocate(packet.getShort());
                 } else if (responseCmd == STATUS_KEEPALIVE) {
-                    byte keepaliveStatus = packet.get();
-                    Logger.d(String.format("received keepalive status: %x", keepaliveStatus));
-                    if (state != null) {
-                        state.onKeepAliveStatus(keepaliveStatus);
-                    }
+                    state.onKeepAliveStatus(packet.get());
                     continue;
                 } else if (responseCmd == STATUS_ERROR) {
                     throw new IOException(String.format("CTAPHID error: %02x", packet.get()));

@@ -116,7 +116,7 @@ public class ManagementApplication implements Closeable {
         backend = new Backend<OtpApplication>(application) {
             @Override
             byte[] readConfig() throws IOException {
-                byte[] response = delegate.transceive(SLOT_YK4_CAPABILITIES, null, false);
+                byte[] response = delegate.transceive(SLOT_YK4_CAPABILITIES, null, null);
                 Logger.d("Check CRC: " + StringUtils.bytesToHex(response) + " length: " + (response[0] + 1));
                 if (ChecksumUtils.checkCrc(response, response[0] + 1 + 2)) {
                     return Arrays.copyOf(response, response[0] + 1);
@@ -126,12 +126,12 @@ public class ManagementApplication implements Closeable {
 
             @Override
             void writeConfig(byte[] config) throws IOException {
-                delegate.transceive(SLOT_YK4_SET_DEVICE_INFO, config, false);
+                delegate.transceive(SLOT_YK4_SET_DEVICE_INFO, config, null);
             }
 
             @Override
             void setMode(byte[] data) throws IOException {
-                delegate.transceive(SLOT_DEVICE_CONFIG, data, false);
+                delegate.transceive(SLOT_DEVICE_CONFIG, data, null);
             }
         };
     }

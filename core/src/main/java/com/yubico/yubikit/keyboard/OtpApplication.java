@@ -1,5 +1,7 @@
 package com.yubico.yubikit.keyboard;
 
+import com.yubico.yubikit.exceptions.TimeoutException;
+import com.yubico.yubikit.utils.CommandState;
 import com.yubico.yubikit.utils.Logger;
 import com.yubico.yubikit.utils.StringUtils;
 
@@ -27,6 +29,8 @@ public class OtpApplication implements Closeable {
     private static final int SEQUENCE_MASK = 0x1f;
     private static final int SEQUENCE_OFFSET = 0x4;
 
+    private final CommandState defaultState = new CommandState();
+
     private final OtpConnection connection;
 
     public OtpApplication(OtpConnection connection) {
@@ -39,11 +43,41 @@ public class OtpApplication implements Closeable {
     }
 
     /**
-     * Read single feature report
+     * Sends a command to the YubiKey, and reads the response.
+     * If the command results in a configuration update, the programming sequence number is verified
+     * and the updated status bytes are returned.
      *
-     * @return blob size of FEATURE_RPT_SIZE
+     * @param slot  the slot to send to
+     * @param data  the data payload to send
+     * @param state optional CommandState for listening for user presence requirement and for cancelling a command
+     * @return response data (including CRC) in the case of data, or an updated status struct
      * @throws IOException in case of communication error
      */
+    public byte[] transceive(byte slot, @Nullable byte[] data, @Nullable CommandState state) throws IOException {
+        byte[] payload;
+        if (data == null) {
+            payload = new byte[SLOT_DATA_SIZE];
+        } else if (data.length > SLOT_DATA_SIZE) {
+            throw new IllegalArgumentException("Payload too large for HID frame!");
+        } else {
+            payload = Arrays.copyOf(data, SLOT_DATA_SIZE);
+        }
+        return readFrame(sendFrame(slot, payload), state != null ? state : defaultState);
+    }
+
+    /**
+     * Receive status bytes from YubiKey
+     *
+     * @return status bytes (first 3 bytes are the firmware version)
+     * @throws IOException in case of communication error
+     */
+    public byte[] readStatus() throws IOException {
+        byte[] featureReport = readFeatureReport();
+        // disregard the first and last byte in the feature report
+        return Arrays.copyOfRange(featureReport, 1, featureReport.length - 1);
+    }
+
+    /* Read a single 8 byte feature report */
     private byte[] readFeatureReport() throws IOException {
         byte[] bufferRead = new byte[FEATURE_RPT_SIZE];
         int bytesRead = connection.readFeatureReport(bufferRead);
@@ -57,11 +91,7 @@ public class OtpApplication implements Closeable {
         return bufferRead;
     }
 
-    /**
-     * Write single feature report
-     *
-     * @param buffer blob size of FEATURE_RPT_SIZE
-     */
+    /* Write a single 8 byte feature report */
     private void writeFeatureReport(byte[] buffer) throws IOException {
         Logger.d("WRITE FEATURE REPORT: " + StringUtils.bytesToHex(buffer));
         int bytesSentPackage = connection.writeFeatureReport(buffer);
@@ -71,41 +101,6 @@ public class OtpApplication implements Closeable {
         if (bytesSentPackage < FEATURE_RPT_SIZE) {
             throw new IOException("Some of the data was not sent");
         }
-    }
-
-    /**
-     * Sends a command to the YubiKey, and reads the response.
-     * If the command results in a configuration update, the programming sequence number is verified
-     * and the updated status bytes are returned.
-     *
-     * @param slot the slot to send to
-     * @param data the data payload to send
-     * @param mayBlock if set to false and the YubiKey reports that it is waiting for user interaction, the command is immediately aborted.
-     * @return response data (including CRC) in the case of data, or an updated status struct
-     * @throws IOException in case of communication error
-     */
-    public byte[] transceive(byte slot, @Nullable byte[] data, boolean mayBlock) throws IOException {
-        byte[] payload;
-        if (data == null) {
-            payload = new byte[SLOT_DATA_SIZE];
-        } else if (data.length > SLOT_DATA_SIZE) {
-            throw new IllegalArgumentException("Payload too large for HID frame!");
-        } else {
-            payload = Arrays.copyOf(data, SLOT_DATA_SIZE);
-        }
-        return readFrame(sendFrame(slot, payload), mayBlock);
-    }
-
-    /**
-     * Receive status bytes from YubiKey
-     *
-     * @return status bytes (first 3 bytes are the firmware version)
-     * @throws IOException in case of communication error
-     */
-    public byte[] readStatus() throws IOException {
-        byte[] featureReport = readFeatureReport();
-        // disregard the first and last byte in the feature report
-        return Arrays.copyOfRange(featureReport, 1, featureReport.length - 1);
     }
 
     /* Sleep for up to ~1s waiting for the WRITE flag to be unset */
@@ -166,7 +161,7 @@ public class OtpApplication implements Closeable {
     }
 
     /* Reads one frame */
-    private byte[] readFrame(int programmingSequence, boolean mayBlock) throws IOException {
+    private byte[] readFrame(int programmingSequence, CommandState state) throws IOException {
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
         byte seq = 0;
         boolean needsTouch = false;
@@ -195,26 +190,23 @@ public class OtpApplication implements Closeable {
                     Logger.d("HID programming sequence updated. New status: " + StringUtils.bytesToHex(status));
                     return status;
                 } else if (needsTouch) {
-                    throw new IOException("Timed out waiting for touch");
+                    throw new TimeoutException("Timed out waiting for touch");
                 } else {
                     throw new IOException("No data");
                 }
             } else { // Need to wait
-                try {
-                    if ((statusByte & RESP_TIMEOUT_WAIT_FLAG) != 0) {
-                        if (!mayBlock) {
-                            resetState();
-                            throw new IOException("User interaction required, but mayBlock is false");
-                        }
-                        needsTouch = true;
-                        Logger.d("Waiting for user interaction...");
-                        Thread.sleep(100);
-                    } else {
-                        Logger.d("Not ready yet...");
-                        Thread.sleep(20);
-                    }
-                } catch (InterruptedException e) {
-                    //Ignore
+                long timeout;
+                if ((statusByte & RESP_TIMEOUT_WAIT_FLAG) != 0) {
+                    state.onKeepAliveStatus(CommandState.STATUS_UPNEEDED);
+                    needsTouch = true;
+                    timeout = 100;
+                } else {
+                    state.onKeepAliveStatus(CommandState.STATUS_PROCESSING);
+                    timeout = 20;
+                }
+                if (state.waitForCancel(timeout)) {
+                    resetState();
+                    throw new TimeoutException("Command cancelled by CommandState");
                 }
             }
         }

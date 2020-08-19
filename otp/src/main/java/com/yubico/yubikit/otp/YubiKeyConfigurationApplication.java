@@ -26,6 +26,7 @@ import com.yubico.yubikit.iso7816.Iso7816Connection;
 import com.yubico.yubikit.keyboard.ChecksumUtils;
 import com.yubico.yubikit.keyboard.OtpApplication;
 import com.yubico.yubikit.keyboard.OtpConnection;
+import com.yubico.yubikit.utils.CommandState;
 import com.yubico.yubikit.utils.Interface;
 import com.yubico.yubikit.utils.Version;
 
@@ -33,6 +34,8 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+
+import javax.annotation.Nullable;
 
 /**
  * Application to use and configure the OTP application of the YubiKey.
@@ -93,7 +96,7 @@ public class YubiKeyConfigurationApplication implements Closeable {
             }
 
             @Override
-            byte[] transceive(byte slot, byte[] data, int expectedResponseLength, boolean mayBlock) throws IOException, CommandException {
+            byte[] transceive(byte slot, byte[] data, int expectedResponseLength, @Nullable CommandState state) throws IOException, CommandException {
                 byte[] response = delegate.sendAndReceive(new Apdu(0, INS_CONFIG, slot, 0, data));
                 if (expectedResponseLength > 0 && expectedResponseLength != response.length) {
                     throw new BadResponseException("Unexpected response length");
@@ -116,12 +119,12 @@ public class YubiKeyConfigurationApplication implements Closeable {
         backend = new Backend<OtpApplication>(application) {
             @Override
             byte[] writeUpdate(byte slot, byte[] data) throws IOException {
-                return delegate.transceive(slot, data, false);
+                return delegate.transceive(slot, data, null);
             }
 
             @Override
-            byte[] transceive(byte slot, byte[] data, int expectedResponseLength, boolean mayBlock) throws IOException {
-                byte[] response = delegate.transceive(slot, data, mayBlock);
+            byte[] transceive(byte slot, byte[] data, int expectedResponseLength, @Nullable CommandState state) throws IOException {
+                byte[] response = delegate.transceive(slot, data, state);
                 if (ChecksumUtils.checkCrc(response, expectedResponseLength + 2)) {
                     return Arrays.copyOf(response, expectedResponseLength);
                 }
@@ -153,12 +156,12 @@ public class YubiKeyConfigurationApplication implements Closeable {
      *
      * @param challenge generated challenge that will be sent
      * @param slot      the slot on YubiKey that configured with challenge response secret
-     * @param mayBlock  if false, the command will be aborted in case the credential requires user touch
+     * @param state     if false, the command will be aborted in case the credential requires user touch
      * @return response on challenge returned from YubiKey
      * @throws IOException      in case of communication error, or no key configured in slot
      * @throws CommandException in case of an error response from the YubiKey
      */
-    public byte[] calculateHmacSha1(byte[] challenge, Slot slot, boolean mayBlock) throws IOException, CommandException {
+    public byte[] calculateHmacSha1(byte[] challenge, Slot slot, @Nullable CommandState state) throws IOException, CommandException {
         // works on version above 2.2
         if (version.isLessThan(2, 2, 0)) {
             throw new NotSupportedOperation("This operation is supported for version 2.2+");
@@ -166,7 +169,7 @@ public class YubiKeyConfigurationApplication implements Closeable {
 
         YubiKeySlot ykSlot = slot.map(YubiKeySlot.CHALLENGE_HMAC_1, YubiKeySlot.CHALLENGE_HMAC_2);
         // response for HMAC-SHA1 challenge response is always 20 bytes
-        return backend.transceive(ykSlot.value, challenge, 20, mayBlock);
+        return backend.transceive(ykSlot.value, challenge, 20, state);
     }
 
     /**
@@ -318,7 +321,7 @@ public class YubiKeyConfigurationApplication implements Closeable {
 
         abstract byte[] writeUpdate(byte slot, byte[] data) throws IOException, CommandException;
 
-        abstract byte[] transceive(byte slot, byte[] data, int expectedResponseLength, boolean mayBlock) throws IOException, CommandException;
+        abstract byte[] transceive(byte slot, byte[] data, int expectedResponseLength, @Nullable CommandState state) throws IOException, CommandException;
 
         @Override
         public void close() throws IOException {
