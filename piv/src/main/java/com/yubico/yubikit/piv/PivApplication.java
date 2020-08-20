@@ -17,6 +17,7 @@
 package com.yubico.yubikit.piv;
 
 
+import com.yubico.yubikit.exceptions.ApplicationNotAvailableException;
 import com.yubico.yubikit.exceptions.BadResponseException;
 import com.yubico.yubikit.exceptions.NotSupportedOperation;
 import com.yubico.yubikit.iso7816.Apdu;
@@ -136,7 +137,7 @@ public class PivApplication extends Iso7816Application {
      * @throws IOException   in case of communication error
      * @throws ApduException in case of an error response from the YubiKey
      */
-    public PivApplication(Iso7816Connection connection) throws IOException, ApduException {
+    public PivApplication(Iso7816Connection connection) throws IOException, ApduException, ApplicationNotAvailableException {
         super(AID, connection);
 
         select();

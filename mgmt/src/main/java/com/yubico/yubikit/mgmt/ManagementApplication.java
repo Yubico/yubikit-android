@@ -18,6 +18,7 @@ package com.yubico.yubikit.mgmt;
 
 import com.yubico.yubikit.ctaphid.FidoApplication;
 import com.yubico.yubikit.ctaphid.FidoConnection;
+import com.yubico.yubikit.exceptions.ApplicationNotAvailableException;
 import com.yubico.yubikit.exceptions.CommandException;
 import com.yubico.yubikit.exceptions.NotSupportedOperation;
 import com.yubico.yubikit.iso7816.Apdu;
@@ -83,7 +84,7 @@ public class ManagementApplication implements Closeable {
      * @throws IOException   in case of connection error
      * @throws ApduException in case of communication error
      */
-    public ManagementApplication(Iso7816Connection connection) throws IOException, ApduException {
+    public ManagementApplication(Iso7816Connection connection) throws IOException, ApplicationNotAvailableException {
         Iso7816Application app = new Iso7816Application(AID, connection);
         version = Version.parse(new String(app.select()));
         backend = new Backend<Iso7816Application>(app) {
@@ -110,9 +111,12 @@ public class ManagementApplication implements Closeable {
      * @param connection connection with YubiKey
      * @throws IOException in case of connection error
      */
-    public ManagementApplication(OtpConnection connection) throws IOException {
+    public ManagementApplication(OtpConnection connection) throws IOException, ApplicationNotAvailableException {
         OtpApplication application = new OtpApplication(connection);
         version = Version.parse(application.readStatus());
+        if (version.isLessThan(3, 0, 0)) {
+            throw new ApplicationNotAvailableException("Management Application requires YubiKey 3 or later");
+        }
         backend = new Backend<OtpApplication>(application) {
             @Override
             byte[] readConfig() throws IOException {

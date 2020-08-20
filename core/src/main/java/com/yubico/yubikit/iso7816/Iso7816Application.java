@@ -16,6 +16,8 @@
 
 package com.yubico.yubikit.iso7816;
 
+import com.yubico.yubikit.exceptions.ApplicationNotAvailableException;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Arrays;
@@ -29,7 +31,7 @@ public class Iso7816Application implements Closeable {
     private static final byte P1_SELECT = (byte) 0x04;
     private static final byte P2_SELECT = (byte) 0x00;
 
-    private static final int SW_FILE_NOT_FOUND = 0x6a82;
+    private static final short SW_FILE_NOT_FOUND = 0x6a82;
 
     /**
      * Application Identified used when selecting the application.
@@ -98,9 +100,16 @@ public class Iso7816Application implements Closeable {
      *
      * @return the response data from selecting the Application
      * @throws IOException   in case of connection or communication error
-     * @throws ApduException in case an error was received in the APDU response
+     * @throws ApplicationNotAvailableException in case the AID doesn't match an available application
      */
-    public byte[] select() throws IOException, ApduException {
-        return sendAndReceive(new Apdu(0, INS_SELECT, P1_SELECT, P2_SELECT, aid));
+    public byte[] select() throws IOException, ApplicationNotAvailableException {
+        try {
+            return sendAndReceive(new Apdu(0, INS_SELECT, P1_SELECT, P2_SELECT, aid));
+        } catch (ApduException e) {
+            if (e.getStatusCode() == SW_FILE_NOT_FOUND) {
+                throw new ApplicationNotAvailableException("The application couldn't be selected", e);
+            }
+            throw new IOException("Unexpected SW", e);
+        }
     }
 }

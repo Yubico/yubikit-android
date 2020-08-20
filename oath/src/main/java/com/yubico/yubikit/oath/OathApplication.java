@@ -16,6 +16,7 @@
 
 package com.yubico.yubikit.oath;
 
+import com.yubico.yubikit.exceptions.ApplicationNotAvailableException;
 import com.yubico.yubikit.exceptions.NotSupportedOperation;
 import com.yubico.yubikit.iso7816.Apdu;
 import com.yubico.yubikit.iso7816.ApduException;
@@ -105,7 +106,7 @@ public class OathApplication extends Iso7816Application {
      * @throws IOException   in case of connection error
      * @throws ApduException in case of communication error
      */
-    public OathApplication(Iso7816Connection connection) throws IOException, ApduException {
+    public OathApplication(Iso7816Connection connection) throws IOException, ApduException, ApplicationNotAvailableException {
         super(AID, connection);
 
         applicationInfo = new OathApplicationInfo(select());

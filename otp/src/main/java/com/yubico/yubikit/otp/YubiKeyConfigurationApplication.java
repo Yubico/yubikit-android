@@ -16,6 +16,7 @@
 
 package com.yubico.yubikit.otp;
 
+import com.yubico.yubikit.exceptions.ApplicationNotAvailableException;
 import com.yubico.yubikit.exceptions.BadResponseException;
 import com.yubico.yubikit.exceptions.CommandException;
 import com.yubico.yubikit.exceptions.NotSupportedOperation;
@@ -66,7 +67,7 @@ public class YubiKeyConfigurationApplication implements Closeable {
      * @throws IOException   in case of connection error
      * @throws ApduException in case of an error response from the YubiKey
      */
-    public YubiKeyConfigurationApplication(Iso7816Connection connection) throws IOException, ApduException {
+    public YubiKeyConfigurationApplication(Iso7816Connection connection) throws IOException, ApduException, ApplicationNotAvailableException {
         // for configuration via USB use HID interface rather than CCID
         // bcz on YK5+ this app is disabled (or partially disabled)
         // NEO has a bug when challenge-response with touch returns 0x6985 error code
@@ -77,7 +78,7 @@ public class YubiKeyConfigurationApplication implements Closeable {
                 Iso7816Application mgmtApplication = new Iso7816Application(MGMT_AID, connection);
                 byte[] response = mgmtApplication.select();
                 version = Version.parse(new String(response));
-            } catch (ApduException e) {
+            } catch (ApplicationNotAvailableException e) {
                 // NEO: version will be populated further down.
             }
         }
