@@ -7,7 +7,7 @@ import android.view.ViewGroup
 import android.widget.CheckBox
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Observer
-import com.yubico.yubikit.Interface
+import com.yubico.yubikit.utils.Interface
 import com.yubico.yubikit.android.app.R
 import com.yubico.yubikit.android.app.ui.YubiKeyFragment
 import com.yubico.yubikit.mgmt.Application

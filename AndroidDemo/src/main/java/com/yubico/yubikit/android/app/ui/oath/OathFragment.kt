@@ -12,7 +12,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.yubico.yubikit.android.app.R
 import com.yubico.yubikit.android.app.ui.YubiKeyFragment
 import com.yubico.yubikit.android.app.ui.getSecret
-import com.yubico.yubikit.exceptions.ApduException
+import com.yubico.yubikit.iso7816.ApduException
 import com.yubico.yubikit.oath.CredentialData
 import com.yubico.yubikit.oath.HashAlgorithm
 import com.yubico.yubikit.oath.OathApplication

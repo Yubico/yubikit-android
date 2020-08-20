@@ -13,8 +13,8 @@ import com.google.android.material.tabs.TabLayoutMediator
 import com.yubico.yubikit.android.app.R
 import com.yubico.yubikit.android.app.ui.YubiKeyFragment
 import com.yubico.yubikit.android.app.ui.getSecret
-import com.yubico.yubikit.exceptions.ApduException
-import com.yubico.yubikit.exceptions.ApplicationNotFound
+import com.yubico.yubikit.exceptions.ApplicationNotAvailableException
+import com.yubico.yubikit.iso7816.ApduException
 import com.yubico.yubikit.piv.PivApplication
 import com.yubico.yubikit.piv.Slot
 import kotlinx.android.synthetic.main.fragment_piv.*
@@ -56,13 +56,12 @@ class PivFragment : YubiKeyFragment<PivApplication, PivViewModel>() {
 
         viewModel.result.observe(viewLifecycleOwner, Observer { result ->
             result.onFailure { e ->
-                if (e is ApplicationNotFound) {
-                    showCerts(false)
-                }
-
-                if (e is ApduException && e.statusCode == 0x6982.toShort()) {
-                    lifecycleScope.launch(Dispatchers.Main) {
-                        viewModel.mgmtKey = Hex.decode(getSecret(requireContext(), R.string.piv_enter_mgmt_key, R.string.piv_mgmt_key_hint))
+                when(e) {
+                    is ApplicationNotAvailableException -> showCerts(false)
+                    is ApduException -> if(e.statusCode == 0x6982.toShort()) {
+                        lifecycleScope.launch(Dispatchers.Main) {
+                            viewModel.mgmtKey = Hex.decode(getSecret(requireContext(), R.string.piv_enter_mgmt_key, R.string.piv_mgmt_key_hint))
+                        }
                     }
                 }
             }

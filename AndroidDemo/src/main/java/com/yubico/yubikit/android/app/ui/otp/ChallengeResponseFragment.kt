@@ -8,6 +8,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import com.yubico.yubikit.android.app.R
 import com.yubico.yubikit.otp.Slot
+import com.yubico.yubikit.utils.CommandState
 import com.yubico.yubikit.utils.RandomUtils
 import kotlinx.android.synthetic.main.fragment_otp_chalresp.*
 import org.bouncycastle.util.encoders.Hex
@@ -60,7 +61,7 @@ class ChallengeResponseFragment : Fragment() {
                     else -> throw IllegalStateException("No slot selected")
                 }
                 viewModel.pendingAction.value = {
-                    val response = calculateHmacSha1(challenge, slot)
+                    val response = calculateHmacSha1(challenge, slot, null)
                     "Calculated response: " + String(Hex.encode(response))
                 }
             } catch (e: java.lang.Exception) {

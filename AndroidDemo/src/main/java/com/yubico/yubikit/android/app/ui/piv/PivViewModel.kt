@@ -5,7 +5,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.yubico.yubikit.android.YubiKeySession
 import com.yubico.yubikit.android.app.ui.YubiKeyViewModel
-import com.yubico.yubikit.exceptions.ApduException
+import com.yubico.yubikit.iso7816.ApduException
 import com.yubico.yubikit.exceptions.BadResponseException
 import com.yubico.yubikit.piv.PivApplication
 import com.yubico.yubikit.piv.Slot

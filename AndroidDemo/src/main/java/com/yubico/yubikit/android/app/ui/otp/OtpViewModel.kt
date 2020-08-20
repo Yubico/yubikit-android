@@ -2,7 +2,7 @@ package com.yubico.yubikit.android.app.ui.otp
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import com.yubico.yubikit.OtpConnection
+import com.yubico.yubikit.keyboard.OtpConnection
 import com.yubico.yubikit.android.YubiKeySession
 import com.yubico.yubikit.android.app.ui.YubiKeyViewModel
 import com.yubico.yubikit.android.transport.usb.UsbSession

@@ -12,7 +12,7 @@ import com.yubico.yubikit.android.app.MainViewModel
 import com.yubico.yubikit.android.app.R
 import com.yubico.yubikit.android.ui.OtpActivity
 import com.yubico.yubikit.otp.Slot
-import com.yubico.yubikit.utils.Modhex
+import com.yubico.yubikit.keyboard.Modhex
 import com.yubico.yubikit.utils.RandomUtils
 import kotlinx.android.synthetic.main.fragment_otp_yubi_otp.*
 import org.bouncycastle.util.encoders.Hex

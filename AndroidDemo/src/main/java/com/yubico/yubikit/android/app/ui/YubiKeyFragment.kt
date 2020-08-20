@@ -16,7 +16,7 @@ import com.yubico.yubikit.android.YubiKeySession
 import com.yubico.yubikit.android.app.MainViewModel
 import com.yubico.yubikit.android.app.R
 import com.yubico.yubikit.android.transport.nfc.NfcSession
-import com.yubico.yubikit.exceptions.ApplicationNotFound
+import com.yubico.yubikit.exceptions.ApplicationNotAvailableException
 import com.yubico.yubikit.utils.Logger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -57,7 +57,7 @@ abstract class YubiKeyFragment<App : Closeable, VM : YubiKeyViewModel<App>> : Fr
             }.onFailure {
                 Logger.e("Error:", it)
                 Toast.makeText(context, it.message, Toast.LENGTH_SHORT).show()
-                if (result is ApplicationNotFound) {
+                if (it is ApplicationNotAvailableException) {
                     emptyText.setText(R.string.app_missing)
                 }
             }

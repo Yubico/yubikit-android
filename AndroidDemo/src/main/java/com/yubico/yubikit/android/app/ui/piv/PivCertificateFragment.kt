@@ -32,6 +32,7 @@ import com.yubico.yubikit.piv.KeyType
 import com.yubico.yubikit.piv.PinPolicy
 import com.yubico.yubikit.piv.Slot
 import com.yubico.yubikit.piv.TouchPolicy
+import com.yubico.yubikit.utils.CommandState
 import kotlinx.android.synthetic.main.fragment_piv_certifiate.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
