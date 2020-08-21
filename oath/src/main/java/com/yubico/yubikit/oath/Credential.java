@@ -18,10 +18,13 @@ package com.yubico.yubikit.oath;
 
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.Objects;
 
 import javax.annotation.Nullable;
 
 public class Credential implements Serializable {
+    final String deviceId;
+
     private final byte[] id;
     private final String name;
     private final int period;
@@ -46,7 +49,8 @@ public class Credential implements Serializable {
      *
      * @param response The parsed response from the YubiKey.
      */
-    Credential(OathApplication.ListResponse response) {
+    Credential(String deviceId, OathApplication.ListResponse response) {
+        this.deviceId = deviceId;
         id = response.id;
         oathType = response.oathType;
 
@@ -62,7 +66,8 @@ public class Credential implements Serializable {
      * @param id       The ID of the Credential
      * @param response The parsed response from the YubiKey for the Credential.
      */
-    Credential(byte[] id, OathApplication.CalculateResponse response) {
+    Credential(String deviceId, byte[] id, OathApplication.CalculateResponse response) {
+        this.deviceId = deviceId;
         this.id = id;
         oathType = response.responseType == TYPE_HOTP ? OathType.HOTP : OathType.TOTP;
         touchRequired = response.responseType == TYPE_TOUCH;
@@ -78,13 +83,18 @@ public class Credential implements Serializable {
      *
      * @param credentialData the data used to create the Credential
      */
-    Credential(CredentialData credentialData) {
-        issuer = credentialData.getIssuer();
-        name = credentialData.getName();
-        oathType = credentialData.getOathType();
-        period = credentialData.getPeriod();
-        touchRequired = credentialData.isTouchRequired();
-        id = credentialData.getId();
+    Credential(String deviceId, CredentialData credentialData) {
+        this(deviceId, credentialData.getId(), credentialData.getIssuer(), credentialData.getName(), credentialData.getOathType(), credentialData.getPeriod(), credentialData.isTouchRequired());
+    }
+
+    Credential(String deviceId, byte[] id, @Nullable String issuer, String name, OathType oathType, int period, boolean touchRequired) {
+        this.deviceId = deviceId;
+        this.id = id;
+        this.issuer = issuer;
+        this.name = name;
+        this.oathType = oathType;
+        this.period = period;
+        this.touchRequired = touchRequired;
     }
 
     /**
@@ -145,11 +155,14 @@ public class Credential implements Serializable {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Credential that = (Credential) o;
-        return Arrays.equals(id, that.id);
+        return deviceId.equals(that.deviceId) &&
+                Arrays.equals(id, that.id);
     }
 
     @Override
     public int hashCode() {
-        return Arrays.hashCode(id);
+        int result = Objects.hash(deviceId);
+        result = 31 * result + Arrays.hashCode(id);
+        return result;
     }
 }

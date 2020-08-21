@@ -76,6 +76,7 @@ public class OathApplication extends Iso7816Application {
     private static final byte INS_DELETE = 0x02;
     private static final byte INS_SET_CODE = 0x03;
     private static final byte INS_RESET = 0x04;
+    private static final byte INS_RENAME = 0x05;
     private static final byte INS_CALCULATE = (byte) 0xa2;
     private static final byte INS_VALIDATE = (byte) 0xa3;
     private static final byte INS_CALCULATE_ALL = (byte) 0xa4;
@@ -269,7 +270,7 @@ public class OathApplication extends Iso7816Application {
         List<Tlv> list = TlvUtils.parseTlvList(response);
         List<Credential> result = new ArrayList<>();
         for (Tlv tlv : list) {
-            result.add(new Credential(new ListResponse(tlv)));
+            result.add(new Credential(applicationInfo.getDeviceId(), new ListResponse(tlv)));
         }
         return result;
     }
@@ -306,7 +307,7 @@ public class OathApplication extends Iso7816Application {
             CalculateResponse response = new CalculateResponse(responseTlvs.next());
 
             // parse credential properties
-            Credential credential = new Credential(credentialId, response);
+            Credential credential = new Credential(applicationInfo.getDeviceId(), credentialId, response);
 
             if (credential.getOathType() == OathType.TOTP && credential.getPeriod() != DEFAULT_PERIOD) {
                 // recalculate credentials that have different period
@@ -365,6 +366,9 @@ public class OathApplication extends Iso7816Application {
      * @throws ApduException in case of communication error
      */
     public Code calculate(Credential credential, @Nullable Long timestamp) throws IOException, ApduException {
+        if (!credential.deviceId.equals(applicationInfo.getDeviceId())) {
+            throw new IllegalArgumentException("The given credential belongs to a different device!");
+        }
         byte[] challenge;
         if (timestamp == null || credential.getPeriod() == 0) {
             challenge = new byte[CHALLENGE_LEN];
@@ -428,9 +432,8 @@ public class OathApplication extends Iso7816Application {
                 output.write(ByteBuffer.allocate(4).putInt(credential.getCounter()).array());
             }
 
-            Apdu apdu = new Apdu(0x00, INS_PUT, 0, 0, output.toByteArray());
-            sendAndReceive(apdu);
-            return new Credential(credential);
+            sendAndReceive(new Apdu(0x00, INS_PUT, 0, 0, output.toByteArray()));
+            return new Credential(applicationInfo.getDeviceId(), credential);
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e);  //This shouldn't happen
         }
@@ -439,13 +442,60 @@ public class OathApplication extends Iso7816Application {
     /**
      * Deletes an existing credential.
      *
-     * @param credentialId ID of credential data to remove
+     * @param credentialId ID of credential to remove
      * @throws IOException   in case of connection error
      * @throws ApduException in case of communication error
      */
     public void deleteCredential(byte[] credentialId) throws IOException, ApduException {
-        Apdu apdu = new Apdu(0x00, INS_DELETE, 0, 0, new Tlv(TAG_NAME, credentialId).getBytes());
-        sendAndReceive(apdu);
+        sendAndReceive(new Apdu(0x00, INS_DELETE, 0, 0, new Tlv(TAG_NAME, credentialId).getBytes()));
+    }
+
+    /**
+     * Change the issuer and name of a credential.
+     *
+     * @param credentialId ID of the credential to rename
+     * @param name         the new name of the credential
+     * @param issuer       the new issuer of the credential
+     * @return the new credential ID
+     * @throws IOException   in case of connection error
+     * @throws ApduException in case of communication error
+     */
+    public byte[] renameCredential(byte[] credentialId, String name, @Nullable String issuer) throws IOException, ApduException {
+        if (applicationInfo.getVersion().isLessThan(5, 3, 1)) {
+            throw new NotSupportedOperation("Renaming a credential requires version 5.3.1 or later");
+        }
+        CredentialIdUtils.CredentialIdData data = CredentialIdUtils.parseId(credentialId, OathType.TOTP); // This works for HOTP as well
+        byte[] newId = CredentialIdUtils.formatId(issuer, name, OathType.TOTP, data.period);
+        sendAndReceive(new Apdu(0x00, INS_RENAME, 0, 0, TlvUtils.packTlvList(Arrays.asList(
+                new Tlv(TAG_NAME, credentialId),
+                new Tlv(TAG_NAME, newId)
+        ))));
+        return newId;
+    }
+
+    /**
+     * Change the issuer and name of a credential.
+     *
+     * @param credential the Credential to rename
+     * @param name       the new name of the credential
+     * @param issuer     the new issuer of the credential
+     * @return the updated Credential
+     * @throws IOException   in case of connection error
+     * @throws ApduException in case of communication error
+     */
+    public Credential renameCredential(Credential credential, String name, @Nullable String issuer) throws IOException, ApduException {
+        if (!credential.deviceId.equals(applicationInfo.getDeviceId())) {
+            throw new IllegalArgumentException("The given credential belongs to a different device!");
+        }
+        return new Credential(
+                credential.deviceId,
+                renameCredential(credential.getId(), name, issuer),
+                credential.getIssuer(),
+                credential.getName(),
+                credential.getOathType(),
+                credential.getPeriod(),
+                credential.isTouchRequired()
+        );
     }
 
     /**
