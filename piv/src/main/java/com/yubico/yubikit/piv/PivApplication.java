@@ -16,7 +16,6 @@
 
 package com.yubico.yubikit.piv;
 
-
 import com.yubico.yubikit.exceptions.ApplicationNotAvailableException;
 import com.yubico.yubikit.exceptions.BadResponseException;
 import com.yubico.yubikit.exceptions.NotSupportedOperation;
@@ -95,6 +94,7 @@ public class PivApplication extends Iso7816Application {
     private static final byte INS_AUTHENTICATE = (byte) 0x87;
     private static final byte INS_GET_DATA = (byte) 0xcb;
     private static final byte INS_PUT_DATA = (byte) 0xdb;
+    private static final byte INS_GET_METADATA = (byte) 0xf7;
     private static final byte INS_ATTEST = (byte) 0xf9;
     private static final byte INS_SET_PIN_RETRIES = (byte) 0xfa;
     private static final byte INS_RESET = (byte) 0xfb;
@@ -116,6 +116,22 @@ public class PivApplication extends Iso7816Application {
     private static final int TAG_LRC = 0xfe;
     private static final int TAG_PIN_POLICY = 0xaa;
     private static final int TAG_TOUCH_POLICY = 0xab;
+
+    //Metadata tags
+    private static final int TAG_METADATA_ALGO = 0x01;
+    private static final int TAG_METADATA_POLICY = 0x02;
+    private static final int TAG_METADATA_ORIGIN = 0x03;
+    private static final int TAG_METADATA_PUBLIC_KEY = 0x04;
+    private static final int TAG_METADATA_IS_DEFAULT = 0x05;
+    private static final int TAG_METADATA_RETRIES = 0x06;
+
+    private static final byte ORIGIN_GENERATED = 1;
+    private static final byte ORIGIN_IMPORTED = 2;
+
+    private static final int INDEX_PIN_POLICY = 0;
+    private static final int INDEX_TOUCH_POLICY = 1;
+    private static final int INDEX_RETRIES_TOTAL = 0;
+    private static final int INDEX_RETRIES_REMAINING = 1;
 
     private static final byte PIN_P2 = (byte) 0x80;
     private static final byte PUK_P2 = (byte) 0x81;
@@ -356,13 +372,18 @@ public class PivApplication extends Iso7816Application {
      * Receive number of attempts left for PIN from YubiKey
      * <p>
      * NOTE: If this command is run in a session where the correct PIN has already been verified,
-     * the correct value will not be retrievable, and the value returned may be incorrect.
+     * the correct value will not be retrievable, and the value returned may be incorrect if the
+     * number of total attempts has been changed from the default.
      *
      * @return number of attempts left
      * @throws IOException   in case of connection error
      * @throws ApduException in case of an error response from the YubiKey
      */
     public int getPinAttempts() throws IOException, ApduException {
+        if (version.isAtLeast(5, 3, 0)) {
+            // If metadata is available, use that
+            return getPinMetadata().getAttemptsRemaining();
+        }
         try {
             // Null as data will not cause actual tries to decrement
             sendAndReceive(new Apdu(0, INS_VERIFY, 0, PIN_P2, null));
@@ -434,6 +455,84 @@ public class PivApplication extends Iso7816Application {
         sendAndReceive(new Apdu(0, INS_SET_PIN_RETRIES, pinRetries, pukRetries, null));
         maxPinRetries = pinRetries;
         currentPinRetries = pinRetries;
+    }
+
+    /**
+     * Reads metadata about the PIN, such as total number of retries, attempts left, and if the PIN has been changed from the default value.
+     *
+     * @return metadata about the PIN
+     * @throws IOException   in case of connection error
+     * @throws ApduException in case of an error response from the YubiKey
+     */
+    public PinMetadata getPinMetadata() throws IOException, ApduException {
+        return getPinPukMetadata(PIN_P2);
+    }
+
+    /**
+     * Reads metadata about the PUK, such as total number of retries, attempts left, and if the PUK has been changed from the default value.
+     *
+     * @return metadata about the PUK
+     * @throws IOException   in case of connection error
+     * @throws ApduException in case of an error response from the YubiKey
+     */
+    public PinMetadata getPukMetadata() throws IOException, ApduException {
+        return getPinPukMetadata(PUK_P2);
+    }
+
+    private PinMetadata getPinPukMetadata(byte p2) throws IOException, ApduException {
+        if (version.isLessThan(5, 3, 0)) {
+            throw new NotSupportedOperation("PIN/PUK metadata requires version 5.3.0 or later.");
+        }
+        Map<Integer, byte[]> data = TlvUtils.parseTlvMap(sendAndReceive(new Apdu(0, INS_GET_METADATA, 0, p2, null)));
+        byte[] retries = data.get(TAG_METADATA_RETRIES);
+        return new PinMetadata(
+                data.get(TAG_METADATA_IS_DEFAULT)[0] != 0,
+                retries[INDEX_RETRIES_TOTAL],
+                retries[INDEX_RETRIES_REMAINING]
+        );
+    }
+
+    /**
+     * Reads metadata about the card management key. Requires 5.3 or later.
+     *
+     * @return metadata about the card management key, such as the Touch policy and if the default value has been changed
+     * @throws IOException   in case of connection error
+     * @throws ApduException in case of an error response from the YubiKey
+     */
+    public ManagementKeyMetadata getManagementKeyMetadata() throws IOException, ApduException {
+        if (version.isLessThan(5, 3, 0)) {
+            throw new NotSupportedOperation("PIN/PUK metadata requires version 5.3.0 or later.");
+        }
+        Map<Integer, byte[]> data = TlvUtils.parseTlvMap(sendAndReceive(new Apdu(0, INS_GET_METADATA, 0, Slot.CARD_MANAGEMENT.value, null)));
+        return new ManagementKeyMetadata(
+                data.get(TAG_METADATA_IS_DEFAULT)[0] != 0,
+                TouchPolicy.fromValue(data.get(TAG_METADATA_POLICY)[INDEX_TOUCH_POLICY])
+        );
+    }
+
+    /**
+     * Reads metadata about a slot. Requires 5.3 or later.
+     *
+     * @param slot the slot to read metadata about
+     * @return metadata about a slot
+     * @throws IOException   in case of connection error
+     * @throws ApduException in case of an error response from the YubiKey
+     */
+    public SlotMetadata getSlotMetadata(Slot slot) throws IOException, ApduException {
+        if (version.isLessThan(5, 3, 0)) {
+            throw new NotSupportedOperation("PIN/PUK metadata requires version 5.3.0 or later.");
+        } else if (slot == Slot.CARD_MANAGEMENT) {
+            throw new IllegalArgumentException("This method cannot be used for the card management key, use getManagementKeyMetadata() instead.");
+        }
+        Map<Integer, byte[]> data = TlvUtils.parseTlvMap(sendAndReceive(new Apdu(0, INS_GET_METADATA, 0, slot.value, null)));
+        byte[] policy = data.get(TAG_METADATA_POLICY);
+        return new SlotMetadata(
+                KeyType.fromValue(data.get(TAG_METADATA_ALGO)[0]),
+                PinPolicy.fromValue(policy[INDEX_PIN_POLICY]),
+                TouchPolicy.fromValue(policy[INDEX_TOUCH_POLICY]),
+                data.get(TAG_METADATA_ORIGIN)[0] == ORIGIN_GENERATED,
+                data.get(TAG_METADATA_PUBLIC_KEY)
+        );
     }
 
     /**
@@ -529,6 +628,23 @@ public class PivApplication extends Iso7816Application {
         putObject(slot.object, null);
     }
 
+    /* Parses a PublicKey from data returned from a YubiKey. */
+    static PublicKey parsePublicKeyFromDevice(KeyType keyType, byte[] encoded) {
+        Map<Integer, byte[]> dataObjects = TlvUtils.parseTlvMap(encoded);
+
+        try {
+            if (keyType.params.algorithm == KeyType.Algorithm.RSA) {
+                BigInteger modulus = new BigInteger(1, dataObjects.get(0x81));
+                BigInteger exponent = new BigInteger(1, dataObjects.get(0x82));
+                return publicRsaKey(modulus, exponent);
+            } else {
+                return publicEccKey(keyType, dataObjects.get(0x86));
+            }
+        } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
+            throw new RuntimeException(e); // This shouldn't happen
+        }
+    }
+
     /**
      * Generate public key (for example for Certificate Signing Request)
      * This method requires verification with pin {@link PivApplication#verify(char[])}}
@@ -544,7 +660,7 @@ public class PivApplication extends Iso7816Application {
      * @throws BadResponseException in case of incorrectYubiKey response
      */
     public PublicKey generateKey(Slot slot, KeyType keyType, PinPolicy pinPolicy, TouchPolicy touchPolicy) throws IOException, ApduException, BadResponseException {
-        boolean isRsa = keyType == KeyType.RSA1024 || keyType == KeyType.RSA2048;
+        boolean isRsa = keyType.params.algorithm == KeyType.Algorithm.RSA;
 
         if (isRsa && version.isAtLeast(4, 2, 0) && version.isLessThan(4, 3, 5)) {
             throw new UnsupportedOperationException("RSA key generation is not supported on this YubiKey");
@@ -573,20 +689,7 @@ public class PivApplication extends Iso7816Application {
         byte[] response = sendAndReceive(new Apdu(0, INS_GENERATE_ASYMMETRIC, 0, slot.value, new Tlv((byte) 0xac, TlvUtils.packTlvMap(tlvs)).getBytes()));
 
         // Tag '7F49' contains data objects for RSA or ECC
-        Map<Integer, byte[]> dataObjects = TlvUtils.parseTlvMap(TlvUtils.unwrapTlv(response, 0x7F49));
-
-        try {
-            if (isRsa) {
-                BigInteger modulus = new BigInteger(1, dataObjects.get(0x81));
-                BigInteger exponent = new BigInteger(1, dataObjects.get(0x82));
-                return publicRsaKey(modulus, exponent);
-            } else {
-                byte[] encoded = dataObjects.get(0x86);
-                return publicEccKey(keyType, encoded);
-            }
-        } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
-            throw new RuntimeException(e); // This shouldn't happen
-        }
+        return parsePublicKeyFromDevice(keyType, TlvUtils.unwrapTlv(response, 0x7F49));
     }
 
     /**
