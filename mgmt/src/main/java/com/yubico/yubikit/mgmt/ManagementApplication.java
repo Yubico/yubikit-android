@@ -81,8 +81,8 @@ public class ManagementApplication implements Closeable {
      * Create new instance of {@link ManagementApplication} over an {@link Iso7816Connection}.
      *
      * @param connection connection with YubiKey
-     * @throws IOException   in case of connection error
-     * @throws ApduException in case of communication error
+     * @throws IOException                      in case of connection error
+     * @throws ApplicationNotAvailableException in case the application is missing/disabled
      */
     public ManagementApplication(Iso7816Connection connection) throws IOException, ApplicationNotAvailableException {
         Iso7816Application app = new Iso7816Application(AID, connection);
@@ -109,7 +109,8 @@ public class ManagementApplication implements Closeable {
      * Create new instance of {@link ManagementApplication} over an {@link OtpConnection}.
      *
      * @param connection connection with YubiKey
-     * @throws IOException in case of connection error
+     * @throws IOException                      in case of connection error
+     * @throws ApplicationNotAvailableException in case the application is missing/disabled
      */
     public ManagementApplication(OtpConnection connection) throws IOException, ApplicationNotAvailableException {
         OtpApplication application = new OtpApplication(connection);
