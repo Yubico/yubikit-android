@@ -20,8 +20,8 @@ import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbEndpoint;
 import android.hardware.usb.UsbInterface;
 
-import com.yubico.yubikit.utils.Interface;
 import com.yubico.yubikit.iso7816.Iso7816Connection;
+import com.yubico.yubikit.utils.Interface;
 import com.yubico.yubikit.utils.Logger;
 import com.yubico.yubikit.utils.StringUtils;
 

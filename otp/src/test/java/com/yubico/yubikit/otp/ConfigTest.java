@@ -20,24 +20,27 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
-public class ConfigurationBuilderTest {
+public class ConfigTest {
 
     @Test
-    public void testStructure() {
+    public void testBuildConfig() {
         byte[] fixed = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06};
         byte[] uid = {0x11, 0x12, 0x13, 0x14, 0x15, 0x16};
         byte[] key = {0x20, 0x21, 0x22, 0x23, 0x24, 0x25,
                 0x26, 0x27, 0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f};
-        byte tktFlags = ConfigurationBuilder.TKTFLAG_APPEND_CR;
-        byte[] config = new ConfigurationBuilder()
-                .fixed(fixed)
-                .uid(uid)
-                .key(ConfigurationBuilder.MODE_AES, key)
-                .tktFlags(tktFlags)
-                .build();
+        byte tktFlags = Config.TKTFLAG_APPEND_CR;
+        byte[] config = Config.buildConfig(
+                fixed,
+                uid,
+                key,
+                (byte)0,
+                tktFlags,
+                (byte)0,
+                null
+        );
 
-        assertEquals(58, config.length);
-        assertEquals(fixed.length, config[ConfigurationBuilder.CFG_FIXED_SIZE_OFFS]);
-        assertEquals(tktFlags, config[ConfigurationBuilder.CFG_TKT_FLAGS_OFFS]);
+        assertEquals(52, config.length);
+        assertEquals(fixed.length, config[44]);
+        assertEquals(tktFlags, config[46]);
     }
 }

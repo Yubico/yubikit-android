@@ -1,11 +1,9 @@
 package com.yubico.yubikit.exceptions;
 
-import java.io.IOException;
-
 /**
  * The operation timed out waiting for something.
  */
-public class TimeoutException extends IOException {
+public class TimeoutException extends CommandException {
     public TimeoutException(String message) {
         super(message);
     }

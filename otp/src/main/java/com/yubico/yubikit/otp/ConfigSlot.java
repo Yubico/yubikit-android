@@ -19,7 +19,7 @@ package com.yubico.yubikit.otp;
 /**
  * Enumaration of slots on YubiKey (used as commands to program/configure YubiKey)
  */
-enum YubiKeySlot {
+enum ConfigSlot {
     DUMMY(0x0),
     CONFIG_1(0x1),
     NAV(0x2),
@@ -43,7 +43,7 @@ enum YubiKeySlot {
      */
     public final byte value;
 
-    YubiKeySlot(final int value) {
+    ConfigSlot(final int value) {
         this.value = (byte) value;
     }
 }

@@ -68,7 +68,6 @@ public class ApduUtils {
 
     /**
      * Sends APDU command and receives byte array from connection
-     * In case if length of output blob is bigger than 255 than it splits into set of APDU commands
      * In case if output has status code that it has remaining info sends another APDU command to receive what's remaining
      *
      * @param connection iso 7816 connection to yubikey
@@ -83,7 +82,6 @@ public class ApduUtils {
 
     /**
      * Sends APDU command and receives byte array from connection
-     * In case if length of output blob is bigger than 255 than it splits into set of APDU commands
      * In case if output has status code that it has remaining info sends another APDU command to receive what's remaining
      *
      * @param connection       iso 7816 connection to yubikey
@@ -95,35 +93,6 @@ public class ApduUtils {
      */
     public static byte[] sendAndReceive(Iso7816Connection connection, Apdu command, byte insSentRemaining) throws IOException, ApduException {
         ApduResponse response = new ApduResponse(connection.transceive(encodeExtended(command)));
-
-        // Read full response
-        ByteArrayOutputStream readBuffer = new ByteArrayOutputStream();
-        byte[] getData = new byte[]{0x00, insSentRemaining, 0x00, 0x00};
-        while (response.getSw() >> 8 == SW1_HAS_MORE_DATA) {
-            readBuffer.write(response.getData());
-            response = new ApduResponse(connection.transceive(getData));
-        }
-
-        if (response.getSw() != SW_SUCCESS) {
-            throw new ApduException(response);
-        }
-        readBuffer.write(response.getData());
-        return readBuffer.toByteArray();
-    }
-
-    public static byte[] sendAndReceiveShort(Iso7816Connection connection, Apdu command, byte insSentRemaining) throws IOException, ApduException {
-        ApduResponse response;
-        // Split command into short APDUs.
-        int offset = 0;
-        int dataLen = command.getData().length;
-        while ((dataLen - offset) > SHORT_APDU_MAX_CHUNK) {
-            response = new ApduResponse(connection.transceive(encodeShort((byte) 0x10, command, offset, SHORT_APDU_MAX_CHUNK)));
-            if (response.getSw() != SW_SUCCESS) {
-                throw new ApduException(response);
-            }
-            offset += SHORT_APDU_MAX_CHUNK;
-        }
-        response = new ApduResponse(connection.transceive(encodeShort((byte) 0x00, command, offset, dataLen - offset)));
 
         // Read full response
         ByteArrayOutputStream readBuffer = new ByteArrayOutputStream();

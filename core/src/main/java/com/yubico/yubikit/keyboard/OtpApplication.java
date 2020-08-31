@@ -1,5 +1,6 @@
 package com.yubico.yubikit.keyboard;
 
+import com.yubico.yubikit.exceptions.CommandException;
 import com.yubico.yubikit.exceptions.TimeoutException;
 import com.yubico.yubikit.utils.CommandState;
 import com.yubico.yubikit.utils.Logger;
@@ -51,9 +52,10 @@ public class OtpApplication implements Closeable {
      * @param data  the data payload to send
      * @param state optional CommandState for listening for user presence requirement and for cancelling a command
      * @return response data (including CRC) in the case of data, or an updated status struct
-     * @throws IOException in case of communication error
+     * @throws IOException      in case of communication error
+     * @throws CommandException in case the command failed
      */
-    public byte[] transceive(byte slot, @Nullable byte[] data, @Nullable CommandState state) throws IOException {
+    public byte[] transceive(byte slot, @Nullable byte[] data, @Nullable CommandState state) throws IOException, CommandException {
         byte[] payload;
         if (data == null) {
             payload = new byte[SLOT_DATA_SIZE];
@@ -161,7 +163,7 @@ public class OtpApplication implements Closeable {
     }
 
     /* Reads one frame */
-    private byte[] readFrame(int programmingSequence, CommandState state) throws IOException {
+    private byte[] readFrame(int programmingSequence, CommandState state) throws IOException, CommandException {
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
         byte seq = 0;
         boolean needsTouch = false;
@@ -182,17 +184,19 @@ public class OtpApplication implements Closeable {
                     return response;
                 }
             } else if (statusByte == 0) { // Status response
+                int prgSeq = report[SEQUENCE_OFFSET];
                 if (stream.size() > 0) {
                     throw new IOException("Incomplete transfer");
-                } else if (report[SEQUENCE_OFFSET] == programmingSequence + 1) {
+                } else if ((prgSeq == programmingSequence + 1) || (prgSeq == 0 & report[SEQUENCE_OFFSET + 1] == 0)) {
                     // Sequence updated, return status.
+                    // Note that when deleting the "last" slot so no slots are valid, the programming sequence is set to 0.
                     byte[] status = Arrays.copyOfRange(report, 1, 7); // Skip first and last bytes
                     Logger.d("HID programming sequence updated. New status: " + StringUtils.bytesToHex(status));
                     return status;
                 } else if (needsTouch) {
                     throw new TimeoutException("Timed out waiting for touch");
                 } else {
-                    throw new IOException("No data");
+                    throw new CommandRejectedException("No data");
                 }
             } else { // Need to wait
                 long timeout;
