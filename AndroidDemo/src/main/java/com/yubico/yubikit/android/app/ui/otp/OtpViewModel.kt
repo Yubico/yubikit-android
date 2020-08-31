@@ -6,7 +6,7 @@ import com.yubico.yubikit.keyboard.OtpConnection
 import com.yubico.yubikit.android.YubiKeySession
 import com.yubico.yubikit.android.app.ui.YubiKeyViewModel
 import com.yubico.yubikit.android.transport.usb.UsbSession
-import com.yubico.yubikit.otp.Status
+import com.yubico.yubikit.otp.ConfigState
 import com.yubico.yubikit.otp.YubiKeyConfigurationApplication
 import com.yubico.yubikit.utils.Logger
 import java.io.IOException
@@ -26,8 +26,8 @@ class OtpViewModel : YubiKeyViewModel<YubiKeyConfigurationApplication>() {
     private var ignoreUsb = false
     private var appRef: NonClosingYubiKeyConfigurationApplication? = null
 
-    private val _slotStatus = MutableLiveData<Status?>()
-    val slotStatus: LiveData<Status?> = _slotStatus
+    private val _slotStatus = MutableLiveData<ConfigState?>()
+    val slotConfigState: LiveData<ConfigState?> = _slotStatus
 
     override fun getApp(session: YubiKeySession): YubiKeyConfigurationApplication = when (session) {
         is UsbSession -> when {

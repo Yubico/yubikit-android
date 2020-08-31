@@ -40,7 +40,7 @@ class OtpFragment : YubiKeyFragment<YubiKeyConfigurationApplication, OtpViewMode
             })
         }.attach()
 
-        viewModel.slotStatus.observe(viewLifecycleOwner, Observer {
+        viewModel.slotConfigState.observe(viewLifecycleOwner, Observer {
             if (it != null) {
                 empty_view.visibility = View.INVISIBLE
                 otp_status_text.text = "Slot 1: ${if (it.isSlotConfigured(Slot.ONE)) "programmed" else "empty"}\nSlot 2: ${if (it.isSlotConfigured(Slot.TWO)) "programmed" else "empty"}"

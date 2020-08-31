@@ -58,7 +58,7 @@ class YubiOtpFragment : Fragment() {
                 }
 
                 viewModel.pendingAction.value = {
-                    setOtpKey(publicId, privateId, key, slot)
+                    setOtpKey(slot, publicId, privateId, key)
                     "Slot $slot programmed"
                 }
             } catch (e: Exception) {
