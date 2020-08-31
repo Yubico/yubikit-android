@@ -36,9 +36,9 @@ dependencies {
     testImplementation 'androidx.test.ext:junit:1.1.2'
     testImplementation "org.robolectric:robolectric:4.4-alpha-4"
     testImplementation "org.mockito:mockito-core:3.3.3"
-
-    androidTestImplementation 'com.android.support.test:runner:1.0.2'
-    androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
+    
+    androidTestImplementation 'androidx.test.ext:junit:1.1.2'
+    androidTestImplementation 'androidx.test:runner:1.3.0'
 }
 
 description = "This module is the core library implementation and provides functionality to detect a YubiKey plugged in or tapped over NFC and to open an ISO/IEC 7816 connection that allows sending raw APDU commands to the key."

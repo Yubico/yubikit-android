@@ -198,9 +198,9 @@ public class YubiKeyConfigurationApplication implements Closeable {
         }
 
         // Secret is packed into key and uid
-        byte[] uid = new byte[Config.UID_SIZE];
         byte[] key = new byte[Config.KEY_SIZE];
-        ByteBuffer.allocate(Config.UID_SIZE + Config.KEY_SIZE).put(secret).position(0).get(key).get(uid);
+        byte[] uid = new byte[Config.UID_SIZE];
+        ByteBuffer.wrap(ByteBuffer.allocate(Config.KEY_SIZE + Config.UID_SIZE).put(secret).array()).get(key).get(uid);
 
         byte cfgFlags = Config.CFGFLAG_CHAL_HMAC | Config.CFGFLAG_HMAC_LT64;
         if (requireTouch) {
@@ -240,7 +240,7 @@ public class YubiKeyConfigurationApplication implements Closeable {
         byte[] fixed = new byte[Config.FIXED_SIZE];
         byte[] uid = new byte[Config.UID_SIZE];
         byte[] key = new byte[Config.KEY_SIZE];
-        ByteBuffer.allocate(SCAN_CODES_SIZE).put(scanCodes).position(0).get(fixed).get(uid).get(key);
+        ByteBuffer.wrap(ByteBuffer.allocate(SCAN_CODES_SIZE).put(scanCodes).array()).get(fixed).get(uid).get(key);
         writeConfiguration(
                 slot,
                 fixed,
@@ -299,7 +299,7 @@ public class YubiKeyConfigurationApplication implements Closeable {
         // Secret is packed into key and uid
         byte[] uid = new byte[Config.UID_SIZE];
         byte[] key = new byte[Config.KEY_SIZE];
-        ByteBuffer.allocate(Config.UID_SIZE + Config.KEY_SIZE).put(secret).position(0).get(key).get(uid);
+        ByteBuffer.wrap(ByteBuffer.allocate(Config.UID_SIZE + Config.KEY_SIZE).put(secret).array()).get(key).get(uid);
 
         byte cfgFlags = 0;
         if (hotp8digits) {
