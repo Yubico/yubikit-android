@@ -90,7 +90,7 @@ public class OathApplicationInfo {
     }
 
     private static String getDeviceIdString(byte[] salt) {
-        MessageDigest messageDigest = null;
+        MessageDigest messageDigest;
         try {
             messageDigest = MessageDigest.getInstance("SHA-256");
         } catch (NoSuchAlgorithmException e) {

@@ -105,9 +105,9 @@ public class OathApplication extends Iso7816Application {
      *
      * @param connection to the YubiKey
      * @throws IOException   in case of connection error
-     * @throws ApduException in case of communication error
+     * @throws ApplicationNotAvailableException if the application is missing or disabled
      */
-    public OathApplication(Iso7816Connection connection) throws IOException, ApduException, ApplicationNotAvailableException {
+    public OathApplication(Iso7816Connection connection) throws IOException, ApplicationNotAvailableException {
         super(AID, connection);
 
         applicationInfo = new OathApplicationInfo(select());

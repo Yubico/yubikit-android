@@ -141,7 +141,7 @@ public class PivApplication extends Iso7816Application {
     private static final byte[] KEY_PREFIX_P256 = new byte[]{0x30, 0x59, 0x30, 0x13, 0x06, 0x07, 0x2a, (byte) 0x86, 0x48, (byte) 0xce, 0x3d, 0x02, 0x01, 0x06, 0x08, 0x2a, (byte) 0x86, 0x48, (byte) 0xce, 0x3d, 0x03, 0x01, 0x07, 0x03, 0x42, 0x00};
     private static final byte[] KEY_PREFIX_P384 = new byte[]{0x30, 0x76, 0x30, 0x10, 0x06, 0x07, 0x2a, (byte) 0x86, 0x48, (byte) 0xce, 0x3d, 0x02, 0x01, 0x06, 0x05, 0x2b, (byte) 0x81, 0x04, 0x00, 0x22, 0x03, 0x62, 0x00};
 
-    private Version version;
+    private final Version version;
     private int currentPinRetries = 3;  // Internal guess as to number of PIN retries.
     private int maxPinRetries = 3; // Internal guess as to max number of PIN retries.
 
@@ -152,6 +152,7 @@ public class PivApplication extends Iso7816Application {
      * @param connection connection with YubiKey
      * @throws IOException   in case of communication error
      * @throws ApduException in case of an error response from the YubiKey
+     * @throws ApplicationNotAvailableException if the application is missing or disabled
      */
     public PivApplication(Iso7816Connection connection) throws IOException, ApduException, ApplicationNotAvailableException {
         super(AID, connection);
