@@ -159,6 +159,7 @@ public class PivApplication extends Iso7816Application {
 
         select();
         version = Version.parse(sendAndReceive(new Apdu(0, INS_GET_VERSION, 0, 0, null)));
+        enableTouchWorkaround(version);
     }
 
     /**

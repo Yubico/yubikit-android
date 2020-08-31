@@ -91,6 +91,7 @@ public class YubiKeyConfigurationApplication implements Closeable {
         }
         this.version = version;
         configState = parseConfigState(version, statusBytes);
+        ccidApplication.enableTouchWorkaround(version);
         backend = new Backend<Iso7816Application>(ccidApplication) {
             @Override
             byte[] writeConfig(byte slot, byte[] data) throws IOException, CommandException {
@@ -181,7 +182,7 @@ public class YubiKeyConfigurationApplication implements Closeable {
 
     /**
      * Configures HMAC-SHA1 challenge response secret on YubiKey
-     * (@see calculateHmacSha1() how to use it after configuration)
+     * ({@link #calculateHmacSha1(Slot, byte[], CommandState)} how to use it after configuration)
      *
      * @param slot         the slot on YubiKey that will be configured with challenge response
      * @param secret       the 20 bytes HMAC key to store

@@ -20,7 +20,6 @@ import com.yubico.yubikit.exceptions.ApplicationNotAvailableException;
 import com.yubico.yubikit.exceptions.NotSupportedOperation;
 import com.yubico.yubikit.iso7816.Apdu;
 import com.yubico.yubikit.iso7816.ApduException;
-import com.yubico.yubikit.iso7816.ApduUtils;
 import com.yubico.yubikit.iso7816.Iso7816Application;
 import com.yubico.yubikit.iso7816.Iso7816Connection;
 import com.yubico.yubikit.utils.RandomUtils;
@@ -104,13 +103,14 @@ public class OathApplication extends Iso7816Application {
      * and selects the application for use
      *
      * @param connection to the YubiKey
-     * @throws IOException   in case of connection error
+     * @throws IOException                      in case of connection error
      * @throws ApplicationNotAvailableException if the application is missing or disabled
      */
     public OathApplication(Iso7816Connection connection) throws IOException, ApplicationNotAvailableException {
-        super(AID, connection);
+        super(AID, connection, INS_SEND_REMAINING);
 
         applicationInfo = new OathApplicationInfo(select());
+        enableTouchWorkaround(applicationInfo.getVersion());
     }
 
     /**
@@ -575,20 +575,6 @@ public class OathApplication extends Iso7816Application {
             value = result;
         }
         return value;
-    }
-
-    /**
-     * Uses ApduUtils.sendAndReceive method with specific ins byte for "send remaining data" command
-     *
-     * @param command apdu command that will be sent
-     * @return data that received from command execution
-     * @throws IOException   in case of connection error
-     * @throws ApduException in case of communication error
-     */
-    @Override
-    public byte[] sendAndReceive(Apdu command) throws IOException, ApduException {
-        //YKOATH uses a non-standard INS for SEND_REMAINING.
-        return ApduUtils.sendAndReceive(getConnection(), command, INS_SEND_REMAINING);
     }
 
     static class ListResponse {
