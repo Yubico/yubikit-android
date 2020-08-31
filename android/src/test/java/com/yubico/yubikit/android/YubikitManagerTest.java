@@ -24,6 +24,7 @@ import org.junit.runner.RunWith;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+import org.robolectric.annotation.Config;
 
 import java.util.Timer;
 import java.util.TimerTask;
@@ -31,6 +32,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 @RunWith(AndroidJUnit4.class)
+@Config(manifest = Config.NONE)
 public class YubikitManagerTest {
     private UsbDeviceManager mockUsb = Mockito.mock(UsbDeviceManager.class);
     private NfcDeviceManager mockNfc = Mockito.mock(NfcDeviceManager.class);
