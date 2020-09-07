@@ -98,12 +98,12 @@ public class TlvUtils {
     /**
      * Decode TLV data, returning only the value
      *
-     * @param tlvData     the TLV data
      * @param expectedTag the expected tag value of the given TLV data
+     * @param tlvData     the TLV data
      * @return the value of the TLV
      * @throws BadResponseException if the TLV tag differs from expectedTag
      */
-    public static byte[] unwrapTlv(byte[] tlvData, int expectedTag) throws BadResponseException {
+    public static byte[] unwrapValue(int expectedTag, byte[] tlvData) throws BadResponseException {
         Tlv tlv = new Tlv(tlvData, 0);
         if (tlv.getTag() != expectedTag) {
             throw new BadResponseException(String.format("Expected tag: %02x, got %02x", expectedTag, tlv.getTag()));

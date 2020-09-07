@@ -201,7 +201,7 @@ public class PivApplication extends Iso7816Application {
         byte[] response = sendAndReceive(new Apdu(0, INS_AUTHENTICATE, TDES, Slot.CARD_MANAGEMENT.value, request));
 
         // Witness (tag '80') contains encrypted data (unrevealed fact).
-        byte[] witness = TlvUtils.unwrapTlv(TlvUtils.unwrapTlv(response, TAG_DYN_AUTH), TAG_AUTH_WITNESS);
+        byte[] witness = TlvUtils.unwrapValue(TAG_AUTH_WITNESS, TlvUtils.unwrapValue(TAG_DYN_AUTH, response));
         SecretKey key = new SecretKeySpec(managementKey, "DESede");
         try {
             Cipher cipher = Cipher.getInstance("DESede/ECB/NoPadding");
@@ -217,7 +217,7 @@ public class PivApplication extends Iso7816Application {
             response = sendAndReceive(new Apdu(0, INS_AUTHENTICATE, TDES, Slot.CARD_MANAGEMENT.value, request));
 
             // (tag '82') contains either the decrypted data from tag '80' or the encrypted data from tag '81'.
-            byte[] encryptedData = TlvUtils.unwrapTlv(TlvUtils.unwrapTlv(response, TAG_DYN_AUTH), TAG_AUTH_RESPONSE);
+            byte[] encryptedData = TlvUtils.unwrapValue(TAG_AUTH_RESPONSE, TlvUtils.unwrapValue(TAG_DYN_AUTH, response));
             cipher.init(Cipher.ENCRYPT_MODE, key);
             byte[] expectedData = cipher.doFinal(challenge);
             if (!Arrays.equals(encryptedData, expectedData)) {
@@ -311,7 +311,7 @@ public class PivApplication extends Iso7816Application {
 
         try {
             byte[] response = sendAndReceive(new Apdu(0, INS_AUTHENTICATE, keyType.value, slot.value, request));
-            return TlvUtils.unwrapTlv(TlvUtils.unwrapTlv(response, TAG_DYN_AUTH), TAG_AUTH_RESPONSE);
+            return TlvUtils.unwrapValue(TAG_AUTH_RESPONSE, TlvUtils.unwrapValue(TAG_DYN_AUTH, response));
         } catch (ApduException e) {
             if (INCORRECT_VALUES_ERROR == e.getStatusCode()) {
                 //TODO: Replace with new CommandException subclass, wrapping e.
@@ -691,7 +691,7 @@ public class PivApplication extends Iso7816Application {
         byte[] response = sendAndReceive(new Apdu(0, INS_GENERATE_ASYMMETRIC, 0, slot.value, new Tlv((byte) 0xac, TlvUtils.packTlvMap(tlvs)).getBytes()));
 
         // Tag '7F49' contains data objects for RSA or ECC
-        return parsePublicKeyFromDevice(keyType, TlvUtils.unwrapTlv(response, 0x7F49));
+        return parsePublicKeyFromDevice(keyType, TlvUtils.unwrapValue(0x7F49, response));
     }
 
     /**
@@ -782,7 +782,7 @@ public class PivApplication extends Iso7816Application {
     public byte[] getObject(byte[] objectId) throws IOException, ApduException, BadResponseException {
         byte[] requestData = new Tlv(TAG_OBJ_ID, objectId).getBytes();
         byte[] responseData = sendAndReceive(new Apdu(0, INS_GET_DATA, 0x3f, 0xff, requestData));
-        return TlvUtils.unwrapTlv(responseData, TAG_OBJ_DATA);
+        return TlvUtils.unwrapValue(TAG_OBJ_DATA, responseData);
     }
 
     /**
@@ -966,7 +966,7 @@ public class PivApplication extends Iso7816Application {
             List<Tlv> numbers = TlvUtils.parseTlvList(
                     TlvUtils.parseTlvMap(
                             TlvUtils.parseTlvMap(
-                                    TlvUtils.unwrapTlv(derKey, 0x30)
+                                    TlvUtils.unwrapValue(0x30, derKey)
                             ).get(0x04)
                     ).get(0x30)
             );

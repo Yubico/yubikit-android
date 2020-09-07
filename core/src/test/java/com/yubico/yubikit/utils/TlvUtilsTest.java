@@ -44,11 +44,11 @@ public class TlvUtilsTest {
 
     @Test
     public void testUnwrap() throws BadResponseException {
-        TlvUtils.unwrapTlv(new byte[]{(byte) 0x80, 0}, 0x80);
+        TlvUtils.unwrapValue(0x80, new byte[]{(byte) 0x80, 0});
 
-        TlvUtils.unwrapTlv(new byte[]{0x7F, 0x49, 0}, 0x7F49);
+        TlvUtils.unwrapValue(0x7F49, new byte[]{0x7F, 0x49, 0});
 
-        byte[] value = TlvUtils.unwrapTlv(new byte[]{0x7F, 0x49, 3, 1, 2, 3}, 0x7F49);
+        byte[] value = TlvUtils.unwrapValue(0x7F49, new byte[]{0x7F, 0x49, 3, 1, 2, 3});
         Assert.assertArrayEquals(new byte[]{1, 2, 3}, value);
     }
 }
