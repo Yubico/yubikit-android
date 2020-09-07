@@ -83,8 +83,8 @@ public class Credential implements Serializable {
      *
      * @param credentialData the data used to create the Credential
      */
-    Credential(String deviceId, CredentialData credentialData) {
-        this(deviceId, credentialData.getId(), credentialData.getIssuer(), credentialData.getName(), credentialData.getOathType(), credentialData.getPeriod(), credentialData.isTouchRequired());
+    Credential(String deviceId, CredentialData credentialData, boolean touchRequired) {
+        this(deviceId, credentialData.getId(), credentialData.getIssuer(), credentialData.getName(), credentialData.getOathType(), credentialData.getPeriod(), touchRequired);
     }
 
     Credential(String deviceId, byte[] id, @Nullable String issuer, String name, OathType oathType, int period, boolean touchRequired) {

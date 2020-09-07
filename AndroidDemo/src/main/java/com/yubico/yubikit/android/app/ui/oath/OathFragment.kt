@@ -97,7 +97,7 @@ class OathFragment : YubiKeyFragment<OathApplication, OathViewModel>() {
                     edit_text_issuer.error = "Issuer must not be empty"
                 } else {
                     viewModel.pendingAction.value = {
-                        putCredential(CredentialData("user@example.com", OathType.TOTP, HashAlgorithm.SHA1, secret, 6, 30, 0, issuer))
+                        putCredential(CredentialData("user@example.com", OathType.TOTP, HashAlgorithm.SHA1, secret, 6, 30, 0, issuer), false)
                         "Credential added"
                     }
                 }

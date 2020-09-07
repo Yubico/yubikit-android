@@ -39,9 +39,8 @@ public class CredentialData implements Serializable {
 
     // User-modifiable fields
     @Nullable
-    private String issuer;
-    private String name;
-    private boolean touchRequired = false;
+    private final String issuer;
+    private final String name;
 
     public static final int DEFAULT_PERIOD = 30;
     public static final int DEFAULT_DIGITS = 6;
@@ -127,33 +126,6 @@ public class CredentialData implements Serializable {
     }
 
     /**
-     * Set the issuer for the Credential, typically the name of the service.
-     *
-     * @param issuer the name of the issuer.
-     */
-    public void setIssuer(@Nullable String issuer) {
-        this.issuer = issuer;
-    }
-
-    /**
-     * Set the name of the Credential, typically a username.
-     *
-     * @param name the name of the Credential.
-     */
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    /**
-     * Sets flag that credential requires touch. Use it when create new Credential and user specified that calculation requires touch
-     *
-     * @param touchRequired true if requires touch, default is false
-     */
-    public void setTouchRequired(boolean touchRequired) {
-        this.touchRequired = touchRequired;
-    }
-
-    /**
      * Get the name of the credential, typically a username.
      *
      * @return the name
@@ -235,13 +207,6 @@ public class CredentialData implements Serializable {
         return counter;
     }
 
-    /**
-     * @return true if calculation requires touch on yubikey button
-     */
-    public boolean isTouchRequired() {
-        return touchRequired;
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -250,7 +215,6 @@ public class CredentialData implements Serializable {
         return period == that.period &&
                 counter == that.counter &&
                 digits == that.digits &&
-                touchRequired == that.touchRequired &&
                 Objects.equals(issuer, that.issuer) &&
                 name.equals(that.name) &&
                 oathType == that.oathType &&
@@ -260,7 +224,7 @@ public class CredentialData implements Serializable {
 
     @Override
     public int hashCode() {
-        int result = Objects.hash(issuer, name, period, oathType, hashAlgorithm, counter, digits, touchRequired);
+        int result = Objects.hash(issuer, name, period, oathType, hashAlgorithm, counter, digits);
         result = 31 * result + Arrays.hashCode(secret);
         return result;
     }

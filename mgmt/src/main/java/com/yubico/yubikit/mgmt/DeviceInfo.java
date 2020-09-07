@@ -68,7 +68,7 @@ public class DeviceInfo {
     }
 
     static DeviceInfo parse(byte[] response, Version defaultVersion) throws BadResponseException {
-        int length = response[0] % 0xff;
+        int length = response[0] & 0xff;
         if (length != response.length - 1) {
             throw new BadResponseException("Invalid length");
         }

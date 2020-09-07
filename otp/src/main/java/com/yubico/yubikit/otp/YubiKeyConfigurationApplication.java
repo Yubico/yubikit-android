@@ -46,8 +46,11 @@ public class YubiKeyConfigurationApplication implements Closeable {
     private static final byte[] AID = new byte[]{(byte) 0xa0, 0x00, 0x00, 0x05, 0x27, 0x20, 0x01, 0x01};
     private static final byte[] MGMT_AID = new byte[]{(byte) 0xa0, 0x00, 0x00, 0x05, 0x27, 0x47, 0x11, 0x17};
 
-    private static final int KEY_SIZE_OATH = 20;      // Size of OATH-HOTP key (key field + first 4 of UID field)
     private static final int SCAN_CODES_SIZE = Config.FIXED_SIZE + Config.UID_SIZE + Config.KEY_SIZE;
+
+    private static final int HMAC_KEY_SIZE = 20;      // Size of OATH-HOTP key (key field + first 4 of UID field)
+    private static final int HMAC_CHALLENGE_SIZE = 64;
+    private static final int HMAC_RESPONSE_SIZE = 20;
 
     private final Version version;
 
@@ -101,7 +104,7 @@ public class YubiKeyConfigurationApplication implements Closeable {
             @Override
             byte[] transceive(byte slot, byte[] data, int expectedResponseLength, @Nullable CommandState state) throws IOException, CommandException {
                 byte[] response = delegate.sendAndReceive(new Apdu(0, INS_CONFIG, slot, 0, data));
-                if (expectedResponseLength > 0 && expectedResponseLength != response.length) {
+                if (expectedResponseLength != response.length) {
                     throw new BadResponseException("Unexpected response length");
                 }
                 return response;
@@ -156,6 +159,107 @@ public class YubiKeyConfigurationApplication implements Closeable {
     }
 
     /**
+     * Get the serial number of the YubiKey.
+     * Note that the EXTFLAG_SERIAL_API_VISIBLE flag must be set for this command to work.
+     *
+     * @return the serial number
+     * @throws IOException      in case of communication error
+     * @throws CommandException in case of an error response from the YubiKey
+     */
+    public int getSerialNumber() throws IOException, CommandException {
+        return ByteBuffer.wrap(backend.transceive(ConfigSlot.DEVICE_SERIAL.value, new byte[0], 4, null)).getInt();
+    }
+
+    /**
+     * Method allows to swap data between 1st and 2nd slot of the YubiKey
+     *
+     * @throws IOException      in case of communication error
+     * @throws CommandException in case of an error response from the YubiKey
+     */
+    public void swapSlots() throws IOException, CommandException {
+        if (version.isLessThan(2, 3, 0)) {
+            throw new NotSupportedOperation("This operation is supported for version 2.3+");
+        }
+
+        writeConfig(ConfigSlot.SWAP, new byte[0], null);
+    }
+
+    /**
+     * Delete the contents of a configuration slot.
+     *
+     * @param slot       the slot to delete
+     * @param curAccCode the currently set access code, if needed
+     * @throws IOException      in case of communication error
+     * @throws CommandException in case of an error response from the YubiKey
+     */
+    public void deleteSlot(Slot slot, @Nullable byte[] curAccCode) throws IOException, CommandException {
+        writeConfig(
+                slot.map(ConfigSlot.CONFIG_1, ConfigSlot.CONFIG_2),
+                new byte[Config.CONFIG_SIZE],
+                curAccCode
+        );
+    }
+
+    /**
+     * Write configuration to a slot, overwriting previous values.
+     *
+     * @param slot       the slot to write to
+     * @param fixed      the fixed field of the configuration
+     * @param uid        the uid field of the configuration
+     * @param key        the key field of the configuration
+     * @param extFlags   the EXT_FLAGs to set
+     * @param tktFlags   the TKT_FLAGs to set
+     * @param cfgFlags   the CFG_FLAGs to set
+     * @param accCode    the access code to set
+     * @param curAccCode the current access code, if needed
+     * @throws IOException      in case of communication error
+     * @throws CommandException in case of an error response from the YubiKey
+     */
+    public void writeConfiguration(Slot slot, byte[] fixed, byte[] uid, byte[] key, byte extFlags, byte tktFlags, byte cfgFlags, @Nullable byte[] accCode, @Nullable byte[] curAccCode) throws IOException, CommandException {
+        writeConfig(
+                slot.map(ConfigSlot.CONFIG_1, ConfigSlot.CONFIG_2),
+                Config.buildConfig(fixed, uid, key, extFlags, tktFlags, cfgFlags, accCode),
+                curAccCode
+        );
+    }
+
+    /**
+     * Update an already programmed slot with new configuration.
+     * <p>
+     * Note that the EXTFLAG_ALLOW_UPDATE must have been previously set in the configuration to allow update.
+     *
+     * @param slot       the slot to update
+     * @param extFlags   the updated EXT_FLAGs to set
+     * @param tktFlags   the updated TKT_FLAGs to set
+     * @param cfgFlags   the updated CFG_FLAGs to set
+     * @param accCode    the access code to set
+     * @param curAccCode the current access code, if needed
+     * @throws IOException      in case of communication error
+     * @throws CommandException in case of an error response from the YubiKey
+     */
+    public void updateConfiguration(Slot slot, byte extFlags, byte tktFlags, byte cfgFlags, @Nullable byte[] accCode, @Nullable byte[] curAccCode) throws IOException, CommandException {
+        writeConfig(
+                slot.map(ConfigSlot.UPDATE_1, ConfigSlot.UPDATE_2),
+                Config.buildUpdateConfig(extFlags, tktFlags, cfgFlags, accCode),
+                curAccCode
+        );
+    }
+
+    /**
+     * Configure NFC NDEF payload.
+     *
+     * @param slot       the YubiKey slot to append to the uri payload
+     * @param uri        the URI prefix
+     * @param curAccCode the current access code, if needed
+     * @throws IOException      in case of communication error
+     * @throws CommandException in case of an error response from the YubiKey
+     */
+    public void configureNdef(Slot slot, String uri, @Nullable byte[] curAccCode) throws IOException, CommandException {
+        writeConfig(slot.map(ConfigSlot.NDEF_1, ConfigSlot.NDEF_2), Config.buildNdefConfig(uri), curAccCode);
+    }
+
+
+    /**
      * Calculates HMAC-SHA1 on given challenge (using secret that configured/programmed on YubiKey)
      *
      * @param slot      the slot on YubiKey that configured with challenge response secret
@@ -171,11 +275,16 @@ public class YubiKeyConfigurationApplication implements Closeable {
             throw new NotSupportedOperation("This operation is supported for version 2.2+");
         }
 
+        // Pad challenge with byte different from last.
+        byte[] padded = new byte[HMAC_CHALLENGE_SIZE];
+        Arrays.fill(padded, (byte) (challenge[challenge.length - 1] == 0 ? 1 : 0));
+        System.arraycopy(challenge, 0, padded, 0, challenge.length);
+
         // response for HMAC-SHA1 challenge response is always 20 bytes
         return backend.transceive(
                 slot.map(ConfigSlot.CHALLENGE_HMAC_1, ConfigSlot.CHALLENGE_HMAC_2).value,
-                challenge,
-                20,
+                padded,
+                HMAC_RESPONSE_SIZE,
                 state
         );
     }
@@ -194,7 +303,7 @@ public class YubiKeyConfigurationApplication implements Closeable {
         if (version.isLessThan(2, 2, 0)) {
             throw new NotSupportedOperation("This operation is supported for version 2.2+");
         }
-        if (secret.length > KEY_SIZE_OATH) {
+        if (secret.length > HMAC_KEY_SIZE) {
             throw new NotSupportedOperation("key lengths >20 bytes is not supported");
         }
 
@@ -286,21 +395,24 @@ public class YubiKeyConfigurationApplication implements Closeable {
      * @param slot        the slot on YubiKey that will be configured with HOTP (slot 1 - short touch, slot 2 - long touch)
      * @param secret      the 20 bytes secret for YubiKey to store
      * @param hotp8digits if true will generate 8 digits code (default is 6)
+     * @param imf         initial counter value for credential, must be a multiple of 16 (default is 0)
      * @throws IOException      in case of communication error
      * @throws CommandException in case of an error response from the YubiKey
      */
-    public void setHotpKey(Slot slot, byte[] secret, boolean hotp8digits) throws IOException, CommandException {
+    public void setHotpKey(Slot slot, byte[] secret, boolean hotp8digits, int imf) throws IOException, CommandException {
         if (version.isLessThan(2, 1, 0)) {
             throw new NotSupportedOperation("This operation is supported for version 2.1+");
         }
-        if (secret.length > KEY_SIZE_OATH) {
+        if (secret.length > HMAC_KEY_SIZE) {
             throw new NotSupportedOperation("key lengths >20 bytes is not supported");
         }
 
         // Secret is packed into key and uid
         byte[] uid = new byte[Config.UID_SIZE];
         byte[] key = new byte[Config.KEY_SIZE];
-        ByteBuffer.wrap(ByteBuffer.allocate(Config.UID_SIZE + Config.KEY_SIZE).put(secret).array()).get(key).get(uid);
+        ByteBuffer.wrap(ByteBuffer.allocate(Config.KEY_SIZE + Config.UID_SIZE).put(secret).array()).get(key).get(uid);
+        // IMF is packed into last 2 bytes of uid
+        ByteBuffer.wrap(uid, 4, 2).putShort((short) (imf / 16));
 
         byte cfgFlags = 0;
         if (hotp8digits) {
@@ -318,94 +430,6 @@ public class YubiKeyConfigurationApplication implements Closeable {
                 null,
                 null
         );
-    }
-
-    /**
-     * Method allows to swap data between 1st and 2nd slot of the YubiKey
-     *
-     * @throws IOException      in case of communication error
-     * @throws CommandException in case of an error response from the YubiKey
-     */
-    public void swapSlots() throws IOException, CommandException {
-        if (version.isLessThan(2, 3, 0)) {
-            throw new NotSupportedOperation("This operation is supported for version 2.3+");
-        }
-
-        backend.writeConfig(ConfigSlot.SWAP.value, new byte[0]);
-    }
-
-    /**
-     * Delete the contents of a configuration slot.
-     *
-     * @param slot       the slot to delete
-     * @param curAccCode the currently set access code, if needed
-     * @throws IOException      in case of communication error
-     * @throws CommandException in case of an error response from the YubiKey
-     */
-    public void deleteSlot(Slot slot, @Nullable byte[] curAccCode) throws IOException, CommandException {
-        writeConfig(
-                slot.map(ConfigSlot.CONFIG_1, ConfigSlot.CONFIG_2),
-                new byte[Config.CONFIG_SIZE],
-                curAccCode
-        );
-    }
-
-    /**
-     * Write configuration to a slot, overwriting previous values.
-     *
-     * @param slot       the slot to write to
-     * @param fixed      the fixed field of the configuration
-     * @param uid        the uid field of the configuration
-     * @param key        the key field of the configuration
-     * @param extFlags   the EXT_FLAGs to set
-     * @param tktFlags   the TKT_FLAGs to set
-     * @param cfgFlags   the CFG_FLAGs to set
-     * @param accCode    the access code to set
-     * @param curAccCode the current access code, if needed
-     * @throws IOException      in case of communication error
-     * @throws CommandException in case of an error response from the YubiKey
-     */
-    public void writeConfiguration(Slot slot, byte[] fixed, byte[] uid, byte[] key, byte extFlags, byte tktFlags, byte cfgFlags, @Nullable byte[] accCode, @Nullable byte[] curAccCode) throws IOException, CommandException {
-        writeConfig(
-                slot.map(ConfigSlot.CONFIG_1, ConfigSlot.CONFIG_2),
-                Config.buildConfig(fixed, uid, key, extFlags, tktFlags, cfgFlags, accCode),
-                curAccCode
-        );
-    }
-
-    /**
-     * Update an already programmed slot with new configuration.
-     * <p>
-     * Note that the EXTFLAG_ALLOW_UPDATE must have been previously set in the configuration to allow update.
-     *
-     * @param slot       the slot to update
-     * @param extFlags   the updated EXT_FLAGs to set
-     * @param tktFlags   the updated TKT_FLAGs to set
-     * @param cfgFlags   the updated CFG_FLAGs to set
-     * @param accCode    the access code to set
-     * @param curAccCode the current access code, if needed
-     * @throws IOException      in case of communication error
-     * @throws CommandException in case of an error response from the YubiKey
-     */
-    public void updateConfiguration(Slot slot, byte extFlags, byte tktFlags, byte cfgFlags, @Nullable byte[] accCode, @Nullable byte[] curAccCode) throws IOException, CommandException {
-        writeConfig(
-                slot.map(ConfigSlot.UPDATE_1, ConfigSlot.UPDATE_2),
-                Config.buildUpdateConfig(extFlags, tktFlags, cfgFlags, accCode),
-                curAccCode
-        );
-    }
-
-    /**
-     * Configure NFC NDEF payload.
-     *
-     * @param slot       the YubiKey slot to append to the uri payload
-     * @param uri        the URI prefix
-     * @param curAccCode the current access code, if needed
-     * @throws IOException      in case of communication error
-     * @throws CommandException in case of an error response from the YubiKey
-     */
-    public void configureNdef(Slot slot, String uri, @Nullable byte[] curAccCode) throws IOException, CommandException {
-        writeConfig(slot.map(ConfigSlot.NDEF_1, ConfigSlot.NDEF_2), Config.buildNdefConfig(uri), curAccCode);
     }
 
     private void writeConfig(ConfigSlot slot, byte[] config, @Nullable byte[] curAccCode) throws IOException, CommandException {

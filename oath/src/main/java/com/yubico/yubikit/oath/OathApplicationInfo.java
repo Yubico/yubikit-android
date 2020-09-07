@@ -21,6 +21,7 @@ import com.yubico.yubikit.utils.Version;
 
 import org.apache.commons.codec.binary.Base64;
 
+import javax.annotation.Nullable;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
@@ -38,6 +39,7 @@ public class OathApplicationInfo {
 
     private final Version version;
     private final byte[] salt;
+    @Nullable
     private final byte[] challenge;
     private final String deviceId;
 
@@ -78,6 +80,7 @@ public class OathApplicationInfo {
      * A challenge is returned if the authentication object is set. In that case an authentication is required for all commands except VALIDATE and RESET.
      * @return challenge
      */
+    @Nullable
     public byte[] getChallenge() {
         return challenge;
     }

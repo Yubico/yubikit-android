@@ -1,7 +1,5 @@
 package com.yubico.yubikit.exceptions;
 
-import java.io.IOException;
-
 /**
  * An error response from a YubiKey.
  */

@@ -43,7 +43,7 @@ public class ConfigState {
      * @param slot the slot to check
      * @return true if the slot holds configuration, false if empty
      */
-    public boolean isSlotConfigured(Slot slot) {
+    public boolean slotIsConfigured(Slot slot) {
         return (flags & slot.map(CONFIG1_VALID, CONFIG2_VALID)) != 0;
     }
 
@@ -53,7 +53,7 @@ public class ConfigState {
      * @param slot the slot to check
      * @return true of the slot requires touch, false if not
      */
-    public boolean isSlotTouch(Slot slot) {
+    public boolean slotRequiresTouch(Slot slot) {
         return version.isAtLeast(3, 0, 0) && (flags & slot.map(CONFIG1_TOUCH, CONFIG2_TOUCH)) != 0;
     }
 

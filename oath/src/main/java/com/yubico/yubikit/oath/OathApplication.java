@@ -168,22 +168,23 @@ public class OathApplication extends Iso7816Application {
      * @throws ApduException in case of communication error
      */
     public boolean validate(ChallengeSigner signer) throws IOException, ApduException {
+        byte[] challenge = applicationInfo.getChallenge();
         // if no validation/authentication required we consider that validation was successful
-        if (!applicationInfo.isAuthenticationRequired()) {
+        if (challenge == null) {
             return true;
         }
 
         try {
             Map<Integer, byte[]> request = new LinkedHashMap<>();
-            request.put(TAG_RESPONSE, signer.sign(applicationInfo.getChallenge()));
+            request.put(TAG_RESPONSE, signer.sign(challenge));
 
-            byte[] challenge = RandomUtils.getRandomBytes(CHALLENGE_LEN);
-            request.put(TAG_CHALLENGE, challenge);
+            byte[] clientChallenge = RandomUtils.getRandomBytes(CHALLENGE_LEN);
+            request.put(TAG_CHALLENGE, clientChallenge);
 
             byte[] data = sendAndReceive(new Apdu(0, INS_VALIDATE, 0, 0, TlvUtils.packTlvMap(request)));
             Map<Integer, byte[]> map = TlvUtils.parseTlvMap(data);
             // return false if response from validation does not match verification
-            return (Arrays.equals(signer.sign(challenge), map.get(TAG_RESPONSE)));
+            return (Arrays.equals(signer.sign(clientChallenge), map.get(TAG_RESPONSE)));
         } catch (ApduException e) {
             if (e.getStatusCode() == WRONG_SYNTAX) {
                 // key didn't recognize secret
@@ -375,6 +376,7 @@ public class OathApplication extends Iso7816Application {
         } else {
             long timeStep = (timestamp / MILLS_IN_SECOND / credential.getPeriod());
             challenge = ByteBuffer.allocate(CHALLENGE_LEN).putLong(timeStep).array();
+            // TODO: Make sure challenge is correct here
         }
 
         Map<Integer, byte[]> requestTlv = new LinkedHashMap<>();
@@ -398,12 +400,13 @@ public class OathApplication extends Iso7816Application {
      * Adds a new (or overwrites) OATH credential.
      *
      * @param credential credential data to add
+     * @param touchRequired true if the credential should require touch to be used (requires YubiKey 4 or later)
      * @return the newly added Credential
      * @throws IOException   in case of connection error
      * @throws ApduException in case of communication error
      */
-    public Credential putCredential(CredentialData credential) throws IOException, ApduException {
-        if (credential.isTouchRequired() && applicationInfo.getVersion().isLessThan(4, 0, 0)) {
+    public Credential putCredential(CredentialData credential, boolean touchRequired) throws IOException, ApduException {
+        if (touchRequired && applicationInfo.getVersion().isLessThan(4, 0, 0)) {
             throw new NotSupportedOperation("Require touch available on YubiKey 4 or later");
         }
 
@@ -421,7 +424,7 @@ public class OathApplication extends Iso7816Application {
             ByteArrayOutputStream output = new ByteArrayOutputStream();
             output.write(TlvUtils.packTlvMap(requestTlvs));
 
-            if (credential.isTouchRequired()) {
+            if (touchRequired) {
                 output.write(TAG_PROPERTY);
                 output.write(PROPERTY_REQUIRE_TOUCH);
             }
@@ -433,7 +436,7 @@ public class OathApplication extends Iso7816Application {
             }
 
             sendAndReceive(new Apdu(0x00, INS_PUT, 0, 0, output.toByteArray()));
-            return new Credential(applicationInfo.getDeviceId(), credential);
+            return new Credential(applicationInfo.getDeviceId(), credential, touchRequired);
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e);  //This shouldn't happen
         }

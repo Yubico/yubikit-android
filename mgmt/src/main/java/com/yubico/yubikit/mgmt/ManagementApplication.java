@@ -122,7 +122,6 @@ public class ManagementApplication implements Closeable {
             @Override
             byte[] readConfig() throws IOException, CommandException {
                 byte[] response = delegate.transceive(SLOT_YK4_CAPABILITIES, null, null);
-                Logger.d("Check CRC: " + StringUtils.bytesToHex(response) + " length: " + (response[0] + 1));
                 if (ChecksumUtils.checkCrc(response, response[0] + 1 + 2)) {
                     return Arrays.copyOf(response, response[0] + 1);
                 }
