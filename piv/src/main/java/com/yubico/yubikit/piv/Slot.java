@@ -26,41 +26,41 @@ package com.yubico.yubikit.piv;
  * f9 is for Attestation
  */
 public enum Slot {
-    AUTHENTICATION(0x9a, ObjectData.AUTHENTICATION),
-    CARD_MANAGEMENT(0x9b, null),
-    SIGNATURE(0x9c, ObjectData.SIGNATURE),
-    KEY_MANAGEMENT(0x9d, ObjectData.KEY_MANAGEMENT),
-    CARD_AUTH(0x9e, ObjectData.CARD_AUTH),
+    AUTHENTICATION(0x9a, ObjectId.AUTHENTICATION),
+    CARD_MANAGEMENT(0x9b, 0),
+    SIGNATURE(0x9c, ObjectId.SIGNATURE),
+    KEY_MANAGEMENT(0x9d, ObjectId.KEY_MANAGEMENT),
+    CARD_AUTH(0x9e, ObjectId.CARD_AUTH),
 
-    RETIRED1(0x82, ObjectData.RETIRED1),
-    RETIRED2(0x83, ObjectData.RETIRED2),
-    RETIRED3(0x84, ObjectData.RETIRED3),
-    RETIRED4(0x85, ObjectData.RETIRED4),
-    RETIRED5(0x86, ObjectData.RETIRED5),
-    RETIRED6(0x87, ObjectData.RETIRED6),
-    RETIRED7(0x88, ObjectData.RETIRED7),
-    RETIRED8(0x89, ObjectData.RETIRED8),
-    RETIRED9(0x8a, ObjectData.RETIRED9),
-    RETIRED10(0x8b, ObjectData.RETIRED10),
-    RETIRED11(0x8c, ObjectData.RETIRED11),
-    RETIRED12(0x8d, ObjectData.RETIRED12),
-    RETIRED13(0x8e, ObjectData.RETIRED13),
-    RETIRED14(0x8f, ObjectData.RETIRED14),
-    RETIRED15(0x90, ObjectData.RETIRED15),
-    RETIRED16(0x91, ObjectData.RETIRED16),
-    RETIRED17(0x92, ObjectData.RETIRED17),
-    RETIRED18(0x93, ObjectData.RETIRED18),
-    RETIRED19(0x94, ObjectData.RETIRED19),
-    RETIRED20(0x95, ObjectData.RETIRED20),
+    RETIRED1(0x82, ObjectId.RETIRED1),
+    RETIRED2(0x83, ObjectId.RETIRED2),
+    RETIRED3(0x84, ObjectId.RETIRED3),
+    RETIRED4(0x85, ObjectId.RETIRED4),
+    RETIRED5(0x86, ObjectId.RETIRED5),
+    RETIRED6(0x87, ObjectId.RETIRED6),
+    RETIRED7(0x88, ObjectId.RETIRED7),
+    RETIRED8(0x89, ObjectId.RETIRED8),
+    RETIRED9(0x8a, ObjectId.RETIRED9),
+    RETIRED10(0x8b, ObjectId.RETIRED10),
+    RETIRED11(0x8c, ObjectId.RETIRED11),
+    RETIRED12(0x8d, ObjectId.RETIRED12),
+    RETIRED13(0x8e, ObjectId.RETIRED13),
+    RETIRED14(0x8f, ObjectId.RETIRED14),
+    RETIRED15(0x90, ObjectId.RETIRED15),
+    RETIRED16(0x91, ObjectId.RETIRED16),
+    RETIRED17(0x92, ObjectId.RETIRED17),
+    RETIRED18(0x93, ObjectId.RETIRED18),
+    RETIRED19(0x94, ObjectId.RETIRED19),
+    RETIRED20(0x95, ObjectId.RETIRED20),
 
-    ATTESTATION(0xf9, ObjectData.ATTESTATION);
+    ATTESTATION(0xf9, ObjectId.ATTESTATION);
 
     public final int value;
-    public final byte[] object;
+    public final int objectId;
 
-    Slot(int value, byte[] object) {
+    Slot(int value, int objectId) {
         this.value = value;
-        this.object = object;
+        this.objectId = objectId;
     }
 
     public static Slot fromValue(int value) {

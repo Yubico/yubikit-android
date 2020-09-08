@@ -32,7 +32,6 @@ import com.yubico.yubikit.piv.KeyType
 import com.yubico.yubikit.piv.PinPolicy
 import com.yubico.yubikit.piv.Slot
 import com.yubico.yubikit.piv.TouchPolicy
-import com.yubico.yubikit.utils.CommandState
 import kotlinx.android.synthetic.main.fragment_piv_certifiate.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -140,7 +139,7 @@ class PivCertificateFragment : Fragment() {
             lifecycleScope.launch(Dispatchers.Main) {
                 pivViewModel.pendingAction.value = {
                     authenticate(pivViewModel.mgmtKey)
-                    importKey(slot, key, PinPolicy.DEFAULT, TouchPolicy.DEFAULT)
+                    putKey(slot, key, PinPolicy.DEFAULT, TouchPolicy.DEFAULT)
                     putCertificate(slot, cert)
                     "Imported certificate ${cert.subjectDN} issued by ${cert.issuerDN}"
                 }
@@ -157,7 +156,7 @@ class PivCertificateFragment : Fragment() {
                         // Generate a key
                         val publicKey = generateKey(slot, KeyType.ECCP256, PinPolicy.DEFAULT, TouchPolicy.DEFAULT)
 
-                        verify(pin.toCharArray())
+                        verifyPin(pin.toCharArray())
 
                         // Generate a certificate
                         val name = X500Name("CN=Generated Example")
@@ -191,7 +190,7 @@ class PivCertificateFragment : Fragment() {
         // Attest the certificate
         attest.setOnClickListener {
             pivViewModel.pendingAction.value = {
-                val cert = attest(slot)
+                val cert = attestKey(slot)
                 "Received certificate ${cert.subjectDN} issued by ${cert.issuerDN}"
             }
         }
@@ -217,7 +216,7 @@ class PivCertificateFragment : Fragment() {
                             KeyType.Algorithm.RSA -> "RSA"
                             KeyType.Algorithm.EC -> "ECDSA"
                         }
-                        verify(pin.toCharArray())
+                        verifyPin(pin.toCharArray())
                         val signature = sign(slot, keyType, messageBytes, algorithm)
                         val result = Signature.getInstance(algorithm).apply {
                             initVerify(publicKey)

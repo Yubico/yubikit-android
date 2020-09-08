@@ -74,15 +74,15 @@ public class PivDeviceTests {
 
         Logger.d("Verify PIN");
         char[] pin2 = "123123".toCharArray();
-        piv.verify(DEFAULT_PIN);
+        piv.verifyPin(DEFAULT_PIN);
         MatcherAssert.assertThat(piv.getPinAttempts(), CoreMatchers.equalTo(3));
 
         Logger.d("Verify with wrong PIN");
         try {
-            piv.verify(pin2);
+            piv.verifyPin(pin2);
             Assert.fail("Verify with wrong PIN");
         } catch (InvalidPinException e) {
-            MatcherAssert.assertThat(e.getRetryCounter(), CoreMatchers.equalTo(2));
+            MatcherAssert.assertThat(e.getAttemptsRemaining(), CoreMatchers.equalTo(2));
             MatcherAssert.assertThat(piv.getPinAttempts(), CoreMatchers.equalTo(2));
         }
 
@@ -91,20 +91,20 @@ public class PivDeviceTests {
             piv.changePin(pin2, DEFAULT_PIN);
             Assert.fail("Change PIN with wrong PIN");
         } catch (InvalidPinException e) {
-            MatcherAssert.assertThat(e.getRetryCounter(), CoreMatchers.equalTo(1));
+            MatcherAssert.assertThat(e.getAttemptsRemaining(), CoreMatchers.equalTo(1));
             MatcherAssert.assertThat(piv.getPinAttempts(), CoreMatchers.equalTo(1));
         }
 
         Logger.d("Change PIN");
         piv.changePin(DEFAULT_PIN, pin2);
-        piv.verify(pin2);
+        piv.verifyPin(pin2);
 
         Logger.d("Verify with wrong PIN");
         try {
-            piv.verify(DEFAULT_PIN);
+            piv.verifyPin(DEFAULT_PIN);
             Assert.fail("Verify with wrong PIN");
         } catch (InvalidPinException e) {
-            MatcherAssert.assertThat(e.getRetryCounter(), CoreMatchers.equalTo(2));
+            MatcherAssert.assertThat(e.getAttemptsRemaining(), CoreMatchers.equalTo(2));
             MatcherAssert.assertThat(piv.getPinAttempts(), CoreMatchers.equalTo(2));
         }
 
@@ -119,12 +119,12 @@ public class PivDeviceTests {
         // Change PUK
         char[] puk2 = "12341234".toCharArray();
         piv.changePuk(DEFAULT_PUK, puk2);
-        piv.verify(DEFAULT_PIN);
+        piv.verifyPin(DEFAULT_PIN);
 
         // Block PIN
         while (piv.getPinAttempts() > 0) {
             try {
-                piv.verify(puk2);
+                piv.verifyPin(puk2);
             } catch (InvalidPinException e) {
                 //Re-run until blocked...
             }
@@ -132,9 +132,9 @@ public class PivDeviceTests {
 
         // Verify PIN blocked
         try {
-            piv.verify(DEFAULT_PIN);
+            piv.verifyPin(DEFAULT_PIN);
         } catch (InvalidPinException e) {
-            MatcherAssert.assertThat(e.getRetryCounter(), CoreMatchers.equalTo(0));
+            MatcherAssert.assertThat(e.getAttemptsRemaining(), CoreMatchers.equalTo(0));
             MatcherAssert.assertThat(piv.getPinAttempts(), CoreMatchers.equalTo(0));
         }
 
@@ -143,7 +143,7 @@ public class PivDeviceTests {
             piv.unblockPin(DEFAULT_PUK, DEFAULT_PIN);
             Assert.fail("Unblock with wrong PUK");
         } catch (InvalidPinException e) {
-            MatcherAssert.assertThat(e.getRetryCounter(), CoreMatchers.equalTo(2));
+            MatcherAssert.assertThat(e.getAttemptsRemaining(), CoreMatchers.equalTo(2));
         }
 
         // Unblock PIN
@@ -154,7 +154,7 @@ public class PivDeviceTests {
             piv.changePuk(DEFAULT_PUK, puk2);
             Assert.fail("Change PUK with wrong PUK");
         } catch (InvalidPinException e) {
-            MatcherAssert.assertThat(e.getRetryCounter(), CoreMatchers.equalTo(2));
+            MatcherAssert.assertThat(e.getAttemptsRemaining(), CoreMatchers.equalTo(2));
         }
 
         // Change PUK
@@ -181,7 +181,7 @@ public class PivDeviceTests {
         }
 
         Logger.d("Create signature");
-        piv.verify(DEFAULT_PIN);
+        piv.verifyPin(DEFAULT_PIN);
         byte[] signature = piv.sign(slot, keyType, message, signatureAlgorithm);
         Signature sig = Signature.getInstance(signatureAlgorithm);
         try {
@@ -209,7 +209,7 @@ public class PivDeviceTests {
         byte[] ct = cipher.doFinal(message);
         Logger.d("Cipher text " + ct.length + ": " + StringUtils.bytesToHex(ct));
 
-        piv.verify(DEFAULT_PIN);
+        piv.verifyPin(DEFAULT_PIN);
         byte[] pt = piv.decrypt(Slot.AUTHENTICATION, ct, algorithm);
 
         Assert.assertArrayEquals(message, pt);
@@ -229,7 +229,7 @@ public class PivDeviceTests {
         ka.doPhase(publicKey, true);
         byte[] expected = ka.generateSecret();
 
-        piv.verify(DEFAULT_PIN);
+        piv.verifyPin(DEFAULT_PIN);
         byte[] secret = piv.calculateSecret(Slot.AUTHENTICATION, (ECPublicKey) peer.getPublic());
 
         Assert.assertArrayEquals(expected, secret);
@@ -247,7 +247,7 @@ public class PivDeviceTests {
         piv.authenticate(DEFAULT_MANAGEMENT_KEY);
 
         Logger.d("Import key in slot " + slot);
-        KeyType keyType = piv.importKey(slot, keyPair.getPrivate(), PinPolicy.DEFAULT, TouchPolicy.DEFAULT);
+        KeyType keyType = piv.putKey(slot, keyPair.getPrivate(), PinPolicy.DEFAULT, TouchPolicy.DEFAULT);
 
         testSignAllHashes(piv, slot, keyType, keyPair.getPublic());
     }

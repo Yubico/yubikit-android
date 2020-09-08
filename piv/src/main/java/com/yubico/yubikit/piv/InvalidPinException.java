@@ -19,14 +19,14 @@ package com.yubico.yubikit.piv;
 import com.yubico.yubikit.exceptions.CommandException;
 
 public class InvalidPinException extends CommandException {
-    private final int retryCounter;
+    private final int attemptsRemaining;
 
-    public InvalidPinException(int retryCounter) {
-        super("Invalid PIN/PUK. Remaining attempts: " + retryCounter);
-        this.retryCounter = retryCounter;
+    public InvalidPinException(int attemptsRemaining) {
+        super("Invalid PIN/PUK. Remaining attempts: " + attemptsRemaining);
+        this.attemptsRemaining = attemptsRemaining;
     }
 
-    public int getRetryCounter() {
-        return retryCounter;
+    public int getAttemptsRemaining() {
+        return attemptsRemaining;
     }
 }
