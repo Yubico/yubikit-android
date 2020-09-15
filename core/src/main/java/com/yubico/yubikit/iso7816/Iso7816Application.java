@@ -17,6 +17,7 @@
 package com.yubico.yubikit.iso7816;
 
 import com.yubico.yubikit.exceptions.ApplicationNotAvailableException;
+import com.yubico.yubikit.utils.Interface;
 import com.yubico.yubikit.utils.Version;
 
 import java.io.ByteArrayOutputStream;
@@ -85,8 +86,9 @@ public class Iso7816Application implements Closeable {
      * @param firmwareVersion the firmware version to use for detection to enable the workaround
      */
     public void enableTouchWorkaround(Version firmwareVersion) {
-        this.useTouchWorkaround = firmwareVersion.isAtLeast(4, 2, 0) && firmwareVersion.isLessThan(4, 2, 7);
-        this.useTouchWorkaround = true;
+        this.useTouchWorkaround = connection.getInterface() == Interface.USB
+                && firmwareVersion.isAtLeast(4, 2, 0)
+                && firmwareVersion.isLessThan(4, 2, 7);
     }
 
     /**
@@ -94,15 +96,6 @@ public class Iso7816Application implements Closeable {
      */
     public Iso7816Connection getConnection() {
         return connection;
-    }
-
-    /**
-     * Answer to reset
-     *
-     * @return response to identify card reader
-     */
-    public byte[] getAtr() {
-        return connection.getAtr();
     }
 
     public byte[] getAid() {

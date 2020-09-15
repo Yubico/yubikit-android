@@ -35,13 +35,6 @@ public interface Iso7816Connection extends Closeable {
     byte[] transceive(byte[] apdu) throws IOException;
 
     /**
-     * Retrieve Answer to reset (or answer to select for NFC)
-     *
-     * @return data block returned for reset command
-     */
-    byte[] getAtr();
-
-    /**
      * Checks what interface the connection is using (USB or NFC).
      *
      * @return the physical interface used for the connection.

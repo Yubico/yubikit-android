@@ -102,11 +102,6 @@ public class UsbIso7816Connection implements Iso7816Connection {
     }
 
     @Override
-    public byte[] getAtr() {
-        return atr;
-    }
-
-    @Override
     public void close() {
         connection.releaseInterface(ccidInterface);
         connection.close();

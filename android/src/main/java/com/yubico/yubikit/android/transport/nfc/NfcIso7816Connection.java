@@ -64,9 +64,4 @@ public class NfcIso7816Connection implements Iso7816Connection {
         card.close();
         Logger.d("nfc connection closed");
     }
-
-    @Override
-    public byte[] getAtr() {
-        return card.getHistoricalBytes();
-    }
 }
