@@ -30,7 +30,7 @@ import java.util.Arrays;
  * Class that allows to open ISO 7816 connection to YubiKey
  * and communicate using APDUs
  */
-public class Iso7816Application implements Closeable {
+public class Iso7816Protocol implements Closeable {
     private static final byte INS_SELECT = (byte) 0xa4;
     private static final byte P1_SELECT = (byte) 0x04;
     private static final byte P2_SELECT = (byte) 0x00;
@@ -58,17 +58,17 @@ public class Iso7816Application implements Closeable {
     private long lastLongResponse = 0;
 
     /**
-     * Create new instance of {@link Iso7816Application}
+     * Create new instance of {@link Iso7816Protocol}
      * and selects the application for use
      *
      * @param aid        the AID of the application
      * @param connection connection to the YubiKey
      */
-    public Iso7816Application(byte[] aid, Iso7816Connection connection) {
+    public Iso7816Protocol(byte[] aid, Iso7816Connection connection) {
         this(aid, connection, INS_SEND_REMAINING);
     }
 
-    protected Iso7816Application(byte[] aid, Iso7816Connection connection, byte insSendRemaining) {
+    public Iso7816Protocol(byte[] aid, Iso7816Connection connection, byte insSendRemaining) {
         this.connection = connection;
         this.aid = Arrays.copyOf(aid, aid.length);
         this.insSendRemaining = insSendRemaining;
@@ -131,17 +131,17 @@ public class Iso7816Application implements Closeable {
      */
     public byte[] sendAndReceive(Apdu command) throws IOException, ApduException {
         if (useTouchWorkaround && lastLongResponse > 0 && System.currentTimeMillis() - lastLongResponse < 2000) {
-            connection.transceive(new byte[5]);  // Dummy APDU; returns an error
+            connection.sendAndReceive(new byte[5]);  // Dummy APDU; returns an error
             lastLongResponse = 0;
         }
-        ApduResponse response = new ApduResponse(connection.transceive(encodeExtended(command)));
+        ApduResponse response = new ApduResponse(connection.sendAndReceive(encodeExtended(command)));
 
         // Read full response
         ByteArrayOutputStream readBuffer = new ByteArrayOutputStream();
         byte[] getData = new byte[]{0x00, insSendRemaining, 0x00, 0x00};
         while (response.getSw() >> 8 == SW1_HAS_MORE_DATA) {
             readBuffer.write(response.getData());
-            response = new ApduResponse(connection.transceive(getData));
+            response = new ApduResponse(connection.sendAndReceive(getData));
         }
 
         if (response.getSw() != SW_SUCCESS) {

@@ -52,7 +52,7 @@ public class NfcIso7816Connection implements Iso7816Connection {
     }
 
     @Override
-    public byte[] transceive(byte[] apdu) throws IOException {
+    public byte[] sendAndReceive(byte[] apdu) throws IOException {
         Logger.d("sent: " + StringUtils.bytesToHex(apdu));
         byte[] received = card.transceive(apdu);
         Logger.d("received: " + StringUtils.bytesToHex(received));

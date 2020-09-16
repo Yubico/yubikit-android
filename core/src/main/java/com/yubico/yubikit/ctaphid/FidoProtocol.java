@@ -19,9 +19,7 @@ import java.util.Arrays;
 
 import javax.annotation.Nullable;
 
-public class FidoApplication implements Closeable {
-    private static final int PACKET_SIZE = 64;
-
+public class FidoProtocol implements Closeable {
     public static final byte TYPE_INIT = (byte) 0x80;
 
     private static final byte CMD_PING = TYPE_INIT | 0x01;
@@ -40,7 +38,7 @@ public class FidoApplication implements Closeable {
     private final Version version;
     private int channelId;
 
-    public FidoApplication(FidoConnection connection) throws IOException {
+    public FidoProtocol(FidoConnection connection) throws IOException {
         this.connection = connection;
 
         // init
@@ -68,7 +66,7 @@ public class FidoApplication implements Closeable {
         state = state != null ? state : defaultState;
 
         ByteBuffer toSend = ByteBuffer.wrap(payload);
-        byte[] buffer = new byte[PACKET_SIZE];
+        byte[] buffer = new byte[FidoConnection.PACKET_SIZE];
         ByteBuffer packet = ByteBuffer.wrap(buffer);
         byte seq = 0;
 
@@ -76,7 +74,7 @@ public class FidoApplication implements Closeable {
         packet.putInt(channelId).put(cmd).putShort((short) toSend.remaining());
         do {
             toSend.get(buffer, packet.position(), Math.min(toSend.remaining(), packet.remaining()));
-            connection.sendPacket(buffer);
+            connection.send(buffer);
             Logger.d(buffer.length + " bytes sent over fido: " + StringUtils.bytesToHex(buffer));
             Arrays.fill(buffer, (byte) 0);
             packet.clear();
@@ -92,16 +90,13 @@ public class FidoApplication implements Closeable {
                 Logger.d("sending CTAP cancel...");
                 Arrays.fill(buffer, (byte) 0);
                 packet.putInt(channelId).put(CMD_CANCEL);
-                connection.sendPacket(buffer);
-                Logger.d(buffer.length + " bytes sent over fido: " + StringUtils.bytesToHex(buffer));
+                connection.send(buffer);
+                Logger.d("Sent over fido: " + StringUtils.bytesToHex(buffer));
                 packet.clear();
             }
 
-            int recvLength = connection.readPacket(buffer);
-            if (recvLength < 0) {
-                throw new IOException("Unable to read from endpoint");
-            }
-            Logger.d(recvLength + " bytes received over fido: " + StringUtils.bytesToHex(buffer));
+            connection.receive(buffer);
+            Logger.d("Received over fido: " + StringUtils.bytesToHex(buffer));
             int responseChannel = packet.getInt();
             if (responseChannel != channelId) {
                 throw new IOException(String.format("Wrong Channel ID. Expecting: %d, Got: %d", channelId, responseChannel));

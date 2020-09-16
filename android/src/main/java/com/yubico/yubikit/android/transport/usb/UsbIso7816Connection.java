@@ -97,7 +97,7 @@ public class UsbIso7816Connection implements Iso7816Connection {
     }
 
     @Override
-    public byte[] transceive(byte[] apdu) throws IOException {
+    public byte[] sendAndReceive(byte[] apdu) throws IOException {
         return transceive(REQUEST_MESSAGE_TYPE, apdu);
     }
 

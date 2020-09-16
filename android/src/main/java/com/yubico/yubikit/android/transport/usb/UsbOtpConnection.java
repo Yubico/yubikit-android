@@ -30,9 +30,6 @@ import java.io.IOException;
  */
 public class UsbOtpConnection implements OtpConnection {
 
-    /**
-     * Timeout for control transfer
-     */
     private static final int TIMEOUT = 1000;
 
     private final UsbDeviceConnection connection;
@@ -70,9 +67,12 @@ public class UsbOtpConnection implements OtpConnection {
     }
 
     @Override
-    public int readFeatureReport(byte[] report) {
-        return connection.controlTransfer(UsbConstants.USB_DIR_IN | TYPE_CLASS | RECIPIENT_INTERFACE, HID_GET_REPORT,
+    public void receive(byte[] report) throws IOException {
+        int received = connection.controlTransfer(UsbConstants.USB_DIR_IN | TYPE_CLASS | RECIPIENT_INTERFACE, HID_GET_REPORT,
                 REPORT_TYPE_FEATURE << 8, hidInterface.getId(), report, report.length, TIMEOUT);
+        if (received != FEATURE_REPORT_SIZE) {
+            throw new IOException("Unexpected amount of data read: " + received);
+        }
     }
 
     /**
@@ -81,8 +81,8 @@ public class UsbOtpConnection implements OtpConnection {
      * @param report blob size of FEATURE_RPT_SIZE
      */
     @Override
-    public int writeFeatureReport(byte[] report) throws IOException {
-        return connection.controlTransfer(
+    public void send(byte[] report) throws IOException {
+        int sent = connection.controlTransfer(
                 UsbConstants.USB_DIR_OUT | TYPE_CLASS | RECIPIENT_INTERFACE,
                 HID_SET_REPORT, REPORT_TYPE_FEATURE << 8,
                 hidInterface.getId(),
@@ -90,5 +90,8 @@ public class UsbOtpConnection implements OtpConnection {
                 report.length,
                 TIMEOUT
         );
+        if (sent != FEATURE_REPORT_SIZE) {
+            throw new IOException("Unexpected amount of data sent: " + sent);
+        }
     }
 }

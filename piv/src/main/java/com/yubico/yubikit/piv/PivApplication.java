@@ -21,7 +21,7 @@ import com.yubico.yubikit.exceptions.BadResponseException;
 import com.yubico.yubikit.exceptions.NotSupportedOperation;
 import com.yubico.yubikit.iso7816.Apdu;
 import com.yubico.yubikit.iso7816.ApduException;
-import com.yubico.yubikit.iso7816.Iso7816Application;
+import com.yubico.yubikit.iso7816.Iso7816Protocol;
 import com.yubico.yubikit.iso7816.Iso7816Connection;
 import com.yubico.yubikit.utils.Logger;
 import com.yubico.yubikit.utils.RandomUtils;
@@ -30,11 +30,7 @@ import com.yubico.yubikit.utils.Tlv;
 import com.yubico.yubikit.utils.TlvUtils;
 import com.yubico.yubikit.utils.Version;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
+import java.io.*;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
@@ -73,7 +69,7 @@ import javax.crypto.spec.SecretKeySpec;
  * Personal Identity Verification (PIV) interface specified in NIST SP 800-73 document "Cryptographic Algorithms and Key Sizes for PIV".
  * This enables you to perform RSA or ECC sign/decrypt operations using a private key stored on the smartcard, through common interfaces like PKCS#11.
  */
-public class PivApplication extends Iso7816Application {
+public class PivApplication implements Closeable {
     public static final short APPLICATION_NOT_FOUND_ERROR = 0x6a82;
     public static final short AUTHENTICATION_REQUIRED_ERROR = 0x6982;
     public static final short FILE_NOT_FOUND_ERROR = APPLICATION_NOT_FOUND_ERROR;
@@ -141,6 +137,7 @@ public class PivApplication extends Iso7816Application {
     private static final byte[] KEY_PREFIX_P256 = new byte[]{0x30, 0x59, 0x30, 0x13, 0x06, 0x07, 0x2a, (byte) 0x86, 0x48, (byte) 0xce, 0x3d, 0x02, 0x01, 0x06, 0x08, 0x2a, (byte) 0x86, 0x48, (byte) 0xce, 0x3d, 0x03, 0x01, 0x07, 0x03, 0x42, 0x00};
     private static final byte[] KEY_PREFIX_P384 = new byte[]{0x30, 0x76, 0x30, 0x10, 0x06, 0x07, 0x2a, (byte) 0x86, 0x48, (byte) 0xce, 0x3d, 0x02, 0x01, 0x06, 0x05, 0x2b, (byte) 0x81, 0x04, 0x00, 0x22, 0x03, 0x62, 0x00};
 
+    private final Iso7816Protocol protocol;
     private final Version version;
     private int currentPinAttempts = 3;  // Internal guess as to number of PIN retries.
     private int maxPinAttempts = 3; // Internal guess as to max number of PIN retries.
@@ -155,11 +152,16 @@ public class PivApplication extends Iso7816Application {
      * @throws ApplicationNotAvailableException if the application is missing or disabled
      */
     public PivApplication(Iso7816Connection connection) throws IOException, ApduException, ApplicationNotAvailableException {
-        super(AID, connection);
+        protocol = new Iso7816Protocol(AID, connection);
 
-        select();
-        version = Version.parse(sendAndReceive(new Apdu(0, INS_GET_VERSION, 0, 0, null)));
-        enableTouchWorkaround(version);
+        protocol.select();
+        version = Version.parse(protocol.sendAndReceive(new Apdu(0, INS_GET_VERSION, 0, 0, null)));
+        protocol.enableTouchWorkaround(version);
+    }
+
+    @Override
+    public void close() throws IOException {
+        protocol.close();
     }
 
     /**
@@ -181,7 +183,7 @@ public class PivApplication extends Iso7816Application {
     public void reset() throws IOException, ApduException {
         blockPin();
         blockPuk();
-        sendAndReceive(new Apdu(0, INS_RESET, 0, 0, null));
+        protocol.sendAndReceive(new Apdu(0, INS_RESET, 0, 0, null));
         currentPinAttempts = 3;
         maxPinAttempts = 3;
     }
@@ -198,7 +200,7 @@ public class PivApplication extends Iso7816Application {
     public void authenticate(byte[] managementKey) throws IOException, ApduException, BadResponseException {
         // An empty witness is a request for a witness.
         byte[] request = new Tlv(TAG_DYN_AUTH, new Tlv(TAG_AUTH_WITNESS, null).getBytes()).getBytes();
-        byte[] response = sendAndReceive(new Apdu(0, INS_AUTHENTICATE, TDES, Slot.CARD_MANAGEMENT.value, request));
+        byte[] response = protocol.sendAndReceive(new Apdu(0, INS_AUTHENTICATE, TDES, Slot.CARD_MANAGEMENT.value, request));
 
         // Witness (tag '80') contains encrypted data (unrevealed fact).
         byte[] witness = TlvUtils.unwrapValue(TAG_AUTH_WITNESS, TlvUtils.unwrapValue(TAG_DYN_AUTH, response));
@@ -214,7 +216,7 @@ public class PivApplication extends Iso7816Application {
             dataTlvs.put(TAG_AUTH_CHALLENGE, challenge);
 
             request = new Tlv(TAG_DYN_AUTH, TlvUtils.packTlvMap(dataTlvs)).getBytes();
-            response = sendAndReceive(new Apdu(0, INS_AUTHENTICATE, TDES, Slot.CARD_MANAGEMENT.value, request));
+            response = protocol.sendAndReceive(new Apdu(0, INS_AUTHENTICATE, TDES, Slot.CARD_MANAGEMENT.value, request));
 
             // (tag '82') contains either the decrypted data from tag '80' or the encrypted data from tag '81'.
             byte[] encryptedData = TlvUtils.unwrapValue(TAG_AUTH_RESPONSE, TlvUtils.unwrapValue(TAG_DYN_AUTH, response));
@@ -310,7 +312,7 @@ public class PivApplication extends Iso7816Application {
         byte[] request = new Tlv(TAG_DYN_AUTH, TlvUtils.packTlvMap(dataTlvs)).getBytes();
 
         try {
-            byte[] response = sendAndReceive(new Apdu(0, INS_AUTHENTICATE, keyType.value, slot.value, request));
+            byte[] response = protocol.sendAndReceive(new Apdu(0, INS_AUTHENTICATE, keyType.value, slot.value, request));
             return TlvUtils.unwrapValue(TAG_AUTH_RESPONSE, TlvUtils.unwrapValue(TAG_DYN_AUTH, response));
         } catch (ApduException e) {
             if (INCORRECT_VALUES_ERROR == e.getStatusCode()) {
@@ -340,7 +342,7 @@ public class PivApplication extends Iso7816Application {
 
         // NOTE: if p2=0xfe key requires touch
         // Require touch is only available on YubiKey 4 & 5.
-        sendAndReceive(new Apdu(0, INS_SET_MGMKEY, 0xff, 0xff, stream.toByteArray()));
+        protocol.sendAndReceive(new Apdu(0, INS_SET_MGMKEY, 0xff, 0xff, stream.toByteArray()));
     }
 
     /**
@@ -356,7 +358,7 @@ public class PivApplication extends Iso7816Application {
      */
     public void verifyPin(char[] pin) throws IOException, ApduException, InvalidPinException {
         try {
-            sendAndReceive(new Apdu(0, INS_VERIFY, 0, PIN_P2, pinBytes(pin)));
+            protocol.sendAndReceive(new Apdu(0, INS_VERIFY, 0, PIN_P2, pinBytes(pin)));
             currentPinAttempts = maxPinAttempts;
         } catch (ApduException e) {
             int retries = getRetriesFromCode(e.getStatusCode());
@@ -388,7 +390,7 @@ public class PivApplication extends Iso7816Application {
         }
         try {
             // Null as data will not cause actual tries to decrement
-            sendAndReceive(new Apdu(0, INS_VERIFY, 0, PIN_P2, null));
+            protocol.sendAndReceive(new Apdu(0, INS_VERIFY, 0, PIN_P2, null));
             // Already verified, no way to know true count
             return currentPinAttempts;
         } catch (ApduException e) {
@@ -454,7 +456,7 @@ public class PivApplication extends Iso7816Application {
      * @throws ApduException in case of an error response from the YubiKey
      */
     public void setPinAttempts(int pinAttempts, int pukAttempts) throws IOException, ApduException {
-        sendAndReceive(new Apdu(0, INS_SET_PIN_RETRIES, pinAttempts, pukAttempts, null));
+        protocol.sendAndReceive(new Apdu(0, INS_SET_PIN_RETRIES, pinAttempts, pukAttempts, null));
         maxPinAttempts = pinAttempts;
         currentPinAttempts = pinAttempts;
     }
@@ -485,7 +487,7 @@ public class PivApplication extends Iso7816Application {
         if (version.isLessThan(5, 3, 0)) {
             throw new NotSupportedOperation("PIN/PUK metadata requires version 5.3.0 or later.");
         }
-        Map<Integer, byte[]> data = TlvUtils.parseTlvMap(sendAndReceive(new Apdu(0, INS_GET_METADATA, 0, p2, null)));
+        Map<Integer, byte[]> data = TlvUtils.parseTlvMap(protocol.sendAndReceive(new Apdu(0, INS_GET_METADATA, 0, p2, null)));
         byte[] retries = data.get(TAG_METADATA_RETRIES);
         return new PinMetadata(
                 data.get(TAG_METADATA_IS_DEFAULT)[0] != 0,
@@ -505,7 +507,7 @@ public class PivApplication extends Iso7816Application {
         if (version.isLessThan(5, 3, 0)) {
             throw new NotSupportedOperation("Management key metadata requires version 5.3.0 or later.");
         }
-        Map<Integer, byte[]> data = TlvUtils.parseTlvMap(sendAndReceive(new Apdu(0, INS_GET_METADATA, 0, Slot.CARD_MANAGEMENT.value, null)));
+        Map<Integer, byte[]> data = TlvUtils.parseTlvMap(protocol.sendAndReceive(new Apdu(0, INS_GET_METADATA, 0, Slot.CARD_MANAGEMENT.value, null)));
         return new ManagementKeyMetadata(
                 data.get(TAG_METADATA_IS_DEFAULT)[0] != 0,
                 TouchPolicy.fromValue(data.get(TAG_METADATA_POLICY)[INDEX_TOUCH_POLICY])
@@ -526,7 +528,7 @@ public class PivApplication extends Iso7816Application {
         } else if (slot == Slot.CARD_MANAGEMENT) {
             throw new IllegalArgumentException("This method cannot be used for the card management key, use getManagementKeyMetadata() instead.");
         }
-        Map<Integer, byte[]> data = TlvUtils.parseTlvMap(sendAndReceive(new Apdu(0, INS_GET_METADATA, 0, slot.value, null)));
+        Map<Integer, byte[]> data = TlvUtils.parseTlvMap(protocol.sendAndReceive(new Apdu(0, INS_GET_METADATA, 0, slot.value, null)));
         byte[] policy = data.get(TAG_METADATA_POLICY);
         return new SlotMetadata(
                 KeyType.fromValue(data.get(TAG_METADATA_ALGO)[0]),
@@ -606,7 +608,7 @@ public class PivApplication extends Iso7816Application {
             throw new NotSupportedOperation("This operation is supported for version 4.3+");
         }
         try {
-            byte[] responseData = sendAndReceive(new Apdu(0, INS_ATTEST, slot.value, 0, null));
+            byte[] responseData = protocol.sendAndReceive(new Apdu(0, INS_ATTEST, slot.value, 0, null));
             return parseCertificate(responseData);
         } catch (ApduException e) {
             if (INCORRECT_VALUES_ERROR == e.getStatusCode()) {
@@ -688,7 +690,7 @@ public class PivApplication extends Iso7816Application {
             tlvs.put(TAG_TOUCH_POLICY, new byte[]{(byte) touchPolicy.value});
         }
 
-        byte[] response = sendAndReceive(new Apdu(0, INS_GENERATE_ASYMMETRIC, 0, slot.value, new Tlv((byte) 0xac, TlvUtils.packTlvMap(tlvs)).getBytes()));
+        byte[] response = protocol.sendAndReceive(new Apdu(0, INS_GENERATE_ASYMMETRIC, 0, slot.value, new Tlv((byte) 0xac, TlvUtils.packTlvMap(tlvs)).getBytes()));
 
         // Tag '7F49' contains data objects for RSA or ECC
         return parsePublicKeyFromDevice(keyType, TlvUtils.unwrapValue(0x7F49, response));
@@ -757,7 +759,7 @@ public class PivApplication extends Iso7816Application {
             tlvs.put(TAG_TOUCH_POLICY, new byte[]{(byte) touchPolicy.value});
         }
 
-        sendAndReceive(new Apdu(0, INS_IMPORT_KEY, keyType.value, slot.value, TlvUtils.packTlvMap(tlvs)));
+        protocol.sendAndReceive(new Apdu(0, INS_IMPORT_KEY, keyType.value, slot.value, TlvUtils.packTlvMap(tlvs)));
         return keyType;
     }
 
@@ -781,7 +783,7 @@ public class PivApplication extends Iso7816Application {
      */
     public byte[] getObject(int objectId) throws IOException, ApduException, BadResponseException {
         byte[] requestData = new Tlv(TAG_OBJ_ID, ObjectId.getBytes(objectId)).getBytes();
-        byte[] responseData = sendAndReceive(new Apdu(0, INS_GET_DATA, 0x3f, 0xff, requestData));
+        byte[] responseData = protocol.sendAndReceive(new Apdu(0, INS_GET_DATA, 0x3f, 0xff, requestData));
         return TlvUtils.unwrapValue(TAG_OBJ_DATA, responseData);
     }
 
@@ -806,7 +808,7 @@ public class PivApplication extends Iso7816Application {
         Map<Integer, byte[]> tlvs = new LinkedHashMap<>();
         tlvs.put(TAG_OBJ_ID, ObjectId.getBytes(objectId));
         tlvs.put(TAG_OBJ_DATA, objectData);
-        sendAndReceive(new Apdu(0, INS_PUT_DATA, 0x3f, 0xff, TlvUtils.packTlvMap(tlvs)));
+        protocol.sendAndReceive(new Apdu(0, INS_PUT_DATA, 0x3f, 0xff, TlvUtils.packTlvMap(tlvs)));
     }
 
     /*
@@ -837,7 +839,7 @@ public class PivApplication extends Iso7816Application {
     private void changeReference(byte instruction, byte p2, char[] value1, char[] value2) throws IOException, ApduException, InvalidPinException {
         byte[] pinBytes = pinBytes(value1, value2);
         try {
-            sendAndReceive(new Apdu(0, instruction, 0, p2, pinBytes));
+            protocol.sendAndReceive(new Apdu(0, instruction, 0, p2, pinBytes));
         } catch (ApduException e) {
             int retries = getRetriesFromCode(e.getStatusCode());
             if (retries >= 0) {

@@ -16,21 +16,20 @@
 
 package com.yubico.yubikit.mgmt;
 
-import com.yubico.yubikit.ctaphid.FidoApplication;
+import com.yubico.yubikit.ctaphid.FidoProtocol;
 import com.yubico.yubikit.ctaphid.FidoConnection;
 import com.yubico.yubikit.exceptions.ApplicationNotAvailableException;
 import com.yubico.yubikit.exceptions.CommandException;
 import com.yubico.yubikit.exceptions.NotSupportedOperation;
 import com.yubico.yubikit.iso7816.Apdu;
 import com.yubico.yubikit.iso7816.ApduException;
-import com.yubico.yubikit.iso7816.Iso7816Application;
+import com.yubico.yubikit.iso7816.Iso7816Protocol;
 import com.yubico.yubikit.iso7816.Iso7816Connection;
 import com.yubico.yubikit.keyboard.ChecksumUtils;
-import com.yubico.yubikit.keyboard.OtpApplication;
+import com.yubico.yubikit.keyboard.OtpProtocol;
 import com.yubico.yubikit.keyboard.OtpConnection;
 import com.yubico.yubikit.utils.Interface;
 import com.yubico.yubikit.utils.Logger;
-import com.yubico.yubikit.utils.StringUtils;
 import com.yubico.yubikit.utils.Version;
 
 import java.io.Closeable;
@@ -85,9 +84,9 @@ public class ManagementApplication implements Closeable {
      * @throws ApplicationNotAvailableException in case the application is missing/disabled
      */
     public ManagementApplication(Iso7816Connection connection) throws IOException, ApplicationNotAvailableException {
-        Iso7816Application app = new Iso7816Application(AID, connection);
+        Iso7816Protocol app = new Iso7816Protocol(AID, connection);
         version = Version.parse(new String(app.select()));
-        backend = new Backend<Iso7816Application>(app) {
+        backend = new Backend<Iso7816Protocol>(app) {
             @Override
             byte[] readConfig() throws IOException, CommandException {
                 return delegate.sendAndReceive(new Apdu(0, INS_READ_CONFIG, 0, 0, null));
@@ -113,15 +112,15 @@ public class ManagementApplication implements Closeable {
      * @throws ApplicationNotAvailableException in case the application is missing/disabled
      */
     public ManagementApplication(OtpConnection connection) throws IOException, ApplicationNotAvailableException {
-        OtpApplication application = new OtpApplication(connection);
+        OtpProtocol application = new OtpProtocol(connection);
         version = Version.parse(application.readStatus());
         if (version.isLessThan(3, 0, 0)) {
             throw new ApplicationNotAvailableException("Management Application requires YubiKey 3 or later");
         }
-        backend = new Backend<OtpApplication>(application) {
+        backend = new Backend<OtpProtocol>(application) {
             @Override
             byte[] readConfig() throws IOException, CommandException {
-                byte[] response = delegate.transceive(SLOT_YK4_CAPABILITIES, null, null);
+                byte[] response = delegate.sendAndReceive(SLOT_YK4_CAPABILITIES, null, null);
                 if (ChecksumUtils.checkCrc(response, response[0] + 1 + 2)) {
                     return Arrays.copyOf(response, response[0] + 1);
                 }
@@ -130,12 +129,12 @@ public class ManagementApplication implements Closeable {
 
             @Override
             void writeConfig(byte[] config) throws IOException, CommandException {
-                delegate.transceive(SLOT_YK4_SET_DEVICE_INFO, config, null);
+                delegate.sendAndReceive(SLOT_YK4_SET_DEVICE_INFO, config, null);
             }
 
             @Override
             void setMode(byte[] data) throws IOException, CommandException {
-                delegate.transceive(SLOT_DEVICE_CONFIG, data, null);
+                delegate.sendAndReceive(SLOT_DEVICE_CONFIG, data, null);
             }
         };
     }
@@ -147,9 +146,9 @@ public class ManagementApplication implements Closeable {
      * @throws IOException in case of connection error
      */
     public ManagementApplication(FidoConnection connection) throws IOException {
-        FidoApplication app = new FidoApplication(connection);
+        FidoProtocol app = new FidoProtocol(connection);
         version = app.getVersion();
-        backend = new Backend<FidoApplication>(app) {
+        backend = new Backend<FidoProtocol>(app) {
             @Override
             byte[] readConfig() throws IOException {
                 Logger.d("Reading fido config...");

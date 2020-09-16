@@ -15,7 +15,7 @@ import java.util.Arrays;
 
 import javax.annotation.Nullable;
 
-public class OtpApplication implements Closeable {
+public class OtpProtocol implements Closeable {
     private static final int FEATURE_RPT_SIZE = 8;
     private static final int FEATURE_RPT_DATA_SIZE = FEATURE_RPT_SIZE - 1;
 
@@ -34,7 +34,7 @@ public class OtpApplication implements Closeable {
 
     private final OtpConnection connection;
 
-    public OtpApplication(OtpConnection connection) {
+    public OtpProtocol(OtpConnection connection) {
         this.connection = connection;
     }
 
@@ -55,7 +55,7 @@ public class OtpApplication implements Closeable {
      * @throws IOException      in case of communication error
      * @throws CommandException in case the command failed
      */
-    public byte[] transceive(byte slot, @Nullable byte[] data, @Nullable CommandState state) throws IOException, CommandException {
+    public byte[] sendAndReceive(byte slot, @Nullable byte[] data, @Nullable CommandState state) throws IOException, CommandException {
         byte[] payload;
         if (data == null) {
             payload = new byte[SLOT_DATA_SIZE];
@@ -82,13 +82,7 @@ public class OtpApplication implements Closeable {
     /* Read a single 8 byte feature report */
     private byte[] readFeatureReport() throws IOException {
         byte[] bufferRead = new byte[FEATURE_RPT_SIZE];
-        int bytesRead = connection.readFeatureReport(bufferRead);
-        if (bytesRead < 0) {
-            throw new IOException("Can't read the data");
-        }
-        if (bytesRead < FEATURE_RPT_SIZE) {
-            throw new IOException("Size of blob is smaller than expected");
-        }
+        connection.receive(bufferRead);
         Logger.d("READ FEATURE REPORT: " + StringUtils.bytesToHex(bufferRead));
         return bufferRead;
     }
@@ -96,13 +90,7 @@ public class OtpApplication implements Closeable {
     /* Write a single 8 byte feature report */
     private void writeFeatureReport(byte[] buffer) throws IOException {
         Logger.d("WRITE FEATURE REPORT: " + StringUtils.bytesToHex(buffer));
-        int bytesSentPackage = connection.writeFeatureReport(buffer);
-        if (bytesSentPackage < 0) {
-            throw new IOException("Can't write the data");
-        }
-        if (bytesSentPackage < FEATURE_RPT_SIZE) {
-            throw new IOException("Some of the data was not sent");
-        }
+        connection.send(buffer);
     }
 
     /* Sleep for up to ~1s waiting for the WRITE flag to be unset */

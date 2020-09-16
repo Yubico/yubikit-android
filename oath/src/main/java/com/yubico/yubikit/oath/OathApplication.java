@@ -20,13 +20,14 @@ import com.yubico.yubikit.exceptions.ApplicationNotAvailableException;
 import com.yubico.yubikit.exceptions.NotSupportedOperation;
 import com.yubico.yubikit.iso7816.Apdu;
 import com.yubico.yubikit.iso7816.ApduException;
-import com.yubico.yubikit.iso7816.Iso7816Application;
+import com.yubico.yubikit.iso7816.Iso7816Protocol;
 import com.yubico.yubikit.iso7816.Iso7816Connection;
 import com.yubico.yubikit.utils.RandomUtils;
 import com.yubico.yubikit.utils.Tlv;
 import com.yubico.yubikit.utils.TlvUtils;
 
 import java.io.ByteArrayOutputStream;
+import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.security.InvalidKeyException;
@@ -50,7 +51,7 @@ import javax.crypto.spec.SecretKeySpec;
  * Communicates with a YubiKey's OATH application.
  * https://developers.yubico.com/OATH/YKOATH_Protocol.html
  */
-public class OathApplication extends Iso7816Application {
+public class OathApplication implements Closeable {
     public static final short AUTHENTICATION_REQUIRED_ERROR = 0x6982;
     public static final short WRONG_SYNTAX = 0x6a80;
     public static final short GENERIC_ERROR = 0x6581;
@@ -92,6 +93,8 @@ public class OathApplication extends Iso7816Application {
     private static final int DEFAULT_PERIOD = 30;
     private static final int CHALLENGE_LEN = 8;
 
+    private final Iso7816Protocol protocol;
+
     /**
      * Version, ID and a challenge if authentication is configured
      */
@@ -107,10 +110,15 @@ public class OathApplication extends Iso7816Application {
      * @throws ApplicationNotAvailableException if the application is missing or disabled
      */
     public OathApplication(Iso7816Connection connection) throws IOException, ApplicationNotAvailableException {
-        super(AID, connection, INS_SEND_REMAINING);
+        protocol = new Iso7816Protocol(AID, connection, INS_SEND_REMAINING);
 
-        applicationInfo = new OathApplicationInfo(select());
-        enableTouchWorkaround(applicationInfo.getVersion());
+        applicationInfo = new OathApplicationInfo(protocol.select());
+        protocol.enableTouchWorkaround(applicationInfo.getVersion());
+    }
+
+    @Override
+    public void close() throws IOException {
+        protocol.close();
     }
 
     /**
@@ -127,7 +135,7 @@ public class OathApplication extends Iso7816Application {
      * @throws ApduException in case of communication error
      */
     public void reset() throws IOException, ApduException {
-        sendAndReceive(new Apdu(0, INS_RESET, 0xde, 0xad, null));
+        protocol.sendAndReceive(new Apdu(0, INS_RESET, 0xde, 0xad, null));
     }
 
     /**
@@ -181,7 +189,7 @@ public class OathApplication extends Iso7816Application {
             byte[] clientChallenge = RandomUtils.getRandomBytes(CHALLENGE_LEN);
             request.put(TAG_CHALLENGE, clientChallenge);
 
-            byte[] data = sendAndReceive(new Apdu(0, INS_VALIDATE, 0, 0, TlvUtils.packTlvMap(request)));
+            byte[] data = protocol.sendAndReceive(new Apdu(0, INS_VALIDATE, 0, 0, TlvUtils.packTlvMap(request)));
             Map<Integer, byte[]> map = TlvUtils.parseTlvMap(data);
             // return false if response from validation does not match verification
             return (Arrays.equals(signer.sign(clientChallenge), map.get(TAG_RESPONSE)));
@@ -245,7 +253,7 @@ public class OathApplication extends Iso7816Application {
             throw new RuntimeException(e); //This shouldn't happen
         }
 
-        sendAndReceive(new Apdu(0, INS_SET_CODE, 0, 0, TlvUtils.packTlvMap(request)));
+        protocol.sendAndReceive(new Apdu(0, INS_SET_CODE, 0, 0, TlvUtils.packTlvMap(request)));
     }
 
     /**
@@ -256,7 +264,7 @@ public class OathApplication extends Iso7816Application {
      * @throws ApduException in case of communication error
      */
     public void unsetSecret() throws IOException, ApduException {
-        sendAndReceive(new Apdu(0, INS_SET_CODE, 0, 0, new Tlv(TAG_KEY, null).getBytes()));
+        protocol.sendAndReceive(new Apdu(0, INS_SET_CODE, 0, 0, new Tlv(TAG_KEY, null).getBytes()));
     }
 
     /**
@@ -267,7 +275,7 @@ public class OathApplication extends Iso7816Application {
      * @throws ApduException in case of communication error
      */
     public List<Credential> listCredentials() throws IOException, ApduException {
-        byte[] response = sendAndReceive(new Apdu(0, INS_LIST, 0, 0, null));
+        byte[] response = protocol.sendAndReceive(new Apdu(0, INS_LIST, 0, 0, null));
         List<Tlv> list = TlvUtils.parseTlvList(response);
         List<Credential> result = new ArrayList<>();
         for (Tlv tlv : list) {
@@ -300,7 +308,7 @@ public class OathApplication extends Iso7816Application {
         byte[] challenge = ByteBuffer.allocate(CHALLENGE_LEN).putLong(timeStep).array();
 
         // using default period to 30 second for all _credentials and then recalculate those that have different period
-        byte[] data = sendAndReceive(new Apdu(0, INS_CALCULATE_ALL, 0, 1, new Tlv(TAG_CHALLENGE, challenge).getBytes()));
+        byte[] data = protocol.sendAndReceive(new Apdu(0, INS_CALCULATE_ALL, 0, 1, new Tlv(TAG_CHALLENGE, challenge).getBytes()));
         Iterator<Tlv> responseTlvs = TlvUtils.parseTlvList(data).iterator();
         Map<Credential, Code> map = new HashMap<>();
         while (responseTlvs.hasNext()) {
@@ -340,7 +348,7 @@ public class OathApplication extends Iso7816Application {
         Map<Integer, byte[]> request = new LinkedHashMap<>();
         request.put(TAG_NAME, credentialId);
         request.put(TAG_CHALLENGE, challenge);
-        byte[] data = sendAndReceive(new Apdu(0, INS_CALCULATE, 0, 0, TlvUtils.packTlvMap(request)));
+        byte[] data = protocol.sendAndReceive(new Apdu(0, INS_CALCULATE, 0, 0, TlvUtils.packTlvMap(request)));
         Tlv responseTlv = new Tlv(data, 0);
         return Arrays.copyOfRange(responseTlv.getValue(), 1, responseTlv.getLength());
     }
@@ -382,7 +390,7 @@ public class OathApplication extends Iso7816Application {
         Map<Integer, byte[]> requestTlv = new LinkedHashMap<>();
         requestTlv.put(TAG_NAME, credential.getId());
         requestTlv.put(TAG_CHALLENGE, challenge);
-        byte[] data = sendAndReceive(new Apdu(0, INS_CALCULATE, 0, 1, TlvUtils.packTlvMap(requestTlv)));
+        byte[] data = protocol.sendAndReceive(new Apdu(0, INS_CALCULATE, 0, 1, TlvUtils.packTlvMap(requestTlv)));
         Tlv responseTlv = new Tlv(data, 0);
         String value = formatTruncated(new CalculateResponse(responseTlv));
 
@@ -399,7 +407,7 @@ public class OathApplication extends Iso7816Application {
     /**
      * Adds a new (or overwrites) OATH credential.
      *
-     * @param credential credential data to add
+     * @param credential    credential data to add
      * @param touchRequired true if the credential should require touch to be used (requires YubiKey 4 or later)
      * @return the newly added Credential
      * @throws IOException   in case of connection error
@@ -435,7 +443,7 @@ public class OathApplication extends Iso7816Application {
                 output.write(ByteBuffer.allocate(4).putInt(credential.getCounter()).array());
             }
 
-            sendAndReceive(new Apdu(0x00, INS_PUT, 0, 0, output.toByteArray()));
+            protocol.sendAndReceive(new Apdu(0x00, INS_PUT, 0, 0, output.toByteArray()));
             return new Credential(applicationInfo.getDeviceId(), credential, touchRequired);
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e);  //This shouldn't happen
@@ -450,7 +458,7 @@ public class OathApplication extends Iso7816Application {
      * @throws ApduException in case of communication error
      */
     public void deleteCredential(byte[] credentialId) throws IOException, ApduException {
-        sendAndReceive(new Apdu(0x00, INS_DELETE, 0, 0, new Tlv(TAG_NAME, credentialId).getBytes()));
+        protocol.sendAndReceive(new Apdu(0x00, INS_DELETE, 0, 0, new Tlv(TAG_NAME, credentialId).getBytes()));
     }
 
     /**
@@ -469,7 +477,7 @@ public class OathApplication extends Iso7816Application {
         }
         CredentialIdUtils.CredentialIdData data = CredentialIdUtils.parseId(credentialId, OathType.TOTP); // This works for HOTP as well
         byte[] newId = CredentialIdUtils.formatId(issuer, name, OathType.TOTP, data.period);
-        sendAndReceive(new Apdu(0x00, INS_RENAME, 0, 0, TlvUtils.packTlvList(Arrays.asList(
+        protocol.sendAndReceive(new Apdu(0x00, INS_RENAME, 0, 0, TlvUtils.packTlvList(Arrays.asList(
                 new Tlv(TAG_NAME, credentialId),
                 new Tlv(TAG_NAME, newId)
         ))));

@@ -32,7 +32,7 @@ public interface Iso7816Connection extends Closeable {
      * @return The response back from the YubiKey.
      * @throws IOException in case of communication error
      */
-    byte[] transceive(byte[] apdu) throws IOException;
+    byte[] sendAndReceive(byte[] apdu) throws IOException;
 
     /**
      * Checks what interface the connection is using (USB or NFC).

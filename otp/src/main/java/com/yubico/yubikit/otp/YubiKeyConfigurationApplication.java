@@ -21,10 +21,10 @@ import com.yubico.yubikit.exceptions.BadResponseException;
 import com.yubico.yubikit.exceptions.CommandException;
 import com.yubico.yubikit.exceptions.NotSupportedOperation;
 import com.yubico.yubikit.iso7816.Apdu;
-import com.yubico.yubikit.iso7816.Iso7816Application;
+import com.yubico.yubikit.iso7816.Iso7816Protocol;
 import com.yubico.yubikit.iso7816.Iso7816Connection;
 import com.yubico.yubikit.keyboard.ChecksumUtils;
-import com.yubico.yubikit.keyboard.OtpApplication;
+import com.yubico.yubikit.keyboard.OtpProtocol;
 import com.yubico.yubikit.keyboard.OtpConnection;
 import com.yubico.yubikit.utils.CommandState;
 import com.yubico.yubikit.utils.Interface;
@@ -78,7 +78,7 @@ public class YubiKeyConfigurationApplication implements Closeable {
         if (connection.getInterface() == Interface.NFC) {
             // If available, this is more reliable than status.getVersion() over NFC
             try {
-                Iso7816Application mgmtApplication = new Iso7816Application(MGMT_AID, connection);
+                Iso7816Protocol mgmtApplication = new Iso7816Protocol(MGMT_AID, connection);
                 byte[] response = mgmtApplication.select();
                 version = Version.parse(new String(response));
             } catch (ApplicationNotAvailableException e) {
@@ -86,7 +86,7 @@ public class YubiKeyConfigurationApplication implements Closeable {
             }
         }
 
-        Iso7816Application ccidApplication = new Iso7816Application(AID, connection);
+        Iso7816Protocol ccidApplication = new Iso7816Protocol(AID, connection);
         byte[] statusBytes = ccidApplication.select();
         if (version == null) {
             // We didn't get a version above, get it from the status struct.
@@ -95,7 +95,7 @@ public class YubiKeyConfigurationApplication implements Closeable {
         this.version = version;
         configState = parseConfigState(version, statusBytes);
         ccidApplication.enableTouchWorkaround(version);
-        backend = new Backend<Iso7816Application>(ccidApplication) {
+        backend = new Backend<Iso7816Protocol>(ccidApplication) {
             @Override
             byte[] writeConfig(byte slot, byte[] data) throws IOException, CommandException {
                 return delegate.sendAndReceive(new Apdu(0, INS_CONFIG, slot, 0, data));
@@ -119,19 +119,19 @@ public class YubiKeyConfigurationApplication implements Closeable {
      * @throws IOException in case of connection error
      */
     public YubiKeyConfigurationApplication(OtpConnection connection) throws IOException {
-        OtpApplication application = new OtpApplication(connection);
+        OtpProtocol application = new OtpProtocol(connection);
         byte[] statusBytes = application.readStatus();
         version = Version.parse(statusBytes);
         configState = parseConfigState(version, statusBytes);
-        backend = new Backend<OtpApplication>(application) {
+        backend = new Backend<OtpProtocol>(application) {
             @Override
             byte[] writeConfig(byte slot, byte[] data) throws IOException, CommandException {
-                return delegate.transceive(slot, data, null);
+                return delegate.sendAndReceive(slot, data, null);
             }
 
             @Override
             byte[] transceive(byte slot, byte[] data, int expectedResponseLength, @Nullable CommandState state) throws IOException, CommandException {
-                byte[] response = delegate.transceive(slot, data, state);
+                byte[] response = delegate.sendAndReceive(slot, data, state);
                 if (ChecksumUtils.checkCrc(response, expectedResponseLength + 2)) {
                     return Arrays.copyOf(response, expectedResponseLength);
                 }

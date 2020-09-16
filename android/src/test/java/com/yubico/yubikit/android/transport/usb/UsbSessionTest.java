@@ -86,7 +86,7 @@ public class UsbSessionTest {
     public void executeCommand() throws IOException {
         byte[] selectPIVCommand = byteArrayOfInts(new int[]{0x00, 0xA4, 0x04, 0x00, 0x05, 0xA0, 0x00, 0x00, 0x03, 0x08});
         usbConnection = mock.openIso7816Connection();
-        ApduResponse response = new ApduResponse(usbConnection.transceive(selectPIVCommand));
+        ApduResponse response = new ApduResponse(usbConnection.sendAndReceive(selectPIVCommand));
         byte[] selectPIVResponse = byteArrayOfInts(new int[]{0x61, 0x11, 0x4f, 0x06, 0x00, 0x00, 0x10, 0x00, 0x01, 0x00, 0x79, 0x07, 0x4f, 0x05, 0xa0, 0x00, 0x00, 0x03, 0x08, 0x90, 0x00});
         Assert.assertEquals(SUCCESS_CODE, response.getSw());
         Assert.assertArrayEquals(Arrays.copyOfRange(response.getBytes(), 0, response.getBytes().length - 2), response.getData());
@@ -97,7 +97,7 @@ public class UsbSessionTest {
     public void executeCommandMultiplyOfPackageSize() throws IOException {
         byte[] alignedCommand = byteArrayOfInts(new int[]{0x00, 0x00, 0x00, 0x00, 0x00, 0x00});
         usbConnection = mock.openIso7816Connection();
-        byte[] response = usbConnection.transceive(alignedCommand);
+        byte[] response = usbConnection.sendAndReceive(alignedCommand);
         Assert.assertNotNull(response);
     }
 
@@ -106,7 +106,7 @@ public class UsbSessionTest {
         commandResponses.put(StringUtils.bytesToHex(PACKAGE_16_BYTES), changeByte(PACKAGE_16_BYTES_RESPONSE, STATUS_BYTE_POSISION, STATUS_TIME_EXTENSION));
         byte[] commandThatRequiresWaiting = byteArrayOfInts(new int[]{0x00, 0x00, 0x00, 0x00, 0x00, 0x00});
         usbConnection = mock.openIso7816Connection();
-        usbConnection.transceive(commandThatRequiresWaiting);
+        usbConnection.sendAndReceive(commandThatRequiresWaiting);
     }
 
     @Test(expected = IOException.class)
@@ -127,7 +127,7 @@ public class UsbSessionTest {
         commandResponses.put(StringUtils.bytesToHex(PACKAGE_16_BYTES), changeByte(PACKAGE_16_BYTES_RESPONSE, STATUS_BYTE_POSISION, (byte) 0x10));
         byte[] commandThatReturnsStatusCode = byteArrayOfInts(new int[]{0x00, 0x00, 0x00, 0x00, 0x00, 0x00});
         usbConnection = mock.openIso7816Connection();
-        usbConnection.transceive(commandThatReturnsStatusCode);
+        usbConnection.sendAndReceive(commandThatReturnsStatusCode);
     }
 
     @Test
@@ -137,14 +137,14 @@ public class UsbSessionTest {
         commandResponses.put(StringUtils.bytesToHex(PACKAGE_16_BYTES), changeByte(PACKAGE_16_BYTES_RESPONSE, ERROR_BYTE_POSITION, (byte) 0x10));
         byte[] commandThatReturnsStatusCode = byteArrayOfInts(new int[]{0x00, 0x00, 0x00, 0x00, 0x00, 0x00});
         usbConnection = mock.openIso7816Connection();
-        usbConnection.transceive(commandThatReturnsStatusCode);
+        usbConnection.sendAndReceive(commandThatReturnsStatusCode);
     }
 
     @Test(expected = IOException.class)
     public void executeCommandWithEmptyResponse() throws IOException {
         byte[] unknownCommand = byteArrayOfInts(new int[]{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00});
         usbConnection = mock.openIso7816Connection();
-        usbConnection.transceive(unknownCommand);
+        usbConnection.sendAndReceive(unknownCommand);
     }
 
     /**
