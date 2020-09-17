@@ -22,8 +22,10 @@ import android.nfc.Tag;
 import android.nfc.tech.IsoDep;
 import android.nfc.tech.Ndef;
 
-import com.yubico.yubikit.iso7816.Iso7816Connection;
-import com.yubico.yubikit.android.YubiKeySession;
+import com.yubico.yubikit.core.YubiKeyConnection;
+import com.yubico.yubikit.core.YubiKeySession;
+import com.yubico.yubikit.core.NotSupportedOperation;
+import com.yubico.yubikit.core.Interface;
 
 import java.io.IOException;
 
@@ -53,15 +55,14 @@ public class NfcSession implements YubiKeySession {
         return tag;
     }
 
-    @Override
-    public Iso7816Connection openIso7816Connection() throws IOException {
+    private NfcSmartCardConnection openIso7816Connection() throws IOException {
         IsoDep card = IsoDep.get(tag);
         if (card == null) {
             throw new IOException("the tag does not support ISO-DEP");
         }
         card.setTimeout(timeout);
         card.connect();
-        return new NfcIso7816Connection(card);
+        return new NfcSmartCardConnection(card);
     }
 
     public byte[] readNdef() throws IOException {
@@ -77,5 +78,23 @@ public class NfcSession implements YubiKeySession {
             throw new IOException(e);
         }
         throw new IOException("NDEF data missing or invalid");
+    }
+
+    @Override
+    public Interface getInterface() {
+        return Interface.NFC;
+    }
+
+    @Override
+    public boolean supportsConnection(Class<? extends YubiKeyConnection> connectionType) {
+        return connectionType.isAssignableFrom(NfcSmartCardConnection.class);
+    }
+
+    @Override
+    public <T extends YubiKeyConnection> T openConnection(Class<T> connectionType) throws IOException {
+        if (connectionType.isAssignableFrom(NfcSmartCardConnection.class)) {
+            return connectionType.cast(openIso7816Connection());
+        }
+        throw new NotSupportedOperation("The connection type is not supported by this session");
     }
 }

@@ -12,12 +12,12 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.yubico.yubikit.android.app.R
 import com.yubico.yubikit.android.app.ui.YubiKeyFragment
 import com.yubico.yubikit.android.app.ui.getSecret
-import com.yubico.yubikit.iso7816.ApduException
+import com.yubico.yubikit.core.smartcard.ApduException
 import com.yubico.yubikit.oath.CredentialData
 import com.yubico.yubikit.oath.HashAlgorithm
 import com.yubico.yubikit.oath.OathApplication
 import com.yubico.yubikit.oath.OathType
-import com.yubico.yubikit.utils.RandomUtils
+import com.yubico.yubikit.core.RandomUtils
 import kotlinx.android.synthetic.main.fragment_oath.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch

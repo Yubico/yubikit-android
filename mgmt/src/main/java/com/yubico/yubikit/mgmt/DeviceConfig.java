@@ -1,7 +1,7 @@
 package com.yubico.yubikit.mgmt;
 
-import com.yubico.yubikit.utils.Interface;
-import com.yubico.yubikit.utils.TlvUtils;
+import com.yubico.yubikit.core.Interface;
+import com.yubico.yubikit.core.TlvUtils;
 
 import java.nio.ByteBuffer;
 import java.util.HashMap;

@@ -1,6 +1,6 @@
 package com.yubico.yubikit.otp;
 
-import com.yubico.yubikit.keyboard.ChecksumUtils;
+import com.yubico.yubikit.core.otp.ChecksumUtils;
 
 import javax.annotation.Nullable;
 import java.nio.ByteBuffer;

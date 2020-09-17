@@ -8,7 +8,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import com.yubico.yubikit.android.app.R
 import com.yubico.yubikit.otp.Slot
-import com.yubico.yubikit.utils.RandomUtils
+import com.yubico.yubikit.core.RandomUtils
 import kotlinx.android.synthetic.main.fragment_otp_chalresp.*
 import org.bouncycastle.util.encoders.Hex
 
@@ -43,7 +43,7 @@ class ChallengeResponseFragment : Fragment() {
                     else -> throw IllegalStateException("No slot selected")
                 }
                 viewModel.pendingAction.value = {
-                    setHmacSha1Key(slot, key, touch)
+                    putHmacSha1Key(slot, key, touch)
                     "Slot $slot programmed"
                 }
             } catch (e: Exception) {

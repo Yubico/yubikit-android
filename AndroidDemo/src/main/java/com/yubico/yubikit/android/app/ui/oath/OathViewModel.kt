@@ -2,8 +2,9 @@ package com.yubico.yubikit.android.app.ui.oath
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import com.yubico.yubikit.android.YubiKeySession
+import com.yubico.yubikit.core.YubiKeySession
 import com.yubico.yubikit.android.app.ui.YubiKeyViewModel
+import com.yubico.yubikit.core.smartcard.SmartCardConnection
 import com.yubico.yubikit.oath.Code
 import com.yubico.yubikit.oath.Credential
 import com.yubico.yubikit.oath.OathApplication
@@ -18,7 +19,7 @@ class OathViewModel : YubiKeyViewModel<OathApplication>() {
 
     var password: Pair<String, CharArray>? = null
 
-    override fun getApp(session: YubiKeySession) = OathApplication(session.openIso7816Connection())
+    override fun getApp(session: YubiKeySession) = OathApplication(session.openConnection(SmartCardConnection::class.java))
 
     override fun OathApplication.updateState() {
         _oathInfo.postValue(applicationInfo)
@@ -29,6 +30,6 @@ class OathViewModel : YubiKeyViewModel<OathApplication>() {
             }
         }
 
-        _credentials.postValue(calculateAll())
+        _credentials.postValue(calculateCodes())
     }
 }

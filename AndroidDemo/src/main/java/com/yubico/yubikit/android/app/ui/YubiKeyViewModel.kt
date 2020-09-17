@@ -3,7 +3,7 @@ package com.yubico.yubikit.android.app.ui
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import com.yubico.yubikit.android.YubiKeySession
+import com.yubico.yubikit.core.YubiKeySession
 import java.io.Closeable
 
 abstract class YubiKeyViewModel<App : Closeable> : ViewModel() {

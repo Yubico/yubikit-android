@@ -22,7 +22,7 @@ import com.yubico.yubikit.android.transport.nfc.NfcConfiguration
 import com.yubico.yubikit.android.transport.usb.UsbConfiguration
 import com.yubico.yubikit.android.transport.usb.UsbSession
 import com.yubico.yubikit.android.transport.usb.UsbSessionListener
-import com.yubico.yubikit.utils.Logger
+import com.yubico.yubikit.core.Logger
 import kotlinx.android.synthetic.main.dialog_about.*
 import java.util.*
 

@@ -16,19 +16,19 @@
 
 package com.yubico.yubikit.piv;
 
-import com.yubico.yubikit.exceptions.ApplicationNotAvailableException;
-import com.yubico.yubikit.exceptions.BadResponseException;
-import com.yubico.yubikit.exceptions.NotSupportedOperation;
-import com.yubico.yubikit.iso7816.Apdu;
-import com.yubico.yubikit.iso7816.ApduException;
-import com.yubico.yubikit.iso7816.Iso7816Protocol;
-import com.yubico.yubikit.iso7816.Iso7816Connection;
-import com.yubico.yubikit.utils.Logger;
-import com.yubico.yubikit.utils.RandomUtils;
-import com.yubico.yubikit.utils.StringUtils;
-import com.yubico.yubikit.utils.Tlv;
-import com.yubico.yubikit.utils.TlvUtils;
-import com.yubico.yubikit.utils.Version;
+import com.yubico.yubikit.core.ApplicationNotAvailableException;
+import com.yubico.yubikit.core.BadResponseException;
+import com.yubico.yubikit.core.NotSupportedOperation;
+import com.yubico.yubikit.core.smartcard.Apdu;
+import com.yubico.yubikit.core.smartcard.ApduException;
+import com.yubico.yubikit.core.smartcard.SmartCardProtocol;
+import com.yubico.yubikit.core.smartcard.SmartCardConnection;
+import com.yubico.yubikit.core.Logger;
+import com.yubico.yubikit.core.RandomUtils;
+import com.yubico.yubikit.core.StringUtils;
+import com.yubico.yubikit.core.Tlv;
+import com.yubico.yubikit.core.TlvUtils;
+import com.yubico.yubikit.core.Version;
 
 import java.io.*;
 import java.math.BigInteger;
@@ -137,7 +137,7 @@ public class PivApplication implements Closeable {
     private static final byte[] KEY_PREFIX_P256 = new byte[]{0x30, 0x59, 0x30, 0x13, 0x06, 0x07, 0x2a, (byte) 0x86, 0x48, (byte) 0xce, 0x3d, 0x02, 0x01, 0x06, 0x08, 0x2a, (byte) 0x86, 0x48, (byte) 0xce, 0x3d, 0x03, 0x01, 0x07, 0x03, 0x42, 0x00};
     private static final byte[] KEY_PREFIX_P384 = new byte[]{0x30, 0x76, 0x30, 0x10, 0x06, 0x07, 0x2a, (byte) 0x86, 0x48, (byte) 0xce, 0x3d, 0x02, 0x01, 0x06, 0x05, 0x2b, (byte) 0x81, 0x04, 0x00, 0x22, 0x03, 0x62, 0x00};
 
-    private final Iso7816Protocol protocol;
+    private final SmartCardProtocol protocol;
     private final Version version;
     private int currentPinAttempts = 3;  // Internal guess as to number of PIN retries.
     private int maxPinAttempts = 3; // Internal guess as to max number of PIN retries.
@@ -151,8 +151,8 @@ public class PivApplication implements Closeable {
      * @throws ApduException                    in case of an error response from the YubiKey
      * @throws ApplicationNotAvailableException if the application is missing or disabled
      */
-    public PivApplication(Iso7816Connection connection) throws IOException, ApduException, ApplicationNotAvailableException {
-        protocol = new Iso7816Protocol(AID, connection);
+    public PivApplication(SmartCardConnection connection) throws IOException, ApduException, ApplicationNotAvailableException {
+        protocol = new SmartCardProtocol(AID, connection);
 
         protocol.select();
         version = Version.parse(protocol.sendAndReceive(new Apdu(0, INS_GET_VERSION, 0, 0, null)));

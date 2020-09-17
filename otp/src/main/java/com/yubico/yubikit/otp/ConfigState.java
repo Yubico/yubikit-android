@@ -16,7 +16,7 @@
 
 package com.yubico.yubikit.otp;
 
-import com.yubico.yubikit.utils.Version;
+import com.yubico.yubikit.core.Version;
 
 /**
  * Data object containing the state of slot programming for a YubiKey.

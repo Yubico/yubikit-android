@@ -6,6 +6,7 @@ import android.os.Handler;
 import androidx.annotation.NonNull;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
+import com.yubico.yubikit.core.YubiKeySession;
 import com.yubico.yubikit.android.transport.nfc.NfcConfiguration;
 import com.yubico.yubikit.android.transport.nfc.NfcDeviceManager;
 import com.yubico.yubikit.android.transport.nfc.NfcDisabledException;

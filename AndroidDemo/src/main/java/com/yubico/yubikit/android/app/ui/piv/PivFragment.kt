@@ -13,8 +13,8 @@ import com.google.android.material.tabs.TabLayoutMediator
 import com.yubico.yubikit.android.app.R
 import com.yubico.yubikit.android.app.ui.YubiKeyFragment
 import com.yubico.yubikit.android.app.ui.getSecret
-import com.yubico.yubikit.exceptions.ApplicationNotAvailableException
-import com.yubico.yubikit.iso7816.ApduException
+import com.yubico.yubikit.core.ApplicationNotAvailableException
+import com.yubico.yubikit.core.smartcard.ApduException
 import com.yubico.yubikit.piv.PivApplication
 import com.yubico.yubikit.piv.Slot
 import kotlinx.android.synthetic.main.fragment_piv.*

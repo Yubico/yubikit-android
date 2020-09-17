@@ -7,7 +7,7 @@ import android.view.ViewGroup
 import android.widget.CheckBox
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Observer
-import com.yubico.yubikit.utils.Interface
+import com.yubico.yubikit.core.Interface
 import com.yubico.yubikit.android.app.R
 import com.yubico.yubikit.android.app.ui.YubiKeyFragment
 import com.yubico.yubikit.mgmt.Application
@@ -74,7 +74,7 @@ class MgmtFragment : YubiKeyFragment<ManagementApplication, MgmtViewModel>() {
 
         save.setOnClickListener {
             viewModel.pendingAction.value = {
-                writeDeviceConfig(DeviceConfig.Builder().apply {
+                updateDeviceConfig(DeviceConfig.Builder().apply {
                     Interface.values().forEach { iface ->
                         enabledApplications(iface, checkboxIds.filter {
                             it.key.first == iface && view.findViewById<CheckBox>(it.value).isChecked

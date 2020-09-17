@@ -24,9 +24,12 @@ import android.hardware.usb.UsbInterface;
 import android.hardware.usb.UsbManager;
 import android.util.Pair;
 
-import com.yubico.yubikit.iso7816.Iso7816Connection;
-import com.yubico.yubikit.keyboard.OtpConnection;
-import com.yubico.yubikit.android.YubiKeySession;
+import com.yubico.yubikit.core.YubiKeyConnection;
+import com.yubico.yubikit.core.YubiKeySession;
+import com.yubico.yubikit.core.NotSupportedOperation;
+import com.yubico.yubikit.core.smartcard.SmartCardConnection;
+import com.yubico.yubikit.core.otp.OtpConnection;
+import com.yubico.yubikit.core.Interface;
 
 import java.io.IOException;
 import java.util.Objects;
@@ -95,7 +98,7 @@ public class UsbSession implements YubiKeySession {
      *
      * @return whether or not openIso7816Connection can be called.
      */
-    public boolean isIso7816Available() {
+    private boolean isIso7816Available() {
         return ccidEndpoints != null;
     }
 
@@ -105,8 +108,7 @@ public class UsbSession implements YubiKeySession {
      * @return a session for communication with the YubiKey
      * @throws IOException if ISO-7816 isn't available, or on communication error
      */
-    @Override
-    public Iso7816Connection openIso7816Connection() throws IOException {
+    private SmartCardConnection openIso7816Connection() throws IOException {
         UsbDeviceConnection connection = openConnection();
         if (connection == null) {
             throw new IOException("exception in UsbManager.openDevice");
@@ -117,10 +119,10 @@ public class UsbSession implements YubiKeySession {
             throw new IOException("Interface couldn't be claimed");
         }
 
-        return new UsbIso7816Connection(connection, ccidInterface, ccidEndpoints.first, ccidEndpoints.second);
+        return new UsbSmartCardConnection(connection, ccidInterface, ccidEndpoints.first, ccidEndpoints.second);
     }
 
-    public boolean isOtpAvailable() {
+    private boolean isOtpAvailable() {
         return otpInterface != null;
     }
 
@@ -130,7 +132,7 @@ public class UsbSession implements YubiKeySession {
      * @return session for communication with yubikey (supported over USB only)
      * @throws IOException if Keyboard HID interface or endpoints are not found
      */
-    public OtpConnection openOtpConnection() throws IOException {
+    private OtpConnection openOtpConnection() throws IOException {
         UsbDeviceConnection connection = openConnection();
         if (connection == null) {
             throw new IOException("exception in UsbManager.openDevice");
@@ -144,6 +146,30 @@ public class UsbSession implements YubiKeySession {
         return new UsbOtpConnection(connection, otpInterface);
     }
 
+    @Override
+    public Interface getInterface() {
+        return Interface.USB;
+    }
+
+    @Override
+    public boolean supportsConnection(Class<? extends YubiKeyConnection> connectionType) {
+        if (connectionType.isAssignableFrom(UsbOtpConnection.class)) {
+            return isOtpAvailable();
+        } else if (connectionType.isAssignableFrom(UsbSmartCardConnection.class)) {
+            return isIso7816Available();
+        }
+        return false;
+    }
+
+    @Override
+    public <T extends YubiKeyConnection> T openConnection(Class<T> connectionType) throws IOException {
+        if (connectionType.isAssignableFrom(UsbOtpConnection.class) && isOtpAvailable()) {
+            return connectionType.cast(openOtpConnection());
+        } else if (connectionType.isAssignableFrom(UsbSmartCardConnection.class) && isIso7816Available()) {
+            return connectionType.cast(openIso7816Connection());
+        }
+        throw new NotSupportedOperation("The connection type is not supported by this session");
+    }
 
     @Override
     public boolean equals(Object o) {

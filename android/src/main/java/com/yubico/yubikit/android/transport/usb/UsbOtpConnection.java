@@ -20,8 +20,8 @@ import android.hardware.usb.UsbConstants;
 import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbInterface;
 
-import com.yubico.yubikit.keyboard.OtpConnection;
-import com.yubico.yubikit.utils.Logger;
+import com.yubico.yubikit.core.otp.OtpConnection;
+import com.yubico.yubikit.core.Logger;
 
 import java.io.IOException;
 

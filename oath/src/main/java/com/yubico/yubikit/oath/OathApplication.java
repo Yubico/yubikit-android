@@ -16,15 +16,15 @@
 
 package com.yubico.yubikit.oath;
 
-import com.yubico.yubikit.exceptions.ApplicationNotAvailableException;
-import com.yubico.yubikit.exceptions.NotSupportedOperation;
-import com.yubico.yubikit.iso7816.Apdu;
-import com.yubico.yubikit.iso7816.ApduException;
-import com.yubico.yubikit.iso7816.Iso7816Protocol;
-import com.yubico.yubikit.iso7816.Iso7816Connection;
-import com.yubico.yubikit.utils.RandomUtils;
-import com.yubico.yubikit.utils.Tlv;
-import com.yubico.yubikit.utils.TlvUtils;
+import com.yubico.yubikit.core.ApplicationNotAvailableException;
+import com.yubico.yubikit.core.NotSupportedOperation;
+import com.yubico.yubikit.core.smartcard.Apdu;
+import com.yubico.yubikit.core.smartcard.ApduException;
+import com.yubico.yubikit.core.smartcard.SmartCardProtocol;
+import com.yubico.yubikit.core.smartcard.SmartCardConnection;
+import com.yubico.yubikit.core.RandomUtils;
+import com.yubico.yubikit.core.Tlv;
+import com.yubico.yubikit.core.TlvUtils;
 
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
@@ -56,7 +56,6 @@ public class OathApplication implements Closeable {
     public static final short WRONG_SYNTAX = 0x6a80;
     public static final short GENERIC_ERROR = 0x6581;
     public static final short NO_SUCH_OBJECT = 0x6984;
-    public static final short APPLICATION_NOT_FOUND_ERROR = 0x6a82;
 
     /**
      * Tlv tags for credential data
@@ -92,8 +91,9 @@ public class OathApplication implements Closeable {
     private static final long MILLS_IN_SECOND = 1000;
     private static final int DEFAULT_PERIOD = 30;
     private static final int CHALLENGE_LEN = 8;
+    private static final int ACCESS_KEY_LEN = 16;
 
-    private final Iso7816Protocol protocol;
+    private final SmartCardProtocol protocol;
 
     /**
      * Version, ID and a challenge if authentication is configured
@@ -109,8 +109,8 @@ public class OathApplication implements Closeable {
      * @throws IOException                      in case of connection error
      * @throws ApplicationNotAvailableException if the application is missing or disabled
      */
-    public OathApplication(Iso7816Connection connection) throws IOException, ApplicationNotAvailableException {
-        protocol = new Iso7816Protocol(AID, connection, INS_SEND_REMAINING);
+    public OathApplication(SmartCardConnection connection) throws IOException, ApplicationNotAvailableException {
+        protocol = new SmartCardProtocol(AID, connection, INS_SEND_REMAINING);
 
         applicationInfo = new OathApplicationInfo(protocol.select());
         protocol.enableTouchWorkaround(applicationInfo.getVersion());
@@ -156,8 +156,12 @@ public class OathApplication implements Closeable {
         }
 
         try {
-            byte[] secret = calculateSecret(password, applicationInfo.getSalt());
-            return validate(challenge -> calculateResponse(secret, challenge));
+            byte[] secret = deriveAccessKey(password, applicationInfo.getSalt());
+            try {
+                return validate(challenge -> doHmacSha1(secret, challenge));
+            } finally {
+                Arrays.fill(secret, (byte) 0);
+            }
         } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
             throw new RuntimeException(e); // This shouldn't happen.
         }
@@ -206,49 +210,46 @@ public class OathApplication implements Closeable {
     }
 
     /**
-     * Configures Authentication.
+     * Sets an access key derived from a password. Once an access key is set, any usage of the credentials stored will
+     * require the application to be unlocked via one of the validate methods. Also see {@link #setAccessKey(byte[])}.
      *
-     * @param password user-supplied password to set
+     * @param password user-supplied password to set, encoded as UTF-8 bytes
      * @throws IOException   in case of connection error
      * @throws ApduException in case of communication error
      */
     public void setPassword(char[] password) throws IOException, ApduException {
         try {
-            setSecret(calculateSecret(password, applicationInfo.getSalt()));
+            setAccessKey(deriveAccessKey(password, applicationInfo.getSalt()));
         } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
             throw new RuntimeException(e); // this shouldn't happen.
         }
     }
 
     /**
-     * Configures Authentication.
-     * The key to be set is expected to be a user-supplied UTF-8 encoded password passed through 1000 rounds of PBKDF2
-     * with the ID from select used as salt.
-     * 16 bytes of that are used.
-     * When configuring authentication you are required to send an 8 byte challenge and
-     * one authentication-response with that key, in order to confirm that the application and
-     * the host software can calculate the same response for that key.
+     * Sets an access key. Once an access key is set, any usage of the credentials stored will require the application
+     * to be unlocked via one of the validate methods, which requires knowledge of the access key. Typically this key is
+     * derived from a password (see {@link #deriveAccessKey(char[], byte[])}) and is set by instead using the
+     * {@link #setPassword(char[])} method. This method sets the raw 16 byte key.
      *
-     * @param secret 16 bytes of user-supplied UTF-8 encoded password passed through 1000 rounds of PBKDF2
-     *               with the ID from select used as salt
+     * @param key the shared secret key used to unlock access to the application
      * @throws IOException   in case of connection error
      * @throws ApduException in case of communication error
      */
-    public void setSecret(byte[] secret) throws IOException, ApduException {
-        if (secret.length != 16) {
+    public void setAccessKey(byte[] key) throws IOException, ApduException {
+        if (key.length != ACCESS_KEY_LEN) {
             throw new IllegalArgumentException("Secret should be 16 bytes");
         }
 
         Map<Integer, byte[]> request = new LinkedHashMap<>();
-        request.put(TAG_KEY, ByteBuffer.allocate(1 + secret.length)
+        request.put(TAG_KEY, ByteBuffer.allocate(1 + key.length)
                 .put((byte) (OathType.TOTP.value | HashAlgorithm.SHA1.value))
-                .put(secret)
+                .put(key)
                 .array());
 
         byte[] challenge = RandomUtils.getRandomBytes(CHALLENGE_LEN);
         request.put(TAG_CHALLENGE, challenge);
         try {
-            request.put(TAG_RESPONSE, calculateResponse(secret, challenge));
+            request.put(TAG_RESPONSE, doHmacSha1(key, challenge));
         } catch (NoSuchAlgorithmException | InvalidKeyException e) {
             throw new RuntimeException(e); //This shouldn't happen
         }
@@ -257,13 +258,12 @@ public class OathApplication implements Closeable {
     }
 
     /**
-     * Removes authentication.
-     * If the application is protected with a password, this password is removed.
+     * Removes the access key, if one is set.
      *
      * @throws IOException   in case of connection error
      * @throws ApduException in case of communication error
      */
-    public void unsetSecret() throws IOException, ApduException {
+    public void deleteAccessKey() throws IOException, ApduException {
         protocol.sendAndReceive(new Apdu(0, INS_SET_CODE, 0, 0, new Tlv(TAG_KEY, null).getBytes()));
     }
 
@@ -274,7 +274,7 @@ public class OathApplication implements Closeable {
      * @throws IOException   in case of connection error
      * @throws ApduException in case of communication error
      */
-    public List<Credential> listCredentials() throws IOException, ApduException {
+    public List<Credential> getCredentials() throws IOException, ApduException {
         byte[] response = protocol.sendAndReceive(new Apdu(0, INS_LIST, 0, 0, null));
         List<Tlv> list = TlvUtils.parseTlvList(response);
         List<Credential> result = new ArrayList<>();
@@ -285,25 +285,25 @@ public class OathApplication implements Closeable {
     }
 
     /**
-     * Performs CALCULATE for all available credentials,
+     * Performs CALCULATE for all available credentials.
      *
      * @return returns credential + response for TOTP and just credential with null code for HOTP and credentials requiring touch.
      * @throws IOException   in case of connection error
      * @throws ApduException in case of communication error
      */
-    public Map<Credential, Code> calculateAll() throws IOException, ApduException {
-        return calculateAll(System.currentTimeMillis());
+    public Map<Credential, Code> calculateCodes() throws IOException, ApduException {
+        return calculateCodes(System.currentTimeMillis());
     }
 
     /**
-     * Performs CALCULATE for all available credentials,
+     * Performs CALCULATE for all available credentials.
      *
      * @param timestamp the timestamp which is used as start point for TOTP
      * @return returns credential + response for TOTP and just credential for HOTP and credentials requiring touch.
      * @throws IOException   in case of connection error
      * @throws ApduException in case of communication error
      */
-    public Map<Credential, Code> calculateAll(long timestamp) throws IOException, ApduException {
+    public Map<Credential, Code> calculateCodes(long timestamp) throws IOException, ApduException {
         long timeStep = (timestamp / MILLS_IN_SECOND / DEFAULT_PERIOD);
         byte[] challenge = ByteBuffer.allocate(CHALLENGE_LEN).putLong(timeStep).array();
 
@@ -320,7 +320,7 @@ public class OathApplication implements Closeable {
 
             if (credential.getOathType() == OathType.TOTP && credential.getPeriod() != DEFAULT_PERIOD) {
                 // recalculate credentials that have different period
-                map.put(credential, calculate(credential, timestamp));
+                map.put(credential, calculateCode(credential, timestamp));
             } else if (response.response.length == 4) {
                 // Note: codes are typically valid in 'DEFAULT_PERIOD' second slices
                 // so the valid period actually starts before the calculation happens
@@ -344,7 +344,7 @@ public class OathApplication implements Closeable {
      * @throws IOException   in case of connection error
      * @throws ApduException in case of communication error
      */
-    public byte[] calculate(byte[] credentialId, byte[] challenge) throws IOException, ApduException {
+    public byte[] calculateResponse(byte[] credentialId, byte[] challenge) throws IOException, ApduException {
         Map<Integer, byte[]> request = new LinkedHashMap<>();
         request.put(TAG_NAME, credentialId);
         request.put(TAG_CHALLENGE, challenge);
@@ -361,8 +361,8 @@ public class OathApplication implements Closeable {
      * @throws IOException   in case of connection error
      * @throws ApduException in case of communication error
      */
-    public Code calculate(Credential credential) throws IOException, ApduException {
-        return calculate(credential, System.currentTimeMillis());
+    public Code calculateCode(Credential credential) throws IOException, ApduException {
+        return calculateCode(credential, System.currentTimeMillis());
     }
 
     /**
@@ -374,17 +374,14 @@ public class OathApplication implements Closeable {
      * @throws IOException   in case of connection error
      * @throws ApduException in case of communication error
      */
-    public Code calculate(Credential credential, @Nullable Long timestamp) throws IOException, ApduException {
+    public Code calculateCode(Credential credential, @Nullable Long timestamp) throws IOException, ApduException {
         if (!credential.deviceId.equals(applicationInfo.getDeviceId())) {
             throw new IllegalArgumentException("The given credential belongs to a different device!");
         }
-        byte[] challenge;
-        if (timestamp == null || credential.getPeriod() == 0) {
-            challenge = new byte[CHALLENGE_LEN];
-        } else {
+        byte[] challenge = new byte[CHALLENGE_LEN];
+        if (timestamp != null && credential.getPeriod() != 0) {
             long timeStep = (timestamp / MILLS_IN_SECOND / credential.getPeriod());
-            challenge = ByteBuffer.allocate(CHALLENGE_LEN).putLong(timeStep).array();
-            // TODO: Make sure challenge is correct here
+            ByteBuffer.wrap(challenge).putLong(timeStep);
         }
 
         Map<Integer, byte[]> requestTlv = new LinkedHashMap<>();
@@ -462,6 +459,20 @@ public class OathApplication implements Closeable {
     }
 
     /**
+     * Deletes an existing Credential.
+     *
+     * @param credential the Credential to remove
+     * @throws IOException   in case of connection error
+     * @throws ApduException in case of communication error
+     */
+    public void deleteCredential(Credential credential) throws IOException, ApduException {
+        if (!credential.deviceId.equals(applicationInfo.getDeviceId())) {
+            throw new IllegalArgumentException("The given credential belongs to a different device!");
+        }
+        deleteCredential(credential.getId());
+    }
+
+    /**
      * Change the issuer and name of a credential.
      *
      * @param credentialId ID of the credential to rename
@@ -510,18 +521,18 @@ public class OathApplication implements Closeable {
     }
 
     /**
-     * Passes a user-supplied UTF-8 encoded password through 1000 rounds of PBKDF2
-     * with the device ID from select used as salt. 16 bytes of that are used.
+     * Derives an access key from a password and the device-specific salt.
+     * The key is derived by running 1000 rounds of PBKDF2 using the password and salt as inputs, with a 16 byte output.
      *
-     * @param password a user-supplied password
-     * @param salt     the salt value (the deviceId returned by select command)
-     * @return a secret/key for authentication
+     * @param password a user-supplied password, encoded as UTF-8 bytes.
+     * @param salt     the salt value (retrievable from the OathApplicationInfo object)
+     * @return a key for authentication
      * @throws InvalidKeySpecException  in case of crypto operation error
      * @throws NoSuchAlgorithmException in case of crypto operation error
      */
-    public static byte[] calculateSecret(char[] password, byte[] salt) throws NoSuchAlgorithmException, InvalidKeySpecException {
+    public static byte[] deriveAccessKey(char[] password, byte[] salt) throws NoSuchAlgorithmException, InvalidKeySpecException {
         SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
-        PBEKeySpec keyspec = new PBEKeySpec(password, salt, 1000, 128);
+        PBEKeySpec keyspec = new PBEKeySpec(password, salt, 1000, ACCESS_KEY_LEN * 8);
         try {
             return factory.generateSecret(keyspec).getEncoded();
         } finally {
@@ -530,7 +541,7 @@ public class OathApplication implements Closeable {
     }
 
     /**
-     * Calculates HMAC (uses SHA1 as hash function)
+     * Calculates an HMAC-SHA1 response
      *
      * @param secret  the secret
      * @param message data in bytes
@@ -538,7 +549,7 @@ public class OathApplication implements Closeable {
      * @throws InvalidKeyException      in case of crypto operation error
      * @throws NoSuchAlgorithmException in case of crypto operation error
      */
-    private static byte[] calculateResponse(byte[] secret, byte[] message) throws NoSuchAlgorithmException, InvalidKeyException {
+    private static byte[] doHmacSha1(byte[] secret, byte[] message) throws NoSuchAlgorithmException, InvalidKeyException {
         Mac mac = Mac.getInstance("HmacSHA1"); //KeyProperties.KEY_ALGORITHM_HMAC_SHA1 on API 23+
         mac.init(new SecretKeySpec(secret, mac.getAlgorithm()));
         return mac.doFinal(message);
@@ -593,7 +604,7 @@ public class OathApplication implements Closeable {
         final OathType oathType;
         final HashAlgorithm hashAlgorithm;
 
-        ListResponse(Tlv tlv) {
+        private ListResponse(Tlv tlv) {
             byte[] value = tlv.getValue();
             id = Arrays.copyOfRange(value, 1, value.length);
             oathType = OathType.fromValue((byte) (0xf0 & value[0]));
@@ -606,7 +617,7 @@ public class OathApplication implements Closeable {
         final int digits;
         final byte[] response;
 
-        CalculateResponse(Tlv tlv) {
+        private CalculateResponse(Tlv tlv) {
             responseType = (byte) tlv.getTag();
             byte[] value = tlv.getValue();
             digits = value[0];

@@ -30,14 +30,13 @@ public enum Slot {
     TWO;
 
     /**
-     * Maps a Slot value to one of two values.
+     * Maps a Slot value to one of two byte values.
      *
      * @param one the value to use for slot 1
      * @param two the value to use for slot 2
-     * @param <T> The type of the value to return
      * @return either one or two, depending on the slot.
      */
-    <T> T map(T one, T two) {
+    byte map(byte one, byte two) {
         switch (this) {
             case ONE:
                 return one;

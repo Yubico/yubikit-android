@@ -20,7 +20,7 @@ import com.yubico.yubikit.android.transport.nfc.NfcNotFoundException;
 import com.yubico.yubikit.android.transport.usb.UsbConfiguration;
 import com.yubico.yubikit.android.transport.usb.UsbSession;
 import com.yubico.yubikit.android.transport.usb.UsbSessionListener;
-import com.yubico.yubikit.utils.NdefUtils;
+import com.yubico.yubikit.core.NdefUtils;
 
 import java.io.IOException;
 

@@ -16,7 +16,7 @@
 
 package com.yubico.yubikit.oath;
 
-import com.yubico.yubikit.utils.Pair;
+import com.yubico.yubikit.core.Pair;
 
 import org.apache.commons.codec.binary.Base32;
 

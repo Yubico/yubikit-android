@@ -16,7 +16,7 @@
 
 package com.yubico.yubikit.piv;
 
-import com.yubico.yubikit.exceptions.CommandException;
+import com.yubico.yubikit.core.CommandException;
 
 public class InvalidPinException extends CommandException {
     private final int attemptsRemaining;

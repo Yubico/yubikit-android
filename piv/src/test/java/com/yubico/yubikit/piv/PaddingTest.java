@@ -1,8 +1,6 @@
 package com.yubico.yubikit.piv;
 
 import com.yubico.yubikit.testing.Codec;
-import com.yubico.yubikit.utils.Logger;
-import com.yubico.yubikit.utils.StringUtils;
 
 import org.junit.Assert;
 import org.junit.Test;

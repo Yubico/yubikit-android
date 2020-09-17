@@ -16,21 +16,22 @@
 
 package com.yubico.yubikit.mgmt;
 
-import com.yubico.yubikit.ctaphid.FidoProtocol;
-import com.yubico.yubikit.ctaphid.FidoConnection;
-import com.yubico.yubikit.exceptions.ApplicationNotAvailableException;
-import com.yubico.yubikit.exceptions.CommandException;
-import com.yubico.yubikit.exceptions.NotSupportedOperation;
-import com.yubico.yubikit.iso7816.Apdu;
-import com.yubico.yubikit.iso7816.ApduException;
-import com.yubico.yubikit.iso7816.Iso7816Protocol;
-import com.yubico.yubikit.iso7816.Iso7816Connection;
-import com.yubico.yubikit.keyboard.ChecksumUtils;
-import com.yubico.yubikit.keyboard.OtpProtocol;
-import com.yubico.yubikit.keyboard.OtpConnection;
-import com.yubico.yubikit.utils.Interface;
-import com.yubico.yubikit.utils.Logger;
-import com.yubico.yubikit.utils.Version;
+import com.yubico.yubikit.core.YubiKeySession;
+import com.yubico.yubikit.core.fido.FidoProtocol;
+import com.yubico.yubikit.core.fido.FidoConnection;
+import com.yubico.yubikit.core.ApplicationNotAvailableException;
+import com.yubico.yubikit.core.CommandException;
+import com.yubico.yubikit.core.NotSupportedOperation;
+import com.yubico.yubikit.core.smartcard.Apdu;
+import com.yubico.yubikit.core.smartcard.ApduException;
+import com.yubico.yubikit.core.smartcard.SmartCardProtocol;
+import com.yubico.yubikit.core.smartcard.SmartCardConnection;
+import com.yubico.yubikit.core.otp.ChecksumUtils;
+import com.yubico.yubikit.core.otp.OtpProtocol;
+import com.yubico.yubikit.core.otp.OtpConnection;
+import com.yubico.yubikit.core.Interface;
+import com.yubico.yubikit.core.Logger;
+import com.yubico.yubikit.core.Version;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -40,53 +41,62 @@ import java.util.Arrays;
 import javax.annotation.Nullable;
 
 /**
- * Implements management API to YubiKey interface
+ * Application to get information about and configure a YubiKey via the Management Application.
  * https://developers.yubico.com/yubikey-manager/Config_Reference.html
  */
 public class ManagementApplication implements Closeable {
+    // Smart card command constants
     private static final byte[] AID = new byte[]{(byte) 0xa0, 0x00, 0x00, 0x05, 0x27, 0x47, 0x11, 0x17};
-
-    /**
-     * Instruction set for MGMT application
-     */
     private static final byte INS_READ_CONFIG = 0x1d;
     private static final byte INS_WRITE_CONFIG = 0x1c;
     private static final byte INS_SET_MODE = 0x16;
-
-
-    private static final byte SLOT_DEVICE_CONFIG = 0x11;
-    private static final byte SLOT_YK4_CAPABILITIES = 0x13;
-    private static final byte SLOT_YK4_SET_DEVICE_INFO = 0x15;
-
     private static final byte P1_DEVICE_CONFIG = 0x11;
 
+    // OTP command constants
+    private static final byte CMD_DEVICE_CONFIG = 0x11;
+    private static final byte CMD_YK4_CAPABILITIES = 0x13;
+    private static final byte CMD_YK4_SET_DEVICE_INFO = 0x15;
+
+    // FIDO command constants
     private static final byte CTAP_TYPE_INIT = (byte) 0x80;
     private static final byte CTAP_VENDOR_FIRST = 0x40;
     private static final byte CTAP_YUBIKEY_DEVICE_CONFIG = CTAP_TYPE_INIT | CTAP_VENDOR_FIRST;
     private static final byte CTAP_READ_CONFIG = CTAP_TYPE_INIT | CTAP_VENDOR_FIRST + 2;
     private static final byte CTAP_WRITE_CONFIG = CTAP_TYPE_INIT | CTAP_VENDOR_FIRST + 3;
 
-    /**
-     * This applet is implemented on 2 interfaces: CCID and HID
-     */
     private final Backend<?> backend;
-
-    /**
-     * Firmware version
-     */
     private final Version version;
 
     /**
-     * Create new instance of {@link ManagementApplication} over an {@link Iso7816Connection}.
+     * Connects to a YubiKeySession and creates a new instance of {@link ManagementApplication}.
+     *
+     * @param session A YubiKey session to use
+     * @return a new Management Application instance
+     * @throws IOException                      in case of a communication error
+     * @throws ApplicationNotAvailableException if the application is not available
+     */
+    public static ManagementApplication create(YubiKeySession session) throws IOException, ApplicationNotAvailableException {
+        if (session.supportsConnection(SmartCardConnection.class)) {
+            return new ManagementApplication(session.openConnection(SmartCardConnection.class));
+        } else if (session.supportsConnection(OtpConnection.class)) {
+            return new ManagementApplication(session.openConnection(OtpConnection.class));
+        } else if (session.supportsConnection(FidoConnection.class)) {
+            return new ManagementApplication(session.openConnection(FidoConnection.class));
+        }
+        throw new ApplicationNotAvailableException("Session does not support any compatible connection type");
+    }
+
+    /**
+     * Create new instance of {@link ManagementApplication} over an {@link SmartCardConnection}.
      *
      * @param connection connection with YubiKey
      * @throws IOException                      in case of connection error
      * @throws ApplicationNotAvailableException in case the application is missing/disabled
      */
-    public ManagementApplication(Iso7816Connection connection) throws IOException, ApplicationNotAvailableException {
-        Iso7816Protocol app = new Iso7816Protocol(AID, connection);
-        version = Version.parse(new String(app.select()));
-        backend = new Backend<Iso7816Protocol>(app) {
+    public ManagementApplication(SmartCardConnection connection) throws IOException, ApplicationNotAvailableException {
+        SmartCardProtocol protocol = new SmartCardProtocol(AID, connection);
+        version = Version.parse(new String(protocol.select()));
+        backend = new Backend<SmartCardProtocol>(protocol) {
             @Override
             byte[] readConfig() throws IOException, CommandException {
                 return delegate.sendAndReceive(new Apdu(0, INS_READ_CONFIG, 0, 0, null));
@@ -112,15 +122,15 @@ public class ManagementApplication implements Closeable {
      * @throws ApplicationNotAvailableException in case the application is missing/disabled
      */
     public ManagementApplication(OtpConnection connection) throws IOException, ApplicationNotAvailableException {
-        OtpProtocol application = new OtpProtocol(connection);
-        version = Version.parse(application.readStatus());
+        OtpProtocol protocol = new OtpProtocol(connection);
+        version = Version.parse(protocol.readStatus());
         if (version.isLessThan(3, 0, 0)) {
             throw new ApplicationNotAvailableException("Management Application requires YubiKey 3 or later");
         }
-        backend = new Backend<OtpProtocol>(application) {
+        backend = new Backend<OtpProtocol>(protocol) {
             @Override
             byte[] readConfig() throws IOException, CommandException {
-                byte[] response = delegate.sendAndReceive(SLOT_YK4_CAPABILITIES, null, null);
+                byte[] response = delegate.sendAndReceive(CMD_YK4_CAPABILITIES, null, null);
                 if (ChecksumUtils.checkCrc(response, response[0] + 1 + 2)) {
                     return Arrays.copyOf(response, response[0] + 1);
                 }
@@ -129,12 +139,12 @@ public class ManagementApplication implements Closeable {
 
             @Override
             void writeConfig(byte[] config) throws IOException, CommandException {
-                delegate.sendAndReceive(SLOT_YK4_SET_DEVICE_INFO, config, null);
+                delegate.sendAndReceive(CMD_YK4_SET_DEVICE_INFO, config, null);
             }
 
             @Override
             void setMode(byte[] data) throws IOException, CommandException {
-                delegate.sendAndReceive(SLOT_DEVICE_CONFIG, data, null);
+                delegate.sendAndReceive(CMD_DEVICE_CONFIG, data, null);
             }
         };
     }
@@ -146,9 +156,9 @@ public class ManagementApplication implements Closeable {
      * @throws IOException in case of connection error
      */
     public ManagementApplication(FidoConnection connection) throws IOException {
-        FidoProtocol app = new FidoProtocol(connection);
-        version = app.getVersion();
-        backend = new Backend<FidoProtocol>(app) {
+        FidoProtocol protocol = new FidoProtocol(connection);
+        version = protocol.getVersion();
+        backend = new Backend<FidoProtocol>(protocol) {
             @Override
             byte[] readConfig() throws IOException {
                 Logger.d("Reading fido config...");
@@ -181,7 +191,7 @@ public class ManagementApplication implements Closeable {
         return version;
     }
 
-    public DeviceInfo readDeviceInfo() throws IOException, CommandException {
+    public DeviceInfo getDeviceInfo() throws IOException, CommandException {
         if (version.isLessThan(4, 1, 0)) {
             //TODO: Provide fallback?
             throw new NotSupportedOperation("Operation is not supported on versions below 4");
@@ -200,7 +210,7 @@ public class ManagementApplication implements Closeable {
      * @throws IOException      in case of connection error
      * @throws CommandException in case of error response
      */
-    public void writeDeviceConfig(DeviceConfig config, boolean reboot, @Nullable byte[] currentLockCode, @Nullable byte[] newLockCode) throws IOException, CommandException {
+    public void updateDeviceConfig(DeviceConfig config, boolean reboot, @Nullable byte[] currentLockCode, @Nullable byte[] newLockCode) throws IOException, CommandException {
         if (version.isLessThan(5, 0, 0)) {
             throw new NotSupportedOperation("Requires YubiKey 5.0.0 or later");
         }
@@ -234,7 +244,7 @@ public class ManagementApplication implements Closeable {
             if ((mode.transports & UsbTransport.FIDO) != 0) {
                 usbEnabled |= Application.U2F | Application.FIDO2;
             }
-            writeDeviceConfig(
+            updateDeviceConfig(
                     new DeviceConfig.Builder()
                             .enabledApplications(Interface.USB, usbEnabled)
                             .challengeResponseTimeout(chalrespTimeout)

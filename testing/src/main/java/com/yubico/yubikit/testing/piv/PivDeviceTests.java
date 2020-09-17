@@ -1,15 +1,15 @@
 package com.yubico.yubikit.testing.piv;
 
-import com.yubico.yubikit.exceptions.BadResponseException;
-import com.yubico.yubikit.iso7816.ApduException;
+import com.yubico.yubikit.core.BadResponseException;
+import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.piv.InvalidPinException;
 import com.yubico.yubikit.piv.KeyType;
 import com.yubico.yubikit.piv.PinPolicy;
 import com.yubico.yubikit.piv.PivApplication;
 import com.yubico.yubikit.piv.Slot;
 import com.yubico.yubikit.piv.TouchPolicy;
-import com.yubico.yubikit.utils.Logger;
-import com.yubico.yubikit.utils.StringUtils;
+import com.yubico.yubikit.core.Logger;
+import com.yubico.yubikit.core.StringUtils;
 
 import org.bouncycastle.util.encoders.Hex;
 import org.hamcrest.CoreMatchers;

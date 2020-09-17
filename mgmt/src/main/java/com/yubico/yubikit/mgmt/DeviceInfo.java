@@ -1,9 +1,9 @@
 package com.yubico.yubikit.mgmt;
 
-import com.yubico.yubikit.utils.Interface;
-import com.yubico.yubikit.utils.TlvUtils;
-import com.yubico.yubikit.utils.Version;
-import com.yubico.yubikit.exceptions.BadResponseException;
+import com.yubico.yubikit.core.Interface;
+import com.yubico.yubikit.core.TlvUtils;
+import com.yubico.yubikit.core.Version;
+import com.yubico.yubikit.core.BadResponseException;
 
 import java.util.Arrays;
 import java.util.HashMap;

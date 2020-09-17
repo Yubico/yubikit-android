@@ -12,8 +12,8 @@ import com.yubico.yubikit.android.app.MainViewModel
 import com.yubico.yubikit.android.app.R
 import com.yubico.yubikit.android.ui.OtpActivity
 import com.yubico.yubikit.otp.Slot
-import com.yubico.yubikit.keyboard.Modhex
-import com.yubico.yubikit.utils.RandomUtils
+import com.yubico.yubikit.core.otp.Modhex
+import com.yubico.yubikit.core.RandomUtils
 import kotlinx.android.synthetic.main.fragment_otp_yubi_otp.*
 import org.bouncycastle.util.encoders.Hex
 
@@ -58,7 +58,7 @@ class YubiOtpFragment : Fragment() {
                 }
 
                 viewModel.pendingAction.value = {
-                    setOtpKey(slot, publicId, privateId, key)
+                    putYubiOtpKey(slot, publicId, privateId, key)
                     "Slot $slot programmed"
                 }
             } catch (e: Exception) {

@@ -21,11 +21,10 @@ import android.hardware.usb.UsbEndpoint;
 import android.hardware.usb.UsbInterface;
 import android.hardware.usb.UsbManager;
 
-import androidx.annotation.NonNull;
-
-import com.yubico.yubikit.iso7816.Iso7816Connection;
-import com.yubico.yubikit.iso7816.ApduResponse;
-import com.yubico.yubikit.utils.StringUtils;
+import com.yubico.yubikit.core.YubiKeyConnection;
+import com.yubico.yubikit.core.smartcard.SmartCardConnection;
+import com.yubico.yubikit.core.smartcard.ApduResponse;
+import com.yubico.yubikit.core.StringUtils;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -64,7 +63,7 @@ public class UsbSessionTest {
         return bytes;
     }
 
-    private Iso7816Connection usbConnection;
+    private SmartCardConnection usbConnection;
     private UsbSessionMock mock = new UsbSessionMock(Mockito.mock(UsbManager.class), Mockito.mock(UsbDevice.class));
     ;
     private Map<String, byte[]> commandResponses = new HashMap<>();
@@ -79,13 +78,13 @@ public class UsbSessionTest {
 
     @Test
     public void connectAndReset() throws IOException {
-        usbConnection = mock.openIso7816Connection();
+        usbConnection = mock.openConnection(SmartCardConnection.class);
     }
 
     @Test
     public void executeCommand() throws IOException {
         byte[] selectPIVCommand = byteArrayOfInts(new int[]{0x00, 0xA4, 0x04, 0x00, 0x05, 0xA0, 0x00, 0x00, 0x03, 0x08});
-        usbConnection = mock.openIso7816Connection();
+        usbConnection = mock.openConnection(SmartCardConnection.class);
         ApduResponse response = new ApduResponse(usbConnection.sendAndReceive(selectPIVCommand));
         byte[] selectPIVResponse = byteArrayOfInts(new int[]{0x61, 0x11, 0x4f, 0x06, 0x00, 0x00, 0x10, 0x00, 0x01, 0x00, 0x79, 0x07, 0x4f, 0x05, 0xa0, 0x00, 0x00, 0x03, 0x08, 0x90, 0x00});
         Assert.assertEquals(SUCCESS_CODE, response.getSw());
@@ -96,7 +95,7 @@ public class UsbSessionTest {
     @Test
     public void executeCommandMultiplyOfPackageSize() throws IOException {
         byte[] alignedCommand = byteArrayOfInts(new int[]{0x00, 0x00, 0x00, 0x00, 0x00, 0x00});
-        usbConnection = mock.openIso7816Connection();
+        usbConnection = mock.openConnection(SmartCardConnection.class);
         byte[] response = usbConnection.sendAndReceive(alignedCommand);
         Assert.assertNotNull(response);
     }
@@ -105,20 +104,20 @@ public class UsbSessionTest {
     public void executeCommandWithExtendedWaiting() throws IOException {
         commandResponses.put(StringUtils.bytesToHex(PACKAGE_16_BYTES), changeByte(PACKAGE_16_BYTES_RESPONSE, STATUS_BYTE_POSISION, STATUS_TIME_EXTENSION));
         byte[] commandThatRequiresWaiting = byteArrayOfInts(new int[]{0x00, 0x00, 0x00, 0x00, 0x00, 0x00});
-        usbConnection = mock.openIso7816Connection();
+        usbConnection = mock.openConnection(SmartCardConnection.class);
         usbConnection.sendAndReceive(commandThatRequiresWaiting);
     }
 
     @Test(expected = IOException.class)
     public void failToSend() throws IOException {
         mock.mockOutError();
-        usbConnection = mock.openIso7816Connection();
+        usbConnection = mock.openConnection(SmartCardConnection.class);
     }
 
     @Test(expected = IOException.class)
     public void failToRead() throws IOException {
         mock.mockInError();
-        usbConnection = mock.openIso7816Connection();
+        usbConnection = mock.openConnection(SmartCardConnection.class);
     }
 
     @Test(expected = IOException.class)
@@ -126,7 +125,7 @@ public class UsbSessionTest {
         // change status flag to some value different from STATUS_TIME_EXTENSION
         commandResponses.put(StringUtils.bytesToHex(PACKAGE_16_BYTES), changeByte(PACKAGE_16_BYTES_RESPONSE, STATUS_BYTE_POSISION, (byte) 0x10));
         byte[] commandThatReturnsStatusCode = byteArrayOfInts(new int[]{0x00, 0x00, 0x00, 0x00, 0x00, 0x00});
-        usbConnection = mock.openIso7816Connection();
+        usbConnection = mock.openConnection(SmartCardConnection.class);
         usbConnection.sendAndReceive(commandThatReturnsStatusCode);
     }
 
@@ -136,14 +135,14 @@ public class UsbSessionTest {
         // it will be ignored because status is 0
         commandResponses.put(StringUtils.bytesToHex(PACKAGE_16_BYTES), changeByte(PACKAGE_16_BYTES_RESPONSE, ERROR_BYTE_POSITION, (byte) 0x10));
         byte[] commandThatReturnsStatusCode = byteArrayOfInts(new int[]{0x00, 0x00, 0x00, 0x00, 0x00, 0x00});
-        usbConnection = mock.openIso7816Connection();
+        usbConnection = mock.openConnection(SmartCardConnection.class);
         usbConnection.sendAndReceive(commandThatReturnsStatusCode);
     }
 
     @Test(expected = IOException.class)
     public void executeCommandWithEmptyResponse() throws IOException {
         byte[] unknownCommand = byteArrayOfInts(new int[]{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00});
-        usbConnection = mock.openIso7816Connection();
+        usbConnection = mock.openConnection(SmartCardConnection.class);
         usbConnection.sendAndReceive(unknownCommand);
     }
 
@@ -175,10 +174,9 @@ public class UsbSessionTest {
             super(usbManager, usbDevice);
         }
 
-        @NonNull
         @Override
-        public Iso7816Connection openIso7816Connection() throws IOException {
-            return new UsbIso7816Connection(connection, usbInterface, endpointIn, endpointOut);
+        public <T extends YubiKeyConnection> T openConnection(Class<T> connectionType) throws IOException {
+            return (T) new UsbSmartCardConnection(connection, usbInterface, endpointIn, endpointOut);
         }
 
         public void mockOutError() {

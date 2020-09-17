@@ -12,12 +12,12 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Observer
 import androidx.lifecycle.lifecycleScope
-import com.yubico.yubikit.android.YubiKeySession
+import com.yubico.yubikit.core.YubiKeySession
 import com.yubico.yubikit.android.app.MainViewModel
 import com.yubico.yubikit.android.app.R
 import com.yubico.yubikit.android.transport.nfc.NfcSession
-import com.yubico.yubikit.exceptions.ApplicationNotAvailableException
-import com.yubico.yubikit.utils.Logger
+import com.yubico.yubikit.core.ApplicationNotAvailableException
+import com.yubico.yubikit.core.Logger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext

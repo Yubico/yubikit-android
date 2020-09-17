@@ -3,13 +3,14 @@ package com.yubico.yubikit.android.app.ui.piv
 import android.util.SparseArray
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import com.yubico.yubikit.android.YubiKeySession
+import com.yubico.yubikit.core.YubiKeySession
 import com.yubico.yubikit.android.app.ui.YubiKeyViewModel
-import com.yubico.yubikit.iso7816.ApduException
-import com.yubico.yubikit.exceptions.BadResponseException
+import com.yubico.yubikit.core.smartcard.ApduException
+import com.yubico.yubikit.core.BadResponseException
+import com.yubico.yubikit.core.smartcard.SmartCardConnection
 import com.yubico.yubikit.piv.PivApplication
 import com.yubico.yubikit.piv.Slot
-import com.yubico.yubikit.utils.Logger
+import com.yubico.yubikit.core.Logger
 import java.security.cert.X509Certificate
 
 private const val DEFAULT_AUTH_KEY = "010203040506070801020304050607080102030405060708"
@@ -30,7 +31,7 @@ class PivViewModel : YubiKeyViewModel<PivApplication>() {
 
     var mgmtKey: ByteArray = byteArrayOf(1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8)
 
-    override fun getApp(session: YubiKeySession) = PivApplication(session.openIso7816Connection())
+    override fun getApp(session: YubiKeySession) = PivApplication(session.openConnection(SmartCardConnection::class.java))
 
     override fun PivApplication.updateState() {
         _certificates.postValue(SparseArray<X509Certificate>().apply {

@@ -24,7 +24,7 @@ import android.content.IntentFilter;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
 
-import com.yubico.yubikit.utils.Logger;
+import com.yubico.yubikit.core.Logger;
 
 import java.util.ArrayList;
 import java.util.HashMap;
