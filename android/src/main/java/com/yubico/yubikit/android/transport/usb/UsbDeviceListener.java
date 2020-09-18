@@ -16,28 +16,28 @@
 
 package com.yubico.yubikit.android.transport.usb;
 
-public interface UsbSessionListener {
+public interface UsbDeviceListener {
     /**
      * Invoked when detected inserted device after usb discovery started
      *
-     * @param session       usb session that associated with plugged in device
+     * @param device       usb device that associated with plugged in device
      * @param hasPermission true if device has required permissions granted by user
      */
-    void onSessionReceived(UsbSession session, boolean hasPermission);
+    void onDeviceAttached(UsbYubiKeyDevice device, boolean hasPermission);
 
     /**
      * Invoked when detected removal/ejection of usb device after usb discovery started
      *
-     * @param session usb session that will become inactive
+     * @param device usb device that will become inactive
      */
-    void onSessionRemoved(UsbSession session);
+    void onDeviceRemoved(UsbYubiKeyDevice device);
 
     /**
      * If discovery was started with handling permissions than user will be prompted with UI
      * dialog to ask for necessary permissions to communicate with device
      *
-     * @param session   usb session for which user had permissions prompt
+     * @param device   usb device for which user had permissions prompt
      * @param isGranted true if user selected to grant permissions, otherwise false
      */
-    void onRequestPermissionsResult(UsbSession session, boolean isGranted);
+    void onRequestPermissionsResult(UsbYubiKeyDevice device, boolean isGranted);
 }

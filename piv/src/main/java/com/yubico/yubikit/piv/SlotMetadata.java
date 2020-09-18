@@ -63,6 +63,6 @@ public class SlotMetadata {
      * @return the slots public key
      */
     public PublicKey getPublicKey() {
-        return PivApplication.parsePublicKeyFromDevice(keyType, publicKeyEncoded);
+        return PivSession.parsePublicKeyFromDevice(keyType, publicKeyEncoded);
     }
 }

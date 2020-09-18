@@ -36,12 +36,12 @@ yubikitVersion=2.0.0
 ### Using the OTP Library <a name="using_lib"></a>
 The **OTP** module requires the YubiKit android module to detect a
 `YubikeySession` (see [Android Module README](../android/README.md)). Use the
-session to create:
+device to create:
 
 ```java
     // HMAC-SHA1 challenge-response
-    YubiKeyConfigurationApplication application = new YubiKeyConfigurationApplication(session);
-    byte[] response = application.calculateHmacSha1(challenge, Slot.TWO);
+    YubiOtpSession session = YubiOtpSession.create(device);
+    byte[] response = session.calculateHmacSha1(Slot.TWO, challenge, null);
 ```
 
 ### Using Demo Application <a name="using_demo"></a>

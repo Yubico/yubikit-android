@@ -35,10 +35,10 @@ yubikitVersion=2.0.0
 ```
 ### Using PIV Library <a name="using_lib"></a>
 The **PIV** module requires the YubiKit android module to detect a
-`YubikeySession` (see [Android Module README](../android/README.md)).
+`YubikeyDevice` (see [Android Module README](../android/README.md)).
 
 ```java
-    PivApplication application = new PivApplication(session);
+    PivSession session = new PivSession(device.openConnection(SmartCardConnection.class));
     // run provided command/operation (generateKey/putCertificate/sign/etc)
 
 ```

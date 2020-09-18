@@ -15,14 +15,15 @@ import com.yubico.yubikit.android.app.ui.YubiKeyFragment
 import com.yubico.yubikit.android.app.ui.getSecret
 import com.yubico.yubikit.core.ApplicationNotAvailableException
 import com.yubico.yubikit.core.smartcard.ApduException
-import com.yubico.yubikit.piv.PivApplication
+import com.yubico.yubikit.core.smartcard.SW
+import com.yubico.yubikit.piv.PivSession
 import com.yubico.yubikit.piv.Slot
 import kotlinx.android.synthetic.main.fragment_piv.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.bouncycastle.util.encoders.Hex
 
-class PivFragment : YubiKeyFragment<PivApplication, PivViewModel>() {
+class PivFragment : YubiKeyFragment<PivSession, PivViewModel>() {
     private val slots = listOf(PageProperties(Slot.AUTHENTICATION, R.string.piv_authentication),
             PageProperties(Slot.SIGNATURE, R.string.piv_signature),
             PageProperties(Slot.KEY_MANAGEMENT, R.string.piv_key_mgmt),
@@ -58,7 +59,7 @@ class PivFragment : YubiKeyFragment<PivApplication, PivViewModel>() {
             result.onFailure { e ->
                 when(e) {
                     is ApplicationNotAvailableException -> showCerts(false)
-                    is ApduException -> if(e.statusCode == 0x6982.toShort()) {
+                    is ApduException -> if(e.sw == SW.SECURITY_CONDITION_NOT_SATISFIED) {
                         lifecycleScope.launch(Dispatchers.Main) {
                             viewModel.mgmtKey = Hex.decode(getSecret(requireContext(), R.string.piv_enter_mgmt_key, R.string.piv_mgmt_key_hint))
                         }

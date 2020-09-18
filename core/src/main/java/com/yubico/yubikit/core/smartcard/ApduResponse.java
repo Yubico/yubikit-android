@@ -37,7 +37,7 @@ public class ApduResponse {
     }
 
     /**
-     * @return the SW from a key response.
+     * @return the SW from a key response (see {@link SW}).
      */
     public short getSw() {
         return (short) (((0xff & bytes[bytes.length - 2]) << 8) | (0xff & bytes[bytes.length - 1]));

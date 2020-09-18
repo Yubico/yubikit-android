@@ -16,12 +16,10 @@
 
 package com.yubico.yubikit.mgmt;
 
-import com.yubico.yubikit.core.YubiKeySession;
+import com.yubico.yubikit.core.*;
+import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.fido.FidoProtocol;
 import com.yubico.yubikit.core.fido.FidoConnection;
-import com.yubico.yubikit.core.ApplicationNotAvailableException;
-import com.yubico.yubikit.core.CommandException;
-import com.yubico.yubikit.core.NotSupportedOperation;
 import com.yubico.yubikit.core.smartcard.Apdu;
 import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.core.smartcard.SmartCardProtocol;
@@ -29,9 +27,6 @@ import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.otp.ChecksumUtils;
 import com.yubico.yubikit.core.otp.OtpProtocol;
 import com.yubico.yubikit.core.otp.OtpConnection;
-import com.yubico.yubikit.core.Interface;
-import com.yubico.yubikit.core.Logger;
-import com.yubico.yubikit.core.Version;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -45,7 +40,7 @@ import javax.annotation.Nullable;
  * Application to get information about and configure a YubiKey via the Management Application.
  * https://developers.yubico.com/yubikey-manager/Config_Reference.html
  */
-public class ManagementApplication implements Closeable {
+public class ManagementSession implements Closeable {
     // Smart card command constants
     private static final byte[] AID = new byte[]{(byte) 0xa0, 0x00, 0x00, 0x05, 0x27, 0x47, 0x11, 0x17};
     private static final byte INS_READ_CONFIG = 0x1d;
@@ -69,34 +64,34 @@ public class ManagementApplication implements Closeable {
     private final Version version;
 
     /**
-     * Connects to a YubiKeySession and creates a new instance of {@link ManagementApplication}.
+     * Connects to a YubiKeyDevice and creates a new instance of {@link ManagementSession}.
      *
      * @param session A YubiKey session to use
      * @return a new Management Application instance
      * @throws IOException                      in case of a communication error
      * @throws ApplicationNotAvailableException if the application is not available
      */
-    public static ManagementApplication create(YubiKeySession session) throws IOException, ApplicationNotAvailableException {
+    public static ManagementSession create(YubiKeyDevice session) throws IOException, ApplicationNotAvailableException {
         if (session.supportsConnection(SmartCardConnection.class)) {
-            return new ManagementApplication(session.openConnection(SmartCardConnection.class));
+            return new ManagementSession(session.openConnection(SmartCardConnection.class));
         } else if (session.supportsConnection(OtpConnection.class)) {
-            return new ManagementApplication(session.openConnection(OtpConnection.class));
+            return new ManagementSession(session.openConnection(OtpConnection.class));
         } else if (session.supportsConnection(FidoConnection.class)) {
-            return new ManagementApplication(session.openConnection(FidoConnection.class));
+            return new ManagementSession(session.openConnection(FidoConnection.class));
         }
         throw new ApplicationNotAvailableException("Session does not support any compatible connection type");
     }
 
     /**
-     * Create new instance of {@link ManagementApplication} over an {@link SmartCardConnection}.
+     * Create new instance of {@link ManagementSession} over an {@link SmartCardConnection}.
      *
      * @param connection connection with YubiKey
      * @throws IOException                      in case of connection error
      * @throws ApplicationNotAvailableException in case the application is missing/disabled
      */
-    public ManagementApplication(SmartCardConnection connection) throws IOException, ApplicationNotAvailableException {
-        SmartCardProtocol protocol = new SmartCardProtocol(AID, connection);
-        version = Version.parse(new String(protocol.select(), StandardCharsets.UTF_8));
+    public ManagementSession(SmartCardConnection connection) throws IOException, ApplicationNotAvailableException {
+        SmartCardProtocol protocol = new SmartCardProtocol(connection);
+        version = Version.parse(new String(protocol.select(AID), StandardCharsets.UTF_8));
         backend = new Backend<SmartCardProtocol>(protocol) {
             @Override
             byte[] readConfig() throws IOException, CommandException {
@@ -116,13 +111,13 @@ public class ManagementApplication implements Closeable {
     }
 
     /**
-     * Create new instance of {@link ManagementApplication} over an {@link OtpConnection}.
+     * Create new instance of {@link ManagementSession} over an {@link OtpConnection}.
      *
      * @param connection connection with YubiKey
      * @throws IOException                      in case of connection error
      * @throws ApplicationNotAvailableException in case the application is missing/disabled
      */
-    public ManagementApplication(OtpConnection connection) throws IOException, ApplicationNotAvailableException {
+    public ManagementSession(OtpConnection connection) throws IOException, ApplicationNotAvailableException {
         OtpProtocol protocol = new OtpProtocol(connection);
         version = Version.parse(protocol.readStatus());
         if (version.isLessThan(3, 0, 0)) {
@@ -156,7 +151,7 @@ public class ManagementApplication implements Closeable {
      * @param connection a connection over the FIDO USB transport with a YubiKey
      * @throws IOException in case of connection error
      */
-    public ManagementApplication(FidoConnection connection) throws IOException {
+    public ManagementSession(FidoConnection connection) throws IOException {
         FidoProtocol protocol = new FidoProtocol(connection);
         version = protocol.getVersion();
         backend = new Backend<FidoProtocol>(protocol) {
@@ -237,13 +232,13 @@ public class ManagementApplication implements Closeable {
             //Translate into DeviceConfig and set using writeDeviceConfig
             int usbEnabled = 0;
             if ((mode.transports & UsbTransport.OTP) != 0) {
-                usbEnabled |= Application.OTP;
+                usbEnabled |= Application.OTP.bit;
             }
             if ((mode.transports & UsbTransport.CCID) != 0) {
-                usbEnabled |= Application.OATH | Application.PIV | Application.OPGP;
+                usbEnabled |= Application.OATH.bit | Application.PIV.bit | Application.OPENPGP.bit;
             }
             if ((mode.transports & UsbTransport.FIDO) != 0) {
-                usbEnabled |= Application.U2F | Application.FIDO2;
+                usbEnabled |= Application.U2F.bit | Application.FIDO2.bit;
             }
             updateDeviceConfig(
                     new DeviceConfig.Builder()

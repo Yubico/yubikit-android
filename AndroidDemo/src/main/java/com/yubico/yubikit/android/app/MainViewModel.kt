@@ -3,7 +3,7 @@ package com.yubico.yubikit.android.app
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import com.yubico.yubikit.core.YubiKeySession
+import com.yubico.yubikit.core.YubiKeyDevice
 import kotlinx.coroutines.asCoroutineDispatcher
 import java.util.concurrent.Executors
 
@@ -17,5 +17,5 @@ class MainViewModel() : ViewModel() {
         _handleYubiKey.postValue(enabled)
     }
 
-    val yubiKey = MutableLiveData<YubiKeySession?>()
+    val yubiKey = MutableLiveData<YubiKeyDevice?>()
 }

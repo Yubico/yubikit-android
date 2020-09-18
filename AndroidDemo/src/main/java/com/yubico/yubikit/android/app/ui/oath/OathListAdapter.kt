@@ -13,7 +13,7 @@ import com.yubico.yubikit.oath.Code
 import com.yubico.yubikit.oath.Credential
 import java.util.*
 
-class OathListAdapter(val listener: ItemListener) : ListAdapter<Pair<Credential, Code?>, OathListAdapter.ViewHolder>(object : DiffUtil.ItemCallback<Pair<Credential, Code?>>() {
+class OathListAdapter(private val listener: ItemListener) : ListAdapter<Pair<Credential, Code?>, OathListAdapter.ViewHolder>(object : DiffUtil.ItemCallback<Pair<Credential, Code?>>() {
     override fun areItemsTheSame(oldItem: Pair<Credential, Code?>, newItem: Pair<Credential, Code?>): Boolean {
         return Arrays.equals(oldItem.first.id, newItem.first.id)
     }

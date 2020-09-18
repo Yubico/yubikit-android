@@ -3,7 +3,7 @@ package com.yubico.yubikit.testing.piv;
 import com.yubico.yubikit.core.BadResponseException;
 import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.piv.KeyType;
-import com.yubico.yubikit.piv.PivApplication;
+import com.yubico.yubikit.piv.PivSession;
 import com.yubico.yubikit.piv.Slot;
 import com.yubico.yubikit.testing.Codec;
 
@@ -209,7 +209,7 @@ public class PivTestUtils {
         }
     }
 
-    public static X509Certificate createCertificate(PivApplication piv, PublicKey publicKey, Slot slot, KeyType keyType) throws IOException, CertificateException {
+    public static X509Certificate createCertificate(PivSession piv, PublicKey publicKey, Slot slot, KeyType keyType) throws IOException, CertificateException {
         X500Name name = new X500Name("CN=Example");
         X509v3CertificateBuilder serverCertGen = new X509v3CertificateBuilder(
                 name,

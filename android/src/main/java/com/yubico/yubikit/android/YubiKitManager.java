@@ -21,15 +21,12 @@ import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
 
-import com.yubico.yubikit.android.transport.nfc.NfcConfiguration;
-import com.yubico.yubikit.android.transport.nfc.NfcDeviceManager;
-import com.yubico.yubikit.android.transport.nfc.NfcNotAvailable;
-import com.yubico.yubikit.android.transport.nfc.NfcSession;
-import com.yubico.yubikit.android.transport.nfc.NfcSessionListener;
+import com.yubico.yubikit.android.transport.nfc.*;
+import com.yubico.yubikit.android.transport.nfc.NfcYubiKeyDevice;
 import com.yubico.yubikit.android.transport.usb.UsbConfiguration;
 import com.yubico.yubikit.android.transport.usb.UsbDeviceManager;
-import com.yubico.yubikit.android.transport.usb.UsbSession;
-import com.yubico.yubikit.android.transport.usb.UsbSessionListener;
+import com.yubico.yubikit.android.transport.usb.UsbYubiKeyDevice;
+import com.yubico.yubikit.android.transport.usb.UsbDeviceListener;
 
 import javax.annotation.Nullable;
 
@@ -93,7 +90,7 @@ public final class YubiKitManager {
      * @param listener         listener that is going to be invoked upon successful discovery of key session
      *                         or failure to detect any session (lack of permissions)
      */
-    public void startUsbDiscovery(final UsbConfiguration usbConfiguration, UsbSessionListener listener) {
+    public void startUsbDiscovery(final UsbConfiguration usbConfiguration, UsbDeviceListener listener) {
         usbDeviceManager.enable(usbConfiguration, new UsbInternalListener(listener));
     }
 
@@ -104,12 +101,12 @@ public final class YubiKitManager {
      * to unsubscribe use {@link YubiKitManager#stopNfcDiscovery(Activity)}
      *
      * @param nfcConfiguration additional configurations on how NFC discovery should be handled
-     * @param listener         listener that is going to be invoked upon successful discovery of key session
-     *                         or failure to detect any session (setting if off or no nfc adapter on device)
+     * @param listener         listener that is going to be invoked upon successful discovery of YubiKeys
+     *                         or failure to detect any device (setting if off or no nfc adapter on device)
      * @param activity         active (not finished) activity required for nfc foreground dispatch
      * @throws NfcNotAvailable in case if NFC not available on android device
      */
-    public void startNfcDiscovery(final NfcConfiguration nfcConfiguration, Activity activity, NfcSessionListener listener)
+    public void startNfcDiscovery(final NfcConfiguration nfcConfiguration, Activity activity, NfcDeviceListener listener)
             throws NfcNotAvailable {
         if (nfcDeviceManager == null) {
             throw new NfcNotAvailable("NFC is not available on this device", false);
@@ -138,46 +135,46 @@ public final class YubiKitManager {
     /**
      * Internal listeners that help to invoke callbacks on provided handler (default main thread)
      */
-    private final class NfcInternalListener implements NfcSessionListener {
-        private final NfcSessionListener listener;
+    private final class NfcInternalListener implements NfcDeviceListener {
+        private final NfcDeviceListener listener;
 
-        private NfcInternalListener(NfcSessionListener listener) {
+        private NfcInternalListener(NfcDeviceListener listener) {
             this.listener = listener;
         }
 
         @Override
-        public void onSessionReceived(final NfcSession session) {
+        public void onDeviceAttached(final NfcYubiKeyDevice device) {
             handler.post(() -> {
-                listener.onSessionReceived(session);
+                listener.onDeviceAttached(device);
             });
         }
     }
 
-    private final class UsbInternalListener implements UsbSessionListener {
-        private final UsbSessionListener listener;
+    private final class UsbInternalListener implements UsbDeviceListener {
+        private final UsbDeviceListener listener;
 
-        private UsbInternalListener(UsbSessionListener listener) {
+        private UsbInternalListener(UsbDeviceListener listener) {
             this.listener = listener;
         }
 
         @Override
-        public void onSessionReceived(final UsbSession session, final boolean hasPermissions) {
+        public void onDeviceAttached(final UsbYubiKeyDevice device, final boolean hasPermissions) {
             handler.post(() -> {
-                listener.onSessionReceived(session, hasPermissions);
+                listener.onDeviceAttached(device, hasPermissions);
             });
         }
 
         @Override
-        public void onSessionRemoved(final UsbSession session) {
+        public void onDeviceRemoved(final UsbYubiKeyDevice device) {
             handler.post(() -> {
-                listener.onSessionRemoved(session);
+                listener.onDeviceRemoved(device);
             });
         }
 
         @Override
-        public void onRequestPermissionsResult(final UsbSession session, final boolean isGranted) {
+        public void onRequestPermissionsResult(final UsbYubiKeyDevice device, final boolean isGranted) {
             handler.post(() -> {
-                listener.onRequestPermissionsResult(session, isGranted);
+                listener.onRequestPermissionsResult(device, isGranted);
             });
         }
     }

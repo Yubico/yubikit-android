@@ -33,14 +33,14 @@ yubikitVersion=2.0.0
 ```
 ### Using MGMT Library <a name="using_lib"></a>
 The **MGMT** module requires the YubiKit android module to detect a
-`YubikeySession` (see [Android Module README](../android/README.md)). Use the
-session to create:
+`YubikeyDevice` (see [Android Module README](../android/README.md)). Use the
+device to create:
 
-a) a `ManagementApplication` to select the MGMT applet,
+a) a `ManagementSession` to select the MGMT applet,
 
 ```java
-    ManagementApplication application = new ManagementApplication(session);
-    // run provided command/operation (readConfiguration/writeConfiguration)
+    ManagementSession application = ManagementSession.create(device);
+    // run provided command/operation (getDeviceInfo/updateDeviceConfig)
 ```
 
 ### Using Demo Application <a name="using_demo"></a>

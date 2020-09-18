@@ -121,12 +121,12 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginBottom="@dimen/activity_margin"
-        android:text="@string/otp_read_yubiotp" />
+        android:text="@string/otp_read_yubiotp_desc" />
 
     <Button
         android:id="@+id/btn_request_otp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Read Yubico OTP" />
+        android:text="@string/otp_read_yubiotp" />
 
 </LinearLayout>

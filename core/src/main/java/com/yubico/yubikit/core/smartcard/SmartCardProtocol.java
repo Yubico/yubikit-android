@@ -36,16 +36,9 @@ public class SmartCardProtocol implements Closeable {
     private static final byte P2_SELECT = (byte) 0x00;
     private static final byte INS_SEND_REMAINING = (byte) 0xc0;
 
-    private static final short SW_SUCCESS = (short) 0x9000;
-    private static final short SW_FILE_NOT_FOUND = 0x6a82;
     private static final byte SW1_HAS_MORE_DATA = 0x61;
 
     private static final int SHORT_APDU_MAX_CHUNK = 0xff;
-
-    /**
-     * Application Identified used when selecting the application.
-     */
-    private final byte[] aid;
 
     private final byte insSendRemaining;
 
@@ -61,16 +54,14 @@ public class SmartCardProtocol implements Closeable {
      * Create new instance of {@link SmartCardProtocol}
      * and selects the application for use
      *
-     * @param aid        the AID of the application
      * @param connection connection to the YubiKey
      */
-    public SmartCardProtocol(byte[] aid, SmartCardConnection connection) {
-        this(aid, connection, INS_SEND_REMAINING);
+    public SmartCardProtocol(SmartCardConnection connection) {
+        this(connection, INS_SEND_REMAINING);
     }
 
-    public SmartCardProtocol(byte[] aid, SmartCardConnection connection, byte insSendRemaining) {
+    public SmartCardProtocol(SmartCardConnection connection, byte insSendRemaining) {
         this.connection = connection;
-        this.aid = Arrays.copyOf(aid, aid.length);
         this.insSendRemaining = insSendRemaining;
     }
 
@@ -98,22 +89,19 @@ public class SmartCardProtocol implements Closeable {
         return connection;
     }
 
-    public byte[] getAid() {
-        return Arrays.copyOf(aid, aid.length);
-    }
-
     /**
-     * Sends an APDU to SELECT the Application.
+     * Sends an APDU to SELECT an Application.
      *
+     * @param aid the AID to select.
      * @return the response data from selecting the Application
      * @throws IOException                      in case of connection or communication error
      * @throws ApplicationNotAvailableException in case the AID doesn't match an available application
      */
-    public byte[] select() throws IOException, ApplicationNotAvailableException {
+    public byte[] select(byte[] aid) throws IOException, ApplicationNotAvailableException {
         try {
             return sendAndReceive(new Apdu(0, INS_SELECT, P1_SELECT, P2_SELECT, aid));
         } catch (ApduException e) {
-            if (e.getStatusCode() == SW_FILE_NOT_FOUND) {
+            if (e.getSw() == SW.FILE_NOT_FOUND) {
                 throw new ApplicationNotAvailableException("The application couldn't be selected", e);
             }
             throw new IOException("Unexpected SW", e);
@@ -144,7 +132,7 @@ public class SmartCardProtocol implements Closeable {
             response = new ApduResponse(connection.sendAndReceive(getData));
         }
 
-        if (response.getSw() != SW_SUCCESS) {
+        if (response.getSw() != SW.OK) {
             throw new ApduException(response);
         }
         readBuffer.write(response.getData());

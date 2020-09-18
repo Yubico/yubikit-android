@@ -12,10 +12,10 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Observer
 import androidx.lifecycle.lifecycleScope
-import com.yubico.yubikit.core.YubiKeySession
+import com.yubico.yubikit.core.YubiKeyDevice
 import com.yubico.yubikit.android.app.MainViewModel
 import com.yubico.yubikit.android.app.R
-import com.yubico.yubikit.android.transport.nfc.NfcSession
+import com.yubico.yubikit.android.transport.nfc.NfcYubiKeyDevice
 import com.yubico.yubikit.core.ApplicationNotAvailableException
 import com.yubico.yubikit.core.Logger
 import kotlinx.coroutines.Dispatchers
@@ -66,9 +66,9 @@ abstract class YubiKeyFragment<App : Closeable, VM : YubiKeyViewModel<App>> : Fr
 
         viewModel.pendingAction.observe(viewLifecycleOwner, Observer {
             if (it != null) {
-                activityViewModel.yubiKey.value.let { session ->
-                    if (session != null) {
-                        onYubiKey(session)
+                activityViewModel.yubiKey.value.let { device ->
+                    if (device != null) {
+                        onYubiKey(device)
                     } else {
                         yubiKeyPrompt.setMessage(resources.getString(R.string.hold_key))
                         yubiKeyPrompt.show()
@@ -85,12 +85,12 @@ abstract class YubiKeyFragment<App : Closeable, VM : YubiKeyViewModel<App>> : Fr
         super.onPause()
     }
 
-    private fun onYubiKey(it: YubiKeySession) {
+    private fun onYubiKey(it: YubiKeyDevice) {
         lifecycleScope.launch {
             withContext(activityViewModel.singleDispatcher) {
-                viewModel.onYubiKeySession(it)
+                viewModel.onYubiKeyDevice(it)
 
-                if (it is NfcSession) {
+                if (it is NfcYubiKeyDevice) {
                     withContext(Dispatchers.Main) {
                         if (yubiKeyPrompt.isShowing) {
                             yubiKeyPrompt.setMessage(resources.getString(R.string.remove_key))
@@ -104,6 +104,7 @@ abstract class YubiKeyFragment<App : Closeable, VM : YubiKeyViewModel<App>> : Fr
                                 it.tag, 250, { yubiKeyPrompt.dismiss() }, null)
                     } else {
                         // Busy-wait for removal
+                        @Suppress("BlockingMethodInNonBlockingContext")
                         try {
                             val isoDep = IsoDep.get(it.tag)
                             isoDep.connect()
@@ -115,11 +116,9 @@ abstract class YubiKeyFragment<App : Closeable, VM : YubiKeyViewModel<App>> : Fr
                         } catch (e: IOException) {
                             //Ignore
                         }
-                        Logger.d("DISMISS 1")
                         yubiKeyPrompt.dismiss()
                     }
                 } else if (yubiKeyPrompt.isShowing) {
-                    Logger.d("DISMISS 2")
                     yubiKeyPrompt.dismiss()
                 }
                 Unit

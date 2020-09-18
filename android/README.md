@@ -42,38 +42,38 @@ yubikitVersion=2.0.0
    YubiKitManager yubiKitManager = new YubiKitManager(context);
 ```
 
-**Step 2** Create a listener to react to USB session events:
+**Step 2** Create a listener to react to USB device events:
 ```java
-    private class UsbListener implements UsbSessionListener {
+    private class UsbListener implements UsbDeviceListener {
         @Override
-        public void onSessionReceived(UsbSession session, boolean hasPermissions) {
+        public void onDeviceAttached(UsbYubiKeyDevice device, boolean hasPermissions) {
             // YubiKey was plugged in
         }
 
         @Override
-        public void onSessionRemoved(UsbSession session) {
+        public void onDeviceRemoved(UsbYubiKeyDevice device) {
             // YubiKey was unplugged
         }
 
         @Override
-        public void onRequestPermissionsResult(UsbSession session, boolean isGranted) {
+        public void onRequestPermissionsResult(UsbYubiKeyDevice device, boolean isGranted) {
             // whether user granted permissions to specific YubiKey
         }
     }
 ```
-**Step 3** Create a listener to react to NFC session events:
+**Step 3** Create a listener to react to NFC device events:
 ```java
-    private class NfcListener implements NfcSessionListener {
-        void onSessionReceived(NfcSession session) {
+    private class NfcListener implements NfcDeviceListener {
+        void onDeviceAttached(NfcYubiKeyDevice device) {
             // Tag was discovered
         }
     }
 ```
-**Step 4** Subscribe to USB YubiKey session events:
+**Step 4** Subscribe to USB YubiKey device events:
 ```java
     yubiKitManager.startUsbDiscovery(UsbConfiguration(), new UsbListener());
 ```
-**Step 5** Subscribe to NFC YubiKey session events.
+**Step 5** Subscribe to NFC YubiKey device events.
 
 **Note**: Discovery over NFC requires an `Activity` in the foreground (we recommend starting discovery over NFC in the `onResume()` method). Discovery over USB does not require an Activity.
 
@@ -83,37 +83,33 @@ yubikitVersion=2.0.0
         super.onResume()
         try {
             yubiKitManager.startNfcDiscovery(new NfcConfiguration(), activity, new NfcListener());
-        } catch (NfcDisabledException e) {
-            // show Snackbar message that user needs to turn on NFC for this feature
-        } catch (NfcNotFoundException e) {
-            // NFC is not available so this feature does not work on this device
+        } catch (NfcNotAvailableException e) {
+            if (e.disabled) {
+                // show Snackbar message that user needs to turn on NFC for this feature
+            } else {
+                // NFC is not available so this feature does not work on this device
+            }
         }
     }
 ```
-**Step 6** Open an ISO/IEC 7816 connection from YubiKey session (`NfcSession` or `UsbSession`), check ATR, create APDU, and then execute it.
+**Step 6** Open an ISO/IEC 7816 connection from YubiKey device (`NfcYubiKeyDevice` or `UsbYubiKeyDevice`), create APDU, and then execute it.
 
 **Note**: The API that sends the APDU commands to the YubiKey is a blocking function. Use a background thread to provide the expected user experience.
 
 ```java
-    executorService.execute {
-        try {
-            //connect to the key / start the connection
-            Iso7816Connection connection = session.openIso7816Connection();
-
+    executorService.execute(() -> {
+        //connect to the YubiKey / start the connection
+        try(SmartCardConnection connection = device.openConnection(SmartCardConnection.class)) {
             // here you can run your command set.
             // Example:
-            // connection.getAtr();
-            // byte[] aid = StringUtils.byteArrayOfInts(new int[] {0xA0, 0x00, 0x00, 0x03, 0x08});
-            // connection.execute(new Apdu(0x00, 0xA4, 0x04, 0x00, aid)));
-        } catch (IOException e) {
+            SmartCardProtocol protocol = new SmartCardProtocol(connection);
+            byte[] aid = new byte[] {0xA0, 0x00, 0x00, 0x03, 0x08};
+            protocol.select(aid);  // Select a smartcard application
+            protocol.sendAndReceive(new Apdu(0x00, 0xA4, 0x00, 0x00)));
+        } catch (ApplicationNotFoundException | IOException e) {
             // handle error that occurred during communication with key
-        } finally {
-            try {
-                connection.close();
-            } catch (IOException ignore) {
-            }
         }
-    }
+    });
 ```
 **Step 7** Stop discovery.
 

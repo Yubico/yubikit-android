@@ -21,8 +21,8 @@ import com.yubico.yubikit.android.YubiKitManager
 import com.yubico.yubikit.android.transport.nfc.NfcConfiguration
 import com.yubico.yubikit.android.transport.nfc.NfcNotAvailable
 import com.yubico.yubikit.android.transport.usb.UsbConfiguration
-import com.yubico.yubikit.android.transport.usb.UsbSession
-import com.yubico.yubikit.android.transport.usb.UsbSessionListener
+import com.yubico.yubikit.android.transport.usb.UsbYubiKeyDevice
+import com.yubico.yubikit.android.transport.usb.UsbDeviceListener
 import com.yubico.yubikit.core.Logger
 import kotlinx.android.synthetic.main.dialog_about.*
 import java.util.*
@@ -70,24 +70,24 @@ class MainActivity : AppCompatActivity() {
         viewModel.handleYubiKey.observe(this, Observer {
             if (it) {
                 Logger.d("Enable listening")
-                yubikit.startUsbDiscovery(UsbConfiguration(), object : UsbSessionListener {
-                    override fun onSessionReceived(session: UsbSession, hasPermission: Boolean) {
-                        Logger.d("USB Session started $session, $hasPermission, current: ${viewModel.yubiKey.value}")
+                yubikit.startUsbDiscovery(UsbConfiguration(), object : UsbDeviceListener {
+                    override fun onDeviceAttached(device: UsbYubiKeyDevice, hasPermission: Boolean) {
+                        Logger.d("USB device attached $device, $hasPermission, current: ${viewModel.yubiKey.value}")
                         if (hasPermission) {
-                            viewModel.yubiKey.value = session
+                            viewModel.yubiKey.value = device
                         }
                     }
 
-                    override fun onRequestPermissionsResult(session: UsbSession, isGranted: Boolean) {
-                        Logger.d("Permission result $session, $isGranted, current: ${viewModel.yubiKey.value}")
+                    override fun onRequestPermissionsResult(device: UsbYubiKeyDevice, isGranted: Boolean) {
+                        Logger.d("Permission result $device, $isGranted, current: ${viewModel.yubiKey.value}")
                         if (isGranted) {
-                            viewModel.yubiKey.value = session
+                            viewModel.yubiKey.value = device
                         }
                     }
 
-                    override fun onSessionRemoved(session: UsbSession) {
-                        Logger.d("Session removed $session")
-                        if (viewModel.yubiKey.value == session) {
+                    override fun onDeviceRemoved(device: UsbYubiKeyDevice) {
+                        Logger.d("Device removed $device")
+                        if (viewModel.yubiKey.value == device) {
                             viewModel.yubiKey.value = null
                         }
                     }
@@ -144,7 +144,7 @@ class MainActivity : AppCompatActivity() {
         if (viewModel.handleYubiKey.value == true && hasNfc) {
             try {
                 yubikit.startNfcDiscovery(NfcConfiguration(), this) { session ->
-                    Logger.d("NFC Session started $session")
+                    Logger.d("NFC device connected $session")
                     viewModel.yubiKey.apply {
                         value = session
                         postValue(null)

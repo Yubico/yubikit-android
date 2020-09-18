@@ -23,14 +23,14 @@ import android.nfc.tech.IsoDep;
 import android.nfc.tech.Ndef;
 
 import com.yubico.yubikit.core.YubiKeyConnection;
-import com.yubico.yubikit.core.YubiKeySession;
+import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.NotSupportedOperation;
 import com.yubico.yubikit.core.Interface;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.io.IOException;
 
-public class NfcSession implements YubiKeySession {
+public class NfcYubiKeyDevice implements YubiKeyDevice {
 
     /**
      * Represents an NFC tag that has been discovered.
@@ -44,7 +44,7 @@ public class NfcSession implements YubiKeySession {
      *
      * @param tag the tag that has been discovered
      */
-    NfcSession(Tag tag, int timeout) {
+    NfcYubiKeyDevice(Tag tag, int timeout) {
         this.tag = tag;
         this.timeout = timeout;
     }

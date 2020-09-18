@@ -49,7 +49,7 @@ public class Credential implements Serializable {
      *
      * @param response The parsed response from the YubiKey.
      */
-    Credential(String deviceId, OathApplication.ListResponse response) {
+    Credential(String deviceId, OathSession.ListResponse response) {
         this.deviceId = deviceId;
         id = response.id;
         oathType = response.oathType;
@@ -66,7 +66,7 @@ public class Credential implements Serializable {
      * @param id       The ID of the Credential
      * @param response The parsed response from the YubiKey for the Credential.
      */
-    Credential(String deviceId, byte[] id, OathApplication.CalculateResponse response) {
+    Credential(String deviceId, byte[] id, OathSession.CalculateResponse response) {
         this.deviceId = deviceId;
         this.id = id;
         oathType = response.responseType == TYPE_HOTP ? OathType.HOTP : OathType.TOTP;

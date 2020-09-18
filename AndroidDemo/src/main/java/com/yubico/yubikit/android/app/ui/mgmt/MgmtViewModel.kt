@@ -2,38 +2,38 @@ package com.yubico.yubikit.android.app.ui.mgmt
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import com.yubico.yubikit.core.YubiKeySession
+import com.yubico.yubikit.core.YubiKeyDevice
 import com.yubico.yubikit.core.otp.OtpConnection
 import com.yubico.yubikit.android.app.ui.YubiKeyViewModel
 import com.yubico.yubikit.core.smartcard.SmartCardConnection
 import com.yubico.yubikit.mgmt.DeviceInfo
-import com.yubico.yubikit.mgmt.ManagementApplication
+import com.yubico.yubikit.mgmt.ManagementSession
 import com.yubico.yubikit.core.Logger
 import java.io.IOException
 
-class NonClosingManagementApplication(connection: OtpConnection) : ManagementApplication(connection) {
+class NonClosingManagementSession(connection: OtpConnection) : ManagementSession(connection) {
     override fun close() {
-        Logger.d("Keeping application open")
+        Logger.d("Keeping session open")
     }
 
     fun doClose() {
-        Logger.d("Closing application")
+        Logger.d("Closing session")
         super.close()
     }
 }
 
-class MgmtViewModel : YubiKeyViewModel<ManagementApplication>() {
+class MgmtViewModel : YubiKeyViewModel<ManagementSession>() {
     private val _deviceInfo = MutableLiveData<DeviceInfo?>()
     val deviceInfo: LiveData<DeviceInfo?> = _deviceInfo
 
-    override fun getApp(session: YubiKeySession): ManagementApplication = when {
-        session.supportsConnection(SmartCardConnection::class.java) -> ManagementApplication(session.openConnection(SmartCardConnection::class.java))
+    override fun getSession(device: YubiKeyDevice): ManagementSession = when {
+        device.supportsConnection(SmartCardConnection::class.java) -> ManagementSession(device.openConnection(SmartCardConnection::class.java))
         // Keep the application open over OTP, as closing it causes the device to re-enumerate
-        session.supportsConnection(OtpConnection::class.java) -> NonClosingManagementApplication(session.openConnection(OtpConnection::class.java))
+        device.supportsConnection(OtpConnection::class.java) -> NonClosingManagementSession(device.openConnection(OtpConnection::class.java))
         else -> throw IOException("No interface available for Management")
     }
 
-    override fun ManagementApplication.updateState() {
-        _deviceInfo.postValue(getDeviceInfo())
+    override fun ManagementSession.updateState() {
+        _deviceInfo.postValue(deviceInfo)
     }
 }

@@ -16,6 +16,6 @@
 
 package com.yubico.yubikit.android.transport.nfc;
 
-public interface NfcSessionListener {
-    void onSessionReceived(final NfcSession session);
+public interface NfcDeviceListener {
+    void onDeviceAttached(final NfcYubiKeyDevice device);
 }

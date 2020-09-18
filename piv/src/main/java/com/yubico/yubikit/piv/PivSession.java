@@ -19,10 +19,7 @@ package com.yubico.yubikit.piv;
 import com.yubico.yubikit.core.ApplicationNotAvailableException;
 import com.yubico.yubikit.core.BadResponseException;
 import com.yubico.yubikit.core.NotSupportedOperation;
-import com.yubico.yubikit.core.smartcard.Apdu;
-import com.yubico.yubikit.core.smartcard.ApduException;
-import com.yubico.yubikit.core.smartcard.SmartCardProtocol;
-import com.yubico.yubikit.core.smartcard.SmartCardConnection;
+import com.yubico.yubikit.core.smartcard.*;
 import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.core.RandomUtils;
 import com.yubico.yubikit.core.StringUtils;
@@ -69,13 +66,7 @@ import javax.crypto.spec.SecretKeySpec;
  * Personal Identity Verification (PIV) interface specified in NIST SP 800-73 document "Cryptographic Algorithms and Key Sizes for PIV".
  * This enables you to perform RSA or ECC sign/decrypt operations using a private key stored on the smartcard, through common interfaces like PKCS#11.
  */
-public class PivApplication implements Closeable {
-    public static final short APPLICATION_NOT_FOUND_ERROR = 0x6a82;
-    public static final short AUTHENTICATION_REQUIRED_ERROR = 0x6982;
-    public static final short FILE_NOT_FOUND_ERROR = APPLICATION_NOT_FOUND_ERROR;
-    public static final short INCORRECT_VALUES_ERROR = 0x6a80;
-    public static final short AUTH_METHOD_BLOCKED = 0x6983;
-
+public class PivSession implements Closeable {
     private static final int PIN_LEN = 8;
     private static final int CHALLENGE_LEN = 8;
 
@@ -143,7 +134,7 @@ public class PivApplication implements Closeable {
     private int maxPinAttempts = 3; // Internal guess as to max number of PIN retries.
 
     /**
-     * Create new instance of {@link PivApplication}
+     * Create new instance of {@link PivSession}
      * and selects the application for use
      *
      * @param connection connection with YubiKey
@@ -151,10 +142,9 @@ public class PivApplication implements Closeable {
      * @throws ApduException                    in case of an error response from the YubiKey
      * @throws ApplicationNotAvailableException if the application is missing or disabled
      */
-    public PivApplication(SmartCardConnection connection) throws IOException, ApduException, ApplicationNotAvailableException {
-        protocol = new SmartCardProtocol(AID, connection);
-
-        protocol.select();
+    public PivSession(SmartCardConnection connection) throws IOException, ApduException, ApplicationNotAvailableException {
+        protocol = new SmartCardProtocol(connection);
+        protocol.select(AID);
         version = Version.parse(protocol.sendAndReceive(new Apdu(0, INS_GET_VERSION, 0, 0, null)));
         protocol.enableTouchWorkaround(version);
     }
@@ -315,7 +305,7 @@ public class PivApplication implements Closeable {
             byte[] response = protocol.sendAndReceive(new Apdu(0, INS_AUTHENTICATE, keyType.value, slot.value, request));
             return TlvUtils.unwrapValue(TAG_AUTH_RESPONSE, TlvUtils.unwrapValue(TAG_DYN_AUTH, response));
         } catch (ApduException e) {
-            if (INCORRECT_VALUES_ERROR == e.getStatusCode()) {
+            if (SW.INCORRECT_PARAMETERS == e.getSw()) {
                 //TODO: Replace with new CommandException subclass, wrapping e.
                 throw new ApduException(e.getApdu(), String.format(Locale.ROOT, "Make sure that %s key is generated on slot %02X", keyType.name(), slot.value));
             }
@@ -325,7 +315,7 @@ public class PivApplication implements Closeable {
 
     /**
      * Change management key
-     * This method requires authentication {@link PivApplication#authenticate(byte[])}
+     * This method requires authentication {@link PivSession#authenticate(byte[])}
      *
      * @param managementKey new value of management key
      * @throws IOException   in case of connection error
@@ -361,7 +351,7 @@ public class PivApplication implements Closeable {
             protocol.sendAndReceive(new Apdu(0, INS_VERIFY, 0, PIN_P2, pinBytes(pin)));
             currentPinAttempts = maxPinAttempts;
         } catch (ApduException e) {
-            int retries = getRetriesFromCode(e.getStatusCode());
+            int retries = getRetriesFromCode(e.getSw());
             if (retries >= 0) {
                 currentPinAttempts = retries;
                 throw new InvalidPinException(retries);
@@ -394,7 +384,7 @@ public class PivApplication implements Closeable {
             // Already verified, no way to know true count
             return currentPinAttempts;
         } catch (ApduException e) {
-            int retries = getRetriesFromCode(e.getStatusCode());
+            int retries = getRetriesFromCode(e.getSw());
             if (retries >= 0) {
                 currentPinAttempts = retries;
                 return retries;
@@ -447,8 +437,8 @@ public class PivApplication implements Closeable {
 
     /**
      * Set pin and puk reties
-     * This method requires authentication {@link PivApplication#authenticate(byte[])}
-     * and verification with pin {@link PivApplication#verifyPin(char[])}}
+     * This method requires authentication {@link PivSession#authenticate(byte[])}
+     * and verification with pin {@link PivSession#verifyPin(char[])}}
      *
      * @param pinAttempts sets attempts to pin
      * @param pukAttempts sets attempts to puk
@@ -566,7 +556,7 @@ public class PivApplication implements Closeable {
 
     /**
      * Import certificate instance to YubiKey
-     * This method requires authentication {@link PivApplication#authenticate(byte[])}
+     * This method requires authentication {@link PivSession#authenticate(byte[])}
      *
      * @param slot        Key reference '9A', '9C', '9D', or '9E'. {@link Slot}.
      * @param certificate certificate instance
@@ -594,8 +584,8 @@ public class PivApplication implements Closeable {
      * Attestation works through a special key slot called "f9" this comes pre-loaded from factory with a key and cert signed by Yubico,
      * but can be overwritten. After a key has been generated in a normal slot it can be attested by this special key
      * <p>
-     * This method requires authentication {@link PivApplication#authenticate(byte[])}
-     * This method requires key to be generated on slot {@link PivApplication#generateKey(Slot, KeyType, PinPolicy, TouchPolicy)}
+     * This method requires authentication {@link PivSession#authenticate(byte[])}
+     * This method requires key to be generated on slot {@link PivSession#generateKey(Slot, KeyType, PinPolicy, TouchPolicy)}
      *
      * @param slot Key reference '9A', '9C', '9D', or '9E'. {@link Slot}.
      * @return X.509 certificate for the key that is to be attested
@@ -611,7 +601,7 @@ public class PivApplication implements Closeable {
             byte[] responseData = protocol.sendAndReceive(new Apdu(0, INS_ATTEST, slot.value, 0, null));
             return parseCertificate(responseData);
         } catch (ApduException e) {
-            if (INCORRECT_VALUES_ERROR == e.getStatusCode()) {
+            if (SW.INCORRECT_PARAMETERS == e.getSw()) {
                 throw new ApduException(e.getApdu(), String.format(Locale.ROOT, "Make sure that key is generated on slot %02X", slot.value));
             }
             throw e;
@@ -622,7 +612,7 @@ public class PivApplication implements Closeable {
 
     /**
      * Deletes certificate from YubiKey
-     * This method requires authentication {@link PivApplication#authenticate(byte[])}
+     * This method requires authentication {@link PivSession#authenticate(byte[])}
      *
      * @param slot Key reference '9A', '9C', '9D', or '9E'. {@link Slot}.
      * @throws IOException   in case of connection error
@@ -651,8 +641,8 @@ public class PivApplication implements Closeable {
 
     /**
      * Generate public key (for example for Certificate Signing Request)
-     * This method requires verification with pin {@link PivApplication#verifyPin(char[])}}
-     * and authentication with management key {@link PivApplication#authenticate(byte[])}
+     * This method requires verification with pin {@link PivSession#verifyPin(char[])}}
+     * and authentication with management key {@link PivSession#authenticate(byte[])}
      *
      * @param slot        Key reference '9A', '9C', '9D', or '9E'. {@link Slot}.
      * @param keyType     which algorithm is used for key generation {@link KeyType}
@@ -698,7 +688,7 @@ public class PivApplication implements Closeable {
 
     /**
      * Import private key to YubiKey
-     * This method requires authentication {@link PivApplication#authenticate(byte[])}
+     * This method requires authentication {@link PivSession#authenticate(byte[])}
      *
      * @param slot        Key reference '9A', '9C', '9D', or '9E'. {@link Slot}.
      * @param key         private key to import
@@ -841,7 +831,7 @@ public class PivApplication implements Closeable {
         try {
             protocol.sendAndReceive(new Apdu(0, instruction, 0, p2, pinBytes));
         } catch (ApduException e) {
-            int retries = getRetriesFromCode(e.getStatusCode());
+            int retries = getRetriesFromCode(e.getSw());
             if (retries >= 0) {
                 if (p2 == PIN_P2) {
                     currentPinAttempts = retries;
@@ -917,7 +907,7 @@ public class PivApplication implements Closeable {
      * Parses number of left attempts from status code
      */
     private int getRetriesFromCode(int statusCode) {
-        if (statusCode == AUTH_METHOD_BLOCKED) {
+        if (statusCode == SW.AUTH_METHOD_BLOCKED) {
             return 0;
         }
         if (version.isLessThan(1, 0, 4)) {

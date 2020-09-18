@@ -69,9 +69,9 @@ public class NfcDeviceManager {
      * @param listener         the listener to invoke on NFC sessions
      * @throws NfcNotAvailable in case NFC is turned off (but available)
      */
-    public void enable(Activity activity, NfcConfiguration nfcConfiguration, NfcSessionListener listener) throws NfcNotAvailable {
+    public void enable(Activity activity, NfcConfiguration nfcConfiguration, NfcDeviceListener listener) throws NfcNotAvailable {
         if (checkAvailability(nfcConfiguration.isHandleUnavailableNfc())) {
-            dispatcher.enable(activity, nfcConfiguration, tag -> listener.onSessionReceived(new NfcSession(tag, nfcConfiguration.getTimeout())));
+            dispatcher.enable(activity, nfcConfiguration, tag -> listener.onDeviceAttached(new NfcYubiKeyDevice(tag, nfcConfiguration.getTimeout())));
         }
     }
 

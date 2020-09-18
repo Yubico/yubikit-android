@@ -2,16 +2,16 @@ package com.yubico.yubikit.android.app.ui.otp
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import com.yubico.yubikit.core.YubiKeySession
+import com.yubico.yubikit.core.YubiKeyDevice
 import com.yubico.yubikit.core.otp.OtpConnection
 import com.yubico.yubikit.android.app.ui.YubiKeyViewModel
 import com.yubico.yubikit.core.smartcard.SmartCardConnection
 import com.yubico.yubikit.otp.ConfigState
-import com.yubico.yubikit.otp.YubiOtpApplication
+import com.yubico.yubikit.otp.YubiOtpSession
 import com.yubico.yubikit.core.Logger
 import java.io.IOException
 
-class NonClosingYubiOtpApplication(connection: OtpConnection) : YubiOtpApplication(connection) {
+class NonClosingYubiOtpSession(connection: OtpConnection) : YubiOtpSession(connection) {
     override fun close() {
         Logger.d("Keeping application open")
     }
@@ -22,26 +22,26 @@ class NonClosingYubiOtpApplication(connection: OtpConnection) : YubiOtpApplicati
     }
 }
 
-class OtpViewModel : YubiKeyViewModel<YubiOtpApplication>() {
+class OtpViewModel : YubiKeyViewModel<YubiOtpSession>() {
     private var ignoreUsb = false
-    private var appRef: NonClosingYubiOtpApplication? = null
+    private var sessionRef: NonClosingYubiOtpSession? = null
 
     private val _slotStatus = MutableLiveData<ConfigState?>()
     val slotConfigState: LiveData<ConfigState?> = _slotStatus
 
-    override fun getApp(session: YubiKeySession): YubiOtpApplication = when {
-        ignoreUsb && appRef != null -> appRef!!
-        session.supportsConnection(OtpConnection::class.java) -> NonClosingYubiOtpApplication(session.openConnection(OtpConnection::class.java)).apply { appRef = this }
-        session.supportsConnection(SmartCardConnection::class.java) -> YubiOtpApplication(session.openConnection(SmartCardConnection::class.java))
+    override fun getSession(device: YubiKeyDevice): YubiOtpSession = when {
+        ignoreUsb && sessionRef != null -> sessionRef!!
+        device.supportsConnection(OtpConnection::class.java) -> NonClosingYubiOtpSession(device.openConnection(OtpConnection::class.java)).apply { sessionRef = this }
+        device.supportsConnection(SmartCardConnection::class.java) -> YubiOtpSession(device.openConnection(SmartCardConnection::class.java))
         else -> throw IOException("No interface available for Management")
     }
 
-    override fun YubiOtpApplication.updateState() {
+    override fun YubiOtpSession.updateState() {
         _slotStatus.postValue(status)
     }
 
     fun releaseYubiKey() {
-        appRef?.doClose()
+        sessionRef?.doClose()
         //ignoreUsb = true
     }
 

@@ -12,11 +12,11 @@ import com.google.android.material.tabs.TabLayoutMediator
 import com.yubico.yubikit.android.app.R
 import com.yubico.yubikit.android.app.ui.YubiKeyFragment
 import com.yubico.yubikit.otp.Slot
-import com.yubico.yubikit.otp.YubiOtpApplication
+import com.yubico.yubikit.otp.YubiOtpSession
 import kotlinx.android.synthetic.main.fragment_otp.*
 import java.lang.IllegalStateException
 
-class OtpFragment : YubiKeyFragment<YubiOtpApplication, OtpViewModel>() {
+class OtpFragment : YubiKeyFragment<YubiOtpSession, OtpViewModel>() {
     override val viewModel: OtpViewModel by activityViewModels()
 
     override fun onCreateView(
@@ -40,7 +40,7 @@ class OtpFragment : YubiKeyFragment<YubiOtpApplication, OtpViewModel>() {
             })
         }.attach()
 
-        viewModel.slotConfigState.observe(viewLifecycleOwner, Observer {
+        viewModel.slotConfigState.observe(viewLifecycleOwner, {
             if (it != null) {
                 empty_view.visibility = View.INVISIBLE
                 otp_status_text.text = "Slot 1: ${if (it.slotIsConfigured(Slot.ONE)) "programmed" else "empty"}\nSlot 2: ${if (it.slotIsConfigured(Slot.TWO)) "programmed" else "empty"}"

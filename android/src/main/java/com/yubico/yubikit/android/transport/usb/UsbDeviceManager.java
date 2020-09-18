@@ -21,7 +21,6 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
 
 import com.yubico.yubikit.core.Logger;
@@ -64,7 +63,7 @@ public class UsbDeviceManager {
      * @param usbConfiguration contains information if device manager also registers receiver on permissions grant from user
      * @param listener         the UsbSessionListener to react to changes
      */
-    public void enable(UsbConfiguration usbConfiguration, UsbSessionListener listener) {
+    public void enable(UsbConfiguration usbConfiguration, UsbDeviceListener listener) {
         disable();
         receiver = new UsbBroadcastReceiver(usbConfiguration, listener);
     }
@@ -83,12 +82,12 @@ public class UsbDeviceManager {
      * Watches usb connection changes
      */
     private final class UsbBroadcastReceiver extends BroadcastReceiver {
-        private final Set<UsbDevice> pendingPermission = new HashSet<>();
-        private final Map<UsbDevice, UsbSession> sessions = new HashMap<>();
+        private final Set<android.hardware.usb.UsbDevice> pendingPermission = new HashSet<>();
+        private final Map<android.hardware.usb.UsbDevice, UsbYubiKeyDevice> sessions = new HashMap<>();
         private final UsbConfiguration usbConfiguration;
-        private final UsbSessionListener listener;
+        private final UsbDeviceListener listener;
 
-        private UsbBroadcastReceiver(UsbConfiguration usbConfiguration, UsbSessionListener listener) {
+        private UsbBroadcastReceiver(UsbConfiguration usbConfiguration, UsbDeviceListener listener) {
             this.usbConfiguration = usbConfiguration;
             this.listener = listener;
             IntentFilter intentFilter = new IntentFilter(UsbManager.ACTION_USB_DEVICE_ATTACHED);
@@ -100,14 +99,14 @@ public class UsbDeviceManager {
         public void stop() {
             context.unregisterReceiver(this);
             pendingPermission.clear();
-            for (UsbSession session : sessions.values()) {
-                listener.onSessionRemoved(session);
+            for (UsbYubiKeyDevice session : sessions.values()) {
+                listener.onDeviceRemoved(session);
             }
         }
 
-        protected List<UsbDevice> listDevices() {
-            List<UsbDevice> yubikeys = new ArrayList<>();
-            for (UsbDevice device : usbManager.getDeviceList().values()) {
+        protected List<android.hardware.usb.UsbDevice> listDevices() {
+            List<android.hardware.usb.UsbDevice> yubikeys = new ArrayList<>();
+            for (android.hardware.usb.UsbDevice device : usbManager.getDeviceList().values()) {
                 if (!usbConfiguration.isFilterYubicoDevices() || device.getVendorId() == YUBICO_VENDOR_ID) {
                     yubikeys.add(device);
                 }
@@ -116,7 +115,7 @@ public class UsbDeviceManager {
         }
 
         private void checkExisting() {
-            for (UsbDevice device : listDevices()) {
+            for (android.hardware.usb.UsbDevice device : listDevices()) {
                 checkPermissions(device);
             }
         }
@@ -124,7 +123,7 @@ public class UsbDeviceManager {
         @Override
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
-            UsbDevice device = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
+            android.hardware.usb.UsbDevice device = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
             if (device == null || device.getVendorId() != YUBICO_VENDOR_ID) {
                 // we are not interested in devices other than yubikeys
                 return;
@@ -134,15 +133,15 @@ public class UsbDeviceManager {
                 checkPermissions(device);
             } else if (UsbManager.ACTION_USB_DEVICE_DETACHED.equals(action)) {
                 // notify user that his current session is not valid anymore
-                listener.onSessionRemoved(Objects.requireNonNull(sessions.remove(device)));
+                listener.onDeviceRemoved(Objects.requireNonNull(sessions.remove(device)));
             }
         }
 
-        private void checkPermissions(UsbDevice device) {
+        private void checkPermissions(android.hardware.usb.UsbDevice device) {
             // return to user that device was discovered and whether permissions are granted or not
-            UsbSession session = new UsbSession(usbManager, device);
+            UsbYubiKeyDevice session = new UsbYubiKeyDevice(usbManager, device);
             sessions.put(device, session);
-            listener.onSessionReceived(session, usbManager.hasPermission(device));
+            listener.onDeviceAttached(session, usbManager.hasPermission(device));
 
             if (!usbManager.hasPermission(device) && usbConfiguration.isHandlePermissions() && pendingPermission.add(device)) {
                 Logger.d("Request permission");
@@ -158,14 +157,14 @@ public class UsbDeviceManager {
             public void onReceive(Context context, Intent intent) {
                 if (ACTION_USB_PERMISSION.equals(intent.getAction())) {
                     context.unregisterReceiver(this);
-                    UsbDevice device = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
+                    android.hardware.usb.UsbDevice device = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
                     if (pendingPermission.remove(device)) {
                         // device is not plugged in anymore, we're not interested in it's permissions
                         if (device == null || !listDevices().contains(device)) {
                             return;
                         }
 
-                        listener.onRequestPermissionsResult(new UsbSession(usbManager, device), usbManager.hasPermission(device));
+                        listener.onRequestPermissionsResult(new UsbYubiKeyDevice(usbManager, device), usbManager.hasPermission(device));
                     }
                 }
             }

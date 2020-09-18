@@ -2,7 +2,7 @@ package com.yubico.yubikit.core;
 
 import java.io.IOException;
 
-public interface YubiKeySession {
+public interface YubiKeyDevice {
     Interface getInterface();
 
     boolean supportsConnection(Class<? extends YubiKeyConnection> connectionType);

@@ -16,20 +16,14 @@
 
 package com.yubico.yubikit.otp;
 
-import com.yubico.yubikit.core.YubiKeySession;
-import com.yubico.yubikit.core.ApplicationNotAvailableException;
-import com.yubico.yubikit.core.BadResponseException;
-import com.yubico.yubikit.core.CommandException;
-import com.yubico.yubikit.core.NotSupportedOperation;
+import com.yubico.yubikit.core.*;
+import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.otp.ChecksumUtils;
 import com.yubico.yubikit.core.otp.OtpConnection;
 import com.yubico.yubikit.core.otp.OtpProtocol;
 import com.yubico.yubikit.core.smartcard.Apdu;
 import com.yubico.yubikit.core.smartcard.SmartCardProtocol;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
-import com.yubico.yubikit.core.CommandState;
-import com.yubico.yubikit.core.Interface;
-import com.yubico.yubikit.core.Version;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -53,7 +47,7 @@ import javax.annotation.Nullable;
  * <p>
  * Additionally for NFC enabled YubiKeys, one slot can be configured to be output over NDEF as part of a URL payload.
  */
-public class YubiOtpApplication implements Closeable {
+public class YubiOtpSession implements Closeable {
     private static final byte INS_CONFIG = (byte) 0x01;
     private static final byte[] AID = new byte[]{(byte) 0xa0, 0x00, 0x00, 0x05, 0x27, 0x20, 0x01, 0x01};
     private static final byte[] MGMT_AID = new byte[]{(byte) 0xa0, 0x00, 0x00, 0x05, 0x27, 0x47, 0x11, 0x17};
@@ -85,24 +79,24 @@ public class YubiOtpApplication implements Closeable {
     private ConfigState configState;
 
     /**
-     * Connect to a YubiKey session, and create a new instance of {@link YubiOtpApplication}.
+     * Connect to a YubiKey session, and create a new instance of {@link YubiOtpSession}.
      *
      * @param session A YubiKey session to use
      * @return a new YubiKey Configuration Application instance
      * @throws IOException                      in case of a communication error
      * @throws ApplicationNotAvailableException if the application is not available
      */
-    public static YubiOtpApplication create(YubiKeySession session) throws IOException, ApplicationNotAvailableException {
+    public static YubiOtpSession create(YubiKeyDevice session) throws IOException, ApplicationNotAvailableException {
         if (session.supportsConnection(OtpConnection.class)) {
-            return new YubiOtpApplication(session.openConnection(OtpConnection.class));
+            return new YubiOtpSession(session.openConnection(OtpConnection.class));
         } else if (session.supportsConnection(SmartCardConnection.class)) {
-            return new YubiOtpApplication(session.openConnection(SmartCardConnection.class));
+            return new YubiOtpSession(session.openConnection(SmartCardConnection.class));
         }
         throw new ApplicationNotAvailableException("Session does not support any compatible connection type");
     }
 
     /**
-     * Create new instance of {@link YubiOtpApplication} using an {@link SmartCardConnection}.
+     * Create new instance of {@link YubiOtpSession} using an {@link SmartCardConnection}.
      * NOTE: Not all functionality is available over all interfaces. Over USB, some functionality may be blocked when
      * not using an OtpConnection.
      *
@@ -110,21 +104,21 @@ public class YubiOtpApplication implements Closeable {
      * @throws IOException                      in case of connection error
      * @throws ApplicationNotAvailableException if the application is missing or disabled
      */
-    public YubiOtpApplication(SmartCardConnection connection) throws IOException, ApplicationNotAvailableException {
+    public YubiOtpSession(SmartCardConnection connection) throws IOException, ApplicationNotAvailableException {
         Version version = null;
+        SmartCardProtocol protocol = new SmartCardProtocol(connection);
+
         if (connection.getInterface() == Interface.NFC) {
             // If available, this is more reliable than status.getVersion() over NFC
             try {
-                SmartCardProtocol mgmtApplication = new SmartCardProtocol(MGMT_AID, connection);
-                byte[] response = mgmtApplication.select();
+                byte[] response = protocol.select(MGMT_AID);
                 version = Version.parse(new String(response, StandardCharsets.UTF_8));
             } catch (ApplicationNotAvailableException e) {
                 // NEO: version will be populated further down.
             }
         }
 
-        SmartCardProtocol protocol = new SmartCardProtocol(AID, connection);
-        byte[] statusBytes = protocol.select();
+        byte[] statusBytes = protocol.select(AID);
         if (version == null) {
             // We didn't get a version above, get it from the status struct.
             version = Version.parse(statusBytes);
@@ -150,12 +144,12 @@ public class YubiOtpApplication implements Closeable {
     }
 
     /**
-     * Create new instance of {@link YubiOtpApplication} using an {@link OtpConnection}.
+     * Create new instance of {@link YubiOtpSession} using an {@link OtpConnection}.
      *
      * @param connection an OtpConnection with YubiKey
      * @throws IOException in case of connection error
      */
-    public YubiOtpApplication(OtpConnection connection) throws IOException {
+    public YubiOtpSession(OtpConnection connection) throws IOException {
         OtpProtocol protocol = new OtpProtocol(connection);
         byte[] statusBytes = protocol.readStatus();
         version = Version.parse(statusBytes);

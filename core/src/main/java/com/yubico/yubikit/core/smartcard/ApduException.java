@@ -21,12 +21,13 @@ import com.yubico.yubikit.core.CommandException;
 import java.util.Locale;
 
 /**
- * Exception is thrown if used APDU utils to parse received data and it has unexpected status code (not equal success == 0x9000)
+ * Exception is thrown if used APDU utils to parse received data and it has unexpected status code (not equal success == 0x9000).
+ * See {@link SW} for a list of status codes.
  */
 public class ApduException extends CommandException {
     static final long serialVersionUID = 1L;
 
-    private ApduResponse apdu;
+    private final ApduResponse apdu;
 
     public ApduException(ApduResponse apdu) {
         this(apdu, String.format(Locale.ROOT, "APDU error: 0x%04x", apdu.getSw()));
@@ -41,7 +42,7 @@ public class ApduException extends CommandException {
      * Gets error code that received via APDU response
      * @return error code
      */
-    public short getStatusCode() {
+    public short getSw() {
         return apdu.getSw();
     }
 

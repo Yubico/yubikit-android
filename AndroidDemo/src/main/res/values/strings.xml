@@ -59,7 +59,8 @@
     <string name="otp_aes_key">AES key (hex)</string>
     <string name="otp_hmac_key">HMAC-SHA1 key (hex)</string>
     <string name="otp_hmac_challenge">Challenge (hex)</string>
-    <string name="otp_read_yubiotp">Read a Yubico OTP from a YubiKey over USB or NFC</string>
+    <string name="otp_read_yubiotp">Read Yubico OTP</string>
+    <string name="otp_read_yubiotp_desc">Read a Yubico OTP from a YubiKey over USB or NFC</string>
     <string name="otp_slot_1">Slot 1 (short press)</string>
     <string name="otp_slot_2">Slot 2 (long press)</string>
     <string name="otp_chalresp_desc">Program a challenge-response credential.\nWARNING: Overwriting a slot can NOT be undone!</string>
@@ -80,6 +81,7 @@
         \n\nTo read more about the YubiKey and its supported application, visit https://www.yubico.com
         \n\nFor the iOS version of YubiKit, visit https://github.com/Yubico/yubikit-ios
     </string>
+    <string name="yubico">Yubico</string>
     <string name="version">Version %s</string>
     <string name="copyright">Copyright © 2019–2020 Yubico.</string>
 

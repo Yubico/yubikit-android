@@ -15,13 +15,13 @@
  */
 package com.yubico.yubikit.android.transport.usb;
 
-import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbEndpoint;
 import android.hardware.usb.UsbInterface;
 import android.hardware.usb.UsbManager;
 
 import com.yubico.yubikit.core.YubiKeyConnection;
+import com.yubico.yubikit.core.smartcard.SW;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.smartcard.ApduResponse;
 import com.yubico.yubikit.core.StringUtils;
@@ -39,8 +39,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class UsbSessionTest {
-    private static final short SUCCESS_CODE = (short) 0x9000;
-
     private static final byte[] RESET_REQUEST = byteArrayOfInts(new int[]{0x62, 0, 0, 0, 0, 0, 0, 0, 0, 0});
     private static final byte[] ANSWER_TO_RESET = byteArrayOfInts(new int[]{0x80, 0x16, 0, 0, 0, 0, 0, 0, 0, 0, 0x3b, 0xfc, 0x13, 0, 0, 0x81, 0x31, 0xfe, 0x15, 0x59, 0x75, 0x62, 0x69, 0x6b, 0x65, 0x79, 0x4e, 0x45, 0x4f, 0x72, 0x33});
 
@@ -64,7 +62,7 @@ public class UsbSessionTest {
     }
 
     private SmartCardConnection usbConnection;
-    private UsbSessionMock mock = new UsbSessionMock(Mockito.mock(UsbManager.class), Mockito.mock(UsbDevice.class));
+    private UsbYubiKeyDeviceMock mock = new UsbYubiKeyDeviceMock(Mockito.mock(UsbManager.class), Mockito.mock(android.hardware.usb.UsbDevice.class));
     private Map<String, byte[]> commandResponses = new HashMap<>();
 
     @Before
@@ -86,7 +84,7 @@ public class UsbSessionTest {
         usbConnection = mock.openConnection(SmartCardConnection.class);
         ApduResponse response = new ApduResponse(usbConnection.sendAndReceive(selectPIVCommand));
         byte[] selectPIVResponse = byteArrayOfInts(new int[]{0x61, 0x11, 0x4f, 0x06, 0x00, 0x00, 0x10, 0x00, 0x01, 0x00, 0x79, 0x07, 0x4f, 0x05, 0xa0, 0x00, 0x00, 0x03, 0x08, 0x90, 0x00});
-        Assert.assertEquals(SUCCESS_CODE, response.getSw());
+        Assert.assertEquals(SW.OK, response.getSw());
         Assert.assertArrayEquals(Arrays.copyOfRange(response.getBytes(), 0, response.getBytes().length - 2), response.getData());
         Assert.assertArrayEquals(selectPIVResponse, response.getBytes());
     }
@@ -159,7 +157,7 @@ public class UsbSessionTest {
         return output;
     }
 
-    private static class UsbSessionMock extends UsbSession {
+    private static class UsbYubiKeyDeviceMock extends UsbYubiKeyDevice {
         final static int MAX_BLOB_SIZE = 16;
         final UsbDeviceConnection connection = Mockito.mock(UsbDeviceConnection.class);
         final UsbInterface usbInterface = Mockito.mock(UsbInterface.class);
@@ -169,7 +167,7 @@ public class UsbSessionTest {
         byte[] currentCommand;
         int blobOffset = 0;
 
-        public UsbSessionMock(UsbManager usbManager, UsbDevice usbDevice) {
+        public UsbYubiKeyDeviceMock(UsbManager usbManager, android.hardware.usb.UsbDevice usbDevice) {
             super(usbManager, usbDevice);
         }
 

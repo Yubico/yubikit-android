@@ -33,27 +33,27 @@ yubikitVersion=2.0.0
 
 ### Using OATH Library <a name="using_lib"></a>
 The **OATH** module requires the YubiKit android module to detect a
-`YubikeySession` (see [Android Module README](../android/README.md)).
+`YubikeyDevice` (see [Android Module README](../android/README.md)).
 
-First, create an `OathApplication` to select the OATH applet on the YubiKey.
+First, create an `OathSession` to select the OATH applet on the YubiKey.
 ```java
 
-    OathApplication oathApplication = new OathApplication(session);
+    OathSession session = new OathSession(device);
     // run provided command/operation (put/calculate/delete/etc)
     // example:
     //    try {
-    //        oathApplication.putCredential(CredentialData.parseUri(uri));
+    //        session.putCredential(CredentialData.parseUri(uri));
     //    } catch (ParseUriException | IOException | ApduException e) {
     //        // handle errors
     //    }
 
 ```
 
-Next, use the `OathApplication` to add, remove, list, and calculate credentials.
+Next, use the `OathSession` to add, remove, list, and calculate credentials.
 
-The `OathApplication` implements the YKOATH protocol. Refer to the [YKOATH protocol specification](https://developers.yubico.com/OATH/YKOATH_Protocol.html) for more details.
+The `OathSession` implements the YKOATH protocol. Refer to the [YKOATH protocol specification](https://developers.yubico.com/OATH/YKOATH_Protocol.html) for more details.
 
-In addition, the `OathApplication` provides an interface for setting/validating a password on credential storage, calculating all credentials, and resetting the OATH application to its default state. For the complete list of methods look at the [`OathApplication` class documentation](src/main/java/com/yubico/yubikit/oath/OathApplication.java).
+In addition, the `OathSession` provides an interface for setting/validating a password on credential storage, calculating all credentials, and resetting the OATH application to its default state. For the complete list of methods look at the [`OathSession` class documentation](src/main/java/com/yubico/yubikit/oath/OathSession.java).
 
 The **OATH** module also provides a class for defining an OATH `CredentialData`. Use its factory method `CredentialData.parseUri` to parse the credential parameters from the Uri of the [Key Uri Format](https://github.com/google/google-authenticator/wiki/Key-Uri-Format).
 

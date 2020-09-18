@@ -18,10 +18,7 @@ package com.yubico.yubikit.oath;
 
 import com.yubico.yubikit.core.ApplicationNotAvailableException;
 import com.yubico.yubikit.core.NotSupportedOperation;
-import com.yubico.yubikit.core.smartcard.Apdu;
-import com.yubico.yubikit.core.smartcard.ApduException;
-import com.yubico.yubikit.core.smartcard.SmartCardProtocol;
-import com.yubico.yubikit.core.smartcard.SmartCardConnection;
+import com.yubico.yubikit.core.smartcard.*;
 import com.yubico.yubikit.core.RandomUtils;
 import com.yubico.yubikit.core.Tlv;
 import com.yubico.yubikit.core.TlvUtils;
@@ -51,15 +48,9 @@ import javax.crypto.spec.SecretKeySpec;
  * Communicates with a YubiKey's OATH application.
  * https://developers.yubico.com/OATH/YKOATH_Protocol.html
  */
-public class OathApplication implements Closeable {
-    public static final short AUTHENTICATION_REQUIRED_ERROR = 0x6982;
-    public static final short WRONG_SYNTAX = 0x6a80;
-    public static final short GENERIC_ERROR = 0x6581;
-    public static final short NO_SUCH_OBJECT = 0x6984;
+public class OathSession implements Closeable {
 
-    /**
-     * Tlv tags for credential data
-     */
+    // Tlv tags for credential data
     private static final int TAG_NAME = 0x71;
     private static final int TAG_KEY = 0x73;
     private static final int TAG_RESPONSE = 0x75;
@@ -67,9 +58,7 @@ public class OathApplication implements Closeable {
     private static final int TAG_IMF = 0x7a;
     private static final int TAG_CHALLENGE = 0x74;
 
-    /**
-     * Instruction bytes for APDU commands
-     */
+    // Instruction bytes for APDU commands
     private static final byte INS_LIST = (byte) 0xa1;
     private static final byte INS_PUT = 0x01;
     private static final byte INS_DELETE = 0x02;
@@ -83,9 +72,6 @@ public class OathApplication implements Closeable {
 
     private static final byte PROPERTY_REQUIRE_TOUCH = (byte) 0x02;
 
-    /**
-     * Select OATH application APDU command data (for example for PIV application it's 0xa0, 0x00, 0x00, 0x03, 0x08)
-     */
     private static final byte[] AID = new byte[]{(byte) 0xa0, 0x00, 0x00, 0x05, 0x27, 0x21, 0x01, 0x01};
 
     private static final long MILLS_IN_SECOND = 1000;
@@ -102,17 +88,16 @@ public class OathApplication implements Closeable {
 
 
     /**
-     * Create new instance of {@link OathApplication}
+     * Create new instance of {@link OathSession}
      * and selects the application for use
      *
      * @param connection to the YubiKey
      * @throws IOException                      in case of connection error
      * @throws ApplicationNotAvailableException if the application is missing or disabled
      */
-    public OathApplication(SmartCardConnection connection) throws IOException, ApplicationNotAvailableException {
-        protocol = new SmartCardProtocol(AID, connection, INS_SEND_REMAINING);
-
-        applicationInfo = new OathApplicationInfo(protocol.select());
+    public OathSession(SmartCardConnection connection) throws IOException, ApplicationNotAvailableException {
+        protocol = new SmartCardProtocol(connection, INS_SEND_REMAINING);
+        applicationInfo = new OathApplicationInfo(protocol.select(AID));
         protocol.enableTouchWorkaround(applicationInfo.getVersion());
     }
 
@@ -198,7 +183,7 @@ public class OathApplication implements Closeable {
             // return false if response from validation does not match verification
             return (Arrays.equals(signer.sign(clientChallenge), map.get(TAG_RESPONSE)));
         } catch (ApduException e) {
-            if (e.getStatusCode() == WRONG_SYNTAX) {
+            if (e.getSw() == SW.INCORRECT_PARAMETERS) {
                 // key didn't recognize secret
                 return false;
             }

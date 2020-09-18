@@ -16,16 +16,11 @@
 
 package com.yubico.yubikit.android.transport.usb;
 
-import android.hardware.usb.UsbConstants;
-import android.hardware.usb.UsbDevice;
-import android.hardware.usb.UsbDeviceConnection;
-import android.hardware.usb.UsbEndpoint;
-import android.hardware.usb.UsbInterface;
-import android.hardware.usb.UsbManager;
+import android.hardware.usb.*;
 import android.util.Pair;
 
 import com.yubico.yubikit.core.YubiKeyConnection;
-import com.yubico.yubikit.core.YubiKeySession;
+import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.NotSupportedOperation;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.otp.OtpConnection;
@@ -36,7 +31,7 @@ import java.util.Objects;
 
 import javax.annotation.Nullable;
 
-public class UsbSession implements YubiKeySession {
+public class UsbYubiKeyDevice implements YubiKeyDevice {
     private final UsbManager usbManager;
     private final UsbDevice usbDevice;
     @Nullable
@@ -53,7 +48,7 @@ public class UsbSession implements YubiKeySession {
      * @param usbManager manager of usb connection
      * @param usbDevice  device connected over usb that has permissions to interact with
      */
-    UsbSession(UsbManager usbManager, UsbDevice usbDevice) {
+    UsbYubiKeyDevice(UsbManager usbManager, UsbDevice usbDevice) {
         this.usbManager = usbManager;
         this.usbDevice = usbDevice;
 
@@ -175,7 +170,7 @@ public class UsbSession implements YubiKeySession {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        UsbSession that = (UsbSession) o;
+        UsbYubiKeyDevice that = (UsbYubiKeyDevice) o;
         return Objects.equals(usbManager, that.usbManager) &&
                 Objects.equals(usbDevice, that.usbDevice);
     }

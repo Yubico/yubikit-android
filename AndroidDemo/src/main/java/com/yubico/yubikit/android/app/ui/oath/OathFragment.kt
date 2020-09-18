@@ -15,15 +15,16 @@ import com.yubico.yubikit.android.app.ui.getSecret
 import com.yubico.yubikit.core.smartcard.ApduException
 import com.yubico.yubikit.oath.CredentialData
 import com.yubico.yubikit.oath.HashAlgorithm
-import com.yubico.yubikit.oath.OathApplication
+import com.yubico.yubikit.oath.OathSession
 import com.yubico.yubikit.oath.OathType
 import com.yubico.yubikit.core.RandomUtils
+import com.yubico.yubikit.core.smartcard.SW
 import kotlinx.android.synthetic.main.fragment_oath.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.apache.commons.codec.binary.Base32
 
-class OathFragment : YubiKeyFragment<OathApplication, OathViewModel>() {
+class OathFragment : YubiKeyFragment<OathSession, OathViewModel>() {
     override val viewModel: OathViewModel by activityViewModels()
 
     lateinit var listAdapter: OathListAdapter
@@ -67,7 +68,7 @@ class OathFragment : YubiKeyFragment<OathApplication, OathViewModel>() {
 
         viewModel.result.observe(viewLifecycleOwner, Observer { result ->
             result.onFailure { e ->
-                if (e is ApduException && e.statusCode == 0x6982.toShort()) {
+                if (e is ApduException && e.sw == SW.SECURITY_CONDITION_NOT_SATISFIED) {
                     viewModel.oathInfo.value?.deviceId?.let { deviceId ->
                         lifecycleScope.launch(Dispatchers.Main) {
                             getSecret(requireContext(), R.string.enter_password, R.string.password)?.let {

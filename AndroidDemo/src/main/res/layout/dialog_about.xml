@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!--
+<?xml version="1.0" encoding="utf-8"?><!--
   ~ Copyright (C) 2019-2020 Yubico.
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,8 +18,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:layout_margin="@dimen/activity_margin"
-    >
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_margin="@dimen/activity_margin">
 
     <LinearLayout
         android:orientation="vertical"
@@ -32,20 +31,21 @@
             android:layout_margin="@dimen/card_view_margin"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:tint="@color/colorLightGreen"
-            android:src="@drawable/big_logo"/>
+            android:src="@drawable/big_logo"
+            app:tint="@color/colorLightGreen"
+            android:contentDescription="@string/yubico" />
 
         <TextView
             android:textAppearance="?android:attr/textAppearanceLarge"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/app_name"/>
+            android:text="@string/app_name" />
 
         <TextView
             android:id="@+id/version"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            tools:text="Version 1.0 (1)"/>
+            tools:text="Version 1.0 (1)" />
 
 
         <TextView
@@ -53,13 +53,13 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:autoLink="web"
-            android:text="@string/about_app"/>
+            android:text="@string/about_app" />
 
         <TextView
             android:layout_margin="@dimen/text_margin"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/copyright"/>
+            android:text="@string/copyright" />
 
     </LinearLayout>
 

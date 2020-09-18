@@ -17,8 +17,8 @@ import com.yubico.yubikit.android.transport.nfc.NfcConfiguration;
 import com.yubico.yubikit.android.transport.nfc.NfcDeviceManager;
 import com.yubico.yubikit.android.transport.nfc.NfcNotAvailable;
 import com.yubico.yubikit.android.transport.usb.UsbConfiguration;
-import com.yubico.yubikit.android.transport.usb.UsbSession;
-import com.yubico.yubikit.android.transport.usb.UsbSessionListener;
+import com.yubico.yubikit.android.transport.usb.UsbYubiKeyDevice;
+import com.yubico.yubikit.android.transport.usb.UsbDeviceListener;
 import com.yubico.yubikit.core.NdefUtils;
 
 import java.io.IOException;
@@ -50,15 +50,15 @@ public class OtpActivity extends Activity {
         textView = findViewById(R.id.yubikit_otp_text_view);
 
         manager = new YubiKitManager(this);
-        manager.startUsbDiscovery(new UsbConfiguration().handlePermissions(false), new UsbSessionListener() {
+        manager.startUsbDiscovery(new UsbConfiguration().handlePermissions(false), new UsbDeviceListener() {
             @Override
-            public void onSessionReceived(@Nonnull UsbSession session, boolean hasPermission) {
+            public void onDeviceAttached(@Nonnull UsbYubiKeyDevice device, boolean hasPermission) {
                 usbSessionCounter++;
                 textView.setText(R.string.yubikit_otp_touch);
             }
 
             @Override
-            public void onSessionRemoved(@Nonnull UsbSession session) {
+            public void onDeviceRemoved(@Nonnull UsbYubiKeyDevice device) {
                 usbSessionCounter--;
                 if (usbSessionCounter == 0) {
                     textView.setText(hasNfc ? R.string.yubikit_otp_plug_in_or_tap : R.string.yubikit_otp_plug_in);
@@ -66,7 +66,7 @@ public class OtpActivity extends Activity {
             }
 
             @Override
-            public void onRequestPermissionsResult(@Nonnull UsbSession session, boolean isGranted) {
+            public void onRequestPermissionsResult(@Nonnull UsbYubiKeyDevice device, boolean isGranted) {
                 // We don't need permissions to handle YubiOTP
             }
         });
