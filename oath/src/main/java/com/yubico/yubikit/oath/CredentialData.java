@@ -118,7 +118,7 @@ public class CredentialData implements Serializable {
         this.name = name;
         this.oathType = oathType;
         this.hashAlgorithm = hashAlgorithm;
-        this.secret = secret;
+        this.secret = Arrays.copyOf(secret, secret.length);
         this.digits = digits;
         this.period = period;
         this.counter = counter;
@@ -167,7 +167,7 @@ public class CredentialData implements Serializable {
      * @return the secret
      */
     public byte[] getSecret() {
-        return secret;
+        return Arrays.copyOf(secret, secret.length);
     }
 
     /**

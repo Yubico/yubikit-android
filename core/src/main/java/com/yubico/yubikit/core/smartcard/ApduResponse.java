@@ -33,7 +33,7 @@ public class ApduResponse {
         if (bytes.length < 2) {
             throw new IllegalArgumentException("Invalid APDU response data");
         }
-        this.bytes = bytes;
+        this.bytes = Arrays.copyOf(bytes, bytes.length);
     }
 
     /**
@@ -54,6 +54,6 @@ public class ApduResponse {
      * @return raw data from a key response
      */
     public byte[] getBytes() {
-        return bytes;
+        return Arrays.copyOf(bytes, bytes.length);
     }
 }

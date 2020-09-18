@@ -43,13 +43,13 @@ public class NfcDeviceManager {
      *
      * @param context    the application context
      * @param dispatcher optional implementation of NfcDispatcher to use instead of the default.
-     * @throws NfcNotFoundException if the Android device does not support NFC
+     * @throws NfcNotAvailable if the Android device does not support NFC
      */
-    public NfcDeviceManager(Context context, @Nullable NfcDispatcher dispatcher) throws NfcNotFoundException {
+    public NfcDeviceManager(Context context, @Nullable NfcDispatcher dispatcher) throws NfcNotAvailable {
         this.context = context;
         adapter = NfcAdapter.getDefaultAdapter(this.context);
         if (adapter == null) {
-            throw new NfcNotFoundException("NFC unavailable on this device");
+            throw new NfcNotAvailable("NFC unavailable on this device", false);
         }
         if (dispatcher == null) {
             dispatcher = new NfcReaderDispatcher(adapter);
@@ -57,7 +57,7 @@ public class NfcDeviceManager {
         this.dispatcher = dispatcher;
     }
 
-    public NfcDeviceManager(Context context) throws NfcNotFoundException {
+    public NfcDeviceManager(Context context) throws NfcNotAvailable {
         this(context, null);
     }
 
@@ -67,9 +67,9 @@ public class NfcDeviceManager {
      * @param activity         activity that is going to dispatch nfc tags
      * @param nfcConfiguration additional configurations for NFC discovery
      * @param listener         the listener to invoke on NFC sessions
-     * @throws NfcDisabledException in case NFC is turned off (but available)
+     * @throws NfcNotAvailable in case NFC is turned off (but available)
      */
-    public void enable(Activity activity, NfcConfiguration nfcConfiguration, NfcSessionListener listener) throws NfcDisabledException {
+    public void enable(Activity activity, NfcConfiguration nfcConfiguration, NfcSessionListener listener) throws NfcNotAvailable {
         if (checkAvailability(nfcConfiguration.isHandleUnavailableNfc())) {
             dispatcher.enable(activity, nfcConfiguration, tag -> listener.onSessionReceived(new NfcSession(tag, nfcConfiguration.getTimeout())));
         }
@@ -88,9 +88,9 @@ public class NfcDeviceManager {
      * Checks if user turned on NFC_TRANSPORT and returns result via listener callbacks
      *
      * @param handleUnavailableNfc true if prompt user for turning on settings with UI dialog, otherwise returns error if no settings on or NFC_TRANSPORT is not available
-     * @throws NfcDisabledException in case if NFC turned off
+     * @throws NfcNotAvailable in case if NFC turned off
      */
-    private boolean checkAvailability(boolean handleUnavailableNfc) throws NfcDisabledException {
+    private boolean checkAvailability(boolean handleUnavailableNfc) throws NfcNotAvailable {
         if (adapter.isEnabled()) {
             return true;
         }
@@ -98,7 +98,7 @@ public class NfcDeviceManager {
             context.startActivity(new Intent(NFC_SETTINGS_ACTION));
             return false;
         } else {
-            throw new NfcDisabledException("Please activate NFC_TRANSPORT");
+            throw new NfcNotAvailable("Please activate NFC_TRANSPORT", true);
         }
     }
 }

@@ -36,6 +36,7 @@ import com.yubico.yubikit.core.Version;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 import javax.annotation.Nullable;
@@ -95,7 +96,7 @@ public class ManagementApplication implements Closeable {
      */
     public ManagementApplication(SmartCardConnection connection) throws IOException, ApplicationNotAvailableException {
         SmartCardProtocol protocol = new SmartCardProtocol(AID, connection);
-        version = Version.parse(new String(protocol.select()));
+        version = Version.parse(new String(protocol.select(), StandardCharsets.UTF_8));
         backend = new Backend<SmartCardProtocol>(protocol) {
             @Override
             byte[] readConfig() throws IOException, CommandException {

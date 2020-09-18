@@ -99,7 +99,7 @@ public class SmartCardProtocol implements Closeable {
     }
 
     public byte[] getAid() {
-        return aid;
+        return Arrays.copyOf(aid, aid.length);
     }
 
     /**

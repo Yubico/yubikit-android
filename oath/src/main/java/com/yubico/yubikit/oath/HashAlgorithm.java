@@ -27,7 +27,9 @@ public enum HashAlgorithm {
     SHA1((byte)1, 64),
     SHA256((byte)2, 64),
     SHA512((byte)3, 128);
-    public static int MIN_KEY_SIZE = 14;
+
+    public static final int MIN_KEY_SIZE = 14;
+
     public final byte value;
     public final int blockSize;
 

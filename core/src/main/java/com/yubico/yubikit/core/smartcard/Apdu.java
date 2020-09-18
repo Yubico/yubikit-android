@@ -17,6 +17,7 @@
 package com.yubico.yubikit.core.smartcard;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 import javax.annotation.Nullable;
 
@@ -40,7 +41,6 @@ public class Apdu {
      * @param p1   The first instruction parameter byte.
      * @param p2   The second instruction parameter byte.
      * @param data The command data.
-     * @param type The type of the APDU, short or extended.
      */
     private Apdu(byte cla, byte ins, byte p1, byte p2, @Nullable byte[] data) {
         this.cla = cla;
@@ -74,7 +74,7 @@ public class Apdu {
      * @return byte array of APDU data
      */
     public byte[] getData() {
-        return data;
+        return Arrays.copyOf(data, data.length);
     }
 
     /**

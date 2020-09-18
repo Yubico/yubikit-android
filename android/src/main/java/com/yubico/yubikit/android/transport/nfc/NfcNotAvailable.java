@@ -16,10 +16,22 @@
 
 package com.yubico.yubikit.android.transport.nfc;
 
-public class NfcDisabledException extends Exception {
+public class NfcNotAvailable extends Exception {
     static final long serialVersionUID = 1L;
 
-    public NfcDisabledException(String message) {
+    private final boolean disabled;
+
+    public NfcNotAvailable(String message, boolean disabled) {
         super(message);
+        this.disabled = disabled;
+    }
+
+    /**
+     * If true, the NFC functionality is disabled and can be enabled. If false, the device lacks NFC functionality.
+     *
+     * @return true if NFC is disabled
+     */
+    public boolean isDisabled() {
+        return disabled;
     }
 }

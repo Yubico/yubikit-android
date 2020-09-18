@@ -17,6 +17,7 @@
 package com.yubico.yubikit.core;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 /**
@@ -28,11 +29,11 @@ public class NdefUtils {
     private static final byte TYPE_LENGTH = 0x01;
     private static final byte URL_TYPE = (byte)0x55;
     private static final byte HTTPS_PROTOCOL = (byte)0x04;
-    private static final byte[] DOMAIN = "my.yubico.com".getBytes();
-    private static final byte[] NEO_REMAINDER_PREFIX = "/neo/".getBytes();
+    private static final byte[] DOMAIN = "my.yubico.com".getBytes(StandardCharsets.UTF_8);
+    private static final byte[] NEO_REMAINDER_PREFIX = "/neo/".getBytes(StandardCharsets.UTF_8);
 
     public static String getNdefPayload(byte[] ndefData) {
-        return new String(getNdefPayloadBytes(ndefData));
+        return new String(getNdefPayloadBytes(ndefData), StandardCharsets.UTF_8);
     }
 
     public static byte[] getNdefPayloadBytes(byte[] ndefData) {

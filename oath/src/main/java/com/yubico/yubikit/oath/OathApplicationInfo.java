@@ -73,7 +73,7 @@ public class OathApplicationInfo {
      * @return device salt
      */
     public byte[] getSalt() {
-        return salt;
+        return Arrays.copyOf(salt, salt.length);
     }
 
     /**
@@ -82,7 +82,7 @@ public class OathApplicationInfo {
      */
     @Nullable
     public byte[] getChallenge() {
-        return challenge;
+        return challenge == null ? null : Arrays.copyOf(challenge, challenge.length);
     }
 
     /**

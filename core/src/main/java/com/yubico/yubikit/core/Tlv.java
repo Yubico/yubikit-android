@@ -27,8 +27,8 @@ import javax.annotation.Nullable;
  * This class handles simple BER-TLV encoded values where the tag consists of 1-2 bytes.
  */
 public class Tlv {
-    private static int LENGTH_REQUIRES_EXTRA_BYTE = 0x81;
-    private static int LENGTH_REQUIRES_EXTRA_TWO_BYTES = 0x82;
+    private static final int LENGTH_REQUIRES_EXTRA_BYTE = 0x81;
+    private static final int LENGTH_REQUIRES_EXTRA_TWO_BYTES = 0x82;
 
     private final int tag;
     private final int length;
@@ -38,14 +38,14 @@ public class Tlv {
     /**
      * Creates instance of {@link Tlv}
      *
-     * @param bytes       raw bytes that needs to be converted into Tlv
+     * @param bytes      raw bytes that needs to be converted into Tlv
      * @param dataOffset offset within data byte array
      */
     public Tlv(byte[] bytes, int dataOffset) {
         int pointer = 0;
         int tagData = bytes[dataOffset + pointer++] & 0xFF;
         if ((tagData & 0x1f) == 0x1f) {
-            tagData = tagData << 8 | bytes[dataOffset + pointer++];
+            tagData = tagData << 8 | (bytes[dataOffset + pointer++] & 0xFF);
         }
         tag = tagData;
 
@@ -143,7 +143,7 @@ public class Tlv {
      * @return raw data of tlv blob
      */
     public byte[] getBytes() {
-        return bytes;
+        return Arrays.copyOf(bytes, bytes.length);
     }
 
     @Override

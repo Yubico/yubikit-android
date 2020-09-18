@@ -23,8 +23,7 @@ import android.os.Looper;
 
 import com.yubico.yubikit.android.transport.nfc.NfcConfiguration;
 import com.yubico.yubikit.android.transport.nfc.NfcDeviceManager;
-import com.yubico.yubikit.android.transport.nfc.NfcDisabledException;
-import com.yubico.yubikit.android.transport.nfc.NfcNotFoundException;
+import com.yubico.yubikit.android.transport.nfc.NfcNotAvailable;
 import com.yubico.yubikit.android.transport.nfc.NfcSession;
 import com.yubico.yubikit.android.transport.nfc.NfcSessionListener;
 import com.yubico.yubikit.android.transport.usb.UsbConfiguration;
@@ -54,7 +53,7 @@ public final class YubiKitManager {
     private static NfcDeviceManager buildNfcDeviceManager(Context context) {
         try {
             return new NfcDeviceManager(context);
-        } catch (NfcNotFoundException e) {
+        } catch (NfcNotAvailable e) {
             return null;
         }
     }
@@ -108,13 +107,12 @@ public final class YubiKitManager {
      * @param listener         listener that is going to be invoked upon successful discovery of key session
      *                         or failure to detect any session (setting if off or no nfc adapter on device)
      * @param activity         active (not finished) activity required for nfc foreground dispatch
-     * @throws NfcDisabledException in case if NFC not activated
-     * @throws NfcNotFoundException in case if NFC not available on android device
+     * @throws NfcNotAvailable in case if NFC not available on android device
      */
     public void startNfcDiscovery(final NfcConfiguration nfcConfiguration, Activity activity, NfcSessionListener listener)
-            throws NfcDisabledException, NfcNotFoundException {
+            throws NfcNotAvailable {
         if (nfcDeviceManager == null) {
-            throw new NfcNotFoundException("NFC is not available on this device");
+            throw new NfcNotAvailable("NFC is not available on this device", false);
         }
         nfcDeviceManager.enable(activity, nfcConfiguration, new NfcInternalListener(listener));
     }

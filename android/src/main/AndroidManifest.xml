@@ -10,10 +10,11 @@
         android:name="android.hardware.nfc"
         android:required="false" />
 
-    <application>
-        <activity android:name=".ui.OtpActivity"
+    <application android:supportsRtl="true">
+        <activity
+            android:name=".ui.OtpActivity"
             android:label="@string/yubikit_otp_activity_title"
             android:theme="@style/OtpDialogTheme"
-            android:excludeFromRecents="true"/>
+            android:excludeFromRecents="true" />
     </application>
 </manifest>

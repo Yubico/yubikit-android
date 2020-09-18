@@ -24,6 +24,7 @@ import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.Interface;
 import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.core.StringUtils;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -221,7 +222,8 @@ public class UsbSmartCardConnection implements SmartCardConnection {
         private byte sequence;
         private byte status;
         private byte error;
-        private byte message_specific_byte;
+        @SuppressFBWarnings("URF_UNREAD_FIELD")
+        private byte messageSpecificByte;
 
         private MessageHeader(byte[] buffer) {
             if (buffer.length > SIZE_OF_CCID_PREFIX) {
@@ -232,7 +234,7 @@ public class UsbSmartCardConnection implements SmartCardConnection {
                 sequence = responseBuffer.get();
                 status = responseBuffer.get();
                 error = responseBuffer.get();
-                message_specific_byte = responseBuffer.get();
+                messageSpecificByte = responseBuffer.get();
             }
         }
 

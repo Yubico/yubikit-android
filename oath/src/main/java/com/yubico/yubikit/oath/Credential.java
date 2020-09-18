@@ -103,7 +103,7 @@ public class Credential implements Serializable {
      * @return period + issuer + name
      */
     public byte[] getId() {
-        return id;
+        return Arrays.copyOf(id, id.length);
     }
 
     /**

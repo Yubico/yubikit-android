@@ -5,13 +5,14 @@ import com.yubico.yubikit.testing.Codec;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 
 public class PaddingTest {
     @Test
     public void testPkcs1v1_5() throws NoSuchAlgorithmException, InvalidKeyException {
-        byte[] message = "Hello world!".getBytes();
+        byte[] message = "Hello world!".getBytes(StandardCharsets.UTF_8);
 
         Assert.assertArrayEquals(
                 Codec.fromHex("0001ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff003031300d060960864801650304020105000420c0535e4be2b79ffd93291305436bf889314e4a3faec05ecffcbb7df31ad9e51a"),

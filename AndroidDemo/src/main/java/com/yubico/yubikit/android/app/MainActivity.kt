@@ -19,12 +19,14 @@ import androidx.navigation.ui.setupWithNavController
 import com.google.android.material.navigation.NavigationView
 import com.yubico.yubikit.android.YubiKitManager
 import com.yubico.yubikit.android.transport.nfc.NfcConfiguration
+import com.yubico.yubikit.android.transport.nfc.NfcNotAvailable
 import com.yubico.yubikit.android.transport.usb.UsbConfiguration
 import com.yubico.yubikit.android.transport.usb.UsbSession
 import com.yubico.yubikit.android.transport.usb.UsbSessionListener
 import com.yubico.yubikit.core.Logger
 import kotlinx.android.synthetic.main.dialog_about.*
 import java.util.*
+import kotlin.properties.Delegates
 
 class MainActivity : AppCompatActivity() {
     private lateinit var appBarConfiguration: AppBarConfiguration
@@ -33,6 +35,8 @@ class MainActivity : AppCompatActivity() {
     private val viewModel: MainViewModel by viewModels()
 
     private lateinit var yubikit: YubiKitManager
+
+    private var hasNfc by Delegates.notNull<Boolean>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -88,12 +92,18 @@ class MainActivity : AppCompatActivity() {
                         }
                     }
                 })
-                yubikit.startNfcDiscovery(NfcConfiguration(), this) { session ->
-                    Logger.d("NFC Session started $session")
-                    viewModel.yubiKey.apply {
-                        value = session
-                        postValue(null)
+                try {
+                    yubikit.startNfcDiscovery(NfcConfiguration(), this) { session ->
+                        Logger.d("NFC Session started $session")
+                        viewModel.yubiKey.apply {
+                            value = session
+                            postValue(null)
+                        }
                     }
+                    hasNfc = true
+                } catch (e: NfcNotAvailable) {
+                    hasNfc = false
+                    Logger.e("Error starting NFC listening", e)
                 }
             } else {
                 Logger.d("Disable listening")
@@ -131,13 +141,17 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         Logger.d("ON RESUME ACTIVITY")
-        if (viewModel.handleYubiKey.value == true) {
-            yubikit.startNfcDiscovery(NfcConfiguration(), this) { session ->
-                Logger.d("NFC Session started $session")
-                viewModel.yubiKey.apply {
-                    value = session
-                    postValue(null)
+        if (viewModel.handleYubiKey.value == true && hasNfc) {
+            try {
+                yubikit.startNfcDiscovery(NfcConfiguration(), this) { session ->
+                    Logger.d("NFC Session started $session")
+                    viewModel.yubiKey.apply {
+                        value = session
+                        postValue(null)
+                    }
                 }
+            } catch (e: NfcNotAvailable) {
+                Logger.e("NFC is not available", e)
             }
         }
     }

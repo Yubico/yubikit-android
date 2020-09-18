@@ -1,6 +1,7 @@
 package com.yubico.yubikit.otp;
 
 import com.yubico.yubikit.core.otp.ChecksumUtils;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import javax.annotation.Nullable;
 import java.nio.ByteBuffer;
@@ -157,6 +158,7 @@ public class Config {
                 .array();
     }
 
+    @SuppressFBWarnings(value = "BIT_AND_ZZ", justification = "Check EXTflag mask for completeness")
     static byte[] buildUpdateConfig(byte extFlags, byte tktFlags, byte cfgFlags, @Nullable byte[] accCode) {
         if ((extFlags & ~EXTFLAG_UPDATE_MASK) != 0) {
             throw new IllegalArgumentException("Unsupported ext flags for update");

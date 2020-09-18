@@ -35,6 +35,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 import javax.annotation.Nullable;
@@ -116,7 +117,7 @@ public class YubiOtpApplication implements Closeable {
             try {
                 SmartCardProtocol mgmtApplication = new SmartCardProtocol(MGMT_AID, connection);
                 byte[] response = mgmtApplication.select();
-                version = Version.parse(new String(response));
+                version = Version.parse(new String(response, StandardCharsets.UTF_8));
             } catch (ApplicationNotAvailableException e) {
                 // NEO: version will be populated further down.
             }

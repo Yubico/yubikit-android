@@ -2,7 +2,7 @@
 
 buildscript {
     ext {
-        kotlin_version = '1.4.0'
+        kotlin_version = '1.4.10'
     }
     repositories {
         google()
@@ -17,6 +17,7 @@ buildscript {
 plugins {
     id 'java-library'
     id 'maven-publish'
+    id "com.github.spotbugs" version "4.5.0"
 }
 
 allprojects {
@@ -30,4 +31,9 @@ allprojects {
 subprojects {
     version = '2.0.0-SNAPSHOT'
     ext.pomName = "Yubico YubiKit ${project.name.capitalize()}"
+
+    apply plugin: 'com.github.spotbugs'
+}
+dependencies {
+    spotbugsPlugins 'com.h3xstream.findsecbugs:findsecbugs-plugin:1.10.1'
 }

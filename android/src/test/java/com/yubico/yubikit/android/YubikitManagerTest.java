@@ -9,8 +9,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import com.yubico.yubikit.core.YubiKeySession;
 import com.yubico.yubikit.android.transport.nfc.NfcConfiguration;
 import com.yubico.yubikit.android.transport.nfc.NfcDeviceManager;
-import com.yubico.yubikit.android.transport.nfc.NfcDisabledException;
-import com.yubico.yubikit.android.transport.nfc.NfcNotFoundException;
+import com.yubico.yubikit.android.transport.nfc.NfcNotAvailable;
 import com.yubico.yubikit.android.transport.nfc.NfcSession;
 import com.yubico.yubikit.android.transport.nfc.NfcSessionListener;
 import com.yubico.yubikit.android.transport.usb.UsbConfiguration;
@@ -48,7 +47,7 @@ public class YubikitManagerTest {
     private YubiKitManager yubiKitManager = new YubiKitManager(handler, mockUsb, mockNfc);
 
     @Before
-    public void setUp() throws NfcDisabledException {
+    public void setUp() throws NfcNotAvailable {
         Mockito.doAnswer(new ListenerInvocation(usbSession)).when(mockUsb).enable(Mockito.any(), Mockito.any(UsbSessionListener.class));
         Mockito.doAnswer(new ListenerInvocation(nfcSession)).when(mockNfc).enable(Mockito.any(), Mockito.any(), Mockito.any(NfcSessionListener.class));
 
@@ -60,7 +59,7 @@ public class YubikitManagerTest {
     }
 
     @Test
-    public void discoverSession() throws NfcDisabledException, NfcNotFoundException {
+    public void discoverSession() throws NfcNotAvailable {
         yubiKitManager.startNfcDiscovery(new NfcConfiguration(), mockActivity, new NfcListener());
         yubiKitManager.startUsbDiscovery(new UsbConfiguration(), new UsbListener());
 
@@ -81,7 +80,7 @@ public class YubikitManagerTest {
     }
 
     @Test
-    public void discoverUsbSession() throws NfcNotFoundException, NfcDisabledException {
+    public void discoverUsbSession() throws NfcNotAvailable {
         UsbConfiguration configuration = new UsbConfiguration();
         yubiKitManager.startUsbDiscovery(configuration, new UsbListener());
 
@@ -104,7 +103,7 @@ public class YubikitManagerTest {
     }
 
     @Test
-    public void discoverNfcSession() throws NfcNotFoundException, NfcDisabledException {
+    public void discoverNfcSession() throws NfcNotAvailable {
         NfcConfiguration configuration = new NfcConfiguration();
         yubiKitManager.startNfcDiscovery(configuration, mockActivity, new NfcListener());
 

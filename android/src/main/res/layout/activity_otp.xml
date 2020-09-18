@@ -13,13 +13,14 @@
         android:layout_marginLeft="@dimen/yubikit_otp_activity_margin"
         android:layout_marginRight="@dimen/yubikit_otp_activity_margin"
         android:gravity="center"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        tools:ignore="UseCompoundDrawables">
 
         <ImageView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_width="300dp"
+            android:layout_height="150dp"
             android:contentDescription="@string/yubikit_otp_image_desc"
-            android:src="@drawable/ykfamily" />
+            android:src="@drawable/ic_ykfamily" />
 
         <TextView
             android:id="@+id/yubikit_otp_text_view"

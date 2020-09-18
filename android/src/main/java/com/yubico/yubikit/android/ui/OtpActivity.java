@@ -15,8 +15,7 @@ import com.yubico.yubikit.android.R;
 import com.yubico.yubikit.android.YubiKitManager;
 import com.yubico.yubikit.android.transport.nfc.NfcConfiguration;
 import com.yubico.yubikit.android.transport.nfc.NfcDeviceManager;
-import com.yubico.yubikit.android.transport.nfc.NfcDisabledException;
-import com.yubico.yubikit.android.transport.nfc.NfcNotFoundException;
+import com.yubico.yubikit.android.transport.nfc.NfcNotAvailable;
 import com.yubico.yubikit.android.transport.usb.UsbConfiguration;
 import com.yubico.yubikit.android.transport.usb.UsbSession;
 import com.yubico.yubikit.android.transport.usb.UsbSessionListener;
@@ -124,6 +123,7 @@ public class OtpActivity extends Activity {
                             IsoDep isoDep = IsoDep.get(session.getTag());
                             isoDep.connect();
                             while (isoDep.isConnected()) {
+                                //noinspection BusyWait
                                 Thread.sleep(DEFAULT_TAG_IGNORE_TIMEOUT_MS);
                             }
                         } catch (InterruptedException | IOException e) {
@@ -136,13 +136,12 @@ public class OtpActivity extends Activity {
                 }
 
             });
-        } catch (NfcDisabledException e) {
+        } catch (NfcNotAvailable e) {
             hasNfc = false;
             textView.setText(R.string.yubikit_otp_plug_in);
-            nfcBtn.setVisibility(View.VISIBLE);
-        } catch (NfcNotFoundException e) {
-            hasNfc = false;
-            textView.setText(R.string.yubikit_otp_plug_in);
+            if (e.isDisabled()) {
+                nfcBtn.setVisibility(View.VISIBLE);
+            }
         }
     }
 

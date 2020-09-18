@@ -26,6 +26,7 @@ import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.YubiKeySession;
 import com.yubico.yubikit.core.NotSupportedOperation;
 import com.yubico.yubikit.core.Interface;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.io.IOException;
 
@@ -65,6 +66,7 @@ public class NfcSession implements YubiKeySession {
         return new NfcSmartCardConnection(card);
     }
 
+    @SuppressFBWarnings("RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE")
     public byte[] readNdef() throws IOException {
         try(Ndef ndef = Ndef.get(tag)) {
             if (ndef != null) {

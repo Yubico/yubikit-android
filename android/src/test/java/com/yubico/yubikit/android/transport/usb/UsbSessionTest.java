@@ -65,7 +65,6 @@ public class UsbSessionTest {
 
     private SmartCardConnection usbConnection;
     private UsbSessionMock mock = new UsbSessionMock(Mockito.mock(UsbManager.class), Mockito.mock(UsbDevice.class));
-    ;
     private Map<String, byte[]> commandResponses = new HashMap<>();
 
     @Before
@@ -176,7 +175,7 @@ public class UsbSessionTest {
 
         @Override
         public <T extends YubiKeyConnection> T openConnection(Class<T> connectionType) throws IOException {
-            return (T) new UsbSmartCardConnection(connection, usbInterface, endpointIn, endpointOut);
+            return connectionType.cast(new UsbSmartCardConnection(connection, usbInterface, endpointIn, endpointOut));
         }
 
         public void mockOutError() {

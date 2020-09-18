@@ -17,6 +17,7 @@ import org.hamcrest.MatcherAssert;
 import org.junit.Assert;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
@@ -168,7 +169,7 @@ public class PivDeviceTests {
     }
 
     public static void testSign(PivApplication piv, Slot slot, KeyType keyType, PublicKey publicKey, String digest) throws NoSuchAlgorithmException, IOException, ApduException, InvalidPinException, InvalidKeyException, BadResponseException {
-        byte[] message = "Hello world!".getBytes();
+        byte[] message = "Hello world!".getBytes(StandardCharsets.UTF_8);
 
         String signatureAlgorithm = digest.replace("-", "") + "With";
         switch (keyType.params.algorithm) {
@@ -198,7 +199,7 @@ public class PivDeviceTests {
             throw new IllegalArgumentException("Unsupported");
         }
 
-        byte[] message = "Hello world!".getBytes();
+        byte[] message = "Hello world!".getBytes(StandardCharsets.UTF_8);
 
         piv.authenticate(DEFAULT_MANAGEMENT_KEY);
         PublicKey publicKey = piv.generateKey(Slot.AUTHENTICATION, keyType, PinPolicy.DEFAULT, TouchPolicy.DEFAULT);

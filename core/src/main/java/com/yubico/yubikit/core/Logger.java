@@ -42,6 +42,7 @@ public abstract class Logger {
     protected void logError(String message, Throwable throwable) {
     }
 
+    @Nullable
     private static Logger instance = null;
 
     /**
