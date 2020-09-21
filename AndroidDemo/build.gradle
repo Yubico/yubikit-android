@@ -38,8 +38,8 @@ dependencies {
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
 
     implementation project(':android')
-    implementation project(':mgmt')
-    implementation project(':otp')
+    implementation project(':management')
+    implementation project(':yubiotp')
     implementation project(':oath')
     implementation project(':piv')
 

@@ -22,7 +22,7 @@ import android.nfc.tech.IsoDep;
 import com.yubico.yubikit.core.Interface;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.Logger;
-import com.yubico.yubikit.core.StringUtils;
+import com.yubico.yubikit.core.util.StringUtils;
 
 import java.io.IOException;
 

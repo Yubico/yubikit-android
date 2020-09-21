@@ -21,10 +21,10 @@ import com.yubico.yubikit.core.BadResponseException;
 import com.yubico.yubikit.core.NotSupportedOperation;
 import com.yubico.yubikit.core.smartcard.*;
 import com.yubico.yubikit.core.Logger;
-import com.yubico.yubikit.core.RandomUtils;
-import com.yubico.yubikit.core.StringUtils;
-import com.yubico.yubikit.core.Tlv;
-import com.yubico.yubikit.core.TlvUtils;
+import com.yubico.yubikit.core.util.RandomUtils;
+import com.yubico.yubikit.core.util.StringUtils;
+import com.yubico.yubikit.core.util.Tlv;
+import com.yubico.yubikit.core.util.TlvUtils;
 import com.yubico.yubikit.core.Version;
 
 import java.io.*;

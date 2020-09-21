@@ -19,9 +19,9 @@ package com.yubico.yubikit.oath;
 import com.yubico.yubikit.core.ApplicationNotAvailableException;
 import com.yubico.yubikit.core.NotSupportedOperation;
 import com.yubico.yubikit.core.smartcard.*;
-import com.yubico.yubikit.core.RandomUtils;
-import com.yubico.yubikit.core.Tlv;
-import com.yubico.yubikit.core.TlvUtils;
+import com.yubico.yubikit.core.util.RandomUtils;
+import com.yubico.yubikit.core.util.Tlv;
+import com.yubico.yubikit.core.util.TlvUtils;
 
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;

@@ -6,6 +6,7 @@ package com.yubico.yubikit.core.smartcard;
 public final class SW {
     public static final short NO_INPUT_DATA = 0x6285;
     public static final short VERIFY_FAIL_NO_RETRY = 0x63C0;
+    public static final short MEMORY_ERROR = 0x6581;
     public static final short WRONG_LENGTH = 0x6700;
     public static final short SECURITY_CONDITION_NOT_SATISFIED = 0x6982;
     public static final short AUTH_METHOD_BLOCKED = 0x6983;

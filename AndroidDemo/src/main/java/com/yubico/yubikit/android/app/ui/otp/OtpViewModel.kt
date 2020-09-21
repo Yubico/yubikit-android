@@ -6,8 +6,8 @@ import com.yubico.yubikit.core.YubiKeyDevice
 import com.yubico.yubikit.core.otp.OtpConnection
 import com.yubico.yubikit.android.app.ui.YubiKeyViewModel
 import com.yubico.yubikit.core.smartcard.SmartCardConnection
-import com.yubico.yubikit.otp.ConfigState
-import com.yubico.yubikit.otp.YubiOtpSession
+import com.yubico.yubikit.yubiotp.ConfigState
+import com.yubico.yubikit.yubiotp.YubiOtpSession
 import com.yubico.yubikit.core.Logger
 import java.io.IOException
 

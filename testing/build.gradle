@@ -6,8 +6,8 @@ dependencies {
     api project(':core')
     api project(':oath')
     api project(':piv')
-    api project(':otp')
-    api project(':mgmt')
+    api project(':yubiotp')
+    api project(':management')
 
     api 'junit:junit:4.13'
 

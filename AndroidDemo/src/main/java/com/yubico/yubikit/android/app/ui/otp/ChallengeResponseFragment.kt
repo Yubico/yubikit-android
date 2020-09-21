@@ -7,9 +7,9 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import com.yubico.yubikit.android.app.R
-import com.yubico.yubikit.otp.Slot
-import com.yubico.yubikit.core.RandomUtils
-import kotlinx.android.synthetic.main.fragment_otp_chalresp.*
+import com.yubico.yubikit.yubiotp.Slot
+import com.yubico.yubikit.core.util.RandomUtils
+import kotlinx.android.synthetic.main.fragment_yubiotp_chalresp.*
 import org.bouncycastle.util.encoders.Hex
 
 class ChallengeResponseFragment : Fragment() {
@@ -17,7 +17,7 @@ class ChallengeResponseFragment : Fragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View? {
-        return inflater.inflate(R.layout.fragment_otp_chalresp, container, false)
+        return inflater.inflate(R.layout.fragment_yubiotp_chalresp, container, false)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {

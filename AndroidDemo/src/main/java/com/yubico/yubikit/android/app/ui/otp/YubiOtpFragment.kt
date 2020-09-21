@@ -11,10 +11,10 @@ import androidx.fragment.app.activityViewModels
 import com.yubico.yubikit.android.app.MainViewModel
 import com.yubico.yubikit.android.app.R
 import com.yubico.yubikit.android.ui.OtpActivity
-import com.yubico.yubikit.otp.Slot
+import com.yubico.yubikit.yubiotp.Slot
 import com.yubico.yubikit.core.otp.Modhex
-import com.yubico.yubikit.core.RandomUtils
-import kotlinx.android.synthetic.main.fragment_otp_yubi_otp.*
+import com.yubico.yubikit.core.util.RandomUtils
+import kotlinx.android.synthetic.main.fragment_yubiotp_otp.*
 import org.bouncycastle.util.encoders.Hex
 
 private const val REQUEST_OTP_CODE = 1
@@ -25,7 +25,7 @@ class YubiOtpFragment : Fragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View? {
-        return inflater.inflate(R.layout.fragment_otp_yubi_otp, container, false)
+        return inflater.inflate(R.layout.fragment_yubiotp_otp, container, false)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {

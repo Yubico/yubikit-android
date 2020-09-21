@@ -2,19 +2,19 @@
 <navigation xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    app:startDestination="@+id/nav_mgmt">
+    app:startDestination="@+id/nav_management">
 
     <fragment
-        android:id="@+id/nav_mgmt"
-        android:name="com.yubico.yubikit.android.app.ui.mgmt.MgmtFragment"
+        android:id="@+id/nav_management"
+        android:name="com.yubico.yubikit.android.app.ui.management.ManagementFragment"
         android:label="@string/menu_mgmt"
-        tools:layout="@layout/fragment_mgmt" />
+        tools:layout="@layout/fragment_management" />
 
     <fragment
-        android:id="@+id/nav_otp"
+        android:id="@+id/nav_yubiotp"
         android:name="com.yubico.yubikit.android.app.ui.otp.OtpFragment"
         android:label="@string/menu_otp"
-        tools:layout="@layout/fragment_otp" />
+        tools:layout="@layout/fragment_yubiotp" />
 
     <fragment
         android:id="@+id/nav_piv"

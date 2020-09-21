@@ -23,7 +23,7 @@ import android.hardware.usb.UsbInterface;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.Interface;
 import com.yubico.yubikit.core.Logger;
-import com.yubico.yubikit.core.StringUtils;
+import com.yubico.yubikit.core.util.StringUtils;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.io.ByteArrayOutputStream;

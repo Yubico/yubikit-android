@@ -17,7 +17,7 @@ import com.yubico.yubikit.oath.CredentialData
 import com.yubico.yubikit.oath.HashAlgorithm
 import com.yubico.yubikit.oath.OathSession
 import com.yubico.yubikit.oath.OathType
-import com.yubico.yubikit.core.RandomUtils
+import com.yubico.yubikit.core.util.RandomUtils
 import com.yubico.yubikit.core.smartcard.SW
 import kotlinx.android.synthetic.main.fragment_oath.*
 import kotlinx.coroutines.Dispatchers

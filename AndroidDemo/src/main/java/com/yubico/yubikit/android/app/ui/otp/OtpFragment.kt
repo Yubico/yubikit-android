@@ -6,14 +6,13 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
-import androidx.lifecycle.Observer
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import com.google.android.material.tabs.TabLayoutMediator
 import com.yubico.yubikit.android.app.R
 import com.yubico.yubikit.android.app.ui.YubiKeyFragment
-import com.yubico.yubikit.otp.Slot
-import com.yubico.yubikit.otp.YubiOtpSession
-import kotlinx.android.synthetic.main.fragment_otp.*
+import com.yubico.yubikit.yubiotp.Slot
+import com.yubico.yubikit.yubiotp.YubiOtpSession
+import kotlinx.android.synthetic.main.fragment_yubiotp.*
 import java.lang.IllegalStateException
 
 class OtpFragment : YubiKeyFragment<YubiOtpSession, OtpViewModel>() {
@@ -24,7 +23,7 @@ class OtpFragment : YubiKeyFragment<YubiOtpSession, OtpViewModel>() {
             container: ViewGroup?,
             savedInstanceState: Bundle?
     ): View? {
-        return inflater.inflate(R.layout.fragment_otp, container, false)
+        return inflater.inflate(R.layout.fragment_yubiotp, container, false)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {

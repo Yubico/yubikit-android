@@ -4,7 +4,7 @@ import com.yubico.yubikit.core.CommandException;
 import com.yubico.yubikit.core.TimeoutException;
 import com.yubico.yubikit.core.CommandState;
 import com.yubico.yubikit.core.Logger;
-import com.yubico.yubikit.core.StringUtils;
+import com.yubico.yubikit.core.util.StringUtils;
 
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;

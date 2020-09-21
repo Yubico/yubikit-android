@@ -6,7 +6,7 @@ import com.yubico.yubikit.core.smartcard.SW;
 import com.yubico.yubikit.piv.*;
 import com.yubico.yubikit.piv.PivSession;
 import com.yubico.yubikit.core.Logger;
-import com.yubico.yubikit.core.StringUtils;
+import com.yubico.yubikit.core.util.StringUtils;
 
 import org.bouncycastle.util.encoders.Hex;
 import org.hamcrest.CoreMatchers;
