@@ -82,6 +82,24 @@ public class NfcYubiKeyDevice implements YubiKeyDevice {
         throw new IOException("NDEF data missing or invalid");
     }
 
+    /**
+     * Waits for the removal of the device before returning.
+     * This method will block until the YubiKey has been removed from the NFC field and can be used to prevent triggering
+     * NFC YubiKey detection multiple times in quick succession.
+     */
+    public void awaitRemoval() {
+        try {
+            IsoDep isoDep = IsoDep.get(tag);
+            isoDep.connect();
+            while (isoDep.isConnected()) {
+                //noinspection BusyWait
+                Thread.sleep(250);
+            }
+        } catch (InterruptedException | IOException e) {
+            // Ignore
+        }
+    }
+
     @Override
     public Interface getInterface() {
         return Interface.NFC;

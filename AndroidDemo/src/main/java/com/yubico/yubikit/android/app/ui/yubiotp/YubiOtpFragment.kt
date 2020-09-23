@@ -1,4 +1,4 @@
-package com.yubico.yubikit.android.app.ui.otp
+package com.yubico.yubikit.android.app.ui.yubiotp
 
 import android.app.Activity
 import android.content.Intent

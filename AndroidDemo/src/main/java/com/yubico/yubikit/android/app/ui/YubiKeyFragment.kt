@@ -1,9 +1,6 @@
 package com.yubico.yubikit.android.app.ui
 
 import android.app.AlertDialog
-import android.nfc.NfcAdapter
-import android.nfc.tech.IsoDep
-import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.widget.TextView
@@ -12,17 +9,16 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Observer
 import androidx.lifecycle.lifecycleScope
-import com.yubico.yubikit.core.YubiKeyDevice
 import com.yubico.yubikit.android.app.MainViewModel
 import com.yubico.yubikit.android.app.R
 import com.yubico.yubikit.android.transport.nfc.NfcYubiKeyDevice
 import com.yubico.yubikit.core.ApplicationNotAvailableException
 import com.yubico.yubikit.core.Logger
+import com.yubico.yubikit.core.YubiKeyDevice
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.Closeable
-import java.io.IOException
 
 abstract class YubiKeyFragment<App : Closeable, VM : YubiKeyViewModel<App>> : Fragment() {
     protected val activityViewModel: MainViewModel by activityViewModels()
@@ -98,26 +94,8 @@ abstract class YubiKeyFragment<App : Closeable, VM : YubiKeyViewModel<App>> : Fr
                             emptyText.setText(R.string.remove_key)
                         }
                     }
-                    // Wait for the YubiKey to be removed before returning to avoid triggering a new tag discovery.
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                        NfcAdapter.getDefaultAdapter(context).ignore(
-                                it.tag, 250, { yubiKeyPrompt.dismiss() }, null)
-                    } else {
-                        // Busy-wait for removal
-                        @Suppress("BlockingMethodInNonBlockingContext")
-                        try {
-                            val isoDep = IsoDep.get(it.tag)
-                            isoDep.connect()
-                            while (isoDep.isConnected) {
-                                Thread.sleep(250)
-                            }
-                        } catch (e: InterruptedException) {
-                            //Ignore
-                        } catch (e: IOException) {
-                            //Ignore
-                        }
-                        yubiKeyPrompt.dismiss()
-                    }
+                    it.awaitRemoval()
+                    yubiKeyPrompt.dismiss()
                 } else if (yubiKeyPrompt.isShowing) {
                     yubiKeyPrompt.dismiss()
                 }

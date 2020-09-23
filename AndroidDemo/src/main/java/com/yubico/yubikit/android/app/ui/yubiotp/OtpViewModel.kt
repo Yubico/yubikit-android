@@ -1,4 +1,4 @@
-package com.yubico.yubikit.android.app.ui.otp
+package com.yubico.yubikit.android.app.ui.yubiotp
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
