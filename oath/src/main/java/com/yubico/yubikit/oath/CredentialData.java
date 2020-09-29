@@ -17,17 +17,15 @@
 package com.yubico.yubikit.oath;
 
 import com.yubico.yubikit.core.util.Pair;
-
 import org.apache.commons.codec.binary.Base32;
 
+import javax.annotation.Nullable;
 import java.io.Serializable;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.annotation.Nullable;
 
 public class CredentialData implements Serializable {
     private final int period;

@@ -16,21 +16,21 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@master
+      - uses: actions/checkout@master
 
-    - name: Scan and fail if warnings
-      run: |
-        if [ "${SECRET}" != "" ]; then
-          docker login yubico-yes-docker-local.jfrog.io/ \
-            -u svc-static-code-analysis-reader -p ${SECRET}
-          docker pull ${SCAN_IMG}
-          docker run -v${PWD}:/k -e PROJECT_NAME=${GITHUB_REPOSITORY#Yubico/} \
-            -t ${SCAN_IMG}
-        fi
-        
+      - name: Scan and fail if warnings
+        run: |
+          if [ "${SECRET}" != "" ]; then
+            docker login yubico-yes-docker-local.jfrog.io/ \
+              -u svc-static-code-analysis-reader -p ${SECRET}
+            docker pull ${SCAN_IMG}
+            docker run -v${PWD}:/k -e PROJECT_NAME=${GITHUB_REPOSITORY#Yubico/} \
+              -t ${SCAN_IMG}
+          fi
 
-    - uses: actions/upload-artifact@master
-      if: failure()
-      with:
-        name: suppression_files
-        path: suppression_files
+
+      - uses: actions/upload-artifact@master
+        if: failure()
+        with:
+          name: suppression_files
+          path: suppression_files

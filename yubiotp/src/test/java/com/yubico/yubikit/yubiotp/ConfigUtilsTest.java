@@ -33,9 +33,9 @@ public class ConfigUtilsTest {
                 fixed,
                 uid,
                 key,
-                (byte)0,
+                (byte) 0,
                 tktFlags,
-                (byte)0,
+                (byte) 0,
                 null
         );
 

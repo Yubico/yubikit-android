@@ -13,7 +13,6 @@ import com.yubico.yubikit.android.app.ui.YubiKeyFragment
 import com.yubico.yubikit.yubiotp.Slot
 import com.yubico.yubikit.yubiotp.YubiOtpSession
 import kotlinx.android.synthetic.main.fragment_yubiotp.*
-import java.lang.IllegalStateException
 
 class OtpFragment : YubiKeyFragment<YubiOtpSession, OtpViewModel>() {
     override val viewModel: OtpViewModel by activityViewModels()
@@ -32,7 +31,7 @@ class OtpFragment : YubiKeyFragment<YubiOtpSession, OtpViewModel>() {
         pager.adapter = ProgramModeAdapter(this)
 
         TabLayoutMediator(tab_layout, pager) { tab, position ->
-            tab.setText(when(position) {
+            tab.setText(when (position) {
                 0 -> R.string.otp_yubiotp
                 1 -> R.string.otp_chalresp
                 else -> throw IllegalStateException()

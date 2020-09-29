@@ -93,7 +93,7 @@ class ConfigUtils {
                 .put(extFlags)
                 .put(tktFlags)
                 .put(cfgFlags)
-                .putShort((short)0) // 2 bytes RFU
+                .putShort((short) 0) // 2 bytes RFU
                 .putShort((short) ~ChecksumUtils.calculateCrc(config.array(), config.position()))
                 .array();
     }

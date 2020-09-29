@@ -26,9 +26,10 @@ public interface ChallengeSigner {
 
     /**
      * The response computed by performing the correct HMAC function of provided challenge with the correct key.
+     *
      * @param challenge the challenge that needs to be signed
      * @return HMAC of the challenge
-     * @throws InvalidKeyException in case of crypto operation error
+     * @throws InvalidKeyException      in case of crypto operation error
      * @throws NoSuchAlgorithmException in case of crypto operation error
      */
     byte[] sign(byte[] challenge) throws InvalidKeyException, NoSuchAlgorithmException;

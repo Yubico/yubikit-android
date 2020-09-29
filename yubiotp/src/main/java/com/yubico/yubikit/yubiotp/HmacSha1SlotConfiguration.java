@@ -15,6 +15,7 @@ public class HmacSha1SlotConfiguration extends BaseSlotConfiguration<HmacSha1Slo
 
     /**
      * Creates a HMAC-SHA1 challenge-response configuration with default settings.
+     *
      * @param secret the 20 bytes HMAC key to store
      */
     public HmacSha1SlotConfiguration(byte[] secret) {

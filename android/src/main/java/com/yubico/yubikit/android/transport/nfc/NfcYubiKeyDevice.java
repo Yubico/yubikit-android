@@ -21,11 +21,10 @@ import android.nfc.NdefMessage;
 import android.nfc.Tag;
 import android.nfc.tech.IsoDep;
 import android.nfc.tech.Ndef;
-
+import com.yubico.yubikit.core.Interface;
+import com.yubico.yubikit.core.NotSupportedOperation;
 import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.YubiKeyDevice;
-import com.yubico.yubikit.core.NotSupportedOperation;
-import com.yubico.yubikit.core.Interface;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.io.IOException;
@@ -68,7 +67,7 @@ public class NfcYubiKeyDevice implements YubiKeyDevice {
 
     @SuppressFBWarnings("RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE")
     public byte[] readNdef() throws IOException {
-        try(Ndef ndef = Ndef.get(tag)) {
+        try (Ndef ndef = Ndef.get(tag)) {
             if (ndef != null) {
                 ndef.connect();
                 NdefMessage message = ndef.getNdefMessage();

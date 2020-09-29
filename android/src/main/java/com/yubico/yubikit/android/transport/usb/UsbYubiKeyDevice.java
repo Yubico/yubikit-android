@@ -18,18 +18,16 @@ package com.yubico.yubikit.android.transport.usb;
 
 import android.hardware.usb.*;
 import android.util.Pair;
-
+import com.yubico.yubikit.core.Interface;
+import com.yubico.yubikit.core.NotSupportedOperation;
 import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.YubiKeyDevice;
-import com.yubico.yubikit.core.NotSupportedOperation;
-import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.otp.OtpConnection;
-import com.yubico.yubikit.core.Interface;
-
-import java.io.IOException;
-import java.util.Objects;
+import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 
 import javax.annotation.Nullable;
+import java.io.IOException;
+import java.util.Objects;
 
 public class UsbYubiKeyDevice implements YubiKeyDevice {
     private final UsbManager usbManager;

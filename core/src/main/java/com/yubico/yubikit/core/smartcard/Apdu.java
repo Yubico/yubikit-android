@@ -16,10 +16,8 @@
 
 package com.yubico.yubikit.core.smartcard;
 
-import java.nio.ByteBuffer;
-import java.util.Arrays;
-
 import javax.annotation.Nullable;
+import java.util.Arrays;
 
 /**
  * Data model for encapsulating an APDU command, as defined by ISO/IEC 7816-4 standard.

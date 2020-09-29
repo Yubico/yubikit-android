@@ -1,35 +1,23 @@
 package com.yubico.yubikit.testing.piv;
 
 import com.yubico.yubikit.core.BadResponseException;
+import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.core.smartcard.SW;
-import com.yubico.yubikit.piv.*;
-import com.yubico.yubikit.piv.PivSession;
-import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.core.util.StringUtils;
-
+import com.yubico.yubikit.piv.*;
 import org.bouncycastle.util.encoders.Hex;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
 import org.junit.Assert;
 
+import javax.crypto.*;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.security.InvalidKeyException;
-import java.security.KeyPair;
-import java.security.NoSuchAlgorithmException;
-import java.security.PublicKey;
-import java.security.Signature;
-import java.security.SignatureException;
+import java.security.*;
 import java.security.interfaces.ECPublicKey;
 import java.util.Arrays;
 import java.util.List;
-
-import javax.crypto.BadPaddingException;
-import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.KeyAgreement;
-import javax.crypto.NoSuchPaddingException;
 
 public class PivDeviceTests {
     private static final byte[] DEFAULT_MANAGEMENT_KEY = Hex.decode("010203040506070801020304050607080102030405060708");

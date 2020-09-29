@@ -47,6 +47,7 @@ abstract class KeyboardSlotConfiguration<T extends KeyboardSlotConfiguration<T>>
 
     /**
      * Send scancodes for numeric keypad keypresses when sending digits - helps with some keyboard layouts.
+     *
      * @param useNumeric true to use the numeric keypad (default: false)
      * @return the configuration for chaining
      */

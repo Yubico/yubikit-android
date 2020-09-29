@@ -16,9 +16,8 @@
 
 package com.yubico.yubikit.oath;
 
-import com.yubico.yubikit.core.util.TlvUtils;
 import com.yubico.yubikit.core.Version;
-
+import com.yubico.yubikit.core.util.TlvUtils;
 import org.apache.commons.codec.binary.Base64;
 
 import javax.annotation.Nullable;
@@ -45,6 +44,7 @@ public class OathApplicationInfo {
 
     /**
      * Creates an instance of OATH application info from SELECT response
+     *
      * @param response the response from OATH SELECT command
      */
     OathApplicationInfo(byte[] response) {
@@ -78,6 +78,7 @@ public class OathApplicationInfo {
 
     /**
      * A challenge is returned if the authentication object is set. In that case an authentication is required for all commands except VALIDATE and RESET.
+     *
      * @return challenge
      */
     @Nullable

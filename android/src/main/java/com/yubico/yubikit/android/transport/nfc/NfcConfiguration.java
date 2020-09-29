@@ -36,6 +36,7 @@ public class NfcConfiguration {
     /**
      * Setting this flag allows the caller to prevent the
      * platform from playing sounds when it discovers a tag.
+     *
      * @param disableNfcDiscoverySound new value of this property
      * @return configuration object
      */
@@ -47,6 +48,7 @@ public class NfcConfiguration {
     /**
      * Setting this flag allows the caller to prevent the
      * platform from performing an NDEF check on the tags it
+     *
      * @param skipNdefCheck new value of this property
      * @return configuration object
      */
@@ -60,6 +62,7 @@ public class NfcConfiguration {
      * otherwise start of NFC session will return error in callback if no permissions/setting
      * and allows user to handle disabled NFC reader (show error or snackbar or refer to settings)
      * Default value is false
+     *
      * @param handleUnavailableNfc new value of this property
      * @return configuration object
      */
@@ -70,6 +73,7 @@ public class NfcConfiguration {
 
     /**
      * The timeout to use for wireless communication.
+     *
      * @param timeout the timeout in milliseconds
      * @return configuration object
      */

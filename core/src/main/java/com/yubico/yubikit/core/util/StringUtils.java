@@ -20,6 +20,7 @@ public class StringUtils {
 
     /**
      * Helper method that convert byte array into string for logging
+     *
      * @param byteArray array of bytes
      * @return string representation of byte array
      */
@@ -29,9 +30,10 @@ public class StringUtils {
 
     /**
      * Helper method that convert byte array into string for logging
+     *
      * @param byteArray array of bytes
-     * @param offset the offset within byteArray
-     * @param size the size of array
+     * @param offset    the offset within byteArray
+     * @param size      the size of array
      * @return string representation of byte array
      */
     public static String bytesToHex(byte[] byteArray, int offset, int size) {

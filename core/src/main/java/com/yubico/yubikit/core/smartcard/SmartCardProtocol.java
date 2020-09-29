@@ -24,7 +24,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 
 /**
  * Class that allows to open ISO 7816 connection to YubiKey

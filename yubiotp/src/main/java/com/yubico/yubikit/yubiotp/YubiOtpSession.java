@@ -17,22 +17,20 @@
 package com.yubico.yubikit.yubiotp;
 
 import com.yubico.yubikit.core.*;
-import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.otp.ChecksumUtils;
 import com.yubico.yubikit.core.otp.OtpConnection;
 import com.yubico.yubikit.core.otp.OtpProtocol;
 import com.yubico.yubikit.core.smartcard.Apdu;
-import com.yubico.yubikit.core.smartcard.SmartCardProtocol;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
+import com.yubico.yubikit.core.smartcard.SmartCardProtocol;
 
+import javax.annotation.Nullable;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-
-import javax.annotation.Nullable;
 
 /**
  * Application to use and configure the OTP application of the YubiKey.

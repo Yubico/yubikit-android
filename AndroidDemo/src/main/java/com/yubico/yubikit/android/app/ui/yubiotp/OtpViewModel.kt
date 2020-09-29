@@ -2,13 +2,13 @@ package com.yubico.yubikit.android.app.ui.yubiotp
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import com.yubico.yubikit.android.app.ui.YubiKeyViewModel
+import com.yubico.yubikit.core.Logger
 import com.yubico.yubikit.core.YubiKeyDevice
 import com.yubico.yubikit.core.otp.OtpConnection
-import com.yubico.yubikit.android.app.ui.YubiKeyViewModel
 import com.yubico.yubikit.core.smartcard.SmartCardConnection
 import com.yubico.yubikit.yubiotp.ConfigState
 import com.yubico.yubikit.yubiotp.YubiOtpSession
-import com.yubico.yubikit.core.Logger
 import java.io.IOException
 
 class NonClosingYubiOtpSession(connection: OtpConnection) : YubiOtpSession(connection) {

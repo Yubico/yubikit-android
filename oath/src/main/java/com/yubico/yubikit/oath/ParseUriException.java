@@ -21,6 +21,7 @@ package com.yubico.yubikit.oath;
  */
 public class ParseUriException extends Exception {
     static final long serialVersionUID = 1L;
+
     public ParseUriException(String message) {
         super(message);
     }

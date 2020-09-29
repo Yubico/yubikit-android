@@ -1,7 +1,5 @@
 package com.yubico.yubikit.core;
 
-import com.yubico.yubikit.core.Logger;
-
 /**
  * Provides control over an ongoing YubiKey operation.
  * <p>

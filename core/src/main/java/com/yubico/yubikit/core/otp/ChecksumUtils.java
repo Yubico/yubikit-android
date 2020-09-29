@@ -18,8 +18,8 @@ package com.yubico.yubikit.core.otp;
 
 /**
  * <p>
- *   Utility methods for calculating and verifying the CRC13239 checksum used
- *   for YubiKeys.
+ * Utility methods for calculating and verifying the CRC13239 checksum used
+ * for YubiKeys.
  * </p>
  */
 public class ChecksumUtils {
@@ -30,14 +30,15 @@ public class ChecksumUtils {
 
     /**
      * <p>Method for calculating a CRC13239 checksum over a byte buffer.</p>
-     * @param data byte buffer to be checksummed.
+     *
+     * @param data   byte buffer to be checksummed.
      * @param length how much of the buffer should be checksummed
      * @return CRC13239 checksum
      */
     static public short calculateCrc(byte[] data, int length) {
         int crc = 0xffff;
 
-        for(int index = 0; index < length; index++) {
+        for (int index = 0; index < length; index++) {
             int i, j;
             crc ^= data[index] & 0xFF;
             for (i = 0; i < 8; i++) {
@@ -55,7 +56,7 @@ public class ChecksumUtils {
     /**
      * Verify a checksum.
      *
-     * @param data the data, ending in the 2 byte CRC checksum to verify
+     * @param data   the data, ending in the 2 byte CRC checksum to verify
      * @param length The length of the data, including the checksum at the end
      * @return true if the checksum is correct, false if not
      */

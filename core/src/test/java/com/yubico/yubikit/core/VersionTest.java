@@ -15,7 +15,6 @@
  */
 package com.yubico.yubikit.core;
 
-import com.yubico.yubikit.core.Version;
 import org.junit.Assert;
 import org.junit.Test;
 

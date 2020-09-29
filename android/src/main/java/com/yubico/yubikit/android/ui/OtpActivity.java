@@ -10,21 +10,19 @@ import android.view.KeyEvent;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
-
 import com.yubico.yubikit.android.R;
 import com.yubico.yubikit.android.YubiKitManager;
 import com.yubico.yubikit.android.transport.nfc.NfcConfiguration;
 import com.yubico.yubikit.android.transport.nfc.NfcDeviceManager;
 import com.yubico.yubikit.android.transport.nfc.NfcNotAvailable;
 import com.yubico.yubikit.android.transport.usb.UsbConfiguration;
-import com.yubico.yubikit.android.transport.usb.UsbYubiKeyDevice;
 import com.yubico.yubikit.android.transport.usb.UsbDeviceListener;
+import com.yubico.yubikit.android.transport.usb.UsbYubiKeyDevice;
 import com.yubico.yubikit.core.util.NdefUtils;
-
-import java.io.IOException;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.io.IOException;
 
 public class OtpActivity extends Activity {
     public static final String EXTRA_OTP = "otp";

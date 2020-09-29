@@ -20,13 +20,11 @@ import android.app.Activity;
 import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
-
 import com.yubico.yubikit.android.transport.nfc.*;
-import com.yubico.yubikit.android.transport.nfc.NfcYubiKeyDevice;
 import com.yubico.yubikit.android.transport.usb.UsbConfiguration;
+import com.yubico.yubikit.android.transport.usb.UsbDeviceListener;
 import com.yubico.yubikit.android.transport.usb.UsbDeviceManager;
 import com.yubico.yubikit.android.transport.usb.UsbYubiKeyDevice;
-import com.yubico.yubikit.android.transport.usb.UsbDeviceListener;
 
 import javax.annotation.Nullable;
 

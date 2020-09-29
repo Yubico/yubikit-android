@@ -45,7 +45,6 @@ import org.bouncycastle.operator.ContentSigner
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.OutputStream
-import java.lang.IllegalArgumentException
 import java.math.BigInteger
 import java.security.KeyFactory
 import java.security.Signature
@@ -127,7 +126,11 @@ class PivCertificateFragment : Fragment() {
             showCerts(cert != null)
             if (cert != null) {
                 val expiration = SimpleDateFormat("yyyy-MM-dd", Locale.ROOT).format(cert.notAfter)
-                val keyType = try {KeyType.fromKey(cert.publicKey).toString() } catch (e: IllegalArgumentException) { cert.publicKey.algorithm }
+                val keyType = try {
+                    KeyType.fromKey(cert.publicKey).toString()
+                } catch (e: IllegalArgumentException) {
+                    cert.publicKey.algorithm
+                }
                 cert_info.text = "Issuer: ${cert.issuerDN}\nSubject name: ${cert.subjectDN}\nExpiration date: $expiration\nKey type: $keyType"
             }
         })

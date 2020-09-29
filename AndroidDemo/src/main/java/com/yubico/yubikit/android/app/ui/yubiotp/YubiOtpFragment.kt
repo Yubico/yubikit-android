@@ -11,10 +11,9 @@ import androidx.fragment.app.activityViewModels
 import com.yubico.yubikit.android.app.MainViewModel
 import com.yubico.yubikit.android.app.R
 import com.yubico.yubikit.android.ui.OtpActivity
-import com.yubico.yubikit.yubiotp.Slot
 import com.yubico.yubikit.core.otp.Modhex
 import com.yubico.yubikit.core.util.RandomUtils
-import com.yubico.yubikit.yubiotp.StaticTicketSlotConfiguration
+import com.yubico.yubikit.yubiotp.Slot
 import com.yubico.yubikit.yubiotp.YubiOtpSlotConfiguration
 import kotlinx.android.synthetic.main.fragment_yubiotp_otp.*
 import org.bouncycastle.util.encoders.Hex

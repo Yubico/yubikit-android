@@ -8,5 +8,6 @@ public interface FidoConnection extends YubiKeyConnection {
     int PACKET_SIZE = 64;
 
     void send(byte[] packet) throws IOException;
+
     void receive(byte[] packet) throws IOException;
 }

@@ -3,12 +3,11 @@ package com.yubico.yubikit.management;
 import com.yubico.yubikit.core.Interface;
 import com.yubico.yubikit.core.util.TlvUtils;
 
+import javax.annotation.Nullable;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
-
-import javax.annotation.Nullable;
 
 public class DeviceConfig {
     private static final int TAG_USB_ENABLED = 0x03;

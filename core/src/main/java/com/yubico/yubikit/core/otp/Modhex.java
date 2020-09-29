@@ -27,6 +27,7 @@ public class Modhex {
     private final static char[] ALPHABET = "cbdefghijklnrtuv".toCharArray();
 
     private static final Map<Character, Integer> table = new HashMap<>();
+
     static {
         for (int i = 0; i < ALPHABET.length; i++) {
             table.put(ALPHABET[i], i);
@@ -69,7 +70,8 @@ public class Modhex {
 
     /**
      * Encode data as Modhex.
-      * @param bytes the data to encode
+     *
+     * @param bytes the data to encode
      * @return A Modhex encoded string
      */
     public static String encode(byte[] bytes) {

@@ -16,11 +16,10 @@
 
 package com.yubico.yubikit.core.util;
 
+import javax.annotation.Nullable;
 import java.io.ByteArrayOutputStream;
 import java.util.Arrays;
 import java.util.Locale;
-
-import javax.annotation.Nullable;
 
 /**
  * Tag, length, Value structure that helps to parse APDU response data.

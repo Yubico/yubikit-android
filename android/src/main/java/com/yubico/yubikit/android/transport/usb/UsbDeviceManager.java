@@ -22,18 +22,10 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.hardware.usb.UsbManager;
-
 import com.yubico.yubikit.core.Logger;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-
 import javax.annotation.Nullable;
+import java.util.*;
 
 /**
  * This class allows you to access the state of USB_TRANSPORT and communicate with USB_TRANSPORT devices. Currently only host mode is supported in the public API.

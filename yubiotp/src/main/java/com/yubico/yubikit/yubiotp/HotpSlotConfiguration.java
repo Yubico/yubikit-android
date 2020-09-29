@@ -8,7 +8,6 @@ import java.util.Arrays;
 
 /**
  * Configures the YubiKey to return an OATH-HOTP code on touch
- *
  */
 public class HotpSlotConfiguration extends KeyboardSlotConfiguration<HotpSlotConfiguration> {
     private static final int HMAC_KEY_SIZE = 20;      // Size of OATH-HOTP key (key field + first 4 of UID field)

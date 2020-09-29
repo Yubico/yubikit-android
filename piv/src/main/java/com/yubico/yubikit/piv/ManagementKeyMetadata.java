@@ -24,6 +24,7 @@ public class ManagementKeyMetadata {
 
     /**
      * Whether or not the YubiKey sensor needs to be touched when performing authentication.
+     *
      * @return the touch policy of the card management key
      */
     public TouchPolicy getTouchPolicy() {

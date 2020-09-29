@@ -1,8 +1,6 @@
 package com.yubico.yubikit.core.otp;
 
-import com.yubico.yubikit.core.otp.Modhex;
 import com.yubico.yubikit.testing.Codec;
-
 import org.junit.Assert;
 import org.junit.Test;
 

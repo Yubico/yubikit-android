@@ -16,13 +16,12 @@
 
 package com.yubico.yubikit.piv;
 
+import javax.annotation.Nonnull;
 import java.math.BigInteger;
 import java.security.Key;
 import java.security.interfaces.ECKey;
 import java.security.interfaces.RSAKey;
 import java.security.spec.EllipticCurve;
-
-import javax.annotation.Nonnull;
 
 public enum KeyType {
     RSA1024(0x06, new RsaKeyParams(1024)),

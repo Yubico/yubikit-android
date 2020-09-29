@@ -19,13 +19,11 @@ import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbEndpoint;
 import android.hardware.usb.UsbInterface;
 import android.hardware.usb.UsbManager;
-
 import com.yubico.yubikit.core.YubiKeyConnection;
+import com.yubico.yubikit.core.smartcard.ApduResponse;
 import com.yubico.yubikit.core.smartcard.SW;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
-import com.yubico.yubikit.core.smartcard.ApduResponse;
 import com.yubico.yubikit.core.util.StringUtils;
-
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;

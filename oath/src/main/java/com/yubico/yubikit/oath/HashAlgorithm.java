@@ -24,9 +24,9 @@ import java.security.NoSuchAlgorithmException;
  * Types of hash algorithms that can be used for TOTP using YubiKey OATH
  */
 public enum HashAlgorithm {
-    SHA1((byte)1, 64),
-    SHA256((byte)2, 64),
-    SHA512((byte)3, 128);
+    SHA1((byte) 1, 64),
+    SHA256((byte) 2, 64),
+    SHA512((byte) 3, 128);
 
     public static final int MIN_KEY_SIZE = 14;
 

@@ -16,12 +16,11 @@
 
 package com.yubico.yubikit.oath;
 
+import javax.annotation.Nullable;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import javax.annotation.Nullable;
 
 /**
  * Internal utility class for dealing with parameters stored in YKOATH credential names.
@@ -32,10 +31,11 @@ class CredentialIdUtils {
 
     /**
      * Format the YKOATH Credential ID to use for a credential given its parameters.
-     * @param issuer an optional issuer name for the credential
-     * @param name the name of the credential
+     *
+     * @param issuer   an optional issuer name for the credential
+     * @param name     the name of the credential
      * @param oathType the type of the credential
-     * @param period the time period of a TOTP credential (ignored for HOTP)
+     * @param period   the time period of a TOTP credential (ignored for HOTP)
      * @return A bytestring to use with YKOATH.
      */
     static byte[] formatId(@Nullable String issuer, String name, OathType oathType, int period) {
@@ -54,8 +54,9 @@ class CredentialIdUtils {
 
     /**
      * Parse credential parameters from a YKOATH credential name.
+     *
      * @param credentialId as retrieved from a YubiKey.
-     * @param oathType the type of the credential
+     * @param oathType     the type of the credential
      * @return parsed data stored in the credential ID.
      */
     static CredentialIdData parseId(byte[] credentialId, OathType oathType) {
@@ -66,9 +67,9 @@ class CredentialIdUtils {
             if (m.matches()) {
                 String periodString = m.group(2);
                 return new CredentialIdData(
-                    m.group(4),
-                    m.group(5),
-                    periodString == null ? DEFAULT_PERIOD : Integer.parseInt(periodString)
+                        m.group(4),
+                        m.group(5),
+                        periodString == null ? DEFAULT_PERIOD : Integer.parseInt(periodString)
                 );
             } else {  //Invalid id, use it directly as name.
                 return new CredentialIdData(null, data, DEFAULT_PERIOD);
@@ -89,7 +90,8 @@ class CredentialIdUtils {
     }
 
     static class CredentialIdData {
-        @Nullable final String issuer;
+        @Nullable
+        final String issuer;
         final String name;
         final int period;
 

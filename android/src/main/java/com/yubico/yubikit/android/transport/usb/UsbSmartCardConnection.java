@@ -19,10 +19,9 @@ package com.yubico.yubikit.android.transport.usb;
 import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbEndpoint;
 import android.hardware.usb.UsbInterface;
-
-import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.Interface;
 import com.yubico.yubikit.core.Logger;
+import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.util.StringUtils;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 

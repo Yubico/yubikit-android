@@ -25,10 +25,10 @@ import java.util.Arrays;
  */
 public class NdefUtils {
     private static final byte[] HEADER = new byte[]{(byte) 0xd1, 0x55, 0x04}; // NDEF, URI, HTTPS
-    private static final byte NDEF_RECORD = (byte)0xd1;
+    private static final byte NDEF_RECORD = (byte) 0xd1;
     private static final byte TYPE_LENGTH = 0x01;
-    private static final byte URL_TYPE = (byte)0x55;
-    private static final byte HTTPS_PROTOCOL = (byte)0x04;
+    private static final byte URL_TYPE = (byte) 0x55;
+    private static final byte HTTPS_PROTOCOL = (byte) 0x04;
     private static final byte[] DOMAIN = "my.yubico.com".getBytes(StandardCharsets.UTF_8);
     private static final byte[] NEO_REMAINDER_PREFIX = "/neo/".getBytes(StandardCharsets.UTF_8);
 
@@ -44,7 +44,7 @@ public class NdefUtils {
         byte recordType = data.get();
         byte protocol = data.get();
 
-        if(record != NDEF_RECORD || typeLength != TYPE_LENGTH || recordType != URL_TYPE ||protocol != HTTPS_PROTOCOL ) {
+        if (record != NDEF_RECORD || typeLength != TYPE_LENGTH || recordType != URL_TYPE || protocol != HTTPS_PROTOCOL) {
             throw new IllegalArgumentException("Not a HTTPS URL NDEF record");
         }
 

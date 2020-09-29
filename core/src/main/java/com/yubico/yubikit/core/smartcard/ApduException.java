@@ -40,6 +40,7 @@ public class ApduException extends CommandException {
 
     /**
      * Gets error code that received via APDU response
+     *
      * @return error code
      */
     public short getSw() {
@@ -48,6 +49,7 @@ public class ApduException extends CommandException {
 
     /**
      * Get the ResponseApdu.
+     *
      * @return the response APDU that generated the error
      */
     public ApduResponse getApdu() {

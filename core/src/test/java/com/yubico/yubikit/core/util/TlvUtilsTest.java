@@ -16,8 +16,6 @@
 package com.yubico.yubikit.core.util;
 
 import com.yubico.yubikit.core.BadResponseException;
-import com.yubico.yubikit.core.util.Tlv;
-import com.yubico.yubikit.core.util.TlvUtils;
 import org.junit.Assert;
 import org.junit.Test;
 

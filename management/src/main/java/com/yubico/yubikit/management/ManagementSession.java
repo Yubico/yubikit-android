@@ -17,24 +17,22 @@
 package com.yubico.yubikit.management;
 
 import com.yubico.yubikit.core.*;
-import com.yubico.yubikit.core.YubiKeyDevice;
-import com.yubico.yubikit.core.fido.FidoProtocol;
 import com.yubico.yubikit.core.fido.FidoConnection;
+import com.yubico.yubikit.core.fido.FidoProtocol;
+import com.yubico.yubikit.core.otp.ChecksumUtils;
+import com.yubico.yubikit.core.otp.OtpConnection;
+import com.yubico.yubikit.core.otp.OtpProtocol;
 import com.yubico.yubikit.core.smartcard.Apdu;
 import com.yubico.yubikit.core.smartcard.ApduException;
-import com.yubico.yubikit.core.smartcard.SmartCardProtocol;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
-import com.yubico.yubikit.core.otp.ChecksumUtils;
-import com.yubico.yubikit.core.otp.OtpProtocol;
-import com.yubico.yubikit.core.otp.OtpConnection;
+import com.yubico.yubikit.core.smartcard.SmartCardProtocol;
 
+import javax.annotation.Nullable;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-
-import javax.annotation.Nullable;
 
 /**
  * Application to get information about and configure a YubiKey via the Management Application.

@@ -7,10 +7,9 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import com.yubico.yubikit.android.app.R
-import com.yubico.yubikit.yubiotp.Slot
 import com.yubico.yubikit.core.util.RandomUtils
 import com.yubico.yubikit.yubiotp.HmacSha1SlotConfiguration
-import com.yubico.yubikit.yubiotp.StaticTicketSlotConfiguration
+import com.yubico.yubikit.yubiotp.Slot
 import kotlinx.android.synthetic.main.fragment_yubiotp_chalresp.*
 import org.bouncycastle.util.encoders.Hex
 

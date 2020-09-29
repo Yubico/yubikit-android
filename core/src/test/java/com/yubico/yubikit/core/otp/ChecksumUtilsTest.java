@@ -15,8 +15,6 @@
  */
 package com.yubico.yubikit.core.otp;
 
-import com.yubico.yubikit.core.otp.ChecksumUtils;
-
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -30,7 +28,7 @@ public class ChecksumUtilsTest {
         byte[] data = {0x0, 0x1, 0x2, 0x3, 0x4};
         short crc = ChecksumUtils.calculateCrc(data, data.length);
         Assert.assertEquals((short) 62919, crc);
-        byte[] verifyingData = ByteBuffer.allocate(data.length + 2).put(data).order(ByteOrder.LITTLE_ENDIAN).putShort((short)(0xffff - crc)).array();
+        byte[] verifyingData = ByteBuffer.allocate(data.length + 2).put(data).order(ByteOrder.LITTLE_ENDIAN).putShort((short) (0xffff - crc)).array();
         Assert.assertTrue(ChecksumUtils.checkCrc(verifyingData, verifyingData.length));
     }
 
@@ -39,7 +37,7 @@ public class ChecksumUtilsTest {
         byte[] data = {(byte) 0xfe};
         short crc = ChecksumUtils.calculateCrc(data, data.length);
         Assert.assertEquals((short) 4470, crc);
-        byte[] verifyingData = ByteBuffer.allocate(data.length + 2).put(data).order(ByteOrder.LITTLE_ENDIAN).putShort((short)(0xffff - crc)).array();
+        byte[] verifyingData = ByteBuffer.allocate(data.length + 2).put(data).order(ByteOrder.LITTLE_ENDIAN).putShort((short) (0xffff - crc)).array();
         Assert.assertTrue(ChecksumUtils.checkCrc(verifyingData, verifyingData.length));
     }
 
@@ -55,7 +53,7 @@ public class ChecksumUtilsTest {
         short crc = ChecksumUtils.calculateCrc(data, data.length);
 
         Assert.assertEquals((short) 35339, crc);
-        byte[] verifyingData = ByteBuffer.allocate(data.length + 2).put(data).order(ByteOrder.LITTLE_ENDIAN).putShort((short)(0xffff - crc)).array();
+        byte[] verifyingData = ByteBuffer.allocate(data.length + 2).put(data).order(ByteOrder.LITTLE_ENDIAN).putShort((short) (0xffff - crc)).array();
         Assert.assertTrue(ChecksumUtils.checkCrc(verifyingData, verifyingData.length));
     }
 
@@ -64,7 +62,7 @@ public class ChecksumUtilsTest {
         byte[] data = {0x55, (byte) 0xaa, 0x00, (byte) 0xff};
         short crc = ChecksumUtils.calculateCrc(data, data.length);
         Assert.assertEquals((short) 52149, crc);
-        byte[] verifyingData = ByteBuffer.allocate(data.length + 2).put(data).order(ByteOrder.LITTLE_ENDIAN).putShort((short)(0xffff - crc)).array();
+        byte[] verifyingData = ByteBuffer.allocate(data.length + 2).put(data).order(ByteOrder.LITTLE_ENDIAN).putShort((short) (0xffff - crc)).array();
         Assert.assertTrue(ChecksumUtils.checkCrc(verifyingData, verifyingData.length));
     }
 }

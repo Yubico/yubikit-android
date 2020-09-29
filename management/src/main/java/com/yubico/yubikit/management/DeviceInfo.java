@@ -1,15 +1,14 @@
 package com.yubico.yubikit.management;
 
-import com.yubico.yubikit.core.Interface;
-import com.yubico.yubikit.core.util.TlvUtils;
-import com.yubico.yubikit.core.Version;
 import com.yubico.yubikit.core.BadResponseException;
+import com.yubico.yubikit.core.Interface;
+import com.yubico.yubikit.core.Version;
+import com.yubico.yubikit.core.util.TlvUtils;
 
+import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-
-import javax.annotation.Nullable;
 
 public class DeviceInfo {
     private static final int TAG_USB_SUPPORTED = 0x01;

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+
     <style name="OtpDialogTheme" parent="android:Theme.Dialog">
         <item name="android:background">@color/dialog_background</item>
         <item name="android:textColorPrimary">@color/text_color_primary</item>

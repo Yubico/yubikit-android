@@ -16,8 +16,8 @@
 
 package com.yubico.yubikit.core.smartcard;
 
-import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.Interface;
+import com.yubico.yubikit.core.YubiKeyConnection;
 
 import java.io.IOException;
 

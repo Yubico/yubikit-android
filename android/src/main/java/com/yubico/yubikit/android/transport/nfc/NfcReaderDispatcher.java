@@ -44,7 +44,7 @@ public class NfcReaderDispatcher implements NfcDispatcher {
      *
      * @param activity activity that is going to receive nfc events
      *                 Note: invoke that while activity is in foreground
-     * @param handler the handler for new tags
+     * @param handler  the handler for new tags
      */
     private void enableReaderMode(Activity activity, final NfcConfiguration nfcConfiguration, OnTagHandler handler) {
         Bundle options = new Bundle();

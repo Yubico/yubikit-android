@@ -6,9 +6,9 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.CheckBox
 import androidx.fragment.app.activityViewModels
-import com.yubico.yubikit.core.Interface
 import com.yubico.yubikit.android.app.R
 import com.yubico.yubikit.android.app.ui.YubiKeyFragment
+import com.yubico.yubikit.core.Interface
 import com.yubico.yubikit.management.Application
 import com.yubico.yubikit.management.DeviceConfig
 import com.yubico.yubikit.management.ManagementSession

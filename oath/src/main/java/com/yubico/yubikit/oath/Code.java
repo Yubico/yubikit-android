@@ -38,8 +38,9 @@ public class Code {
 
     /**
      * Initiates instance of {@link Code}
-     * @param value the value of one-time password received from key within CALCULATE or CALCULATE_ALL request
-     * @param validFrom timestamp that was used to generate code
+     *
+     * @param value      the value of one-time password received from key within CALCULATE or CALCULATE_ALL request
+     * @param validFrom  timestamp that was used to generate code
      * @param validUntil timestamp when one-time password becomes invalid/expired
      */
     public Code(String value, long validFrom, long validUntil) {
@@ -71,6 +72,7 @@ public class Code {
 
     /**
      * Check if code is expired
+     *
      * @return true if it's still valid
      */
     public final boolean isValid() {

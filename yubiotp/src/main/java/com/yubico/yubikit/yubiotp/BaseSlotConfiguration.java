@@ -69,6 +69,7 @@ abstract class BaseSlotConfiguration<T extends BaseSlotConfiguration<T>> impleme
     /**
      * Makes the configuration dormant (hidden from use). A dormant configuration needs to be updated and the dormant
      * bit removed to be used.
+     *
      * @param dormant if true, the configuration cannot be used
      * @return the configuration for chaining
      */
@@ -78,6 +79,7 @@ abstract class BaseSlotConfiguration<T extends BaseSlotConfiguration<T>> impleme
 
     /**
      * Inverts the behaviour of the led on the YubiKey.
+     *
      * @param invertLed if true, the LED behavior is inverted
      * @return the configuration for chaining
      */

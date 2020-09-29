@@ -57,9 +57,9 @@ class PivFragment : YubiKeyFragment<PivSession, PivViewModel>() {
 
         viewModel.result.observe(viewLifecycleOwner, Observer { result ->
             result.onFailure { e ->
-                when(e) {
+                when (e) {
                     is ApplicationNotAvailableException -> showCerts(false)
-                    is ApduException -> if(e.sw == SW.SECURITY_CONDITION_NOT_SATISFIED) {
+                    is ApduException -> if (e.sw == SW.SECURITY_CONDITION_NOT_SATISFIED) {
                         lifecycleScope.launch(Dispatchers.Main) {
                             viewModel.mgmtKey = Hex.decode(getSecret(requireContext(), R.string.piv_enter_mgmt_key, R.string.piv_mgmt_key_hint))
                         }
