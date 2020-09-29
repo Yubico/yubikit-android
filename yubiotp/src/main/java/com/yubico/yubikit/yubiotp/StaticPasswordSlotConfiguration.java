@@ -25,7 +25,8 @@ public class StaticPasswordSlotConfiguration extends KeyboardSlotConfiguration<S
 
         // Scan codes are packed into fixed, uid, and key, and zero padded.
         fixed = new byte[ConfigUtils.FIXED_SIZE];
-        ByteBuffer.allocate(SCAN_CODES_SIZE).put(scanCodes).rewind().get(fixed).get(uid).get(key);
+        // NB: rewind() doesn't return a ByteBuffer before Java 9.
+        ByteBuffer.wrap(ByteBuffer.allocate(SCAN_CODES_SIZE).put(scanCodes).array()).get(fixed).get(uid).get(key);
 
         updateCfgFlags(CFGFLAG_SHORT_TICKET, true);
     }
