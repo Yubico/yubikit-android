@@ -37,7 +37,7 @@ class OtpViewModel : YubiKeyViewModel<YubiOtpSession>() {
     }
 
     override fun YubiOtpSession.updateState() {
-        _slotStatus.postValue(status)
+        _slotStatus.postValue(configState)
     }
 
     fun releaseYubiKey() {

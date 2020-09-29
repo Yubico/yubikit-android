@@ -14,6 +14,8 @@ import com.yubico.yubikit.android.ui.OtpActivity
 import com.yubico.yubikit.yubiotp.Slot
 import com.yubico.yubikit.core.otp.Modhex
 import com.yubico.yubikit.core.util.RandomUtils
+import com.yubico.yubikit.yubiotp.StaticTicketSlotConfiguration
+import com.yubico.yubikit.yubiotp.YubiOtpSlotConfiguration
 import kotlinx.android.synthetic.main.fragment_yubiotp_otp.*
 import org.bouncycastle.util.encoders.Hex
 
@@ -58,7 +60,7 @@ class YubiOtpFragment : Fragment() {
                 }
 
                 viewModel.pendingAction.value = {
-                    putYubiOtpKey(slot, publicId, privateId, key)
+                    putConfiguration(slot, YubiOtpSlotConfiguration(publicId, privateId, key), null, null)
                     "Slot $slot programmed"
                 }
             } catch (e: Exception) {

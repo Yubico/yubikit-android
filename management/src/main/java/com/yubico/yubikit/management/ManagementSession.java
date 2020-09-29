@@ -43,6 +43,8 @@ import javax.annotation.Nullable;
 public class ManagementSession implements Closeable {
     // Smart card command constants
     private static final byte[] AID = new byte[]{(byte) 0xa0, 0x00, 0x00, 0x05, 0x27, 0x47, 0x11, 0x17};
+    private static final byte[] OTP_AID = new byte[]{(byte) 0xa0, 0x00, 0x00, 0x05, 0x27, 0x20, 0x01, 0x01};
+    private static final byte OTP_INS_CONFIG = 0x01;
     private static final byte INS_READ_CONFIG = 0x1d;
     private static final byte INS_WRITE_CONFIG = 0x1c;
     private static final byte INS_SET_MODE = 0x16;
@@ -105,7 +107,16 @@ public class ManagementSession implements Closeable {
 
             @Override
             void setMode(byte[] data) throws IOException, CommandException {
-                delegate.sendAndReceive(new Apdu(0, INS_SET_MODE, P1_DEVICE_CONFIG, 0, data));
+                if (version.isLessThan(4, 0, 0)) {
+                    // NEO sets mode via the OTP Application
+                    delegate.select(OTP_AID);
+                    delegate.sendAndReceive(new Apdu(0, OTP_INS_CONFIG, CMD_DEVICE_CONFIG, 0, data));
+                    // Workaround to "de-select" on NEO
+                    delegate.getConnection().sendAndReceive(new byte[]{(byte) 0xa4, 0x04, 0x00, 0x08});
+                    delegate.select(AID);
+                } else {
+                    delegate.sendAndReceive(new Apdu(0, INS_SET_MODE, P1_DEVICE_CONFIG, 0, data));
+                }
             }
         };
     }
