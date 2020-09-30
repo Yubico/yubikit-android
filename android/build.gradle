@@ -32,6 +32,7 @@ dependencies {
 
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
     compileOnly 'com.github.spotbugs:spotbugs-annotations:4.1.2'
+    compileOnly 'androidx.annotation:annotation:1.1.0'
 
     testImplementation 'junit:junit:4.13'
     testImplementation 'androidx.test.ext:junit:1.1.2'

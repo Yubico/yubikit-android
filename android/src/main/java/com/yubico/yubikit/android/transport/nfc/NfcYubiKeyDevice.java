@@ -21,6 +21,7 @@ import android.nfc.NdefMessage;
 import android.nfc.Tag;
 import android.nfc.tech.IsoDep;
 import android.nfc.tech.Ndef;
+import androidx.annotation.WorkerThread;
 import com.yubico.yubikit.core.Interface;
 import com.yubico.yubikit.core.NotSupportedOperation;
 import com.yubico.yubikit.core.YubiKeyConnection;
@@ -86,6 +87,7 @@ public class NfcYubiKeyDevice implements YubiKeyDevice {
      * This method will block until the YubiKey has been removed from the NFC field and can be used to prevent triggering
      * NFC YubiKey detection multiple times in quick succession.
      */
+    @WorkerThread
     public void awaitRemoval() {
         try {
             IsoDep isoDep = IsoDep.get(tag);

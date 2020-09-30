@@ -14,7 +14,7 @@
         <activity
             android:name=".ui.OtpActivity"
             android:label="@string/yubikit_otp_activity_title"
-            android:theme="@style/OtpDialogTheme"
+            android:theme="@style/YubiKitPromptDialogTheme"
             android:excludeFromRecents="true" />
     </application>
 </manifest>

@@ -21,6 +21,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
 import com.yubico.yubikit.core.Logger;
 
@@ -74,8 +75,8 @@ public class UsbDeviceManager {
      * Watches usb connection changes
      */
     private final class UsbBroadcastReceiver extends BroadcastReceiver {
-        private final Set<android.hardware.usb.UsbDevice> pendingPermission = new HashSet<>();
-        private final Map<android.hardware.usb.UsbDevice, UsbYubiKeyDevice> sessions = new HashMap<>();
+        private final Set<UsbDevice> pendingPermission = new HashSet<>();
+        private final Map<UsbDevice, UsbYubiKeyDevice> sessions = new HashMap<>();
         private final UsbConfiguration usbConfiguration;
         private final UsbDeviceListener listener;
 
@@ -96,9 +97,9 @@ public class UsbDeviceManager {
             }
         }
 
-        protected List<android.hardware.usb.UsbDevice> listDevices() {
-            List<android.hardware.usb.UsbDevice> yubikeys = new ArrayList<>();
-            for (android.hardware.usb.UsbDevice device : usbManager.getDeviceList().values()) {
+        protected List<UsbDevice> listDevices() {
+            List<UsbDevice> yubikeys = new ArrayList<>();
+            for (UsbDevice device : usbManager.getDeviceList().values()) {
                 if (!usbConfiguration.isFilterYubicoDevices() || device.getVendorId() == YUBICO_VENDOR_ID) {
                     yubikeys.add(device);
                 }
@@ -107,7 +108,7 @@ public class UsbDeviceManager {
         }
 
         private void checkExisting() {
-            for (android.hardware.usb.UsbDevice device : listDevices()) {
+            for (UsbDevice device : listDevices()) {
                 checkPermissions(device);
             }
         }
@@ -115,7 +116,7 @@ public class UsbDeviceManager {
         @Override
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
-            android.hardware.usb.UsbDevice device = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
+            UsbDevice device = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
             if (device == null || device.getVendorId() != YUBICO_VENDOR_ID) {
                 // we are not interested in devices other than yubikeys
                 return;
@@ -124,12 +125,13 @@ public class UsbDeviceManager {
             if (UsbManager.ACTION_USB_DEVICE_ATTACHED.equals(action)) {
                 checkPermissions(device);
             } else if (UsbManager.ACTION_USB_DEVICE_DETACHED.equals(action)) {
+                UsbYubiKeyConnection.releaseUsbDevice(device);
                 // notify user that his current session is not valid anymore
                 listener.onDeviceRemoved(Objects.requireNonNull(sessions.remove(device)));
             }
         }
 
-        private void checkPermissions(android.hardware.usb.UsbDevice device) {
+        private void checkPermissions(UsbDevice device) {
             // return to user that device was discovered and whether permissions are granted or not
             UsbYubiKeyDevice session = new UsbYubiKeyDevice(usbManager, device);
             sessions.put(device, session);
@@ -149,7 +151,7 @@ public class UsbDeviceManager {
             public void onReceive(Context context, Intent intent) {
                 if (ACTION_USB_PERMISSION.equals(intent.getAction())) {
                     context.unregisterReceiver(this);
-                    android.hardware.usb.UsbDevice device = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
+                    UsbDevice device = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
                     if (pendingPermission.remove(device)) {
                         // device is not plugged in anymore, we're not interested in it's permissions
                         if (device == null || !listDevices().contains(device)) {

@@ -15,10 +15,7 @@
  */
 package com.yubico.yubikit.android.transport.usb;
 
-import android.hardware.usb.UsbDeviceConnection;
-import android.hardware.usb.UsbEndpoint;
-import android.hardware.usb.UsbInterface;
-import android.hardware.usb.UsbManager;
+import android.hardware.usb.*;
 import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.smartcard.ApduResponse;
 import com.yubico.yubikit.core.smartcard.SW;
@@ -60,7 +57,7 @@ public class UsbSessionTest {
     }
 
     private SmartCardConnection usbConnection;
-    private UsbYubiKeyDeviceMock mock = new UsbYubiKeyDeviceMock(Mockito.mock(UsbManager.class), Mockito.mock(android.hardware.usb.UsbDevice.class));
+    private UsbYubiKeyDeviceMock mock = new UsbYubiKeyDeviceMock(Mockito.mock(UsbManager.class), Mockito.mock(UsbDevice.class));
     private Map<String, byte[]> commandResponses = new HashMap<>();
 
     @Before
@@ -165,13 +162,14 @@ public class UsbSessionTest {
         byte[] currentCommand;
         int blobOffset = 0;
 
-        public UsbYubiKeyDeviceMock(UsbManager usbManager, android.hardware.usb.UsbDevice usbDevice) {
+        public UsbYubiKeyDeviceMock(UsbManager usbManager, UsbDevice usbDevice) {
             super(usbManager, usbDevice);
         }
 
         @Override
         public <T extends YubiKeyConnection> T openConnection(Class<T> connectionType) throws IOException {
-            return connectionType.cast(new UsbSmartCardConnection(connection, usbInterface, endpointIn, endpointOut));
+            Mockito.when(connection.claimInterface(Mockito.any(), Mockito.anyBoolean())).thenReturn(true);
+            return connectionType.cast(new UsbSmartCardConnection(getUsbDevice(), connection, usbInterface, endpointIn, endpointOut));
         }
 
         public void mockOutError() {

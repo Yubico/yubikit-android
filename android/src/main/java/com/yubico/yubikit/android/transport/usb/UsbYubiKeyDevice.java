@@ -22,8 +22,6 @@ import com.yubico.yubikit.core.Interface;
 import com.yubico.yubikit.core.NotSupportedOperation;
 import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.YubiKeyDevice;
-import com.yubico.yubikit.core.otp.OtpConnection;
-import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -86,57 +84,12 @@ public class UsbYubiKeyDevice implements YubiKeyDevice {
         return usbManager;
     }
 
-    /**
-     * Checks if ISO-7816 communication is available.
-     *
-     * @return whether or not openIso7816Connection can be called.
-     */
-    private boolean isIso7816Available() {
-        return ccidEndpoints != null;
-    }
-
-    /**
-     * Opens a ISO-7816 connection to the YubiKey using the USB CCID (smart card) transport or NFC.
-     *
-     * @return a session for communication with the YubiKey
-     * @throws IOException if ISO-7816 isn't available, or on communication error
-     */
-    private SmartCardConnection openIso7816Connection() throws IOException {
-        UsbDeviceConnection connection = openConnection();
-        if (connection == null) {
-            throw new IOException("exception in UsbManager.openDevice");
-        }
-
-        if (!connection.claimInterface(ccidInterface, true)) {
-            connection.close();
-            throw new IOException("Interface couldn't be claimed");
-        }
-
-        return new UsbSmartCardConnection(connection, ccidInterface, ccidEndpoints.first, ccidEndpoints.second);
+    private boolean isSmartCardAvailable() {
+        return ccidInterface != null && ccidEndpoints != null;
     }
 
     private boolean isOtpAvailable() {
         return otpInterface != null;
-    }
-
-    /**
-     * Creates and starts session for communication with yubikey using HID interface
-     *
-     * @return session for communication with yubikey (supported over USB only)
-     * @throws IOException if Keyboard HID interface or endpoints are not found
-     */
-    private OtpConnection openOtpConnection() throws IOException {
-        UsbDeviceConnection connection = openConnection();
-        if (connection == null) {
-            throw new IOException("exception in UsbManager.openDevice");
-        }
-
-        if (!connection.claimInterface(otpInterface, true)) {
-            connection.close();
-            throw new IOException("Interface couldn't be claimed");
-        }
-
-        return new UsbOtpConnection(connection, otpInterface);
     }
 
     @Override
@@ -149,7 +102,7 @@ public class UsbYubiKeyDevice implements YubiKeyDevice {
         if (connectionType.isAssignableFrom(UsbOtpConnection.class)) {
             return isOtpAvailable();
         } else if (connectionType.isAssignableFrom(UsbSmartCardConnection.class)) {
-            return isIso7816Available();
+            return isSmartCardAvailable();
         }
         return false;
     }
@@ -157,9 +110,9 @@ public class UsbYubiKeyDevice implements YubiKeyDevice {
     @Override
     public <T extends YubiKeyConnection> T openConnection(Class<T> connectionType) throws IOException {
         if (connectionType.isAssignableFrom(UsbOtpConnection.class) && isOtpAvailable()) {
-            return connectionType.cast(openOtpConnection());
-        } else if (connectionType.isAssignableFrom(UsbSmartCardConnection.class) && isIso7816Available()) {
-            return connectionType.cast(openIso7816Connection());
+            return connectionType.cast(new UsbOtpConnection(usbDevice, openConnection(), otpInterface));
+        } else if (connectionType.isAssignableFrom(UsbSmartCardConnection.class) && isSmartCardAvailable()) {
+            return connectionType.cast(new UsbSmartCardConnection(usbDevice, openConnection(), ccidInterface, ccidEndpoints.first, ccidEndpoints.second));
         }
         throw new NotSupportedOperation("The connection type is not supported by this session");
     }
@@ -184,12 +137,15 @@ public class UsbYubiKeyDevice implements YubiKeyDevice {
      * @return connection that is used for sending and receiving data and control messages to a USB device
      * @throws NoPermissionsException in case if user did't grant permissions for device
      */
-    @Nullable
-    private UsbDeviceConnection openConnection() throws NoPermissionsException {
+    private UsbDeviceConnection openConnection() throws IOException {
         if (!usbManager.hasPermission(usbDevice)) {
             throw new NoPermissionsException(usbDevice);
         }
-        return usbManager.openDevice(usbDevice);
+        UsbDeviceConnection connection = usbManager.openDevice(usbDevice);
+        if (connection == null) {
+            throw new IOException("UsbManager.openDevice returned null");
+        }
+        return connection;
     }
 
     /**

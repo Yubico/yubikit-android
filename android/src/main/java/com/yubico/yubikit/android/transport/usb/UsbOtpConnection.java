@@ -17,6 +17,7 @@
 package com.yubico.yubikit.android.transport.usb;
 
 import android.hardware.usb.UsbConstants;
+import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbInterface;
 import com.yubico.yubikit.core.Logger;
@@ -26,9 +27,13 @@ import java.io.IOException;
 
 /**
  * Class that provides interface to read and send data over YubiKey HID (keyboard) interface
+ *
+ * NOTE: when we release HID interface YubiKey will be recognized as keyboard again,
+ * it may give you a flash of UI on Android (notification how to handle Keyboard)
+ * which means your active Activity may got to background for a moment
+ * be aware of that and make sure that your app can handle that.
  */
-public class UsbOtpConnection implements OtpConnection {
-
+public class UsbOtpConnection extends UsbYubiKeyConnection implements OtpConnection {
     private static final int TIMEOUT = 1000;
 
     private final UsbDeviceConnection connection;
@@ -48,21 +53,11 @@ public class UsbOtpConnection implements OtpConnection {
      * @param hidInterface HID interface that was claimed
      *                     NOTE: controlTransfer works only with endpoint zero.
      */
-    UsbOtpConnection(UsbDeviceConnection connection, UsbInterface hidInterface) {
+    UsbOtpConnection(UsbDevice usbDevice, UsbDeviceConnection connection, UsbInterface hidInterface) throws IOException {
+        super(usbDevice, connection, hidInterface);
         this.connection = connection;
         this.hidInterface = hidInterface;
         Logger.d("usb connection opened");
-    }
-
-    @Override
-    public void close() {
-        // NOTE: when we release HID interface YubiKey will be recognized as keyboard again,
-        // it may give you a flash of UI on Android (notification how to handle Keyboard)
-        // which means your active Activity may got to background for a moment
-        // be aware of that and make sure that UI can handle that
-        connection.releaseInterface(hidInterface);
-        connection.close();
-        Logger.d("usb connection closed");
     }
 
     @Override

@@ -16,6 +16,7 @@
 
 package com.yubico.yubikit.android.transport.usb;
 
+import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbEndpoint;
 import android.hardware.usb.UsbInterface;
@@ -36,7 +37,7 @@ import java.util.Locale;
  * USB service for interacting with the YubiKey
  * https://www.usb.org/sites/default/files/DWG_Smart-Card_CCID_Rev110.pdf
  */
-public class UsbSmartCardConnection implements SmartCardConnection {
+public class UsbSmartCardConnection extends UsbYubiKeyConnection implements SmartCardConnection {
 
     private static final int TIMEOUT = 1000;
 
@@ -65,7 +66,6 @@ public class UsbSmartCardConnection implements SmartCardConnection {
     private static final byte STATUS_TIME_EXTENSION = (byte) 0x80;
 
     private final UsbDeviceConnection connection;
-    private final UsbInterface ccidInterface;
     private final UsbEndpoint endpointOut, endpointIn;
     private final byte[] atr;
 
@@ -81,12 +81,12 @@ public class UsbSmartCardConnection implements SmartCardConnection {
      * @param endpointIn    channel for sending data over USB.
      * @param endpointOut   channel for receiving data over USB.
      */
-    UsbSmartCardConnection(UsbDeviceConnection connection, UsbInterface ccidInterface, UsbEndpoint endpointIn, UsbEndpoint endpointOut) throws IOException {
+    UsbSmartCardConnection(UsbDevice usbDevice, UsbDeviceConnection connection, UsbInterface ccidInterface, UsbEndpoint endpointIn, UsbEndpoint endpointOut) throws IOException {
+        super(usbDevice, connection, ccidInterface);
+
         this.connection = connection;
-        this.ccidInterface = ccidInterface;
         this.endpointIn = endpointIn;
         this.endpointOut = endpointOut;
-        Logger.d("usb connection opened");
         // PC_to_RDR_IccPowerOn command makes the slot "active" if it was "inactive"
         atr = transceive(POWER_ON_MESSAGE_TYPE, new byte[0]);
     }
@@ -99,13 +99,6 @@ public class UsbSmartCardConnection implements SmartCardConnection {
     @Override
     public byte[] sendAndReceive(byte[] apdu) throws IOException {
         return transceive(REQUEST_MESSAGE_TYPE, apdu);
-    }
-
-    @Override
-    public void close() {
-        connection.releaseInterface(ccidInterface);
-        connection.close();
-        Logger.d("usb connection closed");
     }
 
     /**
