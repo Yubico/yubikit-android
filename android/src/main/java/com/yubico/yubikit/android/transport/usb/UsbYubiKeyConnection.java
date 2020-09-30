@@ -39,7 +39,7 @@ abstract class UsbYubiKeyConnection implements YubiKeyConnection {
             }
             if (!usbDeviceConnection.claimInterface(usbInterface, true)) {
                 usbDeviceConnection.close();
-                GLOBAL_USB_CONNECTION_LOCK.remove(usbDevice);
+                releaseUsbDevice(usbDevice);
                 throw new IOException("Unable to claim interface");
             }
         }
