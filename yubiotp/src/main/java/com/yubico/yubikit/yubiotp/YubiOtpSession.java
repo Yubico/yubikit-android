@@ -338,7 +338,7 @@ public class YubiOtpSession implements Closeable {
     public byte[] calculateHmacSha1(Slot slot, byte[] challenge, @Nullable CommandState state) throws IOException, CommandException {
         // works on version above 2.2
         if (backend.version.isLessThan(2, 2, 0)) {
-            throw new NotSupportedOperation("This operation is supported for version 2.2+");
+            throw new NotSupportedOperation("This operation requires YubiKey 2.2 or later");
         }
 
         // Pad challenge with byte different from last.

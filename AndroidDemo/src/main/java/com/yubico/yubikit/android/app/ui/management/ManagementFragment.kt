@@ -41,6 +41,11 @@ class ManagementFragment : YubiKeyFragment<ManagementSession, ManagementViewMode
         return inflater.inflate(R.layout.fragment_management, container, false)
     }
 
+    override fun onStop() {
+        viewModel.releaseYubiKey()
+        super.onStop()
+    }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 

@@ -86,4 +86,9 @@ class YubiOtpFragment : Fragment() {
             }
         }
     }
+
+    override fun onStop() {
+        viewModel.releaseYubiKey()
+        super.onStop()
+    }
 }

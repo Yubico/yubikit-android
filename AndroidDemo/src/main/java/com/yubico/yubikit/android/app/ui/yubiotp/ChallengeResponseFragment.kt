@@ -60,6 +60,7 @@ class ChallengeResponseFragment : Fragment() {
                     R.id.radio_calculate_slot_2 -> Slot.TWO
                     else -> throw IllegalStateException("No slot selected")
                 }
+
                 viewModel.pendingAction.value = {
                     val response = calculateHmacSha1(slot, challenge, null)
                     "Calculated response: " + String(Hex.encode(response))

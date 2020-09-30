@@ -23,17 +23,16 @@ class NonClosingYubiOtpSession(connection: OtpConnection) : YubiOtpSession(conne
 }
 
 class OtpViewModel : YubiKeyViewModel<YubiOtpSession>() {
-    private var ignoreUsb = false
     private var sessionRef: NonClosingYubiOtpSession? = null
 
     private val _slotStatus = MutableLiveData<ConfigState?>()
     val slotConfigState: LiveData<ConfigState?> = _slotStatus
 
     override fun getSession(device: YubiKeyDevice): YubiOtpSession = when {
-        ignoreUsb && sessionRef != null -> sessionRef!!
+        sessionRef != null -> sessionRef!!
         device.supportsConnection(OtpConnection::class.java) -> NonClosingYubiOtpSession(device.openConnection(OtpConnection::class.java)).apply { sessionRef = this }
         device.supportsConnection(SmartCardConnection::class.java) -> YubiOtpSession(device.openConnection(SmartCardConnection::class.java))
-        else -> throw IOException("No interface available for Management")
+        else -> throw IOException("No interface available for OTP")
     }
 
     override fun YubiOtpSession.updateState() {
@@ -41,11 +40,9 @@ class OtpViewModel : YubiKeyViewModel<YubiOtpSession>() {
     }
 
     fun releaseYubiKey() {
-        sessionRef?.doClose()
-        //ignoreUsb = true
-    }
-
-    fun resumeUsbCapture() {
-        ignoreUsb = false
+        sessionRef?.let {
+            it.doClose()
+            sessionRef = null
+        }
     }
 }
