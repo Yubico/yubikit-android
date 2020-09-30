@@ -27,7 +27,7 @@ import java.io.IOException;
 
 /**
  * Class that provides interface to read and send data over YubiKey HID (keyboard) interface
- *
+ * <p>
  * NOTE: when we release HID interface YubiKey will be recognized as keyboard again,
  * it may give you a flash of UI on Android (notification how to handle Keyboard)
  * which means your active Activity may got to background for a moment
