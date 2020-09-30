@@ -32,9 +32,9 @@ public class ConfigState {
     private final Version version;
     private final byte flags;
 
-    ConfigState(Version version, short touchlevel) {
+    ConfigState(Version version, short touchLevel) {
         this.version = version;
-        this.flags = (byte) (CONFIG_STATUS_MASK & touchlevel);
+        this.flags = (byte) (CONFIG_STATUS_MASK & touchLevel);
     }
 
     /**

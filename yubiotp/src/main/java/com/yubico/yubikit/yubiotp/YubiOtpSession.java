@@ -68,10 +68,7 @@ public class YubiOtpSession implements Closeable {
     private static final byte CMD_CHALLENGE_HMAC_1 = 0x30;
     private static final byte CMD_CHALLENGE_HMAC_2 = 0x38;
 
-    private final Version version;
     private final Backend<?> backend;
-
-    private ConfigState configState;
 
     /**
      * Connect to a YubiKey session, and create a new instance of {@link YubiOtpSession}.
@@ -118,13 +115,25 @@ public class YubiOtpSession implements Closeable {
             // We didn't get a version above, get it from the status struct.
             version = Version.parse(statusBytes);
         }
-        this.version = version;
-        configState = parseConfigState(version, statusBytes);
+
         protocol.enableTouchWorkaround(version);
-        backend = new Backend<SmartCardProtocol>(protocol) {
+
+        backend = new Backend<SmartCardProtocol>(protocol, version, parseConfigState(version, statusBytes)) {
+            // 5.0.0-5.2.5 have an issue with status over NFC
+            private final boolean dummyStatus = connection.getInterface() == Interface.NFC && version.isAtLeast(5, 0, 0) && version.isLessThan(5, 2, 5);
+
+            {
+                if (dummyStatus) { // We can't read the status, so use a dummy with both slots marked as configured.
+                    configState = new ConfigState(version, (short) 3);
+                }
+            }
+
             @Override
-            byte[] writeConfig(byte slot, byte[] data) throws IOException, CommandException {
-                return delegate.sendAndReceive(new Apdu(0, INS_CONFIG, slot, 0, data));
+            void writeConfig(byte slot, byte[] data) throws IOException, CommandException {
+                byte[] status = delegate.sendAndReceive(new Apdu(0, INS_CONFIG, slot, 0, data));
+                if (!dummyStatus) {
+                    configState = parseConfigState(this.version, status);
+                }
             }
 
             @Override
@@ -147,12 +156,11 @@ public class YubiOtpSession implements Closeable {
     public YubiOtpSession(OtpConnection connection) throws IOException {
         OtpProtocol protocol = new OtpProtocol(connection);
         byte[] statusBytes = protocol.readStatus();
-        version = Version.parse(statusBytes);
-        configState = parseConfigState(version, statusBytes);
-        backend = new Backend<OtpProtocol>(protocol) {
+        Version version = Version.parse(statusBytes);
+        backend = new Backend<OtpProtocol>(protocol, version, parseConfigState(version, statusBytes)) {
             @Override
-            byte[] writeConfig(byte slot, byte[] data) throws IOException, CommandException {
-                return delegate.sendAndReceive(slot, data, null);
+            void writeConfig(byte slot, byte[] data) throws IOException, CommandException {
+                configState = parseConfigState(version, delegate.sendAndReceive(slot, data, null));
             }
 
             @Override
@@ -177,7 +185,7 @@ public class YubiOtpSession implements Closeable {
      * @return the current configuration state of the two slots.
      */
     public ConfigState getConfigState() {
-        return configState;
+        return backend.configState;
     }
 
     /**
@@ -186,7 +194,7 @@ public class YubiOtpSession implements Closeable {
      * @return Yubikey firmware version
      */
     public Version getVersion() {
-        return version;
+        return backend.version;
     }
 
     /**
@@ -208,7 +216,7 @@ public class YubiOtpSession implements Closeable {
      * @throws CommandException in case of an error response from the YubiKey
      */
     public void swapSlots() throws IOException, CommandException {
-        if (version.isLessThan(2, 3, 0)) {
+        if (backend.version.isLessThan(2, 3, 0)) {
             throw new NotSupportedOperation("This operation is supported for version 2.3+");
         }
 
@@ -266,7 +274,7 @@ public class YubiOtpSession implements Closeable {
      * @throws CommandException in case of an error response from the YubiKey
      */
     public void putConfiguration(Slot slot, SlotConfiguration configuration, @Nullable byte[] accCode, @Nullable byte[] curAccCode) throws IOException, CommandException {
-        if (version.compareTo(configuration.getMinimumVersion()) < 0) {
+        if (backend.version.compareTo(configuration.getMinimumVersion()) < 0) {
             throw new NotSupportedOperation("This configuration type requires YubiKey " + configuration.getMinimumVersion() + "or later");
         }
         writeConfig(
@@ -329,7 +337,7 @@ public class YubiOtpSession implements Closeable {
      */
     public byte[] calculateHmacSha1(Slot slot, byte[] challenge, @Nullable CommandState state) throws IOException, CommandException {
         // works on version above 2.2
-        if (version.isLessThan(2, 2, 0)) {
+        if (backend.version.isLessThan(2, 2, 0)) {
             throw new NotSupportedOperation("This operation is supported for version 2.2+");
         }
 
@@ -348,13 +356,13 @@ public class YubiOtpSession implements Closeable {
     }
 
     private void writeConfig(byte commandSlot, byte[] config, @Nullable byte[] curAccCode) throws IOException, CommandException {
-        configState = parseConfigState(version, backend.writeConfig(
+        backend.writeConfig(
                 commandSlot,
                 ByteBuffer.allocate(config.length + ConfigUtils.ACC_CODE_SIZE)
                         .put(config)
                         .put(curAccCode == null ? new byte[ConfigUtils.ACC_CODE_SIZE] : curAccCode)
                         .array()
-        ));
+        );
     }
 
     private static ConfigState parseConfigState(Version version, byte[] status) {
@@ -363,12 +371,16 @@ public class YubiOtpSession implements Closeable {
 
     private static abstract class Backend<T extends Closeable> implements Closeable {
         protected final T delegate;
+        protected final Version version;
+        protected ConfigState configState;
 
-        private Backend(T delegate) {
+        private Backend(T delegate, Version version, ConfigState configState) {
+            this.version = version;
             this.delegate = delegate;
+            this.configState = configState;
         }
 
-        abstract byte[] writeConfig(byte slot, byte[] data) throws IOException, CommandException;
+        abstract void writeConfig(byte slot, byte[] data) throws IOException, CommandException;
 
         abstract byte[] sendAndReceive(byte slot, byte[] data, int expectedResponseLength, @Nullable CommandState state) throws IOException, CommandException;
 

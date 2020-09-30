@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2020 Yubico.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.yubico.yubikit.yubiotp;
 
 import com.yubico.yubikit.core.otp.ChecksumUtils;
@@ -23,11 +39,6 @@ class ConfigUtils {
 
     // NDEF structure
     static final int NDEF_DATA_SIZE = 54; //Size of the NDEF payload data
-
-    // Flags valid for update
-    private static final byte TKTFLAG_UPDATE_MASK = SlotConfiguration.TKTFLAG_TAB_FIRST | SlotConfiguration.TKTFLAG_APPEND_TAB1 | SlotConfiguration.TKTFLAG_APPEND_TAB2 | SlotConfiguration.TKTFLAG_APPEND_DELAY1 | SlotConfiguration.TKTFLAG_APPEND_DELAY2 | SlotConfiguration.TKTFLAG_APPEND_CR;
-    private static final byte CFGFLAG_UPDATE_MASK = SlotConfiguration.CFGFLAG_PACING_10MS | SlotConfiguration.CFGFLAG_PACING_20MS;
-    private static final byte EXTFLAG_UPDATE_MASK = SlotConfiguration.EXTFLAG_SERIAL_BTN_VISIBLE | SlotConfiguration.EXTFLAG_SERIAL_USB_VISIBLE | SlotConfiguration.EXTFLAG_SERIAL_API_VISIBLE | SlotConfiguration.EXTFLAG_USE_NUMERIC_KEYPAD | SlotConfiguration.EXTFLAG_FAST_TRIG | SlotConfiguration.EXTFLAG_ALLOW_UPDATE | SlotConfiguration.EXTFLAG_DORMANT | SlotConfiguration.EXTFLAG_LED_INV;
 
     // From nfcforum-ts-rtd-uri-1.0.pdf
     private static final String[] NDEF_URL_PREFIXES = {
@@ -98,15 +109,12 @@ class ConfigUtils {
                 .array();
     }
 
-    @SuppressFBWarnings(value = "BIT_AND_ZZ", justification = "Check EXTflag mask for completeness")
     static byte[] buildUpdateConfig(byte extFlags, byte tktFlags, byte cfgFlags, @Nullable byte[] accCode) {
-        if ((extFlags & ~EXTFLAG_UPDATE_MASK) != 0) {
-            throw new IllegalArgumentException("Unsupported EXT flags for update");
-        }
-        if ((tktFlags & ~TKTFLAG_UPDATE_MASK) != 0) {
+        // NB: All EXT flags are valid for update.
+        if((tktFlags & ~(SlotConfiguration.TKTFLAG_TAB_FIRST | SlotConfiguration.TKTFLAG_APPEND_TAB1 | SlotConfiguration.TKTFLAG_APPEND_TAB2 | SlotConfiguration.TKTFLAG_APPEND_DELAY1 | SlotConfiguration.TKTFLAG_APPEND_DELAY2 | SlotConfiguration.TKTFLAG_APPEND_CR)) != 0) {
             throw new IllegalArgumentException("Unsupported TKT flags for update");
         }
-        if ((cfgFlags & ~CFGFLAG_UPDATE_MASK) != 0) {
+        if ((cfgFlags & ~(SlotConfiguration.CFGFLAG_PACING_10MS | SlotConfiguration.CFGFLAG_PACING_20MS)) != 0) {
             throw new IllegalArgumentException("Unsupported CFG flags for update");
         }
         return buildConfig(new byte[0], new byte[UID_SIZE], new byte[KEY_SIZE], extFlags, tktFlags, cfgFlags, accCode);

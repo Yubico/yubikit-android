@@ -1,3 +1,18 @@
+/*
+ * Copyright (C) 2020 Yubico.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.yubico.yubikit.yubiotp;
 
 import com.yubico.yubikit.core.Version;
@@ -5,6 +20,8 @@ import com.yubico.yubikit.core.Version;
 import javax.annotation.Nullable;
 
 public interface SlotConfiguration {
+    // Constants in this file come from https://github.com/Yubico/yubikey-personalization/blob/master/ykcore/ykdef.h
+
     // Yubikey 1 and above
     byte TKTFLAG_TAB_FIRST = 0x01; // Send TAB before first part
     byte TKTFLAG_APPEND_TAB1 = 0x02; // Send TAB after first part
@@ -42,7 +59,6 @@ public interface SlotConfiguration {
     byte CFGFLAG_OATH_FIXED_MODHEX = 0x50; //  Fixed part sent as modhex
 
     // Yubikey 2.2 and above
-
     byte TKTFLAG_CHAL_RESP = 0x40; // Challenge-response enabled (both must be set)
     byte CFGFLAG_CHAL_YUBICO = 0x20; // Challenge-response enabled - Yubico OTP mode
     byte CFGFLAG_CHAL_HMAC = 0x22; // Challenge-response enabled - HMAC-SHA1
@@ -54,20 +70,13 @@ public interface SlotConfiguration {
     byte EXTFLAG_SERIAL_API_VISIBLE = 0x04; // Serial number visible via API call
 
     // V2.3 flags only
-
     byte EXTFLAG_USE_NUMERIC_KEYPAD = 0x08; // Use numeric keypad for digits
     byte EXTFLAG_FAST_TRIG = 0x10; // Use fast trig if only cfg1 set
     byte EXTFLAG_ALLOW_UPDATE = 0x20; // Allow update of existing configuration (selected flags + access code)
     byte EXTFLAG_DORMANT = 0x40; // Dormant configuration (can be woken up and flag removed = requires update flag)
 
     // V2.4/3.1 flags only
-
     byte EXTFLAG_LED_INV = (byte) 0x80; // LED idle state is off rather than on
-
-    // Flags valid for update
-    //byte TKTFLAG_UPDATE_MASK = TKTFLAG_TAB_FIRST | TKTFLAG_APPEND_TAB1 | TKTFLAG_APPEND_TAB2 | TKTFLAG_APPEND_DELAY1 | TKTFLAG_APPEND_DELAY2 | TKTFLAG_APPEND_CR;
-    //byte CFGFLAG_UPDATE_MASK = CFGFLAG_PACING_10MS | CFGFLAG_PACING_20MS;
-    //byte EXTFLAG_UPDATE_MASK = EXTFLAG_SERIAL_BTN_VISIBLE | EXTFLAG_SERIAL_USB_VISIBLE | EXTFLAG_SERIAL_API_VISIBLE | EXTFLAG_USE_NUMERIC_KEYPAD | EXTFLAG_FAST_TRIG | EXTFLAG_ALLOW_UPDATE | EXTFLAG_DORMANT | EXTFLAG_LED_INV;
 
     Version getMinimumVersion();
 
