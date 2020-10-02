@@ -78,7 +78,12 @@ public interface SlotConfiguration {
     // V2.4/3.1 flags only
     byte EXTFLAG_LED_INV = (byte) 0x80; // LED idle state is off rather than on
 
-    Version getMinimumVersion();
+    /**
+     * Checks the configuration against a YubiKey firmware version to see if it is supported
+     * @param version the firmware version to check against
+     * @return true if the given YubiKey version supports this configuration
+     */
+    boolean isSupportedBy(Version version);
 
     byte[] getConfig(@Nullable byte[] accCode);
 }

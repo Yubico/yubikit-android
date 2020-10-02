@@ -46,6 +46,12 @@ import java.util.Arrays;
  * Additionally for NFC enabled YubiKeys, one slot can be configured to be output over NDEF as part of a URL payload.
  */
 public class YubiOtpSession implements Closeable {
+    public static final String DEFAULT_NDEF_URI = "https://my.yubico.com/yk/#";
+
+    private static final int ACC_CODE_SIZE = 6;     // Size of access code to re-program device
+    private static final int CONFIG_SIZE = 52;      // Size of config struct (excluding current access code)
+    private static final int NDEF_DATA_SIZE = 54;   // Size of the NDEF payload data
+
     private static final byte[] AID = new byte[]{(byte) 0xa0, 0x00, 0x00, 0x05, 0x27, 0x20, 0x01, 0x01};
     private static final byte[] MGMT_AID = new byte[]{(byte) 0xa0, 0x00, 0x00, 0x05, 0x27, 0x47, 0x11, 0x17};
     private static final byte INS_CONFIG = 0x01;
@@ -234,31 +240,7 @@ public class YubiOtpSession implements Closeable {
     public void deleteSlot(Slot slot, @Nullable byte[] curAccCode) throws IOException, CommandException {
         writeConfig(
                 slot.map(CMD_CONFIG_1, CMD_CONFIG_2),
-                new byte[ConfigUtils.CONFIG_SIZE],
-                curAccCode
-        );
-    }
-
-    /**
-     * Write configuration to a slot, overwriting previous values.
-     * This command allows full control over the EXT, TKT and CFG flags to set, the access code to use, and the access code to set.
-     *
-     * @param slot       the slot to write to
-     * @param fixed      the fixed field of the configuration
-     * @param uid        the uid field of the configuration
-     * @param key        the key field of the configuration
-     * @param extFlags   the EXT_FLAGs to set
-     * @param tktFlags   the TKT_FLAGs to set
-     * @param cfgFlags   the CFG_FLAGs to set
-     * @param accCode    the access code to set
-     * @param curAccCode the current access code, if needed
-     * @throws IOException      in case of communication error
-     * @throws CommandException in case of an error response from the YubiKey
-     */
-    public void putConfiguration(Slot slot, byte[] fixed, byte[] uid, byte[] key, byte extFlags, byte tktFlags, byte cfgFlags, @Nullable byte[] accCode, @Nullable byte[] curAccCode) throws IOException, CommandException {
-        writeConfig(
-                slot.map(CMD_CONFIG_1, CMD_CONFIG_2),
-                ConfigUtils.buildConfig(fixed, uid, key, extFlags, tktFlags, cfgFlags, accCode),
+                new byte[CONFIG_SIZE],
                 curAccCode
         );
     }
@@ -274,8 +256,8 @@ public class YubiOtpSession implements Closeable {
      * @throws CommandException in case of an error response from the YubiKey
      */
     public void putConfiguration(Slot slot, SlotConfiguration configuration, @Nullable byte[] accCode, @Nullable byte[] curAccCode) throws IOException, CommandException {
-        if (backend.version.compareTo(configuration.getMinimumVersion()) < 0) {
-            throw new NotSupportedOperation("This configuration type requires YubiKey " + configuration.getMinimumVersion() + "or later");
+        if (!configuration.isSupportedBy(backend.version)) {
+            throw new NotSupportedOperation("This configuration update is not supported on this YubiKey version");
         }
         writeConfig(
                 slot.map(CMD_CONFIG_1, CMD_CONFIG_2),
@@ -285,24 +267,25 @@ public class YubiOtpSession implements Closeable {
     }
 
     /**
-     * Update an already programmed slot with new configuration.
-     * <p>
-     * Note that the EXTFLAG_ALLOW_UPDATE must have been previously set in the configuration to allow update, and must
-     * again be set in this call to allow further updates.
+     * Update the configuration of a slot, keeping the credential.
      *
-     * @param slot       the slot to update
-     * @param extFlags   the updated EXT_FLAGs to set
-     * @param tktFlags   the updated TKT_FLAGs to set
-     * @param cfgFlags   the updated CFG_FLAGs to set
-     * @param accCode    the access code to set
-     * @param curAccCode the current access code, if needed
+     * @param slot          the slot to update
+     * @param configuration the updated flags tp set
+     * @param accCode       the access code to set
+     * @param curAccCode    the current accedd code, if needed
      * @throws IOException      in case of communication error
      * @throws CommandException in case of an error response from the YubiKey
      */
-    public void updateConfiguration(Slot slot, byte extFlags, byte tktFlags, byte cfgFlags, @Nullable byte[] accCode, @Nullable byte[] curAccCode) throws IOException, CommandException {
+    public void updateConfiguration(Slot slot, UpdateConfiguration configuration, @Nullable byte[] accCode, @Nullable byte[] curAccCode) throws IOException, CommandException {
+        if (!configuration.isSupportedBy(backend.version)) {
+            throw new NotSupportedOperation("This configuration is not supported on this YubiKey version");
+        }
+        if (!Arrays.equals(accCode, curAccCode) && getVersion().isAtLeast(4, 3, 2) && getVersion().isLessThan(4, 3, 6)) {
+            throw new NotSupportedOperation("The access code cannot be updated on this YubiKey. Instead, delete the slot and configure it anew.");
+        }
         writeConfig(
                 slot.map(CMD_UPDATE_1, CMD_UPDATE_2),
-                ConfigUtils.buildUpdateConfig(extFlags, tktFlags, cfgFlags, accCode),
+                configuration.getConfig(accCode),
                 curAccCode
         );
     }
@@ -319,7 +302,7 @@ public class YubiOtpSession implements Closeable {
     public void setNdefConfiguration(Slot slot, @Nullable String uri, @Nullable byte[] curAccCode) throws IOException, CommandException {
         writeConfig(
                 slot.map(CMD_NDEF_1, CMD_NDEF_2),
-                ConfigUtils.buildNdefConfig(uri),
+                buildNdefConfig(uri == null ? DEFAULT_NDEF_URI : uri),
                 curAccCode
         );
     }
@@ -358,15 +341,77 @@ public class YubiOtpSession implements Closeable {
     private void writeConfig(byte commandSlot, byte[] config, @Nullable byte[] curAccCode) throws IOException, CommandException {
         backend.writeConfig(
                 commandSlot,
-                ByteBuffer.allocate(config.length + ConfigUtils.ACC_CODE_SIZE)
+                ByteBuffer.allocate(config.length + ACC_CODE_SIZE)
                         .put(config)
-                        .put(curAccCode == null ? new byte[ConfigUtils.ACC_CODE_SIZE] : curAccCode)
+                        .put(curAccCode == null ? new byte[ACC_CODE_SIZE] : curAccCode)
                         .array()
         );
     }
 
     private static ConfigState parseConfigState(Version version, byte[] status) {
         return new ConfigState(version, ByteBuffer.wrap(status, 4, 2).order(ByteOrder.LITTLE_ENDIAN).getShort());
+    }
+
+    // From nfcforum-ts-rtd-uri-1.0.pdf
+    private static final String[] NDEF_URL_PREFIXES = {
+            "http://www.",
+            "https://www.",
+            "http://",
+            "https://",
+            "tel:",
+            "mailto:",
+            "ftp://anonymous:anonymous@",
+            "ftp://ftp.",
+            "ftps://",
+            "sftp://",
+            "smb://",
+            "nfs://",
+            "ftp://",
+            "dav://",
+            "news:",
+            "telnet://",
+            "imap:",
+            "rtsp://",
+            "urn:",
+            "pop:",
+            "sip:",
+            "sips:",
+            "tftp:",
+            "btspp://",
+            "btl2cap://",
+            "btgoep://",
+            "tcpobex://",
+            "irdaobex://",
+            "file://",
+            "urn:epc:id:",
+            "urn:epc:tag:",
+            "urn:epc:pat:",
+            "urn:epc:raw:",
+            "urn:epc:",
+            "urn:nfc:"
+    };
+
+    private static byte[] buildNdefConfig(String uri) {
+        byte idCode = 0;
+        for (int i = 0; i < NDEF_URL_PREFIXES.length; i++) {
+            String prefix = NDEF_URL_PREFIXES[i];
+            if (uri.startsWith(prefix)) {
+                idCode = (byte) (i + 1);
+                uri = uri.substring(prefix.length());
+                break;
+            }
+        }
+        byte[] uriBytes = uri.getBytes(StandardCharsets.UTF_8);
+        int dataLength = 1 + uriBytes.length;
+        if (dataLength > NDEF_DATA_SIZE) {
+            throw new IllegalArgumentException("URI payload too large");
+        }
+        return ByteBuffer.allocate(2 + NDEF_DATA_SIZE)
+                .put((byte) dataLength)
+                .put((byte) 'U')
+                .put(idCode)
+                .put(uriBytes)
+                .array();
     }
 
     private static abstract class Backend<T extends Closeable> implements Closeable {

@@ -26,24 +26,20 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 /**
- * Class that allows to open ISO 7816 connection to YubiKey
- * and communicate using APDUs
+ * Class that allows to open ISO 7816 connection to YubiKey and communicate using APDUs.
  */
 public class SmartCardProtocol implements Closeable {
     private static final byte INS_SELECT = (byte) 0xa4;
     private static final byte P1_SELECT = (byte) 0x04;
     private static final byte P2_SELECT = (byte) 0x00;
-    private static final byte INS_SEND_REMAINING = (byte) 0xc0;
 
+    private static final byte INS_SEND_REMAINING = (byte) 0xc0;
     private static final byte SW1_HAS_MORE_DATA = 0x61;
 
     private static final int SHORT_APDU_MAX_CHUNK = 0xff;
 
     private final byte insSendRemaining;
 
-    /**
-     * Open ISO 7816 connection to yubikey
-     */
     private final SmartCardConnection connection;
 
     private boolean useTouchWorkaround = false;
@@ -82,7 +78,7 @@ public class SmartCardProtocol implements Closeable {
     }
 
     /**
-     * @return open ISO 7816 connection to yubikey
+     * @return the underlying connection
      */
     public SmartCardConnection getConnection() {
         return connection;
@@ -100,7 +96,8 @@ public class SmartCardProtocol implements Closeable {
         try {
             return sendAndReceive(new Apdu(0, INS_SELECT, P1_SELECT, P2_SELECT, aid));
         } catch (ApduException e) {
-            if (e.getSw() == SW.FILE_NOT_FOUND) {
+            // NEO sometimes returns INVALID_INSTRUCTION instead of FILE_NOT_FOUND
+            if (e.getSw() == SW.FILE_NOT_FOUND || e.getSw() == SW.INVALID_INSTRUCTION) {
                 throw new ApplicationNotAvailableException("The application couldn't be selected", e);
             }
             throw new IOException("Unexpected SW", e);

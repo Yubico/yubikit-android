@@ -58,8 +58,8 @@ class ManagementFragment : YubiKeyFragment<ManagementSession, ManagementViewMode
                 info.text = "Device type: ${it.formFactor.name} \nFirmware: ${it.version} \nSerial: ${it.serial}"
                 checkboxIds.forEach { (iface, app), id ->
                     view.findViewById<CheckBox>(id).let { checkbox ->
-                        if (it.getSupportedApplications(iface).and(app.bit) != 0) {
-                            checkbox.isChecked = config.getEnabledApplications(iface).and(app.bit) != 0
+                        if (it.getSupportedApplications(iface) and app.bit != 0) {
+                            checkbox.isChecked = (config.getEnabledApplications(iface) ?: 0) and app.bit != 0
                             checkbox.visibility = View.VISIBLE
                         } else {
                             checkbox.visibility = View.GONE

@@ -26,19 +26,17 @@ public class YubiOtpSlotConfiguration extends KeyboardSlotConfiguration<YubiOtpS
     /**
      * Creates a Yubico OTP configuration with default settings.
      *
-     * @param publicId  public id (0-16 bytes)
-     * @param privateId private id (6 bytes)
-     * @param key       the secret key to store on YubiKey (20 bytes)
+     * @param fixed "public ID" static portion of each OTP (0-16 bytes)
+     * @param uid   "private id" internal to the credential (6 bytes)
+     * @param key   the AES key to encrypt the OTP payload (20 bytes)
      */
-    public YubiOtpSlotConfiguration(byte[] publicId, byte[] privateId, byte[] key) {
-        super(new Version(0, 0, 0));
-
-        if (publicId.length > ConfigUtils.FIXED_SIZE) {
+    public YubiOtpSlotConfiguration(byte[] fixed, byte[] uid, byte[] key) {
+        if (fixed.length > FIXED_SIZE) {
             throw new IllegalArgumentException("Public ID must be <= 16 bytes");
         }
 
-        fixed = Arrays.copyOf(publicId, publicId.length);
-        System.arraycopy(privateId, 0, uid, 0, privateId.length);
+        this.fixed = Arrays.copyOf(fixed, fixed.length);
+        System.arraycopy(uid, 0, this.uid, 0, uid.length);
         System.arraycopy(key, 0, this.key, 0, key.length);
     }
 

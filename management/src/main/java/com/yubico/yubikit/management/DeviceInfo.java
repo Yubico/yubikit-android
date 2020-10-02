@@ -72,6 +72,10 @@ public class DeviceInfo {
         return formFactor;
     }
 
+    public boolean hasInterface(Interface iface) {
+        return supportedApplications.containsKey(iface);
+    }
+
     public int getSupportedApplications(Interface iface) {
         Integer applications = supportedApplications.get(iface);
         return applications == null ? 0 : applications;
@@ -105,12 +109,22 @@ public class DeviceInfo {
         int deviceFlags = readInt(data.get(TAG_DEVICE_FLAGS));
 
         Map<Interface, Integer> supportedApplications = new HashMap<>();
-        supportedApplications.put(Interface.USB, readInt(data.get(TAG_USB_SUPPORTED)));
-        supportedApplications.put(Interface.NFC, readInt(data.get(TAG_NFC_SUPPORTED)));
-
         Map<Interface, Integer> enabledApplications = new HashMap<>();
-        enabledApplications.put(Interface.USB, readInt(data.get(TAG_USB_ENABLED)));
-        enabledApplications.put(Interface.NFC, readInt(data.get(TAG_NFC_ENABLED)));
+
+        if (version.equals(new Version(4, 2, 4))) {
+            // 4.2.4 doesn't report supported applications correctly, but they are always 0x3f.
+            supportedApplications.put(Interface.USB, 0x3f);
+        } else {
+            supportedApplications.put(Interface.USB, readInt(data.get(TAG_USB_SUPPORTED)));
+        }
+        if(data.containsKey(TAG_USB_ENABLED)) {
+            enabledApplications.put(Interface.USB, readInt(data.get(TAG_USB_ENABLED)));
+        }
+
+        if(data.containsKey(TAG_NFC_SUPPORTED)) {
+            supportedApplications.put(Interface.NFC, readInt(data.get(TAG_NFC_SUPPORTED)));
+            enabledApplications.put(Interface.NFC, readInt(data.get(TAG_NFC_ENABLED)));
+        }
 
         return new DeviceInfo(
                 new DeviceConfig(

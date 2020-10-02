@@ -15,35 +15,33 @@
  */
 package com.yubico.yubikit.yubiotp;
 
-import com.yubico.yubikit.core.NotSupportedOperation;
 import com.yubico.yubikit.core.Version;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
+import static com.yubico.yubikit.yubiotp.HmacSha1SlotConfiguration.shortenHmacSha1Key;
+
 /**
  * Configures the YubiKey to return an OATH-HOTP code on touch
  */
 public class HotpSlotConfiguration extends KeyboardSlotConfiguration<HotpSlotConfiguration> {
-    private static final int HMAC_KEY_SIZE = 20;      // Size of OATH-HOTP key (key field + first 4 of UID field)
-
     /**
      * Creates an OATH-HOTP configuration with default settings.
      *
      * @param secret the shared secret for the OATH-TOTP credential
      */
     public HotpSlotConfiguration(byte[] secret) {
-        super(new Version(2, 2, 0));
-
-        if (secret.length > HMAC_KEY_SIZE) {
-            throw new NotSupportedOperation("key lengths >20 bytes is not supported");
-        }
-
         // Secret is packed into key and uid
-        ByteBuffer.wrap(ByteBuffer.allocate(ConfigUtils.KEY_SIZE + ConfigUtils.UID_SIZE).put(secret).array()).get(key).get(uid);
+        ByteBuffer.wrap(ByteBuffer.allocate(KEY_SIZE + UID_SIZE).put(shortenHmacSha1Key(secret)).array()).get(key).get(uid);
 
         updateTktFlags(TKTFLAG_OATH_HOTP, true);
         updateTktFlags(CFGFLAG_OATH_FIXED_MODHEX2, true);
+    }
+
+    @Override
+    public boolean isSupportedBy(Version version) {
+        return version.isAtLeast(2,2,0);
     }
 
     @Override
@@ -75,7 +73,7 @@ public class HotpSlotConfiguration extends KeyboardSlotConfiguration<HotpSlotCon
      * @return the configuration for chaining
      */
     public HotpSlotConfiguration tokenId(byte[] tokenId, boolean fixedModhex1, boolean fixedModhex2) {
-        if (tokenId.length > ConfigUtils.FIXED_SIZE) {
+        if (tokenId.length > FIXED_SIZE) {
             throw new IllegalArgumentException("Token ID must be <= 16 bytes");
         }
         fixed = Arrays.copyOf(tokenId, tokenId.length);

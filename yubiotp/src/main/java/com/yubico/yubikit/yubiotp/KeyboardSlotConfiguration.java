@@ -18,8 +18,7 @@ package com.yubico.yubikit.yubiotp;
 import com.yubico.yubikit.core.Version;
 
 abstract class KeyboardSlotConfiguration<T extends KeyboardSlotConfiguration<T>> extends BaseSlotConfiguration<T> {
-    protected KeyboardSlotConfiguration(Version minVersion) {
-        super(minVersion);
+    protected KeyboardSlotConfiguration() {
         updateTktFlags(TKTFLAG_APPEND_CR, true);
         updateExtFlags(EXTFLAG_FAST_TRIG, true);
     }

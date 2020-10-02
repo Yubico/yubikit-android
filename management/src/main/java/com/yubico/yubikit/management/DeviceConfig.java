@@ -49,6 +49,16 @@ public class DeviceConfig {
         this.deviceFlags = deviceFlags;
     }
 
+    /**
+     * Get the currently enabled applications for a given Interface.
+     * NOTE: This method will return null if the Interface is not supported by the YubiKey, OR if the enabled
+     * applications state isn't readable. The YubiKey 4 series, for example, does not return enabled-status for USB
+     * applications.
+     *
+     * @param iface the physical interface to get enabled applications for
+     * @return the enabled applications, represented as {@link Application} bits being set (1) or not (0)
+     */
+    @Nullable
     public Integer getEnabledApplications(Interface iface) {
         return enabledApplications.get(iface);
     }

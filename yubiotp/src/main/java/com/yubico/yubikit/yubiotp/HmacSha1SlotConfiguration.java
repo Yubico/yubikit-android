@@ -20,6 +20,8 @@ import com.yubico.yubikit.core.NotSupportedOperation;
 import com.yubico.yubikit.core.Version;
 
 import java.nio.ByteBuffer;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 /**
  * Configures HMAC-SHA1 challenge response secret on YubiKey
@@ -28,24 +30,39 @@ import java.nio.ByteBuffer;
 public class HmacSha1SlotConfiguration extends BaseSlotConfiguration<HmacSha1SlotConfiguration> {
     private static final int HMAC_KEY_SIZE = 20;      // Size of OATH-HOTP key (key field + first 4 of UID field)
 
+    static byte[] shortenHmacSha1Key(byte[] key) {
+        if (key.length > 64) {
+            // As per HMAC specification, shorten keys longer than BLOCKSIZE by hashing them.
+            try {
+                return MessageDigest.getInstance("SHA1").digest(key);
+            } catch (NoSuchAlgorithmException e) {
+                // Shouldn't happen
+                throw new IllegalStateException();
+            }
+        }
+        if (key.length > HMAC_KEY_SIZE) {
+            throw new NotSupportedOperation("HMAC-SHA1 key lengths >20 bytes are not supported");
+        }
+        return key;
+    }
+
     /**
      * Creates a HMAC-SHA1 challenge-response configuration with default settings.
      *
      * @param secret the 20 bytes HMAC key to store
      */
     public HmacSha1SlotConfiguration(byte[] secret) {
-        super(new Version(2, 2, 0));
-
-        if (secret.length > HMAC_KEY_SIZE) {
-            throw new NotSupportedOperation("key lengths >20 bytes is not supported");
-        }
-
         // Secret is packed into key and uid
-        ByteBuffer.wrap(ByteBuffer.allocate(ConfigUtils.KEY_SIZE + ConfigUtils.UID_SIZE).put(secret).array()).get(key).get(uid);
+        ByteBuffer.wrap(ByteBuffer.allocate(KEY_SIZE + UID_SIZE).put(shortenHmacSha1Key(secret)).array()).get(key).get(uid);
 
         updateTktFlags(TKTFLAG_CHAL_RESP, true);
         updateCfgFlags(CFGFLAG_CHAL_HMAC, true);
         updateCfgFlags(CFGFLAG_HMAC_LT64, true);
+    }
+
+    @Override
+    public boolean isSupportedBy(Version version) {
+        return version.isAtLeast(2,2,0);
     }
 
     @Override

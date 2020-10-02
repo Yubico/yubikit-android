@@ -285,6 +285,7 @@ public abstract class YubiKeyPromptActivity<T extends YubiKeyConnection> extends
         if (allowUsb) {
             yubiKit.stopUsbDiscovery();
         }
+        executor.shutdown();
         super.onDestroy();
     }
 

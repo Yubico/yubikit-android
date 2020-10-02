@@ -20,7 +20,7 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
-public class ConfigUtilsTest {
+public class BaseSlotConfigurationTest {
 
     @Test
     public void testBuildConfig() {
@@ -29,7 +29,7 @@ public class ConfigUtilsTest {
         byte[] key = {0x20, 0x21, 0x22, 0x23, 0x24, 0x25,
                 0x26, 0x27, 0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f};
         byte tktFlags = SlotConfiguration.TKTFLAG_APPEND_CR;
-        byte[] config = ConfigUtils.buildConfig(
+        byte[] config = BaseSlotConfiguration.buildConfig(
                 fixed,
                 uid,
                 key,

@@ -34,8 +34,7 @@ public class StaticTicketSlotConfiguration extends KeyboardSlotConfiguration<Sta
      * @param key   AES key used to generate the "dynamic" part of the ticket
      */
     public StaticTicketSlotConfiguration(byte[] fixed, byte[] uid, byte[] key) {
-        super(new Version(1, 0, 0));
-        if (fixed.length > ConfigUtils.FIXED_SIZE) {
+        if (fixed.length > FIXED_SIZE) {
             throw new IllegalArgumentException("Public ID must be <= 16 bytes");
         }
 
@@ -44,6 +43,11 @@ public class StaticTicketSlotConfiguration extends KeyboardSlotConfiguration<Sta
         System.arraycopy(key, 0, this.key, 0, key.length);
 
         updateCfgFlags(CFGFLAG_STATIC_TICKET, true);
+    }
+
+    @Override
+    public boolean isSupportedBy(Version version) {
+        return version.isAtLeast(0,0,0);
     }
 
     @Override
