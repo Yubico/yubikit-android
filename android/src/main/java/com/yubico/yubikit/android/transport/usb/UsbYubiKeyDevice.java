@@ -18,7 +18,7 @@ package com.yubico.yubikit.android.transport.usb;
 
 import android.hardware.usb.*;
 import android.util.Pair;
-import com.yubico.yubikit.core.Interface;
+import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.NotSupportedOperation;
 import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.YubiKeyDevice;
@@ -93,8 +93,8 @@ public class UsbYubiKeyDevice implements YubiKeyDevice {
     }
 
     @Override
-    public Interface getInterface() {
-        return Interface.USB;
+    public Transport getTransport() {
+        return Transport.USB;
     }
 
     @Override

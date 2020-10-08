@@ -3,7 +3,7 @@ package com.yubico.yubikit.android.app.ui.oath
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.yubico.yubikit.android.app.ui.YubiKeyViewModel
-import com.yubico.yubikit.core.Interface
+import com.yubico.yubikit.core.Transport
 import com.yubico.yubikit.core.YubiKeyDevice
 import com.yubico.yubikit.core.smartcard.ApduException
 import com.yubico.yubikit.core.smartcard.SW
@@ -21,7 +21,7 @@ class OathViewModel : YubiKeyViewModel<OathSession>() {
 
     private var isNfc = false
     override fun getSession(device: YubiKeyDevice) = OathSession(device.openConnection(SmartCardConnection::class.java).apply {
-        isNfc = `interface` == Interface.NFC
+        isNfc = transport == Transport.NFC
     })
 
     override fun OathSession.updateState() {

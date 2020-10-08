@@ -95,7 +95,7 @@ public class YubiOtpSession implements Closeable {
 
     /**
      * Create new instance of {@link YubiOtpSession} using an {@link SmartCardConnection}.
-     * NOTE: Not all functionality is available over all interfaces. Over USB, some functionality may be blocked when
+     * NOTE: Not all functionality is available over all transports. Over USB, some functionality may be blocked when
      * not using an OtpConnection.
      *
      * @param connection an Iso7816Connection with a YubiKey
@@ -106,7 +106,7 @@ public class YubiOtpSession implements Closeable {
         Version version = null;
         SmartCardProtocol protocol = new SmartCardProtocol(connection);
 
-        if (connection.getInterface() == Interface.NFC) {
+        if (connection.getTransport() == Transport.NFC) {
             // If available, this is more reliable than status.getVersion() over NFC
             try {
                 byte[] response = protocol.select(MGMT_AID);
@@ -126,7 +126,7 @@ public class YubiOtpSession implements Closeable {
 
         backend = new Backend<SmartCardProtocol>(protocol, version, parseConfigState(version, statusBytes)) {
             // 5.0.0-5.2.5 have an issue with status over NFC
-            private final boolean dummyStatus = connection.getInterface() == Interface.NFC && version.isAtLeast(5, 0, 0) && version.isLessThan(5, 2, 5);
+            private final boolean dummyStatus = connection.getTransport() == Transport.NFC && version.isAtLeast(5, 0, 0) && version.isLessThan(5, 2, 5);
 
             {
                 if (dummyStatus) { // We can't read the status, so use a dummy with both slots marked as configured.

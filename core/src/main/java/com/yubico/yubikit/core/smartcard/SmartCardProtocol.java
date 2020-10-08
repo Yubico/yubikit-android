@@ -17,7 +17,7 @@
 package com.yubico.yubikit.core.smartcard;
 
 import com.yubico.yubikit.core.ApplicationNotAvailableException;
-import com.yubico.yubikit.core.Interface;
+import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.Version;
 
 import java.io.ByteArrayOutputStream;
@@ -72,7 +72,7 @@ public class SmartCardProtocol implements Closeable {
      * @param firmwareVersion the firmware version to use for detection to enable the workaround
      */
     public void enableTouchWorkaround(Version firmwareVersion) {
-        this.useTouchWorkaround = connection.getInterface() == Interface.USB
+        this.useTouchWorkaround = connection.getTransport() == Transport.USB
                 && firmwareVersion.isAtLeast(4, 2, 0)
                 && firmwareVersion.isLessThan(4, 2, 7);
     }

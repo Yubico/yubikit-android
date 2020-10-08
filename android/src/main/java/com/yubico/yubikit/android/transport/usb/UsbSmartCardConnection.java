@@ -20,7 +20,7 @@ import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbEndpoint;
 import android.hardware.usb.UsbInterface;
-import com.yubico.yubikit.core.Interface;
+import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.util.StringUtils;
@@ -92,8 +92,8 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
     }
 
     @Override
-    public Interface getInterface() {
-        return Interface.USB;
+    public Transport getTransport() {
+        return Transport.USB;
     }
 
     @Override

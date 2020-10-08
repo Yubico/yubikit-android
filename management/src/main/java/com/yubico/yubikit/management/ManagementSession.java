@@ -233,25 +233,25 @@ public class ManagementSession implements Closeable {
      * @throws ApduException         in case of communication or not supported operation error
      * @throws NotSupportedOperation if this command is not supported for this YubiKey
      */
-    public void setMode(UsbTransport.Mode mode, byte chalrespTimeout, short autoejectTimeout) throws IOException, CommandException {
+    public void setMode(UsbInterface.Mode mode, byte chalrespTimeout, short autoejectTimeout) throws IOException, CommandException {
         if (version.isLessThan(3, 0, 0)) {
             throw new NotSupportedOperation("Requires YubiKey 3.0.0 or later");
         }
         if (version.isAtLeast(5, 0, 0)) {
             //Translate into DeviceConfig and set using writeDeviceConfig
             int usbEnabled = 0;
-            if ((mode.transports & UsbTransport.OTP) != 0) {
+            if ((mode.interfaces & UsbInterface.OTP) != 0) {
                 usbEnabled |= Application.OTP.bit;
             }
-            if ((mode.transports & UsbTransport.CCID) != 0) {
+            if ((mode.interfaces & UsbInterface.CCID) != 0) {
                 usbEnabled |= Application.OATH.bit | Application.PIV.bit | Application.OPENPGP.bit;
             }
-            if ((mode.transports & UsbTransport.FIDO) != 0) {
+            if ((mode.interfaces & UsbInterface.FIDO) != 0) {
                 usbEnabled |= Application.U2F.bit | Application.FIDO2.bit;
             }
             updateDeviceConfig(
                     new DeviceConfig.Builder()
-                            .enabledApplications(Interface.USB, usbEnabled)
+                            .enabledApplications(Transport.USB, usbEnabled)
                             .challengeResponseTimeout(chalrespTimeout)
                             .autoEjectTimeout(autoejectTimeout)
                             .build(),

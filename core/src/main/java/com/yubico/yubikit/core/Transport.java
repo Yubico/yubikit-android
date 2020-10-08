@@ -17,9 +17,9 @@
 package com.yubico.yubikit.core;
 
 /**
- * Types of physical interfaces supported by the YubiKey
+ * Types of physical transports supported by the YubiKey
  */
-public enum Interface {
+public enum Transport {
     USB,
     NFC
 }

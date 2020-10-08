@@ -46,7 +46,7 @@ import java.util.*;
 
 /**
  * Personal Identity Verification (PIV) interface specified in NIST SP 800-73 document "Cryptographic Algorithms and Key Sizes for PIV".
- * This enables you to perform RSA or ECC sign/decrypt operations using a private key stored on the smartcard, through common interfaces like PKCS#11.
+ * This enables you to perform RSA or ECC sign/decrypt operations using a private key stored on the smartcard, through common transports like PKCS#11.
  */
 public class PivSession implements Closeable {
     private static final int PIN_LEN = 8;

@@ -22,7 +22,7 @@ import android.nfc.Tag;
 import android.nfc.tech.IsoDep;
 import android.nfc.tech.Ndef;
 import androidx.annotation.WorkerThread;
-import com.yubico.yubikit.core.Interface;
+import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.NotSupportedOperation;
 import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.YubiKeyDevice;
@@ -102,8 +102,8 @@ public class NfcYubiKeyDevice implements YubiKeyDevice {
     }
 
     @Override
-    public Interface getInterface() {
-        return Interface.NFC;
+    public Transport getTransport() {
+        return Transport.NFC;
     }
 
     @Override

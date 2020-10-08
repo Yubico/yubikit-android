@@ -8,7 +8,7 @@ import android.widget.CheckBox
 import androidx.fragment.app.activityViewModels
 import com.yubico.yubikit.android.app.R
 import com.yubico.yubikit.android.app.ui.YubiKeyFragment
-import com.yubico.yubikit.core.Interface
+import com.yubico.yubikit.core.Transport
 import com.yubico.yubikit.management.Application
 import com.yubico.yubikit.management.DeviceConfig
 import com.yubico.yubikit.management.ManagementSession
@@ -18,19 +18,19 @@ class ManagementFragment : YubiKeyFragment<ManagementSession, ManagementViewMode
     override val viewModel: ManagementViewModel by activityViewModels()
 
     private val checkboxIds = mapOf(
-            (Interface.USB to Application.OTP) to R.id.checkbox_usb_otp,
-            (Interface.USB to Application.U2F) to R.id.checkbox_usb_u2f,
-            (Interface.USB to Application.PIV) to R.id.checkbox_usb_piv,
-            (Interface.USB to Application.OATH) to R.id.checkbox_usb_oath,
-            (Interface.USB to Application.OPENPGP) to R.id.checkbox_usb_pgp,
-            (Interface.USB to Application.FIDO2) to R.id.checkbox_usb_fido2,
+            (Transport.USB to Application.OTP) to R.id.checkbox_usb_otp,
+            (Transport.USB to Application.U2F) to R.id.checkbox_usb_u2f,
+            (Transport.USB to Application.PIV) to R.id.checkbox_usb_piv,
+            (Transport.USB to Application.OATH) to R.id.checkbox_usb_oath,
+            (Transport.USB to Application.OPENPGP) to R.id.checkbox_usb_pgp,
+            (Transport.USB to Application.FIDO2) to R.id.checkbox_usb_fido2,
 
-            (Interface.NFC to Application.OTP) to R.id.checkbox_nfc_otp,
-            (Interface.NFC to Application.U2F) to R.id.checkbox_nfc_u2f,
-            (Interface.NFC to Application.PIV) to R.id.checkbox_nfc_piv,
-            (Interface.NFC to Application.OATH) to R.id.checkbox_nfc_oath,
-            (Interface.NFC to Application.OPENPGP) to R.id.checkbox_nfc_pgp,
-            (Interface.NFC to Application.FIDO2) to R.id.checkbox_nfc_fido2
+            (Transport.NFC to Application.OTP) to R.id.checkbox_nfc_otp,
+            (Transport.NFC to Application.U2F) to R.id.checkbox_nfc_u2f,
+            (Transport.NFC to Application.PIV) to R.id.checkbox_nfc_piv,
+            (Transport.NFC to Application.OATH) to R.id.checkbox_nfc_oath,
+            (Transport.NFC to Application.OPENPGP) to R.id.checkbox_nfc_pgp,
+            (Transport.NFC to Application.FIDO2) to R.id.checkbox_nfc_fido2
     )
 
     override fun onCreateView(
@@ -54,12 +54,11 @@ class ManagementFragment : YubiKeyFragment<ManagementSession, ManagementViewMode
 
         viewModel.deviceInfo.observe(viewLifecycleOwner, {
             if (it != null) {
-                val config = it.config
                 info.text = "Device type: ${it.formFactor.name} \nFirmware: ${it.version} \nSerial: ${it.serial}"
-                checkboxIds.forEach { (iface, app), id ->
+                checkboxIds.forEach { (transport, app), id ->
                     view.findViewById<CheckBox>(id).let { checkbox ->
-                        if (it.getSupportedApplications(iface) and app.bit != 0) {
-                            checkbox.isChecked = (config.getEnabledApplications(iface) ?: 0) and app.bit != 0
+                        if (it.getSupportedApplications(transport) and app.bit != 0) {
+                            checkbox.isChecked = (it.config.getEnabledApplications(transport) ?: 0) and app.bit != 0
                             checkbox.visibility = View.VISIBLE
                         } else {
                             checkbox.visibility = View.GONE
@@ -79,9 +78,9 @@ class ManagementFragment : YubiKeyFragment<ManagementSession, ManagementViewMode
         save.setOnClickListener {
             viewModel.pendingAction.value = {
                 updateDeviceConfig(DeviceConfig.Builder().apply {
-                    Interface.values().forEach { iface ->
-                        enabledApplications(iface, checkboxIds.filter {
-                            it.key.first == iface && view.findViewById<CheckBox>(it.value).isChecked
+                    Transport.values().forEach { transport ->
+                        enabledApplications(transport, checkboxIds.filter {
+                            it.key.first == transport && view.findViewById<CheckBox>(it.value).isChecked
                         }.map {
                             it.key.second.bit  // Application bit
                         }.sum())

@@ -16,7 +16,7 @@
 
 package com.yubico.yubikit.core.smartcard;
 
-import com.yubico.yubikit.core.Interface;
+import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.YubiKeyConnection;
 
 import java.io.IOException;
@@ -35,9 +35,9 @@ public interface SmartCardConnection extends YubiKeyConnection {
     byte[] sendAndReceive(byte[] apdu) throws IOException;
 
     /**
-     * Checks what interface the connection is using (USB or NFC).
+     * Checks what transport the connection is using (USB or NFC).
      *
-     * @return the physical interface used for the connection.
+     * @return the physical transport used for the connection.
      */
-    Interface getInterface();
+    Transport getTransport();
 }

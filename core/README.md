@@ -1,5 +1,5 @@
 # YubiKit Core Module
-The **core** module is the base library, with common interfaces and utilities used
+The **core** module is the base library, with common transports and utilities used
 throughout the rest of the modules. This module is typically not used alone, but
 as a dependency of the [android](../android/) module, and others.
 

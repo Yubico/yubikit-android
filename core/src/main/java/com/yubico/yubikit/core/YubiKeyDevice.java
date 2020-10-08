@@ -18,7 +18,7 @@ package com.yubico.yubikit.core;
 import java.io.IOException;
 
 public interface YubiKeyDevice {
-    Interface getInterface();
+    Transport getTransport();
 
     boolean supportsConnection(Class<? extends YubiKeyConnection> connectionType);
 

@@ -16,7 +16,7 @@
 package com.yubico.yubikit.management;
 
 import com.yubico.yubikit.core.BadResponseException;
-import com.yubico.yubikit.core.Interface;
+import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.Version;
 import com.yubico.yubikit.core.util.TlvUtils;
 
@@ -43,10 +43,10 @@ public class DeviceInfo {
     private final Integer serial;
     private final Version version;
     private final FormFactor formFactor;
-    private final Map<Interface, Integer> supportedApplications;
+    private final Map<Transport, Integer> supportedApplications;
     private final boolean isLocked;
 
-    private DeviceInfo(DeviceConfig config, @Nullable Integer serial, Version version, FormFactor formFactor, Map<Interface, Integer> supportedApplications, boolean isLocked) {
+    private DeviceInfo(DeviceConfig config, @Nullable Integer serial, Version version, FormFactor formFactor, Map<Transport, Integer> supportedApplications, boolean isLocked) {
         this.config = config;
         this.serial = serial;
         this.version = version;
@@ -72,12 +72,12 @@ public class DeviceInfo {
         return formFactor;
     }
 
-    public boolean hasInterface(Interface iface) {
-        return supportedApplications.containsKey(iface);
+    public boolean hasTransport(Transport transport) {
+        return supportedApplications.containsKey(transport);
     }
 
-    public int getSupportedApplications(Interface iface) {
-        Integer applications = supportedApplications.get(iface);
+    public int getSupportedApplications(Transport transport) {
+        Integer applications = supportedApplications.get(transport);
         return applications == null ? 0 : applications;
     }
 
@@ -108,22 +108,22 @@ public class DeviceInfo {
         byte challengeResponseTimeout = (byte) readInt(data.get(TAG_CHALLENGE_RESPONSE_TIMEOUT));
         int deviceFlags = readInt(data.get(TAG_DEVICE_FLAGS));
 
-        Map<Interface, Integer> supportedApplications = new HashMap<>();
-        Map<Interface, Integer> enabledApplications = new HashMap<>();
+        Map<Transport, Integer> supportedApplications = new HashMap<>();
+        Map<Transport, Integer> enabledApplications = new HashMap<>();
 
         if (version.equals(new Version(4, 2, 4))) {
             // 4.2.4 doesn't report supported applications correctly, but they are always 0x3f.
-            supportedApplications.put(Interface.USB, 0x3f);
+            supportedApplications.put(Transport.USB, 0x3f);
         } else {
-            supportedApplications.put(Interface.USB, readInt(data.get(TAG_USB_SUPPORTED)));
+            supportedApplications.put(Transport.USB, readInt(data.get(TAG_USB_SUPPORTED)));
         }
         if(data.containsKey(TAG_USB_ENABLED)) {
-            enabledApplications.put(Interface.USB, readInt(data.get(TAG_USB_ENABLED)));
+            enabledApplications.put(Transport.USB, readInt(data.get(TAG_USB_ENABLED)));
         }
 
         if(data.containsKey(TAG_NFC_SUPPORTED)) {
-            supportedApplications.put(Interface.NFC, readInt(data.get(TAG_NFC_SUPPORTED)));
-            enabledApplications.put(Interface.NFC, readInt(data.get(TAG_NFC_ENABLED)));
+            supportedApplications.put(Transport.NFC, readInt(data.get(TAG_NFC_SUPPORTED)));
+            enabledApplications.put(Transport.NFC, readInt(data.get(TAG_NFC_ENABLED)));
         }
 
         return new DeviceInfo(
