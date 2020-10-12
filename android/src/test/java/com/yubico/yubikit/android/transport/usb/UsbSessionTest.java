@@ -32,6 +32,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.Semaphore;
 
 public class UsbSessionTest {
     private static final byte[] RESET_REQUEST = byteArrayOfInts(new int[]{0x62, 0, 0, 0, 0, 0, 0, 0, 0, 0});
@@ -163,13 +164,13 @@ public class UsbSessionTest {
         int blobOffset = 0;
 
         public UsbYubiKeyDeviceMock(UsbManager usbManager, UsbDevice usbDevice) {
-            super(usbManager, usbDevice);
+            super(usbManager, usbDevice, new Semaphore(1));
         }
 
         @Override
         public <T extends YubiKeyConnection> T openConnection(Class<T> connectionType) throws IOException {
             Mockito.when(connection.claimInterface(Mockito.any(), Mockito.anyBoolean())).thenReturn(true);
-            return connectionType.cast(new UsbSmartCardConnection(getUsbDevice(), connection, usbInterface, endpointIn, endpointOut));
+            return connectionType.cast(new UsbSmartCardConnection(getUsbDevice(), new Semaphore(1), connection, usbInterface, endpointIn, endpointOut));
         }
 
         public void mockOutError() {

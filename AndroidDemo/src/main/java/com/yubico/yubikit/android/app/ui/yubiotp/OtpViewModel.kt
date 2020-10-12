@@ -30,8 +30,24 @@ class OtpViewModel : YubiKeyViewModel<YubiOtpSession>() {
 
     override fun getSession(device: YubiKeyDevice): YubiOtpSession = when {
         sessionRef != null -> sessionRef!!
-        device.supportsConnection(OtpConnection::class.java) -> NonClosingYubiOtpSession(device.openConnection(OtpConnection::class.java)).apply { sessionRef = this }
-        device.supportsConnection(SmartCardConnection::class.java) -> YubiOtpSession(device.openConnection(SmartCardConnection::class.java))
+        device.supportsConnection(OtpConnection::class.java) -> {
+            val connection = device.openConnection(OtpConnection::class.java)
+            try {
+                NonClosingYubiOtpSession(connection).apply { sessionRef = this }
+            } catch (e: Exception) {
+                connection.close()
+                throw e
+            }
+        }
+        device.supportsConnection(SmartCardConnection::class.java) -> {
+            val connection = device.openConnection(SmartCardConnection::class.java)
+            try {
+                YubiOtpSession(connection)
+            } catch (e: Exception) {
+                connection.close()
+                throw e
+            }
+        }
         else -> throw IOException("No interface available for OTP")
     }
 

@@ -16,7 +16,10 @@
 
 package com.yubico.yubikit.android.transport.usb;
 
-public interface UsbDeviceListener {
+import androidx.annotation.WorkerThread;
+
+@WorkerThread
+public interface UsbYubiKeyListener {
     /**
      * Invoked when detected inserted device after usb discovery started
      *

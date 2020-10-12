@@ -44,7 +44,7 @@ yubikitVersion=2.0.0
 
 **Step 2** Create a listener to react to USB device events:
 ```java
-    private class UsbListener implements UsbDeviceListener {
+    private class UsbListener implements UsbYubiKeyListener {
         @Override
         public void onDeviceAttached(UsbYubiKeyDevice device, boolean hasPermissions) {
             // YubiKey was plugged in
@@ -63,7 +63,7 @@ yubikitVersion=2.0.0
 ```
 **Step 3** Create a listener to react to NFC device events:
 ```java
-    private class NfcListener implements NfcDeviceListener {
+    private class NfcListener implements NfcYubiKeyListener {
         void onDeviceAttached(NfcYubiKeyDevice device) {
             // Tag was discovered
         }
@@ -71,7 +71,7 @@ yubikitVersion=2.0.0
 ```
 **Step 4** Subscribe to USB YubiKey device events:
 ```java
-    yubiKitManager.startUsbDiscovery(UsbConfiguration(), new UsbListener());
+    yubiKitManager.startUsbDiscovery(new UsbConfiguration(), new UsbListener());
 ```
 **Step 5** Subscribe to NFC YubiKey device events.
 
@@ -84,32 +84,30 @@ yubikitVersion=2.0.0
         try {
             yubiKitManager.startNfcDiscovery(new NfcConfiguration(), activity, new NfcListener());
         } catch (NfcNotAvailableException e) {
-            if (e.disabled) {
-                // show Snackbar message that user needs to turn on NFC for this feature
+            if (e.isDisabled()) {
+                // show a message that user needs to turn on NFC for this feature
             } else {
                 // NFC is not available so this feature does not work on this device
             }
         }
     }
 ```
-**Step 6** Open an ISO/IEC 7816 connection from YubiKey device (`NfcYubiKeyDevice` or `UsbYubiKeyDevice`), create APDU, and then execute it.
+**Step 6** Open an SmartCardConnecion to the YubiKey (`NfcYubiKeyDevice` or `UsbYubiKeyDevice`), create an APDU, and then send it.
 
 **Note**: The API that sends the APDU commands to the YubiKey is a blocking function. Use a background thread to provide the expected user experience.
 
 ```java
-    executorService.execute(() -> {
-        //connect to the YubiKey / start the connection
-        try(SmartCardConnection connection = device.openConnection(SmartCardConnection.class)) {
-            // here you can run your command set.
-            // Example:
-            SmartCardProtocol protocol = new SmartCardProtocol(connection);
-            byte[] aid = new byte[] {0xA0, 0x00, 0x00, 0x03, 0x08};
-            protocol.select(aid);  // Select a smartcard application
-            protocol.sendAndReceive(new Apdu(0x00, 0xA4, 0x00, 0x00)));
-        } catch (ApplicationNotFoundException | IOException e) {
-            // handle error that occurred during communication with key
-        }
-    });
+    //connect to the YubiKey / start the connection
+    try(SmartCardConnection connection = device.openConnection(SmartCardConnection.class)) {
+        // here you can run your command set.
+        // Example:
+        SmartCardProtocol protocol = new SmartCardProtocol(connection);
+        byte[] aid = new byte[] {0xA0, 0x00, 0x00, 0x03, 0x08};
+        protocol.select(aid);  // Select a smartcard application
+        protocol.sendAndReceive(new Apdu(0x00, 0xA4, 0x00, 0x00)));
+    } catch (ApplicationNotFoundException | IOException e) {
+        // handle errors
+    }
 ```
 **Step 7** Stop discovery.
 

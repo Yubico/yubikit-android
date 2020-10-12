@@ -10,7 +10,7 @@ import java.util.concurrent.Executors
 class MainViewModel() : ViewModel() {
     val singleDispatcher = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
 
-    private val _handleYubiKey = MutableLiveData<Boolean>(true)
+    private val _handleYubiKey = MutableLiveData(true)
     val handleYubiKey: LiveData<Boolean> = _handleYubiKey
 
     fun setYubiKeyListenerEnabled(enabled: Boolean) {

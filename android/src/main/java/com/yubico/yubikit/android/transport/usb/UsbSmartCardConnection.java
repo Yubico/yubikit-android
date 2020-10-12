@@ -20,8 +20,8 @@ import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbEndpoint;
 import android.hardware.usb.UsbInterface;
-import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.Logger;
+import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.util.StringUtils;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
@@ -32,6 +32,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.Locale;
+import java.util.concurrent.Semaphore;
 
 /**
  * USB service for interacting with the YubiKey
@@ -81,8 +82,8 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
      * @param endpointIn    channel for sending data over USB.
      * @param endpointOut   channel for receiving data over USB.
      */
-    UsbSmartCardConnection(UsbDevice usbDevice, UsbDeviceConnection connection, UsbInterface ccidInterface, UsbEndpoint endpointIn, UsbEndpoint endpointOut) throws IOException {
-        super(usbDevice, connection, ccidInterface);
+    UsbSmartCardConnection(UsbDevice usbDevice, Semaphore connectionLock, UsbDeviceConnection connection, UsbInterface ccidInterface, UsbEndpoint endpointIn, UsbEndpoint endpointOut) throws IOException {
+        super(usbDevice, connectionLock, connection, ccidInterface);
 
         this.connection = connection;
         this.endpointIn = endpointIn;

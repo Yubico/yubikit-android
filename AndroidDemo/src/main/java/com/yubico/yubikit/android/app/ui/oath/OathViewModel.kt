@@ -20,9 +20,16 @@ class OathViewModel : YubiKeyViewModel<OathSession>() {
     var password: Pair<String, CharArray>? = null
 
     private var isNfc = false
-    override fun getSession(device: YubiKeyDevice) = OathSession(device.openConnection(SmartCardConnection::class.java).apply {
-        isNfc = transport == Transport.NFC
-    })
+    override fun getSession(device: YubiKeyDevice): OathSession {
+        val connection = device.openConnection(SmartCardConnection::class.java)
+        isNfc = connection.transport == Transport.NFC
+        try {
+            return OathSession(connection)
+        } catch (e: Exception) {
+            connection.close()
+            throw e
+        }
+    }
 
     override fun OathSession.updateState() {
         _oathInfo.postValue(applicationInfo)

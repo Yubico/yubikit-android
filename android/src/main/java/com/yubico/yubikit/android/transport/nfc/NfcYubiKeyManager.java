@@ -22,11 +22,13 @@ import android.content.Intent;
 import android.nfc.NfcAdapter;
 
 import javax.annotation.Nullable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * This class allows you to communicate with local NFC adapter
  */
-public class NfcDeviceManager {
+public class NfcYubiKeyManager {
 
     /**
      * Action for intent to tweak NFC settings in Android settings view
@@ -37,17 +39,18 @@ public class NfcDeviceManager {
     private final Context context;
     private final NfcAdapter adapter;
     private final NfcDispatcher dispatcher;
+    @Nullable
+    private ExecutorService executorService = null;
 
     /**
-     * Creates instance of {@link NfcDeviceManager}
+     * Creates instance of {@link NfcYubiKeyManager}
      *
      * @param context    the application context
      * @param dispatcher optional implementation of NfcDispatcher to use instead of the default.
      * @throws NfcNotAvailable if the Android device does not support NFC
      */
-    public NfcDeviceManager(Context context, @Nullable NfcDispatcher dispatcher) throws NfcNotAvailable {
-        this.context = context;
-        adapter = NfcAdapter.getDefaultAdapter(this.context);
+    public NfcYubiKeyManager(Context context, @Nullable NfcDispatcher dispatcher) throws NfcNotAvailable {
+        adapter = NfcAdapter.getDefaultAdapter(context);
         if (adapter == null) {
             throw new NfcNotAvailable("NFC unavailable on this device", false);
         }
@@ -55,10 +58,7 @@ public class NfcDeviceManager {
             dispatcher = new NfcReaderDispatcher(adapter);
         }
         this.dispatcher = dispatcher;
-    }
-
-    public NfcDeviceManager(Context context) throws NfcNotAvailable {
-        this(context, null);
+        this.context = context;
     }
 
     /**
@@ -69,9 +69,11 @@ public class NfcDeviceManager {
      * @param listener         the listener to invoke on NFC sessions
      * @throws NfcNotAvailable in case NFC is turned off (but available)
      */
-    public void enable(Activity activity, NfcConfiguration nfcConfiguration, NfcDeviceListener listener) throws NfcNotAvailable {
+    public void enable(Activity activity, NfcConfiguration nfcConfiguration, NfcYubiKeyListener listener) throws NfcNotAvailable {
         if (checkAvailability(nfcConfiguration.isHandleUnavailableNfc())) {
-            dispatcher.enable(activity, nfcConfiguration, tag -> listener.onDeviceAttached(new NfcYubiKeyDevice(tag, nfcConfiguration.getTimeout())));
+            ExecutorService executor = Executors.newSingleThreadExecutor();
+            dispatcher.enable(activity, nfcConfiguration, tag -> executor.execute(() -> listener.onDeviceAttached(new NfcYubiKeyDevice(tag, nfcConfiguration.getTimeout()))));
+            executorService = executor;
         }
     }
 
@@ -81,6 +83,10 @@ public class NfcDeviceManager {
      * @param activity activity that goes to background or want to stop dispatching nfc tags
      */
     public void disable(Activity activity) {
+        if (executorService != null) {
+            executorService.shutdown();
+            executorService = null;
+        }
         dispatcher.disable(activity);
     }
 

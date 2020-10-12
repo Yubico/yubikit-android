@@ -24,6 +24,7 @@ import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.core.otp.OtpConnection;
 
 import java.io.IOException;
+import java.util.concurrent.Semaphore;
 
 /**
  * Class that provides interface to read and send data over YubiKey HID (keyboard) interface
@@ -53,8 +54,8 @@ public class UsbOtpConnection extends UsbYubiKeyConnection implements OtpConnect
      * @param hidInterface HID interface that was claimed
      *                     NOTE: controlTransfer works only with endpoint zero.
      */
-    UsbOtpConnection(UsbDevice usbDevice, UsbDeviceConnection connection, UsbInterface hidInterface) throws IOException {
-        super(usbDevice, connection, hidInterface);
+    UsbOtpConnection(UsbDevice usbDevice, Semaphore connectionLock, UsbDeviceConnection connection, UsbInterface hidInterface) throws IOException {
+        super(usbDevice, connectionLock, connection, hidInterface);
         this.connection = connection;
         this.hidInterface = hidInterface;
         Logger.d("usb connection opened");

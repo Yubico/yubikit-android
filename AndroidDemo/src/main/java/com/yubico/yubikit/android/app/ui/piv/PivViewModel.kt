@@ -27,7 +27,15 @@ class PivViewModel : YubiKeyViewModel<PivSession>() {
 
     var mgmtKey: ByteArray = byteArrayOf(1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8)
 
-    override fun getSession(device: YubiKeyDevice) = PivSession(device.openConnection(SmartCardConnection::class.java))
+    override fun getSession(device: YubiKeyDevice): PivSession {
+        val connection = device.openConnection(SmartCardConnection::class.java)
+        try {
+            return PivSession(connection)
+        } catch (e: Exception) {
+            connection.close()
+            throw e
+        }
+    }
 
     override fun PivSession.updateState() {
         _certificates.postValue(SparseArray<X509Certificate>().apply {

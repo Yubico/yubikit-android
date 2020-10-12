@@ -18,18 +18,20 @@ package com.yubico.yubikit.android.transport.usb;
 
 import android.hardware.usb.*;
 import android.util.Pair;
-import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.NotSupportedOperation;
+import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.YubiKeyDevice;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.Objects;
+import java.util.concurrent.Semaphore;
 
 public class UsbYubiKeyDevice implements YubiKeyDevice {
     private final UsbManager usbManager;
     private final UsbDevice usbDevice;
+    private final Semaphore connectionLock;
     @Nullable
     private final UsbInterface ccidInterface;
     @Nullable
@@ -44,9 +46,10 @@ public class UsbYubiKeyDevice implements YubiKeyDevice {
      * @param usbManager manager of usb connection
      * @param usbDevice  device connected over usb that has permissions to interact with
      */
-    UsbYubiKeyDevice(UsbManager usbManager, UsbDevice usbDevice) {
+    UsbYubiKeyDevice(UsbManager usbManager, UsbDevice usbDevice, Semaphore connectionLock) {
         this.usbManager = usbManager;
         this.usbDevice = usbDevice;
+        this.connectionLock = connectionLock;
 
         // Check for CCID
         Pair<UsbEndpoint, UsbEndpoint> endpointPair = null;
@@ -110,9 +113,9 @@ public class UsbYubiKeyDevice implements YubiKeyDevice {
     @Override
     public <T extends YubiKeyConnection> T openConnection(Class<T> connectionType) throws IOException {
         if (connectionType.isAssignableFrom(UsbOtpConnection.class) && isOtpAvailable()) {
-            return connectionType.cast(new UsbOtpConnection(usbDevice, openConnection(), otpInterface));
+            return connectionType.cast(new UsbOtpConnection(usbDevice, connectionLock, openConnection(), otpInterface));
         } else if (connectionType.isAssignableFrom(UsbSmartCardConnection.class) && isSmartCardAvailable()) {
-            return connectionType.cast(new UsbSmartCardConnection(usbDevice, openConnection(), ccidInterface, ccidEndpoints.first, ccidEndpoints.second));
+            return connectionType.cast(new UsbSmartCardConnection(usbDevice, connectionLock, openConnection(), ccidInterface, ccidEndpoints.first, ccidEndpoints.second));
         }
         throw new NotSupportedOperation("The connection type is not supported by this session");
     }

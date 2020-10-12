@@ -28,11 +28,11 @@ import androidx.annotation.WorkerThread;
 import com.yubico.yubikit.android.R;
 import com.yubico.yubikit.android.YubiKitManager;
 import com.yubico.yubikit.android.transport.nfc.NfcConfiguration;
-import com.yubico.yubikit.android.transport.nfc.NfcDeviceManager;
+import com.yubico.yubikit.android.transport.nfc.NfcYubiKeyManager;
 import com.yubico.yubikit.android.transport.nfc.NfcNotAvailable;
 import com.yubico.yubikit.android.transport.usb.UsbConfiguration;
-import com.yubico.yubikit.android.transport.usb.UsbDeviceListener;
 import com.yubico.yubikit.android.transport.usb.UsbYubiKeyDevice;
+import com.yubico.yubikit.android.transport.usb.UsbYubiKeyListener;
 import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.YubiKeyDevice;
@@ -40,8 +40,6 @@ import com.yubico.yubikit.core.YubiKeyDevice;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.IOException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 /**
  * Abstract base class for custom YubiKey dialogs.
@@ -52,8 +50,6 @@ import java.util.concurrent.Executors;
  * @param <T> the connection subclass used to determine suitability of a connected YubiKey.
  */
 public abstract class YubiKeyPromptActivity<T extends YubiKeyConnection> extends Activity {
-    private final ExecutorService executor = Executors.newSingleThreadExecutor();
-
     private final Class<T> connectionType;
     private final boolean allowUsb;
     private final boolean allowNfc;
@@ -201,16 +197,14 @@ public abstract class YubiKeyPromptActivity<T extends YubiKeyConnection> extends
 
         yubiKit = new YubiKitManager(this);
         if (allowUsb) {
-            yubiKit.startUsbDiscovery(new UsbConfiguration(), new UsbDeviceListener() {
+            yubiKit.startUsbDiscovery(new UsbConfiguration(), new UsbYubiKeyListener() {
                 @Override
                 public void onDeviceAttached(@Nonnull UsbYubiKeyDevice device, boolean hasPermission) {
                     usbSessionCounter++;
-                    helpTextView.setText(R.string.yubikit_prompt_wait);
+                    runOnUiThread(() -> helpTextView.setText(R.string.yubikit_prompt_wait));
                     if (hasPermission) {
-                        executor.execute(() -> {
-                            onYubiKeyDevice(device);
-                            finishIfDone();
-                        });
+                        onYubiKeyDevice(device);
+                        finishIfDone();
                     }
                 }
 
@@ -218,17 +212,15 @@ public abstract class YubiKeyPromptActivity<T extends YubiKeyConnection> extends
                 public void onDeviceRemoved(@Nonnull UsbYubiKeyDevice device) {
                     usbSessionCounter--;
                     if (usbSessionCounter == 0) {
-                        helpTextView.setText(hasNfc ? R.string.yubikit_prompt_plug_in_or_tap : R.string.yubikit_prompt_plug_in);
+                        runOnUiThread(() -> helpTextView.setText(hasNfc ? R.string.yubikit_prompt_plug_in_or_tap : R.string.yubikit_prompt_plug_in));
                     }
                 }
 
                 @Override
                 public void onRequestPermissionsResult(@Nonnull UsbYubiKeyDevice device, boolean isGranted) {
                     if (isGranted) {
-                        executor.execute(() -> {
-                            onYubiKeyDevice(device);
-                            finishIfDone();
-                        });
+                        onYubiKeyDevice(device);
+                        finishIfDone();
                     } else {
                         Logger.d("Access to YubiKey denied");
                     }
@@ -240,7 +232,7 @@ public abstract class YubiKeyPromptActivity<T extends YubiKeyConnection> extends
             enableNfcButton = findViewById(enableNfcButtonId);
             enableNfcButton.setFocusable(false);
             enableNfcButton.setOnClickListener(v -> {
-                startActivity(new Intent(NfcDeviceManager.NFC_SETTINGS_ACTION));
+                startActivity(new Intent(NfcYubiKeyManager.NFC_SETTINGS_ACTION));
             });
         }
     }
@@ -253,14 +245,10 @@ public abstract class YubiKeyPromptActivity<T extends YubiKeyConnection> extends
             enableNfcButton.setVisibility(View.GONE);
             try {
                 yubiKit.startNfcDiscovery(new NfcConfiguration(), this, device -> {
-                    executor.execute(() -> {
-                        onYubiKeyDevice(device);
-                        runOnUiThread(() -> {
-                            helpTextView.setText(R.string.yubikit_prompt_remove);
-                        });
-                        device.awaitRemoval();
-                        finishIfDone();
-                    });
+                    onYubiKeyDevice(device);
+                    runOnUiThread(() -> helpTextView.setText(R.string.yubikit_prompt_remove));
+                    device.awaitRemoval();
+                    finishIfDone();
                 });
             } catch (NfcNotAvailable e) {
                 hasNfc = false;
@@ -285,7 +273,6 @@ public abstract class YubiKeyPromptActivity<T extends YubiKeyConnection> extends
         if (allowUsb) {
             yubiKit.stopUsbDiscovery();
         }
-        executor.shutdown();
         super.onDestroy();
     }
 

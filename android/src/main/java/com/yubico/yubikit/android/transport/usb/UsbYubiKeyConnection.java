@@ -23,43 +23,33 @@ import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.core.YubiKeyConnection;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.Set;
-import java.util.WeakHashMap;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 abstract class UsbYubiKeyConnection implements YubiKeyConnection {
-    private static final Set<UsbDevice> GLOBAL_USB_CONNECTION_LOCK = Collections.newSetFromMap(new WeakHashMap<>());
-
     private final UsbDevice usbDevice;
+    private final Semaphore lock;
     private final UsbDeviceConnection usbDeviceConnection;
     private final UsbInterface usbInterface;
 
-    static void releaseUsbDevice(UsbDevice usbDevice) {
-        synchronized (GLOBAL_USB_CONNECTION_LOCK) {
-            GLOBAL_USB_CONNECTION_LOCK.remove(usbDevice);
-            GLOBAL_USB_CONNECTION_LOCK.notify();
-        }
-    }
-
-    protected UsbYubiKeyConnection(UsbDevice usbDevice, UsbDeviceConnection usbDeviceConnection, UsbInterface usbInterface) throws IOException {
-        synchronized (GLOBAL_USB_CONNECTION_LOCK) {
-            if (!GLOBAL_USB_CONNECTION_LOCK.add(usbDevice)) {
-                try {
-                    GLOBAL_USB_CONNECTION_LOCK.wait(200);
-                    if (!GLOBAL_USB_CONNECTION_LOCK.add(usbDevice)) {
-                        throw new AlreadyInUseException(usbDevice);
-                    }
-                } catch (InterruptedException e) {
-                    throw new IOException("Interrupted");
+    protected UsbYubiKeyConnection(UsbDevice usbDevice, Semaphore lock, UsbDeviceConnection usbDeviceConnection, UsbInterface usbInterface) throws IOException {
+        try {
+            if (lock.tryAcquire(200, TimeUnit.MILLISECONDS)) {
+                if (!usbDeviceConnection.claimInterface(usbInterface, true)) {
+                    usbDeviceConnection.close();
+                    lock.release();
+                    throw new IOException("Unable to claim interface");
                 }
+                Logger.d("Acquired connection lock for " + usbDevice.getDeviceName());
+            } else {
+                throw new AlreadyInUseException(usbDevice);
             }
-            if (!usbDeviceConnection.claimInterface(usbInterface, true)) {
-                usbDeviceConnection.close();
-                releaseUsbDevice(usbDevice);
-                throw new IOException("Unable to claim interface");
-            }
+        } catch (InterruptedException e) {
+            throw new IOException("Interrupted");
         }
+
         this.usbDevice = usbDevice;
+        this.lock = lock;
         this.usbDeviceConnection = usbDeviceConnection;
         this.usbInterface = usbInterface;
 
@@ -70,8 +60,8 @@ abstract class UsbYubiKeyConnection implements YubiKeyConnection {
     public void close() {
         usbDeviceConnection.releaseInterface(usbInterface);
         usbDeviceConnection.close();
-        releaseUsbDevice(usbDevice);
-
+        Logger.d("Releasing connection lock for " + usbDevice.getDeviceName());
+        lock.release();
         Logger.d("USB connection closed: " + this);
     }
 }

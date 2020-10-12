@@ -18,36 +18,29 @@ package com.yubico.yubikit.android;
 
 import android.app.Activity;
 import android.content.Context;
-import android.os.Handler;
-import android.os.Looper;
-import com.yubico.yubikit.android.transport.nfc.*;
+import com.yubico.yubikit.android.transport.nfc.NfcConfiguration;
+import com.yubico.yubikit.android.transport.nfc.NfcNotAvailable;
+import com.yubico.yubikit.android.transport.nfc.NfcYubiKeyListener;
+import com.yubico.yubikit.android.transport.nfc.NfcYubiKeyManager;
 import com.yubico.yubikit.android.transport.usb.UsbConfiguration;
-import com.yubico.yubikit.android.transport.usb.UsbDeviceListener;
-import com.yubico.yubikit.android.transport.usb.UsbDeviceManager;
-import com.yubico.yubikit.android.transport.usb.UsbYubiKeyDevice;
+import com.yubico.yubikit.android.transport.usb.UsbYubiKeyListener;
+import com.yubico.yubikit.android.transport.usb.UsbYubiKeyManager;
 
 import javax.annotation.Nullable;
 
+/**
+ * Starting point for YubiKey device discovery over both USB and NFC.
+ * Use this class to listen for YubiKeys and get a {@link com.yubico.yubikit.core.YubiKeyDevice} reference.
+ */
 public final class YubiKitManager {
-
-    private final Handler handler;
-    private final UsbDeviceManager usbDeviceManager;
+    private final UsbYubiKeyManager usbYubiKeyManager;
     @Nullable
-    private final NfcDeviceManager nfcDeviceManager;
-
-    /**
-     * Initialize instance of {@link YubiKitManager}
-     *
-     * @param context application context
-     */
-    public YubiKitManager(Context context) {
-        this(context, null);
-    }
+    private final NfcYubiKeyManager nfcYubiKeyManager;
 
     @Nullable
-    private static NfcDeviceManager buildNfcDeviceManager(Context context) {
+    private static NfcYubiKeyManager buildNfcDeviceManager(Context context) {
         try {
-            return new NfcDeviceManager(context);
+            return new NfcYubiKeyManager(context, null);
         } catch (NfcNotAvailable e) {
             return null;
         }
@@ -57,25 +50,20 @@ public final class YubiKitManager {
      * Initialize instance of {@link YubiKitManager}
      *
      * @param context application context
-     * @param handler on which callbacks will be invoked (default is main thread)
      */
-    public YubiKitManager(Context context, @Nullable Handler handler) {
-        this(handler != null ? handler : new Handler(Looper.getMainLooper()),
-                new UsbDeviceManager(context.getApplicationContext()),
-                buildNfcDeviceManager(context.getApplicationContext()));
+    public YubiKitManager(Context context) {
+        this(new UsbYubiKeyManager(context.getApplicationContext()), buildNfcDeviceManager(context.getApplicationContext()));
     }
 
     /**
-     * Initialize instance of {@link YubiKitManager}
+     * Initialize an instance of {@link YubiKitManager}, providing the USB and NFC YubiKey managers to use for device discovery.
      *
-     * @param handler          on which callbacks will be invoked (default is main thread)
-     * @param usbDeviceManager UsbDeviceManager instance to use for USB communication
-     * @param nfcDeviceManager NfcDeviceManager instance to use for NFC communication
+     * @param usbYubiKeyManager UsbYubiKeyManager instance to use for USB communication
+     * @param nfcYubiKeyManager NfcYubiKeyManager instance to use for NFC communication
      */
-    public YubiKitManager(@Nullable Handler handler, UsbDeviceManager usbDeviceManager, @Nullable NfcDeviceManager nfcDeviceManager) {
-        this.handler = handler != null ? handler : new Handler(Looper.getMainLooper());
-        this.usbDeviceManager = usbDeviceManager;
-        this.nfcDeviceManager = nfcDeviceManager;
+    public YubiKitManager(UsbYubiKeyManager usbYubiKeyManager, @Nullable NfcYubiKeyManager nfcYubiKeyManager) {
+        this.usbYubiKeyManager = usbYubiKeyManager;
+        this.nfcYubiKeyManager = nfcYubiKeyManager;
     }
 
 
@@ -88,8 +76,8 @@ public final class YubiKitManager {
      * @param listener         listener that is going to be invoked upon successful discovery of key session
      *                         or failure to detect any session (lack of permissions)
      */
-    public void startUsbDiscovery(final UsbConfiguration usbConfiguration, UsbDeviceListener listener) {
-        usbDeviceManager.enable(usbConfiguration, new UsbInternalListener(listener));
+    public void startUsbDiscovery(final UsbConfiguration usbConfiguration, UsbYubiKeyListener listener) {
+        usbYubiKeyManager.enable(usbConfiguration, listener);
     }
 
     /**
@@ -104,19 +92,19 @@ public final class YubiKitManager {
      * @param activity         active (not finished) activity required for nfc foreground dispatch
      * @throws NfcNotAvailable in case if NFC not available on android device
      */
-    public void startNfcDiscovery(final NfcConfiguration nfcConfiguration, Activity activity, NfcDeviceListener listener)
+    public void startNfcDiscovery(final NfcConfiguration nfcConfiguration, Activity activity, NfcYubiKeyListener listener)
             throws NfcNotAvailable {
-        if (nfcDeviceManager == null) {
+        if (nfcYubiKeyManager == null) {
             throw new NfcNotAvailable("NFC is not available on this device", false);
         }
-        nfcDeviceManager.enable(activity, nfcConfiguration, new NfcInternalListener(listener));
+        nfcYubiKeyManager.enable(activity, nfcConfiguration, listener);
     }
 
     /**
      * Unsubscribe from changes that happen via USB
      */
     public void stopUsbDiscovery() {
-        usbDeviceManager.disable();
+        usbYubiKeyManager.disable();
     }
 
     /**
@@ -125,55 +113,8 @@ public final class YubiKitManager {
      * @param activity active (not finished) activity required for nfc foreground dispatch
      */
     public void stopNfcDiscovery(Activity activity) {
-        if (nfcDeviceManager != null) {
-            nfcDeviceManager.disable(activity);
-        }
-    }
-
-    /**
-     * Internal listeners that help to invoke callbacks on provided handler (default main thread)
-     */
-    private final class NfcInternalListener implements NfcDeviceListener {
-        private final NfcDeviceListener listener;
-
-        private NfcInternalListener(NfcDeviceListener listener) {
-            this.listener = listener;
-        }
-
-        @Override
-        public void onDeviceAttached(final NfcYubiKeyDevice device) {
-            handler.post(() -> {
-                listener.onDeviceAttached(device);
-            });
-        }
-    }
-
-    private final class UsbInternalListener implements UsbDeviceListener {
-        private final UsbDeviceListener listener;
-
-        private UsbInternalListener(UsbDeviceListener listener) {
-            this.listener = listener;
-        }
-
-        @Override
-        public void onDeviceAttached(final UsbYubiKeyDevice device, final boolean hasPermissions) {
-            handler.post(() -> {
-                listener.onDeviceAttached(device, hasPermissions);
-            });
-        }
-
-        @Override
-        public void onDeviceRemoved(final UsbYubiKeyDevice device) {
-            handler.post(() -> {
-                listener.onDeviceRemoved(device);
-            });
-        }
-
-        @Override
-        public void onRequestPermissionsResult(final UsbYubiKeyDevice device, final boolean isGranted) {
-            handler.post(() -> {
-                listener.onRequestPermissionsResult(device, isGranted);
-            });
+        if (nfcYubiKeyManager != null) {
+            nfcYubiKeyManager.disable(activity);
         }
     }
 }

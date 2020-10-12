@@ -16,6 +16,9 @@
 
 package com.yubico.yubikit.android.transport.nfc;
 
-public interface NfcDeviceListener {
-    void onDeviceAttached(final NfcYubiKeyDevice device);
+import androidx.annotation.WorkerThread;
+
+@WorkerThread
+public interface NfcYubiKeyListener {
+    void onDeviceAttached(NfcYubiKeyDevice device);
 }

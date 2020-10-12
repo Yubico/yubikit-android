@@ -9,7 +9,6 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.drawerlayout.widget.DrawerLayout
-import androidx.lifecycle.Observer
 import androidx.navigation.NavController
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
@@ -21,8 +20,8 @@ import com.yubico.yubikit.android.YubiKitManager
 import com.yubico.yubikit.android.transport.nfc.NfcConfiguration
 import com.yubico.yubikit.android.transport.nfc.NfcNotAvailable
 import com.yubico.yubikit.android.transport.usb.UsbConfiguration
-import com.yubico.yubikit.android.transport.usb.UsbDeviceListener
 import com.yubico.yubikit.android.transport.usb.UsbYubiKeyDevice
+import com.yubico.yubikit.android.transport.usb.UsbYubiKeyListener
 import com.yubico.yubikit.core.Logger
 import kotlinx.android.synthetic.main.dialog_about.*
 import java.util.*
@@ -35,6 +34,7 @@ class MainActivity : AppCompatActivity() {
     private val viewModel: MainViewModel by viewModels()
 
     private lateinit var yubikit: YubiKitManager
+    private val nfcConfiguration = NfcConfiguration()
 
     private var hasNfc by Delegates.notNull<Boolean>()
 
@@ -67,37 +67,40 @@ class MainActivity : AppCompatActivity() {
 
         yubikit = YubiKitManager(this)
 
-        viewModel.handleYubiKey.observe(this, Observer {
+        viewModel.handleYubiKey.observe(this, {
             if (it) {
                 Logger.d("Enable listening")
-                yubikit.startUsbDiscovery(UsbConfiguration(), object : UsbDeviceListener {
+                yubikit.startUsbDiscovery(UsbConfiguration(), object : UsbYubiKeyListener {
                     override fun onDeviceAttached(device: UsbYubiKeyDevice, hasPermission: Boolean) {
                         Logger.d("USB device attached $device, $hasPermission, current: ${viewModel.yubiKey.value}")
                         if (hasPermission) {
-                            viewModel.yubiKey.value = device
+                            viewModel.yubiKey.postValue(device)
                         }
                     }
 
                     override fun onRequestPermissionsResult(device: UsbYubiKeyDevice, isGranted: Boolean) {
                         Logger.d("Permission result $device, $isGranted, current: ${viewModel.yubiKey.value}")
                         if (isGranted) {
-                            viewModel.yubiKey.value = device
+                            viewModel.yubiKey.postValue(device)
                         }
                     }
 
                     override fun onDeviceRemoved(device: UsbYubiKeyDevice) {
                         Logger.d("Device removed $device")
                         if (viewModel.yubiKey.value == device) {
-                            viewModel.yubiKey.value = null
+                            viewModel.yubiKey.postValue(null)
                         }
                     }
                 })
                 try {
-                    yubikit.startNfcDiscovery(NfcConfiguration(), this) { session ->
-                        Logger.d("NFC Session started $session")
+                    yubikit.startNfcDiscovery(nfcConfiguration, this) { device ->
+                        Logger.d("NFC Session started $device")
                         viewModel.yubiKey.apply {
-                            value = session
-                            postValue(null)
+                            // Trigger new value, then removal
+                            runOnUiThread {
+                                value = device
+                                postValue(null)
+                            }
                         }
                     }
                     hasNfc = true
@@ -114,7 +117,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        // Inflate the menu; this adds items to the action bar if it is present.
         menuInflater.inflate(R.menu.main, menu)
         return true
     }
@@ -140,14 +142,16 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        Logger.d("ON RESUME ACTIVITY")
         if (viewModel.handleYubiKey.value == true && hasNfc) {
             try {
-                yubikit.startNfcDiscovery(NfcConfiguration(), this) { session ->
-                    Logger.d("NFC device connected $session")
+                yubikit.startNfcDiscovery(nfcConfiguration, this) { device ->
+                    Logger.d("NFC device connected $device")
                     viewModel.yubiKey.apply {
-                        value = session
-                        postValue(null)
+                        // Trigger new value, then removal
+                        runOnUiThread {
+                            value = device
+                            postValue(null)
+                        }
                     }
                 }
             } catch (e: NfcNotAvailable) {
@@ -157,13 +161,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onPause() {
-        Logger.d("ON PAUSE ACTIVITY")
         yubikit.stopNfcDiscovery(this)
         super.onPause()
     }
 
     override fun onDestroy() {
-        Logger.d("ON DESTROY ACTIVITY")
         viewModel.yubiKey.value = null
         yubikit.stopUsbDiscovery()
         super.onDestroy()

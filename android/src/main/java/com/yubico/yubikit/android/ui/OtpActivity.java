@@ -23,7 +23,7 @@ import android.widget.TextView;
 import com.yubico.yubikit.android.R;
 import com.yubico.yubikit.android.transport.nfc.NfcYubiKeyDevice;
 import com.yubico.yubikit.android.transport.usb.UsbConfiguration;
-import com.yubico.yubikit.android.transport.usb.UsbDeviceListener;
+import com.yubico.yubikit.android.transport.usb.UsbYubiKeyListener;
 import com.yubico.yubikit.android.transport.usb.UsbYubiKeyDevice;
 import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.YubiKeyDevice;
@@ -67,18 +67,18 @@ public class OtpActivity extends YubiKeyPromptActivity<YubiKeyConnection> {
 
         TextView helpTextView = findViewById(helpTextViewId);
 
-        getYubiKitManager().startUsbDiscovery(new UsbConfiguration().handlePermissions(false), new UsbDeviceListener() {
+        getYubiKitManager().startUsbDiscovery(new UsbConfiguration().handlePermissions(false), new UsbYubiKeyListener() {
             @Override
             public void onDeviceAttached(@Nonnull UsbYubiKeyDevice device, boolean hasPermission) {
                 usbSessionCounter++;
-                helpTextView.setText(R.string.yubikit_otp_touch);
+                runOnUiThread(() -> helpTextView.setText(R.string.yubikit_otp_touch));
             }
 
             @Override
             public void onDeviceRemoved(@Nonnull UsbYubiKeyDevice device) {
                 usbSessionCounter--;
                 if (usbSessionCounter == 0) {
-                    helpTextView.setText(isNfcEnabled() ? R.string.yubikit_prompt_plug_in_or_tap : R.string.yubikit_prompt_plug_in);
+                    runOnUiThread(() -> helpTextView.setText(isNfcEnabled() ? R.string.yubikit_prompt_plug_in_or_tap : R.string.yubikit_prompt_plug_in));
                 }
             }
 

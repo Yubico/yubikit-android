@@ -28,9 +28,25 @@ class ManagementViewModel : YubiKeyViewModel<ManagementSession>() {
     private var sessionRef: NonClosingManagementSession? = null
 
     override fun getSession(device: YubiKeyDevice): ManagementSession = when {
-        device.supportsConnection(SmartCardConnection::class.java) -> ManagementSession(device.openConnection(SmartCardConnection::class.java))
+        device.supportsConnection(SmartCardConnection::class.java) -> {
+            val connection = device.openConnection(SmartCardConnection::class.java)
+            try {
+                ManagementSession(connection)
+            } catch (e: Exception) {
+                connection.close()
+                throw e
+            }
+        }
         // Keep the application open over OTP, as closing it causes the device to re-enumerate
-        device.supportsConnection(OtpConnection::class.java) -> NonClosingManagementSession(device.openConnection(OtpConnection::class.java)).apply { sessionRef = this }
+        device.supportsConnection(OtpConnection::class.java) -> {
+            val connection = device.openConnection(OtpConnection::class.java)
+            try {
+                NonClosingManagementSession(connection).apply { sessionRef = this }
+            } catch (e: Exception) {
+                connection.close()
+                throw e
+            }
+        }
         else -> throw IOException("No interface available for Management")
     }
 

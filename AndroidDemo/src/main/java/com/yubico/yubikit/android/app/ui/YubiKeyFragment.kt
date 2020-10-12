@@ -37,7 +37,7 @@ abstract class YubiKeyFragment<App : Closeable, VM : YubiKeyViewModel<App>> : Fr
                 .setOnCancelListener { viewModel.pendingAction.value = null }
                 .create()
 
-        activityViewModel.yubiKey.observe(viewLifecycleOwner, Observer {
+        activityViewModel.yubiKey.observe(viewLifecycleOwner, {
             if (it != null) {
                 onYubiKey(it)
             } else {
@@ -45,7 +45,7 @@ abstract class YubiKeyFragment<App : Closeable, VM : YubiKeyViewModel<App>> : Fr
             }
         })
 
-        viewModel.result.observe(viewLifecycleOwner, Observer { result ->
+        viewModel.result.observe(viewLifecycleOwner, { result ->
             result.onSuccess {
                 it?.let {
                     Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
@@ -60,7 +60,7 @@ abstract class YubiKeyFragment<App : Closeable, VM : YubiKeyViewModel<App>> : Fr
             viewModel.clearResult()
         })
 
-        viewModel.pendingAction.observe(viewLifecycleOwner, Observer {
+        viewModel.pendingAction.observe(viewLifecycleOwner, {
             if (it != null) {
                 activityViewModel.yubiKey.value.let { device ->
                     if (device != null) {
