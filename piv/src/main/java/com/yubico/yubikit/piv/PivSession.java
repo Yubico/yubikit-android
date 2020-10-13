@@ -167,7 +167,7 @@ public class PivSession implements Closeable {
      *                      The default 3DES management key (9B) is 010203040506070801020304050607080102030405060708.
      * @throws IOException          in case of connection error
      * @throws ApduException        in case of an error response from the YubiKey
-     * @throws BadResponseException in case of incorrectYubiKey response
+     * @throws BadResponseException in case of incorrect YubiKey response
      */
     public void authenticate(byte[] managementKey) throws IOException, ApduException, BadResponseException {
         // An empty witness is a request for a witness.
@@ -175,7 +175,7 @@ public class PivSession implements Closeable {
         byte[] response = protocol.sendAndReceive(new Apdu(0, INS_AUTHENTICATE, TDES, Slot.CARD_MANAGEMENT.value, request));
 
         // Witness (tag '80') contains encrypted data (unrevealed fact).
-        byte[] witness = TlvUtils.unwrapValue(TAG_AUTH_WITNESS, TlvUtils.unwrapValue(TAG_DYN_AUTH, response));
+        byte[] witness = TlvUtils.unpackValue(TAG_AUTH_WITNESS, TlvUtils.unpackValue(TAG_DYN_AUTH, response));
         SecretKey key = new SecretKeySpec(managementKey, "DESede");
         try {
             Cipher cipher = Cipher.getInstance("DESede/ECB/NoPadding");
@@ -191,7 +191,7 @@ public class PivSession implements Closeable {
             response = protocol.sendAndReceive(new Apdu(0, INS_AUTHENTICATE, TDES, Slot.CARD_MANAGEMENT.value, request));
 
             // (tag '82') contains either the decrypted data from tag '80' or the encrypted data from tag '81'.
-            byte[] encryptedData = TlvUtils.unwrapValue(TAG_AUTH_RESPONSE, TlvUtils.unwrapValue(TAG_DYN_AUTH, response));
+            byte[] encryptedData = TlvUtils.unpackValue(TAG_AUTH_RESPONSE, TlvUtils.unpackValue(TAG_DYN_AUTH, response));
             cipher.init(Cipher.ENCRYPT_MODE, key);
             byte[] expectedData = cipher.doFinal(challenge);
             if (!Arrays.equals(encryptedData, expectedData)) {
@@ -218,7 +218,7 @@ public class PivSession implements Closeable {
      * @return the signature
      * @throws IOException              in case of connection error
      * @throws ApduException            in case of an error response from the YubiKey
-     * @throws BadResponseException     in case of incorrectYubiKey response
+     * @throws BadResponseException     in case of incorrect YubiKey response
      * @throws NoSuchAlgorithmException if the algorithm isn't supported
      */
     public byte[] sign(Slot slot, KeyType keyType, byte[] message, String algorithm) throws IOException, ApduException, BadResponseException, NoSuchAlgorithmException {
@@ -235,7 +235,7 @@ public class PivSession implements Closeable {
      * @return the decrypted plaintext
      * @throws IOException              in case of connection error
      * @throws ApduException            in case of an error response from the YubiKey
-     * @throws BadResponseException     in case of incorrectYubiKey response
+     * @throws BadResponseException     in case of incorrect YubiKey response
      * @throws NoSuchPaddingException   in case the padding algorithm isn't supported
      * @throws NoSuchAlgorithmException in case the algorithm isn't supported
      * @throws BadPaddingException      in case of a padding error
@@ -264,7 +264,7 @@ public class PivSession implements Closeable {
      * @return the shared secret, comprising the x-coordinate of the ECDH result point.
      * @throws IOException          in case of connection error
      * @throws ApduException        in case of an error response from the YubiKey
-     * @throws BadResponseException in case of incorrectYubiKey response
+     * @throws BadResponseException in case of incorrect YubiKey response
      */
     public byte[] calculateSecret(Slot slot, ECPublicKey peerPublicKey) throws IOException, ApduException, BadResponseException {
         KeyType keyType = KeyType.fromKey(peerPublicKey);
@@ -285,7 +285,7 @@ public class PivSession implements Closeable {
 
         try {
             byte[] response = protocol.sendAndReceive(new Apdu(0, INS_AUTHENTICATE, keyType.value, slot.value, request));
-            return TlvUtils.unwrapValue(TAG_AUTH_RESPONSE, TlvUtils.unwrapValue(TAG_DYN_AUTH, response));
+            return TlvUtils.unpackValue(TAG_AUTH_RESPONSE, TlvUtils.unpackValue(TAG_DYN_AUTH, response));
         } catch (ApduException e) {
             if (SW.INCORRECT_PARAMETERS == e.getSw()) {
                 //TODO: Replace with new CommandException subclass, wrapping e.
@@ -518,7 +518,7 @@ public class PivSession implements Closeable {
      * @return certificate instance
      * @throws IOException          in case of connection error
      * @throws ApduException        in case of an error response from the YubiKey
-     * @throws BadResponseException in case of incorrectYubiKey response
+     * @throws BadResponseException in case of incorrect YubiKey response
      */
     public X509Certificate getCertificate(Slot slot) throws IOException, ApduException, BadResponseException {
         byte[] objectData = getObject(slot.objectId);
@@ -573,7 +573,7 @@ public class PivSession implements Closeable {
      * @return X.509 certificate for the key that is to be attested
      * @throws IOException          in case of connection error
      * @throws ApduException        in case of an error response from the YubiKey
-     * @throws BadResponseException in case of incorrectYubiKey response
+     * @throws BadResponseException in case of incorrect YubiKey response
      */
     public X509Certificate attestKey(Slot slot) throws IOException, ApduException, BadResponseException {
         if (version.isLessThan(4, 3, 0)) {
@@ -633,7 +633,7 @@ public class PivSession implements Closeable {
      * @return public key for generated pair
      * @throws IOException          in case of connection error
      * @throws ApduException        in case of an error response from the YubiKey
-     * @throws BadResponseException in case of incorrectYubiKey response
+     * @throws BadResponseException in case of incorrect YubiKey response
      */
     public PublicKey generateKey(Slot slot, KeyType keyType, PinPolicy pinPolicy, TouchPolicy touchPolicy) throws IOException, ApduException, BadResponseException {
         boolean isRsa = keyType.params.algorithm == KeyType.Algorithm.RSA;
@@ -665,7 +665,7 @@ public class PivSession implements Closeable {
         byte[] response = protocol.sendAndReceive(new Apdu(0, INS_GENERATE_ASYMMETRIC, 0, slot.value, new Tlv((byte) 0xac, TlvUtils.packTlvMap(tlvs)).getBytes()));
 
         // Tag '7F49' contains data objects for RSA or ECC
-        return parsePublicKeyFromDevice(keyType, TlvUtils.unwrapValue(0x7F49, response));
+        return parsePublicKeyFromDevice(keyType, TlvUtils.unpackValue(0x7F49, response));
     }
 
     /**
@@ -751,12 +751,12 @@ public class PivSession implements Closeable {
      * @return data that read from YubiKey
      * @throws IOException          in case of connection error
      * @throws ApduException        in case of an error response from the YubiKey
-     * @throws BadResponseException in case of incorrectYubiKey response
+     * @throws BadResponseException in case of incorrect YubiKey response
      */
     public byte[] getObject(int objectId) throws IOException, ApduException, BadResponseException {
         byte[] requestData = new Tlv(TAG_OBJ_ID, ObjectId.getBytes(objectId)).getBytes();
         byte[] responseData = protocol.sendAndReceive(new Apdu(0, INS_GET_DATA, 0x3f, 0xff, requestData));
-        return TlvUtils.unwrapValue(TAG_OBJ_DATA, responseData);
+        return TlvUtils.unpackValue(TAG_OBJ_DATA, responseData);
     }
 
     /**
@@ -940,7 +940,7 @@ public class PivSession implements Closeable {
             List<Tlv> numbers = TlvUtils.parseTlvList(
                     TlvUtils.parseTlvMap(
                             TlvUtils.parseTlvMap(
-                                    TlvUtils.unwrapValue(0x30, derKey)
+                                    TlvUtils.unpackValue(0x30, derKey)
                             ).get(0x04)
                     ).get(0x30)
             );

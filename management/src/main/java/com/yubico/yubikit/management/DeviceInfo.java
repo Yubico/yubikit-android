@@ -91,7 +91,7 @@ public class DeviceInfo {
             throw new BadResponseException("Invalid length");
         }
 
-        Map<Integer, byte[]> data = TlvUtils.parseTlvMap(Arrays.copyOfRange(response, 1, length));
+        Map<Integer, byte[]> data = TlvUtils.parseTlvMap(Arrays.copyOfRange(response, 1, response.length));
 
         boolean isLocked = readInt(data.get(TAG_CONFIG_LOCKED)) == 1;
         int serial = readInt(data.get(TAG_SERIAL_NUMBER));

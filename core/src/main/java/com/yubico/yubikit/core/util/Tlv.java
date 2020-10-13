@@ -18,50 +18,20 @@ package com.yubico.yubikit.core.util;
 
 import javax.annotation.Nullable;
 import java.io.ByteArrayOutputStream;
+import java.math.BigInteger;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Locale;
 
 /**
  * Tag, length, Value structure that helps to parse APDU response data.
- * This class handles simple BER-TLV encoded values where the tag consists of 1-2 bytes.
+ * This class handles BER-TLV encoded data with determinate length.
  */
 public class Tlv {
-    private static final int LENGTH_REQUIRES_EXTRA_BYTE = 0x81;
-    private static final int LENGTH_REQUIRES_EXTRA_TWO_BYTES = 0x82;
-
     private final int tag;
     private final int length;
     private final byte[] bytes;
     private final int offset;
-
-    /**
-     * Creates instance of {@link Tlv}
-     *
-     * @param bytes      raw bytes that needs to be converted into Tlv
-     * @param dataOffset offset within data byte array
-     */
-    public Tlv(byte[] bytes, int dataOffset) {
-        int pointer = 0;
-        int tagData = bytes[dataOffset + pointer++] & 0xFF;
-        if ((tagData & 0x1f) == 0x1f) {
-            tagData = tagData << 8 | (bytes[dataOffset + pointer++] & 0xFF);
-        }
-        tag = tagData;
-
-        int checkByte = bytes[dataOffset + pointer++] & 0xFF;
-        if (checkByte < LENGTH_REQUIRES_EXTRA_BYTE) {
-            length = checkByte;
-        } else if (checkByte == LENGTH_REQUIRES_EXTRA_BYTE) {
-            length = bytes[dataOffset + pointer++] & 0xFF;
-        } else if (checkByte == LENGTH_REQUIRES_EXTRA_TWO_BYTES) {
-            length = ((bytes[dataOffset + pointer++] & 0xFF) << 8) + (bytes[dataOffset + pointer++] & 0xFF);
-        } else {
-            length = 0;
-        }
-        offset = pointer;
-
-        this.bytes = Arrays.copyOfRange(bytes, dataOffset, dataOffset + offset + length);
-    }
 
     /**
      * Creates instance of {@link Tlv}
@@ -73,36 +43,20 @@ public class Tlv {
         this.tag = tag;
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
 
-        if (tag <= 0xFF) {
-            stream.write(tag);
-        } else if (((tag >> 8) & 0x1F) == 0x1F) {
-            stream.write(tag >> 8);
-            stream.write(tag & 0xFF);
+        byte[] tagBytes = BigInteger.valueOf(tag).toByteArray();
+        int stripLeading = tagBytes[0] == 0 ? 1 : 0;
+        stream.write(tagBytes, stripLeading, tagBytes.length - stripLeading);
+
+        length = value == null ? 0 : value.length;
+        if (length < 0x80) {
+            stream.write(length);
         } else {
-            throw new IllegalArgumentException("Unsupported tag format!");
+            byte[] lnBytes = BigInteger.valueOf(length).toByteArray();
+            stripLeading = lnBytes[0] == 0 ? 1 : 0;
+            stream.write(0x80 | lnBytes.length - stripLeading);
+            stream.write(lnBytes, stripLeading, lnBytes.length - stripLeading);
         }
 
-        if (value != null) {
-            length = value.length;
-        } else {
-            length = 0;
-        }
-        if (length <= 0x7F) {
-            // length that less than 128 requires only 1 byte
-            stream.write(length);
-        } else if (value.length <= 0xFF) {
-            // length that more than 127 but less than 256 requires 2 bytes (flags that length > 127 and length itself)
-            stream.write(LENGTH_REQUIRES_EXTRA_BYTE);
-            stream.write(length);
-        } else if (value.length <= 0xFFFF) {
-            // length that more than 255 but less than 65536 requires 3 bytes (flags that length > 256 and 2 bytes for length itself)
-            stream.write(LENGTH_REQUIRES_EXTRA_TWO_BYTES);
-            stream.write(value.length >> 8);
-            stream.write(length & 0xFF);
-        } else {
-            // length that more than 65536 is not supported within this protocol
-            throw new IllegalArgumentException("Length of value is too large.");
-        }
         offset = stream.size();
         if (value != null) {
             stream.write(value, 0, length);
@@ -132,13 +86,6 @@ public class Tlv {
     }
 
     /**
-     * @return the offset where value starts from (within raw data)
-     */
-    public int getOffset() {
-        return offset;
-    }
-
-    /**
      * @return raw data of tlv blob
      */
     public byte[] getBytes() {
@@ -148,5 +95,55 @@ public class Tlv {
     @Override
     public String toString() {
         return String.format(Locale.ROOT, "Tlv(0x%x, %d, %s)", tag, length, StringUtils.bytesToHex(getValue()));
+    }
+
+    /**
+     * Parse Tlv data from a byte array.
+     * @param data a byte array containing the TLV encoded data.
+     * @param offset the offset in data where the TLV data begins.
+     * @param length the length of the TLV encoded data.
+     * @return The parsed Tlv
+     */
+    public static Tlv parse(byte[] data, int offset, int length) {
+        ByteBuffer buffer = ByteBuffer.wrap(data, offset, length);
+        Tlv tlv = parseFrom(buffer);
+        if (buffer.hasRemaining()) {
+            throw new IllegalArgumentException("Extra data remaining");
+        }
+        return tlv;
+    }
+
+    /**
+     * Parse Tlv data from a byte array.
+     * @param data a byte array containing the TLV encoded data (and nothing more).
+     * @return The parsed Tlv
+     */
+    public static Tlv parse(byte[] data) {
+        return parse(data, 0, data.length);
+    }
+
+    static Tlv parseFrom(ByteBuffer buffer) {
+        int tag = buffer.get() & 0xFF;
+        if ((tag & 0x1F) == 0x1F) { // Long form tag
+            tag = (tag << 8) | (buffer.get() & 0xFF);
+            while ((tag & 0x80) == 0x80) {
+                tag = (tag << 8) | (buffer.get() & 0xFF);
+            }
+        }
+
+        int length = buffer.get() & 0xFF;
+        if (length == 0x80) {
+            throw new IllegalArgumentException("Indefinite length not supported");
+        } else if (length > 0x80) {
+            int lengthLn = length - 0x80;
+            length = 0;
+            for (int i = 0; i < lengthLn; i++) {
+                length = (length << 8) | (buffer.get() & 0xff);
+            }
+        }
+
+        byte[] value = new byte[length];
+        buffer.get(value);
+        return new Tlv(tag, value);
     }
 }

@@ -1,8 +1,6 @@
 # YubiKit Android Module
 The **android** module implements the basic classes needed to interact with
-YubiKeys on Android. It detects the plugged-in YubiKey or one in close
-proximity to the NFC reader and opens an ISO/IEC 7816 connection to send raw
-APDU commands to the YubiKey.
+YubiKeys on Android, over NFC and USB.
 
 ## Requirements
 The **YubiKit** module requires at minimum Java 7 or Android 4.4. Anything
@@ -42,7 +40,8 @@ yubikitVersion=2.0.0
    YubiKitManager yubiKitManager = new YubiKitManager(context);
 ```
 
-**Step 2** Create a listener to react to USB device events:
+**Step 2** Create a listener to react to USB device events.
+Note that callbacks will be invoked in a worker Thread in which you are free to communicate with the YubiKey without blocking the main (UI) thread.
 ```java
     private class UsbListener implements UsbYubiKeyListener {
         @Override

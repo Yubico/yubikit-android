@@ -17,6 +17,7 @@
 package com.yubico.yubikit.oath;
 
 import com.yubico.yubikit.core.ApplicationNotAvailableException;
+import com.yubico.yubikit.core.BadResponseException;
 import com.yubico.yubikit.core.NotSupportedOperation;
 import com.yubico.yubikit.core.smartcard.*;
 import com.yubico.yubikit.core.util.RandomUtils;
@@ -321,14 +322,15 @@ public class OathSession implements Closeable {
      * @return calculated HMAC response
      * @throws IOException   in case of connection error
      * @throws ApduException in case of communication error
+     * @throws BadResponseException in case an unexpected response was sent from the YubiKey
      */
-    public byte[] calculateResponse(byte[] credentialId, byte[] challenge) throws IOException, ApduException {
+    public byte[] calculateResponse(byte[] credentialId, byte[] challenge) throws IOException, ApduException, BadResponseException {
         Map<Integer, byte[]> request = new LinkedHashMap<>();
         request.put(TAG_NAME, credentialId);
         request.put(TAG_CHALLENGE, challenge);
         byte[] data = protocol.sendAndReceive(new Apdu(0, INS_CALCULATE, 0, 0, TlvUtils.packTlvMap(request)));
-        Tlv responseTlv = new Tlv(data, 0);
-        return Arrays.copyOfRange(responseTlv.getValue(), 1, responseTlv.getLength());
+        byte[] response = TlvUtils.unpackValue(TAG_RESPONSE, data);
+        return Arrays.copyOfRange(response, 1, response.length);
     }
 
     /**
@@ -366,8 +368,7 @@ public class OathSession implements Closeable {
         requestTlv.put(TAG_NAME, credential.getId());
         requestTlv.put(TAG_CHALLENGE, challenge);
         byte[] data = protocol.sendAndReceive(new Apdu(0, INS_CALCULATE, 0, 1, TlvUtils.packTlvMap(requestTlv)));
-        Tlv responseTlv = new Tlv(data, 0);
-        String value = formatTruncated(new CalculateResponse(responseTlv));
+        String value = formatTruncated(new CalculateResponse(Tlv.parse(data)));
 
         switch (credential.getOathType()) {
             case TOTP:

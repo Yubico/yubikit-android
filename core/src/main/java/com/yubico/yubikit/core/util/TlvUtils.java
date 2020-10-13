@@ -19,6 +19,7 @@ package com.yubico.yubikit.core.util;
 import com.yubico.yubikit.core.BadResponseException;
 
 import java.io.ByteArrayOutputStream;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -36,12 +37,11 @@ public class TlvUtils {
      * @return list of Tlvs
      */
     public static List<Tlv> parseTlvList(byte[] data) {
+        ByteBuffer buffer = ByteBuffer.wrap(data);
         List<Tlv> tlvs = new ArrayList<>();
-        int offset = 0;
-        while (offset < data.length) {
-            Tlv tlv = new Tlv(data, offset);
+        while (buffer.hasRemaining()) {
+            Tlv tlv = Tlv.parseFrom(buffer);
             tlvs.add(tlv);
-            offset += tlv.getOffset() + tlv.getLength();
         }
         return tlvs;
     }
@@ -55,12 +55,11 @@ public class TlvUtils {
      * @return map of Tlv values where the key is tag
      */
     public static Map<Integer, byte[]> parseTlvMap(byte[] data) {
+        ByteBuffer buffer = ByteBuffer.wrap(data);
         Map<Integer, byte[]> tlvs = new LinkedHashMap<>();
-        int offset = 0;
-        while (offset < data.length) {
-            Tlv tlv = new Tlv(data, offset);
+        while (buffer.hasRemaining()) {
+            Tlv tlv = Tlv.parseFrom(buffer);
             tlvs.put(tlv.getTag(), tlv.getValue());
-            offset += tlv.getOffset() + tlv.getLength();
         }
         return tlvs;
     }
@@ -90,7 +89,8 @@ public class TlvUtils {
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
         for (Map.Entry<Integer, byte[]> entry : map.entrySet()) {
             Tlv tlv = new Tlv(entry.getKey(), entry.getValue());
-            stream.write(tlv.getBytes(), 0, tlv.getBytes().length);
+            byte[] tlvBytes = tlv.getBytes();
+            stream.write(tlvBytes, 0, tlvBytes.length);
         }
         return stream.toByteArray();
     }
@@ -103,8 +103,8 @@ public class TlvUtils {
      * @return the value of the TLV
      * @throws BadResponseException if the TLV tag differs from expectedTag
      */
-    public static byte[] unwrapValue(int expectedTag, byte[] tlvData) throws BadResponseException {
-        Tlv tlv = new Tlv(tlvData, 0);
+    public static byte[] unpackValue(int expectedTag, byte[] tlvData) throws BadResponseException {
+        Tlv tlv = Tlv.parse(tlvData, 0, tlvData.length);
         if (tlv.getTag() != expectedTag) {
             throw new BadResponseException(String.format("Expected tag: %02x, got %02x", expectedTag, tlv.getTag()));
         }

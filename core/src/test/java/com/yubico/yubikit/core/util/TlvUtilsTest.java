@@ -22,32 +22,32 @@ import org.junit.Test;
 public class TlvUtilsTest {
     @Test
     public void testDoubleByteTags() {
-        com.yubico.yubikit.core.util.Tlv tlv = new com.yubico.yubikit.core.util.Tlv(new byte[]{0x7F, 0x49, 0}, 0);
+        Tlv tlv = Tlv.parse(new byte[]{0x7F, 0x49, 0});
         Assert.assertEquals(0x7F49, tlv.getTag());
-        Assert.assertEquals(3, tlv.getOffset());
+        Assert.assertEquals(0, tlv.getLength());
 
-        tlv = new com.yubico.yubikit.core.util.Tlv(new byte[]{(byte) 0x80, 0}, 0);
+        tlv = Tlv.parse(new byte[]{(byte) 0x80, 0});
         Assert.assertEquals(0x80, tlv.getTag());
-        Assert.assertEquals(2, tlv.getOffset());
+        Assert.assertEquals(0, tlv.getLength());
 
-        tlv = new com.yubico.yubikit.core.util.Tlv(0x7F49, null);
+        tlv = new Tlv(0x7F49, null);
         Assert.assertEquals(0x7F49, tlv.getTag());
-        Assert.assertEquals(3, tlv.getOffset());
+        Assert.assertEquals(0, tlv.getLength());
         Assert.assertArrayEquals(new byte[]{0x7F, 0x49, 0}, tlv.getBytes());
 
         tlv = new Tlv(0x80, null);
         Assert.assertEquals(0x80, tlv.getTag());
-        Assert.assertEquals(2, tlv.getOffset());
+        Assert.assertEquals(0, tlv.getLength());
         Assert.assertArrayEquals(new byte[]{(byte) 0x80, 0}, tlv.getBytes());
     }
 
     @Test
     public void testUnwrap() throws BadResponseException {
-        com.yubico.yubikit.core.util.TlvUtils.unwrapValue(0x80, new byte[]{(byte) 0x80, 0});
+        TlvUtils.unpackValue(0x80, new byte[]{(byte) 0x80, 0});
 
-        com.yubico.yubikit.core.util.TlvUtils.unwrapValue(0x7F49, new byte[]{0x7F, 0x49, 0});
+        TlvUtils.unpackValue(0x7F49, new byte[]{0x7F, 0x49, 0});
 
-        byte[] value = TlvUtils.unwrapValue(0x7F49, new byte[]{0x7F, 0x49, 3, 1, 2, 3});
+        byte[] value = TlvUtils.unpackValue(0x7F49, new byte[]{0x7F, 0x49, 3, 1, 2, 3});
         Assert.assertArrayEquals(new byte[]{1, 2, 3}, value);
     }
 }
