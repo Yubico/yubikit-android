@@ -16,7 +16,7 @@
 package com.yubico.yubikit.management;
 
 import com.yubico.yubikit.core.Transport;
-import com.yubico.yubikit.core.util.TlvUtils;
+import com.yubico.yubikit.core.util.Tlvs;
 
 import javax.annotation.Nullable;
 import java.nio.ByteBuffer;
@@ -106,7 +106,7 @@ public class DeviceConfig {
         if (newLockCode != null) {
             values.put(TAG_CONFIGURATION_LOCK, newLockCode);
         }
-        byte[] data = TlvUtils.packTlvMap(values);
+        byte[] data = Tlvs.encodeMap(values);
 
         if (data.length > 0xff) {
             throw new IllegalStateException("DeviceConfiguration too large");

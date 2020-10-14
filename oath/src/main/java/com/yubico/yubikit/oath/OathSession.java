@@ -22,7 +22,7 @@ import com.yubico.yubikit.core.NotSupportedOperation;
 import com.yubico.yubikit.core.smartcard.*;
 import com.yubico.yubikit.core.util.RandomUtils;
 import com.yubico.yubikit.core.util.Tlv;
-import com.yubico.yubikit.core.util.TlvUtils;
+import com.yubico.yubikit.core.util.Tlvs;
 
 import javax.annotation.Nullable;
 import javax.crypto.Mac;
@@ -172,8 +172,8 @@ public class OathSession implements Closeable {
             byte[] clientChallenge = RandomUtils.getRandomBytes(CHALLENGE_LEN);
             request.put(TAG_CHALLENGE, clientChallenge);
 
-            byte[] data = protocol.sendAndReceive(new Apdu(0, INS_VALIDATE, 0, 0, TlvUtils.packTlvMap(request)));
-            Map<Integer, byte[]> map = TlvUtils.parseTlvMap(data);
+            byte[] data = protocol.sendAndReceive(new Apdu(0, INS_VALIDATE, 0, 0, Tlvs.encodeMap(request)));
+            Map<Integer, byte[]> map = Tlvs.decodeMap(data);
             // return false if response from validation does not match verification
             return (Arrays.equals(signer.sign(clientChallenge), map.get(TAG_RESPONSE)));
         } catch (ApduException e) {
@@ -233,7 +233,7 @@ public class OathSession implements Closeable {
             throw new RuntimeException(e); //This shouldn't happen
         }
 
-        protocol.sendAndReceive(new Apdu(0, INS_SET_CODE, 0, 0, TlvUtils.packTlvMap(request)));
+        protocol.sendAndReceive(new Apdu(0, INS_SET_CODE, 0, 0, Tlvs.encodeMap(request)));
     }
 
     /**
@@ -255,7 +255,7 @@ public class OathSession implements Closeable {
      */
     public List<Credential> getCredentials() throws IOException, ApduException {
         byte[] response = protocol.sendAndReceive(new Apdu(0, INS_LIST, 0, 0, null));
-        List<Tlv> list = TlvUtils.parseTlvList(response);
+        List<Tlv> list = Tlvs.decodeList(response);
         List<Credential> result = new ArrayList<>();
         for (Tlv tlv : list) {
             result.add(new Credential(applicationInfo.getDeviceId(), new ListResponse(tlv)));
@@ -267,10 +267,11 @@ public class OathSession implements Closeable {
      * Performs CALCULATE for all available credentials.
      *
      * @return returns credential + response for TOTP and just credential with null code for HOTP and credentials requiring touch.
-     * @throws IOException   in case of connection error
-     * @throws ApduException in case of communication error
+     * @throws IOException          in case of connection error
+     * @throws ApduException        in case of communication error
+     * @throws BadResponseException in case of incorrect YubiKey response
      */
-    public Map<Credential, Code> calculateCodes() throws IOException, ApduException {
+    public Map<Credential, Code> calculateCodes() throws IOException, ApduException, BadResponseException {
         return calculateCodes(System.currentTimeMillis());
     }
 
@@ -279,19 +280,24 @@ public class OathSession implements Closeable {
      *
      * @param timestamp the timestamp which is used as start point for TOTP
      * @return returns credential + response for TOTP and just credential for HOTP and credentials requiring touch.
-     * @throws IOException   in case of connection error
-     * @throws ApduException in case of communication error
+     * @throws IOException          in case of connection error
+     * @throws ApduException        in case of communication error
+     * @throws BadResponseException in case of incorrect YubiKey response
      */
-    public Map<Credential, Code> calculateCodes(long timestamp) throws IOException, ApduException {
+    public Map<Credential, Code> calculateCodes(long timestamp) throws IOException, ApduException, BadResponseException {
         long timeStep = (timestamp / MILLS_IN_SECOND / DEFAULT_PERIOD);
         byte[] challenge = ByteBuffer.allocate(CHALLENGE_LEN).putLong(timeStep).array();
 
         // using default period to 30 second for all _credentials and then recalculate those that have different period
         byte[] data = protocol.sendAndReceive(new Apdu(0, INS_CALCULATE_ALL, 0, 1, new Tlv(TAG_CHALLENGE, challenge).getBytes()));
-        Iterator<Tlv> responseTlvs = TlvUtils.parseTlvList(data).iterator();
+        Iterator<Tlv> responseTlvs = Tlvs.decodeList(data).iterator();
         Map<Credential, Code> map = new HashMap<>();
         while (responseTlvs.hasNext()) {
-            byte[] credentialId = responseTlvs.next().getValue();
+            Tlv nameTlv = responseTlvs.next();
+            if (nameTlv.getTag() != TAG_NAME) {
+                throw new BadResponseException(String.format("Unexpected tag: %02x", nameTlv.getTag()));
+            }
+            byte[] credentialId = nameTlv.getValue();
             CalculateResponse response = new CalculateResponse(responseTlvs.next());
 
             // parse credential properties
@@ -320,16 +326,16 @@ public class OathSession implements Closeable {
      * @param credentialId credential ID to identify the credential
      * @param challenge    challenge bytes
      * @return calculated HMAC response
-     * @throws IOException   in case of connection error
-     * @throws ApduException in case of communication error
+     * @throws IOException          in case of connection error
+     * @throws ApduException        in case of communication error
      * @throws BadResponseException in case an unexpected response was sent from the YubiKey
      */
     public byte[] calculateResponse(byte[] credentialId, byte[] challenge) throws IOException, ApduException, BadResponseException {
         Map<Integer, byte[]> request = new LinkedHashMap<>();
         request.put(TAG_NAME, credentialId);
         request.put(TAG_CHALLENGE, challenge);
-        byte[] data = protocol.sendAndReceive(new Apdu(0, INS_CALCULATE, 0, 0, TlvUtils.packTlvMap(request)));
-        byte[] response = TlvUtils.unpackValue(TAG_RESPONSE, data);
+        byte[] data = protocol.sendAndReceive(new Apdu(0, INS_CALCULATE, 0, 0, Tlvs.encodeMap(request)));
+        byte[] response = Tlvs.unpackValue(TAG_RESPONSE, data);
         return Arrays.copyOfRange(response, 1, response.length);
     }
 
@@ -367,7 +373,7 @@ public class OathSession implements Closeable {
         Map<Integer, byte[]> requestTlv = new LinkedHashMap<>();
         requestTlv.put(TAG_NAME, credential.getId());
         requestTlv.put(TAG_CHALLENGE, challenge);
-        byte[] data = protocol.sendAndReceive(new Apdu(0, INS_CALCULATE, 0, 1, TlvUtils.packTlvMap(requestTlv)));
+        byte[] data = protocol.sendAndReceive(new Apdu(0, INS_CALCULATE, 0, 1, Tlvs.encodeMap(requestTlv)));
         String value = formatTruncated(new CalculateResponse(Tlv.parse(data)));
 
         switch (credential.getOathType()) {
@@ -381,7 +387,9 @@ public class OathSession implements Closeable {
     }
 
     /**
-     * Adds a new (or overwrites) OATH credential.
+     * Adds a new OATH credential.
+     * <p>
+     * The Credential ID must be unique to the YubiKey, else the existing Credential with the same ID will be overwritten.
      *
      * @param credential    credential data to add
      * @param touchRequired true if the credential should require touch to be used (requires YubiKey 4 or later)
@@ -406,7 +414,7 @@ public class OathSession implements Closeable {
                     .array());
 
             ByteArrayOutputStream output = new ByteArrayOutputStream();
-            output.write(TlvUtils.packTlvMap(requestTlvs));
+            output.write(Tlvs.encodeMap(requestTlvs));
 
             if (touchRequired) {
                 output.write(TAG_PROPERTY);
@@ -427,9 +435,9 @@ public class OathSession implements Closeable {
     }
 
     /**
-     * Deletes an existing credential.
+     * Deletes an existing Credential.
      *
-     * @param credentialId ID of credential to remove
+     * @param credentialId ID of the credential to remove
      * @throws IOException   in case of connection error
      * @throws ApduException in case of communication error
      */
@@ -467,7 +475,7 @@ public class OathSession implements Closeable {
         }
         CredentialIdUtils.CredentialIdData data = CredentialIdUtils.parseId(credentialId, OathType.TOTP); // This works for HOTP as well
         byte[] newId = CredentialIdUtils.formatId(issuer, name, OathType.TOTP, data.period);
-        protocol.sendAndReceive(new Apdu(0x00, INS_RENAME, 0, 0, TlvUtils.packTlvList(Arrays.asList(
+        protocol.sendAndReceive(new Apdu(0x00, INS_RENAME, 0, 0, Tlvs.encodeList(Arrays.asList(
                 new Tlv(TAG_NAME, credentialId),
                 new Tlv(TAG_NAME, newId)
         ))));
@@ -529,7 +537,7 @@ public class OathSession implements Closeable {
      * @throws NoSuchAlgorithmException in case of crypto operation error
      */
     private static byte[] doHmacSha1(byte[] secret, byte[] message) throws NoSuchAlgorithmException, InvalidKeyException {
-        Mac mac = Mac.getInstance("HmacSHA1"); //KeyProperties.KEY_ALGORITHM_HMAC_SHA1 on API 23+
+        Mac mac = Mac.getInstance("HmacSHA1");
         mac.init(new SecretKeySpec(secret, mac.getAlgorithm()));
         return mac.doFinal(message);
     }

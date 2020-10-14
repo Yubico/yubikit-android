@@ -18,7 +18,7 @@ package com.yubico.yubikit.management;
 import com.yubico.yubikit.core.BadResponseException;
 import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.Version;
-import com.yubico.yubikit.core.util.TlvUtils;
+import com.yubico.yubikit.core.util.Tlvs;
 
 import javax.annotation.Nullable;
 import java.util.Arrays;
@@ -91,7 +91,7 @@ public class DeviceInfo {
             throw new BadResponseException("Invalid length");
         }
 
-        Map<Integer, byte[]> data = TlvUtils.parseTlvMap(Arrays.copyOfRange(response, 1, response.length));
+        Map<Integer, byte[]> data = Tlvs.decodeMap(Arrays.copyOfRange(response, 1, response.length));
 
         boolean isLocked = readInt(data.get(TAG_CONFIG_LOCKED)) == 1;
         int serial = readInt(data.get(TAG_SERIAL_NUMBER));

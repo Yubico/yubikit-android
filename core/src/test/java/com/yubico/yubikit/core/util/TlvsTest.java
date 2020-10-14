@@ -19,7 +19,7 @@ import com.yubico.yubikit.core.BadResponseException;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class TlvUtilsTest {
+public class TlvsTest {
     @Test
     public void testDoubleByteTags() {
         Tlv tlv = Tlv.parse(new byte[]{0x7F, 0x49, 0});
@@ -43,11 +43,11 @@ public class TlvUtilsTest {
 
     @Test
     public void testUnwrap() throws BadResponseException {
-        TlvUtils.unpackValue(0x80, new byte[]{(byte) 0x80, 0});
+        Tlvs.unpackValue(0x80, new byte[]{(byte) 0x80, 0});
 
-        TlvUtils.unpackValue(0x7F49, new byte[]{0x7F, 0x49, 0});
+        Tlvs.unpackValue(0x7F49, new byte[]{0x7F, 0x49, 0});
 
-        byte[] value = TlvUtils.unpackValue(0x7F49, new byte[]{0x7F, 0x49, 3, 1, 2, 3});
+        byte[] value = Tlvs.unpackValue(0x7F49, new byte[]{0x7F, 0x49, 3, 1, 2, 3});
         Assert.assertArrayEquals(new byte[]{1, 2, 3}, value);
     }
 }

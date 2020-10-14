@@ -17,7 +17,7 @@
 package com.yubico.yubikit.oath;
 
 import com.yubico.yubikit.core.Version;
-import com.yubico.yubikit.core.util.TlvUtils;
+import com.yubico.yubikit.core.util.Tlvs;
 import org.apache.commons.codec.binary.Base64;
 
 import javax.annotation.Nullable;
@@ -48,7 +48,7 @@ public class OathApplicationInfo {
      * @param response the response from OATH SELECT command
      */
     OathApplicationInfo(byte[] response) {
-        Map<Integer, byte[]> map = TlvUtils.parseTlvMap(response);
+        Map<Integer, byte[]> map = Tlvs.decodeMap(response);
         version = Version.parse(map.get(TAG_VERSION));
         salt = map.get(TAG_NAME);
         challenge = map.get(TAG_CHALLENGE);

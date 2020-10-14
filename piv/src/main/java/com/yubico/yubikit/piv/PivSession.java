@@ -21,7 +21,7 @@ import com.yubico.yubikit.core.smartcard.*;
 import com.yubico.yubikit.core.util.RandomUtils;
 import com.yubico.yubikit.core.util.StringUtils;
 import com.yubico.yubikit.core.util.Tlv;
-import com.yubico.yubikit.core.util.TlvUtils;
+import com.yubico.yubikit.core.util.Tlvs;
 
 import javax.annotation.Nullable;
 import javax.crypto.*;
@@ -179,7 +179,7 @@ public class PivSession implements Closeable {
         byte[] response = protocol.sendAndReceive(new Apdu(0, INS_AUTHENTICATE, TDES, Slot.CARD_MANAGEMENT.value, request));
 
         // Witness (tag '80') contains encrypted data (unrevealed fact).
-        byte[] witness = TlvUtils.unpackValue(TAG_AUTH_WITNESS, TlvUtils.unpackValue(TAG_DYN_AUTH, response));
+        byte[] witness = Tlvs.unpackValue(TAG_AUTH_WITNESS, Tlvs.unpackValue(TAG_DYN_AUTH, response));
         SecretKey key = new SecretKeySpec(managementKey, "DESede");
         try {
             Map<Integer, byte[]> dataTlvs = new LinkedHashMap<>();
@@ -191,11 +191,11 @@ public class PivSession implements Closeable {
             byte[] challenge = RandomUtils.getRandomBytes(CHALLENGE_LEN);
             dataTlvs.put(TAG_AUTH_CHALLENGE, challenge);
 
-            request = new Tlv(TAG_DYN_AUTH, TlvUtils.packTlvMap(dataTlvs)).getBytes();
+            request = new Tlv(TAG_DYN_AUTH, Tlvs.encodeMap(dataTlvs)).getBytes();
             response = protocol.sendAndReceive(new Apdu(0, INS_AUTHENTICATE, TDES, Slot.CARD_MANAGEMENT.value, request));
 
             // (tag '82') contains either the decrypted data from tag '80' or the encrypted data from tag '81'.
-            byte[] encryptedData = TlvUtils.unpackValue(TAG_AUTH_RESPONSE, TlvUtils.unpackValue(TAG_DYN_AUTH, response));
+            byte[] encryptedData = Tlvs.unpackValue(TAG_AUTH_RESPONSE, Tlvs.unpackValue(TAG_DYN_AUTH, response));
             cipher.init(Cipher.ENCRYPT_MODE, key);
             byte[] expectedData = cipher.doFinal(challenge);
             if (!Arrays.equals(encryptedData, expectedData)) {
@@ -285,11 +285,11 @@ public class PivSession implements Closeable {
         Map<Integer, byte[]> dataTlvs = new LinkedHashMap<>();
         dataTlvs.put(TAG_AUTH_RESPONSE, null);
         dataTlvs.put(exponentiation ? TAG_AUTH_EXPONENTIATION : TAG_AUTH_CHALLENGE, message);
-        byte[] request = new Tlv(TAG_DYN_AUTH, TlvUtils.packTlvMap(dataTlvs)).getBytes();
+        byte[] request = new Tlv(TAG_DYN_AUTH, Tlvs.encodeMap(dataTlvs)).getBytes();
 
         try {
             byte[] response = protocol.sendAndReceive(new Apdu(0, INS_AUTHENTICATE, keyType.value, slot.value, request));
-            return TlvUtils.unpackValue(TAG_AUTH_RESPONSE, TlvUtils.unpackValue(TAG_DYN_AUTH, response));
+            return Tlvs.unpackValue(TAG_AUTH_RESPONSE, Tlvs.unpackValue(TAG_DYN_AUTH, response));
         } catch (ApduException e) {
             if (SW.INCORRECT_PARAMETERS == e.getSw()) {
                 //TODO: Replace with new CommandException subclass, wrapping e.
@@ -463,7 +463,7 @@ public class PivSession implements Closeable {
         if (version.isLessThan(5, 3, 0)) {
             throw new NotSupportedOperation("PIN/PUK metadata requires version 5.3.0 or later.");
         }
-        Map<Integer, byte[]> data = TlvUtils.parseTlvMap(protocol.sendAndReceive(new Apdu(0, INS_GET_METADATA, 0, p2, null)));
+        Map<Integer, byte[]> data = Tlvs.decodeMap(protocol.sendAndReceive(new Apdu(0, INS_GET_METADATA, 0, p2, null)));
         byte[] retries = data.get(TAG_METADATA_RETRIES);
         return new PinMetadata(
                 data.get(TAG_METADATA_IS_DEFAULT)[0] != 0,
@@ -483,7 +483,7 @@ public class PivSession implements Closeable {
         if (version.isLessThan(5, 3, 0)) {
             throw new NotSupportedOperation("Management key metadata requires version 5.3.0 or later.");
         }
-        Map<Integer, byte[]> data = TlvUtils.parseTlvMap(protocol.sendAndReceive(new Apdu(0, INS_GET_METADATA, 0, Slot.CARD_MANAGEMENT.value, null)));
+        Map<Integer, byte[]> data = Tlvs.decodeMap(protocol.sendAndReceive(new Apdu(0, INS_GET_METADATA, 0, Slot.CARD_MANAGEMENT.value, null)));
         return new ManagementKeyMetadata(
                 data.get(TAG_METADATA_IS_DEFAULT)[0] != 0,
                 TouchPolicy.fromValue(data.get(TAG_METADATA_POLICY)[INDEX_TOUCH_POLICY])
@@ -504,7 +504,7 @@ public class PivSession implements Closeable {
         } else if (slot == Slot.CARD_MANAGEMENT) {
             throw new IllegalArgumentException("This method cannot be used for the card management key, use getManagementKeyMetadata() instead.");
         }
-        Map<Integer, byte[]> data = TlvUtils.parseTlvMap(protocol.sendAndReceive(new Apdu(0, INS_GET_METADATA, 0, slot.value, null)));
+        Map<Integer, byte[]> data = Tlvs.decodeMap(protocol.sendAndReceive(new Apdu(0, INS_GET_METADATA, 0, slot.value, null)));
         byte[] policy = data.get(TAG_METADATA_POLICY);
         return new SlotMetadata(
                 KeyType.fromValue(data.get(TAG_METADATA_ALGO)[0]),
@@ -527,7 +527,7 @@ public class PivSession implements Closeable {
     public X509Certificate getCertificate(Slot slot) throws IOException, ApduException, BadResponseException {
         byte[] objectData = getObject(slot.objectId);
 
-        Map<Integer, byte[]> certData = TlvUtils.parseTlvMap(objectData);
+        Map<Integer, byte[]> certData = Tlvs.decodeMap(objectData);
         byte[] certInfo = certData.get(TAG_CERT_INFO);
         if (certInfo != null && certInfo.length > 0 && certInfo[0] != 0) {
             throw new BadResponseException("Compressed certificates are not supported");
@@ -560,7 +560,7 @@ public class PivSession implements Closeable {
         requestTlv.put(TAG_CERTIFICATE, certBytes);
         requestTlv.put(TAG_CERT_INFO, new byte[1]);
         requestTlv.put(TAG_LRC, null);
-        putObject(slot.objectId, TlvUtils.packTlvMap(requestTlv));
+        putObject(slot.objectId, Tlvs.encodeMap(requestTlv));
     }
 
     /**
@@ -610,7 +610,7 @@ public class PivSession implements Closeable {
 
     /* Parses a PublicKey from data returned from a YubiKey. */
     static PublicKey parsePublicKeyFromDevice(KeyType keyType, byte[] encoded) {
-        Map<Integer, byte[]> dataObjects = TlvUtils.parseTlvMap(encoded);
+        Map<Integer, byte[]> dataObjects = Tlvs.decodeMap(encoded);
 
         try {
             if (keyType.params.algorithm == KeyType.Algorithm.RSA) {
@@ -666,10 +666,10 @@ public class PivSession implements Closeable {
             tlvs.put(TAG_TOUCH_POLICY, new byte[]{(byte) touchPolicy.value});
         }
 
-        byte[] response = protocol.sendAndReceive(new Apdu(0, INS_GENERATE_ASYMMETRIC, 0, slot.value, new Tlv((byte) 0xac, TlvUtils.packTlvMap(tlvs)).getBytes()));
+        byte[] response = protocol.sendAndReceive(new Apdu(0, INS_GENERATE_ASYMMETRIC, 0, slot.value, new Tlv((byte) 0xac, Tlvs.encodeMap(tlvs)).getBytes()));
 
         // Tag '7F49' contains data objects for RSA or ECC
-        return parsePublicKeyFromDevice(keyType, TlvUtils.unpackValue(0x7F49, response));
+        return parsePublicKeyFromDevice(keyType, Tlvs.unpackValue(0x7F49, response));
     }
 
     /**
@@ -735,7 +735,7 @@ public class PivSession implements Closeable {
             tlvs.put(TAG_TOUCH_POLICY, new byte[]{(byte) touchPolicy.value});
         }
 
-        protocol.sendAndReceive(new Apdu(0, INS_IMPORT_KEY, keyType.value, slot.value, TlvUtils.packTlvMap(tlvs)));
+        protocol.sendAndReceive(new Apdu(0, INS_IMPORT_KEY, keyType.value, slot.value, Tlvs.encodeMap(tlvs)));
         return keyType;
     }
 
@@ -760,7 +760,7 @@ public class PivSession implements Closeable {
     public byte[] getObject(int objectId) throws IOException, ApduException, BadResponseException {
         byte[] requestData = new Tlv(TAG_OBJ_ID, ObjectId.getBytes(objectId)).getBytes();
         byte[] responseData = protocol.sendAndReceive(new Apdu(0, INS_GET_DATA, 0x3f, 0xff, requestData));
-        return TlvUtils.unpackValue(TAG_OBJ_DATA, responseData);
+        return Tlvs.unpackValue(TAG_OBJ_DATA, responseData);
     }
 
     /**
@@ -784,7 +784,7 @@ public class PivSession implements Closeable {
         Map<Integer, byte[]> tlvs = new LinkedHashMap<>();
         tlvs.put(TAG_OBJ_ID, ObjectId.getBytes(objectId));
         tlvs.put(TAG_OBJ_DATA, objectData);
-        protocol.sendAndReceive(new Apdu(0, INS_PUT_DATA, 0x3f, 0xff, TlvUtils.packTlvMap(tlvs)));
+        protocol.sendAndReceive(new Apdu(0, INS_PUT_DATA, 0x3f, 0xff, Tlvs.encodeMap(tlvs)));
     }
 
     /*
@@ -941,10 +941,10 @@ public class PivSession implements Closeable {
      */
     static List<BigInteger> parsePkcs8RsaKeyValues(byte[] derKey) throws UnsupportedEncodingException {
         try {
-            List<Tlv> numbers = TlvUtils.parseTlvList(
-                    TlvUtils.parseTlvMap(
-                            TlvUtils.parseTlvMap(
-                                    TlvUtils.unpackValue(0x30, derKey)
+            List<Tlv> numbers = Tlvs.decodeList(
+                    Tlvs.decodeMap(
+                            Tlvs.decodeMap(
+                                    Tlvs.unpackValue(0x30, derKey)
                             ).get(0x04)
                     ).get(0x30)
             );
