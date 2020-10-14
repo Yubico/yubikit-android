@@ -51,6 +51,7 @@ import java.util.*;
 public class PivSession implements Closeable {
     private static final int PIN_LEN = 8;
     private static final int CHALLENGE_LEN = 8;
+    private static final int MGM_KEY_LEN = 24;
 
     // Select aid
     private static final byte[] AID = new byte[]{(byte) 0xa0, 0x00, 0x00, 0x03, 0x08};
@@ -170,6 +171,9 @@ public class PivSession implements Closeable {
      * @throws BadResponseException in case of incorrect YubiKey response
      */
     public void authenticate(byte[] managementKey) throws IOException, ApduException, BadResponseException {
+        if (managementKey.length != MGM_KEY_LEN) {
+            throw new IllegalArgumentException("Management Key must be 24 bytes");
+        }
         // An empty witness is a request for a witness.
         byte[] request = new Tlv(TAG_DYN_AUTH, new Tlv(TAG_AUTH_WITNESS, null).getBytes()).getBytes();
         byte[] response = protocol.sendAndReceive(new Apdu(0, INS_AUTHENTICATE, TDES, Slot.CARD_MANAGEMENT.value, request));
@@ -178,8 +182,8 @@ public class PivSession implements Closeable {
         byte[] witness = TlvUtils.unpackValue(TAG_AUTH_WITNESS, TlvUtils.unpackValue(TAG_DYN_AUTH, response));
         SecretKey key = new SecretKeySpec(managementKey, "DESede");
         try {
-            Cipher cipher = Cipher.getInstance("DESede/ECB/NoPadding");
             Map<Integer, byte[]> dataTlvs = new LinkedHashMap<>();
+            Cipher cipher = Cipher.getInstance("DESede/ECB/NoPadding");
             // This decrypted witness
             cipher.init(Cipher.DECRYPT_MODE, key);
             dataTlvs.put(TAG_AUTH_WITNESS, cipher.doFinal(witness));
@@ -221,7 +225,7 @@ public class PivSession implements Closeable {
      * @throws BadResponseException     in case of incorrect YubiKey response
      * @throws NoSuchAlgorithmException if the algorithm isn't supported
      */
-    public byte[] sign(Slot slot, KeyType keyType, byte[] message, String algorithm) throws IOException, ApduException, BadResponseException, NoSuchAlgorithmException {
+    public byte[] sign(Slot slot, KeyType keyType, byte[] message, Signature algorithm) throws IOException, ApduException, BadResponseException, NoSuchAlgorithmException {
         byte[] payload = Padding.pad(keyType, message, algorithm);
         return usePrivateKey(slot, keyType, payload, false);
     }
@@ -240,7 +244,7 @@ public class PivSession implements Closeable {
      * @throws NoSuchAlgorithmException in case the algorithm isn't supported
      * @throws BadPaddingException      in case of a padding error
      */
-    public byte[] decrypt(Slot slot, byte[] cipherText, String algorithm) throws IOException, ApduException, BadResponseException, NoSuchAlgorithmException, NoSuchPaddingException, BadPaddingException {
+    public byte[] decrypt(Slot slot, byte[] cipherText, Cipher algorithm) throws IOException, ApduException, BadResponseException, NoSuchAlgorithmException, NoSuchPaddingException, BadPaddingException {
         KeyType keyType;
         switch (cipherText.length) {
             case 1024 / 8:

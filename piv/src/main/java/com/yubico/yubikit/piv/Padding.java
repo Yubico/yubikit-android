@@ -26,7 +26,8 @@ import java.util.regex.Pattern;
 
 public class Padding {
     private static final String RAW_RSA = "RSA/ECB/NoPadding";
-    private static final Pattern ECDSA_HASH_PATTERN = Pattern.compile("^([A-Z]+)([0-9]*)withECDSA$", Pattern.CASE_INSENSITIVE);
+    private static final Pattern ECDSA_HASH_PATTERN = Pattern.compile("^(.+)withECDSA$", Pattern.CASE_INSENSITIVE);
+    private static final Pattern SHA_PATTERN = Pattern.compile("^SHA[0-9]+$", Pattern.CASE_INSENSITIVE);
 
     /**
      * Prepares a message for signing.
@@ -37,7 +38,7 @@ public class Padding {
      * @return the payload ready to be signed
      * @throws NoSuchAlgorithmException if the algorithm isn't supported
      */
-    public static byte[] pad(KeyType keyType, byte[] message, String algorithm) throws NoSuchAlgorithmException {
+    public static byte[] pad(KeyType keyType, byte[] message, Signature algorithm) throws NoSuchAlgorithmException {
         KeyType.KeyParams params = keyType.params;
         byte[] payload;
         switch (params.algorithm) {
@@ -46,14 +47,13 @@ public class Padding {
                 KeyPairGenerator kpg = KeyPairGenerator.getInstance(params.algorithm.name());
                 kpg.initialize(params.bitLength);
                 KeyPair kp = kpg.generateKeyPair();
-                Signature signature = Signature.getInstance(algorithm);
                 try {
                     // Do a "raw encrypt" of the signature to get the padded message
-                    signature.initSign(kp.getPrivate());
-                    signature.update(message);
+                    algorithm.initSign(kp.getPrivate());
+                    algorithm.update(message);
                     Cipher rsa = Cipher.getInstance(RAW_RSA);
                     rsa.init(Cipher.ENCRYPT_MODE, kp.getPublic());
-                    payload = rsa.doFinal(signature.sign());
+                    payload = rsa.doFinal(algorithm.sign());
                 } catch (SignatureException | BadPaddingException | IllegalBlockSizeException | InvalidKeyException e) {
                     throw new IllegalStateException(e); // Shouldn't happen
                 } catch (NoSuchPaddingException e) {
@@ -61,12 +61,21 @@ public class Padding {
                 }
                 break;
             case EC:
-                Matcher matcher = ECDSA_HASH_PATTERN.matcher(algorithm);
+                Matcher matcher = ECDSA_HASH_PATTERN.matcher(algorithm.getAlgorithm());
                 if (!matcher.find()) {
                     throw new IllegalArgumentException("Invalid algorithm for given key");
                 }
-                String md = matcher.group(1) + "-" + matcher.group(2);
-                byte[] hash = MessageDigest.getInstance(md).digest(message);
+                String hashAlgorithm = matcher.group(1);
+                byte[] hash;
+                if("NONE".equals(hashAlgorithm)) {
+                    hash = message;
+                } else {
+                    if (SHA_PATTERN.matcher(hashAlgorithm).matches()) {
+                        //SHAXYZ needs to be renamed to SHA-XYZ
+                        hashAlgorithm = hashAlgorithm.replace("SHA", "SHA-");
+                    }
+                    hash = MessageDigest.getInstance(hashAlgorithm).digest(message);
+                }
                 int byteLength = params.bitLength / 8;
                 if (hash.length > byteLength) {
                     // Truncate
@@ -96,8 +105,7 @@ public class Padding {
      * @throws NoSuchAlgorithmException in case the algorithm isn't supported
      * @throws BadPaddingException      in case of a padding error
      */
-    public static byte[] unpad(byte[] decrypted, String algorithm) throws NoSuchPaddingException, NoSuchAlgorithmException, BadPaddingException {
-        Cipher cipher = Cipher.getInstance(algorithm);
+    public static byte[] unpad(byte[] decrypted, Cipher algorithm) throws NoSuchPaddingException, NoSuchAlgorithmException, BadPaddingException {
         Cipher rsa = Cipher.getInstance(RAW_RSA);
 
         // Encrypt using a dummy key
@@ -106,8 +114,8 @@ public class Padding {
         KeyPair kp = kpg.generateKeyPair();
         try {
             rsa.init(Cipher.ENCRYPT_MODE, kp.getPublic());
-            cipher.init(Cipher.DECRYPT_MODE, kp.getPrivate());
-            return cipher.doFinal(rsa.doFinal(decrypted));
+            algorithm.init(Cipher.DECRYPT_MODE, kp.getPrivate());
+            return algorithm.doFinal(rsa.doFinal(decrypted));
         } catch (InvalidKeyException | IllegalBlockSizeException e) {
             throw new IllegalStateException(e); // Shouldn't happen
         }

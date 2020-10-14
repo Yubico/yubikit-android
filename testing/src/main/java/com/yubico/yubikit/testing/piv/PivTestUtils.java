@@ -213,7 +213,7 @@ public class PivTestUtils {
         }
     }
 
-    public static X509Certificate createCertificate(PivSession piv, PublicKey publicKey, Slot slot, KeyType keyType) throws IOException, CertificateException {
+    public static X509Certificate createCertificate(PivSession piv, PublicKey publicKey, Slot slot, KeyType keyType) throws IOException, CertificateException, NoSuchAlgorithmException {
         X500Name name = new X500Name("CN=Example");
         X509v3CertificateBuilder serverCertGen = new X509v3CertificateBuilder(
                 name,
@@ -238,6 +238,7 @@ public class PivTestUtils {
             default:
                 throw new IllegalStateException();
         }
+        Signature signature = Signature.getInstance(algorithm);
 
         X509CertificateHolder holder = serverCertGen.build(new ContentSigner() {
             ByteArrayOutputStream messageBuffer = new ByteArrayOutputStream();
@@ -255,7 +256,7 @@ public class PivTestUtils {
             @Override
             public byte[] getSignature() {
                 try {
-                    return piv.sign(slot, keyType, messageBuffer.toByteArray(), algorithm);
+                    return piv.sign(slot, keyType, messageBuffer.toByteArray(), signature);
                 } catch (IOException | ApduException | NoSuchAlgorithmException | BadResponseException e) {
                     throw new RuntimeException(e);
                 }

@@ -177,7 +177,7 @@ class PivCertificateFragment : Fragment() {
                             override fun getAlgorithmIdentifier(): AlgorithmIdentifier = AlgorithmIdentifier(X9ObjectIdentifiers.ecdsa_with_SHA256)
                             override fun getOutputStream(): OutputStream = messageBuffer
                             override fun getSignature(): ByteArray {
-                                return sign(slot, KeyType.ECCP256, messageBuffer.toByteArray(), "SHA256WithECDSA")
+                                return sign(slot, KeyType.ECCP256, messageBuffer.toByteArray(), Signature.getInstance("SHA256withECDSA"))
                             }
                         }).encoded
 
@@ -215,13 +215,17 @@ class PivCertificateFragment : Fragment() {
                     pivViewModel.pendingAction.value = {
                         val publicKey = getCertificate(slot).publicKey
                         val keyType = KeyType.fromKey(publicKey)
-                        val algorithm = "SHA256With" + when (keyType.params.algorithm) {
-                            KeyType.Algorithm.RSA -> "RSA"
-                            KeyType.Algorithm.EC -> "ECDSA"
-                        }
                         verifyPin(pin.toCharArray())
-                        val signature = sign(slot, keyType, messageBytes, algorithm)
-                        val result = Signature.getInstance(algorithm).apply {
+
+                        // Create signature
+                        val signatureAlgorithm = Signature.getInstance(when (keyType.params.algorithm) {
+                            KeyType.Algorithm.RSA -> "SHA256withRSA"
+                            KeyType.Algorithm.EC -> "SHA256withECDSA"
+                        })
+                        val signature = sign(slot, keyType, messageBytes, signatureAlgorithm)
+
+                        // Verify signature
+                        val result = signatureAlgorithm.apply {
                             initVerify(publicKey)
                             update(messageBytes)
                         }.verify(signature)
