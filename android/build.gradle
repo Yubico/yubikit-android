@@ -34,7 +34,7 @@ dependencies {
     compileOnly 'com.github.spotbugs:spotbugs-annotations:4.1.2'
     compileOnly 'androidx.annotation:annotation:1.1.0'
 
-    testImplementation 'junit:junit:4.13'
+    testImplementation project(':testing')
     testImplementation 'androidx.test.ext:junit:1.1.2'
     testImplementation "org.robolectric:robolectric:4.4-alpha-4"
     testImplementation "org.mockito:mockito-core:3.3.3"

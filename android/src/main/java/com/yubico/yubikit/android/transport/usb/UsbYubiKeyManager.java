@@ -3,6 +3,7 @@ package com.yubico.yubikit.android.transport.usb;
 import android.content.Context;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
+import com.yubico.yubikit.android.transport.usb.connection.*;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
@@ -10,6 +11,11 @@ import java.util.Map;
 import java.util.concurrent.Semaphore;
 
 public class UsbYubiKeyManager {
+    static {
+        ConnectionManager.registerConnectionHandler(UsbSmartCardConnection.class, new SmartCardConnectionHandler());
+        ConnectionManager.registerConnectionHandler(UsbOtpConnection.class, new OtpConnectionHandler());
+    }
+
     private final Context context;
     private final UsbManager usbManager;
     @Nullable
@@ -51,7 +57,7 @@ public class UsbYubiKeyManager {
 
         @Override
         public void deviceAttached(UsbDevice usbDevice, Semaphore connectionLock) {
-            UsbYubiKeyDevice yubikey = new UsbYubiKeyDevice(usbManager, usbDevice, connectionLock);
+            UsbYubiKeyDevice yubikey = new UsbYubiKeyDevice(new ConnectionManager(usbManager, usbDevice, connectionLock), usbDevice);
             devices.put(usbDevice, yubikey);
             boolean permission = usbManager.hasPermission(usbDevice);
             listener.onDeviceAttached(yubikey, permission);

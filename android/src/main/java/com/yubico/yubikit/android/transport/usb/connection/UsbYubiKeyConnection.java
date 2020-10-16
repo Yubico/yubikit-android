@@ -14,45 +14,33 @@
  * limitations under the License.
  */
 
-package com.yubico.yubikit.android.transport.usb;
+package com.yubico.yubikit.android.transport.usb.connection;
 
-import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbInterface;
 import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.core.YubiKeyConnection;
 
-import java.io.IOException;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
 
 abstract class UsbYubiKeyConnection implements YubiKeyConnection {
-    private final UsbDevice usbDevice;
     private final Semaphore lock;
     private final UsbDeviceConnection usbDeviceConnection;
     private final UsbInterface usbInterface;
 
-    protected UsbYubiKeyConnection(UsbDevice usbDevice, Semaphore lock, UsbDeviceConnection usbDeviceConnection, UsbInterface usbInterface) throws IOException {
-        try {
-            if (lock.tryAcquire(200, TimeUnit.MILLISECONDS)) {
-                if (!usbDeviceConnection.claimInterface(usbInterface, true)) {
-                    usbDeviceConnection.close();
-                    lock.release();
-                    throw new IOException("Unable to claim interface");
-                }
-                Logger.d("Acquired connection lock for " + usbDevice.getDeviceName());
-            } else {
-                throw new AlreadyInUseException(usbDevice);
-            }
-        } catch (InterruptedException e) {
-            throw new IOException("Interrupted");
+    /**
+     * Base class for USB based Connections.
+     * @param usbDeviceConnection connection, which should already be open
+     * @param usbInterface USB interface, which should already be claimed
+     * @param lock USB Connection lock, which should already be acquired
+     */
+    protected UsbYubiKeyConnection(UsbDeviceConnection usbDeviceConnection, UsbInterface usbInterface, Semaphore lock) {
+        if (lock.availablePermits() > 0) {
+            throw new IllegalStateException("Lock must already be held");
         }
-
-        this.usbDevice = usbDevice;
-        this.lock = lock;
         this.usbDeviceConnection = usbDeviceConnection;
         this.usbInterface = usbInterface;
-
+        this.lock = lock;
         Logger.d("USB connection opened: " + this);
     }
 
@@ -60,7 +48,6 @@ abstract class UsbYubiKeyConnection implements YubiKeyConnection {
     public void close() {
         usbDeviceConnection.releaseInterface(usbInterface);
         usbDeviceConnection.close();
-        Logger.d("Releasing connection lock for " + usbDevice.getDeviceName());
         lock.release();
         Logger.d("USB connection closed: " + this);
     }

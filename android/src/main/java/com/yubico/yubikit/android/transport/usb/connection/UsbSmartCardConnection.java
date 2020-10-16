@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-package com.yubico.yubikit.android.transport.usb;
+package com.yubico.yubikit.android.transport.usb.connection;
 
-import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbEndpoint;
 import android.hardware.usb.UsbInterface;
@@ -76,14 +75,13 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
     /**
      * Sets endpoints and connection and sends power on command
      * if ATR is invalid then throws YubikeyCommunicationException
-     *
-     * @param connection    open usb connection
+     *  @param connection    open usb connection
      * @param ccidInterface ccid interface that was claimed
      * @param endpointIn    channel for sending data over USB.
      * @param endpointOut   channel for receiving data over USB.
      */
-    UsbSmartCardConnection(UsbDevice usbDevice, Semaphore connectionLock, UsbDeviceConnection connection, UsbInterface ccidInterface, UsbEndpoint endpointIn, UsbEndpoint endpointOut) throws IOException {
-        super(usbDevice, connectionLock, connection, ccidInterface);
+    UsbSmartCardConnection(UsbDeviceConnection connection, UsbInterface ccidInterface, Semaphore connectionLock, UsbEndpoint endpointIn, UsbEndpoint endpointOut) throws IOException {
+        super(connection, ccidInterface, connectionLock);
 
         this.connection = connection;
         this.endpointIn = endpointIn;

@@ -56,7 +56,6 @@ final class UsbDeviceManager {
             context.registerReceiver(broadcastReceiver, intentFilter);
             for (UsbDevice usbDevice : usbDevices) {
                 if (usbDevice.getVendorId() == YUBICO_VENDOR_ID) {
-                    Logger.d("TRIGGER ATTACH ON ALREADY PRESENT DEVICE " + usbDevice);
                     onDeviceAttach(usbDevice);
                 }
             }
@@ -84,7 +83,6 @@ final class UsbDeviceManager {
     }
 
     private synchronized void requestDevicePermission(Context context, UsbDevice usbDevice, PermissionResultListener listener) {
-        Logger.d("REQUEST USB PERMISSION");
         DeviceContext deviceContext = Objects.requireNonNull(contexts.get(usbDevice));
         synchronized (deviceContext.permissionListeners) {
             deviceContext.permissionListeners.add(listener);
@@ -94,7 +92,7 @@ final class UsbDeviceManager {
                 if (awaitingPermissions.isEmpty()) {
                     context.registerReceiver(permissionReceiver, new IntentFilter(ACTION_USB_PERMISSION));
                 }
-                Logger.d("ACTUALLY REQUEST USB PERMISSION");
+                Logger.d("Requesting permission for UsbDevice: " + usbDevice.getDeviceName());
                 PendingIntent pendingUsbPermissionIntent = PendingIntent.getBroadcast(context, 0, new Intent(ACTION_USB_PERMISSION), 0);
                 UsbManager usbManager = (UsbManager) context.getSystemService(Context.USB_SERVICE);
                 usbManager.requestPermission(usbDevice, pendingUsbPermissionIntent);
@@ -104,7 +102,7 @@ final class UsbDeviceManager {
     }
 
     private void onDeviceAttach(UsbDevice usbDevice) {
-        Logger.d("DEVICE ATTACHED");
+        Logger.d("UsbDevice attached: " + usbDevice.getDeviceName());
         DeviceContext deviceContext = new DeviceContext();
         contexts.put(usbDevice, deviceContext);
         for (UsbDeviceListener listener : deviceListeners) {
@@ -113,7 +111,7 @@ final class UsbDeviceManager {
     }
 
     private void onPermission(Context context, UsbDevice usbDevice, boolean permission) {
-        Logger.d("ON PERMISSION");
+        Logger.d("Permission result for " + usbDevice.getDeviceName() + ", permitted: " + permission);
         DeviceContext deviceContext = contexts.get(usbDevice);
         if (deviceContext != null) {
             synchronized (deviceContext.permissionListeners) {
@@ -131,7 +129,7 @@ final class UsbDeviceManager {
     }
 
     private void onDeviceDetach(Context context, UsbDevice usbDevice) {
-        Logger.d("DEVICE REMOVED");
+        Logger.d("UsbDevice detached: " + usbDevice.getDeviceName());
         DeviceContext deviceContext = contexts.remove(usbDevice);
         if (deviceContext != null) {
             for (UsbDeviceListener listener : deviceListeners) {

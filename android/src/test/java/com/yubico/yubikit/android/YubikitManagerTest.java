@@ -174,6 +174,4 @@ public class YubikitManagerTest {
             return null;
         }
     }
-
-    ;
 }

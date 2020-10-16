@@ -14,13 +14,11 @@
  * limitations under the License.
  */
 
-package com.yubico.yubikit.android.transport.usb;
+package com.yubico.yubikit.android.transport.usb.connection;
 
 import android.hardware.usb.UsbConstants;
-import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbInterface;
-import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.core.otp.OtpConnection;
 
 import java.io.IOException;
@@ -48,17 +46,13 @@ public class UsbOtpConnection extends UsbYubiKeyConnection implements OtpConnect
 
     /**
      * Sets endpoints and connection
-     * Note: this method is protected to allow dependency injection for UT
-     *
-     * @param connection   open usb connection
+     *  @param connection   open usb connection
      * @param hidInterface HID interface that was claimed
-     *                     NOTE: controlTransfer works only with endpoint zero.
      */
-    UsbOtpConnection(UsbDevice usbDevice, Semaphore connectionLock, UsbDeviceConnection connection, UsbInterface hidInterface) throws IOException {
-        super(usbDevice, connectionLock, connection, hidInterface);
+    UsbOtpConnection(UsbDeviceConnection connection, UsbInterface hidInterface, Semaphore connectionLock) {
+        super(connection, hidInterface, connectionLock);
         this.connection = connection;
         this.hidInterface = hidInterface;
-        Logger.d("usb connection opened");
     }
 
     @Override
