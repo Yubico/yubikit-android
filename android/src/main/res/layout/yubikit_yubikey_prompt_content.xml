@@ -27,9 +27,9 @@
 
         <ImageView
             android:layout_width="300dp"
-            android:layout_height="175dp"
+            android:layout_height="128dp"
             android:contentDescription="@string/yubikit_prompt_image_desc"
-            android:src="@drawable/yubikit_ykfamily_on_grey" />
+            android:src="@drawable/yubikit_ykfamily" />
 
         <TextView
             android:id="@+id/yubikit_prompt_help_text_view"
