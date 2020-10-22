@@ -16,11 +16,20 @@
         android:orientation="vertical"
         tools:ignore="UseCompoundDrawables">
 
+        <TextView
+            android:id="@+id/yubikit_prompt_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/yubikit_otp_text_margin"
+            android:layout_marginBottom="@dimen/yubikit_otp_text_margin"
+            android:textAppearance="@android:style/TextAppearance.Large"
+            android:text="@string/yubikit_otp_activity_title" />
+
         <ImageView
             android:layout_width="300dp"
-            android:layout_height="150dp"
+            android:layout_height="175dp"
             android:contentDescription="@string/yubikit_prompt_image_desc"
-            android:src="@drawable/ic_ykfamily" />
+            android:src="@drawable/yubikit_ykfamily_on_grey" />
 
         <TextView
             android:id="@+id/yubikit_prompt_help_text_view"
@@ -28,6 +37,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/yubikit_otp_text_margin"
             android:minLines="2"
+            android:lineSpacingExtra="4dp"
             android:text="@string/yubikit_prompt_plug_in_or_tap" />
     </LinearLayout>
 

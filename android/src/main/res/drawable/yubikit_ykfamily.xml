@@ -3,9 +3,6 @@
     android:height="100dp"
     android:viewportWidth="1500"
     android:viewportHeight="750">
-    <path
-        android:pathData="M20,0L1480,0A20,20 0,0 1,1500 20L1500,730A20,20 0,0 1,1480 750L20,750A20,20 0,0 1,0 730L0,20A20,20 0,0 1,20 0z"
-        android:fillColor="#ebebeb" />
     <group>
         <path android:pathData="M1166.2,576.91l137.03,0l0,110.39l-137.03,0z" />
         <path

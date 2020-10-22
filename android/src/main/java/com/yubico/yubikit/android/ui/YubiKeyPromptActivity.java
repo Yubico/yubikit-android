@@ -33,6 +33,7 @@ import com.yubico.yubikit.android.transport.nfc.NfcNotAvailable;
 import com.yubico.yubikit.android.transport.usb.UsbConfiguration;
 import com.yubico.yubikit.android.transport.usb.UsbYubiKeyDevice;
 import com.yubico.yubikit.android.transport.usb.UsbYubiKeyListener;
+import com.yubico.yubikit.core.CommandState;
 import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.YubiKeyDevice;
@@ -64,6 +65,7 @@ public abstract class YubiKeyPromptActivity<T extends YubiKeyConnection> extends
     protected final int helpTextViewId;
 
     private YubiKitManager yubiKit;
+    private final CommandState commandState = new MyCommandState();
     private boolean hasNfc = true;
     private int usbSessionCounter = 0;
     private boolean isDone = false;
@@ -112,8 +114,21 @@ public abstract class YubiKeyPromptActivity<T extends YubiKeyConnection> extends
         this(connectionType, true, true);
     }
 
+    /**
+     * Get the YubiKitManager used by this activity.
+     * @return a YubiKitManager
+     */
     protected YubiKitManager getYubiKitManager() {
         return yubiKit;
+    }
+
+    /**
+     * Get a CommandState for use with some blocking YubiKey actions.
+     * The dialog will react to KEEPALIVE_UPNEEDED, and the state will be cancelled if the user presses the cancel button.
+     * @return a CommandState
+     */
+    protected CommandState getCommandState() {
+        return commandState;
     }
 
     protected boolean isNfcEnabled() {
@@ -134,7 +149,7 @@ public abstract class YubiKeyPromptActivity<T extends YubiKeyConnection> extends
         if (device.supportsConnection(connectionType)) {
             try (T connection = device.openConnection(connectionType)) {
                 onYubiKeyConnection(connection);
-            } catch (IOException e) {
+            } catch (Exception e) {
                 onError(e);
             }
         } else {
@@ -185,12 +200,17 @@ public abstract class YubiKeyPromptActivity<T extends YubiKeyConnection> extends
         super.onCreate(savedInstanceState);
         setContentView(contentViewLayoutId);
 
-        setFinishOnTouchOutside(false);
+        // We draw our own title
+        TextView titleText = findViewById(R.id.yubikit_prompt_title);
+        if (titleText != null) {
+            titleText.setText(getTitle());
+        }
 
         helpTextView = findViewById(helpTextViewId);
         cancelButton = findViewById(cancelButtonId);
         cancelButton.setFocusable(false);
         cancelButton.setOnClickListener(v -> {
+            commandState.cancel();
             setResult(Activity.RESULT_CANCELED);
             finish();
         });
@@ -276,9 +296,21 @@ public abstract class YubiKeyPromptActivity<T extends YubiKeyConnection> extends
         super.onDestroy();
     }
 
+
     private void finishIfDone() {
         if (isDone) {
             finish();
+        }
+    }
+
+    private class MyCommandState extends CommandState {
+        boolean awaitingTouch = false;
+        @Override
+        public void onKeepAliveStatus(byte status) {
+            if (!awaitingTouch && status == CommandState.STATUS_UPNEEDED) {
+                awaitingTouch = true;
+                runOnUiThread(() -> helpTextView.setText(R.string.yubikit_prompt_uv));
+            }
         }
     }
 }
