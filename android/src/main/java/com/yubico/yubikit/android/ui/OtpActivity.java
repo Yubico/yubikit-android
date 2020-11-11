@@ -25,15 +25,20 @@ import com.yubico.yubikit.android.transport.nfc.NfcYubiKeyDevice;
 import com.yubico.yubikit.android.transport.usb.UsbConfiguration;
 import com.yubico.yubikit.android.transport.usb.UsbYubiKeyListener;
 import com.yubico.yubikit.android.transport.usb.UsbYubiKeyDevice;
+import com.yubico.yubikit.core.CommandState;
 import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.util.NdefUtils;
+import com.yubico.yubikit.core.util.Pair;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.IOException;
 
-public class OtpActivity extends YubiKeyPromptActivity<YubiKeyConnection> {
+/**
+ * An Activity to prompt the user for a YubiKey to retrieve an OTP from a YubiOTP slot.
+ */
+public class OtpActivity extends YubiKeyPromptActivity {
     public static final String EXTRA_OTP = "otp";
     public static final String EXTRA_ERROR = "error";
 
@@ -41,31 +46,12 @@ public class OtpActivity extends YubiKeyPromptActivity<YubiKeyConnection> {
 
     private int usbSessionCounter = 0;
 
-    public OtpActivity() {
-        // Custom USB handling needed for YubiOtp Keyboard
-        super(YubiKeyConnection.class, false, true);
-    }
-
-    @Override
-    protected void onYubiKeyDevice(YubiKeyDevice device) {
-        if (device instanceof NfcYubiKeyDevice) {
-            Intent intent = new Intent();
-            try {
-                String credential = NdefUtils.getNdefPayload(((NfcYubiKeyDevice) device).readNdef());
-                intent.putExtra(EXTRA_OTP, credential);
-                provideResult(Activity.RESULT_OK, intent);
-            } catch (IOException e) {
-                intent.putExtra(EXTRA_ERROR, e);
-                provideResult(Activity.RESULT_FIRST_USER, intent);
-            }
-        }
-    }
-
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
+        getIntent().putExtra(ARG_ACTION_CLASS, YubiKeyNdefAction.class);
+        getIntent().putExtra(ARG_ALLOW_USB, false);  // Custom USB handling for keyboard.
 
-        TextView helpTextView = findViewById(helpTextViewId);
+        super.onCreate(savedInstanceState);
 
         getYubiKitManager().startUsbDiscovery(new UsbConfiguration().handlePermissions(false), new UsbYubiKeyListener() {
             @Override
@@ -98,7 +84,6 @@ public class OtpActivity extends YubiKeyPromptActivity<YubiKeyConnection> {
             public void onCaptureComplete(String capture) {
                 Intent intent = new Intent();
                 intent.putExtra(EXTRA_OTP, capture);
-                // NB: Custom handling, so no use of provideResult.
                 setResult(Activity.RESULT_OK, intent);
                 finish();
             }
@@ -108,5 +93,24 @@ public class OtpActivity extends YubiKeyPromptActivity<YubiKeyConnection> {
     @Override
     public boolean onKeyUp(int keyCode, KeyEvent event) {
         return keyListener.onKeyEvent(event);
+    }
+
+    static class YubiKeyNdefAction extends YubiKeyPromptAction {
+        @Nullable
+        @Override
+        Pair<Integer, Intent> onYubiKey(YubiKeyDevice device, Bundle extras, CommandState commandState) {
+            if (device instanceof NfcYubiKeyDevice) {
+                Intent intent = new Intent();
+                try {
+                    String credential = NdefUtils.getNdefPayload(((NfcYubiKeyDevice) device).readNdef());
+                    intent.putExtra(EXTRA_OTP, credential);
+                    return new Pair<>(Activity.RESULT_OK, intent);
+                } catch (IOException e) {
+                    intent.putExtra(EXTRA_ERROR, e);
+                    return new Pair<>(Activity.RESULT_FIRST_USER, intent);
+                }
+            }
+            return null;
+        }
     }
 }

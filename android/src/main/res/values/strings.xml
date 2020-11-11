@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Strings used by YubiKeyPromptActivity -->
+    <string name="yubikit_prompt_activity_title">Connect YubiKey</string>
     <string name="yubikit_prompt_image_desc">YubiKey image</string>
     <string name="yubikit_prompt_plug_in">Connect your YubiKey.</string>
     <string name="yubikit_prompt_plug_in_or_tap">Hold your YubiKey flat against the back of your device, or connect it via USB.</string>
@@ -10,6 +11,6 @@
     <string name="yubikit_prompt_enable_nfc">Enable NFC</string>
 
     <!-- Strings used by OtpActivity -->
-    <string name="yubikit_otp_touch">Touch the sensor on your YubiKey.</string>
     <string name="yubikit_otp_activity_title">Authenticate</string>
+    <string name="yubikit_otp_touch">Touch the sensor on your YubiKey.</string>
 </resources>

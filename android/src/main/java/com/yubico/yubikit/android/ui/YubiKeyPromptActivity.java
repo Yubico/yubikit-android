@@ -17,105 +17,131 @@
 package com.yubico.yubikit.android.ui;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
-import androidx.annotation.IdRes;
-import androidx.annotation.LayoutRes;
+
+import androidx.annotation.StringRes;
 import androidx.annotation.WorkerThread;
+
 import com.yubico.yubikit.android.R;
 import com.yubico.yubikit.android.YubiKitManager;
 import com.yubico.yubikit.android.transport.nfc.NfcConfiguration;
-import com.yubico.yubikit.android.transport.nfc.NfcYubiKeyManager;
 import com.yubico.yubikit.android.transport.nfc.NfcNotAvailable;
+import com.yubico.yubikit.android.transport.nfc.NfcYubiKeyManager;
 import com.yubico.yubikit.android.transport.usb.UsbConfiguration;
 import com.yubico.yubikit.android.transport.usb.UsbYubiKeyDevice;
 import com.yubico.yubikit.android.transport.usb.UsbYubiKeyListener;
 import com.yubico.yubikit.core.CommandState;
 import com.yubico.yubikit.core.Logger;
-import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.YubiKeyDevice;
+import com.yubico.yubikit.core.util.Pair;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.io.IOException;
 
 /**
- * Abstract base class for custom YubiKey dialogs.
+ * A dialog for interacting with a YubiKey.
+ * To use, start this activity with a subclass of {@link YubiKeyPromptAction} passed using the
+ * ARG_ACTION_CLASS extra in the intent. This can be done by using the {@link #createIntent} method:
+ * <pre>
+ * {@code
+ * Intent intent = YubiKeyPromptActivity.createIntent(context, MyConnectionAction.class);
+ * startActivityForResult(intent, requestCode);
+ * }
+ * </pre>
  * <p>
- * Subclass this to create a dialog which prompts for a YubiKey, performs an action, and returns a result.
- * Use android:theme="@style/YubiKitPromptDialogTheme" when defining the Activity in your AndroidManifest.xml
- *
- * @param <T> the connection subclass used to determine suitability of a connected YubiKey.
+ * The dialog can be customized by passing additional values in the intent.
  */
-public abstract class YubiKeyPromptActivity<T extends YubiKeyConnection> extends Activity {
-    private final Class<T> connectionType;
-    private final boolean allowUsb;
-    private final boolean allowNfc;
+public class YubiKeyPromptActivity extends Activity {
+    /**
+     * Helper method to create an Intent to start the YubiKeyPromptActivity with a ConnectionAction.
+     *
+     * @param context  the Context to use for Intent creation
+     * @param action   the ConnectionAction to use for handing YubiKey connections.
+     * @param titleRes a string resource to use for the title of the dialog.
+     * @return an Intent which can be passed to startActivity().
+     */
+    public static Intent createIntent(Context context, Class<? extends YubiKeyPromptAction> action, @StringRes int titleRes) {
+        Intent intent = createIntent(context, action);
+        intent.putExtra(ARG_TITLE_ID, titleRes);
+        return intent;
+    }
 
-    @LayoutRes
-    protected final int contentViewLayoutId;
-    @IdRes
-    protected final int cancelButtonId;
-    @IdRes
-    protected final int enableNfcButtonId;
-    @IdRes
-    protected final int helpTextViewId;
+    /**
+     * Helper method to create an Intent to start the YubiKeyPromptActivity with a ConnectionAction.
+     *
+     * @param context the Context to use for Intent creation
+     * @param action  the ConnectionAction to use for handing YubiKey connections.
+     * @return an Intent which can be passed to startActivity().
+     */
+    public static Intent createIntent(Context context, Class<? extends YubiKeyPromptAction> action) {
+        Intent intent = new Intent(context, YubiKeyPromptActivity.class);
+        intent.putExtra(ARG_ACTION_CLASS, action);
+        return intent;
+    }
+
+    /**
+     * The YubiKeyPromptAction subclass to use when a YubiKey is attached.
+     */
+    public static final String ARG_ACTION_CLASS = "ACTION_CLASS";
+
+    /**
+     * Whether or not to listen for YubiKeys over USB (default: true).
+     */
+    public static final String ARG_ALLOW_USB = "ALLOW_USB";
+
+    /**
+     * Whether or not to listen for YubiKeys over NFC (default: true).
+     */
+    public static final String ARG_ALLOW_NFC = "ALLOW_NFC";
+
+    /**
+     * A string resource to use as the title of the dialog.
+     */
+    public static final String ARG_TITLE_ID = "TITLE_ID";
+
+    /**
+     * A layout resource to use as the content of the dialog.
+     */
+    public static final String ARG_CONTENT_VIEW_ID = "CONTENT_VIEW_ID";
+
+    /**
+     * A view ID of a Button to use for cancelling the action.
+     */
+    public static final String ARG_CANCEL_BUTTON_ID = "CANCEL_BUTTON_ID";
+
+    /**
+     * A view ID of a Button to use to enable NFC, if NFC is disabled.
+     */
+    public static final String ARG_ENABLE_NFC_BUTTON_ID = "ENABLE_NFC_BUTTON_ID";
+
+    /**
+     * A view ID of a TextView where helpful information is displayed.
+     */
+    public static final String ARG_HELP_TEXT_VIEW_ID = "HELP_TEXT_VIEW_ID";
+
+    private final MyCommandState commandState = new MyCommandState();
 
     private YubiKitManager yubiKit;
-    private final CommandState commandState = new MyCommandState();
+    private YubiKeyPromptAction action;
+
     private boolean hasNfc = true;
     private int usbSessionCounter = 0;
     private boolean isDone = false;
-    private Button cancelButton;
-    private Button enableNfcButton;
-    private TextView helpTextView;
+    protected Button cancelButton;
+    protected Button enableNfcButton;
+    protected TextView helpTextView;
 
-    /**
-     * Constructor allowing specification of all options.
-     *
-     * @param connectionType      the connection type the activity should react to
-     * @param allowUsb            true if connecting a YubiKey via USB should be supported
-     * @param allowNfc            true if connecting a YubiKey via NFC should be supported
-     * @param contentViewLayoutId layout ID for the main content view to be used
-     * @param helpTextViewId      resource ID for the help TextView which must exist in the main content view
-     * @param cancelButtonId      resource ID for the cancel Button which must exist in the main content view
-     * @param enableNfcButtonId   resource ID for the enable NFC Button which must exist in the main content view, if NFC is allowed
-     */
-    protected YubiKeyPromptActivity(Class<T> connectionType, boolean allowUsb, boolean allowNfc, @LayoutRes int contentViewLayoutId, @IdRes int helpTextViewId, @IdRes int cancelButtonId, @IdRes int enableNfcButtonId) {
-        this.connectionType = connectionType;
-        this.allowUsb = allowUsb;
-        this.allowNfc = allowNfc;
-        this.contentViewLayoutId = contentViewLayoutId;
-        this.helpTextViewId = helpTextViewId;
-        this.cancelButtonId = cancelButtonId;
-        this.enableNfcButtonId = enableNfcButtonId;
-    }
-
-    /**
-     * Constructor allowing specification of basic options.
-     *
-     * @param connectionType the connection type the activity should react to
-     * @param allowUsb       true if connecting a YubiKey via USB should be supported
-     * @param allowNfc       true if connecting a YubiKey via NFC should be supported
-     */
-    protected YubiKeyPromptActivity(Class<T> connectionType, boolean allowUsb, boolean allowNfc) {
-        this(connectionType, allowUsb, allowNfc, R.layout.yubikit_yubikey_prompt_content, R.id.yubikit_prompt_help_text_view, R.id.yubikit_prompt_cancel_btn, R.id.yubikit_prompt_enable_nfc_btn);
-    }
-
-    /**
-     * Constructor using the default settings.
-     *
-     * @param connectionType the connection type the activity should react to
-     */
-    protected YubiKeyPromptActivity(Class<T> connectionType) {
-        this(connectionType, true, true);
-    }
+    private boolean allowUsb;
+    private boolean allowNfc;
 
     /**
      * Get the YubiKitManager used by this activity.
+     *
      * @return a YubiKitManager
      */
     protected YubiKitManager getYubiKitManager() {
@@ -125,6 +151,7 @@ public abstract class YubiKeyPromptActivity<T extends YubiKeyConnection> extends
     /**
      * Get a CommandState for use with some blocking YubiKey actions.
      * The dialog will react to KEEPALIVE_UPNEEDED, and the state will be cancelled if the user presses the cancel button.
+     *
      * @return a CommandState
      */
     protected CommandState getCommandState() {
@@ -138,47 +165,20 @@ public abstract class YubiKeyPromptActivity<T extends YubiKeyConnection> extends
     /**
      * Called when a YubiKey is attached.
      * <p>
-     * If not overridden, the default implementation will connect to the YubiKey (if the desired connection type is
-     * supported) and invoke {@link #onYubiKeyConnection(YubiKeyConnection)}, finally closing the connection once done.
      * If {@link #provideResult(int, Intent)} has been called once this method returns, the Activity will finish.
      *
      * @param device a connected YubiKey
      */
     @WorkerThread
     protected void onYubiKeyDevice(YubiKeyDevice device) {
-        if (device.supportsConnection(connectionType)) {
-            try (T connection = device.openConnection(connectionType)) {
-                onYubiKeyConnection(connection);
-            } catch (Exception e) {
-                onError(e);
-            }
-        } else {
-            Logger.d("Connected YubiKey does not support desired connection type");
+        Pair<Integer, Intent> result = action.onYubiKey(device, getIntent().getExtras(), commandState);
+        if (commandState.awaitingTouch) {
+            runOnUiThread(() -> helpTextView.setText(hasNfc ? R.string.yubikit_prompt_plug_in_or_tap : R.string.yubikit_prompt_plug_in));
+            commandState.awaitingTouch = false;
         }
-    }
-
-    /**
-     * Called when a YubiKey supporting the desired connection type is connected.
-     * <p>
-     * Subclasses should override this method to react to a connected YubiKey. {@link #provideResult(int, Intent)}
-     * should be called by this method to indicate that the activity should finish.
-     * <p>
-     * NOTE: Subclasses should not close the connection, as it will be closed by {@link #onYubiKeyDevice(YubiKeyDevice)}.
-     *
-     * @param connection A YubiKey connection
-     */
-    @WorkerThread
-    protected void onYubiKeyConnection(T connection) {
-        Logger.d("YubiKey connected with connection: " + connection);
-    }
-
-    /**
-     * This method can be overriden to react to Exceptions thrown when connecting to a YubiKey.
-     *
-     * @param e the Exception which was thrown.
-     */
-    protected void onError(Exception e) {
-        Logger.e("Error in YubiKey communication", e);
+        if (result != null) {
+            provideResult(result.first, result.second);
+        }
     }
 
     /**
@@ -198,7 +198,32 @@ public abstract class YubiKeyPromptActivity<T extends YubiKeyConnection> extends
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(contentViewLayoutId);
+
+        // Handle options
+        Bundle args = getIntent().getExtras();
+
+        allowUsb = args.getBoolean(ARG_ALLOW_USB, true);
+        allowNfc = args.getBoolean(ARG_ALLOW_NFC, true);
+
+        // Get the action to perform on YubiKey connected
+        Class<?> actionType = (Class<?>) args.getSerializable(ARG_ACTION_CLASS);
+        try {
+            if (actionType != null && YubiKeyPromptAction.class.isAssignableFrom(actionType)) {
+                action = (YubiKeyPromptAction) actionType.newInstance();
+            } else {
+                throw new IllegalStateException("Missing or invalid ConnectionAction class");
+            }
+        } catch (IllegalStateException | IllegalAccessException | InstantiationException e) {
+            Logger.e("Unable to instantiate ConnectionAction", e);
+            finish();
+        }
+
+        // Set up the view
+        setContentView(args.getInt(ARG_CONTENT_VIEW_ID, R.layout.yubikit_yubikey_prompt_content));
+
+        if (args.containsKey(ARG_TITLE_ID)) {
+            setTitle(args.getInt(ARG_TITLE_ID));
+        }
 
         // We draw our own title
         TextView titleText = findViewById(R.id.yubikit_prompt_title);
@@ -206,8 +231,8 @@ public abstract class YubiKeyPromptActivity<T extends YubiKeyConnection> extends
             titleText.setText(getTitle());
         }
 
-        helpTextView = findViewById(helpTextViewId);
-        cancelButton = findViewById(cancelButtonId);
+        helpTextView = findViewById(args.getInt(ARG_HELP_TEXT_VIEW_ID, R.id.yubikit_prompt_help_text_view));
+        cancelButton = findViewById(args.getInt(ARG_CANCEL_BUTTON_ID, R.id.yubikit_prompt_cancel_btn));
         cancelButton.setFocusable(false);
         cancelButton.setOnClickListener(v -> {
             commandState.cancel();
@@ -249,7 +274,7 @@ public abstract class YubiKeyPromptActivity<T extends YubiKeyConnection> extends
         }
 
         if (allowNfc) {
-            enableNfcButton = findViewById(enableNfcButtonId);
+            enableNfcButton = findViewById(args.getInt(ARG_ENABLE_NFC_BUTTON_ID, R.id.yubikit_prompt_enable_nfc_btn));
             enableNfcButton.setFocusable(false);
             enableNfcButton.setOnClickListener(v -> {
                 startActivity(new Intent(NfcYubiKeyManager.NFC_SETTINGS_ACTION));
@@ -305,6 +330,7 @@ public abstract class YubiKeyPromptActivity<T extends YubiKeyConnection> extends
 
     private class MyCommandState extends CommandState {
         boolean awaitingTouch = false;
+
         @Override
         public void onKeepAliveStatus(byte status) {
             if (!awaitingTouch && status == CommandState.STATUS_UPNEEDED) {
