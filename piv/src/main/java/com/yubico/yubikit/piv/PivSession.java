@@ -16,22 +16,37 @@
 
 package com.yubico.yubikit.piv;
 
-import com.yubico.yubikit.core.*;
-import com.yubico.yubikit.core.smartcard.*;
+import com.yubico.yubikit.core.ApplicationNotAvailableException;
+import com.yubico.yubikit.core.BadResponseException;
+import com.yubico.yubikit.core.Logger;
+import com.yubico.yubikit.core.NotSupportedOperation;
+import com.yubico.yubikit.core.Version;
+import com.yubico.yubikit.core.smartcard.Apdu;
+import com.yubico.yubikit.core.smartcard.ApduException;
+import com.yubico.yubikit.core.smartcard.SW;
+import com.yubico.yubikit.core.smartcard.SmartCardConnection;
+import com.yubico.yubikit.core.smartcard.SmartCardProtocol;
 import com.yubico.yubikit.core.util.RandomUtils;
 import com.yubico.yubikit.core.util.StringUtils;
 import com.yubico.yubikit.core.util.Tlv;
 import com.yubico.yubikit.core.util.Tlvs;
 
-import javax.annotation.Nullable;
-import javax.crypto.*;
-import javax.crypto.spec.SecretKeySpec;
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.Closeable;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.StandardCharsets;
-import java.security.*;
+import java.security.InvalidKeyException;
+import java.security.KeyFactory;
+import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.Signature;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
@@ -42,7 +57,20 @@ import java.security.interfaces.RSAPrivateCrtKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.RSAPublicKeySpec;
 import java.security.spec.X509EncodedKeySpec;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+
+import javax.annotation.Nullable;
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
 
 /**
  * Personal Identity Verification (PIV) interface specified in NIST SP 800-73 document "Cryptographic Algorithms and Key Sizes for PIV".
@@ -87,7 +115,7 @@ public class PivSession implements Closeable {
     private static final int TAG_PIN_POLICY = 0xaa;
     private static final int TAG_TOUCH_POLICY = 0xab;
 
-    //Metadata tags
+    // Metadata tags
     private static final int TAG_METADATA_ALGO = 0x01;
     private static final int TAG_METADATA_POLICY = 0x02;
     private static final int TAG_METADATA_ORIGIN = 0x03;
@@ -304,10 +332,11 @@ public class PivSession implements Closeable {
      * This method requires authentication {@link PivSession#authenticate(byte[])}
      *
      * @param managementKey new value of management key
+     * @param requireTouch true to require touch for authentication
      * @throws IOException   in case of connection error
      * @throws ApduException in case of an error response from the YubiKey
      */
-    public void setManagementKey(byte[] managementKey) throws IOException, ApduException {
+    public void setManagementKey(byte[] managementKey, boolean requireTouch) throws IOException, ApduException {
         if (managementKey.length != 24) {
             throw new IllegalArgumentException("Management key must be 24 bytes");
         }
@@ -318,7 +347,7 @@ public class PivSession implements Closeable {
 
         // NOTE: if p2=0xfe key requires touch
         // Require touch is only available on YubiKey 4 & 5.
-        protocol.sendAndReceive(new Apdu(0, INS_SET_MGMKEY, 0xff, 0xff, stream.toByteArray()));
+        protocol.sendAndReceive(new Apdu(0, INS_SET_MGMKEY, 0xff, requireTouch ? 0xfe : 0xff, stream.toByteArray()));
     }
 
     /**
@@ -382,7 +411,7 @@ public class PivSession implements Closeable {
     }
 
     /**
-     * Change pin
+     * Change PIN.
      *
      * @param oldPin old pin for verification
      * @param newPin new pin to set
@@ -395,7 +424,7 @@ public class PivSession implements Closeable {
     }
 
     /**
-     * Change puk
+     * Change PUK.
      *
      * @param oldPuk old puk for verification
      * @param newPuk new puk to set
@@ -408,7 +437,7 @@ public class PivSession implements Closeable {
     }
 
     /**
-     * Unblock pin
+     * Reset a blocked PIN to a new value using the PUK.
      *
      * @param puk    puk for verification
      *               The default PUK code is 12345678.
@@ -422,12 +451,13 @@ public class PivSession implements Closeable {
     }
 
     /**
-     * Set pin and puk reties
+     * Set the number of retries available for PIN and PUK entry.
+     * <p>
      * This method requires authentication {@link PivSession#authenticate(byte[])}
-     * and verification with pin {@link PivSession#verifyPin(char[])}}
+     * and verification with pin {@link PivSession#verifyPin(char[])}}.
      *
-     * @param pinAttempts sets attempts to pin
-     * @param pukAttempts sets attempts to puk
+     * @param pinAttempts the number of attempts to allow for PIN entry before blocking the PIN
+     * @param pukAttempts the number of attempts to allow for PUK entry before blocking the PUK
      * @throws IOException   in case of connection error
      * @throws ApduException in case of an error response from the YubiKey
      */
@@ -439,6 +469,8 @@ public class PivSession implements Closeable {
 
     /**
      * Reads metadata about the PIN, such as total number of retries, attempts left, and if the PIN has been changed from the default value.
+     * <p>
+     * This functionality requires YubiKey 5.3 or later.
      *
      * @return metadata about the PIN
      * @throws IOException   in case of connection error
@@ -450,6 +482,8 @@ public class PivSession implements Closeable {
 
     /**
      * Reads metadata about the PUK, such as total number of retries, attempts left, and if the PUK has been changed from the default value.
+     * <p>
+     * This functionality requires YubiKey 5.3 or later.
      *
      * @return metadata about the PUK
      * @throws IOException   in case of connection error
@@ -473,7 +507,9 @@ public class PivSession implements Closeable {
     }
 
     /**
-     * Reads metadata about the card management key. Requires 5.3 or later.
+     * Reads metadata about the card management key.
+     * <p>
+     * This functionality requires YubiKey 5.3 or later.
      *
      * @return metadata about the card management key, such as the Touch policy and if the default value has been changed
      * @throws IOException   in case of connection error
@@ -486,12 +522,14 @@ public class PivSession implements Closeable {
         Map<Integer, byte[]> data = Tlvs.decodeMap(protocol.sendAndReceive(new Apdu(0, INS_GET_METADATA, 0, Slot.CARD_MANAGEMENT.value, null)));
         return new ManagementKeyMetadata(
                 data.get(TAG_METADATA_IS_DEFAULT)[0] != 0,
-                TouchPolicy.fromValue(data.get(TAG_METADATA_POLICY)[INDEX_TOUCH_POLICY])
+                TouchPolicy.fromValue(data.get(TAG_METADATA_POLICY)[INDEX_TOUCH_POLICY]) //TODO: Double check this!
         );
     }
 
     /**
-     * Reads metadata about a slot. Requires 5.3 or later.
+     * Reads metadata about the private key stored in a slot.
+     * <p>
+     * This functionality requires YubiKey 5.3 or later.
      *
      * @param slot the slot to read metadata about
      * @return metadata about a slot
@@ -516,7 +554,7 @@ public class PivSession implements Closeable {
     }
 
     /**
-     * Reads certificate loaded on slot
+     * Reads the X.509 certificate stored in a slot.
      *
      * @param slot Key reference '9A', '9C', '9D', or '9E'. {@link Slot}.
      * @return certificate instance
@@ -541,11 +579,11 @@ public class PivSession implements Closeable {
     }
 
     /**
-     * Import certificate instance to YubiKey
-     * This method requires authentication {@link PivSession#authenticate(byte[])}
+     * Writes an X.509 certificate to a slot on the YubiKey.
+     * This method requires authentication {@link PivSession#authenticate(byte[])}.
      *
      * @param slot        Key reference '9A', '9C', '9D', or '9E'. {@link Slot}.
-     * @param certificate certificate instance
+     * @param certificate certificate to write
      * @throws IOException   in case of connection error
      * @throws ApduException in case of an error response from the YubiKey
      */
@@ -564,7 +602,10 @@ public class PivSession implements Closeable {
     }
 
     /**
-     * This feature is only available in YubiKey 4.3 and newer.
+     * Creates an attestation certificate for a private key which was generated on the YubiKey.
+     * <p>
+     * This functionality requires YubiKey 4.3 or later.
+     * <p>
      * A high level description of the thinking and how this can be used can be found at
      * https://developers.yubico.com/PIV/Introduction/PIV_attestation.html
      * Attestation works through a special key slot called "f9" this comes pre-loaded from factory with a key and cert signed by Yubico,
@@ -574,7 +615,7 @@ public class PivSession implements Closeable {
      * This method requires key to be generated on slot {@link PivSession#generateKey(Slot, KeyType, PinPolicy, TouchPolicy)}
      *
      * @param slot Key reference '9A', '9C', '9D', or '9E'. {@link Slot}.
-     * @return X.509 certificate for the key that is to be attested
+     * @return an attestation certificate for the key in the given slot
      * @throws IOException          in case of connection error
      * @throws ApduException        in case of an error response from the YubiKey
      * @throws BadResponseException in case of incorrect YubiKey response
@@ -597,8 +638,10 @@ public class PivSession implements Closeable {
     }
 
     /**
-     * Deletes certificate from YubiKey
+     * Deletes a certificate from the YubiKey.
      * This method requires authentication {@link PivSession#authenticate(byte[])}
+     * <p>
+     * Note: This does NOT delete any corresponding private key.
      *
      * @param slot Key reference '9A', '9C', '9D', or '9E'. {@link Slot}.
      * @throws IOException   in case of connection error
@@ -626,25 +669,17 @@ public class PivSession implements Closeable {
     }
 
     /**
-     * Generate public key (for example for Certificate Signing Request)
-     * This method requires verification with pin {@link PivSession#verifyPin(char[])}}
-     * and authentication with management key {@link PivSession#authenticate(byte[])}
+     * Checks if a given firmware version of YubiKey supports a specific key type with given policies.
      *
-     * @param slot        Key reference '9A', '9C', '9D', or '9E'. {@link Slot}.
-     * @param keyType     which algorithm is used for key generation {@link KeyType}
-     * @param pinPolicy   pin policy {@link PinPolicy}
-     * @param touchPolicy touch policy {@link TouchPolicy}
-     * @return public key for generated pair
-     * @throws IOException          in case of connection error
-     * @throws ApduException        in case of an error response from the YubiKey
-     * @throws BadResponseException in case of incorrect YubiKey response
+     * @param version     the firmware version to check
+     * @param keyType     the type of key to check
+     * @param pinPolicy   the PIN policy to check
+     * @param touchPolicy the touch policy to check
+     * @param generate    true to check if key generation is supported, false to check key import.
      */
-    public PublicKey generateKey(Slot slot, KeyType keyType, PinPolicy pinPolicy, TouchPolicy touchPolicy) throws IOException, ApduException, BadResponseException {
+    public static void checkKeySupport(Version version, KeyType keyType, PinPolicy pinPolicy, TouchPolicy touchPolicy, boolean generate) {
         boolean isRsa = keyType.params.algorithm == KeyType.Algorithm.RSA;
 
-        if (isRsa && version.isAtLeast(4, 2, 0) && version.isLessThan(4, 3, 5)) {
-            throw new UnsupportedOperationException("RSA key generation is not supported on this YubiKey");
-        }
         if (version.isLessThan(4, 0, 0)) {
             if (keyType == KeyType.ECCP384) {
                 throw new UnsupportedOperationException("Elliptic curve P384 is not supported on this YubiKey");
@@ -656,6 +691,37 @@ public class PivSession implements Closeable {
         if (touchPolicy == TouchPolicy.CACHED && version.isLessThan(4, 3, 0)) {
             throw new UnsupportedOperationException("Cached touch policy is not supported on this YubiKey");
         }
+
+        if (generate && isRsa && version.isAtLeast(4, 2, 0) && version.isLessThan(4, 3, 5)) {
+            throw new UnsupportedOperationException("RSA key generation is not supported on this YubiKey");
+        }
+
+        if (version.isAtLeast(4, 4, 0) && version.isLessThan(4, 5, 0)) {
+            if (keyType == KeyType.RSA1024) {
+                throw new UnsupportedOperationException("RSA 1024 is not supported on YubiKey FIPS");
+            }
+            if (pinPolicy == PinPolicy.NEVER) {
+                throw new UnsupportedOperationException("PinPolicy.NEVER is not allowed on YubiKey FIPS");
+            }
+        }
+    }
+
+    /**
+     * Generates a new key pair within the YubiKey.
+     * This method requires verification with pin {@link PivSession#verifyPin(char[])}}
+     * and authentication with management key {@link PivSession#authenticate(byte[])}
+     *
+     * @param slot        Key reference '9A', '9C', '9D', or '9E'. {@link Slot}.
+     * @param keyType     which algorithm is used for key generation {@link KeyType}
+     * @param pinPolicy   the PIN policy for using the private key
+     * @param touchPolicy the touch policy for using the private key
+     * @return the public key of the generated key pair
+     * @throws IOException          in case of connection error
+     * @throws ApduException        in case of an error response from the YubiKey
+     * @throws BadResponseException in case of incorrect YubiKey response
+     */
+    public PublicKey generateKey(Slot slot, KeyType keyType, PinPolicy pinPolicy, TouchPolicy touchPolicy) throws IOException, ApduException, BadResponseException {
+        checkKeySupport(version, keyType, pinPolicy, touchPolicy, true);
 
         Map<Integer, byte[]> tlvs = new LinkedHashMap<>();
         tlvs.put(TAG_GEN_ALGORITHM, new byte[]{(byte) keyType.value});
@@ -673,19 +739,21 @@ public class PivSession implements Closeable {
     }
 
     /**
-     * Import private key to YubiKey
+     * Import a private key into a slot.
      * This method requires authentication {@link PivSession#authenticate(byte[])}
      *
      * @param slot        Key reference '9A', '9C', '9D', or '9E'. {@link Slot}.
-     * @param key         private key to import
-     * @param pinPolicy   pin policy {@link PinPolicy}
-     * @param touchPolicy touch policy {@link TouchPolicy}
-     * @return type of algorithm that was parsed from key
+     * @param key         the private key to import
+     * @param pinPolicy   the PIN policy for using the private key
+     * @param touchPolicy the touch policy for using the private key
+     * @return the KeyType value of the imported key
      * @throws IOException   in case of connection error
      * @throws ApduException in case of an error response from the YubiKey
      */
     public KeyType putKey(Slot slot, PrivateKey key, PinPolicy pinPolicy, TouchPolicy touchPolicy) throws IOException, ApduException {
         KeyType keyType = KeyType.fromKey(key);
+        checkKeySupport(version, keyType, pinPolicy, touchPolicy, false);
+
         KeyType.KeyParams params = keyType.params;
         Map<Integer, byte[]> tlvs = new LinkedHashMap<>();
 
@@ -740,19 +808,10 @@ public class PivSession implements Closeable {
     }
 
     /**
-     * Read object data from YubiKey
+     * Read a data object from the YubiKey.
      *
-     * @param objectId slot/data type to read
-     *                 Values of objectId data for slots {@link Slot#objectId} and other:
-     *                 CAPABILITY = 0x5fc107
-     *                 CHUID = 0x5fc102
-     *                 FINGERPRINTS = 0x5fc103
-     *                 SECURITY = 0x5fc106
-     *                 FACIAL = 0x5fc108
-     *                 DISCOVERY = 0x7e
-     *                 KEY_HISTORY = 0x5fc10c
-     *                 IRIS = 0x5fc121
-     * @return data that read from YubiKey
+     * @param objectId the ID of the object to read, see {@link ObjectId}.
+     * @return the stored data object contents
      * @throws IOException          in case of connection error
      * @throws ApduException        in case of an error response from the YubiKey
      * @throws BadResponseException in case of incorrect YubiKey response
@@ -764,19 +823,10 @@ public class PivSession implements Closeable {
     }
 
     /**
-     * Put object data to YubiKey
+     * Write a data object to the YubiKey.
      *
-     * @param objectId   slot/data type to put
-     *                   Values of objectId data for slots {@link Slot#objectId} and other:
-     *                   CAPABILITY = 0x5fc107
-     *                   CHUID = 0x5fc102
-     *                   FINGERPRINTS = 0x5fc103
-     *                   SECURITY = 0x5fc106
-     *                   FACIAL = 0x5fc108
-     *                   DISCOVERY = 0x7e
-     *                   KEY_HISTORY = 0x5fc10c
-     *                   IRIS = 0x5fc121
-     * @param objectData data to write
+     * @param objectId   the ID of the object to write, see {@link ObjectId}.
+     * @param objectData the data object contents to write
      * @throws IOException   in case of connection error
      * @throws ApduException in case of an error response from the YubiKey
      */

@@ -68,9 +68,10 @@ public class PaddingTest {
                 Padding.pad(KeyType.ECCP384, message, Signature.getInstance("SHA512withECDSA"))
         );
 
+        byte[] preHashedMessage = Codec.fromHex("c0535e4be2b79ffd93291305436bf889314e4a3faec05ecffcbb7df31ad9e51a");
         Assert.assertArrayEquals(
-                Codec.fromHex("c0535e4be2b79ffd93291305436bf889314e4a3faec05ecffcbb7df31ad9e51a"),
-                Padding.pad(KeyType.ECCP256, Codec.fromHex("c0535e4be2b79ffd93291305436bf889314e4a3faec05ecffcbb7df31ad9e51a"), Signature.getInstance("NONEwithECDSA"))
+                preHashedMessage,
+                Padding.pad(KeyType.ECCP256, preHashedMessage, Signature.getInstance("NONEwithECDSA"))
         );
     }
 }
