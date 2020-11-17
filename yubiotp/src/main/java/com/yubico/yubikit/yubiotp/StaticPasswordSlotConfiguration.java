@@ -45,7 +45,7 @@ public class StaticPasswordSlotConfiguration extends KeyboardSlotConfiguration<S
 
     @Override
     public boolean isSupportedBy(Version version) {
-        return version.major == 0 || version.isAtLeast(2,2,0);
+        return YubiOtpSession.FEATURE_STATIC.supports(version);
     }
 
     @Override

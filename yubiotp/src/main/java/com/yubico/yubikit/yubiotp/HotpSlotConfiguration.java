@@ -41,7 +41,7 @@ public class HotpSlotConfiguration extends KeyboardSlotConfiguration<HotpSlotCon
 
     @Override
     public boolean isSupportedBy(Version version) {
-        return version.major == 0 || version.isAtLeast(2,2,0);
+        return YubiOtpSession.FEATURE_HMAC.supports(version);
     }
 
     @Override

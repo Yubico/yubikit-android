@@ -17,7 +17,9 @@
 package com.yubico.yubikit.piv;
 
 import com.yubico.yubikit.core.ApplicationNotAvailableException;
+import com.yubico.yubikit.core.ApplicationSession;
 import com.yubico.yubikit.core.BadResponseException;
+import com.yubico.yubikit.core.Feature;
 import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.core.Version;
 import com.yubico.yubikit.core.smartcard.Apdu;
@@ -32,7 +34,6 @@ import com.yubico.yubikit.core.util.Tlvs;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
@@ -75,7 +76,29 @@ import javax.crypto.spec.SecretKeySpec;
  * Personal Identity Verification (PIV) interface specified in NIST SP 800-73 document "Cryptographic Algorithms and Key Sizes for PIV".
  * This enables you to perform RSA or ECC sign/decrypt operations using a private key stored on the smartcard, through common transports like PKCS#11.
  */
-public class PivSession implements Closeable {
+public class PivSession extends ApplicationSession<PivSession> {
+    // Features
+    /**
+     * Support for the NIST P-348 elliptic curve.
+     */
+    public static final Feature<PivSession> FEATURE_P384 = new Feature.MinVersion<>("Curve P384", 4, 0, 0, PivSession::getVersion);
+    /**
+     * Support for custom PIN or Touch policy.
+     */
+    public static final Feature<PivSession> FEATURE_KEY_POLICY = new Feature.MinVersion<>("PIN/Touch Policy", 4, 0, 0, PivSession::getVersion);
+    /**
+     * Support for the CACHED Touch policy.
+     */
+    public static final Feature<PivSession> FEATURE_TOUCH_CACHED = new Feature.MinVersion<>("Cached Touch Policy", 4, 3, 0, PivSession::getVersion);
+    /**
+     * Support for Attestation of generated keys.
+     */
+    public static final Feature<PivSession> FEATURE_ATTESTATION = new Feature.MinVersion<>("Attestation", 4, 3, 0, PivSession::getVersion);
+    /**
+     * Support for getting PIN/PUK/Management key and private key metadata.
+     */
+    public static final Feature<PivSession> FEATURE_METADATA = new Feature.MinVersion<>("Metadata", 5, 3, 0, PivSession::getVersion);
+
     private static final int PIN_LEN = 8;
     private static final int CHALLENGE_LEN = 8;
     private static final int MGM_KEY_LEN = 24;
@@ -331,7 +354,7 @@ public class PivSession implements Closeable {
      * This method requires authentication {@link PivSession#authenticate(byte[])}
      *
      * @param managementKey new value of management key
-     * @param requireTouch true to require touch for authentication
+     * @param requireTouch  true to require touch for authentication
      * @throws IOException   in case of connection error
      * @throws ApduException in case of an error response from the YubiKey
      */
@@ -493,7 +516,7 @@ public class PivSession implements Closeable {
     }
 
     private PinMetadata getPinPukMetadata(byte p2) throws IOException, ApduException {
-        version.requireAtLeast(5, 3, 0);
+        require(FEATURE_METADATA);
         Map<Integer, byte[]> data = Tlvs.decodeMap(protocol.sendAndReceive(new Apdu(0, INS_GET_METADATA, 0, p2, null)));
         byte[] retries = data.get(TAG_METADATA_RETRIES);
         return new PinMetadata(
@@ -513,7 +536,7 @@ public class PivSession implements Closeable {
      * @throws ApduException in case of an error response from the YubiKey
      */
     public ManagementKeyMetadata getManagementKeyMetadata() throws IOException, ApduException {
-        version.requireAtLeast(5, 3, 0);
+        require(FEATURE_METADATA);
         Map<Integer, byte[]> data = Tlvs.decodeMap(protocol.sendAndReceive(new Apdu(0, INS_GET_METADATA, 0, Slot.CARD_MANAGEMENT.value, null)));
         return new ManagementKeyMetadata(
                 data.get(TAG_METADATA_IS_DEFAULT)[0] != 0,
@@ -532,7 +555,7 @@ public class PivSession implements Closeable {
      * @throws ApduException in case of an error response from the YubiKey
      */
     public SlotMetadata getSlotMetadata(Slot slot) throws IOException, ApduException {
-        version.requireAtLeast(5, 3, 0);
+        require(FEATURE_METADATA);
         if (slot == Slot.CARD_MANAGEMENT) {
             throw new IllegalArgumentException("This method cannot be used for the card management key, use getManagementKeyMetadata() instead.");
         }
@@ -615,7 +638,7 @@ public class PivSession implements Closeable {
      * @throws BadResponseException in case of incorrect YubiKey response
      */
     public X509Certificate attestKey(Slot slot) throws IOException, ApduException, BadResponseException {
-        version.requireAtLeast(4, 3, 0);
+        require(FEATURE_ATTESTATION);
         try {
             byte[] responseData = protocol.sendAndReceive(new Apdu(0, INS_ATTEST, slot.value, 0, null));
             return parseCertificate(responseData);
@@ -663,41 +686,40 @@ public class PivSession implements Closeable {
     /**
      * Checks if a given firmware version of YubiKey supports a specific key type with given policies.
      *
-     * @param version     the firmware version to check
      * @param keyType     the type of key to check
      * @param pinPolicy   the PIN policy to check
      * @param touchPolicy the touch policy to check
      * @param generate    true to check if key generation is supported, false to check key import.
      */
-    public static void checkKeySupport(Version version, KeyType keyType, PinPolicy pinPolicy, TouchPolicy touchPolicy, boolean generate) {
+    public void checkKeySupport(KeyType keyType, PinPolicy pinPolicy, TouchPolicy touchPolicy, boolean generate) {
         if (version.major == 0) {
             return;
         }
 
         boolean isRsa = keyType.params.algorithm == KeyType.Algorithm.RSA;
 
-        if (version.isLessThan(4, 0, 0)) {
-            if (keyType == KeyType.ECCP384) {
-                throw new UnsupportedOperationException("Elliptic curve P384 is not supported on this YubiKey");
-            }
-            if (touchPolicy != TouchPolicy.DEFAULT || pinPolicy != PinPolicy.DEFAULT) {
-                throw new UnsupportedOperationException("PIN/Touch policy is not supported on this YubiKey");
-            }
+        if (keyType == KeyType.ECCP384) {
+            require(FEATURE_P384);
         }
-        if (touchPolicy == TouchPolicy.CACHED && version.isLessThan(4, 3, 0)) {
-            throw new UnsupportedOperationException("Cached touch policy is not supported on this YubiKey");
+        if (pinPolicy != PinPolicy.DEFAULT || touchPolicy != TouchPolicy.DEFAULT) {
+            require(FEATURE_KEY_POLICY);
+            if (touchPolicy == TouchPolicy.CACHED) {
+                require(FEATURE_TOUCH_CACHED);
+            }
         }
 
+        // ROCA
         if (generate && isRsa && version.isAtLeast(4, 2, 0) && version.isLessThan(4, 3, 5)) {
-            throw new UnsupportedOperationException("RSA key generation is not supported on this YubiKey");
+            throw new NotSupportedException("RSA key generation is not supported on this YubiKey");
         }
 
+        // FIPS
         if (version.isAtLeast(4, 4, 0) && version.isLessThan(4, 5, 0)) {
             if (keyType == KeyType.RSA1024) {
-                throw new UnsupportedOperationException("RSA 1024 is not supported on YubiKey FIPS");
+                throw new NotSupportedException("RSA 1024 is not supported on YubiKey FIPS");
             }
             if (pinPolicy == PinPolicy.NEVER) {
-                throw new UnsupportedOperationException("PinPolicy.NEVER is not allowed on YubiKey FIPS");
+                throw new NotSupportedException("PinPolicy.NEVER is not allowed on YubiKey FIPS");
             }
         }
     }
@@ -717,7 +739,7 @@ public class PivSession implements Closeable {
      * @throws BadResponseException in case of incorrect YubiKey response
      */
     public PublicKey generateKey(Slot slot, KeyType keyType, PinPolicy pinPolicy, TouchPolicy touchPolicy) throws IOException, ApduException, BadResponseException {
-        checkKeySupport(version, keyType, pinPolicy, touchPolicy, true);
+        checkKeySupport(keyType, pinPolicy, touchPolicy, true);
 
         Map<Integer, byte[]> tlvs = new LinkedHashMap<>();
         tlvs.put(TAG_GEN_ALGORITHM, new byte[]{(byte) keyType.value});
@@ -748,7 +770,7 @@ public class PivSession implements Closeable {
      */
     public KeyType putKey(Slot slot, PrivateKey key, PinPolicy pinPolicy, TouchPolicy touchPolicy) throws IOException, ApduException {
         KeyType keyType = KeyType.fromKey(key);
-        checkKeySupport(version, keyType, pinPolicy, touchPolicy, false);
+        checkKeySupport(keyType, pinPolicy, touchPolicy, false);
 
         KeyType.KeyParams params = keyType.params;
         Map<Integer, byte[]> tlvs = new LinkedHashMap<>();

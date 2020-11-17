@@ -16,7 +16,16 @@
 
 package com.yubico.yubikit.yubiotp;
 
-import com.yubico.yubikit.core.*;
+import com.yubico.yubikit.core.ApplicationNotAvailableException;
+import com.yubico.yubikit.core.ApplicationSession;
+import com.yubico.yubikit.core.BadResponseException;
+import com.yubico.yubikit.core.CommandException;
+import com.yubico.yubikit.core.CommandState;
+import com.yubico.yubikit.core.Feature;
+import com.yubico.yubikit.core.NotSupportedException;
+import com.yubico.yubikit.core.Transport;
+import com.yubico.yubikit.core.Version;
+import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.otp.ChecksumUtils;
 import com.yubico.yubikit.core.otp.OtpConnection;
 import com.yubico.yubikit.core.otp.OtpProtocol;
@@ -24,13 +33,14 @@ import com.yubico.yubikit.core.smartcard.Apdu;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.smartcard.SmartCardProtocol;
 
-import javax.annotation.Nullable;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+
+import javax.annotation.Nullable;
 
 /**
  * Application to use and configure the OTP application of the YubiKey.
@@ -45,8 +55,15 @@ import java.util.Arrays;
  * <p>
  * Additionally for NFC enabled YubiKeys, one slot can be configured to be output over NDEF as part of a URL payload.
  */
-public class YubiOtpSession implements Closeable {
+public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
     public static final String DEFAULT_NDEF_URI = "https://my.yubico.com/yk/#";
+
+    // Features
+    public static final OtpFeature FEATURE_HMAC = new OtpFeature("HMAC-SHA1", 2, 2, 0);
+    public static final OtpFeature FEATURE_STATIC = new OtpFeature("Static Password", 2, 2, 0);
+    public static final OtpFeature FEATURE_SWAP = new OtpFeature("Swap Slots", 2, 3, 0);
+    public static final OtpFeature FEATURE_UPDATE = new OtpFeature("Update Slot", 2, 3, 0);
+    public static final OtpFeature FEATURE_NDEF = new OtpFeature("NDEF", 3, 0, 0);
 
     private static final int ACC_CODE_SIZE = 6;     // Size of access code to re-program device
     private static final int CONFIG_SIZE = 52;      // Size of config struct (excluding current access code)
@@ -222,7 +239,7 @@ public class YubiOtpSession implements Closeable {
      * @throws CommandException in case of an error response from the YubiKey
      */
     public void swapSlots() throws IOException, CommandException {
-        backend.version.requireAtLeast(2, 3, 0);
+        require(FEATURE_SWAP);
         writeConfig(CMD_SWAP, new byte[0], null);
     }
 
@@ -297,6 +314,7 @@ public class YubiOtpSession implements Closeable {
      * @throws CommandException in case of an error response from the YubiKey
      */
     public void setNdefConfiguration(Slot slot, @Nullable String uri, @Nullable byte[] curAccCode) throws IOException, CommandException {
+        require(FEATURE_NDEF);
         writeConfig(
                 slot.map(CMD_NDEF_1, CMD_NDEF_2),
                 buildNdefConfig(uri == null ? DEFAULT_NDEF_URI : uri),
@@ -316,7 +334,7 @@ public class YubiOtpSession implements Closeable {
      * @throws CommandException in case of an error response from the YubiKey
      */
     public byte[] calculateHmacSha1(Slot slot, byte[] challenge, @Nullable CommandState state) throws IOException, CommandException {
-        backend.version.requireAtLeast(2, 2, 0);
+        require(FEATURE_HMAC);
 
         // Pad challenge with byte different from last.
         byte[] padded = new byte[HMAC_CHALLENGE_SIZE];
@@ -426,6 +444,16 @@ public class YubiOtpSession implements Closeable {
         @Override
         public void close() throws IOException {
             delegate.close();
+        }
+    }
+
+    static class OtpFeature extends Feature.MinVersion<YubiOtpSession> {
+        OtpFeature(String featureName, int major, int minor, int build) {
+            super(featureName, major, minor, build, YubiOtpSession::getVersion);
+        }
+
+        boolean supports(Version version) {
+            return version.major == 0 || requiredVersion.compareTo(version) >= 0;
         }
     }
 }

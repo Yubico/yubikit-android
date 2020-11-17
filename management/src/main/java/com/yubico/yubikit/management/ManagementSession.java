@@ -38,7 +38,12 @@ import java.util.Arrays;
  * Application to get information about and configure a YubiKey via the Management Application.
  * https://developers.yubico.com/yubikey-manager/Config_Reference.html
  */
-public class ManagementSession implements Closeable {
+public class ManagementSession extends ApplicationSession<ManagementSession> {
+    // Features
+    public static final Feature<ManagementSession> FEATURE_MODE = new Feature.MinVersion<>("Mode", 3, 0, 0, ManagementSession::getVersion);
+    public static final Feature<ManagementSession> FEATURE_DEVICE_INFO = new Feature.MinVersion<>("Device Info", 4, 1, 0, ManagementSession::getVersion);
+    public static final Feature<ManagementSession> FEATURE_DEVICE_CONFIG = new Feature.MinVersion<>("Device Config", 5, 0, 0, ManagementSession::getVersion);
+
     // Smart card command constants
     private static final byte[] AID = new byte[]{(byte) 0xa0, 0x00, 0x00, 0x05, 0x27, 0x47, 0x11, 0x17};
     private static final byte[] OTP_AID = new byte[]{(byte) 0xa0, 0x00, 0x00, 0x05, 0x27, 0x20, 0x01, 0x01};
@@ -197,7 +202,7 @@ public class ManagementSession implements Closeable {
     }
 
     public DeviceInfo getDeviceInfo() throws IOException, CommandException {
-        version.requireAtLeast(4, 1, 0);
+        require(FEATURE_DEVICE_INFO);
         return DeviceInfo.parse(backend.readConfig(), version);
     }
 
@@ -212,7 +217,7 @@ public class ManagementSession implements Closeable {
      * @throws CommandException in case of error response
      */
     public void updateDeviceConfig(DeviceConfig config, boolean reboot, @Nullable byte[] currentLockCode, @Nullable byte[] newLockCode) throws IOException, CommandException {
-        version.requireAtLeast(5, 0, 0);
+        require(FEATURE_DEVICE_CONFIG);
         byte[] data = config.getBytes(reboot, currentLockCode, newLockCode);
         backend.writeConfig(data);
     }
@@ -228,7 +233,7 @@ public class ManagementSession implements Closeable {
      * @throws NotSupportedException if this command is not supported for this YubiKey
      */
     public void setMode(UsbInterface.Mode mode, byte chalrespTimeout, short autoejectTimeout) throws IOException, CommandException {
-        if (version.isAtLeast(5, 0, 0)) {
+        if (supports(FEATURE_DEVICE_CONFIG)) {
             //Translate into DeviceConfig and set using writeDeviceConfig
             int usbEnabled = 0;
             if ((mode.interfaces & UsbInterface.OTP) != 0) {
@@ -248,7 +253,7 @@ public class ManagementSession implements Closeable {
                             .build(),
                     false, null, null);
         } else {
-            version.requireAtLeast(3, 0, 0);
+            require(FEATURE_MODE);
             byte[] data = ByteBuffer.allocate(4).put(mode.value).put(chalrespTimeout).putShort(autoejectTimeout).array();
             backend.setMode(data);
         }
