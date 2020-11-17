@@ -129,7 +129,7 @@ public class ManagementSession implements Closeable {
     public ManagementSession(OtpConnection connection) throws IOException, ApplicationNotAvailableException {
         OtpProtocol protocol = new OtpProtocol(connection);
         version = Version.parse(protocol.readStatus());
-        if (version.isLessThan(3, 0, 0)) {
+        if (version.isLessThan(3, 0, 0) && version.major != 0) {
             throw new ApplicationNotAvailableException("Management Application requires YubiKey 3 or later");
         }
         backend = new Backend<OtpProtocol>(protocol) {
@@ -197,11 +197,7 @@ public class ManagementSession implements Closeable {
     }
 
     public DeviceInfo getDeviceInfo() throws IOException, CommandException {
-        if (version.isLessThan(4, 1, 0)) {
-            //TODO: Provide fallback?
-            throw new NotSupportedOperation("Operation is not supported on versions below 4");
-        }
-
+        version.requireAtLeast(4, 1, 0);
         return DeviceInfo.parse(backend.readConfig(), version);
     }
 
@@ -216,9 +212,7 @@ public class ManagementSession implements Closeable {
      * @throws CommandException in case of error response
      */
     public void updateDeviceConfig(DeviceConfig config, boolean reboot, @Nullable byte[] currentLockCode, @Nullable byte[] newLockCode) throws IOException, CommandException {
-        if (version.isLessThan(5, 0, 0)) {
-            throw new NotSupportedOperation("Requires YubiKey 5.0.0 or later");
-        }
+        version.requireAtLeast(5, 0, 0);
         byte[] data = config.getBytes(reboot, currentLockCode, newLockCode);
         backend.writeConfig(data);
     }
@@ -231,12 +225,9 @@ public class ManagementSession implements Closeable {
      * @param autoejectTimeout timeout (10x seconds) for auto-eject (only used for CCID-only mode).
      * @throws IOException           in case of connection error
      * @throws ApduException         in case of communication or not supported operation error
-     * @throws NotSupportedOperation if this command is not supported for this YubiKey
+     * @throws NotSupportedException if this command is not supported for this YubiKey
      */
     public void setMode(UsbInterface.Mode mode, byte chalrespTimeout, short autoejectTimeout) throws IOException, CommandException {
-        if (version.isLessThan(3, 0, 0)) {
-            throw new NotSupportedOperation("Requires YubiKey 3.0.0 or later");
-        }
         if (version.isAtLeast(5, 0, 0)) {
             //Translate into DeviceConfig and set using writeDeviceConfig
             int usbEnabled = 0;
@@ -257,6 +248,7 @@ public class ManagementSession implements Closeable {
                             .build(),
                     false, null, null);
         } else {
+            version.requireAtLeast(3, 0, 0);
             byte[] data = ByteBuffer.allocate(4).put(mode.value).put(chalrespTimeout).putShort(autoejectTimeout).array();
             backend.setMode(data);
         }

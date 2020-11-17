@@ -8,7 +8,7 @@ public class UpdateConfiguration extends KeyboardSlotConfiguration<UpdateConfigu
 
     @Override
     public boolean isSupportedBy(Version version) {
-        return version.isAtLeast(2,3,0);
+        return version.major == 0 || version.isAtLeast(2,3,0);
     }
 
     @Override

@@ -27,15 +27,15 @@ import java.util.Locale;
 public class ApduException extends CommandException {
     static final long serialVersionUID = 1L;
 
-    private final ApduResponse apdu;
+    private final short sw;
 
-    public ApduException(ApduResponse apdu) {
-        this(apdu, String.format(Locale.ROOT, "APDU error: 0x%04x", apdu.getSw()));
+    public ApduException(short sw) {
+        this(sw, String.format(Locale.ROOT, "APDU error: 0x%04x", sw));
     }
 
-    public ApduException(ApduResponse apdu, String message) {
+    public ApduException(short sw, String message) {
         super(message);
-        this.apdu = apdu;
+        this.sw = sw;
     }
 
     /**
@@ -44,15 +44,6 @@ public class ApduException extends CommandException {
      * @return error code
      */
     public short getSw() {
-        return apdu.getSw();
-    }
-
-    /**
-     * Get the ResponseApdu.
-     *
-     * @return the response APDU that generated the error
-     */
-    public ApduResponse getApdu() {
-        return apdu;
+        return sw;
     }
 }

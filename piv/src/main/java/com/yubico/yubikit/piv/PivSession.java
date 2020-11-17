@@ -19,7 +19,7 @@ package com.yubico.yubikit.piv;
 import com.yubico.yubikit.core.ApplicationNotAvailableException;
 import com.yubico.yubikit.core.BadResponseException;
 import com.yubico.yubikit.core.Logger;
-import com.yubico.yubikit.core.NotSupportedOperation;
+import com.yubico.yubikit.core.NotSupportedException;
 import com.yubico.yubikit.core.Version;
 import com.yubico.yubikit.core.smartcard.Apdu;
 import com.yubico.yubikit.core.smartcard.ApduException;
@@ -321,7 +321,7 @@ public class PivSession implements Closeable {
         } catch (ApduException e) {
             if (SW.INCORRECT_PARAMETERS == e.getSw()) {
                 //TODO: Replace with new CommandException subclass, wrapping e.
-                throw new ApduException(e.getApdu(), String.format(Locale.ROOT, "Make sure that %s key is generated on slot %02X", keyType.name(), slot.value));
+                throw new ApduException(e.getSw(), String.format(Locale.ROOT, "Make sure that %s key is generated on slot %02X", keyType.name(), slot.value));
             }
             throw e;
         }
@@ -494,9 +494,7 @@ public class PivSession implements Closeable {
     }
 
     private PinMetadata getPinPukMetadata(byte p2) throws IOException, ApduException {
-        if (version.isLessThan(5, 3, 0)) {
-            throw new NotSupportedOperation("PIN/PUK metadata requires version 5.3.0 or later.");
-        }
+        version.requireAtLeast(5, 3, 0);
         Map<Integer, byte[]> data = Tlvs.decodeMap(protocol.sendAndReceive(new Apdu(0, INS_GET_METADATA, 0, p2, null)));
         byte[] retries = data.get(TAG_METADATA_RETRIES);
         return new PinMetadata(
@@ -516,9 +514,7 @@ public class PivSession implements Closeable {
      * @throws ApduException in case of an error response from the YubiKey
      */
     public ManagementKeyMetadata getManagementKeyMetadata() throws IOException, ApduException {
-        if (version.isLessThan(5, 3, 0)) {
-            throw new NotSupportedOperation("Management key metadata requires version 5.3.0 or later.");
-        }
+        version.requireAtLeast(5, 3, 0);
         Map<Integer, byte[]> data = Tlvs.decodeMap(protocol.sendAndReceive(new Apdu(0, INS_GET_METADATA, 0, Slot.CARD_MANAGEMENT.value, null)));
         return new ManagementKeyMetadata(
                 data.get(TAG_METADATA_IS_DEFAULT)[0] != 0,
@@ -537,9 +533,8 @@ public class PivSession implements Closeable {
      * @throws ApduException in case of an error response from the YubiKey
      */
     public SlotMetadata getSlotMetadata(Slot slot) throws IOException, ApduException {
-        if (version.isLessThan(5, 3, 0)) {
-            throw new NotSupportedOperation("PIN/PUK metadata requires version 5.3.0 or later.");
-        } else if (slot == Slot.CARD_MANAGEMENT) {
+        version.requireAtLeast(5, 3, 0);
+        if (slot == Slot.CARD_MANAGEMENT) {
             throw new IllegalArgumentException("This method cannot be used for the card management key, use getManagementKeyMetadata() instead.");
         }
         Map<Integer, byte[]> data = Tlvs.decodeMap(protocol.sendAndReceive(new Apdu(0, INS_GET_METADATA, 0, slot.value, null)));
@@ -621,15 +616,13 @@ public class PivSession implements Closeable {
      * @throws BadResponseException in case of incorrect YubiKey response
      */
     public X509Certificate attestKey(Slot slot) throws IOException, ApduException, BadResponseException {
-        if (version.isLessThan(4, 3, 0)) {
-            throw new NotSupportedOperation("This operation is supported for version 4.3+");
-        }
+        version.requireAtLeast(4, 3, 0);
         try {
             byte[] responseData = protocol.sendAndReceive(new Apdu(0, INS_ATTEST, slot.value, 0, null));
             return parseCertificate(responseData);
         } catch (ApduException e) {
             if (SW.INCORRECT_PARAMETERS == e.getSw()) {
-                throw new ApduException(e.getApdu(), String.format(Locale.ROOT, "Make sure that key is generated on slot %02X", slot.value));
+                throw new ApduException(e.getSw(), String.format(Locale.ROOT, "Make sure that key is generated on slot %02X", slot.value));
             }
             throw e;
         } catch (CertificateException e) {
@@ -678,6 +671,10 @@ public class PivSession implements Closeable {
      * @param generate    true to check if key generation is supported, false to check key import.
      */
     public static void checkKeySupport(Version version, KeyType keyType, PinPolicy pinPolicy, TouchPolicy touchPolicy, boolean generate) {
+        if (version.major == 0) {
+            return;
+        }
+
         boolean isRsa = keyType.params.algorithm == KeyType.Algorithm.RSA;
 
         if (version.isLessThan(4, 0, 0)) {

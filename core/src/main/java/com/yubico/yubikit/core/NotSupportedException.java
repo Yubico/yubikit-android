@@ -19,8 +19,8 @@ package com.yubico.yubikit.core;
 /**
  * Thrown when an operation is not supported by the connected YubiKey.
  */
-public class NotSupportedOperation extends IllegalArgumentException {
-    public NotSupportedOperation(String message) {
+public class NotSupportedException extends IllegalArgumentException {
+    public NotSupportedException(String message) {
         super(message);
     }
 }

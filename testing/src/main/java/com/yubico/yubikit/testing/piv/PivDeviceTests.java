@@ -57,7 +57,7 @@ public class PivDeviceTests {
 
         Logger.d("Change management key");
         piv.authenticate(DEFAULT_MANAGEMENT_KEY);
-        piv.setManagementKey(key2);
+        piv.setManagementKey(key2, false);
 
         Logger.d("Authenticate with the old key");
         try {
@@ -69,7 +69,7 @@ public class PivDeviceTests {
 
         Logger.d("Change management key");
         piv.authenticate(key2);
-        piv.setManagementKey(DEFAULT_MANAGEMENT_KEY);
+        piv.setManagementKey(DEFAULT_MANAGEMENT_KEY, false);
     }
 
     public static void testPin(PivSession piv) throws ApduException, InvalidPinException, IOException, BadResponseException {

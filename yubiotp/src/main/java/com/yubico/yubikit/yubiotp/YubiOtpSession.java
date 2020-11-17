@@ -222,10 +222,7 @@ public class YubiOtpSession implements Closeable {
      * @throws CommandException in case of an error response from the YubiKey
      */
     public void swapSlots() throws IOException, CommandException {
-        if (backend.version.isLessThan(2, 3, 0)) {
-            throw new NotSupportedOperation("This operation is supported for version 2.3+");
-        }
-
+        backend.version.requireAtLeast(2, 3, 0);
         writeConfig(CMD_SWAP, new byte[0], null);
     }
 
@@ -257,7 +254,7 @@ public class YubiOtpSession implements Closeable {
      */
     public void putConfiguration(Slot slot, SlotConfiguration configuration, @Nullable byte[] accCode, @Nullable byte[] curAccCode) throws IOException, CommandException {
         if (!configuration.isSupportedBy(backend.version)) {
-            throw new NotSupportedOperation("This configuration update is not supported on this YubiKey version");
+            throw new NotSupportedException("This configuration update is not supported on this YubiKey version");
         }
         writeConfig(
                 slot.map(CMD_CONFIG_1, CMD_CONFIG_2),
@@ -278,10 +275,10 @@ public class YubiOtpSession implements Closeable {
      */
     public void updateConfiguration(Slot slot, UpdateConfiguration configuration, @Nullable byte[] accCode, @Nullable byte[] curAccCode) throws IOException, CommandException {
         if (!configuration.isSupportedBy(backend.version)) {
-            throw new NotSupportedOperation("This configuration is not supported on this YubiKey version");
+            throw new NotSupportedException("This configuration is not supported on this YubiKey version");
         }
         if (!Arrays.equals(accCode, curAccCode) && getVersion().isAtLeast(4, 3, 2) && getVersion().isLessThan(4, 3, 6)) {
-            throw new NotSupportedOperation("The access code cannot be updated on this YubiKey. Instead, delete the slot and configure it anew.");
+            throw new NotSupportedException("The access code cannot be updated on this YubiKey. Instead, delete the slot and configure it anew.");
         }
         writeConfig(
                 slot.map(CMD_UPDATE_1, CMD_UPDATE_2),
@@ -319,10 +316,7 @@ public class YubiOtpSession implements Closeable {
      * @throws CommandException in case of an error response from the YubiKey
      */
     public byte[] calculateHmacSha1(Slot slot, byte[] challenge, @Nullable CommandState state) throws IOException, CommandException {
-        // works on version above 2.2
-        if (backend.version.isLessThan(2, 2, 0)) {
-            throw new NotSupportedOperation("This operation requires YubiKey 2.2 or later");
-        }
+        backend.version.requireAtLeast(2, 2, 0);
 
         // Pad challenge with byte different from last.
         byte[] padded = new byte[HMAC_CHALLENGE_SIZE];

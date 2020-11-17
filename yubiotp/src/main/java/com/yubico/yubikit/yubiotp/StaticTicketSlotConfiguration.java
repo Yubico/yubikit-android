@@ -47,7 +47,7 @@ public class StaticTicketSlotConfiguration extends KeyboardSlotConfiguration<Sta
 
     @Override
     public boolean isSupportedBy(Version version) {
-        return version.isAtLeast(0,0,0);
+        return version.major == 0 || version.isAtLeast(0,0,0); // TODO
     }
 
     @Override

@@ -16,7 +16,7 @@
 package com.yubico.yubikit.yubiotp;
 
 import com.yubico.yubikit.core.CommandState;
-import com.yubico.yubikit.core.NotSupportedOperation;
+import com.yubico.yubikit.core.NotSupportedException;
 import com.yubico.yubikit.core.Version;
 
 import java.nio.ByteBuffer;
@@ -41,7 +41,7 @@ public class HmacSha1SlotConfiguration extends BaseSlotConfiguration<HmacSha1Slo
             }
         }
         if (key.length > HMAC_KEY_SIZE) {
-            throw new NotSupportedOperation("HMAC-SHA1 key lengths >20 bytes are not supported");
+            throw new NotSupportedException("HMAC-SHA1 key lengths >20 bytes are not supported");
         }
         return key;
     }
@@ -62,7 +62,7 @@ public class HmacSha1SlotConfiguration extends BaseSlotConfiguration<HmacSha1Slo
 
     @Override
     public boolean isSupportedBy(Version version) {
-        return version.isAtLeast(2,2,0);
+        return version.major == 0 || version.isAtLeast(2,2,0);
     }
 
     @Override

@@ -15,7 +15,7 @@
  */
 package com.yubico.yubikit.yubiotp;
 
-import com.yubico.yubikit.core.NotSupportedOperation;
+import com.yubico.yubikit.core.NotSupportedException;
 import com.yubico.yubikit.core.Version;
 
 import java.nio.ByteBuffer;
@@ -33,7 +33,7 @@ public class StaticPasswordSlotConfiguration extends KeyboardSlotConfiguration<S
      */
     public StaticPasswordSlotConfiguration(byte[] scanCodes) {
         if (scanCodes.length > SCAN_CODES_SIZE) {
-            throw new NotSupportedOperation("Password is too long");
+            throw new NotSupportedException("Password is too long");
         }
 
         // Scan codes are packed into fixed, uid, and key, and zero padded.
@@ -46,7 +46,7 @@ public class StaticPasswordSlotConfiguration extends KeyboardSlotConfiguration<S
 
     @Override
     public boolean isSupportedBy(Version version) {
-        return version.isAtLeast(2,2,0);
+        return version.major == 0 || version.isAtLeast(2,2,0);
     }
 
     @Override

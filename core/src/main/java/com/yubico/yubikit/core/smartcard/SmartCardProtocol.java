@@ -129,7 +129,7 @@ public class SmartCardProtocol implements Closeable {
         }
 
         if (response.getSw() != SW.OK) {
-            throw new ApduException(response);
+            throw new ApduException(response.getSw());
         }
         readBuffer.write(response.getData());
         byte[] responseData = readBuffer.toByteArray();

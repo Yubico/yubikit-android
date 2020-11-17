@@ -18,7 +18,7 @@ package com.yubico.yubikit.oath;
 
 import com.yubico.yubikit.core.ApplicationNotAvailableException;
 import com.yubico.yubikit.core.BadResponseException;
-import com.yubico.yubikit.core.NotSupportedOperation;
+import com.yubico.yubikit.core.NotSupportedException;
 import com.yubico.yubikit.core.smartcard.*;
 import com.yubico.yubikit.core.util.RandomUtils;
 import com.yubico.yubikit.core.util.Tlv;
@@ -398,8 +398,8 @@ public class OathSession implements Closeable {
      * @throws ApduException in case of communication error
      */
     public Credential putCredential(CredentialData credential, boolean touchRequired) throws IOException, ApduException {
-        if (touchRequired && applicationInfo.getVersion().isLessThan(4, 0, 0)) {
-            throw new NotSupportedOperation("Require touch available on YubiKey 4 or later");
+        if (touchRequired) {
+            applicationInfo.getVersion().requireAtLeast(4, 0, 0);
         }
 
         try {
@@ -470,9 +470,7 @@ public class OathSession implements Closeable {
      * @throws ApduException in case of communication error
      */
     public byte[] renameCredential(byte[] credentialId, String name, @Nullable String issuer) throws IOException, ApduException {
-        if (applicationInfo.getVersion().isLessThan(5, 3, 1)) {
-            throw new NotSupportedOperation("Renaming a credential requires version 5.3.1 or later");
-        }
+        applicationInfo.getVersion().requireAtLeast(5, 3, 1);
         CredentialIdUtils.CredentialIdData data = CredentialIdUtils.parseId(credentialId, OathType.TOTP); // This works for HOTP as well
         byte[] newId = CredentialIdUtils.formatId(issuer, name, OathType.TOTP, data.period);
         protocol.sendAndReceive(new Apdu(0x00, INS_RENAME, 0, 0, Tlvs.encodeList(Arrays.asList(

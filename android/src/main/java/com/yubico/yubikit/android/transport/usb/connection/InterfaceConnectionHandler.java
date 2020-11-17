@@ -19,7 +19,7 @@ package com.yubico.yubikit.android.transport.usb.connection;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbInterface;
-import com.yubico.yubikit.core.NotSupportedOperation;
+import com.yubico.yubikit.core.NotSupportedException;
 import com.yubico.yubikit.core.YubiKeyConnection;
 
 import javax.annotation.Nullable;
@@ -45,7 +45,7 @@ abstract class InterfaceConnectionHandler<T extends YubiKeyConnection> implement
             }
             return usbInterface;
         }
-        throw new NotSupportedOperation("The connection type is not available via this transport");
+        throw new NotSupportedException("The connection type is not available via this transport");
     }
 
     @Nullable
