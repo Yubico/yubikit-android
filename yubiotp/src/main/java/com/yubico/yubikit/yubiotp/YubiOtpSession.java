@@ -22,7 +22,6 @@ import com.yubico.yubikit.core.BadResponseException;
 import com.yubico.yubikit.core.CommandException;
 import com.yubico.yubikit.core.CommandState;
 import com.yubico.yubikit.core.Feature;
-import com.yubico.yubikit.core.NotSupportedException;
 import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.Version;
 import com.yubico.yubikit.core.YubiKeyDevice;
@@ -59,10 +58,43 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
     public static final String DEFAULT_NDEF_URI = "https://my.yubico.com/yk/#";
 
     // Features
-    public static final OtpFeature FEATURE_HMAC = new OtpFeature("HMAC-SHA1", 2, 2, 0);
-    public static final OtpFeature FEATURE_STATIC = new OtpFeature("Static Password", 2, 2, 0);
+    /**
+     * Support for checking if a slot is configured via the ConfigState.
+     */
+    public static final OtpFeature FEATURE_CHECK_CONFIGURED = new OtpFeature("Check if a slot is configured", 2, 1, 0);
+    /**
+     * Support for checking if a configured slot requires touch via the ConfigState.
+     */
+    public static final OtpFeature FEATURE_CHECK_TOUCH = new OtpFeature("Check if a slot requires touch", 3, 0, 0);
+    /**
+     * Support for HMAC-SHA1 challenge response functionality.
+     */
+    public static final OtpFeature FEATURE_CHALRESP = new OtpFeature("Challenge-Response", 2, 2, 0);
+
+    /**
+     * Support for inverted LED behavior.
+     */
+    public static final OtpFeature FEATURE_INVERT_LED = new OtpFeature("Invert LED", 2, 4, 0) {
+        @Override
+        boolean supports(Version version) {
+            // YubiKey NEO < 3.1 does not support invert LED behavior
+            if (version.isAtLeast(3, 0, 0) && version.isLessThan(3, 1, 0)) {
+                return false;
+            }
+            return super.supports(version);
+        }
+    };
+    /**
+     * Support for swapping slot configurations.
+     */
     public static final OtpFeature FEATURE_SWAP = new OtpFeature("Swap Slots", 2, 3, 0);
+    /**
+     * Support for updating an already configured slot.
+     */
     public static final OtpFeature FEATURE_UPDATE = new OtpFeature("Update Slot", 2, 3, 0);
+    /**
+     * Support for NDEF configuration.
+     */
     public static final OtpFeature FEATURE_NDEF = new OtpFeature("NDEF", 3, 0, 0);
 
     private static final int ACC_CODE_SIZE = 6;     // Size of access code to re-program device
@@ -291,6 +323,7 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
      * @throws CommandException in case of an error response from the YubiKey
      */
     public void updateConfiguration(Slot slot, UpdateConfiguration configuration, @Nullable byte[] accCode, @Nullable byte[] curAccCode) throws IOException, CommandException {
+        require(FEATURE_UPDATE);
         if (!configuration.isSupportedBy(backend.version)) {
             throw new UnsupportedOperationException("This configuration is not supported on this YubiKey version");
         }
@@ -334,7 +367,7 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
      * @throws CommandException in case of an error response from the YubiKey
      */
     public byte[] calculateHmacSha1(Slot slot, byte[] challenge, @Nullable CommandState state) throws IOException, CommandException {
-        require(FEATURE_HMAC);
+        require(FEATURE_CHALRESP);
 
         // Pad challenge with byte different from last.
         byte[] padded = new byte[HMAC_CHALLENGE_SIZE];
@@ -454,6 +487,11 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
 
         boolean supports(Version version) {
             return version.major == 0 || requiredVersion.compareTo(version) >= 0;
+        }
+
+        @Override
+        public boolean isSupported(YubiOtpSession session) {
+            return supports(getVersion.apply(session));
         }
     }
 }

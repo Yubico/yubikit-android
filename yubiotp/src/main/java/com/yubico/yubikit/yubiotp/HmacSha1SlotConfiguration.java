@@ -16,7 +16,6 @@
 package com.yubico.yubikit.yubiotp;
 
 import com.yubico.yubikit.core.CommandState;
-import com.yubico.yubikit.core.Version;
 
 import java.nio.ByteBuffer;
 import java.security.MessageDigest;
@@ -54,14 +53,9 @@ public class HmacSha1SlotConfiguration extends BaseSlotConfiguration<HmacSha1Slo
         // Secret is packed into key and uid
         ByteBuffer.wrap(ByteBuffer.allocate(KEY_SIZE + UID_SIZE).put(shortenHmacSha1Key(secret)).array()).get(key).get(uid);
 
-        updateTktFlags(TKTFLAG_CHAL_RESP, true);
-        updateCfgFlags(CFGFLAG_CHAL_HMAC, true);
-        updateCfgFlags(CFGFLAG_HMAC_LT64, true);
-    }
-
-    @Override
-    public boolean isSupportedBy(Version version) {
-        return YubiOtpSession.FEATURE_HMAC.supports(version);
+        updateTktFlags(TKTFLAG_CHAL_RESP, true, V2_2);
+        updateCfgFlags(CFGFLAG_CHAL_HMAC, true, V2_2);
+        updateCfgFlags(CFGFLAG_HMAC_LT64, true, V2_2);
     }
 
     @Override
@@ -76,7 +70,7 @@ public class HmacSha1SlotConfiguration extends BaseSlotConfiguration<HmacSha1Slo
      * @return the configuration for chaining
      */
     public HmacSha1SlotConfiguration requireTouch(boolean requireTouch) {
-        return updateCfgFlags(CFGFLAG_CHAL_BTN_TRIG, requireTouch);
+        return updateCfgFlags(CFGFLAG_CHAL_BTN_TRIG, requireTouch, V2_2);
     }
 
     /**
@@ -86,6 +80,6 @@ public class HmacSha1SlotConfiguration extends BaseSlotConfiguration<HmacSha1Slo
      * @return the configuration for chaining
      */
     public HmacSha1SlotConfiguration lt64(boolean lt64) {
-        return updateCfgFlags(CFGFLAG_HMAC_LT64, lt64);
+        return updateCfgFlags(CFGFLAG_HMAC_LT64, lt64, V2_2);
     }
 }

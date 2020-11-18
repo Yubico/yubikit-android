@@ -8,7 +8,7 @@ public class UpdateConfiguration extends KeyboardSlotConfiguration<UpdateConfigu
 
     @Override
     public boolean isSupportedBy(Version version) {
-        return YubiOtpSession.FEATURE_UPDATE.supports(version);
+        return YubiOtpSession.FEATURE_UPDATE.supports(version) && super.isSupportedBy(version);
     }
 
     @Override
@@ -17,25 +17,26 @@ public class UpdateConfiguration extends KeyboardSlotConfiguration<UpdateConfigu
     }
 
     @Override
-    protected UpdateConfiguration updateTktFlags(byte bit, boolean value) {
+    protected UpdateConfiguration updateTktFlags(byte bit, boolean value, Version minVersion) {
         if ((TKTFLAG_UPDATE_MASK & bit) == 0) {
             throw new IllegalArgumentException("Unsupported TKT flags for update");
         }
-        return super.updateTktFlags(bit, value);
+        return super.updateTktFlags(bit, value, minVersion);
     }
 
     @Override
-    protected UpdateConfiguration updateCfgFlags(byte bit, boolean value) {
+    protected UpdateConfiguration updateCfgFlags(byte bit, boolean value, Version minVersion) {
         if ((CFGFLAG_UPDATE_MASK & bit) == 0) {
             throw new IllegalArgumentException("Unsupported CFG flags for update");
         }
-        return super.updateCfgFlags(bit, value);
+        return super.updateCfgFlags(bit, value, minVersion);
     }
 
     // NB: All EXT flags are valid for update.
 
     /**
      * This setting cannot be changed for update, and this method will throw an IllegalArgumentException
+     *
      * @param protectSlot2 If true, slot 2 cannot be modified.
      * @return this method will not return normally
      */
@@ -53,9 +54,9 @@ public class UpdateConfiguration extends KeyboardSlotConfiguration<UpdateConfigu
      * @return the configuration for chaining
      */
     public UpdateConfiguration tabs(boolean before, boolean afterFirst, boolean afterSecond) {
-        updateTktFlags(TKTFLAG_TAB_FIRST, before);
-        updateTktFlags(TKTFLAG_APPEND_TAB1, afterFirst);
-        return updateTktFlags(TKTFLAG_APPEND_TAB2, afterSecond);
+        updateTktFlags(TKTFLAG_TAB_FIRST, before, V1_0);
+        updateTktFlags(TKTFLAG_APPEND_TAB1, afterFirst, V1_0);
+        return updateTktFlags(TKTFLAG_APPEND_TAB2, afterSecond, V1_0);
     }
 
     /**
@@ -66,7 +67,7 @@ public class UpdateConfiguration extends KeyboardSlotConfiguration<UpdateConfigu
      * @return the configuration for chaining
      */
     public UpdateConfiguration delay(boolean afterFirst, boolean afterSecond) {
-        updateTktFlags(TKTFLAG_APPEND_DELAY1, afterFirst);
-        return updateTktFlags(TKTFLAG_APPEND_DELAY2, afterSecond);
+        updateTktFlags(TKTFLAG_APPEND_DELAY1, afterFirst, V1_0);
+        return updateTktFlags(TKTFLAG_APPEND_DELAY2, afterSecond, V1_0);
     }
 }

@@ -15,8 +15,6 @@
  */
 package com.yubico.yubikit.yubiotp;
 
-import com.yubico.yubikit.core.Version;
-
 import java.nio.ByteBuffer;
 
 /**
@@ -40,12 +38,7 @@ public class StaticPasswordSlotConfiguration extends KeyboardSlotConfiguration<S
         // NB: rewind() doesn't return a ByteBuffer before Java 9.
         ByteBuffer.wrap(ByteBuffer.allocate(SCAN_CODES_SIZE).put(scanCodes).array()).get(fixed).get(uid).get(key);
 
-        updateCfgFlags(CFGFLAG_SHORT_TICKET, true);
-    }
-
-    @Override
-    public boolean isSupportedBy(Version version) {
-        return YubiOtpSession.FEATURE_STATIC.supports(version);
+        updateCfgFlags(CFGFLAG_SHORT_TICKET, true, V2_2);
     }
 
     @Override

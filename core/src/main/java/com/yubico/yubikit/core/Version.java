@@ -72,12 +72,6 @@ public final class Version implements Comparable<Version> {
         return compareToVersion(major, minor, micro) >= 0;
     }
 
-    public void requireAtLeast(int major, int minor, int micro) {
-        if (major != 0 && isLessThan(major, minor, micro)) {
-            throw new UnsupportedOperationException(String.format("This action requires YubiKey %s or later", new Version(major, minor, micro)));
-        }
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

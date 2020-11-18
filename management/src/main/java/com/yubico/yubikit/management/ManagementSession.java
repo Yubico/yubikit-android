@@ -230,7 +230,6 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
      * @param autoejectTimeout timeout (10x seconds) for auto-eject (only used for CCID-only mode).
      * @throws IOException           in case of connection error
      * @throws ApduException         in case of communication or not supported operation error
-     * @throws NotSupportedException if this command is not supported for this YubiKey
      */
     public void setMode(UsbInterface.Mode mode, byte chalrespTimeout, short autoejectTimeout) throws IOException, CommandException {
         if (supports(FEATURE_DEVICE_CONFIG)) {

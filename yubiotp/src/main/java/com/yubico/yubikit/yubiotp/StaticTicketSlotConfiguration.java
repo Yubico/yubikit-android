@@ -15,8 +15,6 @@
  */
 package com.yubico.yubikit.yubiotp;
 
-import com.yubico.yubikit.core.Version;
-
 import java.util.Arrays;
 
 /**
@@ -42,12 +40,7 @@ public class StaticTicketSlotConfiguration extends KeyboardSlotConfiguration<Sta
         System.arraycopy(uid, 0, this.uid, 0, uid.length);
         System.arraycopy(key, 0, this.key, 0, key.length);
 
-        updateCfgFlags(CFGFLAG_STATIC_TICKET, true);
-    }
-
-    @Override
-    public boolean isSupportedBy(Version version) {
-        return version.major == 0 || version.isAtLeast(0,0,0); // TODO
+        updateCfgFlags(CFGFLAG_STATIC_TICKET, true, V1_0);
     }
 
     @Override
@@ -62,7 +55,7 @@ public class StaticTicketSlotConfiguration extends KeyboardSlotConfiguration<Sta
      * @return the configuration for chaining
      */
     public StaticTicketSlotConfiguration shortTicket(boolean shortTicket) {
-        return updateTktFlags(CFGFLAG_SHORT_TICKET, shortTicket);
+        return updateTktFlags(CFGFLAG_SHORT_TICKET, shortTicket, V2_0);
     }
 
     /**
@@ -76,9 +69,9 @@ public class StaticTicketSlotConfiguration extends KeyboardSlotConfiguration<Sta
      * @return the configuration for chaining
      */
     public StaticTicketSlotConfiguration strongPassword(boolean upperCase, boolean digit, boolean special) {
-        updateCfgFlags(CFGFLAG_STRONG_PW1, upperCase);
-        updateCfgFlags(CFGFLAG_STRONG_PW2, digit || special);
-        return updateCfgFlags(CFGFLAG_SEND_REF, special);
+        updateCfgFlags(CFGFLAG_STRONG_PW1, upperCase, V2_0);
+        updateCfgFlags(CFGFLAG_STRONG_PW2, digit || special, V2_0);
+        return updateCfgFlags(CFGFLAG_SEND_REF, special, V2_0);
     }
 
     /**
@@ -92,6 +85,6 @@ public class StaticTicketSlotConfiguration extends KeyboardSlotConfiguration<Sta
      * @return the configuration for chaining
      */
     public StaticTicketSlotConfiguration manualUpdate(boolean manualUpdate) {
-        return updateCfgFlags(CFGFLAG_MAN_UPDATE, manualUpdate);
+        return updateCfgFlags(CFGFLAG_MAN_UPDATE, manualUpdate, V2_0);
     }
 }

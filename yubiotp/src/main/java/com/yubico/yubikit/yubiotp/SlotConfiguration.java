@@ -69,17 +69,18 @@ public interface SlotConfiguration {
     byte EXTFLAG_SERIAL_USB_VISIBLE = 0x02; // Serial number visible in USB iSerial field
     byte EXTFLAG_SERIAL_API_VISIBLE = 0x04; // Serial number visible via API call
 
-    // V2.3 flags only
+    // YubiKey 2.3 and above
     byte EXTFLAG_USE_NUMERIC_KEYPAD = 0x08; // Use numeric keypad for digits
     byte EXTFLAG_FAST_TRIG = 0x10; // Use fast trig if only cfg1 set
     byte EXTFLAG_ALLOW_UPDATE = 0x20; // Allow update of existing configuration (selected flags + access code)
     byte EXTFLAG_DORMANT = 0x40; // Dormant configuration (can be woken up and flag removed = requires update flag)
 
-    // V2.4/3.1 flags only
+    // YubiKey 2.4 and 3.1 and above (not 3.0)
     byte EXTFLAG_LED_INV = (byte) 0x80; // LED idle state is off rather than on
 
     /**
      * Checks the configuration against a YubiKey firmware version to see if it is supported
+     *
      * @param version the firmware version to check against
      * @return true if the given YubiKey version supports this configuration
      */

@@ -15,8 +15,6 @@
  */
 package com.yubico.yubikit.yubiotp;
 
-import com.yubico.yubikit.core.Version;
-
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
@@ -35,13 +33,7 @@ public class HotpSlotConfiguration extends KeyboardSlotConfiguration<HotpSlotCon
         // Secret is packed into key and uid
         ByteBuffer.wrap(ByteBuffer.allocate(KEY_SIZE + UID_SIZE).put(shortenHmacSha1Key(secret)).array()).get(key).get(uid);
 
-        updateTktFlags(TKTFLAG_OATH_HOTP, true);
-        updateTktFlags(CFGFLAG_OATH_FIXED_MODHEX2, true);
-    }
-
-    @Override
-    public boolean isSupportedBy(Version version) {
-        return YubiOtpSession.FEATURE_HMAC.supports(version);
+        updateTktFlags(TKTFLAG_OATH_HOTP, true, V2_1);
     }
 
     @Override
@@ -56,7 +48,7 @@ public class HotpSlotConfiguration extends KeyboardSlotConfiguration<HotpSlotCon
      * @return the configuration for chaining
      */
     public HotpSlotConfiguration digits8(boolean digits8) {
-        return updateCfgFlags(CFGFLAG_OATH_HOTP8, digits8);
+        return updateCfgFlags(CFGFLAG_OATH_HOTP8, digits8, V2_1);
     }
 
     /**
@@ -77,8 +69,8 @@ public class HotpSlotConfiguration extends KeyboardSlotConfiguration<HotpSlotCon
             throw new IllegalArgumentException("Token ID must be <= 16 bytes");
         }
         fixed = Arrays.copyOf(tokenId, tokenId.length);
-        updateCfgFlags(CFGFLAG_OATH_FIXED_MODHEX1, fixedModhex1);
-        return updateCfgFlags(CFGFLAG_OATH_FIXED_MODHEX2, fixedModhex2);
+        updateCfgFlags(CFGFLAG_OATH_FIXED_MODHEX1, fixedModhex1, V2_1);
+        return updateCfgFlags(CFGFLAG_OATH_FIXED_MODHEX2, fixedModhex2, V2_1);
     }
 
     /**

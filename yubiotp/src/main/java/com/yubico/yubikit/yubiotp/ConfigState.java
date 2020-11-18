@@ -39,30 +39,40 @@ public class ConfigState {
 
     /**
      * Checks if a slot is configured or empty
+     * <p>
+     * This functionality requires support for {@link YubiOtpSession#FEATURE_CHECK_CONFIGURED}, available on YubiKey 2.1 or later.
      *
      * @param slot the slot to check
      * @return true if the slot holds configuration, false if empty
      */
     public boolean slotIsConfigured(Slot slot) {
-        return (flags & slot.map(CONFIG1_VALID, CONFIG2_VALID)) != 0;
+        if (YubiOtpSession.FEATURE_CHECK_CONFIGURED.supports(version)) {
+            return (flags & slot.map(CONFIG1_VALID, CONFIG2_VALID)) != 0;
+        }
+        throw new UnsupportedOperationException("Checking if a slot is configured is not supported on this YubiKey.");
     }
 
     /**
-     * Checks if a configured slot requires touch or not
+     * Checks if a configured slot requires touch or not.
+     * <p>
+     * This functionality requires support for {@link YubiOtpSession#FEATURE_CHECK_TOUCH}, available on YubiKey 3.0 or later.
      *
      * @param slot the slot to check
-     * @return true of the slot requires touch, false if not
+     * @return true of the slot requires touch, false if not (or if checking isn't supported)
      */
     public boolean slotRequiresTouch(Slot slot) {
-        return version.isAtLeast(3, 0, 0) && (flags & slot.map(CONFIG1_TOUCH, CONFIG2_TOUCH)) != 0;
+        if (YubiOtpSession.FEATURE_CHECK_TOUCH.supports(version)) {
+            return (flags & slot.map(CONFIG1_TOUCH, CONFIG2_TOUCH)) != 0;
+        }
+        throw new UnsupportedOperationException("Checking if a slot requires touch is not supported on this YubiKey.");
     }
 
     /**
-     * Checks if the LED has been configured to be inverted
+     * Checks if the LED has been configured to be inverted.
      *
      * @return true if inverted, false if not
      */
     public boolean isLedInverted() {
-        return (flags & CONFIG_LED_INV) != 0;
+        return YubiOtpSession.FEATURE_INVERT_LED.supports(version) && (flags & CONFIG_LED_INV) != 0;
     }
 }

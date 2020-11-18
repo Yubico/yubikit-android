@@ -15,8 +15,6 @@
  */
 package com.yubico.yubikit.yubiotp;
 
-import com.yubico.yubikit.core.Version;
-
 import java.util.Arrays;
 
 /**
@@ -54,9 +52,9 @@ public class YubiOtpSlotConfiguration extends KeyboardSlotConfiguration<YubiOtpS
      * @return the configuration for chaining
      */
     public YubiOtpSlotConfiguration tabs(boolean before, boolean afterFirst, boolean afterSecond) {
-        updateTktFlags(TKTFLAG_TAB_FIRST, before);
-        updateTktFlags(TKTFLAG_APPEND_TAB1, afterFirst);
-        return updateTktFlags(TKTFLAG_APPEND_TAB2, afterSecond);
+        updateTktFlags(TKTFLAG_TAB_FIRST, before, V1_0);
+        updateTktFlags(TKTFLAG_APPEND_TAB1, afterFirst, V1_0);
+        return updateTktFlags(TKTFLAG_APPEND_TAB2, afterSecond, V1_0);
     }
 
     /**
@@ -67,8 +65,8 @@ public class YubiOtpSlotConfiguration extends KeyboardSlotConfiguration<YubiOtpS
      * @return the configuration for chaining
      */
     public YubiOtpSlotConfiguration delay(boolean afterFirst, boolean afterSecond) {
-        updateTktFlags(TKTFLAG_APPEND_DELAY1, afterFirst);
-        return updateTktFlags(TKTFLAG_APPEND_DELAY2, afterSecond);
+        updateTktFlags(TKTFLAG_APPEND_DELAY1, afterFirst, V1_0);
+        return updateTktFlags(TKTFLAG_APPEND_DELAY2, afterSecond, V1_0);
     }
 
     /**
@@ -78,6 +76,6 @@ public class YubiOtpSlotConfiguration extends KeyboardSlotConfiguration<YubiOtpS
      * @return the configuration for chaining
      */
     public YubiOtpSlotConfiguration sendReference(boolean sendReference) {
-        return updateCfgFlags(CFGFLAG_SEND_REF, sendReference);
+        return updateCfgFlags(CFGFLAG_SEND_REF, sendReference, V1_0);
     }
 }

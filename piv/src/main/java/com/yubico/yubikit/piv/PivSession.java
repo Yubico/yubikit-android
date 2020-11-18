@@ -99,6 +99,17 @@ public class PivSession extends ApplicationSession<PivSession> {
      */
     public static final Feature<PivSession> FEATURE_METADATA = new Feature.MinVersion<>("Metadata", 5, 3, 0, PivSession::getVersion);
 
+    /**
+     * Support for generating RSA keys.
+     */
+    public static final Feature<PivSession> FEATURE_RSA_GENERATION = new Feature<PivSession>("RSA key generation") {
+        @Override
+        public boolean isSupported(PivSession session) {
+            Version version = session.getVersion();
+            return version.isLessThan(4, 2, 6) || version.isAtLeast(4, 3, 5);
+        }
+    };
+
     private static final int PIN_LEN = 8;
     private static final int CHALLENGE_LEN = 8;
     private static final int MGM_KEY_LEN = 24;
@@ -411,7 +422,7 @@ public class PivSession extends ApplicationSession<PivSession> {
      * @throws ApduException in case of an error response from the YubiKey
      */
     public int getPinAttempts() throws IOException, ApduException {
-        if (version.isAtLeast(5, 3, 0)) {
+        if (supports(FEATURE_METADATA)) {
             // If metadata is available, use that
             return getPinMetadata().getAttemptsRemaining();
         }
@@ -492,7 +503,7 @@ public class PivSession extends ApplicationSession<PivSession> {
     /**
      * Reads metadata about the PIN, such as total number of retries, attempts left, and if the PIN has been changed from the default value.
      * <p>
-     * This functionality requires YubiKey 5.3 or later.
+     * This functionality requires support for {@link #FEATURE_METADATA}, available on YubiKey 5.3 or later.
      *
      * @return metadata about the PIN
      * @throws IOException   in case of connection error
@@ -505,7 +516,7 @@ public class PivSession extends ApplicationSession<PivSession> {
     /**
      * Reads metadata about the PUK, such as total number of retries, attempts left, and if the PUK has been changed from the default value.
      * <p>
-     * This functionality requires YubiKey 5.3 or later.
+     * This functionality requires support for {@link #FEATURE_METADATA}, available on YubiKey 5.3 or later.
      *
      * @return metadata about the PUK
      * @throws IOException   in case of connection error
@@ -529,7 +540,7 @@ public class PivSession extends ApplicationSession<PivSession> {
     /**
      * Reads metadata about the card management key.
      * <p>
-     * This functionality requires YubiKey 5.3 or later.
+     * This functionality requires support for {@link #FEATURE_METADATA}, available on YubiKey 5.3 or later.
      *
      * @return metadata about the card management key, such as the Touch policy and if the default value has been changed
      * @throws IOException   in case of connection error
@@ -547,7 +558,7 @@ public class PivSession extends ApplicationSession<PivSession> {
     /**
      * Reads metadata about the private key stored in a slot.
      * <p>
-     * This functionality requires YubiKey 5.3 or later.
+     * This functionality requires support for {@link #FEATURE_METADATA}, available on YubiKey 5.3 or later.
      *
      * @param slot the slot to read metadata about
      * @return metadata about a slot
@@ -621,7 +632,7 @@ public class PivSession extends ApplicationSession<PivSession> {
     /**
      * Creates an attestation certificate for a private key which was generated on the YubiKey.
      * <p>
-     * This functionality requires YubiKey 4.3 or later.
+     * This functionality requires support for {@link #FEATURE_ATTESTATION}, available on YubiKey 4.3 or later.
      * <p>
      * A high level description of the thinking and how this can be used can be found at
      * https://developers.yubico.com/PIV/Introduction/PIV_attestation.html
@@ -709,17 +720,17 @@ public class PivSession extends ApplicationSession<PivSession> {
         }
 
         // ROCA
-        if (generate && isRsa && version.isAtLeast(4, 2, 0) && version.isLessThan(4, 3, 5)) {
-            throw new NotSupportedException("RSA key generation is not supported on this YubiKey");
+        if (generate && isRsa) {
+            require(FEATURE_RSA_GENERATION);
         }
 
         // FIPS
         if (version.isAtLeast(4, 4, 0) && version.isLessThan(4, 5, 0)) {
             if (keyType == KeyType.RSA1024) {
-                throw new NotSupportedException("RSA 1024 is not supported on YubiKey FIPS");
+                throw new UnsupportedOperationException("RSA 1024 is not supported on YubiKey FIPS");
             }
             if (pinPolicy == PinPolicy.NEVER) {
-                throw new NotSupportedException("PinPolicy.NEVER is not allowed on YubiKey FIPS");
+                throw new UnsupportedOperationException("PinPolicy.NEVER is not allowed on YubiKey FIPS");
             }
         }
     }
@@ -727,7 +738,14 @@ public class PivSession extends ApplicationSession<PivSession> {
     /**
      * Generates a new key pair within the YubiKey.
      * This method requires verification with pin {@link PivSession#verifyPin(char[])}}
-     * and authentication with management key {@link PivSession#authenticate(byte[])}
+     * and authentication with management key {@link PivSession#authenticate(byte[])}.
+     * <p>
+     * RSA key types require {@link #FEATURE_RSA_GENERATION}, available on YubiKeys OTHER THAN 4.2.6-4.3.4.
+     * KeyType P348 requires {@link #FEATURE_P384}, available on YubiKey 4 or later.
+     * PinPolicy or TouchPolicy other than default require {@link #FEATURE_KEY_POLICY}, available on YubiKey 4 or later.
+     * TouchPolicy.CACHED requires {@link #FEATURE_TOUCH_CACHED}, available on YubiKey 4.3 or later.
+     * <p>
+     * NOTE: YubiKey FIPS does not allow RSA1024 nor PinProtocol.NEVER.
      *
      * @param slot        Key reference '9A', '9C', '9D', or '9E'. {@link Slot}.
      * @param keyType     which algorithm is used for key generation {@link KeyType}
@@ -758,7 +776,12 @@ public class PivSession extends ApplicationSession<PivSession> {
 
     /**
      * Import a private key into a slot.
-     * This method requires authentication {@link PivSession#authenticate(byte[])}
+     * This method requires authentication {@link PivSession#authenticate(byte[])}.
+     * <p>
+     * KeyType P348 requires {@link #FEATURE_P384}, available on YubiKey 4 or later.
+     * PinPolicy or TouchPolicy other than default require {@link #FEATURE_KEY_POLICY}, available on YubiKey 4 or later.
+     * <p>
+     * NOTE: YubiKey FIPS does not allow RSA1024 nor PinProtocol.NEVER.
      *
      * @param slot        Key reference '9A', '9C', '9D', or '9E'. {@link Slot}.
      * @param key         the private key to import

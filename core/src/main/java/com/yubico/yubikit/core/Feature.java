@@ -41,7 +41,7 @@ public abstract class Feature<T extends ApplicationSession<T>> {
      * @param <T> The type of Session for which the Feature is relevant.
      */
     public static class MinVersion<T extends ApplicationSession<T>> extends Feature<T> {
-        protected final Version requiredVersion;
+        public final Version requiredVersion;
         protected final Function<T, Version> getVersion;
 
         public MinVersion(String featureName, int major, int minor, int build, Function<T, Version> getVersion) {

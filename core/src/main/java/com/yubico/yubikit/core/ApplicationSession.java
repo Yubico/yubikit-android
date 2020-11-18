@@ -21,7 +21,7 @@ public abstract class ApplicationSession<T extends ApplicationSession<T>> implem
 
     protected void require(Feature<T> feature) {
         if (!supports(feature)) {
-            throw new NotSupportedException(feature.getRequiredMessage());
+            throw new UnsupportedOperationException(feature.getRequiredMessage());
         }
     }
 }
