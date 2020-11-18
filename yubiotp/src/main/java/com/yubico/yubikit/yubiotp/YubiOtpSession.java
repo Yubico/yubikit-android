@@ -119,7 +119,7 @@ public class YubiOtpSession implements Closeable {
         byte[] statusBytes = protocol.select(AID);
         if (version == null) {
             // We didn't get a version above, get it from the status struct.
-            version = Version.parse(statusBytes);
+            version = Version.fromBytes(statusBytes);
         }
 
         protocol.enableTouchWorkaround(version);
@@ -162,7 +162,7 @@ public class YubiOtpSession implements Closeable {
     public YubiOtpSession(OtpConnection connection) throws IOException {
         OtpProtocol protocol = new OtpProtocol(connection);
         byte[] statusBytes = protocol.readStatus();
-        Version version = Version.parse(statusBytes);
+        Version version = Version.fromBytes(statusBytes);
         backend = new Backend<OtpProtocol>(protocol, version, parseConfigState(version, statusBytes)) {
             @Override
             void writeConfig(byte slot, byte[] data) throws IOException, CommandException {

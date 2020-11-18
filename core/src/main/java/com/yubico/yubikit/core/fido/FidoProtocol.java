@@ -56,7 +56,7 @@ public class FidoProtocol implements Closeable {
         buffer.get(); // U2F HID version
         byte[] versionBytes = new byte[3];
         buffer.get(versionBytes);
-        version = Version.parse(versionBytes);
+        version = Version.fromBytes(versionBytes);
         buffer.get(); // Capabilities
         Logger.d(String.format("fido connection set up with channel ID: 0x%08x", channelId));
     }

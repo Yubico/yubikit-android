@@ -99,7 +99,7 @@ public class DeviceInfo {
 
         Version version;
         if (data.containsKey(TAG_FIRMWARE_VERSION)) {
-            version = Version.parse(data.get(TAG_FIRMWARE_VERSION));
+            version = Version.fromBytes(data.get(TAG_FIRMWARE_VERSION));
         } else {
             version = defaultVersion;
         }
@@ -111,7 +111,7 @@ public class DeviceInfo {
         Map<Transport, Integer> supportedApplications = new HashMap<>();
         Map<Transport, Integer> enabledApplications = new HashMap<>();
 
-        if (version.equals(new Version(4, 2, 4))) {
+        if (version.major == 4 && version.minor == 2 && version.micro == 4) {
             // 4.2.4 doesn't report supported applications correctly, but they are always 0x3f.
             supportedApplications.put(Transport.USB, 0x3f);
         } else {

@@ -49,7 +49,7 @@ public class OathApplicationInfo {
      */
     OathApplicationInfo(byte[] response) {
         Map<Integer, byte[]> map = Tlvs.decodeMap(response);
-        version = Version.parse(map.get(TAG_VERSION));
+        version = Version.fromBytes(map.get(TAG_VERSION));
         salt = map.get(TAG_NAME);
         challenge = map.get(TAG_CHALLENGE);
         deviceId = getDeviceIdString(salt);

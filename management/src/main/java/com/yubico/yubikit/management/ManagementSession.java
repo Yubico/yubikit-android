@@ -128,7 +128,7 @@ public class ManagementSession implements Closeable {
      */
     public ManagementSession(OtpConnection connection) throws IOException, ApplicationNotAvailableException {
         OtpProtocol protocol = new OtpProtocol(connection);
-        version = Version.parse(protocol.readStatus());
+        version = Version.fromBytes(protocol.readStatus());
         if (version.isLessThan(3, 0, 0) && version.major != 0) {
             throw new ApplicationNotAvailableException("Management Application requires YubiKey 3 or later");
         }

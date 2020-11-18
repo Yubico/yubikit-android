@@ -19,7 +19,6 @@ package com.yubico.yubikit.piv;
 import com.yubico.yubikit.core.ApplicationNotAvailableException;
 import com.yubico.yubikit.core.BadResponseException;
 import com.yubico.yubikit.core.Logger;
-import com.yubico.yubikit.core.NotSupportedException;
 import com.yubico.yubikit.core.Version;
 import com.yubico.yubikit.core.smartcard.Apdu;
 import com.yubico.yubikit.core.smartcard.ApduException;
@@ -156,7 +155,7 @@ public class PivSession implements Closeable {
     public PivSession(SmartCardConnection connection) throws IOException, ApduException, ApplicationNotAvailableException {
         protocol = new SmartCardProtocol(connection);
         protocol.select(AID);
-        version = Version.parse(protocol.sendAndReceive(new Apdu(0, INS_GET_VERSION, 0, 0, null)));
+        version = Version.fromBytes(protocol.sendAndReceive(new Apdu(0, INS_GET_VERSION, 0, 0, null)));
         protocol.enableTouchWorkaround(version);
     }
 

@@ -19,19 +19,30 @@ package com.yubico.yubikit.core;
 
 import java.util.Locale;
 import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
- * Class that allows to parse version of yubikey
+ * A 3-part version number, used by the YubiKey firmware and its various applications.
+ *
+ *
  */
 public final class Version implements Comparable<Version> {
-    public static final Version UNKNOWN = new Version((byte) 0, (byte) 0, (byte) 0);
+    private static final Pattern VERSION_STRING_PATTERN = Pattern.compile("\\b(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\b");
 
     public final byte major;
     public final byte minor;
     public final byte micro;
 
+    private static byte checkRange(int value) {
+        if (value < 0 || value > Byte.MAX_VALUE) {
+            throw new IllegalArgumentException("Version component out of supported range (0-127)");
+        }
+        return (byte) value;
+    }
+
     public Version(int major, int minor, int micro) {
-        this((byte) major, (byte) minor, (byte) micro);
+        this(checkRange(major), checkRange(minor), checkRange(micro));
     }
 
     public Version(byte major, byte minor, byte micro) {
@@ -87,9 +98,9 @@ public final class Version implements Comparable<Version> {
         return String.format(Locale.ROOT, "%d.%d.%d", 0xff & major, 0xff & minor, 0xff & micro);
     }
 
-    public static Version parse(byte[] bytes) {
+    public static Version fromBytes(byte[] bytes) {
         if (bytes.length < 3) {
-            return UNKNOWN;
+            throw new IllegalArgumentException("Version byte array must contain 3 bytes.");
         }
 
         return new Version(bytes[0], bytes[1], bytes[2]);
@@ -98,31 +109,18 @@ public final class Version implements Comparable<Version> {
     /**
      * Parses from string format "Firmware version 5.2.1"
      *
-     * @param nameAndVersion string that contains version at the end
+     * @param nameAndVersion string that contains a 3-number version.
      * @return the firmware version
      */
     public static Version parse(String nameAndVersion) {
-        if (nameAndVersion.isEmpty()) {
-            return UNKNOWN;
+        Matcher match = VERSION_STRING_PATTERN.matcher(nameAndVersion);
+        if (match.find()) {
+            return new Version(
+                    Byte.parseByte(match.group(1)),
+                    Byte.parseByte(match.group(2)),
+                    Byte.parseByte(match.group(3))
+            );
         }
-
-        // take only last part of the message
-        String[] nameParts = nameAndVersion.split(" ");
-        String version = nameParts[nameParts.length - 1];
-
-
-        String[] parts = version.split("\\.");
-        if (parts.length < 3) {
-            return UNKNOWN;
-        }
-
-        byte[] versionBytes = new byte[3];
-        for (int i = 0; i < 3; i++) {
-            try {
-                versionBytes[i] = (byte) Integer.parseInt(parts[i]);
-            } catch (NumberFormatException ignore) {
-            }
-        }
-        return new Version(versionBytes[0], versionBytes[1], versionBytes[2]);
+        throw new IllegalArgumentException("Invalid version string");
     }
 }
