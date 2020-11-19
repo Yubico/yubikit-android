@@ -21,7 +21,6 @@ import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbManager;
 import com.yubico.yubikit.android.transport.usb.AlreadyInUseException;
 import com.yubico.yubikit.android.transport.usb.NoPermissionsException;
-import com.yubico.yubikit.core.NotSupportedException;
 import com.yubico.yubikit.core.YubiKeyConnection;
 
 import javax.annotation.Nullable;
@@ -84,7 +83,7 @@ public class ConnectionManager {
                 throw e;
             }
         }
-        throw new NotSupportedException("The connection type is not available via this transport");
+        throw new IllegalStateException("The connection type is not available via this transport");
     }
 
     @Nullable

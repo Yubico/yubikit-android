@@ -23,7 +23,6 @@ import android.nfc.tech.IsoDep;
 import android.nfc.tech.Ndef;
 import androidx.annotation.WorkerThread;
 import com.yubico.yubikit.core.Transport;
-import com.yubico.yubikit.core.NotSupportedException;
 import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.YubiKeyDevice;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
@@ -116,6 +115,6 @@ public class NfcYubiKeyDevice implements YubiKeyDevice {
         if (connectionType.isAssignableFrom(NfcSmartCardConnection.class)) {
             return connectionType.cast(openIso7816Connection());
         }
-        throw new NotSupportedException("The connection type is not supported by this session");
+        throw new IllegalStateException("The connection type is not supported by this session");
     }
 }

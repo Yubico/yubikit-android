@@ -254,7 +254,7 @@ public class YubiOtpSession implements Closeable {
      */
     public void putConfiguration(Slot slot, SlotConfiguration configuration, @Nullable byte[] accCode, @Nullable byte[] curAccCode) throws IOException, CommandException {
         if (!configuration.isSupportedBy(backend.version)) {
-            throw new NotSupportedException("This configuration update is not supported on this YubiKey version");
+            throw new UnsupportedOperationException("This configuration update is not supported on this YubiKey version");
         }
         writeConfig(
                 slot.map(CMD_CONFIG_1, CMD_CONFIG_2),
@@ -275,10 +275,10 @@ public class YubiOtpSession implements Closeable {
      */
     public void updateConfiguration(Slot slot, UpdateConfiguration configuration, @Nullable byte[] accCode, @Nullable byte[] curAccCode) throws IOException, CommandException {
         if (!configuration.isSupportedBy(backend.version)) {
-            throw new NotSupportedException("This configuration is not supported on this YubiKey version");
+            throw new UnsupportedOperationException("This configuration is not supported on this YubiKey version");
         }
         if (!Arrays.equals(accCode, curAccCode) && getVersion().isAtLeast(4, 3, 2) && getVersion().isLessThan(4, 3, 6)) {
-            throw new NotSupportedException("The access code cannot be updated on this YubiKey. Instead, delete the slot and configure it anew.");
+            throw new UnsupportedOperationException("The access code cannot be updated on this YubiKey. Instead, delete the slot and configure it anew.");
         }
         writeConfig(
                 slot.map(CMD_UPDATE_1, CMD_UPDATE_2),

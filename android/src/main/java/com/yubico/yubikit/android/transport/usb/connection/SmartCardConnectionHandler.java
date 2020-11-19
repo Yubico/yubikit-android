@@ -18,7 +18,6 @@ package com.yubico.yubikit.android.transport.usb.connection;
 
 import android.hardware.usb.*;
 import android.util.Pair;
-import com.yubico.yubikit.core.NotSupportedException;
 
 import java.io.IOException;
 import java.util.concurrent.Semaphore;
@@ -52,6 +51,6 @@ public class SmartCardConnectionHandler extends InterfaceConnectionHandler<UsbSm
         if (endpointIn != null && endpointOut != null) {
             return new Pair<>(endpointIn, endpointOut);
         }
-        throw new NotSupportedException("Missing CCID bulk endpoints");
+        throw new IllegalStateException("Missing CCID bulk endpoints");
     }
 }

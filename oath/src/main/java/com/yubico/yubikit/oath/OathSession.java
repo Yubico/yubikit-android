@@ -18,7 +18,6 @@ package com.yubico.yubikit.oath;
 
 import com.yubico.yubikit.core.ApplicationNotAvailableException;
 import com.yubico.yubikit.core.BadResponseException;
-import com.yubico.yubikit.core.NotSupportedException;
 import com.yubico.yubikit.core.smartcard.*;
 import com.yubico.yubikit.core.util.RandomUtils;
 import com.yubico.yubikit.core.util.Tlv;
