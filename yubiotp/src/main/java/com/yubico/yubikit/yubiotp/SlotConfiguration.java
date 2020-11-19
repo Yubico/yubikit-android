@@ -16,7 +16,7 @@
 package com.yubico.yubikit.yubiotp;
 
 import com.yubico.yubikit.core.Version;
-import com.yubico.yubikit.core.application.Application;
+import com.yubico.yubikit.core.application.Feature;
 
 import javax.annotation.Nullable;
 
@@ -56,8 +56,7 @@ public interface SlotConfiguration {
     Flag TKTFLAG_OATH_HOTP = new Flag(FlagType.TKT, "OATH_HOTP", 0x40, 2, 1); //  OATH HOTP mode
     Flag CFGFLAG_OATH_HOTP8 = new Flag(FlagType.CFG, "OATH_HOTP8", 0x02, 2, 1); //  Generate 8 digits HOTP rather than 6 digits
     Flag CFGFLAG_OATH_FIXED_MODHEX1 = new Flag(FlagType.CFG, "OATH_FIXED_MODHEX1", 0x10, 2, 1); //  First byte in fixed part sent as modhex
-    Flag CFGFLAG_OATH_FIXED_MODHEX2 = new Flag(FlagType.CFG, "OATH_FIXED_MODHEX2", 0x40, 2, 1); //  First two bytes in fixed part sent as modhex
-    Flag CFGFLAG_OATH_FIXED_MODHEX = new Flag(FlagType.CFG, "OATH_FIXED_MODHEX", 0x50, 2, 1); //  Fixed part sent as modhex
+    Flag CFGFLAG_OATH_FIXED_MODHEX2 = new Flag(FlagType.CFG, "OATH_FIXED_MODHEX2", 0x40, 2, 1); //  First two bytes in fixed part sent as modhex (if paired with OATH_FIXED_MODHEX1, all of fixed part is sent as modhex)
 
     // Yubikey 2.2 and above
     Flag TKTFLAG_CHAL_RESP = new Flag(FlagType.TKT, "CHAL_RESP", 0x40, 2, 2); // Challenge-response enabled (both must be set)
@@ -77,7 +76,7 @@ public interface SlotConfiguration {
     Flag EXTFLAG_DORMANT = new Flag(FlagType.EXT, "DORMANT", 0x40, 2, 3); // Dormant configuration (can be woken up and flag removed = requires update flag)
 
     // YubiKey 2.4 and 3.1 and above (not 3.0)
-    Flag EXTFLAG_LED_INV = new NonFailingFlag(FlagType.EXT, "LED_INV", 0x80, 2, 4); // LED idle state is off rather than on
+    Flag EXTFLAG_LED_INV = new Flag(FlagType.EXT, "LED_INV", 0x80, 2, 4); // LED idle state is off rather than on
 
     /**
      * Checks the configuration against a YubiKey firmware version to see if it is supported
@@ -96,7 +95,7 @@ public interface SlotConfiguration {
     /**
      * A flag used for slot configuration.
      */
-    class Flag extends Application.VersionedFeature<YubiOtp> {
+    class Flag extends Feature.Versioned<YubiOtpSession> {
         public final FlagType type;
         public final byte bit;
 

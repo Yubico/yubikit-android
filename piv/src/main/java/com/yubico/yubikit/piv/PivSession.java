@@ -21,6 +21,7 @@ import com.yubico.yubikit.core.Version;
 import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
 import com.yubico.yubikit.core.application.ApplicationSession;
 import com.yubico.yubikit.core.application.BadResponseException;
+import com.yubico.yubikit.core.application.Feature;
 import com.yubico.yubikit.core.smartcard.Apdu;
 import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.core.smartcard.SW;
@@ -75,7 +76,39 @@ import javax.crypto.spec.SecretKeySpec;
  * Personal Identity Verification (PIV) interface specified in NIST SP 800-73 document "Cryptographic Algorithms and Key Sizes for PIV".
  * This enables you to perform RSA or ECC sign/decrypt operations using a private key stored on the smartcard, through common transports like PKCS#11.
  */
-public class PivSession extends ApplicationSession<Piv> {
+public class PivSession extends ApplicationSession<PivSession> {
+    // Features
+    /**
+     * Support for the NIST P-348 elliptic curve.
+     */
+    public static final Feature<PivSession> FEATURE_P384 = new Feature.Versioned<>("Curve P384", 4, 0, 0);
+    /**
+     * Support for custom PIN or Touch policy.
+     */
+    public static final Feature<PivSession> FEATURE_KEY_POLICY = new Feature.Versioned<>("PIN/Touch Policy", 4, 0, 0);
+    /**
+     * Support for the CACHED Touch policy.
+     */
+    public static final Feature<PivSession> FEATURE_TOUCH_CACHED = new Feature.Versioned<>("Cached Touch Policy", 4, 3, 0);
+    /**
+     * Support for Attestation of generated keys.
+     */
+    public static final Feature<PivSession> FEATURE_ATTESTATION = new Feature.Versioned<>("Attestation", 4, 3, 0);
+    /**
+     * Support for getting PIN/PUK/Management key and private key metadata.
+     */
+    public static final Feature<PivSession> FEATURE_METADATA = new Feature.Versioned<>("Metadata", 5, 3, 0);
+
+    /**
+     * Support for generating RSA keys.
+     */
+    public static final Feature<PivSession> FEATURE_RSA_GENERATION = new Feature<PivSession>("RSA key generation") {
+        @Override
+        public boolean isSupportedBy(Version version) {
+            return version.isLessThan(4, 2, 6) || version.isAtLeast(4, 3, 5);
+        }
+    };
+
     private static final int PIN_LEN = 8;
     private static final int CHALLENGE_LEN = 8;
     private static final int MGM_KEY_LEN = 24;
@@ -329,7 +362,9 @@ public class PivSession extends ApplicationSession<Piv> {
 
     /**
      * Change management key
-     * This method requires authentication {@link PivSession#authenticate(byte[])}
+     * This method requires authentication {@link #authenticate(byte[])}.
+     * <p>
+     * This setting requireTouch=true requires support for {@link #FEATURE_KEY_POLICY}, available on YubiKey 4 or later.
      *
      * @param managementKey new value of management key
      * @param requireTouch  true to require touch for authentication
@@ -339,6 +374,9 @@ public class PivSession extends ApplicationSession<Piv> {
     public void setManagementKey(byte[] managementKey, boolean requireTouch) throws IOException, ApduException {
         if (managementKey.length != 24) {
             throw new IllegalArgumentException("Management key must be 24 bytes");
+        }
+        if (requireTouch) {
+            require(FEATURE_KEY_POLICY);
         }
 
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
@@ -389,7 +427,7 @@ public class PivSession extends ApplicationSession<Piv> {
      * @throws ApduException in case of an error response from the YubiKey
      */
     public int getPinAttempts() throws IOException, ApduException {
-        if (supports(Piv.FEATURE_METADATA)) {
+        if (supports(FEATURE_METADATA)) {
             // If metadata is available, use that
             return getPinMetadata().getAttemptsRemaining();
         }
@@ -453,8 +491,8 @@ public class PivSession extends ApplicationSession<Piv> {
     /**
      * Set the number of retries available for PIN and PUK entry.
      * <p>
-     * This method requires authentication {@link PivSession#authenticate(byte[])}
-     * and verification with pin {@link PivSession#verifyPin(char[])}}.
+     * This method requires authentication {@link #authenticate(byte[])}
+     * and verification with pin {@link #verifyPin(char[])}}.
      *
      * @param pinAttempts the number of attempts to allow for PIN entry before blocking the PIN
      * @param pukAttempts the number of attempts to allow for PUK entry before blocking the PUK
@@ -470,7 +508,7 @@ public class PivSession extends ApplicationSession<Piv> {
     /**
      * Reads metadata about the PIN, such as total number of retries, attempts left, and if the PIN has been changed from the default value.
      * <p>
-     * This functionality requires support for {@link Piv#FEATURE_METADATA}, available on YubiKey 5.3 or later.
+     * This functionality requires support for {@link #FEATURE_METADATA}, available on YubiKey 5.3 or later.
      *
      * @return metadata about the PIN
      * @throws IOException   in case of connection error
@@ -483,7 +521,7 @@ public class PivSession extends ApplicationSession<Piv> {
     /**
      * Reads metadata about the PUK, such as total number of retries, attempts left, and if the PUK has been changed from the default value.
      * <p>
-     * This functionality requires support for {@link Piv#FEATURE_METADATA}, available on YubiKey 5.3 or later.
+     * This functionality requires support for {@link #FEATURE_METADATA}, available on YubiKey 5.3 or later.
      *
      * @return metadata about the PUK
      * @throws IOException   in case of connection error
@@ -494,7 +532,7 @@ public class PivSession extends ApplicationSession<Piv> {
     }
 
     private PinMetadata getPinPukMetadata(byte p2) throws IOException, ApduException {
-        require(Piv.FEATURE_METADATA);
+        require(FEATURE_METADATA);
         Map<Integer, byte[]> data = Tlvs.decodeMap(protocol.sendAndReceive(new Apdu(0, INS_GET_METADATA, 0, p2, null)));
         byte[] retries = data.get(TAG_METADATA_RETRIES);
         return new PinMetadata(
@@ -507,14 +545,14 @@ public class PivSession extends ApplicationSession<Piv> {
     /**
      * Reads metadata about the card management key.
      * <p>
-     * This functionality requires support for {@link Piv#FEATURE_METADATA}, available on YubiKey 5.3 or later.
+     * This functionality requires support for {@link #FEATURE_METADATA}, available on YubiKey 5.3 or later.
      *
      * @return metadata about the card management key, such as the Touch policy and if the default value has been changed
      * @throws IOException   in case of connection error
      * @throws ApduException in case of an error response from the YubiKey
      */
     public ManagementKeyMetadata getManagementKeyMetadata() throws IOException, ApduException {
-        require(Piv.FEATURE_METADATA);
+        require(FEATURE_METADATA);
         Map<Integer, byte[]> data = Tlvs.decodeMap(protocol.sendAndReceive(new Apdu(0, INS_GET_METADATA, 0, Slot.CARD_MANAGEMENT.value, null)));
         return new ManagementKeyMetadata(
                 data.get(TAG_METADATA_IS_DEFAULT)[0] != 0,
@@ -525,7 +563,7 @@ public class PivSession extends ApplicationSession<Piv> {
     /**
      * Reads metadata about the private key stored in a slot.
      * <p>
-     * This functionality requires support for {@link Piv#FEATURE_METADATA}, available on YubiKey 5.3 or later.
+     * This functionality requires support for {@link #FEATURE_METADATA}, available on YubiKey 5.3 or later.
      *
      * @param slot the slot to read metadata about
      * @return metadata about a slot
@@ -533,7 +571,7 @@ public class PivSession extends ApplicationSession<Piv> {
      * @throws ApduException in case of an error response from the YubiKey
      */
     public SlotMetadata getSlotMetadata(Slot slot) throws IOException, ApduException {
-        require(Piv.FEATURE_METADATA);
+        require(FEATURE_METADATA);
         if (slot == Slot.CARD_MANAGEMENT) {
             throw new IllegalArgumentException("This method cannot be used for the card management key, use getManagementKeyMetadata() instead.");
         }
@@ -575,7 +613,7 @@ public class PivSession extends ApplicationSession<Piv> {
 
     /**
      * Writes an X.509 certificate to a slot on the YubiKey.
-     * This method requires authentication {@link PivSession#authenticate(byte[])}.
+     * This method requires authentication {@link #authenticate(byte[])}.
      *
      * @param slot        Key reference '9A', '9C', '9D', or '9E'. {@link Slot}.
      * @param certificate certificate to write
@@ -599,15 +637,15 @@ public class PivSession extends ApplicationSession<Piv> {
     /**
      * Creates an attestation certificate for a private key which was generated on the YubiKey.
      * <p>
-     * This functionality requires support for {@link Piv#FEATURE_ATTESTATION}, available on YubiKey 4.3 or later.
+     * This functionality requires support for {@link #FEATURE_ATTESTATION}, available on YubiKey 4.3 or later.
      * <p>
      * A high level description of the thinking and how this can be used can be found at
      * https://developers.yubico.com/PIV/Introduction/PIV_attestation.html
      * Attestation works through a special key slot called "f9" this comes pre-loaded from factory with a key and cert signed by Yubico,
      * but can be overwritten. After a key has been generated in a normal slot it can be attested by this special key
      * <p>
-     * This method requires authentication {@link PivSession#authenticate(byte[])}
-     * This method requires key to be generated on slot {@link PivSession#generateKey(Slot, KeyType, PinPolicy, TouchPolicy)}
+     * This method requires authentication {@link #authenticate(byte[])}
+     * This method requires key to be generated on slot {@link #generateKey(Slot, KeyType, PinPolicy, TouchPolicy)}
      *
      * @param slot Key reference '9A', '9C', '9D', or '9E'. {@link Slot}.
      * @return an attestation certificate for the key in the given slot
@@ -616,7 +654,7 @@ public class PivSession extends ApplicationSession<Piv> {
      * @throws BadResponseException in case of incorrect YubiKey response
      */
     public X509Certificate attestKey(Slot slot) throws IOException, ApduException, BadResponseException {
-        require(Piv.FEATURE_ATTESTATION);
+        require(FEATURE_ATTESTATION);
         try {
             byte[] responseData = protocol.sendAndReceive(new Apdu(0, INS_ATTEST, slot.value, 0, null));
             return parseCertificate(responseData);
@@ -632,7 +670,7 @@ public class PivSession extends ApplicationSession<Piv> {
 
     /**
      * Deletes a certificate from the YubiKey.
-     * This method requires authentication {@link PivSession#authenticate(byte[])}
+     * This method requires authentication {@link #authenticate(byte[])}
      * <p>
      * Note: This does NOT delete any corresponding private key.
      *
@@ -674,21 +712,19 @@ public class PivSession extends ApplicationSession<Piv> {
             return;
         }
 
-        boolean isRsa = keyType.params.algorithm == KeyType.Algorithm.RSA;
-
         if (keyType == KeyType.ECCP384) {
-            require(Piv.FEATURE_P384);
+            require(FEATURE_P384);
         }
         if (pinPolicy != PinPolicy.DEFAULT || touchPolicy != TouchPolicy.DEFAULT) {
-            require(Piv.FEATURE_KEY_POLICY);
+            require(FEATURE_KEY_POLICY);
             if (touchPolicy == TouchPolicy.CACHED) {
-                require(Piv.FEATURE_TOUCH_CACHED);
+                require(FEATURE_TOUCH_CACHED);
             }
         }
 
         // ROCA
-        if (generate && isRsa) {
-            require(Piv.FEATURE_RSA_GENERATION);
+        if (generate && keyType.params.algorithm == KeyType.Algorithm.RSA) {
+            require(FEATURE_RSA_GENERATION);
         }
 
         // FIPS
@@ -704,13 +740,13 @@ public class PivSession extends ApplicationSession<Piv> {
 
     /**
      * Generates a new key pair within the YubiKey.
-     * This method requires verification with pin {@link PivSession#verifyPin(char[])}}
-     * and authentication with management key {@link PivSession#authenticate(byte[])}.
+     * This method requires verification with pin {@link #verifyPin(char[])}}
+     * and authentication with management key {@link #authenticate(byte[])}.
      * <p>
-     * RSA key types require {@link Piv#FEATURE_RSA_GENERATION}, available on YubiKeys OTHER THAN 4.2.6-4.3.4.
-     * KeyType P348 requires {@link Piv#FEATURE_P384}, available on YubiKey 4 or later.
-     * PinPolicy or TouchPolicy other than default require {@link Piv#FEATURE_KEY_POLICY}, available on YubiKey 4 or later.
-     * TouchPolicy.CACHED requires {@link Piv#FEATURE_TOUCH_CACHED}, available on YubiKey 4.3 or later.
+     * RSA key types require {@link #FEATURE_RSA_GENERATION}, available on YubiKeys OTHER THAN 4.2.6-4.3.4.
+     * KeyType P348 requires {@link #FEATURE_P384}, available on YubiKey 4 or later.
+     * PinPolicy or TouchPolicy other than default require {@link #FEATURE_KEY_POLICY}, available on YubiKey 4 or later.
+     * TouchPolicy.CACHED requires {@link #FEATURE_TOUCH_CACHED}, available on YubiKey 4.3 or later.
      * <p>
      * NOTE: YubiKey FIPS does not allow RSA1024 nor PinProtocol.NEVER.
      *
@@ -743,10 +779,10 @@ public class PivSession extends ApplicationSession<Piv> {
 
     /**
      * Import a private key into a slot.
-     * This method requires authentication {@link PivSession#authenticate(byte[])}.
+     * This method requires authentication {@link #authenticate(byte[])}.
      * <p>
-     * KeyType P348 requires {@link Piv#FEATURE_P384}, available on YubiKey 4 or later.
-     * PinPolicy or TouchPolicy other than default require {@link Piv#FEATURE_KEY_POLICY}, available on YubiKey 4 or later.
+     * KeyType P348 requires {@link #FEATURE_P384}, available on YubiKey 4 or later.
+     * PinPolicy or TouchPolicy other than default require {@link #FEATURE_KEY_POLICY}, available on YubiKey 4 or later.
      * <p>
      * NOTE: YubiKey FIPS does not allow RSA1024 nor PinProtocol.NEVER.
      *

@@ -16,10 +16,14 @@
 
 package com.yubico.yubikit.management;
 
-import com.yubico.yubikit.core.*;
+import com.yubico.yubikit.core.Logger;
+import com.yubico.yubikit.core.Transport;
+import com.yubico.yubikit.core.Version;
+import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
 import com.yubico.yubikit.core.application.ApplicationSession;
 import com.yubico.yubikit.core.application.CommandException;
+import com.yubico.yubikit.core.application.Feature;
 import com.yubico.yubikit.core.fido.FidoConnection;
 import com.yubico.yubikit.core.fido.FidoProtocol;
 import com.yubico.yubikit.core.otp.ChecksumUtils;
@@ -30,18 +34,33 @@ import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.smartcard.SmartCardProtocol;
 
-import javax.annotation.Nullable;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
+import javax.annotation.Nullable;
+
 /**
  * Application to get information about and configure a YubiKey via the Management Application.
  * https://developers.yubico.com/yubikey-manager/Config_Reference.html
  */
-public class ManagementSession extends ApplicationSession<Management> {
+public class ManagementSession extends ApplicationSession<ManagementSession> {
+    // Features
+    /**
+     * Support the SET_MODE command to change the USB mode of the YubiKey.
+     */
+    public static final Feature<ManagementSession> FEATURE_MODE = new Feature.Versioned<>("Mode", 3, 0, 0);
+    /**
+     * Support for reading the DeviceInfo data from the YubiKey.
+     */
+    public static final Feature<ManagementSession> FEATURE_DEVICE_INFO = new Feature.Versioned<>("Device Info", 4, 1, 0);
+    /**
+     * Support for writing DeviceConfig data to the YubiKey.
+     */
+    public static final Feature<ManagementSession> FEATURE_DEVICE_CONFIG = new Feature.Versioned<>("Device Config", 5, 0, 0);
+
     // Smart card command constants
     private static final byte[] AID = new byte[]{(byte) 0xa0, 0x00, 0x00, 0x05, 0x27, 0x47, 0x11, 0x17};
     private static final byte[] OTP_AID = new byte[]{(byte) 0xa0, 0x00, 0x00, 0x05, 0x27, 0x20, 0x01, 0x01};
@@ -200,13 +219,24 @@ public class ManagementSession extends ApplicationSession<Management> {
         return version;
     }
 
+    /**
+     * Get device information from the YubiKey.
+     * <p>
+     * This functionality requires support for {@link #FEATURE_DEVICE_INFO}, available on YubiKey 4.1 or later.
+     *
+     * @return a DeviceInfo object
+     * @throws IOException      in case of connection error
+     * @throws CommandException in case of error response
+     */
     public DeviceInfo getDeviceInfo() throws IOException, CommandException {
-        require(Management.FEATURE_DEVICE_INFO);
+        require(FEATURE_DEVICE_INFO);
         return DeviceInfo.parse(backend.readConfig(), version);
     }
 
     /**
      * Write device configuration to a YubiKey 5 or later.
+     * <p>
+     * This functionality requires support for {@link #FEATURE_DEVICE_CONFIG}, available on YubiKey 5 or later.
      *
      * @param config          the device configuration to write
      * @param reboot          if true cause the YubiKey to immediately reboot, applying the new configuration
@@ -216,22 +246,25 @@ public class ManagementSession extends ApplicationSession<Management> {
      * @throws CommandException in case of error response
      */
     public void updateDeviceConfig(DeviceConfig config, boolean reboot, @Nullable byte[] currentLockCode, @Nullable byte[] newLockCode) throws IOException, CommandException {
-        require(Management.FEATURE_DEVICE_CONFIG);
+        require(FEATURE_DEVICE_CONFIG);
         byte[] data = config.getBytes(reboot, currentLockCode, newLockCode);
         backend.writeConfig(data);
     }
 
     /**
      * Write device configuration for YubiKey NEO and YubiKey 4.
+     * <p>
+     * This functionality requires support for {@link #FEATURE_MODE}, available on YubiKey 3 and 4.
+     * If {@link #FEATURE_DEVICE_CONFIG} is supported, the mode will be translated into a DeviceConfig and {@link #updateDeviceConfig} will instead be used.
      *
      * @param mode             USB transport mode to set
      * @param chalrespTimeout  timeout (seconds) for challenge-response requiring touch.
      * @param autoejectTimeout timeout (10x seconds) for auto-eject (only used for CCID-only mode).
-     * @throws IOException           in case of connection error
-     * @throws ApduException         in case of communication or not supported operation error
+     * @throws IOException   in case of connection error
+     * @throws ApduException in case of communication or not supported operation error
      */
     public void setMode(UsbInterface.Mode mode, byte chalrespTimeout, short autoejectTimeout) throws IOException, CommandException {
-        if (supports(Management.FEATURE_DEVICE_CONFIG)) {
+        if (supports(FEATURE_DEVICE_CONFIG)) {
             //Translate into DeviceConfig and set using writeDeviceConfig
             int usbEnabled = 0;
             if ((mode.interfaces & UsbInterface.OTP) != 0) {
@@ -251,7 +284,7 @@ public class ManagementSession extends ApplicationSession<Management> {
                             .build(),
                     false, null, null);
         } else {
-            require(Management.FEATURE_MODE);
+            require(FEATURE_MODE);
             byte[] data = ByteBuffer.allocate(4).put(mode.value).put(chalrespTimeout).putShort(autoejectTimeout).array();
             backend.setMode(data);
         }

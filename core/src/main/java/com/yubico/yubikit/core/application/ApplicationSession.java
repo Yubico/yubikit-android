@@ -10,7 +10,7 @@ import java.io.Closeable;
  *
  * @param <T> the type of the subclass
  */
-public abstract class ApplicationSession<T extends Application> implements Closeable {
+public abstract class ApplicationSession<T extends ApplicationSession<T>> implements Closeable {
     /**
      * Get the version of the Application from the YubiKey. This is typically the same as the YubiKey firmware, but can be versioned separately as well.
      *
@@ -24,11 +24,11 @@ public abstract class ApplicationSession<T extends Application> implements Close
      * @param feature the Feature to check support for.
      * @return true if the Feature is supported, false if not.
      */
-    public boolean supports(Application.Feature<T> feature) {
+    public boolean supports(Feature<T> feature) {
         return feature.isSupportedBy(getVersion());
     }
 
-    protected void require(Application.Feature<T> feature) {
+    protected void require(Feature<T> feature) {
         if (!supports(feature)) {
             throw new UnsupportedOperationException(feature.getRequiredMessage());
         }

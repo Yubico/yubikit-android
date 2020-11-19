@@ -20,6 +20,7 @@ import com.yubico.yubikit.core.Version;
 import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
 import com.yubico.yubikit.core.application.ApplicationSession;
 import com.yubico.yubikit.core.application.BadResponseException;
+import com.yubico.yubikit.core.application.Feature;
 import com.yubico.yubikit.core.smartcard.Apdu;
 import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.core.smartcard.SW;
@@ -53,7 +54,21 @@ import javax.crypto.spec.SecretKeySpec;
  * Communicates with a YubiKey's OATH application.
  * https://developers.yubico.com/OATH/YKOATH_Protocol.html
  */
-public class OathSession extends ApplicationSession<Oath> {
+public class OathSession extends ApplicationSession<OathSession> {
+    // Features
+    /**
+     * Support for credentials that require touch to use.
+     */
+    public static final Feature<OathSession> FEATURE_TOUCH = new Feature.Versioned<>("Touch", 4, 2, 0);
+    /**
+     * Support for credentials using the SHA-512 hash algorithm.
+     */
+    public static final Feature<OathSession> FEATURE_SHA512 = new Feature.Versioned<>("SHA-512", 4, 3, 1);
+    /**
+     * Support for renaming a stored credential.
+     */
+    public static final Feature<OathSession> FEATURE_RENAME = new Feature.Versioned<>("Rename Credential", 5, 3, 0);
+
     // Tlv tags for credential data
     private static final int TAG_NAME = 0x71;
     private static final int TAG_KEY = 0x73;
@@ -405,19 +420,22 @@ public class OathSession extends ApplicationSession<Oath> {
      * Adds a new OATH credential.
      * <p>
      * The Credential ID must be unique to the YubiKey, else the existing Credential with the same ID will be overwritten.
+     * <p>
+     * Setting touchRequired requires support for {@link #FEATURE_TOUCH}, available on YubiKey 4.2 or later.
+     * Using SHA-512 requires support for {@link #FEATURE_SHA512}, available on YubiKey 4.3.1 or later.
      *
      * @param credential    credential data to add
-     * @param touchRequired true if the credential should require touch to be used (requires YubiKey 4 or later)
+     * @param touchRequired true if the credential should require touch to be used
      * @return the newly added Credential
      * @throws IOException   in case of connection error
      * @throws ApduException in case of communication error
      */
     public Credential putCredential(CredentialData credential, boolean touchRequired) throws IOException, ApduException {
         if (touchRequired) {
-            require(Oath.FEATURE_TOUCH);
+            require(FEATURE_TOUCH);
         }
         if (credential.getHashAlgorithm() == HashAlgorithm.SHA512) {
-            require(Oath.FEATURE_SHA512);
+            require(FEATURE_SHA512);
         }
 
         try {
@@ -479,6 +497,8 @@ public class OathSession extends ApplicationSession<Oath> {
 
     /**
      * Change the issuer and name of a credential.
+     * <p>
+     * This functionality requires support for {@link #FEATURE_RENAME}, available on YubiKey 5.3 or later.
      *
      * @param credentialId ID of the credential to rename
      * @param name         the new name of the credential
@@ -488,7 +508,7 @@ public class OathSession extends ApplicationSession<Oath> {
      * @throws ApduException in case of communication error
      */
     public byte[] renameCredential(byte[] credentialId, String name, @Nullable String issuer) throws IOException, ApduException {
-        require(Oath.FEATURE_RENAME);
+        require(FEATURE_RENAME);
         CredentialIdUtils.CredentialIdData data = CredentialIdUtils.parseId(credentialId, OathType.TOTP); // This works for HOTP as well
         byte[] newId = CredentialIdUtils.formatId(issuer, name, OathType.TOTP, data.period);
         protocol.sendAndReceive(new Apdu(0x00, INS_RENAME, 0, 0, Tlvs.encodeList(Arrays.asList(
@@ -500,6 +520,8 @@ public class OathSession extends ApplicationSession<Oath> {
 
     /**
      * Change the issuer and name of a credential.
+     * <p>
+     * This functionality requires support for {@link #FEATURE_RENAME}, available on YubiKey 5.3 or later.
      *
      * @param credential the Credential to rename
      * @param name       the new name of the credential

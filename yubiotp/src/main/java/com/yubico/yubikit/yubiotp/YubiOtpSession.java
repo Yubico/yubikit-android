@@ -24,6 +24,7 @@ import com.yubico.yubikit.core.application.ApplicationSession;
 import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.application.CommandException;
 import com.yubico.yubikit.core.application.CommandState;
+import com.yubico.yubikit.core.application.Feature;
 import com.yubico.yubikit.core.otp.ChecksumUtils;
 import com.yubico.yubikit.core.otp.OtpConnection;
 import com.yubico.yubikit.core.otp.OtpProtocol;
@@ -53,8 +54,35 @@ import javax.annotation.Nullable;
  * <p>
  * Additionally for NFC enabled YubiKeys, one slot can be configured to be output over NDEF as part of a URL payload.
  */
-public class YubiOtpSession extends ApplicationSession<YubiOtp> {
+public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
     public static final String DEFAULT_NDEF_URI = "https://my.yubico.com/yk/#";
+
+    // Features
+    /**
+     * Support for checking if a slot is configured via the ConfigState.
+     */
+    public static final Feature<YubiOtpSession> FEATURE_CHECK_CONFIGURED = new Feature.Versioned<>("Check if a slot is configured", 2, 1, 0);
+    /**
+     * Support for checking if a configured slot requires touch via the ConfigState.
+     */
+    public static final Feature<YubiOtpSession> FEATURE_CHECK_TOUCH = new Feature.Versioned<>("Check if a slot requires touch", 3, 0, 0);
+    /**
+     * Support for HMAC-SHA1 challenge response functionality.
+     */
+    public static final Feature<YubiOtpSession> FEATURE_CHALLENGE_RESPONSE = new Feature.Versioned<>("Challenge-Response", 2, 2, 0);
+
+    /**
+     * Support for swapping slot configurations.
+     */
+    public static final Feature<YubiOtpSession> FEATURE_SWAP = new Feature.Versioned<>("Swap Slots", 2, 3, 0);
+    /**
+     * Support for updating an already configured slot.
+     */
+    public static final Feature<YubiOtpSession> FEATURE_UPDATE = new Feature.Versioned<>("Update Slot", 2, 3, 0);
+    /**
+     * Support for NDEF configuration.
+     */
+    public static final Feature<YubiOtpSession> FEATURE_NDEF = new Feature.Versioned<>("NDEF", 3, 0, 0);
 
     private static final int ACC_CODE_SIZE = 6;     // Size of access code to re-program device
     private static final int CONFIG_SIZE = 52;      // Size of config struct (excluding current access code)
@@ -231,7 +259,7 @@ public class YubiOtpSession extends ApplicationSession<YubiOtp> {
      * @throws CommandException in case of an error response from the YubiKey
      */
     public void swapSlots() throws IOException, CommandException {
-        require(YubiOtp.FEATURE_SWAP);
+        require(FEATURE_SWAP);
         writeConfig(CMD_SWAP, new byte[0], null);
     }
 
@@ -275,6 +303,8 @@ public class YubiOtpSession extends ApplicationSession<YubiOtp> {
     /**
      * Update the configuration of a slot, keeping the credential.
      *
+     * This functionality requires support for {@link #FEATURE_UPDATE}, available on YubiKey 2.3 or later.
+     *
      * @param slot          the slot to update
      * @param configuration the updated flags tp set
      * @param accCode       the access code to set
@@ -283,7 +313,7 @@ public class YubiOtpSession extends ApplicationSession<YubiOtp> {
      * @throws CommandException in case of an error response from the YubiKey
      */
     public void updateConfiguration(Slot slot, UpdateConfiguration configuration, @Nullable byte[] accCode, @Nullable byte[] curAccCode) throws IOException, CommandException {
-        require(YubiOtp.FEATURE_UPDATE);
+        require(FEATURE_UPDATE);
         if (!configuration.isSupportedBy(backend.version)) {
             throw new UnsupportedOperationException("This configuration is not supported on this YubiKey version");
         }
@@ -300,6 +330,8 @@ public class YubiOtpSession extends ApplicationSession<YubiOtp> {
     /**
      * Configure the NFC NDEF payload, and which slot to use.
      *
+     * This functionality requires support for {@link #FEATURE_NDEF}, available on YubiKey 3 or later.
+     *
      * @param slot       the YubiKey slot to append to the uri payload
      * @param uri        the URI prefix (if null, the default "https://my.yubico.com/yk/#" will be used)
      * @param curAccCode the current access code, if needed
@@ -307,7 +339,7 @@ public class YubiOtpSession extends ApplicationSession<YubiOtp> {
      * @throws CommandException in case of an error response from the YubiKey
      */
     public void setNdefConfiguration(Slot slot, @Nullable String uri, @Nullable byte[] curAccCode) throws IOException, CommandException {
-        require(YubiOtp.FEATURE_NDEF);
+        require(FEATURE_NDEF);
         writeConfig(
                 slot.map(CMD_NDEF_1, CMD_NDEF_2),
                 buildNdefConfig(uri == null ? DEFAULT_NDEF_URI : uri),
@@ -319,6 +351,8 @@ public class YubiOtpSession extends ApplicationSession<YubiOtp> {
     /**
      * Calculates HMAC-SHA1 on given challenge (using secret that configured/programmed on YubiKey)
      *
+     * This functionality requires support for {@link #FEATURE_CHALLENGE_RESPONSE}, available on YubiKey 2.2 or later.
+     *
      * @param slot      the slot on YubiKey that configured with challenge response secret
      * @param challenge generated challenge that will be sent
      * @param state     if false, the command will be aborted in case the credential requires user touch
@@ -327,7 +361,7 @@ public class YubiOtpSession extends ApplicationSession<YubiOtp> {
      * @throws CommandException in case of an error response from the YubiKey
      */
     public byte[] calculateHmacSha1(Slot slot, byte[] challenge, @Nullable CommandState state) throws IOException, CommandException {
-        require(YubiOtp.FEATURE_CHALLENGE_RESPONSE);
+        require(FEATURE_CHALLENGE_RESPONSE);
 
         // Pad challenge with byte different from last.
         byte[] padded = new byte[HMAC_CHALLENGE_SIZE];
