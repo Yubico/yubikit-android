@@ -13,7 +13,7 @@ import com.google.android.material.tabs.TabLayoutMediator
 import com.yubico.yubikit.android.app.R
 import com.yubico.yubikit.android.app.ui.YubiKeyFragment
 import com.yubico.yubikit.android.app.ui.getSecret
-import com.yubico.yubikit.core.ApplicationNotAvailableException
+import com.yubico.yubikit.core.application.ApplicationNotAvailableException
 import com.yubico.yubikit.core.smartcard.ApduException
 import com.yubico.yubikit.core.smartcard.SW
 import com.yubico.yubikit.piv.PivSession

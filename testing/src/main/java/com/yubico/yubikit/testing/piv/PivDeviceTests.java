@@ -15,7 +15,7 @@
  */
 package com.yubico.yubikit.testing.piv;
 
-import com.yubico.yubikit.core.BadResponseException;
+import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.core.smartcard.SW;

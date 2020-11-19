@@ -5,7 +5,7 @@
  */
 package com.yubico.yubikit.core.fido;
 
-import com.yubico.yubikit.core.CommandException;
+import com.yubico.yubikit.core.application.CommandException;
 
 import java.util.Locale;
 

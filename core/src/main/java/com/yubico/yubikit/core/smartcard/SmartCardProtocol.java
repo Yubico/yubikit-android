@@ -16,7 +16,7 @@
 
 package com.yubico.yubikit.core.smartcard;
 
-import com.yubico.yubikit.core.ApplicationNotAvailableException;
+import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
 import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.Version;
 

@@ -2,13 +2,25 @@ package com.yubico.yubikit.yubiotp;
 
 import com.yubico.yubikit.core.Version;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+
 public class UpdateConfiguration extends KeyboardSlotConfiguration<UpdateConfiguration> {
-    private static final byte TKTFLAG_UPDATE_MASK = TKTFLAG_TAB_FIRST | TKTFLAG_APPEND_TAB1 | TKTFLAG_APPEND_TAB2 | TKTFLAG_APPEND_DELAY1 | TKTFLAG_APPEND_DELAY2 | TKTFLAG_APPEND_CR;
-    private static final byte CFGFLAG_UPDATE_MASK = CFGFLAG_PACING_10MS | CFGFLAG_PACING_20MS;
+    private static final Set<Flag> UPDATE_FLAGS;
+
+    static {
+        Set<Flag> allowed = new HashSet<>();
+        allowed.addAll(Arrays.asList(EXTFLAG_ALLOW_UPDATE, EXTFLAG_DORMANT, EXTFLAG_FAST_TRIG, EXTFLAG_LED_INV, EXTFLAG_SERIAL_API_VISIBLE, EXTFLAG_SERIAL_BTN_VISIBLE, EXTFLAG_SERIAL_USB_VISIBLE, EXTFLAG_USE_NUMERIC_KEYPAD));
+        allowed.addAll(Arrays.asList(TKTFLAG_TAB_FIRST, TKTFLAG_APPEND_TAB1, TKTFLAG_APPEND_TAB2, TKTFLAG_APPEND_DELAY1, TKTFLAG_APPEND_DELAY2, TKTFLAG_APPEND_CR));
+        allowed.addAll(Arrays.asList(CFGFLAG_PACING_10MS, CFGFLAG_PACING_20MS));
+        UPDATE_FLAGS = Collections.unmodifiableSet(allowed);
+    }
 
     @Override
     public boolean isSupportedBy(Version version) {
-        return YubiOtpSession.FEATURE_UPDATE.supports(version) && super.isSupportedBy(version);
+        return YubiOtp.FEATURE_UPDATE.supports(version) && super.isSupportedBy(version);
     }
 
     @Override
@@ -17,22 +29,12 @@ public class UpdateConfiguration extends KeyboardSlotConfiguration<UpdateConfigu
     }
 
     @Override
-    protected UpdateConfiguration updateTktFlags(byte bit, boolean value, Version minVersion) {
-        if ((TKTFLAG_UPDATE_MASK & bit) == 0) {
+    protected UpdateConfiguration updateFlags(Flag flag, boolean value) {
+        if (!UPDATE_FLAGS.contains(flag)) {
             throw new IllegalArgumentException("Unsupported TKT flags for update");
         }
-        return super.updateTktFlags(bit, value, minVersion);
+        return super.updateFlags(flag, value);
     }
-
-    @Override
-    protected UpdateConfiguration updateCfgFlags(byte bit, boolean value, Version minVersion) {
-        if ((CFGFLAG_UPDATE_MASK & bit) == 0) {
-            throw new IllegalArgumentException("Unsupported CFG flags for update");
-        }
-        return super.updateCfgFlags(bit, value, minVersion);
-    }
-
-    // NB: All EXT flags are valid for update.
 
     /**
      * This setting cannot be changed for update, and this method will throw an IllegalArgumentException
@@ -54,9 +56,9 @@ public class UpdateConfiguration extends KeyboardSlotConfiguration<UpdateConfigu
      * @return the configuration for chaining
      */
     public UpdateConfiguration tabs(boolean before, boolean afterFirst, boolean afterSecond) {
-        updateTktFlags(TKTFLAG_TAB_FIRST, before, V1_0);
-        updateTktFlags(TKTFLAG_APPEND_TAB1, afterFirst, V1_0);
-        return updateTktFlags(TKTFLAG_APPEND_TAB2, afterSecond, V1_0);
+        updateFlags(TKTFLAG_TAB_FIRST, before);
+        updateFlags(TKTFLAG_APPEND_TAB1, afterFirst);
+        return updateFlags(TKTFLAG_APPEND_TAB2, afterSecond);
     }
 
     /**
@@ -67,7 +69,7 @@ public class UpdateConfiguration extends KeyboardSlotConfiguration<UpdateConfigu
      * @return the configuration for chaining
      */
     public UpdateConfiguration delay(boolean afterFirst, boolean afterSecond) {
-        updateTktFlags(TKTFLAG_APPEND_DELAY1, afterFirst, V1_0);
-        return updateTktFlags(TKTFLAG_APPEND_DELAY2, afterSecond, V1_0);
+        updateFlags(TKTFLAG_APPEND_DELAY1, afterFirst);
+        return updateFlags(TKTFLAG_APPEND_DELAY2, afterSecond);
     }
 }

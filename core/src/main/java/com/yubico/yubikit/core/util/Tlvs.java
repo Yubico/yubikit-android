@@ -16,7 +16,7 @@
 
 package com.yubico.yubikit.core.util;
 
-import com.yubico.yubikit.core.BadResponseException;
+import com.yubico.yubikit.core.application.BadResponseException;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;

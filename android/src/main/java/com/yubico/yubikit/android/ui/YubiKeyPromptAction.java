@@ -5,7 +5,7 @@ import android.os.Bundle;
 
 import androidx.annotation.WorkerThread;
 
-import com.yubico.yubikit.core.CommandState;
+import com.yubico.yubikit.core.application.CommandState;
 import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.util.Pair;
 

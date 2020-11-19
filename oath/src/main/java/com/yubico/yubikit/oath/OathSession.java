@@ -16,10 +16,9 @@
 
 package com.yubico.yubikit.oath;
 
-import com.yubico.yubikit.core.ApplicationNotAvailableException;
-import com.yubico.yubikit.core.ApplicationSession;
-import com.yubico.yubikit.core.BadResponseException;
-import com.yubico.yubikit.core.Feature;
+import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
+import com.yubico.yubikit.core.application.ApplicationSession;
+import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.smartcard.Apdu;
 import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.core.smartcard.SW;
@@ -53,12 +52,7 @@ import javax.crypto.spec.SecretKeySpec;
  * Communicates with a YubiKey's OATH application.
  * https://developers.yubico.com/OATH/YKOATH_Protocol.html
  */
-public class OathSession extends ApplicationSession<OathSession> {
-    // Features
-    public static final Feature<OathSession> FEATURE_TOUCH = new Feature.MinVersion<>("Touch", 4, 2, 0, session -> session.applicationInfo.getVersion());
-    public static final Feature<OathSession> FEATURE_SHA512 = new Feature.MinVersion<>("SHA-512", 4, 3, 1, session -> session.applicationInfo.getVersion());
-    public static final Feature<OathSession> FEATURE_RENAME = new Feature.MinVersion<>("Rename Credential", 5, 3, 0, session -> session.applicationInfo.getVersion());
-
+public class OathSession extends ApplicationSession<Oath> {
     // Tlv tags for credential data
     private static final int TAG_NAME = 0x71;
     private static final int TAG_KEY = 0x73;
@@ -414,10 +408,10 @@ public class OathSession extends ApplicationSession<OathSession> {
      */
     public Credential putCredential(CredentialData credential, boolean touchRequired) throws IOException, ApduException {
         if (touchRequired) {
-            require(FEATURE_TOUCH);
+            require(Oath.FEATURE_TOUCH);
         }
         if (credential.getHashAlgorithm() == HashAlgorithm.SHA512) {
-            require(FEATURE_SHA512);
+            require(Oath.FEATURE_SHA512);
         }
 
         try {
@@ -488,7 +482,7 @@ public class OathSession extends ApplicationSession<OathSession> {
      * @throws ApduException in case of communication error
      */
     public byte[] renameCredential(byte[] credentialId, String name, @Nullable String issuer) throws IOException, ApduException {
-        require(FEATURE_RENAME);
+        require(Oath.FEATURE_RENAME);
         CredentialIdUtils.CredentialIdData data = CredentialIdUtils.parseId(credentialId, OathType.TOTP); // This works for HOTP as well
         byte[] newId = CredentialIdUtils.formatId(issuer, name, OathType.TOTP, data.period);
         protocol.sendAndReceive(new Apdu(0x00, INS_RENAME, 0, 0, Tlvs.encodeList(Arrays.asList(

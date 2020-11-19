@@ -13,17 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.yubico.yubikit.core;
+package com.yubico.yubikit.management;
 
-/**
- * An error response from a YubiKey.
- */
-public class CommandException extends Exception {
-    public CommandException(String message) {
-        super(message);
-    }
+public enum Capability {
+    OTP(0x0001),
+    U2F(0x0002),
+    OPENPGP(0x0008),
+    PIV(0x0010),
+    OATH(0x0020),
+    FIDO2(0x0200);
 
-    public CommandException(String message, Throwable cause) {
-        super(message, cause);
+    public final int bit;
+
+    Capability(int bit) {
+        this.bit = bit;
     }
 }

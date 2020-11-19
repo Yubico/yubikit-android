@@ -38,7 +38,7 @@ public class StaticPasswordSlotConfiguration extends KeyboardSlotConfiguration<S
         // NB: rewind() doesn't return a ByteBuffer before Java 9.
         ByteBuffer.wrap(ByteBuffer.allocate(SCAN_CODES_SIZE).put(scanCodes).array()).get(fixed).get(uid).get(key);
 
-        updateCfgFlags(CFGFLAG_SHORT_TICKET, true, V2_2);
+        updateFlags(CFGFLAG_SHORT_TICKET, true);
     }
 
     @Override

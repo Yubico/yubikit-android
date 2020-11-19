@@ -22,8 +22,11 @@ import com.yubico.yubikit.core.otp.ChecksumUtils;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import javax.annotation.Nullable;
 
@@ -36,26 +39,20 @@ abstract class BaseSlotConfiguration<T extends BaseSlotConfiguration<T>> impleme
     private static final int ACC_CODE_SIZE = 6;     // Size of access code to re-program device
     private static final int CONFIG_SIZE = 52;      // Size of config struct (excluding current access code)
 
-    protected static final Version UNCHECKED = new Version(0, 0, 0);
-    protected static final Version V1_0 = new Version(1, 0, 0);
-    protected static final Version V2_0 = new Version(2, 0, 0);
-    protected static final Version V2_1 = new Version(2, 1, 0);
-    protected static final Version V2_2 = new Version(2, 2, 0);
-    protected static final Version V2_3 = new Version(2, 3, 0);
-    protected static final Version V2_4 = new Version(2, 4, 0);
-
     protected byte[] fixed = new byte[0];
     protected final byte[] uid = new byte[UID_SIZE];
     protected final byte[] key = new byte[KEY_SIZE];
 
-    private byte tkt = 0;
-    private byte cfg = 0;
-    // Defaults: If not supported, these are just ignored.
-    private byte ext = EXTFLAG_SERIAL_API_VISIBLE | EXTFLAG_ALLOW_UPDATE;
+    private final Map<FlagType, Set<Flag>> flags = new HashMap<>();
 
-    private final Map<Byte, Version> tktReqs = new HashMap<>();
-    private final Map<Byte, Version> cfgReqs = new HashMap<>();
-    private final Map<Byte, Version> extReqs = new HashMap<>();
+    protected BaseSlotConfiguration() {
+        for (FlagType type : FlagType.values()) {
+            flags.put(type, new HashSet<>());
+        }
+
+        updateFlags(EXTFLAG_SERIAL_API_VISIBLE, true);
+        updateFlags(EXTFLAG_ALLOW_UPDATE, true);
+    }
 
     protected abstract T getThis();
 
@@ -67,33 +64,21 @@ abstract class BaseSlotConfiguration<T extends BaseSlotConfiguration<T>> impleme
         }
     }
 
-    protected final byte getTkt() {
-        return tkt;
+    protected final byte getFlags(FlagType type) {
+        byte bits = 0;
+        for (Flag flag : flags.get(type)) {
+            bits |= flag.bit;
+        }
+        return bits;
     }
 
-    protected final byte getCfg() {
-        return cfg;
-    }
-
-    protected final byte getExt() {
-        return ext;
-    }
-
-    protected T updateTktFlags(byte bit, boolean value, Version minVersion) {
-        tkt = updateFlags(tkt, bit, value);
-        tktReqs.put(bit, minVersion);
-        return getThis();
-    }
-
-    protected T updateCfgFlags(byte bit, boolean value, Version minVersion) {
-        cfg = updateFlags(cfg, bit, value);
-        cfgReqs.put(bit, minVersion);
-        return getThis();
-    }
-
-    protected T updateExtFlags(byte bit, boolean value, Version minVersion) {
-        ext = updateFlags(ext, bit, value);
-        extReqs.put(bit, minVersion);
+    protected T updateFlags(Flag flag, boolean value) {
+        Set<Flag> set = flags.get(flag.type);
+        if (value) {
+            set.add(flag);
+        } else {
+            set.remove(flag);
+        }
         return getThis();
     }
 
@@ -106,29 +91,34 @@ abstract class BaseSlotConfiguration<T extends BaseSlotConfiguration<T>> impleme
         return true;
     }
 
+    private boolean checkFlagSupport(Version version, Set<? extends Flag> flags) {
+        return flags.stream().filter(flag -> !(flag instanceof NonFailingFlag)).allMatch(flag -> version.compareTo(flag.requiredVersion) >= 0);
+    }
+
     @Override
     public boolean isSupportedBy(Version version) {
         if (version.major == 0) {
             return true;
         }
-        return checkFlagSupport(version, tktReqs, tkt) && checkFlagSupport(version, cfgReqs, cfg) && checkFlagSupport(version, extReqs, ext);
+        return flags.values().stream().flatMap(Collection::stream).allMatch(flag -> version.compareTo(flag.requiredVersion) >= 0);
+        //return checkFlagSupport(version, tktReqs, tkt) && checkFlagSupport(version, cfgReqs, cfg) && checkFlagSupport(version, flags.get(FlagType.EXT));
     }
 
     @Override
     public byte[] getConfig(@Nullable byte[] accCode) {
-        return buildConfig(fixed, uid, key, ext, tkt, cfg, accCode);
+        return buildConfig(fixed, uid, key, getFlags(FlagType.EXT), getFlags(FlagType.TKT), getFlags(FlagType.CFG), accCode);
     }
 
     public T serialApiVisible(boolean serialApiVisible) {
-        return updateExtFlags(EXTFLAG_SERIAL_API_VISIBLE, serialApiVisible, V2_2);
+        return updateFlags(EXTFLAG_SERIAL_API_VISIBLE, serialApiVisible);
     }
 
     public T serialUsbVisible(boolean serialUsbVisible) {
-        return updateExtFlags(EXTFLAG_SERIAL_USB_VISIBLE, serialUsbVisible, V2_2);
+        return updateFlags(EXTFLAG_SERIAL_USB_VISIBLE, serialUsbVisible);
     }
 
     public T allowUpdate(boolean allowUpdate) {
-        return updateExtFlags(EXTFLAG_ALLOW_UPDATE, allowUpdate, V2_3);
+        return updateFlags(EXTFLAG_ALLOW_UPDATE, allowUpdate);
     }
 
     /**
@@ -139,7 +129,7 @@ abstract class BaseSlotConfiguration<T extends BaseSlotConfiguration<T>> impleme
      * @return the configuration for chaining
      */
     public T dormant(boolean dormant) {
-        return updateExtFlags(EXTFLAG_DORMANT, dormant, V2_3);
+        return updateFlags(EXTFLAG_DORMANT, dormant);
     }
 
     /**
@@ -149,7 +139,7 @@ abstract class BaseSlotConfiguration<T extends BaseSlotConfiguration<T>> impleme
      * @return the configuration for chaining
      */
     public T invertLed(boolean invertLed) {
-        return updateExtFlags(EXTFLAG_LED_INV, invertLed, YubiOtpSession.FEATURE_INVERT_LED.requiredVersion);
+        return updateFlags(EXTFLAG_LED_INV, invertLed);
     }
 
     /**
@@ -159,7 +149,7 @@ abstract class BaseSlotConfiguration<T extends BaseSlotConfiguration<T>> impleme
      * @return the configuration for chaining
      */
     public T protectSlot2(boolean protectSlot2) {
-        return updateTktFlags(TKTFLAG_PROTECT_CFG2, protectSlot2, V2_0);
+        return updateFlags(TKTFLAG_PROTECT_CFG2, protectSlot2);
     }
 
     static byte[] buildConfig(byte[] fixed, byte[] uid, byte[] key, byte extFlags, byte tktFlags, byte cfgFlags, @Nullable byte[] accCode) {

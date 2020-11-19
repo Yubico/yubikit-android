@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.yubico.yubikit.core;
+package com.yubico.yubikit.core.application;
 
 /**
  * The data contained in a YubiKey response was invalid.

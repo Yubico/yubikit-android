@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.yubico.yubikit.core;
+package com.yubico.yubikit.core.application;
 
 /**
  * The application is either disabled or not supported on the connected YubiKey.

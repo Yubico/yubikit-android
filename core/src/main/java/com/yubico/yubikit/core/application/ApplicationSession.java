@@ -1,4 +1,4 @@
-package com.yubico.yubikit.core;
+package com.yubico.yubikit.core.application;
 
 import java.io.Closeable;
 
@@ -8,18 +8,18 @@ import java.io.Closeable;
  *
  * @param <T> the type of the subclass
  */
-public abstract class ApplicationSession<T extends ApplicationSession<T>> implements Closeable {
+public abstract class ApplicationSession<T extends Application> implements Closeable {
     /**
      * Check if a Feature is supported by the YubiKey.
      *
      * @param feature the Feature to check support for.
      * @return true if the Feature is supported, false if not.
      */
-    public boolean supports(Feature<T> feature) {
-        return feature.isSupported((T) this);
+    public boolean supports(Application.Feature<T> feature) {
+        return feature.isSupported(this);
     }
 
-    protected void require(Feature<T> feature) {
+    protected void require(Application.Feature<T> feature) {
         if (!supports(feature)) {
             throw new UnsupportedOperationException(feature.getRequiredMessage());
         }

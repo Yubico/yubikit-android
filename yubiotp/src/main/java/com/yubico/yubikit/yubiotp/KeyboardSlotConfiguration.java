@@ -15,13 +15,11 @@
  */
 package com.yubico.yubikit.yubiotp;
 
-import com.yubico.yubikit.core.Version;
-
 abstract class KeyboardSlotConfiguration<T extends KeyboardSlotConfiguration<T>> extends BaseSlotConfiguration<T> {
     protected KeyboardSlotConfiguration() {
         // Unchecked defaults, ignored if not supported
-        updateTktFlags(TKTFLAG_APPEND_CR, true, UNCHECKED);
-        updateExtFlags(EXTFLAG_FAST_TRIG, true, UNCHECKED);
+        updateFlags(TKTFLAG_APPEND_CR, true);
+        updateFlags(EXTFLAG_FAST_TRIG, true);
     }
 
     /**
@@ -31,7 +29,7 @@ abstract class KeyboardSlotConfiguration<T extends KeyboardSlotConfiguration<T>>
      * @return the configuration for chaining
      */
     public T appendCr(boolean appendCr) {
-        return updateTktFlags(TKTFLAG_APPEND_CR, appendCr, V1_0);
+        return updateFlags(TKTFLAG_APPEND_CR, appendCr);
     }
 
     /**
@@ -42,7 +40,7 @@ abstract class KeyboardSlotConfiguration<T extends KeyboardSlotConfiguration<T>>
      * @return the configuration for chaining
      */
     public T fastTrigger(boolean fastTrigger) {
-        return updateExtFlags(EXTFLAG_FAST_TRIG, fastTrigger, V2_3);
+        return updateFlags(EXTFLAG_FAST_TRIG, fastTrigger);
     }
 
     /**
@@ -56,8 +54,8 @@ abstract class KeyboardSlotConfiguration<T extends KeyboardSlotConfiguration<T>>
      * @return the configuration for chaining
      */
     public T pacing(boolean pacing10Ms, boolean pacing20Ms) {
-        updateTktFlags(CFGFLAG_PACING_10MS, pacing10Ms, V1_0);
-        return updateTktFlags(CFGFLAG_PACING_20MS, pacing20Ms, V1_0);
+        updateFlags(CFGFLAG_PACING_10MS, pacing10Ms);
+        return updateFlags(CFGFLAG_PACING_20MS, pacing20Ms);
     }
 
     /**
@@ -67,6 +65,6 @@ abstract class KeyboardSlotConfiguration<T extends KeyboardSlotConfiguration<T>>
      * @return the configuration for chaining
      */
     public T useNumeric(boolean useNumeric) {
-        return updateExtFlags(EXTFLAG_USE_NUMERIC_KEYPAD, useNumeric, V2_3);
+        return updateFlags(EXTFLAG_USE_NUMERIC_KEYPAD, useNumeric);
     }
 }

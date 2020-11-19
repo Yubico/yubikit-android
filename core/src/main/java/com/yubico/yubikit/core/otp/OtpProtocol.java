@@ -15,10 +15,10 @@
  */
 package com.yubico.yubikit.core.otp;
 
-import com.yubico.yubikit.core.CommandException;
-import com.yubico.yubikit.core.CommandState;
+import com.yubico.yubikit.core.application.CommandException;
+import com.yubico.yubikit.core.application.CommandState;
 import com.yubico.yubikit.core.Logger;
-import com.yubico.yubikit.core.TimeoutException;
+import com.yubico.yubikit.core.application.TimeoutException;
 import com.yubico.yubikit.core.util.StringUtils;
 
 import javax.annotation.Nullable;

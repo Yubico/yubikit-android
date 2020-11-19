@@ -56,7 +56,7 @@ public class DeviceConfig {
      * applications.
      *
      * @param transport the physical transport to get enabled applications for
-     * @return the enabled applications, represented as {@link Application} bits being set (1) or not (0)
+     * @return the enabled applications, represented as {@link Capability} bits being set (1) or not (0)
      */
     @Nullable
     public Integer getEnabledApplications(Transport transport) {

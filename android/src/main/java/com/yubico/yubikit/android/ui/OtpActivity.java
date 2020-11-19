@@ -19,14 +19,13 @@ import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.KeyEvent;
-import android.widget.TextView;
+
 import com.yubico.yubikit.android.R;
 import com.yubico.yubikit.android.transport.nfc.NfcYubiKeyDevice;
 import com.yubico.yubikit.android.transport.usb.UsbConfiguration;
 import com.yubico.yubikit.android.transport.usb.UsbYubiKeyListener;
 import com.yubico.yubikit.android.transport.usb.UsbYubiKeyDevice;
-import com.yubico.yubikit.core.CommandState;
-import com.yubico.yubikit.core.YubiKeyConnection;
+import com.yubico.yubikit.core.application.CommandState;
 import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.util.NdefUtils;
 import com.yubico.yubikit.core.util.Pair;

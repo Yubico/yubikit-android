@@ -15,7 +15,7 @@
  */
 package com.yubico.yubikit.core.otp;
 
-import com.yubico.yubikit.core.CommandException;
+import com.yubico.yubikit.core.application.CommandException;
 
 /**
  * The command was rejected by the YubiKey.

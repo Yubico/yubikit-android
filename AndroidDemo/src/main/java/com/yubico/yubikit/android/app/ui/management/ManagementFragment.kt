@@ -9,7 +9,7 @@ import androidx.fragment.app.activityViewModels
 import com.yubico.yubikit.android.app.R
 import com.yubico.yubikit.android.app.ui.YubiKeyFragment
 import com.yubico.yubikit.core.Transport
-import com.yubico.yubikit.management.Application
+import com.yubico.yubikit.management.Capability
 import com.yubico.yubikit.management.DeviceConfig
 import com.yubico.yubikit.management.ManagementSession
 import kotlinx.android.synthetic.main.fragment_management.*
@@ -18,19 +18,19 @@ class ManagementFragment : YubiKeyFragment<ManagementSession, ManagementViewMode
     override val viewModel: ManagementViewModel by activityViewModels()
 
     private val checkboxIds = mapOf(
-            (Transport.USB to Application.OTP) to R.id.checkbox_usb_otp,
-            (Transport.USB to Application.U2F) to R.id.checkbox_usb_u2f,
-            (Transport.USB to Application.PIV) to R.id.checkbox_usb_piv,
-            (Transport.USB to Application.OATH) to R.id.checkbox_usb_oath,
-            (Transport.USB to Application.OPENPGP) to R.id.checkbox_usb_pgp,
-            (Transport.USB to Application.FIDO2) to R.id.checkbox_usb_fido2,
+            (Transport.USB to Capability.OTP) to R.id.checkbox_usb_otp,
+            (Transport.USB to Capability.U2F) to R.id.checkbox_usb_u2f,
+            (Transport.USB to Capability.PIV) to R.id.checkbox_usb_piv,
+            (Transport.USB to Capability.OATH) to R.id.checkbox_usb_oath,
+            (Transport.USB to Capability.OPENPGP) to R.id.checkbox_usb_pgp,
+            (Transport.USB to Capability.FIDO2) to R.id.checkbox_usb_fido2,
 
-            (Transport.NFC to Application.OTP) to R.id.checkbox_nfc_otp,
-            (Transport.NFC to Application.U2F) to R.id.checkbox_nfc_u2f,
-            (Transport.NFC to Application.PIV) to R.id.checkbox_nfc_piv,
-            (Transport.NFC to Application.OATH) to R.id.checkbox_nfc_oath,
-            (Transport.NFC to Application.OPENPGP) to R.id.checkbox_nfc_pgp,
-            (Transport.NFC to Application.FIDO2) to R.id.checkbox_nfc_fido2
+            (Transport.NFC to Capability.OTP) to R.id.checkbox_nfc_otp,
+            (Transport.NFC to Capability.U2F) to R.id.checkbox_nfc_u2f,
+            (Transport.NFC to Capability.PIV) to R.id.checkbox_nfc_piv,
+            (Transport.NFC to Capability.OATH) to R.id.checkbox_nfc_oath,
+            (Transport.NFC to Capability.OPENPGP) to R.id.checkbox_nfc_pgp,
+            (Transport.NFC to Capability.FIDO2) to R.id.checkbox_nfc_fido2
     )
 
     override fun onCreateView(

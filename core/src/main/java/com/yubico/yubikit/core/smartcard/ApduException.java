@@ -16,7 +16,7 @@
 
 package com.yubico.yubikit.core.smartcard;
 
-import com.yubico.yubikit.core.CommandException;
+import com.yubico.yubikit.core.application.CommandException;
 
 import java.util.Locale;
 

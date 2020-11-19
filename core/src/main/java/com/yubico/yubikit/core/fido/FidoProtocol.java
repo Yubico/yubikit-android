@@ -5,7 +5,7 @@
  */
 package com.yubico.yubikit.core.fido;
 
-import com.yubico.yubikit.core.CommandState;
+import com.yubico.yubikit.core.application.CommandState;
 import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.core.Version;
 import com.yubico.yubikit.core.util.StringUtils;

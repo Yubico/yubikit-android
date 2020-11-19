@@ -15,7 +15,7 @@
  */
 package com.yubico.yubikit.management;
 
-import com.yubico.yubikit.core.BadResponseException;
+import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.Version;
 import com.yubico.yubikit.core.util.Tlvs;

@@ -17,6 +17,9 @@
 package com.yubico.yubikit.management;
 
 import com.yubico.yubikit.core.*;
+import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
+import com.yubico.yubikit.core.application.ApplicationSession;
+import com.yubico.yubikit.core.application.CommandException;
 import com.yubico.yubikit.core.fido.FidoConnection;
 import com.yubico.yubikit.core.fido.FidoProtocol;
 import com.yubico.yubikit.core.otp.ChecksumUtils;
@@ -38,12 +41,7 @@ import java.util.Arrays;
  * Application to get information about and configure a YubiKey via the Management Application.
  * https://developers.yubico.com/yubikey-manager/Config_Reference.html
  */
-public class ManagementSession extends ApplicationSession<ManagementSession> {
-    // Features
-    public static final Feature<ManagementSession> FEATURE_MODE = new Feature.MinVersion<>("Mode", 3, 0, 0, ManagementSession::getVersion);
-    public static final Feature<ManagementSession> FEATURE_DEVICE_INFO = new Feature.MinVersion<>("Device Info", 4, 1, 0, ManagementSession::getVersion);
-    public static final Feature<ManagementSession> FEATURE_DEVICE_CONFIG = new Feature.MinVersion<>("Device Config", 5, 0, 0, ManagementSession::getVersion);
-
+public class ManagementSession extends ApplicationSession<Management> {
     // Smart card command constants
     private static final byte[] AID = new byte[]{(byte) 0xa0, 0x00, 0x00, 0x05, 0x27, 0x47, 0x11, 0x17};
     private static final byte[] OTP_AID = new byte[]{(byte) 0xa0, 0x00, 0x00, 0x05, 0x27, 0x20, 0x01, 0x01};
@@ -202,7 +200,7 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
     }
 
     public DeviceInfo getDeviceInfo() throws IOException, CommandException {
-        require(FEATURE_DEVICE_INFO);
+        require(Management.FEATURE_DEVICE_INFO);
         return DeviceInfo.parse(backend.readConfig(), version);
     }
 
@@ -217,7 +215,7 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
      * @throws CommandException in case of error response
      */
     public void updateDeviceConfig(DeviceConfig config, boolean reboot, @Nullable byte[] currentLockCode, @Nullable byte[] newLockCode) throws IOException, CommandException {
-        require(FEATURE_DEVICE_CONFIG);
+        require(Management.FEATURE_DEVICE_CONFIG);
         byte[] data = config.getBytes(reboot, currentLockCode, newLockCode);
         backend.writeConfig(data);
     }
@@ -232,17 +230,17 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
      * @throws ApduException         in case of communication or not supported operation error
      */
     public void setMode(UsbInterface.Mode mode, byte chalrespTimeout, short autoejectTimeout) throws IOException, CommandException {
-        if (supports(FEATURE_DEVICE_CONFIG)) {
+        if (supports(Management.FEATURE_DEVICE_CONFIG)) {
             //Translate into DeviceConfig and set using writeDeviceConfig
             int usbEnabled = 0;
             if ((mode.interfaces & UsbInterface.OTP) != 0) {
-                usbEnabled |= Application.OTP.bit;
+                usbEnabled |= Capability.OTP.bit;
             }
             if ((mode.interfaces & UsbInterface.CCID) != 0) {
-                usbEnabled |= Application.OATH.bit | Application.PIV.bit | Application.OPENPGP.bit;
+                usbEnabled |= Capability.OATH.bit | Capability.PIV.bit | Capability.OPENPGP.bit;
             }
             if ((mode.interfaces & UsbInterface.FIDO) != 0) {
-                usbEnabled |= Application.U2F.bit | Application.FIDO2.bit;
+                usbEnabled |= Capability.U2F.bit | Capability.FIDO2.bit;
             }
             updateDeviceConfig(
                     new DeviceConfig.Builder()
@@ -252,7 +250,7 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
                             .build(),
                     false, null, null);
         } else {
-            require(FEATURE_MODE);
+            require(Management.FEATURE_MODE);
             byte[] data = ByteBuffer.allocate(4).put(mode.value).put(chalrespTimeout).putShort(autoejectTimeout).array();
             backend.setMode(data);
         }
