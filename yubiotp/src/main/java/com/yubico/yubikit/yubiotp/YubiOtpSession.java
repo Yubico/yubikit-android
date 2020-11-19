@@ -207,6 +207,7 @@ public class YubiOtpSession extends ApplicationSession<YubiOtp> {
      *
      * @return Yubikey firmware version
      */
+    @Override
     public Version getVersion() {
         return backend.version;
     }

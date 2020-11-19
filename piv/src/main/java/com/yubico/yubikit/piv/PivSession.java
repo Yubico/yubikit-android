@@ -170,6 +170,7 @@ public class PivSession extends ApplicationSession<Piv> {
      *
      * @return firmware version
      */
+    @Override
     public Version getVersion() {
         return version;
     }

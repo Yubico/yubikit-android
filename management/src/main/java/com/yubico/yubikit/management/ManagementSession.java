@@ -195,6 +195,7 @@ public class ManagementSession extends ApplicationSession<Management> {
      *
      * @return Yubikey firmware version
      */
+    @Override
     public Version getVersion() {
         return version;
     }
