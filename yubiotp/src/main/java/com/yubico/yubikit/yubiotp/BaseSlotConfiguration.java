@@ -56,14 +56,6 @@ abstract class BaseSlotConfiguration<T extends BaseSlotConfiguration<T>> impleme
 
     protected abstract T getThis();
 
-    private byte updateFlags(byte flags, byte bit, boolean value) {
-        if (value) {
-            return (byte) (flags | bit);
-        } else {
-            return (byte) (flags & ~bit);
-        }
-    }
-
     protected final byte getFlags(FlagType type) {
         byte bits = 0;
         for (Flag flag : flags.get(type)) {
@@ -82,26 +74,19 @@ abstract class BaseSlotConfiguration<T extends BaseSlotConfiguration<T>> impleme
         return getThis();
     }
 
-    private boolean checkFlagSupport(Version version, Map<Byte, Version> reqs, byte flags) {
-        for (byte flag : reqs.keySet()) {
-            if ((flags & flag) != 0 && version.compareTo(reqs.get(flag)) < 0) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    private boolean checkFlagSupport(Version version, Set<? extends Flag> flags) {
-        return flags.stream().filter(flag -> !(flag instanceof NonFailingFlag)).allMatch(flag -> version.compareTo(flag.requiredVersion) >= 0);
-    }
-
     @Override
     public boolean isSupportedBy(Version version) {
         if (version.major == 0) {
             return true;
         }
-        return flags.values().stream().flatMap(Collection::stream).allMatch(flag -> version.compareTo(flag.requiredVersion) >= 0);
-        //return checkFlagSupport(version, tktReqs, tkt) && checkFlagSupport(version, cfgReqs, cfg) && checkFlagSupport(version, flags.get(FlagType.EXT));
+        for (Set<Flag> flagsOfType: flags.values()) {
+            for (Flag flag : flagsOfType) {
+                if (!(flag instanceof NonFailingFlag) && !flag.isSupportedBy(version)) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     @Override

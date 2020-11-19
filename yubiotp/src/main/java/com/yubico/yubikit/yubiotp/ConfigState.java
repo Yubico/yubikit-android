@@ -46,7 +46,7 @@ public class ConfigState {
      * @return true if the slot holds configuration, false if empty
      */
     public boolean slotIsConfigured(Slot slot) {
-        if (YubiOtp.FEATURE_CHECK_CONFIGURED.supports(version)) {
+        if (YubiOtp.FEATURE_CHECK_CONFIGURED.isSupportedBy(version)) {
             return (flags & slot.map(CONFIG1_VALID, CONFIG2_VALID)) != 0;
         }
         throw new UnsupportedOperationException("Checking if a slot is configured is not supported on this YubiKey.");
@@ -61,7 +61,7 @@ public class ConfigState {
      * @return true of the slot requires touch, false if not (or if checking isn't supported)
      */
     public boolean slotRequiresTouch(Slot slot) {
-        if (YubiOtp.FEATURE_CHECK_TOUCH.supports(version)) {
+        if (YubiOtp.FEATURE_CHECK_TOUCH.isSupportedBy(version)) {
             return (flags & slot.map(CONFIG1_TOUCH, CONFIG2_TOUCH)) != 0;
         }
         throw new UnsupportedOperationException("Checking if a slot requires touch is not supported on this YubiKey.");
@@ -73,6 +73,6 @@ public class ConfigState {
      * @return true if inverted, false if not
      */
     public boolean isLedInverted() {
-        return YubiOtp.FEATURE_INVERT_LED.supports(version) && (flags & CONFIG_LED_INV) != 0;
+        return YubiOtp.FEATURE_INVERT_LED.isSupportedBy(version) && (flags & CONFIG_LED_INV) != 0;
     }
 }

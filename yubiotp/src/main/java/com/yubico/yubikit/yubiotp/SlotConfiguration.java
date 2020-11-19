@@ -96,12 +96,12 @@ public interface SlotConfiguration {
     /**
      * A flag used for slot configuration.
      */
-    class Flag extends Application.VersionedFeature<YubiOtp, YubiOtpSession> {
+    class Flag extends Application.VersionedFeature<YubiOtp> {
         public final FlagType type;
         public final byte bit;
 
         Flag(FlagType type, String name, int bit, int major, int minor) {
-            super(type.name() + "FLAG_" + name, major, minor, 0, YubiOtpSession::getVersion);
+            super(type.name() + "FLAG_" + name, major, minor, 0);
             this.type = type;
             this.bit = (byte) bit;
         }

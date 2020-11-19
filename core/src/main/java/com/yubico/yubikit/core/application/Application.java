@@ -2,8 +2,6 @@ package com.yubico.yubikit.core.application;
 
 import com.yubico.yubikit.core.Version;
 
-import java.util.function.Function;
-
 /**
  * Marker interface for YubiKey Application types.
  */
@@ -34,12 +32,12 @@ public abstract class Application {
         }
 
         /**
-         * Checks if the Feature is supported by the given Session.
+         * Checks if the Feature is supported by the given Application version.
          *
-         * @param session the session to check support for.
+         * @param version the version of the Application to check support for.
          * @return true if the Feature is supported, false if not
          */
-        public abstract boolean isSupported(ApplicationSession<T> session);
+        public abstract boolean isSupportedBy(Version version);
 
         protected String getRequiredMessage() {
             return String.format("%s is not supported by this YubiKey", featureName);
@@ -51,14 +49,12 @@ public abstract class Application {
      *
      * @param <T> The type of Session for which the Feature is relevant.
      */
-    public static class VersionedFeature<T extends Application, S extends ApplicationSession<T>> extends Feature<T> {
-        public final Version requiredVersion;
-        protected final Function<S, Version> getVersion;
+    public static class VersionedFeature<T extends Application> extends Feature<T> {
+        private final Version requiredVersion;
 
-        public VersionedFeature(String featureName, int major, int minor, int build, Function<S, Version> getVersion) {
+        public VersionedFeature(String featureName, int major, int minor, int micro) {
             super(featureName);
-            requiredVersion = new Version(major, minor, build);
-            this.getVersion = getVersion;
+            requiredVersion = new Version(major, minor, micro);
         }
 
         @Override
@@ -66,17 +62,9 @@ public abstract class Application {
             return String.format("%s requires YubiKey %s or later", featureName, requiredVersion);
         }
 
-        public boolean supports(Version version) {
-            return version.major == 0 || requiredVersion.compareTo(version) >= 0;
-        }
-
         @Override
-        public boolean isSupported(ApplicationSession<T> session) {
-            try {
-                return supports(getVersion.apply((S) session));
-            } catch (ClassCastException ignored) {
-                return false;
-            }
+        public boolean isSupportedBy(Version version) {
+            return version.major == 0 || version.compareTo(requiredVersion) >= 0;
         }
     }
 }

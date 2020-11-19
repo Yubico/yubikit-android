@@ -7,43 +7,45 @@ public class YubiOtp extends Application {
     /**
      * Support for checking if a slot is configured via the ConfigState.
      */
-    public static final VersionedFeature<YubiOtp, YubiOtpSession> FEATURE_CHECK_CONFIGURED = otpFeature("Check if a slot is configured", 2, 1, 0);
+    public static final Feature<YubiOtp> FEATURE_CHECK_CONFIGURED = new VersionedFeature<>("Check if a slot is configured", 2, 1, 0);
     /**
      * Support for checking if a configured slot requires touch via the ConfigState.
      */
-    public static final VersionedFeature<YubiOtp, YubiOtpSession> FEATURE_CHECK_TOUCH = otpFeature("Check if a slot requires touch", 3, 0, 0);
+    public static final Feature<YubiOtp> FEATURE_CHECK_TOUCH = new VersionedFeature<>("Check if a slot requires touch", 3, 0, 0);
     /**
      * Support for HMAC-SHA1 challenge response functionality.
      */
-    public static final VersionedFeature<YubiOtp, YubiOtpSession> FEATURE_CHALLENGE_RESPONSE = otpFeature("Challenge-Response", 2, 2, 0);
+    public static final Feature<YubiOtp> FEATURE_CHALLENGE_RESPONSE = new VersionedFeature<>("Challenge-Response", 2, 2, 0);
 
     /**
      * Support for inverted LED behavior.
      */
-    public static final VersionedFeature<YubiOtp, YubiOtpSession> FEATURE_INVERT_LED = new VersionedFeature<YubiOtp, YubiOtpSession>("Invert LED", 2, 4, 0, YubiOtpSession::getVersion) {
+    public static final Feature<YubiOtp> FEATURE_INVERT_LED = new Feature<YubiOtp>("Invert LED") {
         @Override
-        public boolean supports(Version version) {
-            // YubiKey NEO < 3.1 does not support invert LED behavior
-            if (version.isAtLeast(3, 0, 0) && version.isLessThan(3, 1, 0)) {
-                return false;
+        public boolean isSupportedBy(Version version) {
+            if (version.major == 0) {
+                return true;
             }
-            return super.supports(version);
+            if (version.isAtLeast(2, 4, 0)) {
+                // YubiKey NEO < 3.1 does not support invert LED behavior
+                if (version.major == 3 && version.minor == 0) {
+                    return false;
+                }
+                return true;
+            }
+            return false;
         }
     };
     /**
      * Support for swapping slot configurations.
      */
-    public static final VersionedFeature<YubiOtp, YubiOtpSession> FEATURE_SWAP = otpFeature("Swap Slots", 2, 3, 0);
+    public static final Feature<YubiOtp> FEATURE_SWAP = new VersionedFeature<>("Swap Slots", 2, 3, 0);
     /**
      * Support for updating an already configured slot.
      */
-    public static final VersionedFeature<YubiOtp, YubiOtpSession> FEATURE_UPDATE = otpFeature("Update Slot", 2, 3, 0);
+    public static final Feature<YubiOtp> FEATURE_UPDATE = new VersionedFeature<>("Update Slot", 2, 3, 0);
     /**
      * Support for NDEF configuration.
      */
-    public static final VersionedFeature<YubiOtp, YubiOtpSession> FEATURE_NDEF = otpFeature("NDEF", 3, 0, 0);
-
-    private static VersionedFeature<YubiOtp, YubiOtpSession> otpFeature(String name, int major, int minor, int build) {
-        return new VersionedFeature<>(name, major, minor, build, YubiOtpSession::getVersion);
-    }
+    public static final Feature<YubiOtp> FEATURE_NDEF = new VersionedFeature<>("NDEF", 3, 0, 0);
 }

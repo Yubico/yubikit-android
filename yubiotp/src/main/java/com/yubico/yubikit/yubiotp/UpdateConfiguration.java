@@ -20,7 +20,7 @@ public class UpdateConfiguration extends KeyboardSlotConfiguration<UpdateConfigu
 
     @Override
     public boolean isSupportedBy(Version version) {
-        return YubiOtp.FEATURE_UPDATE.supports(version) && super.isSupportedBy(version);
+        return YubiOtp.FEATURE_UPDATE.isSupportedBy(version) && super.isSupportedBy(version);
     }
 
     @Override

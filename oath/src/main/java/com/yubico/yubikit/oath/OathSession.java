@@ -16,6 +16,7 @@
 
 package com.yubico.yubikit.oath;
 
+import com.yubico.yubikit.core.Version;
 import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
 import com.yubico.yubikit.core.application.ApplicationSession;
 import com.yubico.yubikit.core.application.BadResponseException;
@@ -107,6 +108,11 @@ public class OathSession extends ApplicationSession<Oath> {
     @Override
     public void close() throws IOException {
         protocol.close();
+    }
+
+    @Override
+    public Version getVersion() {
+        return applicationInfo.getVersion();
     }
 
     /**
