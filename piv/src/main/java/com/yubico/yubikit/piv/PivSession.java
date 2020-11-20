@@ -85,7 +85,7 @@ public class PivSession extends ApplicationSession<PivSession> {
     /**
      * Support for custom PIN or Touch policy.
      */
-    public static final Feature<PivSession> FEATURE_KEY_POLICY = new Feature.Versioned<>("PIN/Touch Policy", 4, 0, 0);
+    public static final Feature<PivSession> FEATURE_USAGE_POLICY = new Feature.Versioned<>("PIN/Touch Policy", 4, 0, 0);
     /**
      * Support for the CACHED Touch policy.
      */
@@ -364,7 +364,7 @@ public class PivSession extends ApplicationSession<PivSession> {
      * Change management key
      * This method requires authentication {@link #authenticate(byte[])}.
      * <p>
-     * This setting requireTouch=true requires support for {@link #FEATURE_KEY_POLICY}, available on YubiKey 4 or later.
+     * This setting requireTouch=true requires support for {@link #FEATURE_USAGE_POLICY}, available on YubiKey 4 or later.
      *
      * @param managementKey new value of management key
      * @param requireTouch  true to require touch for authentication
@@ -376,7 +376,7 @@ public class PivSession extends ApplicationSession<PivSession> {
             throw new IllegalArgumentException("Management key must be 24 bytes");
         }
         if (requireTouch) {
-            require(FEATURE_KEY_POLICY);
+            require(FEATURE_USAGE_POLICY);
         }
 
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
@@ -716,7 +716,7 @@ public class PivSession extends ApplicationSession<PivSession> {
             require(FEATURE_P384);
         }
         if (pinPolicy != PinPolicy.DEFAULT || touchPolicy != TouchPolicy.DEFAULT) {
-            require(FEATURE_KEY_POLICY);
+            require(FEATURE_USAGE_POLICY);
             if (touchPolicy == TouchPolicy.CACHED) {
                 require(FEATURE_TOUCH_CACHED);
             }
@@ -745,7 +745,7 @@ public class PivSession extends ApplicationSession<PivSession> {
      * <p>
      * RSA key types require {@link #FEATURE_RSA_GENERATION}, available on YubiKeys OTHER THAN 4.2.6-4.3.4.
      * KeyType P348 requires {@link #FEATURE_P384}, available on YubiKey 4 or later.
-     * PinPolicy or TouchPolicy other than default require {@link #FEATURE_KEY_POLICY}, available on YubiKey 4 or later.
+     * PinPolicy or TouchPolicy other than default require {@link #FEATURE_USAGE_POLICY}, available on YubiKey 4 or later.
      * TouchPolicy.CACHED requires {@link #FEATURE_TOUCH_CACHED}, available on YubiKey 4.3 or later.
      * <p>
      * NOTE: YubiKey FIPS does not allow RSA1024 nor PinProtocol.NEVER.
@@ -782,7 +782,7 @@ public class PivSession extends ApplicationSession<PivSession> {
      * This method requires authentication {@link #authenticate(byte[])}.
      * <p>
      * KeyType P348 requires {@link #FEATURE_P384}, available on YubiKey 4 or later.
-     * PinPolicy or TouchPolicy other than default require {@link #FEATURE_KEY_POLICY}, available on YubiKey 4 or later.
+     * PinPolicy or TouchPolicy other than default require {@link #FEATURE_USAGE_POLICY}, available on YubiKey 4 or later.
      * <p>
      * NOTE: YubiKey FIPS does not allow RSA1024 nor PinProtocol.NEVER.
      *
