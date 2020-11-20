@@ -18,11 +18,12 @@ package com.yubico.yubikit.management;
 import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.util.Tlvs;
 
-import javax.annotation.Nullable;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+
+import javax.annotation.Nullable;
 
 public class DeviceConfig {
     private static final int TAG_USB_ENABLED = 0x03;
@@ -34,7 +35,7 @@ public class DeviceConfig {
     private static final int TAG_UNLOCK = 0x0b;
     private static final int TAG_REBOOT = 0x0c;
 
-    private final Map<Transport, Integer> enabledApplications;
+    private final Map<Transport, Integer> enabledCapabilities;
     @Nullable
     private final Short autoEjectTimeout;
     @Nullable
@@ -42,25 +43,25 @@ public class DeviceConfig {
     @Nullable
     private final Integer deviceFlags;
 
-    DeviceConfig(Map<Transport, Integer> enabledApplications, @Nullable Short autoEjectTimeout, @Nullable Byte challengeResponseTimeout, @Nullable Integer deviceFlags) {
-        this.enabledApplications = enabledApplications;
+    DeviceConfig(Map<Transport, Integer> enabledCapabilities, @Nullable Short autoEjectTimeout, @Nullable Byte challengeResponseTimeout, @Nullable Integer deviceFlags) {
+        this.enabledCapabilities = enabledCapabilities;
         this.autoEjectTimeout = autoEjectTimeout;
         this.challengeResponseTimeout = challengeResponseTimeout;
         this.deviceFlags = deviceFlags;
     }
 
     /**
-     * Get the currently enabled applications for a given Interface.
+     * Get the currently enabled capabilities for a given Interface.
      * NOTE: This method will return null if the Interface is not supported by the YubiKey, OR if the enabled
-     * applications state isn't readable. The YubiKey 4 series, for example, does not return enabled-status for USB
+     * capabilities state isn't readable. The YubiKey 4 series, for example, does not return enabled-status for USB
      * applications.
      *
-     * @param transport the physical transport to get enabled applications for
-     * @return the enabled applications, represented as {@link Capability} bits being set (1) or not (0)
+     * @param transport the physical transport to get enabled capabilities for
+     * @return the enabled capabilities, represented as {@link Capability} bits being set (1) or not (0)
      */
     @Nullable
-    public Integer getEnabledApplications(Transport transport) {
-        return enabledApplications.get(transport);
+    public Integer getEnabledCapabilities(Transport transport) {
+        return enabledCapabilities.get(transport);
     }
 
     @Nullable
@@ -86,11 +87,11 @@ public class DeviceConfig {
         if (currentLockCode != null) {
             values.put(TAG_UNLOCK, currentLockCode);
         }
-        Integer usbEnabled = enabledApplications.get(Transport.USB);
+        Integer usbEnabled = enabledCapabilities.get(Transport.USB);
         if (usbEnabled != null) {
             values.put(TAG_USB_ENABLED, new byte[]{(byte) (usbEnabled >> 8), usbEnabled.byteValue()});
         }
-        Integer nfcEnabled = enabledApplications.get(Transport.NFC);
+        Integer nfcEnabled = enabledCapabilities.get(Transport.NFC);
         if (nfcEnabled != null) {
             values.put(TAG_NFC_ENABLED, new byte[]{(byte) (nfcEnabled >> 8), nfcEnabled.byteValue()});
         }
@@ -115,7 +116,7 @@ public class DeviceConfig {
     }
 
     public static class Builder {
-        private final Map<Transport, Integer> enabledApplications = new HashMap<>();
+        private final Map<Transport, Integer> enabledCapabilities = new HashMap<>();
         @Nullable
         private Short autoEjectTimeout;
         @Nullable
@@ -126,8 +127,8 @@ public class DeviceConfig {
         public Builder() {
         }
 
-        public Builder enabledApplications(Transport transport, int applications) {
-            enabledApplications.put(transport, applications);
+        public Builder enabledCapabilities(Transport transport, int capabilities) {
+            enabledCapabilities.put(transport, capabilities);
             return this;
         }
 
@@ -147,7 +148,7 @@ public class DeviceConfig {
         }
 
         public DeviceConfig build() {
-            return new DeviceConfig(enabledApplications, autoEjectTimeout, challengeResponseTimeout, deviceFlags);
+            return new DeviceConfig(enabledCapabilities, autoEjectTimeout, challengeResponseTimeout, deviceFlags);
         }
     }
 }

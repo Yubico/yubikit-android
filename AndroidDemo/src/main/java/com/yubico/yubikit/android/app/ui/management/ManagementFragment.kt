@@ -55,10 +55,10 @@ class ManagementFragment : YubiKeyFragment<ManagementSession, ManagementViewMode
         viewModel.deviceInfo.observe(viewLifecycleOwner, {
             if (it != null) {
                 info.text = "Device type: ${it.formFactor.name} \nFirmware: ${it.version} \nSerial: ${it.serial}"
-                checkboxIds.forEach { (transport, app), id ->
+                checkboxIds.forEach { (transport, capability), id ->
                     view.findViewById<CheckBox>(id).let { checkbox ->
-                        if (it.getSupportedApplications(transport) and app.bit != 0) {
-                            checkbox.isChecked = (it.config.getEnabledApplications(transport) ?: 0) and app.bit != 0
+                        if (it.getSupportedCapabilities(transport) and capability.bit != 0) {
+                            checkbox.isChecked = (it.config.getEnabledCapabilities(transport) ?: 0) and capability.bit != 0
                             checkbox.visibility = View.VISIBLE
                         } else {
                             checkbox.visibility = View.GONE
@@ -79,10 +79,10 @@ class ManagementFragment : YubiKeyFragment<ManagementSession, ManagementViewMode
             viewModel.pendingAction.value = {
                 updateDeviceConfig(DeviceConfig.Builder().apply {
                     Transport.values().forEach { transport ->
-                        enabledApplications(transport, checkboxIds.filter {
+                        enabledCapabilities(transport, checkboxIds.filter {
                             it.key.first == transport && view.findViewById<CheckBox>(it.value).isChecked
                         }.map {
-                            it.key.second.bit  // Application bit
+                            it.key.second.bit  // Capability bit
                         }.sum())
                     }
                 }.build(), true, null, null)

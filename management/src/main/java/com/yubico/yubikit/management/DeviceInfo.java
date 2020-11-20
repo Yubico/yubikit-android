@@ -43,15 +43,15 @@ public class DeviceInfo {
     private final Integer serial;
     private final Version version;
     private final FormFactor formFactor;
-    private final Map<Transport, Integer> supportedApplications;
+    private final Map<Transport, Integer> supportedCapabilities;
     private final boolean isLocked;
 
-    private DeviceInfo(DeviceConfig config, @Nullable Integer serial, Version version, FormFactor formFactor, Map<Transport, Integer> supportedApplications, boolean isLocked) {
+    private DeviceInfo(DeviceConfig config, @Nullable Integer serial, Version version, FormFactor formFactor, Map<Transport, Integer> supportedCapabilities, boolean isLocked) {
         this.config = config;
         this.serial = serial;
         this.version = version;
         this.formFactor = formFactor;
-        this.supportedApplications = supportedApplications;
+        this.supportedCapabilities = supportedCapabilities;
         this.isLocked = isLocked;
     }
 
@@ -73,12 +73,12 @@ public class DeviceInfo {
     }
 
     public boolean hasTransport(Transport transport) {
-        return supportedApplications.containsKey(transport);
+        return supportedCapabilities.containsKey(transport);
     }
 
-    public int getSupportedApplications(Transport transport) {
-        Integer applications = supportedApplications.get(transport);
-        return applications == null ? 0 : applications;
+    public int getSupportedCapabilities(Transport transport) {
+        Integer capabilities = supportedCapabilities.get(transport);
+        return capabilities == null ? 0 : capabilities;
     }
 
     public boolean isLocked() {
@@ -108,31 +108,31 @@ public class DeviceInfo {
         byte challengeResponseTimeout = (byte) readInt(data.get(TAG_CHALLENGE_RESPONSE_TIMEOUT));
         int deviceFlags = readInt(data.get(TAG_DEVICE_FLAGS));
 
-        Map<Transport, Integer> supportedApplications = new HashMap<>();
-        Map<Transport, Integer> enabledApplications = new HashMap<>();
+        Map<Transport, Integer> supportedCapabilities = new HashMap<>();
+        Map<Transport, Integer> enabledCapabilities = new HashMap<>();
 
         if (version.major == 4 && version.minor == 2 && version.micro == 4) {
-            // 4.2.4 doesn't report supported applications correctly, but they are always 0x3f.
-            supportedApplications.put(Transport.USB, 0x3f);
+            // 4.2.4 doesn't report supported capabilities correctly, but they are always 0x3f.
+            supportedCapabilities.put(Transport.USB, 0x3f);
         } else {
-            supportedApplications.put(Transport.USB, readInt(data.get(TAG_USB_SUPPORTED)));
+            supportedCapabilities.put(Transport.USB, readInt(data.get(TAG_USB_SUPPORTED)));
         }
         if(data.containsKey(TAG_USB_ENABLED)) {
-            enabledApplications.put(Transport.USB, readInt(data.get(TAG_USB_ENABLED)));
+            enabledCapabilities.put(Transport.USB, readInt(data.get(TAG_USB_ENABLED)));
         }
 
         if(data.containsKey(TAG_NFC_SUPPORTED)) {
-            supportedApplications.put(Transport.NFC, readInt(data.get(TAG_NFC_SUPPORTED)));
-            enabledApplications.put(Transport.NFC, readInt(data.get(TAG_NFC_ENABLED)));
+            supportedCapabilities.put(Transport.NFC, readInt(data.get(TAG_NFC_SUPPORTED)));
+            enabledCapabilities.put(Transport.NFC, readInt(data.get(TAG_NFC_ENABLED)));
         }
 
         return new DeviceInfo(
                 new DeviceConfig(
-                        enabledApplications,
+                        enabledCapabilities,
                         autoEjectTimeout,
                         challengeResponseTimeout,
                         deviceFlags
-                ), serial, version, formFactor, supportedApplications, isLocked
+                ), serial, version, formFactor, supportedCapabilities, isLocked
         );
     }
 

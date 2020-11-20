@@ -51,7 +51,12 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
     /**
      * Support the SET_MODE command to change the USB mode of the YubiKey.
      */
-    public static final Feature<ManagementSession> FEATURE_MODE = new Feature.Versioned<>("Mode", 3, 0, 0);
+    public static final Feature<ManagementSession> FEATURE_MODE = new Feature<ManagementSession>("Mode") {
+        @Override
+        public boolean isSupportedBy(Version version) {
+            return version.isAtLeast(3, 0, 0) && version.isLessThan(5, 0, 0);
+        }
+    };
     /**
      * Support for reading the DeviceInfo data from the YubiKey.
      */
@@ -278,7 +283,7 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
             }
             updateDeviceConfig(
                     new DeviceConfig.Builder()
-                            .enabledApplications(Transport.USB, usbEnabled)
+                            .enabledCapabilities(Transport.USB, usbEnabled)
                             .challengeResponseTimeout(chalrespTimeout)
                             .autoEjectTimeout(autoejectTimeout)
                             .build(),
