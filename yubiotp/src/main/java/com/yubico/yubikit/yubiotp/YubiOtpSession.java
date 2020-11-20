@@ -166,15 +166,15 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
 
             {
                 if (dummyStatus) { // We can't read the status, so use a dummy with both slots marked as configured.
-                    configState = new ConfigState(version, (short) 3);
+                    configurationState = new ConfigurationState(version, (short) 3);
                 }
             }
 
             @Override
-            void writeConfig(byte slot, byte[] data) throws IOException, CommandException {
+            void writeToSlot(byte slot, byte[] data) throws IOException, CommandException {
                 byte[] status = delegate.sendAndReceive(new Apdu(0, INS_CONFIG, slot, 0, data));
                 if (!dummyStatus) {
-                    configState = parseConfigState(this.version, status);
+                    configurationState = parseConfigState(this.version, status);
                 }
             }
 
@@ -201,8 +201,8 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
         Version version = Version.fromBytes(statusBytes);
         backend = new Backend<OtpProtocol>(protocol, version, parseConfigState(version, statusBytes)) {
             @Override
-            void writeConfig(byte slot, byte[] data) throws IOException, CommandException {
-                configState = parseConfigState(version, delegate.sendAndReceive(slot, data, null));
+            void writeToSlot(byte slot, byte[] data) throws IOException, CommandException {
+                configurationState = parseConfigState(version, delegate.sendAndReceive(slot, data, null));
             }
 
             @Override
@@ -226,8 +226,8 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
      *
      * @return the current configuration state of the two slots.
      */
-    public ConfigState getConfigState() {
-        return backend.configState;
+    public ConfigurationState getConfigurationState() {
+        return backend.configurationState;
     }
 
     /**
@@ -258,7 +258,7 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
      * @throws IOException      in case of communication error
      * @throws CommandException in case of an error response from the YubiKey
      */
-    public void swapSlots() throws IOException, CommandException {
+    public void swapConfigurations() throws IOException, CommandException {
         require(FEATURE_SWAP);
         writeConfig(CMD_SWAP, new byte[0], null);
     }
@@ -271,7 +271,7 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
      * @throws IOException      in case of communication error
      * @throws CommandException in case of an error response from the YubiKey
      */
-    public void deleteSlot(Slot slot, @Nullable byte[] curAccCode) throws IOException, CommandException {
+    public void deleteConfiguration(Slot slot, @Nullable byte[] curAccCode) throws IOException, CommandException {
         writeConfig(
                 slot.map(CMD_CONFIG_1, CMD_CONFIG_2),
                 new byte[CONFIG_SIZE],
@@ -378,7 +378,7 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
     }
 
     private void writeConfig(byte commandSlot, byte[] config, @Nullable byte[] curAccCode) throws IOException, CommandException {
-        backend.writeConfig(
+        backend.writeToSlot(
                 commandSlot,
                 ByteBuffer.allocate(config.length + ACC_CODE_SIZE)
                         .put(config)
@@ -387,8 +387,8 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
         );
     }
 
-    private static ConfigState parseConfigState(Version version, byte[] status) {
-        return new ConfigState(version, ByteBuffer.wrap(status, 4, 2).order(ByteOrder.LITTLE_ENDIAN).getShort());
+    private static ConfigurationState parseConfigState(Version version, byte[] status) {
+        return new ConfigurationState(version, ByteBuffer.wrap(status, 4, 2).order(ByteOrder.LITTLE_ENDIAN).getShort());
     }
 
     // From nfcforum-ts-rtd-uri-1.0.pdf
@@ -456,15 +456,15 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
     private static abstract class Backend<T extends Closeable> implements Closeable {
         protected final T delegate;
         protected final Version version;
-        protected ConfigState configState;
+        protected ConfigurationState configurationState;
 
-        private Backend(T delegate, Version version, ConfigState configState) {
+        private Backend(T delegate, Version version, ConfigurationState configurationState) {
             this.version = version;
             this.delegate = delegate;
-            this.configState = configState;
+            this.configurationState = configurationState;
         }
 
-        abstract void writeConfig(byte slot, byte[] data) throws IOException, CommandException;
+        abstract void writeToSlot(byte slot, byte[] data) throws IOException, CommandException;
 
         abstract byte[] sendAndReceive(byte slot, byte[] data, int expectedResponseLength, @Nullable CommandState state) throws IOException, CommandException;
 

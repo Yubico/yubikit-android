@@ -7,7 +7,7 @@ import com.yubico.yubikit.core.Logger
 import com.yubico.yubikit.core.YubiKeyDevice
 import com.yubico.yubikit.core.otp.OtpConnection
 import com.yubico.yubikit.core.smartcard.SmartCardConnection
-import com.yubico.yubikit.yubiotp.ConfigState
+import com.yubico.yubikit.yubiotp.ConfigurationState
 import com.yubico.yubikit.yubiotp.YubiOtpSession
 import java.io.IOException
 
@@ -25,8 +25,8 @@ class NonClosingYubiOtpSession(connection: OtpConnection) : YubiOtpSession(conne
 class OtpViewModel : YubiKeyViewModel<YubiOtpSession>() {
     private var sessionRef: NonClosingYubiOtpSession? = null
 
-    private val _slotStatus = MutableLiveData<ConfigState?>()
-    val slotConfigState: LiveData<ConfigState?> = _slotStatus
+    private val _slotStatus = MutableLiveData<ConfigurationState?>()
+    val slotConfigurationState: LiveData<ConfigurationState?> = _slotStatus
 
     override fun getSession(device: YubiKeyDevice): YubiOtpSession = when {
         sessionRef != null -> sessionRef!!
@@ -52,7 +52,7 @@ class OtpViewModel : YubiKeyViewModel<YubiOtpSession>() {
     }
 
     override fun YubiOtpSession.updateState() {
-        _slotStatus.postValue(configState)
+        _slotStatus.postValue(configurationState)
     }
 
     fun releaseYubiKey() {

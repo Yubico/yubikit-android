@@ -21,7 +21,7 @@ import com.yubico.yubikit.core.Version;
 /**
  * Data object containing the state of slot programming for a YubiKey.
  */
-public class ConfigState {
+public class ConfigurationState {
     private static final byte CONFIG1_VALID = 0x01;        /* Bit in touchLevel indicating that configuration 1 is valid (from firmware 2.1) */
     private static final byte CONFIG2_VALID = 0x02;        /* Bit in touchLevel indicating that configuration 2 is valid (from firmware 2.1) */
     private static final byte CONFIG1_TOUCH = 0x04;       /* Bit in touchLevel indicating that configuration 1 requires touch (from firmware 3.0) */
@@ -32,7 +32,7 @@ public class ConfigState {
     private final Version version;
     private final byte flags;
 
-    ConfigState(Version version, short touchLevel) {
+    ConfigurationState(Version version, short touchLevel) {
         this.version = version;
         this.flags = (byte) (CONFIG_STATUS_MASK & touchLevel);
     }
