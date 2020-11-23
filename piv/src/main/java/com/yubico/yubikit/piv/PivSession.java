@@ -95,6 +95,10 @@ public class PivSession extends ApplicationSession<PivSession> {
      */
     public static final Feature<PivSession> FEATURE_ATTESTATION = new Feature.Versioned<>("Attestation", 4, 3, 0);
     /**
+     * Support for reading the YubiKey serial number.
+     */
+    public static final Feature<PivSession> FEATURE_SERIAL = new Feature.Versioned<>("Serial Number", 5, 0, 0);
+    /**
      * Support for getting PIN/PUK/Management key and private key metadata.
      */
     public static final Feature<PivSession> FEATURE_METADATA = new Feature.Versioned<>("Metadata", 5, 3, 0);
@@ -125,6 +129,7 @@ public class PivSession extends ApplicationSession<PivSession> {
     private static final byte INS_GET_DATA = (byte) 0xcb;
     private static final byte INS_PUT_DATA = (byte) 0xdb;
     private static final byte INS_GET_METADATA = (byte) 0xf7;
+    private static final byte INS_GET_SERIAL = (byte) 0xf8;
     private static final byte INS_ATTEST = (byte) 0xf9;
     private static final byte INS_SET_PIN_RETRIES = (byte) 0xfa;
     private static final byte INS_RESET = (byte) 0xfb;
@@ -198,14 +203,29 @@ public class PivSession extends ApplicationSession<PivSession> {
     }
 
     /**
-     * Gets firmware version
-     * Note: for YK NEO returns PIV applet version
+     * Get the PIV application version from the YubiKey.
+     * For YubiKey 4 and later this will match the YubiKey firmware version.
      *
-     * @return firmware version
+     * @return application version
      */
     @Override
     public Version getVersion() {
         return version;
+    }
+
+    /**
+     * Get the serial number from the YubiKey.
+     * NOTE: This requires the SERIAL_API_VISIBILE flag to be set on one of the YubiOTP slots (it is set by default).
+     * <p>
+     * This functionality requires support for {@link #FEATURE_SERIAL}, available on YubiKey 5 or later.
+     *
+     * @return The YubiKey's serial number
+     * @throws IOException   in case of connection error
+     * @throws ApduException in case of an error response from the YubiKey
+     */
+    public int getSerial() throws IOException, ApduException {
+        require(FEATURE_SERIAL);
+        return ByteBuffer.wrap(protocol.sendAndReceive(new Apdu(0, INS_GET_SERIAL, 0, 0, null))).getInt();
     }
 
     /**
@@ -364,7 +384,7 @@ public class PivSession extends ApplicationSession<PivSession> {
      * Change management key
      * This method requires authentication {@link #authenticate(byte[])}.
      * <p>
-     * This setting requireTouch=true requires support for {@link #FEATURE_USAGE_POLICY}, available on YubiKey 4 or later.
+     * Thi setting requireTouch=true requires support for {@link #FEATURE_USAGE_POLICY}, available on YubiKey 4 or later.
      *
      * @param managementKey new value of management key
      * @param requireTouch  true to require touch for authentication
@@ -556,7 +576,7 @@ public class PivSession extends ApplicationSession<PivSession> {
         Map<Integer, byte[]> data = Tlvs.decodeMap(protocol.sendAndReceive(new Apdu(0, INS_GET_METADATA, 0, Slot.CARD_MANAGEMENT.value, null)));
         return new ManagementKeyMetadata(
                 data.get(TAG_METADATA_IS_DEFAULT)[0] != 0,
-                TouchPolicy.fromValue(data.get(TAG_METADATA_POLICY)[INDEX_TOUCH_POLICY]) //TODO: Double check this!
+                TouchPolicy.fromValue(data.get(TAG_METADATA_POLICY)[INDEX_TOUCH_POLICY])
         );
     }
 
