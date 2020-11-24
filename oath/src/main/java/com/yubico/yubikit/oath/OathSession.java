@@ -103,7 +103,7 @@ public class OathSession extends ApplicationSession<OathSession> {
     /**
      * Version, ID and a challenge if authentication is configured
      */
-    private final OathApplicationInfo applicationInfo;
+    private OathApplicationInfo applicationInfo;
 
 
     /**
@@ -145,6 +145,12 @@ public class OathSession extends ApplicationSession<OathSession> {
      */
     public void reset() throws IOException, ApduException {
         protocol.sendAndReceive(new Apdu(0, INS_RESET, 0xde, 0xad, null));
+        try {
+            // Re-select since the device ID has changed
+            applicationInfo = new OathApplicationInfo(protocol.select(AID));
+        } catch (ApplicationNotAvailableException e) {
+            throw new IllegalStateException(e);  // This shouldn't happen
+        }
     }
 
     /**
