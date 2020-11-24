@@ -42,8 +42,9 @@ public class NfcYubiKeyDevice implements YubiKeyDevice {
      * Instantiates session for nfc tag interaction
      *
      * @param tag the tag that has been discovered
+     * @param timeout timeout, in milliseconds, to use for NFC communication
      */
-    NfcYubiKeyDevice(Tag tag, int timeout) {
+    public NfcYubiKeyDevice(Tag tag, int timeout) {
         this.tag = tag;
         this.timeout = timeout;
     }

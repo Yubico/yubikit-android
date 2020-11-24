@@ -1,0 +1,196 @@
+== YubiKit Android Module
+This module contains the main implementation of the SDK for Android, and is
+required for all Android development.
+
+
+=== Dependency
+To add the Android module as a dependency to your project, add the following to
+your gradle configuration:
+
+[source,groovy]
+----
+dependencies {
+  implementation 'com.yubico.yubikit:android:(insert version here)'
+}
+----
+
+This module depends on the link:../core/[core] module, which will automatially
+be added as a transitive dependency.
+
+
+=== Logging
+Logging is by default turned off in YubiKit on Android, and must be explicitly
+enabled.
+
+WARNING: Enabling logging will cause YubiKit to log all communication between
+the app and a YubiKey. This may contain sensitive information, and should not be
+enabled for production use!
+
+To enable logging, you must implement the Logger class from the *core* module:
+
+[source,java]
+----
+Logger.setLogger(new Logger() {
+  @Override
+  protected void logDebug(String message) {
+    Log.d(TAG, message);
+  }
+
+  @Override
+  protected void logError(String message, Throwable throwable) {
+    Log.e(TAG, message, throwable);
+  }
+});
+----
+
+
+=== The YubiKit Manager
+Accessing a YubiKey is done with an instance of the YubiKitManager. It provides
+access over both USB and NFC, and allows discovery of new YubiKeys.
+
+To create an instance of `YubikitManager` you will need an Android `Context`,
+such as an Activity. You can instantiate the class in your Activity's
+`onCreate()` method.
+
+[source,java]
+----
+YubiKitManager yubiKitManager = new YubiKitManager(context);
+----
+
+==== YubiKeys over USB
+To connect to a YubiKey over USB, you need to implement the `UsbYubiKeyListener`
+interface, and register it with the YubiKitManager. Again, the `onCreate()`
+method can be used for this:
+
+[source,java]
+----
+yubiKitManager.startUsbDiscovery(new UsbConfiguration(), new UsbYubiKeyListener() {
+  @Override
+  public void onDeviceAttached(UsbYubiKeyDevice device, boolean hasPermissions) {
+    // A YubiKey was plugged in
+  }
+
+  @Override
+  public void onDeviceRemoved(UsbYubiKeyDevice device) {
+    // A YubiKey was removed
+  }
+
+  @Override
+  public void onRequestPermissionsResult(UsbYubiKeyDevice device, boolean isGranted) {
+    // The result of requesting permission to access a YubiKey (granted, or denied)
+  }
+});
+----
+
+To stop listening for USB events, call the `stopUsbDiscovery()` method. This can
+be done in your Activty's `onDestroy()` method:
+
+[source,java]
+----
+yubiKitManager.stopUsbDiscovery();
+----
+
+==== YubiKeys over NFC
+To connect to a YubiKey over NFC, you need to implement the `NfcYubiKeyListener`
+interface, and register it with the YubiKitManager. NFC requires an Activity in
+the foreground, and you should stop listening for NFC events when the Activity
+goes into the background. You can use the Activity's `onResume()` method to
+start listening, and its `onPause()` method to stop:
+
+[source,java]
+----
+@Override
+public void onResume() {
+  super.onResume();
+  try {
+    yubiKitManager.startNfcDiscovery(new NfcConfiguration(), this, new NfcYubiKeyListener() {
+      void onDeviceAttached(NfcYubiKeyDevice device) {
+        // A YubiKey was brought within NFC range
+      }
+    });
+  } catch (NfcNotAvailableException e) {
+    if (e.isDisabled()) {
+      // show a message that user needs to turn on NFC for this feature
+    } else {
+      // NFC is not available so this feature does not work on this device
+    }
+  }
+}
+
+@Override
+public void onPause() {
+  yubiKitManager.stopNfcDiscovery(this);
+  super.onPause();
+}
+----
+
+==== Opening a connection
+Regardless of if you are using USB or NFC, you need to open a connection to the
+YubiKey to do anything with it. There are different types of connections, which
+can be used for different applications. Here is an example of opening a
+SmartCardConnection and doing some low-level communication with it. In practice
+you will more likely use one of the Session classes defined in the other
+modules.
+
+[source,java]
+----
+//connect to the YubiKey / start the connection
+try(SmartCardConnection connection = device.openConnection(SmartCardConnection.class)) {
+  // The SmartCardProtocol offers a the ability of sending APDU-based smartcard commands
+  SmartCardProtocol protocol = new SmartCardProtocol(connection);
+  byte[] aid = new byte[] {0xA0, 0x00, 0x00, 0x03, 0x08};
+  protocol.select(aid);  // Select a smartcard application
+  protocol.sendAndReceive(new Apdu(0x00, 0xA4, 0x00, 0x00)));
+} catch (ApplicationNotFoundException | IOException e) {
+  // handle errors
+}
+----
+
+
+=== UI elements
+The module provides some re-usable components which can be useful for
+implementing common functinoality.
+
+==== The YubiKey Prompt Activity
+An Android Activity dialog which prompts the user to connect their YubiKey, and
+performs some action with it. To use, implement a `YubiKeyPromptAction`, and
+specify it in an Intent to start the `YubiKeyPromptActivity`. The action
+returns a result which the Activity will pass back to the caller. Arguments to
+the action can be passed as extras to the Activity. The
+`YubiKeyPromptConnectionAction` class can be used when a specific type of
+connection is required:
+
+[source,java]
+----
+//MyAction.java
+public class MyAction extends YubiKeyPromptConnectionAction<SmartCardConnection>(SmartCardConnection.class) {
+  @Override
+  Pair<Integer, Intent> onYubiKeyConnection(SmartCardConnection connection, Bundle extras, CommandState commandState) {
+    // Read out a certificate using the PIV module:
+    PivSession session = new PivSession(connection);
+    X509Certificate certificate = session.getCertificate(Slot.AUTHENTICATION);
+    Intent result = new Intent();
+    result.putExtra("EXTRA_CERTIFICATE", certificate.getEncoded());
+    return new Pair<>(Activity.RESULT_OK, result);
+  }
+}
+----
+
+
+==== The OTP Activity
+A specialized YubiKey Prompt Activity used to read out an OTP over the keyboard
+interface (or from the NFC NDEF payload). It does not require a separate Action.
+
+[source,java]
+----
+startActivityForResult(new Intent(context, OtpActivity.class), requestCode);
+
+...
+
+@Override
+public void onActivityResult(int requestCode, int resultCode, Intent data) {
+  if(resultCode == Activity.RESULT_OK) {
+    String otp = data.getStringExtra(OtpActvity.EXTRA_OTP);
+  }
+}
+----
