@@ -22,9 +22,9 @@ public class RandomUtils {
     public static byte[] getRandomBytes(int length) {
         byte[] bytes = new byte[length];
         try {
-            // TODO: Does this require higher API version?
             SecureRandom.getInstanceStrong().nextBytes(bytes);
-        } catch (NoSuchAlgorithmException e) {
+        } catch (NoSuchMethodError | NoSuchAlgorithmException e) {
+            // Fallback for older Android versions
             new SecureRandom().nextBytes(bytes);
         }
         return bytes;
