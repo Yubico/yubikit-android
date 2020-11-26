@@ -1,5 +1,5 @@
 == Yubico Mobile SDK (YubiKit) for Android
-*YubiKit* is an Android library provided by Yubico to enable YuibKey support in
+*YubiKit* is an Android library provided by Yubico to enable YubiKey support in
 Android apps. Both USB and NFC-enabled YubiKeys are supported.
 
 The library includes a link:./AndroidDemo/[YubiKit Android Demo] application,
@@ -59,7 +59,7 @@ data objects suchs as X.509 certificates, and managing access (PIN, etc).
 A good place to get started is to clone the repository and try out the included
 demo app. To integrate the SDK into your app, add the desired dependencies to
 your Gradle configuration, and proceed with the instructions provided with the
-modules you are using.
+modules you are using, starting with the link:.android/[Android] module.
 
 
 ==== Support
@@ -102,11 +102,5 @@ and opens an ISO/IEC 7816 connection to send raw APDU commands to the YubiKey.
 
 
 === Additional Resources
-* Yubico - [developers.yubico.com](https://developers.yubico.com)
-* Yubico - [Online Demo](https://demo.yubico.com) for YubiOTP, OATH, and WebAuthn
-* Yubico - [OTP documentation](https://developers.yubico.com/OTP)
-* Yubico - [What is U2F?](https://developers.yubico.com/U2F)
-* Yubico - [YKOATH Protocol Specifications](https://developers.yubico.com/OATH/YKOATH_Protocol.html)
-* FIDO Alliance - [CTAP2 specifications](https://fidoalliance.org/specs/fido-v2.0-ps-20190130/fido-client-to-authenticator-protocol-v2.0-ps-20190130.html)
-* W3.org - [Web Authentication: An API for accessing Public Key Credentials](https://www.w3.org/TR/webauthn/)
-* Android Developers site - [developer.android.com](https://developer.android.com)
+* Yubico Developers site - https://developers.yubico.com[developers.yubico.com]
+* Android Developers site - https://developer.android.com[developer.android.com]
