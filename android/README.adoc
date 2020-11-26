@@ -15,7 +15,7 @@ dependencies {
 ----
 
 This module depends on the link:../core/[core] module, which will automatially
-be added as a transitive dependency.
+be added as a transitive dependency to your project.
 
 
 === Logging
@@ -58,6 +58,10 @@ YubiKitManager yubiKitManager = new YubiKitManager(context);
 ----
 
 ==== YubiKeys over USB
+NOTE: To make debugging over USB easier, we recommend setting up ADB to connect
+using WiFi, as described here:
+https://developer.android.com/studio/command-line/adb#wireless
+
 To connect to a YubiKey over USB, you need to implement the `UsbYubiKeyListener`
 interface, and register it with the YubiKitManager. Again, the `onCreate()`
 method can be used for this:
