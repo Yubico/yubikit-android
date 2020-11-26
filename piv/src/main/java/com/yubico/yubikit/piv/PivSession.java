@@ -223,7 +223,7 @@ public class PivSession extends ApplicationSession<PivSession> {
      * @throws IOException   in case of connection error
      * @throws ApduException in case of an error response from the YubiKey
      */
-    public int getSerial() throws IOException, ApduException {
+    public int getSerialNumber() throws IOException, ApduException {
         require(FEATURE_SERIAL);
         return ByteBuffer.wrap(protocol.sendAndReceive(new Apdu(0, INS_GET_SERIAL, 0, 0, null))).getInt();
     }

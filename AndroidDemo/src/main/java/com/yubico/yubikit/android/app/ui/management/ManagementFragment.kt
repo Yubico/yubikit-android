@@ -54,7 +54,7 @@ class ManagementFragment : YubiKeyFragment<ManagementSession, ManagementViewMode
 
         viewModel.deviceInfo.observe(viewLifecycleOwner, {
             if (it != null) {
-                info.text = "Device type: ${it.formFactor.name} \nFirmware: ${it.version} \nSerial: ${it.serial}"
+                info.text = "Device type: ${it.formFactor.name} \nFirmware: ${it.version} \nSerial: ${it.serialNumber}"
                 checkboxIds.forEach { (transport, capability), id ->
                     view.findViewById<CheckBox>(id).let { checkbox ->
                         if (it.getSupportedCapabilities(transport) and capability.bit != 0) {

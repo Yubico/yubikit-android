@@ -40,15 +40,15 @@ public class DeviceInfo {
 
     private final DeviceConfig config;
     @Nullable
-    private final Integer serial;
+    private final Integer serialNumber;
     private final Version version;
     private final FormFactor formFactor;
     private final Map<Transport, Integer> supportedCapabilities;
     private final boolean isLocked;
 
-    private DeviceInfo(DeviceConfig config, @Nullable Integer serial, Version version, FormFactor formFactor, Map<Transport, Integer> supportedCapabilities, boolean isLocked) {
+    private DeviceInfo(DeviceConfig config, @Nullable Integer serialNumber, Version version, FormFactor formFactor, Map<Transport, Integer> supportedCapabilities, boolean isLocked) {
         this.config = config;
-        this.serial = serial;
+        this.serialNumber = serialNumber;
         this.version = version;
         this.formFactor = formFactor;
         this.supportedCapabilities = supportedCapabilities;
@@ -60,8 +60,8 @@ public class DeviceInfo {
     }
 
     @Nullable
-    public Integer getSerial() {
-        return serial;
+    public Integer getSerialNumber() {
+        return serialNumber;
     }
 
     public Version getVersion() {
@@ -94,7 +94,7 @@ public class DeviceInfo {
         Map<Integer, byte[]> data = Tlvs.decodeMap(Arrays.copyOfRange(response, 1, response.length));
 
         boolean isLocked = readInt(data.get(TAG_CONFIG_LOCKED)) == 1;
-        int serial = readInt(data.get(TAG_SERIAL_NUMBER));
+        int serialNumber = readInt(data.get(TAG_SERIAL_NUMBER));
         FormFactor formFactor = FormFactor.valueOf(readInt(data.get(TAG_FORMFACTOR)));
 
         Version version;
@@ -132,7 +132,7 @@ public class DeviceInfo {
                         autoEjectTimeout,
                         challengeResponseTimeout,
                         deviceFlags
-                ), serial, version, formFactor, supportedCapabilities, isLocked
+                ), serialNumber, version, formFactor, supportedCapabilities, isLocked
         );
     }
 
