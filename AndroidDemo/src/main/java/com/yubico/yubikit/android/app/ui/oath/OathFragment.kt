@@ -69,7 +69,7 @@ class OathFragment : YubiKeyFragment<OathSession, OathViewModel>() {
         viewModel.result.observe(viewLifecycleOwner, Observer { result ->
             result.onFailure { e ->
                 if (e is ApduException && e.sw == SW.SECURITY_CONDITION_NOT_SATISFIED) {
-                    viewModel.oathInfo.value?.deviceId?.let { deviceId ->
+                    viewModel.oathDeviceId.value?.let { deviceId ->
                         lifecycleScope.launch(Dispatchers.Main) {
                             getSecret(requireContext(), R.string.enter_password, R.string.password)?.let {
                                 viewModel.password = Pair(deviceId, it.toCharArray())

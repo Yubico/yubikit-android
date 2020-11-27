@@ -18,65 +18,37 @@ package com.yubico.yubikit.oath;
 
 
 /**
- * Code generated on yubikey using OATH application
+ * A one-time OATH code, calculated from a Credential stored in a YubiKey.
  */
 public class Code {
-    /**
-     * one-time generated password
-     */
     private final String value;
-
-    /**
-     * timestamp that was used to generate code
-     */
     private final long validFrom;
-
-    /**
-     * timestamp when one-time password becomes invalid/expired
-     */
     private final long validUntil;
 
-    /**
-     * Initiates instance of {@link Code}
-     *
-     * @param value      the value of one-time password received from key within CALCULATE or CALCULATE_ALL request
-     * @param validFrom  timestamp that was used to generate code
-     * @param validUntil timestamp when one-time password becomes invalid/expired
-     */
-    public Code(String value, long validFrom, long validUntil) {
+    Code(String value, long validFrom, long validUntil) {
         this.value = value;
         this.validFrom = validFrom;
         this.validUntil = validUntil;
     }
 
     /**
-     * @return one-time generated password
+     * Returns the String value, typically a 6-8 digit code.
      */
     public final String getValue() {
         return this.value;
     }
 
     /**
-     * @return timestamp that was used to generate code
+     * Returns a UNIX timestamp in ms for when the validity period starts.
      */
     public final long getValidFrom() {
         return this.validFrom;
     }
 
     /**
-     * @return timestamp when one-time password becomes invalid/expired
+     * Returns a UNIX timestamp in ms for when the validity period ends.
      */
     public final long getValidUntil() {
         return this.validUntil;
     }
-
-    /**
-     * Check if code is expired
-     *
-     * @return true if it's still valid
-     */
-    public final boolean isValid() {
-        return this.validUntil > System.currentTimeMillis();
-    }
-
 }

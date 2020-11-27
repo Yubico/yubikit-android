@@ -4,15 +4,18 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.yubico.yubikit.android.app.ui.YubiKeyViewModel
 import com.yubico.yubikit.core.Transport
+import com.yubico.yubikit.core.Version
 import com.yubico.yubikit.core.YubiKeyDevice
 import com.yubico.yubikit.core.smartcard.ApduException
 import com.yubico.yubikit.core.smartcard.SW
 import com.yubico.yubikit.core.smartcard.SmartCardConnection
 import com.yubico.yubikit.oath.*
 
+data class OathApplicationInfo(val version: Version, val deviceId: String, val hasAccessKey: Boolean)
+
 class OathViewModel : YubiKeyViewModel<OathSession>() {
-    private val _oathInfo = MutableLiveData<OathApplicationInfo?>()
-    val oathInfo: LiveData<OathApplicationInfo?> = _oathInfo
+    private val _oathDeviceId = MutableLiveData<String?>()
+    val oathDeviceId: LiveData<String?> = _oathDeviceId
 
     private val _credentials = MutableLiveData<Map<Credential, Code?>?>()
     val credentials: LiveData<Map<Credential, Code?>?> = _credentials
@@ -32,11 +35,11 @@ class OathViewModel : YubiKeyViewModel<OathSession>() {
     }
 
     override fun OathSession.updateState() {
-        _oathInfo.postValue(applicationInfo)
+        _oathDeviceId.postValue(deviceId)
 
-        if (applicationInfo.isAuthenticationRequired) {
+        if (hasAccessKey()) {
             password?.let {
-                it.first == applicationInfo.deviceId && validate(it.second)
+                it.first == deviceId && unlock(it.second)
             }
         }
 

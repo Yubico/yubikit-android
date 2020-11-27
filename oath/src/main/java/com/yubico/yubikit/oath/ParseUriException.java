@@ -17,7 +17,7 @@
 package com.yubico.yubikit.oath;
 
 /**
- * Thrown when QR/OATH uri couldn't be parsed
+ * Thrown when an OATH otpauth:// URI couldn't be parsed.
  */
 public class ParseUriException extends Exception {
     static final long serialVersionUID = 1L;

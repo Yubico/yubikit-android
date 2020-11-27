@@ -30,10 +30,13 @@ import com.yubico.yubikit.core.util.RandomUtils;
 import com.yubico.yubikit.core.util.Tlv;
 import com.yubico.yubikit.core.util.Tlvs;
 
+import org.apache.commons.codec.binary.Base64;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.security.InvalidKeyException;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
@@ -51,8 +54,12 @@ import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 
 /**
- * Communicates with a YubiKey's OATH application.
- * https://developers.yubico.com/OATH/YKOATH_Protocol.html
+ * Communicates with the OATH application on a YubiKey.
+ *
+ * <a href="https://developers.yubico.com/OATH/YKOATH_Protocol.html">Protocol specification</a>.
+ * This application may optionally have an Access Key set, in which case most commands will be
+ * locked until {@link #unlock} has been invoked. Note that {@link #reset()} can always be called,
+ * regardless of if an Access Key is set or not.
  */
 public class OathSession extends ApplicationSession<OathSession> {
     // Features
@@ -69,13 +76,14 @@ public class OathSession extends ApplicationSession<OathSession> {
      */
     public static final Feature<OathSession> FEATURE_RENAME = new Feature.Versioned<>("Rename Credential", 5, 3, 0);
 
-    // Tlv tags for credential data
+    // Tlv tags YKOATH data
     private static final int TAG_NAME = 0x71;
     private static final int TAG_KEY = 0x73;
     private static final int TAG_RESPONSE = 0x75;
     private static final int TAG_PROPERTY = 0x78;
     private static final int TAG_IMF = 0x7a;
     private static final int TAG_CHALLENGE = 0x74;
+    private static final int TAG_VERSION = 0x79;
 
     // Instruction bytes for APDU commands
     private static final byte INS_LIST = (byte) 0xa1;
@@ -94,21 +102,23 @@ public class OathSession extends ApplicationSession<OathSession> {
     private static final byte[] AID = new byte[]{(byte) 0xa0, 0x00, 0x00, 0x05, 0x27, 0x21, 0x01, 0x01};
 
     private static final long MILLS_IN_SECOND = 1000;
-    private static final int DEFAULT_PERIOD = 30;
+    private static final int DEFAULT_TOTP_PERIOD = 30;
     private static final int CHALLENGE_LEN = 8;
     private static final int ACCESS_KEY_LEN = 16;
 
     private final SmartCardProtocol protocol;
+    private final Version version;
 
     /**
      * Version, ID and a challenge if authentication is configured
      */
-    private OathApplicationInfo applicationInfo;
-
+    private String deviceId;
+    private byte[] salt;
+    @Nullable
+    private byte[] challenge;
 
     /**
-     * Create new instance of {@link OathSession}
-     * and selects the application for use
+     * Establishes a new session with a YubiKeys OATH application.
      *
      * @param connection to the YubiKey
      * @throws IOException                      in case of connection error
@@ -116,8 +126,12 @@ public class OathSession extends ApplicationSession<OathSession> {
      */
     public OathSession(SmartCardConnection connection) throws IOException, ApplicationNotAvailableException {
         protocol = new SmartCardProtocol(connection, INS_SEND_REMAINING);
-        applicationInfo = new OathApplicationInfo(protocol.select(AID));
-        protocol.enableTouchWorkaround(applicationInfo.getVersion());
+        SelectResponse selectResponse = new SelectResponse(protocol.select(AID));
+        version = selectResponse.version;
+        deviceId = selectResponse.getDeviceId();
+        salt = selectResponse.salt;
+        challenge = selectResponse.challenge;
+        protocol.enableTouchWorkaround(version);
     }
 
     @Override
@@ -127,14 +141,16 @@ public class OathSession extends ApplicationSession<OathSession> {
 
     @Override
     public Version getVersion() {
-        return applicationInfo.getVersion();
+        return version;
     }
 
     /**
-     * @return version, ID and a challenge if authentication is configured
+     * Returns a unique ID which can be used to identify a particular YubiKey.
+     * <p>
+     * This ID is randomly generated upon invocation of {@link #reset()}.
      */
-    public OathApplicationInfo getApplicationInfo() {
-        return applicationInfo;
+    public String getDeviceId() {
+        return deviceId;
     }
 
     /**
@@ -147,55 +163,58 @@ public class OathSession extends ApplicationSession<OathSession> {
         protocol.sendAndReceive(new Apdu(0, INS_RESET, 0xde, 0xad, null));
         try {
             // Re-select since the device ID has changed
-            applicationInfo = new OathApplicationInfo(protocol.select(AID));
+            SelectResponse selectResponse = new SelectResponse(protocol.select(AID));
+            deviceId = selectResponse.getDeviceId();
+            salt = selectResponse.salt;
+            challenge = null;
         } catch (ApplicationNotAvailableException e) {
             throw new IllegalStateException(e);  // This shouldn't happen
         }
     }
 
     /**
-     * Validates authentication (mutually).
-     * The challenge for this comes from the SELECT command.
-     * The response if computed by performing the correct HMAC function of that challenge with the correct key.
-     * A new challenge is then sent to the application, together with the response.
-     * The application will then respond with a similar calculation that the host software can verify.
+     * Returns true if an Access Key is currently set.
+     */
+    public boolean hasAccessKey() {
+        return challenge != null && challenge.length != 0;
+    }
+
+    /**
+     * Unlocks other commands when an Access Key is set, using a password to derive the Access Key.
+     * <p>
+     * Once unlocked, the application will remain unlocked for the duration of the session.
+     * See the YKOATH protocol specification for further details.
      *
      * @param password user-supplied password
      * @return true if password valid
      * @throws IOException   in case of connection error
      * @throws ApduException in case of communication error
      */
-    public boolean validate(char[] password) throws IOException, ApduException {
-        if (applicationInfo.isAuthenticationRequired() && (password.length == 0)) {
+    public boolean unlock(char[] password) throws IOException, ApduException {
+        if (hasAccessKey() && (password.length == 0)) {
             return false;
         }
 
+        byte[] secret = deriveAccessKey(password);
         try {
-            byte[] secret = deriveAccessKey(password, applicationInfo.getSalt());
-            try {
-                return validate(challenge -> doHmacSha1(secret, challenge));
-            } finally {
-                Arrays.fill(secret, (byte) 0);
-            }
-        } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
-            throw new RuntimeException(e); // This shouldn't happen.
+            return unlock(challenge -> doHmacSha1(secret, challenge));
+        } finally {
+            Arrays.fill(secret, (byte) 0);
         }
     }
 
     /**
-     * Validates authentication (mutually).
-     * The challenge for this comes from the SELECT command.
-     * The response if computed by performing the correct HMAC function of that challenge with the correct key.
-     * A new challenge is then sent to the application, together with the response.
-     * The application will then respond with a similar calculation that the host software can verify.
+     * Unlocks other commands when an Access Key is set.
+     * <p>
+     * Once unlocked, the application will remain unlocked for the duration of the session.
+     * See the YKOATH protocol specification for further details.
      *
-     * @param signer the provide of HMAC calculation
+     * @param validator to provide a correct response to a challenge, using the Access Key.
      * @return if the command was successful or not
      * @throws IOException   in case of connection error
      * @throws ApduException in case of communication error
      */
-    public boolean validate(ChallengeSigner signer) throws IOException, ApduException {
-        byte[] challenge = applicationInfo.getChallenge();
+    public boolean unlock(AccessKey validator) throws IOException, ApduException {
         // if no validation/authentication required we consider that validation was successful
         if (challenge == null) {
             return true;
@@ -203,7 +222,7 @@ public class OathSession extends ApplicationSession<OathSession> {
 
         try {
             Map<Integer, byte[]> request = new LinkedHashMap<>();
-            request.put(TAG_RESPONSE, signer.sign(challenge));
+            request.put(TAG_RESPONSE, validator.calculateResponse(challenge));
 
             byte[] clientChallenge = RandomUtils.getRandomBytes(CHALLENGE_LEN);
             request.put(TAG_CHALLENGE, clientChallenge);
@@ -211,21 +230,18 @@ public class OathSession extends ApplicationSession<OathSession> {
             byte[] data = protocol.sendAndReceive(new Apdu(0, INS_VALIDATE, 0, 0, Tlvs.encodeMap(request)));
             Map<Integer, byte[]> map = Tlvs.decodeMap(data);
             // return false if response from validation does not match verification
-            return (Arrays.equals(signer.sign(clientChallenge), map.get(TAG_RESPONSE)));
+            return (Arrays.equals(validator.calculateResponse(clientChallenge), map.get(TAG_RESPONSE)));
         } catch (ApduException e) {
             if (e.getSw() == SW.INCORRECT_PARAMETERS) {
                 // key didn't recognize secret
                 return false;
             }
             throw e;
-        } catch (InvalidKeyException | NoSuchAlgorithmException e) {
-            throw new RuntimeException(e); // This shouldn't happen
         }
-
     }
 
     /**
-     * Sets an access key derived from a password. Once an access key is set, any usage of the credentials stored will
+     * Sets an Access Key derived from a password. Once a key is set, any usage of the credentials stored will
      * require the application to be unlocked via one of the validate methods. Also see {@link #setAccessKey(byte[])}.
      *
      * @param password user-supplied password to set, encoded as UTF-8 bytes
@@ -233,18 +249,14 @@ public class OathSession extends ApplicationSession<OathSession> {
      * @throws ApduException in case of communication error
      */
     public void setPassword(char[] password) throws IOException, ApduException {
-        try {
-            setAccessKey(deriveAccessKey(password, applicationInfo.getSalt()));
-        } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
-            throw new RuntimeException(e); // this shouldn't happen.
-        }
+        setAccessKey(deriveAccessKey(password));
     }
 
     /**
      * Sets an access key. Once an access key is set, any usage of the credentials stored will require the application
      * to be unlocked via one of the validate methods, which requires knowledge of the access key. Typically this key is
-     * derived from a password (see {@link #deriveAccessKey(char[], byte[])}) and is set by instead using the
-     * {@link #setPassword(char[])} method. This method sets the raw 16 byte key.
+     * derived from a password (see {@link #deriveAccessKey}) and is set by instead using the
+     * {@link #setPassword} method. This method sets the raw 16 byte key.
      *
      * @param key the shared secret key used to unlock access to the application
      * @throws IOException   in case of connection error
@@ -263,11 +275,7 @@ public class OathSession extends ApplicationSession<OathSession> {
 
         byte[] challenge = RandomUtils.getRandomBytes(CHALLENGE_LEN);
         request.put(TAG_CHALLENGE, challenge);
-        try {
-            request.put(TAG_RESPONSE, doHmacSha1(key, challenge));
-        } catch (NoSuchAlgorithmException | InvalidKeyException e) {
-            throw new RuntimeException(e); //This shouldn't happen
-        }
+        request.put(TAG_RESPONSE, doHmacSha1(key, challenge));
 
         protocol.sendAndReceive(new Apdu(0, INS_SET_CODE, 0, 0, Tlvs.encodeMap(request)));
     }
@@ -283,7 +291,7 @@ public class OathSession extends ApplicationSession<OathSession> {
     }
 
     /**
-     * Lists configured credentials.
+     * Get a list of all Credentials stored on the YubiKey.
      *
      * @return list of credentials on device
      * @throws IOException   in case of connection error
@@ -294,15 +302,19 @@ public class OathSession extends ApplicationSession<OathSession> {
         List<Tlv> list = Tlvs.decodeList(response);
         List<Credential> result = new ArrayList<>();
         for (Tlv tlv : list) {
-            result.add(new Credential(applicationInfo.getDeviceId(), new ListResponse(tlv)));
+            result.add(new Credential(deviceId, new ListResponse(tlv)));
         }
         return result;
     }
 
     /**
-     * Performs CALCULATE for all available credentials.
+     * Get a map of all Credentials stored on the YubiKey, together with a Code for each of them.
+     * <p>
+     * Credentials which use HOTP, or which require touch, will not be calculated.
+     * They will still be present in the result, but with a null value.
+     * The current system time will be used for TOTP calculation.
      *
-     * @return returns credential + response for TOTP and just credential with null code for HOTP and credentials requiring touch.
+     * @return a Map mapping Credentials to Code
      * @throws IOException          in case of connection error
      * @throws ApduException        in case of communication error
      * @throws BadResponseException in case of incorrect YubiKey response
@@ -312,16 +324,19 @@ public class OathSession extends ApplicationSession<OathSession> {
     }
 
     /**
-     * Performs CALCULATE for all available credentials.
+     * Get a map of all Credentials stored on the YubiKey, together with a Code for each of them.
+     * <p>
+     * Credentials which use HOTP, or which require touch, will not be calculated.
+     * They will still be present in the result, but with a null value.
      *
      * @param timestamp the timestamp which is used as start point for TOTP
-     * @return returns credential + response for TOTP and just credential for HOTP and credentials requiring touch.
+     * @return a Map mapping Credentials to Code
      * @throws IOException          in case of connection error
      * @throws ApduException        in case of communication error
      * @throws BadResponseException in case of incorrect YubiKey response
      */
     public Map<Credential, Code> calculateCodes(long timestamp) throws IOException, ApduException, BadResponseException {
-        long timeStep = (timestamp / MILLS_IN_SECOND / DEFAULT_PERIOD);
+        long timeStep = (timestamp / MILLS_IN_SECOND / DEFAULT_TOTP_PERIOD);
         byte[] challenge = ByteBuffer.allocate(CHALLENGE_LEN).putLong(timeStep).array();
 
         // using default period to 30 second for all _credentials and then recalculate those that have different period
@@ -337,17 +352,17 @@ public class OathSession extends ApplicationSession<OathSession> {
             CalculateResponse response = new CalculateResponse(responseTlvs.next());
 
             // parse credential properties
-            Credential credential = new Credential(applicationInfo.getDeviceId(), credentialId, response);
+            Credential credential = new Credential(deviceId, credentialId, response);
 
-            if (credential.getOathType() == OathType.TOTP && credential.getPeriod() != DEFAULT_PERIOD) {
+            if (credential.getOathType() == OathType.TOTP && credential.getPeriod() != DEFAULT_TOTP_PERIOD) {
                 // recalculate credentials that have different period
                 map.put(credential, calculateCode(credential, timestamp));
             } else if (response.response.length == 4) {
                 // Note: codes are typically valid in 'DEFAULT_PERIOD' second slices
                 // so the valid period actually starts before the calculation happens
                 // and potentially might happen even way before (so that code is valid only 1 second after calculation)
-                long validFrom = validFrom(timestamp, DEFAULT_PERIOD);
-                map.put(credential, new Code(formatTruncated(response), validFrom, validFrom + DEFAULT_PERIOD * MILLS_IN_SECOND));
+                long validFrom = validFrom(timestamp, DEFAULT_TOTP_PERIOD);
+                map.put(credential, new Code(formatTruncated(response), validFrom, validFrom + DEFAULT_TOTP_PERIOD * MILLS_IN_SECOND));
             } else {
                 map.put(credential, null);
             }
@@ -357,11 +372,14 @@ public class OathSession extends ApplicationSession<OathSession> {
     }
 
     /**
-     * Perform a raw non-truncated CALCULATE (HMAC) for a credential using the given challenge.
+     * Calculate a full (non-truncated) HMAC signature using a Credential.
+     * <p>
+     * Using this command a Credential can be used as an HMAC key to calculate a result for an
+     * arbitrary challenge. The hash algorithm specified for the Credential is used.
      *
-     * @param credentialId credential ID to identify the credential
-     * @param challenge    challenge bytes
-     * @return calculated HMAC response
+     * @param credentialId the ID of a stored Credential
+     * @param challenge    the input to the HMAC operation
+     * @return the calculated response
      * @throws IOException          in case of connection error
      * @throws ApduException        in case of communication error
      * @throws BadResponseException in case an unexpected response was sent from the YubiKey
@@ -376,7 +394,8 @@ public class OathSession extends ApplicationSession<OathSession> {
     }
 
     /**
-     * Performs CALCULATE for one named credential.
+     * Returns a new Code for a stored Credential.
+     * The current system time will be used for TOTP calculation.
      *
      * @param credential credential that will get new code
      * @return calculated code
@@ -388,16 +407,16 @@ public class OathSession extends ApplicationSession<OathSession> {
     }
 
     /**
-     * Performs CALCULATE for one named credential.
+     * Returns a new Code for a stored Credential.
      *
      * @param credential credential that will get new code
-     * @param timestamp  the timestamp which is used as start point for TOTP, can be null for HOTP
-     * @return calculated code
+     * @param timestamp  the timestamp which is used as start point for TOTP, this is ignored for HOTP
+     * @return a new code
      * @throws IOException   in case of connection error
      * @throws ApduException in case of communication error
      */
     public Code calculateCode(Credential credential, @Nullable Long timestamp) throws IOException, ApduException {
-        if (!credential.deviceId.equals(applicationInfo.getDeviceId())) {
+        if (!credential.deviceId.equals(deviceId)) {
             throw new IllegalArgumentException("The given credential belongs to a different device!");
         }
         byte[] challenge = new byte[CHALLENGE_LEN];
@@ -423,63 +442,58 @@ public class OathSession extends ApplicationSession<OathSession> {
     }
 
     /**
-     * Adds a new OATH credential.
+     * Adds a new Credential to the YubiKey.
      * <p>
-     * The Credential ID must be unique to the YubiKey, else the existing Credential with the same ID will be overwritten.
+     * The Credential ID (see {@link CredentialData#getId()}) must be unique to the YubiKey, or the
+     * existing Credential with the same ID will be overwritten.
      * <p>
-     * Setting touchRequired requires support for {@link #FEATURE_TOUCH}, available on YubiKey 4.2 or later.
+     * Setting requireTouch requires support for {@link #FEATURE_TOUCH}, available on YubiKey 4.2 or later.
      * Using SHA-512 requires support for {@link #FEATURE_SHA512}, available on YubiKey 4.3.1 or later.
      *
-     * @param credential    credential data to add
-     * @param touchRequired true if the credential should require touch to be used
+     * @param credentialData credential data to add
+     * @param requireTouch   true if the credential should require touch to be used
      * @return the newly added Credential
      * @throws IOException   in case of connection error
      * @throws ApduException in case of communication error
      */
-    public Credential putCredential(CredentialData credential, boolean touchRequired) throws IOException, ApduException {
-        if (touchRequired) {
-            require(FEATURE_TOUCH);
-        }
-        if (credential.getHashAlgorithm() == HashAlgorithm.SHA512) {
+    public Credential putCredential(CredentialData credentialData, boolean requireTouch) throws IOException, ApduException {
+        if (credentialData.getHashAlgorithm() == HashAlgorithm.SHA512) {
             require(FEATURE_SHA512);
         }
 
-        try {
-            byte[] key = credential.getHashAlgorithm().prepareKey(credential.getSecret());
-            Map<Integer, byte[]> requestTlvs = new LinkedHashMap<>();
-            requestTlvs.put(TAG_NAME, credential.getId());
+        byte[] key = credentialData.getHashAlgorithm().prepareKey(credentialData.getSecret());
+        Map<Integer, byte[]> requestTlvs = new LinkedHashMap<>();
+        requestTlvs.put(TAG_NAME, credentialData.getId());
 
-            requestTlvs.put(TAG_KEY, ByteBuffer.allocate(2 + key.length)
-                    .put((byte) (credential.getOathType().value | credential.getHashAlgorithm().value))
-                    .put((byte) credential.getDigits())
-                    .put(key)
-                    .array());
+        requestTlvs.put(TAG_KEY, ByteBuffer.allocate(2 + key.length)
+                .put((byte) (credentialData.getOathType().value | credentialData.getHashAlgorithm().value))
+                .put((byte) credentialData.getDigits())
+                .put(key)
+                .array());
 
-            ByteArrayOutputStream output = new ByteArrayOutputStream();
-            output.write(Tlvs.encodeMap(requestTlvs));
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        output.write(Tlvs.encodeMap(requestTlvs));
 
-            if (touchRequired) {
-                output.write(TAG_PROPERTY);
-                output.write(PROPERTY_REQUIRE_TOUCH);
-            }
-
-            if (credential.getOathType() == OathType.HOTP && credential.getCounter() > 0) {
-                output.write(TAG_IMF);
-                output.write(4);
-                output.write(ByteBuffer.allocate(4).putInt(credential.getCounter()).array());
-            }
-
-            protocol.sendAndReceive(new Apdu(0x00, INS_PUT, 0, 0, output.toByteArray()));
-            return new Credential(applicationInfo.getDeviceId(), credential, touchRequired);
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);  //This shouldn't happen
+        if (requireTouch) {
+            require(FEATURE_TOUCH);
+            output.write(TAG_PROPERTY);
+            output.write(PROPERTY_REQUIRE_TOUCH);
         }
+
+        if (credentialData.getOathType() == OathType.HOTP && credentialData.getCounter() > 0) {
+            output.write(TAG_IMF);
+            output.write(4);
+            output.write(ByteBuffer.allocate(4).putInt(credentialData.getCounter()).array());
+        }
+
+        protocol.sendAndReceive(new Apdu(0x00, INS_PUT, 0, 0, output.toByteArray()));
+        return new Credential(deviceId, credentialData.getId(), credentialData.getOathType(), requireTouch);
     }
 
     /**
-     * Deletes an existing Credential.
+     * Deletes an existing Credential from the YubiKey.
      *
-     * @param credentialId ID of the credential to remove
+     * @param credentialId the ID of the credential to remove
      * @throws IOException   in case of connection error
      * @throws ApduException in case of communication error
      */
@@ -488,44 +502,39 @@ public class OathSession extends ApplicationSession<OathSession> {
     }
 
     /**
-     * Deletes an existing Credential.
+     * Deletes an existing Credential from the YubiKey.
      *
      * @param credential the Credential to remove
      * @throws IOException   in case of connection error
      * @throws ApduException in case of communication error
      */
     public void deleteCredential(Credential credential) throws IOException, ApduException {
-        if (!credential.deviceId.equals(applicationInfo.getDeviceId())) {
+        if (!credential.deviceId.equals(deviceId)) {
             throw new IllegalArgumentException("The given credential belongs to a different device!");
         }
         deleteCredential(credential.getId());
     }
 
     /**
-     * Change the issuer and name of a credential.
+     * Change the issuer and name of a Credential already stored on the YubiKey.
      * <p>
      * This functionality requires support for {@link #FEATURE_RENAME}, available on YubiKey 5.3 or later.
      *
-     * @param credentialId ID of the credential to rename
-     * @param name         the new name of the credential
-     * @param issuer       the new issuer of the credential
-     * @return the new credential ID
+     * @param credentialId    the ID of the credential to rename
+     * @param newCredentialId the new ID to use
      * @throws IOException   in case of connection error
      * @throws ApduException in case of communication error
      */
-    public byte[] renameCredential(byte[] credentialId, String name, @Nullable String issuer) throws IOException, ApduException {
+    public void renameCredential(byte[] credentialId, byte[] newCredentialId) throws IOException, ApduException {
         require(FEATURE_RENAME);
-        CredentialIdUtils.CredentialIdData data = CredentialIdUtils.parseId(credentialId, OathType.TOTP); // This works for HOTP as well
-        byte[] newId = CredentialIdUtils.formatId(issuer, name, OathType.TOTP, data.period);
         protocol.sendAndReceive(new Apdu(0x00, INS_RENAME, 0, 0, Tlvs.encodeList(Arrays.asList(
                 new Tlv(TAG_NAME, credentialId),
-                new Tlv(TAG_NAME, newId)
+                new Tlv(TAG_NAME, newCredentialId)
         ))));
-        return newId;
     }
 
     /**
-     * Change the issuer and name of a credential.
+     * Change the issuer and name of a Credential already stored on the YubiKey.
      * <p>
      * This functionality requires support for {@link #FEATURE_RENAME}, available on YubiKey 5.3 or later.
      *
@@ -537,16 +546,15 @@ public class OathSession extends ApplicationSession<OathSession> {
      * @throws ApduException in case of communication error
      */
     public Credential renameCredential(Credential credential, String name, @Nullable String issuer) throws IOException, ApduException {
-        if (!credential.deviceId.equals(applicationInfo.getDeviceId())) {
+        if (!credential.deviceId.equals(deviceId)) {
             throw new IllegalArgumentException("The given credential belongs to a different device!");
         }
+        byte[] newId = CredentialIdUtils.formatId(issuer, name, credential.getOathType(), credential.getPeriod());
+        renameCredential(credential.getId(), newId);
         return new Credential(
                 credential.deviceId,
-                renameCredential(credential.getId(), name, issuer),
-                credential.getIssuer(),
-                credential.getName(),
+                newId,
                 credential.getOathType(),
-                credential.getPeriod(),
                 credential.isTouchRequired()
         );
     }
@@ -556,16 +564,15 @@ public class OathSession extends ApplicationSession<OathSession> {
      * The key is derived by running 1000 rounds of PBKDF2 using the password and salt as inputs, with a 16 byte output.
      *
      * @param password a user-supplied password, encoded as UTF-8 bytes.
-     * @param salt     the salt value (retrievable from the OathApplicationInfo object)
-     * @return a key for authentication
-     * @throws InvalidKeySpecException  in case of crypto operation error
-     * @throws NoSuchAlgorithmException in case of crypto operation error
+     * @return an access key for unlocking the session
      */
-    public static byte[] deriveAccessKey(char[] password, byte[] salt) throws NoSuchAlgorithmException, InvalidKeySpecException {
-        SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
+    public byte[] deriveAccessKey(char[] password) {
         PBEKeySpec keyspec = new PBEKeySpec(password, salt, 1000, ACCESS_KEY_LEN * 8);
         try {
+            SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1");
             return factory.generateSecret(keyspec).getEncoded();
+        } catch (InvalidKeySpecException | NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
         } finally {
             keyspec.clearPassword();
         }
@@ -577,13 +584,15 @@ public class OathSession extends ApplicationSession<OathSession> {
      * @param secret  the secret
      * @param message data in bytes
      * @return the MAC result
-     * @throws InvalidKeyException      in case of crypto operation error
-     * @throws NoSuchAlgorithmException in case of crypto operation error
      */
-    private static byte[] doHmacSha1(byte[] secret, byte[] message) throws NoSuchAlgorithmException, InvalidKeyException {
-        Mac mac = Mac.getInstance("HmacSHA1");
-        mac.init(new SecretKeySpec(secret, mac.getAlgorithm()));
-        return mac.doFinal(message);
+    private static byte[] doHmacSha1(byte[] secret, byte[] message) {
+        try {
+            Mac mac = Mac.getInstance("HmacSHA1");
+            mac.init(new SecretKeySpec(secret, mac.getAlgorithm()));
+            return mac.doFinal(message);
+        } catch (NoSuchAlgorithmException | InvalidKeyException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -653,6 +662,38 @@ public class OathSession extends ApplicationSession<OathSession> {
             byte[] value = tlv.getValue();
             digits = value[0];
             response = Arrays.copyOfRange(value, 1, value.length);
+        }
+    }
+
+    private static class SelectResponse {
+        private final Version version;
+        private final byte[] salt;
+        @Nullable
+        private final byte[] challenge;
+
+        /**
+         * Creates an instance of OATH application info from SELECT response
+         *
+         * @param response the response from OATH SELECT command
+         */
+        SelectResponse(byte[] response) {
+            Map<Integer, byte[]> map = Tlvs.decodeMap(response);
+            version = Version.fromBytes(map.get(TAG_VERSION));
+            salt = map.get(TAG_NAME);
+            challenge = map.get(TAG_CHALLENGE);
+        }
+
+        private String getDeviceId() {
+            MessageDigest messageDigest;
+            try {
+                messageDigest = MessageDigest.getInstance("SHA-256");
+            } catch (NoSuchAlgorithmException e) {
+                // Shouldn't happen.
+                throw new IllegalStateException(e);
+            }
+            messageDigest.update(salt);
+            byte[] digest = messageDigest.digest();
+            return Base64.encodeBase64String(Arrays.copyOfRange(digest, 0, 16)).replaceAll("=", "");
         }
     }
 }

@@ -17,10 +17,9 @@
 package com.yubico.yubikit.oath;
 
 /**
- * OTP types that supported for YubiKey OATH
+ * Supported OATH variants for use with the OATH YubiKey application.
  */
 public enum OathType {
-
     HOTP((byte) 0x10),
     TOTP((byte) 0x20);
 
@@ -30,6 +29,9 @@ public enum OathType {
         this.value = value;
     }
 
+    /**
+     * Returns the OATH type corresponding to the given YKOATH TYPE constant.
+     */
     public static OathType fromValue(byte value) {
         for (OathType type : OathType.values()) {
             if (type.value == value) {
@@ -39,6 +41,9 @@ public enum OathType {
         throw new IllegalArgumentException("Not a valid OathType: " + value);
     }
 
+    /**
+     * Returns the OATH type corresponding to the given name, as used in otpauth:// URIs.
+     */
     public static OathType fromString(String value) {
         if ("hotp".equalsIgnoreCase(value)) {
             return HOTP;

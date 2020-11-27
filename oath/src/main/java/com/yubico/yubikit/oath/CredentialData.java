@@ -17,9 +17,9 @@
 package com.yubico.yubikit.oath;
 
 import com.yubico.yubikit.core.util.Pair;
+
 import org.apache.commons.codec.binary.Base32;
 
-import javax.annotation.Nullable;
 import java.io.Serializable;
 import java.net.URI;
 import java.util.Arrays;
@@ -27,7 +27,23 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
+import javax.annotation.Nullable;
+
+/**
+ * Data object holding all required information to add a new {@link Credential} to a YubiKey.
+ */
 public class CredentialData implements Serializable {
+    /**
+     * The default time period for TOTP Credentials.
+     */
+    public static final int DEFAULT_TOTP_PERIOD = 30;
+    /**
+     * The default number of digits for calculated {@link Code}s.
+     */
+    public static final int DEFAULT_DIGITS = 6;
+
+    private static final int DEFAULT_HOTP_COUNTER = 0;
+
     private final int period;
     private final OathType oathType;
     private final HashAlgorithm hashAlgorithm;
@@ -40,20 +56,14 @@ public class CredentialData implements Serializable {
     private final String issuer;
     private final String name;
 
-    public static final int DEFAULT_PERIOD = 30;
-    public static final int DEFAULT_DIGITS = 6;
-    private static final int DEFAULT_COUNTER = 0;
-
     /**
-     * Parse credential properties from an otpauth:// URI, as specified by
-     * https://github.com/google/google-authenticator/wiki/Key-Uri-Format
-     * Format example: otpauth://totp/Example:alice@google.com?secret=JBSWY3DPEHPK3PXP&amp;issuer=Example
+     * Parses an <a href="https://github.com/google/google-authenticator/wiki/Key-Uri-Format">otpauth:// URI</a>.
+     * <p>
+     * Example URI: <pre>otpauth://totp/Example:alice@google.com?secret=JBSWY3DPEHPK3PXP&amp;issuer=Example</pre>
      *
-     * @param uri Url that received from QR reader or manually from server that requires TOTP/HOTP
-     * @return Credential object that needs to be sent to yubikey to store and generate codes
-     * @throws ParseUriException in case if Uri format is incorrect
+     * @param uri the otpauth:// URI to parse
+     * @throws ParseUriException if the URI format is invalid
      */
-
     public static CredentialData parseUri(URI uri) throws ParseUriException {
         if (!"otpauth".equals(uri.getScheme())) {
             throw new ParseUriException("Uri scheme must be otpauth://");
@@ -93,24 +103,24 @@ public class CredentialData implements Serializable {
             throw new ParseUriException("digits must be in range 6-8");
         }
 
-        int period = getIntParam(params, "period", DEFAULT_PERIOD);
-        int counter = getIntParam(params, "counter", DEFAULT_COUNTER);
+        int period = getIntParam(params, "period", DEFAULT_TOTP_PERIOD);
+        int counter = getIntParam(params, "counter", DEFAULT_HOTP_COUNTER);
 
         return new CredentialData(nameAndIssuer.first, oathType, hashAlgorithm, secret, digits, period, counter, nameAndIssuer.second);
     }
 
 
     /**
-     * Creates instance of {@link Credential}
+     * Constructs a new instance from the given parameters.
      *
-     * @param name          the name/label
-     * @param oathType      TOTP or HOTP
-     * @param hashAlgorithm SHA1, SHA265 or SHA 512
-     * @param secret        the key data
-     * @param digits        the number of digits in OATH code
-     * @param period        the period in seconds how long TOTP is valid
-     * @param counter       Imf for HOTP
-     * @param issuer        issuer name
+     * @param name          the name/label of the account, typically a username or email address
+     * @param oathType      the OATH type of the credential (TOTP or HOTP)
+     * @param hashAlgorithm the hash algorithm used by the credential (SHA1, SHA265 or SHA 512)
+     * @param secret        the secret key of the credential, in raw bytes (<i>not</i> Base32 encoded)
+     * @param digits        the number of digits to display for generated {@link Code}s
+     * @param period        the validity period of generated {@link Code}s, in seconds, for a TOTP credential
+     * @param counter       the initial counter value (initial moving factor) for a HOTP credential (typically this should be 0)
+     * @param issuer        the name of the credential issuer (e.g. Google, Amazon, Facebook, etc.)
      */
     public CredentialData(String name, OathType oathType, HashAlgorithm hashAlgorithm, byte[] secret, int digits, int period, int counter, @Nullable String issuer) {
         this.name = name;
@@ -124,54 +134,45 @@ public class CredentialData implements Serializable {
     }
 
     /**
-     * Get the name of the credential, typically a username.
-     *
-     * @return the name
-     */
-    public String getName() {
-        return name;
-    }
-
-    /**
-     * Gets name of credential that used as unique identifier
-     *
-     * @return [PERIOD/][ISSUER:]NAME
+     * Returns the credentials ID, as used to identify it on a YubiKey.
+     * <p>
+     * The Credential ID is calculated based on the combination of the issuer, the name, and (for
+     * TOTP credentials) the validity period.
      */
     public byte[] getId() {
         return CredentialIdUtils.formatId(issuer, name, oathType, period);
     }
 
     /**
-     * Oath type {@link OathType}
-     *
-     * @return HOTP or TOTP
+     * Returns the name of the credential.
+     */
+    public String getName() {
+        return name;
+    }
+
+    /**
+     * Returns the OATH type (HOTP or TOTP) of the credential.
      */
     public OathType getOathType() {
         return oathType;
     }
 
     /**
-     * Hash algorithm {@link HashAlgorithm}
-     *
-     * @return SHA1, SHA256, SHA512
+     * Returns the hash algorithm used by the credential.
      */
     public HashAlgorithm getHashAlgorithm() {
         return hashAlgorithm;
     }
 
     /**
-     * Secret that is going to be hashed with hashAlgorithm
-     *
-     * @return the secret
+     * Returns the credential secret.
      */
     public byte[] getSecret() {
         return Arrays.copyOf(secret, secret.length);
     }
 
     /**
-     * Name of credential issuer (e.g. Google, Amazon, Facebook, etc)
-     *
-     * @return the issuer
+     * Returns the name of the credential issuer.
      */
     @Nullable
     public String getIssuer() {
@@ -179,7 +180,7 @@ public class CredentialData implements Serializable {
     }
 
     /**
-     * Number of digits that going to be used for code (value: 6,7 or 8)
+     * Returns the number of digits in {@link Code}s calculated from the credential.
      *
      * @return number of digits in code
      */
@@ -188,18 +189,14 @@ public class CredentialData implements Serializable {
     }
 
     /**
-     * Period in seconds for how long code is valid from its calculation/generation time
-     *
-     * @return the period (in seconds)
+     * Returns the validity time period in seconds for a {@link Code} generated from this credential.
      */
     public int getPeriod() {
         return period;
     }
 
     /**
-     * Initial counter (for HOTP) , default is 0
-     *
-     * @return the counter
+     * Returns the initial counter value for a HOTP credential.
      */
     public int getCounter() {
         return counter;

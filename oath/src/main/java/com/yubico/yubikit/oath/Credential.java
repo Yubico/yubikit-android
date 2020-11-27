@@ -16,11 +16,15 @@
 
 package com.yubico.yubikit.oath;
 
-import javax.annotation.Nullable;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Objects;
 
+import javax.annotation.Nullable;
+
+/**
+ * A reference to an OATH Credential stored on a YubiKey.
+ */
 public class Credential implements Serializable {
     final String deviceId;
 
@@ -33,7 +37,7 @@ public class Credential implements Serializable {
 
     private boolean touchRequired = false;
 
-    /**
+    /*
      * Variation of code types:
      * 0x75 - TOTP full response
      * 0x76 - TOTP truncated response
@@ -46,7 +50,8 @@ public class Credential implements Serializable {
     /**
      * Construct a Credential using response data from a LIST call.
      *
-     * @param response The parsed response from the YubiKey.
+     * @param deviceId the Device ID of the YubiKey
+     * @param response the parsed response from the YubiKey
      */
     Credential(String deviceId, OathSession.ListResponse response) {
         this.deviceId = deviceId;
@@ -62,8 +67,9 @@ public class Credential implements Serializable {
     /**
      * Construct a Credential using response data from a CALCULATE/CALCULATE_ALL call.
      *
-     * @param id       The ID of the Credential
-     * @param response The parsed response from the YubiKey for the Credential.
+     * @param deviceId the Device ID of the YubiKey
+     * @param id       the ID of the Credential
+     * @param response the parsed response from the YubiKey for the Credential.
      */
     Credential(String deviceId, byte[] id, OathSession.CalculateResponse response) {
         this.deviceId = deviceId;
@@ -80,44 +86,38 @@ public class Credential implements Serializable {
     /**
      * Creates an instance of {@link Credential} from CredentialData successfully added to a YubiKey
      *
-     * @param credentialData the data used to create the Credential
+     * @param deviceId      the Device ID of the YubiKey
+     * @param credentialId  the ID of the Credential
+     * @param oathType      the OATH type of the credential
+     * @param touchRequired whether or not the Credential requires touch
      */
-    Credential(String deviceId, CredentialData credentialData, boolean touchRequired) {
-        this(deviceId, credentialData.getId(), credentialData.getIssuer(), credentialData.getName(), credentialData.getOathType(), credentialData.getPeriod(), touchRequired);
-    }
-
-    Credential(String deviceId, byte[] id, @Nullable String issuer, String name, OathType oathType, int period, boolean touchRequired) {
+    Credential(String deviceId, byte[] credentialId, OathType oathType, boolean touchRequired) {
         this.deviceId = deviceId;
-        this.id = id;
-        this.issuer = issuer;
-        this.name = name;
+        this.id = credentialId;
+        CredentialIdUtils.CredentialIdData idData = CredentialIdUtils.parseId(credentialId, oathType);
+        this.issuer = idData.issuer;
+        this.name = idData.name;
+        this.period = idData.period;
         this.oathType = oathType;
-        this.period = period;
         this.touchRequired = touchRequired;
     }
 
     /**
-     * Gets id of credential that used as unique identifier
-     *
-     * @return period + issuer + name
+     * Returns the ID of a Credential which is used to identify it to the YubiKey.
      */
     public byte[] getId() {
         return Arrays.copyOf(id, id.length);
     }
 
     /**
-     * Oath type {@link OathType}
-     *
-     * @return HOTP or TOTP
+     * Returns the OATH type (HOTP or TOTP) of the Credential.
      */
     public OathType getOathType() {
         return oathType;
     }
 
     /**
-     * Name of credential issuer (e.g. Google, Amazon, Facebook, etc)
-     *
-     * @return the issuer
+     * Returns the name of the Credential issuer (e.g. Google, Amazon, Facebook, etc.)
      */
     @Nullable
     public String getIssuer() {
@@ -125,25 +125,21 @@ public class Credential implements Serializable {
     }
 
     /**
-     * Name of the account (typically a username or email address)
-     *
-     * @return the account name
+     * Returns the name of the account (typically a username or email address).
      */
     public String getName() {
         return name;
     }
 
     /**
-     * Period in seconds for how long code is valid from its calculation/generation time
-     *
-     * @return the period (in seconds)
+     * Returns the validity time period in seconds for a Code generated from this Credential.
      */
     public int getPeriod() {
         return period;
     }
 
     /**
-     * @return true if calculation requires touch on yubikey button
+     * Returns whether or not a user presence check (a physical touch on the sensor of the YubiKey) is required for calculating a Code from this Credential.
      */
     public boolean isTouchRequired() {
         return touchRequired;

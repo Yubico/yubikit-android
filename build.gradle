@@ -33,7 +33,12 @@ subprojects {
     ext.pomName = "Yubico YubiKit ${project.name.capitalize()}"
 
     apply plugin: 'com.github.spotbugs'
+
+    tasks.withType(Javadoc) {
+        options.addStringOption('Xdoclint:all,-missing', '-quiet')
+    }
 }
+
 dependencies {
     spotbugsPlugins 'com.h3xstream.findsecbugs:findsecbugs-plugin:1.10.1'
 }

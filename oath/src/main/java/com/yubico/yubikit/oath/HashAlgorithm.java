@@ -21,14 +21,15 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 /**
- * Types of hash algorithms that can be used for TOTP using YubiKey OATH
+ * Supported hash algoritms for use with the OATH YubiKey application.
  */
 public enum HashAlgorithm {
     SHA1((byte) 1, 64),
     SHA256((byte) 2, 64),
     SHA512((byte) 3, 128);
 
-    public static final int MIN_KEY_SIZE = 14;
+    // Pad the key to at least 14 bytes, as required by the YubiKey.
+    private static final int MIN_KEY_SIZE = 14;
 
     public final byte value;
     public final int blockSize;
@@ -38,16 +39,23 @@ public enum HashAlgorithm {
         this.blockSize = blockSize;
     }
 
-    public byte[] prepareKey(byte[] key) throws NoSuchAlgorithmException {
+    byte[] prepareKey(byte[] key) {
         if (key.length < MIN_KEY_SIZE) {
             return ByteBuffer.allocate(MIN_KEY_SIZE).put(key).array();
         } else if (key.length > blockSize) {
-            return MessageDigest.getInstance(name()).digest(key);
+            try {
+                return MessageDigest.getInstance(name()).digest(key);
+            } catch (NoSuchAlgorithmException e) {
+                throw new RuntimeException(e);
+            }
         } else {
             return key;
         }
     }
 
+    /**
+     * Returns the algorithm corresponding to the given YKOATH ALGORITHM constant.
+     */
     public static HashAlgorithm fromValue(byte value) {
         for (HashAlgorithm type : HashAlgorithm.values()) {
             if (type.value == value) {
@@ -57,6 +65,9 @@ public enum HashAlgorithm {
         throw new IllegalArgumentException("Not a valid HashAlgorithm");
     }
 
+    /**
+     * Returns the algorithm corresponding to the given name, as used in otpauth:// URIs.
+     */
     public static HashAlgorithm fromString(String value) {
         if (value == null || value.isEmpty()) {
             return HashAlgorithm.SHA1;  //This is the default value

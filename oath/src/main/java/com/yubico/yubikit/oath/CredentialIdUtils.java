@@ -27,7 +27,7 @@ import java.util.regex.Pattern;
  */
 class CredentialIdUtils {
     private static final Pattern TOTP_ID_PATTERN = Pattern.compile("^((\\d+)/)?(([^:]+):)?(.+)$");
-    private static final int DEFAULT_PERIOD = CredentialData.DEFAULT_PERIOD;
+    private static final int DEFAULT_PERIOD = CredentialData.DEFAULT_TOTP_PERIOD;
 
     /**
      * Format the YKOATH Credential ID to use for a credential given its parameters.

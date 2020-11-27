@@ -16,21 +16,18 @@
 
 package com.yubico.yubikit.oath;
 
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-
 /**
- * Interface that needs to be implemented to provide custom signing with stored secret
+ * Allows the implementation of custom backends to unlock an OathSession.
+ * <p>
+ * The AccessKey gives the OathSession the ability to unlock a session without providing the actual
+ * key material, which allows it to be stored in the Android KeyStore or similar.
  */
-public interface ChallengeSigner {
-
+public interface AccessKey {
     /**
-     * The response computed by performing the correct HMAC function of provided challenge with the correct key.
+     * Create a HMAC-SHA1 signature over the given challenge, using an OATH Access Key.
      *
-     * @param challenge the challenge that needs to be signed
-     * @return HMAC of the challenge
-     * @throws InvalidKeyException      in case of crypto operation error
-     * @throws NoSuchAlgorithmException in case of crypto operation error
+     * @param challenge a challenge to sign
+     * @return a signature over the given challenge
      */
-    byte[] sign(byte[] challenge) throws InvalidKeyException, NoSuchAlgorithmException;
+    byte[] calculateResponse(byte[] challenge);
 }
