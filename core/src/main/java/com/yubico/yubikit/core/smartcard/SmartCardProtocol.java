@@ -16,9 +16,9 @@
 
 package com.yubico.yubikit.core.smartcard;
 
-import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
 import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.Version;
+import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
 
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
@@ -26,7 +26,9 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 /**
- * Class that allows to open ISO 7816 connection to YubiKey and communicate using APDUs.
+ * Support class for communication over a SmartCardConnection.
+ * <p>
+ * This class handles APDU encoding and chaining, and implements workarounds for known issues.
  */
 public class SmartCardProtocol implements Closeable {
     private static final byte INS_SELECT = (byte) 0xa4;

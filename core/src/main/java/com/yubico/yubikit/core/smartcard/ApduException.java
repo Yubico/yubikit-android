@@ -21,7 +21,7 @@ import com.yubico.yubikit.core.application.CommandException;
 import java.util.Locale;
 
 /**
- * Exception is thrown if used APDU utils to parse received data and it has unexpected status code (not equal success == 0x9000).
+ * Thrown when an APDU command fails with an error code.
  * See {@link SW} for a list of status codes.
  */
 public class ApduException extends CommandException {

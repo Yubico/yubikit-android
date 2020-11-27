@@ -24,7 +24,7 @@ import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class Padding {
+class Padding {
     private static final String RAW_RSA = "RSA/ECB/NoPadding";
     private static final Pattern ECDSA_HASH_PATTERN = Pattern.compile("^(.+)withECDSA$", Pattern.CASE_INSENSITIVE);
     private static final Pattern SHA_PATTERN = Pattern.compile("^SHA[0-9]+$", Pattern.CASE_INSENSITIVE);
@@ -38,7 +38,7 @@ public class Padding {
      * @return the payload ready to be signed
      * @throws NoSuchAlgorithmException if the algorithm isn't supported
      */
-    public static byte[] pad(KeyType keyType, byte[] message, Signature algorithm) throws NoSuchAlgorithmException {
+    static byte[] pad(KeyType keyType, byte[] message, Signature algorithm) throws NoSuchAlgorithmException {
         KeyType.KeyParams params = keyType.params;
         byte[] payload;
         switch (params.algorithm) {
@@ -105,7 +105,7 @@ public class Padding {
      * @throws NoSuchAlgorithmException in case the algorithm isn't supported
      * @throws BadPaddingException      in case of a padding error
      */
-    public static byte[] unpad(byte[] decrypted, Cipher algorithm) throws NoSuchPaddingException, NoSuchAlgorithmException, BadPaddingException {
+    static byte[] unpad(byte[] decrypted, Cipher algorithm) throws NoSuchPaddingException, NoSuchAlgorithmException, BadPaddingException {
         Cipher rsa = Cipher.getInstance(RAW_RSA);
 
         // Encrypt using a dummy key

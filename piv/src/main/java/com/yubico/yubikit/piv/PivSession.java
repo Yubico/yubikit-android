@@ -117,8 +117,10 @@ public class PivSession extends ApplicationSession<PivSession> {
     private static final int CHALLENGE_LEN = 8;
     private static final int MGM_KEY_LEN = 24;
 
-    // Select aid
     private static final byte[] AID = new byte[]{(byte) 0xa0, 0x00, 0x00, 0x03, 0x08};
+    
+    // Special slot for the Management Key
+    private static final int SLOT_CARD_MANAGEMENT = 0x9b;
 
     // Instruction set
     private static final byte INS_VERIFY = 0x20;
@@ -257,7 +259,7 @@ public class PivSession extends ApplicationSession<PivSession> {
         }
         // An empty witness is a request for a witness.
         byte[] request = new Tlv(TAG_DYN_AUTH, new Tlv(TAG_AUTH_WITNESS, null).getBytes()).getBytes();
-        byte[] response = protocol.sendAndReceive(new Apdu(0, INS_AUTHENTICATE, TDES, Slot.CARD_MANAGEMENT.value, request));
+        byte[] response = protocol.sendAndReceive(new Apdu(0, INS_AUTHENTICATE, TDES, SLOT_CARD_MANAGEMENT, request));
 
         // Witness (tag '80') contains encrypted data (unrevealed fact).
         byte[] witness = Tlvs.unpackValue(TAG_AUTH_WITNESS, Tlvs.unpackValue(TAG_DYN_AUTH, response));
@@ -273,7 +275,7 @@ public class PivSession extends ApplicationSession<PivSession> {
             dataTlvs.put(TAG_AUTH_CHALLENGE, challenge);
 
             request = new Tlv(TAG_DYN_AUTH, Tlvs.encodeMap(dataTlvs)).getBytes();
-            response = protocol.sendAndReceive(new Apdu(0, INS_AUTHENTICATE, TDES, Slot.CARD_MANAGEMENT.value, request));
+            response = protocol.sendAndReceive(new Apdu(0, INS_AUTHENTICATE, TDES, SLOT_CARD_MANAGEMENT, request));
 
             // (tag '82') contains either the decrypted data from tag '80' or the encrypted data from tag '81'.
             byte[] encryptedData = Tlvs.unpackValue(TAG_AUTH_RESPONSE, Tlvs.unpackValue(TAG_DYN_AUTH, response));
@@ -401,7 +403,7 @@ public class PivSession extends ApplicationSession<PivSession> {
 
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
         stream.write(TDES);
-        stream.write(new Tlv(Slot.CARD_MANAGEMENT.value, managementKey).getBytes());
+        stream.write(new Tlv(SLOT_CARD_MANAGEMENT, managementKey).getBytes());
 
         // NOTE: if p2=0xfe key requires touch
         // Require touch is only available on YubiKey 4 & 5.
@@ -573,7 +575,7 @@ public class PivSession extends ApplicationSession<PivSession> {
      */
     public ManagementKeyMetadata getManagementKeyMetadata() throws IOException, ApduException {
         require(FEATURE_METADATA);
-        Map<Integer, byte[]> data = Tlvs.decodeMap(protocol.sendAndReceive(new Apdu(0, INS_GET_METADATA, 0, Slot.CARD_MANAGEMENT.value, null)));
+        Map<Integer, byte[]> data = Tlvs.decodeMap(protocol.sendAndReceive(new Apdu(0, INS_GET_METADATA, 0, SLOT_CARD_MANAGEMENT, null)));
         return new ManagementKeyMetadata(
                 data.get(TAG_METADATA_IS_DEFAULT)[0] != 0,
                 TouchPolicy.fromValue(data.get(TAG_METADATA_POLICY)[INDEX_TOUCH_POLICY])
@@ -592,9 +594,6 @@ public class PivSession extends ApplicationSession<PivSession> {
      */
     public SlotMetadata getSlotMetadata(Slot slot) throws IOException, ApduException {
         require(FEATURE_METADATA);
-        if (slot == Slot.CARD_MANAGEMENT) {
-            throw new IllegalArgumentException("This method cannot be used for the card management key, use getManagementKeyMetadata() instead.");
-        }
         Map<Integer, byte[]> data = Tlvs.decodeMap(protocol.sendAndReceive(new Apdu(0, INS_GET_METADATA, 0, slot.value, null)));
         byte[] policy = data.get(TAG_METADATA_POLICY);
         return new SlotMetadata(

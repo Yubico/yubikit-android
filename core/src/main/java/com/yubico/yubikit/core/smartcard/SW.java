@@ -36,5 +36,6 @@ public final class SW {
     public static final short OK = (short) 0x9000;
 
     private SW() {
+        throw new IllegalStateException();
     }
 }

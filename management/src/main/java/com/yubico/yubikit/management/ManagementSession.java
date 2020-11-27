@@ -91,7 +91,9 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
     private final Version version;
 
     /**
-     * Connects to a YubiKeyDevice and creates a new instance of {@link ManagementSession}.
+     * Connects to a YubiKeyDevice and establishes a new session with a YubiKeys Management application.
+     * <p>
+     * This method will use whichever connection type is available.
      *
      * @param session A YubiKey session to use
      * @return a new Management Application instance
@@ -110,7 +112,7 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
     }
 
     /**
-     * Create new instance of {@link ManagementSession} over an {@link SmartCardConnection}.
+     * Establishes a new session with a YubiKeys Management application, over a {@link SmartCardConnection}.
      *
      * @param connection connection with YubiKey
      * @throws IOException                      in case of connection error
@@ -147,7 +149,7 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
     }
 
     /**
-     * Create new instance of {@link ManagementSession} over an {@link OtpConnection}.
+     * Establishes a new session with a YubiKeys Management application, over an {@link OtpConnection}.
      *
      * @param connection connection with YubiKey
      * @throws IOException                      in case of connection error
@@ -182,7 +184,7 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
     }
 
     /**
-     * Create new instance of a ManagementApplication over a FidoConnection.
+     * Establishes a new session with a YubiKeys Management application, over a {@link FidoConnection}.
      *
      * @param connection a connection over the FIDO USB transport with a YubiKey
      * @throws IOException in case of connection error
@@ -214,11 +216,6 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
         backend.close();
     }
 
-    /**
-     * Firmware version
-     *
-     * @return Yubikey firmware version
-     */
     @Override
     public Version getVersion() {
         return version;

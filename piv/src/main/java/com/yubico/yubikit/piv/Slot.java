@@ -17,17 +17,11 @@
 package com.yubico.yubikit.piv;
 
 /**
- * Slots of YubiKey
- * 9a is for PIV Authentication
- * 9c is for Digital Signature (PIN always checked)
- * 9d is for Key Management
- * 9e is for Card Authentication (PIN never checked)
- * 82-95 is for Retired Key Management
- * f9 is for Attestation
+ * A PIV slot for storing a private key, with a corresponding object ID for storing a certificate.
  */
 public enum Slot {
     AUTHENTICATION(0x9a, ObjectId.AUTHENTICATION),
-    CARD_MANAGEMENT(0x9b, 0),
+    // CARD_MANAGEMENT (0x9b) is intentionally left out as it functions differently.
     SIGNATURE(0x9c, ObjectId.SIGNATURE),
     KEY_MANAGEMENT(0x9d, ObjectId.KEY_MANAGEMENT),
     CARD_AUTH(0x9e, ObjectId.CARD_AUTH),
@@ -63,6 +57,9 @@ public enum Slot {
         this.objectId = objectId;
     }
 
+    /**
+     * Returns the PIV slot corresponding to the given ID.
+     */
     public static Slot fromValue(int value) {
         for (Slot type : Slot.values()) {
             if (type.value == value) {

@@ -17,10 +17,24 @@ package com.yubico.yubikit.core;
 
 import java.io.IOException;
 
+/**
+ * A reference to a physical YubiKey.
+ */
 public interface YubiKeyDevice {
+    /**
+     * Returns the transport used for communication
+     */
     Transport getTransport();
 
+    /**
+     * Returns whether or not a specific connection type is supported for this YubiKey, over this transport.
+     */
     boolean supportsConnection(Class<? extends YubiKeyConnection> connectionType);
 
+    /**
+     * Opens and returns a new connection of the given connection type.
+     *
+     * @throws IOException in case of a communications error
+     */
     <T extends YubiKeyConnection> T openConnection(Class<T> connectionType) throws IOException;
 }

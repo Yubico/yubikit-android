@@ -18,7 +18,13 @@ package com.yubico.yubikit.core.util;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 
+/**
+ * Utility class to generate random data.
+ */
 public class RandomUtils {
+    /**
+     * Returns a byte array containing random values.
+     */
     public static byte[] getRandomBytes(int length) {
         byte[] bytes = new byte[length];
         try {
@@ -28,5 +34,9 @@ public class RandomUtils {
             new SecureRandom().nextBytes(bytes);
         }
         return bytes;
+    }
+
+    private RandomUtils() {
+        throw new IllegalStateException();
     }
 }

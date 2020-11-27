@@ -19,10 +19,19 @@ import com.yubico.yubikit.core.YubiKeyConnection;
 
 import java.io.IOException;
 
+/**
+ * A HID CTAP connection to a YubiKey.
+ */
 public interface FidoConnection extends YubiKeyConnection {
     int PACKET_SIZE = 64;
 
+    /**
+     * Sends a HID CTAP packet to the YubiKey.
+     */
     void send(byte[] packet) throws IOException;
 
+    /**
+     * Receives a HID CTAP packet from the YubiKey.
+     */
     void receive(byte[] packet) throws IOException;
 }

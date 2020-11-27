@@ -5,7 +5,9 @@ import com.yubico.yubikit.core.Version;
 import java.io.Closeable;
 
 /**
- * A base class for Sessions with a YubiKey. Subclasses should use their own type as the parameter T:
+ * A base class for Sessions with a YubiKey.
+ * <p>
+ * Subclasses should use their own type as the parameter T:
  * <pre>{@code class FooSession extends ApplicationSession<FooSession>}</pre>
  *
  * @param <T> the type of the subclass

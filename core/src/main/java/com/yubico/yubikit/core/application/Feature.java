@@ -3,7 +3,7 @@ package com.yubico.yubikit.core.application;
 import com.yubico.yubikit.core.Version;
 
 /**
- * A feature for an Application, which may not be supported by all YubiKeys.
+ * A feature for a YubiKey application, which may not be supported by all YubiKeys.
  *
  * @param <T> The type of Session for which the Feature is relevant.
  */

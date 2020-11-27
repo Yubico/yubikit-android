@@ -16,12 +16,13 @@
 
 package com.yubico.yubikit.core.util;
 
-import javax.annotation.Nullable;
 import java.io.ByteArrayOutputStream;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Locale;
+
+import javax.annotation.Nullable;
 
 /**
  * Tag, length, Value structure that helps to parse APDU response data.
@@ -34,10 +35,7 @@ public class Tlv {
     private final int offset;
 
     /**
-     * Creates instance of {@link Tlv}
-     *
-     * @param tag   the tag of structure
-     * @param value the value of structure
+     * Creates a new Tlv given a tag and a value.
      */
     public Tlv(int tag, @Nullable byte[] value) {
         this.tag = tag;
@@ -65,28 +63,28 @@ public class Tlv {
     }
 
     /**
-     * @return the tag
+     * Returns the tag.
      */
     public int getTag() {
         return tag;
     }
 
     /**
-     * @return value bytes
+     * returns the value.
      */
     public byte[] getValue() {
         return Arrays.copyOfRange(bytes, offset, offset + length);
     }
 
     /**
-     * @return length of the value bytes
+     * Returns the length of the value.
      */
     public int getLength() {
         return length;
     }
 
     /**
-     * @return raw data of tlv blob
+     * Returns the Tlv as a BER-TLV encoded byte array.
      */
     public byte[] getBytes() {
         return Arrays.copyOf(bytes, bytes.length);
@@ -98,8 +96,9 @@ public class Tlv {
     }
 
     /**
-     * Parse Tlv data from a byte array.
-     * @param data a byte array containing the TLV encoded data.
+     * Parse a Tlv from a BER-TLV encoded byte array.
+     *
+     * @param data   a byte array containing the TLV encoded data.
      * @param offset the offset in data where the TLV data begins.
      * @param length the length of the TLV encoded data.
      * @return The parsed Tlv
@@ -114,7 +113,8 @@ public class Tlv {
     }
 
     /**
-     * Parse Tlv data from a byte array.
+     * Parse a Tlv from a BER-TLV encoded byte array.
+     *
      * @param data a byte array containing the TLV encoded data (and nothing more).
      * @return The parsed Tlv
      */

@@ -36,27 +36,21 @@ public class SlotMetadata {
     }
 
     /**
-     * The type of the key stored in a slot.
-     *
-     * @return the key type
+     * Returns the type of the key stored in a slot.
      */
     public KeyType getKeyType() {
         return keyType;
     }
 
     /**
-     * The PIN policy for using the key.
-     *
-     * @return the PIN policy
+     * Returns the PIN policy for using the key.
      */
     public PinPolicy getPinPolicy() {
         return pinPolicy;
     }
 
     /**
-     * The touch policy for using the key.
-     *
-     * @return the touch policy
+     * Returns the touch policy for using the key.
      */
     public TouchPolicy getTouchPolicy() {
         return touchPolicy;
@@ -73,9 +67,7 @@ public class SlotMetadata {
     }
 
     /**
-     * Gets the public key corresponding to the key in the slot.
-     *
-     * @return the slots public key
+     * Returns the public key corresponding to the key in the slot.
      */
     public PublicKey getPublicKey() {
         return PivSession.parsePublicKeyFromDevice(keyType, publicKeyEncoded);

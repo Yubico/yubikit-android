@@ -25,7 +25,19 @@ import java.util.Map;
 
 import javax.annotation.Nullable;
 
+/**
+ * Describes the configuration of a YubiKey which can be altered via the Management application.
+ */
 public class DeviceConfig {
+    /**
+     * In pure CCID mode eject/inject the card with the button.
+     */
+    public static final int FLAG_EJECT = 0x80;
+    /**
+     * Enables remote wakeup.
+     */
+    public static final int FLAG_REMOTE_WAKEUP = 0x40;
+
     private static final int TAG_USB_ENABLED = 0x03;
     private static final int TAG_AUTO_EJECT_TIMEOUT = 0x06;
     private static final int TAG_CHALLENGE_RESPONSE_TIMEOUT = 0x07;
@@ -64,16 +76,25 @@ public class DeviceConfig {
         return enabledCapabilities.get(transport);
     }
 
+    /**
+     * Returns the timeout used when in CCID-only mode with {@link #FLAG_EJECT} enabled.
+     */
     @Nullable
     public Short getAutoEjectTimeout() {
         return autoEjectTimeout;
     }
 
+    /**
+     * Returns the timeout value used by the YubiOTP application when waiting for a user presence check (physical touch).
+     */
     @Nullable
     public Byte getChallengeResponseTimeout() {
         return challengeResponseTimeout;
     }
 
+    /**
+     * Returns the device flags that are set.
+     */
     @Nullable
     public Integer getDeviceFlags() {
         return deviceFlags;
@@ -115,6 +136,9 @@ public class DeviceConfig {
         return ByteBuffer.allocate(data.length + 1).put((byte) data.length).put(data).array();
     }
 
+    /**
+     * Builder class for use with {@link ManagementSession#updateDeviceConfig} when altering the device configuration.
+     */
     public static class Builder {
         private final Map<Transport, Integer> enabledCapabilities = new HashMap<>();
         @Nullable
@@ -124,29 +148,54 @@ public class DeviceConfig {
         @Nullable
         private Integer deviceFlags;
 
+        /**
+         * Instantiates a new DeviceConfig.Builder.
+         */
         public Builder() {
         }
 
+        /**
+         * Sets the enabled capabilities for the given transport.
+         *
+         * @param transport    the transport to change capabilities for
+         * @param capabilities the capabilities to set
+         */
         public Builder enabledCapabilities(Transport transport, int capabilities) {
             enabledCapabilities.put(transport, capabilities);
             return this;
         }
 
+        /**
+         * Sets the timeout used when the YubiKey is in CCID-only mode with {@link #FLAG_EJECT} set.
+         *
+         * @param autoEjectTimeout the timeout, in seconds
+         */
         public Builder autoEjectTimeout(short autoEjectTimeout) {
             this.autoEjectTimeout = autoEjectTimeout;
             return this;
         }
 
+        /**
+         * Sets the timeout used by the YubiOTP application, when waiting for a user presence check (physical touch).
+         *
+         * @param challengeResponseTimeout the timeout, in seconds
+         */
         public Builder challengeResponseTimeout(byte challengeResponseTimeout) {
             this.challengeResponseTimeout = challengeResponseTimeout;
             return this;
         }
 
+        /**
+         * Sets the Device flags of the YubiKey.
+         */
         public Builder deviceFlags(int deviceFlags) {
             this.deviceFlags = deviceFlags;
             return this;
         }
 
+        /**
+         * Constructs a DeviceConfig using the current configuration.
+         */
         public DeviceConfig build() {
             return new DeviceConfig(enabledCapabilities, autoEjectTimeout, challengeResponseTimeout, deviceFlags);
         }

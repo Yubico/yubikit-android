@@ -16,8 +16,10 @@
 
 package com.yubico.yubikit.core.util;
 
+/**
+ * Utility methods for Strings.
+ */
 public class StringUtils {
-
     /**
      * Helper method that convert byte array into string for logging
      *
@@ -42,5 +44,9 @@ public class StringUtils {
             sb.append(String.format("%02x ", byteArray[i]));
         }
         return sb.toString();
+    }
+
+    private StringUtils() {
+        throw new IllegalStateException();
     }
 }

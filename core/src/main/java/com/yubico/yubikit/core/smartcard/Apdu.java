@@ -16,29 +16,28 @@
 
 package com.yubico.yubikit.core.smartcard;
 
-import javax.annotation.Nullable;
 import java.util.Arrays;
+
+import javax.annotation.Nullable;
 
 /**
  * Data model for encapsulating an APDU command, as defined by ISO/IEC 7816-4 standard.
  */
 public class Apdu {
-    /* Raw array of command bytes that contains all command bytes (cla, ins, p1, p2), length and data bytes */
     private final byte cla;
     private final byte ins;
     private final byte p1;
     private final byte p2;
     private final byte[] data;
 
-
     /**
-     * Creates a new APDU binary command from a list of parameters specified by the ISO/IEC 7816-4 standard.
+     * Creates a new command APDU from a list of parameters specified by the ISO/IEC 7816-4 standard.
      *
-     * @param cla  The instruction class.
-     * @param ins  The instruction number.
-     * @param p1   The first instruction parameter byte.
-     * @param p2   The second instruction parameter byte.
-     * @param data The command data.
+     * @param cla  the instruction class
+     * @param ins  the instruction number
+     * @param p1   the first instruction parameter byte
+     * @param p2   the second instruction parameter byte
+     * @param data the command data
      */
     private Apdu(byte cla, byte ins, byte p1, byte p2, @Nullable byte[] data) {
         this.cla = cla;
@@ -49,13 +48,7 @@ public class Apdu {
     }
 
     /**
-     * Creates a new APDU binary command from a list of parameters specified by the ISO/IEC 7816-4 standard.
-     *
-     * @param cla  The instruction class.
-     * @param ins  The instruction number.
-     * @param p1   The first instruction parameter byte.
-     * @param p2   The second instruction parameter byte.
-     * @param data The command data.
+     * Constructor using int's for convenience. See {@link Apdu(byte, byte, byte, byte, byte)}.
      */
     public Apdu(int cla, int ins, int p1, int p2, @Nullable byte[] data) {
         this(validateByte(cla, "CLA"),
@@ -67,37 +60,35 @@ public class Apdu {
     }
 
     /**
-     * APDU command data
-     *
-     * @return byte array of APDU data
+     * Returns the data payload of the APDU.
      */
     public byte[] getData() {
         return Arrays.copyOf(data, data.length);
     }
 
     /**
-     * @return Class of an APDU
+     * Returns the CLA of the APDU.
      */
     public byte getCla() {
         return cla;
     }
 
     /**
-     * @return Instruction of an APDU
+     * Returns the INS of the APDU.
      */
     public byte getIns() {
         return ins;
     }
 
     /**
-     * @return Parameter 1 of an APDU
+     * Returns the parameter P1 of the APDU.
      */
     public byte getP1() {
         return p1;
     }
 
     /**
-     * @return Parameter 2 of an APDU
+     * Returns the parameter P2 of the APDU.
      */
     public byte getP2() {
         return p2;
@@ -107,7 +98,7 @@ public class Apdu {
      * Validates that integer passed fits into byte and converts to byte
      */
     private static byte validateByte(int byteInt, String name) {
-        if (byteInt > 255) {
+        if (byteInt > 255 || byteInt < 0) {
             throw new IllegalArgumentException("Invalid value for " + name + ", must fit in a byte");
         }
         return (byte) byteInt;

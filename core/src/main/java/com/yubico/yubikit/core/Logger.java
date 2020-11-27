@@ -26,7 +26,9 @@ import javax.annotation.Nullable;
  */
 public abstract class Logger {
     /**
-     * Logs message (debug level)
+     * Specifies how debug messages are logged.
+     * <p>
+     * If this method is not overridden, then debug messages will not be logged.
      *
      * @param message the message can to be logged
      */
@@ -34,7 +36,9 @@ public abstract class Logger {
     }
 
     /**
-     * Logs message (error level)
+     * Specifies how error messages (with exceptions) are logged.
+     * <p>
+     * If this method is not overridden, then error messages will not be logged.
      *
      * @param message   the message can to be logged
      * @param throwable the exception that can to be logged or counted
@@ -55,12 +59,18 @@ public abstract class Logger {
         instance = logger;
     }
 
+    /**
+     * Log a debug message.
+     */
     public static void d(String message) {
         if (instance != null) {
             instance.logDebug(message);
         }
     }
 
+    /**
+     * Log an error message, together with an exception.
+     */
     public static void e(String message, Throwable throwable) {
         if (instance != null) {
             instance.logError(message, throwable);

@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Helper methods to encode and decode BER-TLV data.
+ * Utility methods to encode and decode BER-TLV data.
  */
 public class Tlvs {
 

@@ -20,7 +20,13 @@ package com.yubico.yubikit.oath;
  * Supported OATH variants for use with the OATH YubiKey application.
  */
 public enum OathType {
+    /**
+     * OATH HOTP (event based), as defined in RFC 4226
+     */
     HOTP((byte) 0x10),
+    /**
+     * OATH TOTP (time based), as defined in RFC 6238
+     */
     TOTP((byte) 0x20);
 
     public final byte value;

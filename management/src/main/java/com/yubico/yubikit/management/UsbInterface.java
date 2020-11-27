@@ -16,7 +16,7 @@
 package com.yubico.yubikit.management;
 
 /**
- * Provides constants for the different USB interfaces, and the Mode enum for combinations of enabled interfaces.
+ * Provides constants for the different YubiKey USB interfaces, and the Mode enum for combinations of enabled interfaces.
  */
 public final class UsbInterface {
     public static final int OTP = 0x01;
@@ -26,6 +26,11 @@ public final class UsbInterface {
     private UsbInterface() {
     }
 
+    /**
+     * Used for configuring USB Mode for YubiKey 3 and 4.
+     * <p>
+     * This is replaced by DeviceConfig starting with YubiKey 5.
+     */
     public enum Mode {
         OTP((byte) 0x00, UsbInterface.OTP),
         CCID((byte) 0x01, UsbInterface.CCID),
@@ -43,13 +48,16 @@ public final class UsbInterface {
             this.interfaces = interfaces;
         }
 
-        public static Mode getMode(int transports) {
+        /**
+         * Returns the USB Mode given the enabled USB interfaces it has.
+         */
+        public static Mode getMode(int interfaces) {
             for (Mode mode : Mode.values()) {
-                if (mode.interfaces == transports) {
+                if (mode.interfaces == interfaces) {
                     return mode;
                 }
             }
-            throw new IllegalArgumentException("Invalid transports for Mode");
+            throw new IllegalArgumentException("Invalid interfaces for Mode");
         }
     }
 }

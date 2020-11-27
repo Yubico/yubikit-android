@@ -22,11 +22,11 @@ import com.yubico.yubikit.core.YubiKeyConnection;
 import java.io.IOException;
 
 /**
- * Defines the interface for execution of raw Apdu commands
+ * A connection capable of sending APDUs and receiving their responses.
  */
 public interface SmartCardConnection extends YubiKeyConnection {
     /**
-     * Synchronously send a command APDU to the YubiKey, and reads a response.
+     * Sends a command APDU to the YubiKey, and reads a response.
      *
      * @param apdu The binary APDU data to be sent.
      * @return The response back from the YubiKey.

@@ -41,8 +41,6 @@ public class PinMetadata {
 
     /**
      * Returns the number of PIN/PUK attempts available after successful verification.
-     *
-     * @return the total number of attempts allowed
      */
     public int getTotalAttempts() {
         return totalAttempts;
@@ -50,8 +48,6 @@ public class PinMetadata {
 
     /**
      * Returns the number of PIN/PUK attempts currently remaining.
-     *
-     * @return the number of attemts remaining
      */
     public int getAttemptsRemaining() {
         return attemptsRemaining;

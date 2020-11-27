@@ -109,9 +109,6 @@ public class OathSession extends ApplicationSession<OathSession> {
     private final SmartCardProtocol protocol;
     private final Version version;
 
-    /**
-     * Version, ID and a challenge if authentication is configured
-     */
     private String deviceId;
     private byte[] salt;
     @Nullable

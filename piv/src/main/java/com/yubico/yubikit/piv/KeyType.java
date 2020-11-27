@@ -16,21 +16,37 @@
 
 package com.yubico.yubikit.piv;
 
-import javax.annotation.Nonnull;
 import java.math.BigInteger;
 import java.security.Key;
 import java.security.interfaces.ECKey;
 import java.security.interfaces.RSAKey;
 import java.security.spec.EllipticCurve;
 
+import javax.annotation.Nonnull;
+
+/**
+ * Supported private key types for use with the PIV YubiKey application.
+ */
 public enum KeyType {
+    /**
+     * RSA with a 1024 bit key.
+     */
     RSA1024(0x06, new RsaKeyParams(1024)),
+    /**
+     * RSA with a 2048 bit key.
+     */
     RSA2048(0x07, new RsaKeyParams(2048)),
+    /**
+     * Elliptic Curve key, using NIST Curve P-256.
+     */
     ECCP256(0x11, new EcKeyParams(
             256,
             "115792089210356248762697446949407573530086143415290314195533631308867097853948",
             "41058363725152142129326129780047268409114441015993725554835256314039467401291"
     )),
+    /**
+     * Elliptic Curve key, using NIST Cuve P-384.
+     */
     ECCP384(0x14, new EcKeyParams(
             384,
             "39402006196394479212279040100143613805079739270465446667948293404245721771496870329047266088258938001861606973112316",
@@ -45,6 +61,9 @@ public enum KeyType {
         this.params = params;
     }
 
+    /**
+     * Returns the key type corresponding to the given PIV algorithm constant.
+     */
     public static KeyType fromValue(int value) {
         for (KeyType type : KeyType.values()) {
             if (type.value == value) {
@@ -54,6 +73,9 @@ public enum KeyType {
         throw new IllegalArgumentException("Not a valid KeyType:" + value);
     }
 
+    /**
+     * Returns the key type corresponding to the given key.
+     */
     public static KeyType fromKey(Key key) {
         for (KeyType keyType : values()) {
             if (keyType.params.matches(key)) {
@@ -63,10 +85,16 @@ public enum KeyType {
         throw new IllegalArgumentException("Unsupported key type");
     }
 
+    /**
+     * Key algorithm identifier.
+     */
     public enum Algorithm {
         RSA, EC;
     }
 
+    /**
+     * Algorithm parameters used by a KeyType.
+     */
     public static abstract class KeyParams {
         @Nonnull  // Needed for Kotlin to use when() on algorithm and not have to null check.
         public final Algorithm algorithm;
@@ -80,8 +108,10 @@ public enum KeyType {
         protected abstract boolean matches(Key key);
     }
 
+    /**
+     * Algorithm parameters for RSA keys.
+     */
     public static final class RsaKeyParams extends KeyParams {
-
         private RsaKeyParams(int bitLength) {
             super(Algorithm.RSA, bitLength);
         }
@@ -95,6 +125,9 @@ public enum KeyType {
         }
     }
 
+    /**
+     * Algorithm parameters for EC keys.
+     */
     public static final class EcKeyParams extends KeyParams {
         private final BigInteger a;
         private final BigInteger b;

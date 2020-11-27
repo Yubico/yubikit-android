@@ -21,7 +21,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 /**
- * Parser that helps to extract OTP from nfc tag
+ * Parser that helps to extract OTP from nfc tag.
  */
 public class NdefUtils {
     private static final byte[] HEADER = new byte[]{(byte) 0xd1, 0x55, 0x04}; // NDEF, URI, HTTPS
@@ -32,10 +32,16 @@ public class NdefUtils {
     private static final byte[] DOMAIN = "my.yubico.com".getBytes(StandardCharsets.UTF_8);
     private static final byte[] NEO_REMAINDER_PREFIX = "/neo/".getBytes(StandardCharsets.UTF_8);
 
+    /**
+     * Returns the String payload portion (an OTP, for example) of a YubiKey's NDEF data.
+     */
     public static String getNdefPayload(byte[] ndefData) {
         return new String(getNdefPayloadBytes(ndefData), StandardCharsets.UTF_8);
     }
 
+    /**
+     * Returns the byte payload portion (static password scan codes, for example) of a YubiKey's NDEF data.
+     */
     public static byte[] getNdefPayloadBytes(byte[] ndefData) {
         ByteBuffer data = ByteBuffer.wrap(ndefData);
         byte record = data.get();

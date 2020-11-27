@@ -19,7 +19,7 @@ package com.yubico.yubikit.core.smartcard;
 import java.util.Arrays;
 
 /**
- * Parses response to APDU from a key
+ * An APDU response from a YubiKey, comprising response data, and a status code.
  */
 public class ApduResponse {
     private final byte[] bytes;

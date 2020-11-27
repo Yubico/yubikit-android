@@ -17,23 +17,18 @@
 package com.yubico.yubikit.core.otp;
 
 /**
- * <p>
- * Utility methods for calculating and verifying the CRC13239 checksum used
- * for YubiKeys.
- * </p>
+ * Utility methods for calculating and verifying the CRC13239 checksum used by YubiKeys.
  */
 public class ChecksumUtils {
-    /**
-     * <p>When verifying a checksum the CRC_OK_RESIDUAL should be the remainder</p>
-     */
+    // When verifying a checksum the CRC_OK_RESIDUAL should be the remainder.
     private static final short CRC_OK_RESIDUAL = (short) 0xf0b8;
 
     /**
-     * <p>Method for calculating a CRC13239 checksum over a byte buffer.</p>
+     * Calculate the CRC13239 checksum for a byte buffer.
      *
      * @param data   byte buffer to be checksummed.
      * @param length how much of the buffer should be checksummed
-     * @return CRC13239 checksum
+     * @return the calculated checksum
      */
     static public short calculateCrc(byte[] data, int length) {
         int crc = 0xffff;
@@ -54,7 +49,7 @@ public class ChecksumUtils {
     }
 
     /**
-     * Verify a checksum.
+     * Verifies a checksum.
      *
      * @param data   the data, ending in the 2 byte CRC checksum to verify
      * @param length The length of the data, including the checksum at the end
@@ -62,5 +57,9 @@ public class ChecksumUtils {
      */
     static public boolean checkCrc(byte[] data, int length) {
         return calculateCrc(data, length) == CRC_OK_RESIDUAL;
+    }
+
+    private ChecksumUtils() {
+        throw new IllegalStateException();
     }
 }

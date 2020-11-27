@@ -17,14 +17,32 @@
 package com.yubico.yubikit.management;
 
 /**
- * Form factor is set during manufacturing and returned as a one-Byte value
+ * The physical form factor of a YubiKey.
  */
 public enum FormFactor {
+    /**
+     * Used when information about the YubiKey's form factor isn't available.
+     */
     UNKNOWN(0x00),
+    /**
+     * A keychain-sized YubiKey with a USB-A connector.
+     */
     USB_A_KEYCHAIN(0x01),
+    /**
+     * A nano-sized YubiKey with a USB-A connector.
+     */
     USB_A_NANO(0x02),
+    /**
+     * A keychain-sized YubiKey with a USB-C connector.
+     */
     USB_C_KEYCHAIN(0x03),
+    /**
+     * A nano-sized YubiKey with a USB-C connector.
+     */
     USB_C_NANO(0x04),
+    /**
+     * A keychain-sized YubiKey with both USB-C and Lightning connectors.
+     */
     USB_C_LIGHTNING(0x05);
 
     public final int value;
@@ -33,6 +51,9 @@ public enum FormFactor {
         this.value = value;
     }
 
+    /**
+     * Returns the form factor corresponding to the given Management application form factor constant, or UNKNOWN if the value is unknown.
+     */
     public static FormFactor valueOf(int value) {
         if (value >= 0 && value < FormFactor.values().length) {
             return FormFactor.values()[value];

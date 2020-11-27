@@ -21,7 +21,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Modhex mapping: https://developers.yubico.com/yubico-c/Manuals/modhex.1.html
+ * Methods for encoding and decoding Modhex encoded Strings.
+ * <p>
+ * See: <a href="https://developers.yubico.com/yubico-c/Manuals/modhex.1.htm">Modhex specification</a>.
  */
 public class Modhex {
     private final static char[] ALPHABET = "cbdefghijklnrtuv".toCharArray();
@@ -36,9 +38,6 @@ public class Modhex {
 
     /**
      * Decodes Modhex encoded string.
-     *
-     * @param modhex a Modhex encoded string.
-     * @return decoded byte array
      */
     public static byte[] decode(String modhex) {
         if (modhex.length() % 2 != 0) {
@@ -69,10 +68,7 @@ public class Modhex {
     }
 
     /**
-     * Encode data as Modhex.
-     *
-     * @param bytes the data to encode
-     * @return A Modhex encoded string
+     * Encodes data to Modhex.
      */
     public static String encode(byte[] bytes) {
         StringBuilder output = new StringBuilder();

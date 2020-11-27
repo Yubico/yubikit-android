@@ -15,6 +15,12 @@
  */
 package com.yubico.yubikit.core.util;
 
+/**
+ * Utility class to hold two values.
+ *
+ * @param <A>
+ * @param <B>
+ */
 public class Pair<A, B> {
     public final A first;
     public final B second;

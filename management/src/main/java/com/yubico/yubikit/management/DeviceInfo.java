@@ -15,16 +15,20 @@
  */
 package com.yubico.yubikit.management;
 
-import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.Version;
+import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.util.Tlvs;
 
-import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
+import javax.annotation.Nullable;
+
+/**
+ * Contains metadata, including Device Configuration, of a YubiKey.
+ */
 public class DeviceInfo {
     private static final int TAG_USB_SUPPORTED = 0x01;
     private static final int TAG_SERIAL_NUMBER = 0x02;
@@ -55,32 +59,56 @@ public class DeviceInfo {
         this.isLocked = isLocked;
     }
 
+    /**
+     * Returns the current Device configuration of the YubiKey.
+     */
     public DeviceConfig getConfig() {
         return config;
     }
 
+    /**
+     * Returns the serial number of the YubiKey, if available.
+     * <p>
+     * The serial number can be read if the YubiKey has a serial number, and one of the YubiOTP slots
+     * is configured with the SERIAL_API_VISIBLE flag.
+     */
     @Nullable
     public Integer getSerialNumber() {
         return serialNumber;
     }
 
+    /**
+     * Returns the version number of the YubiKey firmware.
+     */
     public Version getVersion() {
         return version;
     }
 
+    /**
+     * Returns the form factor of the YubiKey.
+     */
     public FormFactor getFormFactor() {
         return formFactor;
     }
 
+    /**
+     * Returns whether or not a specific transport is available on this YubiKey.
+     */
     public boolean hasTransport(Transport transport) {
         return supportedCapabilities.containsKey(transport);
     }
 
+    /**
+     * Returns the supported (not necessarily enabled) capabilities for a given transport.
+     */
     public int getSupportedCapabilities(Transport transport) {
         Integer capabilities = supportedCapabilities.get(transport);
         return capabilities == null ? 0 : capabilities;
     }
 
+    /**
+     * Returns whether or not a Configuration Lock is set for the Management application on the YubiKey.
+     */
     public boolean isLocked() {
         return isLocked;
     }
@@ -117,11 +145,11 @@ public class DeviceInfo {
         } else {
             supportedCapabilities.put(Transport.USB, readInt(data.get(TAG_USB_SUPPORTED)));
         }
-        if(data.containsKey(TAG_USB_ENABLED)) {
+        if (data.containsKey(TAG_USB_ENABLED)) {
             enabledCapabilities.put(Transport.USB, readInt(data.get(TAG_USB_ENABLED)));
         }
 
-        if(data.containsKey(TAG_NFC_SUPPORTED)) {
+        if (data.containsKey(TAG_NFC_SUPPORTED)) {
             supportedCapabilities.put(Transport.NFC, readInt(data.get(TAG_NFC_SUPPORTED)));
             enabledCapabilities.put(Transport.NFC, readInt(data.get(TAG_NFC_ENABLED)));
         }

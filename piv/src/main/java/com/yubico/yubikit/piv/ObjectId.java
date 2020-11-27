@@ -16,6 +16,9 @@
 
 package com.yubico.yubikit.piv;
 
+/**
+ * Constants used to specify PIV objects.
+ */
 public class ObjectId {
     public static final int CAPABILITY = 0x5fc107;
     public static final int CHUID = 0x5fc102;
@@ -56,11 +59,18 @@ public class ObjectId {
     public static final int PIVMAN_PROTECTED_DATA = PRINTED; // Use slot for printed information.
     public static final int ATTESTATION = 0x5fff01;
 
-    public static byte[] getBytes(int tag) {
-        if (tag == ObjectId.DISCOVERY) {
+    /**
+     * Returns the object ID serialized as a byte array.
+     */
+    public static byte[] getBytes(int objectId) {
+        if (objectId == ObjectId.DISCOVERY) {
             return new byte[]{ObjectId.DISCOVERY};
         } else {
-            return new byte[]{(byte) ((tag >> 16) & 0xff), (byte) ((tag >> 8) & 0xff), (byte) (tag & 0xff)};
+            return new byte[]{(byte) ((objectId >> 16) & 0xff), (byte) ((objectId >> 8) & 0xff), (byte) (objectId & 0xff)};
         }
+    }
+
+    private ObjectId() {
+        throw new IllegalStateException();
     }
 }
