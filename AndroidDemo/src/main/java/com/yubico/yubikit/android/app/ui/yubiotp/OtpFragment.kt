@@ -9,28 +9,30 @@ import androidx.fragment.app.activityViewModels
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import com.google.android.material.tabs.TabLayoutMediator
 import com.yubico.yubikit.android.app.R
+import com.yubico.yubikit.android.app.databinding.FragmentYubiotpBinding
 import com.yubico.yubikit.android.app.ui.YubiKeyFragment
 import com.yubico.yubikit.yubiotp.Slot
 import com.yubico.yubikit.yubiotp.YubiOtpSession
-import kotlinx.android.synthetic.main.fragment_yubiotp.*
 
 class OtpFragment : YubiKeyFragment<YubiOtpSession, OtpViewModel>() {
     override val viewModel: OtpViewModel by activityViewModels()
+    private lateinit var binding: FragmentYubiotpBinding
 
     override fun onCreateView(
             inflater: LayoutInflater,
             container: ViewGroup?,
             savedInstanceState: Bundle?
     ): View? {
-        return inflater.inflate(R.layout.fragment_yubiotp, container, false)
+        binding = FragmentYubiotpBinding.inflate(inflater, container, false)
+        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        pager.adapter = ProgramModeAdapter(this)
+        binding.pager.adapter = ProgramModeAdapter(this)
 
-        TabLayoutMediator(tab_layout, pager) { tab, position ->
+        TabLayoutMediator(binding.tabLayout, binding.pager) { tab, position ->
             tab.setText(when (position) {
                 0 -> R.string.otp_yubiotp
                 1 -> R.string.otp_chalresp
@@ -40,12 +42,12 @@ class OtpFragment : YubiKeyFragment<YubiOtpSession, OtpViewModel>() {
 
         viewModel.slotConfigurationState.observe(viewLifecycleOwner, {
             if (it != null) {
-                empty_view.visibility = View.INVISIBLE
-                otp_status_text.text = "Slot 1: ${if (it.slotIsConfigured(Slot.ONE)) "programmed" else "empty"}\nSlot 2: ${if (it.slotIsConfigured(Slot.TWO)) "programmed" else "empty"}"
-                otp_status_text.visibility = View.VISIBLE
+                binding.emptyView.visibility = View.INVISIBLE
+                binding.otpStatusText.text = "Slot 1: ${if (it.slotIsConfigured(Slot.ONE)) "programmed" else "empty"}\nSlot 2: ${if (it.slotIsConfigured(Slot.TWO)) "programmed" else "empty"}"
+                binding.otpStatusText.visibility = View.VISIBLE
             } else {
-                empty_view.visibility = View.VISIBLE
-                otp_status_text.visibility = View.INVISIBLE
+                binding.emptyView.visibility = View.VISIBLE
+                binding.otpStatusText.visibility = View.INVISIBLE
             }
         })
     }

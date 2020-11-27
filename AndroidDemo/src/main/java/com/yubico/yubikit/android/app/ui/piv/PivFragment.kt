@@ -11,6 +11,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import com.google.android.material.tabs.TabLayoutMediator
 import com.yubico.yubikit.android.app.R
+import com.yubico.yubikit.android.app.databinding.FragmentPivBinding
 import com.yubico.yubikit.android.app.ui.YubiKeyFragment
 import com.yubico.yubikit.android.app.ui.getSecret
 import com.yubico.yubikit.core.application.ApplicationNotAvailableException
@@ -18,7 +19,6 @@ import com.yubico.yubikit.core.smartcard.ApduException
 import com.yubico.yubikit.core.smartcard.SW
 import com.yubico.yubikit.piv.PivSession
 import com.yubico.yubikit.piv.Slot
-import kotlinx.android.synthetic.main.fragment_piv.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.bouncycastle.util.encoders.Hex
@@ -30,20 +30,22 @@ class PivFragment : YubiKeyFragment<PivSession, PivViewModel>() {
             PageProperties(Slot.CARD_AUTH, R.string.piv_card_auth))
 
     override val viewModel: PivViewModel by activityViewModels()
+    private lateinit var binding: FragmentPivBinding
 
     override fun onCreateView(
             inflater: LayoutInflater,
             container: ViewGroup?,
             savedInstanceState: Bundle?
-    ): View? {
-        return inflater.inflate(R.layout.fragment_piv, container, false)
+    ): View {
+        binding = FragmentPivBinding.inflate(inflater, container, false)
+        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        pager.adapter = PagerAdapter(this)
-        TabLayoutMediator(tab_layout, pager) { tab, position ->
+        binding.pager.adapter = PagerAdapter(this)
+        TabLayoutMediator(binding.tabLayout, binding.pager) { tab, position ->
             tab.text = String.format("Slot %02X", slots[position].slot.value)
         }.attach()
 
@@ -70,8 +72,8 @@ class PivFragment : YubiKeyFragment<PivSession, PivViewModel>() {
     }
 
     private fun showCerts(visible: Boolean) {
-        pager.visibility = if (visible) View.VISIBLE else View.GONE
-        empty_view.visibility = if (visible) View.GONE else View.VISIBLE
+        binding.pager.visibility = if (visible) View.VISIBLE else View.GONE
+        binding.emptyView.visibility = if (visible) View.GONE else View.VISIBLE
         activity?.invalidateOptionsMenu()
     }
 

@@ -2,6 +2,7 @@ package com.yubico.yubikit.android.app
 
 import android.os.Bundle
 import android.util.Log
+import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
 import androidx.activity.viewModels
@@ -17,13 +18,14 @@ import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
 import com.google.android.material.navigation.NavigationView
 import com.yubico.yubikit.android.YubiKitManager
+import com.yubico.yubikit.android.app.databinding.ActivityMainBinding
+import com.yubico.yubikit.android.app.databinding.DialogAboutBinding
 import com.yubico.yubikit.android.transport.nfc.NfcConfiguration
 import com.yubico.yubikit.android.transport.nfc.NfcNotAvailable
 import com.yubico.yubikit.android.transport.usb.UsbConfiguration
 import com.yubico.yubikit.android.transport.usb.UsbYubiKeyDevice
 import com.yubico.yubikit.android.transport.usb.UsbYubiKeyListener
 import com.yubico.yubikit.core.Logger
-import kotlinx.android.synthetic.main.dialog_about.*
 import java.util.*
 import kotlin.properties.Delegates
 
@@ -124,11 +126,12 @@ class MainActivity : AppCompatActivity() {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             R.id.action_about -> {
+                val binding = DialogAboutBinding.inflate(LayoutInflater.from(this))
                 AlertDialog.Builder(this)
-                        .setView(R.layout.dialog_about)
+                        .setView(binding.root)
                         .create().apply {
                             setOnShowListener {
-                                version.text = String.format(Locale.getDefault(), getString(R.string.version), BuildConfig.VERSION_NAME);
+                                binding.version.text = String.format(Locale.getDefault(), getString(R.string.version), BuildConfig.VERSION_NAME);
                             }
                         }.show()
             }

@@ -7,38 +7,40 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import com.yubico.yubikit.android.app.R
+import com.yubico.yubikit.android.app.databinding.FragmentYubiotpChalrespBinding
 import com.yubico.yubikit.core.util.RandomUtils
 import com.yubico.yubikit.yubiotp.HmacSha1SlotConfiguration
 import com.yubico.yubikit.yubiotp.Slot
-import kotlinx.android.synthetic.main.fragment_yubiotp_chalresp.*
 import org.bouncycastle.util.encoders.Hex
 
 class ChallengeResponseFragment : Fragment() {
     private val viewModel: OtpViewModel by activityViewModels()
+    private lateinit var binding: FragmentYubiotpChalrespBinding
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View? {
-        return inflater.inflate(R.layout.fragment_yubiotp_chalresp, container, false)
+        binding = FragmentYubiotpChalrespBinding.inflate(inflater, container, false)
+        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        text_layout_key.setEndIconOnClickListener {
-            edit_text_key.setText(String(Hex.encode(RandomUtils.getRandomBytes(8))))
+        binding.textLayoutKey.setEndIconOnClickListener {
+            binding.editTextKey.setText(String(Hex.encode(RandomUtils.getRandomBytes(8))))
         }
-        edit_text_key.setText(String(Hex.encode(RandomUtils.getRandomBytes(8))))
+        binding.editTextKey.setText(String(Hex.encode(RandomUtils.getRandomBytes(8))))
 
-        text_layout_challenge.setEndIconOnClickListener {
-            edit_text_challenge.setText(String(Hex.encode(RandomUtils.getRandomBytes(8))))
+        binding.textLayoutChallenge.setEndIconOnClickListener {
+            binding.editTextChallenge.setText(String(Hex.encode(RandomUtils.getRandomBytes(8))))
         }
-        edit_text_challenge.setText(String(Hex.encode(RandomUtils.getRandomBytes(8))))
+        binding.editTextChallenge.setText(String(Hex.encode(RandomUtils.getRandomBytes(8))))
 
-        btn_save.setOnClickListener {
+        binding.btnSave.setOnClickListener {
             try {
-                val key = Hex.decode(edit_text_key.text.toString())
-                val touch = switch_require_touch.isChecked
-                val slot = when (slot_radio.checkedRadioButtonId) {
+                val key = Hex.decode(binding.editTextKey.text.toString())
+                val touch = binding.switchRequireTouch.isChecked
+                val slot = when (binding.slotRadio.checkedRadioButtonId) {
                     R.id.radio_slot_1 -> Slot.ONE
                     R.id.radio_slot_2 -> Slot.TWO
                     else -> throw IllegalStateException("No slot selected")
@@ -52,10 +54,10 @@ class ChallengeResponseFragment : Fragment() {
             }
         }
 
-        btn_calculate_response.setOnClickListener {
+        binding.btnCalculateResponse.setOnClickListener {
             try {
-                val challenge = Hex.decode(edit_text_challenge.text.toString())
-                val slot = when (slot_calculate_radio.checkedRadioButtonId) {
+                val challenge = Hex.decode(binding.editTextChallenge.text.toString())
+                val slot = when (binding.slotCalculateRadio.checkedRadioButtonId) {
                     R.id.radio_calculate_slot_1 -> Slot.ONE
                     R.id.radio_calculate_slot_2 -> Slot.TWO
                     else -> throw IllegalStateException("No slot selected")

@@ -7,15 +7,17 @@ import android.view.ViewGroup
 import android.widget.CheckBox
 import androidx.fragment.app.activityViewModels
 import com.yubico.yubikit.android.app.R
+import com.yubico.yubikit.android.app.databinding.FragmentManagementBinding
 import com.yubico.yubikit.android.app.ui.YubiKeyFragment
 import com.yubico.yubikit.core.Transport
 import com.yubico.yubikit.management.Capability
 import com.yubico.yubikit.management.DeviceConfig
 import com.yubico.yubikit.management.ManagementSession
-import kotlinx.android.synthetic.main.fragment_management.*
 
 class ManagementFragment : YubiKeyFragment<ManagementSession, ManagementViewModel>() {
     override val viewModel: ManagementViewModel by activityViewModels()
+
+    private lateinit var binding: FragmentManagementBinding
 
     private val checkboxIds = mapOf(
             (Transport.USB to Capability.OTP) to R.id.checkbox_usb_otp,
@@ -38,7 +40,8 @@ class ManagementFragment : YubiKeyFragment<ManagementSession, ManagementViewMode
             container: ViewGroup?,
             savedInstanceState: Bundle?
     ): View? {
-        return inflater.inflate(R.layout.fragment_management, container, false)
+        binding = FragmentManagementBinding.inflate(inflater, container, false)
+        return binding.root
     }
 
     override fun onStop() {
@@ -49,12 +52,12 @@ class ManagementFragment : YubiKeyFragment<ManagementSession, ManagementViewMode
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        application_table.visibility = View.GONE
-        save.visibility = View.GONE
+        binding.applicationTable.visibility = View.GONE
+        binding.save.visibility = View.GONE
 
         viewModel.deviceInfo.observe(viewLifecycleOwner, {
             if (it != null) {
-                info.text = "Device type: ${it.formFactor.name} \nFirmware: ${it.version} \nSerial: ${it.serialNumber}"
+                binding.info.text = "Device type: ${it.formFactor.name} \nFirmware: ${it.version} \nSerial: ${it.serialNumber}"
                 checkboxIds.forEach { (transport, capability), id ->
                     view.findViewById<CheckBox>(id).let { checkbox ->
                         if (it.getSupportedCapabilities(transport) and capability.bit != 0) {
@@ -65,17 +68,17 @@ class ManagementFragment : YubiKeyFragment<ManagementSession, ManagementViewMode
                         }
                     }
                 }
-                application_table.visibility = View.VISIBLE
-                save.visibility = View.VISIBLE
-                empty_view.visibility = View.GONE
+                binding.applicationTable.visibility = View.VISIBLE
+                binding.save.visibility = View.VISIBLE
+                binding.emptyView.visibility = View.GONE
             } else {
-                empty_view.visibility = View.VISIBLE
-                application_table.visibility = View.GONE
-                save.visibility = View.GONE
+                binding.emptyView.visibility = View.VISIBLE
+                binding.applicationTable.visibility = View.GONE
+                binding.save.visibility = View.GONE
             }
         })
 
-        save.setOnClickListener {
+        binding.save.setOnClickListener {
             viewModel.pendingAction.value = {
                 updateDeviceConfig(DeviceConfig.Builder().apply {
                     Transport.values().forEach { transport ->

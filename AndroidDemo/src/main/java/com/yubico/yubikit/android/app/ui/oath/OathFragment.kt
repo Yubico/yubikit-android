@@ -10,6 +10,7 @@ import androidx.lifecycle.Observer
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.yubico.yubikit.android.app.R
+import com.yubico.yubikit.android.app.databinding.FragmentOathBinding
 import com.yubico.yubikit.android.app.ui.YubiKeyFragment
 import com.yubico.yubikit.android.app.ui.getSecret
 import com.yubico.yubikit.core.smartcard.ApduException
@@ -19,7 +20,6 @@ import com.yubico.yubikit.oath.CredentialData
 import com.yubico.yubikit.oath.HashAlgorithm
 import com.yubico.yubikit.oath.OathSession
 import com.yubico.yubikit.oath.OathType
-import kotlinx.android.synthetic.main.fragment_oath.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.apache.commons.codec.binary.Base32
@@ -27,6 +27,7 @@ import org.apache.commons.codec.binary.Base32
 class OathFragment : YubiKeyFragment<OathSession, OathViewModel>() {
     override val viewModel: OathViewModel by activityViewModels()
 
+    lateinit var binding: FragmentOathBinding
     lateinit var listAdapter: OathListAdapter
 
     override fun onCreateView(
@@ -34,7 +35,8 @@ class OathFragment : YubiKeyFragment<OathSession, OathViewModel>() {
             container: ViewGroup?,
             savedInstanceState: Bundle?
     ): View? {
-        return inflater.inflate(R.layout.fragment_oath, container, false)
+        binding = FragmentOathBinding.inflate(inflater, container, false)
+        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -56,14 +58,14 @@ class OathFragment : YubiKeyFragment<OathSession, OathViewModel>() {
                 }
             }
         })
-        with(credential_list) {
+        with(binding.credentialList) {
             layoutManager = LinearLayoutManager(context)
             adapter = listAdapter
         }
 
-        swiperefresh.setOnRefreshListener {
+        binding.swiperefresh.setOnRefreshListener {
             viewModel.pendingAction.value = { null }  // NOOP: Force credential refresh
-            swiperefresh.isRefreshing = false
+            binding.swiperefresh.isRefreshing = false
         }
 
         viewModel.result.observe(viewLifecycleOwner, Observer { result ->
@@ -82,20 +84,20 @@ class OathFragment : YubiKeyFragment<OathSession, OathViewModel>() {
 
         viewModel.credentials.observe(viewLifecycleOwner, Observer {
             listAdapter.submitList(it?.toList())
-            empty_view.visibility = if (it == null) View.VISIBLE else View.GONE
+            binding.emptyView.visibility = if (it == null) View.VISIBLE else View.GONE
         })
 
-        text_layout_key.setEndIconOnClickListener {
-            edit_text_key.setText(Base32().encodeToString(RandomUtils.getRandomBytes(10)))
+        binding.textLayoutKey.setEndIconOnClickListener {
+            binding.editTextKey.setText(Base32().encodeToString(RandomUtils.getRandomBytes(10)))
         }
-        edit_text_key.setText(Base32().encodeToString(RandomUtils.getRandomBytes(10)))
+        binding.editTextKey.setText(Base32().encodeToString(RandomUtils.getRandomBytes(10)))
 
-        btn_save.setOnClickListener {
+        binding.btnSave.setOnClickListener {
             try {
-                val secret = Base32().decode(edit_text_key.text.toString())
-                val issuer = edit_text_issuer.text.toString()
+                val secret = Base32().decode(binding.editTextKey.text.toString())
+                val issuer = binding.editTextIssuer.text.toString()
                 if (issuer.isBlank()) {
-                    edit_text_issuer.error = "Issuer must not be empty"
+                    binding.editTextIssuer.error = "Issuer must not be empty"
                 } else {
                     viewModel.pendingAction.value = {
                         putCredential(CredentialData("user@example.com", OathType.TOTP, HashAlgorithm.SHA1, secret, 6, 30, 0, issuer), false)

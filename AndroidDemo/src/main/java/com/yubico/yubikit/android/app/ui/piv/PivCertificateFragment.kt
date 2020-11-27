@@ -27,12 +27,12 @@ import androidx.lifecycle.Observer
 import androidx.lifecycle.lifecycleScope
 import com.yubico.yubikit.android.app.MainViewModel
 import com.yubico.yubikit.android.app.R
+import com.yubico.yubikit.android.app.databinding.FragmentPivCertifiateBinding
 import com.yubico.yubikit.android.app.ui.getSecret
 import com.yubico.yubikit.piv.KeyType
 import com.yubico.yubikit.piv.PinPolicy
 import com.yubico.yubikit.piv.Slot
 import com.yubico.yubikit.piv.TouchPolicy
-import kotlinx.android.synthetic.main.fragment_piv_certifiate.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.bouncycastle.asn1.ASN1Sequence
@@ -107,17 +107,19 @@ class PivCertificateFragment : Fragment() {
     private val activityViewModel: MainViewModel by activityViewModels()
     private val pivViewModel: PivViewModel by activityViewModels()
 
+    private lateinit var binding: FragmentPivCertifiateBinding
     private lateinit var slot: Slot
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View? {
-        return inflater.inflate(R.layout.fragment_piv_certifiate, container, false)
+        binding = FragmentPivCertifiateBinding.inflate(inflater, container, false)
+        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         slot = Slot.fromValue(requireArguments().getInt(ARG_SLOT))
-        title.text = getString(requireArguments().getInt(ARG_TITLE))
+        binding.title.text = getString(requireArguments().getInt(ARG_TITLE))
         showCerts(false)
 
         pivViewModel.certificates.observe(viewLifecycleOwner, Observer {
@@ -131,12 +133,12 @@ class PivCertificateFragment : Fragment() {
                 } catch (e: IllegalArgumentException) {
                     cert.publicKey.algorithm
                 }
-                cert_info.text = "Issuer: ${cert.issuerDN}\nSubject name: ${cert.subjectDN}\nExpiration date: $expiration\nKey type: $keyType"
+                binding.certInfo.text = "Issuer: ${cert.issuerDN}\nSubject name: ${cert.subjectDN}\nExpiration date: $expiration\nKey type: $keyType"
             }
         })
 
         // Import a static key and self-signed certificate
-        importCert.setOnClickListener {
+        binding.importCert.setOnClickListener {
             val cert = CertificateFactory.getInstance("X.509").generateCertificate(PEM_CERT.byteInputStream()) as X509Certificate
             val key = KeyFactory.getInstance("RSA").generatePrivate(PKCS8EncodedKeySpec(Base64.decode(DER_KEY, Base64.DEFAULT)))
             lifecycleScope.launch(Dispatchers.Main) {
@@ -150,7 +152,7 @@ class PivCertificateFragment : Fragment() {
         }
 
         // Generate a key, then a self-signed certificate, and import
-        generateCert.setOnClickListener {
+        binding.generateCert.setOnClickListener {
             lifecycleScope.launch(Dispatchers.Main) {
                 getSecret(requireContext(), R.string.enter_pin)?.let { pin ->
                     pivViewModel.pendingAction.value = {
@@ -191,7 +193,7 @@ class PivCertificateFragment : Fragment() {
         }
 
         // Attest the certificate
-        attest.setOnClickListener {
+        binding.attest.setOnClickListener {
             pivViewModel.pendingAction.value = {
                 val cert = attestKey(slot)
                 "Received certificate ${cert.subjectDN} issued by ${cert.issuerDN}"
@@ -199,7 +201,7 @@ class PivCertificateFragment : Fragment() {
         }
 
         // Delete the certificate
-        delete.setOnClickListener {
+        binding.delete.setOnClickListener {
             pivViewModel.pendingAction.value = {
                 authenticate(pivViewModel.mgmtKey)
                 deleteCertificate(slot)
@@ -208,8 +210,8 @@ class PivCertificateFragment : Fragment() {
         }
 
         // Sign a message using the key, verify the signature using the certificate
-        sign.setOnClickListener {
-            val messageBytes = message.text.toString().toByteArray()
+        binding.sign.setOnClickListener {
+            val messageBytes = binding.message.text.toString().toByteArray()
             lifecycleScope.launch(Dispatchers.Main) {
                 getSecret(requireContext(), R.string.enter_pin)?.let { pin ->
                     pivViewModel.pendingAction.value = {
@@ -242,11 +244,11 @@ class PivCertificateFragment : Fragment() {
     }
 
     private fun showCerts(visible: Boolean) {
-        cert_info.visibility = if (visible) View.VISIBLE else View.INVISIBLE
-        no_cert.visibility = if (visible) View.INVISIBLE else View.VISIBLE
+        binding.certInfo.visibility = if (visible) View.VISIBLE else View.INVISIBLE
+        binding.noCert.visibility = if (visible) View.INVISIBLE else View.VISIBLE
 
-        delete.isEnabled = visible
-        sign.isEnabled = visible
+        binding.delete.isEnabled = visible
+        binding.sign.isEnabled = visible
     }
 
     companion object {

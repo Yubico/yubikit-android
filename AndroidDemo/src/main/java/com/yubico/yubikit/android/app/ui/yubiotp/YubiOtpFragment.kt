@@ -10,12 +10,12 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import com.yubico.yubikit.android.app.MainViewModel
 import com.yubico.yubikit.android.app.R
+import com.yubico.yubikit.android.app.databinding.FragmentYubiotpOtpBinding
 import com.yubico.yubikit.android.ui.OtpActivity
 import com.yubico.yubikit.core.otp.Modhex
 import com.yubico.yubikit.core.util.RandomUtils
 import com.yubico.yubikit.yubiotp.Slot
 import com.yubico.yubikit.yubiotp.YubiOtpSlotConfiguration
-import kotlinx.android.synthetic.main.fragment_yubiotp_otp.*
 import org.bouncycastle.util.encoders.Hex
 
 private const val REQUEST_OTP_CODE = 1
@@ -23,36 +23,38 @@ private const val REQUEST_OTP_CODE = 1
 class YubiOtpFragment : Fragment() {
     private val activityViewModel: MainViewModel by activityViewModels()
     private val viewModel: OtpViewModel by activityViewModels()
+    private lateinit var binding: FragmentYubiotpOtpBinding
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View? {
-        return inflater.inflate(R.layout.fragment_yubiotp_otp, container, false)
+        binding = FragmentYubiotpOtpBinding.inflate(inflater, container, false)
+        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        text_layout_public_id.setEndIconOnClickListener {
-            edit_text_public_id.setText(Modhex.encode(RandomUtils.getRandomBytes(6)))
+        binding.textLayoutPublicId.setEndIconOnClickListener {
+            binding.editTextPublicId.setText(Modhex.encode(RandomUtils.getRandomBytes(6)))
         }
-        edit_text_public_id.setText(Modhex.encode(RandomUtils.getRandomBytes(6)))
+        binding.editTextPublicId.setText(Modhex.encode(RandomUtils.getRandomBytes(6)))
 
-        text_layout_private_id.setEndIconOnClickListener {
-            edit_text_private_id.setText(String(Hex.encode(RandomUtils.getRandomBytes(6))))
+        binding.textLayoutPrivateId.setEndIconOnClickListener {
+            binding.editTextPrivateId.setText(String(Hex.encode(RandomUtils.getRandomBytes(6))))
         }
-        edit_text_private_id.setText(String(Hex.encode(RandomUtils.getRandomBytes(6))))
+        binding.editTextPrivateId.setText(String(Hex.encode(RandomUtils.getRandomBytes(6))))
 
-        text_layout_key.setEndIconOnClickListener {
-            edit_text_key.setText(String(Hex.encode(RandomUtils.getRandomBytes(16))))
+        binding.textLayoutKey.setEndIconOnClickListener {
+            binding.editTextKey.setText(String(Hex.encode(RandomUtils.getRandomBytes(16))))
         }
-        edit_text_key.setText(String(Hex.encode(RandomUtils.getRandomBytes(16))))
+        binding.editTextKey.setText(String(Hex.encode(RandomUtils.getRandomBytes(16))))
 
-        btn_save.setOnClickListener {
+        binding.btnSave.setOnClickListener {
             try {
-                val publicId = Modhex.decode(edit_text_public_id.text.toString())
-                val privateId = Hex.decode(edit_text_private_id.text.toString())
-                val key = Hex.decode(edit_text_key.text.toString())
-                val slot = when (slot_radio.checkedRadioButtonId) {
+                val publicId = Modhex.decode(binding.editTextPublicId.text.toString())
+                val privateId = Hex.decode(binding.editTextPrivateId.text.toString())
+                val key = Hex.decode(binding.editTextKey.text.toString())
+                val slot = when (binding.slotRadio.checkedRadioButtonId) {
                     R.id.radio_slot_1 -> Slot.ONE
                     R.id.radio_slot_2 -> Slot.TWO
                     else -> throw IllegalStateException("No slot selected")
@@ -67,7 +69,7 @@ class YubiOtpFragment : Fragment() {
             }
         }
 
-        btn_request_otp.setOnClickListener {
+        binding.btnRequestOtp.setOnClickListener {
             activityViewModel.setYubiKeyListenerEnabled(false)
             viewModel.releaseYubiKey()
             startActivityForResult(Intent(context, OtpActivity::class.java), REQUEST_OTP_CODE)
