@@ -48,7 +48,7 @@ public class Apdu {
     }
 
     /**
-     * Constructor using int's for convenience. See {@link Apdu(byte, byte, byte, byte, byte)}.
+     * Constructor using int's for convenience. See {@link #Apdu(byte, byte, byte, byte, byte[])}.
      */
     public Apdu(int cla, int ins, int p1, int p2, @Nullable byte[] data) {
         this(validateByte(cla, "CLA"),
