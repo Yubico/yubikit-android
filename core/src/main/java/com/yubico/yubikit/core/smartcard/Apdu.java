@@ -98,7 +98,7 @@ public class Apdu {
      * Validates that integer passed fits into byte and converts to byte
      */
     private static byte validateByte(int byteInt, String name) {
-        if (byteInt > 255 || byteInt < 0) {
+        if (byteInt > 255 || byteInt < Byte.MIN_VALUE) {
             throw new IllegalArgumentException("Invalid value for " + name + ", must fit in a byte");
         }
         return (byte) byteInt;
