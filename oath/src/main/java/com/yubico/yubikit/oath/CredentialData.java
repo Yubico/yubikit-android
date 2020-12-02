@@ -109,7 +109,6 @@ public class CredentialData implements Serializable {
         return new CredentialData(nameAndIssuer.first, oathType, hashAlgorithm, secret, digits, period, counter, nameAndIssuer.second);
     }
 
-
     /**
      * Constructs a new instance from the given parameters.
      *

@@ -33,7 +33,7 @@ public class NfcSmartCardConnection implements SmartCardConnection {
     /**
      * Provides access to ISO-DEP (ISO 14443-4) properties and I/O operations on a {@link Tag}.
      */
-    private IsoDep card;
+    private final IsoDep card;
 
     /**
      * Instantiates session for nfc tag interaction
