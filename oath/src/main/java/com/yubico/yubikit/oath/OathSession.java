@@ -128,7 +128,7 @@ public class OathSession extends ApplicationSession<OathSession> {
         deviceId = selectResponse.getDeviceId();
         salt = selectResponse.salt;
         challenge = selectResponse.challenge;
-        protocol.enableTouchWorkaround(version);
+        protocol.enableWorkarounds(version);
     }
 
     @Override

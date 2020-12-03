@@ -44,6 +44,8 @@ public class SmartCardProtocol implements Closeable {
 
     private final SmartCardConnection connection;
 
+    private ApduFormat apduFormat = ApduFormat.SHORT;
+
     private boolean useTouchWorkaround = false;
     private long lastLongResponse = 0;
 
@@ -68,15 +70,35 @@ public class SmartCardProtocol implements Closeable {
     }
 
     /**
+     * Enable all relevant workarounds given the firmware version of the YubiKey.
+     *
+     * @param firmwareVersion the firmware version to use for detection to enable the workarounds
+     */
+    public void enableWorkarounds(Version firmwareVersion) {
+        if (connection.getTransport() == Transport.USB
+                && firmwareVersion.isAtLeast(4, 2, 0)
+                && firmwareVersion.isLessThan(4, 2, 7)) {
+            setEnableTouchWorkaround(true);
+        }
+    }
+
+    /**
      * YubiKey 4.2.0 - 4.2.6 have an issue with the touch timeout being too short in certain cases. Enable this workaround
      * on such devices to trigger sending a dummy command which mitigates the issue.
      *
-     * @param firmwareVersion the firmware version to use for detection to enable the workaround
+     * @param enableTouchWorkaround true to enable the workaround, false to disable it
      */
-    public void enableTouchWorkaround(Version firmwareVersion) {
-        this.useTouchWorkaround = connection.getTransport() == Transport.USB
-                && firmwareVersion.isAtLeast(4, 2, 0)
-                && firmwareVersion.isLessThan(4, 2, 7);
+    public void setEnableTouchWorkaround(boolean enableTouchWorkaround) {
+        this.useTouchWorkaround = enableTouchWorkaround;
+    }
+
+    /**
+     * YubiKey NEO doesn't support extended APDU's for most applications.
+     *
+     * @param apduFormat the APDU encoding to use when sending commands
+     */
+    public void setApduFormat(ApduFormat apduFormat) {
+        this.apduFormat = apduFormat;
     }
 
     /**
@@ -120,7 +142,26 @@ public class SmartCardProtocol implements Closeable {
             connection.sendAndReceive(new byte[5]);  // Dummy APDU; returns an error
             lastLongResponse = 0;
         }
-        ApduResponse response = new ApduResponse(connection.sendAndReceive(encodeExtended(command)));
+        ApduResponse response = null;
+        byte[] data = command.getData();
+        switch (apduFormat) {
+            case SHORT:
+                int offset = 0;
+                while (data.length - offset > SHORT_APDU_MAX_CHUNK) {
+                    response = new ApduResponse(connection.sendAndReceive(encodeShortApdu((byte) (command.getCla() | 0x10), command.getIns(), command.getP1(), command.getP2(), data, offset, SHORT_APDU_MAX_CHUNK)));
+                    if (response.getSw() != SW.OK) {
+                        throw new ApduException(response.getSw());
+                    }
+                    offset += SHORT_APDU_MAX_CHUNK;
+                }
+                response = new ApduResponse(connection.sendAndReceive(encodeShortApdu(command.getCla(), command.getIns(), command.getP1(), command.getP2(), data, offset, data.length - offset)));
+                break;
+            case EXTENDED:
+                response = new ApduResponse(connection.sendAndReceive(encodeExtendedApdu(command.getCla(), command.getIns(), command.getP1(), command.getP2(), data)));
+                break;
+            default:
+                throw new IllegalStateException("Invalid APDU format");
+        }
 
         // Read full response
         ByteArrayOutputStream readBuffer = new ByteArrayOutputStream();
@@ -144,34 +185,29 @@ public class SmartCardProtocol implements Closeable {
         return responseData;
     }
 
-    private static byte[] encodeShort(byte cla, Apdu command, int length) {
+    private static byte[] encodeShortApdu(byte cla, byte ins, byte p1, byte p2, byte[] data, int offset, int length) {
         if (length > SHORT_APDU_MAX_CHUNK) {
             throw new IllegalArgumentException("Length must be no greater than " + SHORT_APDU_MAX_CHUNK);
         }
-        byte[] header = new byte[]{cla, command.getIns(), command.getP1(), command.getP2()};
-        if (length == 0) {
-            return header;
-        }
-        return ByteBuffer.allocate(header.length + 1 + length)
-                .put(header)
+        return ByteBuffer.allocate(5 + length)
+                .put(cla)
+                .put(ins)
+                .put(p1)
+                .put(p2)
                 .put((byte) length)
-                .put(command.getData(), 0, length)
+                .put(data, offset, length)
                 .array();
     }
 
-    private static byte[] encodeExtended(Apdu command) {
-        int dataLen = command.getData().length;
-        if (dataLen <= SHORT_APDU_MAX_CHUNK) {
-            return encodeShort(command.getCla(), command, dataLen);
-        }
-        return ByteBuffer.allocate(4 + 3 + dataLen)
-                .put(command.getCla())
-                .put(command.getIns())
-                .put(command.getP1())
-                .put(command.getP2())
+    private static byte[] encodeExtendedApdu(byte cla, byte ins, byte p1, byte p2, byte[] data) {
+        return ByteBuffer.allocate(7 + data.length)
+                .put(cla)
+                .put(ins)
+                .put(p1)
+                .put(p2)
                 .put((byte) 0x00)
-                .putShort((short) dataLen)
-                .put(command.getData())
+                .putShort((short) data.length)
+                .put(data)
                 .array();
     }
 }

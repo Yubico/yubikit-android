@@ -24,6 +24,7 @@ import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.application.Feature;
 import com.yubico.yubikit.core.smartcard.Apdu;
 import com.yubico.yubikit.core.smartcard.ApduException;
+import com.yubico.yubikit.core.smartcard.ApduFormat;
 import com.yubico.yubikit.core.smartcard.SW;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.smartcard.SmartCardProtocol;
@@ -196,7 +197,10 @@ public class PivSession extends ApplicationSession<PivSession> {
         protocol = new SmartCardProtocol(connection);
         protocol.select(AID);
         version = Version.fromBytes(protocol.sendAndReceive(new Apdu(0, INS_GET_VERSION, 0, 0, null)));
-        protocol.enableTouchWorkaround(version);
+        protocol.enableWorkarounds(version);
+        if (version.isAtLeast(4,0,0)) {
+            protocol.setApduFormat(ApduFormat.EXTENDED);
+        }
     }
 
     @Override

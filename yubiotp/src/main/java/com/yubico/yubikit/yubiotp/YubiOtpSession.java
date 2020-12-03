@@ -158,7 +158,7 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
             version = Version.fromBytes(statusBytes);
         }
 
-        protocol.enableTouchWorkaround(version);
+        protocol.enableWorkarounds(version);
 
         backend = new Backend<SmartCardProtocol>(protocol, version, parseConfigState(version, statusBytes)) {
             // 5.0.0-5.2.5 have an issue with status over NFC
