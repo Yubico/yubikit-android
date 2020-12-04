@@ -142,7 +142,8 @@ public class SmartCardProtocol implements Closeable {
             connection.sendAndReceive(new byte[5]);  // Dummy APDU; returns an error
             lastLongResponse = 0;
         }
-        ApduResponse response = null;
+        ApduResponse response;
+        byte[] getData;
         byte[] data = command.getData();
         switch (apduFormat) {
             case SHORT:
@@ -155,9 +156,11 @@ public class SmartCardProtocol implements Closeable {
                     offset += SHORT_APDU_MAX_CHUNK;
                 }
                 response = new ApduResponse(connection.sendAndReceive(encodeShortApdu(command.getCla(), command.getIns(), command.getP1(), command.getP2(), data, offset, data.length - offset)));
+                getData = new byte[]{0x00, insSendRemaining, 0x00, 0x00, 0x00};
                 break;
             case EXTENDED:
                 response = new ApduResponse(connection.sendAndReceive(encodeExtendedApdu(command.getCla(), command.getIns(), command.getP1(), command.getP2(), data)));
+                getData = new byte[]{0x00, insSendRemaining, 0x00, 0x00, 0x00, 0x00, 0x00};
                 break;
             default:
                 throw new IllegalStateException("Invalid APDU format");
@@ -165,7 +168,6 @@ public class SmartCardProtocol implements Closeable {
 
         // Read full response
         ByteArrayOutputStream readBuffer = new ByteArrayOutputStream();
-        byte[] getData = new byte[]{0x00, insSendRemaining, 0x00, 0x00};
         while (response.getSw() >> 8 == SW1_HAS_MORE_DATA) {
             readBuffer.write(response.getData());
             response = new ApduResponse(connection.sendAndReceive(getData));
