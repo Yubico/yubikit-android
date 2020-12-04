@@ -103,6 +103,10 @@ public class PivSession extends ApplicationSession<PivSession> {
      * Support for getting PIN/PUK/Management key and private key metadata.
      */
     public static final Feature<PivSession> FEATURE_METADATA = new Feature.Versioned<>("Metadata", 5, 3, 0);
+    /**
+     * Support for AES management keys.
+     */
+    public static final Feature<PivSession> FEATURE_AES_KEY = new Feature.Versioned<>("AES Management Key", 5, 4, 0);
 
     /**
      * Support for generating RSA keys.
@@ -115,11 +119,9 @@ public class PivSession extends ApplicationSession<PivSession> {
     };
 
     private static final int PIN_LEN = 8;
-    private static final int CHALLENGE_LEN = 8;
-    private static final int MGM_KEY_LEN = 24;
 
     private static final byte[] AID = new byte[]{(byte) 0xa0, 0x00, 0x00, 0x03, 0x08};
-    
+
     // Special slot for the Management Key
     private static final int SLOT_CARD_MANAGEMENT = 0x9b;
 
@@ -174,8 +176,6 @@ public class PivSession extends ApplicationSession<PivSession> {
     private static final byte PIN_P2 = (byte) 0x80;
     private static final byte PUK_P2 = (byte) 0x81;
 
-    private static final byte TDES = 0x03;
-
     private static final byte[] KEY_PREFIX_P256 = new byte[]{0x30, 0x59, 0x30, 0x13, 0x06, 0x07, 0x2a, (byte) 0x86, 0x48, (byte) 0xce, 0x3d, 0x02, 0x01, 0x06, 0x08, 0x2a, (byte) 0x86, 0x48, (byte) 0xce, 0x3d, 0x03, 0x01, 0x07, 0x03, 0x42, 0x00};
     private static final byte[] KEY_PREFIX_P384 = new byte[]{0x30, 0x76, 0x30, 0x10, 0x06, 0x07, 0x2a, (byte) 0x86, 0x48, (byte) 0xce, 0x3d, 0x02, 0x01, 0x06, 0x05, 0x2b, (byte) 0x81, 0x04, 0x00, 0x22, 0x03, 0x62, 0x00};
 
@@ -198,7 +198,7 @@ public class PivSession extends ApplicationSession<PivSession> {
         protocol.select(AID);
         version = Version.fromBytes(protocol.sendAndReceive(new Apdu(0, INS_GET_VERSION, 0, 0, null)));
         protocol.enableWorkarounds(version);
-        if (version.isAtLeast(4,0,0)) {
+        if (version.isAtLeast(4, 0, 0)) {
             protocol.setApduFormat(ApduFormat.EXTENDED);
         }
     }
@@ -249,37 +249,39 @@ public class PivSession extends ApplicationSession<PivSession> {
     }
 
     /**
-     * Authenticate with management key
+     * Authenticate with the Management Key.
      *
+     * @param keyType       the algorithm used for the management key
+     *                      The default key uses TDES
      * @param managementKey management key as byte array
      *                      The default 3DES management key (9B) is 010203040506070801020304050607080102030405060708.
      * @throws IOException          in case of connection error
      * @throws ApduException        in case of an error response from the YubiKey
      * @throws BadResponseException in case of incorrect YubiKey response
      */
-    public void authenticate(byte[] managementKey) throws IOException, ApduException, BadResponseException {
-        if (managementKey.length != MGM_KEY_LEN) {
-            throw new IllegalArgumentException("Management Key must be 24 bytes");
+    public void authenticate(ManagementKeyType keyType, byte[] managementKey) throws IOException, ApduException, BadResponseException {
+        if (managementKey.length != keyType.keyLength) {
+            throw new IllegalArgumentException(String.format("Management Key must be %d bytes", keyType.keyLength));
         }
         // An empty witness is a request for a witness.
         byte[] request = new Tlv(TAG_DYN_AUTH, new Tlv(TAG_AUTH_WITNESS, null).getBytes()).getBytes();
-        byte[] response = protocol.sendAndReceive(new Apdu(0, INS_AUTHENTICATE, TDES, SLOT_CARD_MANAGEMENT, request));
+        byte[] response = protocol.sendAndReceive(new Apdu(0, INS_AUTHENTICATE, keyType.value, SLOT_CARD_MANAGEMENT, request));
 
         // Witness (tag '80') contains encrypted data (unrevealed fact).
         byte[] witness = Tlvs.unpackValue(TAG_AUTH_WITNESS, Tlvs.unpackValue(TAG_DYN_AUTH, response));
-        SecretKey key = new SecretKeySpec(managementKey, "DESede");
+        SecretKey key = new SecretKeySpec(managementKey, keyType.cipherName);
         try {
             Map<Integer, byte[]> dataTlvs = new LinkedHashMap<>();
-            Cipher cipher = Cipher.getInstance("DESede/ECB/NoPadding");
+            Cipher cipher = Cipher.getInstance(keyType.cipherName + "/ECB/NoPadding");
             // This decrypted witness
             cipher.init(Cipher.DECRYPT_MODE, key);
             dataTlvs.put(TAG_AUTH_WITNESS, cipher.doFinal(witness));
             //  The challenge (tag '81') contains clear data (byte sequence),
-            byte[] challenge = RandomUtils.getRandomBytes(CHALLENGE_LEN);
+            byte[] challenge = RandomUtils.getRandomBytes(keyType.challengeLength);
             dataTlvs.put(TAG_AUTH_CHALLENGE, challenge);
 
             request = new Tlv(TAG_DYN_AUTH, Tlvs.encodeMap(dataTlvs)).getBytes();
-            response = protocol.sendAndReceive(new Apdu(0, INS_AUTHENTICATE, TDES, SLOT_CARD_MANAGEMENT, request));
+            response = protocol.sendAndReceive(new Apdu(0, INS_AUTHENTICATE, keyType.value, SLOT_CARD_MANAGEMENT, request));
 
             // (tag '82') contains either the decrypted data from tag '80' or the encrypted data from tag '81'.
             byte[] encryptedData = Tlvs.unpackValue(TAG_AUTH_RESPONSE, Tlvs.unpackValue(TAG_DYN_AUTH, response));
@@ -388,7 +390,7 @@ public class PivSession extends ApplicationSession<PivSession> {
 
     /**
      * Change management key
-     * This method requires authentication {@link #authenticate(byte[])}.
+     * This method requires authentication {@link #authenticate}.
      * <p>
      * Thi setting requireTouch=true requires support for {@link #FEATURE_USAGE_POLICY}, available on YubiKey 4 or later.
      *
@@ -397,16 +399,19 @@ public class PivSession extends ApplicationSession<PivSession> {
      * @throws IOException   in case of connection error
      * @throws ApduException in case of an error response from the YubiKey
      */
-    public void setManagementKey(byte[] managementKey, boolean requireTouch) throws IOException, ApduException {
-        if (managementKey.length != 24) {
-            throw new IllegalArgumentException("Management key must be 24 bytes");
+    public void setManagementKey(ManagementKeyType keyType, byte[] managementKey, boolean requireTouch) throws IOException, ApduException {
+        if (keyType != ManagementKeyType.TDES) {
+            require(FEATURE_AES_KEY);
         }
         if (requireTouch) {
             require(FEATURE_USAGE_POLICY);
         }
+        if (managementKey.length != keyType.keyLength) {
+            throw new IllegalArgumentException(String.format("Management key must be %d bytes", keyType.keyLength));
+        }
 
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
-        stream.write(TDES);
+        stream.write(keyType.value);
         stream.write(new Tlv(SLOT_CARD_MANAGEMENT, managementKey).getBytes());
 
         // NOTE: if p2=0xfe key requires touch
@@ -517,7 +522,7 @@ public class PivSession extends ApplicationSession<PivSession> {
     /**
      * Set the number of retries available for PIN and PUK entry.
      * <p>
-     * This method requires authentication {@link #authenticate(byte[])}
+     * This method requires authentication {@link #authenticate}
      * and verification with pin {@link #verifyPin(char[])}}.
      *
      * @param pinAttempts the number of attempts to allow for PIN entry before blocking the PIN
@@ -581,6 +586,7 @@ public class PivSession extends ApplicationSession<PivSession> {
         require(FEATURE_METADATA);
         Map<Integer, byte[]> data = Tlvs.decodeMap(protocol.sendAndReceive(new Apdu(0, INS_GET_METADATA, 0, SLOT_CARD_MANAGEMENT, null)));
         return new ManagementKeyMetadata(
+                data.containsKey(TAG_METADATA_ALGO) ? ManagementKeyType.fromValue(data.get(TAG_METADATA_ALGO)[0]) : ManagementKeyType.TDES,
                 data.get(TAG_METADATA_IS_DEFAULT)[0] != 0,
                 TouchPolicy.fromValue(data.get(TAG_METADATA_POLICY)[INDEX_TOUCH_POLICY])
         );
@@ -636,7 +642,7 @@ public class PivSession extends ApplicationSession<PivSession> {
 
     /**
      * Writes an X.509 certificate to a slot on the YubiKey.
-     * This method requires authentication {@link #authenticate(byte[])}.
+     * This method requires authentication {@link #authenticate}.
      *
      * @param slot        Key reference '9A', '9C', '9D', or '9E'. {@link Slot}.
      * @param certificate certificate to write
@@ -667,7 +673,7 @@ public class PivSession extends ApplicationSession<PivSession> {
      * Attestation works through a special key slot called "f9" this comes pre-loaded from factory with a key and cert signed by Yubico,
      * but can be overwritten. After a key has been generated in a normal slot it can be attested by this special key
      * <p>
-     * This method requires authentication {@link #authenticate(byte[])}
+     * This method requires authentication {@link #authenticate}
      * This method requires key to be generated on slot {@link #generateKey(Slot, KeyType, PinPolicy, TouchPolicy)}
      *
      * @param slot Key reference '9A', '9C', '9D', or '9E'. {@link Slot}.
@@ -693,7 +699,7 @@ public class PivSession extends ApplicationSession<PivSession> {
 
     /**
      * Deletes a certificate from the YubiKey.
-     * This method requires authentication {@link #authenticate(byte[])}
+     * This method requires authentication {@link #authenticate}
      * <p>
      * Note: This does NOT delete any corresponding private key.
      *
@@ -763,8 +769,8 @@ public class PivSession extends ApplicationSession<PivSession> {
 
     /**
      * Generates a new key pair within the YubiKey.
-     * This method requires verification with pin {@link #verifyPin(char[])}}
-     * and authentication with management key {@link #authenticate(byte[])}.
+     * This method requires verification with pin {@link #verifyPin}}
+     * and authentication with management key {@link #authenticate}.
      * <p>
      * RSA key types require {@link #FEATURE_RSA_GENERATION}, available on YubiKeys OTHER THAN 4.2.6-4.3.4.
      * KeyType P348 requires {@link #FEATURE_P384}, available on YubiKey 4 or later.
@@ -802,7 +808,7 @@ public class PivSession extends ApplicationSession<PivSession> {
 
     /**
      * Import a private key into a slot.
-     * This method requires authentication {@link #authenticate(byte[])}.
+     * This method requires authentication {@link #authenticate}.
      * <p>
      * KeyType P348 requires {@link #FEATURE_P384}, available on YubiKey 4 or later.
      * PinPolicy or TouchPolicy other than default require {@link #FEATURE_USAGE_POLICY}, available on YubiKey 4 or later.

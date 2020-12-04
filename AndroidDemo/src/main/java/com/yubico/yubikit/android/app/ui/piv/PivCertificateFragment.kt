@@ -29,10 +29,7 @@ import com.yubico.yubikit.android.app.MainViewModel
 import com.yubico.yubikit.android.app.R
 import com.yubico.yubikit.android.app.databinding.FragmentPivCertifiateBinding
 import com.yubico.yubikit.android.app.ui.getSecret
-import com.yubico.yubikit.piv.KeyType
-import com.yubico.yubikit.piv.PinPolicy
-import com.yubico.yubikit.piv.Slot
-import com.yubico.yubikit.piv.TouchPolicy
+import com.yubico.yubikit.piv.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.bouncycastle.asn1.ASN1Sequence
@@ -104,7 +101,6 @@ private const val PEM_CERT = "-----BEGIN CERTIFICATE-----\n" +
         "-----END CERTIFICATE-----\n"
 
 class PivCertificateFragment : Fragment() {
-    private val activityViewModel: MainViewModel by activityViewModels()
     private val pivViewModel: PivViewModel by activityViewModels()
 
     private lateinit var binding: FragmentPivCertifiateBinding
@@ -143,7 +139,7 @@ class PivCertificateFragment : Fragment() {
             val key = KeyFactory.getInstance("RSA").generatePrivate(PKCS8EncodedKeySpec(Base64.decode(DER_KEY, Base64.DEFAULT)))
             lifecycleScope.launch(Dispatchers.Main) {
                 pivViewModel.pendingAction.value = {
-                    authenticate(pivViewModel.mgmtKey)
+                    authenticate(pivViewModel.mgmtKeyType, pivViewModel.mgmtKey)
                     putKey(slot, key, PinPolicy.DEFAULT, TouchPolicy.DEFAULT)
                     putCertificate(slot, cert)
                     "Imported certificate ${cert.subjectDN} issued by ${cert.issuerDN}"
@@ -156,7 +152,7 @@ class PivCertificateFragment : Fragment() {
             lifecycleScope.launch(Dispatchers.Main) {
                 getSecret(requireContext(), R.string.enter_pin)?.let { pin ->
                     pivViewModel.pendingAction.value = {
-                        authenticate(pivViewModel.mgmtKey)
+                        authenticate(pivViewModel.mgmtKeyType, pivViewModel.mgmtKey)
 
                         // Generate a key
                         val publicKey = generateKey(slot, KeyType.ECCP256, PinPolicy.DEFAULT, TouchPolicy.DEFAULT)
@@ -203,7 +199,7 @@ class PivCertificateFragment : Fragment() {
         // Delete the certificate
         binding.delete.setOnClickListener {
             pivViewModel.pendingAction.value = {
-                authenticate(pivViewModel.mgmtKey)
+                authenticate(pivViewModel.mgmtKeyType, pivViewModel.mgmtKey)
                 deleteCertificate(slot)
                 "Deleted certificate in slot $slot"
             }

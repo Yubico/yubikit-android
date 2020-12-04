@@ -9,6 +9,7 @@ import com.yubico.yubikit.core.Logger
 import com.yubico.yubikit.core.YubiKeyDevice
 import com.yubico.yubikit.core.smartcard.ApduException
 import com.yubico.yubikit.core.smartcard.SmartCardConnection
+import com.yubico.yubikit.piv.ManagementKeyType
 import com.yubico.yubikit.piv.PivSession
 import com.yubico.yubikit.piv.Slot
 import java.security.cert.X509Certificate
@@ -25,6 +26,7 @@ class PivViewModel : YubiKeyViewModel<PivSession>() {
     private val _certificates = MutableLiveData<SparseArray<X509Certificate>?>()
     val certificates: LiveData<SparseArray<X509Certificate>?> = _certificates
 
+    var mgmtKeyType = ManagementKeyType.TDES
     var mgmtKey: ByteArray = byteArrayOf(1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8)
 
     override fun getSession(device: YubiKeyDevice): PivSession {

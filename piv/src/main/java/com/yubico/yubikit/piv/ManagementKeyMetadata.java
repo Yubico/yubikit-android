@@ -19,12 +19,22 @@ package com.yubico.yubikit.piv;
  * Metadata about the card management key.
  */
 public class ManagementKeyMetadata {
+    private final ManagementKeyType keyType;
     private final boolean defaultValue;
     private final TouchPolicy touchPolicy;
 
-    ManagementKeyMetadata(boolean defaultValue, TouchPolicy touchPolicy) {
+    ManagementKeyMetadata(ManagementKeyType keyType, boolean defaultValue, TouchPolicy touchPolicy) {
+        this.keyType = keyType;
         this.defaultValue = defaultValue;
         this.touchPolicy = touchPolicy;
+    }
+
+    /**
+     * Get the algorithm of key used for the Management Key.
+     * @return a ManagementKeyType value
+     */
+    public ManagementKeyType getKeyType() {
+        return keyType;
     }
 
     /**

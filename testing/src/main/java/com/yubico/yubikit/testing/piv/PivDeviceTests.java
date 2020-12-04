@@ -49,32 +49,32 @@ public class PivDeviceTests {
 
         Logger.d("Authenticate with the wrong key");
         try {
-            piv.authenticate(key2);
+            piv.authenticate(ManagementKeyType.TDES, key2);
             Assert.fail("Authenticated with wrong key");
         } catch (ApduException e) {
             Assert.assertEquals(SW.SECURITY_CONDITION_NOT_SATISFIED, e.getSw());
         }
 
         Logger.d("Change management key");
-        piv.authenticate(DEFAULT_MANAGEMENT_KEY);
-        piv.setManagementKey(key2, false);
+        piv.authenticate(ManagementKeyType.TDES, DEFAULT_MANAGEMENT_KEY);
+        piv.setManagementKey(ManagementKeyType.TDES, key2, false);
 
         Logger.d("Authenticate with the old key");
         try {
-            piv.authenticate(DEFAULT_MANAGEMENT_KEY);
+            piv.authenticate(ManagementKeyType.TDES, DEFAULT_MANAGEMENT_KEY);
             Assert.fail("Authenticated with wrong key");
         } catch (ApduException e) {
             Assert.assertEquals(SW.SECURITY_CONDITION_NOT_SATISFIED, e.getSw());
         }
 
         Logger.d("Change management key");
-        piv.authenticate(key2);
-        piv.setManagementKey(DEFAULT_MANAGEMENT_KEY, false);
+        piv.authenticate(ManagementKeyType.TDES, key2);
+        piv.setManagementKey(ManagementKeyType.TDES, DEFAULT_MANAGEMENT_KEY, false);
     }
 
     public static void testPin(PivSession piv) throws ApduException, InvalidPinException, IOException, BadResponseException {
         // Ensure we only try this if the default management key is set.
-        piv.authenticate(DEFAULT_MANAGEMENT_KEY);
+        piv.authenticate(ManagementKeyType.TDES, DEFAULT_MANAGEMENT_KEY);
 
         Logger.d("Verify PIN");
         char[] pin2 = "123123".toCharArray();
@@ -118,7 +118,7 @@ public class PivDeviceTests {
 
     public static void testPuk(PivSession piv) throws ApduException, InvalidPinException, IOException, BadResponseException {
         // Ensure we only try this if the default management key is set.
-        piv.authenticate(DEFAULT_MANAGEMENT_KEY);
+        piv.authenticate(ManagementKeyType.TDES, DEFAULT_MANAGEMENT_KEY);
 
         // Change PUK
         char[] puk2 = "12341234".toCharArray();
@@ -198,7 +198,7 @@ public class PivDeviceTests {
     }
 
     public static void testSign(PivSession piv, KeyType keyType) throws NoSuchAlgorithmException, IOException, ApduException, InvalidPinException, InvalidKeyException, BadResponseException, InvalidAlgorithmParameterException {
-        piv.authenticate(DEFAULT_MANAGEMENT_KEY);
+        piv.authenticate(ManagementKeyType.TDES, DEFAULT_MANAGEMENT_KEY);
         Logger.d("Generate key: " + keyType);
         PublicKey publicKey = piv.generateKey(Slot.SIGNATURE, keyType, PinPolicy.DEFAULT, TouchPolicy.DEFAULT);
 
@@ -247,7 +247,7 @@ public class PivDeviceTests {
             throw new IllegalArgumentException("Unsupported");
         }
 
-        piv.authenticate(DEFAULT_MANAGEMENT_KEY);
+        piv.authenticate(ManagementKeyType.TDES, DEFAULT_MANAGEMENT_KEY);
         Logger.d("Generate key: " + keyType);
         PublicKey publicKey = piv.generateKey(Slot.KEY_MANAGEMENT, keyType, PinPolicy.DEFAULT, TouchPolicy.DEFAULT);
 
@@ -259,7 +259,7 @@ public class PivDeviceTests {
     public static void testDecrypt(PivSession piv, PublicKey publicKey, Cipher cipher) throws BadResponseException, IOException, ApduException, NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException, InvalidPinException {
         byte[] message = "Hello world!".getBytes(StandardCharsets.UTF_8);
 
-        piv.authenticate(DEFAULT_MANAGEMENT_KEY);
+        piv.authenticate(ManagementKeyType.TDES, DEFAULT_MANAGEMENT_KEY);
         Logger.d("Using cipher " + cipher.getAlgorithm());
 
         cipher.init(Cipher.ENCRYPT_MODE, publicKey);
@@ -278,7 +278,7 @@ public class PivDeviceTests {
             throw new IllegalArgumentException("Unsupported");
         }
 
-        piv.authenticate(DEFAULT_MANAGEMENT_KEY);
+        piv.authenticate(ManagementKeyType.TDES, DEFAULT_MANAGEMENT_KEY);
         PublicKey publicKey = piv.generateKey(Slot.AUTHENTICATION, keyType, PinPolicy.DEFAULT, TouchPolicy.DEFAULT);
         KeyPair peer = PivTestUtils.generateKey(keyType);
 
@@ -302,7 +302,7 @@ public class PivDeviceTests {
 
     public static void testImportKey(PivSession piv, KeyPair keyPair) throws BadResponseException, IOException, ApduException, NoSuchAlgorithmException, InvalidPinException, IllegalBlockSizeException, BadPaddingException, NoSuchPaddingException, InvalidKeyException, SignatureException {
         Slot slot = Slot.AUTHENTICATION;
-        piv.authenticate(DEFAULT_MANAGEMENT_KEY);
+        piv.authenticate(ManagementKeyType.TDES, DEFAULT_MANAGEMENT_KEY);
 
         Logger.d("Import key in slot " + slot);
         KeyType keyType = piv.putKey(slot, keyPair.getPrivate(), PinPolicy.DEFAULT, TouchPolicy.DEFAULT);
@@ -318,7 +318,7 @@ public class PivDeviceTests {
 
     public static void testGenerateKey(PivSession piv, KeyType keyType) throws BadResponseException, IOException, ApduException, InvalidPinException, NoSuchAlgorithmException, InvalidKeyException {
         Slot slot = Slot.AUTHENTICATION;
-        piv.authenticate(DEFAULT_MANAGEMENT_KEY);
+        piv.authenticate(ManagementKeyType.TDES, DEFAULT_MANAGEMENT_KEY);
 
         Logger.d("Generate an " + keyType + " key in slot " + slot);
         PublicKey pub = piv.generateKey(slot, keyType, PinPolicy.DEFAULT, TouchPolicy.DEFAULT);

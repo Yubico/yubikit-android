@@ -31,15 +31,15 @@ public enum KeyType {
     /**
      * RSA with a 1024 bit key.
      */
-    RSA1024(0x06, new RsaKeyParams(1024)),
+    RSA1024((byte) 0x06, new RsaKeyParams(1024)),
     /**
      * RSA with a 2048 bit key.
      */
-    RSA2048(0x07, new RsaKeyParams(2048)),
+    RSA2048((byte) 0x07, new RsaKeyParams(2048)),
     /**
      * Elliptic Curve key, using NIST Curve P-256.
      */
-    ECCP256(0x11, new EcKeyParams(
+    ECCP256((byte) 0x11, new EcKeyParams(
             256,
             "115792089210356248762697446949407573530086143415290314195533631308867097853948",
             "41058363725152142129326129780047268409114441015993725554835256314039467401291"
@@ -47,16 +47,16 @@ public enum KeyType {
     /**
      * Elliptic Curve key, using NIST Cuve P-384.
      */
-    ECCP384(0x14, new EcKeyParams(
+    ECCP384((byte) 0x14, new EcKeyParams(
             384,
             "39402006196394479212279040100143613805079739270465446667948293404245721771496870329047266088258938001861606973112316",
             "27580193559959705877849011840389048093056905856361568521428707301988689241309860865136260764883745107765439761230575"
     ));
 
-    public final int value;
+    public final byte value;
     public final KeyParams params;
 
-    KeyType(int value, KeyParams params) {
+    KeyType(byte value, KeyParams params) {
         this.value = value;
         this.params = params;
     }
