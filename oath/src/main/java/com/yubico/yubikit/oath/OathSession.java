@@ -535,18 +535,18 @@ public class OathSession extends ApplicationSession<OathSession> {
      * <p>
      * This functionality requires support for {@link #FEATURE_RENAME}, available on YubiKey 5.3 or later.
      *
-     * @param credential the Credential to rename
-     * @param name       the new name of the credential
-     * @param issuer     the new issuer of the credential
+     * @param credential  the Credential to rename
+     * @param accountName the new name of the credential
+     * @param issuer      the new issuer of the credential
      * @return the updated Credential
      * @throws IOException   in case of connection error
      * @throws ApduException in case of communication error
      */
-    public Credential renameCredential(Credential credential, String name, @Nullable String issuer) throws IOException, ApduException {
+    public Credential renameCredential(Credential credential, String accountName, @Nullable String issuer) throws IOException, ApduException {
         if (!credential.deviceId.equals(deviceId)) {
             throw new IllegalArgumentException("The given credential belongs to a different device!");
         }
-        byte[] newId = CredentialIdUtils.formatId(issuer, name, credential.getOathType(), credential.getPeriod());
+        byte[] newId = CredentialIdUtils.formatId(issuer, accountName, credential.getOathType(), credential.getPeriod());
         renameCredential(credential.getId(), newId);
         return new Credential(
                 credential.deviceId,

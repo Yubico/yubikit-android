@@ -54,7 +54,7 @@ public class CredentialData implements Serializable {
     // User-modifiable fields
     @Nullable
     private final String issuer;
-    private final String name;
+    private final String accountName;
 
     /**
      * Parses an <a href="https://github.com/google/google-authenticator/wiki/Key-Uri-Format">otpauth:// URI</a>.
@@ -112,7 +112,7 @@ public class CredentialData implements Serializable {
     /**
      * Constructs a new instance from the given parameters.
      *
-     * @param name          the name/label of the account, typically a username or email address
+     * @param accountName          the name/label of the account, typically a username or email address
      * @param oathType      the OATH type of the credential (TOTP or HOTP)
      * @param hashAlgorithm the hash algorithm used by the credential (SHA1, SHA265 or SHA 512)
      * @param secret        the secret key of the credential, in raw bytes (<i>not</i> Base32 encoded)
@@ -121,8 +121,8 @@ public class CredentialData implements Serializable {
      * @param counter       the initial counter value (initial moving factor) for a HOTP credential (typically this should be 0)
      * @param issuer        the name of the credential issuer (e.g. Google, Amazon, Facebook, etc.)
      */
-    public CredentialData(String name, OathType oathType, HashAlgorithm hashAlgorithm, byte[] secret, int digits, int period, int counter, @Nullable String issuer) {
-        this.name = name;
+    public CredentialData(String accountName, OathType oathType, HashAlgorithm hashAlgorithm, byte[] secret, int digits, int period, int counter, @Nullable String issuer) {
+        this.accountName = accountName;
         this.oathType = oathType;
         this.hashAlgorithm = hashAlgorithm;
         this.secret = Arrays.copyOf(secret, secret.length);
@@ -139,14 +139,14 @@ public class CredentialData implements Serializable {
      * TOTP credentials) the validity period.
      */
     public byte[] getId() {
-        return CredentialIdUtils.formatId(issuer, name, oathType, period);
+        return CredentialIdUtils.formatId(issuer, accountName, oathType, period);
     }
 
     /**
      * Returns the name of the credential.
      */
-    public String getName() {
-        return name;
+    public String getAccountName() {
+        return accountName;
     }
 
     /**
@@ -210,7 +210,7 @@ public class CredentialData implements Serializable {
                 counter == that.counter &&
                 digits == that.digits &&
                 Objects.equals(issuer, that.issuer) &&
-                name.equals(that.name) &&
+                accountName.equals(that.accountName) &&
                 oathType == that.oathType &&
                 hashAlgorithm == that.hashAlgorithm &&
                 Arrays.equals(secret, that.secret);
@@ -218,7 +218,7 @@ public class CredentialData implements Serializable {
 
     @Override
     public int hashCode() {
-        int result = Objects.hash(issuer, name, period, oathType, hashAlgorithm, counter, digits);
+        int result = Objects.hash(issuer, accountName, period, oathType, hashAlgorithm, counter, digits);
         result = 31 * result + Arrays.hashCode(secret);
         return result;
     }

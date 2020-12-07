@@ -32,8 +32,8 @@ class OathListAdapter(private val listener: ItemListener) : ListAdapter<Pair<Cre
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         getItem(position).let { (credential, code) ->
             with(holder) {
-                idView.text = credential.issuer?.let { "$it (${credential.name})" }
-                        ?: credential.name
+                idView.text = credential.issuer?.let { "$it (${credential.accountName})" }
+                        ?: credential.accountName
                 contentView.text = code?.value ?: ""
                 deleteBtn.setOnClickListener {
                     listener.onDelete(credential.id)

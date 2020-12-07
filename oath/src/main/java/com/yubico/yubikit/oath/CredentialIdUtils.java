@@ -92,12 +92,12 @@ class CredentialIdUtils {
     static class CredentialIdData {
         @Nullable
         final String issuer;
-        final String name;
+        final String accountName;
         final int period;
 
-        CredentialIdData(@Nullable String issuer, String name, int period) {
+        CredentialIdData(@Nullable String issuer, String accountName, int period) {
             this.issuer = issuer;
-            this.name = name;
+            this.accountName = accountName;
             this.period = period;
         }
     }

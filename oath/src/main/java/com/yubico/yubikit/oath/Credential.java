@@ -29,11 +29,11 @@ public class Credential implements Serializable {
     final String deviceId;
 
     private final byte[] id;
-    private final String name;
+    private final OathType oathType;
     private final int period;
     @Nullable
     private final String issuer;
-    private final OathType oathType;
+    private final String accountName;
 
     private boolean touchRequired = false;
 
@@ -60,7 +60,7 @@ public class Credential implements Serializable {
 
         CredentialIdUtils.CredentialIdData idData = CredentialIdUtils.parseId(id, oathType);
         issuer = idData.issuer;
-        name = idData.name;
+        accountName = idData.accountName;
         period = idData.period;
     }
 
@@ -79,7 +79,7 @@ public class Credential implements Serializable {
 
         CredentialIdUtils.CredentialIdData idData = CredentialIdUtils.parseId(id, oathType);
         issuer = idData.issuer;
-        name = idData.name;
+        accountName = idData.accountName;
         period = idData.period;
     }
 
@@ -96,7 +96,7 @@ public class Credential implements Serializable {
         this.id = credentialId;
         CredentialIdUtils.CredentialIdData idData = CredentialIdUtils.parseId(credentialId, oathType);
         this.issuer = idData.issuer;
-        this.name = idData.name;
+        this.accountName = idData.accountName;
         this.period = idData.period;
         this.oathType = oathType;
         this.touchRequired = touchRequired;
@@ -127,8 +127,8 @@ public class Credential implements Serializable {
     /**
      * Returns the name of the account (typically a username or email address).
      */
-    public String getName() {
-        return name;
+    public String getAccountName() {
+        return accountName;
     }
 
     /**
