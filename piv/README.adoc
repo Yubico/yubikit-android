@@ -5,6 +5,8 @@ https://csrc.nist.gov/publications/detail/sp/800-78/4/final[Cryptographic Algori
 This standard specifies how to perform RSA or ECC sign/decrypt operations using
 a private key stored on the YubiKey.
 
+https://developers.yubico.com/yubikit-android/JavaDoc/piv/latest/[JavaDoc API documentation]
+
 
 === Dependency
 To add the PIV module, along with the link:../android/[Android] module as a

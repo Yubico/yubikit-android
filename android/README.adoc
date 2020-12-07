@@ -2,6 +2,8 @@
 This module contains the main implementation of the SDK for Android, and is
 required for all Android development.
 
+https://developers.yubico.com/yubikit-android/JavaDoc/android/latest/[JavaDoc API documentation]
+
 
 === Dependency
 To add the Android module as a dependency to your project, add the following to

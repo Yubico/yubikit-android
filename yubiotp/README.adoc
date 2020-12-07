@@ -3,10 +3,11 @@ This module provides an interface to configure the YubiKey OTP application,
 which can be used to program a YubiKey slot with a Yubico OTP, OATH-HOTP,
 HMAC-SHA1 Challenge-Response, or static password credential.
 
+https://developers.yubico.com/yubikit-android/JavaDoc/yubiotp/latest/[JavaDoc API documentation]
+
 NOTE: If you only need to _read_ an OTP payload (over USB or NFC) and don't need
 to configure the slots, or access the challenge-response functionality, then
 using the *OtpActivity* from the link:../android/[Android module] is sufficient.
-
 
 
 === Dependency

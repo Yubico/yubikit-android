@@ -5,6 +5,8 @@ as a dependency of the other modules. For example, see the
 link:../android/[Android] module which contains implementations for the
 interfaces defined in this module.
 
+https://developers.yubico.com/yubikit-android/JavaDoc/core/latest/[JavaDoc API documentation]
+
 
 === Dependency
 NOTE: You typically don't have to depend on this module explicitly, as it will

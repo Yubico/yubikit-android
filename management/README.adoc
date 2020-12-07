@@ -2,6 +2,8 @@
 This module provides general YubiKey management functionality such as enabling
 or disabling applications and transports.
 
+https://developers.yubico.com/yubikit-android/JavaDoc/management/latest/[JavaDoc API documentation]
+
 
 === Dependency
 To add the Management module, along with the link:../android/[Android] module as

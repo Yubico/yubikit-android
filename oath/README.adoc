@@ -3,6 +3,8 @@ This module provides access to the OATH application on a YubiKey, for managing
 and using OATH TOTP and OATH HOTP credentials (as specified in RFC 6238 and
 RFC 4226).
 
+https://developers.yubico.com/yubikit-android/JavaDoc/oath/latest/[JavaDoc API documentation]
+
 
 === Dependency
 To add the OATH module, along with the link:../android/[Android] module as a
