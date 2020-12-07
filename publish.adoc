@@ -30,10 +30,12 @@ As a dry run, publish to your local Maven repository ($HOME/.m2/):
   ./gradlew publishToMavenLocal
 
 
-Run this command in Terminal:
+Run this command in Terminal to push to Sonatype staging repository:
 
-  ./gradlew  assembleRelease generatePomFileForAarPublication publish
+  ./gradlew publish
 
-To publish single module:
+Publishing can also be done for a single module:
 
-  ./gradlew  :yubikit:assembleRelease :yubikit:generatePomFileForAarPublication :yubikit:publish
+  ./gradlew modulename:publish
+
+When publishing to Sonatype you will need to log in to the staging repo to close and release.

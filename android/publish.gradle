@@ -47,6 +47,16 @@ afterEvaluate {
                 pom(pomData)
             }
         }
+        repositories {
+            maven {
+                name 'sonatype'
+                url "https://oss.sonatype.org/service/local/staging/deploy/maven2"
+                credentials {
+                    username = getProperty("sonatype.username")
+                    password = getProperty("sonatype.password")
+                }
+            }
+        }
     }
     tasks.withType(Sign) {
         onlyIf { isReleaseVersion }
