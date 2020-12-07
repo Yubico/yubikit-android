@@ -5,18 +5,19 @@
  */
 package com.yubico.yubikit.core.fido;
 
-import com.yubico.yubikit.core.application.CommandState;
 import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.core.Version;
+import com.yubico.yubikit.core.application.CommandState;
 import com.yubico.yubikit.core.util.StringUtils;
 
-import javax.annotation.Nullable;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.util.Arrays;
+
+import javax.annotation.Nullable;
 
 public class FidoProtocol implements Closeable {
     public static final byte TYPE_INIT = (byte) 0x80;

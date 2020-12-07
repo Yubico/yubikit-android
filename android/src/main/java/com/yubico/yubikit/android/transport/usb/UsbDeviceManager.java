@@ -7,13 +7,20 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
+
 import com.yubico.yubikit.core.Logger;
 
-import javax.annotation.Nullable;
-import java.util.*;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.WeakHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
+
+import javax.annotation.Nullable;
 
 final class UsbDeviceManager {
     private final static String ACTION_USB_PERMISSION = "com.yubico.yubikey.USB_PERMISSION";

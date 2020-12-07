@@ -10,7 +10,7 @@ public class ApduTest {
         byte ins = (byte) 0xff;
         int p1 = 0x7f;
         int p2 = 0xff;
-        Apdu apdu = new Apdu(cla, ins, p1, p2 ,null);
+        Apdu apdu = new Apdu(cla, ins, p1, p2, null);
 
         Assert.assertEquals(cla, apdu.getCla());
         Assert.assertEquals(ins, apdu.getIns());

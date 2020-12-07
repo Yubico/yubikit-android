@@ -19,10 +19,12 @@ package com.yubico.yubikit.android.transport.usb.connection;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbInterface;
+
 import com.yubico.yubikit.core.YubiKeyConnection;
 
-import javax.annotation.Nullable;
 import java.io.IOException;
+
+import javax.annotation.Nullable;
 
 abstract class InterfaceConnectionHandler<T extends YubiKeyConnection> implements ConnectionHandler<T> {
     private final int interfaceClass;

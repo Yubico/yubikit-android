@@ -35,9 +35,9 @@ import com.yubico.yubikit.android.transport.nfc.NfcYubiKeyManager;
 import com.yubico.yubikit.android.transport.usb.UsbConfiguration;
 import com.yubico.yubikit.android.transport.usb.UsbYubiKeyDevice;
 import com.yubico.yubikit.android.transport.usb.UsbYubiKeyListener;
-import com.yubico.yubikit.core.application.CommandState;
 import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.core.YubiKeyDevice;
+import com.yubico.yubikit.core.application.CommandState;
 import com.yubico.yubikit.core.util.Pair;
 
 import javax.annotation.Nonnull;

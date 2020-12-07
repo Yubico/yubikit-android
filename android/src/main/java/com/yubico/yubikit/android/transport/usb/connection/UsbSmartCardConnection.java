@@ -19,11 +19,11 @@ package com.yubico.yubikit.android.transport.usb.connection;
 import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbEndpoint;
 import android.hardware.usb.UsbInterface;
+
 import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.util.StringUtils;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -32,6 +32,8 @@ import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.concurrent.Semaphore;
+
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 /**
  * USB service for interacting with the YubiKey
@@ -75,7 +77,8 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
     /**
      * Sets endpoints and connection and sends power on command
      * if ATR is invalid then throws YubikeyCommunicationException
-     *  @param connection    open usb connection
+     *
+     * @param connection    open usb connection
      * @param ccidInterface ccid interface that was claimed
      * @param endpointIn    channel for sending data over USB.
      * @param endpointOut   channel for receiving data over USB.

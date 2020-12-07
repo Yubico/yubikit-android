@@ -15,19 +15,20 @@
  */
 package com.yubico.yubikit.core.otp;
 
+import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.core.application.CommandException;
 import com.yubico.yubikit.core.application.CommandState;
-import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.core.application.TimeoutException;
 import com.yubico.yubikit.core.util.StringUtils;
 
-import javax.annotation.Nullable;
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
+
+import javax.annotation.Nullable;
 
 public class OtpProtocol implements Closeable {
     private static final int FEATURE_RPT_SIZE = 8;

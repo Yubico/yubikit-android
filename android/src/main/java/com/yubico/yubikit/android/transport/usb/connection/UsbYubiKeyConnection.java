@@ -18,6 +18,7 @@ package com.yubico.yubikit.android.transport.usb.connection;
 
 import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbInterface;
+
 import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.core.YubiKeyConnection;
 
@@ -30,9 +31,10 @@ abstract class UsbYubiKeyConnection implements YubiKeyConnection {
 
     /**
      * Base class for USB based Connections.
+     *
      * @param usbDeviceConnection connection, which should already be open
-     * @param usbInterface USB interface, which should already be claimed
-     * @param lock USB Connection lock, which should already be acquired
+     * @param usbInterface        USB interface, which should already be claimed
+     * @param lock                USB Connection lock, which should already be acquired
      */
     protected UsbYubiKeyConnection(UsbDeviceConnection usbDeviceConnection, UsbInterface usbInterface, Semaphore lock) {
         if (lock.availablePermits() > 0) {

@@ -4,9 +4,9 @@ import android.util.SparseArray
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.yubico.yubikit.android.app.ui.YubiKeyViewModel
-import com.yubico.yubikit.core.application.BadResponseException
 import com.yubico.yubikit.core.Logger
 import com.yubico.yubikit.core.YubiKeyDevice
+import com.yubico.yubikit.core.application.BadResponseException
 import com.yubico.yubikit.core.smartcard.ApduException
 import com.yubico.yubikit.core.smartcard.SmartCardConnection
 import com.yubico.yubikit.piv.ManagementKeyType

@@ -21,13 +21,16 @@ import android.nfc.NdefMessage;
 import android.nfc.Tag;
 import android.nfc.tech.IsoDep;
 import android.nfc.tech.Ndef;
+
 import androidx.annotation.WorkerThread;
+
 import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.YubiKeyDevice;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.io.IOException;
+
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 public class NfcYubiKeyDevice implements YubiKeyDevice {
 
@@ -41,7 +44,7 @@ public class NfcYubiKeyDevice implements YubiKeyDevice {
     /**
      * Instantiates session for nfc tag interaction
      *
-     * @param tag the tag that has been discovered
+     * @param tag     the tag that has been discovered
      * @param timeout timeout, in milliseconds, to use for NFC communication
      */
     public NfcYubiKeyDevice(Tag tag, int timeout) {

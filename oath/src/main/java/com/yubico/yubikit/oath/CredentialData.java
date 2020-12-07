@@ -112,7 +112,7 @@ public class CredentialData implements Serializable {
     /**
      * Constructs a new instance from the given parameters.
      *
-     * @param accountName          the name/label of the account, typically a username or email address
+     * @param accountName   the name/label of the account, typically a username or email address
      * @param oathType      the OATH type of the credential (TOTP or HOTP)
      * @param hashAlgorithm the hash algorithm used by the credential (SHA1, SHA265 or SHA 512)
      * @param secret        the secret key of the credential, in raw bytes (<i>not</i> Base32 encoded)

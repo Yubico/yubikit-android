@@ -19,6 +19,7 @@ package com.yubico.yubikit.android.transport.usb.connection;
 import android.hardware.usb.UsbConstants;
 import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbInterface;
+
 import com.yubico.yubikit.core.otp.OtpConnection;
 
 import java.io.IOException;
@@ -46,7 +47,8 @@ public class UsbOtpConnection extends UsbYubiKeyConnection implements OtpConnect
 
     /**
      * Sets endpoints and connection
-     *  @param connection   open usb connection
+     *
+     * @param connection   open usb connection
      * @param hidInterface HID interface that was claimed
      */
     UsbOtpConnection(UsbDeviceConnection connection, UsbInterface hidInterface, Semaphore connectionLock) {

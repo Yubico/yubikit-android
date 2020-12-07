@@ -9,7 +9,10 @@ import com.yubico.yubikit.core.YubiKeyDevice
 import com.yubico.yubikit.core.smartcard.ApduException
 import com.yubico.yubikit.core.smartcard.SW
 import com.yubico.yubikit.core.smartcard.SmartCardConnection
-import com.yubico.yubikit.oath.*
+import com.yubico.yubikit.oath.Code
+import com.yubico.yubikit.oath.Credential
+import com.yubico.yubikit.oath.OathSession
+import com.yubico.yubikit.oath.OathType
 
 data class OathApplicationInfo(val version: Version, val deviceId: String, val hasAccessKey: Boolean)
 

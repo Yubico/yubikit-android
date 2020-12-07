@@ -16,11 +16,12 @@
 
 package com.yubico.yubikit.oath;
 
-import javax.annotation.Nullable;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import javax.annotation.Nullable;
 
 /**
  * Internal utility class for dealing with parameters stored in YKOATH credential names.

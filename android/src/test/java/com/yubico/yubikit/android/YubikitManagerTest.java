@@ -16,12 +16,21 @@
 package com.yubico.yubikit.android;
 
 import android.app.Activity;
-import android.os.Handler;
+
 import androidx.annotation.NonNull;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
-import com.yubico.yubikit.android.transport.nfc.*;
-import com.yubico.yubikit.android.transport.usb.*;
+
+import com.yubico.yubikit.android.transport.nfc.NfcConfiguration;
+import com.yubico.yubikit.android.transport.nfc.NfcNotAvailable;
+import com.yubico.yubikit.android.transport.nfc.NfcYubiKeyDevice;
+import com.yubico.yubikit.android.transport.nfc.NfcYubiKeyListener;
+import com.yubico.yubikit.android.transport.nfc.NfcYubiKeyManager;
+import com.yubico.yubikit.android.transport.usb.UsbConfiguration;
+import com.yubico.yubikit.android.transport.usb.UsbYubiKeyDevice;
+import com.yubico.yubikit.android.transport.usb.UsbYubiKeyListener;
+import com.yubico.yubikit.android.transport.usb.UsbYubiKeyManager;
 import com.yubico.yubikit.core.YubiKeyDevice;
+
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;

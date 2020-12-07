@@ -21,9 +21,10 @@ import android.content.Context;
 import android.content.Intent;
 import android.nfc.NfcAdapter;
 
-import javax.annotation.Nullable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
+import javax.annotation.Nullable;
 
 /**
  * This class allows you to communicate with local NFC adapter

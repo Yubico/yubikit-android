@@ -3,12 +3,18 @@ package com.yubico.yubikit.android.transport.usb;
 import android.content.Context;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
-import com.yubico.yubikit.android.transport.usb.connection.*;
 
-import javax.annotation.Nullable;
+import com.yubico.yubikit.android.transport.usb.connection.ConnectionManager;
+import com.yubico.yubikit.android.transport.usb.connection.OtpConnectionHandler;
+import com.yubico.yubikit.android.transport.usb.connection.SmartCardConnectionHandler;
+import com.yubico.yubikit.android.transport.usb.connection.UsbOtpConnection;
+import com.yubico.yubikit.android.transport.usb.connection.UsbSmartCardConnection;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Semaphore;
+
+import javax.annotation.Nullable;
 
 public class UsbYubiKeyManager {
     static {

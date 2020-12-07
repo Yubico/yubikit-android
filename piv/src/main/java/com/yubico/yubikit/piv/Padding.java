@@ -15,14 +15,21 @@
  */
 package com.yubico.yubikit.piv;
 
+import java.security.InvalidKeyException;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.Signature;
+import java.security.SignatureException;
+import java.util.Arrays;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
-import java.security.*;
-import java.util.Arrays;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 class Padding {
     private static final String RAW_RSA = "RSA/ECB/NoPadding";
@@ -67,7 +74,7 @@ class Padding {
                 }
                 String hashAlgorithm = matcher.group(1);
                 byte[] hash;
-                if("NONE".equals(hashAlgorithm)) {
+                if ("NONE".equals(hashAlgorithm)) {
                     hash = message;
                 } else {
                     if (SHA_PATTERN.matcher(hashAlgorithm).matches()) {

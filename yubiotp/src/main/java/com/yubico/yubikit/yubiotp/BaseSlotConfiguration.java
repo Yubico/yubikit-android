@@ -22,7 +22,6 @@ import com.yubico.yubikit.core.otp.ChecksumUtils;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -79,7 +78,7 @@ abstract class BaseSlotConfiguration<T extends BaseSlotConfiguration<T>> impleme
         if (version.major == 0) {
             return true;
         }
-        for (Set<Flag> flagsOfType: flags.values()) {
+        for (Set<Flag> flagsOfType : flags.values()) {
             for (Flag flag : flagsOfType) {
                 if (!(flag instanceof NonFailingFlag) && !flag.isSupportedBy(version)) {
                     return false;

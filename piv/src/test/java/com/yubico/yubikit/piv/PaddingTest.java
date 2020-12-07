@@ -16,6 +16,7 @@
 package com.yubico.yubikit.piv;
 
 import com.yubico.yubikit.testing.Codec;
+
 import org.junit.Assert;
 import org.junit.Test;
 

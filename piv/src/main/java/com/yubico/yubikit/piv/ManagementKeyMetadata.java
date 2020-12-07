@@ -31,6 +31,7 @@ public class ManagementKeyMetadata {
 
     /**
      * Get the algorithm of key used for the Management Key.
+     *
      * @return a ManagementKeyType value
      */
     public ManagementKeyType getKeyType() {

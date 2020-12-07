@@ -302,7 +302,7 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
 
     /**
      * Update the configuration of a slot, keeping the credential.
-     *
+     * <p>
      * This functionality requires support for {@link #FEATURE_UPDATE}, available on YubiKey 2.3 or later.
      *
      * @param slot          the slot to update
@@ -329,7 +329,7 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
 
     /**
      * Configure the NFC NDEF payload, and which slot to use.
-     *
+     * <p>
      * This functionality requires support for {@link #FEATURE_NDEF}, available on YubiKey 3 or later.
      *
      * @param slot       the YubiKey slot to append to the uri payload
@@ -350,7 +350,7 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
 
     /**
      * Calculates HMAC-SHA1 on given challenge (using secret that configured/programmed on YubiKey)
-     *
+     * <p>
      * This functionality requires support for {@link #FEATURE_CHALLENGE_RESPONSE}, available on YubiKey 2.2 or later.
      *
      * @param slot      the slot on YubiKey that configured with challenge response secret

@@ -89,7 +89,7 @@ public enum KeyType {
      * Key algorithm identifier.
      */
     public enum Algorithm {
-        RSA, EC;
+        RSA, EC
     }
 
     /**

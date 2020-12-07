@@ -5,8 +5,8 @@ import android.os.Bundle;
 
 import androidx.annotation.WorkerThread;
 
-import com.yubico.yubikit.core.application.CommandState;
 import com.yubico.yubikit.core.YubiKeyDevice;
+import com.yubico.yubikit.core.application.CommandState;
 import com.yubico.yubikit.core.util.Pair;
 
 import javax.annotation.Nullable;
@@ -14,7 +14,7 @@ import javax.annotation.Nullable;
 /**
  * Action to be performed by a {@link YubiKeyPromptActivity} when a YubiKey is attached.
  * Extend this class to handle an attached YubiKey from a YubiKeyPromptActivity.
- *
+ * <p>
  * See also {@link YubiKeyPromptConnectionAction} for an alternative which handles YubiKeys for a
  * specific connection type.
  */

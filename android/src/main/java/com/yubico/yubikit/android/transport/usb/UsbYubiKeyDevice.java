@@ -21,14 +21,16 @@ import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbEndpoint;
 import android.hardware.usb.UsbInterface;
 import android.util.Pair;
+
 import com.yubico.yubikit.android.transport.usb.connection.ConnectionManager;
 import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.YubiKeyDevice;
 
-import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.Objects;
+
+import javax.annotation.Nullable;
 
 public class UsbYubiKeyDevice implements YubiKeyDevice {
     private final ConnectionManager connectionManager;

@@ -3,7 +3,9 @@ package com.yubico.yubikit.android.transport.usb.connection;
 import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbEndpoint;
 import android.hardware.usb.UsbInterface;
+
 import com.yubico.yubikit.testing.Codec;
+
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -15,7 +17,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 

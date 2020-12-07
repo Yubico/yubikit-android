@@ -16,6 +16,7 @@
 package com.yubico.yubikit.core.otp;
 
 import com.yubico.yubikit.testing.Codec;
+
 import org.junit.Assert;
 import org.junit.Test;
 

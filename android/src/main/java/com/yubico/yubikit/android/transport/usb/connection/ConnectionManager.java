@@ -19,25 +19,28 @@ package com.yubico.yubikit.android.transport.usb.connection;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbManager;
+
 import com.yubico.yubikit.android.transport.usb.AlreadyInUseException;
 import com.yubico.yubikit.android.transport.usb.NoPermissionsException;
 import com.yubico.yubikit.core.YubiKeyConnection;
 
-import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
+import javax.annotation.Nullable;
+
 public class ConnectionManager {
     private static final Map<Class<? extends YubiKeyConnection>, ConnectionHandler<?>> handlers = new HashMap<>();
 
     /**
      * Registers a new ConnectionHandler for creating YubiKeyConnections.
+     *
      * @param connectionClass the type of connection created by the handler
-     * @param handler the handler responsible for creating connections
-     * @param <T> the type of connection created by the handler
+     * @param handler         the handler responsible for creating connections
+     * @param <T>             the type of connection created by the handler
      */
     public static <T extends YubiKeyConnection> void registerConnectionHandler(Class<T> connectionClass, ConnectionHandler<? extends T> handler) {
         synchronized (handlers) {
@@ -57,6 +60,7 @@ public class ConnectionManager {
 
     /**
      * Checks to see if a given connection type is supported
+     *
      * @param connectionType the type of connection to check support for
      * @return true if the connection type is supported
      */
@@ -67,8 +71,9 @@ public class ConnectionManager {
 
     /**
      * Checks if a connection type is supported by the device, attempts to acquire the connection lock, and returns a connection.
+     *
      * @param connectionType the type of connection to open
-     * @param <T> the type of connection to open
+     * @param <T>            the type of connection to open
      * @return a new connection
      * @throws IOException in case a connection couldn't be opened
      */

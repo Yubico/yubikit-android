@@ -61,7 +61,8 @@ class ManagementFragment : YubiKeyFragment<ManagementSession, ManagementViewMode
                 checkboxIds.forEach { (transport, capability), id ->
                     view.findViewById<CheckBox>(id).let { checkbox ->
                         if (it.getSupportedCapabilities(transport) and capability.bit != 0) {
-                            checkbox.isChecked = (it.config.getEnabledCapabilities(transport) ?: 0) and capability.bit != 0
+                            checkbox.isChecked = (it.config.getEnabledCapabilities(transport)
+                                    ?: 0) and capability.bit != 0
                             checkbox.visibility = View.VISIBLE
                         } else {
                             checkbox.visibility = View.GONE

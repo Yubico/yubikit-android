@@ -18,6 +18,7 @@ package com.yubico.yubikit.android;
 
 import android.app.Activity;
 import android.content.Context;
+
 import com.yubico.yubikit.android.transport.nfc.NfcConfiguration;
 import com.yubico.yubikit.android.transport.nfc.NfcNotAvailable;
 import com.yubico.yubikit.android.transport.nfc.NfcYubiKeyListener;
