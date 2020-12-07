@@ -1,3 +1,7 @@
+* Version 2.0.0-beta01 (released 2020-12-07)
+ * Public preview of 2.0.0, a major restructuring of modules.
+
+
 * Version 1.0.0 (released 2020-06-10)
  ** Documentation improvements.
  ** Removal of unused code and properties.
