@@ -25,7 +25,7 @@ import java.util.concurrent.Semaphore;
 
 public class OtpConnectionHandler extends InterfaceConnectionHandler<UsbOtpConnection> {
     public OtpConnectionHandler() {
-        super(UsbConstants.USB_CLASS_HID);
+        super(UsbConstants.USB_CLASS_HID, UsbConstants.USB_INTERFACE_SUBCLASS_BOOT);
     }
 
     @Override

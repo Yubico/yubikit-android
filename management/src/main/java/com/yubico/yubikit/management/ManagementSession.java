@@ -120,32 +120,59 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
      */
     public ManagementSession(SmartCardConnection connection) throws IOException, ApplicationNotAvailableException {
         SmartCardProtocol protocol = new SmartCardProtocol(connection);
-        version = Version.parse(new String(protocol.select(AID), StandardCharsets.UTF_8));
-        backend = new Backend<SmartCardProtocol>(protocol) {
-            @Override
-            byte[] readConfig() throws IOException, CommandException {
-                return delegate.sendAndReceive(new Apdu(0, INS_READ_CONFIG, 0, 0, null));
+        Version version;
+        try {
+            version = Version.parse(new String(protocol.select(AID), StandardCharsets.UTF_8));
+            if (version.major == 3) {
+                // Workaround to "de-select" on NEO
+                connection.sendAndReceive(new byte[]{(byte) 0xa4, 0x04, 0x00, 0x08});
+                protocol.select(OTP_AID);
             }
-
-            @Override
-            void writeConfig(byte[] config) throws IOException, CommandException {
-                delegate.sendAndReceive(new Apdu(0, INS_WRITE_CONFIG, 0, 0, config));
+        } catch (ApplicationNotAvailableException e) {
+            if (connection.getTransport() == Transport.NFC) {
+                // NEO doesn't support the Management Application over NFC, but can use the OTP application.
+                version = Version.fromBytes(protocol.select(OTP_AID));
+            } else {
+                throw e;
             }
+        }
+        this.version = version;
 
-            @Override
-            void setMode(byte[] data) throws IOException, CommandException {
-                if (version.isLessThan(4, 0, 0)) {
-                    // NEO sets mode via the OTP Application
-                    delegate.select(OTP_AID);
+        if (version.major == 3) {  // NEO, using the OTP application
+            backend = new Backend<SmartCardProtocol>(protocol) {
+                @Override
+                byte[] readConfig() {
+                    throw new UnsupportedOperationException("readConfig not supported on YubiKey NEO");
+                }
+
+                @Override
+                void writeConfig(byte[] config) {
+                    throw new UnsupportedOperationException("writeConfig not supported on YubiKey NEO");
+                }
+
+                @Override
+                void setMode(byte[] data) throws IOException, CommandException {
                     delegate.sendAndReceive(new Apdu(0, OTP_INS_CONFIG, CMD_DEVICE_CONFIG, 0, data));
-                    // Workaround to "de-select" on NEO
-                    delegate.getConnection().sendAndReceive(new byte[]{(byte) 0xa4, 0x04, 0x00, 0x08});
-                    delegate.select(AID);
-                } else {
+                }
+            };
+        } else {
+            backend = new Backend<SmartCardProtocol>(protocol) {
+                @Override
+                byte[] readConfig() throws IOException, CommandException {
+                    return delegate.sendAndReceive(new Apdu(0, INS_READ_CONFIG, 0, 0, null));
+                }
+
+                @Override
+                void writeConfig(byte[] config) throws IOException, CommandException {
+                    delegate.sendAndReceive(new Apdu(0, INS_WRITE_CONFIG, 0, 0, config));
+                }
+
+                @Override
+                void setMode(byte[] data) throws IOException, CommandException {
                     delegate.sendAndReceive(new Apdu(0, INS_SET_MODE, P1_DEVICE_CONFIG, 0, data));
                 }
-            }
-        };
+            };
+        }
     }
 
     /**

@@ -28,7 +28,7 @@ import java.util.concurrent.Semaphore;
 
 public class SmartCardConnectionHandler extends InterfaceConnectionHandler<UsbSmartCardConnection> {
     public SmartCardConnectionHandler() {
-        super(UsbConstants.USB_CLASS_CSCID);
+        super(UsbConstants.USB_CLASS_CSCID, 0);
     }
 
     @Override

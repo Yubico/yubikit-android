@@ -28,9 +28,11 @@ import javax.annotation.Nullable;
 
 abstract class InterfaceConnectionHandler<T extends YubiKeyConnection> implements ConnectionHandler<T> {
     private final int interfaceClass;
+    private final int interfaceSubclass;
 
-    protected InterfaceConnectionHandler(int interfaceClass) {
+    protected InterfaceConnectionHandler(int interfaceClass, int interfaceSubclass) {
         this.interfaceClass = interfaceClass;
+        this.interfaceSubclass = interfaceSubclass;
     }
 
     @Override
@@ -53,7 +55,7 @@ abstract class InterfaceConnectionHandler<T extends YubiKeyConnection> implement
     private UsbInterface getInterface(UsbDevice usbDevice) {
         for (int i = 0; i < usbDevice.getInterfaceCount(); i++) {
             UsbInterface usbInterface = usbDevice.getInterface(i);
-            if (usbInterface.getInterfaceClass() == interfaceClass) {
+            if (usbInterface.getInterfaceClass() == interfaceClass && usbInterface.getInterfaceSubclass() == interfaceSubclass) {
                 return usbInterface;
             }
         }

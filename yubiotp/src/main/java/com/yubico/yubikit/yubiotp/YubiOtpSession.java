@@ -148,6 +148,7 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
                 byte[] response = protocol.select(MGMT_AID);
                 version = Version.parse(new String(response, StandardCharsets.UTF_8));
             } catch (ApplicationNotAvailableException e) {
+                // NB: YubiKey NEO doesn't support the Management Application over NFC.
                 // NEO: version will be populated further down.
             }
         }
