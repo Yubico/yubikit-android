@@ -73,7 +73,7 @@ public class NfcYubiKeyManager {
     public void enable(Activity activity, NfcConfiguration nfcConfiguration, NfcYubiKeyListener listener) throws NfcNotAvailable {
         if (checkAvailability(nfcConfiguration.isHandleUnavailableNfc())) {
             ExecutorService executor = Executors.newSingleThreadExecutor();
-            dispatcher.enable(activity, nfcConfiguration, tag -> executor.execute(() -> listener.onDeviceAttached(new NfcYubiKeyDevice(tag, nfcConfiguration.getTimeout()))));
+            dispatcher.enable(activity, nfcConfiguration, tag -> listener.onDeviceAttached(new NfcYubiKeyDevice(tag, nfcConfiguration.getTimeout(), executorService)));
             executorService = executor;
         }
     }

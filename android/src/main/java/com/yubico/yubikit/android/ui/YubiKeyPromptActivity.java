@@ -292,8 +292,7 @@ public class YubiKeyPromptActivity extends Activity {
                 yubiKit.startNfcDiscovery(new NfcConfiguration(), this, device -> {
                     onYubiKeyDevice(device);
                     runOnUiThread(() -> helpTextView.setText(R.string.yubikit_prompt_remove));
-                    device.awaitRemoval();
-                    finishIfDone();
+                    device.remove(this::finishIfDone);
                 });
             } catch (NfcNotAvailable e) {
                 hasNfc = false;

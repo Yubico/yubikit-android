@@ -22,23 +22,20 @@ import android.nfc.Tag;
 import android.nfc.tech.IsoDep;
 import android.nfc.tech.Ndef;
 
-import androidx.annotation.WorkerThread;
-
 import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.YubiKeyDevice;
 
 import java.io.IOException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 public class NfcYubiKeyDevice implements YubiKeyDevice {
-
-    /**
-     * Represents an NFC tag that has been discovered.
-     */
+    private final AtomicBoolean removed = new AtomicBoolean();
+    private final ExecutorService executorService;
     private final Tag tag;
-
     private final int timeout;
 
     /**
@@ -47,7 +44,8 @@ public class NfcYubiKeyDevice implements YubiKeyDevice {
      * @param tag     the tag that has been discovered
      * @param timeout timeout, in milliseconds, to use for NFC communication
      */
-    public NfcYubiKeyDevice(Tag tag, int timeout) {
+    public NfcYubiKeyDevice(Tag tag, int timeout, ExecutorService executorService) {
+        this.executorService = executorService;
         this.tag = tag;
         this.timeout = timeout;
     }
@@ -86,22 +84,26 @@ public class NfcYubiKeyDevice implements YubiKeyDevice {
     }
 
     /**
-     * Waits for the removal of the device before returning.
-     * This method will block until the YubiKey has been removed from the NFC field and can be used to prevent triggering
-     * NFC YubiKey detection multiple times in quick succession.
+     * Closes the device and waits for physical removal.
+     * This method signals that we are done with the device and can be used to wait for the user to
+     * physically remove the YubiKey from NFC scan range, to avoid triggering NFC YubiKey detection
+     * multiple times in quick succession.
      */
-    @WorkerThread
-    public void awaitRemoval() {
-        try {
-            IsoDep isoDep = IsoDep.get(tag);
-            isoDep.connect();
-            while (isoDep.isConnected()) {
-                //noinspection BusyWait
-                Thread.sleep(250);
+    public void remove(Runnable onRemoved) {
+        removed.set(true);
+        executorService.submit(() -> {
+            try {
+                IsoDep isoDep = IsoDep.get(tag);
+                isoDep.connect();
+                while (isoDep.isConnected()) {
+                    //noinspection BusyWait
+                    Thread.sleep(250);
+                }
+            } catch (InterruptedException | IOException e) {
+                // Ignore
             }
-        } catch (InterruptedException | IOException e) {
-            // Ignore
-        }
+            onRemoved.run();
+        });
     }
 
     @Override
@@ -123,10 +125,16 @@ public class NfcYubiKeyDevice implements YubiKeyDevice {
 
     @Override
     public <T extends YubiKeyConnection> void requestConnection(Class<T> connectionType, ConnectionCallback<? super T> callback) {
-        try (T connection = openConnection(connectionType)) {
-            callback.onConnection(connection);
-        } catch (IOException e) {
-            callback.onError(e);
+        if (removed.get()) {
+            callback.onError(new IOException("Can't requestConnection after calling remove()"));
+        } else {
+            executorService.submit(() -> {
+                try (T connection = openConnection(connectionType)) {
+                    callback.onConnection(connection);
+                } catch (IOException e) {
+                    callback.onError(e);
+                }
+            });
         }
     }
 }

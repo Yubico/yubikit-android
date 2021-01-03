@@ -93,8 +93,7 @@ abstract class YubiKeyFragment<App : Closeable, VM : YubiKeyViewModel<App>> : Fr
                             emptyText.setText(R.string.remove_key)
                         }
                     }
-                    it.awaitRemoval()
-                    yubiKeyPrompt.dismiss()
+                    it.remove(yubiKeyPrompt::dismiss);
                 } else if (yubiKeyPrompt.isShowing) {
                     yubiKeyPrompt.dismiss()
                 }
