@@ -16,34 +16,38 @@
 
 package com.yubico.yubikit.android.transport.usb;
 
-import android.hardware.usb.UsbConstants;
 import android.hardware.usb.UsbDevice;
-import android.hardware.usb.UsbEndpoint;
-import android.hardware.usb.UsbInterface;
-import android.util.Pair;
+import android.hardware.usb.UsbManager;
 
 import com.yubico.yubikit.android.transport.usb.connection.ConnectionManager;
+import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.YubiKeyDevice;
+import com.yubico.yubikit.core.otp.OtpConnection;
 
-import java.io.IOException;
-import java.util.Objects;
+import java.io.Closeable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import javax.annotation.Nullable;
 
-public class UsbYubiKeyDevice implements YubiKeyDevice {
+public class UsbYubiKeyDevice implements YubiKeyDevice, Closeable {
+    private final ExecutorService executorService = Executors.newSingleThreadExecutor();
     private final ConnectionManager connectionManager;
     private final UsbDevice usbDevice;
+    @Nullable
+    private CachedOtpConnection otpConnection = null;
 
     /**
      * Creates the instance of usb session to interact with the yubikey device.
      *
-     * @param connectionManager manager of usb connection
-     * @param usbDevice         device connected over usb that has permissions to interact with
+     * @param usbManager manager of usb connection
+     * @param usbDevice  device connected over usb that has permissions to interact with
      */
-    UsbYubiKeyDevice(ConnectionManager connectionManager, UsbDevice usbDevice) {
-        this.connectionManager = connectionManager;
+    public UsbYubiKeyDevice(UsbManager usbManager, UsbDevice usbDevice) {
+        this.connectionManager = new ConnectionManager(usbManager, usbDevice);
         this.usbDevice = usbDevice;
     }
 
@@ -68,48 +72,79 @@ public class UsbYubiKeyDevice implements YubiKeyDevice {
     }
 
     @Override
-    public <T extends YubiKeyConnection> T openConnection(Class<T> connectionType) throws IOException {
-        return connectionManager.openConnection(connectionType);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        UsbYubiKeyDevice that = (UsbYubiKeyDevice) o;
-        return Objects.equals(usbDevice, that.usbDevice);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(usbDevice);
-    }
-
-
-    /**
-     * Gets bulkin and bulkout endpoints of specified interface
-     *
-     * @param usbInterface interface of usb device
-     * @return the pair of endpoints: in and out
-     */
-    @Nullable
-    private Pair<UsbEndpoint, UsbEndpoint> findEndpoints(UsbInterface usbInterface, int type) {
-        UsbEndpoint endpointIn = null;
-        UsbEndpoint endpointOut = null;
-
-        for (int i = 0; i < usbInterface.getEndpointCount(); i++) {
-            UsbEndpoint endpoint = usbInterface.getEndpoint(i);
-            if (endpoint.getType() == type) {
-                if (endpoint.getDirection() == UsbConstants.USB_DIR_IN) {
-                    endpointIn = endpoint;
-                } else {
-                    endpointOut = endpoint;
-                }
+    public <T extends YubiKeyConnection> void requestConnection(Class<T> connectionType, ConnectionCallback<? super T> callback) {
+        // Keep UsbOtpConnection open until another connection is needed, to prevent re-enumeration of the USB device.
+        if (OtpConnection.class.isAssignableFrom(connectionType)) {
+            ConnectionCallback<? super OtpConnection> otpCallback = (ConnectionCallback<? super OtpConnection>) callback;
+            if (otpConnection == null) {
+                otpConnection = new CachedOtpConnection(otpCallback);
+            } else {
+                otpConnection.queue.offer(otpCallback);
             }
+        } else {
+            if (otpConnection != null) {
+                otpConnection.close();
+                otpConnection = null;
+            }
+            executorService.submit(() -> {
+                try (T connection = connectionManager.openConnection(connectionType)) {
+                    callback.onConnection(connection);
+                } catch (Exception e) {
+                    callback.onError(e);
+                }
+            });
         }
-        if (endpointIn != null && endpointOut != null) {
-            return new Pair<>(endpointIn, endpointOut);
+    }
+
+    @Override
+    public void close() {
+        if (otpConnection != null) {
+            otpConnection.close();
+            otpConnection = null;
         }
-        return null;
+        executorService.shutdown();
+    }
+
+    private static final ConnectionCallback<OtpConnection> CLOSE_OTP = new ConnectionCallback<OtpConnection>() {
+        @Override
+        public void onConnection(OtpConnection connection) {
+            throw new IllegalStateException();
+        }
+    };
+
+    private class CachedOtpConnection implements Closeable {
+        private final LinkedBlockingQueue<ConnectionCallback<? super OtpConnection>> queue = new LinkedBlockingQueue<>();
+
+        private CachedOtpConnection(ConnectionCallback<? super OtpConnection> callback) {
+            Logger.d("Creating new CachedOtpConnection");
+            queue.offer(callback);
+            executorService.submit(() -> {
+                try (OtpConnection connection = connectionManager.openConnection(OtpConnection.class)) {
+                    while (true) {
+                        try {
+                            ConnectionCallback<? super OtpConnection> action = queue.take();
+                            if (action == CLOSE_OTP) {
+                                Logger.d("Closing CachedOtpConnection");
+                                break;
+                            }
+                            try {
+                                action.onConnection(connection);
+                            } catch (Exception e) {
+                                action.onError(e);
+                            }
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                } catch (Exception e) {
+                    callback.onError(e);
+                }
+            });
+        }
+
+        @Override
+        public void close() {
+            queue.offer(CLOSE_OTP);
+        }
     }
 }

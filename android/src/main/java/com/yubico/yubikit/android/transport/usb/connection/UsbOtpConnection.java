@@ -23,7 +23,6 @@ import android.hardware.usb.UsbInterface;
 import com.yubico.yubikit.core.otp.OtpConnection;
 
 import java.io.IOException;
-import java.util.concurrent.Semaphore;
 
 /**
  * Class that provides interface to read and send data over YubiKey HID (keyboard) interface
@@ -36,14 +35,16 @@ import java.util.concurrent.Semaphore;
 public class UsbOtpConnection extends UsbYubiKeyConnection implements OtpConnection {
     private static final int TIMEOUT = 1000;
 
-    private final UsbDeviceConnection connection;
-    private final UsbInterface hidInterface;
-
     private static final int TYPE_CLASS = 0x20;
     private static final int RECIPIENT_INTERFACE = 0x01;
     private static final int HID_GET_REPORT = 0x01;
     private static final int HID_SET_REPORT = 0x09;
     private static final int REPORT_TYPE_FEATURE = 0x03;
+
+    private final UsbDeviceConnection connection;
+    private final UsbInterface hidInterface;
+
+    private boolean closed = false;
 
     /**
      * Sets endpoints and connection
@@ -51,8 +52,8 @@ public class UsbOtpConnection extends UsbYubiKeyConnection implements OtpConnect
      * @param connection   open usb connection
      * @param hidInterface HID interface that was claimed
      */
-    UsbOtpConnection(UsbDeviceConnection connection, UsbInterface hidInterface, Semaphore connectionLock) {
-        super(connection, hidInterface, connectionLock);
+    UsbOtpConnection(UsbDeviceConnection connection, UsbInterface hidInterface) {
+        super(connection, hidInterface);
         this.connection = connection;
         this.hidInterface = hidInterface;
     }
@@ -84,5 +85,15 @@ public class UsbOtpConnection extends UsbYubiKeyConnection implements OtpConnect
         if (sent != FEATURE_REPORT_SIZE) {
             throw new IOException("Unexpected amount of data sent: " + sent);
         }
+    }
+
+    @Override
+    public void close() {
+        closed = true;
+        super.close();
+    }
+
+    public boolean isClosed() {
+        return closed;
     }
 }

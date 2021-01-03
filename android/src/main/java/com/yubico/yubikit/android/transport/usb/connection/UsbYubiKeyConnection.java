@@ -22,10 +22,7 @@ import android.hardware.usb.UsbInterface;
 import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.core.YubiKeyConnection;
 
-import java.util.concurrent.Semaphore;
-
 abstract class UsbYubiKeyConnection implements YubiKeyConnection {
-    private final Semaphore lock;
     private final UsbDeviceConnection usbDeviceConnection;
     private final UsbInterface usbInterface;
 
@@ -34,15 +31,10 @@ abstract class UsbYubiKeyConnection implements YubiKeyConnection {
      *
      * @param usbDeviceConnection connection, which should already be open
      * @param usbInterface        USB interface, which should already be claimed
-     * @param lock                USB Connection lock, which should already be acquired
      */
-    protected UsbYubiKeyConnection(UsbDeviceConnection usbDeviceConnection, UsbInterface usbInterface, Semaphore lock) {
-        if (lock.availablePermits() > 0) {
-            throw new IllegalStateException("Lock must already be held");
-        }
+    protected UsbYubiKeyConnection(UsbDeviceConnection usbDeviceConnection, UsbInterface usbInterface) {
         this.usbDeviceConnection = usbDeviceConnection;
         this.usbInterface = usbInterface;
-        this.lock = lock;
         Logger.d("USB connection opened: " + this);
     }
 
@@ -50,7 +42,6 @@ abstract class UsbYubiKeyConnection implements YubiKeyConnection {
     public void close() {
         usbDeviceConnection.releaseInterface(usbInterface);
         usbDeviceConnection.close();
-        lock.release();
         Logger.d("USB connection closed: " + this);
     }
 }

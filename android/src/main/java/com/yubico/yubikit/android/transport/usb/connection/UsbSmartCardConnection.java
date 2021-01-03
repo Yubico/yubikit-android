@@ -31,7 +31,6 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.Locale;
-import java.util.concurrent.Semaphore;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
@@ -83,8 +82,8 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
      * @param endpointIn    channel for sending data over USB.
      * @param endpointOut   channel for receiving data over USB.
      */
-    UsbSmartCardConnection(UsbDeviceConnection connection, UsbInterface ccidInterface, Semaphore connectionLock, UsbEndpoint endpointIn, UsbEndpoint endpointOut) throws IOException {
-        super(connection, ccidInterface, connectionLock);
+    UsbSmartCardConnection(UsbDeviceConnection connection, UsbInterface ccidInterface, UsbEndpoint endpointIn, UsbEndpoint endpointOut) throws IOException {
+        super(connection, ccidInterface);
 
         this.connection = connection;
         this.endpointIn = endpointIn;

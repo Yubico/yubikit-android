@@ -16,9 +16,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.WeakHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Semaphore;
 
 import javax.annotation.Nullable;
 
@@ -51,7 +48,7 @@ final class UsbDeviceManager {
     private final DeviceBroadcastReceiver broadcastReceiver = new DeviceBroadcastReceiver();
     private final PermissionBroadcastReceiver permissionReceiver = new PermissionBroadcastReceiver();
     private final Set<UsbDeviceListener> deviceListeners = new HashSet<>();
-    private final WeakHashMap<UsbDevice, DeviceContext> contexts = new WeakHashMap<>();
+    private final WeakHashMap<UsbDevice, Set<PermissionResultListener>> contexts = new WeakHashMap<>();
     private final Set<UsbDevice> awaitingPermissions = new HashSet<>();
 
     private synchronized void addUsbListener(Context context, UsbDeviceListener listener) {
@@ -68,31 +65,26 @@ final class UsbDeviceManager {
             }
         }
         deviceListeners.add(listener);
-        for (Map.Entry<UsbDevice, DeviceContext> entry : contexts.entrySet()) {
-            DeviceContext deviceContext = entry.getValue();
-            deviceContext.executorService.execute(() -> listener.deviceAttached(entry.getKey(), deviceContext.connectionLock));
+        for (UsbDevice usbDevice : contexts.keySet()) {
+            listener.deviceAttached(usbDevice);
         }
     }
 
     private synchronized void removeUsbListener(Context context, UsbDeviceListener listener) {
         deviceListeners.remove(listener);
-        for (Map.Entry<UsbDevice, DeviceContext> entry : contexts.entrySet()) {
-            DeviceContext deviceContext = entry.getValue();
-            deviceContext.executorService.execute(() -> listener.deviceRemoved(entry.getKey()));
+        for (UsbDevice usbDevice : contexts.keySet()) {
+            listener.deviceRemoved(usbDevice);
         }
         if (deviceListeners.isEmpty()) {
             context.unregisterReceiver(broadcastReceiver);
-            for (DeviceContext deviceContext : contexts.values()) {
-                deviceContext.executorService.shutdown();
-            }
             contexts.clear();
         }
     }
 
     private synchronized void requestDevicePermission(Context context, UsbDevice usbDevice, PermissionResultListener listener) {
-        DeviceContext deviceContext = Objects.requireNonNull(contexts.get(usbDevice));
-        synchronized (deviceContext.permissionListeners) {
-            deviceContext.permissionListeners.add(listener);
+        Set<PermissionResultListener> permissionListeners = Objects.requireNonNull(contexts.get(usbDevice));
+        synchronized (permissionListeners) {
+            permissionListeners.add(listener);
         }
         synchronized (awaitingPermissions) {
             if (!awaitingPermissions.contains(usbDevice)) {
@@ -110,22 +102,21 @@ final class UsbDeviceManager {
 
     private void onDeviceAttach(UsbDevice usbDevice) {
         Logger.d("UsbDevice attached: " + usbDevice.getDeviceName());
-        DeviceContext deviceContext = new DeviceContext();
-        contexts.put(usbDevice, deviceContext);
+        contexts.put(usbDevice, new HashSet<>());
         for (UsbDeviceListener listener : deviceListeners) {
-            deviceContext.executorService.execute(() -> listener.deviceAttached(usbDevice, deviceContext.connectionLock));
+            listener.deviceAttached(usbDevice);
         }
     }
 
     private void onPermission(Context context, UsbDevice usbDevice, boolean permission) {
         Logger.d("Permission result for " + usbDevice.getDeviceName() + ", permitted: " + permission);
-        DeviceContext deviceContext = contexts.get(usbDevice);
-        if (deviceContext != null) {
-            synchronized (deviceContext.permissionListeners) {
-                for (PermissionResultListener listener : deviceContext.permissionListeners) {
-                    deviceContext.executorService.execute(() -> listener.onPermissionResult(usbDevice, permission));
+        Set<PermissionResultListener> permissionListeners = contexts.get(usbDevice);
+        if (permissionListeners != null) {
+            synchronized (permissionListeners) {
+                for (PermissionResultListener listener : permissionListeners) {
+                    listener.onPermissionResult(usbDevice, permission);
                 }
-                deviceContext.permissionListeners.clear();
+                permissionListeners.clear();
             }
         }
         synchronized (awaitingPermissions) {
@@ -137,12 +128,10 @@ final class UsbDeviceManager {
 
     private void onDeviceDetach(Context context, UsbDevice usbDevice) {
         Logger.d("UsbDevice detached: " + usbDevice.getDeviceName());
-        DeviceContext deviceContext = contexts.remove(usbDevice);
-        if (deviceContext != null) {
+        if (contexts.remove(usbDevice) != null) {
             for (UsbDeviceListener listener : deviceListeners) {
-                deviceContext.executorService.execute(() -> listener.deviceRemoved(usbDevice));
+                listener.deviceRemoved(usbDevice);
             }
-            deviceContext.executorService.shutdown();
         }
         synchronized (awaitingPermissions) {
             if (awaitingPermissions.remove(usbDevice) && awaitingPermissions.isEmpty()) {
@@ -152,7 +141,7 @@ final class UsbDeviceManager {
     }
 
     interface UsbDeviceListener {
-        void deviceAttached(UsbDevice usbDevice, Semaphore connectionLock);
+        void deviceAttached(UsbDevice usbDevice);
 
         void deviceRemoved(UsbDevice usbDevice);
     }
@@ -189,11 +178,5 @@ final class UsbDeviceManager {
                 }
             }
         }
-    }
-
-    private static class DeviceContext {
-        private final ExecutorService executorService = Executors.newSingleThreadExecutor();
-        private final Semaphore connectionLock = new Semaphore(1);
-        private final Set<PermissionResultListener> permissionListeners = new HashSet<>();
     }
 }

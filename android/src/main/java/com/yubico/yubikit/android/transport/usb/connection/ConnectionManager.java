@@ -20,15 +20,14 @@ import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbManager;
 
-import com.yubico.yubikit.android.transport.usb.AlreadyInUseException;
+import androidx.annotation.WorkerThread;
+
 import com.yubico.yubikit.android.transport.usb.NoPermissionsException;
 import com.yubico.yubikit.core.YubiKeyConnection;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nullable;
 
@@ -50,12 +49,10 @@ public class ConnectionManager {
 
     private final UsbManager usbManager;
     private final UsbDevice usbDevice;
-    private final Semaphore connectionLock;
 
-    public ConnectionManager(UsbManager usbManager, UsbDevice usbDevice, Semaphore connectionLock) {
+    public ConnectionManager(UsbManager usbManager, UsbDevice usbDevice) {
         this.usbManager = usbManager;
         this.usbDevice = usbDevice;
-        this.connectionLock = connectionLock;
     }
 
     /**
@@ -70,19 +67,19 @@ public class ConnectionManager {
     }
 
     /**
+     * TODO: fixme
      * Checks if a connection type is supported by the device, attempts to acquire the connection lock, and returns a connection.
      *
      * @param connectionType the type of connection to open
      * @param <T>            the type of connection to open
-     * @return a new connection
-     * @throws IOException in case a connection couldn't be opened
      */
+    @WorkerThread
     public <T extends YubiKeyConnection> T openConnection(Class<T> connectionType) throws IOException {
         ConnectionHandler<T> handler = getHandler(connectionType);
         if (handler != null) {
-            UsbDeviceConnection usbDeviceConnection = openDeviceConnection(usbDevice, connectionLock);
+            UsbDeviceConnection usbDeviceConnection = openDeviceConnection(usbDevice);
             try {
-                return handler.createConnection(usbDevice, usbDeviceConnection, connectionLock);
+                return handler.createConnection(usbDevice, usbDeviceConnection);
             } catch (IOException e) {
                 usbDeviceConnection.close();
                 throw e;
@@ -104,23 +101,10 @@ public class ConnectionManager {
         return null;
     }
 
-    private UsbDeviceConnection openDeviceConnection(UsbDevice usbDevice, Semaphore connectionLock) throws IOException {
+    private UsbDeviceConnection openDeviceConnection(UsbDevice usbDevice) throws IOException {
         if (!usbManager.hasPermission(usbDevice)) {
             throw new NoPermissionsException(usbDevice);
         }
-        try {
-            if (connectionLock.tryAcquire(200, TimeUnit.MILLISECONDS)) {
-                UsbDeviceConnection connection = usbManager.openDevice(usbDevice);
-                if (connection == null) {
-                    throw new IOException("Unable to create USB device connection");
-                }
-                return connection;
-            } else {
-                throw new AlreadyInUseException(usbDevice);
-            }
-        } catch (InterruptedException | IOException e) {
-            Thread.currentThread().interrupt();
-            throw new IOException("Interrupted");
-        }
+        return usbManager.openDevice(usbDevice);
     }
 }

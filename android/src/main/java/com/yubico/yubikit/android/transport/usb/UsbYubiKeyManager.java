@@ -12,7 +12,6 @@ import com.yubico.yubikit.android.transport.usb.connection.UsbSmartCardConnectio
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.Semaphore;
 
 import javax.annotation.Nullable;
 
@@ -62,8 +61,8 @@ public class UsbYubiKeyManager {
         }
 
         @Override
-        public void deviceAttached(UsbDevice usbDevice, Semaphore connectionLock) {
-            UsbYubiKeyDevice yubikey = new UsbYubiKeyDevice(new ConnectionManager(usbManager, usbDevice, connectionLock), usbDevice);
+        public void deviceAttached(UsbDevice usbDevice) {
+            UsbYubiKeyDevice yubikey = new UsbYubiKeyDevice(usbManager, usbDevice);
             devices.put(usbDevice, yubikey);
             boolean permission = usbManager.hasPermission(usbDevice);
             listener.onDeviceAttached(yubikey, permission);
@@ -82,6 +81,7 @@ public class UsbYubiKeyManager {
         public void deviceRemoved(UsbDevice usbDevice) {
             UsbYubiKeyDevice yubikey = devices.remove(usbDevice);
             if (yubikey != null) {
+                yubikey.close();
                 listener.onDeviceRemoved(yubikey);
             }
         }

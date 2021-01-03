@@ -44,11 +44,6 @@ class ManagementFragment : YubiKeyFragment<ManagementSession, ManagementViewMode
         return binding.root
     }
 
-    override fun onStop() {
-        viewModel.releaseYubiKey()
-        super.onStop()
-    }
-
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 

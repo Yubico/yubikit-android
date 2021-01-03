@@ -21,7 +21,6 @@ import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbDeviceConnection;
 
 import java.io.IOException;
-import java.util.concurrent.Semaphore;
 
 public class OtpConnectionHandler extends InterfaceConnectionHandler<UsbOtpConnection> {
     public OtpConnectionHandler() {
@@ -29,7 +28,7 @@ public class OtpConnectionHandler extends InterfaceConnectionHandler<UsbOtpConne
     }
 
     @Override
-    public UsbOtpConnection createConnection(UsbDevice usbDevice, UsbDeviceConnection usbDeviceConnection, Semaphore connectionLock) throws IOException {
-        return new UsbOtpConnection(usbDeviceConnection, getClaimedInterface(usbDevice, usbDeviceConnection), connectionLock);
+    public UsbOtpConnection createConnection(UsbDevice usbDevice, UsbDeviceConnection usbDeviceConnection) throws IOException {
+        return new UsbOtpConnection(usbDeviceConnection, getClaimedInterface(usbDevice, usbDeviceConnection));
     }
 }

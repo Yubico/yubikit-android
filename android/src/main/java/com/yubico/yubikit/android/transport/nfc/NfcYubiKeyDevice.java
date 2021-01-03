@@ -114,11 +114,19 @@ public class NfcYubiKeyDevice implements YubiKeyDevice {
         return connectionType.isAssignableFrom(NfcSmartCardConnection.class);
     }
 
-    @Override
-    public <T extends YubiKeyConnection> T openConnection(Class<T> connectionType) throws IOException {
+    private <T extends YubiKeyConnection> T openConnection(Class<T> connectionType) throws IOException {
         if (connectionType.isAssignableFrom(NfcSmartCardConnection.class)) {
             return connectionType.cast(openIso7816Connection());
         }
         throw new IllegalStateException("The connection type is not supported by this session");
+    }
+
+    @Override
+    public <T extends YubiKeyConnection> void requestConnection(Class<T> connectionType, ConnectionCallback<? super T> callback) {
+        try (T connection = openConnection(connectionType)) {
+            callback.onConnection(connection);
+        } catch (IOException e) {
+            callback.onError(e);
+        }
     }
 }

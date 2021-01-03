@@ -24,7 +24,6 @@ import android.hardware.usb.UsbInterface;
 import android.util.Pair;
 
 import java.io.IOException;
-import java.util.concurrent.Semaphore;
 
 public class SmartCardConnectionHandler extends InterfaceConnectionHandler<UsbSmartCardConnection> {
     public SmartCardConnectionHandler() {
@@ -32,10 +31,10 @@ public class SmartCardConnectionHandler extends InterfaceConnectionHandler<UsbSm
     }
 
     @Override
-    public UsbSmartCardConnection createConnection(UsbDevice usbDevice, UsbDeviceConnection usbDeviceConnection, Semaphore connectionLock) throws IOException {
+    public UsbSmartCardConnection createConnection(UsbDevice usbDevice, UsbDeviceConnection usbDeviceConnection) throws IOException {
         UsbInterface usbInterface = getClaimedInterface(usbDevice, usbDeviceConnection);
         Pair<UsbEndpoint, UsbEndpoint> endpoints = findEndpoints(usbInterface);
-        return new UsbSmartCardConnection(usbDeviceConnection, usbInterface, connectionLock, endpoints.first, endpoints.second);
+        return new UsbSmartCardConnection(usbDeviceConnection, usbInterface, endpoints.first, endpoints.second);
     }
 
     private Pair<UsbEndpoint, UsbEndpoint> findEndpoints(UsbInterface usbInterface) {

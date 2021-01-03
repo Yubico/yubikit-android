@@ -35,11 +35,17 @@ public abstract class YubiKeyPromptConnectionAction<T extends YubiKeyConnection>
     @Override
     final Pair<Integer, Intent> onYubiKey(YubiKeyDevice device, Bundle extras, CommandState commandState) {
         if (device.supportsConnection(connectionType)) {
-            try (T connection = device.openConnection(connectionType)) {
-                return onYubiKeyConnection(connection, extras, commandState);
-            } catch (Exception e) {
-                onError(e);
-            }
+            device.requestConnection(connectionType, new YubiKeyDevice.ConnectionCallback<T>() {
+                @Override
+                public void onConnection(T connection) {
+                    onYubiKeyConnection(connection, extras, commandState);
+                }
+
+                @Override
+                public void onError(Exception error) {
+                    YubiKeyPromptConnectionAction.this.onError(error);
+                }
+            });
         } else {
             Logger.d("Connected YubiKey does not support desired connection type");
         }

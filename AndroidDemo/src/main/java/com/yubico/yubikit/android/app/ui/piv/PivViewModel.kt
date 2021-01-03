@@ -5,10 +5,12 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.yubico.yubikit.android.app.ui.YubiKeyViewModel
 import com.yubico.yubikit.core.Logger
+import com.yubico.yubikit.core.Transport
 import com.yubico.yubikit.core.YubiKeyDevice
 import com.yubico.yubikit.core.application.BadResponseException
 import com.yubico.yubikit.core.smartcard.ApduException
 import com.yubico.yubikit.core.smartcard.SmartCardConnection
+import com.yubico.yubikit.oath.OathSession
 import com.yubico.yubikit.piv.ManagementKeyType
 import com.yubico.yubikit.piv.PivSession
 import com.yubico.yubikit.piv.Slot
@@ -29,14 +31,16 @@ class PivViewModel : YubiKeyViewModel<PivSession>() {
     var mgmtKeyType = ManagementKeyType.TDES
     var mgmtKey: ByteArray = byteArrayOf(1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8)
 
-    override fun getSession(device: YubiKeyDevice): PivSession {
-        val connection = device.openConnection(SmartCardConnection::class.java)
-        try {
-            return PivSession(connection)
-        } catch (e: Exception) {
-            connection.close()
-            throw e
-        }
+    override fun getSession(device: YubiKeyDevice, onError: (Throwable) -> Unit, callback: (PivSession) -> Unit) {
+        device.requestConnection(SmartCardConnection::class.java, object : YubiKeyDevice.ConnectionCallback<SmartCardConnection>() {
+            override fun onConnection(connection: SmartCardConnection) {
+                callback(PivSession(connection))
+            }
+
+            override fun onError(error: java.lang.Exception) {
+                onError(error)
+            }
+        })
     }
 
     override fun PivSession.updateState() {

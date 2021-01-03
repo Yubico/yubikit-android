@@ -91,6 +91,12 @@ public class OtpActivity extends YubiKeyPromptActivity {
     }
 
     @Override
+    protected void onDestroy() {
+        getYubiKitManager().stopUsbDiscovery();
+        super.onDestroy();
+    }
+
+    @Override
     public boolean onKeyUp(int keyCode, KeyEvent event) {
         return keyListener.onKeyEvent(event);
     }

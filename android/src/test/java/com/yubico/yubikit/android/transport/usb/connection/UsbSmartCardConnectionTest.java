@@ -28,7 +28,6 @@ public class UsbSmartCardConnectionTest {
     private final UsbInterface usbInterface = mock(UsbInterface.class);
     private final UsbEndpoint usbEndpointIn = mock(UsbEndpoint.class);
     private final UsbEndpoint usbEndpointOut = mock(UsbEndpoint.class);
-    private final Semaphore connectionLock = new Semaphore(0);
     private final List<String> packetsIn = new ArrayList<>();
     private final List<byte[]> packetsOut = new ArrayList<>();
 
@@ -67,15 +66,9 @@ public class UsbSmartCardConnectionTest {
     private UsbSmartCardConnection getConnection() throws IOException {
         // ATR - response to power on
         packetsIn.add("801700000000000000003bfd1300008131fe158073c021c057597562694b657940");
-        UsbSmartCardConnection connection = new UsbSmartCardConnection(usbDeviceConnection, usbInterface, connectionLock, usbEndpointIn, usbEndpointOut);
+        UsbSmartCardConnection connection = new UsbSmartCardConnection(usbDeviceConnection, usbInterface, usbEndpointIn, usbEndpointOut);
         assertSent("62000000000000000000");  // Power on command
         return connection;
-    }
-
-    @Test
-    public void testCloseReleasesLock() throws IOException {
-        getConnection().close();
-        Assert.assertEquals("Connection lock not released by close()", 1, connectionLock.availablePermits());
     }
 
     @Test

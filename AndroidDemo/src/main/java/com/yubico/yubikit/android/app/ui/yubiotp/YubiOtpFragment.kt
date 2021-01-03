@@ -71,7 +71,6 @@ class YubiOtpFragment : Fragment() {
 
         binding.btnRequestOtp.setOnClickListener {
             activityViewModel.setYubiKeyListenerEnabled(false)
-            viewModel.releaseYubiKey()
             startActivityForResult(Intent(context, OtpActivity::class.java), REQUEST_OTP_CODE)
         }
     }
@@ -87,10 +86,5 @@ class YubiOtpFragment : Fragment() {
                 viewModel.postResult(Result.success("Cancelled by user"))
             }
         }
-    }
-
-    override fun onStop() {
-        viewModel.releaseYubiKey()
-        super.onStop()
     }
 }
