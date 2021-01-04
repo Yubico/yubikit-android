@@ -11,6 +11,8 @@ import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.application.CommandState;
 import com.yubico.yubikit.core.util.Pair;
 
+import java.io.IOException;
+
 import javax.annotation.Nullable;
 
 /**
@@ -35,15 +37,11 @@ public abstract class YubiKeyPromptConnectionAction<T extends YubiKeyConnection>
     @Override
     final Pair<Integer, Intent> onYubiKey(YubiKeyDevice device, Bundle extras, CommandState commandState) {
         if (device.supportsConnection(connectionType)) {
-            device.requestConnection(connectionType, new YubiKeyDevice.ConnectionCallback<T>() {
-                @Override
-                public void onConnection(T connection) {
-                    onYubiKeyConnection(connection, extras, commandState);
-                }
-
-                @Override
-                public void onError(Exception error) {
-                    YubiKeyPromptConnectionAction.this.onError(error);
+            device.requestConnection(connectionType, value -> {
+                try {
+                    onYubiKeyConnection(value.getValue(), extras, commandState);
+                } catch (IOException exception) {
+                    YubiKeyPromptConnectionAction.this.onError(exception);
                 }
             });
         } else {

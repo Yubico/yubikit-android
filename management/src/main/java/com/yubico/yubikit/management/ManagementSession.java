@@ -19,7 +19,6 @@ package com.yubico.yubikit.management;
 import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.Version;
-import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
 import com.yubico.yubikit.core.application.ApplicationSession;
@@ -34,10 +33,11 @@ import com.yubico.yubikit.core.smartcard.Apdu;
 import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.smartcard.SmartCardProtocol;
+import com.yubico.yubikit.core.util.Callback;
+import com.yubico.yubikit.core.util.Result;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -99,35 +99,16 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
      *
      * @param device A YubiKey device to use
      */
-    public static void create(YubiKeyDevice device, SessionCallback callback) {
-        YubiKeyDevice.ConnectionCallback<YubiKeyConnection> connectionCallback = new YubiKeyDevice.ConnectionCallback<YubiKeyConnection>() {
-            private ManagementSession createSession(YubiKeyConnection connection) throws IOException, ApplicationNotAvailableException {
-                if (connection instanceof SmartCardConnection) {
-                    return new ManagementSession((SmartCardConnection) connection);
-                } else if (connection instanceof OtpConnection) {
-                    return new ManagementSession((OtpConnection) connection);
-                } else if (connection instanceof FidoConnection) {
-                    return new ManagementSession((FidoConnection) connection);
-                }
-                throw new IllegalStateException();  // Shouldn't happen
-            }
-
-            @Override
-            public void onConnection(YubiKeyConnection connection) {
-                try {
-                    callback.onSession(createSession(connection));
-                } catch (ApplicationNotAvailableException | IOException e) {
-                    callback.onError(e);
-                }
-            }
-        };
-        for (Class<? extends YubiKeyConnection> connectionType : Arrays.asList(SmartCardConnection.class, OtpConnection.class, FidoConnection.class)) {
-            if (device.supportsConnection(connectionType)) {
-                device.requestConnection(connectionType, connectionCallback);
-                return;
-            }
+    public static void create(YubiKeyDevice device, Callback<Result<ManagementSession, Exception>> callback) {
+        if (device.supportsConnection(SmartCardConnection.class)) {
+            device.requestConnection(SmartCardConnection.class, value -> callback.invoke(Result.of(() -> new ManagementSession(value.getValue()))));
+        } else if (device.supportsConnection(OtpConnection.class)) {
+            device.requestConnection(OtpConnection.class, value -> callback.invoke(Result.of(() -> new ManagementSession(value.getValue()))));
+        } else if (device.supportsConnection(FidoConnection.class)) {
+            device.requestConnection(FidoConnection.class, value -> callback.invoke(Result.of(() -> new ManagementSession(value.getValue()))));
+        } else {
+            callback.invoke(Result.failure(new ApplicationNotAvailableException("Session does not support any compatible connection type")));
         }
-        callback.onError(new ApplicationNotAvailableException("Session does not support any compatible connection type"));
     }
 
     /**
@@ -354,19 +335,6 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
         @Override
         public void close() throws IOException {
             delegate.close();
-        }
-    }
-
-    public abstract static class SessionCallback {
-        public abstract void onSession(ManagementSession session);
-
-        /**
-         * In case there was an error opening the connection, or invoking the callback.
-         *
-         * @param error the Exception which was thrown.
-         */
-        public void onError(Exception error) {
-            Logger.e("Error in connection callback:", error);
         }
     }
 }

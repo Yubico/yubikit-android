@@ -25,6 +25,8 @@ import android.nfc.tech.Ndef;
 import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.YubiKeyDevice;
+import com.yubico.yubikit.core.util.Callback;
+import com.yubico.yubikit.core.util.Result;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutorService;
@@ -124,17 +126,16 @@ public class NfcYubiKeyDevice implements YubiKeyDevice {
     }
 
     @Override
-    public <T extends YubiKeyConnection> void requestConnection(Class<T> connectionType, ConnectionCallback<? super T> callback) {
+    public <T extends YubiKeyConnection> void requestConnection(Class<T> connectionType, Callback<Result<T, IOException>> callback) {
         if (removed.get()) {
-            callback.onError(new IOException("Can't requestConnection after calling remove()"));
-        } else {
+            callback.invoke(Result.failure(new IOException("Can't requestConnection after calling remove()")));
+        } else
             executorService.submit(() -> {
                 try (T connection = openConnection(connectionType)) {
-                    callback.onConnection(connection);
+                    callback.invoke(Result.success(connection));
                 } catch (IOException e) {
-                    callback.onError(e);
+                    callback.invoke(Result.failure(e));
                 }
             });
-        }
     }
 }

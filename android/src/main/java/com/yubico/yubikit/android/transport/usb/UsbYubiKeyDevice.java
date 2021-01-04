@@ -25,8 +25,11 @@ import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.otp.OtpConnection;
+import com.yubico.yubikit.core.util.Callback;
+import com.yubico.yubikit.core.util.Result;
 
 import java.io.Closeable;
+import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -72,10 +75,10 @@ public class UsbYubiKeyDevice implements YubiKeyDevice, Closeable {
     }
 
     @Override
-    public <T extends YubiKeyConnection> void requestConnection(Class<T> connectionType, ConnectionCallback<? super T> callback) {
+    public <T extends YubiKeyConnection> void requestConnection(Class<T> connectionType, Callback<Result<T, IOException>> callback) {
         // Keep UsbOtpConnection open until another connection is needed, to prevent re-enumeration of the USB device.
         if (OtpConnection.class.isAssignableFrom(connectionType)) {
-            ConnectionCallback<? super OtpConnection> otpCallback = (ConnectionCallback<? super OtpConnection>) callback;
+            Callback<Result<OtpConnection, IOException>> otpCallback = value -> callback.invoke((Result<T, IOException>) value);
             if (otpConnection == null) {
                 otpConnection = new CachedOtpConnection(otpCallback);
             } else {
@@ -88,9 +91,9 @@ public class UsbYubiKeyDevice implements YubiKeyDevice, Closeable {
             }
             executorService.submit(() -> {
                 try (T connection = connectionManager.openConnection(connectionType)) {
-                    callback.onConnection(connection);
-                } catch (Exception e) {
-                    callback.onError(e);
+                    callback.invoke(Result.success(connection));
+                } catch (IOException e) {
+                    callback.invoke(Result.failure(e));
                 }
             });
         }
@@ -105,39 +108,34 @@ public class UsbYubiKeyDevice implements YubiKeyDevice, Closeable {
         executorService.shutdown();
     }
 
-    private static final ConnectionCallback<OtpConnection> CLOSE_OTP = new ConnectionCallback<OtpConnection>() {
-        @Override
-        public void onConnection(OtpConnection connection) {
-            throw new IllegalStateException();
-        }
-    };
+    private static final Callback<Result<OtpConnection, IOException>> CLOSE_OTP = value -> {};
 
     private class CachedOtpConnection implements Closeable {
-        private final LinkedBlockingQueue<ConnectionCallback<? super OtpConnection>> queue = new LinkedBlockingQueue<>();
+        private final LinkedBlockingQueue<Callback<Result<OtpConnection, IOException>>> queue = new LinkedBlockingQueue<>();
 
-        private CachedOtpConnection(ConnectionCallback<? super OtpConnection> callback) {
+        private CachedOtpConnection(Callback<Result<OtpConnection, IOException>> callback) {
             Logger.d("Creating new CachedOtpConnection");
             queue.offer(callback);
             executorService.submit(() -> {
                 try (OtpConnection connection = connectionManager.openConnection(OtpConnection.class)) {
                     while (true) {
                         try {
-                            ConnectionCallback<? super OtpConnection> action = queue.take();
+                            Callback<Result<OtpConnection, IOException>> action = queue.take();
                             if (action == CLOSE_OTP) {
                                 Logger.d("Closing CachedOtpConnection");
                                 break;
                             }
                             try {
-                                action.onConnection(connection);
+                                action.invoke(Result.success(connection));
                             } catch (Exception e) {
-                                action.onError(e);
+                                Logger.e("OtpConnection callback threw an exception", e);
                             }
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
                     }
-                } catch (Exception e) {
-                    callback.onError(e);
+                } catch (IOException e) {
+                    callback.invoke(Result.failure(e));
                 }
             });
         }

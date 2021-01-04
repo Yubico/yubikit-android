@@ -13,6 +13,7 @@ import com.yubico.yubikit.oath.Code
 import com.yubico.yubikit.oath.Credential
 import com.yubico.yubikit.oath.OathSession
 import com.yubico.yubikit.oath.OathType
+import java.io.IOException
 
 data class OathApplicationInfo(val version: Version, val deviceId: String, val hasAccessKey: Boolean)
 
@@ -27,16 +28,15 @@ class OathViewModel : YubiKeyViewModel<OathSession>() {
 
     private var isNfc = false
     override fun getSession(device: YubiKeyDevice, onError: (Throwable) -> Unit, callback: (OathSession) -> Unit) {
-        device.requestConnection(SmartCardConnection::class.java, object : YubiKeyDevice.ConnectionCallback<SmartCardConnection>() {
-            override fun onConnection(connection: SmartCardConnection) {
+        device.requestConnection(SmartCardConnection::class.java) {
+            try {
+                val connection = it.value
                 isNfc = connection.transport == Transport.NFC
                 callback(OathSession(connection))
+            } catch (e: Throwable) {
+                onError(e)
             }
-
-            override fun onError(error: java.lang.Exception) {
-                onError(error)
-            }
-        })
+        }
     }
 
     override fun OathSession.updateState() {

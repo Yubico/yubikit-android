@@ -15,6 +15,9 @@
  */
 package com.yubico.yubikit.core;
 
+import com.yubico.yubikit.core.util.Callback;
+import com.yubico.yubikit.core.util.Result;
+
 import java.io.IOException;
 
 /**
@@ -34,30 +37,5 @@ public interface YubiKeyDevice {
     /**
      * Requests a new connection of the given connection type.
      */
-    <T extends YubiKeyConnection> void requestConnection(Class<T> connectionType, ConnectionCallback<? super T> callback);
-
-    /**
-     * Callback for handling a YubiKey connection.
-     * <p>
-     * Once the callback returns, the Connection is automatically closed.
-     *
-     * @param <T> The type of connection handled by the callback.
-     */
-    abstract class ConnectionCallback<T extends YubiKeyConnection> {
-        /**
-         * Called once the connection has been established.
-         *
-         * @param connection the connection, which can be used within this method.
-         */
-        public abstract void onConnection(T connection);
-
-        /**
-         * In case there was an error opening the connection, or invoking the callback.
-         *
-         * @param error the Exception which was thrown.
-         */
-        public void onError(Exception error) {
-            Logger.e("Error in connection callback:", error);
-        }
-    }
+    <T extends YubiKeyConnection> void requestConnection(Class<T> connectionType, Callback<Result<T, IOException>> callback);
 }

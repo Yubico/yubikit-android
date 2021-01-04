@@ -32,15 +32,13 @@ class PivViewModel : YubiKeyViewModel<PivSession>() {
     var mgmtKey: ByteArray = byteArrayOf(1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8)
 
     override fun getSession(device: YubiKeyDevice, onError: (Throwable) -> Unit, callback: (PivSession) -> Unit) {
-        device.requestConnection(SmartCardConnection::class.java, object : YubiKeyDevice.ConnectionCallback<SmartCardConnection>() {
-            override fun onConnection(connection: SmartCardConnection) {
-                callback(PivSession(connection))
+        device.requestConnection(SmartCardConnection::class.java) {
+            try {
+                callback(PivSession(it.value))
+            } catch(e: Throwable) {
+                onError(e)
             }
-
-            override fun onError(error: java.lang.Exception) {
-                onError(error)
-            }
-        })
+        }
     }
 
     override fun PivSession.updateState() {
