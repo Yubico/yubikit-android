@@ -41,7 +41,7 @@ handling a specific application are available in the various application modules
 
 
 === Raw smart card communication (APDUs)
-While using the higher-level abstrations for the YubiKey applications provided
+While using the higher-level abstractions for the YubiKey applications provided
 as separate modules is generally recommended, it is possible to communicate with
 a YubiKey over a lower-level "smart card like" interface. This modules provides
 a *SmartCardProtocol* helper class for that purpose, which will handle protocol
@@ -49,22 +49,26 @@ details like APDU encoding and chaining:
 
 [source,java]
 ----
-//connect to the YubiKey / start the connection
-try(SmartCardConnection connection = device.openConnection(SmartCardConnection.class)) {
-  // The SmartCardProtocol offers a the ability of sending APDU-based smartcard commands
-  SmartCardProtocol protocol = new SmartCardProtocol(connection);
-  byte[] aid = new byte[] {0xA0, 0x00, 0x00, 0x03, 0x08};
-  protocol.select(aid);  // Select a smartcard application
+// Connect to the YubiKey / start the connection
+device.requestConnection(SmartCardConnection.class, result -> {
+  // The result is a Result<SmartCardConnection, IOException>, which represents either a successful connection, or an error.
   try {
-    // Send a command
-    byte[] response = protocol.sendAndReceive(new Apdu(0x00, 0xA4, 0x00, 0x00)));
-    // Response contains the response payload, if the command was successful.
-  } catch(ApduException e) {
-    // The response was an error, e.getSw() contains the status code.
+    SmartCardConnection connection = result.getValue();  // This may throw an IOException
+    // The SmartCardProtocol offers a the ability of sending APDU-based smartcard commands
+    SmartCardProtocol protocol = new SmartCardProtocol(connection);
+    byte[] aid = new byte[] {0xA0, 0x00, 0x00, 0x03, 0x08};
+    protocol.select(aid);  // Select a smartcard application (this may throw an ApplicationNotFoundException)
+    try {
+      // Send a command
+      byte[] response = protocol.sendAndReceive(new Apdu(0x00, 0xA4, 0x00, 0x00)));
+      // Response contains the response payload, if the command was successful.
+    } catch(ApduException e) {
+      // The response was an error, e.getSw() contains the status code.
+    }
+  } catch(ApplicationNotFoundException | IOException e) {
+    // Handle errors
   }
-} catch (...) {
-  // handle errors
-}
+});
 ----
 
 

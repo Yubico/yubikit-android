@@ -29,23 +29,27 @@ will use the best suited connection type available:
 
 [source,java]
 ----
-try(ManagementSession management = ManagementSession.create(device)) {
-  // Get the YubiKey serial number:
-  DeviceInfo info = management.getDeviceInfo();
-  int serialNumber = info.getSerial();
+ManagementSession.create(device, result -> {
+  try {
+    ManagementSession management = result.getValue();
 
-  // Toggle the OTP capability over NFC:
-  int capabilities = info.getConfig().getEnabledCapabilities(Transport.NFC);
-  capabilities ^= Capability.OTP;
-  management.updateDeviceConfig(
-    new DeviceConfig.Builder()
-      .enabledCapabilities(Transport.NFC, capabilities)
-      .build(),
-    false,
-    null,
-    null,
-  );
-} catch (...) {
-  // handle errors
-}
+    // Get the YubiKey serial number:
+    DeviceInfo info = management.getDeviceInfo();
+    int serialNumber = info.getSerial();
+
+    // Toggle the OTP capability over NFC:
+    int capabilities = info.getConfig().getEnabledCapabilities(Transport.NFC);
+    capabilities ^= Capability.OTP;
+    management.updateDeviceConfig(
+      new DeviceConfig.Builder()
+        .enabledCapabilities(Transport.NFC, capabilities)
+        .build(),
+      false,
+      null,
+      null,
+    );
+  } catch (...) {
+    // handle errors
+  }
+});
 ----

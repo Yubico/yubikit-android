@@ -30,22 +30,17 @@ You will need a SmartCardConnection to a YubiKey:
 
 [source,java]
 ----
-try(SmartCardConnection connection = device.openConnection(SmartCardConnection.class)) {
-  PivSession piv = new PivSession(connection);
-  // Verify the PIN:
-  piv.verifyPin(pin);
+PivSession piv = new PivSession(smartCardConnection);
+// Verify the PIN:
+piv.verifyPin(pin);
 
-  // Sign a message using a private key on the YubiKey:
-  byte[] signature = piv.sign(
-    Slot.SIGNATURE,
-    KeyType.ECCP256,
-    message,
-    Signature.getInstance("SHA256withECDSA")
-  );
-} catch (...) {
-  // handle errors
-}
-
+// Sign a message using a private key on the YubiKey:
+byte[] signature = piv.sign(
+  Slot.SIGNATURE,
+  KeyType.ECCP256,
+  message,
+  Signature.getInstance("SHA256withECDSA")
+);
 ----
 
 

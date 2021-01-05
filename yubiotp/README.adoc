@@ -35,20 +35,23 @@ best suited connection type available:
 
 [source,java]
 ----
-try(YubiOtpSession otp = YubiOtpSession.create(device)) {
-  // Program a Challenge-Response credential in slot 2:
-  otp.putConfiguration(
-    Slot.TWO,
-    new HmacSha1SlotConfiguration(hmacKey),
-    null,
-    null,
-  );
+YubiOtpSession.create(device, result -> {
+  try {
+    YubiOtpSession otp = result.getValue();
+    // Program a Challenge-Response credential in slot 2:
+    otp.putConfiguration(
+      Slot.TWO,
+      new HmacSha1SlotConfiguration(hmacKey),
+      null,
+      null,
+    );
 
-  // Use the credential:
-  byte[] response = otp.calculateHmacSha1(Slot.TWO, challenge, null);
-} catch (...) {
-  // Handle errors
-}
+    // Use the credential:
+    byte[] response = otp.calculateHmacSha1(Slot.TWO, challenge, null);
+  } catch (...) {
+    // Handle errors
+  }
+});
 ----
 
 

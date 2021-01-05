@@ -64,27 +64,22 @@ NOTE: To make debugging over USB easier, we recommend setting up ADB to connect
 using WiFi, as described here:
 https://developer.android.com/studio/command-line/adb#wireless
 
-To connect to a YubiKey over USB, you need to implement the `UsbYubiKeyListener`
-interface, and register it with the YubiKitManager. Again, the `onCreate()`
-method can be used for this:
+To connect to a YubiKey over USB, you need to call `startUsbDiscovery` with a callback to handle
+attached YubiKeys. This callback will be invoked whenever a new YubiKey is detected over USB.
+Again, the `onCreate()` method of your Activity is a good place for this.
 
 [source,java]
 ----
-yubiKitManager.startUsbDiscovery(new UsbConfiguration(), new UsbYubiKeyListener() {
-  @Override
-  public void onDeviceAttached(UsbYubiKeyDevice device, boolean hasPermissions) {
-    // A YubiKey was plugged in
+yubiKitManager.startUsbDiscovery(new UsbConfiguration(), device -> {
+  // A YubiKey was plugged in
+  if(!device.hasPermission()) {
+    // Using the default UsbConfiguration this will never happen, as permission will automatically
+    // be requested by the YubiKitManager, and this method won't be invoked unless it is granted.
   }
 
-  @Override
-  public void onDeviceRemoved(UsbYubiKeyDevice device) {
-    // A YubiKey was removed
-  }
-
-  @Override
-  public void onRequestPermissionsResult(UsbYubiKeyDevice device, boolean isGranted) {
-    // The result of requesting permission to access a YubiKey (granted, or denied)
-  }
+  device.setOnClosed(() -> {
+    // Do something when the YubiKey is removed
+  }))
 });
 ----
 
@@ -97,11 +92,11 @@ yubiKitManager.stopUsbDiscovery();
 ----
 
 ==== YubiKeys over NFC
-To connect to a YubiKey over NFC, you need to implement the `NfcYubiKeyListener`
-interface, and register it with the YubiKitManager. NFC requires an Activity in
-the foreground, and you should stop listening for NFC events when the Activity
-goes into the background. You can use the Activity's `onResume()` method to
-start listening, and its `onPause()` method to stop:
+To connect to a YubiKey over NFC, you need to call `startNfcDiscovery` with a callback to handle NFC
+YubiKey events. This callback will be invoked whenever a new YubiKey is detected over NFC.
+NFC requires an Activity in the foreground, and you should stop listening for NFC events when the
+Activity goes into the background. You can use the Activity's `onResume()` method to start listening,
+and its `onPause()` method to stop:
 
 [source,java]
 ----
@@ -109,10 +104,8 @@ start listening, and its `onPause()` method to stop:
 public void onResume() {
   super.onResume();
   try {
-    yubiKitManager.startNfcDiscovery(new NfcConfiguration(), this, new NfcYubiKeyListener() {
-      void onDeviceAttached(NfcYubiKeyDevice device) {
-        // A YubiKey was brought within NFC range
-      }
+    yubiKitManager.startNfcDiscovery(new NfcConfiguration(), this, device -> {
+      // A YubiKey was brought within NFC range
     });
   } catch (NfcNotAvailableException e) {
     if (e.isDisabled()) {
@@ -132,7 +125,11 @@ public void onPause() {
 
 ==== Opening a connection
 Regardless of if you are using USB or NFC, you need to open a connection to the
-YubiKey to do anything with it. There are different types of connections, which
+YubiKey to do anything with it. A YubiKeyDevice manages its own worker thread in which all
+communication with the Connection should be done. Interaction with a Connection is done within a
+Callback, and the Connection is automatically closed once the Callback completes.
+
+There are different types of connections, which
 can be used for different applications. Here is an example of opening a
 SmartCardConnection and doing some low-level communication with it. In practice
 you will more likely use one of the Session classes defined in the other
@@ -140,16 +137,20 @@ modules.
 
 [source,java]
 ----
-//connect to the YubiKey / start the connection
-try(SmartCardConnection connection = device.openConnection(SmartCardConnection.class)) {
-  // The SmartCardProtocol offers a the ability of sending APDU-based smartcard commands
-  SmartCardProtocol protocol = new SmartCardProtocol(connection);
-  byte[] aid = new byte[] {0xA0, 0x00, 0x00, 0x03, 0x08};
-  protocol.select(aid);  // Select a smartcard application
-  protocol.sendAndReceive(new Apdu(0x00, 0xA4, 0x00, 0x00)));
-} catch (ApplicationNotFoundException | IOException e) {
-  // handle errors
-}
+// Request a new SmartCardConnection:
+device.requestConnection(SmartCardConnection.class, result -> {
+  // The result is a Result<SmartCardConnection, IOException>, which represents either a successful connection, or an error.
+  try {
+    SmartCardConnection connection = result.getValue();  // This may throw an IOException
+    // The SmartCardProtocol offers a the ability of sending APDU-based smartcard commands
+    SmartCardProtocol protocol = new SmartCardProtocol(connection);
+    byte[] aid = new byte[] {0xA0, 0x00, 0x00, 0x03, 0x08};
+    protocol.select(aid);  // Select a smartcard application (this may throw an ApplicationNotFoundException)
+    protocol.sendAndReceive(new Apdu(0x00, 0xA4, 0x00, 0x00)));
+  } catch(ApplicationNotFoundException | IOException e) {
+    // Handle errors
+  }
+});
 ----
 
 
@@ -171,13 +172,13 @@ connection is required:
 //MyAction.java
 public class MyAction extends YubiKeyPromptConnectionAction<SmartCardConnection>(SmartCardConnection.class) {
   @Override
-  Pair<Integer, Intent> onYubiKeyConnection(SmartCardConnection connection, Bundle extras, CommandState commandState) {
+  void onYubiKeyConnection(SmartCardConnection connection, Bundle extras, CommandState commandState, Callback<Pair<Integer, Intent>> callback) {
     // Read out a certificate using the PIV module:
     PivSession session = new PivSession(connection);
     X509Certificate certificate = session.getCertificate(Slot.AUTHENTICATION);
     Intent result = new Intent();
     result.putExtra("EXTRA_CERTIFICATE", certificate.getEncoded());
-    return new Pair<>(Activity.RESULT_OK, result);
+    callback.invoke(new Pair<>(Activity.RESULT_OK, result));
   }
 }
 ----

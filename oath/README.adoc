@@ -28,23 +28,18 @@ You will need a SmartCardConnection to a YubiKey:
 
 [source,java]
 ----
-try(SmartCardConnection connection = device.openConnection(SmartCardConnection.class)) {
-  OathSession oath = new OathSession(connection);
-  OathApplicationInfo info = oath.getApplicationInfo();
+OathSession oath = new OathSession(smartCardConnection);
+OathApplicationInfo info = oath.getApplicationInfo();
 
-  // Unlock with a password, if needed
-  if(info.isAuthenticationRequired()) {
-    // Get the password from "somewhere"
-    char[] password = passwordStore.getPassword(info.getDeviceId());
-    oath.validate(password);
-  }
-
-  // Get stored credentials
-  List<Credential> creds = oath.getCredentials();
-} catch (...) {
-  // handle errors
+// Unlock with a password, if needed
+if(info.isAuthenticationRequired()) {
+  // Get the password from "somewhere"
+  char[] password = passwordStore.getPassword(info.getDeviceId());
+  oath.validate(password);
 }
 
+// Get stored credentials
+List<Credential> creds = oath.getCredentials();
 ----
 
 
