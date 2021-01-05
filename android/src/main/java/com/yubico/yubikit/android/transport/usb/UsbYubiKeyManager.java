@@ -9,6 +9,8 @@ import com.yubico.yubikit.android.transport.usb.connection.OtpConnectionHandler;
 import com.yubico.yubikit.android.transport.usb.connection.SmartCardConnectionHandler;
 import com.yubico.yubikit.android.transport.usb.connection.UsbOtpConnection;
 import com.yubico.yubikit.android.transport.usb.connection.UsbSmartCardConnection;
+import com.yubico.yubikit.core.Logger;
+import com.yubico.yubikit.core.util.Callback;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -37,7 +39,7 @@ public class UsbYubiKeyManager {
      * @param usbConfiguration contains information if device manager also registers receiver on permissions grant from user
      * @param listener         the UsbSessionListener to react to changes
      */
-    public synchronized void enable(UsbConfiguration usbConfiguration, UsbYubiKeyListener listener) {
+    public synchronized void enable(UsbConfiguration usbConfiguration, Callback<? super UsbYubiKeyDevice> listener) {
         disable();
         internalListener = new MyDeviceListener(usbConfiguration, listener);
         UsbDeviceManager.registerUsbListener(context, internalListener);
@@ -51,11 +53,11 @@ public class UsbYubiKeyManager {
     }
 
     private class MyDeviceListener implements UsbDeviceManager.UsbDeviceListener {
-        private final UsbYubiKeyListener listener;
+        private final Callback<? super UsbYubiKeyDevice> listener;
         private final UsbConfiguration usbConfiguration;
         private final Map<UsbDevice, UsbYubiKeyDevice> devices = new HashMap<>();
 
-        private MyDeviceListener(UsbConfiguration usbConfiguration, UsbYubiKeyListener listener) {
+        private MyDeviceListener(UsbConfiguration usbConfiguration, Callback<? super UsbYubiKeyDevice> listener) {
             this.usbConfiguration = usbConfiguration;
             this.listener = listener;
         }
@@ -64,16 +66,21 @@ public class UsbYubiKeyManager {
         public void deviceAttached(UsbDevice usbDevice) {
             UsbYubiKeyDevice yubikey = new UsbYubiKeyDevice(usbManager, usbDevice);
             devices.put(usbDevice, yubikey);
-            boolean permission = usbManager.hasPermission(usbDevice);
-            listener.onDeviceAttached(yubikey, permission);
-            if (!permission && usbConfiguration.isHandlePermissions()) {
+
+            if (usbConfiguration.isHandlePermissions() && !yubikey.hasPermission()) {
+                Logger.d("request permission");
                 UsbDeviceManager.requestPermission(context, usbDevice, (usbDevice1, hasPermission) -> {
-                    synchronized (UsbYubiKeyManager.this) {
-                        if (internalListener == this) {
-                            listener.onRequestPermissionsResult(yubikey, hasPermission);
+                    Logger.d("permission result " + hasPermission);
+                    if(hasPermission) {
+                        synchronized (UsbYubiKeyManager.this) {
+                            if (internalListener == this) {
+                                listener.invoke(yubikey);
+                            }
                         }
                     }
                 });
+            } else {
+                listener.invoke(yubikey);
             }
         }
 
@@ -82,7 +89,6 @@ public class UsbYubiKeyManager {
             UsbYubiKeyDevice yubikey = devices.remove(usbDevice);
             if (yubikey != null) {
                 yubikey.close();
-                listener.onDeviceRemoved(yubikey);
             }
         }
     }

@@ -21,11 +21,12 @@ import android.content.Context;
 
 import com.yubico.yubikit.android.transport.nfc.NfcConfiguration;
 import com.yubico.yubikit.android.transport.nfc.NfcNotAvailable;
-import com.yubico.yubikit.android.transport.nfc.NfcYubiKeyListener;
+import com.yubico.yubikit.android.transport.nfc.NfcYubiKeyDevice;
 import com.yubico.yubikit.android.transport.nfc.NfcYubiKeyManager;
 import com.yubico.yubikit.android.transport.usb.UsbConfiguration;
-import com.yubico.yubikit.android.transport.usb.UsbYubiKeyListener;
+import com.yubico.yubikit.android.transport.usb.UsbYubiKeyDevice;
 import com.yubico.yubikit.android.transport.usb.UsbYubiKeyManager;
+import com.yubico.yubikit.core.util.Callback;
 
 import javax.annotation.Nullable;
 
@@ -77,7 +78,7 @@ public final class YubiKitManager {
      * @param listener         listener that is going to be invoked upon successful discovery of key session
      *                         or failure to detect any session (lack of permissions)
      */
-    public void startUsbDiscovery(final UsbConfiguration usbConfiguration, UsbYubiKeyListener listener) {
+    public void startUsbDiscovery(final UsbConfiguration usbConfiguration, Callback<? super UsbYubiKeyDevice> listener) {
         usbYubiKeyManager.enable(usbConfiguration, listener);
     }
 
@@ -93,7 +94,7 @@ public final class YubiKitManager {
      * @param activity         active (not finished) activity required for nfc foreground dispatch
      * @throws NfcNotAvailable in case if NFC not available on android device
      */
-    public void startNfcDiscovery(final NfcConfiguration nfcConfiguration, Activity activity, NfcYubiKeyListener listener)
+    public void startNfcDiscovery(final NfcConfiguration nfcConfiguration, Activity activity, Callback<? super NfcYubiKeyDevice> listener)
             throws NfcNotAvailable {
         if (nfcYubiKeyManager == null) {
             throw new NfcNotAvailable("NFC is not available on this device", false);

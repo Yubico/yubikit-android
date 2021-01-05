@@ -39,19 +39,29 @@ import javax.annotation.Nullable;
 public class UsbYubiKeyDevice implements YubiKeyDevice, Closeable {
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
     private final ConnectionManager connectionManager;
+    private final UsbManager usbManager;
     private final UsbDevice usbDevice;
+
     @Nullable
     private CachedOtpConnection otpConnection = null;
+
+    @Nullable
+    private Runnable onClosed = null;
 
     /**
      * Creates the instance of usb session to interact with the yubikey device.
      *
-     * @param usbManager manager of usb connection
+     * @param usbManager UsbManager for accessing USB devices
      * @param usbDevice  device connected over usb that has permissions to interact with
      */
     public UsbYubiKeyDevice(UsbManager usbManager, UsbDevice usbDevice) {
         this.connectionManager = new ConnectionManager(usbManager, usbDevice);
         this.usbDevice = usbDevice;
+        this.usbManager = usbManager;
+    }
+
+    public boolean hasPermission() {
+        return usbManager.hasPermission(usbDevice);
     }
 
     /**
@@ -76,6 +86,12 @@ public class UsbYubiKeyDevice implements YubiKeyDevice, Closeable {
 
     @Override
     public <T extends YubiKeyConnection> void requestConnection(Class<T> connectionType, Callback<Result<T, IOException>> callback) {
+        if (!hasPermission()) {
+            throw new IllegalStateException("Device access not permitted");
+        } else if (!supportsConnection(connectionType)) {
+            throw new IllegalStateException("Unsupported connection type");
+        }
+
         // Keep UsbOtpConnection open until another connection is needed, to prevent re-enumeration of the USB device.
         if (OtpConnection.class.isAssignableFrom(connectionType)) {
             Callback<Result<OtpConnection, IOException>> otpCallback = value -> callback.invoke((Result<T, IOException>) value);
@@ -99,16 +115,29 @@ public class UsbYubiKeyDevice implements YubiKeyDevice, Closeable {
         }
     }
 
+    public void setOnClosed(Runnable onClosed) {
+        if (executorService.isTerminated()) {
+            onClosed.run();
+        } else {
+            this.onClosed = onClosed;
+        }
+    }
+
     @Override
     public void close() {
+        Logger.d("Closing YubiKey device");
         if (otpConnection != null) {
             otpConnection.close();
             otpConnection = null;
         }
+        if (onClosed != null) {
+            executorService.submit(onClosed);
+        }
         executorService.shutdown();
     }
 
-    private static final Callback<Result<OtpConnection, IOException>> CLOSE_OTP = value -> {};
+    private static final Callback<Result<OtpConnection, IOException>> CLOSE_OTP = value -> {
+    };
 
     private class CachedOtpConnection implements Closeable {
         private final LinkedBlockingQueue<Callback<Result<OtpConnection, IOException>>> queue = new LinkedBlockingQueue<>();

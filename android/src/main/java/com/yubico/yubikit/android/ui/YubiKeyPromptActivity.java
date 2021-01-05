@@ -32,13 +32,10 @@ import com.yubico.yubikit.android.transport.nfc.NfcConfiguration;
 import com.yubico.yubikit.android.transport.nfc.NfcNotAvailable;
 import com.yubico.yubikit.android.transport.nfc.NfcYubiKeyManager;
 import com.yubico.yubikit.android.transport.usb.UsbConfiguration;
-import com.yubico.yubikit.android.transport.usb.UsbYubiKeyDevice;
-import com.yubico.yubikit.android.transport.usb.UsbYubiKeyListener;
 import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.application.CommandState;
 
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 /**
@@ -244,32 +241,16 @@ public class YubiKeyPromptActivity extends Activity {
 
         yubiKit = new YubiKitManager(this);
         if (allowUsb) {
-            yubiKit.startUsbDiscovery(new UsbConfiguration(), new UsbYubiKeyListener() {
-                @Override
-                public void onDeviceAttached(@Nonnull UsbYubiKeyDevice device, boolean hasPermission) {
-                    usbSessionCounter++;
-                    runOnUiThread(() -> helpTextView.setText(R.string.yubikit_prompt_wait));
-                    if (hasPermission) {
-                        onYubiKeyDevice(device, YubiKeyPromptActivity.this::finishIfDone);
-                    }
-                }
-
-                @Override
-                public void onDeviceRemoved(@Nonnull UsbYubiKeyDevice device) {
+            yubiKit.startUsbDiscovery(new UsbConfiguration(), device -> {
+                usbSessionCounter++;
+                device.setOnClosed(() -> {
                     usbSessionCounter--;
                     if (usbSessionCounter == 0) {
                         runOnUiThread(() -> helpTextView.setText(hasNfc ? R.string.yubikit_prompt_plug_in_or_tap : R.string.yubikit_prompt_plug_in));
                     }
-                }
-
-                @Override
-                public void onRequestPermissionsResult(@Nonnull UsbYubiKeyDevice device, boolean isGranted) {
-                    if (isGranted) {
-                        onYubiKeyDevice(device, YubiKeyPromptActivity.this::finishIfDone);
-                    } else {
-                        Logger.d("Access to YubiKey denied");
-                    }
-                }
+                });
+                runOnUiThread(() -> helpTextView.setText(R.string.yubikit_prompt_wait));
+                onYubiKeyDevice(device, YubiKeyPromptActivity.this::finishIfDone);
             });
         }
 

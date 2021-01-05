@@ -22,8 +22,6 @@ import com.yubico.yubikit.android.app.databinding.DialogAboutBinding
 import com.yubico.yubikit.android.transport.nfc.NfcConfiguration
 import com.yubico.yubikit.android.transport.nfc.NfcNotAvailable
 import com.yubico.yubikit.android.transport.usb.UsbConfiguration
-import com.yubico.yubikit.android.transport.usb.UsbYubiKeyDevice
-import com.yubico.yubikit.android.transport.usb.UsbYubiKeyListener
 import com.yubico.yubikit.core.Logger
 import java.util.*
 import kotlin.properties.Delegates
@@ -71,28 +69,14 @@ class MainActivity : AppCompatActivity() {
         viewModel.handleYubiKey.observe(this, {
             if (it) {
                 Logger.d("Enable listening")
-                yubikit.startUsbDiscovery(UsbConfiguration(), object : UsbYubiKeyListener {
-                    override fun onDeviceAttached(device: UsbYubiKeyDevice, hasPermission: Boolean) {
-                        Logger.d("USB device attached $device, $hasPermission, current: ${viewModel.yubiKey.value}")
-                        if (hasPermission) {
-                            viewModel.yubiKey.postValue(device)
-                        }
-                    }
-
-                    override fun onRequestPermissionsResult(device: UsbYubiKeyDevice, isGranted: Boolean) {
-                        Logger.d("Permission result $device, $isGranted, current: ${viewModel.yubiKey.value}")
-                        if (isGranted) {
-                            viewModel.yubiKey.postValue(device)
-                        }
-                    }
-
-                    override fun onDeviceRemoved(device: UsbYubiKeyDevice) {
+                yubikit.startUsbDiscovery(UsbConfiguration()) { device ->
+                    Logger.d("USB device attached $device, current: ${viewModel.yubiKey.value}")
+                    viewModel.yubiKey.postValue(device)
+                    device.setOnClosed {
                         Logger.d("Device removed $device")
-                        if (viewModel.yubiKey.value == device) {
-                            viewModel.yubiKey.postValue(null)
-                        }
+                        viewModel.yubiKey.postValue(null)
                     }
-                })
+                }
                 try {
                     yubikit.startNfcDiscovery(nfcConfiguration, this) { device ->
                         Logger.d("NFC Session started $device")

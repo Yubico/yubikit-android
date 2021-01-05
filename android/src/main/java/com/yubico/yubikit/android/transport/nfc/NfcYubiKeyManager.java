@@ -21,6 +21,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.nfc.NfcAdapter;
 
+import com.yubico.yubikit.core.util.Callback;
+
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -70,10 +72,10 @@ public class NfcYubiKeyManager {
      * @param listener         the listener to invoke on NFC sessions
      * @throws NfcNotAvailable in case NFC is turned off (but available)
      */
-    public void enable(Activity activity, NfcConfiguration nfcConfiguration, NfcYubiKeyListener listener) throws NfcNotAvailable {
+    public void enable(Activity activity, NfcConfiguration nfcConfiguration, Callback<? super NfcYubiKeyDevice> listener) throws NfcNotAvailable {
         if (checkAvailability(nfcConfiguration.isHandleUnavailableNfc())) {
             ExecutorService executor = Executors.newSingleThreadExecutor();
-            dispatcher.enable(activity, nfcConfiguration, tag -> listener.onDeviceAttached(new NfcYubiKeyDevice(tag, nfcConfiguration.getTimeout(), executorService)));
+            dispatcher.enable(activity, nfcConfiguration, tag -> listener.invoke(new NfcYubiKeyDevice(tag, nfcConfiguration.getTimeout(), executor)));
             executorService = executor;
         }
     }

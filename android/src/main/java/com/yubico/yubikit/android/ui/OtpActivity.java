@@ -23,8 +23,6 @@ import android.view.KeyEvent;
 import com.yubico.yubikit.android.R;
 import com.yubico.yubikit.android.transport.nfc.NfcYubiKeyDevice;
 import com.yubico.yubikit.android.transport.usb.UsbConfiguration;
-import com.yubico.yubikit.android.transport.usb.UsbYubiKeyDevice;
-import com.yubico.yubikit.android.transport.usb.UsbYubiKeyListener;
 import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.application.CommandState;
 import com.yubico.yubikit.core.util.Callback;
@@ -33,7 +31,6 @@ import com.yubico.yubikit.core.util.Pair;
 
 import java.io.IOException;
 
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 /**
@@ -56,25 +53,15 @@ public class OtpActivity extends YubiKeyPromptActivity {
 
         super.onCreate(savedInstanceState);
 
-        getYubiKitManager().startUsbDiscovery(new UsbConfiguration().handlePermissions(false), new UsbYubiKeyListener() {
-            @Override
-            public void onDeviceAttached(@Nonnull UsbYubiKeyDevice device, boolean hasPermission) {
-                usbSessionCounter++;
-                runOnUiThread(() -> helpTextView.setText(R.string.yubikit_otp_touch));
-            }
-
-            @Override
-            public void onDeviceRemoved(@Nonnull UsbYubiKeyDevice device) {
+        getYubiKitManager().startUsbDiscovery(new UsbConfiguration().handlePermissions(false), device -> {
+            usbSessionCounter++;
+            device.setOnClosed(() -> {
                 usbSessionCounter--;
                 if (usbSessionCounter == 0) {
                     runOnUiThread(() -> helpTextView.setText(isNfcEnabled() ? R.string.yubikit_prompt_plug_in_or_tap : R.string.yubikit_prompt_plug_in));
                 }
-            }
-
-            @Override
-            public void onRequestPermissionsResult(@Nonnull UsbYubiKeyDevice device, boolean isGranted) {
-                // We don't need permissions to handle YubiOTP
-            }
+            });
+            runOnUiThread(() -> helpTextView.setText(R.string.yubikit_otp_touch));
         });
 
         keyListener = new OtpKeyListener(new OtpKeyListener.OtpListener() {
