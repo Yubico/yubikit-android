@@ -131,9 +131,6 @@ public class YubikitManagerTest {
     private class UsbListener implements Callback<UsbYubiKeyDevice> {
         @Override
         public void invoke(UsbYubiKeyDevice value) {
-            if (!value.hasPermission()) {
-                Assert.fail();
-            }
             signal.countDown();
         }
     }
