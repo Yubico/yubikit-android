@@ -27,6 +27,7 @@ import com.yubico.yubikit.android.transport.usb.UsbYubiKeyDevice;
 import com.yubico.yubikit.android.transport.usb.UsbYubiKeyListener;
 import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.application.CommandState;
+import com.yubico.yubikit.core.util.Callback;
 import com.yubico.yubikit.core.util.NdefUtils;
 import com.yubico.yubikit.core.util.Pair;
 
@@ -39,6 +40,8 @@ import javax.annotation.Nullable;
  * An Activity to prompt the user for a YubiKey to retrieve an OTP from a YubiOTP slot.
  */
 public class OtpActivity extends YubiKeyPromptActivity {
+    public static final int RESULT_ERROR = RESULT_FIRST_USER;
+
     public static final String EXTRA_OTP = "otp";
     public static final String EXTRA_ERROR = "error";
 
@@ -102,21 +105,19 @@ public class OtpActivity extends YubiKeyPromptActivity {
     }
 
     static class YubiKeyNdefAction extends YubiKeyPromptAction {
-        @Nullable
         @Override
-        Pair<Integer, Intent> onYubiKey(YubiKeyDevice device, Bundle extras, CommandState commandState) {
+        void onYubiKey(YubiKeyDevice device, Bundle extras, CommandState commandState, Callback<Pair<Integer, Intent>> callback) {
             if (device instanceof NfcYubiKeyDevice) {
                 Intent intent = new Intent();
                 try {
                     String credential = NdefUtils.getNdefPayload(((NfcYubiKeyDevice) device).readNdef());
                     intent.putExtra(EXTRA_OTP, credential);
-                    return new Pair<>(Activity.RESULT_OK, intent);
+                    callback.invoke(new Pair<>(RESULT_OK, intent));
                 } catch (IOException e) {
                     intent.putExtra(EXTRA_ERROR, e);
-                    return new Pair<>(Activity.RESULT_FIRST_USER, intent);
+                    callback.invoke(new Pair<>(RESULT_ERROR, intent));
                 }
             }
-            return null;
         }
     }
 }

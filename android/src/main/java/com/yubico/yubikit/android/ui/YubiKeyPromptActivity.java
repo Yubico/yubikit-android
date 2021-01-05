@@ -25,7 +25,6 @@ import android.widget.Button;
 import android.widget.TextView;
 
 import androidx.annotation.StringRes;
-import androidx.annotation.WorkerThread;
 
 import com.yubico.yubikit.android.R;
 import com.yubico.yubikit.android.YubiKitManager;
@@ -38,7 +37,6 @@ import com.yubico.yubikit.android.transport.usb.UsbYubiKeyListener;
 import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.application.CommandState;
-import com.yubico.yubikit.core.util.Pair;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -169,16 +167,20 @@ public class YubiKeyPromptActivity extends Activity {
      *
      * @param device a connected YubiKey
      */
-    @WorkerThread
-    protected void onYubiKeyDevice(YubiKeyDevice device) {
-        Pair<Integer, Intent> result = action.onYubiKey(device, getIntent().getExtras(), commandState);
-        if (commandState.awaitingTouch) {
-            runOnUiThread(() -> helpTextView.setText(hasNfc ? R.string.yubikit_prompt_plug_in_or_tap : R.string.yubikit_prompt_plug_in));
-            commandState.awaitingTouch = false;
-        }
-        if (result != null) {
-            provideResult(result.first, result.second);
-        }
+    protected void onYubiKeyDevice(YubiKeyDevice device, Runnable onDone) {
+        action.onYubiKey(device, getIntent().getExtras(), commandState, value -> {
+            if (value.first == YubiKeyPromptAction.RESULT_CONTINUE) {
+                // Keep processing additional YubiKeys
+                if (commandState.awaitingTouch) {
+                    // Reset the help text if touch was prompted for
+                    runOnUiThread(() -> helpTextView.setText(hasNfc ? R.string.yubikit_prompt_plug_in_or_tap : R.string.yubikit_prompt_plug_in));
+                    commandState.awaitingTouch = false;
+                }
+            } else {
+                provideResult(value.first, value.second);
+            }
+            onDone.run();
+        });
     }
 
     /**
@@ -248,8 +250,7 @@ public class YubiKeyPromptActivity extends Activity {
                     usbSessionCounter++;
                     runOnUiThread(() -> helpTextView.setText(R.string.yubikit_prompt_wait));
                     if (hasPermission) {
-                        onYubiKeyDevice(device);
-                        finishIfDone();
+                        onYubiKeyDevice(device, YubiKeyPromptActivity.this::finishIfDone);
                     }
                 }
 
@@ -264,8 +265,7 @@ public class YubiKeyPromptActivity extends Activity {
                 @Override
                 public void onRequestPermissionsResult(@Nonnull UsbYubiKeyDevice device, boolean isGranted) {
                     if (isGranted) {
-                        onYubiKeyDevice(device);
-                        finishIfDone();
+                        onYubiKeyDevice(device, YubiKeyPromptActivity.this::finishIfDone);
                     } else {
                         Logger.d("Access to YubiKey denied");
                     }
@@ -290,9 +290,10 @@ public class YubiKeyPromptActivity extends Activity {
             enableNfcButton.setVisibility(View.GONE);
             try {
                 yubiKit.startNfcDiscovery(new NfcConfiguration(), this, device -> {
-                    onYubiKeyDevice(device);
-                    runOnUiThread(() -> helpTextView.setText(R.string.yubikit_prompt_remove));
-                    device.remove(this::finishIfDone);
+                    onYubiKeyDevice(device, () -> {
+                        runOnUiThread(() -> helpTextView.setText(R.string.yubikit_prompt_remove));
+                        device.remove(this::finishIfDone);
+                    });
                 });
             } catch (NfcNotAvailable e) {
                 hasNfc = false;

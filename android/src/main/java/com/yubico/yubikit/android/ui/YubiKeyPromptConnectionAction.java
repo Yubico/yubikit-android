@@ -9,11 +9,10 @@ import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.application.CommandState;
+import com.yubico.yubikit.core.util.Callback;
 import com.yubico.yubikit.core.util.Pair;
 
 import java.io.IOException;
-
-import javax.annotation.Nullable;
 
 /**
  * Action to be performed by a {@link YubiKeyPromptActivity} when a YubiKey is attached.
@@ -33,21 +32,20 @@ public abstract class YubiKeyPromptConnectionAction<T extends YubiKeyConnection>
         this.connectionType = connectionType;
     }
 
-    @Nullable
     @Override
-    final Pair<Integer, Intent> onYubiKey(YubiKeyDevice device, Bundle extras, CommandState commandState) {
+    final void onYubiKey(YubiKeyDevice device, Bundle extras, CommandState commandState, Callback<Pair<Integer, Intent>> callback) {
         if (device.supportsConnection(connectionType)) {
             device.requestConnection(connectionType, value -> {
                 try {
-                    onYubiKeyConnection(value.getValue(), extras, commandState);
+                    callback.invoke(onYubiKeyConnection(value.getValue(), extras, commandState));
                 } catch (IOException exception) {
-                    YubiKeyPromptConnectionAction.this.onError(exception);
+                    onError(exception);
                 }
             });
         } else {
             Logger.d("Connected YubiKey does not support desired connection type");
+            callback.invoke(CONTINUE);
         }
-        return null;
     }
 
     /**
@@ -55,7 +53,7 @@ public abstract class YubiKeyPromptConnectionAction<T extends YubiKeyConnection>
      * <p>
      * Subclasses should override this method to react to a connected YubiKey.
      * Return a value to cause the dialog to finish, returning the Intent to the caller, using
-     * the given result code. Return null to keep the dialog open to process additional YubiKey
+     * the given result code. Return {@link #CONTINUE} to keep the dialog open to process additional
      * connections. The CommandState can be used to update the dialog UI based on status of the
      * operation, and is cancelled if the user presses the cancel button.
      * NOTE: Subclasses should not close the connection, as it will be closed automatically.
@@ -65,7 +63,6 @@ public abstract class YubiKeyPromptConnectionAction<T extends YubiKeyConnection>
      * @param commandState a CommandState that is hooked up to the activity.
      * @return the result of the operation, as a Pair of result code and Intent with extras, or null
      */
-    @Nullable
     @WorkerThread
     protected abstract Pair<Integer, Intent> onYubiKeyConnection(T connection, Bundle extras, CommandState commandState);
 
