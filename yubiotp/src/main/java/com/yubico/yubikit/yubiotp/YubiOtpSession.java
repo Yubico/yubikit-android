@@ -122,10 +122,10 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
      * @param device A YubiKey device to use
      */
     public static void create(YubiKeyDevice device, Callback<Result<YubiOtpSession, Exception>> callback) {
-        if (device.supportsConnection(SmartCardConnection.class)) {
-            device.requestConnection(SmartCardConnection.class, value -> callback.invoke(Result.of(() -> new YubiOtpSession(value.getValue()))));
-        } else if (device.supportsConnection(OtpConnection.class)) {
+        if (device.supportsConnection(OtpConnection.class)) {
             device.requestConnection(OtpConnection.class, value -> callback.invoke(Result.of(() -> new YubiOtpSession(value.getValue()))));
+        } else if (device.supportsConnection(SmartCardConnection.class)) {
+            device.requestConnection(SmartCardConnection.class, value -> callback.invoke(Result.of(() -> new YubiOtpSession(value.getValue()))));
         } else {
             callback.invoke(Result.failure(new ApplicationNotAvailableException("Session does not support any compatible connection type")));
         }
