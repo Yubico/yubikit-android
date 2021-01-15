@@ -23,7 +23,7 @@ public class ManagementKeyMetadata {
     private final boolean defaultValue;
     private final TouchPolicy touchPolicy;
 
-    ManagementKeyMetadata(ManagementKeyType keyType, boolean defaultValue, TouchPolicy touchPolicy) {
+    public ManagementKeyMetadata(ManagementKeyType keyType, boolean defaultValue, TouchPolicy touchPolicy) {
         this.keyType = keyType;
         this.defaultValue = defaultValue;
         this.touchPolicy = touchPolicy;

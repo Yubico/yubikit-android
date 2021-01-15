@@ -16,6 +16,7 @@
 package com.yubico.yubikit.piv;
 
 import java.security.PublicKey;
+import java.util.Arrays;
 
 /**
  * Metadata about a key in a slot.
@@ -27,12 +28,12 @@ public class SlotMetadata {
     private final boolean generated;
     private final byte[] publicKeyEncoded;
 
-    SlotMetadata(KeyType keyType, PinPolicy pinPolicy, TouchPolicy touchPolicy, boolean generated, byte[] publicKeyEncoded) {
+    public SlotMetadata(KeyType keyType, PinPolicy pinPolicy, TouchPolicy touchPolicy, boolean generated, byte[] publicKeyEncoded) {
         this.keyType = keyType;
         this.pinPolicy = pinPolicy;
         this.touchPolicy = touchPolicy;
         this.generated = generated;
-        this.publicKeyEncoded = publicKeyEncoded;
+        this.publicKeyEncoded = Arrays.copyOf(publicKeyEncoded, publicKeyEncoded.length);
     }
 
     /**

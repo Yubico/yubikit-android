@@ -25,7 +25,7 @@ public class Code {
     private final long validFrom;
     private final long validUntil;
 
-    Code(String value, long validFrom, long validUntil) {
+    public Code(String value, long validFrom, long validUntil) {
         this.value = value;
         this.validFrom = validFrom;
         this.validUntil = validUntil;

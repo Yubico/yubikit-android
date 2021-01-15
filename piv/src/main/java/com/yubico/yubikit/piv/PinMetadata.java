@@ -23,7 +23,7 @@ public class PinMetadata {
     private final int totalAttempts;
     private final int attemptsRemaining;
 
-    PinMetadata(boolean defaultValue, int totalAttempts, int attemptsRemaining) {
+    public PinMetadata(boolean defaultValue, int totalAttempts, int attemptsRemaining) {
         this.defaultValue = defaultValue;
         this.totalAttempts = totalAttempts;
         this.attemptsRemaining = attemptsRemaining;

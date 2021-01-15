@@ -50,7 +50,7 @@ public class DeviceInfo {
     private final Map<Transport, Integer> supportedCapabilities;
     private final boolean isLocked;
 
-    private DeviceInfo(DeviceConfig config, @Nullable Integer serialNumber, Version version, FormFactor formFactor, Map<Transport, Integer> supportedCapabilities, boolean isLocked) {
+    public DeviceInfo(DeviceConfig config, @Nullable Integer serialNumber, Version version, FormFactor formFactor, Map<Transport, Integer> supportedCapabilities, boolean isLocked) {
         this.config = config;
         this.serialNumber = serialNumber;
         this.version = version;
