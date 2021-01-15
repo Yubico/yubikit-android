@@ -190,7 +190,7 @@ public class OtpProtocol implements Closeable {
                 int prgSeq = report[SEQUENCE_OFFSET];
                 if (stream.size() > 0) {
                     throw new IOException("Incomplete transfer");
-                } else if ((prgSeq == programmingSequence + 1) || (prgSeq == 0 && report[SEQUENCE_OFFSET + 1] == 0)) {
+                } else if ((prgSeq == programmingSequence + 1) || (programmingSequence > 0 && prgSeq == 0 && report[SEQUENCE_OFFSET + 1] == 0)) {
                     // Sequence updated, return status.
                     // Note that when deleting the "last" slot so no slots are valid, the programming sequence is set to 0.
                     byte[] status = Arrays.copyOfRange(report, 1, 7); // Skip first and last bytes

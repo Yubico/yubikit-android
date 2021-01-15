@@ -269,6 +269,10 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
     /**
      * Delete the contents of a slot.
      *
+     * NOTE: Attempting to delete an empty slot will under certain circumstances fail, resulting in
+     * a {@link com.yubico.yubikit.core.otp.CommandRejectedException} being thrown. Prefer to check
+     * if a slot is configured before calling delete.
+     *
      * @param slot       the slot to delete
      * @param curAccCode the currently set access code, if needed
      * @throws IOException      in case of communication error
