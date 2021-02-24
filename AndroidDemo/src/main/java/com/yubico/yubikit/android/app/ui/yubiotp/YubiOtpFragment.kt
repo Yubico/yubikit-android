@@ -1,11 +1,12 @@
 package com.yubico.yubikit.android.app.ui.yubiotp
 
-import android.app.Activity
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.activity.result.contract.ActivityResultContract
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import com.yubico.yubikit.android.app.MainViewModel
@@ -18,9 +19,23 @@ import com.yubico.yubikit.yubiotp.Slot
 import com.yubico.yubikit.yubiotp.YubiOtpSlotConfiguration
 import org.bouncycastle.util.encoders.Hex
 
-private const val REQUEST_OTP_CODE = 1
-
 class YubiOtpFragment : Fragment() {
+    class OtpContract : ActivityResultContract<Unit, String?>() {
+        override fun createIntent(context: Context, input: Unit?): Intent = Intent(context, OtpActivity::class.java)
+
+        override fun parseResult(resultCode: Int, intent: Intent?): String? {
+            return intent?.getStringExtra(OtpActivity.EXTRA_OTP)
+        }
+    }
+
+    private val requestOtp = registerForActivityResult(OtpContract()) {
+        activityViewModel.setYubiKeyListenerEnabled(true)
+        viewModel.postResult(Result.success(when (it) {
+            null -> "Cancelled by user"
+            else -> "Read OTP: $it"
+        }))
+    }
+
     private val activityViewModel: MainViewModel by activityViewModels()
     private val viewModel: OtpViewModel by activityViewModels()
     private lateinit var binding: FragmentYubiotpOtpBinding
@@ -71,20 +86,7 @@ class YubiOtpFragment : Fragment() {
 
         binding.btnRequestOtp.setOnClickListener {
             activityViewModel.setYubiKeyListenerEnabled(false)
-            startActivityForResult(Intent(context, OtpActivity::class.java), REQUEST_OTP_CODE)
-        }
-    }
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        if (requestCode == REQUEST_OTP_CODE) {
-            activityViewModel.setYubiKeyListenerEnabled(true)
-            if (resultCode == Activity.RESULT_OK) {
-                data?.getStringExtra(OtpActivity.EXTRA_OTP)?.let {
-                    viewModel.postResult(Result.success("Read OTP: $it"))
-                }
-            } else if (resultCode == Activity.RESULT_CANCELED) {
-                viewModel.postResult(Result.success("Cancelled by user"))
-            }
+            requestOtp.launch(null)
         }
     }
 }
