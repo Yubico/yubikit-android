@@ -227,7 +227,7 @@ public class OathSession extends ApplicationSession<OathSession> {
             byte[] data = protocol.sendAndReceive(new Apdu(0, INS_VALIDATE, 0, 0, Tlvs.encodeMap(request)));
             Map<Integer, byte[]> map = Tlvs.decodeMap(data);
             // return false if response from validation does not match verification
-            return (Arrays.equals(validator.calculateResponse(clientChallenge), map.get(TAG_RESPONSE)));
+            return (MessageDigest.isEqual(validator.calculateResponse(clientChallenge), map.get(TAG_RESPONSE)));
         } catch (ApduException e) {
             if (e.getSw() == SW.INCORRECT_PARAMETERS) {
                 // key didn't recognize secret

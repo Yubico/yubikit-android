@@ -43,7 +43,7 @@ class OtpFragment : YubiKeyFragment<YubiOtpSession, OtpViewModel>() {
         viewModel.slotConfigurationState.observe(viewLifecycleOwner, {
             if (it != null) {
                 binding.emptyView.visibility = View.INVISIBLE
-                binding.otpStatusText.text = "Slot 1: ${if (it.slotIsConfigured(Slot.ONE)) "programmed" else "empty"}\nSlot 2: ${if (it.slotIsConfigured(Slot.TWO)) "programmed" else "empty"}"
+                binding.otpStatusText.text = "Slot 1: ${if (it.isConfigured(Slot.ONE)) "programmed" else "empty"}\nSlot 2: ${if (it.isConfigured(Slot.TWO)) "programmed" else "empty"}"
                 binding.otpStatusText.visibility = View.VISIBLE
             } else {
                 binding.emptyView.visibility = View.VISIBLE

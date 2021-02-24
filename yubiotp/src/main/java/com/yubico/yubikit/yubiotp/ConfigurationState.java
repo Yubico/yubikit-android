@@ -45,7 +45,7 @@ public class ConfigurationState {
      * @param slot the slot to check
      * @return true if the slot holds configuration, false if empty
      */
-    public boolean slotIsConfigured(Slot slot) {
+    public boolean isConfigured(Slot slot) {
         if (YubiOtpSession.FEATURE_CHECK_CONFIGURED.isSupportedBy(version)) {
             return (flags & slot.map(CONFIG1_VALID, CONFIG2_VALID)) != 0;
         }
@@ -53,18 +53,20 @@ public class ConfigurationState {
     }
 
     /**
-     * Checks if a configured slot requires touch or not.
+     * Checks if a configured slot is triggered by touch or not.
      * <p>
-     * This functionality requires support for {@link YubiOtpSession#FEATURE_CHECK_TOUCH}, available on YubiKey 3.0 or later.
+     * This functionality requires support for {@link YubiOtpSession#FEATURE_CHECK_TOUCH_TRIGGERED}, available on YubiKey 3.0 or later.
+     * A slot is triggered by touch if a user-initiated touch of the sensor causes it to output a payload over the keyboard interface.
+     * Only HMAC-SHA1 challenge-response credentials are not triggered by touch.
      *
      * @param slot the slot to check
-     * @return true of the slot requires touch, false if not (or if checking isn't supported)
+     * @return true of the slot is triggered by touch, false if not (or if checking isn't supported)
      */
-    public boolean slotRequiresTouch(Slot slot) {
-        if (YubiOtpSession.FEATURE_CHECK_TOUCH.isSupportedBy(version)) {
+    public boolean isTouchTriggered(Slot slot) {
+        if (YubiOtpSession.FEATURE_CHECK_TOUCH_TRIGGERED.isSupportedBy(version)) {
             return (flags & slot.map(CONFIG1_TOUCH, CONFIG2_TOUCH)) != 0;
         }
-        throw new UnsupportedOperationException("Checking if a slot requires touch is not supported on this YubiKey.");
+        throw new UnsupportedOperationException("Checking if a slot is triggered by touch is not supported on this YubiKey.");
     }
 
     /**

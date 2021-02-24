@@ -67,7 +67,7 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
     /**
      * Support for checking if a configured slot requires touch via the ConfigState.
      */
-    public static final Feature<YubiOtpSession> FEATURE_CHECK_TOUCH = new Feature.Versioned<>("Check if a slot requires touch", 3, 0, 0);
+    public static final Feature<YubiOtpSession> FEATURE_CHECK_TOUCH_TRIGGERED = new Feature.Versioned<>("Check if a slot is triggered by touch", 3, 0, 0);
     /**
      * Support for HMAC-SHA1 challenge response functionality.
      */
@@ -201,7 +201,7 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
     public YubiOtpSession(OtpConnection connection) throws IOException {
         OtpProtocol protocol = new OtpProtocol(connection);
         byte[] statusBytes = protocol.readStatus();
-        Version version = Version.fromBytes(statusBytes);
+        Version version = protocol.getVersion();
         backend = new Backend<OtpProtocol>(protocol, version, parseConfigState(version, statusBytes)) {
             @Override
             void writeToSlot(byte slot, byte[] data) throws IOException, CommandException {
@@ -268,7 +268,7 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
 
     /**
      * Delete the contents of a slot.
-     *
+     * <p>
      * NOTE: Attempting to delete an empty slot will under certain circumstances fail, resulting in
      * a {@link com.yubico.yubikit.core.otp.CommandRejectedException} being thrown. Prefer to check
      * if a slot is configured before calling delete.

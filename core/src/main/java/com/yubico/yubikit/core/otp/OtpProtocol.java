@@ -16,6 +16,7 @@
 package com.yubico.yubikit.core.otp;
 
 import com.yubico.yubikit.core.Logger;
+import com.yubico.yubikit.core.Version;
 import com.yubico.yubikit.core.application.CommandException;
 import com.yubico.yubikit.core.application.CommandState;
 import com.yubico.yubikit.core.application.TimeoutException;
@@ -48,9 +49,29 @@ public class OtpProtocol implements Closeable {
     private final CommandState defaultState = new CommandState();
 
     private final OtpConnection connection;
+    private final Version version;
 
-    public OtpProtocol(OtpConnection connection) {
+    public OtpProtocol(OtpConnection connection) throws IOException {
         this.connection = connection;
+
+        byte[] featureReport = readFeatureReport();
+        if (featureReport[4] == 3) {
+            /* NEO, may have cached pgmSeq in arbitrator.
+               Force communication with applet to refresh pgmSeq by
+               writing an invalid scan map (which should fail). */
+            byte[] scanMap = new byte[51];
+            Arrays.fill(scanMap, (byte) 'c');
+            try {
+                sendAndReceive((byte) 0x12, scanMap, null);
+            } catch (CommandException e) {
+                // We expect this to fail
+            }
+        }
+        version = Version.fromBytes(Arrays.copyOfRange(featureReport, 1, 4));
+    }
+
+    public Version getVersion() {
+        return version;
     }
 
     @Override

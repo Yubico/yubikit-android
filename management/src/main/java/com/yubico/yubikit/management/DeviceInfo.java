@@ -145,7 +145,8 @@ public class DeviceInfo {
         } else {
             supportedCapabilities.put(Transport.USB, readInt(data.get(TAG_USB_SUPPORTED)));
         }
-        if (data.containsKey(TAG_USB_ENABLED)) {
+        if (data.containsKey(TAG_USB_ENABLED) && version.major != 4) {
+            // YK4 reports this incorrectly, instead use supportedCapabilities and USB mode.
             enabledCapabilities.put(Transport.USB, readInt(data.get(TAG_USB_ENABLED)));
         }
 

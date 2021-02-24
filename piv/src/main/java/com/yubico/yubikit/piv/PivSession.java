@@ -44,6 +44,7 @@ import java.nio.CharBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.KeyFactory;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
@@ -287,7 +288,7 @@ public class PivSession extends ApplicationSession<PivSession> {
             byte[] encryptedData = Tlvs.unpackValue(TAG_AUTH_RESPONSE, Tlvs.unpackValue(TAG_DYN_AUTH, response));
             cipher.init(Cipher.ENCRYPT_MODE, key);
             byte[] expectedData = cipher.doFinal(challenge);
-            if (!Arrays.equals(encryptedData, expectedData)) {
+            if (!MessageDigest.isEqual(encryptedData, expectedData)) {
                 Logger.d(String.format(Locale.ROOT, "Expected response: %s and Actual response %s",
                         StringUtils.bytesToHex(expectedData),
                         StringUtils.bytesToHex(encryptedData)));
