@@ -12,6 +12,9 @@ dependencies {
 
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
+compileJava {
+    options.compilerArgs.addAll(['--release', '8'])
+}
 
 ext.pomName = "Yubico YubiKit ${project.name.capitalize()}"
 description = "This library provides OATH functionality of YubiKey which allows to have an authenticator application and store secrets on YubiKey. Provides TOTP or HOTP."
