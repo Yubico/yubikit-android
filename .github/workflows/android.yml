@@ -14,4 +14,17 @@ jobs:
         with:
           java-version: 11
       - name: Build with Gradle
-        run: ./gradlew --stacktrace check test build javadocJar
+        run: ./gradlew --stacktrace check test build javadocJar publishToMavenLocal
+
+      - name: Upload jars
+        uses: actions/upload-artifact@v2
+        with:
+          name: maven-repo
+          path: ~/.m2/repository/com/yubico/yubikit/
+
+      - name: Upload build reports
+        uses: actions/upload-artifact@v2
+        if: always()
+        with:
+          name: build-reports
+          path: ./*/build/reports/*
