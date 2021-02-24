@@ -1,10 +1,11 @@
 * Version 2.0.0-beta02 (released 2021-02-24)
- * Connection handling is now asynchronous.
- * YubiKitManager listeners have been replaced with more generic Callbacks.
- * Release artifacts are compiled to run on Java 8.
+ ** Connection handling is now asynchronous.
+ ** YubiKitManager listeners have been replaced with more generic Callbacks.
+ ** Release artifacts are compiled to run on Java 8.
+
 
 * Version 2.0.0-beta01 (released 2020-12-07)
- * Public preview of 2.0.0, a major restructuring of modules.
+ ** Public preview of 2.0.0, a major restructuring of modules.
 
 
 * Version 1.0.0 (released 2020-06-10)
