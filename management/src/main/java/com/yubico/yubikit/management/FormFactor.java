@@ -43,7 +43,15 @@ public enum FormFactor {
     /**
      * A keychain-sized YubiKey with both USB-C and Lightning connectors.
      */
-    USB_C_LIGHTNING(0x05);
+    USB_C_LIGHTNING(0x05),
+    /**
+     * A keychain-sized YubiKey with fingerprint sensor and USB-A connector.
+     */
+    USB_A_BIO(0x06),
+    /**
+     * A keychain-sized YubiKey with fingerprint sensor and USB-C connector.
+     */
+    USB_C_BIO(0x07);
 
     public final int value;
 
@@ -55,7 +63,8 @@ public enum FormFactor {
      * Returns the form factor corresponding to the given Management application form factor constant, or UNKNOWN if the value is unknown.
      */
     public static FormFactor valueOf(int value) {
-        if (value >= 0 && value < FormFactor.values().length) {
+        value &= 0xf;
+        if (value < FormFactor.values().length) {
             return FormFactor.values()[value];
         }
         return UNKNOWN;
