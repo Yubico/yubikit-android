@@ -66,7 +66,7 @@ data objects suchs as X.509 certificates, and managing access (PIN, etc).
 A good place to get started is to clone the repository and try out the included
 demo app. To integrate the SDK into your app, add the desired dependencies to
 your Gradle configuration, and proceed with the instructions provided with the
-modules you are using, starting with the link:.android/[Android] module.
+modules you are using, starting with the link:./android/[Android] module.
 
 
 ==== Support
