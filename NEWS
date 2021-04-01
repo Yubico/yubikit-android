@@ -1,3 +1,10 @@
+* Version 2.0.0 (released 2021-04-01)
+ ** BACKWARDS INCOMPATIBLE: Major structural overhaul from 1.0.
+ ** The yubikit module is replaced by the core and android modules.
+ ** Several classes have been renamed and/or moved.
+ ** Connection handling is now asynchronous.
+
+
 * Version 2.0.0-beta02 (released 2021-02-24)
  ** Connection handling is now asynchronous.
  ** YubiKitManager listeners have been replaced with more generic Callbacks.
