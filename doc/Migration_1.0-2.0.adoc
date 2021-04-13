@@ -86,10 +86,12 @@ methods. These methods used to take an instance of `UsbSessionListener` or
 `NfcSessionListener`, respectively. These classes have been replaced with the
 more generic `Callback<T>` interface.
 
+==== Connecting over USB
+
 YubiKit 1.0:
 [source,java]
 ----
-yubiKitManager.startUsbDiscovery(UsbConfiguration(), new UsbSessionListener() {
+yubiKitManager.startUsbDiscovery(new UsbConfiguration(), new UsbSessionListener() {
   @Override
   public void onSessionReceived(UsbSession session, boolean hasPermissions) {
     // A YubiKey was plugged in
@@ -130,6 +132,42 @@ permission for the device. If this handling is disabled then the
 `hasPermission` method can be used to check for this, and the standard Android
 USB Host API can be used to request permission for the device.
 
+==== Connecting over NFC
+For NFC the changes are more subtle. The NfcSessionListener is replaced with a
+Callback<NfcYubiKeyDevice>, and `NfcDisabledException` and
+`NfcNotFoundException` are replaced with a single `NfcNotAvailableException`.
+
+YubiKit 1.0:
+[source,java]
+----
+try {
+  yubiKitManager.startNfcDiscovery(new NfcConfiguration(), activity, new NfcSessionListener() {
+    void onSessionReceived(NfcSession session) {
+      // A YubiKey was brought within NFC range
+    }
+  });
+} catch (NfcDisabledException e) {
+  // NFC is available, but turned off
+} catch (NfcNotFoundException e) {
+  // NFC is not available so this feature does not work on this device
+}
+----
+
+YubiKit 2.0:
+[source,java]
+----
+try {
+  yubiKitManager.startNfcDiscovery(new NfcConfiguration(), activity, device -> {
+    // A YubiKey was brought within NFC range
+  });
+} catch (NfcNotAvailableException e) {
+  if (e.isDisabled()) {
+    // NFC is available, but turned off
+  } else {
+    // NFC is not available so this feature does not work on this device
+  }
+}
+----
 
 === Opening connections
 In YubiKit 1.0 opening a Connection to a YubiKey was a synchronous operation.
