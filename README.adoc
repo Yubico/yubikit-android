@@ -2,8 +2,9 @@
 *YubiKit* is an Android library provided by Yubico to enable YubiKey support in
 Android apps. Both USB and NFC-enabled YubiKeys are supported.
 
-NOTE: Version 2.0 breaks compatibility with 1.0. We will be announcing a webinar
-shortly, along with some guides to help with migration.
+NOTE: Version 2.0 breaks compatibility with 1.0. See
+link:./Migration_1.0-2.0.adoc[the migration guide] for some pointers on
+migrating.
 
 For more information on the various concepts and features used in this SDK,
 see our https://developers.yubico.com/Mobile/Concepts.html[YubiKey Concepts]
