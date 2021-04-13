@@ -3,7 +3,7 @@
 Android apps. Both USB and NFC-enabled YubiKeys are supported.
 
 NOTE: Version 2.0 breaks compatibility with 1.0. See
-link:./Migration_1.0-2.0.adoc[the migration guide] for some pointers on
+link:./doc/Migration_1.0-2.0.adoc[the migration guide] for some pointers on
 migrating.
 
 For more information on the various concepts and features used in this SDK,
