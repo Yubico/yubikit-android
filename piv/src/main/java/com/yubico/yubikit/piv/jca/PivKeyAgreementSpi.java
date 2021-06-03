@@ -1,0 +1,83 @@
+package com.yubico.yubikit.piv.jca;
+
+import com.yubico.yubikit.piv.KeyType;
+
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.Key;
+import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
+import java.security.SecureRandom;
+import java.security.interfaces.ECPublicKey;
+import java.security.spec.AlgorithmParameterSpec;
+
+import javax.annotation.Nullable;
+import javax.crypto.KeyAgreementSpi;
+import javax.crypto.SecretKey;
+import javax.crypto.ShortBufferException;
+
+public class PivKeyAgreementSpi extends KeyAgreementSpi {
+    @Nullable
+    private PivPrivateKey privateKey;
+    @Nullable
+    private ECPublicKey publicKey;
+
+    @Override
+    protected void engineInit(Key key, SecureRandom random) throws InvalidKeyException {
+        if (key instanceof PivPrivateKey) {
+            privateKey = (PivPrivateKey) key;
+        } else {
+            throw new InvalidKeyException("Key must be instance of PivPrivateKey");
+        }
+    }
+
+    @Override
+    protected void engineInit(Key key, AlgorithmParameterSpec params, SecureRandom random) throws InvalidKeyException, InvalidAlgorithmParameterException {
+        engineInit(key, random);
+    }
+
+    @Override
+    protected Key engineDoPhase(Key key, boolean lastPhase) throws InvalidKeyException, IllegalStateException {
+        if (privateKey == null) {
+            throw new IllegalStateException("KeyAgreement not initialized");
+        }
+        if (!lastPhase) {
+            throw new IllegalStateException("Multiple phases not supported");
+        }
+        if (key instanceof PublicKey && KeyType.fromKey(key) == privateKey.keyType) {
+            publicKey = (ECPublicKey) key;
+            return null;
+        }
+        throw new InvalidKeyException("Wrong key type");
+    }
+
+    @Override
+    protected byte[] engineGenerateSecret() throws IllegalStateException {
+        if (privateKey != null && publicKey != null) {
+            try {
+                return privateKey.keyAgreement(publicKey);
+            } catch (InvalidKeyException e) {
+                throw new IllegalStateException(e);
+            } finally {
+                publicKey = null;
+            }
+        }
+        throw new IllegalStateException("Not initialized with both private and public keys");
+    }
+
+    @Override
+    protected int engineGenerateSecret(byte[] sharedSecret, int offset) throws IllegalStateException, ShortBufferException {
+        byte[] result = engineGenerateSecret();
+        try {
+            System.arraycopy(result, 0, sharedSecret, offset, result.length);
+            return result.length;
+        } catch (IndexOutOfBoundsException e) {
+            throw new ShortBufferException();
+        }
+    }
+
+    @Override
+    protected SecretKey engineGenerateSecret(String algorithm) throws IllegalStateException, NoSuchAlgorithmException, InvalidKeyException {
+        throw new IllegalStateException("Not supported");
+    }
+}

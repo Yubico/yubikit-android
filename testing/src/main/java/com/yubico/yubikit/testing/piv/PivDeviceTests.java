@@ -27,6 +27,7 @@ import com.yubico.yubikit.piv.PinPolicy;
 import com.yubico.yubikit.piv.PivSession;
 import com.yubico.yubikit.piv.Slot;
 import com.yubico.yubikit.piv.TouchPolicy;
+import com.yubico.yubikit.piv.jca.PivPrivateKey;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.util.encoders.Hex;
@@ -40,6 +41,7 @@ import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.Security;
 import java.security.Signature;
@@ -232,6 +234,7 @@ public class PivDeviceTests {
             case RSA:
                 testSign(piv, publicKey, Signature.getInstance("SHA1withRSA"));
                 testSign(piv, publicKey, Signature.getInstance("SHA256withRSA"));
+                testSign(piv, publicKey, Signature.getInstance("RSASSA-PSS"));
                 testSign(piv, publicKey, Signature.getInstance("SHA256withRSA/PSS"));
 
                 // Test with custom parameter. We use a 0-length salt and ensure signatures are the same
@@ -343,5 +346,25 @@ public class PivDeviceTests {
         PublicKey pub = piv.generateKey(slot, keyType, PinPolicy.DEFAULT, TouchPolicy.DEFAULT);
 
         testSignAllHashes(piv, slot, keyType, pub);
+    }
+
+    public static void testProviderWithDevice(PivSession piv) throws Exception {
+        piv.authenticate(ManagementKeyType.TDES, DEFAULT_MANAGEMENT_KEY);
+
+        for (KeyType keyType : Arrays.asList(KeyType.ECCP256, KeyType.ECCP384)) {
+            PublicKey publicKey = piv.generateKey(Slot.AUTHENTICATION, keyType, PinPolicy.DEFAULT, TouchPolicy.DEFAULT);
+            PrivateKey privateKey = PivPrivateKey.of(piv, Slot.AUTHENTICATION, keyType, DEFAULT_PIN);
+
+            PivTestUtils.ecSignAndVerify(privateKey, publicKey);
+            PivTestUtils.ecKeyAgreement(privateKey, publicKey);
+        }
+
+        for (KeyType keyType : Arrays.asList(KeyType.RSA1024, KeyType.RSA2048)) {
+            PublicKey publicKey = piv.generateKey(Slot.AUTHENTICATION, keyType, PinPolicy.DEFAULT, TouchPolicy.DEFAULT);
+            PrivateKey privateKey = PivPrivateKey.of(piv, Slot.AUTHENTICATION, keyType, DEFAULT_PIN);
+
+            PivTestUtils.rsaEncryptAndDecrypt(privateKey, publicKey);
+            PivTestUtils.rsaSignAndVerify(privateKey, publicKey);
+        }
     }
 }
