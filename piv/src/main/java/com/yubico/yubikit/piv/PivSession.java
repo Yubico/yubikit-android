@@ -305,6 +305,8 @@ public class PivSession extends ApplicationSession<PivSession> {
      * <p>
      * The algorithm must be compatible with the given key type.
      *
+     * DEPRECATED: Use the PivProvider JCA Security Provider instead.
+     *
      * @param slot      the slot containing the private key to use
      * @param keyType   the type of the key stored in the slot
      * @param message   the message to hash
@@ -315,13 +317,51 @@ public class PivSession extends ApplicationSession<PivSession> {
      * @throws BadResponseException     in case of incorrect YubiKey response
      * @throws NoSuchAlgorithmException if the algorithm isn't supported
      */
+    @Deprecated
     public byte[] sign(Slot slot, KeyType keyType, byte[] message, Signature algorithm) throws IOException, ApduException, BadResponseException, NoSuchAlgorithmException {
         byte[] payload = Padding.pad(keyType, message, algorithm);
         return usePrivateKey(slot, keyType, payload, false);
     }
 
     /**
+     * Performs a private key operation on the given payload.
+     * Any hashing and/or padding required should already be done prior to calling this method.
+     *
+     * More commonly, the JCA classes provided should be used instead of directly calling this.
+     *
+     * @param slot      the slot containing the private key to use
+     * @param keyType   the type of the key stored in the slot
+     * @param payload   the data to operate on
+     * @return the result of the operation
+     * @throws IOException              in case of connection error
+     * @throws ApduException            in case of an error response from the YubiKey
+     * @throws BadResponseException     in case of incorrect YubiKey response
+     * @throws NoSuchAlgorithmException if the algorithm isn't supported
+     */
+    public byte[] rawSignOrDecrypt(Slot slot, KeyType keyType, byte[] payload) throws IOException, ApduException, BadResponseException, NoSuchAlgorithmException {
+        int byteLength = keyType.params.bitLength / 8;
+        byte[] padded;
+        if(payload.length > byteLength) {
+            if (keyType.params.algorithm == KeyType.Algorithm.EC) {
+                // Truncate
+                padded = Arrays.copyOf(payload, byteLength);
+            } else {
+                throw new IllegalArgumentException("Payload too large for key");
+            }
+        } else if (payload.length < byteLength) {
+            // Leftpad, with no external dependencies!
+            padded = new byte[byteLength];
+            System.arraycopy(payload, 0, padded, padded.length - payload.length, payload.length);
+        } else {
+            padded = payload;
+        }
+        return usePrivateKey(slot, keyType, padded, false);
+    }
+
+    /**
      * Decrypt an RSA-encrypted message.
+     *
+     * DEPRECATED: Use the PivProvider JCA Security Provider instead.
      *
      * @param slot       the slot containing the RSA private key to use
      * @param cipherText the encrypted payload to decrypt
@@ -334,6 +374,7 @@ public class PivSession extends ApplicationSession<PivSession> {
      * @throws NoSuchAlgorithmException in case the algorithm isn't supported
      * @throws BadPaddingException      in case of a padding error
      */
+    @Deprecated
     public byte[] decrypt(Slot slot, byte[] cipherText, Cipher algorithm) throws IOException, ApduException, BadResponseException, NoSuchAlgorithmException, NoSuchPaddingException, BadPaddingException {
         KeyType keyType;
         switch (cipherText.length) {

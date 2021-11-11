@@ -18,14 +18,14 @@ import javax.crypto.ShortBufferException;
 
 public class PivKeyAgreementSpi extends KeyAgreementSpi {
     @Nullable
-    private PivPrivateKey privateKey;
+    private PivPrivateKey.EcKey privateKey;
     @Nullable
     private ECPublicKey publicKey;
 
     @Override
     protected void engineInit(Key key, SecureRandom random) throws InvalidKeyException {
-        if (key instanceof PivPrivateKey) {
-            privateKey = (PivPrivateKey) key;
+        if (key instanceof PivPrivateKey.EcKey) {
+            privateKey = (PivPrivateKey.EcKey) key;
         } else {
             throw new InvalidKeyException("Key must be instance of PivPrivateKey");
         }

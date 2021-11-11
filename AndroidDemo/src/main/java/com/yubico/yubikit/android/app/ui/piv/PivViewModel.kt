@@ -14,7 +14,16 @@ import com.yubico.yubikit.oath.OathSession
 import com.yubico.yubikit.piv.ManagementKeyType
 import com.yubico.yubikit.piv.PivSession
 import com.yubico.yubikit.piv.Slot
+import com.yubico.yubikit.piv.jca.PivManagerFactoryParameters
+import com.yubico.yubikit.piv.jca.PivProvider
+import java.io.BufferedReader
+import java.io.InputStreamReader
+import java.net.URL
+import java.security.Security
 import java.security.cert.X509Certificate
+import javax.net.ssl.HttpsURLConnection
+import javax.net.ssl.KeyManagerFactory
+import javax.net.ssl.SSLContext
 
 class PivViewModel : YubiKeyViewModel<PivSession>() {
     /**
@@ -30,6 +39,10 @@ class PivViewModel : YubiKeyViewModel<PivSession>() {
 
     var mgmtKeyType = ManagementKeyType.TDES
     var mgmtKey: ByteArray = byteArrayOf(1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8)
+
+    init {
+        Security.addProvider(PivProvider())
+    }
 
     override fun getSession(device: YubiKeyDevice, onError: (Throwable) -> Unit, callback: (PivSession) -> Unit) {
         device.requestConnection(SmartCardConnection::class.java) {
@@ -54,5 +67,18 @@ class PivViewModel : YubiKeyViewModel<PivSession>() {
                 }
             }
         })
+
+        val kmf = KeyManagerFactory.getInstance("X509", "YKPiv")
+        kmf.init(PivManagerFactoryParameters(this, "123456".toCharArray()))
+
+        val sslContext = SSLContext.getInstance("TLS")
+        sslContext.init(kmf.keyManagers, null, null)
+
+        val url = URL("https://dain.se:8443")
+        val connection = url.openConnection() as HttpsURLConnection
+        connection.sslSocketFactory = sslContext.socketFactory
+
+        val html = BufferedReader(InputStreamReader(connection.inputStream)).readText()
+        Logger.d("HTML: $html")
     }
 }
