@@ -1,5 +1,6 @@
 package com.yubico.yubikit.piv.jca;
 
+import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.piv.KeyType;
 
 import java.io.ByteArrayOutputStream;
@@ -7,10 +8,12 @@ import java.security.AlgorithmParameters;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.Key;
+import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
+import java.security.Provider;
 import java.security.SecureRandom;
-import java.security.Signature;
 import java.security.spec.AlgorithmParameterSpec;
+import java.util.Map;
 
 import javax.annotation.Nullable;
 import javax.crypto.BadPaddingException;
@@ -21,6 +24,7 @@ import javax.crypto.NoSuchPaddingException;
 import javax.crypto.ShortBufferException;
 
 public class PivCipherSpi extends CipherSpi {
+    private final Map<KeyType, KeyPair> dummyKeys;
     private final ByteArrayOutputStream buffer = new ByteArrayOutputStream();
     @Nullable
     private PivPrivateKey privateKey;
@@ -29,6 +33,10 @@ public class PivCipherSpi extends CipherSpi {
     @Nullable
     private String padding;
     private int opmode = -1;
+
+    public PivCipherSpi(Map<KeyType, KeyPair> dummyKeys) throws NoSuchPaddingException {
+        this.dummyKeys = dummyKeys;
+    }
 
     @Override
     protected void engineSetMode(String mode) throws NoSuchAlgorithmException {
@@ -65,6 +73,7 @@ public class PivCipherSpi extends CipherSpi {
 
     @Override
     protected void engineInit(int opmode, Key key, SecureRandom random) throws InvalidKeyException {
+        Logger.d("ENGINE INIT " + mode + " " + padding);
         if (key instanceof PivPrivateKey) {
             if (!KeyType.Algorithm.RSA.name().equals(key.getAlgorithm())) {
                 throw new InvalidKeyException("Cipher only supports RSA.");
@@ -101,31 +110,36 @@ public class PivCipherSpi extends CipherSpi {
 
     @Override
     protected byte[] engineDoFinal(byte[] input, int inputOffset, int inputLen) throws IllegalBlockSizeException, BadPaddingException {
-        buffer.write(input, inputOffset, inputLen);
-        byte[] cipherText = buffer.toByteArray();
         if (privateKey == null) {
             throw new IllegalStateException("Cipher not initialized");
         }
+        if (inputLen > 0) {
+            buffer.write(input, inputOffset, inputLen);
+        }
+        byte[] cipherText = buffer.toByteArray();
         try {
+            KeyPair dummy = dummyKeys.get(privateKey.keyType);
+            Cipher rawRsa = Cipher.getInstance("RSA/ECB/NoPadding");
+            rawRsa.init(opmode, dummy.getPublic());
+            Cipher delegate = Cipher.getInstance("RSA/" + mode + "/" + padding);
+            delegate.init(opmode, dummy.getPrivate());
             switch (opmode) {
-                case Cipher.DECRYPT_MODE:
-                    return privateKey.decrypt(cipherText, getDelegate());
-                case Cipher.ENCRYPT_MODE:
-                    if ("NoPadding".equals(padding)) {
-                        return privateKey.decrypt(cipherText, getDelegate());
-                    } else {
-                        return privateKey.sign(cipherText, Signature.getInstance("NONEwithRSA"));
+                case Cipher.DECRYPT_MODE:  // Decrypt, unpad
+                    return delegate.doFinal(rawRsa.doFinal(privateKey.apply(cipherText)));
+                case Cipher.ENCRYPT_MODE:  // Pad, decrypt
+                    try {
+                        return privateKey.apply(rawRsa.doFinal(delegate.doFinal(cipherText)));
+                    } catch (BadPaddingException | IllegalBlockSizeException e) {
+                        throw new IllegalStateException(e); // Shouldn't happen
                     }
                 default:
                     throw new UnsupportedOperationException();
             }
-        } catch (InvalidKeyException | NoSuchAlgorithmException | NoSuchPaddingException e) {
+        } catch (InvalidKeyException | NoSuchAlgorithmException e) {
             throw new IllegalStateException(e);
+        } catch (NoSuchPaddingException e) {
+            throw new UnsupportedOperationException("SecurityProvider doesn't support RSA without padding", e);
         }
-    }
-
-    private Cipher getDelegate() throws NoSuchAlgorithmException, NoSuchPaddingException {
-        return Cipher.getInstance("RSA/" + mode + "/" + padding);
     }
 
     @Override

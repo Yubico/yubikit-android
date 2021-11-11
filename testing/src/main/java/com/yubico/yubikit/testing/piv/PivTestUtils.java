@@ -15,6 +15,7 @@
  */
 package com.yubico.yubikit.testing.piv;
 
+import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.piv.KeyType;
@@ -168,8 +169,8 @@ public class PivTestUtils {
         }
     }
 
-    private static final String[] EC_SIGNATURE_ALGORITHMS = new String[]{"NONEwithECDSA", "SHA1withECDSA", "SHA256withECDSA", "SHA384withECDSA", "SHA512withECDSA"};
-    private static final String[] RSA_SIGNATURE_ALGORITHMS = new String[]{"NONEwithRSA", "MD5withRSA", "SHA1withRSA", "SHA256withRSA", "SHA384withRSA", "SHA512withRSA"};
+    private static final String[] EC_SIGNATURE_ALGORITHMS = new String[]{"NONEwithECDSA", "SHA1withECDSA", "SHA224withECDSA", "SHA256withECDSA", "SHA384withECDSA", "SHA512withECDSA"};
+    private static final String[] RSA_SIGNATURE_ALGORITHMS = new String[]{"NONEwithRSA", "MD5withRSA", "SHA1withRSA", "SHA224withRSA", "SHA256withRSA", "SHA384withRSA", "SHA512withRSA"};
     private static final String[] RSA_CIPHER_ALGORITHMS = new String[]{"RSA/ECB/PKCS1Padding", "RSA/ECB/OAEPWithSHA-1AndMGF1Padding", "RSA/ECB/OAEPWithSHA-256AndMGF1Padding"};
 
     private static final String CERT_1024 = "MIICRjCCAa+gAwIBAgIUTzurbhOVQ7WFsDBtRhXCKusTcdIwDQYJKoZIhvcNAQEL" +
@@ -303,13 +304,14 @@ public class PivTestUtils {
  */
     }
 
-    public static byte[] signAndVerify(PrivateKey privateKey, PublicKey publicKey, Signature algorithm) throws Exception {
+    public static byte[] signAndVerify2(PrivateKey privateKey, PublicKey publicKey, Signature algorithm) throws Exception {
         byte[] message = "Hello world".getBytes(StandardCharsets.UTF_8);
 
         algorithm.initSign(privateKey);
         algorithm.update(message);
         byte[] signature = algorithm.sign();
 
+        algorithm = Signature.getInstance(algorithm.getAlgorithm());
         algorithm.initVerify(publicKey);
         algorithm.update(message);
         boolean result = algorithm.verify(signature);
@@ -318,9 +320,24 @@ public class PivTestUtils {
         return signature;
     }
 
+    public static byte[] sign(PrivateKey privateKey, Signature algorithm) throws Exception {
+        byte[] message = "Hello world".getBytes(StandardCharsets.UTF_8);
+        algorithm.initSign(privateKey);
+        algorithm.update(message);
+        return algorithm.sign();
+    }
+
+    public static void verify(PublicKey publicKey, Signature algorithm, byte[] signature) throws Exception {
+        byte[] message = "Hello world".getBytes(StandardCharsets.UTF_8);
+        algorithm.initVerify(publicKey);
+        algorithm.update(message);
+        boolean result = algorithm.verify(signature);
+        Assert.assertTrue("Signature mismatch for " + algorithm.getAlgorithm(), result);
+    }
+
     public static void rsaSignAndVerify(PrivateKey privateKey, PublicKey publicKey) throws Exception {
         for (String algorithm : RSA_SIGNATURE_ALGORITHMS) {
-            signAndVerify(privateKey, publicKey, Signature.getInstance(algorithm));
+            verify(publicKey, Signature.getInstance(algorithm), sign(privateKey, Signature.getInstance(algorithm)));
         }
         rsaSignAndVerifyPss(privateKey, publicKey);
     }
@@ -360,7 +377,8 @@ public class PivTestUtils {
 
     public static void ecSignAndVerify(PrivateKey privateKey, PublicKey publicKey) throws Exception {
         for (String algorithm : EC_SIGNATURE_ALGORITHMS) {
-            signAndVerify(privateKey, publicKey, Signature.getInstance(algorithm));
+            Logger.d("Test " + algorithm);
+            verify(publicKey, Signature.getInstance(algorithm), sign(privateKey, Signature.getInstance(algorithm)));
         }
     }
 
