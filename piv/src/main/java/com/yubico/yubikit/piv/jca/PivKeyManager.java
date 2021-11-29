@@ -1,6 +1,5 @@
 package com.yubico.yubikit.piv.jca;
 
-import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.piv.KeyType;
@@ -12,64 +11,54 @@ import java.net.Socket;
 import java.security.Principal;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
-import java.util.Arrays;
 
 import javax.annotation.Nullable;
 import javax.net.ssl.X509ExtendedKeyManager;
 
 public class PivKeyManager extends X509ExtendedKeyManager {
-    private final PivSession piv;
-    @Nullable
-    private final Pin pin;
+    private final PivPrivateKey privateKey;
+    private final X509Certificate[] certificates;
 
-    PivKeyManager(PivSession pivSession, @Nullable Pin pin) {
-        this.piv = pivSession;
-        this.pin = pin;
+    public PivKeyManager(PivPrivateKey privateKey, X509Certificate[] certificates) {
+        this.privateKey = privateKey;
+        this.certificates = certificates;
     }
 
-    private Slot slotForAlias(String alias) {
-        return Slot.valueOf(alias);
+    public static PivKeyManager forSlot(PivSession piv, Slot slot, @Nullable Pin pin) throws BadResponseException, IOException, ApduException {
+        X509Certificate certificate = piv.getCertificate(slot);
+        return new PivKeyManager(
+                PivPrivateKey.of(piv, slot, KeyType.fromKey(certificate.getPublicKey()), pin),
+                new X509Certificate[] {certificate}
+        );
     }
 
     @Override
     public String[] getClientAliases(String keyType, Principal[] issuers) {
-        return new String[] { Slot.AUTHENTICATION.name() };
+        return new String[] { "YKPiv" };
     }
 
     @Override
     public String chooseClientAlias(String[] keyType, Principal[] issuers, Socket socket) {
-        return Slot.AUTHENTICATION.name();
+        return "YKPiv";
     }
 
     @Override
     public String[] getServerAliases(String keyType, Principal[] issuers) {
-        return new String[] { "piv" };
+        return new String[] { "YKPiv" };
     }
 
     @Override
     public String chooseServerAlias(String keyType, Principal[] issuers, Socket socket) {
-        return "piv";
+        return "YKPiv";
     }
 
     @Override
     public X509Certificate[] getCertificateChain(String alias) {
-        try {
-            return new X509Certificate[] { piv.getCertificate(slotForAlias(alias)) };
-        } catch (IOException | ApduException | BadResponseException e) {
-            Logger.e("Failed getting certificate key: " + alias, e);
-            return null;
-        }
+        return certificates;
     }
 
     @Override
     public PrivateKey getPrivateKey(String alias) {
-        try {
-            Slot slot = slotForAlias(alias);
-            KeyType keyType = KeyType.fromKey(piv.getCertificate(slot).getPublicKey());
-            return PivPrivateKey.of(piv, slot, keyType, pin);
-        } catch (IOException | ApduException | BadResponseException e) {
-            Logger.e("Failed getting private key: " + alias, e);
-            return null;
-        }
+        return privateKey;
     }
 }
