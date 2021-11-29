@@ -71,7 +71,6 @@ public class PivProvider extends Provider {
 
 
         putService(new Service(this, "KeyAgreement", "ECDH", PivKeyAgreementSpi.class.getName(), null, ecAttributes));
-        putService(new Service(this, "KeyManagerFactory", "X509", PivKeyManagerFactorySpi.class.getName(), null, null));
     }
 
     private class PivEcSignatureService extends Service {
