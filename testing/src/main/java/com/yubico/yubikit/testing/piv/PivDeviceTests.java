@@ -27,6 +27,8 @@ import com.yubico.yubikit.piv.PinPolicy;
 import com.yubico.yubikit.piv.PivSession;
 import com.yubico.yubikit.piv.Slot;
 import com.yubico.yubikit.piv.TouchPolicy;
+import com.yubico.yubikit.piv.jca.Pin;
+import com.yubico.yubikit.piv.jca.PivAlgorithmParameterSpec;
 import com.yubico.yubikit.piv.jca.PivPrivateKey;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -40,6 +42,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
+import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
@@ -56,6 +59,7 @@ import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.KeyAgreement;
+import javax.crypto.KeyGenerator;
 import javax.crypto.NoSuchPaddingException;
 
 public class PivDeviceTests {
@@ -351,20 +355,22 @@ public class PivDeviceTests {
     public static void testProviderWithDevice(PivSession piv) throws Exception {
         piv.authenticate(ManagementKeyType.TDES, DEFAULT_MANAGEMENT_KEY);
 
+        KeyPairGenerator ecGen = KeyPairGenerator.getInstance("EC");
+        ecGen.initialize(new PivAlgorithmParameterSpec(piv, Slot.AUTHENTICATION, null, null, new Pin(DEFAULT_PIN)));
         for (KeyType keyType : Arrays.asList(KeyType.ECCP256, KeyType.ECCP384)) {
-            PublicKey publicKey = piv.generateKey(Slot.AUTHENTICATION, keyType, PinPolicy.DEFAULT, TouchPolicy.DEFAULT);
-            PrivateKey privateKey = PivPrivateKey.of(piv, Slot.AUTHENTICATION, keyType, DEFAULT_PIN);
-
-            PivTestUtils.ecSignAndVerify(privateKey, publicKey);
-            PivTestUtils.ecKeyAgreement(privateKey, publicKey);
+            ecGen.initialize(keyType.params.bitLength);
+            KeyPair keyPair = ecGen.generateKeyPair();
+            PivTestUtils.ecSignAndVerify(keyPair.getPrivate(), keyPair.getPublic());
+            PivTestUtils.ecKeyAgreement(keyPair.getPrivate(), keyPair.getPublic());
         }
 
+        KeyPairGenerator rsaGen = KeyPairGenerator.getInstance("RSA");
+        rsaGen.initialize(new PivAlgorithmParameterSpec(piv, Slot.AUTHENTICATION, null, null, new Pin(DEFAULT_PIN)));
         for (KeyType keyType : Arrays.asList(KeyType.RSA1024, KeyType.RSA2048)) {
-            PublicKey publicKey = piv.generateKey(Slot.AUTHENTICATION, keyType, PinPolicy.DEFAULT, TouchPolicy.DEFAULT);
-            PrivateKey privateKey = PivPrivateKey.of(piv, Slot.AUTHENTICATION, keyType, DEFAULT_PIN);
-
-            PivTestUtils.rsaEncryptAndDecrypt(privateKey, publicKey);
-            PivTestUtils.rsaSignAndVerify(privateKey, publicKey);
+            rsaGen.initialize(keyType.params.bitLength);
+            KeyPair keyPair = rsaGen.generateKeyPair();
+            PivTestUtils.rsaEncryptAndDecrypt(keyPair.getPrivate(), keyPair.getPublic());
+            PivTestUtils.rsaSignAndVerify(keyPair.getPrivate(), keyPair.getPublic());
         }
     }
 }

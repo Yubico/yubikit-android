@@ -65,6 +65,11 @@ public class PivProvider extends Provider {
             }
         }
 
+        putService(new Service(this, "KeyPairGenerator", "RSA", PivKeyPairGeneratorSpi.Rsa.class.getName(), null, null));
+        putService(new Service(this, "KeyPairGenerator", "EC", PivKeyPairGeneratorSpi.Ec.class.getName(), null, null));
+        putService(new Service(this, "KeyStore", "YKPiv", PivKeyStoreSpi.class.getName(), null, null));
+
+
         putService(new Service(this, "KeyAgreement", "ECDH", PivKeyAgreementSpi.class.getName(), null, ecAttributes));
         putService(new Service(this, "KeyManagerFactory", "X509", PivKeyManagerFactorySpi.class.getName(), null, null));
     }
