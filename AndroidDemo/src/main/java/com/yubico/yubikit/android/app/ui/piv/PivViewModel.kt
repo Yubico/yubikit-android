@@ -14,6 +14,7 @@ import com.yubico.yubikit.oath.OathSession
 import com.yubico.yubikit.piv.ManagementKeyType
 import com.yubico.yubikit.piv.PivSession
 import com.yubico.yubikit.piv.Slot
+import com.yubico.yubikit.piv.jca.Pin
 import com.yubico.yubikit.piv.jca.PivManagerFactoryParameters
 import com.yubico.yubikit.piv.jca.PivProvider
 import java.io.BufferedReader
@@ -69,7 +70,7 @@ class PivViewModel : YubiKeyViewModel<PivSession>() {
         })
 
         val kmf = KeyManagerFactory.getInstance("X509", "YKPiv")
-        kmf.init(PivManagerFactoryParameters(this, "123456".toCharArray()))
+        kmf.init(PivManagerFactoryParameters(this, Pin("123456")))
 
         val sslContext = SSLContext.getInstance("TLS")
         sslContext.init(kmf.keyManagers, null, null)

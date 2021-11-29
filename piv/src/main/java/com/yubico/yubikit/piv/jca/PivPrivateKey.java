@@ -18,7 +18,6 @@ import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.ECParameterSpec;
-import java.util.Arrays;
 
 import javax.annotation.Nullable;
 import javax.security.auth.DestroyFailedException;
@@ -28,9 +27,9 @@ public abstract class PivPrivateKey implements PrivateKey {
     final KeyType keyType;
     protected final PivSession session;
     @Nullable
-    protected char[] pin;
+    protected final Pin pin;
 
-    public static PivPrivateKey of(PivSession session, Slot slot, KeyType keyType, @Nullable char[] pin) {
+    public static PivPrivateKey of(PivSession session, Slot slot, KeyType keyType, @Nullable Pin pin) {
         switch (keyType.params.algorithm) {
             case EC:
                 return new EcKey(session, slot, keyType, pin);
@@ -40,30 +39,29 @@ public abstract class PivPrivateKey implements PrivateKey {
         throw new IllegalArgumentException();
     }
 
-    private PivPrivateKey(PivSession session, Slot slot, KeyType keyType, @Nullable char[] pin) {
+    private PivPrivateKey(PivSession session, Slot slot, KeyType keyType, @Nullable Pin pin) {
         this.session = session;
         this.slot = slot;
         this.keyType = keyType;
-        this.pin = pin != null ? Arrays.copyOf(pin, pin.length) : null;
+        this.pin = pin;
     }
 
     @Override
     public void destroy() throws DestroyFailedException {
         if (pin != null) {
-            Arrays.fill(pin, (char) 0);
-            pin = null;
+            pin.destroy();
         }
     }
 
     @Override
     public boolean isDestroyed() {
-        return pin == null;
+        return pin == null || pin.isDestroyed();
     }
 
     byte[] apply(byte[] message) {
         try {
-            if (pin != null) {
-                session.verifyPin(pin);
+            if (pin != null && !pin.isDestroyed()) {
+                session.verifyPin(pin.buffer);
             }
             return session.rawSignOrDecrypt(slot, keyType, message);
         } catch (IOException | InvalidPinException | NoSuchAlgorithmException | BadResponseException | ApduException e) {
@@ -88,7 +86,7 @@ public abstract class PivPrivateKey implements PrivateKey {
     }
 
     static class EcKey extends PivPrivateKey implements ECKey {
-        private EcKey(PivSession session, Slot slot, KeyType keyType, @Nullable char[] pin) {
+        private EcKey(PivSession session, Slot slot, KeyType keyType, @Nullable Pin pin) {
             super(session, slot, keyType, pin);
         }
 
@@ -108,8 +106,8 @@ public abstract class PivPrivateKey implements PrivateKey {
                 throw new InvalidKeyException("KeyAgreement only available for EC keys");
             }
             try {
-                if (pin != null) {
-                    session.verifyPin(pin);
+                if (pin != null && !pin.isDestroyed()) {
+                    session.verifyPin(pin.buffer);
                 }
                 return session.calculateSecret(slot, peerPublicKey);
             } catch (IOException | ApduException | InvalidPinException | BadResponseException e) {
@@ -120,7 +118,7 @@ public abstract class PivPrivateKey implements PrivateKey {
     }
 
     static class RsaKey extends PivPrivateKey implements RSAKey {
-        private RsaKey(PivSession session, Slot slot, KeyType keyType, @Nullable char[] pin) {
+        private RsaKey(PivSession session, Slot slot, KeyType keyType, @Nullable Pin pin) {
             super(session, slot, keyType, pin);
         }
 

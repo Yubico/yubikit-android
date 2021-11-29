@@ -20,11 +20,11 @@ import javax.net.ssl.X509ExtendedKeyManager;
 public class PivKeyManager extends X509ExtendedKeyManager {
     private final PivSession piv;
     @Nullable
-    private final char[] pin;
+    private final Pin pin;
 
-    PivKeyManager(PivSession pivSession, @Nullable char[] pin) {
+    PivKeyManager(PivSession pivSession, @Nullable Pin pin) {
         this.piv = pivSession;
-        this.pin = pin != null ? Arrays.copyOf(pin, pin.length) : null;
+        this.pin = pin;
     }
 
     private Slot slotForAlias(String alias) {

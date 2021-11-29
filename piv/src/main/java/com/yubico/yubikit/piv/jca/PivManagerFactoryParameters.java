@@ -8,9 +8,9 @@ import javax.net.ssl.ManagerFactoryParameters;
 public class PivManagerFactoryParameters implements ManagerFactoryParameters {
     final PivSession piv;
     @Nullable
-    final char[] pin;
+    final Pin pin;
 
-    public PivManagerFactoryParameters(PivSession piv, @Nullable char[] pin) {
+    public PivManagerFactoryParameters(PivSession piv, @Nullable Pin pin) {
         this.piv = piv;
         this.pin = pin;
     }

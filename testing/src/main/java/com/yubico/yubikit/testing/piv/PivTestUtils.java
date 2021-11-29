@@ -33,6 +33,8 @@ import org.bouncycastle.asn1.x9.X9ObjectIdentifiers;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.X509v3CertificateBuilder;
 import org.bouncycastle.operator.ContentSigner;
+import org.bouncycastle.operator.OperatorCreationException;
+import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.junit.Assert;
 
 import java.io.ByteArrayInputStream;
@@ -239,6 +241,40 @@ public class PivTestUtils {
         } catch (CertificateException e) {
             throw new IllegalStateException(e);
         }
+    }
+
+    public static X509Certificate createCertificate(KeyPair keyPair) throws IOException, CertificateException, NoSuchAlgorithmException, OperatorCreationException {
+        X500Name name = new X500Name("CN=Example");
+        X509v3CertificateBuilder serverCertGen = new X509v3CertificateBuilder(
+                name,
+                new BigInteger("123456789"),
+                new Date(),
+                new Date(),
+                name,
+                SubjectPublicKeyInfo.getInstance(ASN1Sequence.getInstance(keyPair.getPublic().getEncoded()))
+        );
+
+
+
+        String algorithm;
+        KeyType keyType = KeyType.fromKey(keyPair.getPrivate());
+        switch (keyType.params.algorithm) {
+            case EC:
+                algorithm = "SHA256WithECDSA";
+                break;
+            case RSA:
+                algorithm = "SHA256WithRSA";
+                break;
+            default:
+                throw new IllegalStateException();
+        }
+        Signature signature = Signature.getInstance(algorithm);
+        ContentSigner contentSigner = new JcaContentSignerBuilder(algorithm).build(keyPair.getPrivate());
+        X509CertificateHolder holder = serverCertGen.build(contentSigner);
+
+        InputStream stream = new ByteArrayInputStream(holder.getEncoded());
+        CertificateFactory cf = CertificateFactory.getInstance("X.509");
+        return (X509Certificate) cf.generateCertificate(stream);
     }
 
     public static X509Certificate createCertificate(PivSession piv, PublicKey publicKey, Slot slot, KeyType keyType) throws IOException, CertificateException, NoSuchAlgorithmException {
