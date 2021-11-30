@@ -76,11 +76,13 @@ public abstract class PivPrivateKey implements PrivateKey {
     }
 
     @Override
+    @Nullable
     public String getFormat() {
         return null;
     }
 
     @Override
+    @Nullable
     public byte[] getEncoded() {
         return null;
     }
@@ -93,12 +95,13 @@ public abstract class PivPrivateKey implements PrivateKey {
         @Override
         public ECParameterSpec getParams() {
             try {
-                ECPublicKey publicKey = (ECPublicKey)session.getCertificate(slot).getPublicKey();
+                ECPublicKey publicKey = (ECPublicKey)JcaUtils.getPublicKey(session, slot);
+                Logger.d("Reading EC params from public key: " + publicKey);
                 return publicKey.getParams();
-            } catch (IOException | ApduException | BadResponseException e) {
-                e.printStackTrace();
+            } catch (IOException | ApduException e) {
+                Logger.e("Error reading public key", e);
+                throw new UnsupportedOperationException();
             }
-            return null;
         }
 
         byte[] keyAgreement(ECPublicKey peerPublicKey) throws InvalidKeyException {
@@ -125,13 +128,13 @@ public abstract class PivPrivateKey implements PrivateKey {
         @Override
         public BigInteger getModulus() {
             try {
-                RSAPublicKey publicKey = (RSAPublicKey)session.getCertificate(slot).getPublicKey();
-                Logger.d("Using public key: " + publicKey);
+                RSAPublicKey publicKey = (RSAPublicKey)JcaUtils.getPublicKey(session, slot);
+                Logger.d("Reading modulus from public key: " + publicKey);
                 return publicKey.getModulus();
-            } catch (IOException | ApduException | BadResponseException e) {
-                e.printStackTrace();
+            } catch (IOException | ApduException e) {
+                Logger.e("Error reading public key", e);
+                throw new UnsupportedOperationException();
             }
-            return null;
         }
     }
 }

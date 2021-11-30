@@ -73,6 +73,16 @@ public class PivProvider extends Provider {
         putService(new Service(this, "KeyAgreement", "ECDH", PivKeyAgreementSpi.class.getName(), null, ecAttributes));
     }
 
+    @Override
+    public synchronized boolean equals(Object o) {
+        return o instanceof PivProvider && super.equals(o);
+    }
+
+    @Override
+    public synchronized int hashCode() {
+        return super.hashCode();
+    }
+
     private class PivEcSignatureService extends Service {
         private final String digest;
 

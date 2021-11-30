@@ -27,7 +27,7 @@ public class PivRsaSignatureSpi extends SignatureSpi {
     private final String signature;
 
     @Nullable
-    private PivPrivateKey privateKey;
+    private PivPrivateKey.RsaKey privateKey;
 
     @Nullable
     private Signature delegate;
@@ -60,11 +60,8 @@ public class PivRsaSignatureSpi extends SignatureSpi {
 
     @Override
     protected void engineInitSign(PrivateKey privateKey) throws InvalidKeyException {
-        if (privateKey instanceof PivPrivateKey) {
-            if (((PivPrivateKey) privateKey).keyType.params.algorithm != KeyType.Algorithm.RSA) {
-                throw new InvalidKeyException("Must be RSA key");
-            }
-            this.privateKey = (PivPrivateKey) privateKey;
+        if (privateKey instanceof PivPrivateKey.RsaKey) {
+            this.privateKey = (PivPrivateKey.RsaKey) privateKey;
             KeyPair dummyPair = dummyKeys.get(this.privateKey.keyType);
             try {
                 getDelegate(false).initSign(dummyPair.getPrivate());
