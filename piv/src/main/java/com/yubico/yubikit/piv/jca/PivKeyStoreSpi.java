@@ -81,7 +81,7 @@ public class PivKeyStoreSpi extends KeyStoreSpi {
         Slot slot = AliasData.parse(alias).slot;
 
         PrivateKey privateKey = null;
-        Certificate certificate = null;
+        Certificate certificate;
         if (entry instanceof KeyStore.TrustedCertificateEntry) {
             if (protParam != null) {
                 throw new KeyStoreException("Certificate cannot use protParam");
@@ -153,7 +153,7 @@ public class PivKeyStoreSpi extends KeyStoreSpi {
 
     @Override
     public void engineSetKeyEntry(String alias, byte[] key, Certificate[] chain) throws KeyStoreException {
-        throw new UnsupportedOperationException("Use setKeyEntry with a PrivateKey instance instead of byte[]");
+        throw new KeyStoreException("Use setKeyEntry with a PrivateKey instance instead of byte[]");
     }
 
     @Override
@@ -226,7 +226,7 @@ public class PivKeyStoreSpi extends KeyStoreSpi {
     public String engineGetCertificateAlias(Certificate cert) {
         Objects.requireNonNull(piv);
         for (Slot slot : Slot.values()) {
-            X509Certificate entry = null;
+            X509Certificate entry;
             try {
                 entry = piv.getCertificate(slot);
             } catch (IOException e) {
@@ -242,17 +242,17 @@ public class PivKeyStoreSpi extends KeyStoreSpi {
     }
 
     @Override
-    public void engineStore(OutputStream stream, char[] password) throws IOException, NoSuchAlgorithmException, CertificateException {
+    public void engineStore(OutputStream stream, char[] password) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void engineLoad(InputStream stream, char[] password) throws IOException, NoSuchAlgorithmException, CertificateException {
+    public void engineLoad(InputStream stream, char[] password) {
         throw new InvalidParameterException("KeyStore must be loaded with a PivLoadStoreParameter");
     }
 
     @Override
-    public void engineLoad(KeyStore.LoadStoreParameter param) throws IOException, NoSuchAlgorithmException, CertificateException {
+    public void engineLoad(KeyStore.LoadStoreParameter param) {
         if (param instanceof PivLoadStoreParameter) {
             piv = ((PivLoadStoreParameter) param).piv;
         } else {

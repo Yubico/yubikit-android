@@ -37,6 +37,7 @@ public class PivKeyAgreementSpi extends KeyAgreementSpi {
     }
 
     @Override
+    @Nullable
     protected Key engineDoPhase(Key key, boolean lastPhase) throws InvalidKeyException, IllegalStateException {
         if (privateKey == null) {
             throw new IllegalStateException("KeyAgreement not initialized");

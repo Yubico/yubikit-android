@@ -1,7 +1,5 @@
 package com.yubico.yubikit.piv.jca;
 
-import com.yubico.yubikit.piv.KeyType;
-
 import java.io.ByteArrayOutputStream;
 import java.security.InvalidKeyException;
 import java.security.InvalidParameterException;
@@ -16,7 +14,7 @@ import javax.annotation.Nullable;
 
 public abstract class PivEcSignatureSpi extends SignatureSpi {
     @Nullable
-    private PivPrivateKey privateKey;
+    private PivPrivateKey.EcKey privateKey;
 
     @Override
     protected void engineInitVerify(PublicKey publicKey) throws InvalidKeyException {
@@ -25,11 +23,8 @@ public abstract class PivEcSignatureSpi extends SignatureSpi {
 
     @Override
     protected void engineInitSign(PrivateKey privateKey) throws InvalidKeyException {
-        if (privateKey instanceof PivPrivateKey) {
-            if (((PivPrivateKey) privateKey).keyType.params.algorithm != KeyType.Algorithm.EC) {
-                throw new InvalidKeyException("Must be EC key");
-            }
-            this.privateKey = (PivPrivateKey) privateKey;
+        if (privateKey instanceof PivPrivateKey.EcKey) {
+            this.privateKey = (PivPrivateKey.EcKey) privateKey;
         } else {
             throw new InvalidKeyException("Unsupported key type");
         }

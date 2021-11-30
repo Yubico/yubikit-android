@@ -11,6 +11,7 @@ import java.net.Socket;
 import java.security.Principal;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
+import java.util.Arrays;
 
 import javax.annotation.Nullable;
 import javax.net.ssl.X509ExtendedKeyManager;
@@ -21,7 +22,7 @@ public class PivKeyManager extends X509ExtendedKeyManager {
 
     public PivKeyManager(PivPrivateKey privateKey, X509Certificate[] certificates) {
         this.privateKey = privateKey;
-        this.certificates = certificates;
+        this.certificates = Arrays.copyOf(certificates, certificates.length);
     }
 
     public static PivKeyManager forSlot(PivSession piv, Slot slot, @Nullable Pin pin) throws BadResponseException, IOException, ApduException {
@@ -54,7 +55,7 @@ public class PivKeyManager extends X509ExtendedKeyManager {
 
     @Override
     public X509Certificate[] getCertificateChain(String alias) {
-        return certificates;
+        return Arrays.copyOf(certificates, certificates.length);
     }
 
     @Override

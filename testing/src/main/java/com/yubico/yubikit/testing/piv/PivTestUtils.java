@@ -63,9 +63,7 @@ import java.security.spec.MGF1ParameterSpec;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.PSSParameterSpec;
 import java.security.spec.X509EncodedKeySpec;
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyAgreement;
@@ -268,7 +266,6 @@ public class PivTestUtils {
             default:
                 throw new IllegalStateException();
         }
-        Signature signature = Signature.getInstance(algorithm);
         ContentSigner contentSigner = new JcaContentSignerBuilder(algorithm).build(keyPair.getPrivate());
         X509CertificateHolder holder = serverCertGen.build(contentSigner);
 
@@ -305,7 +302,7 @@ public class PivTestUtils {
         Signature signature = Signature.getInstance(algorithm);
 
         X509CertificateHolder holder = serverCertGen.build(new ContentSigner() {
-            ByteArrayOutputStream messageBuffer = new ByteArrayOutputStream();
+            final ByteArrayOutputStream messageBuffer = new ByteArrayOutputStream();
 
             @Override
             public AlgorithmIdentifier getAlgorithmIdentifier() {

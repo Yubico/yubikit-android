@@ -17,12 +17,10 @@ import java.security.spec.AlgorithmParameterSpec;
 import javax.annotation.Nullable;
 
 abstract class PivKeyPairGeneratorSpi extends KeyPairGeneratorSpi {
-    private final KeyType.Algorithm algorithm;
     private KeyType keyType;
 
-    PivKeyPairGeneratorSpi(KeyType.Algorithm algorithm) {
-        this.algorithm = algorithm;
-        keyType = getKeyType(-1);
+    PivKeyPairGeneratorSpi(KeyType defaultKeyType) {
+        keyType = defaultKeyType;
     }
 
     @Nullable
@@ -60,7 +58,7 @@ abstract class PivKeyPairGeneratorSpi extends KeyPairGeneratorSpi {
 
     public static class Rsa extends PivKeyPairGeneratorSpi {
         public Rsa() {
-            super(KeyType.Algorithm.RSA);
+            super(KeyType.RSA2048);
         }
 
         @Override
@@ -68,7 +66,6 @@ abstract class PivKeyPairGeneratorSpi extends KeyPairGeneratorSpi {
             switch (keySize) {
                 case 1024:
                     return KeyType.RSA1024;
-                case -1:
                 case 2048:
                     return KeyType.RSA2048;
                 default:
@@ -80,13 +77,12 @@ abstract class PivKeyPairGeneratorSpi extends KeyPairGeneratorSpi {
 
     public static class Ec extends PivKeyPairGeneratorSpi {
         public Ec() {
-            super(KeyType.Algorithm.EC);
+            super(KeyType.ECCP256);
         }
 
         @Override
         protected KeyType getKeyType(int keySize) {
             switch (keySize) {
-                case -1:
                 case 256:
                     return KeyType.ECCP256;
                 case 384:
