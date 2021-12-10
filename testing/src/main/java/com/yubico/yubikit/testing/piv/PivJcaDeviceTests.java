@@ -21,10 +21,10 @@ import com.yubico.yubikit.piv.PinPolicy;
 import com.yubico.yubikit.piv.PivSession;
 import com.yubico.yubikit.piv.Slot;
 import com.yubico.yubikit.piv.TouchPolicy;
-import com.yubico.yubikit.piv.jca.Pin;
 import com.yubico.yubikit.piv.jca.PivAlgorithmParameterSpec;
 import com.yubico.yubikit.piv.jca.PivKeyStoreKeyParameters;
 import com.yubico.yubikit.piv.jca.PivLoadStoreParameter;
+import com.yubico.yubikit.piv.jca.PivSessionProvider;
 
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.Assert;
@@ -48,7 +48,7 @@ public class PivJcaDeviceTests {
         keyStore.load(new PivLoadStoreParameter(piv));
 
         for (KeyType keyType : Arrays.asList(KeyType.RSA1024, KeyType.RSA2048)) {
-            String alias = "9c/" + keyType.name();
+            String alias = "9c";
 
             KeyPair keyPair = PivTestUtils.loadKey(keyType);
             X509Certificate cert = PivTestUtils.createCertificate(keyPair);
@@ -61,7 +61,7 @@ public class PivJcaDeviceTests {
         }
 
         for (KeyType keyType : Arrays.asList(KeyType.ECCP256, KeyType.ECCP384)) {
-            String alias = "9c/" + keyType.name();
+            String alias = "9c";
 
             KeyPair keyPair = PivTestUtils.loadKey(keyType);
             X509Certificate cert = PivTestUtils.createCertificate(keyPair);
@@ -78,10 +78,12 @@ public class PivJcaDeviceTests {
     }
 
     public static void testGenerateKeys(PivSession piv) throws Exception {
+        PivSessionProvider provider = new PivSessionProvider.FromInstance(piv);
         piv.authenticate(ManagementKeyType.TDES, DEFAULT_MANAGEMENT_KEY);
+        piv.verifyPin(DEFAULT_PIN);
 
-        KeyPairGenerator ecGen = KeyPairGenerator.getInstance("EC");
-        ecGen.initialize(new PivAlgorithmParameterSpec(piv, Slot.AUTHENTICATION, null, null, new Pin(DEFAULT_PIN)));
+        KeyPairGenerator ecGen = KeyPairGenerator.getInstance("EC", "YKPiv");
+        ecGen.initialize(new PivAlgorithmParameterSpec(provider, Slot.AUTHENTICATION, null, null));
         for (KeyType keyType : Arrays.asList(KeyType.ECCP256, KeyType.ECCP384)) {
             ecGen.initialize(keyType.params.bitLength);
             KeyPair keyPair = ecGen.generateKeyPair();
@@ -90,8 +92,8 @@ public class PivJcaDeviceTests {
             //TODO: Test with key loaded from KeyStore
         }
 
-        KeyPairGenerator rsaGen = KeyPairGenerator.getInstance("RSA");
-        rsaGen.initialize(new PivAlgorithmParameterSpec(piv, Slot.AUTHENTICATION, null, null, new Pin(DEFAULT_PIN)));
+        KeyPairGenerator rsaGen = KeyPairGenerator.getInstance("RSA", "YKPiv");
+        rsaGen.initialize(new PivAlgorithmParameterSpec(provider, Slot.AUTHENTICATION, null, null));
         for (KeyType keyType : Arrays.asList(KeyType.RSA1024, KeyType.RSA2048)) {
             rsaGen.initialize(keyType.params.bitLength);
             KeyPair keyPair = rsaGen.generateKeyPair();

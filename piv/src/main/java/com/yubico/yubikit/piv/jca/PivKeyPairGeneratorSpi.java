@@ -1,5 +1,6 @@
 package com.yubico.yubikit.piv.jca;
 
+import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.piv.KeyType;
@@ -45,13 +46,19 @@ abstract class PivKeyPairGeneratorSpi extends KeyPairGeneratorSpi {
         if (spec == null) {
             throw new IllegalStateException("KeyPairGenerator not initialized!");
         }
-        try {
-            PublicKey publicKey = spec.piv.generateKey(spec.slot, keyType, spec.pinPolicy, spec.touchPolicy);
-            PrivateKey privateKey = PivPrivateKey.of(spec.piv, spec.slot, keyType, spec.pin);
+        PublicKey publicKey = spec.sessionProvider.use((piv) -> {
+            try {
+                return piv.generateKey(spec.slot, keyType, spec.pinPolicy, spec.touchPolicy);
+            } catch (IOException | ApduException | BadResponseException e) {
+                Logger.e("Error generating key", e);
+                return null;
+            }
+        });
+        if (publicKey != null) {
+            PrivateKey privateKey = PivPrivateKey.of(publicKey, spec.slot, spec.sessionProvider);
             return new KeyPair(publicKey, privateKey);
-        } catch (IOException | ApduException | BadResponseException e) {
-            throw new RuntimeException(e);
         }
+        throw new IllegalStateException("An error occurred when generating the key pair");
     }
 
     protected abstract KeyType getKeyType(int keySize);

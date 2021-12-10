@@ -25,14 +25,6 @@ public class PivKeyManager extends X509ExtendedKeyManager {
         this.certificates = Arrays.copyOf(certificates, certificates.length);
     }
 
-    public static PivKeyManager forSlot(PivSession piv, Slot slot, @Nullable Pin pin) throws BadResponseException, IOException, ApduException {
-        X509Certificate certificate = piv.getCertificate(slot);
-        return new PivKeyManager(
-                PivPrivateKey.of(piv, slot, KeyType.fromKey(certificate.getPublicKey()), pin),
-                new X509Certificate[] {certificate}
-        );
-    }
-
     @Override
     public String[] getClientAliases(String keyType, Principal[] issuers) {
         return new String[] { "YKPiv" };

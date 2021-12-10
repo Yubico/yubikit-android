@@ -21,14 +21,19 @@ import android.util.Base64
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Observer
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.fragment.findNavController
 import com.yubico.yubikit.android.app.R
 import com.yubico.yubikit.android.app.databinding.FragmentPivCertifiateBinding
 import com.yubico.yubikit.android.app.ui.getSecret
+import com.yubico.yubikit.android.app.ui.web.WebFragment
 import com.yubico.yubikit.piv.*
+import com.yubico.yubikit.piv.jca.PivPrivateKey
+import com.yubico.yubikit.piv.jca.PivSessionProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.bouncycastle.asn1.ASN1Sequence
@@ -155,6 +160,7 @@ class PivCertificateFragment : Fragment() {
 
                         // Generate a key
                         val publicKey = generateKey(slot, KeyType.ECCP256, PinPolicy.DEFAULT, TouchPolicy.DEFAULT)
+                        val privateKey = PivPrivateKey.of(publicKey, slot, PivSessionProvider.FromInstance(this))
 
                         verifyPin(pin.toCharArray())
 
@@ -174,7 +180,11 @@ class PivCertificateFragment : Fragment() {
                             override fun getAlgorithmIdentifier(): AlgorithmIdentifier = AlgorithmIdentifier(X9ObjectIdentifiers.ecdsa_with_SHA256)
                             override fun getOutputStream(): OutputStream = messageBuffer
                             override fun getSignature(): ByteArray {
-                                return sign(slot, KeyType.ECCP256, messageBuffer.toByteArray(), Signature.getInstance("SHA256withECDSA"))
+                                return Signature.getInstance("SHA256withECDSA").apply {
+                                    initSign(privateKey)
+                                    update(messageBuffer.toByteArray())
+                                }.sign()
+                                //return sign(slot, KeyType.ECCP256, messageBuffer.toByteArray(), Signature.getInstance("SHA256withECDSA"))
                             }
                         }).encoded
 
@@ -210,19 +220,22 @@ class PivCertificateFragment : Fragment() {
             lifecycleScope.launch(Dispatchers.Main) {
                 getSecret(requireContext(), R.string.enter_pin)?.let { pin ->
                     pivViewModel.pendingAction.value = {
+                        val provider = PivSessionProvider.FromInstanceWithPin(this, pin.toCharArray())
                         val publicKey = getCertificate(slot).publicKey
                         val keyType = KeyType.fromKey(publicKey)
-                        verifyPin(pin.toCharArray())
 
-                        // Create signature
-                        val signatureAlgorithm = Signature.getInstance(when (keyType.params.algorithm) {
+                        val algorithm = when (keyType.params.algorithm) {
                             KeyType.Algorithm.RSA -> "SHA256withRSA"
                             KeyType.Algorithm.EC -> "SHA256withECDSA"
-                        })
-                        val signature = sign(slot, keyType, messageBytes, signatureAlgorithm)
+                        }
+                        // Create signature
+                        val signature = Signature.getInstance(algorithm).apply {
+                            initSign(PivPrivateKey.of(publicKey, slot, provider))
+                            update(messageBytes)
+                        }.sign()
 
                         // Verify signature
-                        val result = signatureAlgorithm.apply {
+                        val result = Signature.getInstance(algorithm).apply {
                             initVerify(publicKey)
                             update(messageBytes)
                         }.verify(signature)
@@ -236,6 +249,12 @@ class PivCertificateFragment : Fragment() {
                 }
             }
         }
+
+        binding.webview.setOnClickListener {
+            pivViewModel.certificates.value?.get(slot.value)?.let { cert ->
+                findNavController().navigate(R.id.nav_web, bundleOf("cert" to cert.encoded, "slot" to slot.value))
+            }
+        }
     }
 
     private fun showCerts(visible: Boolean) {
@@ -244,6 +263,7 @@ class PivCertificateFragment : Fragment() {
 
         binding.delete.isEnabled = visible
         binding.sign.isEnabled = visible
+        binding.webview.isEnabled = visible
     }
 
     companion object {

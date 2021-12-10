@@ -1,7 +1,9 @@
 package com.yubico.yubikit.piv.jca;
 
+import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.smartcard.ApduException;
+import com.yubico.yubikit.piv.InvalidPinException;
 import com.yubico.yubikit.piv.KeyType;
 import com.yubico.yubikit.piv.PinPolicy;
 import com.yubico.yubikit.piv.PivSession;
@@ -18,6 +20,7 @@ import java.security.KeyStoreException;
 import java.security.KeyStoreSpi;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
@@ -25,6 +28,7 @@ import java.security.cert.X509Certificate;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.Objects;
+import java.util.function.Function;
 
 import javax.annotation.Nullable;
 
@@ -33,24 +37,28 @@ public class PivKeyStoreSpi extends KeyStoreSpi {
     private PivSession piv;
 
     @Override
-    public Key engineGetKey(String alias, char[] password) throws NoSuchAlgorithmException, UnrecoverableKeyException {
+    public Key engineGetKey(String alias, char[] password) throws UnrecoverableKeyException {
         Objects.requireNonNull(piv);
-        AliasData params = AliasData.parse(alias);
-        KeyType keyType = params.keyType;
-        if (keyType == null) {
-            try {
-                if (piv.supports(PivSession.FEATURE_METADATA)) {
-                    keyType = piv.getSlotMetadata(params.slot).getKeyType();
-                } else {
-                    keyType = KeyType.fromKey(piv.getCertificate(params.slot).getPublicKey());
-                }
-            } catch (IOException | ApduException e) {
-                throw new RuntimeException(e);
-            } catch (BadResponseException e) {
-                throw new UnrecoverableKeyException("No way to infer KeyType, use 'SLOT/KEYTYPE' (eg. '9a/RSA2048') alias.");
-            }
+        Slot slot = parseAlias(alias);
+        PivSessionProvider provider;
+        if(password != null) {
+            provider = new PivSessionProvider.FromInstanceWithPin(piv, password);
+        } else {
+            provider = new PivSessionProvider.FromInstance(piv);
         }
-        return PivPrivateKey.of(piv, params.slot, keyType, password != null ? new Pin(password) : null);
+        PublicKey publicKey;
+        try {
+            if (piv.supports(PivSession.FEATURE_METADATA)) {
+                publicKey = piv.getSlotMetadata(slot).getPublicKey();
+            } else {
+                publicKey = piv.getCertificate(slot).getPublicKey();
+            }
+        } catch (IOException | ApduException e) {
+            throw new RuntimeException(e);
+        } catch (BadResponseException e) {
+            throw new UnrecoverableKeyException("No way to infer KeyType, use 'SLOT/KEYTYPE' (eg. '9a/RSA2048') alias.");
+        }
+        return PivPrivateKey.of(publicKey, slot, provider);
     }
 
     @Override
@@ -61,7 +69,7 @@ public class PivKeyStoreSpi extends KeyStoreSpi {
     @Override
     public Certificate engineGetCertificate(String alias) {
         Objects.requireNonNull(piv);
-        Slot slot = AliasData.parse(alias).slot;
+        Slot slot = parseAlias(alias);
         try {
             return piv.getCertificate(slot);
         } catch (IOException | ApduException | BadResponseException e) {
@@ -78,7 +86,7 @@ public class PivKeyStoreSpi extends KeyStoreSpi {
     @Override
     public void engineSetEntry(String alias, KeyStore.Entry entry, KeyStore.ProtectionParameter protParam) throws KeyStoreException {
         Objects.requireNonNull(piv);
-        Slot slot = AliasData.parse(alias).slot;
+        Slot slot = parseAlias(alias);
 
         PrivateKey privateKey = null;
         Certificate certificate;
@@ -130,7 +138,7 @@ public class PivKeyStoreSpi extends KeyStoreSpi {
     @Override
     public void engineSetKeyEntry(String alias, Key key, char[] password, Certificate[] chain) throws KeyStoreException {
         Objects.requireNonNull(piv);
-        Slot slot = AliasData.parse(alias).slot;
+        Slot slot = parseAlias(alias);
 
         if (password != null) {
             throw new KeyStoreException("Password can not be set");
@@ -159,7 +167,7 @@ public class PivKeyStoreSpi extends KeyStoreSpi {
     @Override
     public void engineSetCertificateEntry(String alias, Certificate cert) throws KeyStoreException {
         Objects.requireNonNull(piv);
-        Slot slot = AliasData.parse(alias).slot;
+        Slot slot = parseAlias(alias);
         if (cert instanceof X509Certificate) {
             try {
                 piv.putCertificate(slot, (X509Certificate) cert);
@@ -174,7 +182,7 @@ public class PivKeyStoreSpi extends KeyStoreSpi {
     @Override
     public void engineDeleteEntry(String alias) throws KeyStoreException {
         Objects.requireNonNull(piv);
-        Slot slot = AliasData.parse(alias).slot;
+        Slot slot = parseAlias(alias);
         try {
             piv.deleteCertificate(slot);
         } catch (IOException | ApduException e) {
@@ -190,7 +198,7 @@ public class PivKeyStoreSpi extends KeyStoreSpi {
     @Override
     public boolean engineContainsAlias(String alias) {
         try {
-            AliasData.parse(alias);
+            parseAlias(alias);
             return true;
         } catch (IllegalArgumentException e) {
             return false;
@@ -210,7 +218,7 @@ public class PivKeyStoreSpi extends KeyStoreSpi {
     @Override
     public boolean engineIsCertificateEntry(String alias) {
         Objects.requireNonNull(piv);
-        Slot slot = AliasData.parse(alias).slot;
+        Slot slot = parseAlias(alias);
         try {
             piv.getCertificate(slot);
             return true;
@@ -260,37 +268,11 @@ public class PivKeyStoreSpi extends KeyStoreSpi {
         }
     }
 
-    static private class AliasData {
-        private final Slot slot;
-        @Nullable
-        private final KeyType keyType;
-
-        private AliasData(Slot slot, @Nullable KeyType keyType) {
-            this.slot = slot;
-            this.keyType = keyType;
-        }
-
-        @Override
-        public String toString() {
-            String alias = Integer.toString(slot.value, 16);
-            if (keyType != null) {
-                alias += keyType.name();
-            }
-            return alias;
-        }
-
-        static private AliasData parse(String alias) {
-            String[] parts = alias.split("/");
-            try {
-                Slot slot = Slot.fromValue(Integer.parseInt(parts[0], 16));
-                KeyType keyType = null;
-                if (parts.length == 2) {
-                    keyType = KeyType.valueOf(parts[1]);
-                }
-                return new AliasData(slot, keyType);
-            } catch (NumberFormatException e) {
-                throw new IllegalArgumentException(e);
-            }
+    static Slot parseAlias(String alias) {
+        try {
+            return Slot.fromValue(Integer.parseInt(alias, 16));
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException(e);
         }
     }
 }
