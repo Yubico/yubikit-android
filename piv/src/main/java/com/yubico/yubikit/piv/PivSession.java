@@ -336,9 +336,8 @@ public class PivSession extends ApplicationSession<PivSession> {
      * @throws IOException              in case of connection error
      * @throws ApduException            in case of an error response from the YubiKey
      * @throws BadResponseException     in case of incorrect YubiKey response
-     * @throws NoSuchAlgorithmException if the algorithm isn't supported
      */
-    public byte[] rawSignOrDecrypt(Slot slot, KeyType keyType, byte[] payload) throws IOException, ApduException, BadResponseException, NoSuchAlgorithmException {
+    public byte[] rawSignOrDecrypt(Slot slot, KeyType keyType, byte[] payload) throws IOException, ApduException, BadResponseException {
         int byteLength = keyType.params.bitLength / 8;
         byte[] padded;
         if(payload.length > byteLength) {

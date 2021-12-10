@@ -12,7 +12,7 @@ abstract class YubiKeyViewModel<Session : Closeable> : ViewModel() {
 
     val pendingAction = MutableLiveData<(Session.() -> String?)?>()
 
-    abstract fun getSession(device: YubiKeyDevice, onError: (Throwable) -> Unit, callback: (Session) -> Unit): Unit
+    abstract fun getSession(device: YubiKeyDevice, onError: (Throwable) -> Unit, callback: (Session) -> Unit)
     abstract fun Session.updateState()
 
     fun onYubiKeyDevice(device: YubiKeyDevice) {

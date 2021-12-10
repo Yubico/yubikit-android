@@ -72,6 +72,7 @@ class PivViewModel : YubiKeyViewModel<PivSession>() {
             }
         })
 
+        /*
         val sslContext = SSLContext.getInstance("TLS")
         sslContext.init(
             arrayOf(PivKeyManager.forSlot(this, Slot.AUTHENTICATION, Pin("123456"))),
@@ -85,5 +86,6 @@ class PivViewModel : YubiKeyViewModel<PivSession>() {
 
         val html = BufferedReader(InputStreamReader(connection.inputStream)).readText()
         Logger.d("HTML: $html")
+         */
     }
 }

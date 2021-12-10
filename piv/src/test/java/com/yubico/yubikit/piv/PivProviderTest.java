@@ -16,6 +16,7 @@ public class PivProviderTest {
 
     @Test
     public void testAlgorithmsWithProvider() throws Exception {
+        // This doesn't actually use the provider, it makes sure the provider doesn't interfere.
         Security.insertProviderAt(new PivProvider(), 1);
 
         PivTestUtils.rsaTests();

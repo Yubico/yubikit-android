@@ -16,20 +16,12 @@
 package com.yubico.yubikit.testing.piv;
 
 import com.yubico.yubikit.core.Logger;
-import com.yubico.yubikit.core.application.BadResponseException;
-import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.piv.KeyType;
-import com.yubico.yubikit.piv.PivSession;
-import com.yubico.yubikit.piv.Slot;
 import com.yubico.yubikit.testing.Codec;
 
-import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.ASN1Sequence;
-import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers;
 import org.bouncycastle.asn1.x500.X500Name;
-import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
-import org.bouncycastle.asn1.x9.X9ObjectIdentifiers;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.X509v3CertificateBuilder;
 import org.bouncycastle.operator.ContentSigner;
@@ -38,10 +30,8 @@ import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.junit.Assert;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidAlgorithmParameterException;
@@ -241,7 +231,7 @@ public class PivTestUtils {
         }
     }
 
-    public static X509Certificate createCertificate(KeyPair keyPair) throws IOException, CertificateException, NoSuchAlgorithmException, OperatorCreationException {
+    public static X509Certificate createCertificate(KeyPair keyPair) throws IOException, CertificateException, NoSuchAlgorithmException {
         X500Name name = new X500Name("CN=Example");
         X509v3CertificateBuilder serverCertGen = new X509v3CertificateBuilder(
                 name,
@@ -251,7 +241,6 @@ public class PivTestUtils {
                 name,
                 SubjectPublicKeyInfo.getInstance(ASN1Sequence.getInstance(keyPair.getPublic().getEncoded()))
         );
-
 
 
         String algorithm;
@@ -266,14 +255,19 @@ public class PivTestUtils {
             default:
                 throw new IllegalStateException();
         }
-        ContentSigner contentSigner = new JcaContentSignerBuilder(algorithm).build(keyPair.getPrivate());
-        X509CertificateHolder holder = serverCertGen.build(contentSigner);
+        try {
+            ContentSigner contentSigner = new JcaContentSignerBuilder(algorithm).build(keyPair.getPrivate());
+            X509CertificateHolder holder = serverCertGen.build(contentSigner);
 
-        InputStream stream = new ByteArrayInputStream(holder.getEncoded());
-        CertificateFactory cf = CertificateFactory.getInstance("X.509");
-        return (X509Certificate) cf.generateCertificate(stream);
+            InputStream stream = new ByteArrayInputStream(holder.getEncoded());
+            CertificateFactory cf = CertificateFactory.getInstance("X.509");
+            return (X509Certificate) cf.generateCertificate(stream);
+        } catch (OperatorCreationException e) {
+            throw new RuntimeException(e);
+        }
     }
 
+    /*
     public static X509Certificate createCertificate(PivSession piv, PublicKey publicKey, Slot slot, KeyType keyType) throws IOException, CertificateException, NoSuchAlgorithmException {
         X500Name name = new X500Name("CN=Example");
         X509v3CertificateBuilder serverCertGen = new X509v3CertificateBuilder(
@@ -327,15 +321,16 @@ public class PivTestUtils {
         InputStream stream = new ByteArrayInputStream(holder.getEncoded());
         CertificateFactory cf = CertificateFactory.getInstance("X.509");
         return (X509Certificate) cf.generateCertificate(stream);
-/*
+
         KeyPair dummy = generateKey(keyType);
         serverCertGen.setSignatureAlgorithm(algorithm);
         X509Certificate cert = serverCertGen.generate(dummy.getPrivate());
 
         return signCertificate(piv, slot, keyType, cert.getTBSCertificate(), cert.getSigAlgName());
 
- */
+
     }
+    */
 
     public static byte[] signAndVerify2(PrivateKey privateKey, PublicKey publicKey, Signature algorithm) throws Exception {
         byte[] message = "Hello world".getBytes(StandardCharsets.UTF_8);
@@ -395,14 +390,14 @@ public class PivTestUtils {
     }
 
     public static void rsaTests() throws Exception {
-        for (KeyPair keyPair : new KeyPair[] { generateKey(KeyType.RSA1024), generateKey(KeyType.RSA2048) }) {
+        for (KeyPair keyPair : new KeyPair[]{generateKey(KeyType.RSA1024), generateKey(KeyType.RSA2048)}) {
             rsaEncryptAndDecrypt(keyPair.getPrivate(), keyPair.getPublic());
             rsaSignAndVerify(keyPair.getPrivate(), keyPair.getPublic());
         }
     }
 
     public static void ecTests() throws Exception {
-        for (KeyPair keyPair : new KeyPair[] { generateKey(KeyType.ECCP256), generateKey(KeyType.ECCP384) }) {
+        for (KeyPair keyPair : new KeyPair[]{generateKey(KeyType.ECCP256), generateKey(KeyType.ECCP384)}) {
             ecSignAndVerify(keyPair.getPrivate(), keyPair.getPublic());
             ecKeyAgreement(keyPair.getPrivate(), keyPair.getPublic());
         }
@@ -439,7 +434,7 @@ public class PivTestUtils {
 
     public static void ecKeyAgreement(PrivateKey privateKey, PublicKey publicKey) throws Exception {
         KeyPairGenerator kpg = KeyPairGenerator.getInstance("EC");
-        kpg.initialize(((ECKey)publicKey).getParams());
+        kpg.initialize(((ECKey) publicKey).getParams());
 
         KeyPair peerPair = kpg.generateKeyPair();
 

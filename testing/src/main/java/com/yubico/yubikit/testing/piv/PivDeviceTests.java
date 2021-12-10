@@ -27,9 +27,10 @@ import com.yubico.yubikit.piv.PinPolicy;
 import com.yubico.yubikit.piv.PivSession;
 import com.yubico.yubikit.piv.Slot;
 import com.yubico.yubikit.piv.TouchPolicy;
-import com.yubico.yubikit.piv.jca.Pin;
 import com.yubico.yubikit.piv.jca.PivAlgorithmParameterSpec;
 import com.yubico.yubikit.piv.jca.PivPrivateKey;
+import com.yubico.yubikit.piv.jca.PivProvider;
+import com.yubico.yubikit.piv.jca.PivSessionProvider;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.util.encoders.Hex;
@@ -50,6 +51,7 @@ import java.security.Security;
 import java.security.Signature;
 import java.security.SignatureException;
 import java.security.interfaces.ECPublicKey;
+import java.security.spec.AlgorithmParameterSpec;
 import java.security.spec.MGF1ParameterSpec;
 import java.security.spec.PSSParameterSpec;
 import java.util.Arrays;
@@ -59,7 +61,6 @@ import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.KeyAgreement;
-import javax.crypto.KeyGenerator;
 import javax.crypto.NoSuchPaddingException;
 
 public class PivDeviceTests {
@@ -68,6 +69,11 @@ public class PivDeviceTests {
     private static final char[] DEFAULT_PUK = "12345678".toCharArray();
 
     private static final List<String> MESSAGE_DIGESTS = Arrays.asList("SHA-1", "SHA-224", "SHA-256", "SHA-384", "SHA-512");
+
+    public static void initProviders() {
+        Security.addProvider(new BouncyCastleProvider());
+        Security.addProvider(new PivProvider());
+    }
 
     public static void testManagementKey(PivSession piv) throws BadResponseException, IOException, ApduException {
         byte[] key2 = Hex.decode("010203040102030401020304010203040102030401020304");
@@ -210,10 +216,15 @@ public class PivDeviceTests {
         }
 
         Logger.d("Create signature");
-        piv.verifyPin(DEFAULT_PIN);
-        Signature sig = Signature.getInstance(signatureAlgorithm);
-        byte[] signature = piv.sign(slot, keyType, message, sig);
+        //byte[] signature = piv.sign(slot, keyType, message, sig);
         try {
+            Signature sig = Signature.getInstance(signatureAlgorithm);
+            sig.initSign(PivPrivateKey.of(publicKey, slot, new PivSessionProvider.FromInstanceWithPin(piv, DEFAULT_PIN)));
+            sig.update(message);
+            byte[] signature = sig.sign();
+
+            // Verify
+            sig = Signature.getInstance(signatureAlgorithm);
             sig.initVerify(publicKey);
             sig.update(message);
             Assert.assertTrue("Verify signature", sig.verify(signature));
@@ -222,46 +233,51 @@ public class PivDeviceTests {
         }
     }
 
-    public static void testSign(PivSession piv, KeyType keyType) throws NoSuchAlgorithmException, IOException, ApduException, InvalidPinException, InvalidKeyException, BadResponseException, InvalidAlgorithmParameterException {
+    public static void testSign(PivSession piv, KeyType keyType) throws NoSuchAlgorithmException, IOException, ApduException, InvalidPinException, InvalidKeyException, BadResponseException, InvalidAlgorithmParameterException, SignatureException {
         piv.authenticate(ManagementKeyType.TDES, DEFAULT_MANAGEMENT_KEY);
         Logger.d("Generate key: " + keyType);
         PublicKey publicKey = piv.generateKey(Slot.SIGNATURE, keyType, PinPolicy.DEFAULT, TouchPolicy.DEFAULT);
+        PrivateKey privateKey = PivPrivateKey.of(publicKey, Slot.SIGNATURE, new PivSessionProvider.FromInstanceWithPin(piv, DEFAULT_PIN));
 
-        Security.addProvider(new BouncyCastleProvider());
         switch (keyType.params.algorithm) {
             case EC:
-                testSign(piv, publicKey, Signature.getInstance("SHA1withECDSA"));
-                testSign(piv, publicKey, Signature.getInstance("SHA256withECDSA"));
-                testSign(piv, publicKey, Signature.getInstance("NONEwithECDSA"));
-                testSign(piv, publicKey, Signature.getInstance("SHA3-256withECDSA"));
+                testSign(privateKey, publicKey, "SHA1withECDSA", null);
+                testSign(privateKey, publicKey, "SHA256withECDSA", null);
+                testSign(privateKey, publicKey, "NONEwithECDSA", null);
+                testSign(privateKey, publicKey, "SHA3-256withECDSA", null);
                 break;
             case RSA:
-                testSign(piv, publicKey, Signature.getInstance("SHA1withRSA"));
-                testSign(piv, publicKey, Signature.getInstance("SHA256withRSA"));
-                testSign(piv, publicKey, Signature.getInstance("RSASSA-PSS"));
-                testSign(piv, publicKey, Signature.getInstance("SHA256withRSA/PSS"));
+                testSign(privateKey, publicKey, "SHA1withRSA", null);
+                testSign(privateKey, publicKey, "SHA256withRSA", null);
+                testSign(privateKey, publicKey, "RSASSA-PSS", new PSSParameterSpec("SHA-256", "MGF1", MGF1ParameterSpec.SHA256, 8, 1));
 
                 // Test with custom parameter. We use a 0-length salt and ensure signatures are the same
-                Signature deterministicPss = Signature.getInstance("SHA256withRSA/PSS");
-                deterministicPss.setParameter(new PSSParameterSpec("SHA-256", "MGF1", MGF1ParameterSpec.SHA256, 0, 1));
-                byte[] sig1 = testSign(piv, publicKey, deterministicPss);
-                byte[] sig2 = testSign(piv, publicKey, deterministicPss);
+                PSSParameterSpec param = new PSSParameterSpec("SHA-256", "MGF1", MGF1ParameterSpec.SHA256, 0, 1);
+                byte[] sig1 = testSign(privateKey, publicKey, "RSASSA-PSS", param);
+                byte[] sig2 = testSign(privateKey, publicKey, "RSASSA-PSS", param);
                 Assert.assertArrayEquals("PSS parameters not used, signatures are not identical!", sig1, sig2);
                 break;
         }
     }
 
-    public static byte[] testSign(PivSession piv, PublicKey publicKey, Signature signatureAlgorithm) throws NoSuchAlgorithmException, IOException, ApduException, InvalidPinException, BadResponseException {
+    public static byte[] testSign(PrivateKey privateKey, PublicKey publicKey, String signatureAlgorithm, AlgorithmParameterSpec param) throws NoSuchAlgorithmException, IOException, ApduException, InvalidPinException, BadResponseException, InvalidAlgorithmParameterException, InvalidKeyException, SignatureException {
         byte[] message = "Hello world!".getBytes(StandardCharsets.UTF_8);
 
-        Logger.d("Create signature using " + signatureAlgorithm.getAlgorithm());
-        piv.verifyPin(DEFAULT_PIN);
-        byte[] signature = piv.sign(Slot.SIGNATURE, KeyType.fromKey(publicKey), message, signatureAlgorithm);
+        Logger.d("Create signature using " + signatureAlgorithm);
+        Signature signer = Signature.getInstance(signatureAlgorithm);
+        signer.initSign(privateKey);
+        if (param != null) signer.setParameter(param);
+        signer.update(message);
+        byte[] signature = signer.sign();
+
+        //byte[] signature = piv.sign(Slot.SIGNATURE, KeyType.fromKey(publicKey), message, signatureAlgorithm);
         try {
-            signatureAlgorithm.initVerify(publicKey);
-            signatureAlgorithm.update(message);
-            Assert.assertTrue("Verify signature", signatureAlgorithm.verify(signature));
-            Logger.d("Signature verified for: " + signatureAlgorithm.getAlgorithm());
+            Signature verifier = Signature.getInstance(signatureAlgorithm);
+            verifier.initVerify(publicKey);
+            if (param != null) verifier.setParameter(param);
+            verifier.update(message);
+            Assert.assertTrue("Verify signature", verifier.verify(signature));
+            Logger.d("Signature verified for: " + signatureAlgorithm);
             return signature;
         } catch (InvalidKeyException | SignatureException e) {
             throw new RuntimeException(e);
@@ -292,8 +308,9 @@ public class PivDeviceTests {
         byte[] ct = cipher.doFinal(message);
         Logger.d("Cipher text " + ct.length + ": " + StringUtils.bytesToHex(ct));
 
-        piv.verifyPin(DEFAULT_PIN);
-        byte[] pt = piv.decrypt(Slot.KEY_MANAGEMENT, ct, cipher);
+        Cipher decryptCipher = Cipher.getInstance(cipher.getAlgorithm());
+        decryptCipher.init(Cipher.DECRYPT_MODE, PivPrivateKey.of(publicKey, Slot.KEY_MANAGEMENT, new PivSessionProvider.FromInstanceWithPin(piv, DEFAULT_PIN)));
+        byte[] pt = decryptCipher.doFinal(ct);
 
         Assert.assertArrayEquals(message, pt);
         Logger.d("Decrypt successful for " + cipher.getAlgorithm());
@@ -353,10 +370,13 @@ public class PivDeviceTests {
     }
 
     public static void testProviderWithDevice(PivSession piv) throws Exception {
+        PivSessionProvider provider = new PivSessionProvider.FromInstance(piv);
+
         piv.authenticate(ManagementKeyType.TDES, DEFAULT_MANAGEMENT_KEY);
+        piv.verifyPin(DEFAULT_PIN);
 
         KeyPairGenerator ecGen = KeyPairGenerator.getInstance("EC");
-        ecGen.initialize(new PivAlgorithmParameterSpec(piv, Slot.AUTHENTICATION, null, null, new Pin(DEFAULT_PIN)));
+        ecGen.initialize(new PivAlgorithmParameterSpec(provider, Slot.AUTHENTICATION, null, null));
         for (KeyType keyType : Arrays.asList(KeyType.ECCP256, KeyType.ECCP384)) {
             ecGen.initialize(keyType.params.bitLength);
             KeyPair keyPair = ecGen.generateKeyPair();
@@ -365,7 +385,7 @@ public class PivDeviceTests {
         }
 
         KeyPairGenerator rsaGen = KeyPairGenerator.getInstance("RSA");
-        rsaGen.initialize(new PivAlgorithmParameterSpec(piv, Slot.AUTHENTICATION, null, null, new Pin(DEFAULT_PIN)));
+        rsaGen.initialize(new PivAlgorithmParameterSpec(provider, Slot.AUTHENTICATION, null, null));
         for (KeyType keyType : Arrays.asList(KeyType.RSA1024, KeyType.RSA2048)) {
             rsaGen.initialize(keyType.params.bitLength);
             KeyPair keyPair = rsaGen.generateKeyPair();

@@ -8,6 +8,7 @@
     <string name="menu_mgmt">Device Configuration</string>
     <string name="menu_otp">YubiOTP</string>
     <string name="menu_piv">PIV</string>
+    <string name="menu_web">WebView</string>
     <string name="menu_oath">OATH</string>
 
     <string name="need_yubikey">Plug in you YubiKey or tap over NFC reader</string>
@@ -48,6 +49,7 @@
     <string name="piv_sign">Sign</string>
     <string name="piv_sign_desc">Sign a message with the private key</string>
     <string name="piv_certificate_desc">Certificate actions</string>
+    <string name="piv_webview">WebView</string>
 
     <string name="mgmt_subtitle">Enable/disable applications</string>
 

@@ -6,6 +6,7 @@
     android:padding="@dimen/card_view_margin">
 
     <LinearLayout
+        android:id="@+id/info"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical">
@@ -125,6 +126,12 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/piv_sign" />
+
+        <Button
+            android:id="@+id/webview"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/piv_webview" />
 
     </LinearLayout>
 </ScrollView>
