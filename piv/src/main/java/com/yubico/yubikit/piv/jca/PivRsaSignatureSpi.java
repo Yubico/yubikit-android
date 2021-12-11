@@ -1,6 +1,9 @@
 package com.yubico.yubikit.piv.jca;
 
+import com.yubico.yubikit.core.util.Callback;
+import com.yubico.yubikit.core.util.Result;
 import com.yubico.yubikit.piv.KeyType;
+import com.yubico.yubikit.piv.PivSession;
 
 import java.security.AlgorithmParameters;
 import java.security.InvalidAlgorithmParameterException;
@@ -17,12 +20,11 @@ import java.security.spec.AlgorithmParameterSpec;
 import java.util.Map;
 
 import javax.annotation.Nullable;
-import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 
 public class PivRsaSignatureSpi extends SignatureSpi {
+    private final Callback<Callback<Result<PivSession, Exception>>> provider;
     private final Map<KeyType, KeyPair> dummyKeys;
     private final String signature;
 
@@ -32,7 +34,8 @@ public class PivRsaSignatureSpi extends SignatureSpi {
     @Nullable
     private Signature delegate;
 
-    public PivRsaSignatureSpi(Map<KeyType, KeyPair> dummyKeys, String signature) throws NoSuchPaddingException {
+    PivRsaSignatureSpi(Callback<Callback<Result<PivSession, Exception>>> provider, Map<KeyType, KeyPair> dummyKeys, String signature) throws NoSuchPaddingException {
+        this.provider = provider;
         this.dummyKeys = dummyKeys;
         this.signature = signature;
     }
@@ -100,8 +103,8 @@ public class PivRsaSignatureSpi extends SignatureSpi {
             Cipher rawRsa = Cipher.getInstance("RSA/ECB/NoPadding");
             rawRsa.init(Cipher.ENCRYPT_MODE, dummyKeys.get(this.privateKey.keyType).getPublic());
             byte[] padded = rawRsa.doFinal(delegate.sign());
-            return privateKey.apply(padded);
-        } catch (IllegalBlockSizeException | BadPaddingException | NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException e) {
+            return privateKey.rawSignOrDecrypt(provider, padded);
+        } catch (Exception e) {
             throw new SignatureException(e);
         }
     }

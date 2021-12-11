@@ -1,7 +1,10 @@
 package com.yubico.yubikit.piv.jca;
 
 import com.yubico.yubikit.core.Logger;
+import com.yubico.yubikit.core.util.Callback;
+import com.yubico.yubikit.core.util.Result;
 import com.yubico.yubikit.piv.KeyType;
+import com.yubico.yubikit.piv.PivSession;
 
 import java.io.ByteArrayOutputStream;
 import java.security.AlgorithmParameters;
@@ -10,7 +13,6 @@ import java.security.InvalidKeyException;
 import java.security.Key;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
-import java.security.Provider;
 import java.security.SecureRandom;
 import java.security.spec.AlgorithmParameterSpec;
 import java.util.Map;
@@ -24,6 +26,7 @@ import javax.crypto.NoSuchPaddingException;
 import javax.crypto.ShortBufferException;
 
 public class PivCipherSpi extends CipherSpi {
+    private final Callback<Callback<Result<PivSession, Exception>>> provider;
     private final Map<KeyType, KeyPair> dummyKeys;
     private final ByteArrayOutputStream buffer = new ByteArrayOutputStream();
     @Nullable
@@ -34,7 +37,8 @@ public class PivCipherSpi extends CipherSpi {
     private String padding;
     private int opmode = -1;
 
-    public PivCipherSpi(Map<KeyType, KeyPair> dummyKeys) throws NoSuchPaddingException {
+    PivCipherSpi(Callback<Callback<Result<PivSession, Exception>>> provider, Map<KeyType, KeyPair> dummyKeys) throws NoSuchPaddingException {
+        this.provider = provider;
         this.dummyKeys = dummyKeys;
     }
 
@@ -125,20 +129,20 @@ public class PivCipherSpi extends CipherSpi {
             delegate.init(opmode, dummy.getPrivate());
             switch (opmode) {
                 case Cipher.DECRYPT_MODE:  // Decrypt, unpad
-                    return delegate.doFinal(rawRsa.doFinal(privateKey.apply(cipherText)));
+                    return delegate.doFinal(rawRsa.doFinal(privateKey.rawSignOrDecrypt(provider, cipherText)));
                 case Cipher.ENCRYPT_MODE:  // Pad, decrypt
                     try {
-                        return privateKey.apply(rawRsa.doFinal(delegate.doFinal(cipherText)));
+                        return privateKey.rawSignOrDecrypt(provider, rawRsa.doFinal(delegate.doFinal(cipherText)));
                     } catch (BadPaddingException | IllegalBlockSizeException e) {
                         throw new IllegalStateException(e); // Shouldn't happen
                     }
                 default:
                     throw new UnsupportedOperationException();
             }
-        } catch (InvalidKeyException | NoSuchAlgorithmException e) {
-            throw new IllegalStateException(e);
         } catch (NoSuchPaddingException e) {
             throw new UnsupportedOperationException("SecurityProvider doesn't support RSA without padding", e);
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
         }
     }
 

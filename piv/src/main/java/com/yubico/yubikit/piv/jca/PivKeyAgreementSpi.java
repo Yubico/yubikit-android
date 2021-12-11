@@ -1,6 +1,9 @@
 package com.yubico.yubikit.piv.jca;
 
+import com.yubico.yubikit.core.util.Callback;
+import com.yubico.yubikit.core.util.Result;
 import com.yubico.yubikit.piv.KeyType;
+import com.yubico.yubikit.piv.PivSession;
 
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
@@ -17,10 +20,15 @@ import javax.crypto.SecretKey;
 import javax.crypto.ShortBufferException;
 
 public class PivKeyAgreementSpi extends KeyAgreementSpi {
+    private final Callback<Callback<Result<PivSession, Exception>>> provider;
     @Nullable
     private PivPrivateKey.EcKey privateKey;
     @Nullable
     private ECPublicKey publicKey;
+
+    PivKeyAgreementSpi(Callback<Callback<Result<PivSession, Exception>>> provider) {
+        this.provider = provider;
+    }
 
     @Override
     protected void engineInit(Key key, SecureRandom random) throws InvalidKeyException {
@@ -56,8 +64,8 @@ public class PivKeyAgreementSpi extends KeyAgreementSpi {
     protected byte[] engineGenerateSecret() throws IllegalStateException {
         if (privateKey != null && publicKey != null) {
             try {
-                return privateKey.keyAgreement(publicKey);
-            } catch (InvalidKeyException e) {
+                return privateKey.keyAgreement(provider, publicKey);
+            } catch (Exception e) {
                 throw new IllegalStateException(e);
             } finally {
                 publicKey = null;

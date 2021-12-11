@@ -51,7 +51,7 @@ abstract class YubiKeyFragment<App : Closeable, VM : YubiKeyViewModel<App>> : Fr
                 }
             }.onFailure {
                 Logger.e("Error:", it)
-                Toast.makeText(context, it.message, Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, it.message ?: "No message", Toast.LENGTH_SHORT).show()
                 if (it is ApplicationNotAvailableException) {
                     emptyText.setText(R.string.app_missing)
                 }
