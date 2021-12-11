@@ -1,5 +1,9 @@
 package com.yubico.yubikit.piv.jca;
 
+import com.yubico.yubikit.core.util.Callback;
+import com.yubico.yubikit.core.util.Result;
+import com.yubico.yubikit.piv.PivSession;
+
 import java.io.ByteArrayOutputStream;
 import java.security.InvalidKeyException;
 import java.security.InvalidParameterException;
@@ -13,8 +17,13 @@ import java.security.SignatureSpi;
 import javax.annotation.Nullable;
 
 public abstract class PivEcSignatureSpi extends SignatureSpi {
+    private final Callback<Callback<Result<PivSession, Exception>>> provider;
     @Nullable
     private PivPrivateKey.EcKey privateKey;
+
+    protected PivEcSignatureSpi(Callback<Callback<Result<PivSession, Exception>>> provider) {
+        this.provider = provider;
+    }
 
     @Override
     protected void engineInitVerify(PublicKey publicKey) throws InvalidKeyException {
@@ -59,7 +68,11 @@ public abstract class PivEcSignatureSpi extends SignatureSpi {
         if (privateKey == null) {
             throw new SignatureException("Not initialized");
         }
-        return privateKey.apply(digest());
+        try {
+            return privateKey.rawSignOrDecrypt(provider, digest());
+        } catch (Exception e) {
+            throw new SignatureException(e);
+        }
     }
 
     @Override
@@ -79,6 +92,10 @@ public abstract class PivEcSignatureSpi extends SignatureSpi {
 
     public static class Prehashed extends PivEcSignatureSpi {
         private final ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+
+        Prehashed(Callback<Callback<Result<PivSession, Exception>>> provider) {
+            super(provider);
+        }
 
         @Override
         protected void engineInitSign(PrivateKey privateKey) throws InvalidKeyException {
@@ -105,7 +122,8 @@ public abstract class PivEcSignatureSpi extends SignatureSpi {
     public static class Hashed extends PivEcSignatureSpi {
         private final MessageDigest digest;
 
-        Hashed(String algorithm) throws NoSuchAlgorithmException {
+        Hashed(Callback<Callback<Result<PivSession, Exception>>> provider, String algorithm) throws NoSuchAlgorithmException {
+            super(provider);
             digest = MessageDigest.getInstance(algorithm);
         }
 

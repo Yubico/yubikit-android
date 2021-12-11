@@ -68,7 +68,7 @@ class OathFragment : YubiKeyFragment<OathSession, OathViewModel>() {
             binding.swiperefresh.isRefreshing = false
         }
 
-        viewModel.result.observe(viewLifecycleOwner, Observer { result ->
+        viewModel.result.observe(viewLifecycleOwner, { result ->
             result.onFailure { e ->
                 if (e is ApduException && e.sw == SW.SECURITY_CONDITION_NOT_SATISFIED) {
                     viewModel.oathDeviceId.value?.let { deviceId ->

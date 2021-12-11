@@ -1,11 +1,10 @@
 package com.yubico.yubikit.piv.jca;
 
-import com.yubico.yubikit.core.Logger;
-import com.yubico.yubikit.core.application.BadResponseException;
-import com.yubico.yubikit.core.smartcard.ApduException;
+import com.yubico.yubikit.core.util.Callback;
+import com.yubico.yubikit.core.util.Result;
 import com.yubico.yubikit.piv.KeyType;
+import com.yubico.yubikit.piv.PivSession;
 
-import java.io.IOException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidParameterException;
 import java.security.KeyPair;
@@ -14,13 +13,16 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.security.spec.AlgorithmParameterSpec;
+import java.util.concurrent.CompletableFuture;
 
 import javax.annotation.Nullable;
 
 abstract class PivKeyPairGeneratorSpi extends KeyPairGeneratorSpi {
+    private final Callback<Callback<Result<PivSession, Exception>>> provider;
     private KeyType keyType;
 
-    PivKeyPairGeneratorSpi(KeyType defaultKeyType) {
+    PivKeyPairGeneratorSpi(Callback<Callback<Result<PivSession, Exception>>> provider, KeyType defaultKeyType) {
+        this.provider = provider;
         keyType = defaultKeyType;
     }
 
@@ -46,26 +48,25 @@ abstract class PivKeyPairGeneratorSpi extends KeyPairGeneratorSpi {
         if (spec == null) {
             throw new IllegalStateException("KeyPairGenerator not initialized!");
         }
-        PublicKey publicKey = spec.sessionProvider.use((piv) -> {
-            try {
-                return piv.generateKey(spec.slot, keyType, spec.pinPolicy, spec.touchPolicy);
-            } catch (IOException | ApduException | BadResponseException e) {
-                Logger.e("Error generating key", e);
-                return null;
-            }
-        });
-        if (publicKey != null) {
-            PrivateKey privateKey = PivPrivateKey.of(publicKey, spec.slot, spec.sessionProvider);
+        try {
+            CompletableFuture<Result<PublicKey, Exception>> future = new CompletableFuture<>();
+            provider.invoke(result -> future.complete(Result.of(() -> {
+                PivSession session = result.getValue();
+                return session.generateKey(spec.slot, keyType, spec.pinPolicy, spec.touchPolicy);
+            })));
+            PublicKey publicKey = future.get().getValue();
+            PrivateKey privateKey = PivPrivateKey.from(publicKey, spec.slot, spec.pin);
             return new KeyPair(publicKey, privateKey);
+        } catch (Exception e) {
+            throw new IllegalStateException("An error occurred when generating the key pair", e);
         }
-        throw new IllegalStateException("An error occurred when generating the key pair");
     }
 
     protected abstract KeyType getKeyType(int keySize);
 
     public static class Rsa extends PivKeyPairGeneratorSpi {
-        public Rsa() {
-            super(KeyType.RSA2048);
+        Rsa(Callback<Callback<Result<PivSession, Exception>>> provider) {
+            super(provider, KeyType.RSA2048);
         }
 
         @Override
@@ -83,8 +84,8 @@ abstract class PivKeyPairGeneratorSpi extends KeyPairGeneratorSpi {
     }
 
     public static class Ec extends PivKeyPairGeneratorSpi {
-        public Ec() {
-            super(KeyType.ECCP256);
+        Ec(Callback<Callback<Result<PivSession, Exception>>> provider) {
+            super(provider, KeyType.ECCP256);
         }
 
         @Override

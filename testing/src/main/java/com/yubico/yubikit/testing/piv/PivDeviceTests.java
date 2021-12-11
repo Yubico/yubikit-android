@@ -30,7 +30,6 @@ import com.yubico.yubikit.piv.TouchPolicy;
 import com.yubico.yubikit.piv.jca.PivAlgorithmParameterSpec;
 import com.yubico.yubikit.piv.jca.PivPrivateKey;
 import com.yubico.yubikit.piv.jca.PivProvider;
-import com.yubico.yubikit.piv.jca.PivSessionProvider;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.util.encoders.Hex;
@@ -70,10 +69,12 @@ public class PivDeviceTests {
 
     private static final List<String> MESSAGE_DIGESTS = Arrays.asList("SHA-1", "SHA-224", "SHA-256", "SHA-384", "SHA-512");
 
+    /*
     public static void initProviders() {
         Security.addProvider(new BouncyCastleProvider());
         Security.addProvider(new PivProvider());
     }
+     */
 
     public static void testManagementKey(PivSession piv) throws BadResponseException, IOException, ApduException {
         byte[] key2 = Hex.decode("010203040102030401020304010203040102030401020304");
@@ -219,7 +220,7 @@ public class PivDeviceTests {
         //byte[] signature = piv.sign(slot, keyType, message, sig);
         try {
             Signature sig = Signature.getInstance(signatureAlgorithm);
-            sig.initSign(PivPrivateKey.of(publicKey, slot, new PivSessionProvider.FromInstanceWithPin(piv, DEFAULT_PIN)));
+            sig.initSign(PivPrivateKey.from(publicKey, slot, DEFAULT_PIN));
             sig.update(message);
             byte[] signature = sig.sign();
 
@@ -234,10 +235,12 @@ public class PivDeviceTests {
     }
 
     public static void testSign(PivSession piv, KeyType keyType) throws NoSuchAlgorithmException, IOException, ApduException, InvalidPinException, InvalidKeyException, BadResponseException, InvalidAlgorithmParameterException, SignatureException {
+        Security.addProvider(new BouncyCastleProvider());
+        Security.addProvider(new PivProvider(piv));
         piv.authenticate(ManagementKeyType.TDES, DEFAULT_MANAGEMENT_KEY);
         Logger.d("Generate key: " + keyType);
         PublicKey publicKey = piv.generateKey(Slot.SIGNATURE, keyType, PinPolicy.DEFAULT, TouchPolicy.DEFAULT);
-        PrivateKey privateKey = PivPrivateKey.of(publicKey, Slot.SIGNATURE, new PivSessionProvider.FromInstanceWithPin(piv, DEFAULT_PIN));
+        PrivateKey privateKey = PivPrivateKey.from(publicKey, Slot.SIGNATURE, DEFAULT_PIN);
 
         switch (keyType.params.algorithm) {
             case EC:
@@ -309,7 +312,7 @@ public class PivDeviceTests {
         Logger.d("Cipher text " + ct.length + ": " + StringUtils.bytesToHex(ct));
 
         Cipher decryptCipher = Cipher.getInstance(cipher.getAlgorithm());
-        decryptCipher.init(Cipher.DECRYPT_MODE, PivPrivateKey.of(publicKey, Slot.KEY_MANAGEMENT, new PivSessionProvider.FromInstanceWithPin(piv, DEFAULT_PIN)));
+        decryptCipher.init(Cipher.DECRYPT_MODE, PivPrivateKey.from(publicKey, Slot.KEY_MANAGEMENT, DEFAULT_PIN));
         byte[] pt = decryptCipher.doFinal(ct);
 
         Assert.assertArrayEquals(message, pt);
@@ -370,13 +373,11 @@ public class PivDeviceTests {
     }
 
     public static void testProviderWithDevice(PivSession piv) throws Exception {
-        PivSessionProvider provider = new PivSessionProvider.FromInstance(piv);
-
         piv.authenticate(ManagementKeyType.TDES, DEFAULT_MANAGEMENT_KEY);
         piv.verifyPin(DEFAULT_PIN);
 
         KeyPairGenerator ecGen = KeyPairGenerator.getInstance("EC");
-        ecGen.initialize(new PivAlgorithmParameterSpec(provider, Slot.AUTHENTICATION, null, null));
+        ecGen.initialize(new PivAlgorithmParameterSpec(Slot.AUTHENTICATION, null, null, null));
         for (KeyType keyType : Arrays.asList(KeyType.ECCP256, KeyType.ECCP384)) {
             ecGen.initialize(keyType.params.bitLength);
             KeyPair keyPair = ecGen.generateKeyPair();
@@ -385,7 +386,7 @@ public class PivDeviceTests {
         }
 
         KeyPairGenerator rsaGen = KeyPairGenerator.getInstance("RSA");
-        rsaGen.initialize(new PivAlgorithmParameterSpec(provider, Slot.AUTHENTICATION, null, null));
+        rsaGen.initialize(new PivAlgorithmParameterSpec(Slot.AUTHENTICATION, null, null, null));
         for (KeyType keyType : Arrays.asList(KeyType.RSA1024, KeyType.RSA2048)) {
             rsaGen.initialize(keyType.params.bitLength);
             KeyPair keyPair = rsaGen.generateKeyPair();

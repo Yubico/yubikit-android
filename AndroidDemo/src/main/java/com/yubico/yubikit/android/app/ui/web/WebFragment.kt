@@ -22,15 +22,12 @@ import com.yubico.yubikit.core.Logger
 import com.yubico.yubikit.piv.PivSession
 import com.yubico.yubikit.piv.Slot
 import com.yubico.yubikit.piv.jca.PivPrivateKey
-import com.yubico.yubikit.piv.jca.PivSessionProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.ByteArrayInputStream
 import java.io.InputStream
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
-import java.util.concurrent.LinkedBlockingQueue
-import java.util.function.Function
 
 class WebFragment : YubiKeyFragment<PivSession, WebViewModel>() {
     override val viewModel: WebViewModel by activityViewModels()
@@ -75,27 +72,14 @@ class WebFragment : YubiKeyFragment<PivSession, WebViewModel>() {
             }
 
             override fun onReceivedClientCertRequest(view: WebView, request: ClientCertRequest) {
-                Logger.d("onReceivedClientCertRequest ${request}")
-                val privateKey = PivPrivateKey.of(
-                    certificate.publicKey,
-                    slot,
-                    object :
-                        PivSessionProvider {
-                        override fun <T : Any?> use(function: Function<PivSession, T>): T? {
-                            val result = LinkedBlockingQueue<T>()
-                            lifecycleScope.launch(Dispatchers.Main) {
-                                getSecret(ContextHolder.context!!, R.string.enter_pin)?.let { pin ->
-                                    viewModel.pendingAction.postValue {
-                                        verifyPin(pin.toCharArray())
-                                        result.add(function.apply(this))
-                                        "OK"
-                                    }
-                                } ?: result.add(null)
-                            }
-                            return result.take()
-                        }
-                    })
-                request.proceed(privateKey, arrayOf(certificate))
+                Logger.d("onReceivedClientCertRequest $request")
+                lifecycleScope.launch(Dispatchers.Main) {
+                    getSecret(ContextHolder.context!!, R.string.enter_pin)?.let { pin ->
+                        val privateKey =
+                            PivPrivateKey.from(certificate.publicKey, slot, pin.toCharArray())
+                        request.proceed(privateKey, arrayOf(certificate))
+                    }
+                }
             }
 
             override fun onReceivedSslError(
@@ -110,7 +94,7 @@ class WebFragment : YubiKeyFragment<PivSession, WebViewModel>() {
 
         binding.webview.loadUrl(binding.edittext.text.toString())
 
-        binding.edittext.setOnEditorActionListener { v, actionId, event ->
+        binding.edittext.setOnEditorActionListener { _, actionId, _ ->
             when (actionId) {
                 EditorInfo.IME_ACTION_DONE -> {
                     binding.webview.loadUrl(binding.edittext.text.toString())

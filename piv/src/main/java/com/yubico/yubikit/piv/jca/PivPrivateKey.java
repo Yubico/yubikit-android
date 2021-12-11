@@ -1,16 +1,12 @@
 package com.yubico.yubikit.piv.jca;
 
-import com.yubico.yubikit.core.Logger;
-import com.yubico.yubikit.core.application.BadResponseException;
-import com.yubico.yubikit.core.smartcard.ApduException;
-import com.yubico.yubikit.piv.InvalidPinException;
+import com.yubico.yubikit.core.util.Callback;
+import com.yubico.yubikit.core.util.Result;
 import com.yubico.yubikit.piv.KeyType;
 import com.yubico.yubikit.piv.PivSession;
 import com.yubico.yubikit.piv.Slot;
 
-import java.io.IOException;
 import java.math.BigInteger;
-import java.security.InvalidKeyException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.interfaces.ECKey;
@@ -18,64 +14,56 @@ import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.ECParameterSpec;
-import java.util.function.Function;
+import java.util.Arrays;
+import java.util.concurrent.CompletableFuture;
 
 import javax.annotation.Nullable;
-import javax.security.auth.DestroyFailedException;
-import javax.security.auth.Destroyable;
 
 public abstract class PivPrivateKey implements PrivateKey {
     final Slot slot;
     final KeyType keyType;
-    protected final PivSessionProvider sessionProvider;
+    @Nullable
+    protected final char[] pin;
+    private boolean destroyed = false;
 
-    public static PivPrivateKey of(PublicKey publicKey, Slot slot, PivSessionProvider sessionProvider) {
+    public static PivPrivateKey from(PublicKey publicKey, Slot slot, @Nullable char[] pin) {
         KeyType keyType = KeyType.fromKey(publicKey);
-        switch (keyType.params.algorithm) {
-            case EC:
-                return new EcKey(sessionProvider, slot, keyType, ((ECPublicKey)publicKey).getParams());
-            case RSA:
-                return new RsaKey(sessionProvider, slot, keyType, ((RSAPublicKey)publicKey).getModulus());
+        if (keyType.params.algorithm == KeyType.Algorithm.RSA) {
+            return new PivPrivateKey.RsaKey(slot, keyType, ((RSAPublicKey) publicKey).getModulus(), pin);
+        } else {
+            return new PivPrivateKey.EcKey(slot, keyType, ((ECPublicKey) publicKey).getParams(), pin);
         }
-        throw new IllegalArgumentException();
     }
 
-    private PivPrivateKey(PivSessionProvider sessionProvider, Slot slot, KeyType keyType) {
-        this.sessionProvider = sessionProvider;
+    public PivPrivateKey(Slot slot, KeyType keyType, @Nullable char[] pin) {
         this.slot = slot;
         this.keyType = keyType;
+        this.pin = pin != null ? Arrays.copyOf(pin, pin.length) : null;
     }
 
-    byte[] apply(byte[] message) {
-        byte[] result = sessionProvider.use((session) -> {
-            try {
-                return session.rawSignOrDecrypt(slot, keyType, message);
-            } catch (IOException | ApduException | BadResponseException e) {
-                Logger.e("Error signing message", e);
-                return null;
+    byte[] rawSignOrDecrypt(Callback<Callback<Result<PivSession, Exception>>> provider, byte[] payload) throws Exception {
+        CompletableFuture<Result<byte[], Exception>> future = new CompletableFuture<>();
+        provider.invoke(result -> future.complete(Result.of(() -> {
+            PivSession session = result.getValue();
+            if (pin != null) {
+                session.verifyPin(pin);
             }
-        });
-        if(result != null) {
-            return result;
-        }
-        throw new UnsupportedOperationException();
+            return session.rawSignOrDecrypt(slot, keyType, payload);
+        })));
+        return future.get().getValue();
     }
 
     @Override
-    public void destroy() throws DestroyFailedException {
-        if (sessionProvider instanceof Destroyable) {
-            ((Destroyable) sessionProvider).destroy();
-        } else {
-            throw new DestroyFailedException();
+    public void destroy() {
+        if (pin != null) {
+            Arrays.fill(pin, (char) 0);
         }
+        destroyed = true;
     }
 
     @Override
     public boolean isDestroyed() {
-        if (sessionProvider instanceof Destroyable) {
-            return ((Destroyable) sessionProvider).isDestroyed();
-        }
-        return false;
+        return destroyed;
     }
 
     @Override
@@ -96,37 +84,36 @@ public abstract class PivPrivateKey implements PrivateKey {
     }
 
     static class EcKey extends PivPrivateKey implements ECKey {
-        private final ECParameterSpec params;
-        private EcKey(PivSessionProvider sessionProvider, Slot slot, KeyType keyType, ECParameterSpec params) {
-            super(sessionProvider, slot, keyType);
+        private final ECParameterSpec params;  //TODO: Get this from KeyType?
+
+        private EcKey(Slot slot, KeyType keyType, ECParameterSpec params, @Nullable char[] pin) {
+            super(slot, keyType, pin);
             this.params = params;
+        }
+
+        byte[] keyAgreement(Callback<Callback<Result<PivSession, Exception>>> provider, ECPublicKey peerPublicKey) throws Exception {
+            CompletableFuture<Result<byte[], Exception>> future = new CompletableFuture<>();
+            provider.invoke(result -> future.complete(Result.of(() -> {
+                PivSession session = result.getValue();
+                if (pin != null) {
+                    session.verifyPin(pin);
+                }
+                return session.calculateSecret(slot, peerPublicKey);
+            })));
+            return future.get().getValue();
         }
 
         @Override
         public ECParameterSpec getParams() {
             return params;
         }
-
-        byte[] keyAgreement(ECPublicKey peerPublicKey) throws InvalidKeyException {
-            byte[] result = sessionProvider.use((session) -> {
-                try {
-                    return session.calculateSecret(slot, peerPublicKey);
-                } catch (IOException | ApduException | BadResponseException e) {
-                    Logger.e("Error performing key agreement", e);
-                    return null;
-                }
-            });
-            if(result != null) {
-                return result;
-            }
-            throw new UnsupportedOperationException();
-        }
     }
 
     static class RsaKey extends PivPrivateKey implements RSAKey {
         private final BigInteger modulus;
-        private RsaKey(PivSessionProvider getSession, Slot slot, KeyType keyType, BigInteger modulus) {
-            super(getSession, slot, keyType);
+
+        private RsaKey(Slot slot, KeyType keyType, BigInteger modulus, @Nullable char[] pin) {
+            super(slot, keyType, pin);
             this.modulus = modulus;
         }
 
@@ -135,5 +122,4 @@ public abstract class PivPrivateKey implements PrivateKey {
             return modulus;
         }
     }
-
 }

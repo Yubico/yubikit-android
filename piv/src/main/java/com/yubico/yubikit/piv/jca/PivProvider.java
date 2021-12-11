@@ -1,7 +1,10 @@
 package com.yubico.yubikit.piv.jca;
 
 import com.yubico.yubikit.core.Logger;
+import com.yubico.yubikit.core.util.Callback;
+import com.yubico.yubikit.core.util.Result;
 import com.yubico.yubikit.piv.KeyType;
+import com.yubico.yubikit.piv.PivSession;
 
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -19,15 +22,37 @@ public class PivProvider extends Provider {
     private static final Map<String, String> ecAttributes = Collections.singletonMap("SupportedKeyClasses", PivPrivateKey.EcKey.class.getName());
     private static final Map<String, String> rsaAttributes = Collections.singletonMap("SupportedKeyClasses", PivPrivateKey.RsaKey.class.getName());
 
+    private final Callback<Callback<Result<PivSession, Exception>>> sessionRequester;
     private final Map<KeyType, KeyPair> rsaDummyKeys = new HashMap<>();
 
-    public PivProvider() {
+    /**
+     * Creates a Security Provider wrapping an instance of a PivSession.
+     * <p>
+     * The PivSession must be active for as long as the Provider will be used.
+     *
+     * @param session A PivSession to use for YubiKey interaction.
+     */
+    public PivProvider(PivSession session) {
+        this(callback -> callback.invoke(Result.success(session)));
+    }
+
+    /**
+     * Creates a Security Provider capable of using a PivSession with a YubiKey to perform key operations.
+     * @param sessionRequester a mechanism for the Provider to get an instance of a PivSession.
+     */
+    public PivProvider(Callback<Callback<Result<PivSession, Exception>>> sessionRequester) {
         super("YKPiv", 1.0, "JCA Provider for YubiKey PIV");
+        this.sessionRequester = sessionRequester;
 
         Logger.d("EC " + ecAttributes);
         Logger.d("RSA " + rsaAttributes);
 
-        putService(new Service(this, "Signature", "NONEwithECDSA", PivEcSignatureSpi.Prehashed.class.getName(), null, ecAttributes));
+        putService(new Service(this, "Signature", "NONEwithECDSA", PivEcSignatureSpi.Prehashed.class.getName(), null, ecAttributes) {
+            @Override
+            public Object newInstance(Object constructorParameter) {
+                return new PivEcSignatureSpi.Prehashed(sessionRequester);
+            }
+        });
 
         try {
             KeyPairGenerator rsaGen = KeyPairGenerator.getInstance("RSA");
@@ -65,12 +90,32 @@ public class PivProvider extends Provider {
             }
         }
 
-        putService(new Service(this, "KeyPairGenerator", "RSA", PivKeyPairGeneratorSpi.Rsa.class.getName(), null, null));
-        putService(new Service(this, "KeyPairGenerator", "EC", PivKeyPairGeneratorSpi.Ec.class.getName(), null, null));
-        putService(new Service(this, "KeyStore", "YKPiv", PivKeyStoreSpi.class.getName(), null, null));
+        putService(new Service(this, "KeyPairGenerator", "RSA", PivKeyPairGeneratorSpi.Rsa.class.getName(), null, null) {
+            @Override
+            public Object newInstance(Object constructorParameter) {
+                return new PivKeyPairGeneratorSpi.Rsa(sessionRequester);
+            }
+        });
+        putService(new Service(this, "KeyPairGenerator", "EC", PivKeyPairGeneratorSpi.Ec.class.getName(), null, null) {
+            @Override
+            public Object newInstance(Object constructorParameter) {
+                return new PivKeyPairGeneratorSpi.Ec(sessionRequester);
+            }
+        });
+        putService(new Service(this, "KeyStore", "YKPiv", PivKeyStoreSpi.class.getName(), null, null) {
+            @Override
+            public Object newInstance(Object constructorParameter) {
+                return new PivKeyStoreSpi(sessionRequester);
+            }
+        });
 
 
-        putService(new Service(this, "KeyAgreement", "ECDH", PivKeyAgreementSpi.class.getName(), null, ecAttributes));
+        putService(new Service(this, "KeyAgreement", "ECDH", PivKeyAgreementSpi.class.getName(), null, ecAttributes) {
+            @Override
+            public Object newInstance(Object constructorParameter) {
+                return new PivKeyAgreementSpi(sessionRequester);
+            }
+        });
     }
 
     @Override
@@ -93,7 +138,7 @@ public class PivProvider extends Provider {
 
         @Override
         public Object newInstance(Object constructorParameter) throws NoSuchAlgorithmException {
-            return new PivEcSignatureSpi.Hashed(digest);
+            return new PivEcSignatureSpi.Hashed(sessionRequester, digest);
         }
     }
 
@@ -105,7 +150,7 @@ public class PivProvider extends Provider {
         @Override
         public Object newInstance(Object constructorParameter) throws NoSuchAlgorithmException {
             try {
-                return new PivRsaSignatureSpi(rsaDummyKeys, getAlgorithm());
+                return new PivRsaSignatureSpi(sessionRequester, rsaDummyKeys, getAlgorithm());
             } catch (NoSuchPaddingException e) {
                 throw new NoSuchAlgorithmException("No underlying Provider supporting " + getAlgorithm() + " available.");
             }
@@ -120,7 +165,7 @@ public class PivProvider extends Provider {
         @Override
         public Object newInstance(Object constructorParameter) throws NoSuchAlgorithmException {
             try {
-                return new PivCipherSpi(rsaDummyKeys);
+                return new PivCipherSpi(sessionRequester, rsaDummyKeys);
             } catch (NoSuchPaddingException e) {
                 throw new NoSuchAlgorithmException(e);
             }
