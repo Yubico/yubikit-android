@@ -31,11 +31,11 @@ public abstract class PivPrivateKey implements PrivateKey {
         if (keyType.params.algorithm == KeyType.Algorithm.RSA) {
             return new PivPrivateKey.RsaKey(slot, keyType, ((RSAPublicKey) publicKey).getModulus(), pin);
         } else {
-            return new PivPrivateKey.EcKey(slot, keyType, ((ECPublicKey) publicKey).getParams(), pin);
+            return new PivPrivateKey.EcKey(slot, keyType, ((ECPublicKey) publicKey), pin);
         }
     }
 
-    public PivPrivateKey(Slot slot, KeyType keyType, @Nullable char[] pin) {
+    protected PivPrivateKey(Slot slot, KeyType keyType, @Nullable char[] pin) {
         this.slot = slot;
         this.keyType = keyType;
         this.pin = pin != null ? Arrays.copyOf(pin, pin.length) : null;
@@ -84,11 +84,11 @@ public abstract class PivPrivateKey implements PrivateKey {
     }
 
     static class EcKey extends PivPrivateKey implements ECKey {
-        private final ECParameterSpec params;  //TODO: Get this from KeyType?
+        private final ECPublicKey publicKey;
 
-        private EcKey(Slot slot, KeyType keyType, ECParameterSpec params, @Nullable char[] pin) {
+        private EcKey(Slot slot, KeyType keyType, ECPublicKey publicKey, @Nullable char[] pin) {
             super(slot, keyType, pin);
-            this.params = params;
+            this.publicKey = publicKey;
         }
 
         byte[] keyAgreement(Callback<Callback<Result<PivSession, Exception>>> provider, ECPublicKey peerPublicKey) throws Exception {
@@ -105,7 +105,7 @@ public abstract class PivPrivateKey implements PrivateKey {
 
         @Override
         public ECParameterSpec getParams() {
-            return params;
+            return publicKey.getParams();
         }
     }
 
