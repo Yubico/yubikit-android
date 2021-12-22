@@ -12,7 +12,6 @@ import com.yubico.yubikit.core.Logger;
 
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.WeakHashMap;
@@ -92,7 +91,11 @@ final class UsbDeviceManager {
                     context.registerReceiver(permissionReceiver, new IntentFilter(ACTION_USB_PERMISSION));
                 }
                 Logger.d("Requesting permission for UsbDevice: " + usbDevice.getDeviceName());
-                PendingIntent pendingUsbPermissionIntent = PendingIntent.getBroadcast(context, 0, new Intent(ACTION_USB_PERMISSION), 0);
+                int flags = 0;
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                    flags |= PendingIntent.FLAG_MUTABLE;
+                }
+                PendingIntent pendingUsbPermissionIntent = PendingIntent.getBroadcast(context, 0, new Intent(ACTION_USB_PERMISSION), flags);
                 UsbManager usbManager = (UsbManager) context.getSystemService(Context.USB_SERVICE);
                 usbManager.requestPermission(usbDevice, pendingUsbPermissionIntent);
                 awaitingPermissions.add(usbDevice);
