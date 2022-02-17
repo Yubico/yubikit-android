@@ -42,7 +42,7 @@ class OathViewModel : YubiKeyViewModel<OathSession>() {
     override fun OathSession.updateState() {
         _oathDeviceId.postValue(deviceId)
 
-        if (hasAccessKey()) {
+        if (isLocked) {
             password?.let {
                 it.first == deviceId && unlock(it.second)
             }
