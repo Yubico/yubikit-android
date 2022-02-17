@@ -49,14 +49,18 @@ public class DeviceInfo {
     private final FormFactor formFactor;
     private final Map<Transport, Integer> supportedCapabilities;
     private final boolean isLocked;
+    private final boolean isFips;
+    private final boolean isSky;
 
-    public DeviceInfo(DeviceConfig config, @Nullable Integer serialNumber, Version version, FormFactor formFactor, Map<Transport, Integer> supportedCapabilities, boolean isLocked) {
+    public DeviceInfo(DeviceConfig config, @Nullable Integer serialNumber, Version version, FormFactor formFactor, Map<Transport, Integer> supportedCapabilities, boolean isLocked, boolean isFips, boolean isSky) {
         this.config = config;
         this.serialNumber = serialNumber;
         this.version = version;
         this.formFactor = formFactor;
         this.supportedCapabilities = supportedCapabilities;
         this.isLocked = isLocked;
+        this.isFips = isFips;
+        this.isSky = isSky;
     }
 
     /**
@@ -113,6 +117,20 @@ public class DeviceInfo {
         return isLocked;
     }
 
+    /**
+     * Returns whether or not this is a FIPS compliant device
+     */
+    public boolean isFips() {
+        return isFips;
+    }
+
+    /**
+     * Returns whether or not this is a Security key
+     */
+    public boolean isSky() {
+        return isSky;
+    }
+
     static DeviceInfo parse(byte[] response, Version defaultVersion) throws BadResponseException {
         int length = response[0] & 0xff;
         if (length != response.length - 1) {
@@ -155,13 +173,16 @@ public class DeviceInfo {
             enabledCapabilities.put(Transport.NFC, readInt(data.get(TAG_NFC_ENABLED)));
         }
 
+        boolean fips = (formFactor.value & 0x80) == 0x80;
+        boolean sky = (formFactor.value & 0x40) == 0x40;
+
         return new DeviceInfo(
                 new DeviceConfig(
                         enabledCapabilities,
                         autoEjectTimeout,
                         challengeResponseTimeout,
                         deviceFlags
-                ), serialNumber, version, formFactor, supportedCapabilities, isLocked
+                ), serialNumber, version, formFactor, supportedCapabilities, isLocked, fips, sky
         );
     }
 
