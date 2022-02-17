@@ -113,6 +113,7 @@ public class OathSession extends ApplicationSession<OathSession> {
     private byte[] salt;
     @Nullable
     private byte[] challenge;
+    private boolean hasAccessKey;
 
     /**
      * Establishes a new session with a YubiKeys OATH application.
@@ -128,6 +129,7 @@ public class OathSession extends ApplicationSession<OathSession> {
         deviceId = selectResponse.getDeviceId();
         salt = selectResponse.salt;
         challenge = selectResponse.challenge;
+        hasAccessKey = challenge != null && challenge.length != 0;
         protocol.enableWorkarounds(version);
     }
 
@@ -164,6 +166,7 @@ public class OathSession extends ApplicationSession<OathSession> {
             deviceId = selectResponse.getDeviceId();
             salt = selectResponse.salt;
             challenge = null;
+            hasAccessKey = false;
         } catch (ApplicationNotAvailableException e) {
             throw new IllegalStateException(e);  // This shouldn't happen
         }
@@ -173,6 +176,13 @@ public class OathSession extends ApplicationSession<OathSession> {
      * Returns true if an Access Key is currently set.
      */
     public boolean hasAccessKey() {
+        return hasAccessKey;
+    }
+
+    /**
+     * Returns true if the session is locked.
+     */
+    public boolean isLocked() {
         return challenge != null && challenge.length != 0;
     }
 
@@ -188,7 +198,11 @@ public class OathSession extends ApplicationSession<OathSession> {
      * @throws ApduException in case of communication error
      */
     public boolean unlock(char[] password) throws IOException, ApduException {
-        if (hasAccessKey() && (password.length == 0)) {
+        if (!isLocked()) {
+            return true;
+        }
+
+        if (password.length == 0) {
             return false;
         }
 
@@ -227,7 +241,11 @@ public class OathSession extends ApplicationSession<OathSession> {
             byte[] data = protocol.sendAndReceive(new Apdu(0, INS_VALIDATE, 0, 0, Tlvs.encodeMap(request)));
             Map<Integer, byte[]> map = Tlvs.decodeMap(data);
             // return false if response from validation does not match verification
-            return (MessageDigest.isEqual(validator.calculateResponse(clientChallenge), map.get(TAG_RESPONSE)));
+            boolean responsesEqual = MessageDigest.isEqual(validator.calculateResponse(clientChallenge), map.get(TAG_RESPONSE));
+            if (responsesEqual) {
+                challenge = null;
+            }
+            return responsesEqual;
         } catch (ApduException e) {
             if (e.getSw() == SW.INCORRECT_PARAMETERS) {
                 // key didn't recognize secret
@@ -275,6 +293,7 @@ public class OathSession extends ApplicationSession<OathSession> {
         request.put(TAG_RESPONSE, doHmacSha1(key, challenge));
 
         protocol.sendAndReceive(new Apdu(0, INS_SET_CODE, 0, 0, Tlvs.encodeMap(request)));
+        hasAccessKey = true;
     }
 
     /**
@@ -285,6 +304,7 @@ public class OathSession extends ApplicationSession<OathSession> {
      */
     public void deleteAccessKey() throws IOException, ApduException {
         protocol.sendAndReceive(new Apdu(0, INS_SET_CODE, 0, 0, new Tlv(TAG_KEY, null).getBytes()));
+        hasAccessKey = false;
     }
 
     /**
