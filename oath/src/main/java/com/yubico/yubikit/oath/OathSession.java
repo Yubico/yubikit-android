@@ -113,7 +113,7 @@ public class OathSession extends ApplicationSession<OathSession> {
     private byte[] salt;
     @Nullable
     private byte[] challenge;
-    private boolean hasAccessKey;
+    private boolean isAccessKeySet;
 
     /**
      * Establishes a new session with a YubiKeys OATH application.
@@ -129,7 +129,7 @@ public class OathSession extends ApplicationSession<OathSession> {
         deviceId = selectResponse.getDeviceId();
         salt = selectResponse.salt;
         challenge = selectResponse.challenge;
-        hasAccessKey = challenge != null && challenge.length != 0;
+        isAccessKeySet = challenge != null && challenge.length != 0;
         protocol.enableWorkarounds(version);
     }
 
@@ -166,7 +166,7 @@ public class OathSession extends ApplicationSession<OathSession> {
             deviceId = selectResponse.getDeviceId();
             salt = selectResponse.salt;
             challenge = null;
-            hasAccessKey = false;
+            isAccessKeySet = false;
         } catch (ApplicationNotAvailableException e) {
             throw new IllegalStateException(e);  // This shouldn't happen
         }
@@ -174,10 +174,21 @@ public class OathSession extends ApplicationSession<OathSession> {
 
     /**
      * Returns true if an Access Key is currently set.
+     * @deprecated
+     * Use {@link #isAccessKeySet()} instead.
      */
+    @Deprecated
     public boolean hasAccessKey() {
-        return hasAccessKey;
+        return isAccessKeySet;
     }
+
+    /**
+     * Returns true if an Access Key is currently set.
+     */
+    public boolean isAccessKeySet() {
+        return isAccessKeySet;
+    }
+
 
     /**
      * Returns true if the session is locked.
@@ -293,7 +304,7 @@ public class OathSession extends ApplicationSession<OathSession> {
         request.put(TAG_RESPONSE, doHmacSha1(key, challenge));
 
         protocol.sendAndReceive(new Apdu(0, INS_SET_CODE, 0, 0, Tlvs.encodeMap(request)));
-        hasAccessKey = true;
+        isAccessKeySet = true;
     }
 
     /**
@@ -304,7 +315,7 @@ public class OathSession extends ApplicationSession<OathSession> {
      */
     public void deleteAccessKey() throws IOException, ApduException {
         protocol.sendAndReceive(new Apdu(0, INS_SET_CODE, 0, 0, new Tlv(TAG_KEY, null).getBytes()));
-        hasAccessKey = false;
+        isAccessKeySet = false;
     }
 
     /**
