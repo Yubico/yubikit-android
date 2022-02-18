@@ -1,54 +1,40 @@
-package com.yubico.yubikit.management.util;
+/*
+ * Copyright (C) 2022 Yubico.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.yubico.yubikit.support;
 
 import static com.yubico.yubikit.management.Capability.FIDO2;
 import static com.yubico.yubikit.management.Capability.OTP;
 import static com.yubico.yubikit.management.Capability.U2F;
+import static com.yubico.yubikit.support.Util.isFidoOnly;
+import static com.yubico.yubikit.support.YubiKeyTypeName.nameByYubiKeyType;
 
 import com.yubico.yubikit.core.Transport;
-import com.yubico.yubikit.core.Version;
 import com.yubico.yubikit.management.Capability;
 import com.yubico.yubikit.management.DeviceInfo;
 import com.yubico.yubikit.management.FormFactor;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.StringJoiner;
 import java.util.function.Function;
 
 import javax.annotation.Nonnull;
 
-public class DeviceInfoUtil {
-
-    private static final Map<YubiKeyType, String> yubiKeyName;
-
-    static {
-        Map<YubiKeyType, String> initMap = new LinkedHashMap<>();
-        initMap.put(YubiKeyType.YKS, "YubiKey Standard");
-        initMap.put(YubiKeyType.NEO, "YubiKey NEO");
-        initMap.put(YubiKeyType.SKY, "Security Key by Yubico");
-        initMap.put(YubiKeyType.YKP, "YubiKey Plus");
-        initMap.put(YubiKeyType.YK4, "YubiKey");
-
-        yubiKeyName = Collections.unmodifiableMap(initMap);
-    }
-
-    private static boolean isFidoOnly(int usbCapabilities) {
-        return (usbCapabilities & ~(U2F.bit | FIDO2.bit)) == 0;
-    }
-
-    private static boolean isFipsVersion(Version version) {
-        return version.isAtLeast(4, 4, 0) && version.isLessThan(4, 5, 0);
-    }
-
-    private static boolean isPreview(Version version) {
-        return (version.isAtLeast(5, 0, 0) && version.isLessThan(5, 1, 0))
-                || (version.isAtLeast(5, 2, 0) && version.isLessThan(5, 2, 3))
-                || (version.isAtLeast(5, 5, 0) && version.isLessThan(5, 5, 2));
-    }
-
+public class Device {
     /**
      * @return product name of the YubiKey
      */
@@ -65,7 +51,7 @@ public class DeviceInfoUtil {
                         YubiKeyType.SKY : (deviceInfo.getVersion().major == 3) ?
                         YubiKeyType.NEO : YubiKeyType.YK4;
 
-        String deviceName = yubiKeyName.get(yubiKeyType);
+        String deviceName = nameByYubiKeyType.get(yubiKeyType);
 
         if (yubiKeyType == YubiKeyType.SKY) {
             if (supportsCapability.apply(FIDO2)) {
@@ -83,7 +69,7 @@ public class DeviceInfoUtil {
                     return "YubiKey";
                 }
             } else if (majorVersion == 4) {
-                if (isFipsVersion(deviceInfo.getVersion())) {
+                if (VersionUtil.isFips(deviceInfo.getVersion())) {
                     //YK4 FIPS
                     deviceName = "YubiKey FIPS";
                 } else if (supportsCapability.apply(OTP) || supportsCapability.apply(U2F)) {
@@ -94,7 +80,7 @@ public class DeviceInfoUtil {
             }
         }
 
-        if (isPreview(deviceInfo.getVersion())) {
+        if (VersionUtil.isPreview(deviceInfo.getVersion())) {
             deviceName = "YubiKey Preview";
         } else if (deviceInfo.getVersion().isAtLeast(5, 1, 0)) {
             boolean isNano = deviceInfo.getFormFactor() == FormFactor.USB_A_NANO
@@ -157,11 +143,4 @@ public class DeviceInfoUtil {
         return deviceName;
     }
 
-    enum YubiKeyType {
-        YKS,
-        NEO,
-        SKY,
-        YKP,
-        YK4
-    }
 }
