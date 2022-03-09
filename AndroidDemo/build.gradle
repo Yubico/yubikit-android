@@ -43,6 +43,7 @@ dependencies {
     implementation project(':yubiotp')
     implementation project(':oath')
     implementation project(':piv')
+    implementation project(':support')
 
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.0-RC2'
 

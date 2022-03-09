@@ -13,6 +13,7 @@ import com.yubico.yubikit.core.Transport
 import com.yubico.yubikit.management.Capability
 import com.yubico.yubikit.management.DeviceConfig
 import com.yubico.yubikit.management.ManagementSession
+import com.yubico.yubikit.support.Device
 
 class ManagementFragment : YubiKeyFragment<ManagementSession, ManagementViewModel>() {
     override val viewModel: ManagementViewModel by activityViewModels()
@@ -52,7 +53,15 @@ class ManagementFragment : YubiKeyFragment<ManagementSession, ManagementViewMode
 
         viewModel.deviceInfo.observe(viewLifecycleOwner, {
             if (it != null) {
-                binding.info.text = "Device type: ${it.formFactor.name} \nFirmware: ${it.version} \nSerial: ${it.serialNumber}"
+                binding.info.text = "Device: ${Device.getName(it)}\n" +
+                        "Device form factor: ${it.formFactor.name}\n" +
+                        "Firmware: ${it.version}\n" +
+                        "Serial: ${it.serialNumber}\n" +
+                        "FIPS: ${it.isFips}\n" +
+                        "SKY: ${it.isSky}\n" +
+                        "Locked: ${it.isLocked}\n" +
+                        "Auto eject timeout: ${it.config.autoEjectTimeout}\n" +
+                        "Challenge response timeout: ${it.config.challengeResponseTimeout}"
                 checkboxIds.forEach { (transport, capability), id ->
                     view.findViewById<CheckBox>(id).let { checkbox ->
                         if (it.getSupportedCapabilities(transport) and capability.bit != 0) {

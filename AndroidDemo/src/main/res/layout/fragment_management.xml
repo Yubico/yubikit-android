@@ -30,7 +30,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:scrollbars="vertical"
-            tools:text="YubiKey 5 NFC \nFirmware 5.2.1 \nSerial: 9681093" />
+            tools:text="Device: Yubikey\n Device form factor: USB_A_KEYCHAIN\n Firmware: 5.2.1\n Serial: 123456\n FIPS: false\n SKY: false\n Locked: false\n Auto eject timeout: 1\n Challenge response timeout: 15"/>
 
         <TextView
             android:layout_marginTop="@dimen/card_view_margin"
