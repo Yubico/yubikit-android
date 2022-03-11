@@ -319,8 +319,10 @@ public class Device {
             enabledUsbCapabilities = usbEnabled;
         }
 
+        boolean isFips = info.isFips();
         // YK4-based FIPS version
-        boolean isFips = VersionUtil.isFips(version);
+        if (VersionUtil.isFips(version))
+            isFips = true;
 
         // Set nfc_enabled if missing (pre YubiKey 5)
         if (info.hasTransport(Transport.NFC) && enabledNfcCapabilities == null) {

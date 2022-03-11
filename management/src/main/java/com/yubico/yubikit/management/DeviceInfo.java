@@ -141,7 +141,10 @@ public class DeviceInfo {
 
         boolean isLocked = readInt(data.get(TAG_CONFIG_LOCKED)) == 1;
         int serialNumber = readInt(data.get(TAG_SERIAL_NUMBER));
-        FormFactor formFactor = FormFactor.valueOf(readInt(data.get(TAG_FORMFACTOR)));
+        int formFactorTagData = readInt(data.get(TAG_FORMFACTOR));
+        boolean isFips = (formFactorTagData & 0x80) == 0x80;
+        boolean isSky = (formFactorTagData & 0x40) == 0x40;
+        FormFactor formFactor = FormFactor.valueOf(formFactorTagData);
 
         Version version;
         if (data.containsKey(TAG_FIRMWARE_VERSION)) {
@@ -173,16 +176,13 @@ public class DeviceInfo {
             enabledCapabilities.put(Transport.NFC, readInt(data.get(TAG_NFC_ENABLED)));
         }
 
-        boolean fips = (formFactor.value & 0x80) == 0x80;
-        boolean sky = (formFactor.value & 0x40) == 0x40;
-
         return new DeviceInfo(
                 new DeviceConfig(
                         enabledCapabilities,
                         autoEjectTimeout,
                         challengeResponseTimeout,
                         deviceFlags
-                ), serialNumber, version, formFactor, supportedCapabilities, isLocked, fips, sky
+                ), serialNumber, version, formFactor, supportedCapabilities, isLocked, isFips, isSky
         );
     }
 
