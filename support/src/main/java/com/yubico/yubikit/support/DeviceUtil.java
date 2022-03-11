@@ -45,7 +45,6 @@ import com.yubico.yubikit.yubiotp.YubiOtpSession;
 import java.io.IOException;
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -57,18 +56,24 @@ import javax.annotation.Nullable;
 
 public class DeviceUtil {
 
-    private static final Map<YubiKeyAppletId, Capability> appletsToScan;
-    private static final Integer baseNeoApps = OTP.bit | OATH.bit | PIV.bit | OPENPGP.bit;
+    // AppletID and capability it provides
+    private enum CcidApplet {
+        OPENPGP(new byte[]{(byte) 0xd2, 0x76, 0x00, 0x01, 0x24, 0x01}, Capability.OPENPGP),
+        OATH(new byte[]{(byte) 0xa0, 0x00, 0x00, 0x05, 0x27, 0x21, 0x01}, Capability.OATH),
+        PIV(new byte[]{(byte) 0xa0, 0x00, 0x00, 0x03, 0x08}, Capability.PIV),
+        FIDO(new byte[]{(byte) 0xa0, 0x00, 0x00, 0x06, 0x47, 0x2f, 0x00, 0x01}, U2F),
+        AID_U2F_YUBICO(new byte[]{(byte) 0xa0, 0x00, 0x00, 0x05, 0x27, 0x10, 0x02}, U2F);  // Old U2F AID
 
-    static {
-        Map<YubiKeyAppletId, Capability> aMap = new EnumMap<>(YubiKeyAppletId.class);
-        aMap.put(YubiKeyAppletId.FIDO, U2F);
-        aMap.put(YubiKeyAppletId.AID_U2F_YUBICO, U2F);
-        aMap.put(YubiKeyAppletId.PIV, PIV);
-        aMap.put(YubiKeyAppletId.OPENPGP, OPENPGP);
-        aMap.put(YubiKeyAppletId.OATH, OATH);
-        appletsToScan = Collections.unmodifiableMap(aMap);
+        final public byte[] aid;
+        final public Capability capability;
+
+        CcidApplet(byte[] aid, Capability capability) {
+            this.aid = aid;
+            this.capability = capability;
+        }
     }
+
+    private static final Integer baseNeoApps = OTP.bit | OATH.bit | PIV.bit | OPENPGP.bit;
 
     static Pair<Version, Optional<Integer>> readOtpData(SmartCardConnection connection)
             throws ApplicationNotAvailableException, IOException {
@@ -123,16 +128,16 @@ public class DeviceUtil {
             version = new Version(3, 0, 0);
         }
 
-        Logger.d("Scan for available applications");
+        Logger.d("Scan for available ccid applications");
         SmartCardProtocol protocol = new SmartCardProtocol(connection);
-        for (Map.Entry<YubiKeyAppletId, Capability> appletEntry : appletsToScan.entrySet()) {
+        for (final CcidApplet applet : CcidApplet.values()) {
             try {
-                protocol.select(appletEntry.getKey().value);
-                capabilities |= appletEntry.getValue().bit;
+                protocol.select(applet.aid);
+                capabilities |= applet.capability.bit;
             } catch (ApplicationNotAvailableException applicationNotAvailableException) {
-                Logger.d("Missing applet " + appletEntry.getKey().name() + ", capability " + appletEntry.getValue().name());
+                Logger.d("Missing applet " + applet.name() + ", capability " + applet.capability.name());
             } catch (IOException ioException) {
-                Logger.e("IOException selecting applet " + appletEntry.getKey().name() + ", capability " + appletEntry.getValue().name(), ioException);
+                Logger.e("IOException selecting applet " + applet.name() + ", capability " + applet.capability.name(), ioException);
             }
         }
 
