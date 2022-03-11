@@ -262,10 +262,6 @@ public class DeviceUtil {
         }
     }
 
-    static boolean isYk4FipsVersion(Version version) {
-        return version.isAtLeast(4, 4, 0) && version.isLessThan(4, 5, 0);
-    }
-
     static boolean isPreviewVersion(Version version) {
         return (version.isAtLeast(5, 0, 0) && version.isLessThan(5, 1, 0))
                 || (version.isAtLeast(5, 2, 0) && version.isLessThan(5, 2, 3))
@@ -336,7 +332,7 @@ public class DeviceUtil {
 
         boolean isFips = info.isFips();
         // YK4-based FIPS version
-        if (isYk4FipsVersion(version))
+        if (version.isAtLeast(4, 4, 0) && version.isLessThan(4, 5, 0))
             isFips = true;
 
         // Set nfc_enabled if missing (pre YubiKey 5)
@@ -432,7 +428,7 @@ public class DeviceUtil {
                     return "YubiKey";
                 }
             } else if (majorVersion == 4) {
-                if (isYk4FipsVersion(version)) {
+                if (info.isFips()) {
                     //YK4 FIPS
                     deviceName = "YubiKey FIPS";
                 } else if ((supportedUsbCapabilities & (OTP.bit | U2F.bit)) != 0) {
