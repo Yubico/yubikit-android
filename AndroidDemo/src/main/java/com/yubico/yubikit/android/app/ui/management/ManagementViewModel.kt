@@ -21,15 +21,14 @@ class ManagementViewModel : YubiKeyViewModel<ManagementSession>() {
     private val _deviceInfo = MutableLiveData<DeviceInfo?>()
     val deviceInfo: LiveData<DeviceInfo?> = _deviceInfo
 
-    private fun getDeviceInfo(device: YubiKeyDevice) {
+    private fun readDeviceInfo(device: YubiKeyDevice) {
 
         val productId = if (device is UsbYubiKeyDevice) {
             YubiKeyUsbProductId.fromPid(device.usbDevice.productId)
-        }
-        else
+        } else
             null
 
-        val readInfo : (YubiKeyConnection) -> Unit = {
+        val readInfo: (YubiKeyConnection) -> Unit = {
             _deviceInfo.postValue(Device.readInfo(productId, it))
         }
 
@@ -49,17 +48,16 @@ class ManagementViewModel : YubiKeyViewModel<ManagementSession>() {
                     readInfo(it.value)
                 }
             }
+            else -> throw ApplicationNotAvailableException("Cannot read device info")
         }
-
-        throw ApplicationNotAvailableException("Cannot get device info")
     }
 
     override fun getSession(device: YubiKeyDevice, onError: (Throwable) -> Unit, callback: (ManagementSession) -> Unit) {
 
         try {
-            getDeviceInfo(device)
+            readDeviceInfo(device)
         } catch (ignored: ApplicationNotAvailableException) {
-            // cannot get the device for this device
+            // cannot read the device info
         }
 
         ManagementSession.create(device) {

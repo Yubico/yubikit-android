@@ -86,7 +86,7 @@ public class Device {
 
     }
 
-    static DeviceInfo readInfoCCID(SmartCardConnection connection, int interfaces)
+    static DeviceInfo readInfoCcid(SmartCardConnection connection, int interfaces)
             throws IOException {
 
         Version version = null;
@@ -257,6 +257,16 @@ public class Device {
         }
     }
 
+    static boolean isYk4FipsVersion(Version version) {
+        return version.isAtLeast(4, 4, 0) && version.isLessThan(4, 5, 0);
+    }
+
+    static boolean isPreviewVersion(Version version) {
+        return (version.isAtLeast(5, 0, 0) && version.isLessThan(5, 1, 0))
+                || (version.isAtLeast(5, 2, 0) && version.isLessThan(5, 2, 3))
+                || (version.isAtLeast(5, 5, 0) && version.isLessThan(5, 5, 2));
+    }
+
     /**
      * Returns DeviceInfo for connected YubiKey
      *
@@ -273,7 +283,7 @@ public class Device {
 
         DeviceInfo info;
         if (connection instanceof SmartCardConnection) {
-            info = readInfoCCID((SmartCardConnection) connection, interfaces);
+            info = readInfoCcid((SmartCardConnection) connection, interfaces);
         } else if (connection instanceof OtpConnection) {
             info = readInfoOtp((OtpConnection) connection, keyType, interfaces);
         } else if (connection instanceof FidoConnection) {
@@ -321,7 +331,7 @@ public class Device {
 
         boolean isFips = info.isFips();
         // YK4-based FIPS version
-        if (VersionUtil.isFips(version))
+        if (isYk4FipsVersion(version))
             isFips = true;
 
         // Set nfc_enabled if missing (pre YubiKey 5)
@@ -417,7 +427,7 @@ public class Device {
                     return "YubiKey";
                 }
             } else if (majorVersion == 4) {
-                if (VersionUtil.isFips(version)) {
+                if (isYk4FipsVersion(version)) {
                     //YK4 FIPS
                     deviceName = "YubiKey FIPS";
                 } else if ((supportedUsbCapabilities & (OTP.bit | U2F.bit)) != 0) {
@@ -428,7 +438,7 @@ public class Device {
             }
         }
 
-        if (VersionUtil.isPreview(version)) {
+        if (isPreviewVersion(version)) {
             deviceName = "YubiKey Preview";
         } else if (version.isAtLeast(5, 1, 0)) {
             boolean isNano = formFactor == FormFactor.USB_A_NANO
