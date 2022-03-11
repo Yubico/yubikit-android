@@ -332,8 +332,9 @@ public class DeviceUtil {
 
         boolean isFips = info.isFips();
         // YK4-based FIPS version
-        if (version.isAtLeast(4, 4, 0) && version.isLessThan(4, 5, 0))
+        if (version.isAtLeast(4, 4, 0) && version.isLessThan(4, 5, 0)) {
             isFips = true;
+        }
 
         // Set nfc_enabled if missing (pre YubiKey 5)
         if (info.hasTransport(Transport.NFC) && enabledNfcCapabilities == null) {
