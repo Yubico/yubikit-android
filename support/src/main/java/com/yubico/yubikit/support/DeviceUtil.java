@@ -330,6 +330,11 @@ public class DeviceUtil {
             enabledUsbCapabilities = usbEnabled;
         }
 
+        boolean isSky = info.isSky();
+        if (keyType == YubiKeyType.SKY) {
+            isSky = true;
+        }
+
         boolean isFips = info.isFips();
         // YK4-based FIPS version
         if (version.isAtLeast(4, 4, 0) && version.isLessThan(4, 5, 0)) {
@@ -391,7 +396,7 @@ public class DeviceUtil {
                 capabilities,
                 info.isLocked(),
                 isFips,
-                info.isSky()
+                isSky
         );
 
     }
