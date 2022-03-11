@@ -38,9 +38,9 @@ public enum YubiKeyUsbProductId {
     YK4_OTP_FIDO_CCID(0x0407, YubiKeyType.YK4, UsbInterface.OTP | UsbInterface.FIDO | UsbInterface.CCID),
     YKP_OTP_FIDO(0x0410, YubiKeyType.YKP, UsbInterface.OTP | UsbInterface.FIDO);
 
-    final int pid;
-    final YubiKeyType type;
-    final int usbInterfaces;
+    public final int pid;
+    public final YubiKeyType type;
+    public final int usbInterfaces;
 
     YubiKeyUsbProductId(Integer pid, YubiKeyType type, int usbInterfaces) {
         this.pid = pid;

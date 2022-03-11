@@ -56,23 +56,6 @@ import javax.annotation.Nullable;
 
 public class DeviceUtil {
 
-    // Applet and capability it provides
-    private enum CcidApplet {
-        OPENPGP(new byte[]{(byte) 0xd2, 0x76, 0x00, 0x01, 0x24, 0x01}, Capability.OPENPGP),
-        OATH(new byte[]{(byte) 0xa0, 0x00, 0x00, 0x05, 0x27, 0x21, 0x01}, Capability.OATH),
-        PIV(new byte[]{(byte) 0xa0, 0x00, 0x00, 0x03, 0x08}, Capability.PIV),
-        FIDO(new byte[]{(byte) 0xa0, 0x00, 0x00, 0x06, 0x47, 0x2f, 0x00, 0x01}, U2F),
-        AID_U2F_YUBICO(new byte[]{(byte) 0xa0, 0x00, 0x00, 0x05, 0x27, 0x10, 0x02}, U2F);  // Old U2F AID
-
-        final public byte[] aid;
-        final public Capability capability;
-
-        CcidApplet(byte[] aid, Capability capability) {
-            this.aid = aid;
-            this.capability = capability;
-        }
-    }
-
     private static final Integer baseNeoApps = OTP.bit | OATH.bit | PIV.bit | OPENPGP.bit;
 
     static Pair<Version, Optional<Integer>> readOtpData(SmartCardConnection connection)
@@ -269,18 +252,36 @@ public class DeviceUtil {
     }
 
     /**
-     * Returns DeviceInfo for connected YubiKey
+     * Reads out DeviceInfo from a YubiKey, or attempts to synthesize the data.
+     * <p></p>
+     * Reading DeviceInfo from a ManagementSession is only supported for newer YubiKeys.
+     * This function attempts to read that information, but will fall back to gathering the
+     * data using other mechanisms if needed. It will also make adjustments to the data if
+     * required, for example to "fix" known bad values.
+     * <p></p>
+     * The <code>pid</code> parameter must be provided whenever the YubiKey is connected via USB,
      *
+     * @param connection {@link SmartCardConnection}, {@link OtpConnection} or
+     * {@link FidoConnection} connection to the YubiKey
      * @param pid        USB product ID of the YubiKey, can be null if unknown
-     * @param connection established connection to the YubiKey
      * @throws IOException               in case of connection error
-     * @throws InvalidParameterException in case of unsupported connection parameter
+     * @throws InvalidParameterException in case of <code>pid</code> is null for USB connection
+     * @throws InvalidParameterException in case of connection is not {@link SmartCardConnection}, {@link OtpConnection} or
+     * {@link FidoConnection}
      */
-    public static DeviceInfo readInfo(@Nullable YubiKeyUsbProductId pid, YubiKeyConnection connection)
+    public static DeviceInfo readInfo(YubiKeyConnection connection, @Nullable YubiKeyUsbProductId pid)
             throws IOException, InvalidParameterException {
 
-        final YubiKeyType keyType = pid == null ? null : pid.type;
-        final int interfaces = pid == null ? 0 : pid.usbInterfaces;
+        YubiKeyType keyType = null;
+        int interfaces = 0;
+
+        if (pid != null) {
+            keyType = pid.type;
+            interfaces = pid.usbInterfaces;
+        } else if (!(connection instanceof SmartCardConnection) ||
+                ((SmartCardConnection) connection).getTransport() == Transport.USB) {
+            throw new InvalidParameterException("pid missing for usb connection");
+        }
 
         DeviceInfo info;
         if (connection instanceof SmartCardConnection) {
@@ -402,9 +403,9 @@ public class DeviceUtil {
     }
 
     /**
-     * Returns computed product name for a YubiKey device, based on the provided DeviceInfo
+     * Determine the product name of a YubiKey
      */
-    public static String getName(@Nonnull DeviceInfo info) {
+    public static String getName(@Nonnull DeviceInfo info, @Nullable YubiKeyType keyType) {
 
         final Version version = info.getVersion();
         final FormFactor formFactor = info.getFormFactor();
@@ -412,7 +413,8 @@ public class DeviceUtil {
         final int supportedUsbCapabilities = info.getSupportedCapabilities(Transport.USB);
         final boolean isFidoOnly = (supportedUsbCapabilities & ~(U2F.bit | FIDO2.bit)) == 0;
 
-        final YubiKeyType yubiKeyType = (info.getSerialNumber() == null && isFidoOnly) ?
+        final YubiKeyType yubiKeyType = keyType != null ?
+                keyType : (info.getSerialNumber() == null && isFidoOnly) ?
                 YubiKeyType.SKY : (version.major == 3) ?
                 YubiKeyType.NEO : YubiKeyType.YK4;
 
@@ -504,6 +506,23 @@ public class DeviceUtil {
                     .replace("5 A", "5A");
         }
         return deviceName;
+    }
+
+    // Applet and capability it provides
+    private enum CcidApplet {
+        OPENPGP(new byte[]{(byte) 0xd2, 0x76, 0x00, 0x01, 0x24, 0x01}, Capability.OPENPGP),
+        OATH(new byte[]{(byte) 0xa0, 0x00, 0x00, 0x05, 0x27, 0x21, 0x01}, Capability.OATH),
+        PIV(new byte[]{(byte) 0xa0, 0x00, 0x00, 0x03, 0x08}, Capability.PIV),
+        FIDO(new byte[]{(byte) 0xa0, 0x00, 0x00, 0x06, 0x47, 0x2f, 0x00, 0x01}, U2F),
+        AID_U2F_YUBICO(new byte[]{(byte) 0xa0, 0x00, 0x00, 0x05, 0x27, 0x10, 0x02}, U2F);  // Old U2F AID
+
+        final public byte[] aid;
+        final public Capability capability;
+
+        CcidApplet(byte[] aid, Capability capability) {
+            this.aid = aid;
+            this.capability = capability;
+        }
     }
 
 }

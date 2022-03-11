@@ -13,13 +13,19 @@ import com.yubico.yubikit.core.smartcard.SmartCardConnection
 import com.yubico.yubikit.management.DeviceInfo
 import com.yubico.yubikit.management.ManagementSession
 import com.yubico.yubikit.support.DeviceUtil
+import com.yubico.yubikit.support.YubiKeyType
 import com.yubico.yubikit.support.YubiKeyUsbProductId
 import java.io.IOException
 
+data class ConnectedDeviceInfo(
+    val deviceInfo: DeviceInfo,
+    val type: YubiKeyType?
+)
 
 class ManagementViewModel : YubiKeyViewModel<ManagementSession>() {
-    private val _deviceInfo = MutableLiveData<DeviceInfo?>()
-    val deviceInfo: LiveData<DeviceInfo?> = _deviceInfo
+    private val _deviceInfo = MutableLiveData<ConnectedDeviceInfo?>()
+    val deviceInfo: LiveData<ConnectedDeviceInfo?> = _deviceInfo
+
 
     private fun readDeviceInfo(device: YubiKeyDevice) {
 
@@ -29,7 +35,9 @@ class ManagementViewModel : YubiKeyViewModel<ManagementSession>() {
             null
 
         val readInfo: (YubiKeyConnection) -> Unit = {
-            _deviceInfo.postValue(DeviceUtil.readInfo(productId, it))
+            _deviceInfo.postValue(
+                ConnectedDeviceInfo(DeviceUtil.readInfo(it, productId), productId?.type)
+            )
         }
 
         when {

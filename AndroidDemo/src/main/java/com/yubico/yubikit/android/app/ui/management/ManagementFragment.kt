@@ -53,19 +53,21 @@ class ManagementFragment : YubiKeyFragment<ManagementSession, ManagementViewMode
 
         viewModel.deviceInfo.observe(viewLifecycleOwner, {
             if (it != null) {
-                binding.info.text = "Device: ${DeviceUtil.getName(it)}\n" +
-                        "Device form factor: ${it.formFactor.name}\n" +
-                        "Firmware: ${it.version}\n" +
-                        "Serial: ${it.serialNumber}\n" +
-                        "FIPS: ${it.isFips}\n" +
-                        "SKY: ${it.isSky}\n" +
-                        "Locked: ${it.isLocked}\n" +
-                        "Auto eject timeout: ${it.config.autoEjectTimeout}\n" +
-                        "Challenge response timeout: ${it.config.challengeResponseTimeout}"
+                val info = it.deviceInfo
+                val keyType = it.type
+                binding.info.text = "Device: ${DeviceUtil.getName(info, keyType)}\n" +
+                        "Device form factor: ${info.formFactor.name}\n" +
+                        "Firmware: ${info.version}\n" +
+                        "Serial: ${info.serialNumber}\n" +
+                        "FIPS: ${info.isFips}\n" +
+                        "SKY: ${info.isSky}\n" +
+                        "Locked: ${info.isLocked}\n" +
+                        "Auto eject timeout: ${info.config.autoEjectTimeout}\n" +
+                        "Challenge response timeout: ${info.config.challengeResponseTimeout}"
                 checkboxIds.forEach { (transport, capability), id ->
                     view.findViewById<CheckBox>(id).let { checkbox ->
-                        if (it.getSupportedCapabilities(transport) and capability.bit != 0) {
-                            checkbox.isChecked = (it.config.getEnabledCapabilities(transport)
+                        if (info.getSupportedCapabilities(transport) and capability.bit != 0) {
+                            checkbox.isChecked = (info.config.getEnabledCapabilities(transport)
                                     ?: 0) and capability.bit != 0
                             checkbox.visibility = View.VISIBLE
                         } else {
