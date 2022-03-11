@@ -55,7 +55,7 @@ import java.util.StringJoiner;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-public class Device {
+public class DeviceUtil {
 
     private static final Map<YubiKeyAppletId, Capability> appletsToScan;
     private static final Integer baseNeoApps = OTP.bit | OATH.bit | PIV.bit | OPENPGP.bit;

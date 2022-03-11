@@ -13,7 +13,7 @@ import com.yubico.yubikit.core.Transport
 import com.yubico.yubikit.management.Capability
 import com.yubico.yubikit.management.DeviceConfig
 import com.yubico.yubikit.management.ManagementSession
-import com.yubico.yubikit.support.Device
+import com.yubico.yubikit.support.DeviceUtil
 
 class ManagementFragment : YubiKeyFragment<ManagementSession, ManagementViewModel>() {
     override val viewModel: ManagementViewModel by activityViewModels()
@@ -53,7 +53,7 @@ class ManagementFragment : YubiKeyFragment<ManagementSession, ManagementViewMode
 
         viewModel.deviceInfo.observe(viewLifecycleOwner, {
             if (it != null) {
-                binding.info.text = "Device: ${Device.getName(it)}\n" +
+                binding.info.text = "Device: ${DeviceUtil.getName(it)}\n" +
                         "Device form factor: ${it.formFactor.name}\n" +
                         "Firmware: ${it.version}\n" +
                         "Serial: ${it.serialNumber}\n" +

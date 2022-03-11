@@ -12,7 +12,7 @@ import com.yubico.yubikit.core.otp.OtpConnection
 import com.yubico.yubikit.core.smartcard.SmartCardConnection
 import com.yubico.yubikit.management.DeviceInfo
 import com.yubico.yubikit.management.ManagementSession
-import com.yubico.yubikit.support.Device
+import com.yubico.yubikit.support.DeviceUtil
 import com.yubico.yubikit.support.YubiKeyUsbProductId
 import java.io.IOException
 
@@ -29,7 +29,7 @@ class ManagementViewModel : YubiKeyViewModel<ManagementSession>() {
             null
 
         val readInfo: (YubiKeyConnection) -> Unit = {
-            _deviceInfo.postValue(Device.readInfo(productId, it))
+            _deviceInfo.postValue(DeviceUtil.readInfo(productId, it))
         }
 
         when {
