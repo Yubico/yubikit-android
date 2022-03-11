@@ -19,6 +19,8 @@ package com.yubico.yubikit.support;
 import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.management.UsbInterface;
 
+import javax.annotation.Nullable;
+
 public enum YubiKeyUsbProductId {
     YKS_OTP(0x0010, YubiKeyType.YKS, UsbInterface.OTP),
     NEO_OTP(0x0110, YubiKeyType.NEO, UsbInterface.OTP),
@@ -48,6 +50,7 @@ public enum YubiKeyUsbProductId {
         this.usbInterfaces = usbInterfaces;
     }
 
+    @Nullable
     static public YubiKeyUsbProductId fromPid(int pid) {
         for (YubiKeyUsbProductId value : YubiKeyUsbProductId.values()) {
             if (value.pid == pid) {
