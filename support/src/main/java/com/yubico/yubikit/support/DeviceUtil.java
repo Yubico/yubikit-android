@@ -56,7 +56,7 @@ import javax.annotation.Nullable;
 
 public class DeviceUtil {
 
-    // AppletID and capability it provides
+    // Applet and capability it provides
     private enum CcidApplet {
         OPENPGP(new byte[]{(byte) 0xd2, 0x76, 0x00, 0x01, 0x24, 0x01}, Capability.OPENPGP),
         OATH(new byte[]{(byte) 0xa0, 0x00, 0x00, 0x05, 0x27, 0x21, 0x01}, Capability.OATH),
@@ -283,8 +283,8 @@ public class DeviceUtil {
     public static DeviceInfo readInfo(@Nullable YubiKeyUsbProductId pid, YubiKeyConnection connection)
             throws IOException, InvalidParameterException {
 
-        final YubiKeyType keyType = pid == null ? null : pid.getKeyType();
-        final int interfaces = pid == null ? 0 : pid.getInterfaces();
+        final YubiKeyType keyType = pid == null ? null : pid.type;
+        final int interfaces = pid == null ? 0 : pid.usbInterfaces;
 
         DeviceInfo info;
         if (connection instanceof SmartCardConnection) {

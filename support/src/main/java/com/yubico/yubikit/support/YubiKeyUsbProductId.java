@@ -58,12 +58,4 @@ public enum YubiKeyUsbProductId {
         Logger.d("Failed to find enum value for " + pid);
         return null;
     }
-
-    YubiKeyType getKeyType() {
-        return type;
-    }
-
-    int getInterfaces() {
-        return usbInterfaces;
-    }
 }
