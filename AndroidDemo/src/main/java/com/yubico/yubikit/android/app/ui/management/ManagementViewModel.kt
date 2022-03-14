@@ -4,9 +4,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.yubico.yubikit.android.app.ui.YubiKeyViewModel
 import com.yubico.yubikit.android.transport.usb.UsbYubiKeyDevice
-import com.yubico.yubikit.core.Logger
-import com.yubico.yubikit.core.YubiKeyConnection
-import com.yubico.yubikit.core.YubiKeyDevice
+import com.yubico.yubikit.core.*
 import com.yubico.yubikit.core.application.ApplicationNotAvailableException
 import com.yubico.yubikit.core.fido.FidoConnection
 import com.yubico.yubikit.core.otp.OtpConnection
@@ -14,8 +12,6 @@ import com.yubico.yubikit.core.smartcard.SmartCardConnection
 import com.yubico.yubikit.management.DeviceInfo
 import com.yubico.yubikit.management.ManagementSession
 import com.yubico.yubikit.support.DeviceUtil
-import com.yubico.yubikit.support.UsbPid
-import com.yubico.yubikit.support.YubiKeyType
 import java.io.IOException
 
 data class ConnectedDeviceInfo(
@@ -87,7 +83,11 @@ class ManagementViewModel : YubiKeyViewModel<ManagementSession>() {
         }
     }
 
-    override fun getSession(device: YubiKeyDevice, onError: (Throwable) -> Unit, callback: (ManagementSession) -> Unit) {
+    override fun getSession(
+        device: YubiKeyDevice,
+        onError: (Throwable) -> Unit,
+        callback: (ManagementSession) -> Unit
+    ) {
 
         try {
             readDeviceInfo(device)

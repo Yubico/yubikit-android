@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 
-package com.yubico.yubikit.support;
-
-import com.yubico.yubikit.management.UsbInterface;
+package com.yubico.yubikit.core;
 
 public enum UsbPid {
     YKS_OTP(0x0010, YubiKeyType.YKS, UsbInterface.OTP),
@@ -41,7 +39,7 @@ public enum UsbPid {
     public final YubiKeyType type;
     public final int usbInterfaces;
 
-    UsbPid(Integer value, YubiKeyType type, int usbInterfaces) {
+    UsbPid(int value, YubiKeyType type, int usbInterfaces) {
         this.value = value;
         this.type = type;
         this.usbInterfaces = usbInterfaces;

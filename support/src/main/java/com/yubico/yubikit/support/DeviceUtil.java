@@ -26,8 +26,11 @@ import static com.yubico.yubikit.management.ManagementSession.FEATURE_DEVICE_INF
 
 import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.core.Transport;
+import com.yubico.yubikit.core.UsbInterface;
+import com.yubico.yubikit.core.UsbPid;
 import com.yubico.yubikit.core.Version;
 import com.yubico.yubikit.core.YubiKeyConnection;
+import com.yubico.yubikit.core.YubiKeyType;
 import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
 import com.yubico.yubikit.core.application.CommandException;
 import com.yubico.yubikit.core.fido.FidoConnection;
@@ -40,7 +43,6 @@ import com.yubico.yubikit.management.DeviceConfig;
 import com.yubico.yubikit.management.DeviceInfo;
 import com.yubico.yubikit.management.FormFactor;
 import com.yubico.yubikit.management.ManagementSession;
-import com.yubico.yubikit.management.UsbInterface;
 import com.yubico.yubikit.yubiotp.YubiOtpSession;
 
 import java.io.IOException;

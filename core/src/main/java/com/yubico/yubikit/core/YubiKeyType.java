@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.yubico.yubikit.support;
+package com.yubico.yubikit.core;
 
 public enum YubiKeyType {
     YKS("YubiKey Standard"),
@@ -23,7 +23,7 @@ public enum YubiKeyType {
     YKP("YubiKey Plus"),
     YK4("YubiKey");
 
-    final String name;
+    public final String name;
 
     YubiKeyType(String name) {
         this.name = name;
