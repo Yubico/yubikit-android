@@ -142,8 +142,8 @@ public class DeviceInfo {
         boolean isLocked = readInt(data.get(TAG_CONFIG_LOCKED)) == 1;
         int serialNumber = readInt(data.get(TAG_SERIAL_NUMBER));
         int formFactorTagData = readInt(data.get(TAG_FORMFACTOR));
-        boolean isFips = (formFactorTagData & 0x80) == 0x80;
-        boolean isSky = (formFactorTagData & 0x40) == 0x40;
+        boolean isFips = (formFactorTagData & 0x80) != 0;
+        boolean isSky = (formFactorTagData & 0x40) != 0;
         FormFactor formFactor = FormFactor.valueOf(formFactorTagData);
 
         Version version;

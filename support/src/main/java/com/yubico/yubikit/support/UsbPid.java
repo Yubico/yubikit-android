@@ -16,12 +16,9 @@
 
 package com.yubico.yubikit.support;
 
-import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.management.UsbInterface;
 
-import javax.annotation.Nullable;
-
-public enum YubiKeyUsbProductId {
+public enum UsbPid {
     YKS_OTP(0x0010, YubiKeyType.YKS, UsbInterface.OTP),
     NEO_OTP(0x0110, YubiKeyType.NEO, UsbInterface.OTP),
     NEO_OTP_CCID(0x0111, YubiKeyType.NEO, UsbInterface.OTP | UsbInterface.CCID),
@@ -40,25 +37,23 @@ public enum YubiKeyUsbProductId {
     YK4_OTP_FIDO_CCID(0x0407, YubiKeyType.YK4, UsbInterface.OTP | UsbInterface.FIDO | UsbInterface.CCID),
     YKP_OTP_FIDO(0x0410, YubiKeyType.YKP, UsbInterface.OTP | UsbInterface.FIDO);
 
-    public final int pid;
+    public final int value;
     public final YubiKeyType type;
     public final int usbInterfaces;
 
-    YubiKeyUsbProductId(Integer pid, YubiKeyType type, int usbInterfaces) {
-        this.pid = pid;
+    UsbPid(Integer value, YubiKeyType type, int usbInterfaces) {
+        this.value = value;
         this.type = type;
         this.usbInterfaces = usbInterfaces;
     }
 
-    @Nullable
-    static public YubiKeyUsbProductId fromPid(int pid) {
-        for (YubiKeyUsbProductId value : YubiKeyUsbProductId.values()) {
-            if (value.pid == pid) {
-                return value;
+    static public UsbPid fromValue(int value) throws IllegalArgumentException {
+        for (UsbPid pid : UsbPid.values()) {
+            if (pid.value == value) {
+                return pid;
             }
         }
 
-        Logger.d("Failed to find enum value for " + pid);
-        return null;
+        throw new IllegalArgumentException("invalid pid value");
     }
 }

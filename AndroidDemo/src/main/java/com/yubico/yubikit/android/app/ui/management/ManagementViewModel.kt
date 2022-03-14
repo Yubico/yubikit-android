@@ -14,7 +14,7 @@ import com.yubico.yubikit.management.DeviceInfo
 import com.yubico.yubikit.management.ManagementSession
 import com.yubico.yubikit.support.DeviceUtil
 import com.yubico.yubikit.support.YubiKeyType
-import com.yubico.yubikit.support.YubiKeyUsbProductId
+import com.yubico.yubikit.support.UsbPid
 import java.io.IOException
 
 data class ConnectedDeviceInfo(
@@ -30,7 +30,12 @@ class ManagementViewModel : YubiKeyViewModel<ManagementSession>() {
     private fun readDeviceInfo(device: YubiKeyDevice) {
 
         val productId = if (device is UsbYubiKeyDevice) {
-            YubiKeyUsbProductId.fromPid(device.usbDevice.productId)
+            try {
+                UsbPid.fromValue(device.usbDevice.productId)
+            } catch (exception: IllegalArgumentException) {
+                // productId was not recognized
+                null
+            }
         } else
             null
 

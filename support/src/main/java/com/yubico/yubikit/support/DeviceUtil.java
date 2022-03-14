@@ -43,7 +43,6 @@ import com.yubico.yubikit.management.UsbInterface;
 import com.yubico.yubikit.yubiotp.YubiOtpSession;
 
 import java.io.IOException;
-import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
@@ -51,7 +50,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.StringJoiner;
 
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public class DeviceUtil {
@@ -168,13 +166,13 @@ public class DeviceUtil {
                     try {
                         return managementSession.getDeviceInfo();
                     } catch (CommandException ignored) {
-                        // can be caused by retained state
+                        // can be caused by reclaim state
                         otpSession = new YubiOtpSession(connection);
                     }
                     serial = otpSession.getSerialNumber();
                 }
             } catch (CommandException commandException) {
-                // can be caused by retained state
+                // can be caused by reclaim state
                 try {
                     Thread.sleep(500);
                 } catch (InterruptedException ignored) {
@@ -262,15 +260,15 @@ public class DeviceUtil {
      * The <code>pid</code> parameter must be provided whenever the YubiKey is connected via USB,
      *
      * @param connection {@link SmartCardConnection}, {@link OtpConnection} or
-     * {@link FidoConnection} connection to the YubiKey
+     *                   {@link FidoConnection} connection to the YubiKey
      * @param pid        USB product ID of the YubiKey, can be null if unknown
-     * @throws IOException               in case of connection error
-     * @throws InvalidParameterException in case of <code>pid</code> is null for USB connection
-     * @throws InvalidParameterException in case of connection is not {@link SmartCardConnection}, {@link OtpConnection} or
-     * {@link FidoConnection}
+     * @throws IOException              in case of connection error
+     * @throws IllegalArgumentException in case of <code>pid</code> is null for USB connection
+     * @throws IllegalArgumentException in case of connection is not {@link SmartCardConnection},
+     *                                  {@link OtpConnection} or {@link FidoConnection}
      */
-    public static DeviceInfo readInfo(YubiKeyConnection connection, @Nullable YubiKeyUsbProductId pid)
-            throws IOException, InvalidParameterException {
+    public static DeviceInfo readInfo(YubiKeyConnection connection, @Nullable UsbPid pid)
+            throws IOException, IllegalArgumentException {
 
         YubiKeyType keyType = null;
         int interfaces = 0;
@@ -280,7 +278,7 @@ public class DeviceUtil {
             interfaces = pid.usbInterfaces;
         } else if (!(connection instanceof SmartCardConnection) ||
                 ((SmartCardConnection) connection).getTransport() == Transport.USB) {
-            throw new InvalidParameterException("pid missing for usb connection");
+            throw new IllegalArgumentException("pid missing for usb connection");
         }
 
         DeviceInfo info;
@@ -291,7 +289,7 @@ public class DeviceUtil {
         } else if (connection instanceof FidoConnection) {
             info = readInfoFido((FidoConnection) connection, keyType);
         } else {
-            throw new InvalidParameterException("Invalid connection type");
+            throw new IllegalArgumentException("Invalid connection type");
         }
 
         Logger.d("Read info " + info);
@@ -331,16 +329,9 @@ public class DeviceUtil {
             enabledUsbCapabilities = usbEnabled;
         }
 
-        boolean isSky = info.isSky();
-        if (keyType == YubiKeyType.SKY) {
-            isSky = true;
-        }
-
-        boolean isFips = info.isFips();
-        // YK4-based FIPS version
-        if (version.isAtLeast(4, 4, 0) && version.isLessThan(4, 5, 0)) {
-            isFips = true;
-        }
+        final boolean isSky = info.isSky() || keyType == YubiKeyType.SKY;
+        final boolean isFips = info.isFips() ||
+                (version.isAtLeast(4, 4, 0) && version.isLessThan(4, 5, 0));
 
         // Set nfc_enabled if missing (pre YubiKey 5)
         if (info.hasTransport(Transport.NFC) && enabledNfcCapabilities == null) {
@@ -405,7 +396,7 @@ public class DeviceUtil {
     /**
      * Determine the product name of a YubiKey
      */
-    public static String getName(@Nonnull DeviceInfo info, @Nullable YubiKeyType keyType) {
+    public static String getName(DeviceInfo info, @Nullable YubiKeyType keyType) {
 
         final Version version = info.getVersion();
         final FormFactor formFactor = info.getFormFactor();
