@@ -22,6 +22,7 @@ import static com.yubico.yubikit.management.Capability.OPENPGP;
 import static com.yubico.yubikit.management.Capability.OTP;
 import static com.yubico.yubikit.management.Capability.PIV;
 import static com.yubico.yubikit.management.Capability.U2F;
+import static com.yubico.yubikit.management.ManagementSession.FEATURE_DEVICE_INFO;
 
 import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.core.Transport;
@@ -163,23 +164,32 @@ public class DeviceUtil {
         for (int i = 0; i < 8; i++) {
             try {
                 if (otpSession == null) {
-                    try {
+                    if (managementSession.supports(FEATURE_DEVICE_INFO)) {
                         return managementSession.getDeviceInfo();
-                    } catch (CommandException ignored) {
-                        // can be caused by reclaim state
+                    } else {
                         otpSession = new YubiOtpSession(connection);
+                        serial = otpSession.getSerialNumber();
+                        break;
                     }
-                    serial = otpSession.getSerialNumber();
                 }
             } catch (CommandException commandException) {
+                Logger.d("Caught Command Exception: " + commandException.getMessage());
+                if (otpSession != null && interfaces == UsbInterface.OTP) {
+                    Logger.d("This is not reclaim");
+                    break; // Can't be reclaim with only one interface
+                }
                 // can be caused by reclaim state
                 try {
+                    Logger.d("Potential reclaim, sleep...");
                     Thread.sleep(500);
                 } catch (InterruptedException ignored) {
                     // ignoring interrupted exception
                 }
             }
+        }
 
+        if (otpSession == null) {
+            otpSession = new YubiOtpSession(connection);
         }
 
         version = otpSession.getVersion();

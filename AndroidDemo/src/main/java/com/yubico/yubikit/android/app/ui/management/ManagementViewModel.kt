@@ -4,6 +4,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.yubico.yubikit.android.app.ui.YubiKeyViewModel
 import com.yubico.yubikit.android.transport.usb.UsbYubiKeyDevice
+import com.yubico.yubikit.core.Logger
 import com.yubico.yubikit.core.YubiKeyConnection
 import com.yubico.yubikit.core.YubiKeyDevice
 import com.yubico.yubikit.core.application.ApplicationNotAvailableException
@@ -13,8 +14,8 @@ import com.yubico.yubikit.core.smartcard.SmartCardConnection
 import com.yubico.yubikit.management.DeviceInfo
 import com.yubico.yubikit.management.ManagementSession
 import com.yubico.yubikit.support.DeviceUtil
-import com.yubico.yubikit.support.YubiKeyType
 import com.yubico.yubikit.support.UsbPid
+import com.yubico.yubikit.support.YubiKeyType
 import java.io.IOException
 
 data class ConnectedDeviceInfo(
@@ -26,39 +27,60 @@ class ManagementViewModel : YubiKeyViewModel<ManagementSession>() {
     private val _deviceInfo = MutableLiveData<ConnectedDeviceInfo?>()
     val deviceInfo: LiveData<ConnectedDeviceInfo?> = _deviceInfo
 
+    private fun getUsbPid(device: YubiKeyDevice): UsbPid? = if (device is UsbYubiKeyDevice) {
+        try {
+            UsbPid.fromValue(device.usbDevice.productId)
+        } catch (exception: IllegalArgumentException) {
+            // productId was not recognized
+            null
+        }
+    } else
+        null
 
     private fun readDeviceInfo(device: YubiKeyDevice) {
 
-        val productId = if (device is UsbYubiKeyDevice) {
-            try {
-                UsbPid.fromValue(device.usbDevice.productId)
-            } catch (exception: IllegalArgumentException) {
-                // productId was not recognized
-                null
-            }
-        } else
-            null
+        val usbPid = getUsbPid(device)
 
         val readInfo: (YubiKeyConnection) -> Unit = {
-            _deviceInfo.postValue(
-                ConnectedDeviceInfo(DeviceUtil.readInfo(it, productId), productId?.type)
-            )
+            try {
+                _deviceInfo.postValue(
+                    ConnectedDeviceInfo(DeviceUtil.readInfo(it, usbPid), usbPid?.type)
+                )
+            } catch (e: Exception) {
+                Logger.d("Caught ${e.message} when reading device info")
+                throw e
+            }
         }
 
         when {
             device.supportsConnection(SmartCardConnection::class.java) -> {
                 device.requestConnection(SmartCardConnection::class.java) {
-                    readInfo(it.value)
+                    if (it.isSuccess) {
+                        Logger.d("readInfo on SmartCardConnection")
+                        readInfo(it.value)
+                    } else {
+                        Logger.d("cannot readInfo on SmartCardConnection because requesting connection failed")
+                    }
                 }
             }
             device.supportsConnection(OtpConnection::class.java) -> {
                 device.requestConnection(OtpConnection::class.java) {
-                    readInfo(it.value)
+                    if (it.isSuccess) {
+                        Logger.d("readInfo on OtpConnection")
+                        readInfo(it.value)
+                    } else {
+                        Logger.d("cannot readInfo on OtpConnection because requesting connection failed")
+                    }
                 }
             }
             device.supportsConnection(FidoConnection::class.java) -> {
                 device.requestConnection(FidoConnection::class.java) {
-                    readInfo(it.value)
+                    if (it.isSuccess) {
+                        Logger.d("readInfo on FidoConnection")
+                        readInfo(it.value)
+                    } else {
+                        Logger.d("cannot readInfo on FidoConnection because requesting connection failed")
+                    }
                 }
             }
             else -> throw ApplicationNotAvailableException("Cannot read device info")
