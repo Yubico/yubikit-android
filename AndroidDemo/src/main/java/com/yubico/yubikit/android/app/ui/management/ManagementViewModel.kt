@@ -4,7 +4,10 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.yubico.yubikit.android.app.ui.YubiKeyViewModel
 import com.yubico.yubikit.android.transport.usb.UsbYubiKeyDevice
-import com.yubico.yubikit.core.*
+import com.yubico.yubikit.core.Logger
+import com.yubico.yubikit.core.YubiKeyConnection
+import com.yubico.yubikit.core.YubiKeyDevice
+import com.yubico.yubikit.core.YubiKeyType
 import com.yubico.yubikit.core.application.ApplicationNotAvailableException
 import com.yubico.yubikit.core.fido.FidoConnection
 import com.yubico.yubikit.core.otp.OtpConnection
@@ -13,6 +16,7 @@ import com.yubico.yubikit.management.DeviceInfo
 import com.yubico.yubikit.management.ManagementSession
 import com.yubico.yubikit.support.DeviceUtil
 import java.io.IOException
+import java.io.InvalidObjectException
 
 data class ConnectedDeviceInfo(
     val deviceInfo: DeviceInfo,
@@ -23,19 +27,16 @@ class ManagementViewModel : YubiKeyViewModel<ManagementSession>() {
     private val _deviceInfo = MutableLiveData<ConnectedDeviceInfo?>()
     val deviceInfo: LiveData<ConnectedDeviceInfo?> = _deviceInfo
 
-    private fun getUsbPid(device: YubiKeyDevice): UsbPid? = if (device is UsbYubiKeyDevice) {
-        try {
-            UsbPid.fromValue(device.usbDevice.productId)
-        } catch (exception: IllegalArgumentException) {
-            // productId was not recognized
-            null
-        }
-    } else
-        null
-
     private fun readDeviceInfo(device: YubiKeyDevice) {
 
-        val usbPid = getUsbPid(device)
+        val usbPid = if (device is UsbYubiKeyDevice) {
+            try {
+                device.pid
+            } catch (ignored: InvalidObjectException) {
+                // this UsbYubiKeyDevice does not map to a known UsbPid
+                null
+            }
+        } else null
 
         val readInfo: (YubiKeyConnection) -> Unit = {
             try {

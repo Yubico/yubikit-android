@@ -22,6 +22,7 @@ import android.hardware.usb.UsbManager;
 import com.yubico.yubikit.android.transport.usb.connection.ConnectionManager;
 import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.core.Transport;
+import com.yubico.yubikit.core.UsbPid;
 import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.otp.OtpConnection;
@@ -30,6 +31,7 @@ import com.yubico.yubikit.core.util.Result;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.InvalidObjectException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -72,6 +74,20 @@ public class UsbYubiKeyDevice implements YubiKeyDevice, Closeable {
      */
     public UsbDevice getUsbDevice() {
         return usbDevice;
+    }
+
+    /**
+     * @return {@link UsbPid} for the device's product id
+     * @throws InvalidObjectException in case when the usb product id is not recognized
+     */
+    public UsbPid getPid() throws InvalidObjectException {
+        int productId = getUsbDevice().getProductId();
+        try {
+            return UsbPid.fromValue(productId);
+        } catch (IllegalArgumentException exception) {
+            // productId was not recognized
+            throw new InvalidObjectException("Unknown usb product id: " + productId);
+        }
     }
 
     @Override
