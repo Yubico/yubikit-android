@@ -62,7 +62,7 @@ public class DeviceUtil {
     static Pair<Version, Optional<Integer>> readOtpData(SmartCardConnection connection)
             throws ApplicationNotAvailableException, IOException {
 
-        YubiOtpSession otpSession = new YubiOtpSession((SmartCardConnection) connection);
+        YubiOtpSession otpSession = new YubiOtpSession(connection);
 
         Optional<Integer> serialNumber = Optional.empty();
         try {
@@ -263,14 +263,15 @@ public class DeviceUtil {
 
     /**
      * Reads out DeviceInfo from a YubiKey, or attempts to synthesize the data.
-     * <p></p>
+     * <p>
      * Reading DeviceInfo from a ManagementSession is only supported for newer YubiKeys.
      * This function attempts to read that information, but will fall back to gathering the
      * data using other mechanisms if needed. It will also make adjustments to the data if
      * required, for example to "fix" known bad values.
-     * <p></p>
+     * </p>
+     * <p>
      * The <code>pid</code> parameter must be provided whenever the YubiKey is connected via USB,
-     *
+     *</p>
      * @param connection {@link SmartCardConnection}, {@link OtpConnection} or
      *                   {@link FidoConnection} connection to the YubiKey
      * @param pid        USB product ID of the YubiKey, can be null if unknown
