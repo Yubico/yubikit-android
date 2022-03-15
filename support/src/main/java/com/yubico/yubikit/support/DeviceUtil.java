@@ -271,7 +271,7 @@ public class DeviceUtil {
      * </p>
      * <p>
      * The <code>pid</code> parameter must be provided whenever the YubiKey is connected via USB,
-     *</p>
+     * </p>
      * @param connection {@link SmartCardConnection}, {@link OtpConnection} or
      *                   {@link FidoConnection} connection to the YubiKey
      * @param pid        USB product ID of the YubiKey, can be null if unknown
