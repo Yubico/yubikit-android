@@ -16,7 +16,6 @@ import com.yubico.yubikit.management.DeviceInfo
 import com.yubico.yubikit.management.ManagementSession
 import com.yubico.yubikit.support.DeviceUtil
 import java.io.IOException
-import java.io.InvalidObjectException
 
 data class ConnectedDeviceInfo(
     val deviceInfo: DeviceInfo,
@@ -30,12 +29,7 @@ class ManagementViewModel : YubiKeyViewModel<ManagementSession>() {
     private fun readDeviceInfo(device: YubiKeyDevice) {
 
         val usbPid = if (device is UsbYubiKeyDevice) {
-            try {
                 device.pid
-            } catch (ignored: InvalidObjectException) {
-                // this UsbYubiKeyDevice does not map to a known UsbPid
-                null
-            }
         } else null
 
         val readInfo: (YubiKeyConnection) -> Unit = {

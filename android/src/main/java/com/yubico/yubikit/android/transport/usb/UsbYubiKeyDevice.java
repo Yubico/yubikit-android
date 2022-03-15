@@ -33,7 +33,6 @@ import com.yubico.yubikit.core.util.Result;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.io.InvalidObjectException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
