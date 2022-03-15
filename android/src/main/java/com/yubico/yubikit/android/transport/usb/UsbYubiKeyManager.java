@@ -12,7 +12,6 @@ import com.yubico.yubikit.android.transport.usb.connection.UsbSmartCardConnectio
 import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.core.util.Callback;
 
-import java.io.InvalidObjectException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -85,7 +84,7 @@ public class UsbYubiKeyManager {
                 } else {
                     listener.invoke(yubikey);
                 }
-            } catch (InvalidObjectException invalidObjectException) {
+            } catch (IllegalArgumentException ignored) {
                 Logger.d("Attached usbDevice(vid=" + usbDevice.getVendorId() + ",pid=" + usbDevice.getProductId() +
                         ") is not recognized as a valid YubiKey");
             }

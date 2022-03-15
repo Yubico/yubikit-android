@@ -58,13 +58,13 @@ public class UsbYubiKeyDevice implements YubiKeyDevice, Closeable {
      *
      * @param usbManager UsbManager for accessing USB devices
      * @param usbDevice  device connected over usb that has permissions to interact with
-     * @throws InvalidObjectException when the usbDevice is not a recognized YubiKey
+     * @throws IllegalArgumentException when the usbDevice is not a recognized YubiKey
      */
     public UsbYubiKeyDevice(UsbManager usbManager, UsbDevice usbDevice)
-            throws InvalidObjectException {
+            throws IllegalArgumentException {
 
         if (usbDevice.getVendorId() != YUBICO_VENDOR_ID) {
-            throw new InvalidObjectException("Invalid vendor id");
+            throw new IllegalArgumentException("Invalid vendor id");
         }
 
         this.usbPid = UsbPid.fromValue(usbDevice.getProductId());
