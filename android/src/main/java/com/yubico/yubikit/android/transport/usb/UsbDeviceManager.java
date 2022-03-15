@@ -20,7 +20,7 @@ import javax.annotation.Nullable;
 
 final class UsbDeviceManager {
     private final static String ACTION_USB_PERMISSION = "com.yubico.yubikey.USB_PERMISSION";
-    private final static int YUBICO_VENDOR_ID = 0x1050;
+    public final static int YUBICO_VENDOR_ID = 0x1050;
 
     @Nullable
     private static UsbDeviceManager instance;
