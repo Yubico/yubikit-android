@@ -311,9 +311,8 @@ public class DeviceUtil {
         final Version version = info.getVersion();
         final FormFactor formFactor = info.getFormFactor();
 
-        @SuppressWarnings("WrapperTypeMayBePrimitive")
-        Integer supportedUsbCapabilities = info.getSupportedCapabilities(Transport.USB);
-        Integer supportedNfcCapabilities = info.getSupportedCapabilities(Transport.NFC);
+        int supportedUsbCapabilities = info.getSupportedCapabilities(Transport.USB);
+        int supportedNfcCapabilities = info.getSupportedCapabilities(Transport.NFC);
 
         Integer enabledUsbCapabilities = config.getEnabledCapabilities(Transport.USB);
         Integer enabledNfcCapabilities = config.getEnabledCapabilities(Transport.NFC);
@@ -359,7 +358,7 @@ public class DeviceUtil {
                     || (formFactor == FormFactor.USB_C_KEYCHAIN
                     && version.isLessThan(5, 2, 4))) {
                 // Known not to have NFC
-                supportedNfcCapabilities = null;
+                supportedNfcCapabilities = 0;
                 enabledNfcCapabilities = null;
             }
         }
@@ -390,8 +389,12 @@ public class DeviceUtil {
         }
 
         Map<Transport, Integer> capabilities = new EnumMap<>(Transport.class);
-        capabilities.put(Transport.USB, supportedUsbCapabilities);
-        capabilities.put(Transport.NFC, supportedNfcCapabilities);
+        if (supportedUsbCapabilities != 0) {
+            capabilities.put(Transport.USB, supportedUsbCapabilities);
+        }
+        if (supportedNfcCapabilities != 0) {
+            capabilities.put(Transport.NFC, supportedNfcCapabilities);
+        }
 
         return new DeviceInfo(
                 configBuilder.build(),
