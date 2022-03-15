@@ -446,7 +446,7 @@ public class DeviceUtil {
                 if (info.isFips()) {
                     //YK4 FIPS
                     deviceName = "YubiKey FIPS";
-                } else if ((supportedUsbCapabilities & (OTP.bit | U2F.bit)) != 0) {
+                } else if (supportedUsbCapabilities == (OTP.bit | U2F.bit)) {
                     deviceName = "YubiKey Edge";
                 } else {
                     deviceName = "YubiKey 4";
