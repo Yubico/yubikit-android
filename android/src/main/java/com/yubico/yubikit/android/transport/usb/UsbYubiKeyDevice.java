@@ -16,6 +16,8 @@
 
 package com.yubico.yubikit.android.transport.usb;
 
+import static com.yubico.yubikit.android.transport.usb.UsbDeviceManager.YUBICO_VENDOR_ID;
+
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
 
@@ -43,6 +45,7 @@ public class UsbYubiKeyDevice implements YubiKeyDevice, Closeable {
     private final ConnectionManager connectionManager;
     private final UsbManager usbManager;
     private final UsbDevice usbDevice;
+    private final UsbPid usbPid;
 
     @Nullable
     private CachedOtpConnection otpConnection = null;
@@ -55,8 +58,17 @@ public class UsbYubiKeyDevice implements YubiKeyDevice, Closeable {
      *
      * @param usbManager UsbManager for accessing USB devices
      * @param usbDevice  device connected over usb that has permissions to interact with
+     * @throws InvalidObjectException when the usbDevice is not a recognized YubiKey
      */
-    public UsbYubiKeyDevice(UsbManager usbManager, UsbDevice usbDevice) {
+    public UsbYubiKeyDevice(UsbManager usbManager, UsbDevice usbDevice)
+            throws InvalidObjectException {
+
+        if (usbDevice.getVendorId() != YUBICO_VENDOR_ID) {
+            throw new InvalidObjectException("Invalid vendor id");
+        }
+
+        this.usbPid = UsbPid.fromValue(usbDevice.getProductId());
+
         this.connectionManager = new ConnectionManager(usbManager, usbDevice);
         this.usbDevice = usbDevice;
         this.usbManager = usbManager;
@@ -78,16 +90,9 @@ public class UsbYubiKeyDevice implements YubiKeyDevice, Closeable {
 
     /**
      * @return {@link UsbPid} for the device's product id
-     * @throws InvalidObjectException in case when the usb product id is not recognized
      */
-    public UsbPid getPid() throws InvalidObjectException {
-        int productId = getUsbDevice().getProductId();
-        try {
-            return UsbPid.fromValue(productId);
-        } catch (IllegalArgumentException exception) {
-            // productId was not recognized
-            throw new InvalidObjectException("Unknown usb product id: " + productId);
-        }
+    public UsbPid getPid() {
+        return usbPid;
     }
 
     @Override

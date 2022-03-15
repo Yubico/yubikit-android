@@ -12,6 +12,7 @@ import com.yubico.yubikit.android.transport.usb.connection.UsbSmartCardConnectio
 import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.core.util.Callback;
 
+import java.io.InvalidObjectException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -64,24 +65,31 @@ public class UsbYubiKeyManager {
 
         @Override
         public void deviceAttached(UsbDevice usbDevice) {
-            UsbYubiKeyDevice yubikey = new UsbYubiKeyDevice(usbManager, usbDevice);
-            devices.put(usbDevice, yubikey);
 
-            if (usbConfiguration.isHandlePermissions() && !yubikey.hasPermission()) {
-                Logger.d("request permission");
-                UsbDeviceManager.requestPermission(context, usbDevice, (usbDevice1, hasPermission) -> {
-                    Logger.d("permission result " + hasPermission);
-                    if(hasPermission) {
-                        synchronized (UsbYubiKeyManager.this) {
-                            if (internalListener == this) {
-                                listener.invoke(yubikey);
+            try {
+                UsbYubiKeyDevice yubikey = new UsbYubiKeyDevice(usbManager, usbDevice);
+                devices.put(usbDevice, yubikey);
+
+                if (usbConfiguration.isHandlePermissions() && !yubikey.hasPermission()) {
+                    Logger.d("request permission");
+                    UsbDeviceManager.requestPermission(context, usbDevice, (usbDevice1, hasPermission) -> {
+                        Logger.d("permission result " + hasPermission);
+                        if (hasPermission) {
+                            synchronized (UsbYubiKeyManager.this) {
+                                if (internalListener == this) {
+                                    listener.invoke(yubikey);
+                                }
                             }
                         }
-                    }
-                });
-            } else {
-                listener.invoke(yubikey);
+                    });
+                } else {
+                    listener.invoke(yubikey);
+                }
+            } catch (InvalidObjectException invalidObjectException) {
+                Logger.d("Attached usbDevice(vid=" + usbDevice.getVendorId() + ",pid=" + usbDevice.getProductId() +
+                        ") is not recognized as a valid YubiKey");
             }
+
         }
 
         @Override
