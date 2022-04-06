@@ -1,36 +1,40 @@
-name: static code analysis
-# Documentation: https://github.com/Yubico/yes-static-code-analysis
+name: "CodeQL"
 
 on:
   push:
+    branches: [ master ]
+  pull_request:
+    # The branches below must be a subset of the branches above
+    branches: [ master ]
   schedule:
-    - cron: '0 0 * * 1'
-
-env:
-  SCAN_IMG:
-    yubico-yes-docker-local.jfrog.io/static-code-analysis/android_java:v1
-  SECRET: ${{ secrets.ARTIFACTORY_READER_TOKEN }}
+    - cron: '25 16 * * 0'
 
 jobs:
-  build:
+  analyze:
+    name: Analyze
     runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'java' ]
 
     steps:
-      - uses: actions/checkout@master
+    - name: Checkout repository
+      uses: actions/checkout@v3
 
-      - name: Scan and fail if warnings
-        run: |
-          if [ "${SECRET}" != "" ]; then
-            docker login yubico-yes-docker-local.jfrog.io/ \
-              -u svc-static-code-analysis-reader -p ${SECRET}
-            docker pull ${SCAN_IMG}
-            docker run -v${PWD}:/k -e PROJECT_NAME=${GITHUB_REPOSITORY#Yubico/} \
-              -t ${SCAN_IMG}
-          fi
+    # Initializes the CodeQL tools for scanning.
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v2
+      with:
+        languages: ${{ matrix.language }}
 
+    - name: Autobuild
+      uses: github/codeql-action/autobuild@v2
 
-      - uses: actions/upload-artifact@master
-        if: failure()
-        with:
-          name: suppression_files
-          path: suppression_files
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v2
