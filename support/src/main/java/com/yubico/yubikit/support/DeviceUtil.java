@@ -37,7 +37,6 @@ import com.yubico.yubikit.core.fido.FidoConnection;
 import com.yubico.yubikit.core.otp.OtpConnection;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.smartcard.SmartCardProtocol;
-import com.yubico.yubikit.core.util.Pair;
 import com.yubico.yubikit.management.Capability;
 import com.yubico.yubikit.management.DeviceConfig;
 import com.yubico.yubikit.management.DeviceInfo;
@@ -50,8 +49,6 @@ import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.StringJoiner;
 
 import javax.annotation.Nullable;
 
@@ -59,20 +56,29 @@ public class DeviceUtil {
 
     private static final Integer baseNeoApps = OTP.bit | OATH.bit | PIV.bit | OPENPGP.bit;
 
-    static Pair<Version, Optional<Integer>> readOtpData(SmartCardConnection connection)
+    static class OtpData {
+        final Version version;
+        final @Nullable Integer serial;
+
+        public OtpData(Version version, @Nullable Integer serial) {
+            this.version = version;
+            this.serial = serial;
+        }
+    }
+
+    static OtpData readOtpData(SmartCardConnection connection)
             throws ApplicationNotAvailableException, IOException {
 
         YubiOtpSession otpSession = new YubiOtpSession(connection);
 
-        Optional<Integer> serialNumber = Optional.empty();
+        Integer serialNumber = null;
         try {
-            serialNumber = Optional.of(otpSession.getSerialNumber());
+            serialNumber = otpSession.getSerialNumber();
         } catch (CommandException commandException) {
             Logger.e("Unable to read serial over OTP, no serial", commandException);
         }
 
-        return new Pair<>(otpSession.getVersion(), serialNumber);
-
+        return new OtpData(otpSession.getVersion(), serialNumber);
     }
 
     static DeviceInfo readInfoCcid(SmartCardConnection connection, int interfaces)
@@ -97,12 +103,12 @@ public class DeviceUtil {
         Integer serial = null;
 
         try {
-            Pair<Version, Optional<Integer>> otpData = readOtpData(connection);
+            OtpData otpData = readOtpData(connection);
             capabilities |= OTP.bit;
             if (version == null) {
-                version = otpData.first;
+                version = otpData.version;
             }
-            serial = otpData.second.orElse(null);
+            serial = otpData.serial;
         } catch (IOException | ApplicationNotAvailableException e) {
             Logger.d("Couldn't select OTP application, serial unknown");
         }
@@ -239,7 +245,7 @@ public class DeviceUtil {
             supportedApps.put(Transport.USB, U2F.bit);
             if (keyType == YubiKeyType.NEO) {
                 int usbApps = supportedApps.get(Transport.USB);
-                supportedApps.replace(Transport.USB, usbApps | baseNeoApps);
+                supportedApps.put(Transport.USB, usbApps | baseNeoApps);
                 supportedApps.put(Transport.NFC, supportedApps.get(Transport.USB));
             }
 
@@ -504,11 +510,16 @@ public class DeviceUtil {
                 namePartsList.add("FIPS");
             }
 
-            StringJoiner joiner = new StringJoiner(" ");
-            for (String s : namePartsList) {
-                joiner.add(s);
+            StringBuilder builder = new StringBuilder();
+            for (int partCount = 0; partCount < namePartsList.size(); partCount++)
+            {
+                String s = namePartsList.get(partCount);
+                builder.append(s);
+                if (partCount<namePartsList.size() - 1) {
+                    builder.append(" ");
+                }
             }
-            deviceName = joiner.toString()
+            deviceName = builder.toString()
                     .replace("5 C", "5C")
                     .replace("5 A", "5A");
         }
