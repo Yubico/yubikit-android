@@ -174,8 +174,8 @@ public class OathSession extends ApplicationSession<OathSession> {
 
     /**
      * Returns true if an Access Key is currently set.
-     * @deprecated
-     * Use {@link #isAccessKeySet()} instead.
+     *
+     * @deprecated Use {@link #isAccessKeySet()} instead.
      */
     @Deprecated
     public boolean hasAccessKey() {
@@ -364,7 +364,8 @@ public class OathSession extends ApplicationSession<OathSession> {
      * @throws BadResponseException in case of incorrect YubiKey response
      */
     public Map<Credential, Code> calculateCodes(long timestamp) throws IOException, ApduException, BadResponseException {
-        // CALCULATE_ALL works on a single timestep, so we run it with the most common one (period=30) and then recalculate codes where period != 30.
+        // CALCULATE_ALL uses a single timestep, so we run it with the most common one (period=30)
+        // and then recalculate any codes where period != 30.
         long timeStep = (timestamp / MILLS_IN_SECOND / DEFAULT_TOTP_PERIOD);
         byte[] challenge = ByteBuffer.allocate(CHALLENGE_LEN).putLong(timeStep).array();
         long validFrom = validFrom(timestamp, DEFAULT_TOTP_PERIOD);
