@@ -364,10 +364,12 @@ public class OathSession extends ApplicationSession<OathSession> {
      * @throws BadResponseException in case of incorrect YubiKey response
      */
     public Map<Credential, Code> calculateCodes(long timestamp) throws IOException, ApduException, BadResponseException {
+        // CALCULATE_ALL works on a single timestep, so we run it with the most common one (period=30) and then recalculate codes where period != 30.
         long timeStep = (timestamp / MILLS_IN_SECOND / DEFAULT_TOTP_PERIOD);
         byte[] challenge = ByteBuffer.allocate(CHALLENGE_LEN).putLong(timeStep).array();
+        long validFrom = validFrom(timestamp, DEFAULT_TOTP_PERIOD);
+        long validUntil = validFrom + DEFAULT_TOTP_PERIOD * MILLS_IN_SECOND;
 
-        // using default period to 30 second for all _credentials and then recalculate those that have different period
         byte[] data = protocol.sendAndReceive(new Apdu(0, INS_CALCULATE_ALL, 0, 1, new Tlv(TAG_CHALLENGE, challenge).getBytes()));
         Iterator<Tlv> responseTlvs = Tlvs.decodeList(data).iterator();
         Map<Credential, Code> map = new HashMap<>();
@@ -382,16 +384,16 @@ public class OathSession extends ApplicationSession<OathSession> {
             // parse credential properties
             Credential credential = new Credential(deviceId, credentialId, response);
 
-            if (credential.getOathType() == OathType.TOTP && credential.getPeriod() != DEFAULT_TOTP_PERIOD) {
-                // recalculate credentials that have different period
-                map.put(credential, calculateCode(credential, timestamp));
-            } else if (response.response.length == 4) {
-                // Note: codes are typically valid in 'DEFAULT_PERIOD' second slices
-                // so the valid period actually starts before the calculation happens
-                // and potentially might happen even way before (so that code is valid only 1 second after calculation)
-                long validFrom = validFrom(timestamp, DEFAULT_TOTP_PERIOD);
-                map.put(credential, new Code(formatTruncated(response), validFrom, validFrom + DEFAULT_TOTP_PERIOD * MILLS_IN_SECOND));
+            // Non-empty responses are for TOTP credentials which do not require touch.
+            if (response.response.length == 4) {
+                if (credential.getPeriod() != DEFAULT_TOTP_PERIOD) {
+                    // Recalculate TOTP for correct period.
+                    map.put(credential, calculateCode(credential, timestamp));
+                } else {
+                    map.put(credential, new Code(formatTruncated(response), validFrom, validUntil));
+                }
             } else {
+                // HOTP, or TOTP that requires touch, no code.
                 map.put(credential, null);
             }
         }
