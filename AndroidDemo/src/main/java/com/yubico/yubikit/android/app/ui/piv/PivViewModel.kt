@@ -58,21 +58,5 @@ class PivViewModel : YubiKeyViewModel<PivSession>() {
                 }
             }
         })
-
-        /*
-        val sslContext = SSLContext.getInstance("TLS")
-        sslContext.init(
-            arrayOf(PivKeyManager.forSlot(this, Slot.AUTHENTICATION, Pin("123456"))),
-            null,
-            null
-        )
-
-        val url = URL("https://dain.se:8443")
-        val connection = url.openConnection() as HttpsURLConnection
-        connection.sslSocketFactory = sslContext.socketFactory
-
-        val html = BufferedReader(InputStreamReader(connection.inputStream)).readText()
-        Logger.d("HTML: $html")
-         */
     }
 }

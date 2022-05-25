@@ -262,15 +262,6 @@ class PivCertificateFragment : Fragment() {
                 }
             }
         }
-
-        binding.webview.setOnClickListener {
-            pivViewModel.certificates.value?.get(slot.value)?.let { cert ->
-                findNavController().navigate(
-                    R.id.nav_web,
-                    bundleOf("cert" to cert.encoded, "slot" to slot.value)
-                )
-            }
-        }
     }
 
     private fun showCerts(visible: Boolean) {
