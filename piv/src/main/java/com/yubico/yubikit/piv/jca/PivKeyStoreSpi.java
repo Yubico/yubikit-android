@@ -26,7 +26,6 @@ import java.util.Date;
 import java.util.Enumeration;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 
 import javax.annotation.Nullable;
 
@@ -111,7 +110,7 @@ public class PivKeyStoreSpi extends KeyStoreSpi {
     }
 
     @Override
-    public void engineSetEntry(String alias, KeyStore.Entry entry, KeyStore.ProtectionParameter protParam) throws KeyStoreException {
+    public void engineSetEntry(String alias, KeyStore.Entry entry, @Nullable KeyStore.ProtectionParameter protParam) throws KeyStoreException {
         Slot slot = parseAlias(alias);
 
         PrivateKey privateKey = null;
@@ -162,7 +161,7 @@ public class PivKeyStoreSpi extends KeyStoreSpi {
     }
 
     @Override
-    public void engineSetKeyEntry(String alias, Key key, char[] password, Certificate[] chain) throws KeyStoreException {
+    public void engineSetKeyEntry(String alias, Key key, @Nullable char[] password, Certificate[] chain) throws KeyStoreException {
         Objects.requireNonNull(provider);
         Slot slot = parseAlias(alias);
 
@@ -281,11 +280,11 @@ public class PivKeyStoreSpi extends KeyStoreSpi {
 
     @Override
     public void engineLoad(InputStream stream, char[] password) {
-        throw new InvalidParameterException("KeyStore must be loaded with a PivLoadStoreParameter");
+        throw new InvalidParameterException("KeyStore must be loaded with a null LoadStoreParameter");
     }
 
     @Override
-    public void engineLoad(KeyStore.LoadStoreParameter param) {
+    public void engineLoad(@Nullable KeyStore.LoadStoreParameter param) {
         if (param != null) {
             throw new InvalidParameterException("KeyStore must be loaded with null");
         }

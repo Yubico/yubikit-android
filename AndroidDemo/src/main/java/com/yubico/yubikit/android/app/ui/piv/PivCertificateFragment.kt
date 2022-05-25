@@ -16,21 +16,23 @@
 
 package com.yubico.yubikit.android.app.ui.piv
 
+import android.annotation.SuppressLint
 import android.os.Bundle
 import android.util.Base64
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Observer
 import androidx.lifecycle.lifecycleScope
-import androidx.navigation.fragment.findNavController
 import com.yubico.yubikit.android.app.R
 import com.yubico.yubikit.android.app.databinding.FragmentPivCertifiateBinding
 import com.yubico.yubikit.android.app.ui.getSecret
-import com.yubico.yubikit.piv.*
+import com.yubico.yubikit.piv.KeyType
+import com.yubico.yubikit.piv.PinPolicy
+import com.yubico.yubikit.piv.Slot
+import com.yubico.yubikit.piv.TouchPolicy
 import com.yubico.yubikit.piv.jca.PivPrivateKey
 import com.yubico.yubikit.piv.jca.PivProvider
 import kotlinx.coroutines.Dispatchers
@@ -112,11 +114,12 @@ class PivCertificateFragment : Fragment() {
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         binding = FragmentPivCertifiateBinding.inflate(inflater, container, false)
         return binding.root
     }
 
+    @SuppressLint("SetTextI18n")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         slot = Slot.fromValue(requireArguments().getInt(ARG_SLOT))

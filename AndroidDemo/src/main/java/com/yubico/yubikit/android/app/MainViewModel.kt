@@ -7,7 +7,7 @@ import com.yubico.yubikit.core.YubiKeyDevice
 import kotlinx.coroutines.asCoroutineDispatcher
 import java.util.concurrent.Executors
 
-class MainViewModel() : ViewModel() {
+class MainViewModel : ViewModel() {
     val singleDispatcher = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
 
     private val _handleYubiKey = MutableLiveData(true)

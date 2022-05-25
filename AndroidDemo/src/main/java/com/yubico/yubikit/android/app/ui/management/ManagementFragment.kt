@@ -1,5 +1,6 @@
 package com.yubico.yubikit.android.app.ui.management
 
+import android.annotation.SuppressLint
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -40,18 +41,19 @@ class ManagementFragment : YubiKeyFragment<ManagementSession, ManagementViewMode
             inflater: LayoutInflater,
             container: ViewGroup?,
             savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         binding = FragmentManagementBinding.inflate(inflater, container, false)
         return binding.root
     }
 
+    @SuppressLint("SetTextI18n")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
         binding.applicationTable.visibility = View.GONE
         binding.save.visibility = View.GONE
 
-        viewModel.deviceInfo.observe(viewLifecycleOwner, {
+        viewModel.deviceInfo.observe(viewLifecycleOwner) {
             if (it != null) {
                 val info = it.deviceInfo
                 val keyType = it.type
@@ -68,7 +70,7 @@ class ManagementFragment : YubiKeyFragment<ManagementSession, ManagementViewMode
                     view.findViewById<CheckBox>(id).let { checkbox ->
                         if (info.getSupportedCapabilities(transport) and capability.bit != 0) {
                             checkbox.isChecked = (info.config.getEnabledCapabilities(transport)
-                                    ?: 0) and capability.bit != 0
+                                ?: 0) and capability.bit != 0
                             checkbox.visibility = View.VISIBLE
                         } else {
                             checkbox.visibility = View.GONE
@@ -83,7 +85,7 @@ class ManagementFragment : YubiKeyFragment<ManagementSession, ManagementViewMode
                 binding.applicationTable.visibility = View.GONE
                 binding.save.visibility = View.GONE
             }
-        })
+        }
 
         binding.save.setOnClickListener {
             viewModel.pendingAction.value = {

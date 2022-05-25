@@ -4,7 +4,6 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.yubico.yubikit.android.app.ui.YubiKeyViewModel
 import com.yubico.yubikit.core.Transport
-import com.yubico.yubikit.core.Version
 import com.yubico.yubikit.core.YubiKeyDevice
 import com.yubico.yubikit.core.smartcard.ApduException
 import com.yubico.yubikit.core.smartcard.SW
@@ -13,9 +12,6 @@ import com.yubico.yubikit.oath.Code
 import com.yubico.yubikit.oath.Credential
 import com.yubico.yubikit.oath.OathSession
 import com.yubico.yubikit.oath.OathType
-import java.io.IOException
-
-data class OathApplicationInfo(val version: Version, val deviceId: String, val hasAccessKey: Boolean)
 
 class OathViewModel : YubiKeyViewModel<OathSession>() {
     private val _oathDeviceId = MutableLiveData<String?>()
@@ -52,12 +48,12 @@ class OathViewModel : YubiKeyViewModel<OathSession>() {
             calculateCodes()
         } catch (e: ApduException) {
             when (e.sw) {
-                SW.MEMORY_ERROR -> credentials.map {
-                    it to when {
+                SW.MEMORY_ERROR -> credentials.associateWith {
+                    when {
                         isNfc && it.oathType == OathType.TOTP -> calculateCode(it)
                         else -> null
                     }
-                }.toMap()
+                }
                 else -> throw e
             }
         }

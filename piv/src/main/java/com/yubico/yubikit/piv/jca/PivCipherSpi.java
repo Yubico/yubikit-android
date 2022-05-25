@@ -71,6 +71,7 @@ public class PivCipherSpi extends CipherSpi {
     }
 
     @Override
+    @Nullable
     protected AlgorithmParameters engineGetParameters() {
         return null;
     }
@@ -91,12 +92,18 @@ public class PivCipherSpi extends CipherSpi {
     }
 
     @Override
-    protected void engineInit(int opmode, Key key, AlgorithmParameterSpec params, SecureRandom random) throws InvalidKeyException, InvalidAlgorithmParameterException {
+    protected void engineInit(int opmode, Key key, @Nullable AlgorithmParameterSpec params, SecureRandom random) throws InvalidKeyException, InvalidAlgorithmParameterException {
+        if(params != null) {
+            throw new InvalidAlgorithmParameterException("Cipher must be initialized with params = null");
+        }
         engineInit(opmode, key, random);
     }
 
     @Override
-    protected void engineInit(int opmode, Key key, AlgorithmParameters params, SecureRandom random) throws InvalidKeyException, InvalidAlgorithmParameterException {
+    protected void engineInit(int opmode, Key key, @Nullable AlgorithmParameters params, SecureRandom random) throws InvalidKeyException, InvalidAlgorithmParameterException {
+        if(params != null) {
+            throw new InvalidAlgorithmParameterException("Cipher must be initialized with params = null");
+        }
         engineInit(opmode, key, random);
     }
 

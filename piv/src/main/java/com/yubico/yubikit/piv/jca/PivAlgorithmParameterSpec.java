@@ -8,7 +8,6 @@ import java.security.spec.AlgorithmParameterSpec;
 import java.util.Arrays;
 
 import javax.annotation.Nullable;
-import javax.security.auth.DestroyFailedException;
 import javax.security.auth.Destroyable;
 
 public class PivAlgorithmParameterSpec implements AlgorithmParameterSpec, Destroyable {

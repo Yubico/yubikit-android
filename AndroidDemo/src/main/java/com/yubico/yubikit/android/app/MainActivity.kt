@@ -43,7 +43,7 @@ class MainActivity : AppCompatActivity() {
 
         Logger.setLogger(object : Logger() {
             override fun logDebug(message: String) {
-                Log.d("yubikit", message);
+                Log.d("yubikit", message)
             }
 
             override fun logError(message: String, throwable: Throwable) {
@@ -66,7 +66,7 @@ class MainActivity : AppCompatActivity() {
 
         yubikit = YubiKitManager(this)
 
-        viewModel.handleYubiKey.observe(this, {
+        viewModel.handleYubiKey.observe(this) {
             if (it) {
                 Logger.d("Enable listening")
                 yubikit.startUsbDiscovery(UsbConfiguration()) { device ->
@@ -98,7 +98,7 @@ class MainActivity : AppCompatActivity() {
                 yubikit.stopNfcDiscovery(this)
                 yubikit.stopUsbDiscovery()
             }
-        })
+        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -114,7 +114,7 @@ class MainActivity : AppCompatActivity() {
                         .setView(binding.root)
                         .create().apply {
                             setOnShowListener {
-                                binding.version.text = String.format(Locale.getDefault(), getString(R.string.version), BuildConfig.VERSION_NAME);
+                                binding.version.text = String.format(Locale.getDefault(), getString(R.string.version), BuildConfig.VERSION_NAME)
                             }
                         }.show()
             }

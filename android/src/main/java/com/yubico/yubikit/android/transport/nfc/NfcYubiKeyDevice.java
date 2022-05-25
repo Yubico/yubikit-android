@@ -29,6 +29,7 @@ import com.yubico.yubikit.core.util.Callback;
 import com.yubico.yubikit.core.util.Result;
 
 import java.io.IOException;
+import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -120,7 +121,7 @@ public class NfcYubiKeyDevice implements YubiKeyDevice {
 
     private <T extends YubiKeyConnection> T openConnection(Class<T> connectionType) throws IOException {
         if (connectionType.isAssignableFrom(NfcSmartCardConnection.class)) {
-            return connectionType.cast(openIso7816Connection());
+            return Objects.requireNonNull(connectionType.cast(openIso7816Connection()));
         }
         throw new IllegalStateException("The connection type is not supported by this session");
     }
