@@ -32,6 +32,8 @@ android {
     buildFeatures {
         viewBinding true
     }
+
+    namespace = 'com.yubico.yubikit.android.app'
 }
 
 dependencies {
