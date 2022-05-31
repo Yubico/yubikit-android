@@ -50,14 +50,14 @@ abstract class PivKeyPairGeneratorSpi extends KeyPairGeneratorSpi {
             throw new IllegalStateException("KeyPairGenerator not initialized!");
         }
         try {
-            BlockingQueue<Result<PublicKey, Exception>> queue = new ArrayBlockingQueue<>(1);
+            BlockingQueue<Result<KeyPair, Exception>> queue = new ArrayBlockingQueue<>(1);
             provider.invoke(result -> queue.add(Result.of(() -> {
                 PivSession session = result.getValue();
-                return session.generateKey(spec.slot, keyType, spec.pinPolicy, spec.touchPolicy);
+                PublicKey publicKey = session.generateKey(spec.slot, keyType, spec.pinPolicy, spec.touchPolicy);
+                PrivateKey privateKey = PivPrivateKey.from(publicKey, spec.slot, spec.pinPolicy, spec.touchPolicy, spec.pin);
+                return new KeyPair(publicKey, privateKey);
             })));
-            PublicKey publicKey = queue.take().getValue();
-            PrivateKey privateKey = PivPrivateKey.from(publicKey, spec.slot, spec.pin);
-            return new KeyPair(publicKey, privateKey);
+            return queue.take().getValue();
         } catch (Exception e) {
             throw new IllegalStateException("An error occurred when generating the key pair", e);
         }

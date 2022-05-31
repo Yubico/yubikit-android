@@ -3,8 +3,10 @@ package com.yubico.yubikit.piv.jca;
 import com.yubico.yubikit.core.util.Callback;
 import com.yubico.yubikit.core.util.Result;
 import com.yubico.yubikit.piv.KeyType;
+import com.yubico.yubikit.piv.PinPolicy;
 import com.yubico.yubikit.piv.PivSession;
 import com.yubico.yubikit.piv.Slot;
+import com.yubico.yubikit.piv.TouchPolicy;
 
 import java.math.BigInteger;
 import java.security.PrivateKey;
@@ -24,25 +26,34 @@ public abstract class PivPrivateKey implements PrivateKey {
     final Slot slot;
     final KeyType keyType;
     @Nullable
-    protected final char[] pin;
+    private final PinPolicy pinPolicy;
+    @Nullable
+    private final TouchPolicy touchPolicy;
+    @Nullable
+    protected char[] pin;
     private boolean destroyed = false;
 
-    static PivPrivateKey from(PublicKey publicKey, Slot slot, @Nullable char[] pin) {
+    static PivPrivateKey from(PublicKey publicKey, Slot slot, @Nullable PinPolicy pinPolicy, @Nullable TouchPolicy touchPolicy, @Nullable char[] pin) {
         KeyType keyType = KeyType.fromKey(publicKey);
         if (keyType.params.algorithm == KeyType.Algorithm.RSA) {
-            return new PivPrivateKey.RsaKey(slot, keyType, ((RSAPublicKey) publicKey).getModulus(), pin);
+            return new PivPrivateKey.RsaKey(slot, keyType, pinPolicy, touchPolicy, ((RSAPublicKey) publicKey).getModulus(), pin);
         } else {
-            return new PivPrivateKey.EcKey(slot, keyType, ((ECPublicKey) publicKey), pin);
+            return new PivPrivateKey.EcKey(slot, keyType, pinPolicy, touchPolicy, ((ECPublicKey) publicKey), pin);
         }
     }
 
-    protected PivPrivateKey(Slot slot, KeyType keyType, @Nullable char[] pin) {
+    protected PivPrivateKey(Slot slot, KeyType keyType, @Nullable PinPolicy pinPolicy, @Nullable TouchPolicy touchPolicy, @Nullable char[] pin) {
         this.slot = slot;
         this.keyType = keyType;
+        this.pinPolicy = pinPolicy;
+        this.touchPolicy = touchPolicy;
         this.pin = pin != null ? Arrays.copyOf(pin, pin.length) : null;
     }
 
     byte[] rawSignOrDecrypt(Callback<Callback<Result<PivSession, Exception>>> provider, byte[] payload) throws Exception {
+        if (destroyed) {
+            throw new IllegalStateException("PivPrivateKey has been destroyed");
+        }
         BlockingQueue<Result<byte[], Exception>> queue = new ArrayBlockingQueue<>(1);
         provider.invoke(result -> queue.add(Result.of(() -> {
             PivSession session = result.getValue();
@@ -52,6 +63,42 @@ public abstract class PivPrivateKey implements PrivateKey {
             return session.rawSignOrDecrypt(slot, keyType, payload);
         })));
         return queue.take().getValue();
+    }
+
+    /**
+     * Get the PIV slot where the private key is stored.
+     */
+    public Slot getSlot() {
+        return slot;
+    }
+
+    /**
+     * Get the PIN policy of the key, if available.
+     */
+    @Nullable
+    public PinPolicy getPinPolicy() {
+        return pinPolicy;
+    }
+
+    /**
+     * Get the Touch policy of the key, if available.
+     */
+    @Nullable
+    public TouchPolicy getTouchPolicy() {
+        return touchPolicy;
+    }
+
+    /**
+     * Sets the PIN to use when performing key operations with this private key, or to null.
+     */
+    public void setPin(@Nullable char[] pin) {
+        if (destroyed) {
+            throw new IllegalStateException("PivPrivateKey has been destroyed");
+        }
+        if (pin != null) {
+            Arrays.fill(pin, (char) 0);
+        }
+        this.pin = pin != null ? Arrays.copyOf(pin, pin.length) : null;
     }
 
     @Override
@@ -87,8 +134,8 @@ public abstract class PivPrivateKey implements PrivateKey {
     static class EcKey extends PivPrivateKey implements ECKey {
         private final ECPublicKey publicKey;
 
-        private EcKey(Slot slot, KeyType keyType, ECPublicKey publicKey, @Nullable char[] pin) {
-            super(slot, keyType, pin);
+        private EcKey(Slot slot, KeyType keyType, @Nullable PinPolicy pinPolicy, @Nullable TouchPolicy touchPolicy, ECPublicKey publicKey, @Nullable char[] pin) {
+            super(slot, keyType, pinPolicy, touchPolicy, pin);
             this.publicKey = publicKey;
         }
 
@@ -113,8 +160,8 @@ public abstract class PivPrivateKey implements PrivateKey {
     static class RsaKey extends PivPrivateKey implements RSAKey {
         private final BigInteger modulus;
 
-        private RsaKey(Slot slot, KeyType keyType, BigInteger modulus, @Nullable char[] pin) {
-            super(slot, keyType, pin);
+        private RsaKey(Slot slot, KeyType keyType, @Nullable PinPolicy pinPolicy, @Nullable TouchPolicy touchPolicy, BigInteger modulus, @Nullable char[] pin) {
+            super(slot, keyType, pinPolicy, touchPolicy, pin);
             this.modulus = modulus;
         }
 
