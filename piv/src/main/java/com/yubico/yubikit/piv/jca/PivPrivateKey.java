@@ -15,7 +15,8 @@ import java.security.interfaces.RSAKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.ECParameterSpec;
 import java.util.Arrays;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 
 import javax.annotation.Nullable;
 
@@ -42,15 +43,15 @@ public abstract class PivPrivateKey implements PrivateKey {
     }
 
     byte[] rawSignOrDecrypt(Callback<Callback<Result<PivSession, Exception>>> provider, byte[] payload) throws Exception {
-        CompletableFuture<Result<byte[], Exception>> future = new CompletableFuture<>();
-        provider.invoke(result -> future.complete(Result.of(() -> {
+        BlockingQueue<Result<byte[], Exception>> queue = new ArrayBlockingQueue<>(1);
+        provider.invoke(result -> queue.add(Result.of(() -> {
             PivSession session = result.getValue();
             if (pin != null) {
                 session.verifyPin(pin);
             }
             return session.rawSignOrDecrypt(slot, keyType, payload);
         })));
-        return future.get().getValue();
+        return queue.take().getValue();
     }
 
     @Override
@@ -92,15 +93,15 @@ public abstract class PivPrivateKey implements PrivateKey {
         }
 
         byte[] keyAgreement(Callback<Callback<Result<PivSession, Exception>>> provider, ECPublicKey peerPublicKey) throws Exception {
-            CompletableFuture<Result<byte[], Exception>> future = new CompletableFuture<>();
-            provider.invoke(result -> future.complete(Result.of(() -> {
+            BlockingQueue<Result<byte[], Exception>> queue = new ArrayBlockingQueue<>(1);
+            provider.invoke(result -> queue.add(Result.of(() -> {
                 PivSession session = result.getValue();
                 if (pin != null) {
                     session.verifyPin(pin);
                 }
                 return session.calculateSecret(slot, peerPublicKey);
             })));
-            return future.get().getValue();
+            return queue.take().getValue();
         }
 
         @Override

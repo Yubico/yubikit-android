@@ -25,7 +25,8 @@ import java.security.cert.X509Certificate;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 
 import javax.annotation.Nullable;
 
@@ -37,41 +38,41 @@ public class PivKeyStoreSpi extends KeyStoreSpi {
     }
 
     private KeyType putKey(Slot slot, PrivateKey key, PinPolicy pinPolicy, TouchPolicy touchPolicy) throws Exception {
-        CompletableFuture<Result<KeyType, Exception>> future = new CompletableFuture<>();
-        provider.invoke(result -> future.complete(Result.of(() -> result.getValue().putKey(slot, key, pinPolicy, touchPolicy))));
-        return future.get().getValue();
+        BlockingQueue<Result<KeyType, Exception>> queue = new ArrayBlockingQueue<>(1);
+        provider.invoke(result -> queue.add(Result.of(() -> result.getValue().putKey(slot, key, pinPolicy, touchPolicy))));
+        return queue.take().getValue();
     }
 
     private void putCertificate(Slot slot, X509Certificate certificate) throws Exception {
-        CompletableFuture<Result<Boolean, Exception>> future = new CompletableFuture<>();
-        provider.invoke(result -> future.complete(Result.of(() -> {
+        BlockingQueue<Result<Boolean, Exception>> queue = new ArrayBlockingQueue<>(1);
+        provider.invoke(result -> queue.add(Result.of(() -> {
             result.getValue().putCertificate(slot, certificate);
             return true;
         })));
-        future.get().getValue();
+        queue.take().getValue();
     }
 
     private X509Certificate getCertificate(Slot slot) throws Exception {
-        CompletableFuture<Result<X509Certificate, Exception>> future = new CompletableFuture<>();
-        provider.invoke(result -> future.complete(Result.of(() -> result.getValue().getCertificate(slot))));
-        return future.get().getValue();
+        BlockingQueue<Result<X509Certificate, Exception>> queue = new ArrayBlockingQueue<>(1);
+        provider.invoke(result -> queue.add(Result.of(() -> result.getValue().getCertificate(slot))));
+        return queue.take().getValue();
     }
 
     private void deleteCertificate(Slot slot) throws Exception {
-        CompletableFuture<Result<Boolean, Exception>> future = new CompletableFuture<>();
-        provider.invoke(result -> future.complete(Result.of(() -> {
+        BlockingQueue<Result<Boolean, Exception>> queue = new ArrayBlockingQueue<>(1);
+        provider.invoke(result -> queue.add(Result.of(() -> {
             result.getValue().deleteCertificate(slot);
             return true;
         })));
-        future.get().getValue();
+        queue.take().getValue();
     }
 
     @Override
     public Key engineGetKey(String alias, char[] password) throws UnrecoverableKeyException {
         Slot slot = parseAlias(alias);
         try {
-            CompletableFuture<Result<PublicKey, Exception>> future = new CompletableFuture<>();
-            provider.invoke(result -> future.complete(Result.of(() -> {
+            BlockingQueue<Result<PublicKey, Exception>> queue = new ArrayBlockingQueue<>(1);
+            provider.invoke(result -> queue.add(Result.of(() -> {
                 PivSession session = result.getValue();
                 if (session.supports(PivSession.FEATURE_METADATA)) {
                     return session.getSlotMetadata(slot).getPublicKey();
@@ -79,7 +80,7 @@ public class PivKeyStoreSpi extends KeyStoreSpi {
                     return session.getCertificate(slot).getPublicKey();
                 }
             })));
-            PublicKey publicKey = future.get().getValue();
+            PublicKey publicKey = queue.take().getValue();
             return PivPrivateKey.from(publicKey, slot, password);
         } catch (BadResponseException e) {
             throw new UnrecoverableKeyException("No way to infer KeyType, make sure the matching certificate is stored");

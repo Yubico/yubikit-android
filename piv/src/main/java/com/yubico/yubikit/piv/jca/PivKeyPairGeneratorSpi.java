@@ -13,7 +13,8 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.security.spec.AlgorithmParameterSpec;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 
 import javax.annotation.Nullable;
 
@@ -49,12 +50,12 @@ abstract class PivKeyPairGeneratorSpi extends KeyPairGeneratorSpi {
             throw new IllegalStateException("KeyPairGenerator not initialized!");
         }
         try {
-            CompletableFuture<Result<PublicKey, Exception>> future = new CompletableFuture<>();
-            provider.invoke(result -> future.complete(Result.of(() -> {
+            BlockingQueue<Result<PublicKey, Exception>> queue = new ArrayBlockingQueue<>(1);
+            provider.invoke(result -> queue.add(Result.of(() -> {
                 PivSession session = result.getValue();
                 return session.generateKey(spec.slot, keyType, spec.pinPolicy, spec.touchPolicy);
             })));
-            PublicKey publicKey = future.get().getValue();
+            PublicKey publicKey = queue.take().getValue();
             PrivateKey privateKey = PivPrivateKey.from(publicKey, spec.slot, spec.pin);
             return new KeyPair(publicKey, privateKey);
         } catch (Exception e) {
