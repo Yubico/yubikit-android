@@ -69,7 +69,7 @@ public class PivKeyStoreSpi extends KeyStoreSpi {
 
     @Override
     public Key engineGetKey(String alias, char[] password) throws UnrecoverableKeyException {
-        Slot slot = parseAlias(alias);
+        Slot slot = Slot.fromStringAlias(alias);
         try {
             BlockingQueue<Result<PublicKey, Exception>> queue = new ArrayBlockingQueue<>(1);
             provider.invoke(result -> queue.add(Result.of(() -> {
@@ -96,7 +96,7 @@ public class PivKeyStoreSpi extends KeyStoreSpi {
 
     @Override
     public Certificate engineGetCertificate(String alias) {
-        Slot slot = parseAlias(alias);
+        Slot slot = Slot.fromStringAlias(alias);
         try {
             return getCertificate(slot);
         } catch (Exception e) {
@@ -112,7 +112,7 @@ public class PivKeyStoreSpi extends KeyStoreSpi {
 
     @Override
     public void engineSetEntry(String alias, KeyStore.Entry entry, @Nullable KeyStore.ProtectionParameter protParam) throws KeyStoreException {
-        Slot slot = parseAlias(alias);
+        Slot slot = Slot.fromStringAlias(alias);
 
         PrivateKey privateKey = null;
         Certificate certificate;
@@ -164,7 +164,7 @@ public class PivKeyStoreSpi extends KeyStoreSpi {
     @Override
     public void engineSetKeyEntry(String alias, Key key, @Nullable char[] password, Certificate[] chain) throws KeyStoreException {
         Objects.requireNonNull(provider);
-        Slot slot = parseAlias(alias);
+        Slot slot = Slot.fromStringAlias(alias);
 
         if (password != null) {
             throw new KeyStoreException("Password can not be set");
@@ -192,7 +192,7 @@ public class PivKeyStoreSpi extends KeyStoreSpi {
 
     @Override
     public void engineSetCertificateEntry(String alias, Certificate cert) throws KeyStoreException {
-        Slot slot = parseAlias(alias);
+        Slot slot = Slot.fromStringAlias(alias);
         if (cert instanceof X509Certificate) {
             try {
                 putCertificate(slot, (X509Certificate) cert);
@@ -207,7 +207,7 @@ public class PivKeyStoreSpi extends KeyStoreSpi {
     @Override
     public void engineDeleteEntry(String alias) throws KeyStoreException {
         Objects.requireNonNull(provider);
-        Slot slot = parseAlias(alias);
+        Slot slot = Slot.fromStringAlias(alias);
         try {
             deleteCertificate(slot);
         } catch (Exception e) {
@@ -223,7 +223,7 @@ public class PivKeyStoreSpi extends KeyStoreSpi {
     @Override
     public boolean engineContainsAlias(String alias) {
         try {
-            parseAlias(alias);
+            Slot.fromStringAlias(alias);
             return true;
         } catch (IllegalArgumentException e) {
             return false;
@@ -243,7 +243,7 @@ public class PivKeyStoreSpi extends KeyStoreSpi {
     @Override
     public boolean engineIsCertificateEntry(String alias) {
         Objects.requireNonNull(provider);
-        Slot slot = parseAlias(alias);
+        Slot slot = Slot.fromStringAlias(alias);
         try {
             getCertificate(slot);
             return true;
@@ -268,7 +268,7 @@ public class PivKeyStoreSpi extends KeyStoreSpi {
                 return null;
             }
             if (entry.equals(cert)) {
-                return Integer.toString(slot.value, 16);
+                return slot.getStringAlias();
             }
         }
         return null;
@@ -288,14 +288,6 @@ public class PivKeyStoreSpi extends KeyStoreSpi {
     public void engineLoad(@Nullable KeyStore.LoadStoreParameter param) {
         if (param != null) {
             throw new InvalidParameterException("KeyStore must be loaded with null");
-        }
-    }
-
-    static Slot parseAlias(String alias) {
-        try {
-            return Slot.fromValue(Integer.parseInt(alias, 16));
-        } catch (NumberFormatException e) {
-            throw new IllegalArgumentException(e);
         }
     }
 }
