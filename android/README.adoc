@@ -16,7 +16,7 @@ dependencies {
 }
 ----
 
-This module depends on the link:../core/[core] module, which will automatially
+This module depends on the link:../core/[core] module, which will automatically
 be added as a transitive dependency to your project.
 
 
@@ -84,7 +84,7 @@ yubiKitManager.startUsbDiscovery(new UsbConfiguration(), device -> {
 ----
 
 To stop listening for USB events, call the `stopUsbDiscovery()` method. This can
-be done in your Activty's `onDestroy()` method:
+be done in your Activity's `onDestroy()` method:
 
 [source,java]
 ----
@@ -156,7 +156,7 @@ device.requestConnection(SmartCardConnection.class, result -> {
 
 === UI elements
 The module provides some re-usable components which can be useful for
-implementing common functinoality.
+implementing common functionality.
 
 ==== The YubiKey Prompt Activity
 An Android Activity dialog which prompts the user to connect their YubiKey, and

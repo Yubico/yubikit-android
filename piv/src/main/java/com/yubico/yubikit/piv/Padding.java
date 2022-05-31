@@ -77,7 +77,9 @@ class Padding {
                 if ("NONE".equals(hashAlgorithm)) {
                     hash = message;
                 } else {
-                    if (SHA_PATTERN.matcher(hashAlgorithm).matches()) {
+                    if (SHA_PATTERN.matcher(hashAlgorithm).matches())
+                    //noinspection SpellCheckingInspection
+                    {
                         //SHAXYZ needs to be renamed to SHA-XYZ
                         hashAlgorithm = hashAlgorithm.replace("SHA", "SHA-");
                     }
@@ -88,7 +90,7 @@ class Padding {
                     // Truncate
                     payload = Arrays.copyOf(hash, byteLength);
                 } else if (hash.length < byteLength) {
-                    // Leftpad, with no external dependencies!
+                    // Left pad, with no external dependencies!
                     payload = new byte[byteLength];
                     System.arraycopy(hash, 0, payload, payload.length - hash.length, hash.length);
                 } else {

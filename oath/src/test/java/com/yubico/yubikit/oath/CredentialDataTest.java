@@ -22,6 +22,7 @@ import org.junit.Test;
 import java.net.URI;
 import java.net.URISyntaxException;
 
+@SuppressWarnings("SpellCheckingInspection")
 public class CredentialDataTest {
 
     @Test

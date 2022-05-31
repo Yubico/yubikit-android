@@ -24,6 +24,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
 import java.security.Signature;
 
+@SuppressWarnings("SpellCheckingInspection")
 public class PaddingTest {
     @Test
     public void testPkcs1v1_5() throws NoSuchAlgorithmException {

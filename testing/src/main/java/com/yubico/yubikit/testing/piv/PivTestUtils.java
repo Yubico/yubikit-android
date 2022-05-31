@@ -58,6 +58,7 @@ import java.util.Date;
 import javax.crypto.Cipher;
 import javax.crypto.KeyAgreement;
 
+@SuppressWarnings("SpellCheckingInspection")
 public class PivTestUtils {
     private enum StaticKey {
         RSA1024(

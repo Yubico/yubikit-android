@@ -315,7 +315,7 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
      * @param slot          the slot to update
      * @param configuration the updated flags tp set
      * @param accCode       the access code to set
-     * @param curAccCode    the current accedd code, if needed
+     * @param curAccCode    the current access code, if needed
      * @throws IOException      in case of communication error
      * @throws CommandException in case of an error response from the YubiKey
      */

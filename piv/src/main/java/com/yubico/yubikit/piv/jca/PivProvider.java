@@ -48,6 +48,7 @@ public class PivProvider extends Provider {
         Logger.d("EC " + ecAttributes);
         Logger.d("RSA " + rsaAttributes);
 
+        //noinspection SpellCheckingInspection
         putService(new Service(this, "Signature", "NONEwithECDSA", PivEcSignatureSpi.Prehashed.class.getName(), null, ecAttributes) {
             @Override
             public Object newInstance(Object constructorParameter) {

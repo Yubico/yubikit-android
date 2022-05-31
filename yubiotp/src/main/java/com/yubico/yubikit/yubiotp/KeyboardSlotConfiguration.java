@@ -36,7 +36,7 @@ abstract class KeyboardSlotConfiguration<T extends KeyboardSlotConfiguration<T>>
      * Faster triggering when only slot 1 is configured.
      * This option is always in effect on firmware versions 3.0 and above.
      *
-     * @param fastTrigger if true, trigger slot 1 quicker when slot 2 is unconfigured (default: true)
+     * @param fastTrigger if true, trigger slot 1 quicker when slot 2 is not configured (default: true)
      * @return the configuration for chaining
      */
     public T fastTrigger(boolean fastTrigger) {
@@ -59,7 +59,7 @@ abstract class KeyboardSlotConfiguration<T extends KeyboardSlotConfiguration<T>>
     }
 
     /**
-     * Send scancodes for numeric keypad keypresses when sending digits - helps with some keyboard layouts.
+     * Send scancodes for numeric keypad key presses when sending digits - helps with some keyboard layouts.
      *
      * @param useNumeric true to use the numeric keypad (default: false)
      * @return the configuration for chaining

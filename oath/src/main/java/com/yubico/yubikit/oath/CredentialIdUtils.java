@@ -37,7 +37,7 @@ class CredentialIdUtils {
      * @param name     the name of the credential
      * @param oathType the type of the credential
      * @param period   the time period of a TOTP credential (ignored for HOTP)
-     * @return A bytestring to use with YKOATH.
+     * @return A byte string to use with YKOATH.
      */
     static byte[] formatId(@Nullable String issuer, String name, OathType oathType, int period) {
         String longName = "";

@@ -246,6 +246,7 @@ public class PivDeviceTests {
             case EC:
                 testSign(privateKey, publicKey, "SHA1withECDSA", null);
                 testSign(privateKey, publicKey, "SHA256withECDSA", null);
+                //noinspection SpellCheckingInspection
                 testSign(privateKey, publicKey, "NONEwithECDSA", null);
                 testSign(privateKey, publicKey, "SHA3-256withECDSA", null);
                 break;

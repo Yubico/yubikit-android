@@ -75,7 +75,7 @@ public class NfcConfiguration {
     /**
      * Set it to true to shows view with settings nfc setting if NFC is disabled,
      * otherwise start of NFC session will return error in callback if no permissions/setting
-     * and allows user to handle disabled NFC reader (show error or snackbar or refer to settings)
+     * and allows user to handle disabled NFC reader (show error or snack-bar or refer to settings)
      * Default value is false
      *
      * @param handleUnavailableNfc new value of this property

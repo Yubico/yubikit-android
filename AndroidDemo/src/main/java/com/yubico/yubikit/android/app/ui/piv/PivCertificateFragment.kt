@@ -56,6 +56,7 @@ import java.security.spec.PKCS8EncodedKeySpec
 import java.text.SimpleDateFormat
 import java.util.*
 
+@Suppress("SpellCheckingInspection")
 private const val DER_KEY =
     "MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC0G266KNssenUQ" +
             "wsqN3+f3ysmiHgp4345wsaiDcxXryXX3pXr3vYdiJFQ6HiiMbfdpm4FeulLYCOdB" +
@@ -84,6 +85,7 @@ private const val DER_KEY =
             "Ls4b2aPv5hhSx47MGZbVAIhSbls5zOZXDZm4wdfQE5J+4kAVlYF73ZCrH24Zbqqy" +
             "MF/0wDt/NExsv6FMUwSKfyY="
 
+@Suppress("SpellCheckingInspection")
 private const val PEM_CERT = "-----BEGIN CERTIFICATE-----\n" +
         "MIIDSzCCAjOgAwIBAgIUG0ZaYHxZYLPZjCDgXsoGMOC5iUcwDQYJKoZIhvcNAQEL\n" +
         "BQAwNTEhMB8GA1UECgwYSW50ZXJuZXQgV2lkZ2l0cyBQdHkgTHRkMRAwDgYDVQQD\n" +
