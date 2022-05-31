@@ -27,7 +27,7 @@ public abstract class PivPrivateKey implements PrivateKey {
     protected final char[] pin;
     private boolean destroyed = false;
 
-    public static PivPrivateKey from(PublicKey publicKey, Slot slot, @Nullable char[] pin) {
+    static PivPrivateKey from(PublicKey publicKey, Slot slot, @Nullable char[] pin) {
         KeyType keyType = KeyType.fromKey(publicKey);
         if (keyType.params.algorithm == KeyType.Algorithm.RSA) {
             return new PivPrivateKey.RsaKey(slot, keyType, ((RSAPublicKey) publicKey).getModulus(), pin);
