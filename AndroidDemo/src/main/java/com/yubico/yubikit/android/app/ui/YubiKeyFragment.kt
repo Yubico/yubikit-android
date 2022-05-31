@@ -20,7 +20,7 @@ import kotlinx.coroutines.withContext
 import java.io.Closeable
 
 abstract class YubiKeyFragment<App : Closeable, VM : YubiKeyViewModel<App>> : Fragment() {
-    protected val activityViewModel: MainViewModel by activityViewModels()
+    private val activityViewModel: MainViewModel by activityViewModels()
     protected abstract val viewModel: VM
 
     private lateinit var yubiKeyPrompt: AlertDialog
@@ -36,15 +36,15 @@ abstract class YubiKeyFragment<App : Closeable, VM : YubiKeyViewModel<App>> : Fr
                 .setOnCancelListener { viewModel.pendingAction.value = null }
                 .create()
 
-        activityViewModel.yubiKey.observe(viewLifecycleOwner, {
+        activityViewModel.yubiKey.observe(viewLifecycleOwner) {
             if (it != null) {
                 onYubiKey(it)
             } else {
                 emptyText.setText(R.string.need_yubikey)
             }
-        })
+        }
 
-        viewModel.result.observe(viewLifecycleOwner, { result ->
+        viewModel.result.observe(viewLifecycleOwner) { result ->
             result.onSuccess {
                 it?.let {
                     Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
@@ -57,9 +57,9 @@ abstract class YubiKeyFragment<App : Closeable, VM : YubiKeyViewModel<App>> : Fr
                 }
             }
             viewModel.clearResult()
-        })
+        }
 
-        viewModel.pendingAction.observe(viewLifecycleOwner, {
+        viewModel.pendingAction.observe(viewLifecycleOwner) {
             if (it != null) {
                 activityViewModel.yubiKey.value.let { device ->
                     if (device != null) {
@@ -70,7 +70,7 @@ abstract class YubiKeyFragment<App : Closeable, VM : YubiKeyViewModel<App>> : Fr
                     }
                 }
             }
-        })
+        }
     }
 
     override fun onPause() {
@@ -93,7 +93,7 @@ abstract class YubiKeyFragment<App : Closeable, VM : YubiKeyViewModel<App>> : Fr
                             emptyText.setText(R.string.remove_key)
                         }
                     }
-                    it.remove(yubiKeyPrompt::dismiss);
+                    it.remove(yubiKeyPrompt::dismiss)
                 } else if (yubiKeyPrompt.isShowing) {
                     yubiKeyPrompt.dismiss()
                 }

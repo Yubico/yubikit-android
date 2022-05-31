@@ -6,7 +6,6 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.activityViewModels
-import androidx.lifecycle.Observer
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.yubico.yubikit.android.app.R
@@ -27,14 +26,14 @@ import org.apache.commons.codec.binary.Base32
 class OathFragment : YubiKeyFragment<OathSession, OathViewModel>() {
     override val viewModel: OathViewModel by activityViewModels()
 
-    lateinit var binding: FragmentOathBinding
-    lateinit var listAdapter: OathListAdapter
+    private lateinit var binding: FragmentOathBinding
+    private lateinit var listAdapter: OathListAdapter
 
     override fun onCreateView(
             inflater: LayoutInflater,
             container: ViewGroup?,
             savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         binding = FragmentOathBinding.inflate(inflater, container, false)
         return binding.root
     }
@@ -68,24 +67,28 @@ class OathFragment : YubiKeyFragment<OathSession, OathViewModel>() {
             binding.swiperefresh.isRefreshing = false
         }
 
-        viewModel.result.observe(viewLifecycleOwner, { result ->
+        viewModel.result.observe(viewLifecycleOwner) { result ->
             result.onFailure { e ->
                 if (e is ApduException && e.sw == SW.SECURITY_CONDITION_NOT_SATISFIED) {
                     viewModel.oathDeviceId.value?.let { deviceId ->
                         lifecycleScope.launch(Dispatchers.Main) {
-                            getSecret(requireContext(), R.string.enter_password, R.string.password)?.let {
+                            getSecret(
+                                requireContext(),
+                                R.string.enter_password,
+                                R.string.password
+                            )?.let {
                                 viewModel.password = Pair(deviceId, it.toCharArray())
                             }
                         }
                     }
                 }
             }
-        })
+        }
 
-        viewModel.credentials.observe(viewLifecycleOwner, Observer {
+        viewModel.credentials.observe(viewLifecycleOwner) {
             listAdapter.submitList(it?.toList())
             binding.emptyView.visibility = if (it == null) View.VISIBLE else View.GONE
-        })
+        }
 
         binding.textLayoutKey.setEndIconOnClickListener {
             binding.editTextKey.setText(Base32().encodeToString(RandomUtils.getRandomBytes(10)))

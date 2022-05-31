@@ -2,11 +2,11 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
 android {
-    compileSdkVersion 31
+    compileSdkVersion 32
 
     defaultConfig {
         minSdkVersion 24
-        targetSdkVersion 31
+        targetSdkVersion 32
         versionName version
         versionCode 1
 
@@ -32,6 +32,8 @@ android {
     buildFeatures {
         viewBinding true
     }
+
+    namespace = 'com.yubico.yubikit.android.app'
 }
 
 dependencies {
@@ -48,17 +50,17 @@ dependencies {
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.0-RC2'
 
     implementation 'androidx.core:core-ktx:1.7.0'
-    implementation 'androidx.fragment:fragment-ktx:1.4.0'
-    implementation 'androidx.appcompat:appcompat:1.4.0'
+    implementation 'androidx.fragment:fragment-ktx:1.4.1'
+    implementation 'androidx.appcompat:appcompat:1.4.1'
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
-    implementation 'com.google.android.material:material:1.4.0'
+    implementation 'com.google.android.material:material:1.6.0'
 
     // Lifecycle
-    implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:2.4.0"
+    implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:2.4.1"
     implementation "androidx.lifecycle:lifecycle-extensions:2.2.0"
 
     // Navigation
-    def nav_version = '2.3.5'
+    def nav_version = '2.4.2'
     implementation "androidx.navigation:navigation-fragment-ktx:$nav_version"
     implementation "androidx.navigation:navigation-ui-ktx:$nav_version"
     implementation "androidx.navigation:navigation-dynamic-features-fragment:$nav_version"

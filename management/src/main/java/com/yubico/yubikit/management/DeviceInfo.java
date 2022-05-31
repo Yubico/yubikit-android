@@ -52,6 +52,17 @@ public class DeviceInfo {
     private final boolean isFips;
     private final boolean isSky;
 
+    /**
+     * Constructs a new DeviceInfo.
+     * @param config the mutable configuration of the YubiKey
+     * @param serialNumber the YubiKeys serial number
+     * @param version the firmware version of the YubiKey
+     * @param formFactor the YubiKeys physical form factor
+     * @param supportedCapabilities the capabilities supported by the YubiKey
+     * @param isLocked whether or not the configuration is protected by a lock code
+     * @param isFips whether or not the YubiKey is a FIPS model
+     * @param isSky whether or not the YubiKey is a Security Key by Yubico model
+     */
     public DeviceInfo(DeviceConfig config, @Nullable Integer serialNumber, Version version, FormFactor formFactor, Map<Transport, Integer> supportedCapabilities, boolean isLocked, boolean isFips, boolean isSky) {
         this.config = config;
         this.serialNumber = serialNumber;
@@ -61,6 +72,14 @@ public class DeviceInfo {
         this.isLocked = isLocked;
         this.isFips = isFips;
         this.isSky = isSky;
+    }
+
+    /**
+     * Legacy constructor, retained for backwards compatibility until 3.0.0.
+     */
+    @Deprecated
+    public DeviceInfo(DeviceConfig config, @Nullable Integer serialNumber, Version version, FormFactor formFactor, Map<Transport, Integer> supportedCapabilities, boolean isLocked) {
+        this(config, serialNumber, version, formFactor, supportedCapabilities, isLocked, false, false);
     }
 
     /**

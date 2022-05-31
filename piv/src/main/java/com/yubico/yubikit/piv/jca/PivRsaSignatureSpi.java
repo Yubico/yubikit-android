@@ -117,6 +117,7 @@ public class PivRsaSignatureSpi extends SignatureSpi {
     @Override
     protected void engineSetParameter(String param, Object value) throws InvalidParameterException {
         try {
+            //noinspection deprecation
             getDelegate(true).setParameter(param, value);
         } catch (NoSuchAlgorithmException e) {
             throw new InvalidParameterException("Not initialized");
@@ -126,6 +127,7 @@ public class PivRsaSignatureSpi extends SignatureSpi {
     @Override
     protected Object engineGetParameter(String param) throws InvalidParameterException {
         if (delegate != null) {
+            //noinspection deprecation
             return delegate.getParameter(param);
         } else {
             throw new InvalidParameterException("Not initialized");

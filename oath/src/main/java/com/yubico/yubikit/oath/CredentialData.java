@@ -90,11 +90,17 @@ public class CredentialData implements Serializable {
         }
 
         HashAlgorithm hashAlgorithm;
-        try {
-            hashAlgorithm = HashAlgorithm.fromString(params.get("algorithm"));
-        } catch (IllegalArgumentException e) {
-            throw new ParseUriException("Invalid HMAC algorithm");
+        String algorithmName = params.get("algorithm");
+        if (algorithmName == null) {
+            hashAlgorithm = HashAlgorithm.SHA1;
+        } else {
+            try {
+                hashAlgorithm = HashAlgorithm.fromString(algorithmName);
+            } catch (IllegalArgumentException e) {
+                throw new ParseUriException("Invalid HMAC algorithm");
+            }
         }
+
 
         byte[] secret = decodeSecret(params.get("secret"));
 

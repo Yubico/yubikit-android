@@ -52,13 +52,13 @@ class PivFragment : YubiKeyFragment<PivSession, PivViewModel>() {
 
         showCerts(false)
 
-        viewModel.certificates.observe(viewLifecycleOwner, {
+        viewModel.certificates.observe(viewLifecycleOwner) {
             it?.run {
                 showCerts(true)
             }
-        })
+        }
 
-        viewModel.result.observe(viewLifecycleOwner, { result ->
+        viewModel.result.observe(viewLifecycleOwner) { result ->
             result.onFailure { e ->
                 when (e) {
                     is ApplicationNotAvailableException -> showCerts(false)
@@ -75,7 +75,7 @@ class PivFragment : YubiKeyFragment<PivSession, PivViewModel>() {
                     }
                 }
             }
-        })
+        }
     }
 
     private fun showCerts(visible: Boolean) {

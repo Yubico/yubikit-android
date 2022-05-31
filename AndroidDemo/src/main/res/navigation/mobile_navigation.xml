@@ -27,10 +27,4 @@
         android:name="com.yubico.yubikit.android.app.ui.oath.OathFragment"
         android:label="@string/menu_oath"
         tools:layout="@layout/fragment_oath" />
-
-    <fragment
-        android:id="@+id/nav_web"
-        android:name="com.yubico.yubikit.android.app.ui.web.WebFragment"
-        android:label="@string/menu_web"
-        tools:layout="@layout/fragment_web" />
 </navigation>

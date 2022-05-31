@@ -25,6 +25,7 @@ public class RandomUtils {
     /**
      * Returns a byte array containing random values.
      */
+    @SuppressWarnings("NewApi")
     public static byte[] getRandomBytes(int length) {
         byte[] bytes = new byte[length];
         try {
