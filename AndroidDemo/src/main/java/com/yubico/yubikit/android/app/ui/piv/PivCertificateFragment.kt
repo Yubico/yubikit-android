@@ -275,7 +275,6 @@ class PivCertificateFragment : Fragment() {
 
         binding.delete.isEnabled = visible
         binding.sign.isEnabled = visible
-        binding.webview.isEnabled = visible
     }
 
     companion object {
