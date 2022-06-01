@@ -239,8 +239,8 @@ class PivCertificateFragment : Fragment() {
 
                         val keyStore = KeyStore.getInstance("YKPiv", provider)
                         keyStore.load(null)
-                        val publicKey = keyStore.getCertificate(slot.value.toString(16)).publicKey
-                        val privateKey = keyStore.getKey(slot.value.toString(16), pin.toCharArray()) as PrivateKey
+                        val publicKey = keyStore.getCertificate(slot.stringAlias).publicKey
+                        val privateKey = keyStore.getKey(slot.stringAlias, pin.toCharArray()) as PrivateKey
                         val algorithm = when (KeyType.fromKey(publicKey).params.algorithm) {
                             KeyType.Algorithm.RSA -> "SHA256withRSA"
                             KeyType.Algorithm.EC -> "SHA256withECDSA"
