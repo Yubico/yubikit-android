@@ -59,11 +59,12 @@ public class CredentialData implements Serializable {
     /**
      * Parses an <a href="https://github.com/google/google-authenticator/wiki/Key-Uri-Format">otpauth:// URI</a>.
      * <p>
-     * Example URI: <pre>otpauth://totp/Example:alice@google.com?secret=OTP_SECRET&amp;issuer=Example</pre>
+     * Example URI: <pre>otpauth://totp/Example:alice@google.com?secret=JBSWY3DPEHPK3PXP&amp;issuer=Example</pre>
      *
      * @param uri the otpauth:// URI to parse
      * @throws ParseUriException if the URI format is invalid
      */
+    @SuppressWarnings("SpellCheckingInspection")
     public static CredentialData parseUri(URI uri) throws ParseUriException {
         if (!"otpauth".equals(uri.getScheme())) {
             throw new ParseUriException("Uri scheme must be otpauth://");

@@ -26,8 +26,8 @@ public class ChecksumUtils {
     /**
      * Calculate the CRC13239 checksum for a byte buffer.
      *
-     * @param data   byte buffer to be checksum-ed.
-     * @param length how much of the buffer should be checksum-ed
+     * @param data   byte buffer to be checksummed.
+     * @param length how much of the buffer should be checksummed
      * @return the calculated checksum
      */
     static public short calculateCrc(byte[] data, int length) {

@@ -6,6 +6,7 @@ ccid
 cfgflag
 chal
 chalresp
+checksummed
 chuid
 ctap
 ctaphid
@@ -38,6 +39,7 @@ rsassa
 secp
 sede
 smartcard
+snackbar
 swiperefresh
 textinputlayout
 tcpobex
@@ -48,6 +50,7 @@ transceive
 unpad
 upneeded
 uuuuuuuu
+vvincredible
 webview
 withecdsa
 withrsa
