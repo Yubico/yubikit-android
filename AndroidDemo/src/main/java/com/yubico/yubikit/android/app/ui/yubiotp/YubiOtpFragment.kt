@@ -41,7 +41,7 @@ class YubiOtpFragment : Fragment() {
     private lateinit var binding: FragmentYubiotpOtpBinding
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
-                              savedInstanceState: Bundle?): View? {
+                              savedInstanceState: Bundle?): View {
         binding = FragmentYubiotpOtpBinding.inflate(inflater, container, false)
         return binding.root
     }

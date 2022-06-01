@@ -833,7 +833,7 @@ public class PivSession extends ApplicationSession<PivSession> {
         checkKeySupport(keyType, pinPolicy, touchPolicy, true);
 
         Map<Integer, byte[]> tlvs = new LinkedHashMap<>();
-        tlvs.put(TAG_GEN_ALGORITHM, new byte[]{(byte) keyType.value});
+        tlvs.put(TAG_GEN_ALGORITHM, new byte[]{keyType.value});
         if (pinPolicy != PinPolicy.DEFAULT) {
             tlvs.put(TAG_PIN_POLICY, new byte[]{(byte) pinPolicy.value});
         }

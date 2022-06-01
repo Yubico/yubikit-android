@@ -33,6 +33,7 @@ import com.yubico.yubikit.piv.KeyType
 import com.yubico.yubikit.piv.PinPolicy
 import com.yubico.yubikit.piv.Slot
 import com.yubico.yubikit.piv.TouchPolicy
+import com.yubico.yubikit.piv.jca.PivAlgorithmParameterSpec
 import com.yubico.yubikit.piv.jca.PivPrivateKey
 import com.yubico.yubikit.piv.jca.PivProvider
 import kotlinx.coroutines.Dispatchers
@@ -48,8 +49,7 @@ import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.OutputStream
 import java.math.BigInteger
-import java.security.KeyFactory
-import java.security.Signature
+import java.security.*
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
 import java.security.spec.PKCS8EncodedKeySpec
@@ -167,14 +167,17 @@ class PivCertificateFragment : Fragment() {
                     pivViewModel.pendingAction.value = {
                         authenticate(pivViewModel.mgmtKeyType, pivViewModel.mgmtKey)
 
-                        // Generate a key
-                        val publicKey = generateKey(
-                            slot,
-                            KeyType.ECCP256,
-                            PinPolicy.DEFAULT,
-                            TouchPolicy.DEFAULT
+                        val provider = PivProvider(this)
+                        val factory = KeyPairGenerator.getInstance("EC", provider)
+                        factory.initialize(
+                            PivAlgorithmParameterSpec(
+                                slot,
+                                PinPolicy.DEFAULT,
+                                TouchPolicy.DEFAULT,
+                                pin.toCharArray()
+                            )
                         )
-                        val privateKey = PivPrivateKey.from(publicKey, slot, pin.toCharArray())
+                        val keyPair = factory.generateKeyPair()
 
                         // Generate a certificate
                         val name = X500Name("CN=Generated Example")
@@ -184,10 +187,8 @@ class PivCertificateFragment : Fragment() {
                             Date(),
                             Date(),
                             name,
-                            SubjectPublicKeyInfo.getInstance(ASN1Sequence.getInstance(publicKey.encoded))
+                            SubjectPublicKeyInfo.getInstance(ASN1Sequence.getInstance(keyPair.public.encoded))
                         )
-
-                        val provider = PivProvider(this)
                         val certBytes = serverCertGen.build(object : ContentSigner {
                             val messageBuffer = ByteArrayOutputStream()
                             override fun getAlgorithmIdentifier(): AlgorithmIdentifier =
@@ -196,7 +197,7 @@ class PivCertificateFragment : Fragment() {
                             override fun getOutputStream(): OutputStream = messageBuffer
                             override fun getSignature(): ByteArray {
                                 return Signature.getInstance("SHA256withECDSA", provider).apply {
-                                    initSign(privateKey)
+                                    initSign(keyPair.private)
                                     update(messageBuffer.toByteArray())
                                 }.sign()
                                 //return sign(slot, KeyType.ECCP256, messageBuffer.toByteArray(), Signature.getInstance("SHA256withECDSA"))
@@ -236,19 +237,20 @@ class PivCertificateFragment : Fragment() {
             lifecycleScope.launch(Dispatchers.Main) {
                 getSecret(requireContext(), R.string.enter_pin)?.let { pin ->
                     pivViewModel.pendingAction.value = {
-                        val publicKey = pivViewModel.certificates.value!!.get(slot.value).publicKey
-                        val keyType = KeyType.fromKey(publicKey)
+                        val provider = PivProvider(this)
 
-                        val algorithm = when (keyType.params.algorithm) {
+                        val keyStore = KeyStore.getInstance("YKPiv", provider)
+                        keyStore.load(null)
+                        val publicKey = keyStore.getCertificate(slot.stringAlias).publicKey
+                        val privateKey = keyStore.getKey(slot.stringAlias, pin.toCharArray()) as PrivateKey
+                        val algorithm = when (KeyType.fromKey(publicKey).params.algorithm) {
                             KeyType.Algorithm.RSA -> "SHA256withRSA"
                             KeyType.Algorithm.EC -> "SHA256withECDSA"
                         }
 
-                        val provider = PivProvider(this)
-
                         // Create signature
                         val signature = Signature.getInstance(algorithm, provider).apply {
-                            initSign(PivPrivateKey.from(publicKey, slot, pin.toCharArray()))
+                            initSign(privateKey)
                             update(messageBytes)
                         }.sign()
 
@@ -275,7 +277,6 @@ class PivCertificateFragment : Fragment() {
 
         binding.delete.isEnabled = visible
         binding.sign.isEnabled = visible
-        binding.webview.isEnabled = visible
     }
 
     companion object {

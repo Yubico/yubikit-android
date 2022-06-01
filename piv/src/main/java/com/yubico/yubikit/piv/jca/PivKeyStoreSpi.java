@@ -2,12 +2,13 @@ package com.yubico.yubikit.piv.jca;
 
 import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.smartcard.ApduException;
+import com.yubico.yubikit.core.smartcard.SW;
 import com.yubico.yubikit.core.util.Callback;
 import com.yubico.yubikit.core.util.Result;
-import com.yubico.yubikit.piv.KeyType;
 import com.yubico.yubikit.piv.PinPolicy;
 import com.yubico.yubikit.piv.PivSession;
 import com.yubico.yubikit.piv.Slot;
+import com.yubico.yubikit.piv.SlotMetadata;
 import com.yubico.yubikit.piv.TouchPolicy;
 
 import java.io.InputStream;
@@ -19,13 +20,14 @@ import java.security.KeyStoreException;
 import java.security.KeyStoreSpi;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.UnrecoverableEntryException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.Date;
 import java.util.Enumeration;
-import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 
 import javax.annotation.Nullable;
 
@@ -36,53 +38,45 @@ public class PivKeyStoreSpi extends KeyStoreSpi {
         this.provider = provider;
     }
 
-    private KeyType putKey(Slot slot, PrivateKey key, PinPolicy pinPolicy, TouchPolicy touchPolicy) throws Exception {
-        CompletableFuture<Result<KeyType, Exception>> future = new CompletableFuture<>();
-        provider.invoke(result -> future.complete(Result.of(() -> result.getValue().putKey(slot, key, pinPolicy, touchPolicy))));
-        return future.get().getValue();
-    }
-
-    private void putCertificate(Slot slot, X509Certificate certificate) throws Exception {
-        CompletableFuture<Result<Boolean, Exception>> future = new CompletableFuture<>();
-        provider.invoke(result -> future.complete(Result.of(() -> {
-            result.getValue().putCertificate(slot, certificate);
+    private void putEntry(Slot slot, @Nullable PrivateKey key, PinPolicy pinPolicy, TouchPolicy touchPolicy, @Nullable X509Certificate certificate) throws Exception {
+        BlockingQueue<Result<Boolean, Exception>> queue = new ArrayBlockingQueue<>(1);
+        provider.invoke(result -> queue.add(Result.of(() -> {
+            PivSession piv = result.getValue();
+            if (key != null) {
+                piv.putKey(slot, key, pinPolicy, touchPolicy);
+            }
+            if (certificate != null) {
+                piv.putCertificate(slot, certificate);
+            }
             return true;
         })));
-        future.get().getValue();
-    }
-
-    private X509Certificate getCertificate(Slot slot) throws Exception {
-        CompletableFuture<Result<X509Certificate, Exception>> future = new CompletableFuture<>();
-        provider.invoke(result -> future.complete(Result.of(() -> result.getValue().getCertificate(slot))));
-        return future.get().getValue();
-    }
-
-    private void deleteCertificate(Slot slot) throws Exception {
-        CompletableFuture<Result<Boolean, Exception>> future = new CompletableFuture<>();
-        provider.invoke(result -> future.complete(Result.of(() -> {
-            result.getValue().deleteCertificate(slot);
-            return true;
-        })));
-        future.get().getValue();
+        queue.take().getValue();
     }
 
     @Override
+    @Nullable
     public Key engineGetKey(String alias, char[] password) throws UnrecoverableKeyException {
-        Slot slot = parseAlias(alias);
+        Slot slot = Slot.fromStringAlias(alias);
         try {
-            CompletableFuture<Result<PublicKey, Exception>> future = new CompletableFuture<>();
-            provider.invoke(result -> future.complete(Result.of(() -> {
+            BlockingQueue<Result<PivPrivateKey, Exception>> queue = new ArrayBlockingQueue<>(1);
+            provider.invoke(result -> queue.add(Result.of(() -> {
                 PivSession session = result.getValue();
                 if (session.supports(PivSession.FEATURE_METADATA)) {
-                    return session.getSlotMetadata(slot).getPublicKey();
+                    SlotMetadata data = session.getSlotMetadata(slot);
+                    return PivPrivateKey.from(data.getPublicKey(), slot, data.getPinPolicy(), data.getTouchPolicy(), password);
                 } else {
-                    return session.getCertificate(slot).getPublicKey();
+                    PublicKey publicKey = session.getCertificate(slot).getPublicKey();
+                    return PivPrivateKey.from(publicKey, slot, null, null, password);
                 }
             })));
-            PublicKey publicKey = future.get().getValue();
-            return PivPrivateKey.from(publicKey, slot, password);
+            return queue.take().getValue();
         } catch (BadResponseException e) {
             throw new UnrecoverableKeyException("No way to infer KeyType, make sure the matching certificate is stored");
+        } catch (ApduException e) {
+            if (e.getSw() == SW.FILE_NOT_FOUND) {
+                return null;
+            }
+            throw new RuntimeException(e);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -94,10 +88,61 @@ public class PivKeyStoreSpi extends KeyStoreSpi {
     }
 
     @Override
+    @Nullable
     public Certificate engineGetCertificate(String alias) {
-        Slot slot = parseAlias(alias);
+        Slot slot = Slot.fromStringAlias(alias);
+        BlockingQueue<Result<X509Certificate, Exception>> queue = new ArrayBlockingQueue<>(1);
+        provider.invoke(result -> queue.add(Result.of(() -> result.getValue().getCertificate(slot))));
+
         try {
-            return getCertificate(slot);
+            return queue.take().getValue();
+        } catch (BadResponseException e) {
+            // Malformed certificate?
+            return null;
+        } catch (ApduException e) {
+            if (e.getSw() == SW.FILE_NOT_FOUND) {
+                // Empty slot
+                return null;
+            }
+            throw new RuntimeException(e);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    @Nullable
+    public KeyStore.Entry engineGetEntry(String alias, KeyStore.ProtectionParameter protParam) throws
+            UnrecoverableEntryException {
+        Slot slot = Slot.fromStringAlias(alias);
+        try {
+            BlockingQueue<Result<KeyStore.Entry, Exception>> queue = new ArrayBlockingQueue<>(1);
+            provider.invoke(result -> queue.add(Result.of(() -> {
+                PivSession session = result.getValue();
+                Certificate certificate = session.getCertificate(slot);
+                char[] pin = null;
+                if (protParam instanceof KeyStore.PasswordProtection) {
+                    pin = ((KeyStore.PasswordProtection) protParam).getPassword();
+                }
+                PrivateKey key;
+                if (session.supports(PivSession.FEATURE_METADATA)) {
+                    SlotMetadata data = session.getSlotMetadata(slot);
+                    key = PivPrivateKey.from(data.getPublicKey(), slot, data.getPinPolicy(), data.getTouchPolicy(), pin);
+                } else {
+                    PublicKey publicKey = certificate.getPublicKey();
+                    key = PivPrivateKey.from(publicKey, slot, null, null, pin);
+                }
+                return new KeyStore.PrivateKeyEntry(key, new Certificate[]{certificate});
+            })));
+            return queue.take().getValue();
+        } catch (BadResponseException e) {
+            throw new UnrecoverableEntryException("Make sure the matching certificate is stored");
+        } catch (ApduException e) {
+            if (e.getSw() == SW.FILE_NOT_FOUND) {
+                // Empty slot
+                return null;
+            }
+            throw new RuntimeException(e);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -110,8 +155,9 @@ public class PivKeyStoreSpi extends KeyStoreSpi {
     }
 
     @Override
-    public void engineSetEntry(String alias, KeyStore.Entry entry, @Nullable KeyStore.ProtectionParameter protParam) throws KeyStoreException {
-        Slot slot = parseAlias(alias);
+    public void engineSetEntry(String alias, KeyStore.Entry
+            entry, @Nullable KeyStore.ProtectionParameter protParam) throws KeyStoreException {
+        Slot slot = Slot.fromStringAlias(alias);
 
         PrivateKey privateKey = null;
         Certificate certificate;
@@ -133,9 +179,9 @@ public class PivKeyStoreSpi extends KeyStoreSpi {
             }
         }
 
+        PinPolicy pinPolicy = PinPolicy.DEFAULT;
+        TouchPolicy touchPolicy = TouchPolicy.DEFAULT;
         if (privateKey != null) {
-            PinPolicy pinPolicy = PinPolicy.DEFAULT;
-            TouchPolicy touchPolicy = TouchPolicy.DEFAULT;
             if (protParam != null) {
                 if (protParam instanceof PivKeyStoreKeyParameters) {
                     pinPolicy = ((PivKeyStoreKeyParameters) protParam).pinPolicy;
@@ -144,26 +190,19 @@ public class PivKeyStoreSpi extends KeyStoreSpi {
                     throw new KeyStoreException("protParam must be an instance of PivKeyStoreKeyParameters");
                 }
             }
-            try {
-                putKey(slot, ((KeyStore.PrivateKeyEntry) entry).getPrivateKey(), pinPolicy, touchPolicy);
-            } catch (Exception e) {
-                throw new KeyStoreException(e);
-            }
         }
 
-        if (certificate != null) {
-            try {
-                putCertificate(slot, (X509Certificate) certificate);
-            } catch (Exception e) {
-                throw new KeyStoreException(e);
-            }
+        try {
+            putEntry(slot, privateKey, pinPolicy, touchPolicy, (X509Certificate) certificate);
+        } catch (Exception e) {
+            throw new KeyStoreException(e);
         }
     }
 
     @Override
-    public void engineSetKeyEntry(String alias, Key key, @Nullable char[] password, Certificate[] chain) throws KeyStoreException {
-        Objects.requireNonNull(provider);
-        Slot slot = parseAlias(alias);
+    public void engineSetKeyEntry(String alias, Key key,
+                                  @Nullable char[] password, Certificate[] chain) throws KeyStoreException {
+        Slot slot = Slot.fromStringAlias(alias);
 
         if (password != null) {
             throw new KeyStoreException("Password can not be set");
@@ -174,8 +213,7 @@ public class PivKeyStoreSpi extends KeyStoreSpi {
         }
         if (chain[0] instanceof X509Certificate) {
             try {
-                putKey(slot, (PrivateKey) key, PinPolicy.DEFAULT, TouchPolicy.DEFAULT);
-                putCertificate(slot, (X509Certificate) chain[0]);
+                putEntry(slot, (PrivateKey) key, PinPolicy.DEFAULT, TouchPolicy.DEFAULT, (X509Certificate) chain[0]);
             } catch (Exception e) {
                 throw new KeyStoreException(e);
             }
@@ -185,16 +223,18 @@ public class PivKeyStoreSpi extends KeyStoreSpi {
     }
 
     @Override
-    public void engineSetKeyEntry(String alias, byte[] key, Certificate[] chain) throws KeyStoreException {
+    public void engineSetKeyEntry(String alias, byte[] key, Certificate[] chain) throws
+            KeyStoreException {
         throw new KeyStoreException("Use setKeyEntry with a PrivateKey instance instead of byte[]");
     }
 
     @Override
-    public void engineSetCertificateEntry(String alias, Certificate cert) throws KeyStoreException {
-        Slot slot = parseAlias(alias);
+    public void engineSetCertificateEntry(String alias, Certificate cert) throws
+            KeyStoreException {
+        Slot slot = Slot.fromStringAlias(alias);
         if (cert instanceof X509Certificate) {
             try {
-                putCertificate(slot, (X509Certificate) cert);
+                putEntry(slot, null, PinPolicy.DEFAULT, TouchPolicy.DEFAULT, (X509Certificate) cert);
             } catch (Exception e) {
                 throw new KeyStoreException(e);
             }
@@ -205,10 +245,16 @@ public class PivKeyStoreSpi extends KeyStoreSpi {
 
     @Override
     public void engineDeleteEntry(String alias) throws KeyStoreException {
-        Objects.requireNonNull(provider);
-        Slot slot = parseAlias(alias);
+        Slot slot = Slot.fromStringAlias(alias);
+
+        BlockingQueue<Result<Boolean, Exception>> queue = new ArrayBlockingQueue<>(1);
+        provider.invoke(result -> queue.add(Result.of(() -> {
+            result.getValue().deleteCertificate(slot);
+            return true;
+        })));
+
         try {
-            deleteCertificate(slot);
+            queue.take().getValue();
         } catch (Exception e) {
             throw new KeyStoreException(e);
         }
@@ -222,7 +268,7 @@ public class PivKeyStoreSpi extends KeyStoreSpi {
     @Override
     public boolean engineContainsAlias(String alias) {
         try {
-            parseAlias(alias);
+            Slot.fromStringAlias(alias);
             return true;
         } catch (IllegalArgumentException e) {
             return false;
@@ -241,33 +287,16 @@ public class PivKeyStoreSpi extends KeyStoreSpi {
 
     @Override
     public boolean engineIsCertificateEntry(String alias) {
-        Objects.requireNonNull(provider);
-        Slot slot = parseAlias(alias);
-        try {
-            getCertificate(slot);
-            return true;
-        } catch (BadResponseException e) {
-            return false;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        return engineGetCertificate(alias) != null;
     }
 
     @Override
     @Nullable
     public String engineGetCertificateAlias(Certificate cert) {
-        Objects.requireNonNull(provider);
         for (Slot slot : Slot.values()) {
-            X509Certificate entry;
-            try {
-                entry = getCertificate(slot);
-            } catch (ApduException | BadResponseException e) {
-                continue;
-            } catch (Exception e) {
-                return null;
-            }
-            if (entry.equals(cert)) {
-                return Integer.toString(slot.value, 16);
+            String alias = slot.getStringAlias();
+            if (cert.equals(engineGetCertificate(alias))) {
+                return alias;
             }
         }
         return null;
@@ -287,14 +316,6 @@ public class PivKeyStoreSpi extends KeyStoreSpi {
     public void engineLoad(@Nullable KeyStore.LoadStoreParameter param) {
         if (param != null) {
             throw new InvalidParameterException("KeyStore must be loaded with null");
-        }
-    }
-
-    static Slot parseAlias(String alias) {
-        try {
-            return Slot.fromValue(Integer.parseInt(alias, 16));
-        } catch (NumberFormatException e) {
-            throw new IllegalArgumentException(e);
         }
     }
 }
