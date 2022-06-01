@@ -1,3 +1,21 @@
+* Version 2.1.0-alpha.1 (unreleased)
+ ** Added a new support module with utility functions for getting device
+    information/metadata.
+ ** PIV:
+  ** Added a JCA Provider implementation.
+  ** Added Slot getStringAlias and fromStringAlias methods.
+ ** OATH:
+  ** Fixed OathSession.calculateCodes so that it never triggers touch.
+ ** Management:
+  ** DeviceInfo now provides isFips and isSky properties.
+ ** Deprecations (will be removed in 3.0.0):
+  ** PivSession.sign has been deprecated in favor of using the JCA Provider.
+  ** OathSession.hasAccessKey has been deprecated and replaced with
+     OathSession.isAccessKeySet.
+  ** UsbInterface in the management module has been deprecated, replaced with
+     UsbInterface in the core module.
+
+
 * Version 2.0.0 (released 2021-04-01)
  ** BACKWARDS INCOMPATIBLE: Major structural overhaul from 1.0.
  ** The yubikit module is replaced by the core and android modules.
