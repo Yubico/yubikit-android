@@ -249,7 +249,7 @@ public class PivDeviceTests {
         Logger.d("Generate key: " + keyType);
 
         KeyPairGenerator kpg = KeyPairGenerator.getInstance(keyType.params.algorithm.name());
-        kpg.initialize(new PivAlgorithmParameterSpec(Slot.SIGNATURE, PinPolicy.DEFAULT, TouchPolicy.DEFAULT, DEFAULT_PIN));
+        kpg.initialize(new PivAlgorithmParameterSpec(Slot.SIGNATURE, keyType, PinPolicy.DEFAULT, TouchPolicy.DEFAULT, DEFAULT_PIN));
         KeyPair keyPair = kpg.generateKeyPair();
 
         //PublicKey publicKey = piv.generateKey(Slot.SIGNATURE, keyType, PinPolicy.DEFAULT, TouchPolicy.DEFAULT);
@@ -308,7 +308,7 @@ public class PivDeviceTests {
         piv.authenticate(ManagementKeyType.TDES, DEFAULT_MANAGEMENT_KEY);
         Logger.d("Generate key: " + keyType);
         KeyPairGenerator kpg = KeyPairGenerator.getInstance(keyType.params.algorithm.name());
-        kpg.initialize(new PivAlgorithmParameterSpec(Slot.KEY_MANAGEMENT, PinPolicy.DEFAULT, TouchPolicy.DEFAULT, DEFAULT_PIN));
+        kpg.initialize(new PivAlgorithmParameterSpec(Slot.KEY_MANAGEMENT, keyType, PinPolicy.DEFAULT, TouchPolicy.DEFAULT, DEFAULT_PIN));
         KeyPair pair = kpg.generateKeyPair();
 
         testDecrypt(pair, Cipher.getInstance("RSA/ECB/PKCS1Padding"));
@@ -391,18 +391,16 @@ public class PivDeviceTests {
         piv.verifyPin(DEFAULT_PIN);
 
         KeyPairGenerator ecGen = KeyPairGenerator.getInstance("EC");
-        ecGen.initialize(new PivAlgorithmParameterSpec(Slot.AUTHENTICATION, null, null, null));
         for (KeyType keyType : Arrays.asList(KeyType.ECCP256, KeyType.ECCP384)) {
-            ecGen.initialize(keyType.params.bitLength);
+        ecGen.initialize(new PivAlgorithmParameterSpec(Slot.AUTHENTICATION, keyType, null, null, null));
             KeyPair keyPair = ecGen.generateKeyPair();
             PivTestUtils.ecSignAndVerify(keyPair.getPrivate(), keyPair.getPublic());
             PivTestUtils.ecKeyAgreement(keyPair.getPrivate(), keyPair.getPublic());
         }
 
         KeyPairGenerator rsaGen = KeyPairGenerator.getInstance("RSA");
-        rsaGen.initialize(new PivAlgorithmParameterSpec(Slot.AUTHENTICATION, null, null, null));
         for (KeyType keyType : Arrays.asList(KeyType.RSA1024, KeyType.RSA2048)) {
-            rsaGen.initialize(keyType.params.bitLength);
+            rsaGen.initialize(new PivAlgorithmParameterSpec(Slot.AUTHENTICATION, keyType, null, null, null));
             KeyPair keyPair = rsaGen.generateKeyPair();
             PivTestUtils.rsaEncryptAndDecrypt(keyPair.getPrivate(), keyPair.getPublic());
             PivTestUtils.rsaSignAndVerify(keyPair.getPrivate(), keyPair.getPublic());

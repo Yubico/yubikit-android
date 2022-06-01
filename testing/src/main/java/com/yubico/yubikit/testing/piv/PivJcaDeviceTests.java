@@ -86,9 +86,8 @@ public class PivJcaDeviceTests {
         Security.addProvider(provider);
 
         KeyPairGenerator ecGen = KeyPairGenerator.getInstance("EC", provider);
-        ecGen.initialize(new PivAlgorithmParameterSpec(Slot.AUTHENTICATION, null, null, DEFAULT_PIN));
         for (KeyType keyType : Arrays.asList(KeyType.ECCP256, KeyType.ECCP384)) {
-            ecGen.initialize(keyType.params.bitLength);
+            ecGen.initialize(new PivAlgorithmParameterSpec(Slot.AUTHENTICATION, keyType, null, null, DEFAULT_PIN));
             KeyPair keyPair = ecGen.generateKeyPair();
             PivTestUtils.ecSignAndVerify(keyPair.getPrivate(), keyPair.getPublic());
             PivTestUtils.ecKeyAgreement(keyPair.getPrivate(), keyPair.getPublic());
@@ -96,9 +95,8 @@ public class PivJcaDeviceTests {
         }
 
         KeyPairGenerator rsaGen = KeyPairGenerator.getInstance("RSA", provider);
-        rsaGen.initialize(new PivAlgorithmParameterSpec(Slot.AUTHENTICATION, null, null, DEFAULT_PIN));
         for (KeyType keyType : Arrays.asList(KeyType.RSA1024, KeyType.RSA2048)) {
-            rsaGen.initialize(keyType.params.bitLength);
+            rsaGen.initialize(new PivAlgorithmParameterSpec(Slot.AUTHENTICATION, keyType, null, null, DEFAULT_PIN));
             KeyPair keyPair = rsaGen.generateKeyPair();
             PivTestUtils.rsaEncryptAndDecrypt(keyPair.getPrivate(), keyPair.getPublic());
             PivTestUtils.rsaSignAndVerify(keyPair.getPrivate(), keyPair.getPublic());
