@@ -170,6 +170,7 @@ class PivCertificateFragment : Fragment() {
                         factory.initialize(
                             PivAlgorithmParameterSpec(
                                 slot,
+                                KeyType.ECCP256,
                                 PinPolicy.DEFAULT,
                                 TouchPolicy.DEFAULT,
                                 pin.toCharArray()

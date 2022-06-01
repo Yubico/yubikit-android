@@ -20,11 +20,11 @@ import javax.annotation.Nullable;
 
 abstract class PivKeyPairGeneratorSpi extends KeyPairGeneratorSpi {
     private final Callback<Callback<Result<PivSession, Exception>>> provider;
-    private KeyType keyType;
+    private final KeyType.Algorithm algorithm;
 
-    PivKeyPairGeneratorSpi(Callback<Callback<Result<PivSession, Exception>>> provider, KeyType defaultKeyType) {
+    PivKeyPairGeneratorSpi(Callback<Callback<Result<PivSession, Exception>>> provider, KeyType.Algorithm algorithm) {
         this.provider = provider;
-        keyType = defaultKeyType;
+        this.algorithm = algorithm;
     }
 
     @Nullable
@@ -33,7 +33,10 @@ abstract class PivKeyPairGeneratorSpi extends KeyPairGeneratorSpi {
     @Override
     public void initialize(AlgorithmParameterSpec params, SecureRandom random) throws InvalidAlgorithmParameterException {
         if (params instanceof PivAlgorithmParameterSpec) {
-            this.spec = (PivAlgorithmParameterSpec) params;
+            spec = (PivAlgorithmParameterSpec) params;
+            if (spec.keyType.params.algorithm != algorithm) {
+                throw new InvalidAlgorithmParameterException("Invalid key algorithm for this KeyPairGenerator");
+            }
         } else {
             throw new InvalidAlgorithmParameterException("Must be instance of PivAlgorithmParameterSpec");
         }
@@ -41,7 +44,7 @@ abstract class PivKeyPairGeneratorSpi extends KeyPairGeneratorSpi {
 
     @Override
     public void initialize(int keySize, SecureRandom random) {
-        keyType = getKeyType(keySize);
+        throw new IllegalArgumentException("Initialize with PivAlgorithmParameterSpec!");
     }
 
     @Override
@@ -53,7 +56,7 @@ abstract class PivKeyPairGeneratorSpi extends KeyPairGeneratorSpi {
             BlockingQueue<Result<KeyPair, Exception>> queue = new ArrayBlockingQueue<>(1);
             provider.invoke(result -> queue.add(Result.of(() -> {
                 PivSession session = result.getValue();
-                PublicKey publicKey = session.generateKey(spec.slot, keyType, spec.pinPolicy, spec.touchPolicy);
+                PublicKey publicKey = session.generateKey(spec.slot, spec.keyType, spec.pinPolicy, spec.touchPolicy);
                 PrivateKey privateKey = PivPrivateKey.from(publicKey, spec.slot, spec.pinPolicy, spec.touchPolicy, spec.pin);
                 return new KeyPair(publicKey, privateKey);
             })));
@@ -63,42 +66,15 @@ abstract class PivKeyPairGeneratorSpi extends KeyPairGeneratorSpi {
         }
     }
 
-    protected abstract KeyType getKeyType(int keySize);
-
     public static class Rsa extends PivKeyPairGeneratorSpi {
         Rsa(Callback<Callback<Result<PivSession, Exception>>> provider) {
-            super(provider, KeyType.RSA2048);
-        }
-
-        @Override
-        protected KeyType getKeyType(int keySize) {
-            switch (keySize) {
-                case 1024:
-                    return KeyType.RSA1024;
-                case 2048:
-                    return KeyType.RSA2048;
-                default:
-                    throw new InvalidParameterException("Unsupported RSA key size");
-
-            }
+            super(provider, KeyType.Algorithm.RSA);
         }
     }
 
     public static class Ec extends PivKeyPairGeneratorSpi {
         Ec(Callback<Callback<Result<PivSession, Exception>>> provider) {
-            super(provider, KeyType.ECCP256);
-        }
-
-        @Override
-        protected KeyType getKeyType(int keySize) {
-            switch (keySize) {
-                case 256:
-                    return KeyType.ECCP256;
-                case 384:
-                    return KeyType.ECCP384;
-                default:
-                    throw new InvalidParameterException("Unsupported EC key size");
-            }
+            super(provider, KeyType.Algorithm.EC);
         }
     }
 }
