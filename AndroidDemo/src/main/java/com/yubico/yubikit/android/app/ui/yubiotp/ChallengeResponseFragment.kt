@@ -18,7 +18,7 @@ class ChallengeResponseFragment : Fragment() {
     private lateinit var binding: FragmentYubiotpChalrespBinding
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
-                              savedInstanceState: Bundle?): View? {
+                              savedInstanceState: Bundle?): View {
         binding = FragmentYubiotpChalrespBinding.inflate(inflater, container, false)
         return binding.root
     }
