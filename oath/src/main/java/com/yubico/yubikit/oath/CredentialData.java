@@ -64,6 +64,7 @@ public class CredentialData implements Serializable {
      * @param uri the otpauth:// URI to parse
      * @throws ParseUriException if the URI format is invalid
      */
+    @SuppressWarnings("SpellCheckingInspection")
     public static CredentialData parseUri(URI uri) throws ParseUriException {
         if (!"otpauth".equals(uri.getScheme())) {
             throw new ParseUriException("Uri scheme must be otpauth://");
@@ -263,7 +264,7 @@ public class CredentialData implements Serializable {
      *
      * @param params       Query parameter map.
      * @param name         query parameter name.
-     * @param defaultValue default value in case query paramater is omitted.
+     * @param defaultValue default value in case query parameter is omitted.
      * @return the parsed value, or the default value, if missing.
      * @throws ParseUriException if the value exists and is malformed.
      */

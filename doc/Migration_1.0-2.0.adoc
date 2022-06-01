@@ -1,7 +1,7 @@
 == YubiKit 1.0 to 2.0 migration guide
 Many classes have moved or changed from version 1.0 to 2.0. Many of these
 changes are simple method renames, or packages that have moved, and should be
-straightforward.  This guide will focus on the larger structual changes and
+straightforward.  This guide will focus on the larger structural changes and
 give a better understanding of how to adapt your app from using YubiKit 1.0 to
 2.0.
 

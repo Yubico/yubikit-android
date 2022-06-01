@@ -22,6 +22,7 @@ import org.junit.Test;
 
 import java.nio.charset.StandardCharsets;
 
+@SuppressWarnings("SpellCheckingInspection")
 public class ModhexTest {
     @Test
     public void testDecode() {

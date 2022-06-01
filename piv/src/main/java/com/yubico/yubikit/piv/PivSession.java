@@ -222,7 +222,7 @@ public class PivSession extends ApplicationSession<PivSession> {
 
     /**
      * Get the serial number from the YubiKey.
-     * NOTE: This requires the SERIAL_API_VISIBILE flag to be set on one of the YubiOTP slots (it is set by default).
+     * NOTE: This requires the SERIAL_API_VISIBLE flag to be set on one of the YubiOTP slots (it is set by default).
      * <p>
      * This functionality requires support for {@link #FEATURE_SERIAL}, available on YubiKey 5 or later.
      *
@@ -348,7 +348,7 @@ public class PivSession extends ApplicationSession<PivSession> {
                 throw new IllegalArgumentException("Payload too large for key");
             }
         } else if (payload.length < byteLength) {
-            // Leftpad, with no external dependencies!
+            // Left pad, with no external dependencies!
             padded = new byte[byteLength];
             System.arraycopy(payload, 0, padded, padded.length - payload.length, payload.length);
         } else {

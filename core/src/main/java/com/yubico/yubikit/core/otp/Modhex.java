@@ -26,6 +26,7 @@ import java.util.Map;
  * See: <a href="https://developers.yubico.com/yubico-c/Manuals/modhex.1.htm">Modhex specification</a>.
  */
 public class Modhex {
+    @SuppressWarnings("SpellCheckingInspection")
     private final static char[] ALPHABET = "cbdefghijklnrtuv".toCharArray();
 
     private static final Map<Character, Integer> table = new HashMap<>();

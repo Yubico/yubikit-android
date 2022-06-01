@@ -29,6 +29,7 @@ import java.security.spec.InvalidKeySpecException;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 
+@SuppressWarnings("SpellCheckingInspection")
 public class PivSessionTest {
     @Test
     public void testDecodeP256Key() throws InvalidKeySpecException, NoSuchAlgorithmException {

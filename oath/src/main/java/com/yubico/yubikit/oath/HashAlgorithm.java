@@ -21,7 +21,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 /**
- * Supported hash algoritms for use with the OATH YubiKey application.
+ * Supported hash algorithms for use with the OATH YubiKey application.
  */
 public enum HashAlgorithm {
     SHA1((byte) 1, 64),
