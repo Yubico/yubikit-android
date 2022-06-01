@@ -90,13 +90,15 @@ public abstract class PivPrivateKey implements PrivateKey {
 
     /**
      * Sets the PIN to use when performing key operations with this private key, or to null.
+     * Note that a copy is made of the PIN, which can be cleared out by calling {@link #destroy()}.
      */
     public void setPin(@Nullable char[] pin) {
         if (destroyed) {
             throw new IllegalStateException("PivPrivateKey has been destroyed");
         }
-        if (pin != null) {
-            Arrays.fill(pin, (char) 0);
+        // Zero out the old PIN, if one was set
+        if (this.pin != null) {
+            Arrays.fill(this.pin, (char) 0);
         }
         this.pin = pin != null ? Arrays.copyOf(pin, pin.length) : null;
     }
