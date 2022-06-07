@@ -201,7 +201,14 @@ public class DeviceInfo {
                         autoEjectTimeout,
                         challengeResponseTimeout,
                         deviceFlags
-                ), serialNumber, version, formFactor, supportedCapabilities, isLocked, isFips, isSky
+                ),
+                serialNumber == 0 ? null : serialNumber,
+                version,
+                formFactor,
+                supportedCapabilities,
+                isLocked,
+                isFips,
+                isSky
         );
     }
 
