@@ -35,6 +35,7 @@ import org.apache.commons.codec.binary.Base64;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -724,7 +725,10 @@ public class OathSession extends ApplicationSession<OathSession> {
             }
             messageDigest.update(salt);
             byte[] digest = messageDigest.digest();
-            return new String(Base64.encodeBase64(Arrays.copyOfRange(digest, 0, 16))).replaceAll("=", "");
+            return new String(
+                    Base64.encodeBase64(Arrays.copyOfRange(digest, 0, 16)),
+                    StandardCharsets.US_ASCII)
+                .replaceAll("=", "");
         }
     }
 }
