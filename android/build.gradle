@@ -22,6 +22,10 @@ android {
         targetCompatibility = 1.8
     }
 
+    publishing {
+        singleVariant('release')
+    }
+
     namespace = 'com.yubico.yubikit.android'
 }
 
