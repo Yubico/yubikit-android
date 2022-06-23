@@ -57,8 +57,8 @@ public class YubikitManagerTest {
 
     @Before
     public void setUp() throws NfcNotAvailable {
-        Mockito.doAnswer(new UsbListenerInvocation(usbSession)).when(mockUsb).enable(Mockito.any(), Mockito.any(Callback.class));
-        Mockito.doAnswer(new NfcListenerInvocation(nfcSession)).when(mockNfc).enable(Mockito.any(), Mockito.any(), Mockito.any(Callback.class));
+        Mockito.doAnswer(new UsbListenerInvocation(usbSession)).when(mockUsb).enable(Mockito.any(), ArgumentMatchers.<Callback<UsbYubiKeyDevice>>any());
+        Mockito.doAnswer(new NfcListenerInvocation(nfcSession)).when(mockNfc).enable(Mockito.any(), Mockito.any(), ArgumentMatchers.<Callback<NfcYubiKeyDevice>>any());
     }
 
     @Test
@@ -87,7 +87,7 @@ public class YubikitManagerTest {
         UsbConfiguration configuration = new UsbConfiguration();
         yubiKitManager.startUsbDiscovery(configuration, new UsbListener());
 
-        Mockito.verify(mockUsb).enable(Mockito.eq(configuration), Mockito.any(Callback.class));
+        Mockito.verify(mockUsb).enable(Mockito.eq(configuration), ArgumentMatchers.<Callback<UsbYubiKeyDevice>>any());
         Mockito.verify(mockNfc, Mockito.never()).enable(Mockito.any(), Mockito.any(), Mockito.any());
 
         // wait until listener will be invoked
@@ -110,7 +110,7 @@ public class YubikitManagerTest {
         NfcConfiguration configuration = new NfcConfiguration();
         yubiKitManager.startNfcDiscovery(configuration, mockActivity, new NfcListener());
 
-        Mockito.verify(mockUsb, Mockito.never()).enable(Mockito.any(), Mockito.any(Callback.class));
+        Mockito.verify(mockUsb, Mockito.never()).enable(Mockito.any(), ArgumentMatchers.<Callback<UsbYubiKeyDevice>>any());
         Mockito.verify(mockNfc).enable(Mockito.eq(mockActivity), Mockito.eq(configuration), Mockito.any());
 
         // wait until listener will be invoked

@@ -114,6 +114,7 @@ public class UsbYubiKeyDevice implements YubiKeyDevice, Closeable {
 
         // Keep UsbOtpConnection open until another connection is needed, to prevent re-enumeration of the USB device.
         if (OtpConnection.class.isAssignableFrom(connectionType)) {
+            @SuppressWarnings("unchecked")
             Callback<Result<OtpConnection, IOException>> otpCallback = value -> callback.invoke((Result<T, IOException>) value);
             if (otpConnection == null) {
                 otpConnection = new CachedOtpConnection(otpCallback);
