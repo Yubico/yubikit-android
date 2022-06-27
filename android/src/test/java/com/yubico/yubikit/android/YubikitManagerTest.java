@@ -32,6 +32,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
@@ -42,23 +43,25 @@ import java.util.TimerTask;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import javax.annotation.Nullable;
+
 @RunWith(AndroidJUnit4.class)
 @Config(manifest = Config.NONE)
 public class YubikitManagerTest {
-    private UsbYubiKeyManager mockUsb = Mockito.mock(UsbYubiKeyManager.class);
-    private NfcYubiKeyManager mockNfc = Mockito.mock(NfcYubiKeyManager.class);
-    private Activity mockActivity = Mockito.mock(Activity.class);
+    private final UsbYubiKeyManager mockUsb = Mockito.mock(UsbYubiKeyManager.class);
+    private final NfcYubiKeyManager mockNfc = Mockito.mock(NfcYubiKeyManager.class);
+    private final Activity mockActivity = Mockito.mock(Activity.class);
 
-    private UsbYubiKeyDevice usbSession = Mockito.mock(UsbYubiKeyDevice.class);
-    private NfcYubiKeyDevice nfcSession = Mockito.mock(NfcYubiKeyDevice.class);
+    private final UsbYubiKeyDevice usbSession = Mockito.mock(UsbYubiKeyDevice.class);
+    private final NfcYubiKeyDevice nfcSession = Mockito.mock(NfcYubiKeyDevice.class);
 
     private final CountDownLatch signal = new CountDownLatch(2);
-    private YubiKitManager yubiKitManager = new YubiKitManager(mockUsb, mockNfc);
+    private final YubiKitManager yubiKitManager = new YubiKitManager(mockUsb, mockNfc);
 
     @Before
     public void setUp() throws NfcNotAvailable {
-        Mockito.doAnswer(new UsbListenerInvocation(usbSession)).when(mockUsb).enable(Mockito.any(), Mockito.any(Callback.class));
-        Mockito.doAnswer(new NfcListenerInvocation(nfcSession)).when(mockNfc).enable(Mockito.any(), Mockito.any(), Mockito.any(Callback.class));
+        Mockito.doAnswer(new UsbListenerInvocation(usbSession)).when(mockUsb).enable(Mockito.any(), ArgumentMatchers.<Callback<UsbYubiKeyDevice>>any());
+        Mockito.doAnswer(new NfcListenerInvocation(nfcSession)).when(mockNfc).enable(Mockito.any(), Mockito.any(), ArgumentMatchers.<Callback<NfcYubiKeyDevice>>any());
     }
 
     @Test
@@ -87,7 +90,7 @@ public class YubikitManagerTest {
         UsbConfiguration configuration = new UsbConfiguration();
         yubiKitManager.startUsbDiscovery(configuration, new UsbListener());
 
-        Mockito.verify(mockUsb).enable(Mockito.eq(configuration), Mockito.any(Callback.class));
+        Mockito.verify(mockUsb).enable(Mockito.eq(configuration), ArgumentMatchers.<Callback<UsbYubiKeyDevice>>any());
         Mockito.verify(mockNfc, Mockito.never()).enable(Mockito.any(), Mockito.any(), Mockito.any());
 
         // wait until listener will be invoked
@@ -110,7 +113,7 @@ public class YubikitManagerTest {
         NfcConfiguration configuration = new NfcConfiguration();
         yubiKitManager.startNfcDiscovery(configuration, mockActivity, new NfcListener());
 
-        Mockito.verify(mockUsb, Mockito.never()).enable(Mockito.any(), Mockito.any(Callback.class));
+        Mockito.verify(mockUsb, Mockito.never()).enable(Mockito.any(), ArgumentMatchers.<Callback<UsbYubiKeyDevice>>any());
         Mockito.verify(mockNfc).enable(Mockito.eq(mockActivity), Mockito.eq(configuration), Mockito.any());
 
         // wait until listener will be invoked
@@ -142,13 +145,14 @@ public class YubikitManagerTest {
         }
     }
 
-    private class UsbListenerInvocation implements Answer {
-        private UsbYubiKeyDevice session;
+    private static class UsbListenerInvocation implements Answer {
+        private final UsbYubiKeyDevice session;
 
         private UsbListenerInvocation(UsbYubiKeyDevice session) {
             this.session = session;
         }
 
+        @Nullable
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
             Callback<? super UsbYubiKeyDevice> internalListener = invocation.getArgument(1);
@@ -162,13 +166,14 @@ public class YubikitManagerTest {
         }
     }
 
-    private class NfcListenerInvocation implements Answer {
-        private NfcYubiKeyDevice session;
+    private static class NfcListenerInvocation implements Answer {
+        private final NfcYubiKeyDevice session;
 
         private NfcListenerInvocation(NfcYubiKeyDevice session) {
             this.session = session;
         }
 
+        @Nullable
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
             Callback<? super NfcYubiKeyDevice> internalListener = invocation.getArgument(2);

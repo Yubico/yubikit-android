@@ -93,8 +93,9 @@ public class ConnectionManager {
         synchronized (handlers) {
             for (Map.Entry<Class<? extends YubiKeyConnection>, ConnectionHandler<? extends YubiKeyConnection>> entry : handlers.entrySet()) {
                 if (connectionType.isAssignableFrom(entry.getKey())) {
-                    //noinspection unchecked
-                    return (ConnectionHandler<T>) entry.getValue();
+                    @SuppressWarnings("unchecked")
+                    ConnectionHandler<T> entryValue = (ConnectionHandler<T>) entry.getValue();
+                    return entryValue;
                 }
             }
         }

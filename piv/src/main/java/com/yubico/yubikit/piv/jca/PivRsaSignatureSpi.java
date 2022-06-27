@@ -114,6 +114,7 @@ public class PivRsaSignatureSpi extends SignatureSpi {
         throw new SignatureException("Not initialized");
     }
 
+    @SuppressWarnings("deprecation")
     @Override
     protected void engineSetParameter(String param, Object value) throws InvalidParameterException {
         try {
@@ -124,6 +125,7 @@ public class PivRsaSignatureSpi extends SignatureSpi {
         }
     }
 
+    @SuppressWarnings("deprecation")
     @Override
     protected Object engineGetParameter(String param) throws InvalidParameterException {
         if (delegate != null) {
