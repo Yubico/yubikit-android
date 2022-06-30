@@ -177,39 +177,6 @@ public class PivDeviceTests {
         piv.changePuk(puk2, DEFAULT_PUK);
     }
 
-    public static void testDecrypt(PivSession piv, KeyType keyType) throws BadResponseException, IOException, ApduException, NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException, InvalidPinException, InvalidAlgorithmParameterException {
-        if (keyType.params.algorithm != KeyType.Algorithm.RSA) {
-            throw new IllegalArgumentException("Unsupported");
-        }
-
-        piv.authenticate(ManagementKeyType.TDES, DEFAULT_MANAGEMENT_KEY);
-        Logger.d("Generate key: " + keyType);
-        KeyPairGenerator kpg = KeyPairGenerator.getInstance(keyType.params.algorithm.name());
-        kpg.initialize(new PivAlgorithmParameterSpec(Slot.KEY_MANAGEMENT, keyType, PinPolicy.DEFAULT, TouchPolicy.DEFAULT, DEFAULT_PIN));
-        KeyPair pair = kpg.generateKeyPair();
-
-        testDecrypt(pair, Cipher.getInstance("RSA/ECB/PKCS1Padding"));
-        testDecrypt(pair, Cipher.getInstance("RSA/ECB/OAEPWithSHA-1AndMGF1Padding"));
-        testDecrypt(pair, Cipher.getInstance("RSA/ECB/OAEPWithSHA-256AndMGF1Padding"));
-    }
-
-    public static void testDecrypt(KeyPair keyPair, Cipher cipher) throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException, InvalidPinException {
-        byte[] message = "Hello world!".getBytes(StandardCharsets.UTF_8);
-
-        Logger.d("Using cipher " + cipher.getAlgorithm());
-
-        cipher.init(Cipher.ENCRYPT_MODE, keyPair.getPublic());
-        byte[] ct = cipher.doFinal(message);
-        Logger.d("Cipher text " + ct.length + ": " + StringUtils.bytesToHex(ct));
-
-        Cipher decryptCipher = Cipher.getInstance(cipher.getAlgorithm());
-        decryptCipher.init(Cipher.DECRYPT_MODE, keyPair.getPrivate());
-        byte[] pt = decryptCipher.doFinal(ct);
-
-        Assert.assertArrayEquals(message, pt);
-        Logger.d("Decrypt successful for " + cipher.getAlgorithm());
-    }
-
     public static void testEcdh(PivSession piv, KeyType keyType) throws BadResponseException, IOException, ApduException, NoSuchAlgorithmException, InvalidKeyException, InvalidPinException {
         if (keyType.params.algorithm != KeyType.Algorithm.EC) {
             throw new IllegalArgumentException("Unsupported");

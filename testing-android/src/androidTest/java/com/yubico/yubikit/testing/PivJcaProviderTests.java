@@ -3,6 +3,7 @@ package com.yubico.yubikit.testing;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.yubico.yubikit.testing.framework.PivInstrumentedTests;
+import com.yubico.yubikit.testing.piv.PivJcaDecryptTests;
 import com.yubico.yubikit.testing.piv.PivJcaDeviceTests;
 import com.yubico.yubikit.testing.piv.PivJcaSigningTests;
 
@@ -27,4 +28,8 @@ public class PivJcaProviderTests extends PivInstrumentedTests {
         withPivSession(PivJcaSigningTests::testSign);
     }
 
+    @Test
+    public void testDecrypt() throws Throwable {
+        withPivSession(PivJcaDecryptTests::testDecrypt);
+    }
 }
