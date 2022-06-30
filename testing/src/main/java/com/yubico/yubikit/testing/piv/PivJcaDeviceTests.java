@@ -15,6 +15,7 @@
  */
 package com.yubico.yubikit.testing.piv;
 
+import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.piv.KeyType;
 import com.yubico.yubikit.piv.ManagementKeyType;
 import com.yubico.yubikit.piv.PinPolicy;
@@ -25,6 +26,7 @@ import com.yubico.yubikit.piv.jca.PivAlgorithmParameterSpec;
 import com.yubico.yubikit.piv.jca.PivKeyStoreKeyParameters;
 import com.yubico.yubikit.piv.jca.PivProvider;
 
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.util.encoders.Hex;
 import org.junit.Assert;
 
@@ -32,25 +34,51 @@ import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.KeyStore;
 import java.security.PrivateKey;
+import java.security.Provider;
 import java.security.Security;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
+import java.util.Set;
 
 public class PivJcaDeviceTests {
     private static final byte[] DEFAULT_MANAGEMENT_KEY = Hex.decode("010203040506070801020304050607080102030405060708");
     private static final char[] DEFAULT_PIN = "123456".toCharArray();
 
+    public static void setupJCA(PivSession piv) {
+        Security.addProvider(new PivProvider(piv));
+        Security.removeProvider("BC");
+        Security.addProvider(new BouncyCastleProvider());
+        listJCAProviders();
+    }
+
+    public static void tearDownJCA() {
+        Security.removeProvider("YKPiv");
+    }
+
+    public static void listJCAProviders() {
+        Provider[] providers = Security.getProviders();
+
+        for (Provider p : providers) {
+            String providerInfo = p.getName() + "/" + p.getInfo() + "/" + p.getVersion();
+            Logger.d(providerInfo);
+            Set<Provider.Service> services = p.getServices();
+            for (Provider.Service s : services) {
+                String serviceInfo = p.getName() + ":" + s.getType() + "/" + s.getAlgorithm() + "/" + s.getClassName();
+                Logger.d(serviceInfo);
+            }
+        }
+    }
+
     public static void testImportKeys(PivSession piv) throws Exception {
-        PivProvider provider = new PivProvider(piv);
+        setupJCA(piv);
         piv.authenticate(ManagementKeyType.TDES, DEFAULT_MANAGEMENT_KEY);
-        Security.addProvider(provider);
 
         KeyStore keyStore = KeyStore.getInstance("YKPiv");
         keyStore.load(null);
 
         for (KeyType keyType : Arrays.asList(KeyType.RSA1024, KeyType.RSA2048)) {
-            String alias = "9c";
+            String alias = Slot.SIGNATURE.getStringAlias();
 
             KeyPair keyPair = PivTestUtils.loadKey(keyType);
             X509Certificate cert = PivTestUtils.createCertificate(keyPair);
@@ -77,15 +105,15 @@ public class PivJcaDeviceTests {
 
             Assert.assertEquals(cert, keyStore.getCertificate(keyStore.getCertificateAlias(cert)));
         }
-        Security.removeProvider("YKPiv");
+
+        tearDownJCA();
     }
 
     public static void testGenerateKeys(PivSession piv) throws Exception {
-        PivProvider provider = new PivProvider(piv);
+        setupJCA(piv);
         piv.authenticate(ManagementKeyType.TDES, DEFAULT_MANAGEMENT_KEY);
-        Security.addProvider(provider);
 
-        KeyPairGenerator ecGen = KeyPairGenerator.getInstance("EC", provider);
+        KeyPairGenerator ecGen = KeyPairGenerator.getInstance("YKPivEC");
         for (KeyType keyType : Arrays.asList(KeyType.ECCP256, KeyType.ECCP384)) {
             ecGen.initialize(new PivAlgorithmParameterSpec(Slot.AUTHENTICATION, keyType, null, null, DEFAULT_PIN));
             KeyPair keyPair = ecGen.generateKeyPair();
@@ -94,7 +122,7 @@ public class PivJcaDeviceTests {
             //TODO: Test with key loaded from KeyStore
         }
 
-        KeyPairGenerator rsaGen = KeyPairGenerator.getInstance("RSA", provider);
+        KeyPairGenerator rsaGen = KeyPairGenerator.getInstance("YKPivRSA");
         for (KeyType keyType : Arrays.asList(KeyType.RSA1024, KeyType.RSA2048)) {
             rsaGen.initialize(new PivAlgorithmParameterSpec(Slot.AUTHENTICATION, keyType, null, null, DEFAULT_PIN));
             KeyPair keyPair = rsaGen.generateKeyPair();
@@ -102,6 +130,6 @@ public class PivJcaDeviceTests {
             PivTestUtils.rsaSignAndVerify(keyPair.getPrivate(), keyPair.getPublic());
             //TODO: Test with key loaded from KeyStore
         }
-        Security.removeProvider("YKPiv");
+        tearDownJCA();
     }
 }

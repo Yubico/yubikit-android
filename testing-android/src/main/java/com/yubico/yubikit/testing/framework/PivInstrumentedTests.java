@@ -1,16 +1,11 @@
 package com.yubico.yubikit.testing.framework;
 
-import androidx.test.ext.junit.runners.AndroidJUnit4;
-
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.piv.PivSession;
-
-import org.junit.runner.RunWith;
 
 import java.util.Optional;
 import java.util.concurrent.LinkedBlockingQueue;
 
-@RunWith(AndroidJUnit4.class)
 public class PivInstrumentedTests extends YKInstrumentedTests {
 
     public interface Callback {

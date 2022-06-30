@@ -80,9 +80,7 @@ public class PivProvider extends Provider {
                 if (!digests.contains(digest)) {
                     // SHA names don't quite match between Signature and MessageDigest.
                     digest = digest.replace("SHA", "SHA-");
-                    if (digest.equals("SHA-1")) {
-                        digest = "SHA";
-                    }
+
                 }
                 if (digests.contains(digest)) {
                     putService(new PivEcSignatureService(signature, digest));
@@ -92,18 +90,19 @@ public class PivProvider extends Provider {
             }
         }
 
-        putService(new Service(this, "KeyPairGenerator", "RSA", PivKeyPairGeneratorSpi.Rsa.class.getName(), null, null) {
+        putService(new Service(this, "KeyPairGenerator", "YKPivRSA", PivKeyPairGeneratorSpi.Rsa.class.getName(), null, null) {
             @Override
             public Object newInstance(Object constructorParameter) {
                 return new PivKeyPairGeneratorSpi.Rsa(sessionRequester);
             }
         });
-        putService(new Service(this, "KeyPairGenerator", "EC", PivKeyPairGeneratorSpi.Ec.class.getName(), null, null) {
+        putService(new Service(this, "KeyPairGenerator", "YKPivEC", PivKeyPairGeneratorSpi.Ec.class.getName(), null, null) {
             @Override
             public Object newInstance(Object constructorParameter) {
                 return new PivKeyPairGeneratorSpi.Ec(sessionRequester);
             }
         });
+
         putService(new Service(this, "KeyStore", "YKPiv", PivKeyStoreSpi.class.getName(), null, null) {
             @Override
             public Object newInstance(Object constructorParameter) {

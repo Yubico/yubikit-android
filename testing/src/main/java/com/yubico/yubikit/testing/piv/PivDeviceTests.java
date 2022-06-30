@@ -73,13 +73,6 @@ public class PivDeviceTests {
 
     private static final List<String> MESSAGE_DIGESTS = Arrays.asList("SHA-1", "SHA-224", "SHA-256", "SHA-384", "SHA-512");
 
-    /*
-    public static void initProviders() {
-        Security.addProvider(new BouncyCastleProvider());
-        Security.addProvider(new PivProvider());
-    }
-     */
-
     public static void testManagementKey(PivSession piv) throws BadResponseException, IOException, ApduException {
         byte[] key2 = Hex.decode("010203040102030401020304010203040102030401020304");
 
@@ -352,59 +345,5 @@ public class PivDeviceTests {
         byte[] secret = piv.calculateSecret(Slot.AUTHENTICATION, (ECPublicKey) peer.getPublic());
 
         Assert.assertArrayEquals(expected, secret);
-    }
-
-    public static void testImportKeys(PivSession piv) throws ApduException, BadResponseException, NoSuchAlgorithmException, IOException, InvalidPinException, InvalidKeyException, BadPaddingException, NoSuchPaddingException, IllegalBlockSizeException, SignatureException {
-        for (KeyType keyType : KeyType.values()) {
-            testImportKey(piv, PivTestUtils.loadKey(keyType));
-            testImportKey(piv, PivTestUtils.generateKey(keyType));
-        }
-    }
-
-    public static void testImportKey(PivSession piv, KeyPair keyPair) throws BadResponseException, IOException, ApduException, NoSuchAlgorithmException, InvalidPinException, IllegalBlockSizeException, BadPaddingException, NoSuchPaddingException, InvalidKeyException, SignatureException {
-        Slot slot = Slot.AUTHENTICATION;
-        piv.authenticate(ManagementKeyType.TDES, DEFAULT_MANAGEMENT_KEY);
-
-        Logger.d("Import key in slot " + slot);
-        KeyType keyType = piv.putKey(slot, keyPair.getPrivate(), PinPolicy.DEFAULT, TouchPolicy.DEFAULT);
-
-        testSignAllHashes(piv, slot, keyType, keyPair.getPublic());
-    }
-
-    public static void testGenerateKeys(PivSession piv) throws BadResponseException, IOException, ApduException, InvalidPinException, NoSuchAlgorithmException, InvalidKeyException {
-        for (KeyType keyType : KeyType.values()) {
-            testGenerateKey(piv, keyType);
-        }
-    }
-
-    public static void testGenerateKey(PivSession piv, KeyType keyType) throws BadResponseException, IOException, ApduException, InvalidPinException, NoSuchAlgorithmException, InvalidKeyException {
-        Slot slot = Slot.AUTHENTICATION;
-        piv.authenticate(ManagementKeyType.TDES, DEFAULT_MANAGEMENT_KEY);
-
-        Logger.d("Generate an " + keyType + " key in slot " + slot);
-        PublicKey pub = piv.generateKey(slot, keyType, PinPolicy.DEFAULT, TouchPolicy.DEFAULT);
-
-        testSignAllHashes(piv, slot, keyType, pub);
-    }
-
-    public static void testProviderWithDevice(PivSession piv) throws Exception {
-        piv.authenticate(ManagementKeyType.TDES, DEFAULT_MANAGEMENT_KEY);
-        piv.verifyPin(DEFAULT_PIN);
-
-        KeyPairGenerator ecGen = KeyPairGenerator.getInstance("EC");
-        for (KeyType keyType : Arrays.asList(KeyType.ECCP256, KeyType.ECCP384)) {
-        ecGen.initialize(new PivAlgorithmParameterSpec(Slot.AUTHENTICATION, keyType, null, null, null));
-            KeyPair keyPair = ecGen.generateKeyPair();
-            PivTestUtils.ecSignAndVerify(keyPair.getPrivate(), keyPair.getPublic());
-            PivTestUtils.ecKeyAgreement(keyPair.getPrivate(), keyPair.getPublic());
-        }
-
-        KeyPairGenerator rsaGen = KeyPairGenerator.getInstance("RSA");
-        for (KeyType keyType : Arrays.asList(KeyType.RSA1024, KeyType.RSA2048)) {
-            rsaGen.initialize(new PivAlgorithmParameterSpec(Slot.AUTHENTICATION, keyType, null, null, null));
-            KeyPair keyPair = rsaGen.generateKeyPair();
-            PivTestUtils.rsaEncryptAndDecrypt(keyPair.getPrivate(), keyPair.getPublic());
-            PivTestUtils.rsaSignAndVerify(keyPair.getPrivate(), keyPair.getPublic());
-        }
     }
 }
