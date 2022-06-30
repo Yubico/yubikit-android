@@ -4,6 +4,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.yubico.yubikit.testing.framework.PivInstrumentedTests;
 import com.yubico.yubikit.testing.piv.PivJcaDeviceTests;
+import com.yubico.yubikit.testing.piv.PivJcaSigningTests;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -19,6 +20,11 @@ public class PivJcaProviderTests extends PivInstrumentedTests {
     @Test
     public void testImportKeys() throws Throwable {
         withPivSession(PivJcaDeviceTests::testImportKeys);
+    }
+
+    @Test
+    public void testSigning() throws Throwable {
+        withPivSession(PivJcaSigningTests::testSign);
     }
 
 }
