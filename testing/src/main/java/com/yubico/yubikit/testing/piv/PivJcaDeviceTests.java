@@ -91,7 +91,7 @@ public class PivJcaDeviceTests {
         }
 
         for (KeyType keyType : Arrays.asList(KeyType.ECCP256, KeyType.ECCP384)) {
-            String alias = "9c";
+            String alias = Slot.SIGNATURE.getStringAlias();
 
             KeyPair keyPair = PivTestUtils.loadKey(keyType);
             X509Certificate cert = PivTestUtils.createCertificate(keyPair);
