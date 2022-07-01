@@ -84,7 +84,7 @@ public class PivJcaDeviceTests {
         setupJca(piv);
         piv.authenticate(ManagementKeyType.TDES, DEFAULT_MANAGEMENT_KEY);
 
-        KeyPairGenerator ecGen = KeyPairGenerator.getInstance("YKPivEC");
+        KeyPairGenerator ecGen = KeyPairGenerator.getInstance("EC", "YKPiv");
         for (KeyType keyType : Arrays.asList(KeyType.ECCP256, KeyType.ECCP384)) {
             ecGen.initialize(new PivAlgorithmParameterSpec(Slot.AUTHENTICATION, keyType, null, null, DEFAULT_PIN));
             KeyPair keyPair = ecGen.generateKeyPair();
@@ -93,7 +93,7 @@ public class PivJcaDeviceTests {
             //TODO: Test with key loaded from KeyStore
         }
 
-        KeyPairGenerator rsaGen = KeyPairGenerator.getInstance("YKPivRSA");
+        KeyPairGenerator rsaGen = KeyPairGenerator.getInstance("RSA", "YKPiv");
         for (KeyType keyType : Arrays.asList(KeyType.RSA1024, KeyType.RSA2048)) {
             rsaGen.initialize(new PivAlgorithmParameterSpec(Slot.AUTHENTICATION, keyType, null, null, DEFAULT_PIN));
             KeyPair keyPair = rsaGen.generateKeyPair();

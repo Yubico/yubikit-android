@@ -25,6 +25,7 @@ import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.security.Signature;
 import java.security.SignatureException;
 import java.security.spec.AlgorithmParameterSpec;
@@ -33,20 +34,19 @@ import java.security.spec.PSSParameterSpec;
 
 public class PivJcaSigningTests {
 
-    public static void testSign(PivSession piv) throws NoSuchAlgorithmException, IOException, ApduException, InvalidKeyException, BadResponseException, InvalidAlgorithmParameterException, SignatureException {
+    public static void testSign(PivSession piv) throws NoSuchAlgorithmException, NoSuchProviderException, IOException, ApduException, InvalidKeyException, BadResponseException, InvalidAlgorithmParameterException, SignatureException {
+        setupJca(piv);
         for (KeyType keyType : KeyType.values()) {
             testSign(piv, keyType);
         }
+        tearDownJca();
     }
 
-    public static void testSign(PivSession piv, KeyType keyType) throws NoSuchAlgorithmException, IOException, ApduException, InvalidKeyException, BadResponseException, InvalidAlgorithmParameterException, SignatureException {
-        setupJca(piv);
-
+    public static void testSign(PivSession piv, KeyType keyType) throws NoSuchAlgorithmException, NoSuchProviderException, IOException, ApduException, InvalidKeyException, BadResponseException, InvalidAlgorithmParameterException, SignatureException {
         piv.authenticate(ManagementKeyType.TDES, DEFAULT_MANAGEMENT_KEY);
         Logger.d("Generate key: " + keyType);
 
-        // YKPivEC or YKPivRSA
-        KeyPairGenerator kpg = KeyPairGenerator.getInstance("YKPiv" + keyType.params.algorithm.name());
+        KeyPairGenerator kpg = KeyPairGenerator.getInstance(keyType.params.algorithm.name(), "YKPiv");
         kpg.initialize(new PivAlgorithmParameterSpec(Slot.SIGNATURE, keyType, PinPolicy.DEFAULT, TouchPolicy.DEFAULT, DEFAULT_PIN));
         KeyPair keyPair = kpg.generateKeyPair();
 
@@ -70,8 +70,6 @@ public class PivJcaSigningTests {
                 Assert.assertArrayEquals("PSS parameters not used, signatures are not identical!", sig1, sig2);
                 break;
         }
-
-        tearDownJca();
     }
 
     public static byte[] testSign(KeyPair keyPair, String signatureAlgorithm, AlgorithmParameterSpec param) throws NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeyException, SignatureException {
