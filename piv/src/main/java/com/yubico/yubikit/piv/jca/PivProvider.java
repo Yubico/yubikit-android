@@ -90,13 +90,13 @@ public class PivProvider extends Provider {
             }
         }
 
-        putService(new Service(this, "KeyPairGenerator", "RSA", PivKeyPairGeneratorSpi.Rsa.class.getName(), null, null) {
+        putService(new Service(this, "KeyPairGenerator", "YKPivRSA", PivKeyPairGeneratorSpi.Rsa.class.getName(), null, null) {
             @Override
             public Object newInstance(Object constructorParameter) {
                 return new PivKeyPairGeneratorSpi.Rsa(sessionRequester);
             }
         });
-        putService(new Service(this, "KeyPairGenerator", "EC", PivKeyPairGeneratorSpi.Ec.class.getName(), null, null) {
+        putService(new Service(this, "KeyPairGenerator", "YKPivEC", PivKeyPairGeneratorSpi.Ec.class.getName(), null, null) {
             @Override
             public Object newInstance(Object constructorParameter) {
                 return new PivKeyPairGeneratorSpi.Ec(sessionRequester);

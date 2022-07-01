@@ -12,10 +12,9 @@ import java.util.Set;
 
 public class PivJcaUtils {
     public static void setupJca(PivSession piv) {
-        Security.removeProvider("YKPiv");
-        Security.addProvider(new PivProvider(piv));
         Security.removeProvider("BC");
         Security.addProvider(new BouncyCastleProvider());
+        Security.insertProviderAt(new PivProvider(piv), 1);
         listJcaProviders();
     }
 

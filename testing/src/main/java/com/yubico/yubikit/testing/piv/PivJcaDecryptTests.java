@@ -53,7 +53,7 @@ public class PivJcaDecryptTests {
 
         piv.authenticate(ManagementKeyType.TDES, DEFAULT_MANAGEMENT_KEY);
         Logger.d("Generate key: " + keyType);
-        KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA", "YKPiv");
+        KeyPairGenerator kpg = KeyPairGenerator.getInstance("YKPivRSA");
         kpg.initialize(new PivAlgorithmParameterSpec(Slot.KEY_MANAGEMENT, keyType, PinPolicy.DEFAULT, TouchPolicy.DEFAULT, DEFAULT_PIN));
         KeyPair pair = kpg.generateKeyPair();
 

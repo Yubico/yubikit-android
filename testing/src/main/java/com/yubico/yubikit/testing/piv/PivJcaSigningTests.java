@@ -46,7 +46,7 @@ public class PivJcaSigningTests {
         piv.authenticate(ManagementKeyType.TDES, DEFAULT_MANAGEMENT_KEY);
         Logger.d("Generate key: " + keyType);
 
-        KeyPairGenerator kpg = KeyPairGenerator.getInstance(keyType.params.algorithm.name(), "YKPiv");
+        KeyPairGenerator kpg = KeyPairGenerator.getInstance("YKPiv" + keyType.params.algorithm.name());
         kpg.initialize(new PivAlgorithmParameterSpec(Slot.SIGNATURE, keyType, PinPolicy.DEFAULT, TouchPolicy.DEFAULT, DEFAULT_PIN));
         KeyPair keyPair = kpg.generateKeyPair();
 
