@@ -9,7 +9,6 @@ import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.core.util.StringUtils;
-import com.yubico.yubikit.piv.InvalidPinException;
 import com.yubico.yubikit.piv.KeyType;
 import com.yubico.yubikit.piv.ManagementKeyType;
 import com.yubico.yubikit.piv.PinPolicy;
@@ -35,7 +34,7 @@ import javax.crypto.NoSuchPaddingException;
 
 public class PivJcaDecryptTests {
 
-    public static void testDecrypt(PivSession piv) throws BadResponseException, IOException, ApduException, NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException, InvalidPinException, InvalidAlgorithmParameterException {
+    public static void testDecrypt(PivSession piv) throws BadResponseException, IOException, ApduException, NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException, InvalidAlgorithmParameterException {
         for (KeyType keyType : KeyType.values()) {
             if (keyType.params.algorithm.name().equals("RSA")) {
                 testDecrypt(piv, keyType);
@@ -43,7 +42,7 @@ public class PivJcaDecryptTests {
         }
     }
 
-    public static void testDecrypt(PivSession piv, KeyType keyType) throws BadResponseException, IOException, ApduException, NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException, InvalidPinException, InvalidAlgorithmParameterException {
+    public static void testDecrypt(PivSession piv, KeyType keyType) throws BadResponseException, IOException, ApduException, NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException, InvalidAlgorithmParameterException {
         setupJca(piv);
         if (keyType.params.algorithm != KeyType.Algorithm.RSA) {
             throw new IllegalArgumentException("Unsupported");
@@ -61,7 +60,7 @@ public class PivJcaDecryptTests {
         tearDownJca();
     }
 
-    public static void testDecrypt(KeyPair keyPair, Cipher cipher) throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException, InvalidPinException {
+    public static void testDecrypt(KeyPair keyPair, Cipher cipher) throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException {
         byte[] message = "Hello world!".getBytes(StandardCharsets.UTF_8);
 
         Logger.d("Using cipher " + cipher.getAlgorithm());
