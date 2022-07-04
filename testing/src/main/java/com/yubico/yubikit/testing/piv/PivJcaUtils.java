@@ -31,7 +31,7 @@ public class PivJcaUtils {
             Logger.d(providerInfo);
             Set<Provider.Service> services = p.getServices();
             for (Provider.Service s : services) {
-                String serviceInfo = p.getName() + ":" + s.getType() + "/" + s.getAlgorithm() + "/" + s.getClassName();
+                String serviceInfo = "\t" + s.getType() + ":  " + s.getAlgorithm() + " -> " + s.getClassName();
                 Logger.d(serviceInfo);
             }
         }
