@@ -13,9 +13,11 @@ import java.security.Provider;
 import java.security.Security;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.annotation.Nullable;
 import javax.crypto.NoSuchPaddingException;
 
 public class PivProvider extends Provider {
@@ -74,7 +76,8 @@ public class PivProvider extends Provider {
         }
 
         Set<String> digests = Security.getAlgorithms("MessageDigest");
-        for (String signature : Security.getAlgorithms("Signature")) {
+        for (String signatureOrig : Security.getAlgorithms("Signature")) {
+            String signature = signatureOrig.toUpperCase();
             if (signature.endsWith("WITHECDSA")) {
                 String digest = signature.substring(0, signature.length() - 9);
                 if (!digests.contains(digest)) {
@@ -83,12 +86,14 @@ public class PivProvider extends Provider {
 
                 }
                 if (digests.contains(digest)) {
-                    putService(new PivEcSignatureService(signature, digest));
+                    putService(new PivEcSignatureService(signature, digest, null));
                 }
             } else if (!rsaDummyKeys.isEmpty() && signature.endsWith("WITHRSA")) {
                 putService(new PivRsaSignatureService(signature));
             } else if (!rsaDummyKeys.isEmpty() && signature.endsWith("PSS")) {
                 putService(new PivRsaSignatureService(signature));
+            } else if (signature.equals("ECDSA")) {
+                putService(new PivEcSignatureService("ECDSA", "SHA-1", Collections.singletonList("SHA1withECDSA")));
             }
         }
 
@@ -134,8 +139,8 @@ public class PivProvider extends Provider {
     private class PivEcSignatureService extends Service {
         private final String digest;
 
-        public PivEcSignatureService(String algorithm, String digest) {
-            super(PivProvider.this, "Signature", algorithm, PivEcSignatureSpi.Hashed.class.getName(), null, ecAttributes);
+        public PivEcSignatureService(String algorithm, String digest, @Nullable List<String> aliases) {
+            super(PivProvider.this, "Signature", algorithm, PivEcSignatureSpi.Hashed.class.getName(), aliases, ecAttributes);
             this.digest = digest;
         }
 
