@@ -25,16 +25,21 @@ import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
+import java.security.Provider;
+import java.security.Security;
 import java.security.Signature;
 import java.security.SignatureException;
 import java.security.spec.AlgorithmParameterSpec;
 import java.security.spec.MGF1ParameterSpec;
 import java.security.spec.PSSParameterSpec;
+import java.util.HashSet;
+import java.util.Set;
 
 public class PivJcaSigningTests {
 
-    public static void testSign(PivSession piv) throws NoSuchAlgorithmException, NoSuchProviderException, IOException, ApduException, InvalidKeyException, BadResponseException, InvalidAlgorithmParameterException, SignatureException {
+    private static Set<String> signatureAlgorithmsWithPss = new HashSet<>();
+
+    public static void testSign(PivSession piv) throws NoSuchAlgorithmException, IOException, ApduException, InvalidKeyException, BadResponseException, InvalidAlgorithmParameterException, SignatureException {
         setupJca(piv);
         for (KeyType keyType : KeyType.values()) {
             testSign(piv, keyType);
@@ -42,13 +47,15 @@ public class PivJcaSigningTests {
         tearDownJca();
     }
 
-    public static void testSign(PivSession piv, KeyType keyType) throws NoSuchAlgorithmException, NoSuchProviderException, IOException, ApduException, InvalidKeyException, BadResponseException, InvalidAlgorithmParameterException, SignatureException {
+    public static void testSign(PivSession piv, KeyType keyType) throws NoSuchAlgorithmException, IOException, ApduException, InvalidKeyException, BadResponseException, InvalidAlgorithmParameterException, SignatureException {
         piv.authenticate(ManagementKeyType.TDES, DEFAULT_MANAGEMENT_KEY);
         Logger.d("Generate key: " + keyType);
 
         KeyPairGenerator kpg = KeyPairGenerator.getInstance("YKPiv" + keyType.params.algorithm.name());
         kpg.initialize(new PivAlgorithmParameterSpec(Slot.SIGNATURE, keyType, PinPolicy.DEFAULT, TouchPolicy.DEFAULT, DEFAULT_PIN));
         KeyPair keyPair = kpg.generateKeyPair();
+
+        signatureAlgorithmsWithPss = getAllSignatureAlgorithmsWithPSS();
 
         switch (keyType.params.algorithm) {
             case EC:
@@ -61,13 +68,82 @@ public class PivJcaSigningTests {
             case RSA:
                 testSign(keyPair, "SHA1withRSA", null);
                 testSign(keyPair, "SHA256withRSA", null);
-                testSign(keyPair, "RSASSA-PSS", new PSSParameterSpec("SHA-256", "MGF1", MGF1ParameterSpec.SHA256, 8, 1));
 
-                // Test with custom parameter. We use a 0-length salt and ensure signatures are the same
-                PSSParameterSpec param = new PSSParameterSpec("SHA-256", "MGF1", MGF1ParameterSpec.SHA256, 0, 1);
-                byte[] sig1 = testSign(keyPair, "RSASSA-PSS", param);
-                byte[] sig2 = testSign(keyPair, "RSASSA-PSS", param);
-                Assert.assertArrayEquals("PSS parameters not used, signatures are not identical!", sig1, sig2);
+                String signatureAlgorithm = "SHA1WITHRSA/PSS";
+                if (signatureAlgorithmsWithPss.contains(signatureAlgorithm)) {
+                    testSign(keyPair, signatureAlgorithm, new PSSParameterSpec("SHA-1", "MGF1", MGF1ParameterSpec.SHA1, 8, 1));
+                    PSSParameterSpec param = new PSSParameterSpec("SHA-1", "MGF1", MGF1ParameterSpec.SHA1, 0, 1);
+                    byte[] sig1 = testSign(keyPair, signatureAlgorithm, param);
+                    byte[] sig2 = testSign(keyPair, signatureAlgorithm, param);
+                    Assert.assertArrayEquals("PSS parameters not used, signatures are not identical!", sig1, sig2);
+                }
+
+                try {
+                    signatureAlgorithm = "SHA224WITHRSA/PSS";
+                    if (signatureAlgorithmsWithPss.contains(signatureAlgorithm)) {
+                        @SuppressWarnings("NewApi")
+                        PSSParameterSpec saltedParam = new PSSParameterSpec("SHA-224", "MGF1", MGF1ParameterSpec.SHA224, 8, 1);
+                        testSign(keyPair, signatureAlgorithm, saltedParam);
+
+                        @SuppressWarnings("NewApi")
+                        PSSParameterSpec param = new PSSParameterSpec("SHA-224", "MGF1", MGF1ParameterSpec.SHA224, 0, 1);
+                        byte[] sig1 = testSign(keyPair, signatureAlgorithm, param);
+                        byte[] sig2 = testSign(keyPair, signatureAlgorithm, param);
+                        Assert.assertArrayEquals("PSS parameters not used, signatures are not identical!", sig1, sig2);
+                    }
+                } catch (NoSuchFieldError noSuchFieldError) {
+                    // MGF1ParameterSpec.SHA224 is supported from Android API 26
+                    Logger.d("Ignoring following error: " + noSuchFieldError.getMessage());
+                }
+
+                signatureAlgorithm = "SHA256WITHRSA/PSS";
+                if (signatureAlgorithmsWithPss.contains(signatureAlgorithm)) {
+                    testSign(keyPair, signatureAlgorithm, new PSSParameterSpec("SHA-256", "MGF1", MGF1ParameterSpec.SHA256, 8, 1));
+                    PSSParameterSpec param = new PSSParameterSpec("SHA-256", "MGF1", MGF1ParameterSpec.SHA256, 0, 1);
+                    byte[] sig1 = testSign(keyPair, signatureAlgorithm, param);
+                    byte[] sig2 = testSign(keyPair, signatureAlgorithm, param);
+                    Assert.assertArrayEquals("PSS parameters not used, signatures are not identical!", sig1, sig2);
+                }
+
+                signatureAlgorithm = "SHA384WITHRSA/PSS";
+                if (signatureAlgorithmsWithPss.contains(signatureAlgorithm)) {
+                    testSign(keyPair, signatureAlgorithm, new PSSParameterSpec("SHA-384", "MGF1", MGF1ParameterSpec.SHA384, 8, 1));
+                    PSSParameterSpec param = new PSSParameterSpec("SHA-384", "MGF1", MGF1ParameterSpec.SHA384, 0, 1);
+                    byte[] sig1 = testSign(keyPair, signatureAlgorithm, param);
+                    byte[] sig2 = testSign(keyPair, signatureAlgorithm, param);
+                    Assert.assertArrayEquals("PSS parameters not used, signatures are not identical!", sig1, sig2);
+                }
+
+                // RSA1024 is too small for SHA512WITHRSA/PSS
+                if (keyType == KeyType.RSA2048) {
+                    signatureAlgorithm = "SHA512WITHRSA/PSS";
+                    if (signatureAlgorithmsWithPss.contains(signatureAlgorithm)) {
+                        testSign(keyPair, signatureAlgorithm, new PSSParameterSpec("SHA-512", "MGF1", MGF1ParameterSpec.SHA512, 8, 1));
+                        PSSParameterSpec param = new PSSParameterSpec("SHA-512", "MGF1", MGF1ParameterSpec.SHA512, 0, 1);
+                        byte[] sig1 = testSign(keyPair, signatureAlgorithm, param);
+                        byte[] sig2 = testSign(keyPair, signatureAlgorithm, param);
+                        Assert.assertArrayEquals("PSS parameters not used, signatures are not identical!", sig1, sig2);
+                    }
+                }
+
+                signatureAlgorithm = "RAWRSASSA-PSS";
+                if (signatureAlgorithmsWithPss.contains(signatureAlgorithm)) {
+                    testSign(keyPair, signatureAlgorithm, new PSSParameterSpec("SHA-256", "MGF1", MGF1ParameterSpec.SHA256, 8, 1));
+                    PSSParameterSpec param = new PSSParameterSpec("SHA-256", "MGF1", MGF1ParameterSpec.SHA256, 0, 1);
+                    byte[] sig1 = testSign(keyPair, signatureAlgorithm, param);
+                    byte[] sig2 = testSign(keyPair, signatureAlgorithm, param);
+                    Assert.assertArrayEquals("PSS parameters not used, signatures are not identical!", sig1, sig2);
+                }
+
+                signatureAlgorithm = "RSASSA-PSS";
+                if (signatureAlgorithmsWithPss.contains(signatureAlgorithm)) {
+                    testSign(keyPair, signatureAlgorithm, new PSSParameterSpec("SHA-256", "MGF1", MGF1ParameterSpec.SHA256, 8, 1));
+                    PSSParameterSpec param = new PSSParameterSpec("SHA-256", "MGF1", MGF1ParameterSpec.SHA256, 0, 1);
+                    byte[] sig1 = testSign(keyPair, signatureAlgorithm, param);
+                    byte[] sig2 = testSign(keyPair, signatureAlgorithm, param);
+                    Assert.assertArrayEquals("PSS parameters not used, signatures are not identical!", sig1, sig2);
+                }
+
                 break;
         }
     }
@@ -95,47 +171,17 @@ public class PivJcaSigningTests {
         }
     }
 
-    /* TODO review following
-    private static final List<String> MESSAGE_DIGESTS = Arrays.asList("SHA-1", "SHA-224", "SHA-256", "SHA-384", "SHA-512");
-
-    public static void testSignAllHashes(PivSession piv, Slot slot, KeyType keyType, PublicKey publicKey) throws ApduException, NoSuchAlgorithmException, InvalidPinException, IOException, InvalidKeyException, BadResponseException {
-        for (String hash : MESSAGE_DIGESTS) {
-            testSign(piv, slot, keyType, publicKey, hash);
+    public static Set<String> getAllSignatureAlgorithmsWithPSS() {
+        signatureAlgorithmsWithPss.clear();
+        Set<String> pssSignatures = new HashSet<>();
+        Provider provider = Security.getProvider("YKPiv");
+        Set<Provider.Service> allServices = provider.getServices();
+        for (Provider.Service service : allServices) {
+            if (service.getType().equals("Signature") && service.getAlgorithm().endsWith("PSS")) {
+                pssSignatures.add(service.getAlgorithm());
+            }
         }
+
+        return pssSignatures;
     }
-
-    public static void testSign(PivSession piv, Slot slot, KeyType keyType, PublicKey publicKey, String digest) throws NoSuchAlgorithmException, IOException, ApduException, InvalidPinException, InvalidKeyException, BadResponseException {
-        byte[] message = "Hello world!".getBytes(StandardCharsets.UTF_8);
-
-        String signatureAlgorithm = digest.replace("-", "") + "with";
-        switch (keyType.params.algorithm) {
-            case RSA:
-                signatureAlgorithm += "RSA";
-                break;
-            case EC:
-                signatureAlgorithm += "ECDSA";
-                break;
-        }
-
-        Logger.d("Create signature");
-        try {
-            Signature sig = Signature.getInstance(signatureAlgorithm);
-
-            KeyStore keyStore = KeyStore.getInstance("YKPiv");
-            keyStore.load(null);
-            PrivateKey privateKey = (PrivateKey) keyStore.getKey(slot.getStringAlias(), DEFAULT_PIN);
-            sig.initSign(privateKey);
-            sig.update(message);
-            byte[] signature = sig.sign();
-
-            // Verify
-            sig = Signature.getInstance(signatureAlgorithm);
-            sig.initVerify(publicKey);
-            sig.update(message);
-            Assert.assertTrue("Verify signature", sig.verify(signature));
-        } catch (InvalidKeyException | SignatureException | KeyStoreException | CertificateException | UnrecoverableKeyException e) {
-            throw new RuntimeException(e);
-        }
-    }
-*/
 }

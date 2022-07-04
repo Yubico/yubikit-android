@@ -38,6 +38,7 @@ public class PivProvider extends Provider {
 
     /**
      * Creates a Security Provider capable of using a PivSession with a YubiKey to perform key operations.
+     *
      * @param sessionRequester a mechanism for the Provider to get an instance of a PivSession.
      */
     public PivProvider(Callback<Callback<Result<PivSession, Exception>>> sessionRequester) {
@@ -68,7 +69,6 @@ public class PivProvider extends Provider {
             Logger.d("TIME TAKEN: " + (end - start));
 
             putService(new PivRsaCipherService());
-            putService(new PivRsaSignatureService("RSASSA-PSS"));
         } catch (NoSuchAlgorithmException e) {
             Logger.e("Unable to support RSA, no underlying Provider with RSA capability", e);
         }
@@ -86,6 +86,8 @@ public class PivProvider extends Provider {
                     putService(new PivEcSignatureService(signature, digest));
                 }
             } else if (!rsaDummyKeys.isEmpty() && signature.endsWith("WITHRSA")) {
+                putService(new PivRsaSignatureService(signature));
+            } else if (!rsaDummyKeys.isEmpty() && signature.endsWith("PSS")) {
                 putService(new PivRsaSignatureService(signature));
             }
         }
