@@ -39,8 +39,11 @@ import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
 
+import javax.security.auth.Destroyable;
+
 public class PivJcaDeviceTests {
 
+    @SuppressWarnings("NewApi") // casting to Destroyable is supported from API 26
     public static void testImportKeys(PivSession piv) throws Exception {
         setupJca(piv);
         piv.authenticate(ManagementKeyType.TDES, DEFAULT_MANAGEMENT_KEY);
@@ -58,7 +61,7 @@ public class PivJcaDeviceTests {
 
             PivTestUtils.rsaEncryptAndDecrypt(privateKey, keyPair.getPublic());
             PivTestUtils.rsaSignAndVerify(privateKey, keyPair.getPublic());
-            privateKey.destroy();
+            ((Destroyable) privateKey).destroy();
         }
 
         for (KeyType keyType : Arrays.asList(KeyType.ECCP256, KeyType.ECCP384)) {
@@ -72,7 +75,7 @@ public class PivJcaDeviceTests {
 
             PivTestUtils.ecKeyAgreement(privateKey, keyPair.getPublic());
             PivTestUtils.ecSignAndVerify(privateKey, keyPair.getPublic());
-            privateKey.destroy();
+            ((Destroyable) privateKey).destroy();
 
             Assert.assertEquals(cert, keyStore.getCertificate(keyStore.getCertificateAlias(cert)));
         }
