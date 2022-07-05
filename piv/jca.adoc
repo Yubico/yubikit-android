@@ -12,7 +12,9 @@ Before any of the YubiKit PIV JCA provider (YKPiv) functionality can be used, a 
 
 [source,java]
 ----
-YubikeyDevice device = ... ; // device is obtained on a succesfull USB/NFC connection, see YubiKit documentation
+// device instance is obtained on a successful USB/NFC connection
+// see YubiKit documentation
+YubikeyDevice device = ... ;
 
 device.requestConnection(SmartCardConnection::class.java) {
     PivSession pivSession = new PivSession(it.value);
@@ -54,7 +56,7 @@ KeyStore keyStore = KeyStore.getInstance("YKPiv", pivProvider);
 -----
 === Accessing YKPiv services
 
-If the provider is installed globally, calls to `getInstance` will return YKPiv services where appropriate, otherwise use `getInstance` overrides with `"YKPiv"` or instance parameters. The following snippets show differnt ways how to acquire a `Signature` instance from YKPiv:
+If the provider is installed globally, calls to `getInstance` will return YKPiv services where appropriate, otherwise use `getInstance` overrides with `"YKPiv"` or instance parameters. The following snippets show different ways how to acquire a `Signature` instance from YKPiv:
 [source,java]
 -----
 // YKPiv installed globally
@@ -69,7 +71,9 @@ PivProvider pivProvider = new PivProvider(pivSession)
 Signature s1 = Signature.getInstance("SHA1withRSA", "YKPiv");
 Signature s2 = Signature.getInstance("SHA1withRSA", pivProvider);
 
-// note that if the second parameter was ommited, the system would return SHA1withRSA signature object from one of the globally installed providers
+// note that if the second parameter was omitted,
+// the system would return SHA1withRSA signature object
+// from one of the globally installed providers
 -----
 
 The `KeyPairGenerator` service is an exception to the rule and defines custom service names `YKPivEC` and `YKPivRSA` for EC KeyPairGenerator and RSA KeyPairGenerator instances.
