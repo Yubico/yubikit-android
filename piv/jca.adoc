@@ -99,11 +99,15 @@ PivAlgorithmParameterSpec(
 ----
 
 `slot`:: is the PIV slot, one of `Slot.AUTHENTICATION`, `Slot.SIGNATURE`, `Slot.KEY_MANAGEMENT` or `Slot.CARD_AUTH`
+
 `keyType`:: one of `KeyType.RSA1024`, `KeyType.RSA2048`, `KeyType.ECCP256`, `KeyType.ECCP384`; must match the `KeyPairGenerator` type
+
 `pinPolicy`:: defines the pin policy for using the key. `PinPolicy.DEFAULT`, `PinPolicy.NEVER`, `PinPolicy.ONCE` or `PinPolicy.ALWAYS`
+
 `touchPolicy`:: defines the whether or not a user presence is required (physical touch) when using the key.
 One of `TouchPolicy.DEFAULT`, `TouchPolicy.NEVER`, `TouchPolicy.ALWAYS`, `TouchPolicy.CACHED`
-`pin`:: the PIV application PIN
+
+`pin`:: the PIV application PIN; valid PIN is required depending on the `PinPolicy` value and the operation which is planned to be performed with the resulting PrivateKey - signing and decrypting require PIN.
 
 The `DEFAULT` values of `PinPolicy` and `TouchPolicy` depend on the `slot` value.
 See YubiKit documentation for more information.
