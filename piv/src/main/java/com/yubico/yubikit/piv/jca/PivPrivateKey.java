@@ -21,8 +21,9 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
 import javax.annotation.Nullable;
+import javax.security.auth.Destroyable;
 
-public abstract class PivPrivateKey implements PrivateKey {
+public abstract class PivPrivateKey implements PrivateKey, Destroyable {
     final Slot slot;
     final KeyType keyType;
     @Nullable

@@ -168,7 +168,7 @@ class PivCertificateFragment : Fragment() {
                         authenticate(pivViewModel.mgmtKeyType, pivViewModel.mgmtKey)
 
                         val provider = PivProvider(this)
-                        val factory = KeyPairGenerator.getInstance("EC", provider)
+                        val factory = KeyPairGenerator.getInstance("YKPivEC", provider)
                         factory.initialize(
                             PivAlgorithmParameterSpec(
                                 slot,

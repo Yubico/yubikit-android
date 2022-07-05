@@ -1,1 +1,1 @@
-include ':AndroidDemo', ':core', ':android', ':oath', ':yubiotp', ':management', ':piv', ':support', ':testing'
+include ':AndroidDemo', ':core', ':android', ':oath', ':yubiotp', ':management', ':piv', ':support', ':testing', ':testing-android'

@@ -13,9 +13,11 @@ import java.security.Provider;
 import java.security.Security;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.annotation.Nullable;
 import javax.crypto.NoSuchPaddingException;
 
 public class PivProvider extends Provider {
@@ -38,6 +40,7 @@ public class PivProvider extends Provider {
 
     /**
      * Creates a Security Provider capable of using a PivSession with a YubiKey to perform key operations.
+     *
      * @param sessionRequester a mechanism for the Provider to get an instance of a PivSession.
      */
     public PivProvider(Callback<Callback<Result<PivSession, Exception>>> sessionRequester) {
@@ -68,42 +71,45 @@ public class PivProvider extends Provider {
             Logger.d("TIME TAKEN: " + (end - start));
 
             putService(new PivRsaCipherService());
-            putService(new PivRsaSignatureService("RSASSA-PSS"));
         } catch (NoSuchAlgorithmException e) {
             Logger.e("Unable to support RSA, no underlying Provider with RSA capability", e);
         }
 
         Set<String> digests = Security.getAlgorithms("MessageDigest");
-        for (String signature : Security.getAlgorithms("Signature")) {
+        for (String signatureOrig : Security.getAlgorithms("Signature")) {
+            String signature = signatureOrig.toUpperCase();
             if (signature.endsWith("WITHECDSA")) {
                 String digest = signature.substring(0, signature.length() - 9);
                 if (!digests.contains(digest)) {
                     // SHA names don't quite match between Signature and MessageDigest.
                     digest = digest.replace("SHA", "SHA-");
-                    if (digest.equals("SHA-1")) {
-                        digest = "SHA";
-                    }
+
                 }
                 if (digests.contains(digest)) {
-                    putService(new PivEcSignatureService(signature, digest));
+                    putService(new PivEcSignatureService(signature, digest, null));
                 }
             } else if (!rsaDummyKeys.isEmpty() && signature.endsWith("WITHRSA")) {
                 putService(new PivRsaSignatureService(signature));
+            } else if (!rsaDummyKeys.isEmpty() && signature.endsWith("PSS")) {
+                putService(new PivRsaSignatureService(signature));
+            } else if (signature.equals("ECDSA")) {
+                putService(new PivEcSignatureService("ECDSA", "SHA-1", Collections.singletonList("SHA1withECDSA")));
             }
         }
 
-        putService(new Service(this, "KeyPairGenerator", "RSA", PivKeyPairGeneratorSpi.Rsa.class.getName(), null, null) {
+        putService(new Service(this, "KeyPairGenerator", "YKPivRSA", PivKeyPairGeneratorSpi.Rsa.class.getName(), null, null) {
             @Override
             public Object newInstance(Object constructorParameter) {
                 return new PivKeyPairGeneratorSpi.Rsa(sessionRequester);
             }
         });
-        putService(new Service(this, "KeyPairGenerator", "EC", PivKeyPairGeneratorSpi.Ec.class.getName(), null, null) {
+        putService(new Service(this, "KeyPairGenerator", "YKPivEC", PivKeyPairGeneratorSpi.Ec.class.getName(), null, null) {
             @Override
             public Object newInstance(Object constructorParameter) {
                 return new PivKeyPairGeneratorSpi.Ec(sessionRequester);
             }
         });
+
         putService(new Service(this, "KeyStore", "YKPiv", PivKeyStoreSpi.class.getName(), null, null) {
             @Override
             public Object newInstance(Object constructorParameter) {
@@ -133,8 +139,8 @@ public class PivProvider extends Provider {
     private class PivEcSignatureService extends Service {
         private final String digest;
 
-        public PivEcSignatureService(String algorithm, String digest) {
-            super(PivProvider.this, "Signature", algorithm, PivEcSignatureSpi.Hashed.class.getName(), null, ecAttributes);
+        public PivEcSignatureService(String algorithm, String digest, @Nullable List<String> aliases) {
+            super(PivProvider.this, "Signature", algorithm, PivEcSignatureSpi.Hashed.class.getName(), aliases, ecAttributes);
             this.digest = digest;
         }
 

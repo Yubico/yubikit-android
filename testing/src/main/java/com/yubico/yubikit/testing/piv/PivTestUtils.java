@@ -368,7 +368,6 @@ public class PivTestUtils {
         for (String algorithm : RSA_SIGNATURE_ALGORITHMS) {
             verify(publicKey, Signature.getInstance(algorithm), sign(privateKey, Signature.getInstance(algorithm)));
         }
-        rsaSignAndVerifyPss(privateKey, publicKey);
     }
 
     public static void encryptAndDecrypt(PrivateKey privateKey, PublicKey publicKey, Cipher algorithm) throws Exception {
@@ -409,28 +408,6 @@ public class PivTestUtils {
             Logger.d("Test " + algorithm);
             verify(publicKey, Signature.getInstance(algorithm), sign(privateKey, Signature.getInstance(algorithm)));
         }
-    }
-
-    public static void rsaSignAndVerifyPss(PrivateKey privateKey, PublicKey publicKey) throws Exception {
-        byte[] message = "Hello world".getBytes(StandardCharsets.UTF_8);
-
-        Signature algorithm = Signature.getInstance("RSASSA-PSS");
-        algorithm.initSign(privateKey);
-        algorithm.setParameter(new PSSParameterSpec("SHA-256", "MGF1", MGF1ParameterSpec.SHA256, 0, 1));
-        algorithm.update(message);
-        byte[] sig1 = algorithm.sign();
-
-        algorithm.initSign(privateKey);
-        algorithm.setParameter(new PSSParameterSpec("SHA-256", "MGF1", MGF1ParameterSpec.SHA256, 0, 1));
-        algorithm.update(message);
-        byte[] sig2 = algorithm.sign();
-        Assert.assertArrayEquals("PSS parameters not used, signatures are not identical!", sig1, sig2);
-
-        algorithm = Signature.getInstance("RSASSA-PSS");
-        algorithm.initVerify(publicKey);
-        algorithm.setParameter(new PSSParameterSpec("SHA-256", "MGF1", MGF1ParameterSpec.SHA256, 0, 1));
-        algorithm.update(message);
-        Assert.assertTrue("Signature mismatch", algorithm.verify(sig1));
     }
 
     public static void ecKeyAgreement(PrivateKey privateKey, PublicKey publicKey) throws Exception {

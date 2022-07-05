@@ -36,6 +36,7 @@ pkcs
 prehashed
 prot
 rsassa
+rawrsassa
 secp
 sede
 smartcard
