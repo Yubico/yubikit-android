@@ -175,7 +175,7 @@ To verify a digital signature, following code can be used:
 [source,java]
 ----
 // note: the signature algorithm and key have to be compatible
-PrivateKey publicKey = keyPair.getPublic();
+PublicKey publicKey = keyPair.getPublic();
 Signature signature = Signature.getInstance("SHA256withECDSA");
 
 byte[] message = "message to sign".getBytes(StandardCharsets.UTF_8);
