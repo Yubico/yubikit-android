@@ -37,10 +37,10 @@ The YKPiv Provider uses custom PrivateKey classes which aren't usable by other P
 To avoid a different Provider from being used with these PrivateKeys, we recommend installing the PivProvider in the first position:
 
 [source,java]
------
+----
 PivProvider pivProvider = new PivProvider(pivSession)
 Security.insertProviderAt(pivProvider, 1);
------
+----
 
 Inserting YKPiv provider in the first position makes it the preferred provider, and calling JCA APIs which don't specify a provider by name or pointer will return PIV JCA implementations (where applicable).
 
@@ -49,13 +49,13 @@ If additional Signature or Cipher schemes are required for use with YKPiv, you c
 For example, to be able to use an algorithm which is provided by the third party Provider Bouncy Castle, you could do the following:
 [source,java]
 
------
+----
 Security.removeProvider("BC"); // remove standard Bouncy Castle
 Security.addProvider(new BouncyCastle()); // add a more recent version of Bouncy Castle
 
 PivProvider pivProvider = new PivProvider(pivSession); // called after Bouncy Castle has been added
 Security.insertProviderAt(pivProvider, 1);
------
+----
 
 ==== Alternative: Using the Provider directly
 
@@ -63,60 +63,56 @@ To use YKPiv without global installation (avoiding call to `Security.insertProvi
 For example:
 [source,java]
 
------
+----
 PivProvider pivProvider = new PivProvider(pivSession)
 KeyStore keyStore = KeyStore.getInstance("YKPiv", pivProvider);
------
+----
 
-=== Accessing YKPiv services
+=== Generating new keys
 
-If the provider is installed globally, calls to `getInstance` will return YKPiv services where appropriate.
-For local providers, one needs to use the version of `getInstance` which takes the provider object as the second parameter.
-The following snippets show different ways how to acquire a `Signature` instance from YKPiv:
-[source,java]
-
------
-// YKPiv installed globally
-Security.insertProvider(new PivProvider(pivSession));
-...
-Signature s = Signature.getInstance("SHA1withRSA");
-
-// YKPiv not installed globally
-PivProvider pivProvider = new PivProvider(pivSession)
-Signature s = Signature.getInstance("SHA1withRSA", pivProvider);
-
-// note that if the second parameter was omitted,
-// the system would return SHA1withRSA signature object
-// from one of the globally installed providers
------
-
-The `KeyPairGenerator` service is an exception to the rule and defines custom service names `YKPivEC` and `YKPivRSA` for EC KeyPairGenerator and RSA KeyPairGenerator instances.
+The `KeyPairGenerator` service is used for generating new keys.
+Depending on requested key type, use the following code to acquire an instance of the service:
 
 [source,java]
------
-// get instance of RSA KeyPairGenerator, for globally installed YKPiv
+----
+// get instance of RSA KeyPairGenerator
 KeyPairGenerator rsaKpg = KeyPairGenerator.getInstance("YKPivRSA");
 
-// get instance of EC KeyPairGenerator, for globally installed YKPiv
+// get instance of EC KeyPairGenerator
 KeyPairGenerator ecKpg = KeyPairGenerator.getInstance("YKPivEC");
------
+----
 
-=== Examples
-
-Following examples use a globally installed YKPiv.
-
-==== Key generation
-
-Generate RSA KeyPair
+The instance then needs to be initialized with `PivAlgorithmParameterSpec` object which describes the properties of the new key:
 [source,java]
 
------
+----
+PivAlgorithmParameterSpec(
+    Slot slot,
+    KeyType keyType,
+    @Nullable PinPolicy pinPolicy,
+    @Nullable TouchPolicy touchPolicy,
+    @Nullable char[] pin)
+----
+
+`slot`:: is the PIV slot, one of `Slot.AUTHENTICATION`, `Slot.SIGNATURE`, `Slot.KEY_MANAGEMENT` or `Slot.CARD_AUTH`
+`keyType`:: one of `KeyType.RSA1024`, `KeyType.RSA2048`, `KeyType.ECCP256`, `KeyType.ECCP384`; must match the `KeyPairGenerator` type `pinPolicy`:: defines the pin policy for using the key. `PinPolicy.DEFAULT`, `PinPolicy.NEVER`, `PinPolicy.ONCE` or `PinPolicy.ALWAYS`
+`touchPolicy`:: defines the whether or not a user presence is required (physical touch) when using the key.
+One of `TouchPolicy.DEFAULT`, `TouchPolicy.NEVER`, `TouchPolicy.ALWAYS`, `TouchPolicy.CACHED`
+`pin`:: the PIV application PIN
+
+The `DEFAULT` values of `PinPolicy` and `TouchPolicy` depend on the `slot` value.
+See YubiKit documentation for more information.
+
+Follows an example of generation of an RSA key pair.
+[source,java]
+
+----
 KeyPairGenerator rsaGen = KeyPairGenerator.getInstance("YKPivRSA");
 
 rsaGen.initialize(
     new PivAlgorithmParameterSpec(
         Slot.AUTHENTICATION,
-        KeyType.RSA1024, // or KeyType.RSA2048
+        KeyType.RSA1024,
         null, // PinPolicy
         null, // TouchPolicy
         DEFAULT_PIN // PIV PIN
@@ -124,12 +120,45 @@ rsaGen.initialize(
 );
 
 KeyPair keyPair = rsaGen.generateKeyPair();
------
+----
 
-==== Signing
+=== Accessing and importing keys
+
+Private keys can be stored in YKPiv `KeyStore` wit the `setEntry` method.
+The slot, pin and touch policies have the same values as when generating new keys.
+Store key to a specific PIV slot.
 
 [source,java]
------
+----
+KeyStore keyStore = KeyStore.getInstance("YKPiv");
+keyStore.load(null);
+
+KeyPair keyPair = ...;
+X509Certificate cert = ...;
+
+keyStore.setEntry(
+    Slot.SIGNATURE,
+    new KeyStore.PrivateKeyEntry(keyPair.getPrivate(), new Certificate[]{cert}),
+    new PivKeyStoreKeyParameters(PinPolicy.DEFAULT, TouchPolicy.DEFAULT)
+);
+----
+
+To get a private key stored in a specific slot of the `KeyStore`, use `getKey` method.
+
+[source,java]
+----
+KeyStore keyStore = KeyStore.getInstance("YKPiv");
+keyStore.load(null);
+
+PrivateKey privateKey = (PrivateKey) keyStore.getKey(Slot.SIGNATURE, DEFAULT_PIN);
+----
+
+=== Using digital signatures
+
+The YKPiv private keys can be used for digital signatures:
+[source,java]
+
+----
 // note: the signature algorithm and key have to be compatible
 PrivateKey privateKey = keyPair.getPrivate();
 Signature signature = Signature.getInstance("SHA256withECDSA");
@@ -138,12 +167,12 @@ byte[] message = "message to sign".getBytes(StandardCharsets.UTF_8);
 signature.initSign(privateKey);
 signature.update(message);
 byte[] messageSignature = signature.sign();
------
+----
 
-==== Verifying signature
+To verify a digital signature, following code can be used:
 
 [source,java]
------
+----
 // note: the signature algorithm and key have to be compatible
 PrivateKey publicKey = keyPair.getPublic();
 Signature signature = Signature.getInstance("SHA256withECDSA");
@@ -154,12 +183,15 @@ byte[] messageSignature = ...;
 signature.initVerify(publicKey);
 signature.update(message);
 bool success = signature.verify(messageSignature);
------
+----
 
-==== Encryption and Decryption
+=== Encryption and Decryption
 
+YKPiv keys can be used for encryption and decryption of data.
+The following example shows how:
 [source,java]
------
+
+----
 KeyPair keyPair = ...;
 String cipherAlgorithm = "RSA/ECB/PKCS1Padding"; // or other algorithm
 byte[] message = "message to encrypt".getBytes(StandardCharsets.UTF_8);
@@ -173,43 +205,16 @@ cipher.init(Cipher.DECRYPT_MODE, keyPair.getPrivate());
 byte[] decrypted = cipher.doFinal(encrypted);
 
 // decrypted == message
------
+----
 
-==== Key store
+=== Key agreement
 
-Store key to a specific PIV slot.
-
+YKPiv implements a `KeyAgreement` service.
+Key agreement is a protocol by which 2 or more parties can establish the same cryptographic keys, without having to exchange any secret information.
+The following example shows how to use the `KeyAgreement` instance for two different key pairs (one of them is YKPiv key pair) for getting a common secret.
 [source,java]
------
-KeyStore keyStore = KeyStore.getInstance("YKPiv");
-keyStore.load(null);
 
-KeyPair keyPair = ...; // generate
-X509Certificate cert = PivTestUtils.createCertificate(keyPair);
-
-keyStore.setEntry(
-    Slot.SIGNATURE,
-    new KeyStore.PrivateKeyEntry(keyPair.getPrivate(), new Certificate[]{cert}),
-    new PivKeyStoreKeyParameters(PinPolicy.DEFAULT, TouchPolicy.DEFAULT)
-);
-
-PrivateKey privateKey = (PrivateKey) keyStore.getKey(alias, DEFAULT_PIN);
------
-
-Retrieve key from PIV slot.
-
-[source,java]
------
-KeyStore keyStore = KeyStore.getInstance("YKPiv");
-keyStore.load(null);
-
-PrivateKey privateKey = (PrivateKey) keyStore.getKey(Slot.SIGNATURE, DEFAULT_PIN);
------
-
-==== Key agreement
-
-[source,java]
------
+----
 
 // generate EC key with the YKPiv provider
 KeyPairGenerator pivKpg = KeyPairGenerator.getInstance("YkPivEC");
@@ -234,4 +239,4 @@ ka.doPhase(pivKeyPair.getPublic(), true);
 byte[] peerSecret = ka.generateSecret();
 
 // secret == peerSecret
------
+----
