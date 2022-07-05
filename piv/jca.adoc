@@ -39,7 +39,7 @@ To avoid a different Provider from being used with these PrivateKeys, we recomme
 [source,java]
 ----
 PivProvider pivProvider = new PivProvider(pivSession)
-Security.insertProviderAt(pivProvider, 1);
+Security.insertProviderAt(pivProvider, 1); // JCA Security providers are indexed from 1
 ----
 
 Inserting YKPiv provider in the first position makes it the preferred provider, and calling JCA APIs which don't specify a provider by name or pointer will return PIV JCA implementations (where applicable).
@@ -50,10 +50,14 @@ For example, to be able to use an algorithm which is provided by the third party
 [source,java]
 
 ----
-Security.removeProvider("BC"); // remove standard Bouncy Castle
-Security.addProvider(new BouncyCastle()); // add a more recent version of Bouncy Castle
+// This example installs an updated version of Bouncy Castle JCA provider
+// for this, we first need to remove the original Bouncy Castle provider
+Security.removeProvider("BC");
+// after the system Bouncy Castle provider has been removed, we install a new instance
+Security.addProvider(new BouncyCastle());
 
-PivProvider pivProvider = new PivProvider(pivSession); // called after Bouncy Castle has been added
+// we call the PivProvider constructor after we have installed additional providers
+PivProvider pivProvider = new PivProvider(pivSession);
 Security.insertProviderAt(pivProvider, 1);
 ----
 
