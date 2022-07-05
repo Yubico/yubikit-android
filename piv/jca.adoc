@@ -1,6 +1,6 @@
 == YubiKit PIV JCA guide
 
-YubiKit PIV Session can be accessed through standard Java Cryptography Architecture (JCA) interfaces.
+Private keys and certificates in the YubiKey PIV application can be accessed and managed through the standard Java Cryptography Architecture (JCA) interfaces through a custom Provider.
 This guide shows examples for common JCA operations.
 Read more about JCA in the https://docs.oracle.com/en/java/javase/17/security/java-cryptography-architecture-jca-reference-guide.html[official documentation].
 
@@ -9,8 +9,7 @@ For even more usage examples, the source code of the `:testing` module is recomm
 
 === Provider installation
 
-Before any of the YubiKit PIV JCA provider (YKPiv) functionality can be used, a _JCA Service provider_ needs to be installed in the process.
-Note that for being able to instantiate the PIV JCA Provider, the `PivSession` needs to be acquired from a connected YubiKey, for example this way:
+The YKPiv PivProvider needs an active PivSession to be able to perform any actions. You can either pass an instance of PivSession directly to the constructor of PivProvider, or you can provide a `Callback` which will be invoked to supply a PivSession whenever one is required. To obtain a PivSession, the following code can be used:
 
 [source,java]
 ----
@@ -24,9 +23,9 @@ device.requestConnection(SmartCardConnection::class.java) {
 }
 ----
 
-Before using any of the provider methods, the YubiKey PIV Session must be authenticated with a management key by calling `piv.authenticate()`.
+Before calling methods which modify data on the YubiKey, such as key generation or key import, the YubiKey PIV Session must be authenticated with a management key by calling `piv.authenticate()`.
 
-There are several ways how to achieve this and they are dependent on the way how the provided functionality is intended to be used.
+YKPiv provider can be installed into the application/process either globally or locally.
 
 ==== Global installation
 
@@ -66,7 +65,7 @@ KeyStore keyStore = KeyStore.getInstance("YKPiv", pivProvider);
 
 === Accessing YKPiv services
 
-If the provider is installed globally, calls to `getInstance` will return YKPiv services where appropriate, otherwise use `getInstance` overrides with `"YKPiv"` or instance parameters.
+If the provider is installed globally, calls to `getInstance` will return YKPiv services where appropriate. For local providers, one needs to use the version of `getInstance` which takes the provider object as the second parameter.
 The following snippets show different ways how to acquire a `Signature` instance from YKPiv:
 [source,java]
 
@@ -76,12 +75,9 @@ Security.insertProvider(new PivProvider(pivSession));
 ...
 Signature s = Signature.getInstance("SHA1withRSA");
 
-
 // YKPiv not installed globally
 PivProvider pivProvider = new PivProvider(pivSession)
-// the following calls are equivalent
-Signature s1 = Signature.getInstance("SHA1withRSA", "YKPiv");
-Signature s2 = Signature.getInstance("SHA1withRSA", pivProvider);
+Signature s = Signature.getInstance("SHA1withRSA", pivProvider);
 
 // note that if the second parameter was omitted,
 // the system would return SHA1withRSA signature object
