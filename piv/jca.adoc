@@ -9,7 +9,9 @@ For even more usage examples, the source code of the `:testing` module is recomm
 
 === Provider installation
 
-The YKPiv PivProvider needs an active PivSession to be able to perform any actions. You can either pass an instance of PivSession directly to the constructor of PivProvider, or you can provide a `Callback` which will be invoked to supply a PivSession whenever one is required. To obtain a PivSession, the following code can be used:
+The YKPiv PivProvider needs an active PivSession to be able to perform any actions.
+You can either pass an instance of PivSession directly to the constructor of PivProvider, or you can provide a `Callback` which will be invoked to supply a PivSession whenever one is required.
+To obtain a PivSession, the following code can be used:
 
 [source,java]
 ----
@@ -25,14 +27,16 @@ device.requestConnection(SmartCardConnection::class.java) {
 
 Before calling methods which modify data on the YubiKey, such as key generation or key import, the YubiKey PIV Session must be authenticated with a management key by calling `piv.authenticate()`.
 
-YKPiv provider can be installed into the application/process either globally or locally.
+YKPiv provider can be installed into the application/process or used directly.
 
-==== Global installation
+==== Installing the YKPiv Provider
 
-YKPiv aims to extend existing systems services and to have a wide support, we recommend that it is added to the application after all other needed providers have been added.
-An application can install the YKPiv globally by using the following recommended code snippet.
+Before you can use the YKPiv Provider you will need to make it accessible to the application by adding it to the list of Security Providers.
+
+The YKPiv Provider uses custom PrivateKey classes which aren't usable by other Providers.
+To avoid a different Provider from being used with these PrivateKeys, we recommend installing the PivProvider in the first position:
+
 [source,java]
-
 -----
 PivProvider pivProvider = new PivProvider(pivSession)
 Security.insertProviderAt(pivProvider, 1);
@@ -40,19 +44,20 @@ Security.insertProviderAt(pivProvider, 1);
 
 Inserting YKPiv provider in the first position makes it the preferred provider, and calling JCA APIs which don't specify a provider by name or pointer will return PIV JCA implementations (where applicable).
 
-If an application needs to use more external JCA providers, such as Bouncy castle, it is recommended that YKPiv is inserted, for example:
+The Provider uses services from existing other Providers to perform padding and hashing of messages.
+If additional Signature or Cipher schemes are required for use with YKPiv, you can install additional JCA Providers *prior* to instantiating the YKPiv PivProvider.
+For example, to be able to use an algorithm which is provided by the third party Provider Bouncy Castle, you could do the following:
 [source,java]
 
 -----
-PivProvider pivProvider = new PivProvider(pivSession)
-
-Security.removeProvider("BC"); // remove standard BouncyCastle
+Security.removeProvider("BC"); // remove standard Bouncy Castle
 Security.addProvider(new BouncyCastle()); // add a more recent version of Bouncy Castle
 
+PivProvider pivProvider = new PivProvider(pivSession); // called after Bouncy Castle has been added
 Security.insertProviderAt(pivProvider, 1);
 -----
 
-==== Local installation
+==== Alternative: Using the Provider directly
 
 To use YKPiv without global installation (avoiding call to `Security.insertProviderAt()`, the application needs to instantiate the provider class and use it in the JCA `getInstance` methods.
 For example:
@@ -65,7 +70,8 @@ KeyStore keyStore = KeyStore.getInstance("YKPiv", pivProvider);
 
 === Accessing YKPiv services
 
-If the provider is installed globally, calls to `getInstance` will return YKPiv services where appropriate. For local providers, one needs to use the version of `getInstance` which takes the provider object as the second parameter.
+If the provider is installed globally, calls to `getInstance` will return YKPiv services where appropriate.
+For local providers, one needs to use the version of `getInstance` which takes the provider object as the second parameter.
 The following snippets show different ways how to acquire a `Signature` instance from YKPiv:
 [source,java]
 
