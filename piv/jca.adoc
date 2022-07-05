@@ -109,7 +109,7 @@ Generate RSA KeyPair
 [source,java]
 
 -----
-KeyPairGenerator rsaGen = KeyPairGenerator.getInstance("YkPivRSA");
+KeyPairGenerator rsaGen = KeyPairGenerator.getInstance("YKPivRSA");
 
 rsaGen.initialize(
     new PivAlgorithmParameterSpec(
@@ -159,7 +159,7 @@ bool success = signature.verify(messageSignature);
 [source,java]
 -----
 KeyPair keyPair = ...;
-String ciherAlgorithm = "RSA/ECB/PKCS1Padding"; // or other algorithm
+String cipherAlgorithm = "RSA/ECB/PKCS1Padding"; // or other algorithm
 byte[] message = "message to encrypt".getBytes(StandardCharsets.UTF_8);
 
 Cipher cipher = Cipher.getInstance(cipherAlgorithm);
