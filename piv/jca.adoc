@@ -1,0 +1,115 @@
+== YubiKit PIV JCA guide
+YubiKit PIV Session can be accessed through standard Java Cryptography Architecture (JCA) interfaces.
+
+This guide shows examples for common JCA operations. Read more about JCA in the https://docs.oracle.com/en/java/javase/17/security/java-cryptography-architecture-jca-reference-guide.html[official documentation].
+
+Please note, that for brevity, error and exception handling code is omitted from the examples.
+
+For even more usage examples, the source code of the `:testing` module is recommended.
+
+=== Provider installation
+Before any of the YubiKit PIV JCA provider (YKPiv) functionality can be used, a _JCA Service provider_ needs to be installed in the process. Note that for being able to instantiate the PIV JCA Provider, the `PivSession` needs to be acquired from a connected YubiKey, for example this way:
+
+[source,java]
+----
+YubikeyDevice device = ... ; // device is obtained on a succesfull USB/NFC connection, see YubiKit documentation
+
+device.requestConnection(SmartCardConnection::class.java) {
+    PivSession pivSession = new PivSession(it.value);
+    // use pivSession
+}
+----
+
+Before using any of the provider methods, the YubiKey PIV Session must be authenticated with a management key by calling `piv.authenticate()`.
+
+There are several ways how to achieve this and they are dependent on the way how the provided functionality is intended to be used.
+
+==== Global installation
+YKPiv aims to extend existing systems services and to have a wide support, we recommend that it is added to the application after all other needed providers have been added. An application can install the YKPiv globally by using the following recommended code snippet.
+[source,java]
+-----
+PivProvider pivProvider = new PivProvider(pivSession)
+Security.insertProviderAt(pivProvider, 1);
+-----
+
+Inserting YKPiv provider in the first position makes it the preferred provider, and calling JCA APIs which don't specify a provider by name or pointer will return PIV JCA implementations (where applicable).
+
+If an application needs to use more external JCA providers, such as Bouncy castle, it is recommended that YKPiv is inserted, for example:
+[source,java]
+-----
+PivProvider pivProvider = new PivProvider(pivSession)
+
+Security.removeProvider("BC"); // remove standard BouncyCastle
+Security.addProvider(new BouncyCastle()); // add a more recent version of Bouncy Castle
+
+Security.insertProviderAt(pivProvider, 1);
+-----
+
+==== Local installation
+To use YKPiv without global installation (avoiding call to `Security.insertProviderAt()`, the application needs to instantiate the provider class and use it in the JCA `getInstance` methods. For example:
+[source,java]
+-----
+PivProvider pivProvider = new PivProvider(pivSession)
+KeyStore keyStore = KeyStore.getInstance("YKPiv", pivProvider);
+-----
+=== Accessing YKPiv services
+
+If the provider is installed globally, calls to `getInstance` will return YKPiv services where appropriate, otherwise use `getInstance` overrides with `"YKPiv"` or instance parameters. The following snippets show differnt ways how to acquire a `Signature` instance from YKPiv:
+[source,java]
+-----
+// YKPiv installed globally
+Security.insertProvider(new PivProvider(pivSession));
+...
+Signature s = Signature.getInstance("SHA1withRSA");
+
+
+// YKPiv not installed globally
+PivProvider pivProvider = new PivProvider(pivSession)
+// the following calls are equivalent
+Signature s1 = Signature.getInstance("SHA1withRSA", "YKPiv");
+Signature s2 = Signature.getInstance("SHA1withRSA", pivProvider);
+
+// note that if the second parameter was ommited, the system would return SHA1withRSA signature object from one of the globally installed providers
+-----
+
+The `KeyPairGenerator` service is an exception to the rule and defines custom service names `YKPivEC` and `YKPivRSA` for EC KeyPairGenerator and RSA KeyPairGenerator instances.
+
+[source,java]
+-----
+// get instance of RSA KeyPairGenerator, for globally installed YKPiv
+KeyPairGenerator rsaKpg = KeyPairGenerator.getInstance("YKPivRSA");
+
+// get instance of EC KeyPairGenerator, for globally installed YKPiv
+KeyPairGenerator ecKpg = KeyPairGenerator.getInstance("YKPivEC");
+-----
+
+=== Examples
+==== Key generation
+[source,java]
+-----
+...
+-----
+
+==== Signing
+[source,java]
+-----
+...
+-----
+
+==== Decryption
+[source,java]
+-----
+...
+-----
+
+==== Key store
+[source,java]
+-----
+...
+-----
+
+==== Key agreement
+[source,java]
+-----
+...
+-----
