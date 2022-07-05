@@ -1,14 +1,16 @@
 == YubiKit PIV JCA guide
-YubiKit PIV Session can be accessed through standard Java Cryptography Architecture (JCA) interfaces.
 
-This guide shows examples for common JCA operations. Read more about JCA in the https://docs.oracle.com/en/java/javase/17/security/java-cryptography-architecture-jca-reference-guide.html[official documentation].
+YubiKit PIV Session can be accessed through standard Java Cryptography Architecture (JCA) interfaces.
+This guide shows examples for common JCA operations.
+Read more about JCA in the https://docs.oracle.com/en/java/javase/17/security/java-cryptography-architecture-jca-reference-guide.html[official documentation].
 
 Please note, that for brevity, error and exception handling code is omitted from the examples.
-
 For even more usage examples, the source code of the `:testing` module is recommended.
 
 === Provider installation
-Before any of the YubiKit PIV JCA provider (YKPiv) functionality can be used, a _JCA Service provider_ needs to be installed in the process. Note that for being able to instantiate the PIV JCA Provider, the `PivSession` needs to be acquired from a connected YubiKey, for example this way:
+
+Before any of the YubiKit PIV JCA provider (YKPiv) functionality can be used, a _JCA Service provider_ needs to be installed in the process.
+Note that for being able to instantiate the PIV JCA Provider, the `PivSession` needs to be acquired from a connected YubiKey, for example this way:
 
 [source,java]
 ----
@@ -27,8 +29,11 @@ Before using any of the provider methods, the YubiKey PIV Session must be authen
 There are several ways how to achieve this and they are dependent on the way how the provided functionality is intended to be used.
 
 ==== Global installation
-YKPiv aims to extend existing systems services and to have a wide support, we recommend that it is added to the application after all other needed providers have been added. An application can install the YKPiv globally by using the following recommended code snippet.
+
+YKPiv aims to extend existing systems services and to have a wide support, we recommend that it is added to the application after all other needed providers have been added.
+An application can install the YKPiv globally by using the following recommended code snippet.
 [source,java]
+
 -----
 PivProvider pivProvider = new PivProvider(pivSession)
 Security.insertProviderAt(pivProvider, 1);
@@ -38,6 +43,7 @@ Inserting YKPiv provider in the first position makes it the preferred provider, 
 
 If an application needs to use more external JCA providers, such as Bouncy castle, it is recommended that YKPiv is inserted, for example:
 [source,java]
+
 -----
 PivProvider pivProvider = new PivProvider(pivSession)
 
@@ -48,16 +54,22 @@ Security.insertProviderAt(pivProvider, 1);
 -----
 
 ==== Local installation
-To use YKPiv without global installation (avoiding call to `Security.insertProviderAt()`, the application needs to instantiate the provider class and use it in the JCA `getInstance` methods. For example:
+
+To use YKPiv without global installation (avoiding call to `Security.insertProviderAt()`, the application needs to instantiate the provider class and use it in the JCA `getInstance` methods.
+For example:
 [source,java]
+
 -----
 PivProvider pivProvider = new PivProvider(pivSession)
 KeyStore keyStore = KeyStore.getInstance("YKPiv", pivProvider);
 -----
+
 === Accessing YKPiv services
 
-If the provider is installed globally, calls to `getInstance` will return YKPiv services where appropriate, otherwise use `getInstance` overrides with `"YKPiv"` or instance parameters. The following snippets show different ways how to acquire a `Signature` instance from YKPiv:
+If the provider is installed globally, calls to `getInstance` will return YKPiv services where appropriate, otherwise use `getInstance` overrides with `"YKPiv"` or instance parameters.
+The following snippets show different ways how to acquire a `Signature` instance from YKPiv:
 [source,java]
+
 -----
 // YKPiv installed globally
 Security.insertProvider(new PivProvider(pivSession));
@@ -88,32 +100,136 @@ KeyPairGenerator ecKpg = KeyPairGenerator.getInstance("YKPivEC");
 -----
 
 === Examples
+
+Following examples use a globally installed YKPiv.
+
 ==== Key generation
+
+Generate RSA KeyPair
 [source,java]
+
 -----
-...
+KeyPairGenerator rsaGen = KeyPairGenerator.getInstance("YkPivRSA");
+
+rsaGen.initialize(
+    new PivAlgorithmParameterSpec(
+        Slot.AUTHENTICATION,
+        KeyType.RSA1024, // or KeyType.RSA2048
+        null, // PinPolicy
+        null, // TouchPolicy
+        DEFAULT_PIN // PIV PIN
+    )
+);
+
+KeyPair keyPair = rsaGen.generateKeyPair();
 -----
 
 ==== Signing
+
 [source,java]
 -----
-...
+// note: the signature algorithm and key have to be compatible
+PrivateKey privateKey = keyPair.getPrivate();
+Signature signature = Signature.getInstance("SHA256withECDSA");
+
+byte[] message = "message to sign".getBytes(StandardCharsets.UTF_8);
+signature.initSign(privateKey);
+signature.update(message);
+byte[] messageSignature = signature.sign();
 -----
 
-==== Decryption
+==== Verifying signature
+
 [source,java]
 -----
-...
+// note: the signature algorithm and key have to be compatible
+PrivateKey publicKey = keyPair.getPublic();
+Signature signature = Signature.getInstance("SHA256withECDSA");
+
+byte[] message = "message to sign".getBytes(StandardCharsets.UTF_8);
+byte[] messageSignature = ...;
+
+signature.initVerify(publicKey);
+signature.update(message);
+bool success = signature.verify(messageSignature);
+-----
+
+==== Encryption and Decryption
+
+[source,java]
+-----
+KeyPair keyPair = ...;
+String ciherAlgorithm = "RSA/ECB/PKCS1Padding"; // or other algorithm
+byte[] message = "message to encrypt".getBytes(StandardCharsets.UTF_8);
+
+Cipher cipher = Cipher.getInstance(cipherAlgorithm);
+cipher.init(Cipher.ENCRYPT_MODE, keyPair.getPublic());
+byte[] encrypted = cipher.doFinal(message);
+
+cipher = Cipher.getInstance(cipherAlgorithm);
+cipher.init(Cipher.DECRYPT_MODE, keyPair.getPrivate());
+byte[] decrypted = cipher.doFinal(encrypted);
+
+// decrypted == message
 -----
 
 ==== Key store
+
+Store key to a specific PIV slot.
+
 [source,java]
 -----
-...
+KeyStore keyStore = KeyStore.getInstance("YKPiv");
+keyStore.load(null);
+
+KeyPair keyPair = ...; // generate
+X509Certificate cert = PivTestUtils.createCertificate(keyPair);
+
+keyStore.setEntry(
+    Slot.SIGNATURE,
+    new KeyStore.PrivateKeyEntry(keyPair.getPrivate(), new Certificate[]{cert}),
+    new PivKeyStoreKeyParameters(PinPolicy.DEFAULT, TouchPolicy.DEFAULT)
+);
+
+PrivateKey privateKey = (PrivateKey) keyStore.getKey(alias, DEFAULT_PIN);
+-----
+
+Retrieve key from PIV slot.
+
+[source,java]
+-----
+KeyStore keyStore = KeyStore.getInstance("YKPiv");
+keyStore.load(null);
+
+PrivateKey privateKey = (PrivateKey) keyStore.getKey(Slot.SIGNATURE, DEFAULT_PIN);
 -----
 
 ==== Key agreement
+
 [source,java]
 -----
-...
+
+// generate EC key with the YKPiv provider
+KeyPairGenerator pivKpg = KeyPairGenerator.getInstance("YkPivEC");
+pivKpg.initialize(
+    new PivAlgorithmParameterSpec(Slot.AUTHENTICATION, KeyType.ECCP256, null, null, DEFAULT_PIN));
+KeyPair pivKeyPair = pivKpg.generateKeyPair();
+
+// generate EC key with another provider, based on pivKeyPair
+KeyPairGenerator kpg = KeyPairGenerator.getInstance("EC");
+kpg.initialize(((ECKey) pivKeyPair.getPublic()).getParams());
+KeyPair peerPair = kpg.generateKeyPair();
+
+// this is YKPiv KeyAgreement service
+KeyAgreement ka = KeyAgreement.getInstance("ECDH");
+ka.init(pivKeyPair.getPrivate());
+ka.doPhase(peerPair.getPublic(), true);
+byte[] secret = ka.generateSecret();
+
+ka = KeyAgreement.getInstance("ECDH");
+ka.init(peerPair.getPrivate());
+ka.doPhase(pivKeyPair.getPublic(), true);
+byte[] peerSecret = ka.generateSecret();
+
+// secret == peerSecret
 -----
