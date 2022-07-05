@@ -125,9 +125,9 @@ KeyPair keyPair = rsaGen.generateKeyPair();
 
 === Accessing and importing keys
 
-Private keys can be stored in YKPiv `KeyStore` wit the `setEntry` method.
+Private keys can be stored in YKPiv `KeyStore` with the `setEntry` method.
 The slot, pin and touch policies have the same values as when generating new keys.
-Store key to a specific PIV slot.
+Example snippet:
 
 [source,java]
 ----
