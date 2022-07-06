@@ -1,0 +1,3 @@
+<component name="DependencyValidationManager">
+  <scope name="Copyright" pattern="file[yubikit-android*]:*//*java||file[yubikit-android*]:*//*kt||file[yubikit-android*]:*//*gradle||file[yubikit-android*]:*//AndroidManifest.xml" />
+</component>
