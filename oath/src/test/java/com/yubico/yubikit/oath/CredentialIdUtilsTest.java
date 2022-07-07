@@ -23,7 +23,7 @@ import java.nio.charset.StandardCharsets;
 
 public class CredentialIdUtilsTest {
     @Test
-    public void testParseData() throws ParseUriException {
+    public void testParseData() {
         final String issuer = "issuer";
         String accountId = "20/issuer:account";
         CredentialIdUtils.CredentialIdData idData = CredentialIdUtils.parseId(accountId.getBytes(StandardCharsets.UTF_8), OathType.TOTP);
