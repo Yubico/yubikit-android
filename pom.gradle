@@ -1,7 +1,7 @@
 project.ext.pomData = {
     name = project.ext.pomName //"Yubico YubiKit ${project.name.capitalize()}"
     description = project.description
-    url = "https://github.com/Yubico/yubikit-android/tree/master/${project.name}"
+    url = "https://github.com/Yubico/yubikit-android/tree/main/${project.name}"
     licenses {
         license {
             name = 'The Apache License, Version 2.0'
