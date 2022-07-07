@@ -1,0 +1,3 @@
+<component name="DependencyValidationManager">
+  <scope name="Inspection" pattern="file[yubikit-android.support*]:*//*||file[yubikit-android.android*]:*//*||file[yubikit-android.AndroidDemo*]:*//*||file[yubikit-android.core*]:*//*||file[yubikit-android.management*]:*//*||file[yubikit-android.oath*]:*//*||file[yubikit-android.piv*]:*//*||file[yubikit-android.testing*]:*//*||file[yubikit-android.testing-android*]:*//*||file[yubikit-android.yubiotp*]:*//*" />
+</component>

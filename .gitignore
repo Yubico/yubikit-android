@@ -42,7 +42,11 @@ captures/
 .idea/dictionaries
 .idea/libraries
 .idea/caches
-.idea/
+!.idea/
+.idea/*
+!.idea/.gitignore
+!.idea/copyright/
+!.idea/scopes/
 
 # Keystore files
 # Uncomment the following line if you do not want to check your keystore files in.
