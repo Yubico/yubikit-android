@@ -22,7 +22,6 @@ import com.yubico.yubikit.piv.KeyType;
 import com.yubico.yubikit.piv.PivSession;
 
 import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidParameterException;
 import java.security.KeyPair;
 import java.security.KeyPairGeneratorSpi;
 import java.security.PrivateKey;
