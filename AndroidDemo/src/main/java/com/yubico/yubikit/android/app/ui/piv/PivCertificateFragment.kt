@@ -34,7 +34,6 @@ import com.yubico.yubikit.piv.PinPolicy
 import com.yubico.yubikit.piv.Slot
 import com.yubico.yubikit.piv.TouchPolicy
 import com.yubico.yubikit.piv.jca.PivAlgorithmParameterSpec
-import com.yubico.yubikit.piv.jca.PivPrivateKey
 import com.yubico.yubikit.piv.jca.PivProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch

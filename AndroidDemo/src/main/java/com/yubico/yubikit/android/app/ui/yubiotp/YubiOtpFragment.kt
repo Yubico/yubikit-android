@@ -37,7 +37,7 @@ import org.bouncycastle.util.encoders.Hex
 
 class YubiOtpFragment : Fragment() {
     class OtpContract : ActivityResultContract<Unit, String?>() {
-        override fun createIntent(context: Context, input: Unit?): Intent = Intent(context, OtpActivity::class.java)
+        override fun createIntent(context: Context, input: Unit): Intent = Intent(context, OtpActivity::class.java)
 
         override fun parseResult(resultCode: Int, intent: Intent?): String? {
             return intent?.getStringExtra(OtpActivity.EXTRA_OTP)

@@ -38,7 +38,7 @@ class OtpFragment : YubiKeyFragment<YubiOtpSession, OtpViewModel>() {
             inflater: LayoutInflater,
             container: ViewGroup?,
             savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         binding = FragmentYubiotpBinding.inflate(inflater, container, false)
         return binding.root
     }
@@ -56,7 +56,7 @@ class OtpFragment : YubiKeyFragment<YubiOtpSession, OtpViewModel>() {
             })
         }.attach()
 
-        viewModel.slotConfigurationState.observe(viewLifecycleOwner, {
+        viewModel.slotConfigurationState.observe(viewLifecycleOwner) {
             if (it != null) {
                 binding.emptyView.visibility = View.INVISIBLE
                 binding.otpStatusText.text = "Slot 1: ${if (it.isConfigured(Slot.ONE)) "programmed" else "empty"}\nSlot 2: ${if (it.isConfigured(Slot.TWO)) "programmed" else "empty"}"
@@ -65,7 +65,7 @@ class OtpFragment : YubiKeyFragment<YubiOtpSession, OtpViewModel>() {
                 binding.emptyView.visibility = View.VISIBLE
                 binding.otpStatusText.visibility = View.INVISIBLE
             }
-        })
+        }
     }
 
     class ProgramModeAdapter(fragment: Fragment) : FragmentStateAdapter(fragment) {
