@@ -23,15 +23,9 @@ import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.core.smartcard.SW;
-import com.yubico.yubikit.core.util.StringUtils;
 import com.yubico.yubikit.piv.InvalidPinException;
-import com.yubico.yubikit.piv.KeyType;
 import com.yubico.yubikit.piv.ManagementKeyType;
-import com.yubico.yubikit.piv.PinPolicy;
 import com.yubico.yubikit.piv.PivSession;
-import com.yubico.yubikit.piv.Slot;
-import com.yubico.yubikit.piv.TouchPolicy;
-import com.yubico.yubikit.piv.jca.PivAlgorithmParameterSpec;
 
 import org.bouncycastle.util.encoders.Hex;
 import org.hamcrest.CoreMatchers;
@@ -39,20 +33,6 @@ import org.hamcrest.MatcherAssert;
 import org.junit.Assert;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.NoSuchAlgorithmException;
-import java.security.PublicKey;
-import java.security.interfaces.ECPublicKey;
-
-import javax.crypto.BadPaddingException;
-import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.KeyAgreement;
-import javax.crypto.NoSuchPaddingException;
 
 public class PivDeviceTests {
 
@@ -175,25 +155,5 @@ public class PivDeviceTests {
 
         // Change PUK
         piv.changePuk(puk2, DEFAULT_PUK);
-    }
-
-    public static void testEcdh(PivSession piv, KeyType keyType) throws BadResponseException, IOException, ApduException, NoSuchAlgorithmException, InvalidKeyException, InvalidPinException {
-        if (keyType.params.algorithm != KeyType.Algorithm.EC) {
-            throw new IllegalArgumentException("Unsupported");
-        }
-
-        piv.authenticate(ManagementKeyType.TDES, DEFAULT_MANAGEMENT_KEY);
-        PublicKey publicKey = piv.generateKey(Slot.AUTHENTICATION, keyType, PinPolicy.DEFAULT, TouchPolicy.DEFAULT);
-        KeyPair peer = PivTestUtils.generateKey(keyType);
-
-        KeyAgreement ka = KeyAgreement.getInstance("ECDH");
-        ka.init(peer.getPrivate());
-        ka.doPhase(publicKey, true);
-        byte[] expected = ka.generateSecret();
-
-        piv.verifyPin(DEFAULT_PIN);
-        byte[] secret = piv.calculateSecret(Slot.AUTHENTICATION, (ECPublicKey) peer.getPublic());
-
-        Assert.assertArrayEquals(expected, secret);
     }
 }
