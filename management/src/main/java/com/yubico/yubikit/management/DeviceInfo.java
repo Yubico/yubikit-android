@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Yubico.
+ * Copyright (C) 2020-2022 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,14 +49,37 @@ public class DeviceInfo {
     private final FormFactor formFactor;
     private final Map<Transport, Integer> supportedCapabilities;
     private final boolean isLocked;
+    private final boolean isFips;
+    private final boolean isSky;
 
-    public DeviceInfo(DeviceConfig config, @Nullable Integer serialNumber, Version version, FormFactor formFactor, Map<Transport, Integer> supportedCapabilities, boolean isLocked) {
+    /**
+     * Constructs a new DeviceInfo.
+     * @param config the mutable configuration of the YubiKey
+     * @param serialNumber the YubiKeys serial number
+     * @param version the firmware version of the YubiKey
+     * @param formFactor the YubiKeys physical form factor
+     * @param supportedCapabilities the capabilities supported by the YubiKey
+     * @param isLocked whether or not the configuration is protected by a lock code
+     * @param isFips whether or not the YubiKey is a FIPS model
+     * @param isSky whether or not the YubiKey is a Security Key by Yubico model
+     */
+    public DeviceInfo(DeviceConfig config, @Nullable Integer serialNumber, Version version, FormFactor formFactor, Map<Transport, Integer> supportedCapabilities, boolean isLocked, boolean isFips, boolean isSky) {
         this.config = config;
         this.serialNumber = serialNumber;
         this.version = version;
         this.formFactor = formFactor;
         this.supportedCapabilities = supportedCapabilities;
         this.isLocked = isLocked;
+        this.isFips = isFips;
+        this.isSky = isSky;
+    }
+
+    /**
+     * Legacy constructor, retained for backwards compatibility until 3.0.0.
+     */
+    @Deprecated
+    public DeviceInfo(DeviceConfig config, @Nullable Integer serialNumber, Version version, FormFactor formFactor, Map<Transport, Integer> supportedCapabilities, boolean isLocked) {
+        this(config, serialNumber, version, formFactor, supportedCapabilities, isLocked, false, false);
     }
 
     /**
@@ -113,6 +136,20 @@ public class DeviceInfo {
         return isLocked;
     }
 
+    /**
+     * Returns whether or not this is a FIPS compliant device
+     */
+    public boolean isFips() {
+        return isFips;
+    }
+
+    /**
+     * Returns whether or not this is a Security key
+     */
+    public boolean isSky() {
+        return isSky;
+    }
+
     static DeviceInfo parse(byte[] response, Version defaultVersion) throws BadResponseException {
         int length = response[0] & 0xff;
         if (length != response.length - 1) {
@@ -123,7 +160,10 @@ public class DeviceInfo {
 
         boolean isLocked = readInt(data.get(TAG_CONFIG_LOCKED)) == 1;
         int serialNumber = readInt(data.get(TAG_SERIAL_NUMBER));
-        FormFactor formFactor = FormFactor.valueOf(readInt(data.get(TAG_FORMFACTOR)));
+        int formFactorTagData = readInt(data.get(TAG_FORMFACTOR));
+        boolean isFips = (formFactorTagData & 0x80) != 0;
+        boolean isSky = (formFactorTagData & 0x40) != 0;
+        FormFactor formFactor = FormFactor.valueOf(formFactorTagData);
 
         Version version;
         if (data.containsKey(TAG_FIRMWARE_VERSION)) {
@@ -161,7 +201,14 @@ public class DeviceInfo {
                         autoEjectTimeout,
                         challengeResponseTimeout,
                         deviceFlags
-                ), serialNumber, version, formFactor, supportedCapabilities, isLocked
+                ),
+                serialNumber == 0 ? null : serialNumber,
+                version,
+                formFactor,
+                supportedCapabilities,
+                isLocked,
+                isFips,
+                isSky
         );
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Yubico.
+ * Copyright (C) 2019-2022 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package com.yubico.yubikit.android.app.ui.piv
 
+import android.annotation.SuppressLint
 import android.os.Bundle
 import android.util.Base64
 import android.view.LayoutInflater
@@ -28,7 +29,12 @@ import androidx.lifecycle.lifecycleScope
 import com.yubico.yubikit.android.app.R
 import com.yubico.yubikit.android.app.databinding.FragmentPivCertifiateBinding
 import com.yubico.yubikit.android.app.ui.getSecret
-import com.yubico.yubikit.piv.*
+import com.yubico.yubikit.piv.KeyType
+import com.yubico.yubikit.piv.PinPolicy
+import com.yubico.yubikit.piv.Slot
+import com.yubico.yubikit.piv.TouchPolicy
+import com.yubico.yubikit.piv.jca.PivAlgorithmParameterSpec
+import com.yubico.yubikit.piv.jca.PivProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.bouncycastle.asn1.ASN1Sequence
@@ -42,42 +48,43 @@ import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.OutputStream
 import java.math.BigInteger
-import java.security.KeyFactory
-import java.security.Signature
+import java.security.*
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
 import java.security.spec.PKCS8EncodedKeySpec
 import java.text.SimpleDateFormat
 import java.util.*
 
+@Suppress("SpellCheckingInspection")
 private const val DER_KEY =
-        "MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC0G266KNssenUQ" +
-                "wsqN3+f3ysmiHgp4345wsaiDcxXryXX3pXr3vYdiJFQ6HiiMbfdpm4FeulLYCOdB" +
-                "ghKHIh/MnxTuwq6mPrxzLFxqGfHinvORc4Y+mZSiicN/Ajo+uQdgH5LrhlHJ0g7a" +
-                "e26RWW3Z4pOel/SeXWJgKm4prhKzi6Or3NZ1l4Wpg4C/lrLD9/bhL6XdUmr/kXc2" +
-                "UoldUz1ZyTNmDqr0oyix52jX+Tpxp7WsPUmXUoapxVpugOQKlkCGFltb5jnaK8VY" +
-                "rlBfN0a7N0o+HCSIThjBLbr65qKXOmUYgS+q5OmidyeCz/1AJ5OLwSf63M71NXMt" +
-                "ZoJjLdMBAgMBAAECggEAT6Z+HnfpDc+OK/5pQ7sMxCn7Z+WvLet3++ClrJRd0mvC" +
-                "7uVQ73TzBXUZhqZFumz7aMnrua/e6UlutCrI9NgjhgOoZzrTsBO4lZq9t/KHZXh0" +
-                "MRQM/2w+Lm+MdIPQrGJ5n4n3GI/LZdyu0vKZYFBTY3NvY0jCVrLnya2aEHa6MIpH" +
-                "sDyJa0EpjZRMHscPAP4C9h0EE/kXdFuu8Q4I+RUhnWAEAox9wGq05cbWAnzz6f5W" +
-                "WWHUL2CfPvSLHx7jjCXOmXf035pj91IfHghVoQyU0UW29xKSqfJv7nJwqV67C0cb" +
-                "kd2MeNARiFi7z4kp6ziLU6gPeLQq3iyWy35hTYPl3QKBgQDdlznGc4YkeomH3W22" +
-                "nHol3BUL96gOrBSZnziNM19hvKQLkRhyIlikQaS7RWlzKbKtDTFhPDixWhKEHDWZ" +
-                "1DRs9th8LLZHXMP+oUyJPkFCX28syP7D4cpXNMbRk5yJXcuF72sYMs4dldjUQVa2" +
-                "9DaEDkaVFOEAdIVOPNmvmE7MDwKBgQDQEyImwRkHzpp+IAFqhy06DJpmlnOlkD0A" +
-                "hrDAT+EpXTwJssZK8DHcwMhEQbBt+3jXjIXLdko0bR9UUKIpviyF3TZg7IGlMCT4" +
-                "XSs/UlWUct2n9QRrIV5ivRN5+tZZr4+mxbm5d7aa73oQuZl70d5mn6P4y5OsEc5s" +
-                "XFNwUSCf7wKBgDo5NhES4bhMCj8My3sj+mRgQ5d1Z08ToAYNdAqF6RYBPwlbApVa" +
-                "uPfP17ztLBv6ZNxbjxIBhNP02tCjqOHWhD/tTEy0YuC1WzpYn4egN/18nfWiim5l" +
-                "sYjgcS04H/VoE8YJdpZRIx9a9DIxSNuhp4FjTuB1L/mypCQ+kOQ2nN25AoGBAJlw" +
-                "0qlzkorQT9ucrI6rWq3JJ39piaTZRjMCIIvhHDENwT2BqXsPwCWDwOuc6Ydhf86s" +
-                "oOnWtIgOxKC/yaYwyNJ6vCQjpMN1Sn4g7siGZffP8Sdvpy99bwYvWpKEaNfAgJXC" +
-                "j+B2qKF+4iw9QjMuI+zX4uqQ7bhhdTExsJJOMVnfAoGABSbxwvLPglJ6cpoqyGL5" +
-                "Ihg1LS4qog29HVmnX4o/HLXtTCO169yQP5lBWIGRO/yUcgouglJpeikcJSPJROWP" +
-                "Ls4b2aPv5hhSx47MGZbVAIhSbls5zOZXDZm4wdfQE5J+4kAVlYF73ZCrH24Zbqqy" +
-                "MF/0wDt/NExsv6FMUwSKfyY="
+    "MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC0G266KNssenUQ" +
+            "wsqN3+f3ysmiHgp4345wsaiDcxXryXX3pXr3vYdiJFQ6HiiMbfdpm4FeulLYCOdB" +
+            "ghKHIh/MnxTuwq6mPrxzLFxqGfHinvORc4Y+mZSiicN/Ajo+uQdgH5LrhlHJ0g7a" +
+            "e26RWW3Z4pOel/SeXWJgKm4prhKzi6Or3NZ1l4Wpg4C/lrLD9/bhL6XdUmr/kXc2" +
+            "UoldUz1ZyTNmDqr0oyix52jX+Tpxp7WsPUmXUoapxVpugOQKlkCGFltb5jnaK8VY" +
+            "rlBfN0a7N0o+HCSIThjBLbr65qKXOmUYgS+q5OmidyeCz/1AJ5OLwSf63M71NXMt" +
+            "ZoJjLdMBAgMBAAECggEAT6Z+HnfpDc+OK/5pQ7sMxCn7Z+WvLet3++ClrJRd0mvC" +
+            "7uVQ73TzBXUZhqZFumz7aMnrua/e6UlutCrI9NgjhgOoZzrTsBO4lZq9t/KHZXh0" +
+            "MRQM/2w+Lm+MdIPQrGJ5n4n3GI/LZdyu0vKZYFBTY3NvY0jCVrLnya2aEHa6MIpH" +
+            "sDyJa0EpjZRMHscPAP4C9h0EE/kXdFuu8Q4I+RUhnWAEAox9wGq05cbWAnzz6f5W" +
+            "WWHUL2CfPvSLHx7jjCXOmXf035pj91IfHghVoQyU0UW29xKSqfJv7nJwqV67C0cb" +
+            "kd2MeNARiFi7z4kp6ziLU6gPeLQq3iyWy35hTYPl3QKBgQDdlznGc4YkeomH3W22" +
+            "nHol3BUL96gOrBSZnziNM19hvKQLkRhyIlikQaS7RWlzKbKtDTFhPDixWhKEHDWZ" +
+            "1DRs9th8LLZHXMP+oUyJPkFCX28syP7D4cpXNMbRk5yJXcuF72sYMs4dldjUQVa2" +
+            "9DaEDkaVFOEAdIVOPNmvmE7MDwKBgQDQEyImwRkHzpp+IAFqhy06DJpmlnOlkD0A" +
+            "hrDAT+EpXTwJssZK8DHcwMhEQbBt+3jXjIXLdko0bR9UUKIpviyF3TZg7IGlMCT4" +
+            "XSs/UlWUct2n9QRrIV5ivRN5+tZZr4+mxbm5d7aa73oQuZl70d5mn6P4y5OsEc5s" +
+            "XFNwUSCf7wKBgDo5NhES4bhMCj8My3sj+mRgQ5d1Z08ToAYNdAqF6RYBPwlbApVa" +
+            "uPfP17ztLBv6ZNxbjxIBhNP02tCjqOHWhD/tTEy0YuC1WzpYn4egN/18nfWiim5l" +
+            "sYjgcS04H/VoE8YJdpZRIx9a9DIxSNuhp4FjTuB1L/mypCQ+kOQ2nN25AoGBAJlw" +
+            "0qlzkorQT9ucrI6rWq3JJ39piaTZRjMCIIvhHDENwT2BqXsPwCWDwOuc6Ydhf86s" +
+            "oOnWtIgOxKC/yaYwyNJ6vCQjpMN1Sn4g7siGZffP8Sdvpy99bwYvWpKEaNfAgJXC" +
+            "j+B2qKF+4iw9QjMuI+zX4uqQ7bhhdTExsJJOMVnfAoGABSbxwvLPglJ6cpoqyGL5" +
+            "Ihg1LS4qog29HVmnX4o/HLXtTCO169yQP5lBWIGRO/yUcgouglJpeikcJSPJROWP" +
+            "Ls4b2aPv5hhSx47MGZbVAIhSbls5zOZXDZm4wdfQE5J+4kAVlYF73ZCrH24Zbqqy" +
+            "MF/0wDt/NExsv6FMUwSKfyY="
 
+@Suppress("SpellCheckingInspection")
 private const val PEM_CERT = "-----BEGIN CERTIFICATE-----\n" +
         "MIIDSzCCAjOgAwIBAgIUG0ZaYHxZYLPZjCDgXsoGMOC5iUcwDQYJKoZIhvcNAQEL\n" +
         "BQAwNTEhMB8GA1UECgwYSW50ZXJuZXQgV2lkZ2l0cyBQdHkgTHRkMRAwDgYDVQQD\n" +
@@ -105,12 +112,15 @@ class PivCertificateFragment : Fragment() {
     private lateinit var binding: FragmentPivCertifiateBinding
     private lateinit var slot: Slot
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
-                              savedInstanceState: Bundle?): View? {
+    override fun onCreateView(
+        inflater: LayoutInflater, container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
         binding = FragmentPivCertifiateBinding.inflate(inflater, container, false)
         return binding.root
     }
 
+    @SuppressLint("SetTextI18n")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         slot = Slot.fromValue(requireArguments().getInt(ARG_SLOT))
@@ -128,14 +138,17 @@ class PivCertificateFragment : Fragment() {
                 } catch (e: IllegalArgumentException) {
                     cert.publicKey.algorithm
                 }
-                binding.certInfo.text = "Issuer: ${cert.issuerDN}\nSubject name: ${cert.subjectDN}\nExpiration date: $expiration\nKey type: $keyType"
+                binding.certInfo.text =
+                    "Issuer: ${cert.issuerDN}\nSubject name: ${cert.subjectDN}\nExpiration date: $expiration\nKey type: $keyType"
             }
         })
 
         // Import a static key and self-signed certificate
         binding.importCert.setOnClickListener {
-            val cert = CertificateFactory.getInstance("X.509").generateCertificate(PEM_CERT.byteInputStream()) as X509Certificate
-            val key = KeyFactory.getInstance("RSA").generatePrivate(PKCS8EncodedKeySpec(Base64.decode(DER_KEY, Base64.DEFAULT)))
+            val cert = CertificateFactory.getInstance("X.509")
+                .generateCertificate(PEM_CERT.byteInputStream()) as X509Certificate
+            val key = KeyFactory.getInstance("RSA")
+                .generatePrivate(PKCS8EncodedKeySpec(Base64.decode(DER_KEY, Base64.DEFAULT)))
             lifecycleScope.launch(Dispatchers.Main) {
                 pivViewModel.pendingAction.value = {
                     authenticate(pivViewModel.mgmtKeyType, pivViewModel.mgmtKey)
@@ -153,32 +166,46 @@ class PivCertificateFragment : Fragment() {
                     pivViewModel.pendingAction.value = {
                         authenticate(pivViewModel.mgmtKeyType, pivViewModel.mgmtKey)
 
-                        // Generate a key
-                        val publicKey = generateKey(slot, KeyType.ECCP256, PinPolicy.DEFAULT, TouchPolicy.DEFAULT)
-
-                        verifyPin(pin.toCharArray())
+                        val provider = PivProvider(this)
+                        val factory = KeyPairGenerator.getInstance("YKPivEC", provider)
+                        factory.initialize(
+                            PivAlgorithmParameterSpec(
+                                slot,
+                                KeyType.ECCP256,
+                                PinPolicy.DEFAULT,
+                                TouchPolicy.DEFAULT,
+                                pin.toCharArray()
+                            )
+                        )
+                        val keyPair = factory.generateKeyPair()
 
                         // Generate a certificate
                         val name = X500Name("CN=Generated Example")
                         val serverCertGen = X509v3CertificateBuilder(
-                                name,
-                                BigInteger("123456789"),
-                                Date(),
-                                Date(),
-                                name,
-                                SubjectPublicKeyInfo.getInstance(ASN1Sequence.getInstance(publicKey.encoded))
+                            name,
+                            BigInteger("123456789"),
+                            Date(),
+                            Date(),
+                            name,
+                            SubjectPublicKeyInfo.getInstance(ASN1Sequence.getInstance(keyPair.public.encoded))
                         )
-
                         val certBytes = serverCertGen.build(object : ContentSigner {
                             val messageBuffer = ByteArrayOutputStream()
-                            override fun getAlgorithmIdentifier(): AlgorithmIdentifier = AlgorithmIdentifier(X9ObjectIdentifiers.ecdsa_with_SHA256)
+                            override fun getAlgorithmIdentifier(): AlgorithmIdentifier =
+                                AlgorithmIdentifier(X9ObjectIdentifiers.ecdsa_with_SHA256)
+
                             override fun getOutputStream(): OutputStream = messageBuffer
                             override fun getSignature(): ByteArray {
-                                return sign(slot, KeyType.ECCP256, messageBuffer.toByteArray(), Signature.getInstance("SHA256withECDSA"))
+                                return Signature.getInstance("SHA256withECDSA", provider).apply {
+                                    initSign(keyPair.private)
+                                    update(messageBuffer.toByteArray())
+                                }.sign()
+                                //return sign(slot, KeyType.ECCP256, messageBuffer.toByteArray(), Signature.getInstance("SHA256withECDSA"))
                             }
                         }).encoded
 
-                        val cert = CertificateFactory.getInstance("X.509").generateCertificate(ByteArrayInputStream(certBytes)) as X509Certificate
+                        val cert = CertificateFactory.getInstance("X.509")
+                            .generateCertificate(ByteArrayInputStream(certBytes)) as X509Certificate
                         putCertificate(slot, cert)
 
                         "Generated key in slot $slot"
@@ -210,19 +237,25 @@ class PivCertificateFragment : Fragment() {
             lifecycleScope.launch(Dispatchers.Main) {
                 getSecret(requireContext(), R.string.enter_pin)?.let { pin ->
                     pivViewModel.pendingAction.value = {
-                        val publicKey = getCertificate(slot).publicKey
-                        val keyType = KeyType.fromKey(publicKey)
-                        verifyPin(pin.toCharArray())
+                        val provider = PivProvider(this)
 
-                        // Create signature
-                        val signatureAlgorithm = Signature.getInstance(when (keyType.params.algorithm) {
+                        val keyStore = KeyStore.getInstance("YKPiv", provider)
+                        keyStore.load(null)
+                        val publicKey = keyStore.getCertificate(slot.stringAlias).publicKey
+                        val privateKey = keyStore.getKey(slot.stringAlias, pin.toCharArray()) as PrivateKey
+                        val algorithm = when (KeyType.fromKey(publicKey).params.algorithm) {
                             KeyType.Algorithm.RSA -> "SHA256withRSA"
                             KeyType.Algorithm.EC -> "SHA256withECDSA"
-                        })
-                        val signature = sign(slot, keyType, messageBytes, signatureAlgorithm)
+                        }
+
+                        // Create signature
+                        val signature = Signature.getInstance(algorithm, provider).apply {
+                            initSign(privateKey)
+                            update(messageBytes)
+                        }.sign()
 
                         // Verify signature
-                        val result = signatureAlgorithm.apply {
+                        val result = Signature.getInstance(algorithm).apply {
                             initVerify(publicKey)
                             update(messageBytes)
                         }.verify(signature)

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Yubico.
+ * Copyright (C) 2020-2022 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
 import java.security.Signature;
 
+@SuppressWarnings("SpellCheckingInspection")
 public class PaddingTest {
     @Test
     public void testPkcs1v1_5() throws NoSuchAlgorithmException {

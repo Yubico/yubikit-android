@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Yubico.
+ * Copyright (C) 2019-2022 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,7 +45,7 @@ public enum KeyType {
             "41058363725152142129326129780047268409114441015993725554835256314039467401291"
     )),
     /**
-     * Elliptic Curve key, using NIST Cuve P-384.
+     * Elliptic Curve key, using NIST Curve P-384.
      */
     ECCP384((byte) 0x14, new EcKeyParams(
             384,

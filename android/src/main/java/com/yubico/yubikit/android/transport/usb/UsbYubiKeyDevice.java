@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Yubico.
+ * Copyright (C) 2019-2022 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,15 @@
 
 package com.yubico.yubikit.android.transport.usb;
 
+import static com.yubico.yubikit.android.transport.usb.UsbDeviceManager.YUBICO_VENDOR_ID;
+
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
 
 import com.yubico.yubikit.android.transport.usb.connection.ConnectionManager;
 import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.core.Transport;
+import com.yubico.yubikit.core.UsbPid;
 import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.otp.OtpConnection;
@@ -41,6 +44,7 @@ public class UsbYubiKeyDevice implements YubiKeyDevice, Closeable {
     private final ConnectionManager connectionManager;
     private final UsbManager usbManager;
     private final UsbDevice usbDevice;
+    private final UsbPid usbPid;
 
     @Nullable
     private CachedOtpConnection otpConnection = null;
@@ -53,8 +57,17 @@ public class UsbYubiKeyDevice implements YubiKeyDevice, Closeable {
      *
      * @param usbManager UsbManager for accessing USB devices
      * @param usbDevice  device connected over usb that has permissions to interact with
+     * @throws IllegalArgumentException when the usbDevice is not a recognized YubiKey
      */
-    public UsbYubiKeyDevice(UsbManager usbManager, UsbDevice usbDevice) {
+    public UsbYubiKeyDevice(UsbManager usbManager, UsbDevice usbDevice)
+            throws IllegalArgumentException {
+
+        if (usbDevice.getVendorId() != YUBICO_VENDOR_ID) {
+            throw new IllegalArgumentException("Invalid vendor id");
+        }
+
+        this.usbPid = UsbPid.fromValue(usbDevice.getProductId());
+
         this.connectionManager = new ConnectionManager(usbManager, usbDevice);
         this.usbDevice = usbDevice;
         this.usbManager = usbManager;
@@ -72,6 +85,13 @@ public class UsbYubiKeyDevice implements YubiKeyDevice, Closeable {
      */
     public UsbDevice getUsbDevice() {
         return usbDevice;
+    }
+
+    /**
+     * @return {@link UsbPid} for the device's product id
+     */
+    public UsbPid getPid() {
+        return usbPid;
     }
 
     @Override
@@ -94,6 +114,7 @@ public class UsbYubiKeyDevice implements YubiKeyDevice, Closeable {
 
         // Keep UsbOtpConnection open until another connection is needed, to prevent re-enumeration of the USB device.
         if (OtpConnection.class.isAssignableFrom(connectionType)) {
+            @SuppressWarnings("unchecked")
             Callback<Result<OtpConnection, IOException>> otpCallback = value -> callback.invoke((Result<T, IOException>) value);
             if (otpConnection == null) {
                 otpConnection = new CachedOtpConnection(otpCallback);

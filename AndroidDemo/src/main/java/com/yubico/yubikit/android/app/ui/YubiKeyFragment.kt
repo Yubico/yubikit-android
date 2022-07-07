@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2022 Yubico.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.yubico.yubikit.android.app.ui
 
 import android.app.AlertDialog
@@ -20,7 +36,7 @@ import kotlinx.coroutines.withContext
 import java.io.Closeable
 
 abstract class YubiKeyFragment<App : Closeable, VM : YubiKeyViewModel<App>> : Fragment() {
-    protected val activityViewModel: MainViewModel by activityViewModels()
+    private val activityViewModel: MainViewModel by activityViewModels()
     protected abstract val viewModel: VM
 
     private lateinit var yubiKeyPrompt: AlertDialog
@@ -36,30 +52,30 @@ abstract class YubiKeyFragment<App : Closeable, VM : YubiKeyViewModel<App>> : Fr
                 .setOnCancelListener { viewModel.pendingAction.value = null }
                 .create()
 
-        activityViewModel.yubiKey.observe(viewLifecycleOwner, {
+        activityViewModel.yubiKey.observe(viewLifecycleOwner) {
             if (it != null) {
                 onYubiKey(it)
             } else {
                 emptyText.setText(R.string.need_yubikey)
             }
-        })
+        }
 
-        viewModel.result.observe(viewLifecycleOwner, { result ->
+        viewModel.result.observe(viewLifecycleOwner) { result ->
             result.onSuccess {
                 it?.let {
                     Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
                 }
             }.onFailure {
                 Logger.e("Error:", it)
-                Toast.makeText(context, it.message, Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, it.message ?: "No message", Toast.LENGTH_SHORT).show()
                 if (it is ApplicationNotAvailableException) {
                     emptyText.setText(R.string.app_missing)
                 }
             }
             viewModel.clearResult()
-        })
+        }
 
-        viewModel.pendingAction.observe(viewLifecycleOwner, {
+        viewModel.pendingAction.observe(viewLifecycleOwner) {
             if (it != null) {
                 activityViewModel.yubiKey.value.let { device ->
                     if (device != null) {
@@ -70,7 +86,7 @@ abstract class YubiKeyFragment<App : Closeable, VM : YubiKeyViewModel<App>> : Fr
                     }
                 }
             }
-        })
+        }
     }
 
     override fun onPause() {
@@ -93,7 +109,7 @@ abstract class YubiKeyFragment<App : Closeable, VM : YubiKeyViewModel<App>> : Fr
                             emptyText.setText(R.string.remove_key)
                         }
                     }
-                    it.remove(yubiKeyPrompt::dismiss);
+                    it.remove(yubiKeyPrompt::dismiss)
                 } else if (yubiKeyPrompt.isShowing) {
                     yubiKeyPrompt.dismiss()
                 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Yubico.
+ * Copyright (C) 2020-2022 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import java.security.spec.InvalidKeySpecException;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 
+@SuppressWarnings("SpellCheckingInspection")
 public class PivSessionTest {
     @Test
     public void testDecodeP256Key() throws InvalidKeySpecException, NoSuchAlgorithmException {

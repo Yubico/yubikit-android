@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="yubico_green">#9ACA3C</color>
+    <color name="yubico_green_dark">#7FA632</color>
+    <color name="accent">#3B5879</color>
+</resources>

@@ -22,7 +22,7 @@ dependencies {
 }
 ----
 
-This module depends on the link:../core/[core] module, which will automatially
+This module depends on the link:../core/[core] module, which will automatically
 be added as a transitive dependency to your project.
 
 

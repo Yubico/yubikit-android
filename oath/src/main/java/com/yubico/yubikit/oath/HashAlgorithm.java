@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Yubico.
+ * Copyright (C) 2019-2022 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 /**
- * Supported hash algoritms for use with the OATH YubiKey application.
+ * Supported hash algorithms for use with the OATH YubiKey application.
  */
 public enum HashAlgorithm {
     SHA1((byte) 1, 64),
@@ -69,17 +69,10 @@ public enum HashAlgorithm {
      * Returns the algorithm corresponding to the given name, as used in otpauth:// URIs.
      */
     public static HashAlgorithm fromString(String value) {
-        if (value == null || value.isEmpty()) {
-            return HashAlgorithm.SHA1;  //This is the default value
-        }
-        if ("sha1".equalsIgnoreCase(value)) {
-            return HashAlgorithm.SHA1;
-        }
-        if ("sha256".equalsIgnoreCase(value)) {
-            return HashAlgorithm.SHA256;
-        }
-        if ("sha512".equalsIgnoreCase(value)) {
-            return HashAlgorithm.SHA512;
+        for (HashAlgorithm type : HashAlgorithm.values()) {
+            if (type.name().equalsIgnoreCase(value)) {
+                return type;
+            }
         }
         throw new IllegalArgumentException("Not a valid HashAlgorithm");
     }

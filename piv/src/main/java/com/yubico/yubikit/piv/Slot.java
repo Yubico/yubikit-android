@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Yubico.
+ * Copyright (C) 2019-2022 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,6 +58,14 @@ public enum Slot {
     }
 
     /**
+     * Gets the String alias for the slot, which is a HEX representation of the slot value.
+     * @return the slot alias
+     */
+    public String getStringAlias() {
+        return Integer.toString(value, 16);
+    }
+
+    /**
      * Returns the PIV slot corresponding to the given ID.
      */
     public static Slot fromValue(int value) {
@@ -67,5 +75,16 @@ public enum Slot {
             }
         }
         throw new IllegalArgumentException("Not a valid Slot :" + value);
+    }
+
+    /**
+     * Returns the PIV slot corresponding to the given String alias.
+     *
+     * The alias should be the HEX representation of the slot value.
+     * @param alias a slot value as HEX string
+     * @return a Slot
+     */
+    public static Slot fromStringAlias(String alias) {
+        return fromValue(Integer.parseInt(alias, 16));
     }
 }

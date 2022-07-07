@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Yubico.
+ * Copyright (C) 2020-2022 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,7 +37,7 @@ class CredentialIdUtils {
      * @param name     the name of the credential
      * @param oathType the type of the credential
      * @param period   the time period of a TOTP credential (ignored for HOTP)
-     * @return A bytestring to use with YKOATH.
+     * @return A byte string to use with YKOATH.
      */
     static byte[] formatId(@Nullable String issuer, String name, OathType oathType, int period) {
         String longName = "";

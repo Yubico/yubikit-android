@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Yubico.
+ * Copyright (C) 2020-2022 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,8 @@ import com.yubico.yubikit.android.transport.usb.UsbConfiguration;
 import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.application.CommandState;
+
+import java.util.Objects;
 
 import javax.annotation.Nullable;
 
@@ -199,7 +201,7 @@ public class YubiKeyPromptActivity extends Activity {
         super.onCreate(savedInstanceState);
 
         // Handle options
-        Bundle args = getIntent().getExtras();
+        Bundle args = Objects.requireNonNull(getIntent().getExtras());
 
         allowUsb = args.getBoolean(ARG_ALLOW_USB, true);
         allowNfc = args.getBoolean(ARG_ALLOW_NFC, true);
@@ -257,9 +259,7 @@ public class YubiKeyPromptActivity extends Activity {
         if (allowNfc) {
             enableNfcButton = findViewById(args.getInt(ARG_ENABLE_NFC_BUTTON_ID, R.id.yubikit_prompt_enable_nfc_btn));
             enableNfcButton.setFocusable(false);
-            enableNfcButton.setOnClickListener(v -> {
-                startActivity(new Intent(NfcYubiKeyManager.NFC_SETTINGS_ACTION));
-            });
+            enableNfcButton.setOnClickListener(v -> startActivity(new Intent(NfcYubiKeyManager.NFC_SETTINGS_ACTION)));
         }
     }
 
@@ -270,12 +270,10 @@ public class YubiKeyPromptActivity extends Activity {
         if (allowNfc) {
             enableNfcButton.setVisibility(View.GONE);
             try {
-                yubiKit.startNfcDiscovery(new NfcConfiguration(), this, device -> {
-                    onYubiKeyDevice(device, () -> {
-                        runOnUiThread(() -> helpTextView.setText(R.string.yubikit_prompt_remove));
-                        device.remove(this::finishIfDone);
-                    });
-                });
+                yubiKit.startNfcDiscovery(new NfcConfiguration(), this, device -> onYubiKeyDevice(device, () -> {
+                    runOnUiThread(() -> helpTextView.setText(R.string.yubikit_prompt_remove));
+                    device.remove(this::finishIfDone);
+                }));
             } catch (NfcNotAvailable e) {
                 hasNfc = false;
                 helpTextView.setText(R.string.yubikit_prompt_plug_in);

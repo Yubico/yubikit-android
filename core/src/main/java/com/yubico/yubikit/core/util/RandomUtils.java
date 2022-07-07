@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Yubico.
+ * Copyright (C) 2020-2022 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ public class RandomUtils {
     /**
      * Returns a byte array containing random values.
      */
+    @SuppressWarnings("NewApi")
     public static byte[] getRandomBytes(int length) {
         byte[] bytes = new byte[length];
         try {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Yubico.
+ * Copyright (C) 2020-2022 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,47 +15,48 @@
  */
 package com.yubico.yubikit.testing.piv;
 
-import com.yubico.yubikit.core.application.BadResponseException;
-import com.yubico.yubikit.core.smartcard.ApduException;
+import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.piv.KeyType;
-import com.yubico.yubikit.piv.PivSession;
-import com.yubico.yubikit.piv.Slot;
 import com.yubico.yubikit.testing.Codec;
 
-import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.ASN1Sequence;
-import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers;
 import org.bouncycastle.asn1.x500.X500Name;
-import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
-import org.bouncycastle.asn1.x9.X9ObjectIdentifiers;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.X509v3CertificateBuilder;
 import org.bouncycastle.operator.ContentSigner;
+import org.bouncycastle.operator.OperatorCreationException;
+import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
+import org.junit.Assert;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.security.Signature;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.security.interfaces.ECKey;
 import java.security.spec.ECGenParameterSpec;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Date;
 
+import javax.crypto.Cipher;
+import javax.crypto.KeyAgreement;
+
+@SuppressWarnings("SpellCheckingInspection")
 public class PivTestUtils {
     private enum StaticKey {
         RSA1024(
@@ -157,19 +158,9 @@ public class PivTestUtils {
         }
     }
 
-    private static final String CERT_1024 = "MIICRjCCAa+gAwIBAgIUTzurbhOVQ7WFsDBtRhXCKusTcdIwDQYJKoZIhvcNAQEL" +
-            "BQAwNTEhMB8GA1UECgwYSW50ZXJuZXQgV2lkZ2l0cyBQdHkgTHRkMRAwDgYDVQQL" +
-            "DAdFeGFtcGxlMB4XDTIwMDcyNjEwMDQ0MVoXDTIwMDcyNzEwMDQ0MVowNTEhMB8G" +
-            "A1UECgwYSW50ZXJuZXQgV2lkZ2l0cyBQdHkgTHRkMRAwDgYDVQQLDAdFeGFtcGxl" +
-            "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC1nmdBOTtpf4h33JPZqJH9Ylh9" +
-            "nmQ1kKCaEClDgHlaClHnDadudCebS9xBzjalqBelSzvgfuo0xE+CM/ewXlI+4DiR" +
-            "5hMPp6hX4Lk1ZjXnome9dUzWDaRe5MFu8loIVhvkO4kBKDF32N8eAS99x9oCkVrT" +
-            "ByuuhiVYi9ZfbN6g1wIDAQABo1MwUTAdBgNVHQ4EFgQUAzogt9qbYtDhK+76EA7e" +
-            "pGwwzHYwHwYDVR0jBBgwFoAUAzogt9qbYtDhK+76EA7epGwwzHYwDwYDVR0TAQH/" +
-            "BAUwAwEB/zANBgkqhkiG9w0BAQsFAAOBgQBCvEtJrPu3ab/n7E0XfThhhQN5FQ+W" +
-            "ot/MQ7XOzSxvfvVaVzHXWYCR7+k3rw1FwWrNtHhVEgcLJCfiBXEwbyzqbn54wKbR" +
-            "Dxm8hg23i837fMQvbt0UbVJw2wCiTQedVNpohruKUhGZ//JsbmyzIjdOEuTJF6C7" +
-            "F8oHEcrwIaLOEw==";
+    private static final String[] EC_SIGNATURE_ALGORITHMS = new String[]{"NONEwithECDSA", "SHA1withECDSA", "SHA224withECDSA", "SHA256withECDSA", "SHA384withECDSA", "SHA512withECDSA"};
+    private static final String[] RSA_SIGNATURE_ALGORITHMS = new String[]{"NONEwithRSA", "MD5withRSA", "SHA1withRSA", "SHA224withRSA", "SHA256withRSA", "SHA384withRSA", "SHA512withRSA"};
+    private static final String[] RSA_CIPHER_ALGORITHMS = new String[]{"RSA/ECB/PKCS1Padding", "RSA/ECB/OAEPWithSHA-1AndMGF1Padding", "RSA/ECB/OAEPWithSHA-256AndMGF1Padding"};
 
     public static KeyPair generateKey(KeyType keyType) {
         switch (keyType) {
@@ -213,19 +204,7 @@ public class PivTestUtils {
         throw new IllegalArgumentException("Unknown algorithm");
     }
 
-    public static X509Certificate loadCertificate(KeyType keyType) {
-        if (keyType != KeyType.RSA1024) {
-            throw new UnsupportedOperationException("RSA 1024 only");
-        }
-        InputStream stream = new ByteArrayInputStream(Codec.fromBase64(CERT_1024));
-        try {
-            return (X509Certificate) CertificateFactory.getInstance("X.509").generateCertificate(stream);
-        } catch (CertificateException e) {
-            throw new IllegalStateException(e);
-        }
-    }
-
-    public static X509Certificate createCertificate(PivSession piv, PublicKey publicKey, Slot slot, KeyType keyType) throws IOException, CertificateException, NoSuchAlgorithmException {
+    public static X509Certificate createCertificate(KeyPair keyPair) throws IOException, CertificateException {
         X500Name name = new X500Name("CN=Example");
         X509v3CertificateBuilder serverCertGen = new X509v3CertificateBuilder(
                 name,
@@ -233,58 +212,111 @@ public class PivTestUtils {
                 new Date(),
                 new Date(),
                 name,
-                SubjectPublicKeyInfo.getInstance(ASN1Sequence.getInstance(publicKey.getEncoded()))
+                SubjectPublicKeyInfo.getInstance(ASN1Sequence.getInstance(keyPair.getPublic().getEncoded()))
         );
 
         String algorithm;
-        ASN1ObjectIdentifier algorithmId;
+        KeyType keyType = KeyType.fromKey(keyPair.getPrivate());
         switch (keyType.params.algorithm) {
             case EC:
                 algorithm = "SHA256WithECDSA";
-                algorithmId = X9ObjectIdentifiers.ecdsa_with_SHA256;
                 break;
             case RSA:
                 algorithm = "SHA256WithRSA";
-                algorithmId = PKCSObjectIdentifiers.sha256WithRSAEncryption;
                 break;
             default:
                 throw new IllegalStateException();
         }
-        Signature signature = Signature.getInstance(algorithm);
+        try {
+            ContentSigner contentSigner = new JcaContentSignerBuilder(algorithm).build(keyPair.getPrivate());
+            X509CertificateHolder holder = serverCertGen.build(contentSigner);
 
-        X509CertificateHolder holder = serverCertGen.build(new ContentSigner() {
-            ByteArrayOutputStream messageBuffer = new ByteArrayOutputStream();
+            InputStream stream = new ByteArrayInputStream(holder.getEncoded());
+            CertificateFactory cf = CertificateFactory.getInstance("X.509");
+            return (X509Certificate) cf.generateCertificate(stream);
+        } catch (OperatorCreationException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
-            @Override
-            public AlgorithmIdentifier getAlgorithmIdentifier() {
-                return new AlgorithmIdentifier(algorithmId);
-            }
+    public static byte[] sign(PrivateKey privateKey, Signature algorithm) throws Exception {
+        byte[] message = "Hello world".getBytes(StandardCharsets.UTF_8);
+        algorithm.initSign(privateKey);
+        algorithm.update(message);
+        return algorithm.sign();
+    }
 
-            @Override
-            public OutputStream getOutputStream() {
-                return messageBuffer;
-            }
+    public static void verify(PublicKey publicKey, Signature algorithm, byte[] signature) throws Exception {
+        byte[] message = "Hello world".getBytes(StandardCharsets.UTF_8);
+        algorithm.initVerify(publicKey);
+        algorithm.update(message);
+        boolean result = algorithm.verify(signature);
+        Assert.assertTrue("Signature mismatch for " + algorithm.getAlgorithm(), result);
+    }
 
-            @Override
-            public byte[] getSignature() {
-                try {
-                    return piv.sign(slot, keyType, messageBuffer.toByteArray(), signature);
-                } catch (IOException | ApduException | NoSuchAlgorithmException | BadResponseException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        });
+    public static void rsaSignAndVerify(PrivateKey privateKey, PublicKey publicKey) throws Exception {
+        for (String algorithm : RSA_SIGNATURE_ALGORITHMS) {
+            verify(publicKey, Signature.getInstance(algorithm), sign(privateKey, Signature.getInstance(algorithm)));
+        }
+    }
 
-        InputStream stream = new ByteArrayInputStream(holder.getEncoded());
-        CertificateFactory cf = CertificateFactory.getInstance("X.509");
-        return (X509Certificate) cf.generateCertificate(stream);
-/*
-        KeyPair dummy = generateKey(keyType);
-        serverCertGen.setSignatureAlgorithm(algorithm);
-        X509Certificate cert = serverCertGen.generate(dummy.getPrivate());
+    public static void encryptAndDecrypt(PrivateKey privateKey, PublicKey publicKey, Cipher algorithm) throws Exception {
+        byte[] message = "Hello world".getBytes(StandardCharsets.UTF_8);
 
-        return signCertificate(piv, slot, keyType, cert.getTBSCertificate(), cert.getSigAlgName());
+        algorithm.init(Cipher.ENCRYPT_MODE, publicKey);
+        byte[] encrypted = algorithm.doFinal(message);
 
- */
+        algorithm = Cipher.getInstance(algorithm.getAlgorithm());
+        algorithm.init(Cipher.DECRYPT_MODE, privateKey);
+        byte[] decrypted = algorithm.doFinal(encrypted);
+
+        Assert.assertArrayEquals("Decrypted mismatch", decrypted, message);
+    }
+
+    public static void rsaEncryptAndDecrypt(PrivateKey privateKey, PublicKey publicKey) throws Exception {
+        for (String algorithm : RSA_CIPHER_ALGORITHMS) {
+            encryptAndDecrypt(privateKey, publicKey, Cipher.getInstance(algorithm));
+        }
+    }
+
+    public static void rsaTests() throws Exception {
+        for (KeyPair keyPair : new KeyPair[]{generateKey(KeyType.RSA1024), generateKey(KeyType.RSA2048)}) {
+            rsaEncryptAndDecrypt(keyPair.getPrivate(), keyPair.getPublic());
+            rsaSignAndVerify(keyPair.getPrivate(), keyPair.getPublic());
+        }
+    }
+
+    public static void ecTests() throws Exception {
+        for (KeyPair keyPair : new KeyPair[]{generateKey(KeyType.ECCP256), generateKey(KeyType.ECCP384)}) {
+            ecSignAndVerify(keyPair.getPrivate(), keyPair.getPublic());
+            ecKeyAgreement(keyPair.getPrivate(), keyPair.getPublic());
+        }
+    }
+
+    public static void ecSignAndVerify(PrivateKey privateKey, PublicKey publicKey) throws Exception {
+        for (String algorithm : EC_SIGNATURE_ALGORITHMS) {
+            Logger.d("Test " + algorithm);
+            verify(publicKey, Signature.getInstance(algorithm), sign(privateKey, Signature.getInstance(algorithm)));
+        }
+    }
+
+    public static void ecKeyAgreement(PrivateKey privateKey, PublicKey publicKey) throws Exception {
+        KeyPairGenerator kpg = KeyPairGenerator.getInstance("EC");
+        kpg.initialize(((ECKey) publicKey).getParams());
+
+        KeyPair peerPair = kpg.generateKeyPair();
+
+        KeyAgreement ka = KeyAgreement.getInstance("ECDH");
+
+        ka.init(privateKey);
+        ka.doPhase(peerPair.getPublic(), true);
+        byte[] secret = ka.generateSecret();
+
+        ka = KeyAgreement.getInstance("ECDH");
+        ka.init(peerPair.getPrivate());
+        ka.doPhase(publicKey, true);
+        byte[] peerSecret = ka.generateSecret();
+
+        Assert.assertArrayEquals("Secret mismatch", secret, peerSecret);
     }
 }

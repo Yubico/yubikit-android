@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">YubiKit Tester</string>
+    <string name="touch">Touch button when flashing…</string>
+    <string name="remove_yubikey">Remove YubiKey now</string>
+    <string name="tap_yubikey">Tap and hold YubiKey…</string>
+    <string name="processing">Processing…</string>
+</resources>

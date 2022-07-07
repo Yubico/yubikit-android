@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Yubico.
+ * Copyright (C) 2020-2022 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,6 +64,7 @@ public class CredentialData implements Serializable {
      * @param uri the otpauth:// URI to parse
      * @throws ParseUriException if the URI format is invalid
      */
+    @SuppressWarnings("SpellCheckingInspection")
     public static CredentialData parseUri(URI uri) throws ParseUriException {
         if (!"otpauth".equals(uri.getScheme())) {
             throw new ParseUriException("Uri scheme must be otpauth://");
@@ -90,11 +91,17 @@ public class CredentialData implements Serializable {
         }
 
         HashAlgorithm hashAlgorithm;
-        try {
-            hashAlgorithm = HashAlgorithm.fromString(params.get("algorithm"));
-        } catch (IllegalArgumentException e) {
-            throw new ParseUriException("Invalid HMAC algorithm");
+        String algorithmName = params.get("algorithm");
+        if (algorithmName == null) {
+            hashAlgorithm = HashAlgorithm.SHA1;
+        } else {
+            try {
+                hashAlgorithm = HashAlgorithm.fromString(algorithmName);
+            } catch (IllegalArgumentException e) {
+                throw new ParseUriException("Invalid HMAC algorithm");
+            }
         }
+
 
         byte[] secret = decodeSecret(params.get("secret"));
 
@@ -257,7 +264,7 @@ public class CredentialData implements Serializable {
      *
      * @param params       Query parameter map.
      * @param name         query parameter name.
-     * @param defaultValue default value in case query paramater is omitted.
+     * @param defaultValue default value in case query parameter is omitted.
      * @return the parsed value, or the default value, if missing.
      * @throws ParseUriException if the value exists and is malformed.
      */

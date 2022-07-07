@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2022 Yubico.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.yubico.yubikit.android.transport.usb;
 
 import android.content.Context;
@@ -64,24 +80,31 @@ public class UsbYubiKeyManager {
 
         @Override
         public void deviceAttached(UsbDevice usbDevice) {
-            UsbYubiKeyDevice yubikey = new UsbYubiKeyDevice(usbManager, usbDevice);
-            devices.put(usbDevice, yubikey);
 
-            if (usbConfiguration.isHandlePermissions() && !yubikey.hasPermission()) {
-                Logger.d("request permission");
-                UsbDeviceManager.requestPermission(context, usbDevice, (usbDevice1, hasPermission) -> {
-                    Logger.d("permission result " + hasPermission);
-                    if(hasPermission) {
-                        synchronized (UsbYubiKeyManager.this) {
-                            if (internalListener == this) {
-                                listener.invoke(yubikey);
+            try {
+                UsbYubiKeyDevice yubikey = new UsbYubiKeyDevice(usbManager, usbDevice);
+                devices.put(usbDevice, yubikey);
+
+                if (usbConfiguration.isHandlePermissions() && !yubikey.hasPermission()) {
+                    Logger.d("request permission");
+                    UsbDeviceManager.requestPermission(context, usbDevice, (usbDevice1, hasPermission) -> {
+                        Logger.d("permission result " + hasPermission);
+                        if (hasPermission) {
+                            synchronized (UsbYubiKeyManager.this) {
+                                if (internalListener == this) {
+                                    listener.invoke(yubikey);
+                                }
                             }
                         }
-                    }
-                });
-            } else {
-                listener.invoke(yubikey);
+                    });
+                } else {
+                    listener.invoke(yubikey);
+                }
+            } catch (IllegalArgumentException ignored) {
+                Logger.d("Attached usbDevice(vid=" + usbDevice.getVendorId() + ",pid=" + usbDevice.getProductId() +
+                        ") is not recognized as a valid YubiKey");
             }
+
         }
 
         @Override

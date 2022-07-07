@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Yubico.
+ * Copyright (C) 2019-2022 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package com.yubico.yubikit.management;
 
 import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.core.Transport;
+import com.yubico.yubikit.core.UsbInterface;
 import com.yubico.yubikit.core.Version;
 import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
@@ -91,25 +92,6 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
 
     private final Backend<?> backend;
     private final Version version;
-
-    /**
-     * Connects to a YubiKeyDevice and establishes a new session with a YubiKeys Management application.
-     * <p>
-     * This method will use whichever connection type is available.
-     *
-     * @param device A YubiKey device to use
-     */
-    public static void create(YubiKeyDevice device, Callback<Result<ManagementSession, Exception>> callback) {
-        if (device.supportsConnection(SmartCardConnection.class)) {
-            device.requestConnection(SmartCardConnection.class, value -> callback.invoke(Result.of(() -> new ManagementSession(value.getValue()))));
-        } else if (device.supportsConnection(OtpConnection.class)) {
-            device.requestConnection(OtpConnection.class, value -> callback.invoke(Result.of(() -> new ManagementSession(value.getValue()))));
-        } else if (device.supportsConnection(FidoConnection.class)) {
-            device.requestConnection(FidoConnection.class, value -> callback.invoke(Result.of(() -> new ManagementSession(value.getValue()))));
-        } else {
-            callback.invoke(Result.failure(new ApplicationNotAvailableException("Session does not support any compatible connection type")));
-        }
-    }
 
     /**
      * Establishes a new session with a YubiKeys Management application, over a {@link SmartCardConnection}.
@@ -236,6 +218,25 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
                 delegate.sendAndReceive(CTAP_YUBIKEY_DEVICE_CONFIG, data, null);
             }
         };
+    }
+
+    /**
+     * Connects to a YubiKeyDevice and establishes a new session with a YubiKeys Management application.
+     * <p>
+     * This method will use whichever connection type is available.
+     *
+     * @param device A YubiKey device to use
+     */
+    public static void create(YubiKeyDevice device, Callback<Result<ManagementSession, Exception>> callback) {
+        if (device.supportsConnection(SmartCardConnection.class)) {
+            device.requestConnection(SmartCardConnection.class, value -> callback.invoke(Result.of(() -> new ManagementSession(value.getValue()))));
+        } else if (device.supportsConnection(OtpConnection.class)) {
+            device.requestConnection(OtpConnection.class, value -> callback.invoke(Result.of(() -> new ManagementSession(value.getValue()))));
+        } else if (device.supportsConnection(FidoConnection.class)) {
+            device.requestConnection(FidoConnection.class, value -> callback.invoke(Result.of(() -> new ManagementSession(value.getValue()))));
+        } else {
+            callback.invoke(Result.failure(new ApplicationNotAvailableException("Session does not support any compatible connection type")));
+        }
     }
 
     @Override

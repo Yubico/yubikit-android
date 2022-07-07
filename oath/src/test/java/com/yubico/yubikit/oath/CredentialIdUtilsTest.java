@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Yubico.
+ * Copyright (C) 2020-2022 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import java.nio.charset.StandardCharsets;
 
 public class CredentialIdUtilsTest {
     @Test
-    public void testParseData() throws ParseUriException {
+    public void testParseData() {
         final String issuer = "issuer";
         String accountId = "20/issuer:account";
         CredentialIdUtils.CredentialIdData idData = CredentialIdUtils.parseId(accountId.getBytes(StandardCharsets.UTF_8), OathType.TOTP);

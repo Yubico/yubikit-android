@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Yubico.
+ * Copyright (C) 2020-2022 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,7 +49,7 @@ public interface SlotConfiguration {
     // Yubikey 2 and above
     Flag CFGFLAG_SHORT_TICKET = new Flag(FlagType.CFG, "SHORT_TICKET", 0x02, 2, 0); // Send truncated ticket (half length)
     Flag CFGFLAG_STRONG_PW1 = new Flag(FlagType.CFG, "STRONG_PW1", 0x10, 2, 0); // Strong password policy flag #1 (mixed case)
-    Flag CFGFLAG_STRONG_PW2 = new Flag(FlagType.CFG, "STRONG_PW2", 0x40, 2, 0); // Strong password policy flag #2 (subtitute 0..7 to digits)
+    Flag CFGFLAG_STRONG_PW2 = new Flag(FlagType.CFG, "STRONG_PW2", 0x40, 2, 0); // Strong password policy flag #2 (substitute 0..7 to digits)
     Flag CFGFLAG_MAN_UPDATE = new Flag(FlagType.CFG, "MAN_UPDATE", 0x80, 2, 0); // Allow manual (local) update of static OTP
 
     // Yubikey 2.1 and above

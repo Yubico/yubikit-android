@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2022 Yubico.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.yubico.yubikit.android.app.ui.yubiotp
 
 import android.content.Context
@@ -21,7 +37,7 @@ import org.bouncycastle.util.encoders.Hex
 
 class YubiOtpFragment : Fragment() {
     class OtpContract : ActivityResultContract<Unit, String?>() {
-        override fun createIntent(context: Context, input: Unit?): Intent = Intent(context, OtpActivity::class.java)
+        override fun createIntent(context: Context, input: Unit): Intent = Intent(context, OtpActivity::class.java)
 
         override fun parseResult(resultCode: Int, intent: Intent?): String? {
             return intent?.getStringExtra(OtpActivity.EXTRA_OTP)
@@ -41,7 +57,7 @@ class YubiOtpFragment : Fragment() {
     private lateinit var binding: FragmentYubiotpOtpBinding
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
-                              savedInstanceState: Bundle?): View? {
+                              savedInstanceState: Bundle?): View {
         binding = FragmentYubiotpOtpBinding.inflate(inflater, container, false)
         return binding.root
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Yubico.
+ * Copyright (C) 2019-2022 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -315,7 +315,7 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
      * @param slot          the slot to update
      * @param configuration the updated flags tp set
      * @param accCode       the access code to set
-     * @param curAccCode    the current accedd code, if needed
+     * @param curAccCode    the current access code, if needed
      * @throws IOException      in case of communication error
      * @throws CommandException in case of an error response from the YubiKey
      */

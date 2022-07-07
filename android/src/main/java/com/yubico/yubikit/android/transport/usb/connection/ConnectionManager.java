@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Yubico.
+ * Copyright (C) 2020-2022 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -93,8 +93,9 @@ public class ConnectionManager {
         synchronized (handlers) {
             for (Map.Entry<Class<? extends YubiKeyConnection>, ConnectionHandler<? extends YubiKeyConnection>> entry : handlers.entrySet()) {
                 if (connectionType.isAssignableFrom(entry.getKey())) {
-                    //noinspection unchecked
-                    return (ConnectionHandler<T>) entry.getValue();
+                    @SuppressWarnings("unchecked")
+                    ConnectionHandler<T> entryValue = (ConnectionHandler<T>) entry.getValue();
+                    return entryValue;
                 }
             }
         }

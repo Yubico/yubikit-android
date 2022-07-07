@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Yubico.
+ * Copyright (C) 2019-2022 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ import org.apache.commons.codec.binary.Base64;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -113,6 +114,7 @@ public class OathSession extends ApplicationSession<OathSession> {
     private byte[] salt;
     @Nullable
     private byte[] challenge;
+    private boolean isAccessKeySet;
 
     /**
      * Establishes a new session with a YubiKeys OATH application.
@@ -128,6 +130,7 @@ public class OathSession extends ApplicationSession<OathSession> {
         deviceId = selectResponse.getDeviceId();
         salt = selectResponse.salt;
         challenge = selectResponse.challenge;
+        isAccessKeySet = challenge != null && challenge.length != 0;
         protocol.enableWorkarounds(version);
     }
 
@@ -164,6 +167,7 @@ public class OathSession extends ApplicationSession<OathSession> {
             deviceId = selectResponse.getDeviceId();
             salt = selectResponse.salt;
             challenge = null;
+            isAccessKeySet = false;
         } catch (ApplicationNotAvailableException e) {
             throw new IllegalStateException(e);  // This shouldn't happen
         }
@@ -171,8 +175,26 @@ public class OathSession extends ApplicationSession<OathSession> {
 
     /**
      * Returns true if an Access Key is currently set.
+     *
+     * @deprecated Use {@link #isAccessKeySet()} instead.
      */
+    @Deprecated
     public boolean hasAccessKey() {
+        return isAccessKeySet;
+    }
+
+    /**
+     * Returns true if an Access Key is currently set.
+     */
+    public boolean isAccessKeySet() {
+        return isAccessKeySet;
+    }
+
+
+    /**
+     * Returns true if the session is locked.
+     */
+    public boolean isLocked() {
         return challenge != null && challenge.length != 0;
     }
 
@@ -188,7 +210,11 @@ public class OathSession extends ApplicationSession<OathSession> {
      * @throws ApduException in case of communication error
      */
     public boolean unlock(char[] password) throws IOException, ApduException {
-        if (hasAccessKey() && (password.length == 0)) {
+        if (!isLocked()) {
+            return true;
+        }
+
+        if (password.length == 0) {
             return false;
         }
 
@@ -227,7 +253,11 @@ public class OathSession extends ApplicationSession<OathSession> {
             byte[] data = protocol.sendAndReceive(new Apdu(0, INS_VALIDATE, 0, 0, Tlvs.encodeMap(request)));
             Map<Integer, byte[]> map = Tlvs.decodeMap(data);
             // return false if response from validation does not match verification
-            return (MessageDigest.isEqual(validator.calculateResponse(clientChallenge), map.get(TAG_RESPONSE)));
+            boolean responsesEqual = MessageDigest.isEqual(validator.calculateResponse(clientChallenge), map.get(TAG_RESPONSE));
+            if (responsesEqual) {
+                challenge = null;
+            }
+            return responsesEqual;
         } catch (ApduException e) {
             if (e.getSw() == SW.INCORRECT_PARAMETERS) {
                 // key didn't recognize secret
@@ -275,6 +305,7 @@ public class OathSession extends ApplicationSession<OathSession> {
         request.put(TAG_RESPONSE, doHmacSha1(key, challenge));
 
         protocol.sendAndReceive(new Apdu(0, INS_SET_CODE, 0, 0, Tlvs.encodeMap(request)));
+        isAccessKeySet = true;
     }
 
     /**
@@ -285,6 +316,7 @@ public class OathSession extends ApplicationSession<OathSession> {
      */
     public void deleteAccessKey() throws IOException, ApduException {
         protocol.sendAndReceive(new Apdu(0, INS_SET_CODE, 0, 0, new Tlv(TAG_KEY, null).getBytes()));
+        isAccessKeySet = false;
     }
 
     /**
@@ -333,10 +365,13 @@ public class OathSession extends ApplicationSession<OathSession> {
      * @throws BadResponseException in case of incorrect YubiKey response
      */
     public Map<Credential, Code> calculateCodes(long timestamp) throws IOException, ApduException, BadResponseException {
+        // CALCULATE_ALL uses a single time step, so we run it with the most common one (period=30)
+        // and then recalculate any codes where period != 30.
         long timeStep = (timestamp / MILLS_IN_SECOND / DEFAULT_TOTP_PERIOD);
         byte[] challenge = ByteBuffer.allocate(CHALLENGE_LEN).putLong(timeStep).array();
+        long validFrom = validFrom(timestamp, DEFAULT_TOTP_PERIOD);
+        long validUntil = validFrom + DEFAULT_TOTP_PERIOD * MILLS_IN_SECOND;
 
-        // using default period to 30 second for all _credentials and then recalculate those that have different period
         byte[] data = protocol.sendAndReceive(new Apdu(0, INS_CALCULATE_ALL, 0, 1, new Tlv(TAG_CHALLENGE, challenge).getBytes()));
         Iterator<Tlv> responseTlvs = Tlvs.decodeList(data).iterator();
         Map<Credential, Code> map = new HashMap<>();
@@ -351,16 +386,16 @@ public class OathSession extends ApplicationSession<OathSession> {
             // parse credential properties
             Credential credential = new Credential(deviceId, credentialId, response);
 
-            if (credential.getOathType() == OathType.TOTP && credential.getPeriod() != DEFAULT_TOTP_PERIOD) {
-                // recalculate credentials that have different period
-                map.put(credential, calculateCode(credential, timestamp));
-            } else if (response.response.length == 4) {
-                // Note: codes are typically valid in 'DEFAULT_PERIOD' second slices
-                // so the valid period actually starts before the calculation happens
-                // and potentially might happen even way before (so that code is valid only 1 second after calculation)
-                long validFrom = validFrom(timestamp, DEFAULT_TOTP_PERIOD);
-                map.put(credential, new Code(formatTruncated(response), validFrom, validFrom + DEFAULT_TOTP_PERIOD * MILLS_IN_SECOND));
+            // Non-empty responses are for TOTP credentials which do not require touch.
+            if (response.response.length == 4) {
+                if (credential.getPeriod() != DEFAULT_TOTP_PERIOD) {
+                    // Recalculate TOTP for correct period.
+                    map.put(credential, calculateCode(credential, timestamp));
+                } else {
+                    map.put(credential, new Code(formatTruncated(response), validFrom, validUntil));
+                }
             } else {
+                // HOTP, or TOTP that requires touch, no code.
                 map.put(credential, null);
             }
         }
@@ -690,7 +725,10 @@ public class OathSession extends ApplicationSession<OathSession> {
             }
             messageDigest.update(salt);
             byte[] digest = messageDigest.digest();
-            return Base64.encodeBase64String(Arrays.copyOfRange(digest, 0, 16)).replaceAll("=", "");
+            return new String(
+                    Base64.encodeBase64(Arrays.copyOfRange(digest, 0, 16)),
+                    StandardCharsets.US_ASCII)
+                .replaceAll("=", "");
         }
     }
 }

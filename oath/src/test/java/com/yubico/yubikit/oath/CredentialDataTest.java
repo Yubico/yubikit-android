@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Yubico.
+ * Copyright (C) 2019-2022 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import org.junit.Test;
 import java.net.URI;
 import java.net.URISyntaxException;
 
+@SuppressWarnings("SpellCheckingInspection")
 public class CredentialDataTest {
 
     @Test

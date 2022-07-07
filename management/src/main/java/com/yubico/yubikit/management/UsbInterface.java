@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 Yubico.
+ * Copyright (C) 2022 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,15 @@ package com.yubico.yubikit.management;
 
 /**
  * Provides constants for the different YubiKey USB interfaces, and the Mode enum for combinations of enabled interfaces.
+ * @deprecated This class has been moved to the core module, and will remain here only until YubiKit 3.0 is released.
  */
+@Deprecated
 public final class UsbInterface {
+    @Deprecated
     public static final int OTP = 0x01;
+    @Deprecated
     public static final int FIDO = 0x02;
+    @Deprecated
     public static final int CCID = 0x04;
 
     private UsbInterface() {
@@ -31,6 +36,7 @@ public final class UsbInterface {
      * <p>
      * This is replaced by DeviceConfig starting with YubiKey 5.
      */
+    @Deprecated
     public enum Mode {
         OTP((byte) 0x00, UsbInterface.OTP),
         CCID((byte) 0x01, UsbInterface.CCID),
@@ -40,7 +46,9 @@ public final class UsbInterface {
         FIDO_CCID((byte) 0x05, UsbInterface.FIDO | UsbInterface.CCID),
         OTP_FIDO_CCID((byte) 0x06, UsbInterface.OTP | UsbInterface.FIDO | UsbInterface.CCID);
 
+        @Deprecated
         public final byte value;
+        @Deprecated
         public final int interfaces;
 
         Mode(byte value, int interfaces) {
@@ -51,6 +59,7 @@ public final class UsbInterface {
         /**
          * Returns the USB Mode given the enabled USB interfaces it has.
          */
+        @Deprecated
         public static Mode getMode(int interfaces) {
             for (Mode mode : Mode.values()) {
                 if (mode.interfaces == interfaces) {

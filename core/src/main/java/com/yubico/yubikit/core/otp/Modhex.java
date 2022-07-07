@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Yubico.
+ * Copyright (C) 2019-2022 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import java.util.Map;
  * See: <a href="https://developers.yubico.com/yubico-c/Manuals/modhex.1.htm">Modhex specification</a>.
  */
 public class Modhex {
+    @SuppressWarnings("SpellCheckingInspection")
     private final static char[] ALPHABET = "cbdefghijklnrtuv".toCharArray();
 
     private static final Map<Character, Integer> table = new HashMap<>();

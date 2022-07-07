@@ -1,5 +1,22 @@
+/*
+ * Copyright (C) 2022 Yubico.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.yubico.yubikit.android.app.ui.management
 
+import android.annotation.SuppressLint
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -13,6 +30,7 @@ import com.yubico.yubikit.core.Transport
 import com.yubico.yubikit.management.Capability
 import com.yubico.yubikit.management.DeviceConfig
 import com.yubico.yubikit.management.ManagementSession
+import com.yubico.yubikit.support.DeviceUtil
 
 class ManagementFragment : YubiKeyFragment<ManagementSession, ManagementViewModel>() {
     override val viewModel: ManagementViewModel by activityViewModels()
@@ -39,25 +57,36 @@ class ManagementFragment : YubiKeyFragment<ManagementSession, ManagementViewMode
             inflater: LayoutInflater,
             container: ViewGroup?,
             savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         binding = FragmentManagementBinding.inflate(inflater, container, false)
         return binding.root
     }
 
+    @SuppressLint("SetTextI18n")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
         binding.applicationTable.visibility = View.GONE
         binding.save.visibility = View.GONE
 
-        viewModel.deviceInfo.observe(viewLifecycleOwner, {
+        viewModel.deviceInfo.observe(viewLifecycleOwner) {
             if (it != null) {
-                binding.info.text = "Device type: ${it.formFactor.name} \nFirmware: ${it.version} \nSerial: ${it.serialNumber}"
+                val info = it.deviceInfo
+                val keyType = it.type
+                binding.info.text = "Device: ${DeviceUtil.getName(info, keyType)}\n" +
+                        "Device form factor: ${info.formFactor.name}\n" +
+                        "Firmware: ${info.version}\n" +
+                        "Serial: ${info.serialNumber}\n" +
+                        "FIPS: ${info.isFips}\n" +
+                        "SKY: ${info.isSky}\n" +
+                        "Locked: ${info.isLocked}\n" +
+                        "Auto eject timeout: ${info.config.autoEjectTimeout}\n" +
+                        "Challenge response timeout: ${info.config.challengeResponseTimeout}"
                 checkboxIds.forEach { (transport, capability), id ->
                     view.findViewById<CheckBox>(id).let { checkbox ->
-                        if (it.getSupportedCapabilities(transport) and capability.bit != 0) {
-                            checkbox.isChecked = (it.config.getEnabledCapabilities(transport)
-                                    ?: 0) and capability.bit != 0
+                        if (info.getSupportedCapabilities(transport) and capability.bit != 0) {
+                            checkbox.isChecked = (info.config.getEnabledCapabilities(transport)
+                                ?: 0) and capability.bit != 0
                             checkbox.visibility = View.VISIBLE
                         } else {
                             checkbox.visibility = View.GONE
@@ -72,7 +101,7 @@ class ManagementFragment : YubiKeyFragment<ManagementSession, ManagementViewMode
                 binding.applicationTable.visibility = View.GONE
                 binding.save.visibility = View.GONE
             }
-        })
+        }
 
         binding.save.setOnClickListener {
             viewModel.pendingAction.value = {

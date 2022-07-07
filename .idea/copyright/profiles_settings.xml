@@ -1,0 +1,7 @@
+<component name="CopyrightManager">
+  <settings default="Yubico">
+    <module2copyright>
+      <element module="Copyright" copyright="Yubico" />
+    </module2copyright>
+  </settings>
+</component>
