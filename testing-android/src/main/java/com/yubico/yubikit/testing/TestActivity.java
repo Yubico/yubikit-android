@@ -41,6 +41,8 @@ import java.util.concurrent.Semaphore;
 
 public class TestActivity extends AppCompatActivity {
 
+    private final String TAG = "yubikit.test";
+
     private TextView testNameText;
     private TextView statusText;
     private TextView bottomText;
@@ -66,19 +68,18 @@ public class TestActivity extends AppCompatActivity {
         Logger.setLogger(new Logger() {
             @Override
             protected void logDebug(@NonNull String message) {
-                Log.d("yubikit.test", message);
+                Log.d(TAG, message);
             }
 
             @Override
             protected void logError(@NonNull String message, @NonNull Throwable throwable) {
-                Log.e("yubikit.test", message, throwable);
+                Log.e(TAG, message, throwable);
             }
         });
 
         yubiKitManager.startUsbDiscovery(new UsbConfiguration(), device -> {
             bottomText.setVisibility(View.VISIBLE);
             bottomText.setText(R.string.touch);
-            setBusy(true);
             sessionQueue.add(device);
         });
     }
@@ -87,15 +88,12 @@ public class TestActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         try {
-            yubiKitManager.startNfcDiscovery(new NfcConfiguration(), this, (session) -> {
-                setBusy(true);
-                sessionQueue.add(session);
-            });
+            yubiKitManager.startNfcDiscovery(new NfcConfiguration(), this, sessionQueue::add);
         } catch (NfcNotAvailable e) {
             if (e.isDisabled()) {
-                Log.e("test", "NFC is disabled", e);
+                Log.e(TAG, "NFC is disabled", e);
             } else {
-                Log.e("test", "NFC is not supported", e);
+                Log.e(TAG, "NFC is not supported", e);
             }
         }
     }
@@ -128,7 +126,9 @@ public class TestActivity extends AppCompatActivity {
             }
         });
 
-        return sessionQueue.take();
+        YubiKeyDevice connectedDevice = sessionQueue.take();
+        setBusy(true);
+        return connectedDevice;
 
     }
 
