@@ -56,23 +56,41 @@
             <TableRow
                 android:layout_weight="1"
                 android:gravity="center"
+                android:weightSum="2" >
+
+                <Button
+                    android:id="@+id/generate_ec_cert"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/piv_generate_ec_cert" />
+
+                <Button
+                    android:id="@+id/generate_rsa_cert"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/piv_generate_rsa_cert" />
+            </TableRow>
+
+            <TableRow
+                android:layout_weight="1"
+                android:gravity="center"
                 android:weightSum="2">
 
                 <Button
                     android:id="@+id/import_cert"
                     android:layout_width="0dp"
                     android:layout_height="match_parent"
-                    android:layout_marginEnd="4dp"
                     android:layout_weight="1"
                     android:text="@string/piv_import_cert" />
 
                 <Button
-                    android:id="@+id/generate_cert"
+                    android:id="@+id/attest"
                     android:layout_width="0dp"
                     android:layout_height="match_parent"
-                    android:layout_marginStart="4dp"
                     android:layout_weight="1"
-                    android:text="@string/piv_generate_cert" />
+                    android:text="@string/piv_attest" />
 
 
             </TableRow>
@@ -83,18 +101,9 @@
                 android:weightSum="2">
 
                 <Button
-                    android:id="@+id/attest"
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_marginEnd="4dp"
-                    android:layout_weight="1"
-                    android:text="@string/piv_attest" />
-
-                <Button
                     android:id="@+id/delete"
                     android:layout_width="0dp"
                     android:layout_height="match_parent"
-                    android:layout_marginStart="4dp"
                     android:layout_weight="1"
                     android:text="@string/piv_delete" />
             </TableRow>

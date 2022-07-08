@@ -160,7 +160,7 @@ class PivCertificateFragment : Fragment() {
         }
 
         // Generate a key, then a self-signed certificate, and import
-        binding.generateCert.setOnClickListener {
+        binding.generateEcCert.setOnClickListener {
             lifecycleScope.launch(Dispatchers.Main) {
                 getSecret(requireContext(), R.string.enter_pin)?.let { pin ->
                     pivViewModel.pendingAction.value = {
@@ -180,7 +180,7 @@ class PivCertificateFragment : Fragment() {
                         val keyPair = factory.generateKeyPair()
 
                         // Generate a certificate
-                        val name = X500Name("CN=Generated Example")
+                        val name = X500Name("CN=Generated EC Example")
                         val serverCertGen = X509v3CertificateBuilder(
                             name,
                             BigInteger("123456789"),
@@ -200,7 +200,6 @@ class PivCertificateFragment : Fragment() {
                                     initSign(keyPair.private)
                                     update(messageBuffer.toByteArray())
                                 }.sign()
-                                //return sign(slot, KeyType.ECCP256, messageBuffer.toByteArray(), Signature.getInstance("SHA256withECDSA"))
                             }
                         }).encoded
 
@@ -208,7 +207,60 @@ class PivCertificateFragment : Fragment() {
                             .generateCertificate(ByteArrayInputStream(certBytes)) as X509Certificate
                         putCertificate(slot, cert)
 
-                        "Generated key in slot $slot"
+                        "Generated EC key in slot $slot"
+                    }
+                }
+            }
+        }
+
+        binding.generateRsaCert.setOnClickListener {
+            lifecycleScope.launch(Dispatchers.Main) {
+                getSecret(requireContext(), R.string.enter_pin)?.let { pin ->
+                    pivViewModel.pendingAction.value = {
+                        authenticate(pivViewModel.mgmtKeyType, pivViewModel.mgmtKey)
+
+                        val provider = PivProvider(this)
+                        val factory = KeyPairGenerator.getInstance("YKPivRSA", provider)
+                        factory.initialize(
+                            PivAlgorithmParameterSpec(
+                                slot,
+                                KeyType.RSA2048,
+                                PinPolicy.DEFAULT,
+                                TouchPolicy.DEFAULT,
+                                pin.toCharArray()
+                            )
+                        )
+                        val keyPair = factory.generateKeyPair()
+
+                        // Generate a certificate
+                        val name = X500Name("CN=Generated RSA Example")
+                        val serverCertGen = X509v3CertificateBuilder(
+                            name,
+                            BigInteger("123456789"),
+                            Date(),
+                            Date(),
+                            name,
+                            SubjectPublicKeyInfo.getInstance(ASN1Sequence.getInstance(keyPair.public.encoded))
+                        )
+                        val certBytes = serverCertGen.build(object : ContentSigner {
+                            val messageBuffer = ByteArrayOutputStream()
+                            override fun getAlgorithmIdentifier(): AlgorithmIdentifier =
+                                AlgorithmIdentifier(X9ObjectIdentifiers.ecdsa_with_SHA256)
+
+                            override fun getOutputStream(): OutputStream = messageBuffer
+                            override fun getSignature(): ByteArray {
+                                return Signature.getInstance("SHA256withRSA", provider).apply {
+                                    initSign(keyPair.private)
+                                    update(messageBuffer.toByteArray())
+                                }.sign()
+                            }
+                        }).encoded
+
+                        val cert = CertificateFactory.getInstance("X.509")
+                            .generateCertificate(ByteArrayInputStream(certBytes)) as X509Certificate
+                        putCertificate(slot, cert)
+
+                        "Generated RSA key in slot $slot"
                     }
                 }
             }
