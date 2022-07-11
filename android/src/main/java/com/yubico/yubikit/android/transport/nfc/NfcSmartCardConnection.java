@@ -52,6 +52,11 @@ public class NfcSmartCardConnection implements SmartCardConnection {
     }
 
     @Override
+    public boolean isExtendedLengthApduSupported() {
+        return card.isExtendedLengthApduSupported();
+    }
+
+    @Override
     public byte[] sendAndReceive(byte[] apdu) throws IOException {
         Logger.d("sent: " + StringUtils.bytesToHex(apdu));
         byte[] received = card.transceive(apdu);
