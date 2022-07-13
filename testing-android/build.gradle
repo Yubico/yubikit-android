@@ -16,9 +16,14 @@ android {
 
     }
 
+    signingConfigs {
+        release
+    }
+
     buildTypes {
         release {
-            minifyEnabled false
+            minifyEnabled true
+            signingConfig signingConfigs.release
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
@@ -51,3 +56,5 @@ dependencies {
 }
 
 description = "This module contains instrumented test framework and tests for yubikit-android."
+
+apply from: 'signing.gradle'

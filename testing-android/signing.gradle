@@ -1,0 +1,55 @@
+/*
+To run the instrumented tests in release mode (minified, obfuscated) do:
+ 1. use an existing keystore or create a new one:
+        keytool -genkey -v -keystore testing.keystore -alias testing \
+                -keyalg RSA -keysize 4096 -validity 10000
+
+ 2. create a file called `testing-sign.properties` in the `testing-android` folder with the
+    keystore properties:
+        key.store=...
+        key.store.password=...
+        key.alias=...
+        key.alias.password=...
+
+    Set the variables to values of the new keystore, key.store path should be absolute path.
+
+  3. set android.testBuildType to 'release' in module's build.gradle
+*/
+
+def updateReleaseSigningConfig() {
+    var properties = "testing-sign.properties"
+    File signingProperties = file(properties)
+    if (signingProperties.exists()) {
+        Properties p = new Properties()
+        p.load(new FileInputStream(signingProperties))
+
+        var keyStore = p.getProperty('key.store')
+        var keyStorePassword = p.getProperty('key.store.password')
+        var keyAlias = p.getProperty('key.alias')
+        var keyAliasPassword = p.getProperty('key.alias.password')
+
+        if (p != null &&
+                keyStore != null &&
+                keyStorePassword != null &&
+                keyAlias != null &&
+                keyAliasPassword != null) {
+            android.signingConfigs.release.storeFile = file(keyStore)
+            android.signingConfigs.release.storePassword = keyStorePassword
+            android.signingConfigs.release.keyAlias = keyAlias
+            android.signingConfigs.release.keyPassword = keyAliasPassword
+
+            android.testBuildType 'release'
+
+            println "Successfully applied release signing from " + properties
+        } else {
+            android.buildTypes.release.signingConfig null
+            println "Error: Signing file $signingProperties is missing needed properties"
+        }
+
+    } else {
+        android.buildTypes.release.signingConfig null
+        println "Error: Failed to load $properties"
+    }
+}
+
+updateReleaseSigningConfig()

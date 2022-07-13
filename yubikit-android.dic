@@ -23,6 +23,8 @@ int's
 iqmp
 irdaobex
 keepalive
+keyalg
+keysize
 keyspec
 mgmkey
 modhex
