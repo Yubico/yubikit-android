@@ -199,7 +199,9 @@ public class PivSession extends ApplicationSession<PivSession> {
         protocol.select(AID);
         version = Version.fromBytes(protocol.sendAndReceive(new Apdu(0, INS_GET_VERSION, 0, 0, null)));
         protocol.enableWorkarounds(version);
-        if (version.isAtLeast(4, 0, 0)) {
+
+        // use extended length APDUs on compatible connections and devices
+        if (connection.isExtendedLengthApduSupported() && version.isAtLeast(4, 0, 0)) {
             protocol.setApduFormat(ApduFormat.EXTENDED);
         }
     }

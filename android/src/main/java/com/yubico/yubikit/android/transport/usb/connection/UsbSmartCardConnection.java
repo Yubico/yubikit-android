@@ -97,6 +97,15 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
         return Transport.USB;
     }
 
+    /**
+     * This connection generally supports Extended length APDUs. This can be limited by firmware
+     * version of connected YubiKey.
+     */
+    @Override
+    public boolean isExtendedLengthApduSupported() {
+        return true;
+    }
+
     @Override
     public byte[] sendAndReceive(byte[] apdu) throws IOException {
         return transceive(REQUEST_MESSAGE_TYPE, apdu);

@@ -40,4 +40,13 @@ public interface SmartCardConnection extends YubiKeyConnection {
      * @return the physical transport used for the connection.
      */
     Transport getTransport();
+
+    /**
+     * Standard APDUs have a 1-byte length field, allowing a maximum of 255 payload bytes,
+     * which results in a maximum APDU length of 261 bytes. Extended length APDUs have a 3-byte length field,
+     * allowing 65535 payload bytes.
+     *
+     * @return true if this connection object supports Extended length APDUs.
+     */
+    boolean isExtendedLengthApduSupported();
 }
