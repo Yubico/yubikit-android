@@ -49,7 +49,7 @@ class MainActivity : AppCompatActivity() {
     private val viewModel: MainViewModel by viewModels()
 
     private lateinit var yubikit: YubiKitManager
-    private val nfcConfiguration = NfcConfiguration()
+    private val nfcConfiguration = NfcConfiguration().timeout(15000)
 
     private var hasNfc by Delegates.notNull<Boolean>()
 

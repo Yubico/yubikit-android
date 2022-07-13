@@ -88,7 +88,7 @@ public class TestActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         try {
-            yubiKitManager.startNfcDiscovery(new NfcConfiguration(), this, sessionQueue::add);
+            yubiKitManager.startNfcDiscovery(new NfcConfiguration().timeout(15000), this, sessionQueue::add);
         } catch (NfcNotAvailable e) {
             if (e.isDisabled()) {
                 Log.e(TAG, "NFC is disabled", e);
