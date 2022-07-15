@@ -62,6 +62,8 @@ This module lets you configure and use the PIV application on a YubiKey. It
 supports importing, generating, and using private keys. Reading and writing
 data objects such as X.509 certificates, and managing access (PIN, etc).
 
+link:./support/[Support]::
+This module contains helper functionality such as getting information about YubiKeys.
 
 === Getting Started
 A good place to get started is to clone the repository and try out the included

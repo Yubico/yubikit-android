@@ -43,6 +43,8 @@ byte[] signature = piv.sign(
 );
 ----
 
+==== YubiKey PIV JCA Provider
+Since YubiKit 2.1.0 PIV module functionality can be accessed through Java cryptography architecture interfaces. To learn more refer to the link:jca.adoc[YubiKit PIV JCA guide]
 
 === Additional Resources
 * Read more about PIV on the https://developers.yubico.com/PIV/[Yubico developer site]

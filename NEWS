@@ -1,4 +1,4 @@
-* Version 2.1.0-alpha.1 (released 2022-06-01)
+* Version 2.1.0 (unreleased)
  ** Added a new support module with utility functions for getting device
     information/metadata.
  ** PIV:
@@ -14,6 +14,13 @@
      OathSession.isAccessKeySet.
   ** UsbInterface in the management module has been deprecated, replaced with
      UsbInterface in the core module.
+ ** Added testing-android module which can run tests on physical devices
+  ** currently Piv and Piv Jca tests are implemented
+ ** Bug fixes and improvements
+
+
+* Version 2.1.0-alpha.1 (released 2022-06-01)
+ ** Public preview of 2.1.0
 
 
 * Version 2.0.0 (released 2021-04-01)
