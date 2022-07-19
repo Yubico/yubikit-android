@@ -7,7 +7,7 @@ NOTE: Don't run any of the tests on a production YubiKey. The tests execute vari
 === Recommended setup
 1. A physical Android device running API 19+
 2. YubiKey
-3. OTG cable for connecting a YubiKey (note: it is possible to run the tests over NFC as well, but it involves but it is much more convenient to use USB connection)
+3. OTG cable for connecting a YubiKey (note: it is possible to run the tests over NFC as well, but it is much more convenient to use USB connection)
 4. Wireless debugging setup (see instructions in https://developer.android.com/studio/command-line/adb[official adb documentation]).
 5. Recent version of Android Studio (Chipmunk and newer)
 
