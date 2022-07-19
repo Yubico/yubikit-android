@@ -2,18 +2,18 @@
 
 This module contains tests for execution on a physical device and with YubiKey connected via USB or NFC. The test runs need a presence of someone who can tap the key when needed and therefore are these tests suitable only for local execution.
 
-=== Warning
-
-**Don't run any of the tests on a production YubiKey.** The tests execute various YubiKit methods on the YubiKey, data will be changed and removed.
+NOTE: Don't run any of the tests on a production YubiKey. The tests execute various YubiKit methods on the YubiKey, data will be changed and removed.
 
 === Recommended setup
 1. A physical Android device running API 19+
-2. OTG cable for connecting a YubiKey (note: it is possible to run the tests over NFC as well, but it involves but it is much more convenient to use USB connection)
-3. Wireless debugging setup.
-4. Recent version of Android Studio
+2. YubiKey
+3. OTG cable for connecting a YubiKey (note: it is possible to run the tests over NFC as well, but it involves but it is much more convenient to use USB connection)
+4. Wireless debugging setup (see instructions in https://developer.android.com/studio/command-line/adb[official adb documentation]).
+5. Recent version of Android Studio (Chipmunk and newer)
 
 === Running the tests
-1. Make sure that the YubiKey you are using is suitable for testing, as the tests will overwrite the YubiKey contents
+1. Make sure that the YubiKey you are using is meant for testing. Don't proceed with the tests if unsure.
+ Running the instrumented tests will: change pin, puk, management key and overwrite stored certificates in the PIV application
 2. Open `yubikit-android` project in Android Studio
 3. Connect your device through wireless debugging and select it
 4. Right-click the `testing-android` project and select _Run 'All tests'_

@@ -1,3 +1,19 @@
 == YubiKit Support Module
-This module provides support utilities
+This module provides optional support functionality, currently methods for getting YubiKey device info and device name are implemented.
+
+https://developers.yubico.com/yubikit-android/JavaDoc/support/latest/[JavaDoc API documentation]
+
+=== Dependency
+To add the `support` module as a dependency to your project, add the following to
+your gradle configuration:
+
+[source,groovy]
+----
+dependencies {
+  implementation 'com.yubico.yubikit:support:(insert version here)'
+}
+----
+
+This module depends on other modules from YubiKit (link:../core/[core], link:../management/[management] and link:../yubiotp/[yubiotp]), which will automatically
+be added as a transitive dependency to your project.
 
