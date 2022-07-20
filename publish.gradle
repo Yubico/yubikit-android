@@ -1,7 +1,9 @@
 apply plugin: 'maven-publish'
 apply plugin: 'signing'
 
+ext.signingDisabled = System.getenv("SIGN") == "false"
 ext.isReleaseVersion = !version.endsWith("SNAPSHOT")
+ext.signRelease = isReleaseVersion && !signingDisabled
 
 java {
     withJavadocJar()
@@ -18,7 +20,7 @@ publishing {
         }
     }
     tasks.withType(Sign) {
-        onlyIf { isReleaseVersion }
+        onlyIf { signRelease }
     }
 
     signing {
