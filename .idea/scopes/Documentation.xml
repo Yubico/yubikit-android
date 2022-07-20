@@ -1,0 +1,3 @@
+<component name="DependencyValidationManager">
+  <scope name="Documentation" pattern="file[yubikit-android.*]:*.adoc||file[yubikit-android]:*.adoc||file[yubikit-android]:NEWS" />
+</component>

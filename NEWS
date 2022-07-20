@@ -1,19 +1,26 @@
-* Version 2.1.0-alpha.1 (released 2022-06-01)
+* Version 2.1.0 (unreleased)
  ** Added a new support module with utility functions for getting device
     information/metadata.
  ** PIV:
-  ** Added a JCA Provider implementation.
-  ** Added Slot getStringAlias and fromStringAlias methods.
+ *** Added a JCA Provider implementation.
+ *** Added Slot getStringAlias and fromStringAlias methods.
  ** OATH:
-  ** Fixed OathSession.calculateCodes so that it never triggers touch.
+ *** Fixed OathSession.calculateCodes so that it never triggers touch.
  ** Management:
-  ** DeviceInfo now provides isFips and isSky properties.
+ *** DeviceInfo now provides isFips and isSky properties.
  ** Deprecations (will be removed in 3.0.0):
-  ** PivSession.sign has been deprecated in favor of using the JCA Provider.
-  ** OathSession.hasAccessKey has been deprecated and replaced with
+ *** PivSession.sign has been deprecated in favor of using the JCA Provider.
+ *** OathSession.hasAccessKey has been deprecated and replaced with
      OathSession.isAccessKeySet.
-  ** UsbInterface in the management module has been deprecated, replaced with
+ *** UsbInterface in the management module has been deprecated, replaced with
      UsbInterface in the core module.
+ ** Added testing-android module which can run tests on physical devices
+ *** currently Piv and Piv Jca tests are implemented
+ ** Bug fixes and improvements
+
+
+* Version 2.1.0-alpha.1 (released 2022-06-01)
+ ** Public preview of 2.1.0
 
 
 * Version 2.0.0 (released 2021-04-01)
