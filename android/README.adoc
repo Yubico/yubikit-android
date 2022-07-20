@@ -124,13 +124,13 @@ public void onPause() {
 ----
 
 ===== NFC timeouts
-NFC connection times out after `timeout` value of `NfcConfiguration()` object. Some operations which run on the YubiKey, for example generation of RSA keys, take long time. To avoid timeouts, start NFC discovery with configuration with reasonable timeout value.
+NFC connection times out after `timeout` value of `NfcConfiguration()` object. Some operations which run on the YubiKey, for example generation of RSA keys, can take long time to complete. To avoid timeouts, start NFC discovery with configuration with reasonable timeout value.
 
 [source,java]
 ----
     ...
     yubiKitManager.startNfcDiscovery(
-        new NfcConfiguration().setTimeout(15000), // 15 seconds
+        new NfcConfiguration().setTimeout(25000), // 25 seconds
     ...
 ----
 
