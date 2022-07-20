@@ -14,7 +14,9 @@ jobs:
         with:
           java-version: 11
       - name: Build with Gradle
-        run: SIGN=false ./gradlew --stacktrace check test build javadocJar publishToMavenLocal
+        env:
+          SIGN: false
+        run: ./gradlew --stacktrace check test build javadocJar publishToMavenLocal
 
       - name: Upload jars
         uses: actions/upload-artifact@v2
