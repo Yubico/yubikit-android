@@ -41,6 +41,6 @@ Publishing can also be done for a single module:
 When publishing to Sonatype you will need to log in to the staging repo to close and release.
 
 When building release, gradle will by default execute signing tasks. When this is not desired, for
-example during CI builds, it is possible to disable signing with `SIGN` env variable set to `false`.
+example during CI builds, it is possible to disable signing with `NO_GPG_SIGN` env variable set to `true`.
 
-  SIGN=false ./gradlew publishToMaven
+  NO_GPG_SIGN=true ./gradlew publishToMaven
