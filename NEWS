@@ -1,4 +1,4 @@
-* Version 2.1.0 (unreleased)
+* Version 2.1.0 (2022-07-25)
  ** Added a new support module with utility functions for getting device
     information/metadata.
  ** PIV:
