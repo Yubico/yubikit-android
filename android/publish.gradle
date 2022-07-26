@@ -59,7 +59,7 @@ afterEvaluate {
         }
     }
     tasks.withType(Sign) {
-        onlyIf { isReleaseVersion }
+        onlyIf { isReleaseVersion && System.getenv("NO_GPG_SIGN") != "true" }
     }
     signing {
         useGpgCmd()

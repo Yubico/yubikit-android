@@ -11,7 +11,7 @@ see our https://developers.yubico.com/Mobile/Concepts.html[YubiKey Concepts]
 overview.
 
 The library includes a link:./AndroidDemo/[YubiKit Android Demo] application,
-which provives a complete example of integrating and using the features of this
+which provides a complete example of integrating and using the features of this
 library in an Android app. While this demo is written in Kotlin, the library
 itself is written in Java, and can be used by both Java and Kotlin.
 
@@ -29,7 +29,7 @@ provided by Google.
 The SDK is split up into multiple modules. Each module has its own
 documentation and can be used independently of the others. All YubiKit modules
 include javadoc and additional resources deployed with the library archive.
-Refer to the javadoc documentation detailed about the API's methods,
+Refer to the javadoc documentation detailed about the APIs methods,
 properties, and parameters. The SDK is versioned as a whole: You should not mix
 YubiKit modules with different version numbers. The modules are:
 
@@ -46,7 +46,7 @@ various reusable UI elements.
 link:./management/[Management]::
 This module provides the ability to read out metadata from a YubiKey, such as
 its serial number, and firmware version. It also allows changing the
-confiuration of a YubiKey, to enable/disable other applications, etc.
+configuration of a YubiKey, to enable/disable other applications, etc.
 
 link:./yubiotp/[YubiOTP]::
 This module lets you configure the YubiOTP application. This includes
@@ -60,8 +60,10 @@ store and use up to 32 OATH (TOTP or HOTP) credentials.
 link:./piv/[PIV]::
 This module lets you configure and use the PIV application on a YubiKey. It
 supports importing, generating, and using private keys. Reading and writing
-data objects suchs as X.509 certificates, and managing access (PIN, etc).
+data objects such as X.509 certificates, and managing access (PIN, etc).
 
+link:./support/[Support]::
+This module contains helper functionality such as getting information about YubiKeys.
 
 === Getting Started
 A good place to get started is to clone the repository and try out the included

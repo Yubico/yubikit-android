@@ -12,7 +12,7 @@ https://developers.yubico.com/yubikit-android/JavaDoc/core/latest/[JavaDoc API d
 NOTE: You typically don't have to depend on this module explicitly, as it will
 be pulled in as a dependency to other modules.
 
-To add the Android module as a dependency to your project, add the following to
+To add the Core module as a dependency to your project, add the following to
 your gradle configuration:
 
 [source,groovy]

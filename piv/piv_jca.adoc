@@ -47,8 +47,8 @@ Inserting YKPiv provider in the first position makes it the preferred provider, 
 The Provider uses services from existing other Providers to perform padding and hashing of messages.
 If additional Signature or Cipher schemes are required for use with YKPiv, you can install additional JCA Providers *prior* to instantiating the YKPiv PivProvider.
 For example, to be able to use an algorithm which is provided by the third party Provider Bouncy Castle, you could do the following:
-[source,java]
 
+[source,java]
 ----
 // This example installs an updated version of Bouncy Castle JCA provider
 // for this, we first need to remove the original Bouncy Castle provider
@@ -65,8 +65,8 @@ Security.insertProviderAt(pivProvider, 1);
 
 To use YKPiv without global installation (avoiding call to `Security.insertProviderAt()`, the application needs to instantiate the provider class and use it in the JCA `getInstance` methods.
 For example:
-[source,java]
 
+[source,java]
 ----
 PivProvider pivProvider = new PivProvider(pivSession)
 KeyStore keyStore = KeyStore.getInstance("YKPiv", pivProvider);
@@ -87,8 +87,8 @@ KeyPairGenerator ecKpg = KeyPairGenerator.getInstance("YKPivEC");
 ----
 
 The instance then needs to be initialized with `PivAlgorithmParameterSpec` object which describes the properties of the new key:
-[source,java]
 
+[source,java]
 ----
 PivAlgorithmParameterSpec(
     Slot slot,
@@ -110,7 +110,7 @@ One of `TouchPolicy.DEFAULT`, `TouchPolicy.NEVER`, `TouchPolicy.ALWAYS`, `TouchP
 `pin`:: the PIV application PIN; valid PIN is required depending on the `PinPolicy` value and the operation which is planned to be performed with the resulting PrivateKey - signing and decrypting require PIN.
 
 The `DEFAULT` values of `PinPolicy` and `TouchPolicy` depend on the `slot` value.
-See YubiKit documentation for more information.
+See https://developers.yubico.com/yubikit-android/JavaDoc/piv/latest[YubiKit PIV module JavaDoc] and https://developers.yubico.com/PIV/Introduction/Certificate_slots.html[PIV Certificate slots] for more details.
 
 Follows an example of generation of an RSA key pair.
 [source,java]
@@ -165,8 +165,8 @@ PrivateKey privateKey = (PrivateKey) keyStore.getKey(Slot.SIGNATURE, DEFAULT_PIN
 === Using digital signatures
 
 The YKPiv private keys can be used for digital signatures:
-[source,java]
 
+[source,java]
 ----
 // note: the signature algorithm and key have to be compatible
 PrivateKey privateKey = keyPair.getPrivate();
@@ -198,8 +198,8 @@ bool success = signature.verify(messageSignature);
 
 YKPiv keys can be used for encryption and decryption of data.
 The following example shows how:
-[source,java]
 
+[source,java]
 ----
 KeyPair keyPair = ...;
 String cipherAlgorithm = "RSA/ECB/PKCS1Padding"; // or other algorithm
@@ -221,8 +221,8 @@ byte[] decrypted = cipher.doFinal(encrypted);
 YKPiv implements a `KeyAgreement` service.
 Key agreement is a protocol by which 2 or more parties can establish the same cryptographic keys, without having to exchange any secret information.
 The following example shows how to use the `KeyAgreement` instance for two different key pairs (one of them is YKPiv key pair) for getting a common secret.
-[source,java]
 
+[source,java]
 ----
 
 // generate EC key with the YKPiv provider

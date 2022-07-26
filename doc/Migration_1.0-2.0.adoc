@@ -138,6 +138,7 @@ Callback<NfcYubiKeyDevice>, and `NfcDisabledException` and
 `NfcNotFoundException` are replaced with a single `NfcNotAvailableException`.
 
 YubiKit 1.0:
+
 [source,java]
 ----
 try {
@@ -154,6 +155,7 @@ try {
 ----
 
 YubiKit 2.0:
+
 [source,java]
 ----
 try {
