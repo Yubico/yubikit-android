@@ -8,6 +8,7 @@ import android.webkit.ClientCertRequest
 import android.webkit.SslErrorHandler
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.annotation.RequiresApi
 import androidx.lifecycle.viewModelScope
 import com.yubico.yubikit.android.app.R
 import com.yubico.yubikit.android.app.ui.getSecret
@@ -21,6 +22,7 @@ import kotlinx.coroutines.launch
 import java.security.KeyStore
 import java.security.cert.X509Certificate
 
+@RequiresApi(21)
 class DemoWebViewClient(private val viewModel: ClientCertificatesViewModel) :
     WebViewClient() {
 
