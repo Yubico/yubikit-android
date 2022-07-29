@@ -10,6 +10,7 @@
     <string name="menu_piv">PIV</string>
     <string name="menu_web">WebView</string>
     <string name="menu_oath">OATH</string>
+    <string name="menu_client_certs">Client certificates</string>
 
     <string name="need_yubikey">Plug in you YubiKey or tap over NFC reader</string>
     <string name="hold_key">Hold your key flat until operation is completed</string>
@@ -77,6 +78,9 @@
     <string name="oath_key">Secret (hex)</string>
     <string name="oath_issuer">Credential issuer</string>
     <string name="oath_add">Add new credential</string>
+
+    <string name="client_certs_info">Import a PIV certificate into testing YubiKey and click to Go button.</string>
+    <string name="client_certs_go">Go!</string>
 
     <string name="about">About</string>
     <string name="about_app">YubiKit is a library provided by Yubico for interacting with YubiKeys.
