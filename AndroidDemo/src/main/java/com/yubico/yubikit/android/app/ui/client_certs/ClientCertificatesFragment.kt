@@ -152,7 +152,7 @@ class ClientCertificatesFragment : Fragment() {
 
     private fun startNfc() {
         try {
-            yubikit.startNfcDiscovery(NfcConfiguration(), activity!!) { nfcYubiKey ->
+            yubikit.startNfcDiscovery(NfcConfiguration(), requireActivity()) { nfcYubiKey ->
                 lifecycleScope.launch(Dispatchers.Main) {
                     yubiKeyPrompt.setMessage(resources.getString(R.string.client_certs_dialog_msg_nfc_hold))
                     viewModel.provideYubiKey(Result.success(nfcYubiKey))
