@@ -24,19 +24,14 @@ import com.yubico.yubikit.core.YubiKeyDevice
 import com.yubico.yubikit.core.smartcard.SmartCardConnection
 import com.yubico.yubikit.core.util.Result
 import com.yubico.yubikit.piv.PivSession
-import com.yubico.yubikit.piv.Slot
-import com.yubico.yubikit.piv.jca.PivPrivateKey
 import com.yubico.yubikit.piv.jca.PivProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.security.KeyStore
 import java.security.Security
-import java.security.cert.X509Certificate
 import kotlin.coroutines.suspendCoroutine
 
 data class YubiKeyAction(
-    val message: String,
-    val action: suspend (Result<YubiKeyDevice, Exception>) -> Unit
+    val message: String, val action: suspend (Result<YubiKeyDevice, Exception>) -> Unit
 )
 
 
@@ -60,8 +55,6 @@ class ClientCertificatesViewModel : ViewModel() {
     }
 
     val url = MutableLiveData("")
-    //val url = MutableLiveData("https://webauthntest.azurewebsites.net/")
-    //val url = MutableLiveData("https://demo.yubico.com/")
 
     val useNfc = MutableLiveData(true)
     val usbYubiKey = MutableLiveData<UsbYubiKeyDevice?>()
@@ -80,18 +73,17 @@ class ClientCertificatesViewModel : ViewModel() {
     /**
      * Requests a PIV session, and uses it to produce some result
      */
-    suspend fun <T> usePiv(title: String, action: (PivSession) -> T) =
-        suspendCoroutine { outer ->
-            _pendingYubiKeyAction.postValue(YubiKeyAction(title) { yubiKey ->
-                outer.resumeWith(runCatching {
-                    suspendCoroutine { inner ->
-                        yubiKey.value.requestConnection(SmartCardConnection::class.java) {
-                            inner.resumeWith(runCatching {
-                                action.invoke(PivSession(it.value))
-                            })
-                        }
+    suspend fun <T> usePiv(title: String, action: (PivSession) -> T) = suspendCoroutine { outer ->
+        _pendingYubiKeyAction.postValue(YubiKeyAction(title) { yubiKey ->
+            outer.resumeWith(runCatching {
+                suspendCoroutine { inner ->
+                    yubiKey.value.requestConnection(SmartCardConnection::class.java) {
+                        inner.resumeWith(runCatching {
+                            action.invoke(PivSession(it.value))
+                        })
                     }
-                })
+                }
             })
-        }
+        })
+    }
 }

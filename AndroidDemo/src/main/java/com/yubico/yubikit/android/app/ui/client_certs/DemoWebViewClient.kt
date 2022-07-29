@@ -35,7 +35,6 @@ class DemoWebViewClient(private val viewModel: ClientCertificatesViewModel) :
 
     override fun onPageFinished(view: WebView, url: String) {
         Log.d(TAG, "Browsed to $url")
-        //viewModel.url.postValue(view.url)
         super.onPageFinished(view, url)
     }
 
