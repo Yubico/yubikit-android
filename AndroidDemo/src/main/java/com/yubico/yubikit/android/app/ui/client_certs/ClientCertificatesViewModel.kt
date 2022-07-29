@@ -24,10 +24,14 @@ import com.yubico.yubikit.core.YubiKeyDevice
 import com.yubico.yubikit.core.smartcard.SmartCardConnection
 import com.yubico.yubikit.core.util.Result
 import com.yubico.yubikit.piv.PivSession
+import com.yubico.yubikit.piv.Slot
+import com.yubico.yubikit.piv.jca.PivPrivateKey
 import com.yubico.yubikit.piv.jca.PivProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.security.KeyStore
 import java.security.Security
+import java.security.cert.X509Certificate
 import kotlin.coroutines.suspendCoroutine
 
 data class YubiKeyAction(
@@ -77,7 +81,7 @@ class ClientCertificatesViewModel : ViewModel() {
      * Requests a PIV session, and uses it to produce some result
      */
     suspend fun <T> usePiv(title: String, action: (PivSession) -> T) =
-        suspendCoroutine<T> { outer ->
+        suspendCoroutine { outer ->
             _pendingYubiKeyAction.postValue(YubiKeyAction(title) { yubiKey ->
                 outer.resumeWith(runCatching {
                     suspendCoroutine { inner ->

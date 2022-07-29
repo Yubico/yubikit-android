@@ -17,28 +17,32 @@
 package com.yubico.yubikit.android.app.ui.client_certs
 
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.webkit.WebView
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
 import com.yubico.yubikit.android.YubiKitManager
+import com.yubico.yubikit.android.app.MainViewModel
+import com.yubico.yubikit.android.app.R
 import com.yubico.yubikit.android.app.databinding.FragmentClientCertsBinding
 import com.yubico.yubikit.android.transport.nfc.NfcConfiguration
 import com.yubico.yubikit.android.transport.nfc.NfcNotAvailable
 import com.yubico.yubikit.android.transport.usb.UsbConfiguration
-import com.yubico.yubikit.core.Logger
 import com.yubico.yubikit.core.util.Result
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlin.coroutines.cancellation.CancellationException
 
+@RequiresApi(21)
 class ClientCertificatesFragment : Fragment() {
 
     val viewModel: ClientCertificatesViewModel by activityViewModels()
+    private val appViewModel: MainViewModel by activityViewModels()
     private lateinit var yubikit: YubiKitManager
     private lateinit var binding: FragmentClientCertsBinding
     private lateinit var yubiKeyPrompt: AlertDialog
@@ -48,14 +52,17 @@ class ClientCertificatesFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
+
+        // this fragment has its own yubikey handler
+        // disable yubiKey listener in main activity
+        appViewModel.setYubiKeyListenerEnabled(false)
+
         binding = FragmentClientCertsBinding.inflate(inflater, container, false)
 
         // Handles YubiKey communication
         yubikit = YubiKitManager(requireContext())
 
         yubikit.startUsbDiscovery(UsbConfiguration()) { device ->
-            Logger.d("USB device attached $device")
-
             // usbYubiKey keeps a reference to the currently connected YubiKey over USB
             viewModel.usbYubiKey.postValue(device)
             device.setOnClosed { viewModel.usbYubiKey.postValue(null) }
@@ -69,10 +76,9 @@ class ClientCertificatesFragment : Fragment() {
 
         // Dialog used to prompt the user to insert/tap a YubiKey
         yubiKeyPrompt = AlertDialog.Builder(requireContext())
-            .setTitle("Insert YubiKey")
-            .setMessage("Insert or tap your YubiKey")
+            .setTitle(resources.getString(R.string.client_certs_dialog_title_insert_key))
+            .setMessage(resources.getString(R.string.client_certs_dialog_msg_insert_key))
             .setOnCancelListener {
-                Log.d("YKBrowser", "CANCELLED")
                 lifecycleScope.launch {
                     viewModel.provideYubiKey(Result.failure(CancellationException("Cancelled by user")))
                 }
@@ -87,7 +93,6 @@ class ClientCertificatesFragment : Fragment() {
 
         viewModel.pendingYubiKeyAction.observe(viewLifecycleOwner) { action ->
             if (action != null) {
-                Log.d("YKBrowser", "Insert YubiKey...")
                 lifecycleScope.launch(Dispatchers.Main) {
                     val usbYubiKey = viewModel.usbYubiKey.value
                     if (usbYubiKey != null) {
@@ -96,7 +101,7 @@ class ClientCertificatesFragment : Fragment() {
                     } else {
                         val useNfc = viewModel.useNfc.value == true
                         yubiKeyPrompt.setTitle(action.message)
-                        yubiKeyPrompt.setMessage("Insert or tap your YubiKey now")
+                        yubiKeyPrompt.setMessage(resources.getString(R.string.client_certs_dialog_msg_insert_key_now))
                         yubiKeyPrompt.show()
                         if (useNfc) {
                             // Listen on NFC
@@ -107,32 +112,52 @@ class ClientCertificatesFragment : Fragment() {
             }
         }
 
-
-
         with(binding.webView) {
             settings.apply {
                 javaScriptEnabled = true
                 domStorageEnabled = true
             }
 
-            webViewClient = ClientCertsWebViewClient(viewModel)
-
-            loadUrl("https://client.badssl.com")
+            webViewClient = DemoWebViewClient(viewModel)
         }
+
+        binding.go.setOnClickListener {
+            WebView.clearClientCertPreferences {
+                viewModel.url.postValue(URL)
+            }
+        }
+
+        binding.help.setOnClickListener {
+            WebView.clearClientCertPreferences {
+                viewModel.url.postValue("")
+            }
+        }
+
+        viewModel.url.observe(viewLifecycleOwner) {
+            if (it.isEmpty()) {
+                binding.webView.visibility = View.INVISIBLE
+            } else {
+                binding.webView.visibility = View.VISIBLE
+                binding.webView.loadUrl(it)
+            }
+        }
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        // enable yubiKey listener in main activity
+        appViewModel.setYubiKeyListenerEnabled(true)
     }
 
 
     private fun startNfc() {
         try {
             yubikit.startNfcDiscovery(NfcConfiguration(), activity!!) { nfcYubiKey ->
-                Log.d("YKBrowser", "NFC Session started $nfcYubiKey")
                 lifecycleScope.launch(Dispatchers.Main) {
-                    yubiKeyPrompt.setMessage("Hold your YubiKey still")
+                    yubiKeyPrompt.setMessage(resources.getString(R.string.client_certs_dialog_msg_nfc_hold))
                     viewModel.provideYubiKey(Result.success(nfcYubiKey))
-                    Log.d("YKBrowser", "Remove NFC now")
-                    yubiKeyPrompt.setMessage("Remove your YubiKey")
+                    yubiKeyPrompt.setMessage(resources.getString(R.string.client_certs_dialog_msg_nfc_remove))
                     nfcYubiKey.remove {
-                        Log.d("YKBrowser", "YubiKey NFC removed")
                         lifecycleScope.launch(Dispatchers.Main) {
                             yubiKeyPrompt.dismiss()
                         }
@@ -141,7 +166,10 @@ class ClientCertificatesFragment : Fragment() {
             }
         } catch (e: NfcNotAvailable) {
             viewModel.useNfc.value = false
-            Log.e("YKBrowser", "Error starting NFC listening", e)
         }
+    }
+
+    companion object {
+        private const val URL = "https://client.badssl.com"
     }
 }

@@ -1,5 +1,6 @@
 package com.yubico.yubikit.android.app.ui.client_certs
 
+import android.content.res.Resources
 import android.graphics.Bitmap
 import android.net.http.SslError
 import android.util.Log
@@ -8,16 +9,19 @@ import android.webkit.SslErrorHandler
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.lifecycle.viewModelScope
+import com.yubico.yubikit.android.app.R
+import com.yubico.yubikit.android.app.ui.getSecret
 import com.yubico.yubikit.piv.PinPolicy
 import com.yubico.yubikit.piv.PivSession
 import com.yubico.yubikit.piv.Slot
 import com.yubico.yubikit.piv.jca.PivPrivateKey
 import com.yubico.yubikit.piv.jca.PivProvider
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import java.security.KeyStore
 import java.security.cert.X509Certificate
 
-class ClientCertsWebViewClient(private val viewModel: ClientCertificatesViewModel) :
+class DemoWebViewClient(private val viewModel: ClientCertificatesViewModel) :
     WebViewClient() {
 
     companion object {
@@ -35,6 +39,32 @@ class ClientCertsWebViewClient(private val viewModel: ClientCertificatesViewMode
         super.onPageFinished(view, url)
     }
 
+    private suspend fun getCertificates(resources: Resources) =
+        viewModel.usePiv(resources.getString(R.string.client_certs_dialog_title_read_certs)) { piv: PivSession ->
+            // We initialize a second PivProvider here to use with the KeyStore instance.
+            // Unlike the one in MainViewModel which is registered as a system Provider,
+            // this one will only be used synchronously with this instance of the PivSession.
+            val keyStore = KeyStore.getInstance("YKPiv", PivProvider(piv))
+            keyStore.load(null)
+            listOf(
+                Slot.AUTHENTICATION,
+                Slot.SIGNATURE,
+                Slot.KEY_MANAGEMENT,
+                Slot.CARD_AUTH
+            ).mapNotNull { slot ->
+                // We avoid padding the PIN here since we're not sure we need it yet
+                when (val entry = keyStore.getEntry(slot.stringAlias, null)) {
+                    // All entries returned here should be PrivateKeyEntry's, or null
+                    is KeyStore.PrivateKeyEntry ->
+                        Pair(
+                            entry.privateKey as PivPrivateKey,
+                            entry.certificate as X509Certificate
+                        )
+                    else -> null
+                }
+            }
+        }
+
     /**
      * Handles client certificate requests using PIV on a YubiKey
      */
@@ -42,51 +72,27 @@ class ClientCertsWebViewClient(private val viewModel: ClientCertificatesViewMode
         Log.d(TAG, "Client certificate request from ${request.host}")
         viewModel.viewModelScope.launch {
             try {
-                // Get the available certificates
-                val entries = viewModel.usePiv("Read PIV certificates") { piv: PivSession ->
-                    // We initialize a second PivProvider here to use with the KeyStore instance.
-                    // Unlike the one in MainViewModel which is registered as a system Provider,
-                    // this one will only be used synchronously with this instance of the PivSession.
-                    val keyStore = KeyStore.getInstance("YKPiv", PivProvider(piv))
-                    keyStore.load(null)
-                    listOf(
-                        Slot.AUTHENTICATION,
-                        Slot.SIGNATURE,
-                        Slot.KEY_MANAGEMENT,
-                        Slot.CARD_AUTH
-                    ).mapNotNull { slot ->
-                        // We avoid padding the PIN here since we're not sure we need it yet
-                        when (val entry = keyStore.getEntry(slot.stringAlias, null)) {
-                            // All entries returned here should be PrivateKeyEntry's, or null
-                            is KeyStore.PrivateKeyEntry ->
-                                Pair(
-                                    entry.privateKey as PivPrivateKey,
-                                    entry.certificate as X509Certificate
-                                )
-                            else -> null
-                        }
-                    }
-                }
-
+                val certificates = getCertificates(view.resources)
                 // Select which certificate to use
                 val index =
                     selectItem(
                         view.context,
-                        "Select a client certificate",
-                        entries
+                        view.resources.getString(R.string.client_certs_dialog_select_cert),
+                        certificates
                     ) { (key, certificate) -> "${key.slot.stringAlias}: ${certificate.issuerDN.name}" }
 
-                val (privateKey, certificate) = entries[index]
+                val (privateKey, certificate) = certificates[index]
                 if (privateKey.pinPolicy != PinPolicy.NEVER) {
                     // Now that we know we might need the PIN, we ask the user for it
-                    val pin = enterPin(view.context, "Enter PIV PIN")
-                    // ...and give it to the PrivateKey so that it can be used
-                    privateKey.setPin(pin)
+                    getSecret(view.context, R.string.client_certs_dialog_enter_pin)?.apply {
+                        // ...and give it to the PrivateKey so that it can be used
+                        privateKey.setPin(toCharArray())
+                    } ?: throw CancellationException()
                 }
                 // When the private key is used, it will again require a YubiKey connection
                 request.proceed(privateKey, arrayOf(certificate))
             } catch (e: Exception) {
-                Log.e("YKBrowser", "Error getting client certificate auth", e)
+                Log.e(TAG, "Error getting client certificate auth", e)
                 request.cancel()
             }
         }

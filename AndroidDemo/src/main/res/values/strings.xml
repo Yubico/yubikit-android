@@ -79,8 +79,37 @@
     <string name="oath_issuer">Credential issuer</string>
     <string name="oath_add">Add new credential</string>
 
-    <string name="client_certs_info">Import a PIV certificate into testing YubiKey and click to Go button.</string>
-    <string name="client_certs_go">Go!</string>
+    <string name="client_certs_info_header_1">Client SSL certificate demo</string>
+    <string name="client_certs_info_header_2">Prepare YubiKey</string>
+    <string name="client_certs_info_header_3">Test client certificate</string>
+
+    <string name="client_certs_info_par_1">This screen shows how to use PIV JCA implementation of YubiKey to connect to sites which require client SSL certificate, this example uses client.badssl.com.</string>
+    <string name="client_certs_info_par_2">1. Download cert from https://badssl.com/download/
+\n2. Import it into a YubiKey PIV slot</string>
+    <string name="client_certs_info_par_3"> click to go to test site</string>
+    <string name="client_certs_info_par_4">\u2022 test site will start loading
+\n\u2022 the app will ask for YubiKey
+\n\u2022 tap the NFC key or connect it via USB
+\n\u2022 list of PIV certs from the YubiKey is presented
+\n\u2022 select correct certificate
+\n\u2022 if asked for PIN, provide it
+\n\u2022 if asked for YubiKey, provide it
+\n\u2022 test site loads successfully
+    </string>
+    <string name="client_certs_info_par_5">show this help</string>
+
+    <string name="client_certs_url">https://client.badssl.com</string>
+    <string name="client_certs_help_description">Screen help</string>
+    <string name="client_certs_go_description">Go to test site</string>
+
+    <string name="client_certs_dialog_title_insert_key">Insert YubiKey</string>
+    <string name="client_certs_dialog_msg_insert_key">Insert or tap your YubiKey</string>
+    <string name="client_certs_dialog_msg_insert_key_now">Insert or tap your YubiKey now</string>
+    <string name="client_certs_dialog_msg_nfc_hold">Hold your YubiKey still</string>
+    <string name="client_certs_dialog_msg_nfc_remove">Remove your YubiKey</string>
+    <string name="client_certs_dialog_enter_pin">Enter PIV PIN</string>
+    <string name="client_certs_dialog_select_cert">Select a client certificate</string>
+    <string name="client_certs_dialog_title_read_certs">Read PIV certificates</string>
 
     <string name="about">About</string>
     <string name="about_app">YubiKit is a library provided by Yubico for interacting with YubiKeys.

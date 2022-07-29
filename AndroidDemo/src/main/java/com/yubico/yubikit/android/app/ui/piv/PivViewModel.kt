@@ -30,7 +30,7 @@ import com.yubico.yubikit.piv.PivSession
 import com.yubico.yubikit.piv.Slot
 import java.security.cert.X509Certificate
 
-class PivViewModel : YubiKeyViewModel<PivSession>() {
+open class PivViewModel : YubiKeyViewModel<PivSession>() {
     /**
      * List of slots that we will show on demo UI
      */
