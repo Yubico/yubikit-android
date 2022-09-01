@@ -23,6 +23,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.activity.result.contract.ActivityResultContract
+import androidx.activity.result.launch
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import com.yubico.yubikit.android.app.MainViewModel
@@ -102,7 +103,7 @@ class YubiOtpFragment : Fragment() {
 
         binding.btnRequestOtp.setOnClickListener {
             activityViewModel.setYubiKeyListenerEnabled(false)
-            requestOtp.launch(null)
+            requestOtp.launch()
         }
     }
 }
