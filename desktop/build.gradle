@@ -1,7 +1,7 @@
 apply plugin: 'java-library'
 
 dependencies {
-    api project(':core')
+    api project(':support')
 
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
 

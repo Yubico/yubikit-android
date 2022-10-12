@@ -1,85 +1,80 @@
+/*
+ * Copyright (C) 2022 Yubico.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.yubico.yubikit.desktop;
 
 import com.yubico.yubikit.core.Logger;
+import com.yubico.yubikit.core.UsbPid;
+import com.yubico.yubikit.core.YubiKeyConnection;
+import com.yubico.yubikit.core.YubiKeyDevice;
+import com.yubico.yubikit.core.fido.FidoConnection;
+import com.yubico.yubikit.core.otp.OtpConnection;
+import com.yubico.yubikit.core.smartcard.SmartCardConnection;
+import com.yubico.yubikit.desktop.hid.HidManager;
+import com.yubico.yubikit.desktop.pcsc.PcscManager;
+import com.yubico.yubikit.management.DeviceInfo;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import javax.smartcardio.CardException;
-import javax.smartcardio.CardTerminal;
-import javax.smartcardio.CardTerminals;
-import javax.smartcardio.TerminalFactory;
+import java.util.*;
 
 public class YubiKitManager {
-    private final CardTerminals terminals;
-    private final AtomicBoolean running = new AtomicBoolean();
-    private final Map<String, PcscDevice> sessions = new HashMap<>();
+    private final PcscManager pcscManager;
+    private final HidManager hidManager;
 
-    public YubiKitManager(CardTerminals cardTerminals) {
-        this.terminals = cardTerminals;
+    public YubiKitManager(PcscManager pcscManager, HidManager hidManager) {
+        this.pcscManager = pcscManager;
+        this.hidManager = hidManager;
     }
 
     public YubiKitManager() {
-        this(TerminalFactory.getDefault().terminals());
+        this(new PcscManager(), new HidManager());
     }
 
-    public void stop() {
-        running.set(false);
-    }
-
-    /**
-     * Starts listening for YubiKey device events. This method will continue to run until
-     * {@link #stop} is called. The callback will be invoked in the same (single) thread which this
-     * method is invoked on.
-     *
-     * @param configuration options which influence listening behavior
-     * @param listener      the callback to invoke for sessions added/removed
-     */
-    public void run(PcscConfiguration configuration, PcscSessionListener listener) {
-        if (!running.compareAndSet(false, true)) {
-            throw new IllegalStateException("PCSC detection already running!");
+    List<? extends UsbYubiKeyDevice> listDevices(Class<? extends YubiKeyConnection> connectionType) {
+        if (SmartCardConnection.class.isAssignableFrom(connectionType)) {
+            return pcscManager.getDevices();
+        } else if (OtpConnection.class.isAssignableFrom(connectionType)) {
+            return hidManager.getOtpDevices();
+        } else if (FidoConnection.class.isAssignableFrom(connectionType)) {
+            return hidManager.getFidoDevices();
         }
+        throw new IllegalStateException("Unsupported connection type");
+    }
 
-        while (running.get()) {
-            Set<String> removed = new HashSet<>(sessions.keySet());
-            try {
-                for (CardTerminal terminal : terminals.list(CardTerminals.State.CARD_PRESENT)) {
-                    String name = terminal.getName();
-                    if (sessions.containsKey(name)) {
-                        removed.remove(name);
-                    } else if (configuration.filterName(name)) {
-                        PcscDevice session = new PcscDevice(terminal);
-                        sessions.put(name, session);
-                        if (configuration.isInterfaceAllowed(session.getTransport())) {
-                            Logger.d("Session started: " + name);
-                            listener.onSessionReceived(session);
-                        }
-                    }
+    public Map<YubiKeyDevice, DeviceInfo> listAllDevices(Set<Class<? extends YubiKeyConnection>> connectionTypes) {
+        Map<UsbPid, UsbPidGroup> groups = new HashMap<>();
+        for (Class<? extends YubiKeyConnection> connectionType : connectionTypes) {
+            Logger.d("Enumerate devices for " + connectionType);
+            for (UsbYubiKeyDevice device : listDevices(connectionType)) {
+                UsbPid pid = device.getPid();
+                Logger.d("Found device with PID " + pid);
+                if (!groups.containsKey(pid)) {
+                    groups.put(pid, new UsbPidGroup(pid));
                 }
-                for (String name : removed) {
-                    PcscDevice session = sessions.remove(name);
-                    if (configuration.isInterfaceAllowed(session.getTransport())) {
-                        Logger.d("Session ended: " + name);
-                        listener.onSessionRemoved(session);
-                    }
-                }
-                terminals.waitForChange(configuration.getPollingTimeout());
-            } catch (CardException e) {
-                e.printStackTrace();
+                groups.get(pid).add(connectionType, device, false);
             }
         }
 
-        for (Map.Entry<String, PcscDevice> entry : sessions.entrySet()) {
-            PcscDevice session = entry.getValue();
-            if (configuration.isInterfaceAllowed(session.getTransport())) {
-                Logger.d("Session ended: " + entry.getKey());
-                listener.onSessionRemoved(session);
-            }
+        Map<YubiKeyDevice, DeviceInfo> devices = new LinkedHashMap<>();
+        for (UsbPidGroup group: groups.values()) {
+            devices.putAll(group.getDevices());
         }
-        sessions.clear();
+        return devices;
+    }
+
+    public Map<YubiKeyDevice, DeviceInfo> listAllDevices() {
+        return listAllDevices(new HashSet<>(Arrays.asList(SmartCardConnection.class, OtpConnection.class, FidoConnection.class)));
     }
 }

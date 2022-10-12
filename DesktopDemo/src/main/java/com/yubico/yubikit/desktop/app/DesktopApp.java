@@ -1,10 +1,19 @@
 package com.yubico.yubikit.desktop.app;
 
 import com.yubico.yubikit.core.Logger;
+import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
 import com.yubico.yubikit.core.application.BadResponseException;
+import com.yubico.yubikit.core.fido.FidoConnection;
+import com.yubico.yubikit.core.otp.OtpConnection;
 import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.desktop.*;
+import com.yubico.yubikit.core.smartcard.SmartCardConnection;
+import com.yubico.yubikit.desktop.hid.HidDevice;
+import com.yubico.yubikit.desktop.hid.HidSessionListener;
+import com.yubico.yubikit.desktop.hid.HidManager;
+import com.yubico.yubikit.desktop.pcsc.NfcPcscDevice;
+import com.yubico.yubikit.management.DeviceInfo;
 import com.yubico.yubikit.piv.KeyType;
 import com.yubico.yubikit.piv.ManagementKeyType;
 import com.yubico.yubikit.piv.PinPolicy;
@@ -37,6 +46,10 @@ import java.security.Security;
 import java.security.SignatureException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Semaphore;
 
 import javax.net.ssl.HttpsURLConnection;
@@ -64,67 +77,56 @@ public class DesktopApp {
             }
         });
 
+        YubiKitManager manager = new YubiKitManager();
+        Map<YubiKeyDevice, DeviceInfo> devices = manager.listAllDevices();
+        Logger.d("Devices: " + devices);
+        for (Map.Entry<YubiKeyDevice, DeviceInfo> entry : devices.entrySet()) {
+            YubiKeyDevice device = entry.getKey();
+            DeviceInfo info = entry.getValue();
+            Logger.d("FOUND KEY: " + device + " " + info);
+            if (device.supportsConnection(SmartCardConnection.class)) {
+                Logger.d("Request CCID connection");
+                device.requestConnection(SmartCardConnection.class, value -> {
+                    try {
+                        Logger.d("Got CCID connection " + value.getValue());
+                    } catch (IOException e) {
+                        Logger.e("Failed to get CCID", e);
+                    }
+                });
+            }
+            if (device.supportsConnection(OtpConnection.class)) {
+                Logger.d("Request OTP connection");
+                device.requestConnection(OtpConnection.class, value -> {
+                    try {
+                        Logger.d("Got OTP connection " + value.getValue());
+                    } catch (IOException e) {
+                        Logger.e("Failed to get OTP", e);
+                    }
+                });
+            }
+            if (device.supportsConnection(FidoConnection.class)) {
+                Logger.d("Request FIDO connection");
+                device.requestConnection(FidoConnection.class, value -> {
+                    try {
+                        Logger.d("Got FIDO connection " + value.getValue());
+                    } catch (IOException e) {
+                        Logger.e("Failed to get FIDO", e);
+                    }
+                });
+            }
+        }
+
         //testHidOtp();
-        testCcid();
+        //testCcid();
+
+        Logger.d("Sleeping...");
+        try {
+            Thread.sleep(5000);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
 
         Logger.d("Application exited");
-    }
-
-    private static void testCcid() {
-        YubiKitManager yubikit = new YubiKitManager();
-
-        yubikit.run(new PcscConfiguration(), new PcscSessionListener() {
-            @Override
-            public void onSessionReceived(PcscDevice session) {
-                /*
-                if (session.getInterface() == Interface.NFC) {
-                    try {
-                        byte[] ndefData = session.readNdef();
-                        String otp = NdefUtils.getNdefPayload(ndefData);
-                        Logger.d("Read OTP: " + otp);
-                    } catch (IOException | ApduException | ApplicationNotAvailableException e) {
-                        e.printStackTrace();
-                    }
-                }
-
-                 */
-
-                testPiv(session);
-
-                try (PivSession piv = new PivSession(session.openIso7816Connection())) {
-                    /*
-                    PivJcaDeviceTests.testImportKeys(piv);
-                    PivJcaDeviceTests.testGenerateKeys(piv);
-
-                    PivDeviceTests.testSign(piv, KeyType.ECCP256);
-                    PivDeviceTests.testSign(piv, KeyType.RSA2048);
-                    PivDeviceTests.testDecrypt(piv, KeyType.RSA2048);
-                     */
-
-                    //testHttps(piv);
-
-                    /*
-                    for (Slot slot : Arrays.asList(Slot.AUTHENTICATION, Slot.SIGNATURE, Slot.CARD_AUTH, Slot.KEY_MANAGEMENT)) {
-                        System.out.println("Slot: " + slot);
-                        try {
-                            System.out.println(piv.getCertificate(slot));
-                        } catch (ApduException | BadResponseException e) {
-                            System.out.println("No certificate");
-                        }
-                    }*/
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-
-                yubikit.stop();
-            }
-
-            @Override
-            public void onSessionRemoved(PcscDevice session) {
-                Logger.d("Shutting down...");
-                yubikit.stop();
-            }
-        });
     }
 
     private static void testHttps(PivSession piv) throws Exception {
@@ -154,7 +156,7 @@ public class DesktopApp {
         Security.removeProvider("YKPiv");
     }
 
-    private static void testPiv(PcscDevice session) {
+    private static void testPiv(NfcPcscDevice session) {
         try (PivSession piv = new PivSession(session.openIso7816Connection())) {
             //piv.authenticate(new byte[]{1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8});
             //Logger.d("Generate key...");
@@ -174,7 +176,7 @@ public class DesktopApp {
 
             // Create certificate
             //Provider provider = new PivProvider(piv);
-            KeyPairGenerator kpg = KeyPairGenerator.getInstance("YkPivEC", provider);
+            KeyPairGenerator kpg = KeyPairGenerator.getInstance("YKPivEC", provider);
             kpg.initialize(new PivAlgorithmParameterSpec(Slot.AUTHENTICATION, KeyType.ECCP256, PinPolicy.ALWAYS, TouchPolicy.DEFAULT, "123456".toCharArray()));
             KeyPair keyPair = kpg.generateKeyPair();
 
@@ -244,7 +246,7 @@ public class DesktopApp {
     }
 
     private static void testHidOtp() {
-        YubiKitHidManager hidManager = new YubiKitHidManager();
+        HidManager hidManager = new HidManager();
 
         Semaphore lock = new Semaphore(0);
 
