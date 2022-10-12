@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Yubico.
+ * Copyright (C) 2019-2022 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,20 +14,20 @@
  * limitations under the License.
  */
 
-package com.yubico.yubikit.desktop;
+package com.yubico.yubikit.desktop.pcsc;
 
-public interface HidSessionListener {
+public interface PcscSessionListener {
     /**
      * Invoked when detected inserted device after usb discovery started
      *
      * @param session usb session that associated with plugged in device
      */
-    void onSessionReceived(HidDevice session);
+    void onSessionReceived(NfcPcscDevice session);
 
     /**
      * Invoked when detected removal/ejection of usb device after usb discovery started
      *
      * @param session usb session that will become inactive
      */
-    void onSessionRemoved(HidDevice session);
+    void onSessionRemoved(NfcPcscDevice session);
 }

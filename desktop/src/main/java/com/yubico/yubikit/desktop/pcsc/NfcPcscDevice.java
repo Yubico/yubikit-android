@@ -1,4 +1,20 @@
-package com.yubico.yubikit.desktop;
+/*
+ * Copyright (C) 2022 Yubico.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.yubico.yubikit.desktop.pcsc;
 
 import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.YubiKeyConnection;
@@ -19,39 +35,16 @@ import java.util.concurrent.Executors;
 import javax.smartcardio.CardException;
 import javax.smartcardio.CardTerminal;
 
-public class PcscDevice implements YubiKeyDevice {
+public class NfcPcscDevice extends PcscDevice {
     private static final byte[] NDEF_AID = new byte[]{(byte) 0xd2, 0x76, 0x00, 0x00, (byte) 0x85, 0x01, 0x01};
 
-    private final ExecutorService executorService = Executors.newSingleThreadExecutor();
-    private final CardTerminal terminal;
-    private final Transport transport;
-
-    public PcscDevice(CardTerminal terminal) {
-        this.terminal = terminal;
-
-        // If the terminal has YubiKey in the name, it's connected via USB. Otherwise we assume it's NFC
-        if (terminal.getName().toLowerCase().contains("yubikey")) {
-            transport = Transport.USB;
-        } else {
-            transport = Transport.NFC;
-        }
-    }
-
-    public String getReaderName() {
-        return terminal.getName();
+    public NfcPcscDevice(CardTerminal terminal) {
+        super(terminal);
     }
 
     @Override
     public Transport getTransport() {
-        return transport;
-    }
-
-    public SmartCardConnection openIso7816Connection() throws IOException {
-        try {
-            return new PcscSmartCardConnection(terminal.connect("T=1"));
-        } catch (CardException e) {
-            throw new IOException(e);
-        }
+        return Transport.NFC;
     }
 
     /**
@@ -77,26 +70,5 @@ public class PcscDevice implements YubiKeyDevice {
             }
             return buf.array();
         }
-    }
-
-    @Override
-    public boolean supportsConnection(Class<? extends YubiKeyConnection> connectionType) {
-        return connectionType.isAssignableFrom(PcscSmartCardConnection.class);
-    }
-
-    @Override
-    public <T extends YubiKeyConnection> void requestConnection(Class<T> connectionType, Callback<Result<T, IOException>> callback) {
-        if (!supportsConnection(connectionType)) {
-            throw new IllegalStateException("Unsupported connection type");
-        }
-        executorService.submit(() -> {
-            try {
-                callback.invoke(Result.success(connectionType.cast(new PcscSmartCardConnection(terminal.connect("T=1")))));
-            } catch (CardException e) {
-                callback.invoke(Result.failure(new IOException(e)));
-            } catch (IOException e) {
-                callback.invoke(Result.failure(e));
-            }
-        });
     }
 }
