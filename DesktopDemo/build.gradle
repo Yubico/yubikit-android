@@ -1,0 +1,20 @@
+plugins {
+    id 'application'
+}
+
+dependencies {
+    compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
+
+    implementation project(':desktop')
+    implementation project(':testing')
+}
+
+application {
+    mainClassName = "com.yubico.yubikit.desktop.app.DesktopApp"
+    applicationName = 'DesktopApp'
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}

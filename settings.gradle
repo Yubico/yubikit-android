@@ -1,3 +1,4 @@
 include ':core', ':oath', ':yubiotp', ':management', ':piv', ':openpgp', ':support', ':fido'
 include ':testing'
 include ':android', ':AndroidDemo', ':testing-android'
+include ':desktop', ':DesktopDemo'
