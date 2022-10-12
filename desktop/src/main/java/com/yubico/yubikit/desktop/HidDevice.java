@@ -39,7 +39,7 @@ public class HidDevice implements YubiKeyDevice {
     @Override
     public boolean supportsConnection(Class<? extends YubiKeyConnection> connectionType) {
         if (connectionType.isAssignableFrom(HidOtpConnection.class)) {
-            return usagePage == 5;
+            return usagePage == 1;
         } else if (connectionType.isAssignableFrom(HidFidoConnection.class)) {
             return usagePage == 0xf1d0;
         }
