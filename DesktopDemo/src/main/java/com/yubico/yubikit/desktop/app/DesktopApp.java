@@ -4,13 +4,7 @@ import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
 import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.smartcard.ApduException;
-import com.yubico.yubikit.desktop.HidDevice;
-import com.yubico.yubikit.desktop.HidSessionListener;
-import com.yubico.yubikit.desktop.PcscConfiguration;
-import com.yubico.yubikit.desktop.PcscDevice;
-import com.yubico.yubikit.desktop.PcscSessionListener;
-import com.yubico.yubikit.desktop.YubiKitHidManager;
-import com.yubico.yubikit.desktop.YubiKitManager;
+import com.yubico.yubikit.desktop.*;
 import com.yubico.yubikit.piv.KeyType;
 import com.yubico.yubikit.piv.ManagementKeyType;
 import com.yubico.yubikit.piv.PinPolicy;
@@ -51,6 +45,10 @@ import javax.net.ssl.SSLContext;
 
 public class DesktopApp {
     public static void main(String[] argv) {
+        if (OperatingSystem.isMac()) {
+            System.setProperty("sun.security.smartcardio.library", "/System/Library/Frameworks/PCSC.framework/Versions/Current/PCSC");
+        }
+
         System.out.println("Insert YubiKey now...");
 
         Logger.setLogger(new Logger() {
@@ -176,7 +174,7 @@ public class DesktopApp {
 
             // Create certificate
             //Provider provider = new PivProvider(piv);
-            KeyPairGenerator kpg = KeyPairGenerator.getInstance("EC", provider);
+            KeyPairGenerator kpg = KeyPairGenerator.getInstance("YkPivEC", provider);
             kpg.initialize(new PivAlgorithmParameterSpec(Slot.AUTHENTICATION, KeyType.ECCP256, PinPolicy.ALWAYS, TouchPolicy.DEFAULT, "123456".toCharArray()));
             KeyPair keyPair = kpg.generateKeyPair();
 

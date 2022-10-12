@@ -14,25 +14,27 @@
  * limitations under the License.
  */
 
-package com.yubico.yubikit.desktop;
+package com.yubico.yubikit.testing;
 
-import java.lang.*;
+import com.yubico.yubikit.testing.framework.PivInstrumentedTests;
+import com.yubico.yubikit.testing.piv.PivDeviceTests;
 
-public class OperatingSystem {
-    public static String Name = System.getProperty("os.name");
+import org.junit.Test;
 
-    public static boolean isWindows()
-    {
-        return Name.toLowerCase().contains("win");
+public class PivTests extends PivInstrumentedTests {
+
+    @Test
+    public void testPin() throws Throwable {
+        withPivSession(PivDeviceTests::testPin);
     }
 
-    public static boolean isMac()
-    {
-        return Name.toLowerCase().contains("mac");
+    @Test
+    public void testPuk() throws Throwable {
+        withPivSession(PivDeviceTests::testPuk);
     }
 
-    public static boolean isLinux()
-    {
-        return Name.toLowerCase().contains("linux");
+    @Test
+    public void testManagementKey() throws Throwable {
+        withPivSession(PivDeviceTests::testManagementKey);
     }
 }
