@@ -23,16 +23,27 @@ public class HidOtpConnection implements OtpConnection {
 
     @Override
     public void receive(byte[] report) throws IOException {
-        int received = hidDevice.getFeatureReport(report, interfaceId);
-        if (received != FEATURE_REPORT_SIZE) {
+        int offset = OperatingSystem.isWindows() ? 1 : 0;
+        int reportSize = FEATURE_REPORT_SIZE + offset;
+
+        byte[] temp = new byte[reportSize];
+        int received = hidDevice.getFeatureReport(temp, interfaceId);
+
+        System.arraycopy(temp, offset, report, 0, FEATURE_REPORT_SIZE);
+
+        if (received != reportSize) {
             throw new IOException("Unexpected amount of data read: " + received);
         }
     }
 
     @Override
     public void send(byte[] report) throws IOException {
+        int offset = OperatingSystem.isWindows() ? 1 : 0;
+        int reportSize = FEATURE_REPORT_SIZE + offset;
+
         int sent = hidDevice.sendFeatureReport(report, interfaceId);
-        if (sent != FEATURE_REPORT_SIZE) {
+        
+        if (sent != reportSize) {
             throw new IOException("Unexpected amount of data sent: " + sent);
         }
     }
