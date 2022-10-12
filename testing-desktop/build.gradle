@@ -1,0 +1,28 @@
+plugins {
+    id 'java'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.jetbrains:annotations:20.1.0'
+    testImplementation('junit:junit:4.13.2')
+    testRuntimeOnly('org.junit.vintage:junit-vintage-engine:5.9.0')
+
+    implementation project(':desktop')
+    implementation project(':piv')
+    implementation project(':testing')
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
+
+test {
+    useJUnitPlatform()
+}
+
+description = "This module contains instrumented test framework and tests for yubikit-desktop."
