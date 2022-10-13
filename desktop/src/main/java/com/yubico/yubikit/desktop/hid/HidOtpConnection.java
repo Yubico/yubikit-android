@@ -43,10 +43,7 @@ public class HidOtpConnection implements OtpConnection {
         int offset = OperatingSystem.isWindows() ? 1 : 0;
         int reportSize = FEATURE_REPORT_SIZE + offset;
 
-        byte[] temp = new byte[reportSize];
-        int received = hidDevice.getFeatureReport(temp, interfaceId);
-
-        System.arraycopy(temp, offset, report, 0, FEATURE_REPORT_SIZE);
+        int received = hidDevice.getFeatureReport(report, interfaceId);
 
         if (received != reportSize) {
             throw new IOException("Unexpected amount of data read: " + received);
