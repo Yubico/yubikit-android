@@ -18,53 +18,21 @@ package com.yubico.yubikit.testing;
 
 import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.desktop.*;
-import org.jetbrains.annotations.NotNull;
-
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
 
 public class DesktopTestDriver {
 
-    private final BlockingQueue<PcscDevice> sessionQueue = new ArrayBlockingQueue<>(1);
-
     private final YubiKitManager yubikit;
-
-    private Thread observerThread = null;
 
     public DesktopTestDriver() {
         if (OperatingSystem.isMac()) {
             System.setProperty("sun.security.smartcardio.library", "/System/Library/Frameworks/PCSC.framework/Versions/Current/PCSC");
         }
         yubikit = new YubiKitManager();
-        startObserving();
     }
 
-    private void startObserving() {
-
-        observerThread = new Thread(() -> yubikit.run(new PcscConfiguration(), new PcscSessionListener() {
-            @Override
-            public void onSessionReceived(@NotNull PcscDevice session) {
-                sessionQueue.add(session);
-                System.out.println("Session added");
-            }
-
-            @Override
-            public void onSessionRemoved(@NotNull PcscDevice session) {
-                System.out.println("Session removed");
-            }
-        }));
-
-        observerThread.start();
-    }
-
-    private void stopObserving() {
-        yubikit.stop();
-    }
 
     public YubiKeyDevice awaitSession() throws InterruptedException {
-        YubiKeyDevice connectedDevice = sessionQueue.take();
-        System.out.println("Device connected");
-        return connectedDevice;
+        return yubikit.listAllDevices().keySet().iterator().next();
     }
 
     public void returnSession(YubiKeyDevice device) {
