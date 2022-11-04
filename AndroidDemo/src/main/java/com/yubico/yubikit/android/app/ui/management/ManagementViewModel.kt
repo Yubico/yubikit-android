@@ -28,6 +28,7 @@ import com.yubico.yubikit.core.application.ApplicationNotAvailableException
 import com.yubico.yubikit.core.fido.FidoConnection
 import com.yubico.yubikit.core.otp.OtpConnection
 import com.yubico.yubikit.core.smartcard.SmartCardConnection
+import com.yubico.yubikit.core.util.StringUtils
 import com.yubico.yubikit.management.DeviceInfo
 import com.yubico.yubikit.management.ManagementSession
 import com.yubico.yubikit.support.DeviceUtil
@@ -35,7 +36,8 @@ import java.io.IOException
 
 data class ConnectedDeviceInfo(
     val deviceInfo: DeviceInfo,
-    val type: YubiKeyType?
+    val type: YubiKeyType?,
+    val atr: String
 )
 
 class ManagementViewModel : YubiKeyViewModel<ManagementSession>() {
@@ -50,8 +52,10 @@ class ManagementViewModel : YubiKeyViewModel<ManagementSession>() {
 
         val readInfo: (YubiKeyConnection) -> Unit = {
             try {
+                val atr = StringUtils.bytesToHex((it as? SmartCardConnection)?.atr ?: byteArrayOf())
+
                 _deviceInfo.postValue(
-                    ConnectedDeviceInfo(DeviceUtil.readInfo(it, usbPid), usbPid?.type)
+                    ConnectedDeviceInfo(DeviceUtil.readInfo(it, usbPid), usbPid?.type, atr)
                 )
             } catch (e: Exception) {
                 Logger.d("Caught ${e.message} when reading device info")

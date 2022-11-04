@@ -69,4 +69,10 @@ public class NfcSmartCardConnection implements SmartCardConnection {
         card.close();
         Logger.d("nfc connection closed");
     }
+
+    @Override
+    public byte[] getAtr() {
+        byte[] historicalBytes = card.getHistoricalBytes();
+        return historicalBytes != null ? historicalBytes.clone() : new byte[]{};
+    }
 }

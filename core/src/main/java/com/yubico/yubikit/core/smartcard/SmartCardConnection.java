@@ -49,4 +49,11 @@ public interface SmartCardConnection extends YubiKeyConnection {
      * @return true if this connection object supports Extended length APDUs.
      */
     boolean isExtendedLengthApduSupported();
+
+    /**
+     * Retrieve Answer to reset (or answer to select for NFC)
+     *
+     * @return data block returned for reset command
+     */
+    byte[] getAtr();
 }
