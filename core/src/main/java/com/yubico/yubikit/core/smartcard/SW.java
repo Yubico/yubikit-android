@@ -31,6 +31,7 @@ public final class SW {
     public static final short INCORRECT_PARAMETERS = 0x6A80;
     public static final short FILE_NOT_FOUND = 0x6A82;
     public static final short NO_SPACE = 0x6A84;
+    public static final short WRONG_PARAMETER = 0x6B00;
     public static final short INVALID_INSTRUCTION = 0x6D00;
     public static final short COMMAND_ABORTED = 0x6F00;
     public static final short OK = (short) 0x9000;
