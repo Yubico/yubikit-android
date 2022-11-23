@@ -33,6 +33,12 @@ jobs:
       with:
         languages: ${{ matrix.language }}
 
+    - name: Setup Java
+      uses: actions/setup-java@v3
+      with:
+        distribution: 'zulu'
+        java-version: '11.0.16'
+
     - name: Autobuild
       uses: github/codeql-action/autobuild@v2
 
