@@ -2,9 +2,9 @@
 <resources>
 
     <style name="YubiKitPromptDialogTheme" parent="android:Theme.Dialog">
-        <item name="android:background">@color/dialog_background</item>
-        <item name="android:textColorPrimary">@color/text_color_primary</item>
-        <item name="android:textColorSecondary">@color/text_color_secondary</item>
+        <item name="android:background">@color/yubikit_dialog_background</item>
+        <item name="android:textColorPrimary">@color/yubikit_text_color_primary</item>
+        <item name="android:textColorSecondary">@color/yubikit_text_color_secondary</item>
         <!--<item name="android:windowTitleStyle">@style/YubiKitPromptDialogWindowTitle</item>-->
         <item name="android:buttonStyle">@style/YubiKitPromptDialogButton</item>
         <item name="android:backgroundDimEnabled">true</item>
