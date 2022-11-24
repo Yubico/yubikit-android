@@ -81,7 +81,8 @@ class ManagementFragment : YubiKeyFragment<ManagementSession, ManagementViewMode
                         "SKY: ${info.isSky}\n" +
                         "Locked: ${info.isLocked}\n" +
                         "Auto eject timeout: ${info.config.autoEjectTimeout}\n" +
-                        "Challenge response timeout: ${info.config.challengeResponseTimeout}"
+                        "Challenge response timeout: ${info.config.challengeResponseTimeout}\n" +
+                        "ATR: ${it.atr}"
                 checkboxIds.forEach { (transport, capability), id ->
                     view.findViewById<CheckBox>(id).let { checkbox ->
                         if (info.getSupportedCapabilities(transport) and capability.bit != 0) {

@@ -111,6 +111,11 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
         return transceive(REQUEST_MESSAGE_TYPE, apdu);
     }
 
+    @Override
+    public byte[] getAtr() {
+        return atr.clone();
+    }
+
     /**
      * Does the data exchange between phone and connected usb device with bulk messages
      * All bulk messages begin with a 10-bytes header, followed by message-specific data.
