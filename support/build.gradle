@@ -4,9 +4,11 @@ dependencies {
     api project(':management')
     api project(':yubiotp')
 
+
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
 
     testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.jetbrains:annotations:15.0'
     testImplementation project(':testing')
 }
 
