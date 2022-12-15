@@ -510,6 +510,10 @@ public class DeviceUtil {
                 namePartsList.add("FIPS");
             }
 
+            if (info.isSky() && info.getSerialNumber() != null) {
+                namePartsList.add("- Enterprise Edition");
+            }
+
             StringBuilder builder = new StringBuilder();
             for (int partCount = 0; partCount < namePartsList.size(); partCount++)
             {
