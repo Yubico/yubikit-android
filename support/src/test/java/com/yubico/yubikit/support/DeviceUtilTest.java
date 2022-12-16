@@ -52,5 +52,7 @@ public class DeviceUtilTest {
         Assert.assertEquals("Security Key C NFC", DeviceUtil.getName(infoSky(FormFactor.USB_C_KEYCHAIN), keyType));
         Assert.assertEquals("Security Key NFC - Enterprise Edition", DeviceUtil.getName(infoSkyEnterprise(FormFactor.USB_A_KEYCHAIN), keyType));
         Assert.assertEquals("Security Key C NFC - Enterprise Edition", DeviceUtil.getName(infoSkyEnterprise(FormFactor.USB_C_KEYCHAIN), keyType));
+        Assert.assertEquals("Security Key NFC Bio - Enterprise Edition", DeviceUtil.getName(infoSkyEnterprise(FormFactor.USB_A_BIO), keyType));
+        Assert.assertEquals("Security Key C NFC Bio - Enterprise Edition", DeviceUtil.getName(infoSkyEnterprise(FormFactor.USB_C_BIO), keyType));
     }
 }
