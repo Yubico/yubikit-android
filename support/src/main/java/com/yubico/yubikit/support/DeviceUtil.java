@@ -16,14 +16,6 @@
 
 package com.yubico.yubikit.support;
 
-import static com.yubico.yubikit.management.Capability.FIDO2;
-import static com.yubico.yubikit.management.Capability.OATH;
-import static com.yubico.yubikit.management.Capability.OPENPGP;
-import static com.yubico.yubikit.management.Capability.OTP;
-import static com.yubico.yubikit.management.Capability.PIV;
-import static com.yubico.yubikit.management.Capability.U2F;
-import static com.yubico.yubikit.management.ManagementSession.FEATURE_DEVICE_INFO;
-
 import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.UsbInterface;
@@ -31,11 +23,11 @@ import com.yubico.yubikit.core.UsbPid;
 import com.yubico.yubikit.core.Version;
 import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.YubiKeyType;
-import com.yubico.yubikit.core.smartcard.AppId;
 import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
 import com.yubico.yubikit.core.application.CommandException;
 import com.yubico.yubikit.core.fido.FidoConnection;
 import com.yubico.yubikit.core.otp.OtpConnection;
+import com.yubico.yubikit.core.smartcard.AppId;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.smartcard.SmartCardProtocol;
 import com.yubico.yubikit.management.Capability;
@@ -55,7 +47,7 @@ import javax.annotation.Nullable;
 
 public class DeviceUtil {
 
-    private static final Integer baseNeoApps = OTP.bit | OATH.bit | PIV.bit | OPENPGP.bit;
+    private static final Integer baseNeoApps = Capability.OTP.bit | Capability.OATH.bit | Capability.PIV.bit | Capability.OPENPGP.bit;
 
     static class OtpData {
         final Version version;
@@ -105,7 +97,7 @@ public class DeviceUtil {
 
         try {
             OtpData otpData = readOtpData(connection);
-            capabilities |= OTP.bit;
+            capabilities |= Capability.OTP.bit;
             if (version == null) {
                 version = otpData.version;
             }
@@ -133,7 +125,7 @@ public class DeviceUtil {
         }
 
         if (((interfaces & UsbInterface.FIDO) != 0) || version.isAtLeast(3, 3, 0)) {
-            capabilities |= U2F.bit;
+            capabilities |= Capability.U2F.bit;
         }
 
         Map<Transport, Integer> supportedCapabilities = new EnumMap<>(Transport.class);
@@ -173,7 +165,7 @@ public class DeviceUtil {
         for (int i = 0; i < 8; i++) {
             try {
                 if (otpSession == null) {
-                    if (managementSession.supports(FEATURE_DEVICE_INFO)) {
+                    if (managementSession.supports(ManagementSession.FEATURE_DEVICE_INFO)) {
                         return managementSession.getDeviceInfo();
                     } else {
                         otpSession = new YubiOtpSession(connection);
@@ -208,14 +200,14 @@ public class DeviceUtil {
         if (keyType == YubiKeyType.NEO) {
             usbSupported = baseNeoApps;
             if ((interfaces & UsbInterface.FIDO) != 0 || version.isAtLeast(3, 0, 0)) {
-                usbSupported |= U2F.bit;
+                usbSupported |= Capability.U2F.bit;
             }
             capabilities.put(Transport.USB, usbSupported);
             capabilities.put(Transport.NFC, usbSupported);
         } else if (keyType == YubiKeyType.YKP) {
-            capabilities.put(Transport.USB, OTP.bit | U2F.bit);
+            capabilities.put(Transport.USB, Capability.OTP.bit | Capability.U2F.bit);
         } else {
-            capabilities.put(Transport.USB, OTP.bit);
+            capabilities.put(Transport.USB, Capability.OTP.bit);
         }
 
         return new DeviceInfo(
@@ -243,7 +235,7 @@ public class DeviceUtil {
                             new Version(3, 0, 0);
 
             Map<Transport, Integer> supportedApps = new EnumMap<>(Transport.class);
-            supportedApps.put(Transport.USB, U2F.bit);
+            supportedApps.put(Transport.USB, Capability.U2F.bit);
             if (keyType == YubiKeyType.NEO) {
                 int usbApps = supportedApps.get(Transport.USB);
                 supportedApps.put(Transport.USB, usbApps | baseNeoApps);
@@ -328,21 +320,21 @@ public class DeviceUtil {
         if (info.hasTransport(Transport.USB) && enabledUsbCapabilities == null) {
 
             int usbEnabled = supportedUsbCapabilities;
-            if (usbEnabled == (OTP.bit | U2F.bit | UsbInterface.CCID)) {
+            if (usbEnabled == (Capability.OTP.bit | Capability.U2F.bit | UsbInterface.CCID)) {
                 // YubiKey Edge, hide unusable CCID interface from supported
-                supportedUsbCapabilities = OTP.bit | U2F.bit;
+                supportedUsbCapabilities = Capability.OTP.bit | Capability.U2F.bit;
             }
 
             if ((interfaces & UsbInterface.OTP) == 0) {
-                usbEnabled &= ~OTP.bit;
+                usbEnabled &= ~Capability.OTP.bit;
             }
 
             if ((interfaces & UsbInterface.FIDO) == 0) {
-                usbEnabled &= ~(U2F.bit | FIDO2.bit);
+                usbEnabled &= ~(Capability.U2F.bit | Capability.FIDO2.bit);
             }
 
             if ((interfaces & UsbInterface.CCID) == 0) {
-                usbEnabled &= ~(UsbInterface.CCID | OATH.bit | OPENPGP.bit | PIV.bit);
+                usbEnabled &= ~(UsbInterface.CCID | Capability.OATH.bit | Capability.OPENPGP.bit | Capability.PIV.bit);
             }
 
             enabledUsbCapabilities = usbEnabled;
@@ -425,7 +417,7 @@ public class DeviceUtil {
         final FormFactor formFactor = info.getFormFactor();
 
         final int supportedUsbCapabilities = info.getSupportedCapabilities(Transport.USB);
-        final boolean isFidoOnly = (supportedUsbCapabilities & ~(U2F.bit | FIDO2.bit)) == 0;
+        final boolean isFidoOnly = (supportedUsbCapabilities & ~(Capability.U2F.bit | Capability.FIDO2.bit)) == 0;
 
         final YubiKeyType yubiKeyType = keyType != null ?
                 keyType : (info.getSerialNumber() == null && isFidoOnly) ?
@@ -435,7 +427,7 @@ public class DeviceUtil {
         String deviceName = yubiKeyType.name;
 
         if (yubiKeyType == YubiKeyType.SKY) {
-            if ((supportedUsbCapabilities & FIDO2.bit) == FIDO2.bit) {
+            if ((supportedUsbCapabilities & Capability.FIDO2.bit) == Capability.FIDO2.bit) {
                 deviceName = "FIDO U2F Security Key"; // SKY 1
             }
             if (info.hasTransport(Transport.NFC)) {
@@ -453,7 +445,7 @@ public class DeviceUtil {
                 if (info.isFips()) {
                     //YK4 FIPS
                     deviceName = "YubiKey FIPS";
-                } else if (supportedUsbCapabilities == (OTP.bit | U2F.bit)) {
+                } else if (supportedUsbCapabilities == (Capability.OTP.bit | Capability.U2F.bit)) {
                     deviceName = "YubiKey Edge";
                 } else {
                     deviceName = "YubiKey 4";
@@ -532,8 +524,8 @@ public class DeviceUtil {
         OPENPGP(AppId.OPENPGP, Capability.OPENPGP),
         OATH(AppId.OATH, Capability.OATH),
         PIV(AppId.PIV, Capability.PIV),
-        FIDO(AppId.FIDO, U2F),
-        AID_U2F_YUBICO(new byte[]{(byte) 0xa0, 0x00, 0x00, 0x05, 0x27, 0x10, 0x02}, U2F);  // Old U2F AID
+        FIDO(AppId.FIDO, Capability.U2F),
+        AID_U2F_YUBICO(new byte[]{(byte) 0xa0, 0x00, 0x00, 0x05, 0x27, 0x10, 0x02}, Capability.U2F);  // Old U2F AID
 
         final public byte[] aid;
         final public Capability capability;
