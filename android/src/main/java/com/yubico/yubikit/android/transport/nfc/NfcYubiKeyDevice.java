@@ -25,6 +25,9 @@ import android.nfc.tech.Ndef;
 import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.YubiKeyDevice;
+import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
+import com.yubico.yubikit.core.smartcard.SmartCardConnection;
+import com.yubico.yubikit.core.smartcard.SmartCardProtocol;
 import com.yubico.yubikit.core.util.Callback;
 import com.yubico.yubikit.core.util.Result;
 
@@ -139,4 +142,33 @@ public class NfcYubiKeyDevice implements YubiKeyDevice {
                 }
             });
     }
+
+    /**
+     * Probe the nfc device whether it is a Yubico hardware.
+     * @return true if this device is a YubiKey or a Security Key by Yubico.
+     */
+    public boolean isYubiKey() {
+        final byte[] managementAppId = new byte[]{(byte) 0xa0, 0x00, 0x00, 0x05, 0x27, 0x47, 0x11, 0x17};
+        final byte[] yubiOtpAppId = new byte[]{(byte) 0xa0, 0x00, 0x00, 0x05, 0x27, 0x20, 0x01, 0x01};
+
+        try (SmartCardConnection connection = openConnection(SmartCardConnection.class)) {
+            SmartCardProtocol protocol = new SmartCardProtocol(connection);
+            try {
+                protocol.select(managementAppId);
+                return true;
+            } catch (ApplicationNotAvailableException managementNotAvailable) {
+                try {
+                    protocol.select(yubiOtpAppId);
+                    return true;
+                } catch (ApplicationNotAvailableException yubiOtpNotAvailable) {
+                    // ignored
+                }
+            }
+        } catch (IOException ioException) {
+            // ignored
+        }
+
+        return false;
+    }
+
 }
