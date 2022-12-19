@@ -82,8 +82,9 @@ public class DeviceUtil {
     }
 
     static DeviceInfo readInfoCcid(SmartCardConnection connection, int interfaces)
-            throws IOException {
+            throws IOException, UnknownKeyException {
 
+        boolean managementAvailable = true;
         Version version = null;
 
         try {
@@ -96,6 +97,7 @@ public class DeviceUtil {
                 // we ignore this exception and synthesize the information
             }
         } catch (ApplicationNotAvailableException ignored) {
+            managementAvailable = false;
             Logger.d("Couldn't select Management application, use fallback");
         }
 
@@ -109,7 +111,13 @@ public class DeviceUtil {
                 version = otpData.version;
             }
             serial = otpData.serial;
-        } catch (IOException | ApplicationNotAvailableException e) {
+        } catch (IOException e) {
+            Logger.d("Failure when selecting OTP application, serial unknown");
+        } catch (ApplicationNotAvailableException e) {
+            if (!managementAvailable) {
+                // this is not a known YubiKey
+                throw new UnknownKeyException();
+            }
             Logger.d("Couldn't select OTP application, serial unknown");
         }
 
@@ -287,7 +295,7 @@ public class DeviceUtil {
      *                                  {@link OtpConnection} or {@link FidoConnection}
      */
     public static DeviceInfo readInfo(YubiKeyConnection connection, @Nullable UsbPid pid)
-            throws IOException, IllegalArgumentException {
+            throws IOException, UnknownKeyException {
 
         YubiKeyType keyType = null;
         int interfaces = 0;

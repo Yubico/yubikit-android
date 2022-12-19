@@ -69,6 +69,12 @@ class ManagementFragment : YubiKeyFragment<ManagementSession, ManagementViewMode
         binding.applicationTable.visibility = View.GONE
         binding.save.visibility = View.GONE
 
+        viewModel.errorInfo.observe(viewLifecycleOwner) { errorString ->
+            errorString?.let {
+                binding.info.text = "Error:\n$it"
+            }
+        }
+
         viewModel.deviceInfo.observe(viewLifecycleOwner) {
             if (it != null) {
                 val info = it.deviceInfo
