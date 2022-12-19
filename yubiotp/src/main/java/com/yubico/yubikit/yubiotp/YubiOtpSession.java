@@ -146,7 +146,7 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
         if (connection.getTransport() == Transport.NFC) {
             // If available, this is more reliable than status.getVersion() over NFC
             try {
-                byte[] response = protocol.select(AppId.Management);
+                byte[] response = protocol.select(AppId.MANAGEMENT);
                 version = Version.parse(new String(response, StandardCharsets.UTF_8));
             } catch (ApplicationNotAvailableException e) {
                 // NB: YubiKey NEO doesn't support the Management Application over NFC.
@@ -154,7 +154,7 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
             }
         }
 
-        byte[] statusBytes = protocol.select(AppId.Otp);
+        byte[] statusBytes = protocol.select(AppId.OTP);
         if (version == null) {
             // We didn't get a version above, get it from the status struct.
             version = Version.fromBytes(statusBytes);

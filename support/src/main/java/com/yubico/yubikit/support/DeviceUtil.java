@@ -529,10 +529,10 @@ public class DeviceUtil {
 
     // Applet and capability it provides
     private enum CcidApplet {
-        OPENPGP(AppId.OpenPgp, Capability.OPENPGP),
-        OATH(AppId.Oath, Capability.OATH),
-        PIV(AppId.Piv, Capability.PIV),
-        FIDO(AppId.Fido, U2F),
+        OPENPGP(AppId.OPENPGP, Capability.OPENPGP),
+        OATH(AppId.OATH, Capability.OATH),
+        PIV(AppId.PIV, Capability.PIV),
+        FIDO(AppId.FIDO, U2F),
         AID_U2F_YUBICO(new byte[]{(byte) 0xa0, 0x00, 0x00, 0x05, 0x27, 0x10, 0x02}, U2F);  // Old U2F AID
 
         final public byte[] aid;

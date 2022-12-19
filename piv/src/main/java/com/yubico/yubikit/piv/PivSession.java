@@ -195,7 +195,7 @@ public class PivSession extends ApplicationSession<PivSession> {
      */
     public PivSession(SmartCardConnection connection) throws IOException, ApduException, ApplicationNotAvailableException {
         protocol = new SmartCardProtocol(connection);
-        protocol.select(AppId.Piv);
+        protocol.select(AppId.PIV);
         version = Version.fromBytes(protocol.sendAndReceive(new Apdu(0, INS_GET_VERSION, 0, 0, null)));
         protocol.enableWorkarounds(version);
 

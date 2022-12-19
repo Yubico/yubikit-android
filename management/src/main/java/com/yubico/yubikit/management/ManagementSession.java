@@ -103,16 +103,16 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
         SmartCardProtocol protocol = new SmartCardProtocol(connection);
         Version version;
         try {
-            version = Version.parse(new String(protocol.select(AppId.Management), StandardCharsets.UTF_8));
+            version = Version.parse(new String(protocol.select(AppId.MANAGEMENT), StandardCharsets.UTF_8));
             if (version.major == 3) {
                 // Workaround to "de-select" on NEO
                 connection.sendAndReceive(new byte[]{(byte) 0xa4, 0x04, 0x00, 0x08});
-                protocol.select(AppId.Otp);
+                protocol.select(AppId.OTP);
             }
         } catch (ApplicationNotAvailableException e) {
             if (connection.getTransport() == Transport.NFC) {
                 // NEO doesn't support the Management Application over NFC, but can use the OTP application.
-                version = Version.fromBytes(protocol.select(AppId.Otp));
+                version = Version.fromBytes(protocol.select(AppId.OTP));
             } else {
                 throw e;
             }

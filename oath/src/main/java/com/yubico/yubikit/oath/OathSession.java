@@ -124,7 +124,7 @@ public class OathSession extends ApplicationSession<OathSession> {
      */
     public OathSession(SmartCardConnection connection) throws IOException, ApplicationNotAvailableException {
         protocol = new SmartCardProtocol(connection, INS_SEND_REMAINING);
-        SelectResponse selectResponse = new SelectResponse(protocol.select(AppId.Oath));
+        SelectResponse selectResponse = new SelectResponse(protocol.select(AppId.OATH));
         version = selectResponse.version;
         deviceId = selectResponse.getDeviceId();
         salt = selectResponse.salt;
@@ -162,7 +162,7 @@ public class OathSession extends ApplicationSession<OathSession> {
         protocol.sendAndReceive(new Apdu(0, INS_RESET, 0xde, 0xad, null));
         try {
             // Re-select since the device ID has changed
-            SelectResponse selectResponse = new SelectResponse(protocol.select(AppId.Oath));
+            SelectResponse selectResponse = new SelectResponse(protocol.select(AppId.OATH));
             deviceId = selectResponse.getDeviceId();
             salt = selectResponse.salt;
             challenge = null;
