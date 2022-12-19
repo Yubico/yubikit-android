@@ -288,7 +288,7 @@ public class DeviceUtil {
      *                                  {@link OtpConnection} or {@link FidoConnection}
      */
     public static DeviceInfo readInfo(YubiKeyConnection connection, @Nullable UsbPid pid)
-            throws IOException, UnknownKeyException {
+            throws IOException, IllegalArgumentException, UnknownKeyException {
 
         YubiKeyType keyType = null;
         int interfaces = 0;
