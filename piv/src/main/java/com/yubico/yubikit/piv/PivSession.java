@@ -18,6 +18,7 @@ package com.yubico.yubikit.piv;
 
 import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.core.Version;
+import com.yubico.yubikit.core.smartcard.AppId;
 import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
 import com.yubico.yubikit.core.application.ApplicationSession;
 import com.yubico.yubikit.core.application.BadResponseException;
@@ -121,8 +122,6 @@ public class PivSession extends ApplicationSession<PivSession> {
 
     private static final int PIN_LEN = 8;
 
-    private static final byte[] AID = new byte[]{(byte) 0xa0, 0x00, 0x00, 0x03, 0x08};
-
     // Special slot for the Management Key
     private static final int SLOT_CARD_MANAGEMENT = 0x9b;
 
@@ -196,7 +195,7 @@ public class PivSession extends ApplicationSession<PivSession> {
      */
     public PivSession(SmartCardConnection connection) throws IOException, ApduException, ApplicationNotAvailableException {
         protocol = new SmartCardProtocol(connection);
-        protocol.select(AID);
+        protocol.select(AppId.PIV);
         version = Version.fromBytes(protocol.sendAndReceive(new Apdu(0, INS_GET_VERSION, 0, 0, null)));
         protocol.enableWorkarounds(version);
 

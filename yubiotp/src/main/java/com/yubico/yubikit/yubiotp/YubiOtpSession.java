@@ -19,6 +19,7 @@ package com.yubico.yubikit.yubiotp;
 import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.Version;
 import com.yubico.yubikit.core.YubiKeyDevice;
+import com.yubico.yubikit.core.smartcard.AppId;
 import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
 import com.yubico.yubikit.core.application.ApplicationSession;
 import com.yubico.yubikit.core.application.BadResponseException;
@@ -90,8 +91,6 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
     private static final int CONFIG_SIZE = 52;      // Size of config struct (excluding current access code)
     private static final int NDEF_DATA_SIZE = 54;   // Size of the NDEF payload data
 
-    private static final byte[] AID = new byte[]{(byte) 0xa0, 0x00, 0x00, 0x05, 0x27, 0x20, 0x01, 0x01};
-    private static final byte[] MGMT_AID = new byte[]{(byte) 0xa0, 0x00, 0x00, 0x05, 0x27, 0x47, 0x11, 0x17};
     private static final byte INS_CONFIG = 0x01;
 
     private static final int HMAC_CHALLENGE_SIZE = 64;
@@ -147,7 +146,7 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
         if (connection.getTransport() == Transport.NFC) {
             // If available, this is more reliable than status.getVersion() over NFC
             try {
-                byte[] response = protocol.select(MGMT_AID);
+                byte[] response = protocol.select(AppId.MANAGEMENT);
                 version = Version.parse(new String(response, StandardCharsets.UTF_8));
             } catch (ApplicationNotAvailableException e) {
                 // NB: YubiKey NEO doesn't support the Management Application over NFC.
@@ -155,7 +154,7 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
             }
         }
 
-        byte[] statusBytes = protocol.select(AID);
+        byte[] statusBytes = protocol.select(AppId.OTP);
         if (version == null) {
             // We didn't get a version above, get it from the status struct.
             version = Version.fromBytes(statusBytes);
