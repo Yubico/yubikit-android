@@ -17,6 +17,7 @@
 package com.yubico.yubikit.oath;
 
 import com.yubico.yubikit.core.Version;
+import com.yubico.yubikit.core.smartcard.AppId;
 import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
 import com.yubico.yubikit.core.application.ApplicationSession;
 import com.yubico.yubikit.core.application.BadResponseException;
@@ -100,8 +101,6 @@ public class OathSession extends ApplicationSession<OathSession> {
 
     private static final byte PROPERTY_REQUIRE_TOUCH = (byte) 0x02;
 
-    private static final byte[] AID = new byte[]{(byte) 0xa0, 0x00, 0x00, 0x05, 0x27, 0x21, 0x01, 0x01};
-
     private static final long MILLS_IN_SECOND = 1000;
     private static final int DEFAULT_TOTP_PERIOD = 30;
     private static final int CHALLENGE_LEN = 8;
@@ -125,7 +124,7 @@ public class OathSession extends ApplicationSession<OathSession> {
      */
     public OathSession(SmartCardConnection connection) throws IOException, ApplicationNotAvailableException {
         protocol = new SmartCardProtocol(connection, INS_SEND_REMAINING);
-        SelectResponse selectResponse = new SelectResponse(protocol.select(AID));
+        SelectResponse selectResponse = new SelectResponse(protocol.select(AppId.Oath));
         version = selectResponse.version;
         deviceId = selectResponse.getDeviceId();
         salt = selectResponse.salt;
@@ -163,7 +162,7 @@ public class OathSession extends ApplicationSession<OathSession> {
         protocol.sendAndReceive(new Apdu(0, INS_RESET, 0xde, 0xad, null));
         try {
             // Re-select since the device ID has changed
-            SelectResponse selectResponse = new SelectResponse(protocol.select(AID));
+            SelectResponse selectResponse = new SelectResponse(protocol.select(AppId.Oath));
             deviceId = selectResponse.getDeviceId();
             salt = selectResponse.salt;
             challenge = null;

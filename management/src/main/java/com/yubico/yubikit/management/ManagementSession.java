@@ -21,6 +21,7 @@ import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.UsbInterface;
 import com.yubico.yubikit.core.Version;
 import com.yubico.yubikit.core.YubiKeyDevice;
+import com.yubico.yubikit.core.smartcard.AppId;
 import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
 import com.yubico.yubikit.core.application.ApplicationSession;
 import com.yubico.yubikit.core.application.CommandException;
@@ -70,8 +71,6 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
     public static final Feature<ManagementSession> FEATURE_DEVICE_CONFIG = new Feature.Versioned<>("Device Config", 5, 0, 0);
 
     // Smart card command constants
-    private static final byte[] AID = new byte[]{(byte) 0xa0, 0x00, 0x00, 0x05, 0x27, 0x47, 0x11, 0x17};
-    private static final byte[] OTP_AID = new byte[]{(byte) 0xa0, 0x00, 0x00, 0x05, 0x27, 0x20, 0x01, 0x01};
     private static final byte OTP_INS_CONFIG = 0x01;
     private static final byte INS_READ_CONFIG = 0x1d;
     private static final byte INS_WRITE_CONFIG = 0x1c;
@@ -104,16 +103,16 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
         SmartCardProtocol protocol = new SmartCardProtocol(connection);
         Version version;
         try {
-            version = Version.parse(new String(protocol.select(AID), StandardCharsets.UTF_8));
+            version = Version.parse(new String(protocol.select(AppId.Management), StandardCharsets.UTF_8));
             if (version.major == 3) {
                 // Workaround to "de-select" on NEO
                 connection.sendAndReceive(new byte[]{(byte) 0xa4, 0x04, 0x00, 0x08});
-                protocol.select(OTP_AID);
+                protocol.select(AppId.Otp);
             }
         } catch (ApplicationNotAvailableException e) {
             if (connection.getTransport() == Transport.NFC) {
                 // NEO doesn't support the Management Application over NFC, but can use the OTP application.
-                version = Version.fromBytes(protocol.select(OTP_AID));
+                version = Version.fromBytes(protocol.select(AppId.Otp));
             } else {
                 throw e;
             }

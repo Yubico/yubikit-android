@@ -31,6 +31,7 @@ import com.yubico.yubikit.core.UsbPid;
 import com.yubico.yubikit.core.Version;
 import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.YubiKeyType;
+import com.yubico.yubikit.core.smartcard.AppId;
 import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
 import com.yubico.yubikit.core.application.CommandException;
 import com.yubico.yubikit.core.fido.FidoConnection;
@@ -528,10 +529,10 @@ public class DeviceUtil {
 
     // Applet and capability it provides
     private enum CcidApplet {
-        OPENPGP(new byte[]{(byte) 0xd2, 0x76, 0x00, 0x01, 0x24, 0x01}, Capability.OPENPGP),
-        OATH(new byte[]{(byte) 0xa0, 0x00, 0x00, 0x05, 0x27, 0x21, 0x01}, Capability.OATH),
-        PIV(new byte[]{(byte) 0xa0, 0x00, 0x00, 0x03, 0x08}, Capability.PIV),
-        FIDO(new byte[]{(byte) 0xa0, 0x00, 0x00, 0x06, 0x47, 0x2f, 0x00, 0x01}, U2F),
+        OPENPGP(AppId.OpenPgp, Capability.OPENPGP),
+        OATH(AppId.Oath, Capability.OATH),
+        PIV(AppId.Piv, Capability.PIV),
+        FIDO(AppId.Fido, U2F),
         AID_U2F_YUBICO(new byte[]{(byte) 0xa0, 0x00, 0x00, 0x05, 0x27, 0x10, 0x02}, U2F);  // Old U2F AID
 
         final public byte[] aid;
