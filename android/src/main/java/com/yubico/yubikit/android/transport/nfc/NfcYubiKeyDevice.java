@@ -102,7 +102,7 @@ public class NfcYubiKeyDevice implements YubiKeyDevice {
                     //noinspection BusyWait
                     Thread.sleep(250);
                 }
-            } catch (InterruptedException | IOException e) {
+            } catch (SecurityException | InterruptedException | IOException e) {
                 // Ignore
             }
             onRemoved.run();
