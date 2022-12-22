@@ -27,7 +27,7 @@
         android:layout_height="wrap_content"
         android:hint="@string/otp_public_id"
         app:endIconContentDescription="@string/randomize"
-        app:endIconDrawable="@drawable/ic_refresh_24dp"
+        app:endIconDrawable="@drawable/ic_baseline_refresh_24"
         app:endIconMode="custom">
 
         <com.google.android.material.textfield.TextInputEditText
@@ -46,7 +46,7 @@
         android:layout_height="wrap_content"
         android:hint="@string/otp_private_id"
         app:endIconContentDescription="@string/randomize"
-        app:endIconDrawable="@drawable/ic_refresh_24dp"
+        app:endIconDrawable="@drawable/ic_baseline_refresh_24"
         app:endIconMode="custom">
 
         <com.google.android.material.textfield.TextInputEditText
@@ -65,7 +65,7 @@
         android:layout_height="wrap_content"
         android:hint="@string/otp_aes_key"
         app:endIconContentDescription="@string/randomize"
-        app:endIconDrawable="@drawable/ic_refresh_24dp"
+        app:endIconDrawable="@drawable/ic_baseline_refresh_24"
         app:endIconMode="custom">
 
         <com.google.android.material.textfield.TextInputEditText

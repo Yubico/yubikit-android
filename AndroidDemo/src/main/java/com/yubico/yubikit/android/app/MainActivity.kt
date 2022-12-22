@@ -16,6 +16,7 @@
 
 package com.yubico.yubikit.android.app
 
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -41,6 +42,8 @@ import com.yubico.yubikit.android.transport.usb.UsbConfiguration
 import com.yubico.yubikit.core.Logger
 import java.util.*
 import kotlin.properties.Delegates
+
+val clientCertificatesSupported = Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP
 
 class MainActivity : AppCompatActivity() {
     private lateinit var appBarConfiguration: AppBarConfiguration
@@ -75,10 +78,21 @@ class MainActivity : AppCompatActivity() {
         navController = findNavController(R.id.nav_host_fragment)
         // Passing each menu ID as a set of Ids because each
         // menu should be considered as top level destinations.
-        appBarConfiguration = AppBarConfiguration(setOf(
-                R.id.nav_management, R.id.nav_yubiotp, R.id.nav_piv, R.id.nav_oath), drawerLayout)
+        appBarConfiguration = AppBarConfiguration(
+            setOf(
+                R.id.nav_management,
+                R.id.nav_yubiotp,
+                R.id.nav_piv,
+                R.id.nav_oath,
+                R.id.nav_client_certs
+            ), drawerLayout
+        )
         setupActionBarWithNavController(navController, appBarConfiguration)
         navView.setupWithNavController(navController)
+
+        if (clientCertificatesSupported) {
+            navView.menu.findItem(R.id.nav_client_certs)?.isEnabled = true
+        }
 
         yubikit = YubiKitManager(this)
 
@@ -127,12 +141,16 @@ class MainActivity : AppCompatActivity() {
             R.id.action_about -> {
                 val binding = DialogAboutBinding.inflate(LayoutInflater.from(this))
                 AlertDialog.Builder(this)
-                        .setView(binding.root)
-                        .create().apply {
-                            setOnShowListener {
-                                binding.version.text = String.format(Locale.getDefault(), getString(R.string.version), BuildConfig.VERSION_NAME)
-                            }
-                        }.show()
+                    .setView(binding.root)
+                    .create().apply {
+                        setOnShowListener {
+                            binding.version.text = String.format(
+                                Locale.getDefault(),
+                                getString(R.string.version),
+                                BuildConfig.VERSION_NAME
+                            )
+                        }
+                    }.show()
             }
         }
         return super.onOptionsItemSelected(item)

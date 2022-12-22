@@ -27,4 +27,10 @@
         android:name="com.yubico.yubikit.android.app.ui.oath.OathFragment"
         android:label="@string/menu_oath"
         tools:layout="@layout/fragment_oath" />
+
+    <fragment
+        android:id="@+id/nav_client_certs"
+        android:name="com.yubico.yubikit.android.app.ui.client_certs.ClientCertificatesFragment"
+        android:label="@string/menu_client_certs"
+        tools:layout="@layout/fragment_client_certs" />
 </navigation>

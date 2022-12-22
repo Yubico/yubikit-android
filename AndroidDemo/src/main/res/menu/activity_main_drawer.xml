@@ -20,5 +20,10 @@
             android:id="@+id/nav_oath"
             android:icon="@drawable/ic_baseline_timelapse_24"
             android:title="@string/menu_oath" />
+        <item
+            android:id="@+id/nav_client_certs"
+            android:icon="@drawable/ic_baseline_client_certs_24"
+            android:title="@string/menu_client_certs"
+            android:enabled="false"/> <!-- enabled in runtime on supported devices -->
     </group>
 </menu>
