@@ -22,10 +22,10 @@ import com.yubico.yubikit.management.DeviceConfig;
 import com.yubico.yubikit.management.DeviceInfo;
 import com.yubico.yubikit.management.FormFactor;
 
-import org.jetbrains.annotations.Nullable;
-
 import java.util.HashMap;
 import java.util.Map;
+
+import javax.annotation.Nullable;
 
 public class Util {
     static class InfoBuilder {
