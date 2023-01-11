@@ -1,11 +1,11 @@
 apply plugin: 'com.android.library'
 
 android {
-    compileSdkVersion 32
+    compileSdkVersion 33
 
     defaultConfig {
         minSdkVersion 19
-        targetSdkVersion 32
+        targetSdkVersion 33
 
         testApplicationId 'com.yubico.yubikit.testing'
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
@@ -36,16 +36,16 @@ dependencies {
 
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.1.6'
 
-    implementation 'androidx.test:core:1.4.0'
-    implementation 'androidx.test:rules:1.4.0'
-    implementation 'androidx.test:runner:1.4.0'
-    implementation 'androidx.test.ext:junit:1.1.3'
+    implementation 'androidx.test:core:1.5.0'
+    implementation 'androidx.test:rules:1.5.0'
+    implementation 'androidx.test:runner:1.5.2'
+    implementation 'androidx.test.ext:junit:1.1.5'
 
     api project(':android')
     api project(':piv')
     api project(':testing')
 
-    implementation 'com.google.android.material:material:1.6.1'
+    implementation 'com.google.android.material:material:1.7.0'
 
     implementation 'androidx.multidex:multidex:2.0.1'
 }
