@@ -32,4 +32,7 @@
         <item name="android:textStyle">bold</item>
         <item name="android:fontFamily">sans-serif-light</item>
     </style>
+
+    <public name="YubiKitPromptDialogTheme" type="style" />
+    <public name="YubiKitPromptDialogButton" type="style" />
 </resources>
