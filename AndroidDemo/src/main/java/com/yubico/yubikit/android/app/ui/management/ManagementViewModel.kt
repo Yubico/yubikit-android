@@ -32,6 +32,7 @@ import com.yubico.yubikit.core.util.StringUtils
 import com.yubico.yubikit.management.DeviceInfo
 import com.yubico.yubikit.management.ManagementSession
 import com.yubico.yubikit.support.DeviceUtil
+import com.yubico.yubikit.support.UnknownKeyException
 import java.io.IOException
 
 data class ConnectedDeviceInfo(
@@ -43,6 +44,9 @@ data class ConnectedDeviceInfo(
 class ManagementViewModel : YubiKeyViewModel<ManagementSession>() {
     private val _deviceInfo = MutableLiveData<ConnectedDeviceInfo?>()
     val deviceInfo: LiveData<ConnectedDeviceInfo?> = _deviceInfo
+
+    private val _errorInfo = MutableLiveData<String?>()
+    val errorInfo: LiveData<String?> = _errorInfo
 
     private fun readDeviceInfo(device: YubiKeyDevice) {
 
@@ -57,6 +61,8 @@ class ManagementViewModel : YubiKeyViewModel<ManagementSession>() {
                 _deviceInfo.postValue(
                     ConnectedDeviceInfo(DeviceUtil.readInfo(it, usbPid), usbPid?.type, atr)
                 )
+            } catch (unknownKeyException: UnknownKeyException) {
+                _errorInfo.postValue("This device is not a YubiKey neither a Security Key by Yubico")
             } catch (e: Exception) {
                 Logger.d("Caught ${e.message} when reading device info")
                 throw e
