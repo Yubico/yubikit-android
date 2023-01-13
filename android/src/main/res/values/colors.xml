@@ -3,4 +3,8 @@
     <color name="yubikit_dialog_background">#ffffff</color>
     <color name="yubikit_text_color_primary">#de000000</color>
     <color name="yubikit_text_color_secondary">#99000000</color>
+
+    <public name="yubikit_dialog_background" type="color" />
+    <public name="yubikit_text_color_primary" type="color" />
+    <public name="yubikit_text_color_secondary" type="color" />
 </resources>

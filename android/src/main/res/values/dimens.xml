@@ -2,4 +2,7 @@
 <resources>
     <dimen name="yubikit_otp_activity_margin">24dp</dimen>
     <dimen name="yubikit_otp_text_margin">16dp</dimen>
+
+    <public name="yubikit_otp_activity_margin" type="dimen" />
+    <public name="yubikit_otp_text_margin" type="dimen" />
 </resources>

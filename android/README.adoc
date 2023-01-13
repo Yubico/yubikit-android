@@ -213,3 +213,19 @@ public void onActivityResult(int requestCode, int resultCode, Intent data) {
   }
 }
 ----
+
+==== Overriding resources
+Client applications can override colors and string resources of the YubiKey Prompt and OTP activities.
+
+For example, to change a background color of the yubikit prompt dialogs, add a color resource to your application:
+
+[source,xml]
+----
+<resources>
+    <color name="yubikit_dialog_background">#DEBF90</color>
+</resources>
+----
+
+We don't recommend overriding resources which are not marked as `public`.
+
+
