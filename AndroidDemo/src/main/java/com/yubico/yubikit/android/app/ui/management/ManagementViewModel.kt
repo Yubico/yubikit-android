@@ -63,7 +63,10 @@ class ManagementViewModel : YubiKeyViewModel<ManagementSession>() {
                 )
             } catch (unknownKeyException: UnknownKeyException) {
                 _errorInfo.postValue("This device is not a YubiKey neither a Security Key by Yubico")
+                _deviceInfo.postValue(null)
             } catch (e: Exception) {
+                _errorInfo.postValue("Caught ${e.message} when reading device info")
+                _deviceInfo.postValue(null)
                 Logger.d("Caught ${e.message} when reading device info")
                 throw e
             }
