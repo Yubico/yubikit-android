@@ -75,7 +75,7 @@ public class DeviceUtil {
     }
 
     static DeviceInfo readInfoCcid(SmartCardConnection connection, int interfaces)
-            throws IOException, UnknownKeyException {
+            throws IOException {
 
         boolean managementAvailable = true;
         Version version = null;
@@ -109,7 +109,8 @@ public class DeviceUtil {
         } catch (ApplicationNotAvailableException e) {
             if (!managementAvailable) {
                 // this is not a known YubiKey
-                throw new UnknownKeyException();
+                Logger.d("Hardware key could not be identified");
+                throw new IllegalArgumentException("Hardware key could not be identified");
             }
             Logger.d("Couldn't select OTP application, serial unknown");
         }
@@ -286,9 +287,10 @@ public class DeviceUtil {
      * @throws IllegalArgumentException in case of <code>pid</code> is null for USB connection
      * @throws IllegalArgumentException in case of connection is not {@link SmartCardConnection},
      *                                  {@link OtpConnection} or {@link FidoConnection}
+     * @throws IllegalArgumentException when the hardware key could not be identified
      */
     public static DeviceInfo readInfo(YubiKeyConnection connection, @Nullable UsbPid pid)
-            throws IOException, IllegalArgumentException, UnknownKeyException {
+            throws IOException, IllegalArgumentException {
 
         YubiKeyType keyType = null;
         int interfaces = 0;
