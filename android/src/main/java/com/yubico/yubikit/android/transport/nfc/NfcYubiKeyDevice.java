@@ -138,8 +138,12 @@ public class NfcYubiKeyDevice implements YubiKeyDevice {
             executorService.submit(() -> {
                 try (T connection = openConnection(connectionType)) {
                     callback.invoke(Result.success(connection));
-                } catch (IOException e) {
-                    callback.invoke(Result.failure(e));
+                } catch (IOException ioException) {
+                    callback.invoke(Result.failure(ioException));
+                } catch (Exception exception) {
+                    callback.invoke(Result.failure(new IOException("openConnection(" +
+                            connectionType.getSimpleName() + ") exception: " + exception.getMessage())
+                    ));
                 }
             });
     }
