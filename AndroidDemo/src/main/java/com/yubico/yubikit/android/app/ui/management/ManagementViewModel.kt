@@ -61,7 +61,7 @@ class ManagementViewModel : YubiKeyViewModel<ManagementSession>() {
                     ConnectedDeviceInfo(DeviceUtil.readInfo(it, usbPid), usbPid?.type, atr)
                 )
             } catch (illegalArgumentException: IllegalArgumentException) {
-                _errorInfo.postValue("Failed to read key information - is it a key by Yubico?")
+                _errorInfo.postValue("Failed to identify device, is it a YubiKey?")
                 _deviceInfo.postValue(null)
                 throw illegalArgumentException
             } catch (e: Exception) {
