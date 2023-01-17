@@ -1,3 +1,19 @@
+* Version 2.1.1 (released 2023-01-17)
+ ** core module:
+ *** Added a public class containing YubiKey smartcard application ids (core.smartcard.AppId)
+ ** android module:
+ *** Added SmartCardConnection.getAtr() and USB and NFC implementations for getting ATR and ATS
+ *** Updated dependency versions, compile and build with latest SDKs
+ *** Bug fixes related to Android 13
+ *** Bug fixes related to communication over NFC
+ *** All library resources are now prefixed with 'yubikit_' prefix (thanks to @ajarl for contribution)
+ *** Library resources which are available to override by clients are explicitly marked as public
+ ** support module:
+ *** Added a helper method NfcYubiKeyDevice.isYubiKey() for probing NFC devices
+ *** Updated DeviceUtil.getName() to supports additional hardware security keys by Yubico
+ ** AndroidDemo module:
+ *** bug fixes and improvements
+
 * Version 2.1.0 (released 2022-07-25)
  ** Added a new support module with utility functions for getting device
     information/metadata.
