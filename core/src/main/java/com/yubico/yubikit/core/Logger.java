@@ -26,6 +26,11 @@ import javax.annotation.Nullable;
  * Helper class allows to customize logs within the SDK
  * SDK has only 2 levels of logging: debug information and error
  * If a Logger implementation is not provided the SDK won't produce any logs
+ *
+ * @see <a href="https://github.com/Yubico/yubikit-android/blob/main/doc/Logging_Migration.adoc">Logging Migration</a>
+ * contains information about logging in YubiKit, best practices and migration from Logger.
+ * @deprecated This class and all its public methods have been deprecated in YubiKit 2.3.0 and will be removed
+ * in future release.
  */
 @Deprecated
 public abstract class Logger {
@@ -162,9 +167,7 @@ public abstract class Logger {
      * logs. Call with null to disable logging.
      *
      * @param logger the Logger implementation to use
-     * @deprecated
      */
-    @Deprecated
     public static void setLogger(@Nullable Logger logger) {
         instance = logger;
     }
