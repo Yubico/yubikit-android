@@ -31,6 +31,8 @@ import java.io.IOException;
  */
 public class NfcSmartCardConnection implements SmartCardConnection {
 
+    private final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(NfcSmartCardConnection.class);
+
     /**
      * Provides access to ISO-DEP (ISO 14443-4) properties and I/O operations on a {@link Tag}.
      */
@@ -43,7 +45,7 @@ public class NfcSmartCardConnection implements SmartCardConnection {
      */
     NfcSmartCardConnection(IsoDep card) {
         this.card = card;
-        Logger.d("nfc connection opened");
+        Logger.debug(logger, "nfc connection opened");
     }
 
     @Override
@@ -58,16 +60,16 @@ public class NfcSmartCardConnection implements SmartCardConnection {
 
     @Override
     public byte[] sendAndReceive(byte[] apdu) throws IOException {
-        Logger.d("sent: " + StringUtils.bytesToHex(apdu));
+        Logger.trace(logger, "sent: {}", StringUtils.bytesToHex(apdu));
         byte[] received = card.transceive(apdu);
-        Logger.d("received: " + StringUtils.bytesToHex(received));
+        Logger.trace(logger, "received: {}", StringUtils.bytesToHex(received));
         return received;
     }
 
     @Override
     public void close() throws IOException {
         card.close();
-        Logger.d("nfc connection closed");
+        Logger.debug(logger, "nfc connection closed");
     }
 
     @Override

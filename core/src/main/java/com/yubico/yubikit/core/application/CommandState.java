@@ -24,6 +24,9 @@ import com.yubico.yubikit.core.Logger;
  * Call {@link #cancel()} to cancel an ongoing operation.
  */
 public class CommandState {
+
+    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(CommandState.class);
+
     public static final byte STATUS_PROCESSING = 1;
     public static final byte STATUS_UPNEEDED = 2;
 
@@ -36,7 +39,7 @@ public class CommandState {
      * @param status The keep alive status byte
      */
     public void onKeepAliveStatus(byte status) {
-        Logger.d(String.format("received keepalive status: %x", status));
+        Logger.debug(logger, "received keepalive status: {}", status);
     }
 
     /**
@@ -53,7 +56,7 @@ public class CommandState {
             try {
                 wait(ms);
             } catch (InterruptedException e) {
-                Logger.d("Thread interrupted, cancelling command");
+                Logger.debug(logger, "Thread interrupted, cancelling command");
                 cancelled = true;
                 Thread.currentThread().interrupt();
             }

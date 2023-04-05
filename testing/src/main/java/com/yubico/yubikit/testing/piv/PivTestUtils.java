@@ -15,7 +15,6 @@
  */
 package com.yubico.yubikit.testing.piv;
 
-import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.piv.KeyType;
 import com.yubico.yubikit.testing.Codec;
 
@@ -58,6 +57,9 @@ import javax.crypto.KeyAgreement;
 
 @SuppressWarnings("SpellCheckingInspection")
 public class PivTestUtils {
+
+    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(PivTestUtils.class);
+
     private enum StaticKey {
         RSA1024(
                 KeyType.RSA1024,
@@ -295,7 +297,7 @@ public class PivTestUtils {
 
     public static void ecSignAndVerify(PrivateKey privateKey, PublicKey publicKey) throws Exception {
         for (String algorithm : EC_SIGNATURE_ALGORITHMS) {
-            Logger.d("Test " + algorithm);
+            logger.debug("Test {}", algorithm);
             verify(publicKey, Signature.getInstance(algorithm), sign(privateKey, Signature.getInstance(algorithm)));
         }
     }

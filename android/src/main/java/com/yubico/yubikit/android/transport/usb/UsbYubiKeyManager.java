@@ -39,6 +39,8 @@ public class UsbYubiKeyManager {
         ConnectionManager.registerConnectionHandler(UsbOtpConnection.class, new OtpConnectionHandler());
     }
 
+    private final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(UsbYubiKeyManager.class);
+
     private final Context context;
     private final UsbManager usbManager;
     @Nullable
@@ -86,9 +88,9 @@ public class UsbYubiKeyManager {
                 devices.put(usbDevice, yubikey);
 
                 if (usbConfiguration.isHandlePermissions() && !yubikey.hasPermission()) {
-                    Logger.d("request permission");
+                    Logger.debug(logger, "request permission");
                     UsbDeviceManager.requestPermission(context, usbDevice, (usbDevice1, hasPermission) -> {
-                        Logger.d("permission result " + hasPermission);
+                        Logger.debug(logger, "permission result {}", hasPermission);
                         if (hasPermission) {
                             synchronized (UsbYubiKeyManager.this) {
                                 if (internalListener == this) {
@@ -101,8 +103,8 @@ public class UsbYubiKeyManager {
                     listener.invoke(yubikey);
                 }
             } catch (IllegalArgumentException ignored) {
-                Logger.d("Attached usbDevice(vid=" + usbDevice.getVendorId() + ",pid=" + usbDevice.getProductId() +
-                        ") is not recognized as a valid YubiKey");
+                Logger.debug(logger, "Attached usbDevice(vid={},pid={}) is not recognized as a valid YubiKey",
+                        usbDevice.getVendorId(), usbDevice.getProductId());
             }
 
         }

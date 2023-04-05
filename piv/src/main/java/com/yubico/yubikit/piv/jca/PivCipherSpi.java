@@ -42,6 +42,9 @@ import javax.crypto.NoSuchPaddingException;
 import javax.crypto.ShortBufferException;
 
 public class PivCipherSpi extends CipherSpi {
+
+    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(PivCipherSpi.class);
+
     private final Callback<Callback<Result<PivSession, Exception>>> provider;
     private final Map<KeyType, KeyPair> dummyKeys;
     private final ByteArrayOutputStream buffer = new ByteArrayOutputStream();
@@ -94,7 +97,7 @@ public class PivCipherSpi extends CipherSpi {
 
     @Override
     protected void engineInit(int opmode, Key key, SecureRandom random) throws InvalidKeyException {
-        Logger.d("ENGINE INIT " + mode + " " + padding);
+        Logger.debug(logger, "ENGINE INIT {} {}", mode, padding);
         if (key instanceof PivPrivateKey) {
             if (!KeyType.Algorithm.RSA.name().equals(key.getAlgorithm())) {
                 throw new InvalidKeyException("Cipher only supports RSA.");

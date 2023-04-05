@@ -54,6 +54,9 @@ import javax.annotation.Nullable;
  * The dialog can be customized by passing additional values in the intent.
  */
 public class YubiKeyPromptActivity extends Activity {
+
+    private final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(YubiKeyPromptActivity.class);
+
     /**
      * Helper method to create an Intent to start the YubiKeyPromptActivity with a ConnectionAction.
      *
@@ -215,7 +218,7 @@ public class YubiKeyPromptActivity extends Activity {
                 throw new IllegalStateException("Missing or invalid ConnectionAction class");
             }
         } catch (IllegalStateException | IllegalAccessException | InstantiationException e) {
-            Logger.e("Unable to instantiate ConnectionAction", e);
+            Logger.error(logger, "Unable to instantiate ConnectionAction", e);
             finish();
         }
 

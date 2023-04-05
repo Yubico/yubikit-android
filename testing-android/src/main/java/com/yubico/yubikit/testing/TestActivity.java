@@ -65,17 +65,17 @@ public class TestActivity extends AppCompatActivity {
 
         yubiKitManager = new YubiKitManager(this);
 
-        Logger.setLogger(new Logger() {
-            @Override
-            protected void logDebug(@NonNull String message) {
-                Log.d(TAG, message);
-            }
-
-            @Override
-            protected void logError(@NonNull String message, @NonNull Throwable throwable) {
-                Log.e(TAG, message, throwable);
-            }
-        });
+//        Logger.setLogger(new Logger() {
+//            @Override
+//            protected void logDebug(@NonNull String message) {
+//                Log.d(TAG, message);
+//            }
+//
+//            @Override
+//            protected void logError(@NonNull String message, @NonNull Throwable throwable) {
+//                Log.e(TAG, message, throwable);
+//            }
+//        });
 
         yubiKitManager.startUsbDiscovery(new UsbConfiguration(), device -> {
             bottomText.setVisibility(View.VISIBLE);

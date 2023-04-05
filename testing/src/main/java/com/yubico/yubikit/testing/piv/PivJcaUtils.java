@@ -27,6 +27,8 @@ import java.security.Security;
 import java.util.Set;
 
 public class PivJcaUtils {
+    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(PivJcaUtils.class);
+
     public static void setupJca(PivSession piv) {
         Security.removeProvider("BC");
         Security.addProvider(new BouncyCastleProvider());
@@ -43,12 +45,11 @@ public class PivJcaUtils {
 
         for (Provider p : providers) {
             @SuppressWarnings("deprecation")
-            String providerInfo = p.getName() + "/" + p.getInfo() + "/" + p.getVersion();
-            Logger.d(providerInfo);
+            double version = p.getVersion();
+            Logger.debug(logger, "{}/{}/{}", new Object[]{p.getName(), p.getInfo(), version});
             Set<Provider.Service> services = p.getServices();
             for (Provider.Service s : services) {
-                String serviceInfo = "\t" + s.getType() + ":  " + s.getAlgorithm() + " -> " + s.getClassName();
-                Logger.d(serviceInfo);
+                Logger.debug(logger, "\t{}: {} -> {}", new Object[]{s.getType(), s.getAlgorithm(), s.getClassName()});
             }
         }
     }

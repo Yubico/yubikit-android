@@ -21,7 +21,6 @@ import static com.yubico.yubikit.testing.piv.PivJcaUtils.tearDownJca;
 import static com.yubico.yubikit.testing.piv.PivTestConstants.DEFAULT_MANAGEMENT_KEY;
 import static com.yubico.yubikit.testing.piv.PivTestConstants.DEFAULT_PIN;
 
-import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.piv.KeyType;
@@ -53,6 +52,8 @@ import java.util.Set;
 
 public class PivJcaSigningTests {
 
+    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(PivJcaSigningTests.class);
+
     private static Set<String> signatureAlgorithmsWithPss = new HashSet<>();
 
     public static void testSign(PivSession piv) throws NoSuchAlgorithmException, IOException, ApduException, InvalidKeyException, BadResponseException, InvalidAlgorithmParameterException, SignatureException {
@@ -65,7 +66,7 @@ public class PivJcaSigningTests {
 
     public static void testSign(PivSession piv, KeyType keyType) throws NoSuchAlgorithmException, IOException, ApduException, InvalidKeyException, BadResponseException, InvalidAlgorithmParameterException, SignatureException {
         piv.authenticate(ManagementKeyType.TDES, DEFAULT_MANAGEMENT_KEY);
-        Logger.d("Generate key: " + keyType);
+        logger.debug("Generate key: {}", keyType);
 
         KeyPairGenerator kpg = KeyPairGenerator.getInstance("YKPiv" + keyType.params.algorithm.name());
         kpg.initialize(new PivAlgorithmParameterSpec(Slot.SIGNATURE, keyType, PinPolicy.DEFAULT, TouchPolicy.DEFAULT, DEFAULT_PIN));
@@ -109,7 +110,7 @@ public class PivJcaSigningTests {
                     }
                 } catch (NoSuchFieldError noSuchFieldError) {
                     // MGF1ParameterSpec.SHA224 is supported from Android API 26
-                    Logger.d("Ignoring following error: " + noSuchFieldError.getMessage());
+                    logger.debug("Ignoring following error: {}", noSuchFieldError.getMessage());
                 }
 
                 signatureAlgorithm = "SHA256WITHRSA/PSS";
@@ -167,7 +168,7 @@ public class PivJcaSigningTests {
     public static byte[] testSign(KeyPair keyPair, String signatureAlgorithm, AlgorithmParameterSpec param) throws NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeyException, SignatureException {
         byte[] message = "Hello world!".getBytes(StandardCharsets.UTF_8);
 
-        Logger.d("Create signature using " + signatureAlgorithm);
+        logger.debug("Create signature using {}", signatureAlgorithm);
         Signature signer = Signature.getInstance(signatureAlgorithm);
         signer.initSign(keyPair.getPrivate());
         if (param != null) signer.setParameter(param);
@@ -180,7 +181,7 @@ public class PivJcaSigningTests {
             if (param != null) verifier.setParameter(param);
             verifier.update(message);
             Assert.assertTrue("Verify signature", verifier.verify(signature));
-            Logger.d("Signature verified for: " + signatureAlgorithm);
+            logger.debug("Signature verified for: {}", signatureAlgorithm);
             return signature;
         } catch (InvalidKeyException | SignatureException e) {
             throw new RuntimeException(e);

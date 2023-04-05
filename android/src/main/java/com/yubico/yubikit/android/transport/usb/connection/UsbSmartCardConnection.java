@@ -40,6 +40,8 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
  */
 public class UsbSmartCardConnection extends UsbYubiKeyConnection implements SmartCardConnection {
 
+    private final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(UsbSmartCardConnection.class);
+
     private static final int TIMEOUT = 1000;
 
     /**
@@ -154,7 +156,7 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
         while (bytesSent < bufferOut.length || bytesSentPackage == endpointOut.getMaxPacketSize()) {
             bytesSentPackage = connection.bulkTransfer(endpointOut, bufferOut, bytesSent, bufferOut.length - bytesSent, TIMEOUT);
             if (bytesSentPackage > 0) {
-                Logger.d(bytesSentPackage + " bytes sent over ccid: " + StringUtils.bytesToHex(bufferOut, bytesSent, bytesSentPackage));
+                Logger.trace(logger, "{} bytes sent over ccid: {}", bytesSentPackage, StringUtils.bytesToHex(bufferOut, bytesSent, bytesSentPackage));
                 bytesSent += bytesSentPackage;
             } else if (bytesSentPackage < 0) {
                 throw new IOException("Failed to send " + (bufferOut.length - bytesSent) + " bytes");
@@ -177,7 +179,7 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
         do {
             bytesRead = connection.bulkTransfer(endpointIn, bufferRead, bufferRead.length, TIMEOUT);
             if (bytesRead > 0) {
-                Logger.d(bytesRead + " bytes received: " + StringUtils.bytesToHex(bufferRead, 0, bytesRead));
+                Logger.trace(logger, "{} bytes received: {}", bytesRead, StringUtils.bytesToHex(bufferRead, 0, bytesRead));
 
                 if (receivedExpectedPrefix) {
                     stream.write(bufferRead, 0, bytesRead);
@@ -190,8 +192,9 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
                         receivedExpectedPrefix = true;
                         stream.write(bufferRead, 0, bytesRead);
                     } else if (messageHeader.error != 0 && !responseRequiresTimeExtension) {
-                        Logger.d(String.format(
-                                Locale.ROOT, "Invalid response from card reader bStatus=0x%02X and bError=0x%02X", messageHeader.status, messageHeader.error));
+                        Logger.debug(logger, "Invalid response from card reader bStatus={} and bError={}",
+                                String.format(Locale.ROOT, "0x%02X", messageHeader.status),
+                                String.format(Locale.ROOT, "0x%02X", messageHeader.error));
                         throw new IOException("Invalid response from card reader");
                     }
                 }

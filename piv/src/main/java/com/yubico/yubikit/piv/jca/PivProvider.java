@@ -37,6 +37,9 @@ import javax.annotation.Nullable;
 import javax.crypto.NoSuchPaddingException;
 
 public class PivProvider extends Provider {
+
+    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(PivProvider.class);
+
     private static final Map<String, String> ecAttributes = Collections.singletonMap("SupportedKeyClasses", PivPrivateKey.EcKey.class.getName());
     private static final Map<String, String> rsaAttributes = Collections.singletonMap("SupportedKeyClasses", PivPrivateKey.RsaKey.class.getName());
 
@@ -64,8 +67,8 @@ public class PivProvider extends Provider {
         super("YKPiv", 1.0, "JCA Provider for YubiKey PIV");
         this.sessionRequester = sessionRequester;
 
-        Logger.d("EC " + ecAttributes);
-        Logger.d("RSA " + rsaAttributes);
+        Logger.debug(logger, "EC {}", ecAttributes);
+        Logger.debug(logger, "RSA {}", rsaAttributes);
 
         //noinspection SpellCheckingInspection
         putService(new Service(this, "Signature", "NONEwithECDSA", PivEcSignatureSpi.Prehashed.class.getName(), null, ecAttributes) {
@@ -84,11 +87,11 @@ public class PivProvider extends Provider {
                 rsaDummyKeys.put(keyType, rsaGen.generateKeyPair());
             }
             long end = System.currentTimeMillis();
-            Logger.d("TIME TAKEN: " + (end - start));
+            Logger.debug(logger, "TIME TAKEN: {}", (end - start));
 
             putService(new PivRsaCipherService());
         } catch (NoSuchAlgorithmException e) {
-            Logger.e("Unable to support RSA, no underlying Provider with RSA capability", e);
+            Logger.error(logger, "Unable to support RSA, no underlying Provider with RSA capability", e);
         }
 
         Set<String> digests = Security.getAlgorithms("MessageDigest");

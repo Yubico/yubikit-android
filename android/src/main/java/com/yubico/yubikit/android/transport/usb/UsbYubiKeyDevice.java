@@ -40,6 +40,9 @@ import java.util.concurrent.LinkedBlockingQueue;
 import javax.annotation.Nullable;
 
 public class UsbYubiKeyDevice implements YubiKeyDevice, Closeable {
+
+    private final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(UsbYubiKeyDevice.class);
+
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
     private final ConnectionManager connectionManager;
     private final UsbManager usbManager;
@@ -146,7 +149,7 @@ public class UsbYubiKeyDevice implements YubiKeyDevice, Closeable {
 
     @Override
     public void close() {
-        Logger.d("Closing YubiKey device");
+        Logger.debug(logger, "Closing YubiKey device");
         if (otpConnection != null) {
             otpConnection.close();
             otpConnection = null;
@@ -164,7 +167,7 @@ public class UsbYubiKeyDevice implements YubiKeyDevice, Closeable {
         private final LinkedBlockingQueue<Callback<Result<OtpConnection, IOException>>> queue = new LinkedBlockingQueue<>();
 
         private CachedOtpConnection(Callback<Result<OtpConnection, IOException>> callback) {
-            Logger.d("Creating new CachedOtpConnection");
+            Logger.debug(logger, "Creating new CachedOtpConnection");
             queue.offer(callback);
             executorService.submit(() -> {
                 try (OtpConnection connection = connectionManager.openConnection(OtpConnection.class)) {
@@ -172,13 +175,13 @@ public class UsbYubiKeyDevice implements YubiKeyDevice, Closeable {
                         try {
                             Callback<Result<OtpConnection, IOException>> action = queue.take();
                             if (action == CLOSE_OTP) {
-                                Logger.d("Closing CachedOtpConnection");
+                                Logger.debug(logger, "Closing CachedOtpConnection");
                                 break;
                             }
                             try {
                                 action.invoke(Result.success(connection));
                             } catch (Exception e) {
-                                Logger.e("OtpConnection callback threw an exception", e);
+                                Logger.error(logger, "OtpConnection callback threw an exception", e);
                             }
                         } catch (InterruptedException e) {
                             e.printStackTrace();

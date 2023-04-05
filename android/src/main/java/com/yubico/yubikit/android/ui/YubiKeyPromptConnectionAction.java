@@ -37,6 +37,9 @@ import java.io.IOException;
  * @param <T> The connection type to handle
  */
 public abstract class YubiKeyPromptConnectionAction<T extends YubiKeyConnection> extends YubiKeyPromptAction {
+
+    private final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(YubiKeyPromptConnectionAction.class);
+
     final Class<T> connectionType;
 
     /**
@@ -59,7 +62,7 @@ public abstract class YubiKeyPromptConnectionAction<T extends YubiKeyConnection>
                 }
             });
         } else {
-            Logger.d("Connected YubiKey does not support desired connection type");
+            Logger.debug(logger, "Connected YubiKey does not support desired connection type");
             callback.invoke(CONTINUE);
         }
     }
@@ -89,6 +92,6 @@ public abstract class YubiKeyPromptConnectionAction<T extends YubiKeyConnection>
      */
     @WorkerThread
     protected void onError(Exception exception) {
-        Logger.e("Error connecting to YubiKey", exception);
+        Logger.error(logger, "Error connecting to YubiKey", exception);
     }
 }

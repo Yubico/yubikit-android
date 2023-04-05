@@ -30,6 +30,9 @@ import java.util.Arrays;
 import javax.annotation.Nullable;
 
 public class FidoProtocol implements Closeable {
+
+    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(FidoProtocol.class);
+
     public static final byte TYPE_INIT = (byte) 0x80;
 
     private static final byte CMD_PING = TYPE_INIT | 0x01;
@@ -69,7 +72,7 @@ public class FidoProtocol implements Closeable {
         buffer.get(versionBytes);
         version = Version.fromBytes(versionBytes);
         buffer.get(); // Capabilities
-        Logger.d(String.format("fido connection set up with channel ID: 0x%08x", channelId));
+        Logger.debug(logger, "fido connection set up with channel ID: {}", String.format("0x%08x", channelId));
     }
 
     public byte[] sendAndReceive(byte cmd, byte[] payload, @Nullable CommandState state) throws IOException {
@@ -85,7 +88,7 @@ public class FidoProtocol implements Closeable {
         do {
             toSend.get(buffer, packet.position(), Math.min(toSend.remaining(), packet.remaining()));
             connection.send(buffer);
-            Logger.d(buffer.length + " bytes sent over fido: " + StringUtils.bytesToHex(buffer));
+            Logger.debug(logger, "{} bytes sent over fido: {}", buffer.length, StringUtils.bytesToHex(buffer));
             Arrays.fill(buffer, (byte) 0);
             packet.clear();
             packet.putInt(channelId).put((byte) (0x7f & seq++));
@@ -97,16 +100,16 @@ public class FidoProtocol implements Closeable {
         do {
             packet.clear();
             if (state.waitForCancel(0)) {
-                Logger.d("sending CTAP cancel...");
+                Logger.debug(logger, "sending CTAP cancel...");
                 Arrays.fill(buffer, (byte) 0);
                 packet.putInt(channelId).put(CMD_CANCEL);
                 connection.send(buffer);
-                Logger.d("Sent over fido: " + StringUtils.bytesToHex(buffer));
+                Logger.trace(logger, "Sent over fido: {}", StringUtils.bytesToHex(buffer));
                 packet.clear();
             }
 
             connection.receive(buffer);
-            Logger.d("Received over fido: " + StringUtils.bytesToHex(buffer));
+            Logger.trace(logger, "Received over fido: {}", StringUtils.bytesToHex(buffer));
             int responseChannel = packet.getInt();
             if (responseChannel != channelId) {
                 throw new IOException(String.format("Wrong Channel ID. Expecting: %d, Got: %d", channelId, responseChannel));
@@ -142,6 +145,6 @@ public class FidoProtocol implements Closeable {
     @Override
     public void close() throws IOException {
         connection.close();
-        Logger.d("fido connection closed");
+        Logger.debug(logger, "fido connection closed");
     }
 }

@@ -80,6 +80,10 @@ import javax.crypto.spec.SecretKeySpec;
  * This enables you to perform RSA or ECC sign/decrypt operations using a private key stored on the smartcard, through common transports like PKCS#11.
  */
 public class PivSession extends ApplicationSession<PivSession> {
+
+    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(PivSession.class);
+
+
     // Features
     /**
      * Support for the NIST P-348 elliptic curve.
@@ -290,9 +294,9 @@ public class PivSession extends ApplicationSession<PivSession> {
             cipher.init(Cipher.ENCRYPT_MODE, key);
             byte[] expectedData = cipher.doFinal(challenge);
             if (!MessageDigest.isEqual(encryptedData, expectedData)) {
-                Logger.d(String.format(Locale.ROOT, "Expected response: %s and Actual response %s",
+                Logger.trace(logger, "Expected response: {} and Actual response {}",
                         StringUtils.bytesToHex(expectedData),
-                        StringUtils.bytesToHex(encryptedData)));
+                        StringUtils.bytesToHex(encryptedData));
                 throw new BadResponseException("Calculated response for challenge is incorrect");
             }
         } catch (NoSuchAlgorithmException | InvalidKeyException | NoSuchPaddingException | BadPaddingException | IllegalBlockSizeException e) {
@@ -1007,7 +1011,7 @@ public class PivSession extends ApplicationSession<PivSession> {
             }
         }
 
-        Logger.d("PIN is blocked");
+        Logger.debug(logger, "PIN is blocked");
     }
 
     private void blockPuk() throws IOException, ApduException {
@@ -1020,7 +1024,7 @@ public class PivSession extends ApplicationSession<PivSession> {
                 counter = e.getAttemptsRemaining();
             }
         }
-        Logger.d("PUK is blocked");
+        Logger.debug(logger, "PUK is blocked");
     }
 
     private static byte[] pinBytes(char[] pin) {

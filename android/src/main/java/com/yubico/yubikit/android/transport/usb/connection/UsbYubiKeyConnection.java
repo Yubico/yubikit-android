@@ -23,6 +23,7 @@ import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.core.YubiKeyConnection;
 
 abstract class UsbYubiKeyConnection implements YubiKeyConnection {
+    private final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(UsbYubiKeyConnection.class);
     private final UsbDeviceConnection usbDeviceConnection;
     private final UsbInterface usbInterface;
 
@@ -35,13 +36,13 @@ abstract class UsbYubiKeyConnection implements YubiKeyConnection {
     protected UsbYubiKeyConnection(UsbDeviceConnection usbDeviceConnection, UsbInterface usbInterface) {
         this.usbDeviceConnection = usbDeviceConnection;
         this.usbInterface = usbInterface;
-        Logger.d("USB connection opened: " + this);
+        Logger.debug(logger, "USB connection opened: {}", this);
     }
 
     @Override
     public void close() {
         usbDeviceConnection.releaseInterface(usbInterface);
         usbDeviceConnection.close();
-        Logger.d("USB connection closed: " + this);
+        Logger.debug(logger, "USB connection closed: {}", this);
     }
 }

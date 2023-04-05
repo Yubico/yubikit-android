@@ -51,6 +51,9 @@ import javax.annotation.Nullable;
  * https://developers.yubico.com/yubikey-manager/Config_Reference.html
  */
 public class ManagementSession extends ApplicationSession<ManagementSession> {
+
+    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(ManagementSession.class);
+
     // Features
     /**
      * Support the SET_MODE command to change the USB mode of the YubiKey.
@@ -203,7 +206,7 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
         backend = new Backend<FidoProtocol>(protocol) {
             @Override
             byte[] readConfig() throws IOException {
-                Logger.d("Reading fido config...");
+                Logger.debug(logger, "Reading fido config...");
                 return delegate.sendAndReceive(CTAP_READ_CONFIG, new byte[0], null);
             }
 
