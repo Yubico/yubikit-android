@@ -18,6 +18,7 @@ package com.yubico.yubikit.core;
 
 
 import org.slf4j.event.Level;
+import org.slf4j.helpers.FormattingTuple;
 import org.slf4j.helpers.MessageFormatter;
 
 import javax.annotation.Nullable;
@@ -38,7 +39,11 @@ public abstract class Logger {
     public static final class Internal {
         private static void log(Level level, org.slf4j.Logger logger, String message) {
             if (instance != null) {
-                instance.logDebug(message);
+                if (Level.ERROR == level) {
+                    instance.logError(message, new Exception("Throwable missing in logger.error"));
+                } else {
+                    instance.logDebug(message);
+                }
             } else {
                 switch (level) {
                     case TRACE:
@@ -62,8 +67,7 @@ public abstract class Logger {
 
         private static void log(Level level, org.slf4j.Logger logger, String format, Object arg) {
             if (instance != null) {
-                String message = MessageFormatter.format(format, arg).getMessage();
-                instance.logDebug(message);
+                logToInstance(level, MessageFormatter.format(format, arg));
             } else {
                 switch (level) {
                     case TRACE:
@@ -87,8 +91,7 @@ public abstract class Logger {
 
         private static void log(Level level, org.slf4j.Logger logger, String format, Object arg1, Object arg2) {
             if (instance != null) {
-                String message = MessageFormatter.format(format, arg1, arg2).getMessage();
-                instance.logDebug(message);
+                logToInstance(level, MessageFormatter.format(format, arg1, arg2));
             } else {
                 switch (level) {
                     case TRACE:
@@ -110,10 +113,9 @@ public abstract class Logger {
             }
         }
 
-        private static void log(Level level, org.slf4j.Logger logger, String format, Object[] args) {
+        private static void log(Level level, org.slf4j.Logger logger, String format, Object... args) {
             if (instance != null) {
-                String message = MessageFormatter.arrayFormat(format, args).getMessage();
-                instance.logDebug(message);
+                logToInstance(level, MessageFormatter.arrayFormat(format, args));
             } else {
                 switch (level) {
                     case TRACE:
@@ -131,6 +133,28 @@ public abstract class Logger {
                     case ERROR:
                         logger.error(format, args);
                         break;
+                }
+            }
+        }
+
+        private static void logToInstance(Level level, FormattingTuple formattingTuple) {
+            if (instance != null) {
+
+                Throwable throwable = formattingTuple.getThrowable();
+                String message = formattingTuple.getMessage();
+
+                if (Level.ERROR == level) {
+                    if (throwable != null) {
+                        instance.logError(message, throwable);
+                    } else {
+                        instance.logError(message, new Throwable("Throwable missing in logger.error"));
+                    }
+                } else {
+                    if (throwable != null) {
+                        instance.logDebug(message + " Throwable: " + throwable.getMessage());
+                    } else {
+                        instance.logDebug(message);
+                    }
                 }
             }
         }
@@ -202,7 +226,7 @@ public abstract class Logger {
         Internal.log(Level.TRACE, logger, format, arg1, arg2);
     }
 
-    public static void trace(org.slf4j.Logger logger, String format, Object[] args) {
+    public static void trace(org.slf4j.Logger logger, String format, Object... args) {
         Internal.log(Level.TRACE, logger, format, args);
     }
 
@@ -218,7 +242,7 @@ public abstract class Logger {
         Internal.log(Level.DEBUG, logger, format, arg1, arg2);
     }
 
-    public static void debug(org.slf4j.Logger logger, String format, Object[] args) {
+    public static void debug(org.slf4j.Logger logger, String format, Object... args) {
         Internal.log(Level.DEBUG, logger, format, args);
     }
 
@@ -234,7 +258,7 @@ public abstract class Logger {
         Internal.log(Level.INFO, logger, format, arg1, arg2);
     }
 
-    public static void info(org.slf4j.Logger logger, String format, Object[] args) {
+    public static void info(org.slf4j.Logger logger, String format, Object... args) {
         Internal.log(Level.INFO, logger, format, args);
     }
 
@@ -250,7 +274,7 @@ public abstract class Logger {
         Internal.log(Level.WARN, logger, format, arg1, arg2);
     }
 
-    public static void warn(org.slf4j.Logger logger, String format, Object[] args) {
+    public static void warn(org.slf4j.Logger logger, String format, Object... args) {
         Internal.log(Level.WARN, logger, format, args);
     }
 
@@ -266,7 +290,7 @@ public abstract class Logger {
         Internal.log(Level.ERROR, logger, format, arg1, arg2);
     }
 
-    public static void error(org.slf4j.Logger logger, String format, Object[] args) {
+    public static void error(org.slf4j.Logger logger, String format, Object... args) {
         Internal.log(Level.ERROR, logger, format, args);
     }
 }

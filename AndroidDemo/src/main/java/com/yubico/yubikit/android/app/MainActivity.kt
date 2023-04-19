@@ -17,7 +17,6 @@
 package com.yubico.yubikit.android.app
 
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
@@ -38,7 +37,6 @@ import com.yubico.yubikit.android.app.databinding.DialogAboutBinding
 import com.yubico.yubikit.android.transport.nfc.NfcConfiguration
 import com.yubico.yubikit.android.transport.nfc.NfcNotAvailable
 import com.yubico.yubikit.android.transport.usb.UsbConfiguration
-import com.yubico.yubikit.core.Logger
 import java.util.*
 import kotlin.properties.Delegates
 
@@ -58,16 +56,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-// Don't use deprecated Logger
-//        Logger.setLogger(object : Logger() {
-//            override fun logDebug(message: String) {
-//                Log.d("yubikit", message)
-//            }
-//
-//            override fun logError(message: String, throwable: Throwable) {
-//                Log.e("yubikit", message, throwable)
-//            }
-//        })
+        LoggerDemonstration.run()
 
         val toolbar: Toolbar = findViewById(R.id.toolbar)
         setSupportActionBar(toolbar)
