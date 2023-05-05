@@ -128,9 +128,11 @@ public class DeviceUtil {
                 protocol.select(applet.aid);
                 capabilities |= applet.capability.bit;
             } catch (ApplicationNotAvailableException applicationNotAvailableException) {
-                Logger.debug(logger, "Missing applet {}, capability {}", applet.name(), applet.capability.name());
+                Logger.debug(logger, "Missing applet {}, capability {}",
+                        applet.name(), applet.capability.name());
             } catch (IOException ioException) {
-                Logger.error(logger, "IOException selecting applet " + applet.name() + ", capability " + applet.capability.name(), ioException);
+                Logger.warn(logger, "IOException selecting applet {}, capability {}",
+                        applet.name(), applet.capability.name(), ioException);
             }
         }
 
@@ -184,7 +186,7 @@ public class DeviceUtil {
                     }
                 }
             } catch (CommandException commandException) {
-                Logger.debug(logger, "Caught Command Exception: {}", commandException.getMessage());
+                Logger.debug(logger, "Caught Command Exception: {}", commandException);
                 if (otpSession != null && interfaces == UsbInterface.OTP) {
                     Logger.debug(logger, "This is not reclaim");
                     break; // Can't be reclaim with only one interface
