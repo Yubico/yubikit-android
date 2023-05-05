@@ -16,11 +16,13 @@
 
 package com.yubico.yubikit.piv.jca;
 
-import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.core.util.Callback;
 import com.yubico.yubikit.core.util.Result;
 import com.yubico.yubikit.piv.KeyType;
 import com.yubico.yubikit.piv.PivSession;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.security.AlgorithmParameters;
@@ -42,9 +44,6 @@ import javax.crypto.NoSuchPaddingException;
 import javax.crypto.ShortBufferException;
 
 public class PivCipherSpi extends CipherSpi {
-
-    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(PivCipherSpi.class);
-
     private final Callback<Callback<Result<PivSession, Exception>>> provider;
     private final Map<KeyType, KeyPair> dummyKeys;
     private final ByteArrayOutputStream buffer = new ByteArrayOutputStream();
@@ -55,6 +54,8 @@ public class PivCipherSpi extends CipherSpi {
     @Nullable
     private String padding;
     private int opmode = -1;
+
+    private static final Logger logger = LoggerFactory.getLogger(PivCipherSpi.class);
 
     PivCipherSpi(Callback<Callback<Result<PivSession, Exception>>> provider, Map<KeyType, KeyPair> dummyKeys) throws NoSuchPaddingException {
         this.provider = provider;
@@ -97,7 +98,7 @@ public class PivCipherSpi extends CipherSpi {
 
     @Override
     protected void engineInit(int opmode, Key key, SecureRandom random) throws InvalidKeyException {
-        Logger.debug(logger, "ENGINE INIT {} {}", mode, padding);
+        logger.debug("Engine init: mode={} padding={}", mode, padding);
         if (key instanceof PivPrivateKey) {
             if (!KeyType.Algorithm.RSA.name().equals(key.getAlgorithm())) {
                 throw new InvalidKeyException("Cipher only supports RSA.");
