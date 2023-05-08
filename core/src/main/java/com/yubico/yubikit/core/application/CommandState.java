@@ -26,12 +26,12 @@ import org.slf4j.LoggerFactory;
  */
 public class CommandState {
 
-    private static final Logger logger = LoggerFactory.getLogger(CommandState.class);
-
     public static final byte STATUS_PROCESSING = 1;
     public static final byte STATUS_UPNEEDED = 2;
 
     private boolean cancelled = false;
+
+    private static final Logger logger = LoggerFactory.getLogger(CommandState.class);
 
     /**
      * Override this method to handle keep-alive messages sent from the YubiKey.

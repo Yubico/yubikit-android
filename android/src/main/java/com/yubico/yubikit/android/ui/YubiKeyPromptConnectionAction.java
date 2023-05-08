@@ -40,9 +40,9 @@ import java.io.IOException;
  */
 public abstract class YubiKeyPromptConnectionAction<T extends YubiKeyConnection> extends YubiKeyPromptAction {
 
-    private static final Logger logger = LoggerFactory.getLogger(YubiKeyPromptConnectionAction.class);
-
     final Class<T> connectionType;
+
+    private static final Logger logger = LoggerFactory.getLogger(YubiKeyPromptConnectionAction.class);
 
     /**
      * Subclasses need to provide a default (no-arg) constructor which calls this parent constructor.

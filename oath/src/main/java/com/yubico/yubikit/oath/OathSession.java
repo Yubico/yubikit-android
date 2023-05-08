@@ -117,7 +117,7 @@ public class OathSession extends ApplicationSession<OathSession> {
     private byte[] challenge;
     private boolean isAccessKeySet;
 
-    private final Logger logger = LoggerFactory.getLogger(OathSession.class);
+    private static final Logger logger = LoggerFactory.getLogger(OathSession.class);
 
     /**
      * Establishes a new session with a YubiKeys OATH application.

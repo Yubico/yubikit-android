@@ -33,8 +33,6 @@ import javax.annotation.Nullable;
 
 public class FidoProtocol implements Closeable {
 
-    private static final Logger logger = LoggerFactory.getLogger(FidoProtocol.class);
-
     public static final byte TYPE_INIT = (byte) 0x80;
 
     private static final byte CMD_PING = TYPE_INIT | 0x01;
@@ -52,6 +50,8 @@ public class FidoProtocol implements Closeable {
 
     private final Version version;
     private int channelId;
+
+    private static final Logger logger = LoggerFactory.getLogger(FidoProtocol.class);
 
     public FidoProtocol(FidoConnection connection) throws IOException {
         this.connection = connection;

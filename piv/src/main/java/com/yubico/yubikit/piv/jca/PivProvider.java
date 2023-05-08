@@ -39,7 +39,6 @@ import javax.annotation.Nullable;
 import javax.crypto.NoSuchPaddingException;
 
 public class PivProvider extends Provider {
-
     private static final Map<String, String> ecAttributes = Collections.singletonMap("SupportedKeyClasses", PivPrivateKey.EcKey.class.getName());
     private static final Map<String, String> rsaAttributes = Collections.singletonMap("SupportedKeyClasses", PivPrivateKey.RsaKey.class.getName());
 

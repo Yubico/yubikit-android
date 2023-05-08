@@ -56,9 +56,6 @@ import javax.annotation.Nullable;
  * The dialog can be customized by passing additional values in the intent.
  */
 public class YubiKeyPromptActivity extends Activity {
-
-    private final Logger logger = LoggerFactory.getLogger(YubiKeyPromptActivity.class);
-
     /**
      * Helper method to create an Intent to start the YubiKeyPromptActivity with a ConnectionAction.
      *
@@ -140,6 +137,8 @@ public class YubiKeyPromptActivity extends Activity {
 
     private boolean allowUsb;
     private boolean allowNfc;
+
+    private static final Logger logger = LoggerFactory.getLogger(YubiKeyPromptActivity.class);
 
     /**
      * Get the YubiKitManager used by this activity.

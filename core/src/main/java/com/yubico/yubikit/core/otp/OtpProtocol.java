@@ -35,8 +35,6 @@ import javax.annotation.Nullable;
 
 public class OtpProtocol implements Closeable {
 
-    private static final Logger logger = LoggerFactory.getLogger(OtpProtocol.class);
-
     private static final int FEATURE_RPT_SIZE = 8;
     private static final int FEATURE_RPT_DATA_SIZE = FEATURE_RPT_SIZE - 1;
 
@@ -55,6 +53,8 @@ public class OtpProtocol implements Closeable {
 
     private final OtpConnection connection;
     private final Version version;
+
+    private static final Logger logger = LoggerFactory.getLogger(OtpProtocol.class);
 
     public OtpProtocol(OtpConnection connection) throws IOException {
         this.connection = connection;
