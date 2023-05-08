@@ -3,7 +3,6 @@ apply plugin: 'java-library'
 dependencies {
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
 
-    api 'org.slf4j:slf4j-api:2.0.7'
     implementation 'com.github.tony19:logback-android:3.0.0'
 
     api project(':core')
