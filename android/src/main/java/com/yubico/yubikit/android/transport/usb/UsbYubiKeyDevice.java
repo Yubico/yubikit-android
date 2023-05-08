@@ -200,4 +200,12 @@ public class UsbYubiKeyDevice implements YubiKeyDevice, Closeable {
             queue.offer(CLOSE_OTP);
         }
     }
+
+    @Override
+    public String toString() {
+        return "UsbYubiKeyDevice{" +
+                "usbDevice=" + usbDevice +
+                ", usbPid=" + usbPid +
+                '}';
+    }
 }
