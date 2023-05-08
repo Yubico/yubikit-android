@@ -16,6 +16,7 @@
 
 package com.yubico.yubikit.oath;
 
+import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.core.Version;
 import com.yubico.yubikit.core.smartcard.AppId;
 import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
@@ -32,7 +33,6 @@ import com.yubico.yubikit.core.util.Tlv;
 import com.yubico.yubikit.core.util.Tlvs;
 
 import org.apache.commons.codec.binary.Base64;
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
@@ -117,7 +117,7 @@ public class OathSession extends ApplicationSession<OathSession> {
     private byte[] challenge;
     private boolean isAccessKeySet;
 
-    private static final Logger logger = LoggerFactory.getLogger(OathSession.class);
+    private static final org.slf4j.Logger logger = LoggerFactory.getLogger(OathSession.class);
 
     /**
      * Establishes a new session with a YubiKeys OATH application.
@@ -135,7 +135,7 @@ public class OathSession extends ApplicationSession<OathSession> {
         challenge = selectResponse.challenge;
         isAccessKeySet = challenge != null && challenge.length != 0;
         protocol.enableWorkarounds(version);
-        logger.debug("OATH session initialized (version={}, isAccessKeySet={})", version, isAccessKeySet);
+        Logger.debug(logger, "OATH session initialized (version={}, isAccessKeySet={})", version, isAccessKeySet);
     }
 
     @Override
@@ -172,7 +172,7 @@ public class OathSession extends ApplicationSession<OathSession> {
             salt = selectResponse.salt;
             challenge = null;
             isAccessKeySet = false;
-            logger.info("OATH application data reset performed");
+            Logger.info(logger, "OATH application data reset performed");
         } catch (ApplicationNotAvailableException e) {
             throw new IllegalStateException(e);  // This shouldn't happen
         }
@@ -248,7 +248,7 @@ public class OathSession extends ApplicationSession<OathSession> {
             return true;
         }
 
-        logger.debug("Unlocking session");
+        Logger.debug(logger, "Unlocking session");
 
         try {
             Map<Integer, byte[]> request = new LinkedHashMap<>();
@@ -313,7 +313,7 @@ public class OathSession extends ApplicationSession<OathSession> {
 
         protocol.sendAndReceive(new Apdu(0, INS_SET_CODE, 0, 0, Tlvs.encodeMap(request)));
         isAccessKeySet = true;
-        logger.info("New access key set");
+        Logger.info(logger, "New access key set");
     }
 
     /**
@@ -325,7 +325,7 @@ public class OathSession extends ApplicationSession<OathSession> {
     public void deleteAccessKey() throws IOException, ApduException {
         protocol.sendAndReceive(new Apdu(0, INS_SET_CODE, 0, 0, new Tlv(TAG_KEY, null).getBytes()));
         isAccessKeySet = false;
-        logger.info("Access key removed");
+        Logger.info(logger, "Access key removed");
     }
 
     /**
@@ -381,7 +381,7 @@ public class OathSession extends ApplicationSession<OathSession> {
         long validFrom = validFrom(timestamp, DEFAULT_TOTP_PERIOD);
         long validUntil = validFrom + DEFAULT_TOTP_PERIOD * MILLS_IN_SECOND;
 
-        logger.info("Calculating all codes for time={}", timestamp);
+        Logger.info(logger, "Calculating all codes for time={}", timestamp);
 
         byte[] data = protocol.sendAndReceive(new Apdu(0, INS_CALCULATE_ALL, 0, 1, new Tlv(TAG_CHALLENGE, challenge).getBytes()));
         Iterator<Tlv> responseTlvs = Tlvs.decodeList(data).iterator();
@@ -402,7 +402,7 @@ public class OathSession extends ApplicationSession<OathSession> {
                 int period = credential.getPeriod();
                 if (period != DEFAULT_TOTP_PERIOD) {
                     // Recalculate TOTP for correct period.
-                    logger.debug("Recalculating code for period={}", period);
+                    Logger.debug(logger, "Recalculating code for period={}", period);
                     map.put(credential, calculateCode(credential, timestamp));
                 } else {
                     map.put(credential, new Code(formatTruncated(response), validFrom, validUntil));
@@ -471,10 +471,10 @@ public class OathSession extends ApplicationSession<OathSession> {
         }
 
         if (credential.getOathType() == OathType.TOTP) {
-            logger.debug("Calculating TOTP code for time={}, period={}",
+            Logger.debug(logger, "Calculating TOTP code for time={}, period={}",
                     timestamp, credential.getPeriod());
         } else {
-            logger.debug("Calculating HOTP code");
+            Logger.debug(logger, "Calculating HOTP code");
         }
 
         Map<Integer, byte[]> requestTlv = new LinkedHashMap<>();
@@ -538,14 +538,14 @@ public class OathSession extends ApplicationSession<OathSession> {
             output.write(ByteBuffer.allocate(4).putInt(credentialData.getCounter()).array());
         }
 
-        logger.debug("Importing credential (type={}, hash={}, digits={}, "
+        Logger.debug(logger, "Importing credential (type={}, hash={}, digits={}, "
                         + "period={}, imf={}, touch_required={})",
                 credentialData.getOathType(), credentialData.getHashAlgorithm(),
                 credentialData.getDigits(), credentialData.getPeriod(),
                 credentialData.getCounter(), requireTouch);
 
         protocol.sendAndReceive(new Apdu(0x00, INS_PUT, 0, 0, output.toByteArray()));
-        logger.info("Credential imported");
+        Logger.info(logger, "Credential imported");
         return new Credential(deviceId, credentialData.getId(), credentialData.getOathType(), requireTouch);
     }
 
@@ -558,7 +558,7 @@ public class OathSession extends ApplicationSession<OathSession> {
      */
     public void deleteCredential(byte[] credentialId) throws IOException, ApduException {
         protocol.sendAndReceive(new Apdu(0x00, INS_DELETE, 0, 0, new Tlv(TAG_NAME, credentialId).getBytes()));
-        logger.info("Credential deleted");
+        Logger.info(logger, "Credential deleted");
     }
 
     /**
@@ -591,7 +591,7 @@ public class OathSession extends ApplicationSession<OathSession> {
                 new Tlv(TAG_NAME, credentialId),
                 new Tlv(TAG_NAME, newCredentialId)
         ))));
-        logger.info("Credential renamed");
+        Logger.info(logger, "Credential renamed");
     }
 
     /**

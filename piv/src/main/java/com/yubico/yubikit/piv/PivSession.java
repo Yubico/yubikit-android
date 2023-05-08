@@ -16,6 +16,7 @@
 
 package com.yubico.yubikit.piv;
 
+import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.core.Version;
 import com.yubico.yubikit.core.smartcard.AppId;
 import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
@@ -33,7 +34,6 @@ import com.yubico.yubikit.core.util.StringUtils;
 import com.yubico.yubikit.core.util.Tlv;
 import com.yubico.yubikit.core.util.Tlvs;
 
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
@@ -186,7 +186,7 @@ public class PivSession extends ApplicationSession<PivSession> {
     private int currentPinAttempts = 3;  // Internal guess as to number of PIN retries.
     private int maxPinAttempts = 3; // Internal guess as to max number of PIN retries.
 
-    private static final Logger logger = LoggerFactory.getLogger(PivSession.class);
+    private static final org.slf4j.Logger logger = LoggerFactory.getLogger(PivSession.class);
 
     /**
      * Create new instance of {@link PivSession}
@@ -207,7 +207,7 @@ public class PivSession extends ApplicationSession<PivSession> {
         if (connection.isExtendedLengthApduSupported() && version.isAtLeast(4, 0, 0)) {
             protocol.setApduFormat(ApduFormat.EXTENDED);
         }
-        logger.debug("PIV session initialized (version={})", version);
+        Logger.debug(logger, "PIV session initialized (version={})", version);
     }
 
     @Override
@@ -248,14 +248,14 @@ public class PivSession extends ApplicationSession<PivSession> {
      * @throws ApduException in case of an error response from the YubiKey
      */
     public void reset() throws IOException, ApduException {
-        logger.debug("Preparing PIV reset");
+        Logger.debug(logger, "Preparing PIV reset");
         blockPin();
         blockPuk();
-        logger.debug("Sending reset");
+        Logger.debug(logger, "Sending reset");
         protocol.sendAndReceive(new Apdu(0, INS_RESET, 0, 0, null));
         currentPinAttempts = 3;
         maxPinAttempts = 3;
-        logger.info("PIV application data reset performed");
+        Logger.info(logger, "PIV application data reset performed");
     }
 
     /**
@@ -270,7 +270,7 @@ public class PivSession extends ApplicationSession<PivSession> {
      * @throws BadResponseException in case of incorrect YubiKey response
      */
     public void authenticate(ManagementKeyType keyType, byte[] managementKey) throws IOException, ApduException, BadResponseException {
-        logger.debug("Authenticating with key type: {}", keyType);
+        Logger.debug(logger, "Authenticating with key type: {}", keyType);
         if (managementKey.length != keyType.keyLength) {
             throw new IllegalArgumentException(String.format("Management Key must be %d bytes", keyType.keyLength));
         }
@@ -299,7 +299,7 @@ public class PivSession extends ApplicationSession<PivSession> {
             cipher.init(Cipher.ENCRYPT_MODE, key);
             byte[] expectedData = cipher.doFinal(challenge);
             if (!MessageDigest.isEqual(encryptedData, expectedData)) {
-                logger.trace("Expected response: {} and actual response {}",
+                Logger.trace(logger, "Expected response: {} and actual response {}",
                         StringUtils.bytesToHex(expectedData),
                         StringUtils.bytesToHex(encryptedData));
                 throw new BadResponseException("Calculated response for challenge is incorrect");
@@ -329,7 +329,7 @@ public class PivSession extends ApplicationSession<PivSession> {
      */
     @Deprecated
     public byte[] sign(Slot slot, KeyType keyType, byte[] message, Signature algorithm) throws IOException, ApduException, BadResponseException, NoSuchAlgorithmException {
-        logger.debug("Signing data with key in slot {} of type {} using algorithm {}",
+        Logger.debug(logger, "Signing data with key in slot {} of type {} using algorithm {}",
                 slot, keyType, algorithm);
         byte[] payload = Padding.pad(keyType, message, algorithm);
         return usePrivateKey(slot, keyType, payload, false);
@@ -366,7 +366,7 @@ public class PivSession extends ApplicationSession<PivSession> {
         } else {
             padded = payload;
         }
-        logger.debug("Decrypting data with key in slot {} of type {}", slot, keyType);
+        Logger.debug(logger, "Decrypting data with key in slot {} of type {}", slot, keyType);
         return usePrivateKey(slot, keyType, padded, false);
     }
 
@@ -399,7 +399,7 @@ public class PivSession extends ApplicationSession<PivSession> {
             default:
                 throw new IllegalArgumentException("Invalid length of ciphertext");
         }
-        logger.debug("Decrypting data with key in slot {} of type {}", slot, keyType);
+        Logger.debug(logger, "Decrypting data with key in slot {} of type {}", slot, keyType);
         return Padding.unpad(usePrivateKey(slot, keyType, cipherText, false), algorithm);
     }
 
@@ -416,7 +416,7 @@ public class PivSession extends ApplicationSession<PivSession> {
     public byte[] calculateSecret(Slot slot, ECPublicKey peerPublicKey) throws IOException, ApduException, BadResponseException {
         KeyType keyType = KeyType.fromKey(peerPublicKey);
         int byteLength = keyType.params.bitLength / 8;
-        logger.debug("Performing key agreement with key in slot {} of type {}", slot, keyType);
+        Logger.debug(logger, "Performing key agreement with key in slot {} of type {}", slot, keyType);
         return usePrivateKey(slot, keyType, ByteBuffer.allocate(1 + 2 * byteLength)
                 .put((byte) 0x04)
                 .put(bytesToLength(peerPublicKey.getW().getAffineX(), byteLength))
@@ -473,7 +473,7 @@ public class PivSession extends ApplicationSession<PivSession> {
         // NOTE: if p2=0xfe key requires touch
         // Require touch is only available on YubiKey 4 & 5.
         protocol.sendAndReceive(new Apdu(0, INS_SET_MGMKEY, 0xff, requireTouch ? 0xfe : 0xff, stream.toByteArray()));
-        logger.info("Management key set");
+        Logger.info(logger, "Management key set");
     }
 
     /**
@@ -552,7 +552,7 @@ public class PivSession extends ApplicationSession<PivSession> {
     public void changePin(char[] oldPin, char[] newPin) throws IOException, ApduException, InvalidPinException {
         logger.debug("Changing PIN");
         changeReference(INS_CHANGE_REFERENCE, PIN_P2, oldPin, newPin);
-        logger.info("New PIN set");
+        Logger.info(logger, "New PIN set");
     }
 
     /**
@@ -567,7 +567,7 @@ public class PivSession extends ApplicationSession<PivSession> {
     public void changePuk(char[] oldPuk, char[] newPuk) throws IOException, ApduException, InvalidPinException {
         logger.debug("Changing PUK");
         changeReference(INS_CHANGE_REFERENCE, PUK_P2, oldPuk, newPuk);
-        logger.info("New PUK set");
+        Logger.info(logger, "New PUK set");
     }
 
     /**
@@ -583,7 +583,7 @@ public class PivSession extends ApplicationSession<PivSession> {
     public void unblockPin(char[] puk, char[] newPin) throws IOException, ApduException, InvalidPinException {
         logger.debug("Using PUK to set new PIN");
         changeReference(INS_RESET_RETRY, PIN_P2, puk, newPin);
-        logger.info("New PIN set");
+        Logger.info(logger, "New PIN set");
     }
 
     /**
@@ -602,7 +602,7 @@ public class PivSession extends ApplicationSession<PivSession> {
         protocol.sendAndReceive(new Apdu(0, INS_SET_PIN_RETRIES, pinAttempts, pukAttempts, null));
         maxPinAttempts = pinAttempts;
         currentPinAttempts = pinAttempts;
-        logger.info("PIN/PUK attempts set");
+        Logger.info(logger, "PIN/PUK attempts set");
     }
 
     /**
@@ -879,7 +879,7 @@ public class PivSession extends ApplicationSession<PivSession> {
 
         logger.debug("Generating key with pin_policy={}, touch_policy={}", pinPolicy, touchPolicy);
         byte[] response = protocol.sendAndReceive(new Apdu(0, INS_GENERATE_ASYMMETRIC, 0, slot.value, new Tlv((byte) 0xac, Tlvs.encodeMap(tlvs)).getBytes()));
-        logger.info("Private key generated in slot {} of type {}", slot, keyType);
+        Logger.info(logger, "Private key generated in slot {} of type {}", slot, keyType);
         // Tag '7F49' contains data objects for RSA or ECC
         return parsePublicKeyFromDevice(keyType, Tlvs.unpackValue(0x7F49, response));
     }
@@ -956,7 +956,7 @@ public class PivSession extends ApplicationSession<PivSession> {
 
         logger.debug("Importing key with pin_policy={}, touch_policy={}", pinPolicy, touchPolicy);
         protocol.sendAndReceive(new Apdu(0, INS_IMPORT_KEY, keyType.value, slot.value, Tlvs.encodeMap(tlvs)));
-        logger.info("Private key imported in slot {} of type {}", slot, keyType);
+        Logger.info(logger, "Private key imported in slot {} of type {}", slot, keyType);
         return keyType;
     }
 

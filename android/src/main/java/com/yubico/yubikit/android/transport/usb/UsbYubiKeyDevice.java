@@ -22,6 +22,7 @@ import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
 
 import com.yubico.yubikit.android.transport.usb.connection.ConnectionManager;
+import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.UsbPid;
 import com.yubico.yubikit.core.YubiKeyConnection;
@@ -30,7 +31,6 @@ import com.yubico.yubikit.core.otp.OtpConnection;
 import com.yubico.yubikit.core.util.Callback;
 import com.yubico.yubikit.core.util.Result;
 
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
@@ -55,7 +55,7 @@ public class UsbYubiKeyDevice implements YubiKeyDevice, Closeable {
     @Nullable
     private Runnable onClosed = null;
 
-    private static final Logger logger = LoggerFactory.getLogger(UsbYubiKeyDevice.class);
+    private static final org.slf4j.Logger logger = LoggerFactory.getLogger(UsbYubiKeyDevice.class);
 
     /**
      * Creates the instance of usb session to interact with the yubikey device.
@@ -151,7 +151,7 @@ public class UsbYubiKeyDevice implements YubiKeyDevice, Closeable {
 
     @Override
     public void close() {
-        logger.debug("Closing YubiKey device");
+        Logger.debug(logger, "Closing YubiKey device");
         if (otpConnection != null) {
             otpConnection.close();
             otpConnection = null;
@@ -169,7 +169,7 @@ public class UsbYubiKeyDevice implements YubiKeyDevice, Closeable {
         private final LinkedBlockingQueue<Callback<Result<OtpConnection, IOException>>> queue = new LinkedBlockingQueue<>();
 
         private CachedOtpConnection(Callback<Result<OtpConnection, IOException>> callback) {
-            logger.debug("Creating new CachedOtpConnection");
+            Logger.debug(logger, "Creating new CachedOtpConnection");
             queue.offer(callback);
             executorService.submit(() -> {
                 try (OtpConnection connection = connectionManager.openConnection(OtpConnection.class)) {
@@ -177,13 +177,13 @@ public class UsbYubiKeyDevice implements YubiKeyDevice, Closeable {
                         try {
                             Callback<Result<OtpConnection, IOException>> action = queue.take();
                             if (action == CLOSE_OTP) {
-                                logger.debug("Closing CachedOtpConnection");
+                                Logger.debug(logger, "Closing CachedOtpConnection");
                                 break;
                             }
                             try {
                                 action.invoke(Result.success(connection));
                             } catch (Exception e) {
-                                logger.error("OtpConnection callback threw an exception", e);
+                                Logger.error(logger, "OtpConnection callback threw an exception", e);
                             }
                         } catch (InterruptedException e) {
                             e.printStackTrace();

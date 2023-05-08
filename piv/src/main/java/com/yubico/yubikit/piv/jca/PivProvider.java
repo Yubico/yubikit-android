@@ -16,12 +16,12 @@
 
 package com.yubico.yubikit.piv.jca;
 
+import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.core.util.Callback;
 import com.yubico.yubikit.core.util.Result;
 import com.yubico.yubikit.piv.KeyType;
 import com.yubico.yubikit.piv.PivSession;
 
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.security.KeyPair;
@@ -45,7 +45,7 @@ public class PivProvider extends Provider {
     private final Callback<Callback<Result<PivSession, Exception>>> sessionRequester;
     private final Map<KeyType, KeyPair> rsaDummyKeys = new HashMap<>();
 
-    private static final Logger logger = LoggerFactory.getLogger(PivProvider.class);
+    private static final org.slf4j.Logger logger = LoggerFactory.getLogger(PivProvider.class);
 
     /**
      * Creates a Security Provider wrapping an instance of a PivSession.
@@ -68,8 +68,8 @@ public class PivProvider extends Provider {
         super("YKPiv", 1.0, "JCA Provider for YubiKey PIV");
         this.sessionRequester = sessionRequester;
 
-        logger.debug("EC attributes: {}", ecAttributes);
-        logger.debug("RSA attributes: {}", rsaAttributes);
+        Logger.debug(logger, "EC attributes: {}", ecAttributes);
+        Logger.debug(logger, "RSA attributes: {}", rsaAttributes);
 
         //noinspection SpellCheckingInspection
         putService(new Service(this, "Signature", "NONEwithECDSA", PivEcSignatureSpi.Prehashed.class.getName(), null, ecAttributes) {
@@ -88,11 +88,11 @@ public class PivProvider extends Provider {
                 rsaDummyKeys.put(keyType, rsaGen.generateKeyPair());
             }
             long end = System.currentTimeMillis();
-            logger.debug("Time taken to generate dummy RSA keys: {}ms", (end - start));
+            Logger.debug(logger, "Time taken to generate dummy RSA keys: {}ms", (end - start));
 
             putService(new PivRsaCipherService());
         } catch (NoSuchAlgorithmException e) {
-            logger.error("Unable to support RSA, no underlying Provider with RSA capability", e);
+            Logger.error(logger, "Unable to support RSA, no underlying Provider with RSA capability", e);
         }
 
         Set<String> digests = Security.getAlgorithms("MessageDigest");

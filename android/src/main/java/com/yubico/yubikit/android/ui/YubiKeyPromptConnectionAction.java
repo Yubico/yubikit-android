@@ -21,13 +21,13 @@ import android.os.Bundle;
 
 import androidx.annotation.WorkerThread;
 
+import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.application.CommandState;
 import com.yubico.yubikit.core.util.Callback;
 import com.yubico.yubikit.core.util.Pair;
 
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
@@ -42,7 +42,7 @@ public abstract class YubiKeyPromptConnectionAction<T extends YubiKeyConnection>
 
     final Class<T> connectionType;
 
-    private static final Logger logger = LoggerFactory.getLogger(YubiKeyPromptConnectionAction.class);
+    private static final org.slf4j.Logger logger = LoggerFactory.getLogger(YubiKeyPromptConnectionAction.class);
 
     /**
      * Subclasses need to provide a default (no-arg) constructor which calls this parent constructor.
@@ -64,7 +64,7 @@ public abstract class YubiKeyPromptConnectionAction<T extends YubiKeyConnection>
                 }
             });
         } else {
-            logger.debug("Connected YubiKey does not support desired connection type");
+            Logger.debug(logger, "Connected YubiKey does not support desired connection type");
             callback.invoke(CONTINUE);
         }
     }
@@ -94,6 +94,6 @@ public abstract class YubiKeyPromptConnectionAction<T extends YubiKeyConnection>
      */
     @WorkerThread
     protected void onError(Exception exception) {
-        logger.error("Error connecting to YubiKey", exception);
+        Logger.error(logger, "Error connecting to YubiKey", exception);
     }
 }

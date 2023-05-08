@@ -24,7 +24,8 @@ import android.content.IntentFilter;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
 
-import org.slf4j.Logger;
+import com.yubico.yubikit.core.Logger;
+
 import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
@@ -43,7 +44,7 @@ final class UsbDeviceManager {
     @Nullable
     private static UsbDeviceManager instance;
 
-    private static final Logger logger = LoggerFactory.getLogger(UsbDeviceManager.class);
+    private static final org.slf4j.Logger logger = LoggerFactory.getLogger(UsbDeviceManager.class);
 
     private static synchronized UsbDeviceManager getInstance() {
         if (instance == null) {
@@ -110,7 +111,7 @@ final class UsbDeviceManager {
                 if (awaitingPermissions.isEmpty()) {
                     context.registerReceiver(permissionReceiver, new IntentFilter(ACTION_USB_PERMISSION));
                 }
-                logger.debug("Requesting permission for UsbDevice: {}", usbDevice.getDeviceName());
+                Logger.debug(logger, "Requesting permission for UsbDevice: {}", usbDevice.getDeviceName());
                 int flags = 0;
                 if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
                     flags |= PendingIntent.FLAG_MUTABLE;
@@ -124,7 +125,7 @@ final class UsbDeviceManager {
     }
 
     private void onDeviceAttach(UsbDevice usbDevice) {
-        logger.debug("UsbDevice attached: {}", usbDevice.getDeviceName());
+        Logger.debug(logger, "UsbDevice attached: {}", usbDevice.getDeviceName());
         contexts.put(usbDevice, new HashSet<>());
         for (UsbDeviceListener listener : deviceListeners) {
             listener.deviceAttached(usbDevice);
@@ -132,7 +133,7 @@ final class UsbDeviceManager {
     }
 
     private void onPermission(Context context, UsbDevice usbDevice, boolean permission) {
-        logger.debug("Permission result for {}, permitted: {}", usbDevice.getDeviceName(), permission);
+        Logger.debug(logger, "Permission result for {}, permitted: {}", usbDevice.getDeviceName(), permission);
         Set<PermissionResultListener> permissionListeners = contexts.get(usbDevice);
         if (permissionListeners != null) {
             synchronized (permissionListeners) {
@@ -150,7 +151,7 @@ final class UsbDeviceManager {
     }
 
     private void onDeviceDetach(Context context, UsbDevice usbDevice) {
-        logger.debug("UsbDevice detached: {}", usbDevice.getDeviceName());
+        Logger.debug(logger, "UsbDevice detached: {}", usbDevice.getDeviceName());
         if (contexts.remove(usbDevice) != null) {
             for (UsbDeviceListener listener : deviceListeners) {
                 listener.deviceRemoved(usbDevice);
