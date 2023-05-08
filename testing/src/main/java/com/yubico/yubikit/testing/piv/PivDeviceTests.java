@@ -19,7 +19,6 @@ import static com.yubico.yubikit.testing.piv.PivTestConstants.DEFAULT_MANAGEMENT
 import static com.yubico.yubikit.testing.piv.PivTestConstants.DEFAULT_PIN;
 import static com.yubico.yubikit.testing.piv.PivTestConstants.DEFAULT_PUK;
 
-import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.core.smartcard.SW;
@@ -32,11 +31,14 @@ import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
 import org.junit.Assert;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 
 public class PivDeviceTests {
 
-    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(PivDeviceTests.class);
+    private static final Logger logger = LoggerFactory.getLogger(PivDeviceTests.class);
 
     public static void testManagementKey(PivSession piv) throws BadResponseException, IOException, ApduException {
         byte[] key2 = Hex.decode("010203040102030401020304010203040102030401020304");

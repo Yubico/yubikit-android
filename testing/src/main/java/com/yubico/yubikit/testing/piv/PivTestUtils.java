@@ -28,6 +28,9 @@ import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.junit.Assert;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -58,7 +61,7 @@ import javax.crypto.KeyAgreement;
 @SuppressWarnings("SpellCheckingInspection")
 public class PivTestUtils {
 
-    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(PivTestUtils.class);
+    private static final Logger logger = LoggerFactory.getLogger(PivTestUtils.class);
 
     private enum StaticKey {
         RSA1024(

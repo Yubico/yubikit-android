@@ -16,18 +16,20 @@
 
 package com.yubico.yubikit.testing.piv;
 
-import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.piv.PivSession;
 import com.yubico.yubikit.piv.jca.PivProvider;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.security.Provider;
 import java.security.Security;
 import java.util.Set;
 
 public class PivJcaUtils {
-    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(PivJcaUtils.class);
+    private static final Logger logger = LoggerFactory.getLogger(PivJcaUtils.class);
 
     public static void setupJca(PivSession piv) {
         Security.removeProvider("BC");
@@ -46,10 +48,10 @@ public class PivJcaUtils {
         for (Provider p : providers) {
             @SuppressWarnings("deprecation")
             double version = p.getVersion();
-            Logger.debug(logger, "{}/{}/{}", new Object[]{p.getName(), p.getInfo(), version});
+            logger.debug("{}/{}/{}", p.getName(), p.getInfo(), version);
             Set<Provider.Service> services = p.getServices();
             for (Provider.Service s : services) {
-                Logger.debug(logger, "\t{}: {} -> {}", new Object[]{s.getType(), s.getAlgorithm(), s.getClassName()});
+                logger.debug("\t{}: {} -> {}", s.getType(), s.getAlgorithm(), s.getClassName());
             }
         }
     }
