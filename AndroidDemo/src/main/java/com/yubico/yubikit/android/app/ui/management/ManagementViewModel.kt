@@ -18,6 +18,7 @@ package com.yubico.yubikit.android.app.ui.management
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+
 import com.yubico.yubikit.android.app.ui.YubiKeyViewModel
 import com.yubico.yubikit.android.transport.usb.UsbYubiKeyDevice
 import com.yubico.yubikit.core.YubiKeyConnection
@@ -31,7 +32,9 @@ import com.yubico.yubikit.core.util.StringUtils
 import com.yubico.yubikit.management.DeviceInfo
 import com.yubico.yubikit.management.ManagementSession
 import com.yubico.yubikit.support.DeviceUtil
+
 import org.slf4j.LoggerFactory
+
 import java.io.IOException
 
 data class ConnectedDeviceInfo(

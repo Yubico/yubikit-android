@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Yubico.
+ * Copyright (C) 2022-2023 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,10 @@
 package com.yubico.yubikit.android.app.ui.piv
 
 import android.util.SparseArray
+
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+
 import com.yubico.yubikit.android.app.ui.YubiKeyViewModel
 import com.yubico.yubikit.core.YubiKeyDevice
 import com.yubico.yubikit.core.application.BadResponseException
@@ -27,7 +29,9 @@ import com.yubico.yubikit.core.smartcard.SmartCardConnection
 import com.yubico.yubikit.piv.ManagementKeyType
 import com.yubico.yubikit.piv.PivSession
 import com.yubico.yubikit.piv.Slot
+
 import org.slf4j.LoggerFactory
+
 import java.security.cert.X509Certificate
 
 class PivViewModel : YubiKeyViewModel<PivSession>() {

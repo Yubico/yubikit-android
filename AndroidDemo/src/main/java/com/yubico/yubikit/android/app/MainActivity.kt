@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Yubico.
+ * Copyright (C) 2022-2023 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,17 +31,23 @@ import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.navigateUp
 import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
+
 import com.google.android.material.navigation.NavigationView
+
 import com.yubico.yubikit.android.YubiKitManager
 import com.yubico.yubikit.android.app.databinding.DialogAboutBinding
 import com.yubico.yubikit.android.transport.nfc.NfcConfiguration
 import com.yubico.yubikit.android.transport.nfc.NfcNotAvailable
 import com.yubico.yubikit.android.transport.usb.UsbConfiguration
+
+import org.slf4j.LoggerFactory
+
 import java.util.*
+
 import kotlin.properties.Delegates
 
 class MainActivity : AppCompatActivity() {
-    private val logger = org.slf4j.LoggerFactory.getLogger(MainActivity::class.java)
+    private val logger = LoggerFactory.getLogger(MainActivity::class.java)
     private lateinit var appBarConfiguration: AppBarConfiguration
     private lateinit var navController: NavController
 
