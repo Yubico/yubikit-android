@@ -19,10 +19,12 @@ package com.yubico.yubikit.android.transport.nfc;
 import android.nfc.Tag;
 import android.nfc.tech.IsoDep;
 
-import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.util.StringUtils;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
@@ -31,12 +33,12 @@ import java.io.IOException;
  */
 public class NfcSmartCardConnection implements SmartCardConnection {
 
-    private final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(NfcSmartCardConnection.class);
-
     /**
      * Provides access to ISO-DEP (ISO 14443-4) properties and I/O operations on a {@link Tag}.
      */
     private final IsoDep card;
+
+    private static final Logger logger = LoggerFactory.getLogger(NfcSmartCardConnection.class);
 
     /**
      * Instantiates session for nfc tag interaction
@@ -45,7 +47,7 @@ public class NfcSmartCardConnection implements SmartCardConnection {
      */
     NfcSmartCardConnection(IsoDep card) {
         this.card = card;
-        Logger.debug(logger, "nfc connection opened");
+        logger.debug("nfc connection opened");
     }
 
     @Override
@@ -60,16 +62,16 @@ public class NfcSmartCardConnection implements SmartCardConnection {
 
     @Override
     public byte[] sendAndReceive(byte[] apdu) throws IOException {
-        Logger.trace(logger, "sent: {}", StringUtils.bytesToHex(apdu));
+        logger.trace("sent: {}", StringUtils.bytesToHex(apdu));
         byte[] received = card.transceive(apdu);
-        Logger.trace(logger, "received: {}", StringUtils.bytesToHex(received));
+        logger.trace("received: {}", StringUtils.bytesToHex(received));
         return received;
     }
 
     @Override
     public void close() throws IOException {
         card.close();
-        Logger.debug(logger, "nfc connection closed");
+        logger.debug("nfc connection closed");
     }
 
     @Override

@@ -33,6 +33,9 @@ import com.yubico.yubikit.piv.jca.PivAlgorithmParameterSpec;
 
 import org.junit.Assert;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidAlgorithmParameterException;
@@ -52,7 +55,7 @@ import java.util.Set;
 
 public class PivJcaSigningTests {
 
-    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(PivJcaSigningTests.class);
+    private static final Logger logger = LoggerFactory.getLogger(PivJcaSigningTests.class);
 
     private static Set<String> signatureAlgorithmsWithPss = new HashSet<>();
 

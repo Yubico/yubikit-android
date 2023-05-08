@@ -32,6 +32,8 @@ import com.yubico.yubikit.core.util.Tlv;
 import com.yubico.yubikit.core.util.Tlvs;
 
 import org.apache.commons.codec.binary.Base64;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -57,7 +59,7 @@ import javax.crypto.spec.SecretKeySpec;
 
 /**
  * Communicates with the OATH application on a YubiKey.
- *
+ * <p>
  * <a href="https://developers.yubico.com/OATH/YKOATH_Protocol.html">Protocol specification</a>.
  * This application may optionally have an Access Key set, in which case most commands will be
  * locked until {@link #unlock} has been invoked. Note that {@link #reset()} can always be called,
@@ -115,6 +117,8 @@ public class OathSession extends ApplicationSession<OathSession> {
     private byte[] challenge;
     private boolean isAccessKeySet;
 
+    private static final Logger logger = LoggerFactory.getLogger(OathSession.class);
+
     /**
      * Establishes a new session with a YubiKeys OATH application.
      *
@@ -131,6 +135,7 @@ public class OathSession extends ApplicationSession<OathSession> {
         challenge = selectResponse.challenge;
         isAccessKeySet = challenge != null && challenge.length != 0;
         protocol.enableWorkarounds(version);
+        logger.debug("OATH session initialized (version={}, isAccessKeySet={})", version, isAccessKeySet);
     }
 
     @Override
@@ -167,6 +172,7 @@ public class OathSession extends ApplicationSession<OathSession> {
             salt = selectResponse.salt;
             challenge = null;
             isAccessKeySet = false;
+            logger.info("OATH application data reset performed");
         } catch (ApplicationNotAvailableException e) {
             throw new IllegalStateException(e);  // This shouldn't happen
         }
@@ -242,6 +248,8 @@ public class OathSession extends ApplicationSession<OathSession> {
             return true;
         }
 
+        logger.debug("Unlocking session");
+
         try {
             Map<Integer, byte[]> request = new LinkedHashMap<>();
             request.put(TAG_RESPONSE, validator.calculateResponse(challenge));
@@ -305,6 +313,7 @@ public class OathSession extends ApplicationSession<OathSession> {
 
         protocol.sendAndReceive(new Apdu(0, INS_SET_CODE, 0, 0, Tlvs.encodeMap(request)));
         isAccessKeySet = true;
+        logger.info("New access key set");
     }
 
     /**
@@ -316,6 +325,7 @@ public class OathSession extends ApplicationSession<OathSession> {
     public void deleteAccessKey() throws IOException, ApduException {
         protocol.sendAndReceive(new Apdu(0, INS_SET_CODE, 0, 0, new Tlv(TAG_KEY, null).getBytes()));
         isAccessKeySet = false;
+        logger.info("Access key removed");
     }
 
     /**
@@ -371,6 +381,8 @@ public class OathSession extends ApplicationSession<OathSession> {
         long validFrom = validFrom(timestamp, DEFAULT_TOTP_PERIOD);
         long validUntil = validFrom + DEFAULT_TOTP_PERIOD * MILLS_IN_SECOND;
 
+        logger.info("Calculating all codes for time={}", timestamp);
+
         byte[] data = protocol.sendAndReceive(new Apdu(0, INS_CALCULATE_ALL, 0, 1, new Tlv(TAG_CHALLENGE, challenge).getBytes()));
         Iterator<Tlv> responseTlvs = Tlvs.decodeList(data).iterator();
         Map<Credential, Code> map = new HashMap<>();
@@ -387,8 +399,10 @@ public class OathSession extends ApplicationSession<OathSession> {
 
             // Non-empty responses are for TOTP credentials which do not require touch.
             if (response.response.length == 4) {
-                if (credential.getPeriod() != DEFAULT_TOTP_PERIOD) {
+                int period = credential.getPeriod();
+                if (period != DEFAULT_TOTP_PERIOD) {
                     // Recalculate TOTP for correct period.
+                    logger.debug("Recalculating code for period={}", period);
                     map.put(credential, calculateCode(credential, timestamp));
                 } else {
                     map.put(credential, new Code(formatTruncated(response), validFrom, validUntil));
@@ -456,6 +470,13 @@ public class OathSession extends ApplicationSession<OathSession> {
             ByteBuffer.wrap(challenge).putLong(timeStep);
         }
 
+        if (credential.getOathType() == OathType.TOTP) {
+            logger.debug("Calculating TOTP code for time={}, period={}",
+                    timestamp, credential.getPeriod());
+        } else {
+            logger.debug("Calculating HOTP code");
+        }
+
         Map<Integer, byte[]> requestTlv = new LinkedHashMap<>();
         requestTlv.put(TAG_NAME, credential.getId());
         requestTlv.put(TAG_CHALLENGE, challenge);
@@ -517,7 +538,14 @@ public class OathSession extends ApplicationSession<OathSession> {
             output.write(ByteBuffer.allocate(4).putInt(credentialData.getCounter()).array());
         }
 
+        logger.debug("Importing credential (type={}, hash={}, digits={}, "
+                        + "period={}, imf={}, touch_required={})",
+                credentialData.getOathType(), credentialData.getHashAlgorithm(),
+                credentialData.getDigits(), credentialData.getPeriod(),
+                credentialData.getCounter(), requireTouch);
+
         protocol.sendAndReceive(new Apdu(0x00, INS_PUT, 0, 0, output.toByteArray()));
+        logger.info("Credential imported");
         return new Credential(deviceId, credentialData.getId(), credentialData.getOathType(), requireTouch);
     }
 
@@ -530,6 +558,7 @@ public class OathSession extends ApplicationSession<OathSession> {
      */
     public void deleteCredential(byte[] credentialId) throws IOException, ApduException {
         protocol.sendAndReceive(new Apdu(0x00, INS_DELETE, 0, 0, new Tlv(TAG_NAME, credentialId).getBytes()));
+        logger.info("Credential deleted");
     }
 
     /**
@@ -562,6 +591,7 @@ public class OathSession extends ApplicationSession<OathSession> {
                 new Tlv(TAG_NAME, credentialId),
                 new Tlv(TAG_NAME, newCredentialId)
         ))));
+        logger.info("Credential renamed");
     }
 
     /**

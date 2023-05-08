@@ -17,12 +17,10 @@
 package com.yubico.yubikit.testing;
 
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -32,16 +30,16 @@ import com.yubico.yubikit.android.transport.nfc.NfcNotAvailable;
 import com.yubico.yubikit.android.transport.nfc.NfcYubiKeyDevice;
 import com.yubico.yubikit.android.transport.usb.UsbConfiguration;
 import com.yubico.yubikit.android.transport.usb.UsbYubiKeyDevice;
-import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.core.YubiKeyDevice;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Semaphore;
 
 public class TestActivity extends AppCompatActivity {
-
-    private final String TAG = "yubikit.test";
 
     private TextView testNameText;
     private TextView statusText;
@@ -52,6 +50,8 @@ public class TestActivity extends AppCompatActivity {
 
     private final BlockingQueue<YubiKeyDevice> sessionQueue = new ArrayBlockingQueue<>(1);
     private final Semaphore lock = new Semaphore(0);
+
+    private final static Logger logger = LoggerFactory.getLogger(TestActivity.class);
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -64,18 +64,6 @@ public class TestActivity extends AppCompatActivity {
         progressBar = findViewById(R.id.progressBar);
 
         yubiKitManager = new YubiKitManager(this);
-
-//        Logger.setLogger(new Logger() {
-//            @Override
-//            protected void logDebug(@NonNull String message) {
-//                Log.d(TAG, message);
-//            }
-//
-//            @Override
-//            protected void logError(@NonNull String message, @NonNull Throwable throwable) {
-//                Log.e(TAG, message, throwable);
-//            }
-//        });
 
         yubiKitManager.startUsbDiscovery(new UsbConfiguration(), device -> {
             bottomText.setVisibility(View.VISIBLE);
@@ -91,9 +79,9 @@ public class TestActivity extends AppCompatActivity {
             yubiKitManager.startNfcDiscovery(new NfcConfiguration().timeout(15000), this, sessionQueue::add);
         } catch (NfcNotAvailable e) {
             if (e.isDisabled()) {
-                Log.e(TAG, "NFC is disabled", e);
+                logger.error("NFC is disabled", e);
             } else {
-                Log.e(TAG, "NFC is not supported", e);
+                logger.error("NFC is not supported", e);
             }
         }
     }

@@ -34,6 +34,9 @@ import com.yubico.yubikit.piv.jca.PivAlgorithmParameterSpec;
 
 import org.junit.Assert;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidAlgorithmParameterException;
@@ -50,7 +53,7 @@ import javax.crypto.NoSuchPaddingException;
 
 public class PivJcaDecryptTests {
 
-    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(PivJcaDecryptTests.class);
+    private static final Logger logger = LoggerFactory.getLogger(PivJcaDecryptTests.class);
 
     public static void testDecrypt(PivSession piv) throws BadResponseException, IOException, ApduException, NoSuchPaddingException, NoSuchAlgorithmException, NoSuchProviderException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException, InvalidAlgorithmParameterException {
         setupJca(piv);
