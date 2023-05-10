@@ -9,7 +9,7 @@ We understood that such approach is not scalable and decided to use industry sta
 === YubiKit changes
 Internally in YubiKit, the integration of `slf4j` brought several changes: we as the SDK developers have greater flexibility on choosing log levels (`TRACE`, `DEBUG`, `INFO`, `WARN` and `ERROR`) in every situation. Most importantly, with the change, *log messages which could contain private or privacy related information such as raw communication data is logged in the `TRACE` log level.*
 
-Other important change is that every class has it's own logger which allows clients to setup logging for every situation.
+Other important change is that every class has its own logger which allows clients to setup logging for every situation.
 
 YubiKit does not use `Marker` `slf4j` APIs as they are not widely supported in `slf4j` implementations.
 
