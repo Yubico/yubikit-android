@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2022 Yubico.
+ * Copyright (C) 2019-2023 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -106,11 +106,7 @@ public class UsbYubiKeyDevice implements YubiKeyDevice, Closeable {
 
     @Override
     public <T extends YubiKeyConnection> void requestConnection(Class<T> connectionType, Callback<Result<T, IOException>> callback) {
-        if (!hasPermission()) {
-            throw new IllegalStateException("Device access not permitted");
-        } else if (!supportsConnection(connectionType)) {
-            throw new IllegalStateException("Unsupported connection type");
-        }
+        verifyAccess(connectionType);
 
         // Keep UsbOtpConnection open until another connection is needed, to prevent re-enumeration of the USB device.
         if (OtpConnection.class.isAssignableFrom(connectionType)) {
@@ -134,6 +130,13 @@ public class UsbYubiKeyDevice implements YubiKeyDevice, Closeable {
                 }
             });
         }
+    }
+
+    @Override
+    public <T extends YubiKeyConnection> T openConnection(Class<T> connectionType) throws IOException {
+        verifyAccess(connectionType);
+
+        return connectionManager.openConnection(connectionType);
     }
 
     public void setOnClosed(Runnable onClosed) {
@@ -193,6 +196,22 @@ public class UsbYubiKeyDevice implements YubiKeyDevice, Closeable {
         @Override
         public void close() {
             queue.offer(CLOSE_OTP);
+        }
+    }
+
+    /**
+     * Throw if the device cannot create connections of the specified type.
+     *
+     * @param connectionType type of connection to verify
+     *
+     * @throws IllegalStateException if the USB permission has not been granted
+     * @throws IllegalStateException if the connectionType is not supported
+     */
+    private <T extends YubiKeyConnection> void verifyAccess(Class<T> connectionType) {
+        if (!hasPermission()) {
+            throw new IllegalStateException("Device access not permitted");
+        } else if (!supportsConnection(connectionType)) {
+            throw new IllegalStateException("Unsupported connection type");
         }
     }
 }

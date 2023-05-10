@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Yubico.
+ * Copyright (C) 2022-2023 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,15 +40,12 @@ class OathViewModel : YubiKeyViewModel<OathSession>() {
 
     private var isNfc = false
     override fun getSession(device: YubiKeyDevice, onError: (Throwable) -> Unit, callback: (OathSession) -> Unit) {
-        device.requestConnection(SmartCardConnection::class.java) {
-            try {
-                val connection = it.value
-                isNfc = connection.transport == Transport.NFC
-                callback(OathSession(connection))
-            } catch (e: Throwable) {
-                onError(e)
+        runCatching {
+            device.openConnection(SmartCardConnection::class.java).use {
+                isNfc = it.transport == Transport.NFC
+                callback(OathSession(it))
             }
-        }
+        }.onFailure(onError)
     }
 
     override fun OathSession.updateState() {

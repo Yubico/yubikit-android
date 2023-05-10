@@ -123,7 +123,7 @@ public class NfcYubiKeyDevice implements YubiKeyDevice {
         return connectionType.isAssignableFrom(NfcSmartCardConnection.class);
     }
 
-    private <T extends YubiKeyConnection> T openConnection(Class<T> connectionType) throws IOException {
+    public <T extends YubiKeyConnection> T openConnection(Class<T> connectionType) throws IOException {
         if (connectionType.isAssignableFrom(NfcSmartCardConnection.class)) {
             return Objects.requireNonNull(connectionType.cast(openIso7816Connection()));
         }

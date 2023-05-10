@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Yubico.
+ * Copyright (C) 2022-2023 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,13 +52,11 @@ class PivViewModel : YubiKeyViewModel<PivSession>() {
         onError: (Throwable) -> Unit,
         callback: (PivSession) -> Unit
     ) {
-        device.requestConnection(SmartCardConnection::class.java) {
-            try {
-                callback(PivSession(it.value))
-            } catch (e: Throwable) {
-                onError(e)
+        runCatching {
+            device.openConnection(SmartCardConnection::class.java).use {
+                callback(PivSession(it))
             }
-        }
+        }.onFailure(onError)
     }
 
     override fun PivSession.updateState() {

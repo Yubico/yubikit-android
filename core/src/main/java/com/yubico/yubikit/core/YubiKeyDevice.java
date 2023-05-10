@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Yubico.
+ * Copyright (C) 2020-2023 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,4 +38,10 @@ public interface YubiKeyDevice {
      * Requests a new connection of the given connection type.
      */
     <T extends YubiKeyConnection> void requestConnection(Class<T> connectionType, Callback<Result<T, IOException>> callback);
+
+
+    /**
+     * Returns a new connection of the given connection type.
+     */
+    <T extends YubiKeyConnection> T openConnection(Class<T> connectionType) throws IOException;
 }
