@@ -455,7 +455,7 @@ public class PivSession extends ApplicationSession<PivSession> {
      * @throws ApduException in case of an error response from the YubiKey
      */
     public void setManagementKey(ManagementKeyType keyType, byte[] managementKey, boolean requireTouch) throws IOException, ApduException {
-        logger.debug("Setting management key of type: {}", keyType);
+        Logger.debug(logger, "Setting management key of type: {}", keyType);
         if (keyType != ManagementKeyType.TDES) {
             require(FEATURE_AES_KEY);
         }
@@ -489,7 +489,7 @@ public class PivSession extends ApplicationSession<PivSession> {
      */
     public void verifyPin(char[] pin) throws IOException, ApduException, InvalidPinException {
         try {
-            logger.debug("Verifying PIN");
+            Logger.debug(logger, "Verifying PIN");
             protocol.sendAndReceive(new Apdu(0, INS_VERIFY, 0, PIN_P2, pinBytes(pin)));
             currentPinAttempts = maxPinAttempts;
         } catch (ApduException e) {
@@ -516,7 +516,7 @@ public class PivSession extends ApplicationSession<PivSession> {
      * @throws ApduException in case of an error response from the YubiKey
      */
     public int getPinAttempts() throws IOException, ApduException {
-        logger.debug("Getting PIN attempts");
+        Logger.debug(logger, "Getting PIN attempts");
         if (supports(FEATURE_METADATA)) {
             // If metadata is available, use that
             return getPinMetadata().getAttemptsRemaining();
@@ -525,13 +525,13 @@ public class PivSession extends ApplicationSession<PivSession> {
             // Null as data will not cause actual tries to decrement
             protocol.sendAndReceive(new Apdu(0, INS_VERIFY, 0, PIN_P2, null));
             // Already verified, no way to know true count
-            logger.debug("Using cached value, may be incorrect");
+            Logger.debug(logger, "Using cached value, may be incorrect");
             return currentPinAttempts;
         } catch (ApduException e) {
             int retries = getRetriesFromCode(e.getSw());
             if (retries >= 0) {
                 currentPinAttempts = retries;
-                logger.debug("Using value from empty verify");
+                Logger.debug(logger, "Using value from empty verify");
                 return retries;
             } else {
                 // status code returned error, not number of retries
@@ -550,7 +550,7 @@ public class PivSession extends ApplicationSession<PivSession> {
      * @throws InvalidPinException in case if pin is invalid
      */
     public void changePin(char[] oldPin, char[] newPin) throws IOException, ApduException, InvalidPinException {
-        logger.debug("Changing PIN");
+        Logger.debug(logger, "Changing PIN");
         changeReference(INS_CHANGE_REFERENCE, PIN_P2, oldPin, newPin);
         Logger.info(logger, "New PIN set");
     }
@@ -565,7 +565,7 @@ public class PivSession extends ApplicationSession<PivSession> {
      * @throws InvalidPinException in case if puk is invalid
      */
     public void changePuk(char[] oldPuk, char[] newPuk) throws IOException, ApduException, InvalidPinException {
-        logger.debug("Changing PUK");
+        Logger.debug(logger, "Changing PUK");
         changeReference(INS_CHANGE_REFERENCE, PUK_P2, oldPuk, newPuk);
         Logger.info(logger, "New PUK set");
     }
@@ -581,7 +581,7 @@ public class PivSession extends ApplicationSession<PivSession> {
      * @throws InvalidPinException in case if puk is invalid
      */
     public void unblockPin(char[] puk, char[] newPin) throws IOException, ApduException, InvalidPinException {
-        logger.debug("Using PUK to set new PIN");
+        Logger.debug(logger, "Using PUK to set new PIN");
         changeReference(INS_RESET_RETRY, PIN_P2, puk, newPin);
         Logger.info(logger, "New PIN set");
     }
@@ -598,7 +598,7 @@ public class PivSession extends ApplicationSession<PivSession> {
      * @throws ApduException in case of an error response from the YubiKey
      */
     public void setPinAttempts(int pinAttempts, int pukAttempts) throws IOException, ApduException {
-        logger.debug("Setting PIN/PUK attempts ({}, {})", pinAttempts, pukAttempts);
+        Logger.debug(logger, "Setting PIN/PUK attempts ({}, {})", pinAttempts, pukAttempts);
         protocol.sendAndReceive(new Apdu(0, INS_SET_PIN_RETRIES, pinAttempts, pukAttempts, null));
         maxPinAttempts = pinAttempts;
         currentPinAttempts = pinAttempts;
@@ -615,7 +615,7 @@ public class PivSession extends ApplicationSession<PivSession> {
      * @throws ApduException in case of an error response from the YubiKey
      */
     public PinMetadata getPinMetadata() throws IOException, ApduException {
-        logger.debug("Getting PIN metadata");
+        Logger.debug(logger, "Getting PIN metadata");
         return getPinPukMetadata(PIN_P2);
     }
 
@@ -629,7 +629,7 @@ public class PivSession extends ApplicationSession<PivSession> {
      * @throws ApduException in case of an error response from the YubiKey
      */
     public PinMetadata getPukMetadata() throws IOException, ApduException {
-        logger.debug("Getting PUK metadata");
+        Logger.debug(logger, "Getting PUK metadata");
         return getPinPukMetadata(PUK_P2);
     }
 
@@ -654,7 +654,7 @@ public class PivSession extends ApplicationSession<PivSession> {
      * @throws ApduException in case of an error response from the YubiKey
      */
     public ManagementKeyMetadata getManagementKeyMetadata() throws IOException, ApduException {
-        logger.debug("Getting management key metadata");
+        Logger.debug(logger, "Getting management key metadata");
         require(FEATURE_METADATA);
         Map<Integer, byte[]> data = Tlvs.decodeMap(protocol.sendAndReceive(new Apdu(0, INS_GET_METADATA, 0, SLOT_CARD_MANAGEMENT, null)));
         return new ManagementKeyMetadata(
@@ -675,7 +675,7 @@ public class PivSession extends ApplicationSession<PivSession> {
      * @throws ApduException in case of an error response from the YubiKey
      */
     public SlotMetadata getSlotMetadata(Slot slot) throws IOException, ApduException {
-        logger.debug("Getting metadata for slot {}", slot);
+        Logger.debug(logger, "Getting metadata for slot {}", slot);
         require(FEATURE_METADATA);
         Map<Integer, byte[]> data = Tlvs.decodeMap(protocol.sendAndReceive(new Apdu(0, INS_GET_METADATA, 0, slot.value, null)));
         byte[] policy = data.get(TAG_METADATA_POLICY);
@@ -698,7 +698,7 @@ public class PivSession extends ApplicationSession<PivSession> {
      * @throws BadResponseException in case of incorrect YubiKey response
      */
     public X509Certificate getCertificate(Slot slot) throws IOException, ApduException, BadResponseException {
-        logger.debug("Reading certificate in slot {}", slot);
+        Logger.debug(logger, "Reading certificate in slot {}", slot);
         byte[] objectData = getObject(slot.objectId);
 
         Map<Integer, byte[]> certData = Tlvs.decodeMap(objectData);
@@ -725,7 +725,7 @@ public class PivSession extends ApplicationSession<PivSession> {
      */
     public void putCertificate(Slot slot, X509Certificate certificate) throws IOException, ApduException {
         byte[] certBytes;
-        logger.debug("Storing certificate in slot {}", slot);
+        Logger.debug(logger, "Storing certificate in slot {}", slot);
         try {
             certBytes = certificate.getEncoded();
         } catch (CertificateEncodingException e) {
@@ -761,7 +761,7 @@ public class PivSession extends ApplicationSession<PivSession> {
         require(FEATURE_ATTESTATION);
         try {
             byte[] responseData = protocol.sendAndReceive(new Apdu(0, INS_ATTEST, slot.value, 0, null));
-            logger.debug("Attested key in slot {}", slot);
+            Logger.debug(logger, "Attested key in slot {}", slot);
             return parseCertificate(responseData);
         } catch (ApduException e) {
             if (SW.INCORRECT_PARAMETERS == e.getSw()) {
@@ -784,7 +784,7 @@ public class PivSession extends ApplicationSession<PivSession> {
      * @throws ApduException in case of an error response from the YubiKey
      */
     public void deleteCertificate(Slot slot) throws IOException, ApduException {
-        logger.debug("Deleting certificate in slot {}", slot);
+        Logger.debug(logger, "Deleting certificate in slot {}", slot);
         putObject(slot.objectId, null);
     }
 
@@ -877,7 +877,7 @@ public class PivSession extends ApplicationSession<PivSession> {
             tlvs.put(TAG_TOUCH_POLICY, new byte[]{(byte) touchPolicy.value});
         }
 
-        logger.debug("Generating key with pin_policy={}, touch_policy={}", pinPolicy, touchPolicy);
+        Logger.debug(logger, "Generating key with pin_policy={}, touch_policy={}", pinPolicy, touchPolicy);
         byte[] response = protocol.sendAndReceive(new Apdu(0, INS_GENERATE_ASYMMETRIC, 0, slot.value, new Tlv((byte) 0xac, Tlvs.encodeMap(tlvs)).getBytes()));
         Logger.info(logger, "Private key generated in slot {} of type {}", slot, keyType);
         // Tag '7F49' contains data objects for RSA or ECC
@@ -954,7 +954,7 @@ public class PivSession extends ApplicationSession<PivSession> {
             tlvs.put(TAG_TOUCH_POLICY, new byte[]{(byte) touchPolicy.value});
         }
 
-        logger.debug("Importing key with pin_policy={}, touch_policy={}", pinPolicy, touchPolicy);
+        Logger.debug(logger, "Importing key with pin_policy={}, touch_policy={}", pinPolicy, touchPolicy);
         protocol.sendAndReceive(new Apdu(0, INS_IMPORT_KEY, keyType.value, slot.value, Tlvs.encodeMap(tlvs)));
         Logger.info(logger, "Private key imported in slot {} of type {}", slot, keyType);
         return keyType;
@@ -970,7 +970,7 @@ public class PivSession extends ApplicationSession<PivSession> {
      * @throws BadResponseException in case of incorrect YubiKey response
      */
     public byte[] getObject(int objectId) throws IOException, ApduException, BadResponseException {
-        logger.debug("Reading data from object slot {}", Integer.toString(objectId, 16));
+        Logger.debug(logger, "Reading data from object slot {}", Integer.toString(objectId, 16));
         byte[] requestData = new Tlv(TAG_OBJ_ID, ObjectId.getBytes(objectId)).getBytes();
         byte[] responseData = protocol.sendAndReceive(new Apdu(0, INS_GET_DATA, 0x3f, 0xff, requestData));
         return Tlvs.unpackValue(TAG_OBJ_DATA, responseData);
@@ -985,7 +985,7 @@ public class PivSession extends ApplicationSession<PivSession> {
      * @throws ApduException in case of an error response from the YubiKey
      */
     public void putObject(int objectId, @Nullable byte[] objectData) throws IOException, ApduException {
-        logger.debug("Writing data to object slot {}", Integer.toString(objectId, 16));
+        Logger.debug(logger, "Writing data to object slot {}", Integer.toString(objectId, 16));
         Map<Integer, byte[]> tlvs = new LinkedHashMap<>();
         tlvs.put(TAG_OBJ_ID, ObjectId.getBytes(objectId));
         tlvs.put(TAG_OBJ_DATA, objectData);
@@ -1038,7 +1038,7 @@ public class PivSession extends ApplicationSession<PivSession> {
 
     private void blockPin() throws IOException, ApduException {
         // Note: that 15 is the highest value that will be returned even if remaining tries is higher.
-        logger.debug("Verify PIN with invalid attempts until blocked");
+        Logger.debug(logger, "Verify PIN with invalid attempts until blocked");
         int counter = getPinAttempts();
         while (counter > 0) {
             try {
@@ -1048,12 +1048,12 @@ public class PivSession extends ApplicationSession<PivSession> {
             }
         }
 
-        logger.debug("PIN is blocked");
+        Logger.debug(logger, "PIN is blocked");
     }
 
     private void blockPuk() throws IOException, ApduException {
         // A failed unblock pin will return number of PUK tries left and also uses one try.
-        logger.debug("Verify PUK with invalid attempts until blocked");
+        Logger.debug(logger, "Verify PUK with invalid attempts until blocked");
         int counter = 1;
         while (counter > 0) {
             try {
@@ -1062,7 +1062,7 @@ public class PivSession extends ApplicationSession<PivSession> {
                 counter = e.getAttemptsRemaining();
             }
         }
-        logger.debug("PUK is blocked");
+        Logger.debug(logger, "PUK is blocked");
     }
 
     private static byte[] pinBytes(char[] pin) {

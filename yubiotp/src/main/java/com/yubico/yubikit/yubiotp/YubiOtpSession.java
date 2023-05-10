@@ -501,17 +501,15 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
     }
 
     private void logCtor(YubiKeyConnection connection) {
-        if (logger.isDebugEnabled()) {
-            Logger.debug(logger, "YubiOTP session initialized for connection={}, version={}, ledInverted={}",
-                    connection.getClass().getSimpleName(),
-                    getVersion(),
-                    backend.configurationState.isLedInverted());
-            Logger.debug(logger, "Configuration slot 1: configured={}, touchTriggered={}",
-                    backend.configurationState.isConfigured(Slot.ONE),
-                    backend.configurationState.isTouchTriggered(Slot.ONE));
-            Logger.debug(logger, "Configuration slot 2: configured={}, touchTriggered={}",
-                    backend.configurationState.isConfigured(Slot.TWO),
-                    backend.configurationState.isTouchTriggered(Slot.TWO));
-        }
+        Logger.debug(logger, "YubiOTP session initialized for connection={}, version={}, ledInverted={}",
+                connection.getClass().getSimpleName(),
+                getVersion(),
+                backend.configurationState.isLedInverted());
+        Logger.debug(logger, "Configuration slot 1: configured={}, touchTriggered={}",
+                backend.configurationState.isConfigured(Slot.ONE),
+                backend.configurationState.isTouchTriggered(Slot.ONE));
+        Logger.debug(logger, "Configuration slot 2: configured={}, touchTriggered={}",
+                backend.configurationState.isConfigured(Slot.TWO),
+                backend.configurationState.isTouchTriggered(Slot.TWO));
     }
 }
