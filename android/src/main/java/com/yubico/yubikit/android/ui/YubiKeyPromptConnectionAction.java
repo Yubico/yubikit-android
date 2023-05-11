@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Yubico.
+ * Copyright (C) 2022-2023 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,8 @@ import com.yubico.yubikit.core.application.CommandState;
 import com.yubico.yubikit.core.util.Callback;
 import com.yubico.yubikit.core.util.Pair;
 
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 
 /**
@@ -37,7 +39,10 @@ import java.io.IOException;
  * @param <T> The connection type to handle
  */
 public abstract class YubiKeyPromptConnectionAction<T extends YubiKeyConnection> extends YubiKeyPromptAction {
+
     final Class<T> connectionType;
+
+    private static final org.slf4j.Logger logger = LoggerFactory.getLogger(YubiKeyPromptConnectionAction.class);
 
     /**
      * Subclasses need to provide a default (no-arg) constructor which calls this parent constructor.
@@ -59,7 +64,7 @@ public abstract class YubiKeyPromptConnectionAction<T extends YubiKeyConnection>
                 }
             });
         } else {
-            Logger.d("Connected YubiKey does not support desired connection type");
+            Logger.debug(logger, "Connected YubiKey does not support desired connection type");
             callback.invoke(CONTINUE);
         }
     }
@@ -89,6 +94,6 @@ public abstract class YubiKeyPromptConnectionAction<T extends YubiKeyConnection>
      */
     @WorkerThread
     protected void onError(Exception exception) {
-        Logger.e("Error connecting to YubiKey", exception);
+        Logger.error(logger, "Error connecting to YubiKey", exception);
     }
 }

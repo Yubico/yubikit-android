@@ -32,6 +32,8 @@ android {
 dependencies {
     api project(':core')
 
+    implementation 'org.slf4j:slf4j-api:2.0.7'
+
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
     compileOnly 'com.github.spotbugs:spotbugs-annotations:4.2.2'
     compileOnly 'androidx.annotation:annotation:1.5.0'

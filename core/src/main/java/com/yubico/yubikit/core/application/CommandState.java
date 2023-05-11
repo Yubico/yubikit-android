@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Yubico.
+ * Copyright (C) 2020-2023 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@ package com.yubico.yubikit.core.application;
 
 import com.yubico.yubikit.core.Logger;
 
+import org.slf4j.LoggerFactory;
+
 /**
  * Provides control over an ongoing YubiKey operation.
  * <p>
@@ -24,10 +26,13 @@ import com.yubico.yubikit.core.Logger;
  * Call {@link #cancel()} to cancel an ongoing operation.
  */
 public class CommandState {
+
     public static final byte STATUS_PROCESSING = 1;
     public static final byte STATUS_UPNEEDED = 2;
 
     private boolean cancelled = false;
+
+    private static final org.slf4j.Logger logger = LoggerFactory.getLogger(CommandState.class);
 
     /**
      * Override this method to handle keep-alive messages sent from the YubiKey.
@@ -36,7 +41,7 @@ public class CommandState {
      * @param status The keep alive status byte
      */
     public void onKeepAliveStatus(byte status) {
-        Logger.d(String.format("received keepalive status: %x", status));
+        Logger.debug(logger, "received keepalive status: {}", status);
     }
 
     /**
@@ -53,7 +58,7 @@ public class CommandState {
             try {
                 wait(ms);
             } catch (InterruptedException e) {
-                Logger.d("Thread interrupted, cancelling command");
+                Logger.debug(logger, "Thread interrupted, cancelling command");
                 cancelled = true;
                 Thread.currentThread().interrupt();
             }

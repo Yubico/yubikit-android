@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Yubico.
+ * Copyright (C) 2022-2023 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@ import static com.yubico.yubikit.testing.piv.PivJcaUtils.tearDownJca;
 import static com.yubico.yubikit.testing.piv.PivTestConstants.DEFAULT_MANAGEMENT_KEY;
 import static com.yubico.yubikit.testing.piv.PivTestConstants.DEFAULT_PIN;
 
-import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.core.util.StringUtils;
@@ -34,6 +33,9 @@ import com.yubico.yubikit.piv.TouchPolicy;
 import com.yubico.yubikit.piv.jca.PivAlgorithmParameterSpec;
 
 import org.junit.Assert;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -50,6 +52,8 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 
 public class PivJcaDecryptTests {
+
+    private static final Logger logger = LoggerFactory.getLogger(PivJcaDecryptTests.class);
 
     public static void testDecrypt(PivSession piv) throws BadResponseException, IOException, ApduException, NoSuchPaddingException, NoSuchAlgorithmException, NoSuchProviderException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException, InvalidAlgorithmParameterException {
         setupJca(piv);
@@ -68,7 +72,7 @@ public class PivJcaDecryptTests {
         }
 
         piv.authenticate(ManagementKeyType.TDES, DEFAULT_MANAGEMENT_KEY);
-        Logger.d("Generate key: " + keyType);
+        logger.debug("Generate key: {}", keyType);
         KeyPairGenerator kpg = KeyPairGenerator.getInstance("YKPivRSA");
         kpg.initialize(new PivAlgorithmParameterSpec(Slot.KEY_MANAGEMENT, keyType, PinPolicy.DEFAULT, TouchPolicy.DEFAULT, DEFAULT_PIN));
         KeyPair pair = kpg.generateKeyPair();
@@ -81,17 +85,17 @@ public class PivJcaDecryptTests {
     public static void testDecrypt(KeyPair keyPair, Cipher cipher) throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException {
         byte[] message = "Hello world!".getBytes(StandardCharsets.UTF_8);
 
-        Logger.d("Using cipher " + cipher.getAlgorithm());
+        logger.debug("Using cipher {}", cipher.getAlgorithm());
 
         cipher.init(Cipher.ENCRYPT_MODE, keyPair.getPublic());
         byte[] ct = cipher.doFinal(message);
-        Logger.d("Cipher text " + ct.length + ": " + StringUtils.bytesToHex(ct));
+        logger.debug("Cipher text {}: {}", ct.length, StringUtils.bytesToHex(ct));
 
         Cipher decryptCipher = Cipher.getInstance(cipher.getAlgorithm());
         decryptCipher.init(Cipher.DECRYPT_MODE, keyPair.getPrivate());
         byte[] pt = decryptCipher.doFinal(ct);
 
         Assert.assertArrayEquals(message, pt);
-        Logger.d("Decrypt successful for " + cipher.getAlgorithm());
+        logger.debug("Decrypt successful for {}", cipher.getAlgorithm());
     }
 }

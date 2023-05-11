@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2022 Yubico.
+ * Copyright (C) 2019-2023 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,8 @@ import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.util.StringUtils;
 
+import org.slf4j.LoggerFactory;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -36,7 +38,7 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 /**
  * USB service for interacting with the YubiKey
- * https://www.usb.org/sites/default/files/DWG_Smart-Card_CCID_Rev110.pdf
+ * <a href="https://www.usb.org/sites/default/files/DWG_Smart-Card_CCID_Rev110.pdf">https://www.usb.org/sites/default/files/DWG_Smart-Card_CCID_Rev110.pdf</a>
  */
 public class UsbSmartCardConnection extends UsbYubiKeyConnection implements SmartCardConnection {
 
@@ -72,6 +74,7 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
 
     private byte sequence = 0;
 
+    private static final org.slf4j.Logger logger = LoggerFactory.getLogger(UsbSmartCardConnection.class);
 
     /**
      * Sets endpoints and connection and sends power on command
@@ -154,7 +157,7 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
         while (bytesSent < bufferOut.length || bytesSentPackage == endpointOut.getMaxPacketSize()) {
             bytesSentPackage = connection.bulkTransfer(endpointOut, bufferOut, bytesSent, bufferOut.length - bytesSent, TIMEOUT);
             if (bytesSentPackage > 0) {
-                Logger.d(bytesSentPackage + " bytes sent over ccid: " + StringUtils.bytesToHex(bufferOut, bytesSent, bytesSentPackage));
+                Logger.trace(logger, "{} bytes sent over ccid: {}", bytesSentPackage, StringUtils.bytesToHex(bufferOut, bytesSent, bytesSentPackage));
                 bytesSent += bytesSentPackage;
             } else if (bytesSentPackage < 0) {
                 throw new IOException("Failed to send " + (bufferOut.length - bytesSent) + " bytes");
@@ -177,7 +180,7 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
         do {
             bytesRead = connection.bulkTransfer(endpointIn, bufferRead, bufferRead.length, TIMEOUT);
             if (bytesRead > 0) {
-                Logger.d(bytesRead + " bytes received: " + StringUtils.bytesToHex(bufferRead, 0, bytesRead));
+                Logger.trace(logger, "{} bytes received: {}", bytesRead, StringUtils.bytesToHex(bufferRead, 0, bytesRead));
 
                 if (receivedExpectedPrefix) {
                     stream.write(bufferRead, 0, bytesRead);
@@ -190,8 +193,9 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
                         receivedExpectedPrefix = true;
                         stream.write(bufferRead, 0, bytesRead);
                     } else if (messageHeader.error != 0 && !responseRequiresTimeExtension) {
-                        Logger.d(String.format(
-                                Locale.ROOT, "Invalid response from card reader bStatus=0x%02X and bError=0x%02X", messageHeader.status, messageHeader.error));
+                        Logger.debug(logger, "Invalid response from card reader bStatus={} and bError={}",
+                                String.format(Locale.ROOT, "0x%02X", messageHeader.status),
+                                String.format(Locale.ROOT, "0x%02X", messageHeader.error));
                         throw new IOException("Invalid response from card reader");
                     }
                 }

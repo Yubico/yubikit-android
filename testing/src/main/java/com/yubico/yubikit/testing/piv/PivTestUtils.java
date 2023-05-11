@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Yubico.
+ * Copyright (C) 2020-2023 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 package com.yubico.yubikit.testing.piv;
 
-import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.piv.KeyType;
 import com.yubico.yubikit.testing.Codec;
 
@@ -28,6 +27,9 @@ import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.junit.Assert;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -58,6 +60,9 @@ import javax.crypto.KeyAgreement;
 
 @SuppressWarnings("SpellCheckingInspection")
 public class PivTestUtils {
+
+    private static final Logger logger = LoggerFactory.getLogger(PivTestUtils.class);
+
     private enum StaticKey {
         RSA1024(
                 KeyType.RSA1024,
@@ -295,7 +300,7 @@ public class PivTestUtils {
 
     public static void ecSignAndVerify(PrivateKey privateKey, PublicKey publicKey) throws Exception {
         for (String algorithm : EC_SIGNATURE_ALGORITHMS) {
-            Logger.d("Test " + algorithm);
+            logger.debug("Test {}", algorithm);
             verify(publicKey, Signature.getInstance(algorithm), sign(privateKey, Signature.getInstance(algorithm)));
         }
     }

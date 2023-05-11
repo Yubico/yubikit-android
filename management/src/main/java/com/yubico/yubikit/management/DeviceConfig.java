@@ -200,4 +200,14 @@ public class DeviceConfig {
             return new DeviceConfig(enabledCapabilities, autoEjectTimeout, challengeResponseTimeout, deviceFlags);
         }
     }
+
+    @Override
+    public String toString() {
+        return "DeviceConfig{" +
+                "enabledCapabilities=" + enabledCapabilities +
+                ", autoEjectTimeout=" + autoEjectTimeout +
+                ", challengeResponseTimeout=" + challengeResponseTimeout +
+                ", deviceFlags=" + deviceFlags +
+                '}';
+    }
 }

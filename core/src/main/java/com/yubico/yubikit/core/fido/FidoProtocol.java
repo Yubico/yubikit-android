@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Yubico.
+ * Copyright (C) 2020-2023 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,8 @@ import com.yubico.yubikit.core.Version;
 import com.yubico.yubikit.core.application.CommandState;
 import com.yubico.yubikit.core.util.StringUtils;
 
+import org.slf4j.LoggerFactory;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -30,6 +32,7 @@ import java.util.Arrays;
 import javax.annotation.Nullable;
 
 public class FidoProtocol implements Closeable {
+
     public static final byte TYPE_INIT = (byte) 0x80;
 
     private static final byte CMD_PING = TYPE_INIT | 0x01;
@@ -47,6 +50,8 @@ public class FidoProtocol implements Closeable {
 
     private final Version version;
     private int channelId;
+
+    private static final org.slf4j.Logger logger = LoggerFactory.getLogger(FidoProtocol.class);
 
     public FidoProtocol(FidoConnection connection) throws IOException {
         this.connection = connection;
@@ -69,7 +74,7 @@ public class FidoProtocol implements Closeable {
         buffer.get(versionBytes);
         version = Version.fromBytes(versionBytes);
         buffer.get(); // Capabilities
-        Logger.d(String.format("fido connection set up with channel ID: 0x%08x", channelId));
+        Logger.debug(logger, "FIDO connection set up with channel ID: {}", String.format("0x%08x", channelId));
     }
 
     public byte[] sendAndReceive(byte cmd, byte[] payload, @Nullable CommandState state) throws IOException {
@@ -85,7 +90,7 @@ public class FidoProtocol implements Closeable {
         do {
             toSend.get(buffer, packet.position(), Math.min(toSend.remaining(), packet.remaining()));
             connection.send(buffer);
-            Logger.d(buffer.length + " bytes sent over fido: " + StringUtils.bytesToHex(buffer));
+            Logger.debug(logger, "{} bytes sent over fido: {}", buffer.length, StringUtils.bytesToHex(buffer));
             Arrays.fill(buffer, (byte) 0);
             packet.clear();
             packet.putInt(channelId).put((byte) (0x7f & seq++));
@@ -97,16 +102,16 @@ public class FidoProtocol implements Closeable {
         do {
             packet.clear();
             if (state.waitForCancel(0)) {
-                Logger.d("sending CTAP cancel...");
+                Logger.debug(logger, "sending CTAP cancel...");
                 Arrays.fill(buffer, (byte) 0);
                 packet.putInt(channelId).put(CMD_CANCEL);
                 connection.send(buffer);
-                Logger.d("Sent over fido: " + StringUtils.bytesToHex(buffer));
+                Logger.trace(logger, "Sent over fido: {}", StringUtils.bytesToHex(buffer));
                 packet.clear();
             }
 
             connection.receive(buffer);
-            Logger.d("Received over fido: " + StringUtils.bytesToHex(buffer));
+            Logger.trace(logger, "Received over fido: {}", StringUtils.bytesToHex(buffer));
             int responseChannel = packet.getInt();
             if (responseChannel != channelId) {
                 throw new IOException(String.format("Wrong Channel ID. Expecting: %d, Got: %d", channelId, responseChannel));
@@ -142,6 +147,6 @@ public class FidoProtocol implements Closeable {
     @Override
     public void close() throws IOException {
         connection.close();
-        Logger.d("fido connection closed");
+        Logger.debug(logger, "fido connection closed");
     }
 }

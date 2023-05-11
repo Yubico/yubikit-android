@@ -18,9 +18,9 @@ package com.yubico.yubikit.android.app.ui.management
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+
 import com.yubico.yubikit.android.app.ui.YubiKeyViewModel
 import com.yubico.yubikit.android.transport.usb.UsbYubiKeyDevice
-import com.yubico.yubikit.core.Logger
 import com.yubico.yubikit.core.YubiKeyConnection
 import com.yubico.yubikit.core.YubiKeyDevice
 import com.yubico.yubikit.core.YubiKeyType
@@ -32,6 +32,9 @@ import com.yubico.yubikit.core.util.StringUtils
 import com.yubico.yubikit.management.DeviceInfo
 import com.yubico.yubikit.management.ManagementSession
 import com.yubico.yubikit.support.DeviceUtil
+
+import org.slf4j.LoggerFactory
+
 import java.io.IOException
 
 data class ConnectedDeviceInfo(
@@ -41,6 +44,9 @@ data class ConnectedDeviceInfo(
 )
 
 class ManagementViewModel : YubiKeyViewModel<ManagementSession>() {
+
+    private val logger = LoggerFactory.getLogger(ManagementViewModel::class.java)
+
     private val _deviceInfo = MutableLiveData<ConnectedDeviceInfo?>()
     val deviceInfo: LiveData<ConnectedDeviceInfo?> = _deviceInfo
 
@@ -67,7 +73,7 @@ class ManagementViewModel : YubiKeyViewModel<ManagementSession>() {
             } catch (e: Exception) {
                 _errorInfo.postValue("Caught ${e.message} when reading device info")
                 _deviceInfo.postValue(null)
-                Logger.d("Caught ${e.message} when reading device info")
+                logger.debug("Caught {} when reading device info", e.message)
                 throw e
             }
         }
@@ -76,30 +82,30 @@ class ManagementViewModel : YubiKeyViewModel<ManagementSession>() {
             device.supportsConnection(SmartCardConnection::class.java) -> {
                 device.requestConnection(SmartCardConnection::class.java) {
                     if (it.isSuccess) {
-                        Logger.d("readInfo on SmartCardConnection")
+                        logger.debug("readInfo on SmartCardConnection")
                         readInfo(it.value)
                     } else {
-                        Logger.d("cannot readInfo on SmartCardConnection because requesting connection failed")
+                        logger.debug("cannot readInfo on SmartCardConnection because requesting connection failed")
                     }
                 }
             }
             device.supportsConnection(OtpConnection::class.java) -> {
                 device.requestConnection(OtpConnection::class.java) {
                     if (it.isSuccess) {
-                        Logger.d("readInfo on OtpConnection")
+                        logger.debug("readInfo on OtpConnection")
                         readInfo(it.value)
                     } else {
-                        Logger.d("cannot readInfo on OtpConnection because requesting connection failed")
+                        logger.debug("cannot readInfo on OtpConnection because requesting connection failed")
                     }
                 }
             }
             device.supportsConnection(FidoConnection::class.java) -> {
                 device.requestConnection(FidoConnection::class.java) {
                     if (it.isSuccess) {
-                        Logger.d("readInfo on FidoConnection")
+                        logger.debug("readInfo on FidoConnection")
                         readInfo(it.value)
                     } else {
-                        Logger.d("cannot readInfo on FidoConnection because requesting connection failed")
+                        logger.debug("cannot readInfo on FidoConnection because requesting connection failed")
                     }
                 }
             }

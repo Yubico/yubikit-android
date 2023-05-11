@@ -1,0 +1,74 @@
+== YubiKit Logging Migration
+This document describes the motivation and method for migrating logging systems in YubiKit since version 2.3.0.
+
+=== Motivation
+Before version 2.3.0, client application would implement `com.yubico.yubikit.core.Logger` interface for getting YubiKit logging messages. An instance of the Logger implementation was passed to YubiKit statically with `Logger.setLogger()` call and once set, YubiKit would send all messages to the `logDebug` and `logError` methods.
+
+We understood that such approach is not scalable and decided to use industry standard way for logging which enables great flexibility for logging overall. The selected solution is to use the `slf4j` logging facade.
+
+=== YubiKit changes
+Internally in YubiKit, the integration of `slf4j` brought several changes: we as the SDK developers have greater flexibility on choosing log levels (`TRACE`, `DEBUG`, `INFO`, `WARN` and `ERROR`) in every situation. Most importantly, with the change, *log messages which could contain private or privacy related information such as raw communication data is logged in the `TRACE` log level.*
+
+Other important change is that every class has its own logger which allows clients to setup logging for every situation.
+
+YubiKit does not use `Marker` `slf4j` APIs as they are not widely supported in `slf4j` implementations.
+
+=== Migration
+==== Applications without Logger implementation
+If a client application does not call `Logger.setLogger()` there is no migration needed.
+
+==== Applications with Logger implementation
+Until `com.yubico.yubikit.core.Logger` is removed, the functionality will be used as it is. To use the `slf4j` facade an application needs to do following:
+
+1. Remove call to `Logger.setLogger()`.
+2. Add an existing `org.slf4j.Logger` implementation.
+
+NOTE: Yubikit modules add version 2.0.x of `slf4j` which means that only implementation compatible with version 2.0.x are supported.
+
+=== Custom implementations
+The following link describes how to implement custom Logger which will work with `slf4j`:
+https://www.slf4j.org/faq.html#slf4j_compatible[https://www.slf4j.org/faq.html#slf4j_compatible]
+
+=== Opting-out
+An application can opt-out from YubiKit logging by not providing `slf4j` implementation.
+
+=== Examples
+The `AndroidDemo` application uses implementation of `slf4j` Logger called https://github.com/tony19/logback-android[logback-android]. This implementation allows logging to various appenders such as `logcat` or files based on various conditions.
+
+To use `logback-android` do:
+
+. Add required dependencies:
+[source,groovy]
+----
+dependencies {
+    implementation 'com.github.tony19:logback-android:3.0.0'
+}
+----
+[arabic,start=2]
+. Add `assets/logback.xml`. This file configures the logger behaviour. A Logger which outputs everything to `logcat` may look as follows:
+[source,xml]
+----
+<configuration xmlns="https://tony19.github.io/logback-android/xml"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="https://tony19.github.io/logback-android/xml https://cdn.jsdelivr.net/gh/tony19/logback-android/logback.xsd" >
+
+    <appender name="logcat" class="ch.qos.logback.classic.android.LogcatAppender">
+        <encoder>
+            <pattern>%msg</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Write TRACE (and higher-level) messages to logcat -->
+    <root level="TRACE">
+        <appender-ref ref="logcat" />
+    </root>
+</configuration>
+----
+Read more about logback configuration here: https://github.com/tony19/logback-android/wiki
+[arabic,start=3]
+. Done
+
+=== Licensing
+`slf4j` is licensed under MIT license (https://www.slf4j.org/license.html)
+
+`logback-android` is licensed under Apache License 2.0 (https://github.com/tony19/logback-android/blob/main/LICENSE)

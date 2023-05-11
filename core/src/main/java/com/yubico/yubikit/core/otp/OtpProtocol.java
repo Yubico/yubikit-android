@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Yubico.
+ * Copyright (C) 2020-2023 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,8 @@ import com.yubico.yubikit.core.application.CommandState;
 import com.yubico.yubikit.core.application.TimeoutException;
 import com.yubico.yubikit.core.util.StringUtils;
 
+import org.slf4j.LoggerFactory;
+
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.IOException;
@@ -32,6 +34,7 @@ import java.util.Arrays;
 import javax.annotation.Nullable;
 
 public class OtpProtocol implements Closeable {
+
     private static final int FEATURE_RPT_SIZE = 8;
     private static final int FEATURE_RPT_DATA_SIZE = FEATURE_RPT_SIZE - 1;
 
@@ -50,6 +53,8 @@ public class OtpProtocol implements Closeable {
 
     private final OtpConnection connection;
     private final Version version;
+
+    private static final org.slf4j.Logger logger = LoggerFactory.getLogger(OtpProtocol.class);
 
     public OtpProtocol(OtpConnection connection) throws IOException {
         this.connection = connection;
@@ -119,13 +124,13 @@ public class OtpProtocol implements Closeable {
     private byte[] readFeatureReport() throws IOException {
         byte[] bufferRead = new byte[FEATURE_RPT_SIZE];
         connection.receive(bufferRead);
-        Logger.d("READ FEATURE REPORT: " + StringUtils.bytesToHex(bufferRead));
+        Logger.trace(logger, "READ FEATURE REPORT: {}", StringUtils.bytesToHex(bufferRead));
         return bufferRead;
     }
 
     /* Write a single 8 byte feature report */
     private void writeFeatureReport(byte[] buffer) throws IOException {
-        Logger.d("WRITE FEATURE REPORT: " + StringUtils.bytesToHex(buffer));
+        Logger.trace(logger, "WRITE FEATURE REPORT: {}", StringUtils.bytesToHex(buffer));
         connection.send(buffer);
     }
 
@@ -159,7 +164,7 @@ public class OtpProtocol implements Closeable {
 
     /* Packs and sends one 70 byte frame */
     private int sendFrame(byte slot, byte[] payload) throws IOException {
-        Logger.d(String.format("Sending payload over HID to slot 0x%02x: ", 0xff & slot) + StringUtils.bytesToHex(payload));
+        Logger.trace(logger, "Sending payload over HID to slot {}: {}", String.format("0x%02x", 0xff & slot), StringUtils.bytesToHex(payload));
 
         // Format Frame
         ByteBuffer buf = ByteBuffer.allocate(FRAME_SIZE)
@@ -204,7 +209,7 @@ public class OtpProtocol implements Closeable {
                     // Transmission complete
                     resetState();
                     byte[] response = stream.toByteArray();
-                    Logger.d(response.length + " bytes read over HID: " + StringUtils.bytesToHex(response));
+                    Logger.trace(logger, "{} bytes read over HID: {}", response.length, StringUtils.bytesToHex(response));
                     return response;
                 }
             } else if (statusByte == 0) { // Status response
@@ -215,7 +220,7 @@ public class OtpProtocol implements Closeable {
                     // Sequence updated, return status.
                     // Note that when deleting the "last" slot so no slots are valid, the programming sequence is set to 0.
                     byte[] status = Arrays.copyOfRange(report, 1, 7); // Skip first and last bytes
-                    Logger.d("HID programming sequence updated. New status: " + StringUtils.bytesToHex(status));
+                    Logger.trace(logger, "HID programming sequence updated. New status: {}", StringUtils.bytesToHex(status));
                     return status;
                 } else if (needsTouch) {
                     throw new TimeoutException("Timed out waiting for touch");

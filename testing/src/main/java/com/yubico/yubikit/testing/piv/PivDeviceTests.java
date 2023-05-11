@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Yubico.
+ * Copyright (C) 2020-2023 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ import static com.yubico.yubikit.testing.piv.PivTestConstants.DEFAULT_MANAGEMENT
 import static com.yubico.yubikit.testing.piv.PivTestConstants.DEFAULT_PIN;
 import static com.yubico.yubikit.testing.piv.PivTestConstants.DEFAULT_PUK;
 
-import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.core.smartcard.SW;
@@ -32,14 +31,19 @@ import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
 import org.junit.Assert;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 
 public class PivDeviceTests {
 
+    private static final Logger logger = LoggerFactory.getLogger(PivDeviceTests.class);
+
     public static void testManagementKey(PivSession piv) throws BadResponseException, IOException, ApduException {
         byte[] key2 = Hex.decode("010203040102030401020304010203040102030401020304");
 
-        Logger.d("Authenticate with the wrong key");
+        logger.debug("Authenticate with the wrong key");
         try {
             piv.authenticate(ManagementKeyType.TDES, key2);
             Assert.fail("Authenticated with wrong key");
@@ -47,11 +51,11 @@ public class PivDeviceTests {
             Assert.assertEquals(SW.SECURITY_CONDITION_NOT_SATISFIED, e.getSw());
         }
 
-        Logger.d("Change management key");
+        logger.debug("Change management key");
         piv.authenticate(ManagementKeyType.TDES, DEFAULT_MANAGEMENT_KEY);
         piv.setManagementKey(ManagementKeyType.TDES, key2, false);
 
-        Logger.d("Authenticate with the old key");
+        logger.debug("Authenticate with the old key");
         try {
             piv.authenticate(ManagementKeyType.TDES, DEFAULT_MANAGEMENT_KEY);
             Assert.fail("Authenticated with wrong key");
@@ -59,7 +63,7 @@ public class PivDeviceTests {
             Assert.assertEquals(SW.SECURITY_CONDITION_NOT_SATISFIED, e.getSw());
         }
 
-        Logger.d("Change management key");
+        logger.debug("Change management key");
         piv.authenticate(ManagementKeyType.TDES, key2);
         piv.setManagementKey(ManagementKeyType.TDES, DEFAULT_MANAGEMENT_KEY, false);
     }
@@ -68,12 +72,12 @@ public class PivDeviceTests {
         // Ensure we only try this if the default management key is set.
         piv.authenticate(ManagementKeyType.TDES, DEFAULT_MANAGEMENT_KEY);
 
-        Logger.d("Verify PIN");
+        logger.debug("Verify PIN");
         char[] pin2 = "123123".toCharArray();
         piv.verifyPin(DEFAULT_PIN);
         MatcherAssert.assertThat(piv.getPinAttempts(), CoreMatchers.equalTo(3));
 
-        Logger.d("Verify with wrong PIN");
+        logger.debug("Verify with wrong PIN");
         try {
             piv.verifyPin(pin2);
             Assert.fail("Verify with wrong PIN");
@@ -82,7 +86,7 @@ public class PivDeviceTests {
             MatcherAssert.assertThat(piv.getPinAttempts(), CoreMatchers.equalTo(2));
         }
 
-        Logger.d("Change PIN with wrong PIN");
+        logger.debug("Change PIN with wrong PIN");
         try {
             piv.changePin(pin2, DEFAULT_PIN);
             Assert.fail("Change PIN with wrong PIN");
@@ -91,11 +95,11 @@ public class PivDeviceTests {
             MatcherAssert.assertThat(piv.getPinAttempts(), CoreMatchers.equalTo(1));
         }
 
-        Logger.d("Change PIN");
+        logger.debug("Change PIN");
         piv.changePin(DEFAULT_PIN, pin2);
         piv.verifyPin(pin2);
 
-        Logger.d("Verify with wrong PIN");
+        logger.debug("Verify with wrong PIN");
         try {
             piv.verifyPin(DEFAULT_PIN);
             Assert.fail("Verify with wrong PIN");
@@ -104,7 +108,7 @@ public class PivDeviceTests {
             MatcherAssert.assertThat(piv.getPinAttempts(), CoreMatchers.equalTo(2));
         }
 
-        Logger.d("Change PIN");
+        logger.debug("Change PIN");
         piv.changePin(pin2, DEFAULT_PIN);
     }
 

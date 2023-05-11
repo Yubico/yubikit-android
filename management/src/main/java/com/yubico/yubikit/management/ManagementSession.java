@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2022 Yubico.
+ * Copyright (C) 2019-2023 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.UsbInterface;
 import com.yubico.yubikit.core.Version;
+import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.smartcard.AppId;
 import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
@@ -38,6 +39,8 @@ import com.yubico.yubikit.core.smartcard.SmartCardProtocol;
 import com.yubico.yubikit.core.util.Callback;
 import com.yubico.yubikit.core.util.Result;
 
+import org.slf4j.LoggerFactory;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -48,7 +51,7 @@ import javax.annotation.Nullable;
 
 /**
  * Application to get information about and configure a YubiKey via the Management Application.
- * https://developers.yubico.com/yubikey-manager/Config_Reference.html
+ * <a href="https://developers.yubico.com/yubikey-manager/Config_Reference.html">https://developers.yubico.com/yubikey-manager/Config_Reference.html</a>
  */
 public class ManagementSession extends ApplicationSession<ManagementSession> {
     // Features
@@ -91,6 +94,8 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
 
     private final Backend<?> backend;
     private final Version version;
+
+    private static final org.slf4j.Logger logger = LoggerFactory.getLogger(ManagementSession.class);
 
     /**
      * Establishes a new session with a YubiKeys Management application, over a {@link SmartCardConnection}.
@@ -154,6 +159,7 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
                 }
             };
         }
+        logCtor(connection);
     }
 
     /**
@@ -189,6 +195,7 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
                 delegate.sendAndReceive(CMD_DEVICE_CONFIG, data, null);
             }
         };
+        logCtor(connection);
     }
 
     /**
@@ -203,7 +210,7 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
         backend = new Backend<FidoProtocol>(protocol) {
             @Override
             byte[] readConfig() throws IOException {
-                Logger.d("Reading fido config...");
+                Logger.debug(logger, "Reading fido config...");
                 return delegate.sendAndReceive(CTAP_READ_CONFIG, new byte[0], null);
             }
 
@@ -217,6 +224,7 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
                 delegate.sendAndReceive(CTAP_YUBIKEY_DEVICE_CONFIG, data, null);
             }
         };
+        logCtor(connection);
     }
 
     /**
@@ -277,7 +285,11 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
     public void updateDeviceConfig(DeviceConfig config, boolean reboot, @Nullable byte[] currentLockCode, @Nullable byte[] newLockCode) throws IOException, CommandException {
         require(FEATURE_DEVICE_CONFIG);
         byte[] data = config.getBytes(reboot, currentLockCode, newLockCode);
+        Logger.debug(logger, "Writing device config: {}, reboot: {}, "
+                        + "current lock code: {}, new lock code: {}",
+                config, reboot, currentLockCode != null, newLockCode != null);
         backend.writeConfig(data);
+        Logger.info(logger, "Device config written");
     }
 
     /**
@@ -293,6 +305,8 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
      * @throws ApduException in case of communication or not supported operation error
      */
     public void setMode(UsbInterface.Mode mode, byte chalrespTimeout, short autoejectTimeout) throws IOException, CommandException {
+        Logger.debug(logger, "Set mode: {}, chalresp_timeout: {}, auto_eject_timeout: {}",
+                mode, chalrespTimeout, autoejectTimeout);
         if (supports(FEATURE_DEVICE_CONFIG)) {
             //Translate into DeviceConfig and set using writeDeviceConfig
             int usbEnabled = 0;
@@ -305,6 +319,7 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
             if ((mode.interfaces & UsbInterface.FIDO) != 0) {
                 usbEnabled |= Capability.U2F.bit | Capability.FIDO2.bit;
             }
+            Logger.debug(logger, "Delegating to DeviceConfig with usb_enabled: {}", usbEnabled);
             updateDeviceConfig(
                     new DeviceConfig.Builder()
                             .enabledCapabilities(Transport.USB, usbEnabled)
@@ -316,6 +331,7 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
             require(FEATURE_MODE);
             byte[] data = ByteBuffer.allocate(4).put(mode.value).put(chalrespTimeout).putShort(autoejectTimeout).array();
             backend.setMode(data);
+            Logger.info(logger, "Mode configuration written");
         }
     }
 
@@ -336,5 +352,11 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
         public void close() throws IOException {
             delegate.close();
         }
+    }
+
+    private void logCtor(YubiKeyConnection connection) {
+        Logger.debug(logger, "Management session initialized for connection={}, version={}",
+                connection.getClass().getSimpleName(),
+                getVersion());
     }
 }

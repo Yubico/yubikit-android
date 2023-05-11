@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Yubico.
+ * Copyright (C) 2022-2023 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,8 @@ import com.yubico.yubikit.android.transport.usb.connection.UsbSmartCardConnectio
 import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.core.util.Callback;
 
+import org.slf4j.LoggerFactory;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -43,6 +45,8 @@ public class UsbYubiKeyManager {
     private final UsbManager usbManager;
     @Nullable
     private MyDeviceListener internalListener = null;
+
+    private static final org.slf4j.Logger logger = LoggerFactory.getLogger(UsbYubiKeyManager.class);
 
     public UsbYubiKeyManager(Context context) {
         this.context = context;
@@ -86,9 +90,9 @@ public class UsbYubiKeyManager {
                 devices.put(usbDevice, yubikey);
 
                 if (usbConfiguration.isHandlePermissions() && !yubikey.hasPermission()) {
-                    Logger.d("request permission");
+                    Logger.debug(logger, "request permission");
                     UsbDeviceManager.requestPermission(context, usbDevice, (usbDevice1, hasPermission) -> {
-                        Logger.d("permission result " + hasPermission);
+                        Logger.debug(logger, "permission result {}", hasPermission);
                         if (hasPermission) {
                             synchronized (UsbYubiKeyManager.this) {
                                 if (internalListener == this) {
@@ -101,8 +105,8 @@ public class UsbYubiKeyManager {
                     listener.invoke(yubikey);
                 }
             } catch (IllegalArgumentException ignored) {
-                Logger.d("Attached usbDevice(vid=" + usbDevice.getVendorId() + ",pid=" + usbDevice.getProductId() +
-                        ") is not recognized as a valid YubiKey");
+                Logger.debug(logger, "Attached usbDevice(vid={},pid={}) is not recognized as a valid YubiKey",
+                        usbDevice.getVendorId(), usbDevice.getProductId());
             }
 
         }

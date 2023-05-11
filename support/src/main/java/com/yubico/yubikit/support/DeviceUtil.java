@@ -37,6 +37,8 @@ import com.yubico.yubikit.management.FormFactor;
 import com.yubico.yubikit.management.ManagementSession;
 import com.yubico.yubikit.yubiotp.YubiOtpSession;
 
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -47,6 +49,7 @@ import javax.annotation.Nullable;
 
 public class DeviceUtil {
 
+    private static final org.slf4j.Logger logger = LoggerFactory.getLogger(DeviceUtil.class);
     private static final Integer baseNeoApps = Capability.OTP.bit | Capability.OATH.bit | Capability.PIV.bit | Capability.OPENPGP.bit;
 
     static class OtpData {
@@ -68,7 +71,7 @@ public class DeviceUtil {
         try {
             serialNumber = otpSession.getSerialNumber();
         } catch (CommandException commandException) {
-            Logger.e("Unable to read serial over OTP, no serial", commandException);
+            Logger.error(logger, "Unable to read serial over OTP, no serial", commandException);
         }
 
         return new OtpData(otpSession.getVersion(), serialNumber);
@@ -91,7 +94,7 @@ public class DeviceUtil {
             }
         } catch (ApplicationNotAvailableException ignored) {
             managementAvailable = false;
-            Logger.d("Couldn't select Management application, use fallback");
+            Logger.debug(logger, "Couldn't select Management application, use fallback");
         }
 
         int capabilities = 0;
@@ -105,31 +108,33 @@ public class DeviceUtil {
             }
             serial = otpData.serial;
         } catch (IOException e) {
-            Logger.d("Failure when selecting OTP application, serial unknown");
+            Logger.debug(logger, "Failure when selecting OTP application, serial unknown");
         } catch (ApplicationNotAvailableException e) {
             if (!managementAvailable) {
                 // this is not a known YubiKey
-                Logger.d("Hardware key could not be identified");
+                Logger.debug(logger, "Hardware key could not be identified");
                 throw new IllegalArgumentException("Hardware key could not be identified");
             }
-            Logger.d("Couldn't select OTP application, serial unknown");
+            Logger.debug(logger, "Couldn't select OTP application, serial unknown");
         }
 
         if (version == null) {
-            Logger.d("Firmware version unknown, using 3.0.0 as a baseline");
+            Logger.debug(logger, "Firmware version unknown, using 3.0.0 as a baseline");
             version = new Version(3, 0, 0);
         }
 
-        Logger.d("Scan for available ccid applications");
+        Logger.debug(logger, "Scan for available ccid applications");
         SmartCardProtocol protocol = new SmartCardProtocol(connection);
         for (final CcidApplet applet : CcidApplet.values()) {
             try {
                 protocol.select(applet.aid);
                 capabilities |= applet.capability.bit;
             } catch (ApplicationNotAvailableException applicationNotAvailableException) {
-                Logger.d("Missing applet " + applet.name() + ", capability " + applet.capability.name());
+                Logger.debug(logger, "Missing applet {}, capability {}",
+                        applet.name(), applet.capability.name());
             } catch (IOException ioException) {
-                Logger.e("IOException selecting applet " + applet.name() + ", capability " + applet.capability.name(), ioException);
+                Logger.warn(logger, "IOException selecting applet {}, capability {}",
+                        applet.name(), applet.capability.name(), ioException);
             }
         }
 
@@ -183,14 +188,14 @@ public class DeviceUtil {
                     }
                 }
             } catch (CommandException commandException) {
-                Logger.d("Caught Command Exception: " + commandException.getMessage());
+                Logger.debug(logger, "Caught Command Exception", commandException);
                 if (otpSession != null && interfaces == UsbInterface.OTP) {
-                    Logger.d("This is not reclaim");
+                    Logger.debug(logger, "This is not reclaim");
                     break; // Can't be reclaim with only one interface
                 }
                 // can be caused by reclaim state
                 try {
-                    Logger.d("Potential reclaim, sleep...");
+                    Logger.debug(logger, "Potential reclaim, sleep...");
                     Thread.sleep(500);
                 } catch (InterruptedException ignored) {
                     // ignoring interrupted exception
@@ -236,7 +241,7 @@ public class DeviceUtil {
             ManagementSession session = new ManagementSession(connection);
             return session.getDeviceInfo();
         } catch (CommandException exception) {
-            Logger.d("Unable to get info via Management application, using fallback");
+            Logger.debug(logger, "Unable to get info via Management application, using fallback");
 
             final Version version =
                     keyType == YubiKeyType.YKP ?
@@ -314,7 +319,7 @@ public class DeviceUtil {
             throw new IllegalArgumentException("Invalid connection type");
         }
 
-        Logger.d("Read info " + info);
+        Logger.debug(logger, "Read info {}", info);
 
         final DeviceConfig config = info.getConfig();
         final Version version = info.getVersion();
