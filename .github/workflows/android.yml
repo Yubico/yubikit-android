@@ -12,8 +12,8 @@ jobs:
       - name: set up JDK
         uses: actions/setup-java@v3
         with:
-          distribution: 'zulu'
-          java-version: '11.0.16'
+          distribution: 'temurin'
+          java-version: '11'
 
       - name: Build with Gradle
         run: NO_GPG_SIGN=true ./gradlew --stacktrace check test build javadocJar publishToMavenLocal
