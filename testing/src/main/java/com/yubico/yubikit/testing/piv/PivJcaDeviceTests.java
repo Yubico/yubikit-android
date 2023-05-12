@@ -62,7 +62,6 @@ public class PivJcaDeviceTests {
             PivTestUtils.rsaEncryptAndDecrypt(privateKey, keyPair.getPublic());
             PivTestUtils.rsaSignAndVerify(privateKey, keyPair.getPublic());
 
-            //noinspection RedundantCast
             ((Destroyable) privateKey).destroy();
         }
 
@@ -78,7 +77,6 @@ public class PivJcaDeviceTests {
             PivTestUtils.ecKeyAgreement(privateKey, keyPair.getPublic());
             PivTestUtils.ecSignAndVerify(privateKey, keyPair.getPublic());
 
-            //noinspection RedundantCast
             ((Destroyable) privateKey).destroy();
 
             Assert.assertEquals(cert, keyStore.getCertificate(keyStore.getCertificateAlias(cert)));

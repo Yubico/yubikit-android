@@ -17,6 +17,7 @@
 package com.yubico.yubikit.testing;
 
 import com.yubico.yubikit.testing.framework.PivInstrumentedTests;
+import com.yubico.yubikit.testing.piv.PivCertificateTests;
 import com.yubico.yubikit.testing.piv.PivDeviceTests;
 
 import org.junit.Test;
@@ -36,5 +37,15 @@ public class PivTests extends PivInstrumentedTests {
     @Test
     public void testManagementKey() throws Throwable {
         withPivSession(PivDeviceTests::testManagementKey);
+    }
+
+    @Test
+    public void testPutUncompressedCertificate() throws Throwable {
+        withPivSession(PivCertificateTests::putUncompressedCertificate);
+    }
+
+    @Test
+    public void testPutCompressedCertificate() throws Throwable {
+        withPivSession(PivCertificateTests::putCompressedCertificate);
     }
 }
