@@ -226,4 +226,18 @@ public class DeviceInfo {
         }
         return value;
     }
+
+    @Override
+    public String toString() {
+        return "DeviceInfo{" +
+                "config=" + config +
+                ", serialNumber=" + serialNumber +
+                ", version=" + version +
+                ", formFactor=" + formFactor +
+                ", supportedCapabilities=" + supportedCapabilities +
+                ", isLocked=" + isLocked +
+                ", isFips=" + isFips +
+                ", isSky=" + isSky +
+                '}';
+    }
 }

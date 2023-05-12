@@ -21,30 +21,60 @@ be added as a transitive dependency to your project.
 
 
 === Logging
-Logging is by default turned off in YubiKit on Android, and must be explicitly
-enabled.
 
-WARNING: Enabling logging will cause YubiKit to log all communication between
-the app and a YubiKey. This may contain sensitive information, and should not be
-enabled for production use!
+NOTE: YubiKit 2.3.0 deprecated core `Logger` class in favor of `slf4j` logging abstraction. `Logger` will be removed in YubiKit 3.0.0. Migration steps are described in link:../doc/Logging_Migration.adoc[Logging Migration]
 
-To enable logging, you must implement the Logger class from the *core* module:
+Logging is provided through the `slf4j` interface. Because YubiKit does not provide logger implementation, applications must provide an implementation to enable logging.
 
-[source,java]
+==== logback-android
+
+`logback-android` is an open-source implementation of `slf4j` which can be simply added to an existing Android project to enable YubiKit logging. To do so:
+
+. Add required dependencies:
+[source,groovy]
 ----
-Logger.setLogger(new Logger() {
-  @Override
-  protected void logDebug(String message) {
-    Log.d(TAG, message);
-  }
-
-  @Override
-  protected void logError(String message, Throwable throwable) {
-    Log.e(TAG, message, throwable);
-  }
-});
+dependencies {
+    implementation 'com.github.tony19:logback-android:3.0.0'
+}
 ----
+[arabic,start=2]
+. Add `assets/logback.xml`. This file configures the logger behaviour. A Logger which outputs everything to `logcat` may look as follows:
+[source,xml]
+----
+<configuration xmlns="https://tony19.github.io/logback-android/xml"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="https://tony19.github.io/logback-android/xml https://cdn.jsdelivr.net/gh/tony19/logback-android/logback.xsd" >
 
+    <appender name="logcat" class="ch.qos.logback.classic.android.LogcatAppender">
+        <encoder>
+            <pattern>%msg</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Write TRACE (and higher-level) messages to logcat -->
+    <root level="TRACE">
+        <appender-ref ref="logcat" />
+    </root>
+</configuration>
+----
+Read more about logback configuration here: https://github.com/tony19/logback-android/wiki
+[arabic,start=3]
+
+NOTE: `slf4j` is licensed under link:https://www.slf4j.org/license.html[MIT license] and `logback-android` is licensed under link:https://github.com/tony19/logback-android/blob/main/LICENSE[Apache License 2.0]
+
+==== Log levels
+Using `slf4j` adds more flexibility for apps to describe precisely which events should or should not be logged. Depending on the used implementation, one can redirect logging to different output streams based on various criteria such as log level, logger name and similar. For detailed information about logging through `slf4j` see link:https://www.slf4j.org/[SLF4J Homepage].
+
+YubiKit for Android uses `slf4j` log levels for following events:
+
+|===
+|Level |Event
+|`info`|Successfully Completed events, such as _Configuration written_, _Private key generated_ and similar.
+|`debug`|Detailed information about what is happening, useful for finding errors during development. No sensitive information is logged.
+|`warn`|Unexpected states which do not prevent execution continuation.
+|`error`|Unrecoverable errors in communication, which prevent YubiKit to continue it's flows.
+|`trace`|Detailed information about data which are being being read from/written to devices. **This log level may contain sensitive information and should not be enabled for production use.**
+|===
 
 === The YubiKit Manager
 Accessing a YubiKey is done with an instance of the YubiKitManager. It provides

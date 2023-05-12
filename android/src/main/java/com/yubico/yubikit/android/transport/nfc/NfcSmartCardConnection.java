@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2022 Yubico.
+ * Copyright (C) 2019-2023 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,8 @@ import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.util.StringUtils;
 
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 
 /**
@@ -36,6 +38,8 @@ public class NfcSmartCardConnection implements SmartCardConnection {
      */
     private final IsoDep card;
 
+    private static final org.slf4j.Logger logger = LoggerFactory.getLogger(NfcSmartCardConnection.class);
+
     /**
      * Instantiates session for nfc tag interaction
      *
@@ -43,7 +47,7 @@ public class NfcSmartCardConnection implements SmartCardConnection {
      */
     NfcSmartCardConnection(IsoDep card) {
         this.card = card;
-        Logger.d("nfc connection opened");
+        Logger.debug(logger, "nfc connection opened");
     }
 
     @Override
@@ -58,16 +62,16 @@ public class NfcSmartCardConnection implements SmartCardConnection {
 
     @Override
     public byte[] sendAndReceive(byte[] apdu) throws IOException {
-        Logger.d("sent: " + StringUtils.bytesToHex(apdu));
+        Logger.trace(logger, "sent: {}", StringUtils.bytesToHex(apdu));
         byte[] received = card.transceive(apdu);
-        Logger.d("received: " + StringUtils.bytesToHex(received));
+        Logger.trace(logger, "received: {}", StringUtils.bytesToHex(received));
         return received;
     }
 
     @Override
     public void close() throws IOException {
         card.close();
-        Logger.d("nfc connection closed");
+        Logger.debug(logger, "nfc connection closed");
     }
 
     @Override

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Yubico.
+ * Copyright (C) 2020-2023 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,8 @@ import com.yubico.yubikit.android.transport.usb.UsbConfiguration;
 import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.application.CommandState;
+
+import org.slf4j.LoggerFactory;
 
 import java.util.Objects;
 
@@ -136,6 +138,8 @@ public class YubiKeyPromptActivity extends Activity {
     private boolean allowUsb;
     private boolean allowNfc;
 
+    private static final org.slf4j.Logger logger = LoggerFactory.getLogger(YubiKeyPromptActivity.class);
+
     /**
      * Get the YubiKitManager used by this activity.
      *
@@ -215,7 +219,7 @@ public class YubiKeyPromptActivity extends Activity {
                 throw new IllegalStateException("Missing or invalid ConnectionAction class");
             }
         } catch (IllegalStateException | IllegalAccessException | InstantiationException e) {
-            Logger.e("Unable to instantiate ConnectionAction", e);
+            Logger.error(logger, "Unable to instantiate ConnectionAction", e);
             finish();
         }
 

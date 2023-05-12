@@ -75,6 +75,8 @@ dependencies {
     implementation 'org.bouncycastle:bcpkix-jdk15to18:1.71'
     implementation 'commons-codec:commons-codec:1.15'
 
+    implementation 'com.github.tony19:logback-android:3.0.0'
+
     testImplementation 'junit:junit:4.13.2'
 
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'

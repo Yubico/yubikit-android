@@ -17,10 +17,11 @@
 package com.yubico.yubikit.android.app.ui.piv
 
 import android.util.SparseArray
+
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+
 import com.yubico.yubikit.android.app.ui.YubiKeyViewModel
-import com.yubico.yubikit.core.Logger
 import com.yubico.yubikit.core.YubiKeyDevice
 import com.yubico.yubikit.core.application.BadResponseException
 import com.yubico.yubikit.core.smartcard.ApduException
@@ -28,9 +29,13 @@ import com.yubico.yubikit.core.smartcard.SmartCardConnection
 import com.yubico.yubikit.piv.ManagementKeyType
 import com.yubico.yubikit.piv.PivSession
 import com.yubico.yubikit.piv.Slot
+
+import org.slf4j.LoggerFactory
+
 import java.security.cert.X509Certificate
 
 class PivViewModel : YubiKeyViewModel<PivSession>() {
+    private val logger = LoggerFactory.getLogger(PivViewModel::class.java)
     /**
      * List of slots that we will show on demo UI
      */
@@ -65,10 +70,10 @@ class PivViewModel : YubiKeyViewModel<PivSession>() {
                 try {
                     put(it.value, getCertificate(it))
                 } catch (e: ApduException) {
-                    Logger.d("Missing certificate: $it")
+                    logger.debug("Missing certificate: {}", it)
                 } catch (e: BadResponseException) {
                     // Malformed cert loaded? Ignore but log:
-                    Logger.e("Failed getting certificate $it", e)
+                    logger.error("Failed getting certificate {}", it, e)
                 }
             }
         })

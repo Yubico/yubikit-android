@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Yubico.
+ * Copyright (C) 2022-2023 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,21 +21,29 @@ import android.os.Bundle
 import android.view.View
 import android.widget.TextView
 import android.widget.Toast
+
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
+
 import com.yubico.yubikit.android.app.MainViewModel
 import com.yubico.yubikit.android.app.R
 import com.yubico.yubikit.android.transport.nfc.NfcYubiKeyDevice
-import com.yubico.yubikit.core.Logger
 import com.yubico.yubikit.core.YubiKeyDevice
 import com.yubico.yubikit.core.application.ApplicationNotAvailableException
+
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+
+import org.slf4j.LoggerFactory
+
 import java.io.Closeable
 
 abstract class YubiKeyFragment<App : Closeable, VM : YubiKeyViewModel<App>> : Fragment() {
+
+    private val logger = LoggerFactory.getLogger(YubiKeyFragment::class.java)
+
     private val activityViewModel: MainViewModel by activityViewModels()
     protected abstract val viewModel: VM
 
@@ -66,7 +74,7 @@ abstract class YubiKeyFragment<App : Closeable, VM : YubiKeyViewModel<App>> : Fr
                     Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
                 }
             }.onFailure {
-                Logger.e("Error:", it)
+                logger.error("Error:", it)
                 Toast.makeText(context, it.message ?: "No message", Toast.LENGTH_SHORT).show()
                 if (it is ApplicationNotAvailableException) {
                     emptyText.setText(R.string.app_missing)

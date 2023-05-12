@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Yubico.
+ * Copyright (C) 2022-2023 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,17 +16,21 @@
 
 package com.yubico.yubikit.testing.piv;
 
-import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.piv.PivSession;
 import com.yubico.yubikit.piv.jca.PivProvider;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.security.Provider;
 import java.security.Security;
 import java.util.Set;
 
 public class PivJcaUtils {
+    private static final Logger logger = LoggerFactory.getLogger(PivJcaUtils.class);
+
     public static void setupJca(PivSession piv) {
         Security.removeProvider("BC");
         Security.addProvider(new BouncyCastleProvider());
@@ -43,12 +47,11 @@ public class PivJcaUtils {
 
         for (Provider p : providers) {
             @SuppressWarnings("deprecation")
-            String providerInfo = p.getName() + "/" + p.getInfo() + "/" + p.getVersion();
-            Logger.d(providerInfo);
+            double version = p.getVersion();
+            logger.debug("{}/{}/{}", p.getName(), p.getInfo(), version);
             Set<Provider.Service> services = p.getServices();
             for (Provider.Service s : services) {
-                String serviceInfo = "\t" + s.getType() + ":  " + s.getAlgorithm() + " -> " + s.getClassName();
-                Logger.d(serviceInfo);
+                logger.debug("\t{}: {} -> {}", s.getType(), s.getAlgorithm(), s.getClassName());
             }
         }
     }

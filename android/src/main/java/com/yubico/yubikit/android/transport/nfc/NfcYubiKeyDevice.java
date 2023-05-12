@@ -173,4 +173,11 @@ public class NfcYubiKeyDevice implements YubiKeyDevice {
         return false;
     }
 
+    @Override
+    public String toString() {
+        return "NfcYubiKeyDevice{" +
+                "tag=" + tag +
+                ", timeout=" + timeout +
+                '}';
+    }
 }

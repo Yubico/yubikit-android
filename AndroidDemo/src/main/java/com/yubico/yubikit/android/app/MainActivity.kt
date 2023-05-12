@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Yubico.
+ * Copyright (C) 2022-2023 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 package com.yubico.yubikit.android.app
 
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
@@ -32,17 +31,23 @@ import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.navigateUp
 import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
+
 import com.google.android.material.navigation.NavigationView
+
 import com.yubico.yubikit.android.YubiKitManager
 import com.yubico.yubikit.android.app.databinding.DialogAboutBinding
 import com.yubico.yubikit.android.transport.nfc.NfcConfiguration
 import com.yubico.yubikit.android.transport.nfc.NfcNotAvailable
 import com.yubico.yubikit.android.transport.usb.UsbConfiguration
-import com.yubico.yubikit.core.Logger
+
+import org.slf4j.LoggerFactory
+
 import java.util.*
+
 import kotlin.properties.Delegates
 
 class MainActivity : AppCompatActivity() {
+    private val logger = LoggerFactory.getLogger(MainActivity::class.java)
     private lateinit var appBarConfiguration: AppBarConfiguration
     private lateinit var navController: NavController
 
@@ -56,16 +61,6 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-
-        Logger.setLogger(object : Logger() {
-            override fun logDebug(message: String) {
-                Log.d("yubikit", message)
-            }
-
-            override fun logError(message: String, throwable: Throwable) {
-                Log.e("yubikit", message, throwable)
-            }
-        })
 
         val toolbar: Toolbar = findViewById(R.id.toolbar)
         setSupportActionBar(toolbar)
@@ -84,18 +79,18 @@ class MainActivity : AppCompatActivity() {
 
         viewModel.handleYubiKey.observe(this) {
             if (it) {
-                Logger.d("Enable listening")
+                logger.info("Enable listening")
                 yubikit.startUsbDiscovery(UsbConfiguration()) { device ->
-                    Logger.d("USB device attached $device, current: ${viewModel.yubiKey.value}")
+                    logger.info("USB device attached {}, current: {}", device, viewModel.yubiKey.value)
                     viewModel.yubiKey.postValue(device)
                     device.setOnClosed {
-                        Logger.d("Device removed $device")
+                        logger.info("Device removed {}", device)
                         viewModel.yubiKey.postValue(null)
                     }
                 }
                 try {
                     yubikit.startNfcDiscovery(nfcConfiguration, this) { device ->
-                        Logger.d("NFC Session started $device")
+                        logger.info("NFC Session started {}", device)
                         viewModel.yubiKey.apply {
                             // Trigger new value, then removal
                             runOnUiThread {
@@ -107,10 +102,10 @@ class MainActivity : AppCompatActivity() {
                     hasNfc = true
                 } catch (e: NfcNotAvailable) {
                     hasNfc = false
-                    Logger.e("Error starting NFC listening", e)
+                    logger.error("Error starting NFC listening", e)
                 }
             } else {
-                Logger.d("Disable listening")
+                logger.info("Disable listening")
                 yubikit.stopNfcDiscovery(this)
                 yubikit.stopUsbDiscovery()
             }
@@ -147,7 +142,7 @@ class MainActivity : AppCompatActivity() {
         if (viewModel.handleYubiKey.value == true && hasNfc) {
             try {
                 yubikit.startNfcDiscovery(nfcConfiguration, this) { device ->
-                    Logger.d("NFC device connected $device")
+                    logger.info("NFC device connected {}", device)
                     viewModel.yubiKey.apply {
                         // Trigger new value, then removal
                         runOnUiThread {
@@ -157,7 +152,7 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
             } catch (e: NfcNotAvailable) {
-                Logger.e("NFC is not available", e)
+                logger.error("NFC is not available", e)
             }
         }
     }

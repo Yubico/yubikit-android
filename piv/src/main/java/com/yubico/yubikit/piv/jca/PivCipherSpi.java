@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Yubico.
+ * Copyright (C) 2022-2023 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,8 @@ import com.yubico.yubikit.core.util.Callback;
 import com.yubico.yubikit.core.util.Result;
 import com.yubico.yubikit.piv.KeyType;
 import com.yubico.yubikit.piv.PivSession;
+
+import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.security.AlgorithmParameters;
@@ -52,6 +54,8 @@ public class PivCipherSpi extends CipherSpi {
     @Nullable
     private String padding;
     private int opmode = -1;
+
+    private static final org.slf4j.Logger logger = LoggerFactory.getLogger(PivCipherSpi.class);
 
     PivCipherSpi(Callback<Callback<Result<PivSession, Exception>>> provider, Map<KeyType, KeyPair> dummyKeys) throws NoSuchPaddingException {
         this.provider = provider;
@@ -94,7 +98,7 @@ public class PivCipherSpi extends CipherSpi {
 
     @Override
     protected void engineInit(int opmode, Key key, SecureRandom random) throws InvalidKeyException {
-        Logger.d("ENGINE INIT " + mode + " " + padding);
+        Logger.debug(logger, "Engine init: mode={} padding={}", mode, padding);
         if (key instanceof PivPrivateKey) {
             if (!KeyType.Algorithm.RSA.name().equals(key.getAlgorithm())) {
                 throw new InvalidKeyException("Cipher only supports RSA.");
