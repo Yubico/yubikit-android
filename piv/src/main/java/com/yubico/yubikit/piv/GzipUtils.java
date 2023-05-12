@@ -26,8 +26,6 @@ import java.io.IOException;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
-import javax.annotation.Nonnull;
-
 /**
  * Utilities for GZIP (<a href="https://www.rfc-editor.org/rfc/rfc1952">RFC1952</a>)
  */
@@ -39,7 +37,7 @@ public class GzipUtils {
      * @return byte array of gzip compressed data
      * @throws IOException if the compression failed
      */
-    static byte[] compress(@Nonnull byte[] input) throws IOException {
+    static byte[] compress(byte[] input) throws IOException {
         Logger.debug(logger, "Compressing {} bytes", input.length);
         try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream(input.length);
              GZIPOutputStream gzipOutputStream = new GZIPOutputStream(byteArrayOutputStream)) {
