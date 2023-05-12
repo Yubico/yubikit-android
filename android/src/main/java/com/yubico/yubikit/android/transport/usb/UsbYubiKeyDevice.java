@@ -224,10 +224,11 @@ public class UsbYubiKeyDevice implements YubiKeyDevice, Closeable {
     } else if (!supportsConnection(connectionType)) {
       throw new IllegalStateException("Unsupported connection type");
     }
-
-    @Override
-    public String toString() {
-      return "UsbYubiKeyDevice{"
-          + "usbDevice=" + usbDevice + ", usbPid=" + usbPid + '}';
-    }
   }
+
+  @Override
+  public String toString() {
+    return "UsbYubiKeyDevice{"
+            + "usbDevice=" + usbDevice + ", usbPid=" + usbPid + '}';
+  }
+}
