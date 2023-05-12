@@ -212,8 +212,7 @@ public class UsbYubiKeyDevice implements YubiKeyDevice, Closeable {
      * @throws IllegalStateException if the USB permission has not been granted
      * @throws IllegalStateException if the connectionType is not supported
      */
-    private <T extends YubiKeyConnection> void
-    verifyAccess(Class<T> connectionType) {
+    private <T extends YubiKeyConnection> void verifyAccess(Class<T> connectionType) {
         if (!hasPermission()) {
             throw new IllegalStateException("Device access not permitted");
         } else if (!supportsConnection(connectionType)) {
@@ -224,9 +223,9 @@ public class UsbYubiKeyDevice implements YubiKeyDevice, Closeable {
     @Nonnull
     @Override
     public String toString() {
-        return "UsbYubiKeyDevice{"
-                + "usbDevice=" + usbDevice
-                + ", usbPid=" + usbPid
-                + '}';
+        return "UsbYubiKeyDevice{" +
+                "usbDevice=" + usbDevice +
+                ", usbPid=" + usbPid +
+                '}';
     }
 }
