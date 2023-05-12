@@ -68,12 +68,12 @@ public class GzipUtilsTest {
 
     @Test(expected = ZipException.class)
     public void decompressInvalidData() throws Throwable {
-        byte[] d = decompress(new byte[]{1, 2, 3, 4});
+        decompress(new byte[]{1, 2, 3, 4});
     }
 
     @Test
     public void decompressGzipedData() throws Throwable {
-        String s = new String(decompress(testData));
+        String s = new String(decompress(testData), StandardCharsets.ISO_8859_1);
         Assert.assertEquals("YubiKit for Android test data", s);
     }
 
