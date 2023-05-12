@@ -15,7 +15,7 @@
  */
 package com.yubico.yubikit.core.application;
 
-import com.yubico.yubikit.core.Logger;
+import com.yubico.yubikit.core.internal.Logger;
 
 import org.slf4j.LoggerFactory;
 

@@ -19,7 +19,7 @@ package com.yubico.yubikit.android.transport.nfc;
 import android.nfc.Tag;
 import android.nfc.tech.IsoDep;
 
-import com.yubico.yubikit.core.Logger;
+import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.util.StringUtils;
