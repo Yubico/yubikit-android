@@ -57,11 +57,13 @@ class PivViewModel : YubiKeyViewModel<PivSession>() {
         onError: (Throwable) -> Unit,
         callback: (PivSession) -> Unit
     ) {
-        runCatching {
-            device.openConnection(SmartCardConnection::class.java).use {
-                callback(PivSession(it))
+        device.requestConnection(SmartCardConnection::class.java) {
+            try {
+                callback(PivSession(it.value))
+            } catch (e: Throwable) {
+                onError(e)
             }
-        }.onFailure(onError)
+        }
     }
 
     override fun PivSession.updateState() {
