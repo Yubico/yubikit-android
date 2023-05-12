@@ -187,12 +187,28 @@ device.requestConnection(SmartCardConnection.class, result -> {
     // The SmartCardProtocol offers a the ability of sending APDU-based smartcard commands
     SmartCardProtocol protocol = new SmartCardProtocol(connection);
     byte[] aid = new byte[] {0xA0, 0x00, 0x00, 0x03, 0x08};
-    protocol.select(aid);  // Select a smartcard application (this may throw an ApplicationNotFoundException)
+    protocol.select(aid);  // Select a smartcard application (this may throw an ApplicationNotAvailableException)
     protocol.sendAndReceive(new Apdu(0x00, 0xA4, 0x00, 0x00)));
-  } catch(ApplicationNotFoundException | IOException e) {
+  } catch(ApplicationNotAvailableException | IOException e) {
     // Handle errors
   }
 });
+----
+
+For more control of the connection instance, YubiKit 2.3.0 adds `YubiKeyConnection YubiKeyDevice.openConnection(type)` API. The caller of this method is responsible for closing the connection and for making sure that the object is accessed in a thread-safe way. Because `YubiKeyConnection` derives from `Closable`, it is possible to use _try-with-resources_ Java statement to automatically close the connection. Example:
+
+[source,java]
+----
+try {
+    try (SmartCardConnection connection = device.openConnection(SmartCardConnection.class)) {
+        SmartCardProtocol protocol = new SmartCardProtocol(connection);
+        byte[] aid = new byte[]{(byte) 0xA0, 0x00, 0x00, 0x03, 0x08};
+        protocol.select(aid);
+        protocol.sendAndReceive(new Apdu(0x00, 0xA4, 0x00, 0x00, null));
+    }
+} catch(ApplicationNotAvailableException | IOException e) {
+    // Handle errors
+}
 ----
 
 

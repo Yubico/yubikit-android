@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Yubico.
+ * Copyright (C) 2022-2023 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,6 @@ package com.yubico.yubikit.testing.framework;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.piv.PivSession;
 
-import java.util.Optional;
-import java.util.concurrent.LinkedBlockingQueue;
 
 public class PivInstrumentedTests extends YKInstrumentedTests {
 
@@ -29,22 +27,9 @@ public class PivInstrumentedTests extends YKInstrumentedTests {
     }
 
     protected void withPivSession(Callback callback) throws Throwable {
-        LinkedBlockingQueue<Optional<Throwable>> result = new LinkedBlockingQueue<>();
-        device.requestConnection(SmartCardConnection.class, callbackResult -> {
-            try {
-                if (callbackResult.isSuccess()) {
-                    PivSession pivSession = new PivSession(callbackResult.getValue());
-                    callback.invoke(pivSession);
-                    result.offer(Optional.empty());
-                }
-            } catch (Throwable e) {
-                result.offer(Optional.of(e));
-            }
-        });
-
-        Optional<Throwable> exception = result.take();
-        if (exception.isPresent()) {
-            throw exception.get();
+        try (SmartCardConnection c = device.openConnection(SmartCardConnection.class)) {
+            PivSession pivSession = new PivSession(c);
+            callback.invoke(pivSession);
         }
     }
 }
