@@ -703,19 +703,19 @@ public class PivSession extends ApplicationSession<PivSession> {
 
         Map<Integer, byte[]> certData = Tlvs.decodeMap(objectData);
         byte[] certInfo = certData.get(TAG_CERT_INFO);
-        byte[] certificate = certData.get(TAG_CERTIFICATE);
+        byte[] cert = certData.get(TAG_CERTIFICATE);
 
         boolean isCompressed = certInfo != null && certInfo.length > 0 && certInfo[0] != 0;
         if (isCompressed) {
             try {
-                certificate = GzipUtils.decompress(certificate);
+                cert = GzipUtils.decompress(cert);
             } catch (IOException e) {
-                throw new BadResponseException("Failed to uncompress certificate", e);
+                throw new BadResponseException("Failed to decompress certificate", e);
             }
         }
 
         try {
-            return parseCertificate(certificate);
+            return parseCertificate(cert);
         } catch (CertificateException e) {
             throw new BadResponseException("Failed to parse certificate: ", e);
         }
