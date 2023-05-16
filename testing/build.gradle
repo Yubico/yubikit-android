@@ -1,8 +1,6 @@
-apply plugin: 'java-library'
+apply plugin: 'project-convention-java-library'
 
 dependencies {
-    compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
-
     implementation 'com.github.tony19:logback-android:3.0.0'
 
     api project(':core')
@@ -14,10 +12,4 @@ dependencies {
     api 'junit:junit:4.13.2'
 
     implementation 'org.bouncycastle:bcpkix-jdk15to18:1.71'
-}
-
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
-compileJava {
-    options.compilerArgs.addAll(['--release', '8'])
 }

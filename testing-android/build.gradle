@@ -1,7 +1,10 @@
-apply plugin: 'com.android.library'
+plugins {
+    id 'com.android.library'
+    id 'project-convention-logging'
+}
 
 android {
-    compileSdkVersion 33
+    compileSdk 33
 
     defaultConfig {
         minSdkVersion 19
@@ -34,9 +37,7 @@ android {
 
 dependencies {
 
-    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.1.6'
-
-    implementation 'org.slf4j:slf4j-api:2.0.7'
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.3'
 
     implementation 'androidx.test:core:1.5.0'
     implementation 'androidx.test:rules:1.5.0'
@@ -47,7 +48,7 @@ dependencies {
     api project(':piv')
     api project(':testing')
 
-    implementation 'com.google.android.material:material:1.7.0'
+    implementation 'com.google.android.material:material:1.9.0'
 
     implementation 'androidx.multidex:multidex:2.0.1'
 }
