@@ -25,7 +25,7 @@ import com.yubico.yubikit.android.transport.usb.connection.OtpConnectionHandler;
 import com.yubico.yubikit.android.transport.usb.connection.SmartCardConnectionHandler;
 import com.yubico.yubikit.android.transport.usb.connection.UsbOtpConnection;
 import com.yubico.yubikit.android.transport.usb.connection.UsbSmartCardConnection;
-import com.yubico.yubikit.core.Logger;
+import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.util.Callback;
 
 import org.slf4j.LoggerFactory;

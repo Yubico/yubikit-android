@@ -16,11 +16,6 @@
 
 package com.yubico.yubikit.core;
 
-
-import org.slf4j.event.Level;
-import org.slf4j.helpers.FormattingTuple;
-import org.slf4j.helpers.MessageFormatter;
-
 import javax.annotation.Nullable;
 
 /**
@@ -35,132 +30,6 @@ import javax.annotation.Nullable;
  */
 @Deprecated
 public abstract class Logger {
-
-    public static final class Internal {
-        private static void log(Level level, org.slf4j.Logger logger, String message) {
-            if (instance != null) {
-                if (Level.ERROR == level) {
-                    instance.logError(message, new Exception("Throwable missing in logger.error"));
-                } else {
-                    instance.logDebug(message);
-                }
-            } else {
-                switch (level) {
-                    case TRACE:
-                        logger.trace(message);
-                        break;
-                    case DEBUG:
-                        logger.debug(message);
-                        break;
-                    case INFO:
-                        logger.info(message);
-                        break;
-                    case WARN:
-                        logger.warn(message);
-                        break;
-                    case ERROR:
-                        logger.error(message);
-                        break;
-                }
-            }
-        }
-
-        private static void log(Level level, org.slf4j.Logger logger, String format, Object arg) {
-            if (instance != null) {
-                logToInstance(level, MessageFormatter.format(format, arg));
-            } else {
-                switch (level) {
-                    case TRACE:
-                        logger.trace(format, arg);
-                        break;
-                    case DEBUG:
-                        logger.debug(format, arg);
-                        break;
-                    case INFO:
-                        logger.info(format, arg);
-                        break;
-                    case WARN:
-                        logger.warn(format, arg);
-                        break;
-                    case ERROR:
-                        logger.error(format, arg);
-                        break;
-                }
-            }
-        }
-
-        private static void log(Level level, org.slf4j.Logger logger, String format, Object arg1, Object arg2) {
-            if (instance != null) {
-                logToInstance(level, MessageFormatter.format(format, arg1, arg2));
-            } else {
-                switch (level) {
-                    case TRACE:
-                        logger.trace(format, arg1, arg2);
-                        break;
-                    case DEBUG:
-                        logger.debug(format, arg1, arg2);
-                        break;
-                    case INFO:
-                        logger.info(format, arg1, arg2);
-                        break;
-                    case WARN:
-                        logger.warn(format, arg1, arg2);
-                        break;
-                    case ERROR:
-                        logger.error(format, arg1, arg2);
-                        break;
-                }
-            }
-        }
-
-        private static void log(Level level, org.slf4j.Logger logger, String format, Object... args) {
-            if (instance != null) {
-                logToInstance(level, MessageFormatter.arrayFormat(format, args));
-            } else {
-                switch (level) {
-                    case TRACE:
-                        logger.trace(format, args);
-                        break;
-                    case DEBUG:
-                        logger.debug(format, args);
-                        break;
-                    case INFO:
-                        logger.info(format, args);
-                        break;
-                    case WARN:
-                        logger.warn(format, args);
-                        break;
-                    case ERROR:
-                        logger.error(format, args);
-                        break;
-                }
-            }
-        }
-
-        private static void logToInstance(Level level, FormattingTuple formattingTuple) {
-            if (instance != null) {
-
-                Throwable throwable = formattingTuple.getThrowable();
-                String message = formattingTuple.getMessage();
-
-                if (Level.ERROR == level) {
-                    if (throwable != null) {
-                        instance.logError(message, throwable);
-                    } else {
-                        instance.logError(message, new Throwable("Throwable missing in logger.error"));
-                    }
-                } else {
-                    if (throwable != null) {
-                        instance.logDebug(message + " Throwable: " + throwable.getMessage());
-                    } else {
-                        instance.logDebug(message);
-                    }
-                }
-            }
-        }
-
-
-    }
 
     /**
      * Specifies how debug messages are logged.
@@ -194,6 +63,7 @@ public abstract class Logger {
      */
     public static void setLogger(@Nullable Logger logger) {
         instance = logger;
+        com.yubico.yubikit.core.internal.Logger.setLogger(instance);
     }
 
     /**
@@ -212,85 +82,5 @@ public abstract class Logger {
         if (instance != null) {
             instance.logError(message, throwable);
         }
-    }
-
-    public static void trace(org.slf4j.Logger logger, String message) {
-        Internal.log(Level.TRACE, logger, message);
-    }
-
-    public static void trace(org.slf4j.Logger logger, String format, Object arg) {
-        Internal.log(Level.TRACE, logger, format, arg);
-    }
-
-    public static void trace(org.slf4j.Logger logger, String format, Object arg1, Object arg2) {
-        Internal.log(Level.TRACE, logger, format, arg1, arg2);
-    }
-
-    public static void trace(org.slf4j.Logger logger, String format, Object... args) {
-        Internal.log(Level.TRACE, logger, format, args);
-    }
-
-    public static void debug(org.slf4j.Logger logger, String message) {
-        Internal.log(Level.DEBUG, logger, message);
-    }
-
-    public static void debug(org.slf4j.Logger logger, String format, Object arg) {
-        Internal.log(Level.DEBUG, logger, format, arg);
-    }
-
-    public static void debug(org.slf4j.Logger logger, String format, Object arg1, Object arg2) {
-        Internal.log(Level.DEBUG, logger, format, arg1, arg2);
-    }
-
-    public static void debug(org.slf4j.Logger logger, String format, Object... args) {
-        Internal.log(Level.DEBUG, logger, format, args);
-    }
-
-    public static void info(org.slf4j.Logger logger, String message) {
-        Internal.log(Level.INFO, logger, message);
-    }
-
-    public static void info(org.slf4j.Logger logger, String format, Object arg) {
-        Internal.log(Level.INFO, logger, format, arg);
-    }
-
-    public static void info(org.slf4j.Logger logger, String format, Object arg1, Object arg2) {
-        Internal.log(Level.INFO, logger, format, arg1, arg2);
-    }
-
-    public static void info(org.slf4j.Logger logger, String format, Object... args) {
-        Internal.log(Level.INFO, logger, format, args);
-    }
-
-    public static void warn(org.slf4j.Logger logger, String message) {
-        Internal.log(Level.WARN, logger, message);
-    }
-
-    public static void warn(org.slf4j.Logger logger, String format, Object arg) {
-        Internal.log(Level.WARN, logger, format, arg);
-    }
-
-    public static void warn(org.slf4j.Logger logger, String format, Object arg1, Object arg2) {
-        Internal.log(Level.WARN, logger, format, arg1, arg2);
-    }
-
-    public static void warn(org.slf4j.Logger logger, String format, Object... args) {
-        Internal.log(Level.WARN, logger, format, args);
-    }
-
-    public static void error(org.slf4j.Logger logger, String message) {
-        Internal.log(Level.ERROR, logger, message);
-    }
-
-    public static void error(org.slf4j.Logger logger, String format, Object arg) {
-        Internal.log(Level.ERROR, logger, format, arg);
-    }
-
-    public static void error(org.slf4j.Logger logger, String format, Object arg1, Object arg2) {
-        Internal.log(Level.ERROR, logger, format, arg1, arg2);
-    }
-
-    public static void error(org.slf4j.Logger logger, String format, Object... args) {
-        Internal.log(Level.ERROR, logger, format, args);
     }
 }

@@ -22,7 +22,7 @@ import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
 
 import com.yubico.yubikit.android.transport.usb.connection.ConnectionManager;
-import com.yubico.yubikit.core.Logger;
+import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.UsbPid;
 import com.yubico.yubikit.core.YubiKeyConnection;
