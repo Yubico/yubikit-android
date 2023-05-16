@@ -24,12 +24,20 @@ allprojects {
         mavenCentral()
         google()
     }
+
+    gradle.projectsEvaluated {
+        tasks.withType(JavaCompile).configureEach {
+            options.compilerArgs.addAll(['-Xlint:deprecation', '-Xlint:unchecked'])
+        }
+    }
+
     group = 'com.yubico.yubikit'
 }
 
 subprojects {
     version = '2.2.1-SNAPSHOT'
     ext.pomName = "Yubico YubiKit ${project.name.capitalize()}"
+
 
     tasks.withType(Javadoc).tap {
         configureEach {
