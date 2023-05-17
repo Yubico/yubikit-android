@@ -16,7 +16,7 @@
 
 package com.yubico.yubikit.piv;
 
-import com.yubico.yubikit.core.Logger;
+import com.yubico.yubikit.core.internal.Logger;
 
 import org.slf4j.LoggerFactory;
 
