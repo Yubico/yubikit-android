@@ -19,7 +19,7 @@ package com.yubico.yubikit.android.transport.usb.connection;
 import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbInterface;
 
-import com.yubico.yubikit.core.Logger;
+import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.YubiKeyConnection;
 
 import org.slf4j.LoggerFactory;

@@ -57,7 +57,7 @@ device.requestConnection(SmartCardConnection.class, result -> {
     // The SmartCardProtocol offers a the ability of sending APDU-based smartcard commands
     SmartCardProtocol protocol = new SmartCardProtocol(connection);
     byte[] aid = new byte[] {0xA0, 0x00, 0x00, 0x03, 0x08};
-    protocol.select(aid);  // Select a smartcard application (this may throw an ApplicationNotFoundException)
+    protocol.select(aid);  // Select a smartcard application (this may throw an ApplicationNotAvailableException)
     try {
       // Send a command
       byte[] response = protocol.sendAndReceive(new Apdu(0x00, 0xA4, 0x00, 0x00)));
@@ -65,7 +65,7 @@ device.requestConnection(SmartCardConnection.class, result -> {
     } catch(ApduException e) {
       // The response was an error, e.getSw() contains the status code.
     }
-  } catch(ApplicationNotFoundException | IOException e) {
+  } catch(ApplicationNotAvailableException | IOException e) {
     // Handle errors
   }
 });

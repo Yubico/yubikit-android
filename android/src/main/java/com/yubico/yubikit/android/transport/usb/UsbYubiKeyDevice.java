@@ -22,7 +22,7 @@ import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
 
 import com.yubico.yubikit.android.transport.usb.connection.ConnectionManager;
-import com.yubico.yubikit.core.Logger;
+import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.UsbPid;
 import com.yubico.yubikit.core.YubiKeyConnection;
@@ -39,6 +39,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public class UsbYubiKeyDevice implements YubiKeyDevice, Closeable {
@@ -111,11 +112,7 @@ public class UsbYubiKeyDevice implements YubiKeyDevice, Closeable {
 
     @Override
     public <T extends YubiKeyConnection> void requestConnection(Class<T> connectionType, Callback<Result<T, IOException>> callback) {
-        if (!hasPermission()) {
-            throw new IllegalStateException("Device access not permitted");
-        } else if (!supportsConnection(connectionType)) {
-            throw new IllegalStateException("Unsupported connection type");
-        }
+        verifyAccess(connectionType);
 
         // Keep UsbOtpConnection open until another connection is needed, to prevent re-enumeration of the USB device.
         if (OtpConnection.class.isAssignableFrom(connectionType)) {
@@ -139,6 +136,13 @@ public class UsbYubiKeyDevice implements YubiKeyDevice, Closeable {
                 }
             });
         }
+    }
+
+    @Override
+    public <T extends YubiKeyConnection> T openConnection(Class<T> connectionType) throws IOException {
+        verifyAccess(connectionType);
+
+        return connectionManager.openConnection(connectionType);
     }
 
     public void setOnClosed(Runnable onClosed) {
@@ -201,6 +205,22 @@ public class UsbYubiKeyDevice implements YubiKeyDevice, Closeable {
         }
     }
 
+    /**
+     * Throw if the device cannot create connections of the specified type.
+     *
+     * @param connectionType type of connection to verify
+     * @throws IllegalStateException if the USB permission has not been granted
+     * @throws IllegalStateException if the connectionType is not supported
+     */
+    private <T extends YubiKeyConnection> void verifyAccess(Class<T> connectionType) {
+        if (!hasPermission()) {
+            throw new IllegalStateException("Device access not permitted");
+        } else if (!supportsConnection(connectionType)) {
+            throw new IllegalStateException("Unsupported connection type");
+        }
+    }
+
+    @Nonnull
     @Override
     public String toString() {
         return "UsbYubiKeyDevice{" +
