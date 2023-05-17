@@ -118,7 +118,11 @@ final class UsbDeviceManager {
                 if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
                     flags |= PendingIntent.FLAG_MUTABLE;
                 }
-                PendingIntent pendingUsbPermissionIntent = PendingIntent.getBroadcast(context, 0, new Intent(ACTION_USB_PERMISSION), flags);
+
+                Intent intent = new Intent(ACTION_USB_PERMISSION);
+                intent.setPackage(context.getPackageName());
+
+                PendingIntent pendingUsbPermissionIntent = PendingIntent.getBroadcast(context, 0, intent, flags);
                 UsbManager usbManager = (UsbManager) context.getSystemService(Context.USB_SERVICE);
                 usbManager.requestPermission(usbDevice, pendingUsbPermissionIntent);
                 awaitingPermissions.add(usbDevice);
