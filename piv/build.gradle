@@ -8,7 +8,12 @@ dependencies {
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
 
     testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.slf4j:slf4j-simple:2.0.7'
     testImplementation project(':testing')
+}
+
+test {
+    systemProperty "org.slf4j.simpleLogger.defaultLogLevel", "trace"
 }
 
 sourceCompatibility = 1.8
