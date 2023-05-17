@@ -16,6 +16,7 @@
 
 package com.yubico.yubikit.android.transport.usb;
 
+import android.annotation.SuppressLint;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -23,6 +24,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
+import android.os.Build;
 
 import com.yubico.yubikit.core.internal.Logger;
 
@@ -109,7 +111,7 @@ final class UsbDeviceManager {
         synchronized (awaitingPermissions) {
             if (!awaitingPermissions.contains(usbDevice)) {
                 if (awaitingPermissions.isEmpty()) {
-                    context.registerReceiver(permissionReceiver, new IntentFilter(ACTION_USB_PERMISSION));
+                    registerPermissionsReceiver(context, permissionReceiver);
                 }
                 Logger.debug(logger, "Requesting permission for UsbDevice: {}", usbDevice.getDeviceName());
                 int flags = 0;
@@ -201,6 +203,15 @@ final class UsbDeviceManager {
                     onPermission(context, device, usbManager.hasPermission(device));
                 }
             }
+        }
+    }
+
+    @SuppressLint("UnspecifiedRegisterReceiverFlag")
+    private static void registerPermissionsReceiver(Context context, PermissionBroadcastReceiver permissionReceiver) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            context.registerReceiver(permissionReceiver, new IntentFilter(ACTION_USB_PERMISSION), Context.RECEIVER_NOT_EXPORTED);
+        } else {
+            context.registerReceiver(permissionReceiver, new IntentFilter(ACTION_USB_PERMISSION));
         }
     }
 }
