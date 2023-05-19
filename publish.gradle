@@ -17,7 +17,7 @@ publishing {
             pom(pomData)
         }
     }
-    tasks.withType(Sign) {
+    tasks.withType(Sign).configureEach {
         onlyIf { isReleaseVersion && System.getenv("NO_GPG_SIGN") != "true" }
     }
 

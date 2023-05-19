@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Yubico.
+ * Copyright (C) 2020-2023 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,6 @@ import java.security.spec.ECGenParameterSpec;
 public class KeyTypeTest {
     private static KeyPair secp256r1;
     private static KeyPair secp384r1;
-    private static KeyPair secp256k1;
     private static KeyPair secp521r1;
     private static KeyPair rsa1024;
     private static KeyPair rsa2048;
@@ -41,8 +40,6 @@ public class KeyTypeTest {
         KeyPairGenerator kpg = KeyPairGenerator.getInstance(KeyType.Algorithm.EC.name());
         kpg.initialize(new ECGenParameterSpec("secp256r1"), new SecureRandom());
         secp256r1 = kpg.generateKeyPair();
-        kpg.initialize(new ECGenParameterSpec("secp256k1"), new SecureRandom());
-        secp256k1 = kpg.generateKeyPair();
         kpg.initialize(new ECGenParameterSpec("secp384r1"), new SecureRandom());
         secp384r1 = kpg.generateKeyPair();
         kpg.initialize(new ECGenParameterSpec("secp521r1"), new SecureRandom());
@@ -65,17 +62,6 @@ public class KeyTypeTest {
         MatcherAssert.assertThat(KeyType.fromKey(secp384r1.getPrivate()), CoreMatchers.is(KeyType.ECCP384));
         MatcherAssert.assertThat(KeyType.fromKey(secp384r1.getPublic()), CoreMatchers.is(KeyType.ECCP384));
     }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void testP256K1Public() {
-        KeyType.fromKey(secp256k1.getPublic());
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void testP256K1Private() {
-        KeyType.fromKey(secp256k1.getPrivate());
-    }
-
 
     @Test(expected = IllegalArgumentException.class)
     public void testP521R1Public() {

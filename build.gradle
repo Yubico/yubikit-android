@@ -2,22 +2,21 @@
 
 buildscript {
     ext {
-        kotlin_version = '1.7.21'
+        kotlin_version = '1.8.20'
     }
     repositories {
         mavenCentral()
         google()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:7.3.1'
+        classpath 'com.android.tools.build:gradle:7.4.2'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
 }
 
 plugins {
-    id 'java-library'
     id 'maven-publish'
-    id "com.github.spotbugs" version "4.5.0"
+    id 'com.github.spotbugs' version '5.0.14'
 }
 
 allprojects {
@@ -25,6 +24,13 @@ allprojects {
         mavenCentral()
         google()
     }
+
+    gradle.projectsEvaluated {
+        tasks.withType(JavaCompile).configureEach {
+            options.compilerArgs.addAll(['-Xlint:deprecation', '-Xlint:unchecked'])
+        }
+    }
+
     group = 'com.yubico.yubikit'
 }
 
@@ -32,18 +38,25 @@ subprojects {
     version = '2.2.1-SNAPSHOT'
     ext.pomName = "Yubico YubiKit ${project.name.capitalize()}"
 
-    apply plugin: 'com.github.spotbugs'
 
-    tasks.withType(Javadoc) {
-        options.addStringOption('Xdoclint:all,-missing', '-quiet')
+    tasks.withType(Javadoc).tap {
+        configureEach {
+            options.addStringOption('Xdoclint:all,-missing', '-quiet')
+        }
     }
-}
 
-dependencies {
-    spotbugsPlugins 'com.h3xstream.findsecbugs:findsecbugs-plugin:1.11.0'
-}
-
-java {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
+    //noinspection UnnecessaryQualifiedReference
+    tasks.withType(com.github.spotbugs.snom.SpotBugsTask).tap {
+        configureEach {
+            if (it.name == 'spotbugsTest' || it.name == 'spotbugsDebug') {
+                enabled = false
+            } else {
+                group 'verification'
+                reports {
+                    xml.enabled = true
+                    html.enabled = true
+                }
+            }
+        }
+    }
 }

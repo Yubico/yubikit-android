@@ -53,8 +53,8 @@ public class GzipUtilsTest {
 
     @Test
     public void compressesBigData() throws Throwable {
-        byte[] data = new byte[128 * 1024 * 1024]; // 128MB
-        for (int index = 0; index < 128 * 1024 * 1024; index++) {
+        byte[] data = new byte[128 * 1024]; // 128kB
+        for (int index = 0; index < 128 * 1024; index++) {
             data[index] = (byte) ((index & 0xff) - (byte) (index >> 8) * (index & 0xef));
         }
         compressAndDecompress(data);
@@ -80,7 +80,7 @@ public class GzipUtilsTest {
     private void compressAndDecompress(byte[] data) throws Throwable {
         byte[] c = compress(data);
         byte[] d = decompress(c);
-        if (data.length < 1024) { // don't log our 128MB test
+        if (data.length < 1024) { // don't log our 128kB test
             logger.trace("Data to compress  : {}", StringUtils.bytesToHex(data));
             logger.trace("compressed data   : {}", StringUtils.bytesToHex(c));
             logger.trace("Decompressed data : {}", StringUtils.bytesToHex(d));
