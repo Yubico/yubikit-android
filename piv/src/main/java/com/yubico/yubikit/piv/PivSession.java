@@ -703,12 +703,19 @@ public class PivSession extends ApplicationSession<PivSession> {
 
         Map<Integer, byte[]> certData = Tlvs.decodeMap(objectData);
         byte[] certInfo = certData.get(TAG_CERT_INFO);
-        if (certInfo != null && certInfo.length > 0 && certInfo[0] != 0) {
-            throw new BadResponseException("Compressed certificates are not supported");
+        byte[] cert = certData.get(TAG_CERTIFICATE);
+
+        boolean isCompressed = certInfo != null && certInfo.length > 0 && certInfo[0] != 0;
+        if (isCompressed) {
+            try {
+                cert = GzipUtils.decompress(cert);
+            } catch (IOException e) {
+                throw new BadResponseException("Failed to decompress certificate", e);
+            }
         }
 
         try {
-            return parseCertificate(certData.get(TAG_CERTIFICATE));
+            return parseCertificate(cert);
         } catch (CertificateException e) {
             throw new BadResponseException("Failed to parse certificate: ", e);
         }
@@ -720,22 +727,44 @@ public class PivSession extends ApplicationSession<PivSession> {
      *
      * @param slot        Key reference '9A', '9C', '9D', or '9E'. {@link Slot}.
      * @param certificate certificate to write
+     * @param compress    If true the certificate will be compressed before being stored on the YubiKey
      * @throws IOException   in case of connection error
      * @throws ApduException in case of an error response from the YubiKey
      */
-    public void putCertificate(Slot slot, X509Certificate certificate) throws IOException, ApduException {
+    public void putCertificate(Slot slot, X509Certificate certificate, boolean compress) throws IOException, ApduException {
         byte[] certBytes;
-        Logger.debug(logger, "Storing certificate in slot {}", slot);
+        byte[] certInfo = { compress ? (byte)0x01 : (byte)0x00 };
+        Logger.debug(logger, "Storing {}certificate in slot {}",
+                compress ? "compressed " : "",
+                slot);
         try {
             certBytes = certificate.getEncoded();
         } catch (CertificateEncodingException e) {
             throw new IllegalArgumentException("Failed to get encoded version of certificate", e);
         }
+
+        if (compress) {
+            certBytes = GzipUtils.compress(certBytes);
+        }
+
         Map<Integer, byte[]> requestTlv = new LinkedHashMap<>();
         requestTlv.put(TAG_CERTIFICATE, certBytes);
-        requestTlv.put(TAG_CERT_INFO, new byte[1]);
+        requestTlv.put(TAG_CERT_INFO, certInfo);
         requestTlv.put(TAG_LRC, null);
         putObject(slot.objectId, Tlvs.encodeMap(requestTlv));
+    }
+
+    /**
+     * Writes an uncompressed X.509 certificate to a slot on the YubiKey.
+     * This method requires authentication {@link #authenticate}.
+     *
+     * @param slot        Key reference '9A', '9C', '9D', or '9E'. {@link Slot}.
+     * @param certificate certificate to write
+     * @throws IOException   in case of connection error
+     * @throws ApduException in case of an error response from the YubiKey
+     */
+    public void putCertificate(Slot slot, X509Certificate certificate) throws IOException, ApduException {
+        putCertificate(slot, certificate, false);
     }
 
     /**
