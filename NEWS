@@ -1,4 +1,4 @@
-* Version 2.3.0 (released 2023-05-24)
+* Version 2.3.0 (released 2023-05-26)
  ** android module:
  *** added `YubiKeyDevice.openConnection()` to public API
  *** updated code to support Android 14 behavior changes
