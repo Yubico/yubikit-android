@@ -1,8 +1,8 @@
 * Version 2.3.0 (released 2023-05-29)
  ** core module:
  *** deprecated `com.yubico.yubikit.core.Logger`
- ** android module:
  *** added `YubiKeyDevice.openConnection()` to public API
+ ** android module:
  *** updated code to support Android 14 behavior changes
  ** PIV module:
  *** implemented support for compressed certificates
