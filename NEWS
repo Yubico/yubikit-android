@@ -1,13 +1,13 @@
-* Version 2.3.0 (released 2023-05-26)
+* Version 2.3.0 (released 2023-05-29)
+ ** core module:
+ *** deprecated `com.yubico.yubikit.core.Logger`
  ** android module:
  *** added `YubiKeyDevice.openConnection()` to public API
  *** updated code to support Android 14 behavior changes
  ** PIV module:
  *** implemented support for compressed certificates
- ** core module:
- *** deprecated `com.yubico.yubikit.core.Logger`
  ** general updates:
- *** added `slf4j` logging system
+ *** adapted for use with slf4j logging system
  *** added support for building with Java 17
  *** updated build dependencies and libraries
 
