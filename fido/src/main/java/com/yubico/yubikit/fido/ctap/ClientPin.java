@@ -5,9 +5,8 @@
  */
 package com.yubico.yubikit.fido.ctap;
 
-import android.util.Pair;
-
 import com.yubico.yubikit.core.application.CommandException;
+import com.yubico.yubikit.core.util.Pair;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;

@@ -1,50 +1,10 @@
-plugins {
-    id 'com.android.library'
-    id 'project-convention-spotbugs'
-    id 'project-convention-logging'
-}
-
-android {
-    compileSdk 33
-
-    defaultConfig {
-        minSdkVersion 19
-        targetSdkVersion 33
-
-        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
-        consumerProguardFiles "consumer-rules.pro"
-    }
-
-    buildTypes {
-        release {
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-        }
-    }
-    compileOptions {
-        sourceCompatibility = 1.8
-        targetCompatibility = 1.8
-    }
-
-    publishing {
-        singleVariant('release')
-    }
-
-    namespace 'com.yubico.yubikit.fido'
-}
+apply plugin: 'yubikit-java-library'
 
 dependencies {
-    api project(':android')
-
-    testImplementation project(':testing')
-    testImplementation 'androidx.test.ext:junit:1.1.5'
-    testImplementation 'org.robolectric:robolectric:4.9'
-    testImplementation 'org.mockito:mockito-core:5.3.0'
-
-    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
-    androidTestImplementation 'androidx.test:runner:1.5.2'
+    api project(':core')
 }
 
-description = "This module provides FIDO support on Android using the YubiKit SDK."
+ext.pomName = "Yubico YubiKit ${project.name.capitalize()}"
+description = "This module provides FIDO support for the YubiKit SDK."
 
-apply from: project.file('publish.gradle')
+apply from: rootProject.file('publish.gradle')

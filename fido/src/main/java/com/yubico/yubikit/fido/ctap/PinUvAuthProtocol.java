@@ -5,7 +5,7 @@
  */
 package com.yubico.yubikit.fido.ctap;
 
-import android.util.Pair;
+import com.yubico.yubikit.core.util.Pair;
 
 import java.util.Map;
 

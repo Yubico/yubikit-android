@@ -7,12 +7,7 @@ package com.yubico.yubikit.fido.ctap;
 
 import javax.annotation.Nullable;
 
-import com.yubico.yubikit.android.transport.usb.connection.ConnectionManager;
-import com.yubico.yubikit.android.transport.usb.connection.FidoConnectionHandler;
-import com.yubico.yubikit.android.transport.usb.connection.UsbFidoConnection;
-import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.core.Version;
-import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
 import com.yubico.yubikit.core.application.ApplicationSession;
@@ -22,7 +17,6 @@ import com.yubico.yubikit.core.application.CommandState;
 import com.yubico.yubikit.core.fido.CtapException;
 import com.yubico.yubikit.core.fido.FidoConnection;
 import com.yubico.yubikit.core.fido.FidoProtocol;
-import com.yubico.yubikit.core.otp.OtpConnection;
 import com.yubico.yubikit.core.smartcard.Apdu;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.smartcard.SmartCardProtocol;
@@ -42,10 +36,6 @@ import java.util.Map;
 import java.util.Objects;
 
 public class Ctap2Session extends ApplicationSession<Ctap2Session> {
-    // TODO: Better place for this?
-    static {
-        ConnectionManager.registerConnectionHandler(UsbFidoConnection.class, new FidoConnectionHandler());
-    }
 
     private static final byte[] AID = new byte[]{(byte) 0xa0, 0x00, 0x00, 0x06, 0x47, 0x2f, 0x00, 0x01};
 
