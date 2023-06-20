@@ -1,0 +1,3 @@
+== FIDO module
+The FIDO module enables applications to authenticate WebAuthn credentials on a
+YubiKey.
