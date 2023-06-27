@@ -7,7 +7,7 @@ package com.yubico.yubikit.fido.webauthn;
 
 import javax.annotation.Nullable;
 
-import com.yubico.yubikit.fido.Cbor;
+import org.apache.commons.codec.binary.Base64;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -30,6 +30,8 @@ public class PublicKeyCredentialRequestOptions {
     private final String rpId;
     private final List<PublicKeyCredentialDescriptor> allowCredentials;
     private final UserVerificationRequirement userVerification;
+    // TODO: add attestation property
+    // TODO: add attestationFormats property
     @Nullable
     private final Extensions extensions;
 
@@ -68,6 +70,25 @@ public class PublicKeyCredentialRequestOptions {
         return extensions;
     }
 
+    public Map<String, ?> toJsonMap() {
+        Map<String, Object> map = new HashMap<>();
+        map.put(CHALLENGE, Base64.encodeBase64URLSafeString(challenge));
+        map.put(TIMEOUT, timeout);
+        if(rpId != null) {
+            map.put(RP_ID, rpId);
+        }
+        List<Map<String, ?>> allowCredentialsList = new ArrayList<>();
+        for (PublicKeyCredentialDescriptor cred : allowCredentials) {
+            allowCredentialsList.add(cred.toJsonMap());
+        }
+        map.put(ALLOW_CREDENTIALS, allowCredentialsList);
+        map.put(USER_VERIFICATION, userVerification.toString());
+        if (extensions != null) {
+            map.put(EXTENSIONS, extensions);
+        }
+        return map;
+    }
+
     public Map<String, ?> toMap() {
         Map<String, Object> map = new HashMap<>();
         map.put(CHALLENGE, challenge);
@@ -85,6 +106,27 @@ public class PublicKeyCredentialRequestOptions {
             map.put(EXTENSIONS, extensions);
         }
         return map;
+    }
+
+    @SuppressWarnings("unchecked")
+    public static PublicKeyCredentialRequestOptions fromJsonMap(Map<String, ?> map) {
+        List<PublicKeyCredentialDescriptor> allowCredentials = null;
+        List<Map<String, ?>> allowCredentialsList = (List<Map<String, ?>>) map.get(ALLOW_CREDENTIALS);
+        if (allowCredentialsList != null) {
+            allowCredentials = new ArrayList<>();
+            for (Map<String, ?> cred : allowCredentialsList) {
+                allowCredentials.add(PublicKeyCredentialDescriptor.fromJsonMap(cred));
+            }
+        }
+
+        return new PublicKeyCredentialRequestOptions(
+                Base64.decodeBase64(Objects.requireNonNull((String) map.get(CHALLENGE))),
+                Objects.requireNonNull((Number) map.get(TIMEOUT)).longValue(),
+                (String) map.get(RP_ID),
+                allowCredentials,
+                UserVerificationRequirement.fromString((String) map.get(USER_VERIFICATION)),
+                null  // Extensions currently ignored
+        );
     }
 
     @SuppressWarnings("unchecked")
@@ -106,14 +148,5 @@ public class PublicKeyCredentialRequestOptions {
                 UserVerificationRequirement.fromString((String) map.get(USER_VERIFICATION)),
                 null  // Extensions currently ignored
         );
-    }
-
-    public byte[] toBytes() {
-        return Cbor.encode(toMap());
-    }
-
-    @SuppressWarnings("unchecked")
-    public static PublicKeyCredentialRequestOptions fromBytes(byte[] bytes) {
-        return fromMap((Map<String, ?>) Objects.requireNonNull(Cbor.decode(bytes)));
     }
 }

@@ -5,6 +5,8 @@
  */
 package com.yubico.yubikit.fido.webauthn;
 
+import org.apache.commons.codec.binary.Base64;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -36,12 +38,28 @@ public class PublicKeyCredentialUserEntity {
         return displayName;
     }
 
+    public Map<String, ?> toJsonMap() {
+        Map<String, Object> map = new HashMap<>();
+        map.put(NAME, name);
+        map.put(ID, Base64.encodeBase64URLSafeString(id));
+        map.put(DISPLAY_NAME, displayName);
+        return map;
+    }
+
     public Map<String, ?> toMap() {
         Map<String, Object> map = new HashMap<>();
         map.put(NAME, name);
         map.put(ID, id);
         map.put(DISPLAY_NAME, displayName);
         return map;
+    }
+
+    public static PublicKeyCredentialUserEntity fromJsonMap(Map<String, ?> map) {
+        return new PublicKeyCredentialUserEntity(
+                Objects.requireNonNull((String) map.get(NAME)),
+                Base64.decodeBase64(Objects.requireNonNull((String) map.get(ID))),
+                Objects.requireNonNull((String) map.get(DISPLAY_NAME))
+        );
     }
 
     public static PublicKeyCredentialUserEntity fromMap(Map<String, ?> map) {

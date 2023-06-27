@@ -7,7 +7,7 @@ package com.yubico.yubikit.fido.webauthn;
 
 import javax.annotation.Nullable;
 
-import com.yubico.yubikit.fido.Cbor;
+import org.apache.commons.codec.binary.Base64;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -127,6 +127,34 @@ public class PublicKeyCredentialCreationOptions {
         return map;
     }
 
+    public Map<String, ?> toJsonMap() {
+        Map<String, Object> map = new HashMap<>();
+        map.put(RP, rp.toMap());
+        map.put(USER, user.toJsonMap());
+        map.put(CHALLENGE, Base64.encodeBase64URLSafeString(challenge));
+        List<Map<String, ?>> paramsList = new ArrayList<>();
+        for (PublicKeyCredentialParameters params : pubKeyCredParams) {
+            paramsList.add(params.toMap());
+        }
+        map.put(PUB_KEY_CRED_PARAMS, paramsList);
+        map.put(TIMEOUT, timeout);
+        if (!excludeCredentials.isEmpty()) {
+            List<Map<String, ?>> excludeCredentialsList = new ArrayList<>();
+            for (PublicKeyCredentialDescriptor cred : excludeCredentials) {
+                excludeCredentialsList.add(cred.toJsonMap());
+            }
+            map.put(EXCLUDE_CREDENTIALS, excludeCredentialsList);
+        }
+        if (authenticatorSelection != null) {
+            map.put(AUTHENTICATOR_SELECTION, authenticatorSelection.toMap());
+        }
+        map.put(ATTESTATION, attestation.toString());
+        if (extensions != null) {
+            map.put(EXTENSIONS, extensions);
+        }
+        return map;
+    }
+
     @SuppressWarnings("unchecked")
     public static PublicKeyCredentialCreationOptions fromMap(Map<String, ?> map) {
         List<PublicKeyCredentialParameters> pubKeyCredParams = new ArrayList<>();
@@ -157,12 +185,33 @@ public class PublicKeyCredentialCreationOptions {
         );
     }
 
-    public byte[] toBytes() {
-        return Cbor.encode(toMap());
-    }
-
     @SuppressWarnings("unchecked")
-    public static PublicKeyCredentialCreationOptions fromBytes(byte[] bytes) {
-        return fromMap((Map<String, ?>) Objects.requireNonNull(Cbor.decode(bytes)));
+    public static PublicKeyCredentialCreationOptions fromJsonMap(Map<String, ?> map) {
+        List<PublicKeyCredentialParameters> pubKeyCredParams = new ArrayList<>();
+        for (Map<String, ?> params : Objects.requireNonNull((List<Map<String, ?>>) map.get(PUB_KEY_CRED_PARAMS))) {
+            pubKeyCredParams.add(PublicKeyCredentialParameters.fromMap(params));
+        }
+        List<PublicKeyCredentialDescriptor> excludeCredentials = null;
+        List<Map<String, ?>> excludeCredentialsList = (List<Map<String, ?>>) map.get(EXCLUDE_CREDENTIALS);
+        if (excludeCredentialsList != null) {
+            excludeCredentials = new ArrayList<>();
+            for (Map<String, ?> cred : excludeCredentialsList) {
+                excludeCredentials.add(PublicKeyCredentialDescriptor.fromJsonMap(cred));
+            }
+        }
+
+        Map<String, ?> authenticatorSelection = (Map<String, ?>) map.get(AUTHENTICATOR_SELECTION);
+
+        return new PublicKeyCredentialCreationOptions(
+                PublicKeyCredentialRpEntity.fromMap(Objects.requireNonNull((Map<String, ?>) map.get(RP))),
+                PublicKeyCredentialUserEntity.fromJsonMap(Objects.requireNonNull((Map<String, ?>) map.get(USER))),
+                Base64.decodeBase64(Objects.requireNonNull((String) map.get(CHALLENGE))),
+                pubKeyCredParams,
+                Objects.requireNonNull((Number) map.get(TIMEOUT)).longValue(),
+                excludeCredentials,
+                authenticatorSelection == null ? null : AuthenticatorSelectionCriteria.fromMap(authenticatorSelection),
+                AttestationConveyancePreference.fromString((String) map.get(ATTESTATION)),
+                null  // Extensions currently ignored
+        );
     }
 }

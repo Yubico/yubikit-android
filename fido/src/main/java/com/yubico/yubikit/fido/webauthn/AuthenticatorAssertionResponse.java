@@ -7,14 +7,14 @@ package com.yubico.yubikit.fido.webauthn;
 
 import javax.annotation.Nullable;
 
-import com.yubico.yubikit.fido.Cbor;
+import org.apache.commons.codec.binary.Base64;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
 public class AuthenticatorAssertionResponse extends AuthenticatorResponse {
-    private static final String CLIENT_DATA_JSON = "clientDataJson";
+    private static final String CLIENT_DATA_JSON = "clientDataJSON";
     private static final String AUTHENTICATOR_DATA = "authenticatorData";
     private static final String SIGNATURE = "signature";
     private static final String USER_HANDLE = "userHandle";
@@ -64,6 +64,18 @@ public class AuthenticatorAssertionResponse extends AuthenticatorResponse {
         return map;
     }
 
+    public Map<String, ?> toJsonMap() {
+        Map<String, Object> map = new HashMap<>();
+        map.put(AUTHENTICATOR_DATA, Base64.encodeBase64URLSafeString(authenticatorData));
+        map.put(CLIENT_DATA_JSON, Base64.encodeBase64URLSafeString(getClientDataJson()));
+        map.put(SIGNATURE, Base64.encodeBase64URLSafeString(signature));
+        if (userHandle != null) {
+            map.put(USER_HANDLE, Base64.encodeBase64URLSafeString(userHandle));
+        }
+        map.put(CREDENTIAL_ID, Base64.encodeBase64URLSafeString(credentialId));
+        return map;
+    }
+
     public static AuthenticatorAssertionResponse fromMap(Map<String, ?> map) {
         return new AuthenticatorAssertionResponse(
                 Objects.requireNonNull((byte[]) map.get(AUTHENTICATOR_DATA)),
@@ -74,8 +86,13 @@ public class AuthenticatorAssertionResponse extends AuthenticatorResponse {
         );
     }
 
-    @SuppressWarnings("unchecked")
-    public static AuthenticatorAssertionResponse fromBytes(byte[] bytes) {
-        return fromMap((Map<String, ?>) Objects.requireNonNull(Cbor.decode(bytes)));
+    public static AuthenticatorAssertionResponse fromJsonMap(Map<String, ?> map) {
+        return new AuthenticatorAssertionResponse(
+                Base64.decodeBase64(Objects.requireNonNull((String) map.get(AUTHENTICATOR_DATA))),
+                Base64.decodeBase64(Objects.requireNonNull((String) map.get(CLIENT_DATA_JSON))),
+                Base64.decodeBase64(Objects.requireNonNull((String) map.get(SIGNATURE))),
+                Base64.decodeBase64((String) map.get(USER_HANDLE)),
+                Base64.decodeBase64(Objects.requireNonNull((String) map.get(CREDENTIAL_ID)))
+        );
     }
 }

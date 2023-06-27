@@ -5,6 +5,8 @@
  */
 package com.yubico.yubikit.fido.webauthn;
 
+import org.apache.commons.codec.binary.Base64;
+
 import javax.annotation.Nullable;
 
 import java.util.Arrays;
@@ -42,6 +44,16 @@ public class PublicKeyCredentialDescriptor {
         return transports;
     }
 
+    public Map<String, ?> toJsonMap() {
+        Map<String, Object> map = new HashMap<>();
+        map.put(TYPE, type.toString());
+        map.put(ID, Base64.encodeBase64URLSafeString(id));
+        if (transports != null) {
+            map.put(TRANSPORTS, transports);
+        }
+        return map;
+    }
+
     public Map<String, ?> toMap() {
         Map<String, Object> map = new HashMap<>();
         map.put(TYPE, type.toString());
@@ -50,6 +62,15 @@ public class PublicKeyCredentialDescriptor {
             map.put(TRANSPORTS, transports);
         }
         return map;
+    }
+
+    @SuppressWarnings("unchecked")
+    public static PublicKeyCredentialDescriptor fromJsonMap(Map<String, ?> map) {
+        return new PublicKeyCredentialDescriptor(
+                PublicKeyCredentialType.fromString(Objects.requireNonNull((String) map.get(TYPE))),
+                Base64.decodeBase64(Objects.requireNonNull((String) map.get(ID))),
+                (List<String>) map.get(TRANSPORTS)
+        );
     }
 
     @SuppressWarnings("unchecked")
