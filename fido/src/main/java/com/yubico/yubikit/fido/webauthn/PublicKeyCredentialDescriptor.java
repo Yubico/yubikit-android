@@ -5,6 +5,9 @@
  */
 package com.yubico.yubikit.fido.webauthn;
 
+import static com.yubico.yubikit.fido.webauthn.BinaryEncoding.doDecode;
+import static com.yubico.yubikit.fido.webauthn.BinaryEncoding.doEncode;
+
 import org.apache.commons.codec.binary.Base64;
 
 import javax.annotation.Nullable;
@@ -44,40 +47,29 @@ public class PublicKeyCredentialDescriptor {
         return transports;
     }
 
-    public Map<String, ?> toJsonMap() {
-        Map<String, Object> map = new HashMap<>();
-        map.put(TYPE, type.toString());
-        map.put(ID, Base64.encodeBase64URLSafeString(id));
-        if (transports != null && !transports.isEmpty()) {
-            map.put(TRANSPORTS, transports);
-        }
-        return map;
-    }
-
     public Map<String, ?> toMap() {
+        return toMap(BinaryEncoding.DEFAULT);
+    }
+
+    public Map<String, ?> toMap(BinaryEncoding binaryEncoding) {
         Map<String, Object> map = new HashMap<>();
         map.put(TYPE, type.toString());
-        map.put(ID, id);
+        map.put(ID, doEncode(id, binaryEncoding));
         if (transports != null && !transports.isEmpty()) {
             map.put(TRANSPORTS, transports);
         }
         return map;
     }
 
-    @SuppressWarnings("unchecked")
-    public static PublicKeyCredentialDescriptor fromJsonMap(Map<String, ?> map) {
-        return new PublicKeyCredentialDescriptor(
-                PublicKeyCredentialType.fromString(Objects.requireNonNull((String) map.get(TYPE))),
-                Base64.decodeBase64(Objects.requireNonNull((String) map.get(ID))),
-                (List<String>) map.get(TRANSPORTS)
-        );
+    public static PublicKeyCredentialDescriptor fromMap(Map<String, ?> map) {
+        return fromMap(map, BinaryEncoding.DEFAULT);
     }
 
     @SuppressWarnings("unchecked")
-    public static PublicKeyCredentialDescriptor fromMap(Map<String, ?> map) {
+    public static PublicKeyCredentialDescriptor fromMap(Map<String, ?> map, BinaryEncoding binaryEncoding) {
         return new PublicKeyCredentialDescriptor(
                 PublicKeyCredentialType.fromString(Objects.requireNonNull((String) map.get(TYPE))),
-                Objects.requireNonNull((byte[]) map.get(ID)),
+                doDecode(Objects.requireNonNull(map.get(ID)), binaryEncoding),
                 (List<String>) map.get(TRANSPORTS)
         );
     }

@@ -5,6 +5,9 @@
  */
 package com.yubico.yubikit.fido.webauthn;
 
+import static com.yubico.yubikit.fido.webauthn.BinaryEncoding.doDecode;
+import static com.yubico.yubikit.fido.webauthn.BinaryEncoding.doEncode;
+
 import javax.annotation.Nullable;
 
 import org.apache.commons.codec.binary.Base64;
@@ -70,35 +73,20 @@ public class PublicKeyCredentialRequestOptions {
         return extensions;
     }
 
-    public Map<String, ?> toJsonMap() {
-        Map<String, Object> map = new HashMap<>();
-        map.put(CHALLENGE, Base64.encodeBase64URLSafeString(challenge));
-        map.put(TIMEOUT, timeout);
-        if(rpId != null) {
-            map.put(RP_ID, rpId);
-        }
-        List<Map<String, ?>> allowCredentialsList = new ArrayList<>();
-        for (PublicKeyCredentialDescriptor cred : allowCredentials) {
-            allowCredentialsList.add(cred.toJsonMap());
-        }
-        map.put(ALLOW_CREDENTIALS, allowCredentialsList);
-        map.put(USER_VERIFICATION, userVerification.toString());
-        if (extensions != null) {
-            map.put(EXTENSIONS, extensions);
-        }
-        return map;
-    }
-
     public Map<String, ?> toMap() {
+        return toMap(BinaryEncoding.DEFAULT);
+    }
+
+    public Map<String, ?> toMap(BinaryEncoding binaryEncoding) {
         Map<String, Object> map = new HashMap<>();
-        map.put(CHALLENGE, challenge);
+        map.put(CHALLENGE, doEncode(challenge, binaryEncoding));
         map.put(TIMEOUT, timeout);
         if(rpId != null) {
             map.put(RP_ID, rpId);
         }
         List<Map<String, ?>> allowCredentialsList = new ArrayList<>();
         for (PublicKeyCredentialDescriptor cred : allowCredentials) {
-            allowCredentialsList.add(cred.toMap());
+            allowCredentialsList.add(cred.toMap(binaryEncoding));
         }
         map.put(ALLOW_CREDENTIALS, allowCredentialsList);
         map.put(USER_VERIFICATION, userVerification.toString());
@@ -108,40 +96,23 @@ public class PublicKeyCredentialRequestOptions {
         return map;
     }
 
-    @SuppressWarnings("unchecked")
-    public static PublicKeyCredentialRequestOptions fromJsonMap(Map<String, ?> map) {
-        List<PublicKeyCredentialDescriptor> allowCredentials = null;
-        List<Map<String, ?>> allowCredentialsList = (List<Map<String, ?>>) map.get(ALLOW_CREDENTIALS);
-        if (allowCredentialsList != null) {
-            allowCredentials = new ArrayList<>();
-            for (Map<String, ?> cred : allowCredentialsList) {
-                allowCredentials.add(PublicKeyCredentialDescriptor.fromJsonMap(cred));
-            }
-        }
-
-        return new PublicKeyCredentialRequestOptions(
-                Base64.decodeBase64(Objects.requireNonNull((String) map.get(CHALLENGE))),
-                Objects.requireNonNull((Number) map.get(TIMEOUT)).longValue(),
-                (String) map.get(RP_ID),
-                allowCredentials,
-                UserVerificationRequirement.fromString((String) map.get(USER_VERIFICATION)),
-                null  // Extensions currently ignored
-        );
+    public static PublicKeyCredentialRequestOptions fromMap(Map<String, ?> map) {
+        return fromMap(map, BinaryEncoding.DEFAULT);
     }
 
     @SuppressWarnings("unchecked")
-    public static PublicKeyCredentialRequestOptions fromMap(Map<String, ?> map) {
+    public static PublicKeyCredentialRequestOptions fromMap(Map<String, ?> map, BinaryEncoding binaryEncoding) {
         List<PublicKeyCredentialDescriptor> allowCredentials = null;
         List<Map<String, ?>> allowCredentialsList = (List<Map<String, ?>>) map.get(ALLOW_CREDENTIALS);
         if (allowCredentialsList != null) {
             allowCredentials = new ArrayList<>();
             for (Map<String, ?> cred : allowCredentialsList) {
-                allowCredentials.add(PublicKeyCredentialDescriptor.fromMap(cred));
+                allowCredentials.add(PublicKeyCredentialDescriptor.fromMap(cred, binaryEncoding));
             }
         }
 
         return new PublicKeyCredentialRequestOptions(
-                Objects.requireNonNull((byte[]) map.get(CHALLENGE)),
+                doDecode(Objects.requireNonNull(map.get(CHALLENGE)), binaryEncoding),
                 Objects.requireNonNull((Number) map.get(TIMEOUT)).longValue(),
                 (String) map.get(RP_ID),
                 allowCredentials,

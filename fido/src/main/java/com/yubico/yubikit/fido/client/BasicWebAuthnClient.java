@@ -16,6 +16,7 @@ import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV1;
 import com.yubico.yubikit.fido.webauthn.AuthenticatorAssertionResponse;
 import com.yubico.yubikit.fido.webauthn.AuthenticatorAttestationResponse;
 import com.yubico.yubikit.fido.webauthn.AuthenticatorSelectionCriteria;
+import com.yubico.yubikit.fido.webauthn.BinaryEncoding;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialCreationOptions;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialDescriptor;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialParameters;
@@ -123,7 +124,7 @@ public class BasicWebAuthnClient implements Closeable {
         } else if (!(effectiveDomain.equals(rpId) || effectiveDomain.endsWith("." + rpId))) {
             throw new ClientError(ClientError.Code.BAD_REQUEST, "RP ID is not valid for effective domain");
         }
-        Map<String, ?> user = options.getUser().toMap();
+        Map<String, ?> user = options.getUser().toMap(BinaryEncoding.NONE);
 
         List<Map<String, ?>> pubKeyCredParams = new ArrayList<>();
         for (PublicKeyCredentialParameters param : options.getPubKeyCredParams()) {
@@ -272,7 +273,7 @@ public class BasicWebAuthnClient implements Closeable {
                 byte[] credentialId;
                 Map<String, ?> credentialMap = assertion.getCredential();
                 if (credentialMap != null) {
-                    credentialId = PublicKeyCredentialDescriptor.fromMap(credentialMap).getId();
+                    credentialId = PublicKeyCredentialDescriptor.fromMap(credentialMap, BinaryEncoding.NONE).getId();
                 } else {
                     // Credential is optional iff allowList contains exactly one credential.
                     credentialId = options.getAllowCredentials().get(0).getId();
@@ -466,7 +467,7 @@ public class BasicWebAuthnClient implements Closeable {
         }
         List<Map<String, ?>> list = new ArrayList<>();
         for (PublicKeyCredentialDescriptor credential : descriptors) {
-            list.add(credential.toMap());
+            list.add(credential.toMap(BinaryEncoding.NONE));
         }
         return list;
     }

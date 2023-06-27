@@ -5,6 +5,9 @@
  */
 package com.yubico.yubikit.fido.webauthn;
 
+import static com.yubico.yubikit.fido.webauthn.BinaryEncoding.doDecode;
+import static com.yubico.yubikit.fido.webauthn.BinaryEncoding.doEncode;
+
 import javax.annotation.Nullable;
 
 import org.apache.commons.codec.binary.Base64;
@@ -100,10 +103,14 @@ public class PublicKeyCredentialCreationOptions {
     }
 
     public Map<String, ?> toMap() {
+        return toMap(BinaryEncoding.DEFAULT);
+    }
+
+    public Map<String, ?> toMap(BinaryEncoding binaryEncoding) {
         Map<String, Object> map = new HashMap<>();
         map.put(RP, rp.toMap());
-        map.put(USER, user.toMap());
-        map.put(CHALLENGE, challenge);
+        map.put(USER, user.toMap(binaryEncoding));
+        map.put(CHALLENGE, doEncode(challenge, binaryEncoding));
         List<Map<String, ?>> paramsList = new ArrayList<>();
         for (PublicKeyCredentialParameters params : pubKeyCredParams) {
             paramsList.add(params.toMap());
@@ -113,7 +120,7 @@ public class PublicKeyCredentialCreationOptions {
         if (!excludeCredentials.isEmpty()) {
             List<Map<String, ?>> excludeCredentialsList = new ArrayList<>();
             for (PublicKeyCredentialDescriptor cred : excludeCredentials) {
-                excludeCredentialsList.add(cred.toMap());
+                excludeCredentialsList.add(cred.toMap(binaryEncoding));
             }
             map.put(EXCLUDE_CREDENTIALS, excludeCredentialsList);
         }
@@ -127,66 +134,12 @@ public class PublicKeyCredentialCreationOptions {
         return map;
     }
 
-    public Map<String, ?> toJsonMap() {
-        Map<String, Object> map = new HashMap<>();
-        map.put(RP, rp.toMap());
-        map.put(USER, user.toJsonMap());
-        map.put(CHALLENGE, Base64.encodeBase64URLSafeString(challenge));
-        List<Map<String, ?>> paramsList = new ArrayList<>();
-        for (PublicKeyCredentialParameters params : pubKeyCredParams) {
-            paramsList.add(params.toMap());
-        }
-        map.put(PUB_KEY_CRED_PARAMS, paramsList);
-        map.put(TIMEOUT, timeout);
-        if (!excludeCredentials.isEmpty()) {
-            List<Map<String, ?>> excludeCredentialsList = new ArrayList<>();
-            for (PublicKeyCredentialDescriptor cred : excludeCredentials) {
-                excludeCredentialsList.add(cred.toJsonMap());
-            }
-            map.put(EXCLUDE_CREDENTIALS, excludeCredentialsList);
-        }
-        if (authenticatorSelection != null) {
-            map.put(AUTHENTICATOR_SELECTION, authenticatorSelection.toMap());
-        }
-        map.put(ATTESTATION, attestation.toString());
-        if (extensions != null) {
-            map.put(EXTENSIONS, extensions);
-        }
-        return map;
-    }
-
-    @SuppressWarnings("unchecked")
     public static PublicKeyCredentialCreationOptions fromMap(Map<String, ?> map) {
-        List<PublicKeyCredentialParameters> pubKeyCredParams = new ArrayList<>();
-        for (Map<String, ?> params : Objects.requireNonNull((List<Map<String, ?>>) map.get(PUB_KEY_CRED_PARAMS))) {
-            pubKeyCredParams.add(PublicKeyCredentialParameters.fromMap(params));
-        }
-        List<PublicKeyCredentialDescriptor> excludeCredentials = null;
-        List<Map<String, ?>> excludeCredentialsList = (List<Map<String, ?>>) map.get(EXCLUDE_CREDENTIALS);
-        if (excludeCredentialsList != null) {
-            excludeCredentials = new ArrayList<>();
-            for (Map<String, ?> cred : excludeCredentialsList) {
-                excludeCredentials.add(PublicKeyCredentialDescriptor.fromMap(cred));
-            }
-        }
-
-        Map<String, ?> authenticatorSelection = (Map<String, ?>) map.get(AUTHENTICATOR_SELECTION);
-
-        return new PublicKeyCredentialCreationOptions(
-                PublicKeyCredentialRpEntity.fromMap(Objects.requireNonNull((Map<String, ?>) map.get(RP))),
-                PublicKeyCredentialUserEntity.fromMap(Objects.requireNonNull((Map<String, ?>) map.get(USER))),
-                Objects.requireNonNull((byte[]) map.get(CHALLENGE)),
-                pubKeyCredParams,
-                Objects.requireNonNull((Number) map.get(TIMEOUT)).longValue(),
-                excludeCredentials,
-                authenticatorSelection == null ? null : AuthenticatorSelectionCriteria.fromMap(authenticatorSelection),
-                AttestationConveyancePreference.fromString((String) map.get(ATTESTATION)),
-                null  // Extensions currently ignored
-        );
+        return fromMap(map, BinaryEncoding.DEFAULT);
     }
 
     @SuppressWarnings("unchecked")
-    public static PublicKeyCredentialCreationOptions fromJsonMap(Map<String, ?> map) {
+    public static PublicKeyCredentialCreationOptions fromMap(Map<String, ?> map, BinaryEncoding binaryEncoding) {
         List<PublicKeyCredentialParameters> pubKeyCredParams = new ArrayList<>();
         for (Map<String, ?> params : Objects.requireNonNull((List<Map<String, ?>>) map.get(PUB_KEY_CRED_PARAMS))) {
             pubKeyCredParams.add(PublicKeyCredentialParameters.fromMap(params));
@@ -196,7 +149,7 @@ public class PublicKeyCredentialCreationOptions {
         if (excludeCredentialsList != null) {
             excludeCredentials = new ArrayList<>();
             for (Map<String, ?> cred : excludeCredentialsList) {
-                excludeCredentials.add(PublicKeyCredentialDescriptor.fromJsonMap(cred));
+                excludeCredentials.add(PublicKeyCredentialDescriptor.fromMap(cred, binaryEncoding));
             }
         }
 
@@ -204,8 +157,8 @@ public class PublicKeyCredentialCreationOptions {
 
         return new PublicKeyCredentialCreationOptions(
                 PublicKeyCredentialRpEntity.fromMap(Objects.requireNonNull((Map<String, ?>) map.get(RP))),
-                PublicKeyCredentialUserEntity.fromJsonMap(Objects.requireNonNull((Map<String, ?>) map.get(USER))),
-                Base64.decodeBase64(Objects.requireNonNull((String) map.get(CHALLENGE))),
+                PublicKeyCredentialUserEntity.fromMap(Objects.requireNonNull((Map<String, ?>) map.get(USER)), binaryEncoding),
+                doDecode(Objects.requireNonNull(map.get(CHALLENGE)), binaryEncoding),
                 pubKeyCredParams,
                 Objects.requireNonNull((Number) map.get(TIMEOUT)).longValue(),
                 excludeCredentials,

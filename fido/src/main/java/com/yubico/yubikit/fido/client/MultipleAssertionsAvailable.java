@@ -7,6 +7,7 @@ package com.yubico.yubikit.fido.client;
 
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.fido.webauthn.AuthenticatorAssertionResponse;
+import com.yubico.yubikit.fido.webauthn.BinaryEncoding;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialDescriptor;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialUserEntity;
 
@@ -53,7 +54,7 @@ public class MultipleAssertionsAvailable extends Throwable {
         List<PublicKeyCredentialUserEntity> users = new ArrayList<>();
         for (Ctap2Session.AssertionData assertion : assertions) {
             try {
-                users.add(PublicKeyCredentialUserEntity.fromMap(Objects.requireNonNull(assertion.getUser())));
+                users.add(PublicKeyCredentialUserEntity.fromMap(Objects.requireNonNull(assertion.getUser()), BinaryEncoding.NONE));
             } catch (NullPointerException e) {
                 throw new UserInformationNotAvailableError();
             }
@@ -79,8 +80,8 @@ public class MultipleAssertionsAvailable extends Throwable {
                 assertion.getAuthencticatorData(),
                 clientDataJson,
                 assertion.getSignature(),
-                PublicKeyCredentialUserEntity.fromMap(Objects.requireNonNull(assertion.getUser())).getId(),
-                PublicKeyCredentialDescriptor.fromMap(Objects.requireNonNull(assertion.getCredential())).getId()
+                PublicKeyCredentialUserEntity.fromMap(Objects.requireNonNull(assertion.getUser()), BinaryEncoding.NONE).getId(),
+                PublicKeyCredentialDescriptor.fromMap(Objects.requireNonNull(assertion.getCredential()), BinaryEncoding.NONE).getId()
         );
     }
 }

@@ -5,9 +5,10 @@
  */
 package com.yubico.yubikit.fido.webauthn;
 
-import javax.annotation.Nullable;
+import static com.yubico.yubikit.fido.webauthn.BinaryEncoding.doDecode;
+import static com.yubico.yubikit.fido.webauthn.BinaryEncoding.doEncode;
 
-import org.apache.commons.codec.binary.Base64;
+import javax.annotation.Nullable;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -53,46 +54,33 @@ public class AuthenticatorAssertionResponse extends AuthenticatorResponse {
 
     @Override
     public Map<String, ?> toMap() {
-        Map<String, Object> map = new HashMap<>();
-        map.put(AUTHENTICATOR_DATA, authenticatorData);
-        map.put(CLIENT_DATA_JSON, getClientDataJson());
-        map.put(SIGNATURE, signature);
-        if (userHandle != null) {
-            map.put(USER_HANDLE, userHandle);
-        }
-        map.put(CREDENTIAL_ID, credentialId);
-        return map;
+        return toMap(BinaryEncoding.DEFAULT);
     }
 
-    public Map<String, ?> toJsonMap() {
+    @Override
+    public Map<String, ?> toMap(BinaryEncoding binaryEncoding) {
         Map<String, Object> map = new HashMap<>();
-        map.put(AUTHENTICATOR_DATA, Base64.encodeBase64URLSafeString(authenticatorData));
-        map.put(CLIENT_DATA_JSON, Base64.encodeBase64URLSafeString(getClientDataJson()));
-        map.put(SIGNATURE, Base64.encodeBase64URLSafeString(signature));
+        map.put(AUTHENTICATOR_DATA, doEncode(authenticatorData, binaryEncoding));
+        map.put(CLIENT_DATA_JSON, doEncode(getClientDataJson(), binaryEncoding));
+        map.put(SIGNATURE, doEncode(signature, binaryEncoding));
         if (userHandle != null) {
-            map.put(USER_HANDLE, Base64.encodeBase64URLSafeString(userHandle));
+            map.put(USER_HANDLE, doEncode(userHandle, binaryEncoding));
         }
-        map.put(CREDENTIAL_ID, Base64.encodeBase64URLSafeString(credentialId));
+        map.put(CREDENTIAL_ID, doEncode(credentialId, binaryEncoding));
         return map;
     }
 
     public static AuthenticatorAssertionResponse fromMap(Map<String, ?> map) {
-        return new AuthenticatorAssertionResponse(
-                Objects.requireNonNull((byte[]) map.get(AUTHENTICATOR_DATA)),
-                Objects.requireNonNull((byte[]) map.get(CLIENT_DATA_JSON)),
-                Objects.requireNonNull((byte[]) map.get(SIGNATURE)),
-                (byte[]) map.get(USER_HANDLE),
-                Objects.requireNonNull((byte[]) map.get(CREDENTIAL_ID))
-        );
+        return fromMap(map, BinaryEncoding.DEFAULT);
     }
 
-    public static AuthenticatorAssertionResponse fromJsonMap(Map<String, ?> map) {
+    public static AuthenticatorAssertionResponse fromMap(Map<String, ?> map, BinaryEncoding binaryEncoding) {
         return new AuthenticatorAssertionResponse(
-                Base64.decodeBase64(Objects.requireNonNull((String) map.get(AUTHENTICATOR_DATA))),
-                Base64.decodeBase64(Objects.requireNonNull((String) map.get(CLIENT_DATA_JSON))),
-                Base64.decodeBase64(Objects.requireNonNull((String) map.get(SIGNATURE))),
-                Base64.decodeBase64((String) map.get(USER_HANDLE)),
-                Base64.decodeBase64(Objects.requireNonNull((String) map.get(CREDENTIAL_ID)))
+                doDecode(Objects.requireNonNull(map.get(AUTHENTICATOR_DATA)), binaryEncoding),
+                doDecode(Objects.requireNonNull(map.get(CLIENT_DATA_JSON)), binaryEncoding),
+                doDecode(Objects.requireNonNull(map.get(SIGNATURE)), binaryEncoding),
+                doDecode(map.get(USER_HANDLE), binaryEncoding),
+                doDecode(Objects.requireNonNull(map.get(CREDENTIAL_ID)), binaryEncoding)
         );
     }
 }

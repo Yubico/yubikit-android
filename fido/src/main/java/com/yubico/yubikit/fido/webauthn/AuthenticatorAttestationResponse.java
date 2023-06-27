@@ -5,7 +5,8 @@
  */
 package com.yubico.yubikit.fido.webauthn;
 
-import org.apache.commons.codec.binary.Base64;
+import static com.yubico.yubikit.fido.webauthn.BinaryEncoding.doDecode;
+import static com.yubico.yubikit.fido.webauthn.BinaryEncoding.doEncode;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -28,30 +29,24 @@ public class AuthenticatorAttestationResponse extends AuthenticatorResponse {
 
     @Override
     public Map<String, ?> toMap() {
-        Map<String, Object> map = new HashMap<>();
-        map.put(CLIENT_DATA_JSON, getClientDataJson());
-        map.put(ATTESTATION_OBJECT, attestationObject);
-        return map;
+        return toMap(BinaryEncoding.DEFAULT);
     }
 
-    public Map<String, ?> toJsonMap() {
+    public Map<String, ?> toMap(BinaryEncoding binaryEncoding) {
         Map<String, Object> map = new HashMap<>();
-        map.put(CLIENT_DATA_JSON, Base64.encodeBase64URLSafeString(getClientDataJson()));
-        map.put(ATTESTATION_OBJECT, Base64.encodeBase64URLSafeString(attestationObject));
+        map.put(CLIENT_DATA_JSON, doEncode(getClientDataJson(), binaryEncoding));
+        map.put(ATTESTATION_OBJECT, doEncode(attestationObject, binaryEncoding));
         return map;
     }
 
     public static AuthenticatorAttestationResponse fromMap(Map<String, ?> map) {
-        return new AuthenticatorAttestationResponse(
-                Objects.requireNonNull((byte[]) map.get(CLIENT_DATA_JSON)),
-                Objects.requireNonNull((byte[]) map.get(ATTESTATION_OBJECT))
-        );
+        return fromMap(map, BinaryEncoding.DEFAULT);
     }
 
-    public static AuthenticatorAttestationResponse fromJsonMap(Map<String, ?> map) {
+    public static AuthenticatorAttestationResponse fromMap(Map<String, ?> map, BinaryEncoding binaryEncoding) {
         return new AuthenticatorAttestationResponse(
-                Base64.decodeBase64(Objects.requireNonNull((String) map.get(CLIENT_DATA_JSON))),
-                Base64.decodeBase64(Objects.requireNonNull((String) map.get(ATTESTATION_OBJECT)))
+                doDecode(Objects.requireNonNull(map.get(CLIENT_DATA_JSON)), binaryEncoding),
+                doDecode(Objects.requireNonNull(map.get(ATTESTATION_OBJECT)), binaryEncoding)
         );
     }
 }
