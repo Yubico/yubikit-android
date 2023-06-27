@@ -48,7 +48,7 @@ public class PublicKeyCredentialDescriptor {
         Map<String, Object> map = new HashMap<>();
         map.put(TYPE, type.toString());
         map.put(ID, Base64.encodeBase64URLSafeString(id));
-        if (transports != null) {
+        if (transports != null && !transports.isEmpty()) {
             map.put(TRANSPORTS, transports);
         }
         return map;
@@ -58,7 +58,7 @@ public class PublicKeyCredentialDescriptor {
         Map<String, Object> map = new HashMap<>();
         map.put(TYPE, type.toString());
         map.put(ID, id);
-        if (transports != null) {
+        if (transports != null && !transports.isEmpty()) {
             map.put(TRANSPORTS, transports);
         }
         return map;
