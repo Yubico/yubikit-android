@@ -5,8 +5,8 @@
  */
 package com.yubico.yubikit.fido.webauthn;
 
-import static com.yubico.yubikit.fido.webauthn.BinaryEncoding.encode;
-import static com.yubico.yubikit.fido.webauthn.BinaryEncoding.decode;
+import static com.yubico.yubikit.fido.webauthn.Base64Utils.encode;
+import static com.yubico.yubikit.fido.webauthn.Base64Utils.decode;
 
 import java.util.HashMap;
 import java.util.Map;

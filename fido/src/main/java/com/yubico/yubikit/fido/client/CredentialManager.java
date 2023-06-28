@@ -9,7 +9,6 @@ import com.yubico.yubikit.core.application.CommandException;
 import com.yubico.yubikit.core.fido.CtapException;
 import com.yubico.yubikit.fido.ctap.CredentialManagement;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialDescriptor;
-import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialType;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialUserEntity;
 
 import java.io.IOException;
@@ -18,7 +17,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 /**
  * Provides management of resident key type credentials, which are stored on a YubiKey.
@@ -88,17 +86,9 @@ public class CredentialManager {
                 rpIdHash = BasicWebAuthnClient.hash(rpId.getBytes(StandardCharsets.UTF_8));
             }
             for (CredentialManagement.CredentialData credData : credentialManagement.enumerateCredentials(rpIdHash)) {
-                final Map<String, ?> user = credData.getUser();
-                final Map<String, ?> credentialId = credData.getCredentialId();
                 credentials.put(
-                        new PublicKeyCredentialDescriptor(
-                                PublicKeyCredentialType.fromString(Objects.requireNonNull((String) credentialId.get(PublicKeyCredentialDescriptor.TYPE))),
-                                Objects.requireNonNull((byte[]) credentialId.get(PublicKeyCredentialDescriptor.ID))
-                        ),
-                        new PublicKeyCredentialUserEntity(
-                                Objects.requireNonNull((String) user.get(PublicKeyCredentialUserEntity.NAME)),
-                                Objects.requireNonNull((byte[]) user.get(PublicKeyCredentialUserEntity.ID)),
-                                Objects.requireNonNull((String) user.get(PublicKeyCredentialUserEntity.DISPLAY_NAME)))
+                        ConversionUtils.PublicKeyCredentialDescriptorFromMap(credData.getCredentialId()),
+                        ConversionUtils.PublicKeyCredentialUserEntityFromMap(credData.getUser())
                 );
             }
             return credentials;
@@ -117,12 +107,7 @@ public class CredentialManager {
      */
     public void deleteCredential(PublicKeyCredentialDescriptor credential) throws IOException, CommandException, ClientError {
         try {
-
-            final Map<String, Object> credentialMap = new HashMap<>();
-            credentialMap.put(PublicKeyCredentialDescriptor.TYPE, credential.getType().toString());
-            credentialMap.put(PublicKeyCredentialDescriptor.ID, credential.getId());
-
-            credentialManagement.deleteCredential(credentialMap);
+            credentialManagement.deleteCredential(ConversionUtils.PublicKeyCredentialDescriptorToMap(credential));
         } catch (CtapException e) {
             throw ClientError.wrapCtapException(e);
         }

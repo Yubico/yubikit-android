@@ -18,12 +18,13 @@ package com.yubico.yubikit.fido.webauthn;
 
 import org.apache.commons.codec.binary.Base64;
 
-public class BinaryEncoding {
-    public static String encode(byte[] data) {
+class Base64Utils {
+
+    static String encode(byte[] data) {
         return Base64.encodeBase64URLSafeString(data);
     }
 
-    public static byte[] decode(Object data) {
+    static byte[] decode(Object data) {
         return Base64.decodeBase64((String) data);
     }
 }

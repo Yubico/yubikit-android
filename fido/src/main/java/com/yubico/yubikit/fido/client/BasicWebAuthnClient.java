@@ -5,8 +5,6 @@
  */
 package com.yubico.yubikit.fido.client;
 
-import static com.yubico.yubikit.fido.webauthn.BinaryEncoding.encode;
-
 import com.yubico.yubikit.core.application.CommandException;
 import com.yubico.yubikit.core.application.CommandState;
 import com.yubico.yubikit.core.fido.CtapException;
@@ -18,12 +16,10 @@ import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV1;
 import com.yubico.yubikit.fido.webauthn.AuthenticatorAssertionResponse;
 import com.yubico.yubikit.fido.webauthn.AuthenticatorAttestationResponse;
 import com.yubico.yubikit.fido.webauthn.AuthenticatorSelectionCriteria;
-import com.yubico.yubikit.fido.webauthn.BinaryEncoding;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialCreationOptions;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialDescriptor;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialParameters;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialRequestOptions;
-import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialUserEntity;
 import com.yubico.yubikit.fido.webauthn.UserVerificationRequirement;
 
 import java.io.Closeable;
@@ -127,13 +123,8 @@ public class BasicWebAuthnClient implements Closeable {
         } else if (!(effectiveDomain.equals(rpId) || effectiveDomain.endsWith("." + rpId))) {
             throw new ClientError(ClientError.Code.BAD_REQUEST, "RP ID is not valid for effective domain");
         }
-        final PublicKeyCredentialUserEntity userEntity = options.getUser();
-        final Map<String, Object> user = new HashMap<>();
-        user.put(PublicKeyCredentialUserEntity.NAME, userEntity.getName());
-        user.put(PublicKeyCredentialUserEntity.ID, userEntity.getId());
-        user.put(PublicKeyCredentialUserEntity.DISPLAY_NAME, userEntity.getDisplayName());
 
-        options.getUser().toMap();
+        final Map<String, Object> user = ConversionUtils.PublicKeyCredentialUserEntityToMap(options.getUser());
 
         List<Map<String, ?>> pubKeyCredParams = new ArrayList<>();
         for (PublicKeyCredentialParameters param : options.getPubKeyCredParams()) {
@@ -476,10 +467,7 @@ public class BasicWebAuthnClient implements Closeable {
         }
         List<Map<String, ?>> list = new ArrayList<>();
         for (PublicKeyCredentialDescriptor credential : descriptors) {
-            Map<String, Object> credentialMap = new HashMap<>();
-            credentialMap.put(PublicKeyCredentialDescriptor.TYPE, credential.getType().toString());
-            credentialMap.put(PublicKeyCredentialDescriptor.ID, credential.getId());
-            list.add(credentialMap);
+            list.add(ConversionUtils.PublicKeyCredentialDescriptorToMap(credential));
         }
         return list;
     }
