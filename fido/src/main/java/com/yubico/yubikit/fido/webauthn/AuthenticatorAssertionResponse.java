@@ -5,8 +5,8 @@
  */
 package com.yubico.yubikit.fido.webauthn;
 
-import static com.yubico.yubikit.fido.webauthn.BinaryEncoding.doDecode;
-import static com.yubico.yubikit.fido.webauthn.BinaryEncoding.doEncode;
+import static com.yubico.yubikit.fido.webauthn.BinaryEncoding.decode;
+import static com.yubico.yubikit.fido.webauthn.BinaryEncoding.encode;
 
 import javax.annotation.Nullable;
 
@@ -54,33 +54,24 @@ public class AuthenticatorAssertionResponse extends AuthenticatorResponse {
 
     @Override
     public Map<String, ?> toMap() {
-        return toMap(BinaryEncoding.DEFAULT);
-    }
-
-    @Override
-    public Map<String, ?> toMap(BinaryEncoding binaryEncoding) {
         Map<String, Object> map = new HashMap<>();
-        map.put(AUTHENTICATOR_DATA, doEncode(authenticatorData, binaryEncoding));
-        map.put(CLIENT_DATA_JSON, doEncode(getClientDataJson(), binaryEncoding));
-        map.put(SIGNATURE, doEncode(signature, binaryEncoding));
+        map.put(AUTHENTICATOR_DATA, encode(authenticatorData));
+        map.put(CLIENT_DATA_JSON, encode(getClientDataJson()));
+        map.put(SIGNATURE, encode(signature));
         if (userHandle != null) {
-            map.put(USER_HANDLE, doEncode(userHandle, binaryEncoding));
+            map.put(USER_HANDLE, encode(userHandle));
         }
-        map.put(CREDENTIAL_ID, doEncode(credentialId, binaryEncoding));
+        map.put(CREDENTIAL_ID, encode(credentialId));
         return map;
     }
 
     public static AuthenticatorAssertionResponse fromMap(Map<String, ?> map) {
-        return fromMap(map, BinaryEncoding.DEFAULT);
-    }
-
-    public static AuthenticatorAssertionResponse fromMap(Map<String, ?> map, BinaryEncoding binaryEncoding) {
         return new AuthenticatorAssertionResponse(
-                doDecode(Objects.requireNonNull(map.get(AUTHENTICATOR_DATA)), binaryEncoding),
-                doDecode(Objects.requireNonNull(map.get(CLIENT_DATA_JSON)), binaryEncoding),
-                doDecode(Objects.requireNonNull(map.get(SIGNATURE)), binaryEncoding),
-                doDecode(map.get(USER_HANDLE), binaryEncoding),
-                doDecode(Objects.requireNonNull(map.get(CREDENTIAL_ID)), binaryEncoding)
+                decode(Objects.requireNonNull(map.get(AUTHENTICATOR_DATA))),
+                decode(Objects.requireNonNull(map.get(CLIENT_DATA_JSON))),
+                decode(Objects.requireNonNull(map.get(SIGNATURE))),
+                decode(map.get(USER_HANDLE)),
+                decode(Objects.requireNonNull(map.get(CREDENTIAL_ID)))
         );
     }
 }

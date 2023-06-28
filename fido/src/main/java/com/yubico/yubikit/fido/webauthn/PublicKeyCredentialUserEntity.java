@@ -5,17 +5,17 @@
  */
 package com.yubico.yubikit.fido.webauthn;
 
-import static com.yubico.yubikit.fido.webauthn.BinaryEncoding.doDecode;
-import static com.yubico.yubikit.fido.webauthn.BinaryEncoding.doEncode;
+import static com.yubico.yubikit.fido.webauthn.BinaryEncoding.decode;
+import static com.yubico.yubikit.fido.webauthn.BinaryEncoding.encode;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
 public class PublicKeyCredentialUserEntity {
-    private static final String ID = "id";
-    private static final String NAME = "name";
-    private static final String DISPLAY_NAME = "displayName";
+    public static final String ID = "id";
+    public static final String NAME = "name";
+    public static final String DISPLAY_NAME = "displayName";
 
     private final String name;
     private final byte[] id;
@@ -40,25 +40,17 @@ public class PublicKeyCredentialUserEntity {
     }
 
     public Map<String, ?> toMap() {
-        return toMap(BinaryEncoding.DEFAULT);
-    }
-
-    public Map<String, ?> toMap(BinaryEncoding binaryEncoding) {
         Map<String, Object> map = new HashMap<>();
         map.put(NAME, name);
-        map.put(ID, doEncode(id, binaryEncoding));
+        map.put(ID, encode(id));
         map.put(DISPLAY_NAME, displayName);
         return map;
     }
 
     public static PublicKeyCredentialUserEntity fromMap(Map<String, ?> map) {
-        return fromMap(map, BinaryEncoding.DEFAULT);
-    }
-
-    public static PublicKeyCredentialUserEntity fromMap(Map<String, ?> map, BinaryEncoding binaryEncoding) {
         return new PublicKeyCredentialUserEntity(
                 Objects.requireNonNull((String) map.get(NAME)),
-                doDecode(Objects.requireNonNull(map.get(ID)), binaryEncoding),
+                decode(Objects.requireNonNull(map.get(ID))),
                 Objects.requireNonNull((String) map.get(DISPLAY_NAME))
         );
     }

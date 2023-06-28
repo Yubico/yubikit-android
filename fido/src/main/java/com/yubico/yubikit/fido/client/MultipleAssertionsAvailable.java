@@ -5,14 +5,16 @@
  */
 package com.yubico.yubikit.fido.client;
 
+import static com.yubico.yubikit.fido.webauthn.BinaryEncoding.decode;
+
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.fido.webauthn.AuthenticatorAssertionResponse;
-import com.yubico.yubikit.fido.webauthn.BinaryEncoding;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialDescriptor;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialUserEntity;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -54,7 +56,12 @@ public class MultipleAssertionsAvailable extends Throwable {
         List<PublicKeyCredentialUserEntity> users = new ArrayList<>();
         for (Ctap2Session.AssertionData assertion : assertions) {
             try {
-                users.add(PublicKeyCredentialUserEntity.fromMap(Objects.requireNonNull(assertion.getUser()), BinaryEncoding.NONE));
+                final Map<String, ?> user = Objects.requireNonNull(assertion.getUser());
+                users.add(new PublicKeyCredentialUserEntity(
+                        Objects.requireNonNull((String) user.get(PublicKeyCredentialUserEntity.NAME)),
+                        Objects.requireNonNull((byte[]) user.get(PublicKeyCredentialUserEntity.ID)),
+                        Objects.requireNonNull((String) user.get(PublicKeyCredentialUserEntity.DISPLAY_NAME))
+                ));
             } catch (NullPointerException e) {
                 throw new UserInformationNotAvailableError();
             }
@@ -76,12 +83,14 @@ public class MultipleAssertionsAvailable extends Throwable {
         Ctap2Session.AssertionData assertion = assertions.get(index);
         assertions.clear();
 
+        final Map<String, ?> user = Objects.requireNonNull(assertion.getUser());
+        final Map<String, ?> credential = Objects.requireNonNull(assertion.getCredential());
         return new AuthenticatorAssertionResponse(
                 assertion.getAuthencticatorData(),
                 clientDataJson,
                 assertion.getSignature(),
-                PublicKeyCredentialUserEntity.fromMap(Objects.requireNonNull(assertion.getUser()), BinaryEncoding.NONE).getId(),
-                PublicKeyCredentialDescriptor.fromMap(Objects.requireNonNull(assertion.getCredential()), BinaryEncoding.NONE).getId()
+                Objects.requireNonNull((byte[]) user.get(PublicKeyCredentialUserEntity.ID)),
+                Objects.requireNonNull((byte[]) credential.get(PublicKeyCredentialDescriptor.ID))
         );
     }
 }

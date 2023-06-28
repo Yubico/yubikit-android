@@ -5,6 +5,8 @@
  */
 package com.yubico.yubikit.fido.client;
 
+import static com.yubico.yubikit.fido.webauthn.BinaryEncoding.encode;
+
 import com.yubico.yubikit.core.application.CommandException;
 import com.yubico.yubikit.core.application.CommandState;
 import com.yubico.yubikit.core.fido.CtapException;
@@ -21,6 +23,7 @@ import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialCreationOptions;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialDescriptor;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialParameters;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialRequestOptions;
+import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialUserEntity;
 import com.yubico.yubikit.fido.webauthn.UserVerificationRequirement;
 
 import java.io.Closeable;
@@ -124,7 +127,13 @@ public class BasicWebAuthnClient implements Closeable {
         } else if (!(effectiveDomain.equals(rpId) || effectiveDomain.endsWith("." + rpId))) {
             throw new ClientError(ClientError.Code.BAD_REQUEST, "RP ID is not valid for effective domain");
         }
-        Map<String, ?> user = options.getUser().toMap(BinaryEncoding.NONE);
+        final PublicKeyCredentialUserEntity userEntity = options.getUser();
+        final Map<String, Object> user = new HashMap<>();
+        user.put(PublicKeyCredentialUserEntity.NAME, userEntity.getName());
+        user.put(PublicKeyCredentialUserEntity.ID, userEntity.getId());
+        user.put(PublicKeyCredentialUserEntity.DISPLAY_NAME, userEntity.getDisplayName());
+
+        options.getUser().toMap();
 
         List<Map<String, ?>> pubKeyCredParams = new ArrayList<>();
         for (PublicKeyCredentialParameters param : options.getPubKeyCredParams()) {
@@ -273,7 +282,7 @@ public class BasicWebAuthnClient implements Closeable {
                 byte[] credentialId;
                 Map<String, ?> credentialMap = assertion.getCredential();
                 if (credentialMap != null) {
-                    credentialId = PublicKeyCredentialDescriptor.fromMap(credentialMap, BinaryEncoding.NONE).getId();
+                    credentialId = Objects.requireNonNull((byte[]) credentialMap.get(PublicKeyCredentialDescriptor.ID));
                 } else {
                     // Credential is optional iff allowList contains exactly one credential.
                     credentialId = options.getAllowCredentials().get(0).getId();
@@ -467,7 +476,10 @@ public class BasicWebAuthnClient implements Closeable {
         }
         List<Map<String, ?>> list = new ArrayList<>();
         for (PublicKeyCredentialDescriptor credential : descriptors) {
-            list.add(credential.toMap(BinaryEncoding.NONE));
+            Map<String, Object> credentialMap = new HashMap<>();
+            credentialMap.put(PublicKeyCredentialDescriptor.TYPE, credential.getType().toString());
+            credentialMap.put(PublicKeyCredentialDescriptor.ID, credential.getId());
+            list.add(credentialMap);
         }
         return list;
     }
