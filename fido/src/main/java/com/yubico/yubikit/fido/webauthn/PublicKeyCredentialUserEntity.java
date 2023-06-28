@@ -8,8 +8,6 @@ package com.yubico.yubikit.fido.webauthn;
 import static com.yubico.yubikit.fido.webauthn.BinaryEncoding.doDecode;
 import static com.yubico.yubikit.fido.webauthn.BinaryEncoding.doEncode;
 
-import org.apache.commons.codec.binary.Base64;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -39,14 +37,6 @@ public class PublicKeyCredentialUserEntity {
 
     public String getDisplayName() {
         return displayName;
-    }
-
-    public Map<String, ?> toJsonMap() {
-        Map<String, Object> map = new HashMap<>();
-        map.put(NAME, name);
-        map.put(ID, Base64.encodeBase64URLSafeString(id));
-        map.put(DISPLAY_NAME, displayName);
-        return map;
     }
 
     public Map<String, ?> toMap() {
