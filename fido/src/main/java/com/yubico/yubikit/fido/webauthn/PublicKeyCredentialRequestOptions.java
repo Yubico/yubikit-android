@@ -5,12 +5,10 @@
  */
 package com.yubico.yubikit.fido.webauthn;
 
-import static com.yubico.yubikit.fido.webauthn.BinaryEncoding.doDecode;
-import static com.yubico.yubikit.fido.webauthn.BinaryEncoding.doEncode;
+import static com.yubico.yubikit.fido.webauthn.Base64Utils.decode;
+import static com.yubico.yubikit.fido.webauthn.Base64Utils.encode;
 
 import javax.annotation.Nullable;
-
-import org.apache.commons.codec.binary.Base64;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -74,19 +72,15 @@ public class PublicKeyCredentialRequestOptions {
     }
 
     public Map<String, ?> toMap() {
-        return toMap(BinaryEncoding.DEFAULT);
-    }
-
-    public Map<String, ?> toMap(BinaryEncoding binaryEncoding) {
         Map<String, Object> map = new HashMap<>();
-        map.put(CHALLENGE, doEncode(challenge, binaryEncoding));
+        map.put(CHALLENGE, encode(challenge));
         map.put(TIMEOUT, timeout);
         if(rpId != null) {
             map.put(RP_ID, rpId);
         }
         List<Map<String, ?>> allowCredentialsList = new ArrayList<>();
         for (PublicKeyCredentialDescriptor cred : allowCredentials) {
-            allowCredentialsList.add(cred.toMap(binaryEncoding));
+            allowCredentialsList.add(cred.toMap());
         }
         map.put(ALLOW_CREDENTIALS, allowCredentialsList);
         map.put(USER_VERIFICATION, userVerification.toString());
@@ -96,23 +90,19 @@ public class PublicKeyCredentialRequestOptions {
         return map;
     }
 
-    public static PublicKeyCredentialRequestOptions fromMap(Map<String, ?> map) {
-        return fromMap(map, BinaryEncoding.DEFAULT);
-    }
-
     @SuppressWarnings("unchecked")
-    public static PublicKeyCredentialRequestOptions fromMap(Map<String, ?> map, BinaryEncoding binaryEncoding) {
+    public static PublicKeyCredentialRequestOptions fromMap(Map<String, ?> map) {
         List<PublicKeyCredentialDescriptor> allowCredentials = null;
         List<Map<String, ?>> allowCredentialsList = (List<Map<String, ?>>) map.get(ALLOW_CREDENTIALS);
         if (allowCredentialsList != null) {
             allowCredentials = new ArrayList<>();
             for (Map<String, ?> cred : allowCredentialsList) {
-                allowCredentials.add(PublicKeyCredentialDescriptor.fromMap(cred, binaryEncoding));
+                allowCredentials.add(PublicKeyCredentialDescriptor.fromMap(cred));
             }
         }
 
         return new PublicKeyCredentialRequestOptions(
-                doDecode(Objects.requireNonNull(map.get(CHALLENGE)), binaryEncoding),
+                decode(Objects.requireNonNull(map.get(CHALLENGE))),
                 Objects.requireNonNull((Number) map.get(TIMEOUT)).longValue(),
                 (String) map.get(RP_ID),
                 allowCredentials,

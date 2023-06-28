@@ -57,21 +57,13 @@ public class SerializationTest {
                 "A. User"
         );
 
-        Map<String, ?> base64Map = user.toMap();
+        Map<String, ?> map = user.toMap();
 
-        Assert.assertArrayEquals(user.getId(), Base64.decodeBase64((String) base64Map.get("id")));
-        Assert.assertEquals(user.getName(), base64Map.get("name"));
-        Assert.assertEquals(user.getDisplayName(), base64Map.get("displayName"));
-
-        compareUserEntities(user, PublicKeyCredentialUserEntity.fromMap(base64Map));
-
-        Map<String, ?> map = user.toMap(BinaryEncoding.NONE);
-
-        Assert.assertArrayEquals(user.getId(), (byte[]) map.get("id"));
+        Assert.assertEquals(Base64.encodeBase64URLSafeString(user.getId()), (String) map.get("id"));
         Assert.assertEquals(user.getName(), map.get("name"));
         Assert.assertEquals(user.getDisplayName(), map.get("displayName"));
 
-        compareUserEntities(user, PublicKeyCredentialUserEntity.fromMap(map, BinaryEncoding.NONE));
+        compareUserEntities(user, PublicKeyCredentialUserEntity.fromMap(map));
     }
 
     private void compareParameters(PublicKeyCredentialParameters a, PublicKeyCredentialParameters b) {
@@ -138,10 +130,10 @@ public class SerializationTest {
         Assert.assertArrayEquals(descriptor.getId(), Base64.decodeBase64((String) base64Map.get("id")));
         compareDescriptors(descriptor, PublicKeyCredentialDescriptor.fromMap(base64Map));
 
-        Map<String, ?> map = descriptor.toMap(BinaryEncoding.NONE);
+        Map<String, ?> map = descriptor.toMap();
         Assert.assertEquals(descriptor.getType().toString(), map.get("type"));
-        Assert.assertArrayEquals(descriptor.getId(), (byte[]) map.get("id"));
-        compareDescriptors(descriptor, PublicKeyCredentialDescriptor.fromMap(map, BinaryEncoding.NONE));
+        Assert.assertEquals(Base64.encodeBase64URLSafeString(descriptor.getId()), (String) map.get("id"));
+        compareDescriptors(descriptor, PublicKeyCredentialDescriptor.fromMap(map));
     }
 
     private void compareSelectionCritiera(AuthenticatorSelectionCriteria a, AuthenticatorSelectionCriteria b) {
@@ -206,7 +198,6 @@ public class SerializationTest {
         );
 
         compareCreationOptions(options, PublicKeyCredentialCreationOptions.fromMap(options.toMap()));
-        compareCreationOptions(options, PublicKeyCredentialCreationOptions.fromMap(options.toMap(BinaryEncoding.NONE), BinaryEncoding.NONE));
     }
 
     private void compareRequestOptions(PublicKeyCredentialRequestOptions a, PublicKeyCredentialRequestOptions b) {
@@ -237,7 +228,6 @@ public class SerializationTest {
         );
 
         compareRequestOptions(options, PublicKeyCredentialRequestOptions.fromMap(options.toMap()));
-        compareRequestOptions(options, PublicKeyCredentialRequestOptions.fromMap(options.toMap(BinaryEncoding.NONE), BinaryEncoding.NONE));
     }
 
     private void compareAssertions(AuthenticatorAssertionResponse a, AuthenticatorAssertionResponse b) {
@@ -270,7 +260,6 @@ public class SerializationTest {
         );
 
         compareAssertions(response, AuthenticatorAssertionResponse.fromMap(response.toMap()));
-        compareAssertions(response, AuthenticatorAssertionResponse.fromMap(response.toMap(BinaryEncoding.NONE), BinaryEncoding.NONE));
     }
 
     private void compareAttestations(AuthenticatorAttestationResponse a, AuthenticatorAttestationResponse b) {
@@ -291,6 +280,5 @@ public class SerializationTest {
         );
 
         compareAttestations(response, AuthenticatorAttestationResponse.fromMap(response.toMap()));
-        compareAttestations(response, AuthenticatorAttestationResponse.fromMap(response.toMap(BinaryEncoding.NONE), BinaryEncoding.NONE));
     }
 }

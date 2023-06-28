@@ -8,7 +8,6 @@ package com.yubico.yubikit.fido.client;
 import com.yubico.yubikit.core.application.CommandException;
 import com.yubico.yubikit.core.fido.CtapException;
 import com.yubico.yubikit.fido.ctap.CredentialManagement;
-import com.yubico.yubikit.fido.webauthn.BinaryEncoding;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialDescriptor;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialUserEntity;
 
@@ -88,8 +87,8 @@ public class CredentialManager {
             }
             for (CredentialManagement.CredentialData credData : credentialManagement.enumerateCredentials(rpIdHash)) {
                 credentials.put(
-                        PublicKeyCredentialDescriptor.fromMap(credData.getCredentialId(), BinaryEncoding.NONE),
-                        PublicKeyCredentialUserEntity.fromMap(credData.getUser(), BinaryEncoding.NONE)
+                        ConversionUtils.publicKeyCredentialDescriptorFromMap(credData.getCredentialId()),
+                        ConversionUtils.publicKeyCredentialUserEntityFromMap(credData.getUser())
                 );
             }
             return credentials;
@@ -108,7 +107,7 @@ public class CredentialManager {
      */
     public void deleteCredential(PublicKeyCredentialDescriptor credential) throws IOException, CommandException, ClientError {
         try {
-            credentialManagement.deleteCredential(credential.toMap(BinaryEncoding.NONE));
+            credentialManagement.deleteCredential(ConversionUtils.publicKeyCredentialDescriptorToMap(credential));
         } catch (CtapException e) {
             throw ClientError.wrapCtapException(e);
         }

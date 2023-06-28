@@ -19,5 +19,4 @@ public abstract class AuthenticatorResponse {
     }
 
     public abstract Map<String, ?> toMap();
-    public abstract Map<String, ?> toMap(BinaryEncoding binaryEncoding);
 }
