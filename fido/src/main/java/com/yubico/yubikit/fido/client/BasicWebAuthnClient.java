@@ -124,7 +124,7 @@ public class BasicWebAuthnClient implements Closeable {
             throw new ClientError(ClientError.Code.BAD_REQUEST, "RP ID is not valid for effective domain");
         }
 
-        final Map<String, Object> user = ConversionUtils.PublicKeyCredentialUserEntityToMap(options.getUser());
+        final Map<String, Object> user = ConversionUtils.publicKeyCredentialUserEntityToMap(options.getUser());
 
         List<Map<String, ?>> pubKeyCredParams = new ArrayList<>();
         for (PublicKeyCredentialParameters param : options.getPubKeyCredParams()) {
@@ -467,7 +467,7 @@ public class BasicWebAuthnClient implements Closeable {
         }
         List<Map<String, ?>> list = new ArrayList<>();
         for (PublicKeyCredentialDescriptor credential : descriptors) {
-            list.add(ConversionUtils.PublicKeyCredentialDescriptorToMap(credential));
+            list.add(ConversionUtils.publicKeyCredentialDescriptorToMap(credential));
         }
         return list;
     }

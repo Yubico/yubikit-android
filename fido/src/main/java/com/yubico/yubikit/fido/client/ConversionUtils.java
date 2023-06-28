@@ -25,14 +25,14 @@ import java.util.Map;
 import java.util.Objects;
 
 class ConversionUtils {
-    static PublicKeyCredentialUserEntity PublicKeyCredentialUserEntityFromMap(Map<String, ?> user) {
+    static PublicKeyCredentialUserEntity publicKeyCredentialUserEntityFromMap(Map<String, ?> user) {
         return new PublicKeyCredentialUserEntity(
                 Objects.requireNonNull((String) user.get(PublicKeyCredentialUserEntity.NAME)),
                 Objects.requireNonNull((byte[]) user.get(PublicKeyCredentialUserEntity.ID)),
                 Objects.requireNonNull((String) user.get(PublicKeyCredentialUserEntity.DISPLAY_NAME)));
     }
 
-    static Map<String, Object> PublicKeyCredentialUserEntityToMap(PublicKeyCredentialUserEntity userEntity) {
+    static Map<String, Object> publicKeyCredentialUserEntityToMap(PublicKeyCredentialUserEntity userEntity) {
         final Map<String, Object> user = new HashMap<>();
         user.put(PublicKeyCredentialUserEntity.NAME, userEntity.getName());
         user.put(PublicKeyCredentialUserEntity.ID, userEntity.getId());
@@ -40,14 +40,14 @@ class ConversionUtils {
         return user;
     }
 
-    static PublicKeyCredentialDescriptor PublicKeyCredentialDescriptorFromMap(Map<String, ?> credential) {
+    static PublicKeyCredentialDescriptor publicKeyCredentialDescriptorFromMap(Map<String, ?> credential) {
         return new PublicKeyCredentialDescriptor(
                 PublicKeyCredentialType.fromString(Objects.requireNonNull((String) credential.get(PublicKeyCredentialDescriptor.TYPE))),
                 Objects.requireNonNull((byte[]) credential.get(PublicKeyCredentialDescriptor.ID))
         );
     }
 
-    static Map<String, Object> PublicKeyCredentialDescriptorToMap(PublicKeyCredentialDescriptor credentialDescriptor) {
+    static Map<String, Object> publicKeyCredentialDescriptorToMap(PublicKeyCredentialDescriptor credentialDescriptor) {
         Map<String, Object> credentialDescriptorMap = new HashMap<>();
         credentialDescriptorMap.put(PublicKeyCredentialDescriptor.TYPE, credentialDescriptor.getType().toString());
         credentialDescriptorMap.put(PublicKeyCredentialDescriptor.ID, credentialDescriptor.getId());
