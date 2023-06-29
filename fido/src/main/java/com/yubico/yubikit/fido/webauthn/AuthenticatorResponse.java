@@ -5,8 +5,6 @@
  */
 package com.yubico.yubikit.fido.webauthn;
 
-import com.yubico.yubikit.fido.Cbor;
-
 import java.util.Map;
 
 public abstract class AuthenticatorResponse {
@@ -21,8 +19,4 @@ public abstract class AuthenticatorResponse {
     }
 
     public abstract Map<String, ?> toMap();
-
-    public byte[] toBytes() {
-        return Cbor.encode(toMap());
-    }
 }

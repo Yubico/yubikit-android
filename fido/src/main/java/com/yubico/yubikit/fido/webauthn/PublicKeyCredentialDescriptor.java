@@ -5,6 +5,9 @@
  */
 package com.yubico.yubikit.fido.webauthn;
 
+import static com.yubico.yubikit.fido.webauthn.Base64Utils.decode;
+import static com.yubico.yubikit.fido.webauthn.Base64Utils.encode;
+
 import javax.annotation.Nullable;
 
 import java.util.Arrays;
@@ -14,14 +17,20 @@ import java.util.Map;
 import java.util.Objects;
 
 public class PublicKeyCredentialDescriptor {
-    private static final String TYPE = "type";
-    private static final String ID = "id";
-    private static final String TRANSPORTS = "transports";
+    public static final String TYPE = "type";
+    public static final String ID = "id";
+    public static final String TRANSPORTS = "transports";
 
     private final PublicKeyCredentialType type;
     private final byte[] id;
     @Nullable
     private final List<String> transports;
+
+    public PublicKeyCredentialDescriptor(PublicKeyCredentialType type, byte[] id) {
+        this.type = type;
+        this.id = id;
+        this.transports = null;
+    }
 
     public PublicKeyCredentialDescriptor(PublicKeyCredentialType type, byte[] id, @Nullable List<String> transports) {
         this.type = type;
@@ -45,7 +54,7 @@ public class PublicKeyCredentialDescriptor {
     public Map<String, ?> toMap() {
         Map<String, Object> map = new HashMap<>();
         map.put(TYPE, type.toString());
-        map.put(ID, id);
+        map.put(ID,encode(id));
         if (transports != null) {
             map.put(TRANSPORTS, transports);
         }
@@ -56,7 +65,7 @@ public class PublicKeyCredentialDescriptor {
     public static PublicKeyCredentialDescriptor fromMap(Map<String, ?> map) {
         return new PublicKeyCredentialDescriptor(
                 PublicKeyCredentialType.fromString(Objects.requireNonNull((String) map.get(TYPE))),
-                Objects.requireNonNull((byte[]) map.get(ID)),
+                decode(Objects.requireNonNull((String) map.get(ID))),
                 (List<String>) map.get(TRANSPORTS)
         );
     }

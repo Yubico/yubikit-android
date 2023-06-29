@@ -123,7 +123,8 @@ public class BasicWebAuthnClient implements Closeable {
         } else if (!(effectiveDomain.equals(rpId) || effectiveDomain.endsWith("." + rpId))) {
             throw new ClientError(ClientError.Code.BAD_REQUEST, "RP ID is not valid for effective domain");
         }
-        Map<String, ?> user = options.getUser().toMap();
+
+        final Map<String, Object> user = ConversionUtils.publicKeyCredentialUserEntityToMap(options.getUser());
 
         List<Map<String, ?>> pubKeyCredParams = new ArrayList<>();
         for (PublicKeyCredentialParameters param : options.getPubKeyCredParams()) {
@@ -272,7 +273,7 @@ public class BasicWebAuthnClient implements Closeable {
                 byte[] credentialId;
                 Map<String, ?> credentialMap = assertion.getCredential();
                 if (credentialMap != null) {
-                    credentialId = PublicKeyCredentialDescriptor.fromMap(credentialMap).getId();
+                    credentialId = Objects.requireNonNull((byte[]) credentialMap.get(PublicKeyCredentialDescriptor.ID));
                 } else {
                     // Credential is optional iff allowList contains exactly one credential.
                     credentialId = options.getAllowCredentials().get(0).getId();
@@ -466,7 +467,7 @@ public class BasicWebAuthnClient implements Closeable {
         }
         List<Map<String, ?>> list = new ArrayList<>();
         for (PublicKeyCredentialDescriptor credential : descriptors) {
-            list.add(credential.toMap());
+            list.add(ConversionUtils.publicKeyCredentialDescriptorToMap(credential));
         }
         return list;
     }

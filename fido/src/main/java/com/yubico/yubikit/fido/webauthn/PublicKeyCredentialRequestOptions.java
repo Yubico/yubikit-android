@@ -5,9 +5,10 @@
  */
 package com.yubico.yubikit.fido.webauthn;
 
-import javax.annotation.Nullable;
+import static com.yubico.yubikit.fido.webauthn.Base64Utils.decode;
+import static com.yubico.yubikit.fido.webauthn.Base64Utils.encode;
 
-import com.yubico.yubikit.fido.Cbor;
+import javax.annotation.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -30,6 +31,8 @@ public class PublicKeyCredentialRequestOptions {
     private final String rpId;
     private final List<PublicKeyCredentialDescriptor> allowCredentials;
     private final UserVerificationRequirement userVerification;
+    // TODO: add attestation property
+    // TODO: add attestationFormats property
     @Nullable
     private final Extensions extensions;
 
@@ -70,7 +73,7 @@ public class PublicKeyCredentialRequestOptions {
 
     public Map<String, ?> toMap() {
         Map<String, Object> map = new HashMap<>();
-        map.put(CHALLENGE, challenge);
+        map.put(CHALLENGE, encode(challenge));
         map.put(TIMEOUT, timeout);
         if(rpId != null) {
             map.put(RP_ID, rpId);
@@ -99,21 +102,12 @@ public class PublicKeyCredentialRequestOptions {
         }
 
         return new PublicKeyCredentialRequestOptions(
-                Objects.requireNonNull((byte[]) map.get(CHALLENGE)),
+                decode(Objects.requireNonNull(map.get(CHALLENGE))),
                 Objects.requireNonNull((Number) map.get(TIMEOUT)).longValue(),
                 (String) map.get(RP_ID),
                 allowCredentials,
                 UserVerificationRequirement.fromString((String) map.get(USER_VERIFICATION)),
                 null  // Extensions currently ignored
         );
-    }
-
-    public byte[] toBytes() {
-        return Cbor.encode(toMap());
-    }
-
-    @SuppressWarnings("unchecked")
-    public static PublicKeyCredentialRequestOptions fromBytes(byte[] bytes) {
-        return fromMap((Map<String, ?>) Objects.requireNonNull(Cbor.decode(bytes)));
     }
 }

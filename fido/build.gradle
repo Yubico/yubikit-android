@@ -2,6 +2,8 @@ apply plugin: 'yubikit-java-library'
 
 dependencies {
     api project(':core')
+
+    implementation 'commons-codec:commons-codec:1.15'
 }
 
 ext.pomName = "Yubico YubiKit ${project.name.capitalize()}"

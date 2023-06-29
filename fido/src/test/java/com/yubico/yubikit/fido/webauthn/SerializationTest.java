@@ -5,8 +5,7 @@
  */
 package com.yubico.yubikit.fido.webauthn;
 
-import com.yubico.yubikit.fido.Cbor;
-
+import org.apache.commons.codec.binary.Base64;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -29,7 +28,6 @@ public class SerializationTest {
     }
 
     @Test
-    @SuppressWarnings("unchecked")
     public void testRpEntity() {
         PublicKeyCredentialRpEntity rp = new PublicKeyCredentialRpEntity(
                 "An Example Company", "example.com"
@@ -41,7 +39,6 @@ public class SerializationTest {
         Assert.assertEquals(rp.getName(), map.get("name"));
 
         compareRpEntities(rp, PublicKeyCredentialRpEntity.fromMap(map));
-        compareRpEntities(rp, PublicKeyCredentialRpEntity.fromMap((Map<String, ?>) Cbor.decode(Cbor.encode(map))));
     }
 
     private void compareUserEntities(PublicKeyCredentialUserEntity a, PublicKeyCredentialUserEntity b) {
@@ -51,7 +48,6 @@ public class SerializationTest {
     }
 
     @Test
-    @SuppressWarnings("unchecked")
     public void testUserEntity() {
         byte[] userId = new byte[4 + random.nextInt(29)];
         random.nextBytes(userId);
@@ -63,12 +59,11 @@ public class SerializationTest {
 
         Map<String, ?> map = user.toMap();
 
-        Assert.assertEquals(user.getId(), map.get("id"));
+        Assert.assertEquals(Base64.encodeBase64URLSafeString(user.getId()), (String) map.get("id"));
         Assert.assertEquals(user.getName(), map.get("name"));
         Assert.assertEquals(user.getDisplayName(), map.get("displayName"));
 
         compareUserEntities(user, PublicKeyCredentialUserEntity.fromMap(map));
-        compareUserEntities(user, PublicKeyCredentialUserEntity.fromMap((Map<String, ?>) Cbor.decode(Cbor.encode(map))));
     }
 
     private void compareParameters(PublicKeyCredentialParameters a, PublicKeyCredentialParameters b) {
@@ -88,7 +83,6 @@ public class SerializationTest {
     }
 
     @Test
-    @SuppressWarnings("unchecked")
     public void testParameters() {
         PublicKeyCredentialParameters param = new PublicKeyCredentialParameters(
                 PublicKeyCredentialType.PUBLIC_KEY,
@@ -101,7 +95,6 @@ public class SerializationTest {
         Assert.assertEquals(param.getAlg(), map.get("alg"));
 
         compareParameters(param, PublicKeyCredentialParameters.fromMap(map));
-        compareParameters(param, PublicKeyCredentialParameters.fromMap((Map<String, ?>) Cbor.decode(Cbor.encode(map))));
     }
 
     private void compareDescriptors(PublicKeyCredentialDescriptor a, PublicKeyCredentialDescriptor b) {
@@ -122,7 +115,6 @@ public class SerializationTest {
     }
 
     @Test
-    @SuppressWarnings("unchecked")
     public void testDescriptor() {
         byte[] credentialId = new byte[4 + random.nextInt(29)];
         random.nextBytes(credentialId);
@@ -133,13 +125,15 @@ public class SerializationTest {
                 Arrays.asList("USB", "NFC")
         );
 
+        Map<String, ?> base64Map = descriptor.toMap();
+        Assert.assertEquals(descriptor.getType().toString(), base64Map.get("type"));
+        Assert.assertArrayEquals(descriptor.getId(), Base64.decodeBase64((String) base64Map.get("id")));
+        compareDescriptors(descriptor, PublicKeyCredentialDescriptor.fromMap(base64Map));
+
         Map<String, ?> map = descriptor.toMap();
-
         Assert.assertEquals(descriptor.getType().toString(), map.get("type"));
-        Assert.assertArrayEquals(descriptor.getId(), (byte[]) map.get("id"));
-
+        Assert.assertEquals(Base64.encodeBase64URLSafeString(descriptor.getId()), (String) map.get("id"));
         compareDescriptors(descriptor, PublicKeyCredentialDescriptor.fromMap(map));
-        compareDescriptors(descriptor, PublicKeyCredentialDescriptor.fromMap((Map<String, ?>) Cbor.decode(Cbor.encode(map))));
     }
 
     private void compareSelectionCritiera(AuthenticatorSelectionCriteria a, AuthenticatorSelectionCriteria b) {
@@ -153,7 +147,6 @@ public class SerializationTest {
     }
 
     @Test
-    @SuppressWarnings("unchecked")
     public void testSelectionCriteria() {
         AuthenticatorSelectionCriteria criteria = new AuthenticatorSelectionCriteria(
                 AuthenticatorAttachment.PLATFORM,
@@ -169,7 +162,6 @@ public class SerializationTest {
         Assert.assertTrue(criteria.isRequireResidentKey());
 
         compareSelectionCritiera(criteria, AuthenticatorSelectionCriteria.fromMap(map));
-        compareSelectionCritiera(criteria, AuthenticatorSelectionCriteria.fromMap((Map<String, ?>) Cbor.decode(Cbor.encode(map))));
     }
 
     private void compareCreationOptions(PublicKeyCredentialCreationOptions a, PublicKeyCredentialCreationOptions b) {
@@ -187,7 +179,6 @@ public class SerializationTest {
     }
 
     @Test
-    @SuppressWarnings("unchecked")
     public void testCreationOptions() {
         byte[] userId = new byte[4 + random.nextInt(29)];
         byte[] challenge = new byte[32];
@@ -206,11 +197,7 @@ public class SerializationTest {
                 null
         );
 
-        Map<String, ?> map = options.toMap();
-
-        compareCreationOptions(options, PublicKeyCredentialCreationOptions.fromMap(map));
-        compareCreationOptions(options, PublicKeyCredentialCreationOptions.fromMap((Map<String, ?>) Cbor.decode(Cbor.encode(map))));
-        compareCreationOptions(options, PublicKeyCredentialCreationOptions.fromBytes(options.toBytes()));
+        compareCreationOptions(options, PublicKeyCredentialCreationOptions.fromMap(options.toMap()));
     }
 
     private void compareRequestOptions(PublicKeyCredentialRequestOptions a, PublicKeyCredentialRequestOptions b) {
@@ -225,7 +212,6 @@ public class SerializationTest {
     }
 
     @Test
-    @SuppressWarnings("unchecked")
     public void testRequestOptions() {
         byte[] challenge = new byte[32];
         byte[] credentialId = new byte[1 + random.nextInt(128)];
@@ -241,11 +227,7 @@ public class SerializationTest {
                 null
         );
 
-        Map<String, ?> map = options.toMap();
-
-        compareRequestOptions(options, PublicKeyCredentialRequestOptions.fromMap(map));
-        compareRequestOptions(options, PublicKeyCredentialRequestOptions.fromMap((Map<String, ?>) Cbor.decode(Cbor.encode(map))));
-        compareRequestOptions(options, PublicKeyCredentialRequestOptions.fromBytes(options.toBytes()));
+        compareRequestOptions(options, PublicKeyCredentialRequestOptions.fromMap(options.toMap()));
     }
 
     private void compareAssertions(AuthenticatorAssertionResponse a, AuthenticatorAssertionResponse b) {
@@ -257,7 +239,6 @@ public class SerializationTest {
     }
 
     @Test
-    @SuppressWarnings("unchecked")
     public void testAssertionResponse() {
         byte[] authData = new byte[128];
         random.nextBytes(authData);
@@ -278,11 +259,7 @@ public class SerializationTest {
                 credentialId
         );
 
-        Map<String, ?> map = response.toMap();
-
-        compareAssertions(response, AuthenticatorAssertionResponse.fromMap(map));
-        compareAssertions(response, AuthenticatorAssertionResponse.fromMap((Map<String, ?>) Cbor.decode(Cbor.encode(map))));
-        compareAssertions(response, AuthenticatorAssertionResponse.fromBytes(response.toBytes()));
+        compareAssertions(response, AuthenticatorAssertionResponse.fromMap(response.toMap()));
     }
 
     private void compareAttestations(AuthenticatorAttestationResponse a, AuthenticatorAttestationResponse b) {
@@ -291,7 +268,6 @@ public class SerializationTest {
     }
 
     @Test
-    @SuppressWarnings("unchecked")
     public void testAttestationResponse() {
         byte[] attestationObject = new byte[128 + random.nextInt(128)];
         random.nextBytes(attestationObject);
@@ -303,10 +279,6 @@ public class SerializationTest {
                 clientDataJson
         );
 
-        Map<String, ?> map = response.toMap();
-
-        compareAttestations(response, AuthenticatorAttestationResponse.fromMap(map));
-        compareAttestations(response, AuthenticatorAttestationResponse.fromMap((Map<String, ?>) Cbor.decode(Cbor.encode(map))));
-        compareAttestations(response, AuthenticatorAttestationResponse.fromBytes(response.toBytes()));
+        compareAttestations(response, AuthenticatorAttestationResponse.fromMap(response.toMap()));
     }
 }

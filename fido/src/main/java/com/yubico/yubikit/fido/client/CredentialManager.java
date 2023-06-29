@@ -87,8 +87,8 @@ public class CredentialManager {
             }
             for (CredentialManagement.CredentialData credData : credentialManagement.enumerateCredentials(rpIdHash)) {
                 credentials.put(
-                        PublicKeyCredentialDescriptor.fromMap(credData.getCredentialId()),
-                        PublicKeyCredentialUserEntity.fromMap(credData.getUser())
+                        ConversionUtils.publicKeyCredentialDescriptorFromMap(credData.getCredentialId()),
+                        ConversionUtils.publicKeyCredentialUserEntityFromMap(credData.getUser())
                 );
             }
             return credentials;
@@ -107,7 +107,7 @@ public class CredentialManager {
      */
     public void deleteCredential(PublicKeyCredentialDescriptor credential) throws IOException, CommandException, ClientError {
         try {
-            credentialManagement.deleteCredential(credential.toMap());
+            credentialManagement.deleteCredential(ConversionUtils.publicKeyCredentialDescriptorToMap(credential));
         } catch (CtapException e) {
             throw ClientError.wrapCtapException(e);
         }

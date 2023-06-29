@@ -12,6 +12,7 @@ import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialUserEntity;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -53,7 +54,7 @@ public class MultipleAssertionsAvailable extends Throwable {
         List<PublicKeyCredentialUserEntity> users = new ArrayList<>();
         for (Ctap2Session.AssertionData assertion : assertions) {
             try {
-                users.add(PublicKeyCredentialUserEntity.fromMap(Objects.requireNonNull(assertion.getUser())));
+                users.add(ConversionUtils.publicKeyCredentialUserEntityFromMap(Objects.requireNonNull(assertion.getUser())));
             } catch (NullPointerException e) {
                 throw new UserInformationNotAvailableError();
             }
@@ -75,12 +76,14 @@ public class MultipleAssertionsAvailable extends Throwable {
         Ctap2Session.AssertionData assertion = assertions.get(index);
         assertions.clear();
 
+        final Map<String, ?> user = Objects.requireNonNull(assertion.getUser());
+        final Map<String, ?> credential = Objects.requireNonNull(assertion.getCredential());
         return new AuthenticatorAssertionResponse(
                 assertion.getAuthencticatorData(),
                 clientDataJson,
                 assertion.getSignature(),
-                PublicKeyCredentialUserEntity.fromMap(Objects.requireNonNull(assertion.getUser())).getId(),
-                PublicKeyCredentialDescriptor.fromMap(Objects.requireNonNull(assertion.getCredential())).getId()
+                Objects.requireNonNull((byte[]) user.get(PublicKeyCredentialUserEntity.ID)),
+                Objects.requireNonNull((byte[]) credential.get(PublicKeyCredentialDescriptor.ID))
         );
     }
 }

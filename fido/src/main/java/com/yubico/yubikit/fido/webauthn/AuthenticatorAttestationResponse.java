@@ -5,14 +5,15 @@
  */
 package com.yubico.yubikit.fido.webauthn;
 
-import com.yubico.yubikit.fido.Cbor;
+import static com.yubico.yubikit.fido.webauthn.Base64Utils.encode;
+import static com.yubico.yubikit.fido.webauthn.Base64Utils.decode;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
 public class AuthenticatorAttestationResponse extends AuthenticatorResponse {
-    private static final String CLIENT_DATA_JSON = "clientDataJson";
+    private static final String CLIENT_DATA_JSON = "clientDataJSON";
     private static final String ATTESTATION_OBJECT = "attestationObject";
 
     private final byte[] attestationObject;
@@ -29,20 +30,15 @@ public class AuthenticatorAttestationResponse extends AuthenticatorResponse {
     @Override
     public Map<String, ?> toMap() {
         Map<String, Object> map = new HashMap<>();
-        map.put(CLIENT_DATA_JSON, getClientDataJson());
-        map.put(ATTESTATION_OBJECT, attestationObject);
+        map.put(CLIENT_DATA_JSON, encode(getClientDataJson()));
+        map.put(ATTESTATION_OBJECT, encode(attestationObject));
         return map;
     }
 
     public static AuthenticatorAttestationResponse fromMap(Map<String, ?> map) {
         return new AuthenticatorAttestationResponse(
-                Objects.requireNonNull((byte[]) map.get(CLIENT_DATA_JSON)),
-                Objects.requireNonNull((byte[]) map.get(ATTESTATION_OBJECT))
+                decode(Objects.requireNonNull(map.get(CLIENT_DATA_JSON))),
+                decode(Objects.requireNonNull(map.get(ATTESTATION_OBJECT)))
         );
-    }
-
-    @SuppressWarnings("unchecked")
-    public static AuthenticatorAttestationResponse fromBytes(byte[] bytes) {
-        return fromMap((Map<String, ?>) Objects.requireNonNull(Cbor.decode(bytes)));
     }
 }

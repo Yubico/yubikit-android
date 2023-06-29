@@ -5,9 +5,10 @@
  */
 package com.yubico.yubikit.fido.webauthn;
 
-import javax.annotation.Nullable;
+import static com.yubico.yubikit.fido.webauthn.Base64Utils.decode;
+import static com.yubico.yubikit.fido.webauthn.Base64Utils.encode;
 
-import com.yubico.yubikit.fido.Cbor;
+import javax.annotation.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -103,7 +104,7 @@ public class PublicKeyCredentialCreationOptions {
         Map<String, Object> map = new HashMap<>();
         map.put(RP, rp.toMap());
         map.put(USER, user.toMap());
-        map.put(CHALLENGE, challenge);
+        map.put(CHALLENGE, encode(challenge));
         List<Map<String, ?>> paramsList = new ArrayList<>();
         for (PublicKeyCredentialParameters params : pubKeyCredParams) {
             paramsList.add(params.toMap());
@@ -147,7 +148,7 @@ public class PublicKeyCredentialCreationOptions {
         return new PublicKeyCredentialCreationOptions(
                 PublicKeyCredentialRpEntity.fromMap(Objects.requireNonNull((Map<String, ?>) map.get(RP))),
                 PublicKeyCredentialUserEntity.fromMap(Objects.requireNonNull((Map<String, ?>) map.get(USER))),
-                Objects.requireNonNull((byte[]) map.get(CHALLENGE)),
+                decode(Objects.requireNonNull(map.get(CHALLENGE))),
                 pubKeyCredParams,
                 Objects.requireNonNull((Number) map.get(TIMEOUT)).longValue(),
                 excludeCredentials,
@@ -155,14 +156,5 @@ public class PublicKeyCredentialCreationOptions {
                 AttestationConveyancePreference.fromString((String) map.get(ATTESTATION)),
                 null  // Extensions currently ignored
         );
-    }
-
-    public byte[] toBytes() {
-        return Cbor.encode(toMap());
-    }
-
-    @SuppressWarnings("unchecked")
-    public static PublicKeyCredentialCreationOptions fromBytes(byte[] bytes) {
-        return fromMap((Map<String, ?>) Objects.requireNonNull(Cbor.decode(bytes)));
     }
 }
