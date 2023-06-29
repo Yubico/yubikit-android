@@ -2,10 +2,14 @@ apply plugin: 'maven-publish'
 apply plugin: 'signing'
 
 ext.isReleaseVersion = !version.endsWith("SNAPSHOT")
+ext.isPreviewVersion = version.indexOf("preview") != -1
 
 java {
     withJavadocJar()
-    withSourcesJar()
+
+    if (!isPreviewVersion) {
+        withSourcesJar()
+    }
 }
 
 publishing {
