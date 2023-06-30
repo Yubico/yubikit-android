@@ -187,6 +187,9 @@ public class BasicWebAuthnClient implements Closeable {
                     Cbor.encode(attestationObject)
             );
         } catch (CtapException e) {
+            if (e.getCtapError() == CtapException.ERR_PIN_INVALID) {
+                throw new PinInvalidClientError(e, clientPin.getPinRetries());
+            }
             throw ClientError.wrapCtapException(e);
         }
     }
@@ -297,6 +300,9 @@ public class BasicWebAuthnClient implements Closeable {
                 throw new MultipleAssertionsAvailable(clientDataJson, assertions);
             }
         } catch (CtapException e) {
+            if (e.getCtapError() == CtapException.ERR_PIN_INVALID) {
+                throw new PinInvalidClientError(e, clientPin.getPinRetries());
+            }
             throw ClientError.wrapCtapException(e);
         }
     }
