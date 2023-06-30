@@ -31,7 +31,7 @@ public class ClientError extends Exception {
     public enum Code {
         OTHER_ERROR(1), BAD_REQUEST(2), CONFIGURATION_UNSUPPORTED(3), DEVICE_INELIGIBLE(4), TIMEOUT(5);
 
-        final int errorCode;
+        public final int errorCode;
 
         Code(int errorCode) {
             this.errorCode = errorCode;
@@ -43,7 +43,7 @@ public class ClientError extends Exception {
         }
     }
 
-    final Code errorCode;
+    public final Code errorCode;
 
     public ClientError(Code errorCode, String message) {
         super(errorCode + " - " + message);
