@@ -195,29 +195,6 @@ public class BasicWebAuthnClient implements Closeable {
     }
 
     /**
-     * DEPRECATED.
-     * Use {@link #makeCredential(byte[], PublicKeyCredentialCreationOptions, String, char[], CommandState)} instead.
-     * This method takes no effective domain, and will not validate the RP ID in the request.
-     * <p>
-     * Create a new WebAuthn credential.
-     * <p>
-     * PIN is always required if a PIN is configured.
-     *
-     * @param clientDataJson The UTF-8 encoded ClientData JSON object.
-     * @param options        The options for creating the credential.
-     * @param pin            If needed, the PIN to authorize the credential creation.
-     * @param state          If needed, the state to provide control over the ongoing operation
-     * @return A WebAuthn attestation response containing the new credential.
-     * @throws IOException      A communication error in the transport layer
-     * @throws CommandException A communication in the protocol layer
-     * @throws ClientError      A higher level error
-     */
-    @Deprecated
-    public AuthenticatorAttestationResponse makeCredential(byte[] clientDataJson, PublicKeyCredentialCreationOptions options, @Nullable char[] pin, @Nullable CommandState state) throws IOException, CommandException, ClientError {
-        return makeCredential(clientDataJson, options, Objects.requireNonNull(options.getRp().getId()), pin, state);
-    }
-
-    /**
      * Authenticate an existing WebAuthn credential.
      * PIN is required if UV is "required", or if UV is "preferred" and a PIN is configured.
      * If no allowCredentials list is provided (which is the case for a passwordless flow) the Authenticator may contain multiple discoverable credentials for the given RP.
@@ -305,31 +282,6 @@ public class BasicWebAuthnClient implements Closeable {
             }
             throw ClientError.wrapCtapException(e);
         }
-    }
-
-    /**
-     * DEPRECATED.
-     * Use {@link #getAssertion(byte[], PublicKeyCredentialRequestOptions, String, char[], CommandState)} instead.
-     * * This method takes no effective domain, and will not validate the RP ID in the request.
-     * <p>
-     * Authenticate an existing WebAuthn credential.
-     * PIN is required if UV is "required", or if UV is "preferred" and a PIN is configured.
-     * If no allowCredentials list is provided (which is the case for a passwordless flow) the Authenticator may contain multiple discoverable credentials for the given RP.
-     * In such cases MultipleAssertionsAvailable will be thrown, and can be handled to select an assertion.
-     *
-     * @param clientDataJson The UTF-8 encoded ClientData JSON object.
-     * @param options        The options for authenticating the credential.
-     * @param pin            If needed, the PIN to authorize the credential creation.
-     * @param state          If needed, the state to provide control over the ongoing operation
-     * @return The assertion response data.
-     * @throws MultipleAssertionsAvailable In case of multiple assertions, catch this to make a selection and get the result.
-     * @throws IOException                 A communication error in the transport layer
-     * @throws CommandException            A communication in the protocol layer
-     * @throws ClientError                 A higher level error
-     */
-    @Deprecated
-    public AuthenticatorAssertionResponse getAssertion(byte[] clientDataJson, PublicKeyCredentialRequestOptions options, @Nullable char[] pin, @Nullable CommandState state) throws MultipleAssertionsAvailable, IOException, CommandException, ClientError {
-        return getAssertion(clientDataJson, options, Objects.requireNonNull(options.getRpId()), pin, state);
     }
 
     /**
