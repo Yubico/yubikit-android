@@ -32,6 +32,7 @@ import java.util.Objects;
 /**
  * Provides Credential management on the CTAP level.
  */
+@SuppressWarnings("unused")
 public class CredentialManagement {
     private static final byte CMD_GET_CREDS_METADATA = 0x01;
     private static final byte CMD_ENUMERATE_RPS_BEGIN = 0x02;

@@ -25,6 +25,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import javax.annotation.Nullable;
+
 /**
  * Test serialization and deserialization of WebAuthn data objects using toMap/fromMap as well as toBytes/fromBytes where applicable.
  * Also tests that each object can successfully serialize to and from CBOR.
@@ -82,10 +84,6 @@ public class SerializationTest {
     }
 
     private void compareParametersLists(List<PublicKeyCredentialParameters> a, List<PublicKeyCredentialParameters> b) {
-        if (a == null && b == null) {
-            return;
-        }
-
         Assert.assertEquals(a.size(), b.size());
         for (int i = 0; i < a.size(); i++) {
             compareParameters(a.get(i), b.get(i));
@@ -113,8 +111,8 @@ public class SerializationTest {
         Assert.assertEquals(a.getTransports(), b.getTransports());
     }
 
-    private void compareDescriptorLists(List<PublicKeyCredentialDescriptor> a, List<PublicKeyCredentialDescriptor> b) {
-        if (a == null && b == null) {
+    private void compareDescriptorLists(@Nullable List<PublicKeyCredentialDescriptor> a, @Nullable List<PublicKeyCredentialDescriptor> b) {
+        if (a == null || b == null) {
             return;
         }
 
@@ -146,8 +144,8 @@ public class SerializationTest {
         compareDescriptors(descriptor, PublicKeyCredentialDescriptor.fromMap(map));
     }
 
-    private void compareSelectionCritiera(AuthenticatorSelectionCriteria a, AuthenticatorSelectionCriteria b) {
-        if (a == null && b == null) {
+    private void compareSelectionCriteria(@Nullable AuthenticatorSelectionCriteria a, @Nullable AuthenticatorSelectionCriteria b) {
+        if (a == null || b == null) {
             return;
         }
         Assert.assertEquals(a.getAuthenticatorAttachment(), b.getAuthenticatorAttachment());
@@ -166,12 +164,16 @@ public class SerializationTest {
 
         Map<String, ?> map = criteria.toMap();
 
-        Assert.assertEquals(criteria.getAuthenticatorAttachment().toString(), map.get("authenticatorAttachment"));
+        AuthenticatorAttachment authenticatorAttachment = criteria.getAuthenticatorAttachment();
+        Assert.assertNotNull(authenticatorAttachment);
+        ResidentKeyRequirement residentKeyRequirement = criteria.getResidentKey();
+        Assert.assertNotNull(residentKeyRequirement);
+        Assert.assertEquals(authenticatorAttachment.toString(), map.get("authenticatorAttachment"));
         Assert.assertEquals(criteria.getUserVerification().toString(), map.get("userVerification"));
-        Assert.assertEquals(criteria.getResidentKey().toString(), map.get("residentKey"));
+        Assert.assertEquals(residentKeyRequirement.toString(), map.get("residentKey"));
         Assert.assertTrue(criteria.isRequireResidentKey());
 
-        compareSelectionCritiera(criteria, AuthenticatorSelectionCriteria.fromMap(map));
+        compareSelectionCriteria(criteria, AuthenticatorSelectionCriteria.fromMap(map));
     }
 
     private void compareCreationOptions(PublicKeyCredentialCreationOptions a, PublicKeyCredentialCreationOptions b) {
@@ -181,7 +183,7 @@ public class SerializationTest {
         compareParametersLists(a.getPubKeyCredParams(), b.getPubKeyCredParams());
         Assert.assertEquals(a.getTimeout(), b.getTimeout());
         compareDescriptorLists(a.getExcludeCredentials(), b.getExcludeCredentials());
-        compareSelectionCritiera(a.getAuthenticatorSelection(), b.getAuthenticatorSelection());
+        compareSelectionCriteria(a.getAuthenticatorSelection(), b.getAuthenticatorSelection());
         Assert.assertEquals(a.getAttestation(), b.getAttestation());
 
         Assert.assertNull(a.getExtensions());

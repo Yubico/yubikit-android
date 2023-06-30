@@ -58,6 +58,7 @@ import javax.annotation.Nullable;
  * <p>
  * No support for Extensions. Any Extensions provided will be ignored.
  */
+@SuppressWarnings("unused")
 public class BasicWebAuthnClient implements Closeable {
     private static final String OPTION_CLIENT_PIN = "clientPin";
     private static final String OPTION_CREDENTIAL_MANAGEMENT = "credentialMgmtPreview";
@@ -78,7 +79,7 @@ public class BasicWebAuthnClient implements Closeable {
     private final ClientPin clientPin;
 
     private boolean pinConfigured;
-    private boolean uvConfigured;
+    private final boolean uvConfigured;
 
     final private boolean credentialManagementSupported;
 
@@ -189,7 +190,7 @@ public class BasicWebAuthnClient implements Closeable {
 
             Map<String, Object> attestationObject = new HashMap<>();
             attestationObject.put(KEY_FORMAT, credential.getFormat());
-            attestationObject.put(KEY_AUTHENTICATOR_DATA, credential.getAuthencticatorData());
+            attestationObject.put(KEY_AUTHENTICATOR_DATA, credential.getAuthenticatorData());
             attestationObject.put(KEY_ATTESTATION_STATEMENT, credential.getAttestationStatement());
 
             return new AuthenticatorAttestationResponse(
@@ -277,7 +278,7 @@ public class BasicWebAuthnClient implements Closeable {
                 }
 
                 return new AuthenticatorAssertionResponse(
-                        assertion.getAuthencticatorData(),
+                        assertion.getAuthenticatorData(),
                         clientDataJson,
                         assertion.getSignature(),
                         userId,

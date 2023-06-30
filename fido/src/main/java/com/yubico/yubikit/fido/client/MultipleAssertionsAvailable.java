@@ -29,6 +29,7 @@ import java.util.Objects;
  * The request generated multiple assertions, and a choice must be made by the user.
  * Once selected, call {@link #select(int)} to get an assertion.
  */
+@SuppressWarnings("unused")
 public class MultipleAssertionsAvailable extends Throwable {
     private final byte[] clientDataJson;
     private final List<Ctap2Session.AssertionData> assertions;
@@ -89,7 +90,7 @@ public class MultipleAssertionsAvailable extends Throwable {
         final Map<String, ?> user = Objects.requireNonNull(assertion.getUser());
         final Map<String, ?> credential = Objects.requireNonNull(assertion.getCredential());
         return new AuthenticatorAssertionResponse(
-                assertion.getAuthencticatorData(),
+                assertion.getAuthenticatorData(),
                 clientDataJson,
                 assertion.getSignature(),
                 Objects.requireNonNull((byte[]) user.get(PublicKeyCredentialUserEntity.ID)),

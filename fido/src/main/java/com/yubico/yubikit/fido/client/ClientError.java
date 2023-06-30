@@ -31,14 +31,10 @@ public class ClientError extends Exception {
     public enum Code {
         OTHER_ERROR(1), BAD_REQUEST(2), CONFIGURATION_UNSUPPORTED(3), DEVICE_INELIGIBLE(4), TIMEOUT(5);
 
-        private final int errorCode;
+        final int errorCode;
 
         Code(int errorCode) {
             this.errorCode = errorCode;
-        }
-
-        public int getErrorCode() {
-            return errorCode;
         }
 
         @Override
@@ -47,20 +43,16 @@ public class ClientError extends Exception {
         }
     }
 
-    private final Code errorCode;
+    final Code errorCode;
 
     public ClientError(Code errorCode, String message) {
-        super(errorCode.toString() + " - " + message);
+        super(errorCode + " - " + message);
         this.errorCode = errorCode;
     }
 
     public ClientError(Code errorCode, Throwable cause) {
         super(errorCode.toString(), cause);
         this.errorCode = errorCode;
-    }
-
-    public Code getErrorCode() {
-        return errorCode;
     }
 
     /**

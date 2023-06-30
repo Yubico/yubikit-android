@@ -38,13 +38,13 @@ import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+@SuppressWarnings("unused")
 public class Ctap2Session extends ApplicationSession<Ctap2Session> {
 
     private static final byte[] AID = new byte[]{(byte) 0xa0, 0x00, 0x00, 0x06, 0x47, 0x2f, 0x00, 0x01};
@@ -191,8 +191,8 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
 
     /**
      * This method is invoked by the host to request generation of a new credential in the authenticator.
-     * <p>
-     * https://fidoalliance.org/specs/fido-v2.0-ps-20190130/fido-client-to-authenticator-protocol-v2.0-ps-20190130.html#authenticatorMakeCredential
+     *
+     * @see <a href="https://fidoalliance.org/specs/fido-v2.0-ps-20190130/fido-client-to-authenticator-protocol-v2.0-ps-20190130.html#authenticatorMakeCredential">authenticatorMakeCredential</a>
      *
      * @param clientDataHash    a SHA-256 hash of the clientDataJson
      * @param rp                a Map containing the RpEntity data
@@ -237,8 +237,8 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
      * This method is used by a host to request cryptographic proof of user authentication as well
      * as user consent to a given transaction, using a previously generated credential that is bound
      * to the authenticator and relying party identifier.
-     * <p>
-     * https://fidoalliance.org/specs/fido-v2.0-ps-20190130/fido-client-to-authenticator-protocol-v2.0-ps-20190130.html#authenticatorGetAssertion
+     *
+     * @see <a href="https://fidoalliance.org/specs/fido-v2.0-ps-20190130/fido-client-to-authenticator-protocol-v2.0-ps-20190130.html#authenticatorGetAssertion">authenticatorGetAssertion</a>
      *
      * @param rpId              the RP ID for the request
      * @param clientDataHash    a SHA-256 hash of the clientDataJson
@@ -307,7 +307,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
 
     /**
      * Data object containing the information readable form a YubiKey using the getInfo command.
-     * https://fidoalliance.org/specs/fido-v2.0-ps-20190130/fido-client-to-authenticator-protocol-v2.0-ps-20190130.html#authenticatorGetInfo
+     * @see <a href="https://fidoalliance.org/specs/fido-v2.0-ps-20190130/fido-client-to-authenticator-protocol-v2.0-ps-20190130.html#authenticatorGetInfo">authenticatorGetInfo</a>
      */
     public static class InfoData {
         private final static int RESULT_VERSIONS = 0x01;
@@ -411,11 +411,11 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
 
         /**
          * The AuthenticatorData object.
-         * https://www.w3.org/TR/webauthn/#authenticator-data
+         * @see <a href="https://www.w3.org/TR/webauthn/#authenticator-data">authenticator-data</a>
          *
          * @return the AuthenticatorData
          */
-        public byte[] getAuthencticatorData() {
+        public byte[] getAuthenticatorData() {
             return authenticatorData;
         }
 
@@ -503,11 +503,11 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
 
         /**
          * The AuthenticatorData object.
-         * https://www.w3.org/TR/webauthn/#authenticator-data
+         * @see <a href="https://www.w3.org/TR/webauthn/#authenticator-data">authenticator-data</a>
          *
          * @return the AuthenticatorData
          */
-        public byte[] getAuthencticatorData() {
+        public byte[] getAuthenticatorData() {
             return authenticatorData;
         }
     }

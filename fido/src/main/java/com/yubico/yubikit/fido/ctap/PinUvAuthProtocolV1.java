@@ -43,7 +43,8 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 /**
- * Implements PIN/UV Auth Protocol 1 (https://fidoalliance.org/specs/fido-v2.0-ps-20190130/fido-client-to-authenticator-protocol-v2.0-ps-20190130.html#authenticatorClientPIN).
+ * Implements PIN/UV Auth Protocol 1
+ * @see <a href="https://fidoalliance.org/specs/fido-v2.0-ps-20190130/fido-client-to-authenticator-protocol-v2.0-ps-20190130.html#authenticatorClientPIN">authenticatorClientPIN</a>.
  */
 public class PinUvAuthProtocolV1 implements PinUvAuthProtocol {
     public static final int VERSION = 1;
@@ -94,7 +95,7 @@ public class PinUvAuthProtocolV1 implements PinUvAuthProtocol {
             ecdh.init(kp.getPrivate());
             ecdh.doPhase(otherKey, true);
             byte[] sharedSecret = MessageDigest.getInstance(HASH_ALG).digest(ecdh.generateSecret());
-            return new Pair<Map<Integer, ?>, byte[]>(keyAgreement, sharedSecret);
+            return new Pair<>(keyAgreement, sharedSecret);
         } catch (NoSuchAlgorithmException | InvalidKeySpecException | InvalidKeyException e) {
             throw new IllegalStateException(e);
         }

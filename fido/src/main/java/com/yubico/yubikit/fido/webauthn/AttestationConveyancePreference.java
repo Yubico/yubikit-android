@@ -17,6 +17,7 @@ package com.yubico.yubikit.fido.webauthn;
 
 import javax.annotation.Nullable;
 
+@SuppressWarnings("unused")
 public enum AttestationConveyancePreference {
     NONE, INDIRECT, DIRECT, ENTERPRISE;
 
