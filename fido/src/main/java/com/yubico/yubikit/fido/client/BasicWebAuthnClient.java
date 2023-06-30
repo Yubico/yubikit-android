@@ -188,7 +188,7 @@ public class BasicWebAuthnClient implements Closeable {
             );
         } catch (CtapException e) {
             if (e.getCtapError() == CtapException.ERR_PIN_INVALID) {
-                throw new PinInvalidClientError(clientPin.getPinRetries());
+                throw new PinInvalidClientError(e, clientPin.getPinRetries());
             }
             throw ClientError.wrapCtapException(e);
         }
@@ -301,7 +301,7 @@ public class BasicWebAuthnClient implements Closeable {
             }
         } catch (CtapException e) {
             if (e.getCtapError() == CtapException.ERR_PIN_INVALID) {
-                throw new PinInvalidClientError(clientPin.getPinRetries());
+                throw new PinInvalidClientError(e, clientPin.getPinRetries());
             }
             throw ClientError.wrapCtapException(e);
         }

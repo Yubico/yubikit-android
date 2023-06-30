@@ -15,6 +15,8 @@
  */
 package com.yubico.yubikit.fido.client;
 
+import com.yubico.yubikit.core.fido.CtapException;
+
 /**
  * A subclass of {@link ClientError} used by {@link BasicWebAuthnClient} to indicate that makeCredential or
  * getAssertion was called with an invalid PIN.
@@ -25,8 +27,8 @@ public class PinInvalidClientError extends ClientError {
     /**
      * @param pinRetries number of retries left before the authenticator is blocked
      */
-    public PinInvalidClientError(int pinRetries) {
-        super(Code.BAD_REQUEST, "PIN invalid");
+    public PinInvalidClientError(CtapException cause, int pinRetries) {
+        super(Code.BAD_REQUEST, cause);
         this.pinRetries = pinRetries;
     }
 }
