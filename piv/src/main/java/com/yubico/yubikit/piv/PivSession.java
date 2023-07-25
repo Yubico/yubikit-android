@@ -16,8 +16,12 @@
 
 package com.yubico.yubikit.piv;
 
+import static com.yubico.yubikit.core.internal.PrivateKeyUtils.bytesToLength;
+
 import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.Version;
+import com.yubico.yubikit.core.internal.PrivateKeyUtils;
+import com.yubico.yubikit.core.internal.RsaPrivateNumbers;
 import com.yubico.yubikit.core.smartcard.AppId;
 import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
 import com.yubico.yubikit.core.application.ApplicationSession;
@@ -40,7 +44,6 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
@@ -58,14 +61,12 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
-import java.security.interfaces.RSAPrivateCrtKey;
+import java.security.interfaces.RSAPrivateKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.RSAPublicKeySpec;
 import java.security.spec.X509EncodedKeySpec;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -177,9 +178,6 @@ public class PivSession extends ApplicationSession<PivSession> {
 
     private static final byte PIN_P2 = (byte) 0x80;
     private static final byte PUK_P2 = (byte) 0x81;
-
-    private static final byte[] KEY_PREFIX_P256 = new byte[]{0x30, 0x59, 0x30, 0x13, 0x06, 0x07, 0x2a, (byte) 0x86, 0x48, (byte) 0xce, 0x3d, 0x02, 0x01, 0x06, 0x08, 0x2a, (byte) 0x86, 0x48, (byte) 0xce, 0x3d, 0x03, 0x01, 0x07, 0x03, 0x42, 0x00};
-    private static final byte[] KEY_PREFIX_P384 = new byte[]{0x30, 0x76, 0x30, 0x10, 0x06, 0x07, 0x2a, (byte) 0x86, 0x48, (byte) 0xce, 0x3d, 0x02, 0x01, 0x06, 0x05, 0x2b, (byte) 0x81, 0x04, 0x00, 0x22, 0x03, 0x62, 0x00};
 
     private final SmartCardProtocol protocol;
     private final Version version;
@@ -304,7 +302,8 @@ public class PivSession extends ApplicationSession<PivSession> {
                         StringUtils.bytesToHex(encryptedData));
                 throw new BadResponseException("Calculated response for challenge is incorrect");
             }
-        } catch (NoSuchAlgorithmException | InvalidKeyException | NoSuchPaddingException | BadPaddingException | IllegalBlockSizeException e) {
+        } catch (NoSuchAlgorithmException | InvalidKeyException | NoSuchPaddingException |
+                 BadPaddingException | IllegalBlockSizeException e) {
             //This should never happen
             throw new RuntimeException(e);
         }
@@ -341,18 +340,18 @@ public class PivSession extends ApplicationSession<PivSession> {
      * <p>
      * More commonly, the JCA classes provided should be used instead of directly calling this.
      *
-     * @param slot      the slot containing the private key to use
-     * @param keyType   the type of the key stored in the slot
-     * @param payload   the data to operate on
+     * @param slot    the slot containing the private key to use
+     * @param keyType the type of the key stored in the slot
+     * @param payload the data to operate on
      * @return the result of the operation
-     * @throws IOException              in case of connection error
-     * @throws ApduException            in case of an error response from the YubiKey
-     * @throws BadResponseException     in case of incorrect YubiKey response
+     * @throws IOException          in case of connection error
+     * @throws ApduException        in case of an error response from the YubiKey
+     * @throws BadResponseException in case of incorrect YubiKey response
      */
     public byte[] rawSignOrDecrypt(Slot slot, KeyType keyType, byte[] payload) throws IOException, ApduException, BadResponseException {
         int byteLength = keyType.params.bitLength / 8;
         byte[] padded;
-        if(payload.length > byteLength) {
+        if (payload.length > byteLength) {
             if (keyType.params.algorithm == KeyType.Algorithm.EC) {
                 // Truncate
                 padded = Arrays.copyOf(payload, byteLength);
@@ -733,7 +732,7 @@ public class PivSession extends ApplicationSession<PivSession> {
      */
     public void putCertificate(Slot slot, X509Certificate certificate, boolean compress) throws IOException, ApduException {
         byte[] certBytes;
-        byte[] certInfo = { compress ? (byte)0x01 : (byte)0x00 };
+        byte[] certInfo = {compress ? (byte) 0x01 : (byte) 0x00};
         Logger.debug(logger, "Storing {}certificate in slot {}",
                 compress ? "compressed " : "",
                 slot);
@@ -939,36 +938,12 @@ public class PivSession extends ApplicationSession<PivSession> {
 
         switch (params.algorithm) {
             case RSA:
-                List<BigInteger> values;
-                if (key instanceof RSAPrivateCrtKey) {
-                    RSAPrivateCrtKey rsaPrivateKey = (RSAPrivateCrtKey) key;
-                    values = Arrays.asList(
-                            rsaPrivateKey.getModulus(),
-                            rsaPrivateKey.getPublicExponent(),
-                            rsaPrivateKey.getPrivateExponent(),
-                            rsaPrivateKey.getPrimeP(),
-                            rsaPrivateKey.getPrimeQ(),
-                            rsaPrivateKey.getPrimeExponentP(),
-                            rsaPrivateKey.getPrimeExponentQ(),
-                            rsaPrivateKey.getCrtCoefficient()
-                    );
-                } else if ("PKCS#8".equals(key.getFormat())) {
-                    values = parsePkcs8RsaKeyValues(key.getEncoded());
-                } else {
-                    throw new UnsupportedEncodingException("Unsupported private key encoding");
-                }
-
-                if (values.get(1).intValue() != 65537) {
-                    throw new UnsupportedEncodingException("Unsupported RSA public exponent");
-                }
-
-                int length = params.bitLength / 8 / 2;
-
-                tlvs.put(0x01, bytesToLength(values.get(3), length));    // p
-                tlvs.put(0x02, bytesToLength(values.get(4), length));    // q
-                tlvs.put(0x03, bytesToLength(values.get(5), length));    // dmp1
-                tlvs.put(0x04, bytesToLength(values.get(6), length));    // dmq1
-                tlvs.put(0x05, bytesToLength(values.get(7), length));    // iqmp
+                RsaPrivateNumbers values = PrivateKeyUtils.getPrivateNumbers((RSAPrivateKey) key);
+                tlvs.put(0x01, values.getPrimeP());    // p
+                tlvs.put(0x02, values.getPrimeQ());    // q
+                tlvs.put(0x03, values.getPrimeExponentP());    // dmp1
+                tlvs.put(0x04, values.getPrimeExponentQ());    // dmq1
+                tlvs.put(0x05, values.getCrtCoefficient());    // iqmp
                 break;
             case EC:
                 ECPrivateKey ecPrivateKey = (ECPrivateKey) key;
@@ -1028,22 +1003,6 @@ public class PivSession extends ApplicationSession<PivSession> {
         InputStream stream = new ByteArrayInputStream(data);
         CertificateFactory cf = CertificateFactory.getInstance("X.509");
         return (X509Certificate) cf.generateCertificate(stream);
-    }
-
-    /*
-     * Shortens to length or left-pads with 0.
-     */
-    private static byte[] bytesToLength(BigInteger value, int length) {
-        byte[] data = value.toByteArray();
-        if (data.length == length) {
-            return data;
-        } else if (data.length > length) {
-            return Arrays.copyOfRange(data, data.length - length, data.length);
-        } else {
-            byte[] padded = new byte[length];
-            System.arraycopy(data, 0, padded, length - data.length, data.length);
-            return padded;
-        }
     }
 
     private void changeReference(byte instruction, byte p2, char[] value1, char[] value2) throws IOException, ApduException, InvalidPinException {
@@ -1145,17 +1104,10 @@ public class PivSession extends ApplicationSession<PivSession> {
     }
 
     static PublicKey publicEccKey(KeyType keyType, byte[] encoded) throws NoSuchAlgorithmException, InvalidKeySpecException {
-        byte[] prefix;
-        switch (keyType) {
-            case ECCP256:
-                prefix = KEY_PREFIX_P256;
-                break;
-            case ECCP384:
-                prefix = KEY_PREFIX_P384;
-                break;
-            default:
-                throw new IllegalArgumentException("Unsupported key type");
+        if(!(keyType.params instanceof KeyType.EcKeyParams)) {
+            throw new IllegalArgumentException("Unsupported key type");
         }
+        byte[] prefix = ((KeyType.EcKeyParams)keyType.params).getPrefix();
         KeyFactory keyFactory = KeyFactory.getInstance(keyType.params.algorithm.name());
         return keyFactory.generatePublic(
                 new X509EncodedKeySpec(
@@ -1170,31 +1122,5 @@ public class PivSession extends ApplicationSession<PivSession> {
     static PublicKey publicRsaKey(BigInteger modulus, BigInteger publicExponent) throws NoSuchAlgorithmException, InvalidKeySpecException {
         KeyFactory factory = KeyFactory.getInstance(KeyType.Algorithm.RSA.name());
         return factory.generatePublic(new RSAPublicKeySpec(modulus, publicExponent));
-    }
-
-    /*
-    Parse a DER encoded PKCS#8 RSA key
-     */
-    static List<BigInteger> parsePkcs8RsaKeyValues(byte[] derKey) throws UnsupportedEncodingException {
-        try {
-            List<Tlv> numbers = Tlvs.decodeList(
-                    Tlvs.decodeMap(
-                            Tlvs.decodeMap(
-                                    Tlvs.unpackValue(0x30, derKey)
-                            ).get(0x04)
-                    ).get(0x30)
-            );
-            List<BigInteger> values = new ArrayList<>();
-            for (Tlv number : numbers) {
-                values.add(new BigInteger(number.getValue()));
-            }
-            BigInteger first = values.remove(0);
-            if (first.intValue() != 0) {
-                throw new UnsupportedEncodingException("Expected value 0");
-            }
-            return values;
-        } catch (BadResponseException e) {
-            throw new UnsupportedEncodingException(e.getMessage());
-        }
     }
 }

@@ -1,0 +1,14 @@
+apply plugin: 'yubikit-java-library'
+
+dependencies {
+    api project(':core')
+}
+
+test {
+    systemProperty "org.slf4j.simpleLogger.defaultLogLevel", "trace"
+}
+
+ext.pomName = "Yubico YubiKit ${project.name.capitalize()}"
+description = "This library provides OpenPGP card functionality for the YubiKey. Specs for the protocol can be found at https://gnupg.org/ftp/specs/"
+
+apply from: rootProject.file('publish.gradle')

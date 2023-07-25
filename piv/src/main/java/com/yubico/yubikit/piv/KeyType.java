@@ -16,11 +16,11 @@
 
 package com.yubico.yubikit.piv;
 
-import java.math.BigInteger;
+import com.yubico.yubikit.core.internal.CurveParams;
+
 import java.security.Key;
 import java.security.interfaces.ECKey;
 import java.security.interfaces.RSAKey;
-import java.security.spec.EllipticCurve;
 
 import javax.annotation.Nonnull;
 
@@ -39,19 +39,11 @@ public enum KeyType {
     /**
      * Elliptic Curve key, using NIST Curve P-256.
      */
-    ECCP256((byte) 0x11, new EcKeyParams(
-            256,
-            "115792089210356248762697446949407573530086143415290314195533631308867097853948",
-            "41058363725152142129326129780047268409114441015993725554835256314039467401291"
-    )),
+    ECCP256((byte) 0x11, new EcKeyParams(CurveParams.SECP256R1)),
     /**
      * Elliptic Curve key, using NIST Curve P-384.
      */
-    ECCP384((byte) 0x14, new EcKeyParams(
-            384,
-            "39402006196394479212279040100143613805079739270465446667948293404245721771496870329047266088258938001861606973112316",
-            "27580193559959705877849011840389048093056905856361568521428707301988689241309860865136260764883745107765439761230575"
-    ));
+    ECCP384((byte) 0x14, new EcKeyParams(CurveParams.SECP384R1));
 
     public final byte value;
     public final KeyParams params;
@@ -129,22 +121,20 @@ public enum KeyType {
      * Algorithm parameters for EC keys.
      */
     public static final class EcKeyParams extends KeyParams {
-        private final BigInteger a;
-        private final BigInteger b;
+        private final CurveParams curveParams;
 
-        private EcKeyParams(int bitLength, String a, String b) {
-            super(Algorithm.EC, bitLength);
-            this.a = new BigInteger(a);
-            this.b = new BigInteger(b);
+        private EcKeyParams(CurveParams curveParams) {
+            super(Algorithm.EC, curveParams.getBitLength());
+            this.curveParams = curveParams;
+        }
+
+        byte[] getPrefix() {
+            return curveParams.getPrefix();
         }
 
         @Override
         protected boolean matches(Key key) {
-            if (key instanceof ECKey) {
-                EllipticCurve curve = ((ECKey) key).getParams().getCurve();
-                return curve.getField().getFieldSize() == bitLength && curve.getA().equals(a) && curve.getB().equals(b);
-            }
-            return false;
+            return key instanceof ECKey && curveParams.matchesKey((ECKey) key);
         }
     }
 }

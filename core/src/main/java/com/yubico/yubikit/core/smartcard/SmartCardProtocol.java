@@ -149,17 +149,17 @@ public class SmartCardProtocol implements Closeable {
             case SHORT:
                 int offset = 0;
                 while (data.length - offset > SHORT_APDU_MAX_CHUNK) {
-                    response = new ApduResponse(connection.sendAndReceive(encodeShortApdu((byte) (command.getCla() | 0x10), command.getIns(), command.getP1(), command.getP2(), data, offset, SHORT_APDU_MAX_CHUNK)));
+                    response = new ApduResponse(connection.sendAndReceive(encodeShortApdu((byte) (command.getCla() | 0x10), command.getIns(), command.getP1(), command.getP2(), data, offset, SHORT_APDU_MAX_CHUNK, command.getLe())));
                     if (response.getSw() != SW.OK) {
                         throw new ApduException(response.getSw());
                     }
                     offset += SHORT_APDU_MAX_CHUNK;
                 }
-                response = new ApduResponse(connection.sendAndReceive(encodeShortApdu(command.getCla(), command.getIns(), command.getP1(), command.getP2(), data, offset, data.length - offset)));
+                response = new ApduResponse(connection.sendAndReceive(encodeShortApdu(command.getCla(), command.getIns(), command.getP1(), command.getP2(), data, offset, data.length - offset, command.getLe())));
                 getData = new byte[]{0x00, insSendRemaining, 0x00, 0x00, 0x00};
                 break;
             case EXTENDED:
-                response = new ApduResponse(connection.sendAndReceive(encodeExtendedApdu(command.getCla(), command.getIns(), command.getP1(), command.getP2(), data)));
+                response = new ApduResponse(connection.sendAndReceive(encodeExtendedApdu(command.getCla(), command.getIns(), command.getP1(), command.getP2(), data, command.getLe())));
                 getData = new byte[]{0x00, insSendRemaining, 0x00, 0x00, 0x00, 0x00, 0x00};
                 break;
             default:
@@ -187,29 +187,35 @@ public class SmartCardProtocol implements Closeable {
         return responseData;
     }
 
-    private static byte[] encodeShortApdu(byte cla, byte ins, byte p1, byte p2, byte[] data, int offset, int length) {
+    private static byte[] encodeShortApdu(byte cla, byte ins, byte p1, byte p2, byte[] data, int offset, int length, int le) {
         if (length > SHORT_APDU_MAX_CHUNK) {
             throw new IllegalArgumentException("Length must be no greater than " + SHORT_APDU_MAX_CHUNK);
         }
-        return ByteBuffer.allocate(5 + length)
+        ByteBuffer buf = ByteBuffer.allocate(5 + length)
                 .put(cla)
                 .put(ins)
                 .put(p1)
                 .put(p2)
                 .put((byte) length)
-                .put(data, offset, length)
-                .array();
+                .put(data, offset, length);
+        if(le > 0) {
+            buf.put((byte) le);
+        }
+        return buf.array();
     }
 
-    private static byte[] encodeExtendedApdu(byte cla, byte ins, byte p1, byte p2, byte[] data) {
-        return ByteBuffer.allocate(7 + data.length)
+    private static byte[] encodeExtendedApdu(byte cla, byte ins, byte p1, byte p2, byte[] data, int le) {
+        ByteBuffer buf = ByteBuffer.allocate(7 + data.length)
                 .put(cla)
                 .put(ins)
                 .put(p1)
                 .put(p2)
                 .put((byte) 0x00)
                 .putShort((short) data.length)
-                .put(data)
-                .array();
+                .put(data);
+        if(le > 0) {
+            buf.putShort((short) le);
+        }
+        return buf.array();
     }
 }
