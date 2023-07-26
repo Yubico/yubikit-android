@@ -16,7 +16,7 @@
 
 package com.yubico.yubikit.openpgp;
 
-import com.yubico.yubikit.core.internal.CurveParams;
+import com.yubico.yubikit.core.keys.EllipticCurveValues;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -148,18 +148,26 @@ abstract class AlgorithmAttributes {
             }
         }
 
-        private final CurveParams curveParams;
+        private final EllipticCurveValues ellipticCurveValues;
         private final ImportFormat importFormat;
 
-        Ec(byte algorithmId, CurveParams curveParams, ImportFormat importFormat) {
+        Ec(byte algorithmId, EllipticCurveValues ellipticCurveValues, ImportFormat importFormat) {
             super(algorithmId);
-            this.curveParams = curveParams;
+            this.ellipticCurveValues = ellipticCurveValues;
             this.importFormat = importFormat;
+        }
+
+        EllipticCurveValues getEllipticCurveValues() {
+            return ellipticCurveValues;
+        }
+
+        ImportFormat getImportFormat() {
+            return importFormat;
         }
 
         @Override
         byte[] getBytes() {
-            byte[] oidBytes = curveParams.getOid();
+            byte[] oidBytes = ellipticCurveValues.getOid();
             byte[] bytes = ByteBuffer.allocate(1 + oidBytes.length)
                     .put(getAlgorithmId())
                     .put(oidBytes)
@@ -175,21 +183,21 @@ abstract class AlgorithmAttributes {
             if (buf.get(buf.limit()) == ImportFormat.STANDARD_W_PUBKEY.value) {
                 return new Ec(
                         algorithmId,
-                        CurveParams.fromOid(Arrays.copyOfRange(buf.array(), buf.position(), buf.remaining() - 1)),
+                        EllipticCurveValues.fromOid(Arrays.copyOfRange(buf.array(), buf.position(), buf.remaining() - 1)),
                         ImportFormat.STANDARD_W_PUBKEY
                 );
             }
             // Standard is defined as "format byte not present"
             return new Ec(
                     algorithmId,
-                    CurveParams.fromOid(Arrays.copyOfRange(buf.array(), buf.position(), buf.remaining())),
+                    EllipticCurveValues.fromOid(Arrays.copyOfRange(buf.array(), buf.position(), buf.remaining())),
                     ImportFormat.STANDARD
             );
         }
 
-        static Ec create(KeyRef keyRef, CurveParams curve) {
+        static Ec create(KeyRef keyRef, EllipticCurveValues curve) {
             byte algId;
-            if (curve == CurveParams.Ed25519) {
+            if (curve == EllipticCurveValues.Ed25519) {
                 algId = 0x16; // EdDSA
             } else if (keyRef == KeyRef.DEC) {
                 algId = 0x12; // ECDH
@@ -204,12 +212,12 @@ abstract class AlgorithmAttributes {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             Ec that = (Ec) o;
-            return curveParams == that.curveParams && importFormat == that.importFormat;
+            return ellipticCurveValues == that.ellipticCurveValues && importFormat == that.importFormat;
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(curveParams, importFormat);
+            return Objects.hash(ellipticCurveValues, importFormat);
         }
     }
 }

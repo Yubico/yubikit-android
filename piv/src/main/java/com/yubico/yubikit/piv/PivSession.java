@@ -21,7 +21,8 @@ import static com.yubico.yubikit.core.internal.PrivateKeyUtils.bytesToLength;
 import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.Version;
 import com.yubico.yubikit.core.internal.PrivateKeyUtils;
-import com.yubico.yubikit.core.internal.RsaPrivateNumbers;
+import com.yubico.yubikit.core.keys.PrivateKeyValues;
+import com.yubico.yubikit.core.keys.PublicKeyValues;
 import com.yubico.yubikit.core.smartcard.AppId;
 import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
 import com.yubico.yubikit.core.application.ApplicationSession;
@@ -49,7 +50,6 @@ import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
-import java.security.KeyFactory;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
@@ -59,16 +59,14 @@ import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
-import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
-import java.security.interfaces.RSAPrivateKey;
+import java.security.spec.ECPoint;
 import java.security.spec.InvalidKeySpecException;
-import java.security.spec.RSAPublicKeySpec;
-import java.security.spec.X509EncodedKeySpec;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 
 import javax.annotation.Nullable;
 import javax.crypto.BadPaddingException;
@@ -412,14 +410,29 @@ public class PivSession extends ApplicationSession<PivSession> {
      * @throws ApduException        in case of an error response from the YubiKey
      * @throws BadResponseException in case of incorrect YubiKey response
      */
+    @Deprecated
     public byte[] calculateSecret(Slot slot, ECPublicKey peerPublicKey) throws IOException, ApduException, BadResponseException {
-        KeyType keyType = KeyType.fromKey(peerPublicKey);
+        return calculateSecret(slot, peerPublicKey.getW());
+    }
+
+    /**
+     * Perform an ECDH operation with a given public key to compute a shared secret.
+     *
+     * @param slot          the slot containing the private EC key
+     * @param peerPublicKey the peer public key for the operation
+     * @return the shared secret, comprising the x-coordinate of the ECDH result point.
+     * @throws IOException          in case of connection error
+     * @throws ApduException        in case of an error response from the YubiKey
+     * @throws BadResponseException in case of incorrect YubiKey response
+     */
+    public byte[] calculateSecret(Slot slot, ECPoint peerPublicKey) throws IOException, ApduException, BadResponseException {
+        KeyType keyType = peerPublicKey.getAffineX().bitLength() > 256 ? KeyType.ECCP384 : KeyType.ECCP256;
         int byteLength = keyType.params.bitLength / 8;
         Logger.debug(logger, "Performing key agreement with key in slot {} of type {}", slot, keyType);
         return usePrivateKey(slot, keyType, ByteBuffer.allocate(1 + 2 * byteLength)
                 .put((byte) 0x04)
-                .put(bytesToLength(peerPublicKey.getW().getAffineX(), byteLength))
-                .put(bytesToLength(peerPublicKey.getW().getAffineY(), byteLength))
+                .put(bytesToLength(peerPublicKey.getAffineX(), byteLength))
+                .put(bytesToLength(peerPublicKey.getAffineY(), byteLength))
                 .array(), true);
     }
 
@@ -817,19 +830,18 @@ public class PivSession extends ApplicationSession<PivSession> {
     }
 
     /* Parses a PublicKey from data returned from a YubiKey. */
-    static PublicKey parsePublicKeyFromDevice(KeyType keyType, byte[] encoded) {
+    static PublicKeyValues parsePublicKeyFromDevice(KeyType keyType, byte[] encoded) {
         Map<Integer, byte[]> dataObjects = Tlvs.decodeMap(encoded);
 
-        try {
-            if (keyType.params.algorithm == KeyType.Algorithm.RSA) {
-                BigInteger modulus = new BigInteger(1, dataObjects.get(0x81));
-                BigInteger exponent = new BigInteger(1, dataObjects.get(0x82));
-                return publicRsaKey(modulus, exponent);
-            } else {
-                return publicEccKey(keyType, dataObjects.get(0x86));
+        if (keyType.params.algorithm == KeyType.Algorithm.RSA) {
+            BigInteger modulus = new BigInteger(1, dataObjects.get(0x81));
+            BigInteger exponent = new BigInteger(1, dataObjects.get(0x82));
+            return new PublicKeyValues.Rsa(modulus, exponent);
+        } else {
+            if (!(keyType.params instanceof KeyType.EcKeyParams)) {
+                throw new IllegalArgumentException("Unsupported key type");
             }
-        } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
-            throw new RuntimeException(e); // This shouldn't happen
+            return PrivateKeyUtils.decodeEcPublicKey(((KeyType.EcKeyParams) keyType.params).getCurveParams(), dataObjects.get(0x86));
         }
     }
 
@@ -909,7 +921,13 @@ public class PivSession extends ApplicationSession<PivSession> {
         byte[] response = protocol.sendAndReceive(new Apdu(0, INS_GENERATE_ASYMMETRIC, 0, slot.value, new Tlv((byte) 0xac, Tlvs.encodeMap(tlvs)).getBytes()));
         Logger.info(logger, "Private key generated in slot {} of type {}", slot, keyType);
         // Tag '7F49' contains data objects for RSA or ECC
-        return parsePublicKeyFromDevice(keyType, Tlvs.unpackValue(0x7F49, response));
+        PublicKeyValues values = parsePublicKeyFromDevice(keyType, Tlvs.unpackValue(0x7F49, response));
+        // TODO: Directly return PublicKeyValues instead
+        try {
+            return values.toPublicKey();
+        } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -929,25 +947,26 @@ public class PivSession extends ApplicationSession<PivSession> {
      * @throws IOException   in case of connection error
      * @throws ApduException in case of an error response from the YubiKey
      */
-    public KeyType putKey(Slot slot, PrivateKey key, PinPolicy pinPolicy, TouchPolicy touchPolicy) throws IOException, ApduException {
-        KeyType keyType = KeyType.fromKey(key);
+    public KeyType putKey(Slot slot, PrivateKeyValues key, PinPolicy pinPolicy, TouchPolicy touchPolicy) throws IOException, ApduException {
+        KeyType keyType = KeyType.fromKeyParams(key);
         checkKeySupport(keyType, pinPolicy, touchPolicy, false);
 
         KeyType.KeyParams params = keyType.params;
         Map<Integer, byte[]> tlvs = new LinkedHashMap<>();
 
+        int byteLength = params.bitLength; // 8
         switch (params.algorithm) {
             case RSA:
-                RsaPrivateNumbers values = PrivateKeyUtils.getPrivateNumbers((RSAPrivateKey) key);
-                tlvs.put(0x01, values.getPrimeP());    // p
-                tlvs.put(0x02, values.getPrimeQ());    // q
-                tlvs.put(0x03, values.getPrimeExponentP());    // dmp1
-                tlvs.put(0x04, values.getPrimeExponentQ());    // dmq1
-                tlvs.put(0x05, values.getCrtCoefficient());    // iqmp
+                PrivateKeyValues.Rsa values = (PrivateKeyValues.Rsa) key;
+                tlvs.put(0x01, bytesToLength(values.getPrimeP(), byteLength / 2));    // p
+                tlvs.put(0x02, bytesToLength(values.getPrimeQ(), byteLength / 2));    // q
+                tlvs.put(0x03, bytesToLength(Objects.requireNonNull(values.getPrimeExponentP()), byteLength / 2));    // dmp1
+                tlvs.put(0x04, bytesToLength(Objects.requireNonNull(values.getPrimeExponentQ()), byteLength / 2));    // dmq1
+                tlvs.put(0x05, bytesToLength(Objects.requireNonNull(values.getCrtCoefficient()), byteLength / 2));    // iqmp
                 break;
             case EC:
-                ECPrivateKey ecPrivateKey = (ECPrivateKey) key;
-                tlvs.put(0x06, bytesToLength(ecPrivateKey.getS(), params.bitLength / 8));  // s
+                PrivateKeyValues.Ec ecPrivateKey = (PrivateKeyValues.Ec) key;
+                tlvs.put(0x06, bytesToLength(ecPrivateKey.getScalar(), byteLength));  // s
                 break;
         }
 
@@ -962,6 +981,28 @@ public class PivSession extends ApplicationSession<PivSession> {
         protocol.sendAndReceive(new Apdu(0, INS_IMPORT_KEY, keyType.value, slot.value, Tlvs.encodeMap(tlvs)));
         Logger.info(logger, "Private key imported in slot {} of type {}", slot, keyType);
         return keyType;
+    }
+
+    /**
+     * Import a private key into a slot.
+     * This method requires authentication {@link #authenticate}.
+     * <p>
+     * KeyType P348 requires {@link #FEATURE_P384}, available on YubiKey 4 or later.
+     * PinPolicy or TouchPolicy other than default require {@link #FEATURE_USAGE_POLICY}, available on YubiKey 4 or later.
+     * <p>
+     * NOTE: YubiKey FIPS does not allow RSA1024 nor PinProtocol.NEVER.
+     *
+     * @param slot        Key reference '9A', '9C', '9D', or '9E'. {@link Slot}.
+     * @param key         the private key to import
+     * @param pinPolicy   the PIN policy for using the private key
+     * @param touchPolicy the touch policy for using the private key
+     * @return the KeyType value of the imported key
+     * @throws IOException   in case of connection error
+     * @throws ApduException in case of an error response from the YubiKey
+     */
+    @Deprecated
+    public KeyType putKey(Slot slot, PrivateKey key, PinPolicy pinPolicy, TouchPolicy touchPolicy) throws IOException, ApduException {
+        return putKey(slot, PrivateKeyValues.fromPrivateKey(key), pinPolicy, touchPolicy);
     }
 
     /**
@@ -1101,26 +1142,5 @@ public class PivSession extends ApplicationSession<PivSession> {
             }
         }
         return -1;
-    }
-
-    static PublicKey publicEccKey(KeyType keyType, byte[] encoded) throws NoSuchAlgorithmException, InvalidKeySpecException {
-        if(!(keyType.params instanceof KeyType.EcKeyParams)) {
-            throw new IllegalArgumentException("Unsupported key type");
-        }
-        byte[] prefix = ((KeyType.EcKeyParams)keyType.params).getPrefix();
-        KeyFactory keyFactory = KeyFactory.getInstance(keyType.params.algorithm.name());
-        return keyFactory.generatePublic(
-                new X509EncodedKeySpec(
-                        ByteBuffer.allocate(prefix.length + encoded.length)
-                                .put(prefix)
-                                .put(encoded)
-                                .array()
-                )
-        );
-    }
-
-    static PublicKey publicRsaKey(BigInteger modulus, BigInteger publicExponent) throws NoSuchAlgorithmException, InvalidKeySpecException {
-        KeyFactory factory = KeyFactory.getInstance(KeyType.Algorithm.RSA.name());
-        return factory.generatePublic(new RSAPublicKeySpec(modulus, publicExponent));
     }
 }

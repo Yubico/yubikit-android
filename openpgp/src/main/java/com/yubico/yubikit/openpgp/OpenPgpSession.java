@@ -16,6 +16,7 @@
 
 package com.yubico.yubikit.openpgp;
 
+import static com.yubico.yubikit.core.internal.PrivateKeyUtils.bytesToLength;
 import static com.yubico.yubikit.openpgp.OpenPgpUtils.decodeBcd;
 
 import com.yubico.yubikit.core.Version;
@@ -23,10 +24,11 @@ import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
 import com.yubico.yubikit.core.application.ApplicationSession;
 import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.application.Feature;
-import com.yubico.yubikit.core.internal.CurveParams;
+import com.yubico.yubikit.core.keys.EllipticCurveValues;
 import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.internal.PrivateKeyUtils;
-import com.yubico.yubikit.core.internal.RsaPrivateNumbers;
+import com.yubico.yubikit.core.keys.PrivateKeyValues;
+import com.yubico.yubikit.core.keys.PublicKeyValues;
 import com.yubico.yubikit.core.smartcard.Apdu;
 import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.core.smartcard.ApduFormat;
@@ -40,23 +42,17 @@ import com.yubico.yubikit.core.util.Tlvs;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
-import java.security.KeyFactory;
+import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
-import java.security.interfaces.ECPrivateKey;
-import java.security.interfaces.RSAPrivateKey;
-import java.security.interfaces.RSAPublicKey;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.RSAPublicKeySpec;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 
 public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
@@ -368,7 +364,7 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
                 // Remove X25519 with EdDSA from all keys
                 AlgorithmAttributes invalidX25519 = new AlgorithmAttributes.Ec(
                         (byte) 0x16,
-                        CurveParams.X25519,
+                        EllipticCurveValues.X25519,
                         AlgorithmAttributes.Ec.ImportFormat.STANDARD
                 );
                 for (List<AlgorithmAttributes> values : data.values()) {
@@ -377,7 +373,7 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
 
                 AlgorithmAttributes x25519 = new AlgorithmAttributes.Ec(
                         (byte) 0x12,
-                        CurveParams.X25519,
+                        EllipticCurveValues.X25519,
                         AlgorithmAttributes.Ec.ImportFormat.STANDARD
                 );
 
@@ -389,7 +385,7 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
                 // Remove EdDSA from DEC, ATT
                 AlgorithmAttributes ed25519 = new AlgorithmAttributes.Ec(
                         (byte) 0x16,
-                        CurveParams.Ed25519,
+                        EllipticCurveValues.Ed25519,
                         AlgorithmAttributes.Ec.ImportFormat.STANDARD
                 );
                 data.get(KeyRef.DEC).remove(ed25519);
@@ -427,78 +423,47 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
         Logger.info(logger, "Key fingerprint set for {}", keyRef);
     }
 
-    private static byte[] encodeRsaKey(Map<Integer, byte[]> data) {
-        try {
-            KeyFactory factory = KeyFactory.getInstance("RSA");
-            BigInteger modulus = new BigInteger(1, data.get(0x81));
-            BigInteger exponent = new BigInteger(1, data.get(0x82));
-            return factory.generatePublic(new RSAPublicKeySpec(modulus, exponent)).getEncoded();
-        } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private static byte[] encodeEcKey(Curve curve, Map<Integer, byte[]> data) {
-        byte[] encoded = data.get(0x86);
-        byte[] prefix = curve.getParams().getPrefix();
-        return ByteBuffer.allocate(prefix.length + encoded.length)
-                .put(prefix)
-                .put(encoded)
-                .array();
-        /*
-        def _parse_ec_key(oid: CurveOid, data: Mapping[int, bytes]) -> EcPublicKey:
-    pubkey_enc = data[0x86]
-    if oid == OID.X25519:
-        return x25519.X25519PublicKey.from_public_bytes(pubkey_enc)
-    if oid == OID.Ed25519:
-        return ed25519.Ed25519PublicKey.from_public_bytes(pubkey_enc)
-
-    curve = getattr(ec, oid._get_name())
-    return ec.EllipticCurvePublicKey.from_encoded_point(curve(), pubkey_enc)
-         */
-    }
-
-    static AlgorithmAttributes getKeyAttributes(PrivateKey privateKey, KeyRef keyRef, Version version) {
-        if (privateKey instanceof RSAPrivateKey) {
+    static AlgorithmAttributes getKeyAttributes(PrivateKeyValues values, KeyRef keyRef, Version version) {
+        if (values instanceof PrivateKeyValues.Rsa) {
             return AlgorithmAttributes.Rsa.create(
-                    ((RSAPrivateKey) privateKey).getModulus().bitLength(),
+                    values.getBitLength(),
                     version.isLessThan(4, 0, 0) ? AlgorithmAttributes.Rsa.ImportFormat.CRT_W_MOD : AlgorithmAttributes.Rsa.ImportFormat.STANDARD
             );
-        } else if (privateKey instanceof ECPrivateKey) {
-            return AlgorithmAttributes.Ec.create(keyRef, CurveParams.fromKey(privateKey));
+        } else if (values instanceof PrivateKeyValues.Ec) {
+            return AlgorithmAttributes.Ec.create(keyRef, ((PrivateKeyValues.Ec) values).getCurveParams());
         } else {
             throw new IllegalArgumentException("Unsupported private key type");
         }
     }
 
-    static PrivateKeyTemplate getKeyTemplate(PrivateKey privateKey, KeyRef keyRef, boolean useCrt) throws UnsupportedEncodingException {
-        if (privateKey instanceof RSAPrivateKey) {
-            RsaPrivateNumbers values = PrivateKeyUtils.getPrivateNumbers(privateKey);
+    static PrivateKeyTemplate getKeyTemplate(PrivateKeyValues values, KeyRef keyRef, boolean useCrt) {
+        int byteLength = values.getBitLength() / 8;
+        if (values instanceof PrivateKeyValues.Rsa) {
+            PrivateKeyValues.Rsa rsaValues = (PrivateKeyValues.Rsa) values;
             if (useCrt) {
                 return new PrivateKeyTemplate.RsaCrt(
                         keyRef.getCrt(),
-                        values.getPublicExponent(),
-                        values.getPrimeP(),
-                        values.getPrimeQ(),
-                        values.getPrimeExponentP(),
-                        values.getPrimeExponentQ(),
-                        values.getCrtCoefficient(),
-                        values.getModulus()
+                        bytesToLength(rsaValues.getPublicExponent(), byteLength / 2),
+                        bytesToLength(rsaValues.getPrimeP(), byteLength / 2),
+                        bytesToLength(rsaValues.getPrimeQ(), byteLength / 2),
+                        bytesToLength(Objects.requireNonNull(rsaValues.getPrimeExponentP()), byteLength / 2),
+                        bytesToLength(Objects.requireNonNull(rsaValues.getPrimeExponentQ()), byteLength / 2),
+                        bytesToLength(Objects.requireNonNull(rsaValues.getCrtCoefficient()), byteLength / 2),
+                        bytesToLength(rsaValues.getModulus(), byteLength / 2)
                 );
             } else {
                 return new PrivateKeyTemplate.Rsa(
                         keyRef.getCrt(),
-                        values.getPublicExponent(),
-                        values.getPrimeP(),
-                        values.getPrimeQ()
+                        bytesToLength(rsaValues.getPublicExponent(), byteLength / 2),
+                        bytesToLength(rsaValues.getPrimeP(), byteLength / 2),
+                        bytesToLength(rsaValues.getPrimeQ(), byteLength / 2)
                 );
             }
-        } else if (privateKey instanceof ECPrivateKey) {
-            int bitLength = CurveParams.fromKey(privateKey).getBitLength();
-            BigInteger secret = ((ECPrivateKey) privateKey).getS();
+        } else if (values instanceof PrivateKeyValues.Ec) {
+            BigInteger secret = ((PrivateKeyValues.Ec) values).getScalar();
             return new PrivateKeyTemplate.Ec(
                     keyRef.getCrt(),
-                    PrivateKeyUtils.bytesToLength(secret, bitLength / 8),
+                    bytesToLength(secret, byteLength),
                     null
             );
         }
@@ -515,7 +480,7 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
         throw new UnsupportedOperationException("Unsupported private key type");
     }
 
-    public byte[] generateRsaKey(KeyRef keyRef, int keySize) throws BadResponseException, ApduException, IOException {
+    public PublicKeyValues.Rsa generateRsaKey(KeyRef keyRef, int keySize) throws BadResponseException, ApduException, IOException {
         require(FEATURE_RSA_GENERATION);
         Logger.debug(logger, "Generating RSA private key for {}", keyRef);
 
@@ -531,22 +496,25 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
         byte[] resp = protocol.sendAndReceive(new Apdu(0, INS_GENERATE_ASYM, 0x80, 0x00, keyRef.getCrt()));
         Map<Integer, byte[]> data = Tlvs.decodeMap(Tlvs.unpackValue(TAG_PUBLIC_KEY, resp));
         Logger.info(logger, "RSA key generated for {}", keyRef);
-        return encodeRsaKey(data);
+        return new PublicKeyValues.Rsa(
+                new BigInteger(1, data.get(0x81)),
+                new BigInteger(1, data.get(0x82))
+        );
     }
 
-    public byte[] generateEcKey(KeyRef keyRef, Curve curve) throws BadResponseException, ApduException, IOException {
+    public PublicKeyValues.Ec generateEcKey(KeyRef keyRef, OpenPgpCurve curve) throws BadResponseException, ApduException, IOException {
         require(FEATURE_EC_KEYS);
         Logger.debug(logger, "Generating EC private key for {}", keyRef);
 
-        setAlgorithmAttributes(keyRef, AlgorithmAttributes.Ec.create(keyRef, curve.getParams()));
+        setAlgorithmAttributes(keyRef, AlgorithmAttributes.Ec.create(keyRef, curve.getValues()));
 
         byte[] resp = protocol.sendAndReceive(new Apdu(0, INS_GENERATE_ASYM, 0x80, 0x00, keyRef.getCrt()));
         Map<Integer, byte[]> data = Tlvs.decodeMap(Tlvs.unpackValue(TAG_PUBLIC_KEY, resp));
         Logger.info(logger, "EC key generated for {}", keyRef);
-        return encodeEcKey(curve, data);
+        return PrivateKeyUtils.decodeEcPublicKey(curve.getValues(), data.get(0x86));
     }
 
-    public void putKey(KeyRef keyRef, PrivateKey privateKey) throws BadResponseException, ApduException, IOException {
+    public void putKey(KeyRef keyRef, PrivateKeyValues privateKey) throws BadResponseException, ApduException, IOException {
         Logger.debug(logger, "Importing a private key for {}", keyRef);
         AlgorithmAttributes attributes = getKeyAttributes(privateKey, keyRef, version);
 
@@ -560,5 +528,48 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
         PrivateKeyTemplate template = getKeyTemplate(privateKey, keyRef, version.isLessThan(4, 0, 0));
         protocol.sendAndReceive(new Apdu(0, INS_PUT_DATA_ODD, 0x3f, 0xff, template.getBytes()));
         Logger.info(logger, "Private key imported for {}", keyRef);
+    }
+
+    public PublicKeyValues getPublicKey(KeyRef keyRef) throws ApduException, IOException, BadResponseException {
+        Logger.debug(logger, "Getting public key for {}", keyRef);
+        byte[] resp = protocol.sendAndReceive(new Apdu(0, INS_GENERATE_ASYM, 0x81, 0x00, keyRef.getCrt()));
+        Map<Integer, byte[]> data = Tlvs.decodeMap(Tlvs.unpackValue(TAG_PUBLIC_KEY, resp));
+        AlgorithmAttributes attributes = getApplicationRelatedData().getDiscretionary().getAlgorithmAttributes(keyRef);
+        if (attributes instanceof AlgorithmAttributes.Ec) {
+            return PrivateKeyUtils.decodeEcPublicKey(((AlgorithmAttributes.Ec) attributes).getEllipticCurveValues(), data.get(0x86));
+        } else {
+            return new PublicKeyValues.Rsa(
+                    new BigInteger(1, data.get(0x81)),
+                    new BigInteger(1, data.get(0x82))
+            );
+        }
+    }
+
+    public void deleteKey(KeyRef keyRef) throws BadResponseException, ApduException, IOException {
+        Logger.debug(logger, "Deleting private key for {}", keyRef);
+        if (version.isLessThan(4, 0, 0)) {
+            Logger.debug(logger, "Overwriting with dummy key");
+            // Import over the key, using a dummy
+            try {
+                KeyPairGenerator rsaGen = KeyPairGenerator.getInstance("RSA");
+                rsaGen.initialize(2048);
+                putKey(keyRef, PrivateKeyValues.fromPrivateKey(rsaGen.generateKeyPair().getPrivate()));
+            } catch (NoSuchAlgorithmException e) {
+                throw new RuntimeException(e);
+            }
+        } else {
+            Logger.debug(logger, "Changing algorithm attributes");
+            // Delete key by changing the key attributes twice.
+            // Use putData to avoid checking for RSA 4096 support
+            putData(
+                    keyRef.getAlgorithmAttributes(),
+                    AlgorithmAttributes.Rsa.create(4096, AlgorithmAttributes.Rsa.ImportFormat.STANDARD).getBytes()
+            );
+            setAlgorithmAttributes(
+                    keyRef,
+                    AlgorithmAttributes.Rsa.create(2048, AlgorithmAttributes.Rsa.ImportFormat.STANDARD)
+            );
+        }
+        Logger.info(logger, "Private key deleted for {}", keyRef);
     }
 }

@@ -14,15 +14,14 @@
  * limitations under the License.
  */
 
-package com.yubico.yubikit.core.internal;
+package com.yubico.yubikit.core.keys;
 
 import java.math.BigInteger;
-import java.security.Key;
-import java.security.interfaces.ECKey;
 import java.security.spec.EllipticCurve;
 import java.util.Arrays;
 
-public enum CurveParams {
+public enum EllipticCurveValues {
+    //TODO: Prefixes and Curve 25519
     SECP256R1(
             new byte[]{0x2a, (byte) 0x86, 0x48, (byte) 0xce, 0x3d, 0x03, 0x01, 0x07},
             256,
@@ -90,14 +89,14 @@ public enum CurveParams {
     private final int bitLength;
     private final BigInteger a;
     private final BigInteger b;
-    private final byte[] prefix;
+    private final byte[] asn1Prefix;
 
-    CurveParams(byte[] oid, int bitLength, String a, String b, byte[] prefix) {
+    EllipticCurveValues(byte[] oid, int bitLength, String a, String b, byte[] asn1Prefix) {
         this.oid = oid;
         this.bitLength = bitLength;
         this.a = new BigInteger(a);
         this.b = new BigInteger(b);
-        this.prefix = prefix;
+        this.asn1Prefix = asn1Prefix;
     }
 
     public int getBitLength() {
@@ -108,28 +107,21 @@ public enum CurveParams {
         return Arrays.copyOf(oid, oid.length);
     }
 
-    public byte[] getPrefix() {
-        return Arrays.copyOf(prefix, prefix.length);
+    byte[] getAsn1Prefix() {
+        return Arrays.copyOf(asn1Prefix, asn1Prefix.length);
     }
 
-    public boolean matchesKey(ECKey key) {
-        EllipticCurve target = ((ECKey) key).getParams().getCurve();
-        return target.getField().getFieldSize() == bitLength && target.getA().equals(a) && target.getB().equals(b);
-    }
-
-    public static CurveParams fromKey(Key key) {
-        if (key instanceof ECKey) {
-            for (CurveParams match : CurveParams.values()) {
-                if (match.matchesKey((ECKey) key)) {
-                    return match;
-                }
+    public static EllipticCurveValues fromCurve(EllipticCurve curve) {
+        for (EllipticCurveValues match : EllipticCurveValues.values()) {
+            if(curve.getField().getFieldSize() == match.bitLength && curve.getA().equals(match.a) && curve.getB().equals(match.b)) {
+                return match;
             }
         }
-        throw new IllegalArgumentException("No curve found matching key");
+        throw new IllegalArgumentException("Not a supported EllipticCurve");
     }
 
-    public static CurveParams fromOid(byte[] oid) {
-        for (CurveParams params : CurveParams.values()) {
+    public static EllipticCurveValues fromOid(byte[] oid) {
+        for (EllipticCurveValues params : EllipticCurveValues.values()) {
             if (Arrays.equals(params.oid, oid)) {
                 return params;
             }
