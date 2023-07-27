@@ -39,13 +39,18 @@ import com.yubico.yubikit.core.util.Tlvs;
 
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigInteger;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateEncodingException;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -53,6 +58,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+
+import javax.annotation.Nullable;
 
 
 public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
@@ -88,12 +95,14 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
     private static final byte INS_GENERATE_ASYM = 0x47;
     private static final byte INS_GET_CHALLENGE = (byte) 0x84;
     private static final byte INS_INTERNAL_AUTHENTICATE = (byte) 0x88;
+    private static final byte INS_SELECT_DATA = (byte) 0xa5;
     private static final byte INS_GET_DATA = (byte) 0xca;
     private static final byte INS_PUT_DATA = (byte) 0xda;
     private static final byte INS_PUT_DATA_ODD = (byte) 0xdb;
     private static final byte INS_TERMINATE = (byte) 0xe6;
     private static final byte INS_GET_VERSION = (byte) 0xf1;
     private static final byte INS_SET_PIN_RETRIES = (byte) 0xf2;
+    private static final byte INS_GET_ATTESTATION = (byte) 0xfb;
     /*
     VERIFY = 0x20
     CHANGE_PIN = 0x24
@@ -205,8 +214,27 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
         return PwStatus.parse(getData(Do.PW_STATUS_BYTES));
     }
 
+    public Kdf getKdf() throws ApduException, IOException {
+        ExtendedCapabilities capabilities = getExtendedCapabilities();
+        if (!capabilities.getFlags().contains(ExtendedCapabilityFlag.KDF)) {
+            return new Kdf.None();
+        }
+        return Kdf.parse(getData(Do.KDF));
+    }
+
+    public void setKdf(Kdf kdf) throws ApduException, IOException {
+        ExtendedCapabilities capabilities = getExtendedCapabilities();
+        if (!capabilities.getFlags().contains(ExtendedCapabilityFlag.KDF)) {
+            throw new UnsupportedOperationException("KDF is not supported");
+        }
+
+        Logger.debug(logger, "Setting PIN KDF to algorithm: {}", kdf.getAlgorithm());
+        putData(Do.KDF, kdf.getBytes());
+        Logger.info(logger, "KDF settings changed");
+    }
+
     private void doVerify(byte pw, String pin) throws ApduException, IOException {
-        byte[] pinEnc = pin.getBytes(StandardCharsets.UTF_8);
+        byte[] pinEnc = getKdf().process(pin, pw);
         try {
             protocol.sendAndReceive(new Apdu(0, INS_VERIFY, 0, pw, pinEnc));
         } catch (ApduException e) {
@@ -436,6 +464,79 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
         Logger.info(logger, "Key fingerprint set for {}", keyRef);
     }
 
+    private void selectCertificate(KeyRef keyRef) throws ApduException, IOException {
+        if (version.isAtLeast(5, 2, 0)) {
+            require(FEATURE_ATTESTATION);
+            byte[] data = new Tlv(
+                    0x60,
+                    new Tlv(
+                            0x5c,
+                            new byte[]{Do.CARDHOLDER_CERTIFICATE >> 8, Do.CARDHOLDER_CERTIFICATE & 0xff}
+                    ).getBytes()
+            ).getBytes();
+            if (version.isLessThan(5, 4, 4)) {
+                // These use a non-standard byte in the command, prepend the length
+                data = ByteBuffer.allocate(1 + data.length).put((byte) data.length).put(data).array();
+            }
+            protocol.sendAndReceive(new Apdu(0, INS_SELECT_DATA, 3 - keyRef.getValue(), 0x04, data));
+        } else if (keyRef != KeyRef.AUT) {
+            // AUT is the default slot, any other slot fails
+            throw new UnsupportedOperationException("Selecting certificate not supported");
+        }
+    }
+
+    @Nullable
+    public X509Certificate getCertificate(KeyRef keyRef) throws ApduException, IOException {
+        Logger.debug(logger, "Getting certificate for key {}", keyRef);
+        byte[] data = null;
+        if (keyRef == KeyRef.ATT) {
+            require(FEATURE_ATTESTATION);
+            data = getData(Do.ATT_CERTIFICATE);
+        } else {
+            selectCertificate(keyRef);
+            data = getData(Do.CARDHOLDER_CERTIFICATE);
+        }
+        if (data.length == 0) {
+            return null;
+        }
+        try (InputStream stream = new ByteArrayInputStream(data)) {
+            CertificateFactory cf = CertificateFactory.getInstance("X.509");
+            return (X509Certificate) cf.generateCertificate(stream);
+        } catch (CertificateException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void putCertificate(KeyRef keyRef, X509Certificate certificate) throws ApduException, IOException {
+        byte[] certData;
+        try {
+            certData = certificate.getEncoded();
+        } catch (CertificateEncodingException e) {
+            throw new IllegalArgumentException("Failed to get encoded version of certificate", e);
+        }
+        Logger.debug(logger, "Importing certificate for key {}", keyRef);
+        if (keyRef == KeyRef.ATT) {
+            require(FEATURE_ATTESTATION);
+            putData(Do.ATT_CERTIFICATE, certData);
+        } else {
+            selectCertificate(keyRef);
+            putData(Do.CARDHOLDER_CERTIFICATE, certData);
+        }
+        Logger.info(logger, "Certificate imported for key {}", keyRef);
+    }
+
+    public void deleteCertificate(KeyRef keyRef) throws ApduException, IOException {
+        Logger.debug(logger, "Deleting certificate for key {}", keyRef);
+        if (keyRef == KeyRef.ATT) {
+            require(FEATURE_ATTESTATION);
+            putData(Do.ATT_CERTIFICATE, new byte[0]);
+        } else {
+            selectCertificate(keyRef);
+            putData(Do.CARDHOLDER_CERTIFICATE, new byte[0]);
+        }
+        Logger.info(logger, "Certificate deleted for key {}", keyRef);
+    }
+
     static AlgorithmAttributes getKeyAttributes(PrivateKeyValues values, KeyRef keyRef, Version version) {
         if (values instanceof PrivateKeyValues.Rsa) {
             return AlgorithmAttributes.Rsa.create(
@@ -649,5 +750,15 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
             return formatDssSignature(response);
         }
         return response;
+    }
+
+    public X509Certificate attestKey(KeyRef keyRef) throws ApduException, IOException {
+        require(FEATURE_ATTESTATION);
+
+        logger.debug("Attesting key {}", keyRef);
+        protocol.sendAndReceive(new Apdu(0x80, INS_GET_ATTESTATION, keyRef.getValue(), 0, null));
+        logger.info("Attestation certificate created for {key_ref.name}");
+
+        return Objects.requireNonNull(getCertificate(keyRef));
     }
 }
