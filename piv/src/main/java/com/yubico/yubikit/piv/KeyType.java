@@ -18,9 +18,13 @@ package com.yubico.yubikit.piv;
 
 import com.yubico.yubikit.core.keys.EllipticCurveValues;
 import com.yubico.yubikit.core.keys.PrivateKeyValues;
+import com.yubico.yubikit.core.keys.PublicKeyValues;
 
 import java.security.Key;
+import java.security.PublicKey;
 import java.security.interfaces.ECKey;
+import java.security.interfaces.ECPrivateKey;
+import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAKey;
 
 import javax.annotation.Nonnull;
@@ -97,8 +101,16 @@ public enum KeyType {
                     return keyType;
                 }
             }
-        } else if (key instanceof ECKey) {
-            EllipticCurveValues ellipticCurveValues = EllipticCurveValues.fromCurve(((ECKey) key).getParams().getCurve());
+        } else {
+            EllipticCurveValues ellipticCurveValues;
+            if (key instanceof ECPublicKey) {
+                ellipticCurveValues = ((PublicKeyValues.Ec) PublicKeyValues.fromPublicKey((ECPublicKey) key)).getCurveParams();
+            } else if (key instanceof ECPrivateKey) {
+                ellipticCurveValues = ((PrivateKeyValues.Ec) PrivateKeyValues.fromPrivateKey((ECPrivateKey) key)).getCurveParams();
+            } else {
+                throw new IllegalArgumentException("Unsupported key type");
+            }
+
             for (KeyType keyType : values()) {
                 if (keyType.params instanceof KeyType.EcKeyParams && ((EcKeyParams) keyType.params).ellipticCurveValues == ellipticCurveValues) {
                     return keyType;

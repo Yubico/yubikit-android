@@ -22,12 +22,12 @@ import com.yubico.yubikit.core.util.Tlvs;
 
 import java.math.BigInteger;
 import java.security.PrivateKey;
-import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.RSAPrivateCrtKey;
 import java.security.interfaces.RSAPrivateKey;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import javax.annotation.Nullable;
 import javax.security.auth.DestroyFailedException;
@@ -41,6 +41,7 @@ import javax.security.auth.Destroyable;
  * Once used, clear the secret keying material by calling {@link #destroy()}.
  */
 public abstract class PrivateKeyValues implements Destroyable {
+    private static final byte[] OID_ECDSA = new byte[]{0x2a, (byte) 0x86, 0x48, (byte) 0xce, 0x3d, 0x02, 0x01};
     final int bitLength;
     private boolean destroyed = false;
 
@@ -66,39 +67,55 @@ public abstract class PrivateKeyValues implements Destroyable {
     public static PrivateKeyValues fromPrivateKey(PrivateKey privateKey) {
         if (privateKey instanceof RSAPrivateKey) {
             return Rsa.fromRsaPrivateKey((RSAPrivateKey) privateKey);
-        } else if (privateKey instanceof ECPrivateKey) {
-            return Ec.fromEcPrivateKey((ECPrivateKey) privateKey);
+        } else {
+            byte[] encoded = privateKey.getEncoded();
+            try {
+                Map<Integer, byte[]> tlvs = Tlvs.decodeMap(Tlvs.unpackValue(0x30, encoded));
+                List<Tlv> sequence = Tlvs.decodeList(tlvs.get(0x30));
+                byte[] algorithm = sequence.get(0).getValue();
+                if (Arrays.equals(OID_ECDSA, algorithm)) {
+                    byte[] parameter = sequence.get(1).getValue();
+                    EllipticCurveValues curve = EllipticCurveValues.fromOid(parameter);
+                    sequence = Tlvs.decodeList(Tlvs.unpackValue(0x30, tlvs.get(0x04)));
+                    return new Ec(curve, sequence.get(1).getValue());
+                } else {
+                    for (EllipticCurveValues curve: Arrays.asList(EllipticCurveValues.Ed25519, EllipticCurveValues.X25519)) {
+                        if (Arrays.equals(curve.getOid(), algorithm)) {
+                            return new Ec(curve, Tlvs.unpackValue(0x04, tlvs.get(0x04)));
+                        }
+                    }
+                }
+            } catch (BadResponseException e) {
+                // ignore, fall through to exception
+            }
         }
+
         throw new IllegalArgumentException("Unsupported private key type");
     }
 
     public static class Ec extends PrivateKeyValues {
         private final EllipticCurveValues ellipticCurveValues;
-        private BigInteger scalar;
+        private byte[] secret;
 
 
-        protected Ec(EllipticCurveValues ellipticCurveValues, BigInteger scalar) {
+        protected Ec(EllipticCurveValues ellipticCurveValues, byte[] secret) {
             super(ellipticCurveValues.getBitLength());
             this.ellipticCurveValues = ellipticCurveValues;
-            this.scalar = scalar;
+            this.secret = Arrays.copyOf(secret, secret.length);
         }
 
         public EllipticCurveValues getCurveParams() {
             return ellipticCurveValues;
         }
 
-        public BigInteger getScalar() {
-            return scalar;
+        public byte[] getSecret() {
+            return Arrays.copyOf(secret, secret.length);
         }
 
         @Override
         public void destroy() throws DestroyFailedException {
-            scalar = BigInteger.ZERO;
+            Arrays.fill(secret, (byte) 0);
             super.destroy();
-        }
-
-        private static Ec fromEcPrivateKey(ECPrivateKey key) {
-            return new Ec(EllipticCurveValues.fromCurve(key.getParams().getCurve()), key.getS());
         }
     }
 

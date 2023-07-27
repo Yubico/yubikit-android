@@ -42,17 +42,4 @@ public final class PrivateKeyUtils {
             return padded;
         }
     }
-
-    public static PublicKeyValues.Ec decodeEcPublicKey(EllipticCurveValues values, byte[] encoded) {
-        ByteBuffer buf = ByteBuffer.wrap(encoded);
-        if (buf.get() != 0x04) {
-            throw new IllegalArgumentException("Only uncompressed public keys are supported");
-        }
-        byte[] coordBuf = new byte[(encoded.length - 1) / 2];
-        buf.get(coordBuf);
-        BigInteger x = new BigInteger(1, coordBuf);
-        buf.get(coordBuf);
-        BigInteger y = new BigInteger(1, coordBuf);
-        return new PublicKeyValues.Ec(values, x, y);
-    }
 }

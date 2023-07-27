@@ -17,6 +17,7 @@
 package com.yubico.yubikit.openpgp;
 
 import com.yubico.yubikit.core.util.Tlv;
+import com.yubico.yubikit.core.util.Tlvs;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -50,10 +51,11 @@ abstract class PrivateKeyTemplate {
         byte[] valuesBytes = new byte[values.remaining()];
         values.get(valuesBytes);
 
-        return new Tlv(0x4d, ByteBuffer.allocate(crt.length + headers.remaining() + values.remaining())
+        byte[] tlvBytes = Tlvs.encodeList(Arrays.asList(new Tlv(0x7f48, headersBytes), new Tlv(0x5f48, valuesBytes)));
+
+        return new Tlv(0x4d, ByteBuffer.allocate(crt.length + tlvBytes.length)
                 .put(crt)
-                .put(new Tlv(0x7f48, headersBytes).getBytes())
-                .put(new Tlv(0x5f48, valuesBytes).getBytes())
+                .put(tlvBytes)
                 .array()).getBytes();
     }
 

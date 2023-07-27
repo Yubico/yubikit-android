@@ -21,111 +21,64 @@ import java.security.spec.EllipticCurve;
 import java.util.Arrays;
 
 public enum EllipticCurveValues {
-    //TODO: Prefixes and Curve 25519
     SECP256R1(
-            new byte[]{0x2a, (byte) 0x86, 0x48, (byte) 0xce, 0x3d, 0x03, 0x01, 0x07},
             256,
-            "115792089210356248762697446949407573530086143415290314195533631308867097853948",
-            "41058363725152142129326129780047268409114441015993725554835256314039467401291",
-            new byte[]{0x30, 0x59, 0x30, 0x13, 0x06, 0x07, 0x2a, (byte) 0x86, 0x48, (byte) 0xce, 0x3d, 0x02, 0x01, 0x06, 0x08, 0x2a, (byte) 0x86, 0x48, (byte) 0xce, 0x3d, 0x03, 0x01, 0x07, 0x03, 0x42, 0x00}
+            new byte[]{0x2a, (byte) 0x86, 0x48, (byte) 0xce, 0x3d, 0x03, 0x01, 0x07}
     ),
     SECP256K1(
-            new byte[]{0x2b, (byte) 0x81, 0x04, 0x00, 0x0a},
             256,
-            "0",
-            "7",
-            new byte[]{}
+            new byte[]{0x2b, (byte) 0x81, 0x04, 0x00, 0x0a}
     ),
     SECP384R1(
-            new byte[]{0x2b, (byte) 0x81, 0x04, 0x00, 0x22},
             384,
-            "39402006196394479212279040100143613805079739270465446667948293404245721771496870329047266088258938001861606973112316",
-            "27580193559959705877849011840389048093056905856361568521428707301988689241309860865136260764883745107765439761230575",
-            new byte[]{}
+            new byte[]{0x2b, (byte) 0x81, 0x04, 0x00, 0x22}
     ),
-    SECP521R1(new byte[]{0x2b, (byte) 0x81, 0x04, 0x00, 0x23},
-            521,
-            "6864797660130609714981900799081393217269435300143305409394463459185543183397656052122559640661454554977296311391480858037121987999716643812574028291115057148",
-            "1093849038073734274511112390766805569936207598951683748994586394495953116150735016013708737573759623248592132296706313309438452531591012912142327488478985984",
-            new byte[]{}
+    SECP521R1(521,
+            new byte[]{0x2b, (byte) 0x81, 0x04, 0x00, 0x23}
     ),
     BrainpoolP256R1(
-            new byte[]{0x2b, 0x24, 0x03, 0x03, 0x02, 0x08, 0x01, 0x01, 0x07},
             256,
-            "56698187605326110043627228396178346077120614539475214109386828188763884139993",
-            "17577232497321838841075697789794520262950426058923084567046852300633325438902",
-            new byte[]{}
+            new byte[]{0x2b, 0x24, 0x03, 0x03, 0x02, 0x08, 0x01, 0x01, 0x07}
     ),
     BrainpoolP384R1(
-            new byte[]{0x2b, 0x24, 0x03, 0x03, 0x02, 0x08, 0x01, 0x01, 0x0b},
             384,
-            "19048979039598244295279281525021548448223459855185222892089532512446337024935426033638342846977861914875721218402342",
-            "717131854892629093329172042053689661426642816397448020844407951239049616491589607702456460799758882466071646850065",
-            new byte[]{}
+            new byte[]{0x2b, 0x24, 0x03, 0x03, 0x02, 0x08, 0x01, 0x01, 0x0b}
     ),
     BrainpoolP512R1(
-            new byte[]{0x2b, 0x24, 0x03, 0x03, 0x02, 0x08, 0x01, 0x01, 0x0d},
             512,
-            "6294860557973063227666421306476379324074715770622746227136910445450301914281276098027990968407983962691151853678563877834221834027439718238065725844264138",
-            "3245789008328967059274849584342077916531909009637501918328323668736179176583263496463525128488282611559800773506973771797764811498834995234341530862286627",
-            new byte[]{}
+            new byte[]{0x2b, 0x24, 0x03, 0x03, 0x02, 0x08, 0x01, 0x01, 0x0d}
     ),
     X25519(
-            new byte[]{0x2b, 0x06, 0x01, 0x04, 0x01, (byte) 0x97, 0x55, 0x01, 0x05, 0x01},
             256,
-            "",
-            "",
-            new byte[]{}
+            new byte[]{0x2b, 0x65, 0x6e}
     ),
     Ed25519(
-            new byte[]{0x2b, 0x06, 0x01, 0x04, 0x01, (byte) 0xda, 0x47, 0x0f, 0x01},
             256,
-            "",
-            "",
-            new byte[]{}
+            new byte[]{0x2b, 0x65, 0x70}
     );
 
-    private final byte[] oid;
     private final int bitLength;
-    private final BigInteger a;
-    private final BigInteger b;
-    private final byte[] asn1Prefix;
+    private final byte[] oid;
 
-    EllipticCurveValues(byte[] oid, int bitLength, String a, String b, byte[] asn1Prefix) {
-        this.oid = oid;
+    EllipticCurveValues(int bitLength, byte[] oid) {
         this.bitLength = bitLength;
-        this.a = new BigInteger(a);
-        this.b = new BigInteger(b);
-        this.asn1Prefix = asn1Prefix;
+        this.oid = oid;
     }
 
     public int getBitLength() {
         return bitLength;
     }
 
-    public byte[] getOid() {
+    byte[] getOid() {
         return Arrays.copyOf(oid, oid.length);
     }
 
-    byte[] getAsn1Prefix() {
-        return Arrays.copyOf(asn1Prefix, asn1Prefix.length);
-    }
-
-    public static EllipticCurveValues fromCurve(EllipticCurve curve) {
+    public static EllipticCurveValues fromOid(byte[] oid) {
         for (EllipticCurveValues match : EllipticCurveValues.values()) {
-            if(curve.getField().getFieldSize() == match.bitLength && curve.getA().equals(match.a) && curve.getB().equals(match.b)) {
+            if (Arrays.equals(oid, match.oid)) {
                 return match;
             }
         }
         throw new IllegalArgumentException("Not a supported EllipticCurve");
-    }
-
-    public static EllipticCurveValues fromOid(byte[] oid) {
-        for (EllipticCurveValues params : EllipticCurveValues.values()) {
-            if (Arrays.equals(params.oid, oid)) {
-                return params;
-            }
-        }
-        throw new IllegalArgumentException("Not a supported curve OID");
     }
 }

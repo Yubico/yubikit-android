@@ -68,12 +68,12 @@ public class OpenPgpAid {
      * @return The serial number of the YubiKey
      */
     public int getSerial() {
-        byte[] serialBytes = new byte[4];
+        int serial = 0;
         try {
             for (int i = 0; i < 4; i++) {
-                serialBytes[i] = decodeBcd(bytes[10 + i]);
+                serial = serial * 100 + decodeBcd(bytes[10 + i]);
             }
-            return ByteBuffer.wrap(serialBytes).getInt();
+            return serial;
         } catch (IllegalArgumentException e) {
             return -ByteBuffer.wrap(bytes).getInt(10);
         }

@@ -8,6 +8,7 @@ dependencies {
     api project(':piv')
     api project(':yubiotp')
     api project(':management')
+    api project(':openpgp')
 
     api 'junit:junit:4.13.2'
 
