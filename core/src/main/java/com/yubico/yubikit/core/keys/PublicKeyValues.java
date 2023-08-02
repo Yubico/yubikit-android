@@ -37,6 +37,7 @@ import java.util.Map;
 
 public abstract class PublicKeyValues {
     private static final byte[] OID_ECDSA = new byte[]{0x2a, (byte) 0x86, 0x48, (byte) 0xce, 0x3d, 0x02, 0x01};
+    private static final byte[] OID_RSA_ENCRYPTION = new byte[]{0x2a, (byte) 0x86, 0x48, (byte) 0x86, (byte) 0xf7, 0x0d, 0x01, 0x01, 0x01};
 
     protected final int bitLength;
 
@@ -205,12 +206,22 @@ public abstract class PublicKeyValues {
 
         @Override
         public byte[] getEncoded() {
-            // TODO: Don't use toPublicKey()
-            try {
-                return toPublicKey().getEncoded();
-            } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
-                throw new RuntimeException(e);
-            }
+            byte[] bitstring = new Tlv(0x30, Tlvs.encodeList(Arrays.asList(
+                    new Tlv(0x02, modulus.toByteArray()),
+                    new Tlv(0x02, publicExponent.toByteArray())
+            ))).getBytes();
+            return new Tlv(0x30, Tlvs.encodeList(Arrays.asList(
+                    new Tlv(0x30, Tlvs.encodeList(Arrays.asList(
+                            new Tlv(0x06, OID_RSA_ENCRYPTION),
+                            new Tlv(0x05, new byte[0])
+                    ))),
+                    new Tlv(0x03, ByteBuffer
+                            .allocate(1 + bitstring.length)
+                            .put((byte) 0)
+                            .put(bitstring)
+                            .array()
+                    )
+            ))).getBytes();
         }
 
         @Override

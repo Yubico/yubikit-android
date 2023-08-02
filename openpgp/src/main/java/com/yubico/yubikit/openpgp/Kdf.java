@@ -32,8 +32,6 @@ import java.util.Map;
 import javax.annotation.Nullable;
 
 public abstract class Kdf {
-    private static final String DEFAULT_USER_PIN = "123456";
-    private static final String DEFAULT_ADMIN_PIN = "12345678";
     protected final byte algorithm;
 
     protected Kdf(byte algorithm) {
@@ -44,7 +42,7 @@ public abstract class Kdf {
         return algorithm;
     }
 
-    abstract byte[] process(String pin, byte pw);
+    abstract byte[] process(Pw pw, String pin);
 
     abstract byte[] getBytes();
 
@@ -59,12 +57,12 @@ public abstract class Kdf {
     }
 
     public static class None extends Kdf {
-        protected None() {
+        public None() {
             super((byte) 0);
         }
 
         @Override
-        public byte[] process(String pin, byte pw) {
+        public byte[] process(Pw pw, String pin) {
             return pin.getBytes(StandardCharsets.UTF_8);
         }
 
@@ -75,7 +73,7 @@ public abstract class Kdf {
     }
 
     public static class IterSaltedS2k extends Kdf {
-        private enum HashAlgorithm {
+        public enum HashAlgorithm {
             SHA256((byte) 0x08),
             SHA512((byte) 0x0a);
             private final byte value;
@@ -137,13 +135,13 @@ public abstract class Kdf {
             );
         }
 
-        private byte[] getSalt(byte pw) {
+        private byte[] getSalt(Pw pw) {
             switch (pw) {
-                case (byte) 0x81:
+                case USER:
                     return saltUser;
-                case (byte) 0x82:
+                case RESET:
                     return saltReset != null ? saltReset : saltUser;
-                case (byte) 0x83:
+                case ADMIN:
                     return saltAdmin != null ? saltAdmin : saltUser;
                 default:
                     throw new IllegalArgumentException();
@@ -163,7 +161,7 @@ public abstract class Kdf {
         }
 
         @Override
-        public byte[] process(String pin, byte pw) {
+        public byte[] process(Pw pw, String pin) {
             byte[] salt = getSalt(pw);
             byte[] pinEncoded = pin.getBytes(StandardCharsets.UTF_8);
             return doProcess(
@@ -202,8 +200,8 @@ public abstract class Kdf {
         public static IterSaltedS2k create(HashAlgorithm hashAlgorithm, int iterationCount) {
             byte[] saltUser = RandomUtils.getRandomBytes(8);
             byte[] saltAdmin = RandomUtils.getRandomBytes(8);
-            byte[] defaultUserPinEncoded = DEFAULT_USER_PIN.getBytes(StandardCharsets.UTF_8);
-            byte[] defaultAdminPinEncoded = DEFAULT_ADMIN_PIN.getBytes(StandardCharsets.UTF_8);
+            byte[] defaultUserPinEncoded = Pw.DEFAULT_USER_PIN.getBytes(StandardCharsets.UTF_8);
+            byte[] defaultAdminPinEncoded = Pw.DEFAULT_ADMIN_PIN.getBytes(StandardCharsets.UTF_8);
             return new IterSaltedS2k(
                     hashAlgorithm,
                     iterationCount,

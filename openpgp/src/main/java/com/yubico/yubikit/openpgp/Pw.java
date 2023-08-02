@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2022 Yubico.
+ * Copyright (C) 2023 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,18 +14,20 @@
  * limitations under the License.
  */
 
-package com.yubico.yubikit.piv;
+package com.yubico.yubikit.openpgp;
 
-import com.yubico.yubikit.core.application.CommandException;
+public enum Pw {
+    USER((byte) 0x81), RESET((byte) 0x82), ADMIN((byte) 0x83);
+    public static final String DEFAULT_USER_PIN = "123456";
+    public static final String DEFAULT_ADMIN_PIN = "12345678";
 
-/**
- * Thrown when the wrong PIN or PUK is used (or when the PIN or PUK is in a blocked state).
- *
- * @deprecated Use InvalidPinException from the code module instead
- */
-@Deprecated
-public class InvalidPinException extends com.yubico.yubikit.core.application.InvalidPinException {
-    public InvalidPinException(int attemptsRemaining) {
-        super(attemptsRemaining);
+    private final byte value;
+
+    Pw(byte value) {
+        this.value = value;
+    }
+
+    public byte getValue() {
+        return value;
     }
 }

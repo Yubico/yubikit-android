@@ -124,6 +124,16 @@ abstract class AlgorithmAttributes {
         public int hashCode() {
             return Objects.hash(nLen, eLen, importFormat);
         }
+
+        @Override
+        public String toString() {
+            return "Rsa{" +
+                    "algorithmId=" + getAlgorithmId() +
+                    ", nLen=" + nLen +
+                    ", eLen=" + eLen +
+                    ", importFormat=" + importFormat +
+                    '}';
+        }
     }
 
     static class Ec extends AlgorithmAttributes {
@@ -216,6 +226,15 @@ abstract class AlgorithmAttributes {
         @Override
         public int hashCode() {
             return Objects.hash(curve, importFormat);
+        }
+
+        @Override
+        public String toString() {
+            return "Ec{" +
+                    "algorithmId=" + getAlgorithmId() +
+                    ", curve=" + curve +
+                    ", importFormat=" + importFormat +
+                    '}';
         }
     }
 }

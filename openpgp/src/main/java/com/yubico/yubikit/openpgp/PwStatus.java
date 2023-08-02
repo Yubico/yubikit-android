@@ -65,6 +65,19 @@ public class PwStatus {
         return attemptsAdmin;
     }
 
+    int getAttempts(Pw pw) {
+        switch (pw) {
+            case USER:
+                return attemptsUser;
+            case RESET:
+                return attemptsReset;
+            case ADMIN:
+                return attemptsAdmin;
+            default:
+                throw new IllegalArgumentException();
+        }
+    }
+
     static PwStatus parse(byte[] encoded) {
         ByteBuffer buf = ByteBuffer.wrap(encoded);
         return new PwStatus(

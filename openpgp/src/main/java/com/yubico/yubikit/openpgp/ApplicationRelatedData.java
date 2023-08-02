@@ -82,6 +82,7 @@ public class ApplicationRelatedData {
                 }
                 generalFeatureManagement = EnumSet.copyOf(flagSet);
             }
+            byte[] discretionary = data.get(TAG_DISCRETIONARY);
             return new ApplicationRelatedData(
                     new OpenPgpAid(data.get(Do.AID)),
                     data.get(Do.HISTORICAL_BYTES),
@@ -89,7 +90,7 @@ public class ApplicationRelatedData {
                     generalFeatureManagement,
                     DiscretionaryDataObjects.parse(
                             // Older keys have data in outer dict
-                            data.containsKey(TAG_DISCRETIONARY) ? data.get(TAG_DISCRETIONARY) : outer
+                            discretionary.length > 0 ? discretionary : outer
                     )
             );
         } catch (BadResponseException e) {

@@ -95,7 +95,7 @@ public abstract class PrivateKeyValues implements Destroyable {
 
     public static class Ec extends PrivateKeyValues {
         private final EllipticCurveValues ellipticCurveValues;
-        private byte[] secret;
+        private final byte[] secret;
 
 
         protected Ec(EllipticCurveValues ellipticCurveValues, byte[] secret) {
@@ -130,6 +130,20 @@ public abstract class PrivateKeyValues implements Destroyable {
         private BigInteger primeExponentQ;
         @Nullable
         private BigInteger crtCoefficient;
+
+        @Override
+        public String toString() {
+            return "Rsa{" +
+                    "modulus=" + modulus +
+                    ", publicExponent=" + publicExponent +
+                    ", primeP=" + primeP +
+                    ", primeQ=" + primeQ +
+                    ", primeExponentP=" + primeExponentP +
+                    ", primeExponentQ=" + primeExponentQ +
+                    ", crtCoefficient=" + crtCoefficient +
+                    ", bitLength=" + bitLength +
+                    '}';
+        }
 
         protected Rsa(BigInteger modulus, BigInteger publicExponent, BigInteger primeP, BigInteger primeQ, @Nullable BigInteger primeExponentP, @Nullable BigInteger primeExponentQ, @Nullable BigInteger crtCoefficient) {
             super(modulus.bitLength());

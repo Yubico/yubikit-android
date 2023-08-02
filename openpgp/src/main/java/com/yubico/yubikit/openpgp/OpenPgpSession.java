@@ -24,6 +24,7 @@ import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
 import com.yubico.yubikit.core.application.ApplicationSession;
 import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.application.Feature;
+import com.yubico.yubikit.core.application.InvalidPinException;
 import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.keys.PrivateKeyValues;
 import com.yubico.yubikit.core.keys.PublicKeyValues;
@@ -45,6 +46,7 @@ import java.io.InputStream;
 import java.math.BigInteger;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateEncodingException;
@@ -67,6 +69,7 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
     public static final Feature<OpenPgpSession> FEATURE_UIF = new Feature.Versioned<>("UIF", 4, 2, 0);
     public static final Feature<OpenPgpSession> FEATURE_ATTESTATION = new Feature.Versioned<>("Attestation", 5, 2, 1);
     public static final Feature<OpenPgpSession> FEATURE_CACHED = new Feature.Versioned<>("Cached UIF", 5, 2, 1);
+    public static final Feature<OpenPgpSession> FEATURE_RSA4096_KEYS = new Feature.Versioned<>("RSA 4096 keys", 4, 0, 0);
     public static final Feature<OpenPgpSession> FEATURE_EC_KEYS = new Feature.Versioned<>("Elliptic curve keys", 5, 2, 0);
     public static final Feature<OpenPgpSession> FEATURE_PIN_ATTEMPTS = new Feature<OpenPgpSession>("Set PIN attempts") {
         @Override
@@ -90,6 +93,8 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
     };
 
     private static final byte INS_VERIFY = 0x20;
+    private static final byte INS_CHANGE_PIN = 0x24;
+    private static final byte INS_RESET_RETRY_COUNTER = 0x2c;
     private static final byte INS_PSO = 0x2A;
     private static final byte INS_ACTIVATE = 0x44;
     private static final byte INS_GENERATE_ASYM = 0x47;
@@ -103,24 +108,6 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
     private static final byte INS_GET_VERSION = (byte) 0xf1;
     private static final byte INS_SET_PIN_RETRIES = (byte) 0xf2;
     private static final byte INS_GET_ATTESTATION = (byte) 0xfb;
-    /*
-    VERIFY = 0x20
-    CHANGE_PIN = 0x24
-    RESET_RETRY_COUNTER = 0x2C
-    PSO = 0x2A
-    ACTIVATE = 0x44
-    GENERATE_ASYM = 0x47
-    GET_CHALLENGE = 0x84
-    INTERNAL_AUTHENTICATE = 0x88
-    SELECT_DATA = 0xA5
-    GET_DATA = 0xCA
-    PUT_DATA = 0xDA
-    PUT_DATA_ODD = 0xDB
-    TERMINATE = 0xE6
-    GET_VERSION = 0xF1
-    SET_PIN_RETRIES = 0xF2
-    GET_ATTESTATION = 0xFB
-     */
 
     private static final int TAG_PUBLIC_KEY = 0x7F49;
 
@@ -233,22 +220,25 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
         Logger.info(logger, "KDF settings changed");
     }
 
-    private void doVerify(byte pw, String pin) throws ApduException, IOException {
-        byte[] pinEnc = getKdf().process(pin, pw);
+    private void doVerify(Pw pw, String pin) throws ApduException, IOException, InvalidPinException {
+        byte[] pinEnc = getKdf().process(pw, pin);
         try {
-            protocol.sendAndReceive(new Apdu(0, INS_VERIFY, 0, pw, pinEnc));
+            protocol.sendAndReceive(new Apdu(0, INS_VERIFY, 0, pw.getValue(), pinEnc));
         } catch (ApduException e) {
-            int remaining = getPinStatus().getAttemptsUser();
-            throw new IllegalStateException("Wrong PIN, " + remaining + " attempts remaining.");
+            if(e.getSw() == SW.SECURITY_CONDITION_NOT_SATISFIED) {
+                int remaining = getPinStatus().getAttempts(pw);
+                throw new InvalidPinException(remaining);
+            }
+            throw e;
         }
     }
 
-    public void verifyUserPin(String pin, boolean extended) throws ApduException, IOException {
-        doVerify(extended ? (byte) 0x82 : (byte) 0x81, pin);
+    public void verifyUserPin(String pin, boolean extended) throws ApduException, IOException, InvalidPinException {
+        doVerify(extended ? Pw.RESET : Pw.USER, pin);
     }
 
-    public void verifyAdminPin(String pin) throws ApduException, IOException {
-        doVerify((byte) 0x83, pin);
+    public void verifyAdminPin(String pin) throws ApduException, IOException, InvalidPinException {
+        doVerify(Pw.ADMIN, pin);
     }
 
     public int getSignatureCounter() throws ApduException, IOException {
@@ -280,21 +270,14 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
 
         // Ensure the User and Admin PINs are blocked
         PwStatus status = getPinStatus();
-        // TODO: Use PW enum?
-        Logger.debug(logger, "Verify User PIN with invalid attempts until blocked");
-        for (int i = status.getAttemptsUser(); i > 0; i--) {
-            try {
-                protocol.sendAndReceive(new Apdu(0, INS_VERIFY, 0, 0x81, INVALID_PIN));
-            } catch (ApduException e) {
-                // Ignore
-            }
-        }
-        Logger.debug(logger, "Verify Admin PIN with invalid attempts until blocked");
-        for (int i = status.getAttemptsAdmin(); i > 0; i--) {
-            try {
-                protocol.sendAndReceive(new Apdu(0, INS_VERIFY, 0, 0x83, INVALID_PIN));
-            } catch (ApduException e) {
-                // Ignore
+        for (Pw pw : Arrays.asList(Pw.USER, Pw.ADMIN)) {
+            Logger.debug(logger, "Verify {} PIN with invalid attempts until blocked", pw);
+            for (int i = status.getAttempts(pw); i > 0; i--) {
+                try {
+                    protocol.sendAndReceive(new Apdu(0, INS_VERIFY, 0, pw.getValue(), INVALID_PIN));
+                } catch (ApduException e) {
+                    // Ignore
+                }
             }
         }
 
@@ -317,6 +300,79 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
                 new byte[]{(byte) userAttempts, (byte) resetAttempts, (byte) adminAttempts}
         ));
         Logger.info(logger, "Number of PIN attempts has been changed");
+    }
+
+    private void changePw(Pw pw, String pin, String newPin) throws ApduException, IOException, InvalidPinException {
+        Logger.debug(logger, "Changing {} PIN", pw);
+        Kdf kdf = getKdf();
+        byte[] pinBytes = kdf.process(pw, pin);
+        byte[] newPinBytes = kdf.process(pw, newPin);
+        try {
+            protocol.sendAndReceive(new Apdu(
+                    0,
+                    INS_CHANGE_PIN,
+                    0,
+                    pw.getValue(),
+                    ByteBuffer
+                            .allocate(pinBytes.length + newPinBytes.length)
+                            .put(pinBytes)
+                            .put(newPinBytes)
+                            .array()
+            ));
+        } catch (ApduException e) {
+            if (e.getSw() == SW.SECURITY_CONDITION_NOT_SATISFIED) {
+                int remaining = getPinStatus().getAttempts(pw);
+                throw new InvalidPinException(remaining);
+
+            }
+            throw e;
+        }
+        Logger.info(logger, "New {} PIN set", pw);
+    }
+
+    public void changeUserPin(String pin, String newPin) throws ApduException, IOException, InvalidPinException {
+        changePw(Pw.USER, pin, newPin);
+    }
+
+    public void changeAdminPin(String pin, String newPin) throws ApduException, IOException, InvalidPinException {
+        changePw(Pw.ADMIN, pin, newPin);
+    }
+
+    public void setResetCode(String resetCode) throws ApduException, IOException {
+        Logger.debug(logger, "Setting a new PIN Reset Code");
+        byte[] data = getKdf().process(Pw.RESET, resetCode);
+        putData(Do.RESETTING_CODE, data);
+        Logger.info(logger, "New Reset Code has been set");
+    }
+
+    public void resetPin(String newPin, @Nullable String resetCode) throws ApduException, IOException, InvalidPinException {
+        Logger.debug(logger, "Resetting User PIN");
+        byte p1 = 2;
+        Kdf kdf = getKdf();
+        byte[] data = kdf.process(Pw.USER, newPin);
+        if (resetCode != null) {
+            logger.debug("Using Reset Code");
+            byte[] resetCodeBytes = kdf.process(Pw.RESET, resetCode);
+            data = ByteBuffer
+                    .allocate(resetCodeBytes.length + data.length)
+                    .put(resetCodeBytes)
+                    .put(data)
+                    .array();
+            p1 = 0;
+        }
+
+        try {
+            protocol.sendAndReceive(new Apdu(0, INS_RESET_RETRY_COUNTER, p1, Pw.USER.getValue(), data));
+        } catch (ApduException e) {
+            if (e.getSw() == SW.SECURITY_CONDITION_NOT_SATISFIED && resetCode != null) {
+                int resetRemaining = getPinStatus().getAttemptsReset();
+                throw new InvalidPinException(resetRemaining,
+                        "Invalid Reset Code, " + resetRemaining + " tries remaining"
+                );
+            }
+            throw e;
+        }
+        Logger.info(logger, "New User PIN has been set");
     }
 
     public Uif getUif(KeyRef keyRef) throws ApduException, IOException {
@@ -350,7 +406,8 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
         Logger.info(logger, "UIF changed for {}", keyRef);
     }
 
-    public Map<KeyRef, List<AlgorithmAttributes>> getAlgorithmInformation() throws ApduException, IOException, BadResponseException {
+    public Map<KeyRef, List<AlgorithmAttributes>> getAlgorithmInformation() throws
+            ApduException, IOException, BadResponseException {
         if (!getExtendedCapabilities().getFlags().contains(ExtendedCapabilityFlag.ALGORITHM_ATTRIBUTES_CHANGEABLE)) {
             throw new UnsupportedOperationException("Writing Algorithm Attributes is not supported");
         }
@@ -437,7 +494,8 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
         return data;
     }
 
-    public void setAlgorithmAttributes(KeyRef keyRef, AlgorithmAttributes attributes) throws BadResponseException, ApduException, IOException {
+    public void setAlgorithmAttributes(KeyRef keyRef, AlgorithmAttributes attributes) throws
+            BadResponseException, ApduException, IOException {
         Logger.debug(logger, "Setting Algorithm Attributes for {}", keyRef);
 
         Map<KeyRef, List<AlgorithmAttributes>> supported = getAlgorithmInformation();
@@ -445,20 +503,22 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
             throw new UnsupportedOperationException("Key slot not supported");
         }
         if (!supported.get(keyRef).contains(attributes)) {
-            throw new UnsupportedOperationException("Algorithm attributes not supported");
+            throw new UnsupportedOperationException("Algorithm attributes not supported: " + attributes);
         }
 
         putData(keyRef.getAlgorithmAttributes(), attributes.getBytes());
         Logger.info(logger, "Algorithm Attributes have been changed");
     }
 
-    public void setGenerationTime(KeyRef keyRef, int timestamp) throws ApduException, IOException {
+    public void setGenerationTime(KeyRef keyRef, int timestamp) throws
+            ApduException, IOException {
         Logger.debug(logger, "Setting key generation timestamp for {}", keyRef);
         putData(keyRef.getGenerationTime(), ByteBuffer.allocate(4).putInt(timestamp).array());
         Logger.info(logger, "Key generation timestamp set for {}", keyRef);
     }
 
-    public void setFingerprint(KeyRef keyRef, byte[] fingerprint) throws ApduException, IOException {
+    public void setFingerprint(KeyRef keyRef, byte[] fingerprint) throws
+            ApduException, IOException {
         Logger.debug(logger, "Setting key fingerprint for {}", keyRef);
         putData(keyRef.getFingerprint(), fingerprint);
         Logger.info(logger, "Key fingerprint set for {}", keyRef);
@@ -507,7 +567,8 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
         }
     }
 
-    public void putCertificate(KeyRef keyRef, X509Certificate certificate) throws ApduException, IOException {
+    public void putCertificate(KeyRef keyRef, X509Certificate certificate) throws
+            ApduException, IOException {
         byte[] certData;
         try {
             certData = certificate.getEncoded();
@@ -537,7 +598,8 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
         Logger.info(logger, "Certificate deleted for key {}", keyRef);
     }
 
-    static AlgorithmAttributes getKeyAttributes(PrivateKeyValues values, KeyRef keyRef, Version version) {
+    static AlgorithmAttributes getKeyAttributes(PrivateKeyValues values, KeyRef keyRef, Version
+            version) {
         if (values instanceof PrivateKeyValues.Rsa) {
             return AlgorithmAttributes.Rsa.create(
                     values.getBitLength(),
@@ -553,7 +615,8 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
         }
     }
 
-    static PrivateKeyTemplate getKeyTemplate(PrivateKeyValues values, KeyRef keyRef, boolean useCrt) {
+    static PrivateKeyTemplate getKeyTemplate(PrivateKeyValues values, KeyRef keyRef,
+                                             boolean useCrt) {
         if (values instanceof PrivateKeyValues.Rsa) {
             int byteLength = values.getBitLength() / 8 / 2;
             PrivateKeyValues.Rsa rsaValues = (PrivateKeyValues.Rsa) values;
@@ -563,10 +626,10 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
                         rsaValues.getPublicExponent().toByteArray(),
                         bytesToLength(rsaValues.getPrimeP(), byteLength),
                         bytesToLength(rsaValues.getPrimeQ(), byteLength),
+                        bytesToLength(Objects.requireNonNull(rsaValues.getCrtCoefficient()), byteLength),
                         bytesToLength(Objects.requireNonNull(rsaValues.getPrimeExponentP()), byteLength),
                         bytesToLength(Objects.requireNonNull(rsaValues.getPrimeExponentQ()), byteLength),
-                        bytesToLength(Objects.requireNonNull(rsaValues.getCrtCoefficient()), byteLength),
-                        bytesToLength(rsaValues.getModulus(), byteLength)
+                        bytesToLength(rsaValues.getModulus(), byteLength * 2)
                 );
             } else {
                 return new PrivateKeyTemplate.Rsa(
@@ -586,7 +649,8 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
         throw new UnsupportedOperationException("Unsupported private key type");
     }
 
-    public PublicKeyValues generateRsaKey(KeyRef keyRef, int keySize) throws BadResponseException, ApduException, IOException {
+    public PublicKeyValues generateRsaKey(KeyRef keyRef, int keySize) throws
+            BadResponseException, ApduException, IOException {
         require(FEATURE_RSA_GENERATION);
         Logger.debug(logger, "Generating RSA private key for {}", keyRef);
 
@@ -600,6 +664,9 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
         }
 
         byte[] resp = protocol.sendAndReceive(new Apdu(0, INS_GENERATE_ASYM, 0x80, 0x00, keyRef.getCrt()));
+        if(version.isLessThan(5, 0, 0)) {
+            setGenerationTime(keyRef, 0);
+        }
         Map<Integer, byte[]> data = Tlvs.decodeMap(Tlvs.unpackValue(TAG_PUBLIC_KEY, resp));
         Logger.info(logger, "RSA key generated for {}", keyRef);
         return new PublicKeyValues.Rsa(
@@ -608,13 +675,17 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
         );
     }
 
-    public PublicKeyValues generateEcKey(KeyRef keyRef, OpenPgpCurve curve) throws BadResponseException, ApduException, IOException {
+    public PublicKeyValues generateEcKey(KeyRef keyRef, OpenPgpCurve curve) throws
+            BadResponseException, ApduException, IOException {
         require(FEATURE_EC_KEYS);
         Logger.debug(logger, "Generating EC private key for {}", keyRef);
 
         setAlgorithmAttributes(keyRef, AlgorithmAttributes.Ec.create(keyRef, curve));
 
         byte[] resp = protocol.sendAndReceive(new Apdu(0, INS_GENERATE_ASYM, 0x80, 0x00, keyRef.getCrt()));
+        if(version.isLessThan(5, 0, 0)) {
+            setGenerationTime(keyRef, 0);
+        }
         Map<Integer, byte[]> data = Tlvs.decodeMap(Tlvs.unpackValue(TAG_PUBLIC_KEY, resp));
         Logger.info(logger, "EC key generated for {}", keyRef);
         byte[] encoded = data.get(0x86);
@@ -624,23 +695,28 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
         return PublicKeyValues.Ec.fromEncodedPoint(curve.getValues(), encoded);
     }
 
-    public void putKey(KeyRef keyRef, PrivateKeyValues privateKey) throws BadResponseException, ApduException, IOException {
+    public void putKey(KeyRef keyRef, PrivateKeyValues privateKey) throws
+            BadResponseException, ApduException, IOException {
         Logger.debug(logger, "Importing a private key for {}", keyRef);
         AlgorithmAttributes attributes = getKeyAttributes(privateKey, keyRef, version);
 
         if (getExtendedCapabilities().getFlags().contains(ExtendedCapabilityFlag.ALGORITHM_ATTRIBUTES_CHANGEABLE)) {
             setAlgorithmAttributes(keyRef, attributes);
         } else {
-            if (!(attributes instanceof AlgorithmAttributes.Rsa && ((AlgorithmAttributes.Rsa) attributes).getNLen() != 2048)) {
+            if (!(attributes instanceof AlgorithmAttributes.Rsa && ((AlgorithmAttributes.Rsa) attributes).getNLen() == 2048)) {
                 throw new UnsupportedOperationException("This YubiKey only supports RSA 2048 keys");
             }
         }
         PrivateKeyTemplate template = getKeyTemplate(privateKey, keyRef, version.isLessThan(4, 0, 0));
         protocol.sendAndReceive(new Apdu(0, INS_PUT_DATA_ODD, 0x3f, 0xff, template.getBytes()));
+        if(version.isLessThan(5, 0, 0)) {
+            setGenerationTime(keyRef, 0);
+        }
         Logger.info(logger, "Private key imported for {}", keyRef);
     }
 
-    public PublicKeyValues getPublicKey(KeyRef keyRef) throws ApduException, IOException, BadResponseException {
+    public PublicKeyValues getPublicKey(KeyRef keyRef) throws
+            ApduException, IOException, BadResponseException {
         Logger.debug(logger, "Getting public key for {}", keyRef);
         byte[] resp = protocol.sendAndReceive(new Apdu(0, INS_GENERATE_ASYM, 0x81, 0x00, keyRef.getCrt()));
         Map<Integer, byte[]> data = Tlvs.decodeMap(Tlvs.unpackValue(TAG_PUBLIC_KEY, resp));
@@ -660,7 +736,8 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
         }
     }
 
-    public void deleteKey(KeyRef keyRef) throws BadResponseException, ApduException, IOException {
+    public void deleteKey(KeyRef keyRef) throws
+            BadResponseException, ApduException, IOException {
         Logger.debug(logger, "Deleting private key for {}", keyRef);
         if (version.isLessThan(4, 0, 0)) {
             Logger.debug(logger, "Overwriting with dummy key");
