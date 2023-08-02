@@ -27,6 +27,7 @@ import java.nio.ByteBuffer;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
+import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.RSAPublicKeySpec;
@@ -167,9 +168,9 @@ public abstract class PublicKeyValues {
         }
 
         @Override
-        public PublicKey toPublicKey() throws NoSuchAlgorithmException, InvalidKeySpecException {
+        public ECPublicKey toPublicKey() throws NoSuchAlgorithmException, InvalidKeySpecException {
             KeyFactory keyFactory = KeyFactory.getInstance("EC");
-            return keyFactory.generatePublic(new X509EncodedKeySpec(getEncoded()));
+            return (ECPublicKey) keyFactory.generatePublic(new X509EncodedKeySpec(getEncoded()));
         }
 
         public static Ec fromEncodedPoint(EllipticCurveValues curve, byte[] encoded) {
@@ -225,9 +226,9 @@ public abstract class PublicKeyValues {
         }
 
         @Override
-        public PublicKey toPublicKey() throws NoSuchAlgorithmException, InvalidKeySpecException {
+        public RSAPublicKey toPublicKey() throws NoSuchAlgorithmException, InvalidKeySpecException {
             KeyFactory factory = KeyFactory.getInstance("RSA");
-            return factory.generatePublic(new RSAPublicKeySpec(modulus, publicExponent));
+            return (RSAPublicKey) factory.generatePublic(new RSAPublicKeySpec(modulus, publicExponent));
         }
     }
 }

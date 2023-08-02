@@ -234,7 +234,7 @@ public abstract class PrivateKeyValues implements Destroyable {
         /*
         Parse a DER encoded PKCS#8 RSA key
          */
-        private static List<BigInteger> parsePkcs8RsaKeyValues(byte[] derKey) {
+        static List<BigInteger> parsePkcs8RsaKeyValues(byte[] derKey) {
             try {
                 List<Tlv> numbers = Tlvs.decodeList(
                         Tlvs.decodeMap(
