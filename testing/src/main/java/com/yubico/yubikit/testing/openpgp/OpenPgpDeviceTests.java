@@ -36,11 +36,9 @@ import org.junit.Assume;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
-import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.security.Security;
 import java.security.Signature;
@@ -152,8 +150,6 @@ public class OpenPgpDeviceTests {
     public static void testGenerateRsaKeys(OpenPgpSession openpgp) throws Exception {
         Assume.assumeTrue("RSA key generation", openpgp.supports(OpenPgpSession.FEATURE_RSA_GENERATION));
 
-        Security.removeProvider("BC");
-
         openpgp.verifyAdminPin(DEFAULT_ADMIN);
 
         byte[] message = "hello".getBytes(StandardCharsets.UTF_8);
@@ -168,7 +164,7 @@ public class OpenPgpDeviceTests {
             assert verifier.verify(signature);
 
             publicKey = openpgp.generateRsaKey(KeyRef.DEC, keySize).toPublicKey();
-            Cipher cipher = Cipher.getInstance("RSA");
+            Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
             cipher.init(Cipher.ENCRYPT_MODE, publicKey);
             byte[] cipherText = cipher.doFinal(message);
 
@@ -251,8 +247,6 @@ public class OpenPgpDeviceTests {
     }
 
     public static void testImportRsaKeys(OpenPgpSession openpgp) throws Exception {
-        Security.removeProvider("BC");
-
         openpgp.verifyAdminPin(DEFAULT_ADMIN);
 
         KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA");
@@ -277,7 +271,7 @@ public class OpenPgpDeviceTests {
             assert verifier.verify(signature);
 
             openpgp.putKey(KeyRef.DEC, PrivateKeyValues.fromPrivateKey(pair.getPrivate()));
-            Cipher cipher = Cipher.getInstance("RSA");
+            Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
             cipher.init(Cipher.ENCRYPT_MODE, publicKey);
             byte[] cipherText = cipher.doFinal(message);
 
@@ -396,8 +390,6 @@ public class OpenPgpDeviceTests {
     }
 
     public static void testSigPinPolicy(OpenPgpSession openpgp) throws Exception {
-        Security.removeProvider("BC");
-
         openpgp.verifyAdminPin(DEFAULT_ADMIN);
 
         KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA");
