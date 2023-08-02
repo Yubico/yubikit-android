@@ -30,7 +30,6 @@ import com.yubico.yubikit.openpgp.PinPolicy;
 import com.yubico.yubikit.openpgp.Pw;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.bouncycastle.util.encoders.Hex;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.slf4j.Logger;
@@ -65,7 +64,7 @@ public class OpenPgpDeviceTests {
             .collect(Collectors.toList());
 
     private static int[] getSupportedRsaKeySizes(OpenPgpSession openpgp) {
-        return openpgp.supports(OpenPgpSession.FEATURE_RSA4096_KEYS) ? new int[]{2048, 4096} : new int[]{2048};
+        return openpgp.supports(OpenPgpSession.FEATURE_RSA4096_KEYS) ? new int[]{2048, 3072, 4096} : new int[]{2048};
     }
 
     public static void testGenerateRequiresAdmin(OpenPgpSession openpgp) throws Exception {
@@ -253,7 +252,6 @@ public class OpenPgpDeviceTests {
         byte[] message = "hello".getBytes(StandardCharsets.UTF_8);
         for (int keySize : getSupportedRsaKeySizes(openpgp)) {
             logger.info("RSA key size: {}", keySize);
-            System.out.println("KEY SIZE: " + keySize);
             kpg.initialize(keySize);
             KeyPair pair = kpg.generateKeyPair();
             openpgp.putKey(KeyRef.SIG, PrivateKeyValues.fromPrivateKey(pair.getPrivate()));

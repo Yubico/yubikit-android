@@ -49,7 +49,9 @@ public enum OpenPgpCurve {
 
     static OpenPgpCurve fromOid(byte[] oid) {
         for (OpenPgpCurve params : OpenPgpCurve.values()) {
-            if (Arrays.equals(params.oid, oid)) {
+            // Allow given oid to have trailing zeroes.
+            byte[] compareOid = Arrays.copyOf(params.oid, Math.max(params.oid.length, oid.length));
+            if (Arrays.equals(compareOid, oid)) {
                 return params;
             }
         }
