@@ -16,8 +16,6 @@
 
 package com.yubico.yubikit.core.keys;
 
-import java.math.BigInteger;
-import java.security.spec.EllipticCurve;
 import java.util.Arrays;
 
 public enum EllipticCurveValues {

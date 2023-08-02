@@ -16,11 +16,7 @@
 
 package com.yubico.yubikit.core.internal;
 
-import com.yubico.yubikit.core.keys.EllipticCurveValues;
-import com.yubico.yubikit.core.keys.PublicKeyValues;
-
 import java.math.BigInteger;
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 /**

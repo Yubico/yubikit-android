@@ -16,8 +16,6 @@
 
 package com.yubico.yubikit.piv;
 
-import com.yubico.yubikit.core.application.CommandException;
-
 /**
  * Thrown when the wrong PIN or PUK is used (or when the PIN or PUK is in a blocked state).
  *

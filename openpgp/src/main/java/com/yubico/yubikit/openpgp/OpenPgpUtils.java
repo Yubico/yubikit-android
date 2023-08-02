@@ -17,11 +17,6 @@
 package com.yubico.yubikit.openpgp;
 
 public class OpenPgpUtils {
-
-    static String capitalize(String name) {
-        return name.substring(0, 1) + name.substring(1).toLowerCase();
-    }
-
     static byte decodeBcd(byte bcd) {
         int high = (bcd & 0xf0) >> 4;
         int low = bcd & 0x0f;

@@ -19,6 +19,7 @@ package com.yubico.yubikit.openpgp;
 import com.yubico.yubikit.core.util.Tlvs;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -90,6 +91,37 @@ public class DiscretionaryDataObjects {
             default:
                 throw new IllegalStateException();
         }
+    }
+
+    @Nullable
+    public byte[] getFingerprint(KeyRef keyRef) {
+        byte[] fingerprint = fingerprints.get(keyRef);
+        if (fingerprint != null) {
+            return Arrays.copyOf(fingerprint, fingerprint.length);
+        }
+        return null;
+    }
+
+    @Nullable
+    public byte[] getCaFingerprint(KeyRef keyRef) {
+        byte[] fingerprint = caFingerprints.get(keyRef);
+        if (fingerprint != null) {
+            return Arrays.copyOf(fingerprint, fingerprint.length);
+        }
+        return null;
+    }
+
+    public int getGenerationTime(KeyRef keyRef) {
+        Integer time = generationTimes.get(keyRef);
+        if (time != null) {
+            return time.intValue();
+        }
+        return -1;
+    }
+
+    @Nullable
+    public KeyStatus getKeyStatus(KeyRef keyRef) {
+        return keyInformation.get(keyRef);
     }
 
     @Nullable

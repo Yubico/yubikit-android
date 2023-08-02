@@ -21,8 +21,6 @@ import com.yubico.yubikit.core.keys.PrivateKeyValues;
 import com.yubico.yubikit.core.keys.PublicKeyValues;
 
 import java.security.Key;
-import java.security.PublicKey;
-import java.security.interfaces.ECKey;
 import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAKey;
