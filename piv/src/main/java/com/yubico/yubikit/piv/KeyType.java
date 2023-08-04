@@ -16,11 +16,14 @@
 
 package com.yubico.yubikit.piv;
 
-import java.math.BigInteger;
+import com.yubico.yubikit.core.keys.EllipticCurveValues;
+import com.yubico.yubikit.core.keys.PrivateKeyValues;
+import com.yubico.yubikit.core.keys.PublicKeyValues;
+
 import java.security.Key;
-import java.security.interfaces.ECKey;
+import java.security.interfaces.ECPrivateKey;
+import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAKey;
-import java.security.spec.EllipticCurve;
 
 import javax.annotation.Nonnull;
 
@@ -39,19 +42,11 @@ public enum KeyType {
     /**
      * Elliptic Curve key, using NIST Curve P-256.
      */
-    ECCP256((byte) 0x11, new EcKeyParams(
-            256,
-            "115792089210356248762697446949407573530086143415290314195533631308867097853948",
-            "41058363725152142129326129780047268409114441015993725554835256314039467401291"
-    )),
+    ECCP256((byte) 0x11, new EcKeyParams(EllipticCurveValues.SECP256R1)),
     /**
      * Elliptic Curve key, using NIST Curve P-384.
      */
-    ECCP384((byte) 0x14, new EcKeyParams(
-            384,
-            "39402006196394479212279040100143613805079739270465446667948293404245721771496870329047266088258938001861606973112316",
-            "27580193559959705877849011840389048093056905856361568521428707301988689241309860865136260764883745107765439761230575"
-    ));
+    ECCP384((byte) 0x14, new EcKeyParams(EllipticCurveValues.SECP384R1));
 
     public final byte value;
     public final KeyParams params;
@@ -73,13 +68,51 @@ public enum KeyType {
         throw new IllegalArgumentException("Not a valid KeyType:" + value);
     }
 
+    public static KeyType fromKeyParams(PrivateKeyValues keyValues) {
+        if (keyValues instanceof PrivateKeyValues.Rsa) {
+            for (KeyType keyType : values()) {
+                if (keyType.params instanceof KeyType.RsaKeyParams) {
+                    if (keyValues.getBitLength() == keyType.params.bitLength) {
+                        return keyType;
+                    }
+                }
+            }
+        } else if (keyValues instanceof PrivateKeyValues.Ec) {
+            for (KeyType keyType : values()) {
+                if (keyType.params instanceof KeyType.EcKeyParams) {
+                    if (((PrivateKeyValues.Ec) keyValues).getCurveParams() == ((EcKeyParams) keyType.params).ellipticCurveValues) {
+                        return keyType;
+                    }
+                }
+            }
+        }
+        throw new IllegalArgumentException("Unsupported key type");
+    }
+
     /**
      * Returns the key type corresponding to the given key.
      */
     public static KeyType fromKey(Key key) {
-        for (KeyType keyType : values()) {
-            if (keyType.params.matches(key)) {
-                return keyType;
+        if (key instanceof RSAKey) {
+            for (KeyType keyType : values()) {
+                if (keyType.params.algorithm == Algorithm.RSA && keyType.params.bitLength == ((RSAKey) key).getModulus().bitLength()) {
+                    return keyType;
+                }
+            }
+        } else {
+            EllipticCurveValues ellipticCurveValues;
+            if (key instanceof ECPublicKey) {
+                ellipticCurveValues = ((PublicKeyValues.Ec) PublicKeyValues.fromPublicKey((ECPublicKey) key)).getCurveParams();
+            } else if (key instanceof ECPrivateKey) {
+                ellipticCurveValues = ((PrivateKeyValues.Ec) PrivateKeyValues.fromPrivateKey((ECPrivateKey) key)).getCurveParams();
+            } else {
+                throw new IllegalArgumentException("Unsupported key type");
+            }
+
+            for (KeyType keyType : values()) {
+                if (keyType.params instanceof KeyType.EcKeyParams && ((EcKeyParams) keyType.params).ellipticCurveValues == ellipticCurveValues) {
+                    return keyType;
+                }
             }
         }
         throw new IllegalArgumentException("Unsupported key type");
@@ -104,8 +137,6 @@ public enum KeyType {
             this.algorithm = algorithm;
             this.bitLength = bitLength;
         }
-
-        protected abstract boolean matches(Key key);
     }
 
     /**
@@ -115,36 +146,21 @@ public enum KeyType {
         private RsaKeyParams(int bitLength) {
             super(Algorithm.RSA, bitLength);
         }
-
-        @Override
-        protected boolean matches(Key key) {
-            if (key instanceof RSAKey) {
-                return ((RSAKey) key).getModulus().bitLength() == bitLength;
-            }
-            return false;
-        }
     }
 
     /**
      * Algorithm parameters for EC keys.
      */
     public static final class EcKeyParams extends KeyParams {
-        private final BigInteger a;
-        private final BigInteger b;
+        private final EllipticCurveValues ellipticCurveValues;
 
-        private EcKeyParams(int bitLength, String a, String b) {
-            super(Algorithm.EC, bitLength);
-            this.a = new BigInteger(a);
-            this.b = new BigInteger(b);
+        private EcKeyParams(EllipticCurveValues ellipticCurveValues) {
+            super(Algorithm.EC, ellipticCurveValues.getBitLength());
+            this.ellipticCurveValues = ellipticCurveValues;
         }
 
-        @Override
-        protected boolean matches(Key key) {
-            if (key instanceof ECKey) {
-                EllipticCurve curve = ((ECKey) key).getParams().getCurve();
-                return curve.getField().getFieldSize() == bitLength && curve.getA().equals(a) && curve.getB().equals(b);
-            }
-            return false;
+        EllipticCurveValues getCurveParams() {
+            return ellipticCurveValues;
         }
     }
 }
