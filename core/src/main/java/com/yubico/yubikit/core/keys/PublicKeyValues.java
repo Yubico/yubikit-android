@@ -16,7 +16,7 @@
 
 package com.yubico.yubikit.core.keys;
 
-import static com.yubico.yubikit.core.internal.PrivateKeyUtils.bytesToLength;
+import static com.yubico.yubikit.core.util.ByteUtils.intToLength;
 
 import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.util.Tlv;
@@ -150,8 +150,8 @@ public abstract class PublicKeyValues {
             int coordSize = (int) Math.ceil(ellipticCurveValues.getBitLength() / 8.0);
             return ByteBuffer.allocate(1 + 2 * coordSize)
                     .put((byte) 0x04)
-                    .put(bytesToLength(x, coordSize))
-                    .put(bytesToLength(y, coordSize))
+                    .put(intToLength(x, coordSize))
+                    .put(intToLength(y, coordSize))
                     .array();
         }
 

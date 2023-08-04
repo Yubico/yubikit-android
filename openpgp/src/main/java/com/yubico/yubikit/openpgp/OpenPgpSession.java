@@ -16,7 +16,7 @@
 
 package com.yubico.yubikit.openpgp;
 
-import static com.yubico.yubikit.core.internal.PrivateKeyUtils.bytesToLength;
+import static com.yubico.yubikit.core.util.ByteUtils.intToLength;
 import static com.yubico.yubikit.openpgp.OpenPgpUtils.decodeBcd;
 
 import com.yubico.yubikit.core.Version;
@@ -944,19 +944,19 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
                 return new PrivateKeyTemplate.RsaCrt(
                         keyRef.getCrt(),
                         rsaValues.getPublicExponent().toByteArray(),
-                        bytesToLength(rsaValues.getPrimeP(), byteLength),
-                        bytesToLength(rsaValues.getPrimeQ(), byteLength),
-                        bytesToLength(Objects.requireNonNull(rsaValues.getCrtCoefficient()), byteLength),
-                        bytesToLength(Objects.requireNonNull(rsaValues.getPrimeExponentP()), byteLength),
-                        bytesToLength(Objects.requireNonNull(rsaValues.getPrimeExponentQ()), byteLength),
-                        bytesToLength(rsaValues.getModulus(), byteLength * 2)
+                        intToLength(rsaValues.getPrimeP(), byteLength),
+                        intToLength(rsaValues.getPrimeQ(), byteLength),
+                        intToLength(Objects.requireNonNull(rsaValues.getCrtCoefficient()), byteLength),
+                        intToLength(Objects.requireNonNull(rsaValues.getPrimeExponentP()), byteLength),
+                        intToLength(Objects.requireNonNull(rsaValues.getPrimeExponentQ()), byteLength),
+                        intToLength(rsaValues.getModulus(), byteLength * 2)
                 );
             } else {
                 return new PrivateKeyTemplate.Rsa(
                         keyRef.getCrt(),
                         rsaValues.getPublicExponent().toByteArray(),
-                        bytesToLength(rsaValues.getPrimeP(), byteLength),
-                        bytesToLength(rsaValues.getPrimeQ(), byteLength)
+                        intToLength(rsaValues.getPrimeP(), byteLength),
+                        intToLength(rsaValues.getPrimeQ(), byteLength)
                 );
             }
         } else if (values instanceof PrivateKeyValues.Ec) {

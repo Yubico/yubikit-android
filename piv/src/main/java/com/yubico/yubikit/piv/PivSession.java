@@ -16,7 +16,7 @@
 
 package com.yubico.yubikit.piv;
 
-import static com.yubico.yubikit.core.internal.PrivateKeyUtils.bytesToLength;
+import static com.yubico.yubikit.core.util.ByteUtils.intToLength;
 
 import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.Version;
@@ -429,13 +429,9 @@ public class PivSession extends ApplicationSession<PivSession> {
      */
     public byte[] calculateSecret(Slot slot, ECPoint peerPublicKey) throws IOException, ApduException, BadResponseException {
         KeyType keyType = peerPublicKey.getAffineX().bitLength() > 256 ? KeyType.ECCP384 : KeyType.ECCP256;
-        int byteLength = keyType.params.bitLength / 8;
+        byte[] encodedPoint = new PublicKeyValues.Ec(((KeyType.EcKeyParams)keyType.params).getCurveParams(), peerPublicKey.getAffineX(), peerPublicKey.getAffineY()).getEncodedPoint();
         Logger.debug(logger, "Performing key agreement with key in slot {} of type {}", slot, keyType);
-        return usePrivateKey(slot, keyType, ByteBuffer.allocate(1 + 2 * byteLength)
-                .put((byte) 0x04)
-                .put(bytesToLength(peerPublicKey.getAffineX(), byteLength))
-                .put(bytesToLength(peerPublicKey.getAffineY(), byteLength))
-                .array(), true);
+        return usePrivateKey(slot, keyType, encodedPoint, true);
     }
 
     private byte[] usePrivateKey(Slot slot, KeyType keyType, byte[] message, boolean exponentiation) throws IOException, ApduException, BadResponseException {
@@ -986,11 +982,11 @@ public class PivSession extends ApplicationSession<PivSession> {
             case RSA:
                 int byteLength = params.bitLength / 8 / 2;
                 PrivateKeyValues.Rsa values = (PrivateKeyValues.Rsa) key;
-                tlvs.put(0x01, bytesToLength(values.getPrimeP(), byteLength));    // p
-                tlvs.put(0x02, bytesToLength(values.getPrimeQ(), byteLength));    // q
-                tlvs.put(0x03, bytesToLength(Objects.requireNonNull(values.getPrimeExponentP()), byteLength));    // dmp1
-                tlvs.put(0x04, bytesToLength(Objects.requireNonNull(values.getPrimeExponentQ()), byteLength));    // dmq1
-                tlvs.put(0x05, bytesToLength(Objects.requireNonNull(values.getCrtCoefficient()), byteLength));    // iqmp
+                tlvs.put(0x01, intToLength(values.getPrimeP(), byteLength));    // p
+                tlvs.put(0x02, intToLength(values.getPrimeQ(), byteLength));    // q
+                tlvs.put(0x03, intToLength(Objects.requireNonNull(values.getPrimeExponentP()), byteLength));    // dmp1
+                tlvs.put(0x04, intToLength(Objects.requireNonNull(values.getPrimeExponentQ()), byteLength));    // dmq1
+                tlvs.put(0x05, intToLength(Objects.requireNonNull(values.getCrtCoefficient()), byteLength));    // iqmp
                 break;
             case EC:
                 PrivateKeyValues.Ec ecPrivateKey = (PrivateKeyValues.Ec) key;

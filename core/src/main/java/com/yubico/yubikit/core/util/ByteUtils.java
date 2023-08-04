@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.yubico.yubikit.core.internal;
+package com.yubico.yubikit.core.util;
 
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -22,20 +22,26 @@ import java.util.Arrays;
 /**
  * Used internally in YubiKit, don't use from applications.
  */
-public final class PrivateKeyUtils {
-    /*
-     * Shortens to length or left-pads with 0.
+public final class ByteUtils {
+    /**
+     * Serializes a BigInteger as an unsigned integer of the given length.
+     * @param value the integer to serialize
+     * @param length the length of the byte[] to return
+     * @return the value as an unsigned integer
      */
-    public static byte[] bytesToLength(BigInteger value, int length) {
+    public static byte[] intToLength(BigInteger value, int length) {
         byte[] data = value.toByteArray();
         if (data.length == length) {
             return data;
-        } else if (data.length > length) {
-            return Arrays.copyOfRange(data, data.length - length, data.length);
-        } else {
+        } else if (data.length < length) {
             byte[] padded = new byte[length];
             System.arraycopy(data, 0, padded, length - data.length, data.length);
             return padded;
+        } else if (data.length == length + 1 && data[0] == 0) {
+            // BigInteger may have a leading zero, since it's signed.
+            return Arrays.copyOfRange(data, 1, data.length);
+        } else {
+            throw new IllegalArgumentException("value is too large to be represented in " + length + " bytes");
         }
     }
 }
