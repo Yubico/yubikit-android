@@ -76,8 +76,11 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
 /**
- * Personal Identity Verification (PIV) interface specified in NIST SP 800-73 document "Cryptographic Algorithms and Key Sizes for PIV".
- * This enables you to perform RSA or ECC sign/decrypt operations using a private key stored on the smartcard, through common transports like PKCS#11.
+ * Personal Identity Verification (PIV) interface specified in NIST SP 800-73 document
+ * "Cryptographic Algorithms and Key Sizes for PIV".
+ * <p>
+ * This enables you to perform RSA or ECC sign/decrypt operations using a private key stored on the
+ * smart card, through common transports like PKCS#11.
  */
 public class PivSession extends ApplicationSession<PivSession> {
     // Features
@@ -894,6 +897,7 @@ public class PivSession extends ApplicationSession<PivSession> {
      * TouchPolicy.CACHED requires {@link #FEATURE_TOUCH_CACHED}, available on YubiKey 4.3 or later.
      * <p>
      * NOTE: YubiKey FIPS does not allow RSA1024 nor PinProtocol.NEVER.
+     * NOTE: This method will be renamed to generateKey in the next major version release of this library.
      *
      * @param slot        Key reference '9A', '9C', '9D', or '9E'. {@link Slot}.
      * @param keyType     which algorithm is used for key generation {@link KeyType}
@@ -904,7 +908,7 @@ public class PivSession extends ApplicationSession<PivSession> {
      * @throws ApduException        in case of an error response from the YubiKey
      * @throws BadResponseException in case of incorrect YubiKey response
      */
-    public PublicKey generateKey(Slot slot, KeyType keyType, PinPolicy pinPolicy, TouchPolicy touchPolicy) throws IOException, ApduException, BadResponseException {
+    public PublicKeyValues generateKeyValues(Slot slot, KeyType keyType, PinPolicy pinPolicy, TouchPolicy touchPolicy) throws IOException, ApduException, BadResponseException {
         checkKeySupport(keyType, pinPolicy, touchPolicy, true);
 
         Map<Integer, byte[]> tlvs = new LinkedHashMap<>();
@@ -920,10 +924,35 @@ public class PivSession extends ApplicationSession<PivSession> {
         byte[] response = protocol.sendAndReceive(new Apdu(0, INS_GENERATE_ASYMMETRIC, 0, slot.value, new Tlv((byte) 0xac, Tlvs.encodeMap(tlvs)).getBytes()));
         Logger.info(logger, "Private key generated in slot {} of type {}", slot, keyType);
         // Tag '7F49' contains data objects for RSA or ECC
-        PublicKeyValues values = parsePublicKeyFromDevice(keyType, Tlvs.unpackValue(0x7F49, response));
-        // TODO: Directly return PublicKeyValues instead
+        return parsePublicKeyFromDevice(keyType, Tlvs.unpackValue(0x7F49, response));
+    }
+
+    /**
+     * Generates a new key pair within the YubiKey.
+     * This method requires verification with pin {@link #verifyPin}}
+     * and authentication with management key {@link #authenticate}.
+     * <p>
+     * RSA key types require {@link #FEATURE_RSA_GENERATION}, available on YubiKeys OTHER THAN 4.2.6-4.3.4.
+     * KeyType P348 requires {@link #FEATURE_P384}, available on YubiKey 4 or later.
+     * PinPolicy or TouchPolicy other than default require {@link #FEATURE_USAGE_POLICY}, available on YubiKey 4 or later.
+     * TouchPolicy.CACHED requires {@link #FEATURE_TOUCH_CACHED}, available on YubiKey 4.3 or later.
+     * <p>
+     * NOTE: YubiKey FIPS does not allow RSA1024 nor PinProtocol.NEVER.
+     *
+     * @param slot        Key reference '9A', '9C', '9D', or '9E'. {@link Slot}.
+     * @param keyType     which algorithm is used for key generation {@link KeyType}
+     * @param pinPolicy   the PIN policy for using the private key
+     * @param touchPolicy the touch policy for using the private key
+     * @return the public key of the generated key pair
+     * @throws IOException          in case of connection error
+     * @throws ApduException        in case of an error response from the YubiKey
+     * @throws BadResponseException in case of incorrect YubiKey response
+     * @deprecated use generateKeyValues instead, which will replace this method in the next major version release
+     */
+    @Deprecated
+    public PublicKey generateKey(Slot slot, KeyType keyType, PinPolicy pinPolicy, TouchPolicy touchPolicy) throws IOException, ApduException, BadResponseException {
         try {
-            return values.toPublicKey();
+            return generateKeyValues(slot, keyType, pinPolicy, touchPolicy).toPublicKey();
         } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
             throw new RuntimeException(e);
         }
@@ -998,6 +1027,7 @@ public class PivSession extends ApplicationSession<PivSession> {
      * @return the KeyType value of the imported key
      * @throws IOException   in case of connection error
      * @throws ApduException in case of an error response from the YubiKey
+     * @deprecated use {@link #putKey(Slot, PrivateKeyValues, PinPolicy, TouchPolicy)} instead
      */
     @Deprecated
     public KeyType putKey(Slot slot, PrivateKey key, PinPolicy pinPolicy, TouchPolicy touchPolicy) throws IOException, ApduException {
