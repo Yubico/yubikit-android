@@ -20,6 +20,7 @@ import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialCreationOptions;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialDescriptor;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialParameters;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialRequestOptions;
+import com.yubico.yubikit.fido.webauthn.ResidentKeyRequirement;
 import com.yubico.yubikit.fido.webauthn.UserVerificationRequirement;
 
 import java.io.Closeable;
@@ -134,8 +135,9 @@ public class BasicWebAuthnClient implements Closeable {
         Map<String, Boolean> ctapOptions = new HashMap<>();
         AuthenticatorSelectionCriteria authenticatorSelection = options.getAuthenticatorSelection();
         if (authenticatorSelection != null) {
-            //TODO Better support for PREFERRED
-            if (authenticatorSelection.isRequireResidentKey()) {
+            ResidentKeyRequirement residentKeyRequirement = authenticatorSelection.getResidentKey();
+            if (residentKeyRequirement == ResidentKeyRequirement.REQUIRED ||
+                    (residentKeyRequirement == ResidentKeyRequirement.PREFERRED && uvSupported)) {
                 ctapOptions.put(OPTION_RESIDENT_KEY, true);
             }
             if (getCtapUv(authenticatorSelection.getUserVerification(), pin != null)) {

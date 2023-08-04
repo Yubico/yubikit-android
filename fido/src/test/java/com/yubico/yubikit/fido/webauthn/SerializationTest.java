@@ -142,7 +142,6 @@ public class SerializationTest {
         }
         Assert.assertEquals(a.getAuthenticatorAttachment(), b.getAuthenticatorAttachment());
         Assert.assertEquals(a.getResidentKey(), b.getResidentKey());
-        Assert.assertEquals(a.isRequireResidentKey(), b.isRequireResidentKey());
         Assert.assertEquals(a.getUserVerification(), b.getUserVerification());
     }
 
@@ -159,7 +158,6 @@ public class SerializationTest {
         Assert.assertEquals(criteria.getAuthenticatorAttachment().toString(), map.get("authenticatorAttachment"));
         Assert.assertEquals(criteria.getUserVerification().toString(), map.get("userVerification"));
         Assert.assertEquals(criteria.getResidentKey().toString(), map.get("residentKey"));
-        Assert.assertTrue(criteria.isRequireResidentKey());
 
         compareSelectionCritiera(criteria, AuthenticatorSelectionCriteria.fromMap(map));
     }
