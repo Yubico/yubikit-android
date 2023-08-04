@@ -16,6 +16,8 @@
 
 package com.yubico.yubikit.core.keys;
 
+import com.yubico.yubikit.core.util.StringUtils;
+
 import java.util.Arrays;
 
 public enum EllipticCurveValues {
@@ -69,6 +71,15 @@ public enum EllipticCurveValues {
 
     byte[] getOid() {
         return Arrays.copyOf(oid, oid.length);
+    }
+
+    @Override
+    public String toString() {
+        return "EllipticCurveValues{" +
+                "name=" + name() +
+                ", bitLength=" + bitLength +
+                ", oid=" + StringUtils.bytesToHex(oid) +
+                '}';
     }
 
     public static EllipticCurveValues fromOid(byte[] oid) {
