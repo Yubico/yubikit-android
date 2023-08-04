@@ -191,29 +191,35 @@ public class SmartCardProtocol implements Closeable {
         if (length > SHORT_APDU_MAX_CHUNK) {
             throw new IllegalArgumentException("Length must be no greater than " + SHORT_APDU_MAX_CHUNK);
         }
-        ByteBuffer buf = ByteBuffer.allocate(5 + length)
+        if (le < 0 || le > SHORT_APDU_MAX_CHUNK) {
+            throw new IllegalArgumentException("Le must be between 0 and " + SHORT_APDU_MAX_CHUNK);
+        }
+
+        ByteBuffer buf = ByteBuffer.allocate(4 + (length > 0 ? 1 : 0) + length + (le > 0 ? 1 : 0))
                 .put(cla)
                 .put(ins)
                 .put(p1)
-                .put(p2)
-                .put((byte) length)
-                .put(data, offset, length);
-        if(le > 0) {
+                .put(p2);
+        if (length > 0) {
+            buf.put((byte) length).put(data, offset, length);
+        }
+        if (le > 0) {
             buf.put((byte) le);
         }
         return buf.array();
     }
 
     private static byte[] encodeExtendedApdu(byte cla, byte ins, byte p1, byte p2, byte[] data, int le) {
-        ByteBuffer buf = ByteBuffer.allocate(7 + data.length)
+        ByteBuffer buf = ByteBuffer.allocate(5 + (data.length > 0 ? 2 : 0) + data.length + (le > 0 ? 2 : 0))
                 .put(cla)
                 .put(ins)
                 .put(p1)
                 .put(p2)
-                .put((byte) 0x00)
-                .putShort((short) data.length)
-                .put(data);
-        if(le > 0) {
+                .put((byte) 0x00);
+        if (data.length > 0) {
+            buf.putShort((short) data.length).put(data);
+        }
+        if (le > 0) {
             buf.putShort((short) le);
         }
         return buf.array();
