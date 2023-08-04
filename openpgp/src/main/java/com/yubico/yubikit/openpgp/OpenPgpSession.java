@@ -63,13 +63,45 @@ import java.util.Objects;
 import javax.annotation.Nullable;
 
 
+/**
+ * OpenPGP card application as specified on <a href="https://gnupg.org/ftp/specs/">gnupg.org</a>.
+ * <p>
+ * Enables you to manage keys and data, as well as perform signing, decryption, and authentication
+ * operations.
+ */
 public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
+    /**
+     * Support for factory reset.
+     */
     public static final Feature<OpenPgpSession> FEATURE_RESET = new Feature.Versioned<>("Reset", 1, 0, 6);
+    /**
+     * Support for the User Interaction Flag (touch requirement).
+     */
     public static final Feature<OpenPgpSession> FEATURE_UIF = new Feature.Versioned<>("UIF", 4, 2, 0);
+    /**
+     * Support for public key attestation.
+     */
     public static final Feature<OpenPgpSession> FEATURE_ATTESTATION = new Feature.Versioned<>("Attestation", 5, 2, 1);
+    /**
+     * Support for the "cached" UIF settings.
+     */
     public static final Feature<OpenPgpSession> FEATURE_CACHED = new Feature.Versioned<>("Cached UIF", 5, 2, 1);
+    /**
+     * Support for 4096 (and 3072) bit RSA keys, in addition to 2048-bit.
+     */
     public static final Feature<OpenPgpSession> FEATURE_RSA4096_KEYS = new Feature.Versioned<>("RSA 4096 keys", 4, 0, 0);
+    /**
+     * Support for private keys using Elliptic Curve cryptography.
+     */
     public static final Feature<OpenPgpSession> FEATURE_EC_KEYS = new Feature.Versioned<>("Elliptic curve keys", 5, 2, 0);
+
+    /**
+     * Support for resetting the PIN verified state.
+     */
+    public static final Feature<OpenPgpSession> FEATURE_UNVERIFY_PIN = new Feature.Versioned<>("Unverify PIN", 5, 6, 0);
+    /**
+     * Support for changing the number of PIN attempts allowed before becoming blocked.
+     */
     public static final Feature<OpenPgpSession> FEATURE_PIN_ATTEMPTS = new Feature<OpenPgpSession>("Set PIN attempts") {
         @Override
         public boolean isSupportedBy(Version version) {
@@ -118,6 +150,14 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
 
     private static final org.slf4j.Logger logger = LoggerFactory.getLogger(OpenPgpSession.class);
 
+    /**
+     * Create new instance of {@link OpenPgpSession} and selects the application for use.
+     *
+     * @param connection a smart card connection to a YubiKey
+     * @throws IOException                      in case of communication error
+     * @throws ApduException                    in case of an error response from the YubiKey
+     * @throws ApplicationNotAvailableException if the application is missing or disabled
+     */
     public OpenPgpSession(SmartCardConnection connection) throws IOException, ApplicationNotAvailableException, ApduException {
         protocol = new SmartCardProtocol(connection);
 
@@ -174,32 +214,79 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
         protocol.close();
     }
 
+    /**
+     * Read a Data Object from the YubiKey.
+     *
+     * @param doId the ID of the Data Object to read
+     * @return the value of the Data Object
+     * @throws ApduException in case of an error response from the YubiKey
+     * @throws IOException   in case of connection error
+     */
     public byte[] getData(int doId) throws ApduException, IOException {
         Logger.debug(logger, "Reading Data Object {}", doId);
         return protocol.sendAndReceive(new Apdu(0, INS_GET_DATA, doId >> 8, doId & 0xff, null));
     }
 
+    /**
+     * Write a Data Object to the YubiKey.
+     *
+     * @param doId the ID of the Data Object to read
+     * @param data the value to write to the Data Object
+     * @throws ApduException in case of an error response from the YubiKey
+     * @throws IOException   in case of connection error
+     */
     public void putData(int doId, byte[] data) throws ApduException, IOException {
         protocol.sendAndReceive(new Apdu(0, INS_PUT_DATA, doId >> 8, doId & 0xff, data));
         Logger.debug(logger, "Wrote Data Object {}", doId);
     }
 
+    /**
+     * Read the Application Related Data from the YubiKey.
+     *
+     * @return the parsed Application Related Data
+     * @throws ApduException in case of an error response from the YubiKey
+     * @throws IOException   in case of connection error
+     */
     public ApplicationRelatedData getApplicationRelatedData() throws ApduException, IOException {
         return ApplicationRelatedData.parse(getData(Do.APPLICATION_RELATED_DATA));
     }
 
+    /**
+     * Get the AID for the OpenPGP application.
+     *
+     * @return the parsed OpenPgpAid
+     */
     public OpenPgpAid getAid() {
         return appData.getAid();
     }
 
+    /**
+     * Get the Extended Capabilities supported by the YubiKey.
+     *
+     * @return the parsed ExtendedCapabilities
+     */
     public ExtendedCapabilities getExtendedCapabilities() {
         return appData.getDiscretionary().getExtendedCapabilities();
     }
 
+    /**
+     * Get the current PIN configuration and status from the YubiKey.
+     *
+     * @return a PwStatus object with remaining attempts, maximum PIN lengths, and signature PIN policy
+     * @throws ApduException in case of an error response from the YubiKey
+     * @throws IOException   in case of connection error
+     */
     public PwStatus getPinStatus() throws ApduException, IOException {
         return PwStatus.parse(getData(Do.PW_STATUS_BYTES));
     }
 
+    /**
+     * Read the current KDF settings configured for the YubiKey.
+     *
+     * @return a Kdf object, capable of deriving a key from a PIN
+     * @throws ApduException in case of an error response from the YubiKey
+     * @throws IOException   in case of connection error
+     */
     public Kdf getKdf() throws ApduException, IOException {
         ExtendedCapabilities capabilities = getExtendedCapabilities();
         if (!capabilities.getFlags().contains(ExtendedCapabilityFlag.KDF)) {
@@ -208,6 +295,20 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
         return Kdf.parse(getData(Do.KDF));
     }
 
+    /**
+     * Set up a PIN Key Derivation Function.
+     * <p>
+     * This enables (or disables) the use of a KDF for PIN verification, as well
+     * as resetting the User and Admin PINs to their default (initial) values.
+     * <p>
+     * If a Reset Code is present, it will be invalidated.
+     * <p>
+     * This command requires Admin PIN verification.
+     *
+     * @param kdf the KDF configuration to set
+     * @throws ApduException in case of an error response from the YubiKey
+     * @throws IOException   in case of connection error
+     */
     public void setKdf(Kdf kdf) throws ApduException, IOException {
         ExtendedCapabilities capabilities = getExtendedCapabilities();
         if (!capabilities.getFlags().contains(ExtendedCapabilityFlag.KDF)) {
@@ -224,7 +325,7 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
         try {
             protocol.sendAndReceive(new Apdu(0, INS_VERIFY, 0, pw.getValue(), pinEnc));
         } catch (ApduException e) {
-            if(e.getSw() == SW.SECURITY_CONDITION_NOT_SATISFIED) {
+            if (e.getSw() == SW.SECURITY_CONDITION_NOT_SATISFIED) {
                 int remaining = getPinStatus().getAttempts(pw);
                 throw new InvalidPinException(remaining);
             }
@@ -232,18 +333,83 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
         }
     }
 
+    /**
+     * Verify the User PIN.
+     * <p>
+     * This will unlock functionality that requires User PIN verification.
+     * Note that with extended=false only sign operations are allowed.
+     * Inversely, with extended=false sign operations are NOT allowed.
+     *
+     * @param pin      the User PIN to verify
+     * @param extended false to verify for signature use, true for other uses
+     * @throws ApduException       in case of an error response from the YubiKey
+     * @throws IOException         in case of connection error
+     * @throws InvalidPinException in case of the wrong PIN
+     */
     public void verifyUserPin(String pin, boolean extended) throws ApduException, IOException, InvalidPinException {
         doVerify(extended ? Pw.RESET : Pw.USER, pin);
     }
 
+    /**
+     * Verify the Admin PIN.
+     * <p>
+     * This will unlock functionality that requires Admin PIN verification.
+     *
+     * @param pin the Admin PIN to verify
+     * @throws ApduException       in case of an error response from the YubiKey
+     * @throws IOException         in case of connection error
+     * @throws InvalidPinException in case of the wrong PIN
+     */
     public void verifyAdminPin(String pin) throws ApduException, IOException, InvalidPinException {
         doVerify(Pw.ADMIN, pin);
     }
 
+    private void doUnverifyPin(Pw pw) throws ApduException, IOException {
+        require(FEATURE_UNVERIFY_PIN);
+        Logger.debug(logger, "Resetting verification for {} PIN", pw.name());
+        protocol.sendAndReceive(new Apdu(0, INS_VERIFY, 0xff, pw.getValue(), null));
+        Logger.info(logger, "{} PIN unverified", pw.name());
+    }
+
+    /**
+     * Resets the verification state of the User PIN to unverified.
+     *
+     * @throws ApduException in case of an error response from the YubiKey
+     * @throws IOException   in case of connection error
+     */
+    public void unverifyUserPin() throws ApduException, IOException {
+        doUnverifyPin(Pw.USER);
+    }
+
+    /**
+     * Resets the verification state of the Admin PIN to unverified.
+     *
+     * @throws ApduException in case of an error response from the YubiKey
+     * @throws IOException   in case of connection error
+     */
+    public void unverifyAdminPin() throws ApduException, IOException {
+        doUnverifyPin(Pw.ADMIN);
+    }
+
+    /**
+     * Gets the number of signatures performed with the SIG key.
+     *
+     * @return the number of signatures
+     * @throws ApduException in case of an error response from the YubiKey
+     * @throws IOException   in case of connection error
+     */
     public int getSignatureCounter() throws ApduException, IOException {
         return SecuritySupportTemplate.parse(getData(Do.SECURITY_SUPPORT_TEMPLATE)).getSignatureCounter();
     }
 
+    /**
+     * Generate random data on the YubiKey.
+     *
+     * @param length the number of bytes to generate
+     * @return random data of the given length
+     * @throws ApduException in case of an error response from the YubiKey
+     * @throws IOException   in case of connection error
+     */
     public byte[] getChallenge(int length) throws ApduException, IOException {
         ExtendedCapabilities capabilities = getExtendedCapabilities();
         if (!capabilities.getFlags().contains(ExtendedCapabilityFlag.GET_CHALLENGE)) {
@@ -257,12 +423,31 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
         return protocol.sendAndReceive(new Apdu(0, INS_GET_CHALLENGE, 0, 0, null, length));
     }
 
+    /**
+     * Set the PIN policy for the signature key slot.
+     * <p>
+     * A PIN policy of ONCE (the default) requires the User PIN to be verified once per session
+     * prior to creating a signature. A policy of ALWAYS requires a new PIN verification prior to
+     * each signature made.
+     *
+     * @param pinPolicy the PIN policy to set
+     * @throws ApduException in case of an error response from the YubiKey
+     * @throws IOException   in case of connection error
+     */
     public void setSignaturePinPolicy(PinPolicy pinPolicy) throws ApduException, IOException {
         Logger.debug(logger, "Setting Signature PIN policy to {}", pinPolicy);
         putData(Do.PW_STATUS_BYTES, new byte[]{pinPolicy.value});
         Logger.info(logger, "Signature PIN policy set");
     }
 
+    /**
+     * Performs a factory reset on the OpenPGP application.
+     * <p>
+     * WARNING: This will delete all stored keys, certificates and other data.
+     *
+     * @throws ApduException in case of an error response from the YubiKey
+     * @throws IOException   in case of connection error
+     */
     public void reset() throws ApduException, IOException {
         require(FEATURE_RESET);
         Logger.debug(logger, "Preparing OpenPGP reset");
@@ -287,6 +472,19 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
         Logger.info(logger, "OpenPGP application data reset performed");
     }
 
+    /**
+     * Set the number of PIN attempts to allow before blocking.
+     * <p>
+     * WARNING: On YubiKey NEO this will reset the PINs to their default values.
+     * <p>
+     * Requires Admin PIN verification.
+     *
+     * @param userAttempts  the number of attempts for the User PIN
+     * @param resetAttempts the number of attempts for the Reset Code
+     * @param adminAttempts the number of attempts for the Admin PIN
+     * @throws ApduException in case of an error response from the YubiKey
+     * @throws IOException   in case of connection error
+     */
     public void setPinAttempts(int userAttempts, int resetAttempts, int adminAttempts) throws ApduException, IOException {
         require(FEATURE_PIN_ATTEMPTS);
 
@@ -329,14 +527,44 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
         Logger.info(logger, "New {} PIN set", pw);
     }
 
+    /**
+     * Change the User PIN.
+     *
+     * @param pin    the current User PIN
+     * @param newPin the new User PIN to set
+     * @throws ApduException       in case of an error response from the YubiKey
+     * @throws IOException         in case of connection error
+     * @throws InvalidPinException in case of the wrong PIN in case of the wrong PIN
+     */
     public void changeUserPin(String pin, String newPin) throws ApduException, IOException, InvalidPinException {
         changePw(Pw.USER, pin, newPin);
     }
 
+    /**
+     * Change the Admin PIN.
+     *
+     * @param pin    the current Admin PIN
+     * @param newPin the new Admin PIN to set
+     * @throws ApduException       in case of an error response from the YubiKey
+     * @throws IOException         in case of connection error
+     * @throws InvalidPinException in case of the wrong PIN
+     */
     public void changeAdminPin(String pin, String newPin) throws ApduException, IOException, InvalidPinException {
         changePw(Pw.ADMIN, pin, newPin);
     }
 
+    /**
+     * Set the Reset Code for User PIN.
+     * <p>
+     * The Reset Code can be used to set a new User PIN if it is lost or becomes
+     * blocked, using the reset_pin method.
+     * <p>
+     * This command requires Admin PIN verification.
+     *
+     * @param resetCode the Reset Code to set
+     * @throws ApduException in case of an error response from the YubiKey
+     * @throws IOException   in case of connection error
+     */
     public void setResetCode(String resetCode) throws ApduException, IOException {
         Logger.debug(logger, "Setting a new PIN Reset Code");
         byte[] data = getKdf().process(Pw.RESET, resetCode);
@@ -344,6 +572,20 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
         Logger.info(logger, "New Reset Code has been set");
     }
 
+    /**
+     * Resets the User PIN in case it is lost or blocked.
+     * <p>
+     * This can be done either after performing Admin PIN verification, or by providing the Reset
+     * Code.
+     * <p>
+     * This command requires Admin PIN verification, or the Reset Code.
+     *
+     * @param newPin    the new User PIN to set
+     * @param resetCode the Reset Code, which is needed if the Admin pin has not been verified
+     * @throws ApduException       in case of an error response from the YubiKey
+     * @throws IOException         in case of connection error
+     * @throws InvalidPinException in case of the wrong PIN
+     */
     public void resetPin(String newPin, @Nullable String resetCode) throws ApduException, IOException, InvalidPinException {
         Logger.debug(logger, "Resetting User PIN");
         byte p1 = 2;
@@ -374,6 +616,14 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
         Logger.info(logger, "New User PIN has been set");
     }
 
+    /**
+     * Get the User Interaction Flag (touch requirement) for a key.
+     *
+     * @param keyRef the key slot to read UIF for
+     * @return the User Interaction Flag for the given slot
+     * @throws ApduException in case of an error response from the YubiKey
+     * @throws IOException   in case of connection error
+     */
     public Uif getUif(KeyRef keyRef) throws ApduException, IOException {
         try {
             return Uif.fromValue(getData(keyRef.getUif())[0]);
@@ -386,8 +636,19 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
         }
     }
 
+    /**
+     * Set the User Interaction Flag (touch requirement) for a key.
+     * <p>
+     * Requires Admin PIN verification.
+     *
+     * @param keyRef the key slot to set UIF for
+     * @param uif    the UIF setting to use for the key in the given slot
+     * @throws ApduException in case of an error response from the YubiKey
+     * @throws IOException   in case of connection error
+     */
     public void setUif(KeyRef keyRef, Uif uif) throws ApduException, IOException {
         require(FEATURE_UIF);
+
         if (keyRef == KeyRef.ATT) {
             require(FEATURE_ATTESTATION);
         }
@@ -405,6 +666,14 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
         Logger.info(logger, "UIF changed for {}", keyRef);
     }
 
+    /**
+     * Get the supported key algorithms for each of the key slots.
+     *
+     * @return a mapping from key ref to list of supported algorithms
+     * @throws ApduException        in case of an error response from the YubiKey
+     * @throws IOException          in case of connection error
+     * @throws BadResponseException in case of incorrect YubiKey response
+     */
     public Map<KeyRef, List<AlgorithmAttributes>> getAlgorithmInformation() throws
             ApduException, IOException, BadResponseException {
         if (!getExtendedCapabilities().getFlags().contains(ExtendedCapabilityFlag.ALGORITHM_ATTRIBUTES_CHANGEABLE)) {
@@ -493,6 +762,15 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
         return data;
     }
 
+    /**
+     * Sets the algorithm attributes to use for a key slot.
+     *
+     * @param keyRef     the key slot to set attributes for
+     * @param attributes the algorithm attributes to set for the slot
+     * @throws BadResponseException in case of incorrect YubiKey response
+     * @throws ApduException        in case of an error response from the YubiKey
+     * @throws IOException          in case of connection error
+     */
     public void setAlgorithmAttributes(KeyRef keyRef, AlgorithmAttributes attributes) throws
             BadResponseException, ApduException, IOException {
         Logger.debug(logger, "Setting Algorithm Attributes for {}", keyRef);
@@ -509,6 +787,14 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
         Logger.info(logger, "Algorithm Attributes have been changed");
     }
 
+    /**
+     * Set the generation timestamp of a key.
+     *
+     * @param keyRef    the key slot to set the timestamp for
+     * @param timestamp the timestamp to set
+     * @throws ApduException in case of an error response from the YubiKey
+     * @throws IOException   in case of connection error
+     */
     public void setGenerationTime(KeyRef keyRef, int timestamp) throws
             ApduException, IOException {
         Logger.debug(logger, "Setting key generation timestamp for {}", keyRef);
@@ -516,6 +802,14 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
         Logger.info(logger, "Key generation timestamp set for {}", keyRef);
     }
 
+    /**
+     * Set the fingerprint of a key, format specified in RFC 4880.
+     *
+     * @param keyRef      the slot of the key to set the fingerprint for
+     * @param fingerprint the fingerprint to set
+     * @throws ApduException in case of an error response from the YubiKey
+     * @throws IOException   in case of connection error
+     */
     public void setFingerprint(KeyRef keyRef, byte[] fingerprint) throws
             ApduException, IOException {
         Logger.debug(logger, "Setting key fingerprint for {}", keyRef);
@@ -544,10 +838,18 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
         }
     }
 
+    /**
+     * Get a certificate from a slot.
+     *
+     * @param keyRef the slot to get a certificate from
+     * @return the certificate stored in the give slot
+     * @throws ApduException in case of an error response from the YubiKey
+     * @throws IOException   in case of connection error
+     */
     @Nullable
     public X509Certificate getCertificate(KeyRef keyRef) throws ApduException, IOException {
         Logger.debug(logger, "Getting certificate for key {}", keyRef);
-        byte[] data = null;
+        byte[] data;
         if (keyRef == KeyRef.ATT) {
             require(FEATURE_ATTESTATION);
             data = getData(Do.ATT_CERTIFICATE);
@@ -566,6 +868,16 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
         }
     }
 
+    /**
+     * Imports a certificate into a slot.
+     * <p>
+     * Requires Admin PIN verification.
+     *
+     * @param keyRef      the slot to put the certificate in
+     * @param certificate the certificate to import
+     * @throws ApduException in case of an error response from the YubiKey
+     * @throws IOException   in case of connection error
+     */
     public void putCertificate(KeyRef keyRef, X509Certificate certificate) throws
             ApduException, IOException {
         byte[] certData;
@@ -585,6 +897,15 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
         Logger.info(logger, "Certificate imported for key {}", keyRef);
     }
 
+    /**
+     * Deletes a certificate in a slot.
+     * <p>
+     * Requires Admin PIN verification.
+     *
+     * @param keyRef the slot in which to delete the certificate
+     * @throws ApduException in case of an error response from the YubiKey
+     * @throws IOException   in case of connection error
+     */
     public void deleteCertificate(KeyRef keyRef) throws ApduException, IOException {
         Logger.debug(logger, "Deleting certificate for key {}", keyRef);
         if (keyRef == KeyRef.ATT) {
@@ -648,6 +969,18 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
         throw new UnsupportedOperationException("Unsupported private key type");
     }
 
+    /**
+     * Generate an RSA key in the given slot.
+     * <p>
+     * Requires Admin PIN verification.
+     *
+     * @param keyRef  the slot to generate the key in
+     * @param keySize the bitlength of the key to generate
+     * @return the public key of the generated key pair
+     * @throws BadResponseException in case of incorrect YubiKey response
+     * @throws ApduException        in case of an error response from the YubiKey
+     * @throws IOException          in case of connection error
+     */
     public PublicKeyValues generateRsaKey(KeyRef keyRef, int keySize) throws
             BadResponseException, ApduException, IOException {
         require(FEATURE_RSA_GENERATION);
@@ -663,7 +996,7 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
         }
 
         byte[] resp = protocol.sendAndReceive(new Apdu(0, INS_GENERATE_ASYM, 0x80, 0x00, keyRef.getCrt()));
-        if(version.isLessThan(5, 0, 0)) {
+        if (version.isLessThan(5, 0, 0)) {
             setGenerationTime(keyRef, 0);
         }
         Map<Integer, byte[]> data = Tlvs.decodeMap(Tlvs.unpackValue(TAG_PUBLIC_KEY, resp));
@@ -674,6 +1007,18 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
         );
     }
 
+    /**
+     * Generate an EC key in the given slot.
+     * <p>
+     * Requires Admin PIN verification.
+     *
+     * @param keyRef the key slot to generate a key in
+     * @param curve  the elliptic curve of the key to generate
+     * @return the public key of the generated key pair
+     * @throws BadResponseException in case of incorrect YubiKey response
+     * @throws ApduException        in case of an error response from the YubiKey
+     * @throws IOException          in case of connection error
+     */
     public PublicKeyValues generateEcKey(KeyRef keyRef, OpenPgpCurve curve) throws
             BadResponseException, ApduException, IOException {
         require(FEATURE_EC_KEYS);
@@ -682,7 +1027,7 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
         setAlgorithmAttributes(keyRef, AlgorithmAttributes.Ec.create(keyRef, curve));
 
         byte[] resp = protocol.sendAndReceive(new Apdu(0, INS_GENERATE_ASYM, 0x80, 0x00, keyRef.getCrt()));
-        if(version.isLessThan(5, 0, 0)) {
+        if (version.isLessThan(5, 0, 0)) {
             setGenerationTime(keyRef, 0);
         }
         Map<Integer, byte[]> data = Tlvs.decodeMap(Tlvs.unpackValue(TAG_PUBLIC_KEY, resp));
@@ -694,6 +1039,17 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
         return PublicKeyValues.Ec.fromEncodedPoint(curve.getValues(), encoded);
     }
 
+    /**
+     * Import a private key into the give slot.
+     * <p>
+     * Requires Admin PIN verification.
+     *
+     * @param keyRef     the slot to import the key into
+     * @param privateKey the private key to import
+     * @throws BadResponseException in case of incorrect YubiKey response
+     * @throws ApduException        in case of an error response from the YubiKey
+     * @throws IOException          in case of connection error
+     */
     public void putKey(KeyRef keyRef, PrivateKeyValues privateKey) throws
             BadResponseException, ApduException, IOException {
         Logger.debug(logger, "Importing a private key for {}", keyRef);
@@ -708,12 +1064,21 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
         }
         PrivateKeyTemplate template = getKeyTemplate(privateKey, keyRef, version.isLessThan(4, 0, 0));
         protocol.sendAndReceive(new Apdu(0, INS_PUT_DATA_ODD, 0x3f, 0xff, template.getBytes()));
-        if(version.isLessThan(5, 0, 0)) {
+        if (version.isLessThan(5, 0, 0)) {
             setGenerationTime(keyRef, 0);
         }
         Logger.info(logger, "Private key imported for {}", keyRef);
     }
 
+    /**
+     * Read the public key from a slot.
+     *
+     * @param keyRef the key slot to read from
+     * @return the public key stored in the given slot
+     * @throws ApduException        in case of an error response from the YubiKey
+     * @throws IOException          in case of connection error
+     * @throws BadResponseException in case of incorrect YubiKey response
+     */
     public PublicKeyValues getPublicKey(KeyRef keyRef) throws
             ApduException, IOException, BadResponseException {
         Logger.debug(logger, "Getting public key for {}", keyRef);
@@ -735,6 +1100,14 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
         }
     }
 
+    /**
+     * Deletes the key in a key slot.
+     *
+     * @param keyRef the slot to delete
+     * @throws BadResponseException in case of incorrect YubiKey response
+     * @throws ApduException        in case of an error response from the YubiKey
+     * @throws IOException          in case of connection error
+     */
     public void deleteKey(KeyRef keyRef) throws
             BadResponseException, ApduException, IOException {
         Logger.debug(logger, "Deleting private key for {}", keyRef);
@@ -774,9 +1147,21 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
         ))).getBytes();
     }
 
+    /**
+     * Signs a message using the SIG key.
+     * <p>
+     * NOTE: This performs a raw signature. Messages should be hashed and/or padded prior.
+     * Requires User PIN verification.
+     *
+     * @param payload the message to sign
+     * @return the generated signature
+     * @throws ApduException in case of an error response from the YubiKey
+     * @throws IOException   in case of connection error
+     */
     public byte[] sign(byte[] payload) throws ApduException, IOException {
-        AlgorithmAttributes attributes = getApplicationRelatedData().getDiscretionary().getAlgorithmAttributes(KeyRef.SIG);
-        // TODO: Null check
+        AlgorithmAttributes attributes = Objects.requireNonNull(
+                getApplicationRelatedData().getDiscretionary().getAlgorithmAttributes(KeyRef.SIG)
+        );
         Logger.debug(logger, "Signing a message with {}", attributes);
         byte[] response = protocol.sendAndReceive(new Apdu(0, INS_PSO, 0x9e, 0x9a, payload));
         Logger.info(logger, "Message signed");
@@ -786,6 +1171,21 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
         return response;
     }
 
+    /**
+     * Decrypts a value using the DEC key.
+     * <p>
+     * This method should be used for RSA keys to perform an RSA decryption using PKCS#1 v1.5 padding.
+     * For RSA the `value` should be an encrypted block.
+     * For ECDH the `value` should be a peer public-key to perform the key exchange
+     * with, and the result will be the derived shared secret.
+     * <p>
+     * Requires (extended) User PIN verification.
+     *
+     * @param payload the ciphertext to decrypt
+     * @return the decrypted and unpadded plaintext
+     * @throws ApduException in case of an error response from the YubiKey
+     * @throws IOException   in case of connection error
+     */
     public byte[] decrypt(byte[] payload) throws ApduException, IOException {
         Logger.debug(logger, "Decrypting a value");
         byte[] response = protocol.sendAndReceive(new Apdu(0, INS_PSO, 0x80, 0x86, ByteBuffer.allocate(payload.length + 1).put((byte) 0).put(payload).array()));
@@ -793,6 +1193,16 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
         return response;
     }
 
+    /**
+     * Performs an ECDH key agreement using the DEC key.
+     * <p>
+     * This method should be used for EC keys where encryption is done using a shared secret.
+     *
+     * @param peerPublicKey the public key to perform the agreement with
+     * @return the key agreement shared secret
+     * @throws ApduException in case of an error response from the YubiKey
+     * @throws IOException   in case of connection error
+     */
     public byte[] decrypt(PublicKeyValues peerPublicKey) throws ApduException, IOException {
         byte[] encodedPoint;
         if (peerPublicKey instanceof PublicKeyValues.Ec) {
@@ -814,9 +1224,20 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
         return response;
     }
 
+    /**
+     * Authenticates a message using the AUT key.
+     * <p>
+     * Requires User PIN verification.
+     *
+     * @param payload the message to authenticate
+     * @return the generated signature
+     * @throws ApduException in case of an error response from the YubiKey
+     * @throws IOException   in case of connection error
+     */
     public byte[] authenticate(byte[] payload) throws ApduException, IOException {
-        AlgorithmAttributes attributes = getApplicationRelatedData().getDiscretionary().getAlgorithmAttributes(KeyRef.AUT);
-        // TODO: Null check
+        AlgorithmAttributes attributes = Objects.requireNonNull(
+                getApplicationRelatedData().getDiscretionary().getAlgorithmAttributes(KeyRef.AUT)
+        );
         Logger.debug(logger, "Authenticating a message with {}", attributes);
         byte[] response = protocol.sendAndReceive(
                 new Apdu(0, INS_INTERNAL_AUTHENTICATE, 0x0, 0x0, payload)
@@ -828,6 +1249,19 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
         return response;
     }
 
+    /**
+     * Creates an attestation certificate for a key.
+     * <p>
+     * The certificate is written to the certificate slot for the key, and its
+     * content is returned.
+     * <p>
+     * Requires User PIN verification.
+     *
+     * @param keyRef the slot to attest
+     * @return the attestation certificate
+     * @throws ApduException in case of an error response from the YubiKey
+     * @throws IOException   in case of connection error
+     */
     public X509Certificate attestKey(KeyRef keyRef) throws ApduException, IOException {
         require(FEATURE_ATTESTATION);
 

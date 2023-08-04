@@ -94,4 +94,29 @@ public class OpenPgpTests extends OpenPgpInstrumentedTests {
     public void testKdf() throws Throwable {
         withOpenPgpSession(OpenPgpDeviceTests::testKdf);
     }
+
+    @Test
+    public void testUnverifyPin() throws Throwable {
+        withOpenPgpSession(OpenPgpDeviceTests::testUnverifyPin);
+    }
+
+    @Test
+    public void testDeleteKey() throws Throwable {
+        withOpenPgpSession(OpenPgpDeviceTests::testDeleteKey);
+    }
+
+    @Test
+    public void testCertificateManagement() throws Throwable {
+        withOpenPgpSession(OpenPgpDeviceTests::testCertificateManagement);
+    }
+
+    @Test
+    public void testGetChallenge() throws Throwable {
+        withOpenPgpSession(OpenPgpDeviceTests::testGetChallenge);
+    }
+
+    @Test
+    public void testSetUif() throws Throwable {
+        withOpenPgpSession(OpenPgpDeviceTests::testSetUif);
+    }
 }
