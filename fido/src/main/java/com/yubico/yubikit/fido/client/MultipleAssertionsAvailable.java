@@ -79,8 +79,8 @@ public class MultipleAssertionsAvailable extends Throwable {
         final Map<String, ?> user = Objects.requireNonNull(assertion.getUser());
         final Map<String, ?> credential = Objects.requireNonNull(assertion.getCredential());
         return new AuthenticatorAssertionResponse(
-                assertion.getAuthencticatorData(),
                 clientDataJson,
+                assertion.getAuthencticatorData(),
                 assertion.getSignature(),
                 Objects.requireNonNull((byte[]) user.get(PublicKeyCredentialUserEntity.ID)),
                 Objects.requireNonNull((byte[]) credential.get(PublicKeyCredentialDescriptor.ID))

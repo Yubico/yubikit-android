@@ -250,8 +250,8 @@ public class SerializationTest {
         random.nextBytes(clientDataJson);
 
         AuthenticatorAssertionResponse response = new AuthenticatorAssertionResponse(
-                authData,
                 clientDataJson,
+                authData,
                 signature,
                 userId,
                 credentialId
@@ -273,8 +273,8 @@ public class SerializationTest {
         random.nextBytes(clientDataJson);
 
         AuthenticatorAttestationResponse response = new AuthenticatorAttestationResponse(
-                attestationObject,
-                clientDataJson
+                clientDataJson,
+                attestationObject
         );
 
         compareAttestations(response, AuthenticatorAttestationResponse.fromMap(response.toMap()));

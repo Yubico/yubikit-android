@@ -292,8 +292,8 @@ public class BasicWebAuthnClient implements Closeable {
                 }
 
                 return new AuthenticatorAssertionResponse(
-                        assertion.getAuthencticatorData(),
                         clientDataJson,
+                        assertion.getAuthencticatorData(),
                         assertion.getSignature(),
                         userId,
                         credentialId
