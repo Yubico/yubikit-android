@@ -39,6 +39,7 @@ public class Apdu {
      * @param p1   the first instruction parameter byte
      * @param p2   the second instruction parameter byte
      * @param data the command data
+     * @param le   the length of expected data in the response
      */
     private Apdu(byte cla, byte ins, byte p1, byte p2, @Nullable byte[] data, int le) {
         this.cla = cla;
