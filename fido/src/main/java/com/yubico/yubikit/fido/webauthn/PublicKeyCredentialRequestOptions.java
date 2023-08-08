@@ -26,17 +26,23 @@ public class PublicKeyCredentialRequestOptions {
     private final static String EXTENSIONS = "extensions";
 
     private final byte[] challenge;
-    private final long timeout;
+    @Nullable
+    private final Long timeout;
     @Nullable
     private final String rpId;
     private final List<PublicKeyCredentialDescriptor> allowCredentials;
     private final UserVerificationRequirement userVerification;
-    // TODO: add attestation property
-    // TODO: add attestationFormats property
     @Nullable
     private final Extensions extensions;
 
-    public PublicKeyCredentialRequestOptions(byte[] challenge, long timeout, @Nullable String rpId, @Nullable List<PublicKeyCredentialDescriptor> allowCredentials, @Nullable UserVerificationRequirement userVerification, @Nullable Extensions extensions) {
+    public PublicKeyCredentialRequestOptions(
+            byte[] challenge,
+            @Nullable Long timeout,
+            @Nullable String rpId,
+            @Nullable List<PublicKeyCredentialDescriptor> allowCredentials,
+            @Nullable UserVerificationRequirement userVerification,
+            @Nullable Extensions extensions
+    ) {
         this.challenge = challenge;
         this.timeout = timeout;
         this.rpId = rpId;
@@ -49,7 +55,7 @@ public class PublicKeyCredentialRequestOptions {
         return challenge;
     }
 
-    public long getTimeout() {
+    public @Nullable Long getTimeout() {
         return timeout;
     }
 
@@ -101,9 +107,11 @@ public class PublicKeyCredentialRequestOptions {
             }
         }
 
+        Number timeout = ((Number) map.get(TIMEOUT));
+
         return new PublicKeyCredentialRequestOptions(
                 decode(Objects.requireNonNull(map.get(CHALLENGE))),
-                Objects.requireNonNull((Number) map.get(TIMEOUT)).longValue(),
+                timeout == null ? null : timeout.longValue(),
                 (String) map.get(RP_ID),
                 allowCredentials,
                 UserVerificationRequirement.fromString((String) map.get(USER_VERIFICATION)),
