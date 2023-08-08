@@ -15,6 +15,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import javax.annotation.Nullable;
+
 /**
  * Test serialization and deserialization of WebAuthn data objects using toMap/fromMap as well as toBytes/fromBytes where applicable.
  * Also tests that each object can successfully serialize to and from CBOR.
@@ -176,8 +178,7 @@ public class SerializationTest {
         Assert.assertNull(b.getExtensions());
     }
 
-    @Test
-    public void testCreationOptions() {
+    void testCreationOptions(@Nullable Long timeout) {
         byte[] userId = new byte[4 + random.nextInt(29)];
         byte[] challenge = new byte[32];
         random.nextBytes(userId);
@@ -188,7 +189,7 @@ public class SerializationTest {
                 new PublicKeyCredentialUserEntity("user", userId, "A User Name"),
                 challenge,
                 Collections.singletonList(new PublicKeyCredentialParameters(PublicKeyCredentialType.PUBLIC_KEY, -7)),
-                random.nextInt(Integer.MAX_VALUE),
+                timeout,
                 Collections.singletonList(new PublicKeyCredentialDescriptor(PublicKeyCredentialType.PUBLIC_KEY, userId, null)),
                 new AuthenticatorSelectionCriteria(null, ResidentKeyRequirement.REQUIRED, null),
                 AttestationConveyancePreference.INDIRECT,
@@ -196,6 +197,12 @@ public class SerializationTest {
         );
 
         compareCreationOptions(options, PublicKeyCredentialCreationOptions.fromMap(options.toMap()));
+    }
+
+    @Test
+    public void testCreationOptions() {
+        testCreationOptions((long) random.nextInt(Integer.MAX_VALUE));
+        testCreationOptions(null);
     }
 
     private void compareRequestOptions(PublicKeyCredentialRequestOptions a, PublicKeyCredentialRequestOptions b) {
@@ -209,8 +216,7 @@ public class SerializationTest {
         Assert.assertNull(b.getExtensions());
     }
 
-    @Test
-    public void testRequestOptions() {
+    public void testRequestOptions(@Nullable Long timeout) {
         byte[] challenge = new byte[32];
         byte[] credentialId = new byte[1 + random.nextInt(128)];
         random.nextBytes(challenge);
@@ -218,7 +224,7 @@ public class SerializationTest {
 
         PublicKeyCredentialRequestOptions options = new PublicKeyCredentialRequestOptions(
                 challenge,
-                random.nextInt(Integer.MAX_VALUE),
+                timeout,
                 "example.com",
                 Collections.singletonList(new PublicKeyCredentialDescriptor(PublicKeyCredentialType.PUBLIC_KEY, credentialId, null)),
                 UserVerificationRequirement.REQUIRED,
@@ -226,6 +232,12 @@ public class SerializationTest {
         );
 
         compareRequestOptions(options, PublicKeyCredentialRequestOptions.fromMap(options.toMap()));
+    }
+
+    @Test
+    public void testRequestOptions() {
+        testRequestOptions((long) random.nextInt(Integer.MAX_VALUE));
+        testRequestOptions(null);
     }
 
     private void compareAssertions(AuthenticatorAssertionResponse a, AuthenticatorAssertionResponse b) {
