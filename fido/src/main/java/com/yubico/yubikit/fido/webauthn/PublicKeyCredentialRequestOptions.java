@@ -80,7 +80,9 @@ public class PublicKeyCredentialRequestOptions {
     public Map<String, ?> toMap() {
         Map<String, Object> map = new HashMap<>();
         map.put(CHALLENGE, encode(challenge));
-        map.put(TIMEOUT, timeout);
+        if (timeout != null) {
+            map.put(TIMEOUT, timeout);
+        }
         if(rpId != null) {
             map.put(RP_ID, rpId);
         }
