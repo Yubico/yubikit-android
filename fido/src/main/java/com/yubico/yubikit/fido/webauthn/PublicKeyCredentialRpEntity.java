@@ -5,27 +5,20 @@
  */
 package com.yubico.yubikit.fido.webauthn;
 
-import javax.annotation.Nullable;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-public class PublicKeyCredentialRpEntity {
-    private static final String ID = "id";
-    private static final String NAME = "name";
+import javax.annotation.Nullable;
 
-    private final String name;
+public class PublicKeyCredentialRpEntity extends PublicKeyCredentialEntity {
+    private static final String ID = "id";
     @Nullable
     private final String id;
 
     public PublicKeyCredentialRpEntity(String name, @Nullable String id) {
-        this.name = name;
+        super(name);
         this.id = id;
-    }
-
-    public String getName() {
-        return name;
     }
 
     @Nullable
@@ -35,8 +28,8 @@ public class PublicKeyCredentialRpEntity {
 
     public Map<String, ?> toMap() {
         Map<String, Object> map = new HashMap<>();
-        map.put(NAME, name);
-        if(id != null) {
+        map.put(NAME, getName());
+        if (id != null) {
             map.put(ID, id);
         }
         return map;
@@ -44,7 +37,8 @@ public class PublicKeyCredentialRpEntity {
 
     public static PublicKeyCredentialRpEntity fromMap(Map<String, ?> map) {
         return new PublicKeyCredentialRpEntity(
-                Objects.requireNonNull((String) map.get(NAME)), (String) map.get(ID)
+                Objects.requireNonNull((String) map.get(NAME)),
+                (String) map.get(ID)
         );
     }
 }

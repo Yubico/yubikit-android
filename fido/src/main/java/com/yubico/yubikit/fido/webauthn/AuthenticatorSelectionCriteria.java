@@ -40,11 +40,6 @@ public class AuthenticatorSelectionCriteria {
         return residentKey;
     }
 
-    @Deprecated
-    public boolean isRequireResidentKey() {
-        return requireResidentKey;
-    }
-
     public UserVerificationRequirement getUserVerification() {
         return userVerification;
     }
