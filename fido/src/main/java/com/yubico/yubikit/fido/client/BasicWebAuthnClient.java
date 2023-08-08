@@ -224,103 +224,13 @@ public class BasicWebAuthnClient implements Closeable {
      * @param effectiveDomain The effective domain for the request, which is used to validate the RP ID against.
      * @param pin             If needed, the PIN to authorize the credential creation.
      * @param state           If needed, the state to provide control over the ongoing operation
-     * @return The assertion response data.
+     * @return Webauthn public key credential with assertion response data.
      * @throws MultipleAssertionsAvailable In case of multiple assertions, catch this to make a selection and get the result.
      * @throws IOException                 A communication error in the transport layer
      * @throws CommandException            A communication in the protocol layer
      * @throws ClientError                 A higher level error
      */
-    public AuthenticatorAssertionResponse getAssertion(byte[] clientDataJson, PublicKeyCredentialRequestOptions options, String effectiveDomain, @Nullable char[] pin, @Nullable CommandState state) throws MultipleAssertionsAvailable, IOException, CommandException, ClientError {
-        String rpId = options.getRpId();
-        if (rpId == null) {
-            rpId = effectiveDomain;
-        } else if (!(effectiveDomain.equals(rpId) || effectiveDomain.endsWith("." + rpId))) {
-            throw new ClientError(ClientError.Code.BAD_REQUEST, "RP ID is not valid for effective domain");
-        }
-        Map<String, Boolean> ctapOptions = new HashMap<>();
-        if (getCtapUv(options.getUserVerification(), pin != null)) {
-            ctapOptions.put(OPTION_USER_VERIFICATION, true);
-        }
-
-        if (options.getExtensions() != null) {
-            throw new ClientError(ClientError.Code.CONFIGURATION_UNSUPPORTED, "Extensions not supported");
-        }
-
-        byte[] clientDataHash = hash(clientDataJson);
-
-        byte[] pinUvAuthParam = null;
-        int pinUvAuthProtocol = 0;
-        try {
-            if (pin != null) {
-                byte[] pinToken = clientPin.getPinToken(pin);
-                pinUvAuthParam = clientPin.getPinUvAuth().authenticate(pinToken, clientDataHash);
-                pinUvAuthProtocol = clientPin.getPinUvAuth().getVersion();
-            }
-
-            List<Ctap2Session.AssertionData> assertions = ctap.getAssertions(
-                    rpId,
-                    clientDataHash,
-                    getCredentialList(options.getAllowCredentials()), //TODO: Look at max size and length, etc.
-                    null,
-                    ctapOptions.isEmpty() ? null : ctapOptions,
-                    pinUvAuthParam,
-                    pinUvAuthProtocol,
-                    state
-            );
-            if (assertions.size() == 1) {
-                Ctap2Session.AssertionData assertion = assertions.get(0);
-                byte[] credentialId;
-                Map<String, ?> credentialMap = assertion.getCredential();
-                if (credentialMap != null) {
-                    credentialId = Objects.requireNonNull((byte[]) credentialMap.get(PublicKeyCredentialDescriptor.ID));
-                } else {
-                    // Credential is optional iff allowList contains exactly one credential.
-                    credentialId = options.getAllowCredentials().get(0).getId();
-                }
-
-                byte[] userId = null;
-                Map<String, ?> userMap = assertion.getUser();
-                if (userMap != null) {
-                    // This is not a complete UserEntity object, it may contain only "id".
-                    userId = Objects.requireNonNull((byte[]) userMap.get(KEY_USER_ID));
-                }
-
-                return new AuthenticatorAssertionResponse(
-                        clientDataJson,
-                        assertion.getAuthencticatorData(),
-                        assertion.getSignature(),
-                        userId,
-                        credentialId
-                );
-            } else {
-                throw new MultipleAssertionsAvailable(clientDataJson, assertions);
-            }
-        } catch (CtapException e) {
-            if (e.getCtapError() == CtapException.ERR_PIN_INVALID) {
-                throw new PinInvalidClientError(e, clientPin.getPinRetries());
-            }
-            throw ClientError.wrapCtapException(e);
-        }
-    }
-
-    /**
-     * Authenticate an existing WebAuthn credential.
-     * PIN is required if UV is "required", or if UV is "preferred" and a PIN is configured.
-     * If no allowCredentials list is provided (which is the case for a passwordless flow) the Authenticator may contain multiple discoverable credentials for the given RP.
-     * In such cases MultipleAssertionsAvailable will be thrown, and can be handled to select an assertion.
-     *
-     * @param clientDataJson  The UTF-8 encoded ClientData JSON object.
-     * @param options         The options for authenticating the credential.
-     * @param effectiveDomain The effective domain for the request, which is used to validate the RP ID against.
-     * @param pin             If needed, the PIN to authorize the credential creation.
-     * @param state           If needed, the state to provide control over the ongoing operation
-     * @return The assertion response data.
-     * @throws MultipleAssertionsAvailable In case of multiple assertions, catch this to make a selection and get the result.
-     * @throws IOException                 A communication error in the transport layer
-     * @throws CommandException            A communication in the protocol layer
-     * @throws ClientError                 A higher level error
-     */
-    public PublicKeyCredential getAssertion2(
+    public PublicKeyCredential getAssertion(
             byte[] clientDataJson,
             PublicKeyCredentialRequestOptions options,
             String effectiveDomain,
