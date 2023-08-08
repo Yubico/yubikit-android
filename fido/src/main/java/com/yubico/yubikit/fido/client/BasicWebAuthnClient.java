@@ -16,6 +16,7 @@ import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV1;
 import com.yubico.yubikit.fido.webauthn.AuthenticatorAssertionResponse;
 import com.yubico.yubikit.fido.webauthn.AuthenticatorAttestationResponse;
 import com.yubico.yubikit.fido.webauthn.AuthenticatorSelectionCriteria;
+import com.yubico.yubikit.fido.webauthn.PublicKeyCredential;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialCreationOptions;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialDescriptor;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialParameters;
@@ -28,6 +29,7 @@ import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,11 +41,12 @@ import javax.annotation.Nullable;
  * A "basic" WebAuthn client implementation which wraps a YubiKeySession.
  * <p>
  * Provides the following functionality:
- * - MakeCredential: Registers a new credential. If a PIN is needed, it is passed to this method.
- * - GetAssertion: Authenticate an existing credential. If a PIN is needed, it is passed to this method.
- * - PIN Management: Set or change the PIN code of an Authenticator, or see its state.
- * - Credential Management: List or delete resident credentials of an Authenticator.
- * <p>
+ * <ul>
+ * <li>MakeCredential: Registers a new credential. If a PIN is needed, it is passed to this method.</li>
+ * <li>GetAssertion: Authenticate an existing credential. If a PIN is needed, it is passed to this method.</li>
+ * <li>PIN Management: Set or change the PIN code of an Authenticator, or see its state.</li>
+ * <li>Credential Management: List or delete resident credentials of an Authenticator.</li>
+ * </ul>
  * The timeout parameter in the request options is ignored. To cancel a request pass a {@link CommandState}
  * instance to the call and use its cancel method.
  * <p>
@@ -111,12 +114,19 @@ public class BasicWebAuthnClient implements Closeable {
      * @param effectiveDomain The effective domain for the request, which is used to validate the RP ID against.
      * @param pin             If needed, the PIN to authorize the credential creation.
      * @param state           If needed, the state to provide control over the ongoing operation
-     * @return A WebAuthn attestation response containing the new credential.
+     * @return A WebAuthn public key credential.
      * @throws IOException      A communication error in the transport layer
      * @throws CommandException A communication in the protocol layer
      * @throws ClientError      A higher level error
      */
-    public AuthenticatorAttestationResponse makeCredential(byte[] clientDataJson, PublicKeyCredentialCreationOptions options, String effectiveDomain, @Nullable char[] pin, @Nullable CommandState state) throws IOException, CommandException, ClientError {
+    @SuppressWarnings("unchecked")
+    public PublicKeyCredential makeCredential(
+            byte[] clientDataJson,
+            PublicKeyCredentialCreationOptions options,
+            String effectiveDomain,
+            @Nullable char[] pin,
+            @Nullable CommandState state
+    ) throws IOException, CommandException, ClientError {
         Map<String, ?> rp = options.getRp().toMap();
         String rpId = options.getRp().getId();
         if (rpId == null) {
@@ -179,14 +189,21 @@ public class BasicWebAuthnClient implements Closeable {
                     state
             );
 
+            byte[] authenticatorData = credential.getAuthencticatorData();
             Map<String, Object> attestationObject = new HashMap<>();
             attestationObject.put(KEY_FORMAT, credential.getFormat());
-            attestationObject.put(KEY_AUTHENTICATOR_DATA, credential.getAuthencticatorData());
+            attestationObject.put(KEY_AUTHENTICATOR_DATA, authenticatorData);
             attestationObject.put(KEY_ATTESTATION_STATEMENT, credential.getAttestationStatement());
 
-            return new AuthenticatorAttestationResponse(
-                    clientDataJson,
-                    Cbor.encode(attestationObject)
+            int credentialIdLength = authenticatorData[54];
+            byte[] credentialId = Arrays.copyOfRange(authenticatorData, 55, 55 + credentialIdLength);
+
+            return new PublicKeyCredential(
+                    credentialId,
+                    new AuthenticatorAttestationResponse(
+                            clientDataJson,
+                            Cbor.encode(attestationObject)
+                    )
             );
         } catch (CtapException e) {
             if (e.getCtapError() == CtapException.ERR_PIN_INVALID) {
@@ -194,29 +211,6 @@ public class BasicWebAuthnClient implements Closeable {
             }
             throw ClientError.wrapCtapException(e);
         }
-    }
-
-    /**
-     * DEPRECATED.
-     * Use {@link #makeCredential(byte[], PublicKeyCredentialCreationOptions, String, char[], CommandState)} instead.
-     * This method takes no effective domain, and will not validate the RP ID in the request.
-     * <p>
-     * Create a new WebAuthn credential.
-     * <p>
-     * PIN is always required if a PIN is configured.
-     *
-     * @param clientDataJson The UTF-8 encoded ClientData JSON object.
-     * @param options        The options for creating the credential.
-     * @param pin            If needed, the PIN to authorize the credential creation.
-     * @param state          If needed, the state to provide control over the ongoing operation
-     * @return A WebAuthn attestation response containing the new credential.
-     * @throws IOException      A communication error in the transport layer
-     * @throws CommandException A communication in the protocol layer
-     * @throws ClientError      A higher level error
-     */
-    @Deprecated
-    public AuthenticatorAttestationResponse makeCredential(byte[] clientDataJson, PublicKeyCredentialCreationOptions options, @Nullable char[] pin, @Nullable CommandState state) throws IOException, CommandException, ClientError {
-        return makeCredential(clientDataJson, options, Objects.requireNonNull(options.getRp().getId()), pin, state);
     }
 
     /**
@@ -310,28 +304,102 @@ public class BasicWebAuthnClient implements Closeable {
     }
 
     /**
-     * DEPRECATED.
-     * Use {@link #getAssertion(byte[], PublicKeyCredentialRequestOptions, String, char[], CommandState)} instead.
-     * * This method takes no effective domain, and will not validate the RP ID in the request.
-     * <p>
      * Authenticate an existing WebAuthn credential.
      * PIN is required if UV is "required", or if UV is "preferred" and a PIN is configured.
      * If no allowCredentials list is provided (which is the case for a passwordless flow) the Authenticator may contain multiple discoverable credentials for the given RP.
      * In such cases MultipleAssertionsAvailable will be thrown, and can be handled to select an assertion.
      *
-     * @param clientDataJson The UTF-8 encoded ClientData JSON object.
-     * @param options        The options for authenticating the credential.
-     * @param pin            If needed, the PIN to authorize the credential creation.
-     * @param state          If needed, the state to provide control over the ongoing operation
+     * @param clientDataJson  The UTF-8 encoded ClientData JSON object.
+     * @param options         The options for authenticating the credential.
+     * @param effectiveDomain The effective domain for the request, which is used to validate the RP ID against.
+     * @param pin             If needed, the PIN to authorize the credential creation.
+     * @param state           If needed, the state to provide control over the ongoing operation
      * @return The assertion response data.
      * @throws MultipleAssertionsAvailable In case of multiple assertions, catch this to make a selection and get the result.
      * @throws IOException                 A communication error in the transport layer
      * @throws CommandException            A communication in the protocol layer
      * @throws ClientError                 A higher level error
      */
-    @Deprecated
-    public AuthenticatorAssertionResponse getAssertion(byte[] clientDataJson, PublicKeyCredentialRequestOptions options, @Nullable char[] pin, @Nullable CommandState state) throws MultipleAssertionsAvailable, IOException, CommandException, ClientError {
-        return getAssertion(clientDataJson, options, Objects.requireNonNull(options.getRpId()), pin, state);
+    public PublicKeyCredential getAssertion2(
+            byte[] clientDataJson,
+            PublicKeyCredentialRequestOptions options,
+            String effectiveDomain,
+            @Nullable char[] pin,
+            @Nullable CommandState state
+    ) throws MultipleAssertionsAvailable, IOException, CommandException, ClientError {
+        String rpId = options.getRpId();
+        if (rpId == null) {
+            rpId = effectiveDomain;
+        } else if (!(effectiveDomain.equals(rpId) || effectiveDomain.endsWith("." + rpId))) {
+            throw new ClientError(ClientError.Code.BAD_REQUEST, "RP ID is not valid for effective domain");
+        }
+        Map<String, Boolean> ctapOptions = new HashMap<>();
+        if (getCtapUv(options.getUserVerification(), pin != null)) {
+            ctapOptions.put(OPTION_USER_VERIFICATION, true);
+        }
+
+        if (options.getExtensions() != null) {
+            throw new ClientError(ClientError.Code.CONFIGURATION_UNSUPPORTED, "Extensions not supported");
+        }
+
+        byte[] clientDataHash = hash(clientDataJson);
+
+        byte[] pinUvAuthParam = null;
+        int pinUvAuthProtocol = 0;
+        try {
+            if (pin != null) {
+                byte[] pinToken = clientPin.getPinToken(pin);
+                pinUvAuthParam = clientPin.getPinUvAuth().authenticate(pinToken, clientDataHash);
+                pinUvAuthProtocol = clientPin.getPinUvAuth().getVersion();
+            }
+
+            List<Ctap2Session.AssertionData> assertions = ctap.getAssertions(
+                    rpId,
+                    clientDataHash,
+                    getCredentialList(options.getAllowCredentials()), //TODO: Look at max size and length, etc.
+                    null,
+                    ctapOptions.isEmpty() ? null : ctapOptions,
+                    pinUvAuthParam,
+                    pinUvAuthProtocol,
+                    state
+            );
+            if (assertions.size() == 1) {
+                Ctap2Session.AssertionData assertion = assertions.get(0);
+                byte[] credentialId;
+                Map<String, ?> credentialMap = assertion.getCredential();
+                if (credentialMap != null) {
+                    credentialId = Objects.requireNonNull((byte[]) credentialMap.get(PublicKeyCredentialDescriptor.ID));
+                } else {
+                    // Credential is optional iff allowList contains exactly one credential.
+                    credentialId = options.getAllowCredentials().get(0).getId();
+                }
+
+                byte[] userId = null;
+                Map<String, ?> userMap = assertion.getUser();
+                if (userMap != null) {
+                    // This is not a complete UserEntity object, it may contain only "id".
+                    userId = Objects.requireNonNull((byte[]) userMap.get(KEY_USER_ID));
+                }
+
+                return new PublicKeyCredential(
+                        credentialId,
+                        new AuthenticatorAssertionResponse(
+                                clientDataJson,
+                                assertion.getAuthencticatorData(),
+                                assertion.getSignature(),
+                                userId,
+                                credentialId
+                        )
+                );
+            } else {
+                throw new MultipleAssertionsAvailable(clientDataJson, assertions);
+            }
+        } catch (CtapException e) {
+            if (e.getCtapError() == CtapException.ERR_PIN_INVALID) {
+                throw new PinInvalidClientError(e, clientPin.getPinRetries());
+            }
+            throw ClientError.wrapCtapException(e);
+        }
     }
 
     /**

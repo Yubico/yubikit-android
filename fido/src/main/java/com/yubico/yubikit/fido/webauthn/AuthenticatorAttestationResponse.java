@@ -13,8 +13,7 @@ import java.util.Map;
 import java.util.Objects;
 
 public class AuthenticatorAttestationResponse extends AuthenticatorResponse {
-    private static final String CLIENT_DATA_JSON = "clientDataJSON";
-    private static final String ATTESTATION_OBJECT = "attestationObject";
+    static final String ATTESTATION_OBJECT = "attestationObject";
 
     private final byte[] attestationObject;
 

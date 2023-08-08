@@ -8,6 +8,8 @@ package com.yubico.yubikit.fido.webauthn;
 import java.util.Map;
 
 public abstract class AuthenticatorResponse {
+    static final String CLIENT_DATA_JSON = "clientDataJSON";
+
     private final byte[] clientDataJson;
 
     AuthenticatorResponse(byte[] clientDataJson) {
