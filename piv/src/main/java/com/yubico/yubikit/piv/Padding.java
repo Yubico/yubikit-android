@@ -31,6 +31,7 @@ import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 
+@Deprecated
 class Padding {
     private static final String RAW_RSA = "RSA/ECB/NoPadding";
     private static final Pattern ECDSA_HASH_PATTERN = Pattern.compile("^(.+)withECDSA$", Pattern.CASE_INSENSITIVE);

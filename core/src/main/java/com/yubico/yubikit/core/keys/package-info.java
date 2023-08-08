@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2022 Yubico.
+ * Copyright (C) 2023 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,17 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+@PackageNonnullByDefault
+package com.yubico.yubikit.core.keys;
 
-package com.yubico.yubikit.piv;
-
-/**
- * Thrown when the wrong PIN or PUK is used (or when the PIN or PUK is in a blocked state).
- *
- * @deprecated Use InvalidPinException from the code module instead
- */
-@Deprecated
-public class InvalidPinException extends com.yubico.yubikit.core.application.InvalidPinException {
-    public InvalidPinException(int attemptsRemaining) {
-        super(attemptsRemaining);
-    }
-}
+import com.yubico.yubikit.core.PackageNonnullByDefault;

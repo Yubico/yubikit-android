@@ -15,7 +15,6 @@
     <string name="yubikit_otp_touch">Touch the sensor on your YubiKey.</string>
 
     <public name="yubikit_prompt_activity_title" type="string" />
-    <public name="yubikit_prompt_activity_title" type="string" />
     <public name="yubikit_prompt_image_desc" type="string" />
     <public name="yubikit_prompt_plug_in" type="string" />
     <public name="yubikit_prompt_plug_in_or_tap" type="string" />

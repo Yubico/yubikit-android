@@ -32,6 +32,7 @@ import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.ECParameterSpec;
+import java.security.spec.ECPoint;
 import java.util.Arrays;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -55,7 +56,7 @@ public abstract class PivPrivateKey implements PrivateKey, Destroyable {
         if (keyType.params.algorithm == KeyType.Algorithm.RSA) {
             return new PivPrivateKey.RsaKey(slot, keyType, pinPolicy, touchPolicy, ((RSAPublicKey) publicKey).getModulus(), pin);
         } else {
-            return new PivPrivateKey.EcKey(slot, keyType, pinPolicy, touchPolicy, ((ECPublicKey) publicKey), pin);
+            return new PivPrivateKey.EcKey(slot, keyType, pinPolicy, touchPolicy, ((ECPublicKey) publicKey).getParams(), pin);
         }
     }
 
@@ -151,14 +152,14 @@ public abstract class PivPrivateKey implements PrivateKey, Destroyable {
     }
 
     static class EcKey extends PivPrivateKey implements ECKey {
-        private final ECPublicKey publicKey;
+        private final ECParameterSpec ecSpec;
 
-        private EcKey(Slot slot, KeyType keyType, @Nullable PinPolicy pinPolicy, @Nullable TouchPolicy touchPolicy, ECPublicKey publicKey, @Nullable char[] pin) {
+        private EcKey(Slot slot, KeyType keyType, @Nullable PinPolicy pinPolicy, @Nullable TouchPolicy touchPolicy, ECParameterSpec ecSpec, @Nullable char[] pin) {
             super(slot, keyType, pinPolicy, touchPolicy, pin);
-            this.publicKey = publicKey;
+            this.ecSpec = ecSpec;
         }
 
-        byte[] keyAgreement(Callback<Callback<Result<PivSession, Exception>>> provider, ECPublicKey peerPublicKey) throws Exception {
+        byte[] keyAgreement(Callback<Callback<Result<PivSession, Exception>>> provider, ECPoint peerPublicKey) throws Exception {
             BlockingQueue<Result<byte[], Exception>> queue = new ArrayBlockingQueue<>(1);
             provider.invoke(result -> queue.add(Result.of(() -> {
                 PivSession session = result.getValue();
@@ -172,7 +173,7 @@ public abstract class PivPrivateKey implements PrivateKey, Destroyable {
 
         @Override
         public ECParameterSpec getParams() {
-            return publicKey.getParams();
+            return ecSpec;
         }
     }
 

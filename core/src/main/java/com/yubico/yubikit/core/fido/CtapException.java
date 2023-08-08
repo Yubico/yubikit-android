@@ -22,8 +22,8 @@ import java.util.Locale;
 /**
  * An error on the CTAP-level, returned from the Authenticator.
  * <p>
- * These error codes are defined by the CTAP2 specification:
- * https://fidoalliance.org/specs/fido-v2.0-id-20180227/fido-client-to-authenticator-protocol-v2.0-id-20180227.html#error-responses
+ * These error codes are defined by the
+ * <a href="https://fidoalliance.org/specs/fido-v2.0-id-20180227/fido-client-to-authenticator-protocol-v2.0-id-20180227.html#error-responses">CTAP2 specification</a>
  */
 public class CtapException extends CommandException {
     public static final byte ERR_SUCCESS = 0x00;

@@ -29,6 +29,7 @@ public class Apdu {
     private final byte p1;
     private final byte p2;
     private final byte[] data;
+    private final int le;
 
     /**
      * Creates a new command APDU from a list of parameters specified by the ISO/IEC 7816-4 standard.
@@ -38,25 +39,35 @@ public class Apdu {
      * @param p1   the first instruction parameter byte
      * @param p2   the second instruction parameter byte
      * @param data the command data
+     * @param le   the length of expected data in the response
      */
-    private Apdu(byte cla, byte ins, byte p1, byte p2, @Nullable byte[] data) {
+    private Apdu(byte cla, byte ins, byte p1, byte p2, @Nullable byte[] data, int le) {
         this.cla = cla;
         this.ins = ins;
         this.p1 = p1;
         this.p2 = p2;
         this.data = data == null ? new byte[0] : data;
+        this.le = le;
+    }
+
+    private Apdu(byte cla, byte ins, byte p1, byte p2, @Nullable byte[] data) {
+        this(cla, ins, p1, p2, data, 0);
     }
 
     /**
      * Constructor using int's for convenience. See {@link #Apdu(byte, byte, byte, byte, byte[])}.
      */
-    public Apdu(int cla, int ins, int p1, int p2, @Nullable byte[] data) {
+    public Apdu(int cla, int ins, int p1, int p2, @Nullable byte[] data, int le) {
         this(validateByte(cla, "CLA"),
                 validateByte(ins, "INS"),
                 validateByte(p1, "P1"),
                 validateByte(p2, "P2"),
-                data
+                data,
+                le
         );
+    }
+    public Apdu(int cla, int ins, int p1, int p2, @Nullable byte[] data) {
+        this(cla, ins, p1, p2, data, 0);
     }
 
     /**
@@ -92,6 +103,10 @@ public class Apdu {
      */
     public byte getP2() {
         return p2;
+    }
+
+    public int getLe() {
+        return le;
     }
 
     /*
