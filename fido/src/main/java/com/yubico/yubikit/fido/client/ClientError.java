@@ -32,10 +32,15 @@ public class ClientError extends Exception {
     public enum Code {
         OTHER_ERROR(1), BAD_REQUEST(2), CONFIGURATION_UNSUPPORTED(3), DEVICE_INELIGIBLE(4), TIMEOUT(5);
 
-        public final int errorCode;
+        private final int errorCode;
 
         Code(int errorCode) {
             this.errorCode = errorCode;
+        }
+
+        @SuppressWarnings("unused")
+        public int getErrorCode() {
+            return errorCode;
         }
 
         @Override
@@ -44,7 +49,7 @@ public class ClientError extends Exception {
         }
     }
 
-    public final Code errorCode;
+    private final Code errorCode;
 
     public ClientError(Code errorCode, String message) {
         super(errorCode + " - " + message);
@@ -56,6 +61,10 @@ public class ClientError extends Exception {
         this.errorCode = errorCode;
     }
 
+    @SuppressWarnings("unused")
+    public Code getErrorCode() {
+        return errorCode;
+    }
     /**
      * Translate CTAP errors into client errors
      *
