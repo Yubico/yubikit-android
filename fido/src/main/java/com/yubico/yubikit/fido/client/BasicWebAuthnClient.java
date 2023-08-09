@@ -42,13 +42,10 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 import javax.annotation.Nullable;
 
@@ -88,15 +85,6 @@ public class BasicWebAuthnClient implements Closeable {
 
     private boolean pinConfigured;
     private boolean uvConfigured;
-
-    private static final Set<String> supportedPublicKeyCredentialTypes;
-
-    static {
-        final Set<String> credentialTypes = new HashSet<>();
-        credentialTypes.add(PublicKeyCredentialType.PUBLIC_KEY);
-
-        supportedPublicKeyCredentialTypes = Collections.unmodifiableSet(credentialTypes);
-    }
 
     final private boolean credentialManagementSupported;
 
@@ -163,7 +151,7 @@ public class BasicWebAuthnClient implements Closeable {
 
         List<Map<String, ?>> pubKeyCredParams = new ArrayList<>();
         for (PublicKeyCredentialParameters param : options.getPubKeyCredParams()) {
-            if (supportedPublicKeyCredentialTypes.contains(param.getType())) {
+            if (isPublicKeyCredentialTypeSupported(param.getType())) {
                 pubKeyCredParams.add(param.toMap());
             }
         }
@@ -202,7 +190,7 @@ public class BasicWebAuthnClient implements Closeable {
                 throw new PinRequiredClientError();
             }
 
-            final List<PublicKeyCredentialDescriptor> excludeCredentials = removeInvalidCredentials(
+            final List<PublicKeyCredentialDescriptor> excludeCredentials = removeUnsupportedCredentials(
                     options.getExcludeCredentials()
             );
 
@@ -293,7 +281,7 @@ public class BasicWebAuthnClient implements Closeable {
                 pinUvAuthProtocol = clientPin.getPinUvAuth().getVersion();
             }
 
-            final List<PublicKeyCredentialDescriptor> allowCredentials = removeInvalidCredentials(
+            final List<PublicKeyCredentialDescriptor> allowCredentials = removeUnsupportedCredentials(
                     options.getAllowCredentials()
             );
 
@@ -480,18 +468,24 @@ public class BasicWebAuthnClient implements Closeable {
         }
     }
 
+    private static boolean isPublicKeyCredentialTypeSupported(String type) {
+        return PublicKeyCredentialType.PUBLIC_KEY.equals(type);
+    }
+
     /**
      * @return new list containing only descriptors with valid {@code PublicKeyCredentialType} type
      */
     @Nullable
-    private static List<PublicKeyCredentialDescriptor> removeInvalidCredentials(@Nullable List<PublicKeyCredentialDescriptor> descriptors) {
+    private static List<PublicKeyCredentialDescriptor> removeUnsupportedCredentials(
+            @Nullable List<PublicKeyCredentialDescriptor> descriptors
+    ) {
         if (descriptors == null || descriptors.isEmpty()) {
             return descriptors;
         }
 
         final List<PublicKeyCredentialDescriptor> list = new ArrayList<>();
         for (PublicKeyCredentialDescriptor credential : descriptors) {
-            if (supportedPublicKeyCredentialTypes.contains(credential.getType())) {
+            if (isPublicKeyCredentialTypeSupported(credential.getType())) {
                 list.add(credential);
             }
         }
