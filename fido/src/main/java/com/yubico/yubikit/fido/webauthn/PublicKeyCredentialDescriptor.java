@@ -32,24 +32,24 @@ public class PublicKeyCredentialDescriptor {
     public static final String ID = "id";
     public static final String TRANSPORTS = "transports";
 
-    private final PublicKeyCredentialType type;
+    private final String type;
     private final byte[] id;
     @Nullable
     private final List<String> transports;
 
-    public PublicKeyCredentialDescriptor(PublicKeyCredentialType type, byte[] id) {
+    public PublicKeyCredentialDescriptor(String type, byte[] id) {
         this.type = type;
         this.id = id;
         this.transports = null;
     }
 
-    public PublicKeyCredentialDescriptor(PublicKeyCredentialType type, byte[] id, @Nullable List<String> transports) {
+    public PublicKeyCredentialDescriptor(String type, byte[] id, @Nullable List<String> transports) {
         this.type = type;
         this.id = id;
         this.transports = transports;
     }
 
-    public PublicKeyCredentialType getType() {
+    public String getType() {
         return type;
     }
 
@@ -64,7 +64,7 @@ public class PublicKeyCredentialDescriptor {
 
     public Map<String, ?> toMap() {
         Map<String, Object> map = new HashMap<>();
-        map.put(TYPE, type.toString());
+        map.put(TYPE, type);
         map.put(ID,encode(id));
         if (transports != null) {
             map.put(TRANSPORTS, transports);
@@ -75,7 +75,7 @@ public class PublicKeyCredentialDescriptor {
     @SuppressWarnings("unchecked")
     public static PublicKeyCredentialDescriptor fromMap(Map<String, ?> map) {
         return new PublicKeyCredentialDescriptor(
-                PublicKeyCredentialType.fromString(Objects.requireNonNull((String) map.get(TYPE))),
+                Objects.requireNonNull((String) map.get(TYPE)),
                 decode(Objects.requireNonNull((String) map.get(ID))),
                 (List<String>) map.get(TRANSPORTS)
         );
@@ -86,7 +86,7 @@ public class PublicKeyCredentialDescriptor {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         PublicKeyCredentialDescriptor that = (PublicKeyCredentialDescriptor) o;
-        return type == that.type &&
+        return type.equals(that.type) &&
                 Arrays.equals(id, that.id);
     }
 

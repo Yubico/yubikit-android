@@ -32,6 +32,7 @@ import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialCreationOptions;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialDescriptor;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialParameters;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialRequestOptions;
+import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialType;
 import com.yubico.yubikit.fido.webauthn.ResidentKeyRequirement;
 import com.yubico.yubikit.fido.webauthn.UserVerificationRequirement;
 
@@ -150,7 +151,9 @@ public class BasicWebAuthnClient implements Closeable {
 
         List<Map<String, ?>> pubKeyCredParams = new ArrayList<>();
         for (PublicKeyCredentialParameters param : options.getPubKeyCredParams()) {
-            pubKeyCredParams.add(param.toMap());
+            if (isPublicKeyCredentialTypeSupported(param.getType())) {
+                pubKeyCredParams.add(param.toMap());
+            }
         }
 
         Map<String, Boolean> ctapOptions = new HashMap<>();
@@ -187,12 +190,16 @@ public class BasicWebAuthnClient implements Closeable {
                 throw new PinRequiredClientError();
             }
 
+            final List<PublicKeyCredentialDescriptor> excludeCredentials = removeUnsupportedCredentials(
+                    options.getExcludeCredentials()
+            );
+
             Ctap2Session.CredentialData credential = ctap.makeCredential(
                     clientDataHash,
                     rp,
                     user,
                     pubKeyCredParams,
-                    getCredentialList(options.getExcludeCredentials()),
+                    getCredentialList(excludeCredentials),
                     null,
                     ctapOptions.isEmpty() ? null : ctapOptions,
                     pinUvAuthParam,
@@ -274,10 +281,14 @@ public class BasicWebAuthnClient implements Closeable {
                 pinUvAuthProtocol = clientPin.getPinUvAuth().getVersion();
             }
 
+            final List<PublicKeyCredentialDescriptor> allowCredentials = removeUnsupportedCredentials(
+                    options.getAllowCredentials()
+            );
+
             List<Ctap2Session.AssertionData> assertions = ctap.getAssertions(
                     rpId,
                     clientDataHash,
-                    getCredentialList(options.getAllowCredentials()), //TODO: Look at max size and length, etc.
+                    getCredentialList(allowCredentials),
                     null,
                     ctapOptions.isEmpty() ? null : ctapOptions,
                     pinUvAuthParam,
@@ -291,8 +302,11 @@ public class BasicWebAuthnClient implements Closeable {
                 if (credentialMap != null) {
                     credentialId = Objects.requireNonNull((byte[]) credentialMap.get(PublicKeyCredentialDescriptor.ID));
                 } else {
-                    // Credential is optional iff allowList contains exactly one credential.
-                    credentialId = options.getAllowCredentials().get(0).getId();
+                    // Credential is optional if allowList contains exactly one credential.
+                    if (allowCredentials == null || allowCredentials.size() != 1) {
+                        throw new RuntimeException("Expecting exactly one valid credential in allowCredentials");
+                    }
+                    credentialId = allowCredentials.get(0).getId();
                 }
 
                 byte[] userId = null;
@@ -454,8 +468,32 @@ public class BasicWebAuthnClient implements Closeable {
         }
     }
 
-    /*
-     * Prepares a list of Credential descriptors for CBOR serialization.
+    private static boolean isPublicKeyCredentialTypeSupported(String type) {
+        return PublicKeyCredentialType.PUBLIC_KEY.equals(type);
+    }
+
+    /**
+     * @return new list containing only descriptors with valid {@code PublicKeyCredentialType} type
+     */
+    @Nullable
+    private static List<PublicKeyCredentialDescriptor> removeUnsupportedCredentials(
+            @Nullable List<PublicKeyCredentialDescriptor> descriptors
+    ) {
+        if (descriptors == null || descriptors.isEmpty()) {
+            return descriptors;
+        }
+
+        final List<PublicKeyCredentialDescriptor> list = new ArrayList<>();
+        for (PublicKeyCredentialDescriptor credential : descriptors) {
+            if (isPublicKeyCredentialTypeSupported(credential.getType())) {
+                list.add(credential);
+            }
+        }
+        return list;
+    }
+
+    /**
+     * @return new list of Credential descriptors for CBOR serialization.
      */
     @Nullable
     private static List<Map<String, ?>> getCredentialList(@Nullable List<PublicKeyCredentialDescriptor> descriptors) {

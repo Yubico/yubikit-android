@@ -16,18 +16,6 @@
 
 package com.yubico.yubikit.fido.webauthn;
 
-public enum PublicKeyCredentialType {
-    PUBLIC_KEY;
-
-    @Override
-    public String toString() {
-        return name().replace("_", "-").toLowerCase();
-    }
-
-    public static PublicKeyCredentialType fromString(String value) {
-        return PublicKeyCredentialType.valueOf(value
-                .replace("-", "_")
-                .toUpperCase()
-        );
-    }
+public class PublicKeyCredentialType {
+    public final static String PUBLIC_KEY = "public-key";
 }

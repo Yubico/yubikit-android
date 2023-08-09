@@ -21,6 +21,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.security.SecureRandom;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -85,10 +86,6 @@ public class SerializationTest {
     }
 
     private void compareParametersLists(List<PublicKeyCredentialParameters> a, List<PublicKeyCredentialParameters> b) {
-        if (a == null && b == null) {
-            return;
-        }
-
         Assert.assertEquals(a.size(), b.size());
         for (int i = 0; i < a.size(); i++) {
             compareParameters(a.get(i), b.get(i));
@@ -104,7 +101,7 @@ public class SerializationTest {
 
         Map<String, ?> map = param.toMap();
 
-        Assert.assertEquals(param.getType().toString(), map.get("type"));
+        Assert.assertEquals(param.getType(), map.get("type"));
         Assert.assertEquals(param.getAlg(), map.get("alg"));
 
         compareParameters(param, PublicKeyCredentialParameters.fromMap(map));
@@ -117,10 +114,6 @@ public class SerializationTest {
     }
 
     private void compareDescriptorLists(List<PublicKeyCredentialDescriptor> a, List<PublicKeyCredentialDescriptor> b) {
-        if (a == null && b == null) {
-            return;
-        }
-
         Assert.assertEquals(a.size(), b.size());
         for (int i = 0; i < a.size(); i++) {
             compareDescriptors(a.get(i), b.get(i));
@@ -139,18 +132,18 @@ public class SerializationTest {
         );
 
         Map<String, ?> base64Map = descriptor.toMap();
-        Assert.assertEquals(descriptor.getType().toString(), base64Map.get("type"));
+        Assert.assertEquals(descriptor.getType(), base64Map.get("type"));
         Assert.assertArrayEquals(descriptor.getId(), Base64.decodeBase64((String) base64Map.get("id")));
         compareDescriptors(descriptor, PublicKeyCredentialDescriptor.fromMap(base64Map));
 
         Map<String, ?> map = descriptor.toMap();
-        Assert.assertEquals(descriptor.getType().toString(), map.get("type"));
+        Assert.assertEquals(descriptor.getType(), map.get("type"));
         Assert.assertEquals(Base64.encodeBase64URLSafeString(descriptor.getId()), (String) map.get("id"));
         compareDescriptors(descriptor, PublicKeyCredentialDescriptor.fromMap(map));
     }
 
-    private void compareSelectionCritiera(AuthenticatorSelectionCriteria a, AuthenticatorSelectionCriteria b) {
-        if (a == null && b == null) {
+    private void compareSelectionCriteria(@Nullable AuthenticatorSelectionCriteria a, @Nullable AuthenticatorSelectionCriteria b) {
+        if (a == null || b == null) {
             return;
         }
         Assert.assertEquals(a.getAuthenticatorAttachment(), b.getAuthenticatorAttachment());
@@ -168,11 +161,13 @@ public class SerializationTest {
 
         Map<String, ?> map = criteria.toMap();
 
+        Assert.assertNotNull(criteria.getAuthenticatorAttachment());
+        Assert.assertNotNull(criteria.getResidentKey());
         Assert.assertEquals(criteria.getAuthenticatorAttachment().toString(), map.get("authenticatorAttachment"));
         Assert.assertEquals(criteria.getUserVerification().toString(), map.get("userVerification"));
         Assert.assertEquals(criteria.getResidentKey().toString(), map.get("residentKey"));
 
-        compareSelectionCritiera(criteria, AuthenticatorSelectionCriteria.fromMap(map));
+        compareSelectionCriteria(criteria, AuthenticatorSelectionCriteria.fromMap(map));
     }
 
     private void compareCreationOptions(PublicKeyCredentialCreationOptions a, PublicKeyCredentialCreationOptions b) {
@@ -182,7 +177,7 @@ public class SerializationTest {
         compareParametersLists(a.getPubKeyCredParams(), b.getPubKeyCredParams());
         Assert.assertEquals(a.getTimeout(), b.getTimeout());
         compareDescriptorLists(a.getExcludeCredentials(), b.getExcludeCredentials());
-        compareSelectionCritiera(a.getAuthenticatorSelection(), b.getAuthenticatorSelection());
+        compareSelectionCriteria(a.getAuthenticatorSelection(), b.getAuthenticatorSelection());
         Assert.assertEquals(a.getAttestation(), b.getAttestation());
 
         Assert.assertNull(a.getExtensions());
@@ -195,13 +190,27 @@ public class SerializationTest {
         random.nextBytes(userId);
         random.nextBytes(challenge);
 
+        List<PublicKeyCredentialParameters> pubKeyCredParams = new ArrayList<>(
+                Arrays.asList(
+                        new PublicKeyCredentialParameters(PublicKeyCredentialType.PUBLIC_KEY, -7),
+                        new PublicKeyCredentialParameters("unknown public key type", -7)
+                )
+        );
+
+        List<PublicKeyCredentialDescriptor> excludeCredentials = new ArrayList<>(
+                Arrays.asList(
+                        new PublicKeyCredentialDescriptor(PublicKeyCredentialType.PUBLIC_KEY, userId, null),
+                        new PublicKeyCredentialDescriptor("unknown public key type", userId, null)
+                )
+        );
+
         PublicKeyCredentialCreationOptions options = new PublicKeyCredentialCreationOptions(
                 new PublicKeyCredentialRpEntity("Example", "example.com"),
                 new PublicKeyCredentialUserEntity("user", userId, "A User Name"),
                 challenge,
-                Collections.singletonList(new PublicKeyCredentialParameters(PublicKeyCredentialType.PUBLIC_KEY, -7)),
+                pubKeyCredParams,
                 timeout,
-                Collections.singletonList(new PublicKeyCredentialDescriptor(PublicKeyCredentialType.PUBLIC_KEY, userId, null)),
+                excludeCredentials,
                 new AuthenticatorSelectionCriteria(null, ResidentKeyRequirement.REQUIRED, null),
                 AttestationConveyancePreference.INDIRECT,
                 null
@@ -233,11 +242,17 @@ public class SerializationTest {
         random.nextBytes(challenge);
         random.nextBytes(credentialId);
 
+        List<PublicKeyCredentialDescriptor> allowCredentials = new ArrayList<>(
+                Arrays.asList(
+                new PublicKeyCredentialDescriptor(PublicKeyCredentialType.PUBLIC_KEY, credentialId, null),
+                new PublicKeyCredentialDescriptor("unknown public key type", credentialId, null))
+        );
+
         PublicKeyCredentialRequestOptions options = new PublicKeyCredentialRequestOptions(
                 challenge,
                 timeout,
                 "example.com",
-                Collections.singletonList(new PublicKeyCredentialDescriptor(PublicKeyCredentialType.PUBLIC_KEY, credentialId, null)),
+                allowCredentials,
                 UserVerificationRequirement.REQUIRED,
                 null
         );

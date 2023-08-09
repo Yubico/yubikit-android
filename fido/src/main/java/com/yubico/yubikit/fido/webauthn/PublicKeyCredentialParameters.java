@@ -24,15 +24,15 @@ public class PublicKeyCredentialParameters {
     private static final String TYPE = "type";
     private static final String ALG = "alg";
 
-    private final PublicKeyCredentialType type;
+    private final String type;
     private final int alg;
 
-    public PublicKeyCredentialParameters(PublicKeyCredentialType type, int alg) {
+    public PublicKeyCredentialParameters(String type, int alg) {
         this.type = type;
         this.alg = alg;
     }
 
-    public PublicKeyCredentialType getType() {
+    public String getType() {
         return type;
     }
 
@@ -42,14 +42,14 @@ public class PublicKeyCredentialParameters {
 
     public Map<String, ?> toMap() {
         Map<String, Object> map = new HashMap<>();
-        map.put(TYPE, type.toString());
+        map.put(TYPE, type);
         map.put(ALG, alg);
         return map;
     }
 
     public static PublicKeyCredentialParameters fromMap(Map<String, ?> map) {
         return new PublicKeyCredentialParameters(
-                PublicKeyCredentialType.fromString(Objects.requireNonNull((String) map.get(TYPE))),
+                Objects.requireNonNull((String) map.get(TYPE)),
                 Objects.requireNonNull((Integer) map.get(ALG))
         );
     }
