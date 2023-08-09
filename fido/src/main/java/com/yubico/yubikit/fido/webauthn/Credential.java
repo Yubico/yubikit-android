@@ -15,20 +15,29 @@
  */
 package com.yubico.yubikit.fido.webauthn;
 
-import java.util.Map;
+public class Credential {
+    static final String ID = "id";
+    static final String TYPE = "type";
 
-public abstract class AuthenticatorResponse {
-    static final String CLIENT_DATA_JSON = "clientDataJSON";
+    private final String id;
+    private final String type;
 
-    private final byte[] clientDataJson;
-
-    AuthenticatorResponse(byte[] clientDataJson) {
-        this.clientDataJson = clientDataJson;
+    /**
+     * Webauthn Credential interface
+     *
+     * @param id The credential’s identifier. The requirements for the identifier are distinct for each type of credential.
+     * @param type Specifies the credential type represented by this object
+     */
+    public Credential(String id, String type) {
+        this.id = id;
+        this.type = type;
     }
 
-    public byte[] getClientDataJson() {
-        return clientDataJson;
+    public String getId() {
+        return id;
     }
 
-    public abstract Map<String, ?> toMap();
+    public String getType() {
+        return type;
+    }
 }

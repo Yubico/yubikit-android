@@ -15,20 +15,15 @@
  */
 package com.yubico.yubikit.fido.webauthn;
 
-import java.util.Map;
+public class PublicKeyCredentialEntity {
+    public static final String NAME = "name";
+    private final String name;
 
-public abstract class AuthenticatorResponse {
-    static final String CLIENT_DATA_JSON = "clientDataJSON";
-
-    private final byte[] clientDataJson;
-
-    AuthenticatorResponse(byte[] clientDataJson) {
-        this.clientDataJson = clientDataJson;
+    public PublicKeyCredentialEntity(String name) {
+        this.name = name;
     }
 
-    public byte[] getClientDataJson() {
-        return clientDataJson;
+    public String getName() {
+        return name;
     }
-
-    public abstract Map<String, ?> toMap();
 }

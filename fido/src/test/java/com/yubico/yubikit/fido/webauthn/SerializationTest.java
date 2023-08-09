@@ -84,6 +84,10 @@ public class SerializationTest {
     }
 
     private void compareParametersLists(List<PublicKeyCredentialParameters> a, List<PublicKeyCredentialParameters> b) {
+        if (a == null && b == null) {
+            return;
+        }
+
         Assert.assertEquals(a.size(), b.size());
         for (int i = 0; i < a.size(); i++) {
             compareParameters(a.get(i), b.get(i));
@@ -111,8 +115,8 @@ public class SerializationTest {
         Assert.assertEquals(a.getTransports(), b.getTransports());
     }
 
-    private void compareDescriptorLists(@Nullable List<PublicKeyCredentialDescriptor> a, @Nullable List<PublicKeyCredentialDescriptor> b) {
-        if (a == null || b == null) {
+    private void compareDescriptorLists(List<PublicKeyCredentialDescriptor> a, List<PublicKeyCredentialDescriptor> b) {
+        if (a == null && b == null) {
             return;
         }
 
@@ -144,13 +148,12 @@ public class SerializationTest {
         compareDescriptors(descriptor, PublicKeyCredentialDescriptor.fromMap(map));
     }
 
-    private void compareSelectionCriteria(@Nullable AuthenticatorSelectionCriteria a, @Nullable AuthenticatorSelectionCriteria b) {
-        if (a == null || b == null) {
+    private void compareSelectionCritiera(AuthenticatorSelectionCriteria a, AuthenticatorSelectionCriteria b) {
+        if (a == null && b == null) {
             return;
         }
         Assert.assertEquals(a.getAuthenticatorAttachment(), b.getAuthenticatorAttachment());
         Assert.assertEquals(a.getResidentKey(), b.getResidentKey());
-        Assert.assertEquals(a.isRequireResidentKey(), b.isRequireResidentKey());
         Assert.assertEquals(a.getUserVerification(), b.getUserVerification());
     }
 
@@ -164,16 +167,11 @@ public class SerializationTest {
 
         Map<String, ?> map = criteria.toMap();
 
-        AuthenticatorAttachment authenticatorAttachment = criteria.getAuthenticatorAttachment();
-        Assert.assertNotNull(authenticatorAttachment);
-        ResidentKeyRequirement residentKeyRequirement = criteria.getResidentKey();
-        Assert.assertNotNull(residentKeyRequirement);
-        Assert.assertEquals(authenticatorAttachment.toString(), map.get("authenticatorAttachment"));
+        Assert.assertEquals(criteria.getAuthenticatorAttachment().toString(), map.get("authenticatorAttachment"));
         Assert.assertEquals(criteria.getUserVerification().toString(), map.get("userVerification"));
-        Assert.assertEquals(residentKeyRequirement.toString(), map.get("residentKey"));
-        Assert.assertTrue(criteria.isRequireResidentKey());
+        Assert.assertEquals(criteria.getResidentKey().toString(), map.get("residentKey"));
 
-        compareSelectionCriteria(criteria, AuthenticatorSelectionCriteria.fromMap(map));
+        compareSelectionCritiera(criteria, AuthenticatorSelectionCriteria.fromMap(map));
     }
 
     private void compareCreationOptions(PublicKeyCredentialCreationOptions a, PublicKeyCredentialCreationOptions b) {
@@ -183,15 +181,14 @@ public class SerializationTest {
         compareParametersLists(a.getPubKeyCredParams(), b.getPubKeyCredParams());
         Assert.assertEquals(a.getTimeout(), b.getTimeout());
         compareDescriptorLists(a.getExcludeCredentials(), b.getExcludeCredentials());
-        compareSelectionCriteria(a.getAuthenticatorSelection(), b.getAuthenticatorSelection());
+        compareSelectionCritiera(a.getAuthenticatorSelection(), b.getAuthenticatorSelection());
         Assert.assertEquals(a.getAttestation(), b.getAttestation());
 
         Assert.assertNull(a.getExtensions());
         Assert.assertNull(b.getExtensions());
     }
 
-    @Test
-    public void testCreationOptions() {
+    void testCreationOptions(@Nullable Long timeout) {
         byte[] userId = new byte[4 + random.nextInt(29)];
         byte[] challenge = new byte[32];
         random.nextBytes(userId);
@@ -202,7 +199,7 @@ public class SerializationTest {
                 new PublicKeyCredentialUserEntity("user", userId, "A User Name"),
                 challenge,
                 Collections.singletonList(new PublicKeyCredentialParameters(PublicKeyCredentialType.PUBLIC_KEY, -7)),
-                random.nextInt(Integer.MAX_VALUE),
+                timeout,
                 Collections.singletonList(new PublicKeyCredentialDescriptor(PublicKeyCredentialType.PUBLIC_KEY, userId, null)),
                 new AuthenticatorSelectionCriteria(null, ResidentKeyRequirement.REQUIRED, null),
                 AttestationConveyancePreference.INDIRECT,
@@ -210,6 +207,12 @@ public class SerializationTest {
         );
 
         compareCreationOptions(options, PublicKeyCredentialCreationOptions.fromMap(options.toMap()));
+    }
+
+    @Test
+    public void testCreationOptions() {
+        testCreationOptions((long) random.nextInt(Integer.MAX_VALUE));
+        testCreationOptions(null);
     }
 
     private void compareRequestOptions(PublicKeyCredentialRequestOptions a, PublicKeyCredentialRequestOptions b) {
@@ -223,8 +226,7 @@ public class SerializationTest {
         Assert.assertNull(b.getExtensions());
     }
 
-    @Test
-    public void testRequestOptions() {
+    public void testRequestOptions(@Nullable Long timeout) {
         byte[] challenge = new byte[32];
         byte[] credentialId = new byte[1 + random.nextInt(128)];
         random.nextBytes(challenge);
@@ -232,7 +234,7 @@ public class SerializationTest {
 
         PublicKeyCredentialRequestOptions options = new PublicKeyCredentialRequestOptions(
                 challenge,
-                random.nextInt(Integer.MAX_VALUE),
+                timeout,
                 "example.com",
                 Collections.singletonList(new PublicKeyCredentialDescriptor(PublicKeyCredentialType.PUBLIC_KEY, credentialId, null)),
                 UserVerificationRequirement.REQUIRED,
@@ -240,6 +242,12 @@ public class SerializationTest {
         );
 
         compareRequestOptions(options, PublicKeyCredentialRequestOptions.fromMap(options.toMap()));
+    }
+
+    @Test
+    public void testRequestOptions() {
+        testRequestOptions((long) random.nextInt(Integer.MAX_VALUE));
+        testRequestOptions(null);
     }
 
     private void compareAssertions(AuthenticatorAssertionResponse a, AuthenticatorAssertionResponse b) {
@@ -250,8 +258,7 @@ public class SerializationTest {
         Assert.assertArrayEquals(a.getClientDataJson(), b.getClientDataJson());
     }
 
-    @Test
-    public void testAssertionResponse() {
+    private AuthenticatorAssertionResponse randomAuthenticatorAssertionResponse() {
         byte[] authData = new byte[128];
         random.nextBytes(authData);
         byte[] credentialId = new byte[1 + random.nextInt(64)];
@@ -263,14 +270,18 @@ public class SerializationTest {
         byte[] clientDataJson = new byte[64 + random.nextInt(64)];
         random.nextBytes(clientDataJson);
 
-        AuthenticatorAssertionResponse response = new AuthenticatorAssertionResponse(
-                authData,
+        return new AuthenticatorAssertionResponse(
                 clientDataJson,
+                authData,
                 signature,
                 userId,
                 credentialId
         );
+    }
 
+    @Test
+    public void testAssertionResponse() {
+        AuthenticatorAssertionResponse response = randomAuthenticatorAssertionResponse();
         compareAssertions(response, AuthenticatorAssertionResponse.fromMap(response.toMap()));
     }
 
@@ -279,18 +290,109 @@ public class SerializationTest {
         Assert.assertArrayEquals(a.getClientDataJson(), b.getClientDataJson());
     }
 
-    @Test
-    public void testAttestationResponse() {
+    AuthenticatorAttestationResponse randomAuthenticatorAttestationResponse() {
         byte[] attestationObject = new byte[128 + random.nextInt(128)];
         random.nextBytes(attestationObject);
         byte[] clientDataJson = new byte[64 + random.nextInt(64)];
         random.nextBytes(clientDataJson);
 
-        AuthenticatorAttestationResponse response = new AuthenticatorAttestationResponse(
-                attestationObject,
-                clientDataJson
+        return new AuthenticatorAttestationResponse(
+                clientDataJson,
+                attestationObject
         );
+    }
 
+    @Test
+    public void testAttestationResponse() {
+        AuthenticatorAttestationResponse response = randomAuthenticatorAttestationResponse();
         compareAttestations(response, AuthenticatorAttestationResponse.fromMap(response.toMap()));
     }
+
+    void comparePublicKeyCredentialsWithAttestation(PublicKeyCredential a, PublicKeyCredential b) {
+        Assert.assertArrayEquals(a.getRawId(), b.getRawId());
+        Assert.assertEquals(a.getId(), b.getId());
+        compareAttestations(
+                (AuthenticatorAttestationResponse) a.getResponse(),
+                (AuthenticatorAttestationResponse) b.getResponse()
+        );
+    }
+
+    void comparePublicKeyCredentialsWithAssertion(PublicKeyCredential a, PublicKeyCredential b) {
+        Assert.assertArrayEquals(a.getRawId(), b.getRawId());
+        Assert.assertEquals(a.getId(), b.getId());
+        compareAssertions(
+                (AuthenticatorAssertionResponse) a.getResponse(),
+                (AuthenticatorAssertionResponse) b.getResponse()
+        );
+    }
+
+    @Test
+    public void testPublicKeyCredentialCreation() {
+        byte[] credentialId = new byte[1 + random.nextInt(64)];
+        random.nextBytes(credentialId);
+        String credentialIdB64UrlEncoded = Base64.encodeBase64URLSafeString(credentialId);
+
+        AuthenticatorAttestationResponse response = randomAuthenticatorAttestationResponse();
+
+        // credentialId as String
+        PublicKeyCredential credential = new PublicKeyCredential(
+                credentialIdB64UrlEncoded,
+                response
+        );
+
+        Assert.assertEquals(credentialIdB64UrlEncoded, credential.getId());
+        Assert.assertArrayEquals(credentialId, credential.getRawId());
+        Assert.assertEquals(PublicKeyCredential.PUBLIC_KEY_CREDENTIAL_TYPE, credential.getType());
+
+        // credentialId as byte[]
+        PublicKeyCredential credential2 = new PublicKeyCredential(
+                credentialId,
+                response
+        );
+
+        Assert.assertEquals(credentialIdB64UrlEncoded, credential2.getId());
+        Assert.assertArrayEquals(credentialId, credential2.getRawId());
+        Assert.assertEquals(PublicKeyCredential.PUBLIC_KEY_CREDENTIAL_TYPE, credential2.getType());
+    }
+
+    @Test
+    public void testPublicKeyCredentialWithAssertion() {
+        byte[] credentialId = new byte[1 + random.nextInt(64)];
+        random.nextBytes(credentialId);
+        String credentialIdB64UrlEncoded = Base64.encodeBase64URLSafeString(credentialId);
+
+        AuthenticatorAssertionResponse response = randomAuthenticatorAssertionResponse();
+
+        PublicKeyCredential credential = new PublicKeyCredential(
+                credentialIdB64UrlEncoded,
+                response
+        );
+
+        Assert.assertEquals(credentialIdB64UrlEncoded, credential.getId());
+        Assert.assertArrayEquals(credentialId, credential.getRawId());
+        Assert.assertEquals(PublicKeyCredential.PUBLIC_KEY_CREDENTIAL_TYPE, credential.getType());
+
+        comparePublicKeyCredentialsWithAssertion(credential, PublicKeyCredential.fromMap(credential.toMap()));
+    }
+
+    @Test
+    public void testPublicKeyCredentialWithAttestation() {
+        byte[] credentialId = new byte[1 + random.nextInt(64)];
+        random.nextBytes(credentialId);
+        String credentialIdB64UrlEncoded = Base64.encodeBase64URLSafeString(credentialId);
+
+        AuthenticatorAttestationResponse response = randomAuthenticatorAttestationResponse();
+
+        PublicKeyCredential credential = new PublicKeyCredential(
+                credentialIdB64UrlEncoded,
+                response
+        );
+
+        Assert.assertEquals(credentialIdB64UrlEncoded, credential.getId());
+        Assert.assertArrayEquals(credentialId, credential.getRawId());
+        Assert.assertEquals(PublicKeyCredential.PUBLIC_KEY_CREDENTIAL_TYPE, credential.getType());
+
+        comparePublicKeyCredentialsWithAttestation(credential, PublicKeyCredential.fromMap(credential.toMap()));
+    }
+
 }

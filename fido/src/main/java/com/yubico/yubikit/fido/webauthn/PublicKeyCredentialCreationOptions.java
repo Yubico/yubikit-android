@@ -42,7 +42,8 @@ public class PublicKeyCredentialCreationOptions {
     private final PublicKeyCredentialUserEntity user;
     private final byte[] challenge;
     private final List<PublicKeyCredentialParameters> pubKeyCredParams;
-    private final long timeout;
+    @Nullable
+    private final Long timeout;
     private final List<PublicKeyCredentialDescriptor> excludeCredentials;
     @Nullable
     private final AuthenticatorSelectionCriteria authenticatorSelection;
@@ -55,7 +56,7 @@ public class PublicKeyCredentialCreationOptions {
             PublicKeyCredentialUserEntity user,
             byte[] challenge,
             List<PublicKeyCredentialParameters> pubKeyCredParams,
-            long timeout,
+            @Nullable Long timeout,
             @Nullable List<PublicKeyCredentialDescriptor> excludeCredentials,
             @Nullable AuthenticatorSelectionCriteria authenticatorSelection,
             @Nullable AttestationConveyancePreference attestation,
@@ -88,7 +89,7 @@ public class PublicKeyCredentialCreationOptions {
         return pubKeyCredParams;
     }
 
-    public long getTimeout() {
+    public @Nullable Long getTimeout() {
         return timeout;
     }
 
@@ -120,7 +121,9 @@ public class PublicKeyCredentialCreationOptions {
             paramsList.add(params.toMap());
         }
         map.put(PUB_KEY_CRED_PARAMS, paramsList);
-        map.put(TIMEOUT, timeout);
+        if (timeout != null) {
+            map.put(TIMEOUT, timeout);
+        }
         if (!excludeCredentials.isEmpty()) {
             List<Map<String, ?>> excludeCredentialsList = new ArrayList<>();
             for (PublicKeyCredentialDescriptor cred : excludeCredentials) {
@@ -154,13 +157,14 @@ public class PublicKeyCredentialCreationOptions {
         }
 
         Map<String, ?> authenticatorSelection = (Map<String, ?>) map.get(AUTHENTICATOR_SELECTION);
+        Number timeout = (Number) map.get(TIMEOUT);
 
         return new PublicKeyCredentialCreationOptions(
                 PublicKeyCredentialRpEntity.fromMap(Objects.requireNonNull((Map<String, ?>) map.get(RP))),
                 PublicKeyCredentialUserEntity.fromMap(Objects.requireNonNull((Map<String, ?>) map.get(USER))),
                 decode(Objects.requireNonNull(map.get(CHALLENGE))),
                 pubKeyCredParams,
-                Objects.requireNonNull((Number) map.get(TIMEOUT)).longValue(),
+                timeout == null ? null : timeout.longValue(),
                 excludeCredentials,
                 authenticatorSelection == null ? null : AuthenticatorSelectionCriteria.fromMap(authenticatorSelection),
                 AttestationConveyancePreference.fromString((String) map.get(ATTESTATION)),

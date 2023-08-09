@@ -17,6 +17,7 @@ package com.yubico.yubikit.fido.client;
 
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.fido.webauthn.AuthenticatorAssertionResponse;
+import com.yubico.yubikit.fido.webauthn.PublicKeyCredential;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialDescriptor;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialUserEntity;
 
@@ -29,7 +30,6 @@ import java.util.Objects;
  * The request generated multiple assertions, and a choice must be made by the user.
  * Once selected, call {@link #select(int)} to get an assertion.
  */
-@SuppressWarnings("unused")
 public class MultipleAssertionsAvailable extends Throwable {
     private final byte[] clientDataJson;
     private final List<Ctap2Session.AssertionData> assertions;
@@ -78,9 +78,9 @@ public class MultipleAssertionsAvailable extends Throwable {
      * returned by {@link #getUsers()}. This method can only be called once to get a single response.
      *
      * @param index The index of the assertion to return.
-     * @return A WebAuthn assertion response.
+     * @return A WebAuthn public key credential.
      */
-    public AuthenticatorAssertionResponse select(int index) {
+    public PublicKeyCredential select(int index) {
         if (assertions.isEmpty()) {
             throw new IllegalStateException("Assertion has already been selected");
         }
@@ -89,12 +89,16 @@ public class MultipleAssertionsAvailable extends Throwable {
 
         final Map<String, ?> user = Objects.requireNonNull(assertion.getUser());
         final Map<String, ?> credential = Objects.requireNonNull(assertion.getCredential());
-        return new AuthenticatorAssertionResponse(
-                assertion.getAuthenticatorData(),
-                clientDataJson,
-                assertion.getSignature(),
-                Objects.requireNonNull((byte[]) user.get(PublicKeyCredentialUserEntity.ID)),
-                Objects.requireNonNull((byte[]) credential.get(PublicKeyCredentialDescriptor.ID))
+        final byte[] credentialId = Objects.requireNonNull((byte[]) credential.get(PublicKeyCredentialDescriptor.ID));
+        return new PublicKeyCredential(
+                credentialId,
+                new AuthenticatorAssertionResponse(
+                        clientDataJson,
+                        assertion.getAuthenticatorData(),
+                        assertion.getSignature(),
+                        Objects.requireNonNull((byte[]) user.get(PublicKeyCredentialUserEntity.ID)),
+                        credentialId
+                )
         );
     }
 }

@@ -22,23 +22,17 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-public class PublicKeyCredentialUserEntity {
+public class PublicKeyCredentialUserEntity extends PublicKeyCredentialEntity {
     public static final String ID = "id";
-    public static final String NAME = "name";
     public static final String DISPLAY_NAME = "displayName";
 
-    private final String name;
     private final byte[] id;
     private final String displayName;
 
     public PublicKeyCredentialUserEntity(String name, byte[] id, String displayName) {
-        this.name = name;
+        super(name);
         this.id = id;
         this.displayName = displayName;
-    }
-
-    public String getName() {
-        return name;
     }
 
     public byte[] getId() {
@@ -51,7 +45,7 @@ public class PublicKeyCredentialUserEntity {
 
     public Map<String, ?> toMap() {
         Map<String, Object> map = new HashMap<>();
-        map.put(NAME, name);
+        map.put(NAME, getName());
         map.put(ID, encode(id));
         map.put(DISPLAY_NAME, displayName);
         return map;
