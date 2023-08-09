@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.yubico.yubikit.fido.webauthn;
 
+package com.yubico.yubikit.fido.webauthn;
 
 import static com.yubico.yubikit.fido.webauthn.Base64Utils.decode;
 import static com.yubico.yubikit.fido.webauthn.Base64Utils.encode;
