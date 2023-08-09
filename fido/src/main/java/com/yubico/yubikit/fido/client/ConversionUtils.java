@@ -17,7 +17,6 @@
 package com.yubico.yubikit.fido.client;
 
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialDescriptor;
-import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialType;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialUserEntity;
 
 import java.util.HashMap;
@@ -42,14 +41,14 @@ class ConversionUtils {
 
     static PublicKeyCredentialDescriptor publicKeyCredentialDescriptorFromMap(Map<String, ?> credential) {
         return new PublicKeyCredentialDescriptor(
-                PublicKeyCredentialType.fromString(Objects.requireNonNull((String) credential.get(PublicKeyCredentialDescriptor.TYPE))),
+                Objects.requireNonNull((String) credential.get(PublicKeyCredentialDescriptor.TYPE)),
                 Objects.requireNonNull((byte[]) credential.get(PublicKeyCredentialDescriptor.ID))
         );
     }
 
     static Map<String, Object> publicKeyCredentialDescriptorToMap(PublicKeyCredentialDescriptor credentialDescriptor) {
         Map<String, Object> credentialDescriptorMap = new HashMap<>();
-        credentialDescriptorMap.put(PublicKeyCredentialDescriptor.TYPE, credentialDescriptor.getType().toString());
+        credentialDescriptorMap.put(PublicKeyCredentialDescriptor.TYPE, credentialDescriptor.getType());
         credentialDescriptorMap.put(PublicKeyCredentialDescriptor.ID, credentialDescriptor.getId());
         return credentialDescriptorMap;
     }
