@@ -1,8 +1,19 @@
 /*
- * Copyright (C) 2020 Yubico AB - All Rights Reserved
- * Unauthorized copying and/or distribution of this file, via any medium is strictly prohibited
- * Proprietary and confidential
+ * Copyright (C) 2020-2023 Yubico.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
+
 package com.yubico.yubikit.fido.ctap;
 
 import javax.annotation.Nullable;
@@ -28,13 +39,13 @@ import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+@SuppressWarnings("unused")
 public class Ctap2Session extends ApplicationSession<Ctap2Session> {
 
     private static final byte[] AID = new byte[]{(byte) 0xa0, 0x00, 0x00, 0x06, 0x47, 0x2f, 0x00, 0x01};
@@ -181,8 +192,8 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
 
     /**
      * This method is invoked by the host to request generation of a new credential in the authenticator.
-     * <p>
-     * https://fidoalliance.org/specs/fido-v2.0-ps-20190130/fido-client-to-authenticator-protocol-v2.0-ps-20190130.html#authenticatorMakeCredential
+     *
+     * @see <a href="https://fidoalliance.org/specs/fido-v2.0-ps-20190130/fido-client-to-authenticator-protocol-v2.0-ps-20190130.html#authenticatorMakeCredential">authenticatorMakeCredential</a>
      *
      * @param clientDataHash    a SHA-256 hash of the clientDataJson
      * @param rp                a Map containing the RpEntity data
@@ -227,8 +238,8 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
      * This method is used by a host to request cryptographic proof of user authentication as well
      * as user consent to a given transaction, using a previously generated credential that is bound
      * to the authenticator and relying party identifier.
-     * <p>
-     * https://fidoalliance.org/specs/fido-v2.0-ps-20190130/fido-client-to-authenticator-protocol-v2.0-ps-20190130.html#authenticatorGetAssertion
+     *
+     * @see <a href="https://fidoalliance.org/specs/fido-v2.0-ps-20190130/fido-client-to-authenticator-protocol-v2.0-ps-20190130.html#authenticatorGetAssertion">authenticatorGetAssertion</a>
      *
      * @param rpId              the RP ID for the request
      * @param clientDataHash    a SHA-256 hash of the clientDataJson
@@ -297,7 +308,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
 
     /**
      * Data object containing the information readable form a YubiKey using the getInfo command.
-     * https://fidoalliance.org/specs/fido-v2.0-ps-20190130/fido-client-to-authenticator-protocol-v2.0-ps-20190130.html#authenticatorGetInfo
+     * @see <a href="https://fidoalliance.org/specs/fido-v2.0-ps-20190130/fido-client-to-authenticator-protocol-v2.0-ps-20190130.html#authenticatorGetInfo">authenticatorGetInfo</a>
      */
     public static class InfoData {
         private final static int RESULT_VERSIONS = 0x01;
@@ -401,11 +412,11 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
 
         /**
          * The AuthenticatorData object.
-         * https://www.w3.org/TR/webauthn/#authenticator-data
+         * @see <a href="https://www.w3.org/TR/webauthn/#authenticator-data">authenticator-data</a>
          *
          * @return the AuthenticatorData
          */
-        public byte[] getAuthencticatorData() {
+        public byte[] getAuthenticatorData() {
             return authenticatorData;
         }
 
@@ -493,11 +504,11 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
 
         /**
          * The AuthenticatorData object.
-         * https://www.w3.org/TR/webauthn/#authenticator-data
+         * @see <a href="https://www.w3.org/TR/webauthn/#authenticator-data">authenticator-data</a>
          *
          * @return the AuthenticatorData
          */
-        public byte[] getAuthencticatorData() {
+        public byte[] getAuthenticatorData() {
             return authenticatorData;
         }
     }

@@ -1,8 +1,19 @@
 /*
- * Copyright (C) 2020 Yubico AB - All Rights Reserved
- * Unauthorized copying and/or distribution of this file, via any medium is strictly prohibited
- * Proprietary and confidential
+ * Copyright (C) 2020-2023 Yubico.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
+
 package com.yubico.yubikit.fido.ctap;
 
 import com.yubico.yubikit.core.util.Pair;
@@ -33,7 +44,8 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 /**
- * Implements PIN/UV Auth Protocol 1 (https://fidoalliance.org/specs/fido-v2.0-ps-20190130/fido-client-to-authenticator-protocol-v2.0-ps-20190130.html#authenticatorClientPIN).
+ * Implements PIN/UV Auth Protocol 1
+ * @see <a href="https://fidoalliance.org/specs/fido-v2.0-ps-20190130/fido-client-to-authenticator-protocol-v2.0-ps-20190130.html#authenticatorClientPIN">authenticatorClientPIN</a>.
  */
 public class PinUvAuthProtocolV1 implements PinUvAuthProtocol {
     public static final int VERSION = 1;
@@ -84,7 +96,7 @@ public class PinUvAuthProtocolV1 implements PinUvAuthProtocol {
             ecdh.init(kp.getPrivate());
             ecdh.doPhase(otherKey, true);
             byte[] sharedSecret = MessageDigest.getInstance(HASH_ALG).digest(ecdh.generateSecret());
-            return new Pair<Map<Integer, ?>, byte[]>(keyAgreement, sharedSecret);
+            return new Pair<>(keyAgreement, sharedSecret);
         } catch (NoSuchAlgorithmException | InvalidKeySpecException | InvalidKeyException e) {
             throw new IllegalStateException(e);
         }
