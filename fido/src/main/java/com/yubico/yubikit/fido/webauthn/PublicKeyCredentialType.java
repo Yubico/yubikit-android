@@ -16,37 +16,6 @@
 
 package com.yubico.yubikit.fido.webauthn;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
-
-public enum PublicKeyCredentialType {
-    PUBLIC_KEY;
-
-    private final static Set<String> validValues;
-
-    @Override
-    public String toString() {
-        return name().replace("_", "-").toLowerCase();
-    }
-
-    /**
-     * Verify that a string value represents valid credential type
-     *
-     * @param type name of a credential type
-     * @return true if {@code type} is a valid {@code PublicKeyCredentialType}
-     * @see <a href="https://www.w3.org/TR/2021/REC-webauthn-2-20210408/#enumdef-publickeycredentialtype">Credential Type Enumeration</a>
-     */
-    @SuppressWarnings("unused")
-    public static boolean contains(String type) {
-        return validValues.contains(type);
-    }
-
-    static {
-        Set<String> set = new HashSet<>();
-        for (PublicKeyCredentialType publicKeyCredentialType : PublicKeyCredentialType.values()) {
-            set.add(publicKeyCredentialType.toString());
-        }
-        validValues = Collections.unmodifiableSet(set);
-    }
+public class PublicKeyCredentialType {
+    public final static String PUBLIC_KEY = "public-key";
 }

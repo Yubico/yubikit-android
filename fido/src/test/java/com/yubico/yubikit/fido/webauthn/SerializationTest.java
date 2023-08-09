@@ -95,7 +95,7 @@ public class SerializationTest {
     @Test
     public void testParameters() {
         PublicKeyCredentialParameters param = new PublicKeyCredentialParameters(
-                PublicKeyCredentialType.PUBLIC_KEY.toString(),
+                PublicKeyCredentialType.PUBLIC_KEY,
                 -7
         );
 
@@ -126,7 +126,7 @@ public class SerializationTest {
         random.nextBytes(credentialId);
 
         PublicKeyCredentialDescriptor descriptor = new PublicKeyCredentialDescriptor(
-                PublicKeyCredentialType.PUBLIC_KEY.toString(),
+                PublicKeyCredentialType.PUBLIC_KEY,
                 credentialId,
                 Arrays.asList("USB", "NFC")
         );
@@ -192,14 +192,14 @@ public class SerializationTest {
 
         List<PublicKeyCredentialParameters> pubKeyCredParams = new ArrayList<>(
                 Arrays.asList(
-                        new PublicKeyCredentialParameters(PublicKeyCredentialType.PUBLIC_KEY.toString(), -7),
+                        new PublicKeyCredentialParameters(PublicKeyCredentialType.PUBLIC_KEY, -7),
                         new PublicKeyCredentialParameters("unknown public key type", -7)
                 )
         );
 
         List<PublicKeyCredentialDescriptor> excludeCredentials = new ArrayList<>(
                 Arrays.asList(
-                        new PublicKeyCredentialDescriptor(PublicKeyCredentialType.PUBLIC_KEY.toString(), userId, null),
+                        new PublicKeyCredentialDescriptor(PublicKeyCredentialType.PUBLIC_KEY, userId, null),
                         new PublicKeyCredentialDescriptor("unknown public key type", userId, null)
                 )
         );
@@ -244,7 +244,7 @@ public class SerializationTest {
 
         List<PublicKeyCredentialDescriptor> allowCredentials = new ArrayList<>(
                 Arrays.asList(
-                new PublicKeyCredentialDescriptor(PublicKeyCredentialType.PUBLIC_KEY.toString(), credentialId, null),
+                new PublicKeyCredentialDescriptor(PublicKeyCredentialType.PUBLIC_KEY, credentialId, null),
                 new PublicKeyCredentialDescriptor("unknown public key type", credentialId, null))
         );
 

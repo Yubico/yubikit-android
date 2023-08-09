@@ -32,6 +32,7 @@ import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialCreationOptions;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialDescriptor;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialParameters;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialRequestOptions;
+import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialType;
 import com.yubico.yubikit.fido.webauthn.ResidentKeyRequirement;
 import com.yubico.yubikit.fido.webauthn.UserVerificationRequirement;
 
@@ -41,10 +42,13 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 import javax.annotation.Nullable;
 
@@ -84,6 +88,15 @@ public class BasicWebAuthnClient implements Closeable {
 
     private boolean pinConfigured;
     private boolean uvConfigured;
+
+    private static final Set<String> supportedPublicKeyCredentialTypes;
+
+    static {
+        final Set<String> credentialTypes = new HashSet<>();
+        credentialTypes.add(PublicKeyCredentialType.PUBLIC_KEY);
+
+        supportedPublicKeyCredentialTypes = Collections.unmodifiableSet(credentialTypes);
+    }
 
     final private boolean credentialManagementSupported;
 
@@ -150,7 +163,9 @@ public class BasicWebAuthnClient implements Closeable {
 
         List<Map<String, ?>> pubKeyCredParams = new ArrayList<>();
         for (PublicKeyCredentialParameters param : options.getPubKeyCredParams()) {
-            pubKeyCredParams.add(param.toMap());
+            if (supportedPublicKeyCredentialTypes.contains(param.getType())) {
+                pubKeyCredParams.add(param.toMap());
+            }
         }
 
         Map<String, Boolean> ctapOptions = new HashMap<>();
@@ -187,12 +202,16 @@ public class BasicWebAuthnClient implements Closeable {
                 throw new PinRequiredClientError();
             }
 
+            final List<PublicKeyCredentialDescriptor> excludeCredentials = removeInvalidCredentials(
+                    options.getExcludeCredentials()
+            );
+
             Ctap2Session.CredentialData credential = ctap.makeCredential(
                     clientDataHash,
                     rp,
                     user,
                     pubKeyCredParams,
-                    getCredentialList(options.getExcludeCredentials()),
+                    getCredentialList(excludeCredentials),
                     null,
                     ctapOptions.isEmpty() ? null : ctapOptions,
                     pinUvAuthParam,
@@ -274,10 +293,14 @@ public class BasicWebAuthnClient implements Closeable {
                 pinUvAuthProtocol = clientPin.getPinUvAuth().getVersion();
             }
 
+            final List<PublicKeyCredentialDescriptor> allowCredentials = removeInvalidCredentials(
+                    options.getAllowCredentials()
+            );
+
             List<Ctap2Session.AssertionData> assertions = ctap.getAssertions(
                     rpId,
                     clientDataHash,
-                    getCredentialList(options.getAllowCredentials()), //TODO: Look at max size and length, etc.
+                    getCredentialList(allowCredentials),
                     null,
                     ctapOptions.isEmpty() ? null : ctapOptions,
                     pinUvAuthParam,
@@ -291,8 +314,11 @@ public class BasicWebAuthnClient implements Closeable {
                 if (credentialMap != null) {
                     credentialId = Objects.requireNonNull((byte[]) credentialMap.get(PublicKeyCredentialDescriptor.ID));
                 } else {
-                    // Credential is optional iff allowList contains exactly one credential.
-                    credentialId = options.getAllowCredentials().get(0).getId();
+                    // Credential is optional if allowList contains exactly one credential.
+                    if (allowCredentials == null || allowCredentials.size() != 1) {
+                        throw new RuntimeException("Expecting exactly one valid credential in allowCredentials");
+                    }
+                    credentialId = allowCredentials.get(0).getId();
                 }
 
                 byte[] userId = null;
@@ -454,8 +480,26 @@ public class BasicWebAuthnClient implements Closeable {
         }
     }
 
-    /*
-     * Prepares a list of Credential descriptors for CBOR serialization.
+    /**
+     * @return new list containing only descriptors with valid {@code PublicKeyCredentialType} type
+     */
+    @Nullable
+    private static List<PublicKeyCredentialDescriptor> removeInvalidCredentials(@Nullable List<PublicKeyCredentialDescriptor> descriptors) {
+        if (descriptors == null || descriptors.isEmpty()) {
+            return descriptors;
+        }
+
+        final List<PublicKeyCredentialDescriptor> list = new ArrayList<>();
+        for (PublicKeyCredentialDescriptor credential : descriptors) {
+            if (supportedPublicKeyCredentialTypes.contains(credential.getType())) {
+                list.add(credential);
+            }
+        }
+        return list;
+    }
+
+    /**
+     * @return new list of Credential descriptors for CBOR serialization.
      */
     @Nullable
     private static List<Map<String, ?>> getCredentialList(@Nullable List<PublicKeyCredentialDescriptor> descriptors) {
