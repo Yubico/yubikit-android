@@ -22,6 +22,7 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -186,7 +187,8 @@ public class Cbor {
         // Canonical order of map keys, as specified here:
         // https://fidoalliance.org/specs/fido-v2.0-ps-20190130/fido-client-to-authenticator-protocol-v2.0-ps-20190130.html#ctap2-canonical-cbor-encoding-form
         // Corresponds to lexicographical comparison.
-        entries.sort((o1, o2) -> {
+        //noinspection Java8ListSort // List.sort(Comparator<>) is available first in Android API 24
+        Collections.sort(entries, (o1, o2) -> {
             byte[] key1 = o1[0];
             byte[] key2 = o2[0];
             int minLength = Math.min(key1.length, key2.length);
