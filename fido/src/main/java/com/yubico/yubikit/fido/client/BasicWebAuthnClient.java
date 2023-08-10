@@ -160,11 +160,9 @@ public class BasicWebAuthnClient implements Closeable {
         AuthenticatorSelectionCriteria authenticatorSelection = options.getAuthenticatorSelection();
         if (authenticatorSelection != null) {
             String residentKeyRequirement = authenticatorSelection.getResidentKey();
-            if (residentKeyRequirement != null) {
-                if ((residentKeyRequirement.equals(ResidentKeyRequirement.REQUIRED)) ||
-                        (residentKeyRequirement.equals(ResidentKeyRequirement.PREFERRED) && uvSupported)) {
-                    ctapOptions.put(OPTION_RESIDENT_KEY, true);
-                }
+            if (ResidentKeyRequirement.REQUIRED.equals(residentKeyRequirement) ||
+                    (ResidentKeyRequirement.PREFERRED.equals(residentKeyRequirement) && uvSupported)) {
+                ctapOptions.put(OPTION_RESIDENT_KEY, true);
             }
             if (getCtapUv(authenticatorSelection.getUserVerification(), pin != null)) {
                 ctapOptions.put(OPTION_USER_VERIFICATION, true);

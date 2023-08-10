@@ -42,7 +42,7 @@ public class AuthenticatorSelectionCriteria {
     ) {
         this.authenticatorAttachment = authenticatorAttachment;
         this.residentKey = residentKey;
-        this.requireResidentKey = Objects.equals(residentKey, ResidentKeyRequirement.REQUIRED);
+        this.requireResidentKey = ResidentKeyRequirement.REQUIRED.equals(residentKey);
         this.userVerification = userVerification != null ? userVerification : UserVerificationRequirement.PREFERRED;
     }
 
