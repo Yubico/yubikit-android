@@ -159,10 +159,12 @@ public class BasicWebAuthnClient implements Closeable {
         Map<String, Boolean> ctapOptions = new HashMap<>();
         AuthenticatorSelectionCriteria authenticatorSelection = options.getAuthenticatorSelection();
         if (authenticatorSelection != null) {
-            ResidentKeyRequirement residentKeyRequirement = authenticatorSelection.getResidentKey();
-            if (residentKeyRequirement == ResidentKeyRequirement.REQUIRED ||
-                    (residentKeyRequirement == ResidentKeyRequirement.PREFERRED && uvSupported)) {
-                ctapOptions.put(OPTION_RESIDENT_KEY, true);
+            String residentKeyRequirement = authenticatorSelection.getResidentKey();
+            if (residentKeyRequirement != null) {
+                if ((residentKeyRequirement.equals(ResidentKeyRequirement.REQUIRED)) ||
+                        (residentKeyRequirement.equals(ResidentKeyRequirement.PREFERRED) && uvSupported)) {
+                    ctapOptions.put(OPTION_RESIDENT_KEY, true);
+                }
             }
             if (getCtapUv(authenticatorSelection.getUserVerification(), pin != null)) {
                 ctapOptions.put(OPTION_USER_VERIFICATION, true);
@@ -322,8 +324,7 @@ public class BasicWebAuthnClient implements Closeable {
                                 clientDataJson,
                                 assertion.getAuthenticatorData(),
                                 assertion.getSignature(),
-                                userId,
-                                credentialId
+                                userId
                         )
                 );
             } else {
@@ -428,7 +429,7 @@ public class BasicWebAuthnClient implements Closeable {
      * Calculates what the CTAP "uv" option should be based on the configuration of the authenticator,
      * the UserVerification parameter to the request, and whether or not a PIN was provided.
      */
-    private boolean getCtapUv(UserVerificationRequirement userVerification, boolean pinProvided) throws ClientError {
+    private boolean getCtapUv(String userVerification, boolean pinProvided) throws ClientError {
         if (pinProvided) {
             if (!pinConfigured) {
                 throw new ClientError(ClientError.Code.BAD_REQUEST, "PIN provided but not configured");
@@ -441,17 +442,17 @@ public class BasicWebAuthnClient implements Closeable {
 
         // No PIN provided
         switch (userVerification) {
-            case DISCOURAGED:
+            case UserVerificationRequirement.DISCOURAGED:
                 // Discouraged, uv = false.
                 return false;
             default:
-            case PREFERRED:
+            case UserVerificationRequirement.PREFERRED:
                 if (!pinUvSupported) {
                     // No Authenticator support, uv = false
                     return false;
                 }
                 //Fall through to REQUIRED since we have support for either PIN or uv.
-            case REQUIRED:
+            case UserVerificationRequirement.REQUIRED:
                 if (!uvConfigured) {
                     // Can't satisfy UserVerification, fail.
                     if (pinConfigured) {

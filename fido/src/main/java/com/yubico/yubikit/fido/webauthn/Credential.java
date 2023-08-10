@@ -26,7 +26,8 @@ public class Credential {
     /**
      * Webauthn Credential interface
      *
-     * @param id The credential’s identifier. The requirements for the identifier are distinct for each type of credential.
+     * @param id   The credential’s identifier. The requirements for the identifier are distinct
+     *             for each type of credential.
      * @param type Specifies the credential type represented by this object
      */
     public Credential(String id, String type) {

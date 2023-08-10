@@ -48,7 +48,7 @@ public class PublicKeyCredentialCreationOptions {
     private final List<PublicKeyCredentialDescriptor> excludeCredentials;
     @Nullable
     private final AuthenticatorSelectionCriteria authenticatorSelection;
-    private final AttestationConveyancePreference attestation;
+    private final String attestation;
     @Nullable
     private final Extensions extensions;
 
@@ -60,7 +60,7 @@ public class PublicKeyCredentialCreationOptions {
             @Nullable Long timeout,
             @Nullable List<PublicKeyCredentialDescriptor> excludeCredentials,
             @Nullable AuthenticatorSelectionCriteria authenticatorSelection,
-            @Nullable AttestationConveyancePreference attestation,
+            @Nullable String attestation,
             @Nullable Extensions extensions
     ) {
         this.rp = rp;
@@ -90,7 +90,8 @@ public class PublicKeyCredentialCreationOptions {
         return pubKeyCredParams;
     }
 
-    public @Nullable Long getTimeout() {
+    @Nullable
+    public Long getTimeout() {
         return timeout;
     }
 
@@ -103,7 +104,7 @@ public class PublicKeyCredentialCreationOptions {
         return authenticatorSelection;
     }
 
-    public AttestationConveyancePreference getAttestation() {
+    public String getAttestation() {
         return attestation;
     }
 
@@ -135,7 +136,7 @@ public class PublicKeyCredentialCreationOptions {
         if (authenticatorSelection != null) {
             map.put(AUTHENTICATOR_SELECTION, authenticatorSelection.toMap());
         }
-        map.put(ATTESTATION, attestation.toString());
+        map.put(ATTESTATION, attestation);
         if (extensions != null) {
             map.put(EXTENSIONS, extensions);
         }
@@ -168,7 +169,7 @@ public class PublicKeyCredentialCreationOptions {
                 timeout == null ? null : timeout.longValue(),
                 excludeCredentials,
                 authenticatorSelection == null ? null : AuthenticatorSelectionCriteria.fromMap(authenticatorSelection),
-                AttestationConveyancePreference.fromString((String) map.get(ATTESTATION)),
+                (String) map.get(ATTESTATION),
                 null  // Extensions currently ignored
         );
     }

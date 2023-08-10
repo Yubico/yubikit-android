@@ -42,7 +42,7 @@ public class PublicKeyCredentialRequestOptions {
     @Nullable
     private final String rpId;
     private final List<PublicKeyCredentialDescriptor> allowCredentials;
-    private final UserVerificationRequirement userVerification;
+    private final String userVerification;
     @Nullable
     private final Extensions extensions;
 
@@ -51,7 +51,7 @@ public class PublicKeyCredentialRequestOptions {
             @Nullable Long timeout,
             @Nullable String rpId,
             @Nullable List<PublicKeyCredentialDescriptor> allowCredentials,
-            @Nullable UserVerificationRequirement userVerification,
+            @Nullable String userVerification,
             @Nullable Extensions extensions
     ) {
         this.challenge = challenge;
@@ -79,7 +79,7 @@ public class PublicKeyCredentialRequestOptions {
         return allowCredentials;
     }
 
-    public UserVerificationRequirement getUserVerification() {
+    public String getUserVerification() {
         return userVerification;
     }
 
@@ -102,7 +102,7 @@ public class PublicKeyCredentialRequestOptions {
             allowCredentialsList.add(cred.toMap());
         }
         map.put(ALLOW_CREDENTIALS, allowCredentialsList);
-        map.put(USER_VERIFICATION, userVerification.toString());
+        map.put(USER_VERIFICATION, userVerification);
         if (extensions != null) {
             map.put(EXTENSIONS, extensions);
         }
@@ -127,7 +127,7 @@ public class PublicKeyCredentialRequestOptions {
                 timeout == null ? null : timeout.longValue(),
                 (String) map.get(RP_ID),
                 allowCredentials,
-                UserVerificationRequirement.fromString((String) map.get(USER_VERIFICATION)),
+                (String) map.get(USER_VERIFICATION),
                 null  // Extensions currently ignored
         );
     }

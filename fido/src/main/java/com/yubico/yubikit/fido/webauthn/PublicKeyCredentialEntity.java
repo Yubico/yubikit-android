@@ -18,6 +18,7 @@ package com.yubico.yubikit.fido.webauthn;
 
 public class PublicKeyCredentialEntity {
     public static final String NAME = "name";
+
     private final String name;
 
     public PublicKeyCredentialEntity(String name) {

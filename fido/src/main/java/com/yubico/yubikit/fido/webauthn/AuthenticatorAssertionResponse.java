@@ -29,26 +29,22 @@ public class AuthenticatorAssertionResponse extends AuthenticatorResponse {
     static final String AUTHENTICATOR_DATA = "authenticatorData";
     static final String SIGNATURE = "signature";
     static final String USER_HANDLE = "userHandle";
-    static final String CREDENTIAL_ID = "credentialId";
 
     private final byte[] authenticatorData;
     private final byte[] signature;
     @Nullable
     private final byte[] userHandle;
-    private final byte[] credentialId;
 
     public AuthenticatorAssertionResponse(
             byte[] clientDataJson,
             byte[] authenticatorData,
             byte[] signature,
-            @Nullable byte[] userHandle,
-            byte[] credentialId
+            @Nullable byte[] userHandle
     ) {
         super(clientDataJson);
         this.authenticatorData = authenticatorData;
         this.signature = signature;
         this.userHandle = userHandle;
-        this.credentialId = credentialId;
     }
 
     public byte[] getAuthenticatorData() {
@@ -64,10 +60,6 @@ public class AuthenticatorAssertionResponse extends AuthenticatorResponse {
         return userHandle;
     }
 
-    public byte[] getCredentialId() {
-        return credentialId;
-    }
-
     @Override
     public Map<String, ?> toMap() {
         Map<String, Object> map = new HashMap<>();
@@ -77,7 +69,6 @@ public class AuthenticatorAssertionResponse extends AuthenticatorResponse {
         if (userHandle != null) {
             map.put(USER_HANDLE, encode(userHandle));
         }
-        map.put(CREDENTIAL_ID, encode(credentialId));
         return map;
     }
 
@@ -86,8 +77,7 @@ public class AuthenticatorAssertionResponse extends AuthenticatorResponse {
                 decode(Objects.requireNonNull(map.get(CLIENT_DATA_JSON))),
                 decode(Objects.requireNonNull(map.get(AUTHENTICATOR_DATA))),
                 decode(Objects.requireNonNull(map.get(SIGNATURE))),
-                decode(map.get(USER_HANDLE)),
-                decode(Objects.requireNonNull(map.get(CREDENTIAL_ID)))
+                decode(map.get(USER_HANDLE))
         );
     }
 }

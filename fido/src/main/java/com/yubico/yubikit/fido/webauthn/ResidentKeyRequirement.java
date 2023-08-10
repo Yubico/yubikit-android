@@ -16,26 +16,9 @@
 
 package com.yubico.yubikit.fido.webauthn;
 
-import javax.annotation.Nullable;
-
 @SuppressWarnings("unused")
-public enum ResidentKeyRequirement {
-    REQUIRED, PREFERRED, DISCOURAGED;
-
-    @Override
-    public String toString() {
-        return name().toLowerCase();
-    }
-
-    @Nullable
-    public static ResidentKeyRequirement fromString(@Nullable String value) {
-        if(value == null) {
-            return null;
-        }
-        try {
-            return ResidentKeyRequirement.valueOf(value.toUpperCase());
-        } catch (IllegalArgumentException e) {
-            return null;
-        }
-    }
+public class ResidentKeyRequirement {
+    public static final String REQUIRED = "required";
+    public static final String PREFERRED = "preferred";
+    public static final String DISCOURAGED = "discouraged";
 }

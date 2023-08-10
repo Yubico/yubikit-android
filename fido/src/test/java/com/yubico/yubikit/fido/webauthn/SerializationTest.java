@@ -23,7 +23,6 @@ import org.junit.Test;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -163,9 +162,9 @@ public class SerializationTest {
 
         Assert.assertNotNull(criteria.getAuthenticatorAttachment());
         Assert.assertNotNull(criteria.getResidentKey());
-        Assert.assertEquals(criteria.getAuthenticatorAttachment().toString(), map.get("authenticatorAttachment"));
-        Assert.assertEquals(criteria.getUserVerification().toString(), map.get("userVerification"));
-        Assert.assertEquals(criteria.getResidentKey().toString(), map.get("residentKey"));
+        Assert.assertEquals(criteria.getAuthenticatorAttachment(), map.get("authenticatorAttachment"));
+        Assert.assertEquals(criteria.getUserVerification(), map.get("userVerification"));
+        Assert.assertEquals(criteria.getResidentKey(), map.get("residentKey"));
 
         compareSelectionCriteria(criteria, AuthenticatorSelectionCriteria.fromMap(map));
     }
@@ -268,7 +267,6 @@ public class SerializationTest {
 
     private void compareAssertions(AuthenticatorAssertionResponse a, AuthenticatorAssertionResponse b) {
         Assert.assertArrayEquals(a.getAuthenticatorData(), b.getAuthenticatorData());
-        Assert.assertArrayEquals(a.getCredentialId(), b.getCredentialId());
         Assert.assertArrayEquals(a.getSignature(), b.getSignature());
         Assert.assertArrayEquals(a.getUserHandle(), b.getUserHandle());
         Assert.assertArrayEquals(a.getClientDataJson(), b.getClientDataJson());
@@ -290,8 +288,7 @@ public class SerializationTest {
                 clientDataJson,
                 authData,
                 signature,
-                userId,
-                credentialId
+                userId
         );
     }
 
