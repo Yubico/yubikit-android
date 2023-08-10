@@ -16,26 +16,10 @@
 
 package com.yubico.yubikit.fido.webauthn;
 
-import javax.annotation.Nullable;
-
 @SuppressWarnings("unused")
-public enum AttestationConveyancePreference {
-    NONE, INDIRECT, DIRECT, ENTERPRISE;
-
-    @Override
-    public String toString() {
-        return name().toLowerCase();
-    }
-
-    @Nullable
-    public static AttestationConveyancePreference fromString(@Nullable String value) {
-        if(value == null) {
-            return null;
-        }
-        try {
-            return AttestationConveyancePreference.valueOf(value.toUpperCase());
-        } catch (IllegalArgumentException e) {
-            return null;
-        }
-    }
+public class AttestationConveyancePreference {
+    public static final String NONE = "none";
+    public static final String INDIRECT = "indirect";
+    public static final String DIRECT = "direct";
+    public static final String ENTERPRISE = "enterprise";
 }

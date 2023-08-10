@@ -16,29 +16,8 @@
 
 package com.yubico.yubikit.fido.webauthn;
 
-import javax.annotation.Nullable;
-
 @SuppressWarnings("unused")
-public enum AuthenticatorAttachment {
-    PLATFORM, CROSS_PLATFORM;
-
-    @Override
-    public String toString() {
-        return name().replace("_", "-").toLowerCase();
-    }
-
-    @Nullable
-    public static AuthenticatorAttachment fromString(@Nullable String value) {
-        if(value == null) {
-            return null;
-        }
-        try {
-            return AuthenticatorAttachment.valueOf(value
-                    .replace("-", "_")
-                    .toUpperCase()
-            );
-        } catch (IllegalArgumentException e) {
-            return null;
-        }
-    }
+public class AuthenticatorAttachment {
+    public static final String PLATFORM = "platform";
+    public static final String CROSS_PLATFORM = "cross-platform";
 }

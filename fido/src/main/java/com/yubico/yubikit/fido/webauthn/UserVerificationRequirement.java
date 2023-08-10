@@ -16,25 +16,8 @@
 
 package com.yubico.yubikit.fido.webauthn;
 
-import javax.annotation.Nullable;
-
-public enum UserVerificationRequirement {
-    REQUIRED, PREFERRED, DISCOURAGED;
-
-    @Override
-    public String toString() {
-        return name().toLowerCase();
-    }
-
-    @Nullable
-    public static UserVerificationRequirement fromString(@Nullable String value) {
-        if(value == null) {
-            return null;
-        }
-        try {
-            return UserVerificationRequirement.valueOf(value.toUpperCase());
-        } catch (IllegalArgumentException e) {
-            return null;
-        }
-    }
+public class UserVerificationRequirement {
+    public static final String REQUIRED = "required";
+    public static final String PREFERRED = "preferred";
+    public static final String DISCOURAGED = "discouraged";
 }

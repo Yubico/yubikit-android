@@ -17,5 +17,5 @@
 package com.yubico.yubikit.fido.webauthn;
 
 public class PublicKeyCredentialType {
-    public final static String PUBLIC_KEY = "public-key";
+    public static final String PUBLIC_KEY = "public-key";
 }

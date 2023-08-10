@@ -97,8 +97,7 @@ public class MultipleAssertionsAvailable extends Throwable {
                         clientDataJson,
                         assertion.getAuthenticatorData(),
                         assertion.getSignature(),
-                        Objects.requireNonNull((byte[]) user.get(PublicKeyCredentialUserEntity.ID)),
-                        credentialId
+                        Objects.requireNonNull((byte[]) user.get(PublicKeyCredentialUserEntity.ID))
                 )
         );
     }
