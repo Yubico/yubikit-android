@@ -34,6 +34,7 @@ import com.yubico.yubikit.core.smartcard.SmartCardProtocol;
 import com.yubico.yubikit.core.util.Callback;
 import com.yubico.yubikit.core.util.Result;
 import com.yubico.yubikit.fido.Cbor;
+import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialDescriptor;
 
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
@@ -326,12 +327,19 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
         private final byte[] aaguid;
         private final Map<String, Object> options;
         private final List<Integer> pinUvAuthProtocols;
+        private final List<String> transports;
 
-        private InfoData(List<String> versions, byte[] aaguid, Map<String, Object> options, List<Integer> pinUvAuthProtocols) {
+        private InfoData(
+                List<String> versions,
+                byte[] aaguid,
+                Map<String, Object> options,
+                List<Integer> pinUvAuthProtocols,
+                List<String> transports) {
             this.versions = versions;
             this.aaguid = aaguid;
             this.options = options;
             this.pinUvAuthProtocols = pinUvAuthProtocols;
+            this.transports = transports;
         }
 
         @SuppressWarnings("unchecked")
@@ -339,8 +347,9 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
             return new InfoData(
                     (List<String>) data.get(RESULT_VERSIONS),
                     (byte[]) data.get(RESULT_AAGUID),
-                    data.containsKey(RESULT_OPTIONS) ? (Map<String, Object>) data.get(RESULT_OPTIONS) : Collections.<String, Object>emptyMap(),
-                    (List<Integer>) data.get(RESULT_PIN_PROTOCOLS)
+                    data.containsKey(RESULT_OPTIONS) ? (Map<String, Object>) data.get(RESULT_OPTIONS) : Collections.emptyMap(),
+                    (List<Integer>) data.get(RESULT_PIN_PROTOCOLS),
+                    (List<String>) data.get(RESULT_TRANSPORTS)
             );
         }
 
@@ -380,6 +389,15 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
          */
         public List<Integer> getPinUvAuthProtocols() {
             return pinUvAuthProtocols;
+        }
+
+        /**
+         * Get a list of the supported transports.
+         *
+         * @return a list of supported transports.
+         */
+        public List<String> getTransports() {
+            return transports;
         }
     }
 
@@ -510,6 +528,31 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
          */
         public byte[] getAuthenticatorData() {
             return authenticatorData;
+        }
+
+        /**
+         * Helper function for obtaining credential id for AssertionData with help of allowCredentials
+         *
+         * @param allowCredentials list of allowed credentials which might help to get correct
+         *                         credential id
+         * @return credentialId for assertion
+         * @throws RuntimeException if credential id could not be computed
+         */
+        public byte[] getCredentialId(
+                @Nullable List<PublicKeyCredentialDescriptor> allowCredentials
+        ) {
+            byte[] credentialId;
+            Map<String, ?> credentialMap = getCredential();
+            if (credentialMap != null) {
+                credentialId = Objects.requireNonNull((byte[]) credentialMap.get(PublicKeyCredentialDescriptor.ID));
+            } else {
+                // Credential is optional if allowList contains exactly one credential.
+                if (allowCredentials == null || allowCredentials.size() != 1) {
+                    throw new RuntimeException("Expecting exactly one valid credential in allowCredentials");
+                }
+                credentialId = allowCredentials.get(0).getId();
+            }
+            return credentialId;
         }
     }
 }

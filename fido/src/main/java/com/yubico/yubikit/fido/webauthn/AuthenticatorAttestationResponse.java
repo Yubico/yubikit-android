@@ -16,20 +16,27 @@
 
 package com.yubico.yubikit.fido.webauthn;
 
-import static com.yubico.yubikit.fido.webauthn.Base64Utils.encode;
 import static com.yubico.yubikit.fido.webauthn.Base64Utils.decode;
+import static com.yubico.yubikit.fido.webauthn.Base64Utils.encode;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
 public class AuthenticatorAttestationResponse extends AuthenticatorResponse {
-    static final String ATTESTATION_OBJECT = "attestationObject";
+    public static final String TRANSPORTS = "transports";
+    public static final String ATTESTATION_OBJECT = "attestationObject";
 
+    private final List<String> transports;
     private final byte[] attestationObject;
 
-    public AuthenticatorAttestationResponse(byte[] clientDataJson, byte[] attestationObject) {
+    public AuthenticatorAttestationResponse(
+            byte[] clientDataJson,
+            List<String> transports,
+            byte[] attestationObject) {
         super(clientDataJson);
+        this.transports = transports;
         this.attestationObject = attestationObject;
     }
 
@@ -37,17 +44,25 @@ public class AuthenticatorAttestationResponse extends AuthenticatorResponse {
         return attestationObject;
     }
 
+    public List<String> getTransports()
+    {
+        return transports;
+    }
+
     @Override
     public Map<String, ?> toMap() {
         Map<String, Object> map = new HashMap<>();
         map.put(CLIENT_DATA_JSON, encode(getClientDataJson()));
+        map.put(TRANSPORTS, transports);
         map.put(ATTESTATION_OBJECT, encode(attestationObject));
         return map;
     }
 
+    @SuppressWarnings("unchecked")
     public static AuthenticatorAttestationResponse fromMap(Map<String, ?> map) {
         return new AuthenticatorAttestationResponse(
-                decode(Objects.requireNonNull(map.get(CLIENT_DATA_JSON))),
+                decode(map.get(CLIENT_DATA_JSON)),
+                (List<String>) Objects.requireNonNull(map.get(TRANSPORTS)),
                 decode(Objects.requireNonNull(map.get(ATTESTATION_OBJECT)))
         );
     }

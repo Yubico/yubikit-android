@@ -16,12 +16,19 @@
 
 package com.yubico.yubikit.fido.client;
 
+import static com.yubico.yubikit.fido.webauthn.PublicKeyCredentialDescriptor.ID;
+
+import com.yubico.yubikit.fido.ctap.Ctap2Session;
+import com.yubico.yubikit.fido.webauthn.AuthenticatorAssertionResponse;
+import com.yubico.yubikit.fido.webauthn.PublicKeyCredential;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialDescriptor;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialUserEntity;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+
+import javax.annotation.Nullable;
 
 class ConversionUtils {
     static PublicKeyCredentialUserEntity publicKeyCredentialUserEntityFromMap(Map<String, ?> user) {
@@ -42,14 +49,36 @@ class ConversionUtils {
     static PublicKeyCredentialDescriptor publicKeyCredentialDescriptorFromMap(Map<String, ?> credential) {
         return new PublicKeyCredentialDescriptor(
                 Objects.requireNonNull((String) credential.get(PublicKeyCredentialDescriptor.TYPE)),
-                Objects.requireNonNull((byte[]) credential.get(PublicKeyCredentialDescriptor.ID))
+                Objects.requireNonNull((byte[]) credential.get(ID))
         );
     }
 
     static Map<String, Object> publicKeyCredentialDescriptorToMap(PublicKeyCredentialDescriptor credentialDescriptor) {
         Map<String, Object> credentialDescriptorMap = new HashMap<>();
         credentialDescriptorMap.put(PublicKeyCredentialDescriptor.TYPE, credentialDescriptor.getType());
-        credentialDescriptorMap.put(PublicKeyCredentialDescriptor.ID, credentialDescriptor.getId());
+        credentialDescriptorMap.put(ID, credentialDescriptor.getId());
         return credentialDescriptorMap;
+    }
+
+    static PublicKeyCredential publicKeyCredentialFromAssertion(
+            Ctap2Session.AssertionData assertion,
+            byte[] credentialId,
+            byte[] clientDataJson) {
+        byte[] userId = null;
+        Map<String, ?> userMap = assertion.getUser();
+        if (userMap != null) {
+            // This is not a complete UserEntity object, it may contain only "id".
+            userId = Objects.requireNonNull((byte[]) userMap.get(ID));
+        }
+
+        return new PublicKeyCredential(
+                credentialId,
+                new AuthenticatorAssertionResponse(
+                        clientDataJson,
+                        assertion.getAuthenticatorData(),
+                        assertion.getSignature(),
+                        userId
+                )
+        );
     }
 }

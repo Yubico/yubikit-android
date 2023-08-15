@@ -209,7 +209,12 @@ public class BasicWebAuthnClientTests {
                 assertNotNull(user.getName());
                 assertNotNull(user.getDisplayName());
                 if (userIdCredIdMap.containsKey(user.getId())) {
-                    PublicKeyCredential credential = multipleAssertionsAvailable.select(i);
+                    MultipleAssertionsAvailable.AssertionInfo assertionInfo = multipleAssertionsAvailable.select(i);
+                    PublicKeyCredential credential = PublicKeyCredential.fromAssertion(
+                            assertionInfo.getAssertionData(),
+                            TestData.CLIENT_DATA_JSON_GET,
+                            null
+                    );
                     AuthenticatorAssertionResponse assertion = (AuthenticatorAssertionResponse) credential.getResponse();
                     assertNotNull("Failed to get assertion", assertion);
                     assertNotNull("Assertion response missing authenticator data", assertion.getAuthenticatorData());

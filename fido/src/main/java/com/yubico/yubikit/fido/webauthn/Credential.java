@@ -17,8 +17,8 @@
 package com.yubico.yubikit.fido.webauthn;
 
 public class Credential {
-    static final String ID = "id";
-    static final String TYPE = "type";
+    public static final String ID = "id";
+    public static final String TYPE = "type";
 
     private final String id;
     private final String type;

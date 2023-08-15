@@ -26,9 +26,9 @@ import java.util.Map;
 import java.util.Objects;
 
 public class AuthenticatorAssertionResponse extends AuthenticatorResponse {
-    static final String AUTHENTICATOR_DATA = "authenticatorData";
-    static final String SIGNATURE = "signature";
-    static final String USER_HANDLE = "userHandle";
+    public static final String AUTHENTICATOR_DATA = "authenticatorData";
+    public static final String SIGNATURE = "signature";
+    public static final String USER_HANDLE = "userHandle";
 
     private final byte[] authenticatorData;
     private final byte[] signature;

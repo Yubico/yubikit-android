@@ -17,12 +17,11 @@
 package com.yubico.yubikit.fido.client;
 
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
-import com.yubico.yubikit.fido.webauthn.AuthenticatorAssertionResponse;
-import com.yubico.yubikit.fido.webauthn.PublicKeyCredential;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialDescriptor;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialUserEntity;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -32,13 +31,28 @@ import java.util.Objects;
  * Once selected, call {@link #select(int)} to get an assertion.
  */
 public class MultipleAssertionsAvailable extends Throwable {
-    private final byte[] clientDataJson;
     private final List<Ctap2Session.AssertionData> assertions;
 
-    MultipleAssertionsAvailable(byte[] clientDataJson, List<Ctap2Session.AssertionData> assertions) {
-        super("Request returned multiple assertions");
+    public static class AssertionInfo {
+        private final Ctap2Session.AssertionData assertionData;
+        private final byte[] credentialId;
 
-        this.clientDataJson = clientDataJson;
+        AssertionInfo(Ctap2Session.AssertionData assertionData, byte[] credentialId) {
+            this.assertionData = assertionData;
+            this.credentialId = credentialId;
+        }
+
+        public Ctap2Session.AssertionData getAssertionData() {
+            return assertionData;
+        }
+
+        public byte[] getCredentialId() {
+            return Arrays.copyOf(credentialId, credentialId.length);
+        }
+    }
+
+    MultipleAssertionsAvailable(List<Ctap2Session.AssertionData> assertions) {
+        super("Request returned multiple assertions");
         this.assertions = assertions;
     }
 
@@ -79,26 +93,19 @@ public class MultipleAssertionsAvailable extends Throwable {
      * returned by {@link #getUsers()}. This method can only be called once to get a single response.
      *
      * @param index The index of the assertion to return.
-     * @return A WebAuthn public key credential.
+     * @return AssertionData and credentialId it holds at specified index.
      */
-    public PublicKeyCredential select(int index) {
+    public AssertionInfo select(int index) {
         if (assertions.isEmpty()) {
             throw new IllegalStateException("Assertion has already been selected");
         }
+
         Ctap2Session.AssertionData assertion = assertions.get(index);
         assertions.clear();
 
-        final Map<String, ?> user = Objects.requireNonNull(assertion.getUser());
         final Map<String, ?> credential = Objects.requireNonNull(assertion.getCredential());
         final byte[] credentialId = Objects.requireNonNull((byte[]) credential.get(PublicKeyCredentialDescriptor.ID));
-        return new PublicKeyCredential(
-                credentialId,
-                new AuthenticatorAssertionResponse(
-                        clientDataJson,
-                        assertion.getAuthenticatorData(),
-                        assertion.getSignature(),
-                        Objects.requireNonNull((byte[]) user.get(PublicKeyCredentialUserEntity.ID))
-                )
-        );
+
+        return new AssertionInfo(assertion, credentialId);
     }
 }
