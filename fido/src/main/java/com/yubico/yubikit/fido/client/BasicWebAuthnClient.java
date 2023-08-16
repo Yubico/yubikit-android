@@ -27,6 +27,7 @@ import com.yubico.yubikit.fido.Cbor;
 import com.yubico.yubikit.fido.ctap.ClientPin;
 import com.yubico.yubikit.fido.ctap.CredentialManagement;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
+import com.yubico.yubikit.fido.ctap.PinUvAuthDummyProtocol;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV1;
 import com.yubico.yubikit.fido.webauthn.AuthenticatorAttestationResponse;
 import com.yubico.yubikit.fido.webauthn.AuthenticatorSelectionCriteria;
@@ -94,11 +95,10 @@ public class BasicWebAuthnClient implements Closeable {
 
         Boolean clientPin = (Boolean) options.get(OPTION_CLIENT_PIN);
         pinSupported = clientPin != null;
-        //TODO: Add support for other PIN protocols when needed.
         if (pinSupported && info.getPinUvAuthProtocols().contains(PinUvAuthProtocolV1.VERSION)) {
             this.clientPin = new ClientPin(ctap, new PinUvAuthProtocolV1());
         } else {
-            this.clientPin = null;
+            this.clientPin = new ClientPin(ctap, new PinUvAuthDummyProtocol());
         }
         pinConfigured = pinSupported && clientPin;
 
