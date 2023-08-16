@@ -18,6 +18,6 @@ package com.yubico.yubikit.fido.ctap;
 
 public class UnsupportedPinUvAuthProtocolError extends RuntimeException {
     public UnsupportedPinUvAuthProtocolError() {
-        super("PIN UV auth operation not supported");
+        super("No supported PIN/UV Auth Protocol");
     }
 }

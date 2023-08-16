@@ -21,7 +21,7 @@ import com.yubico.yubikit.core.util.Pair;
 import java.util.Map;
 
 /**
- * Implements PIN/UV Auth Protocol 1
+ * Implements a dummy PIN/UV Auth Protocol
  * @see <a href="https://fidoalliance.org/specs/fido-v2.0-ps-20190130/fido-client-to-authenticator-protocol-v2.0-ps-20190130.html#authenticatorClientPIN">authenticatorClientPIN</a>.
  */
 public class PinUvAuthDummyProtocol implements PinUvAuthProtocol {

@@ -322,6 +322,9 @@ public class BasicWebAuthnClient implements Closeable {
     /**
      * Create a new WebAuthn credential.
      * <p>
+     * This method is used internally in YubiKit and is not part of the public API. It may be changed
+     * or removed at any time.
+     * <p>
      * PIN is always required if a PIN is configured.
      *
      * @param clientDataHash  Hash of client data.
@@ -415,6 +418,10 @@ public class BasicWebAuthnClient implements Closeable {
 
     /**
      * Authenticate an existing WebAuthn credential.
+     * <p>
+     * This method is used internally in YubiKit and is not part of the public API. It may be changed
+     * or removed at any time.
+     * <p>
      * PIN is required if UV is "required", or if UV is "preferred" and a PIN is configured.
      * If no allowCredentials list is provided (which is the case for a passwordless flow) the Authenticator may contain multiple discoverable credentials for the given RP.
      * In such cases MultipleAssertionsAvailable will be thrown, and can be handled to select an assertion.
