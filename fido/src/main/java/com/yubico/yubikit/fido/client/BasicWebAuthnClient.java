@@ -108,13 +108,17 @@ public class BasicWebAuthnClient implements Closeable {
         credentialManagementSupported = Boolean.TRUE.equals(options.get(OPTION_CREDENTIAL_MANAGEMENT));
     }
 
+    public Ctap2Session.InfoData getSessionInfoData() {
+        return info;
+    }
+
     @Override
     public void close() throws IOException {
         ctap.close();
     }
 
     @SuppressWarnings("unchecked")
-    protected Ctap2Session.CredentialData ctapMakeCredential(
+    public Ctap2Session.CredentialData ctapMakeCredential(
             PublicKeyCredentialCreationOptions options,
             byte[] clientDataHash,
             String effectiveDomain,
@@ -246,7 +250,6 @@ public class BasicWebAuthnClient implements Closeable {
             throw ClientError.wrapCtapException(e);
         }
     }
-
 
     public Ctap2Session.AssertionData ctapGetAssertion(
             PublicKeyCredentialRequestOptions options,
