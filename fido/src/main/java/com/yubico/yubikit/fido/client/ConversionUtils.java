@@ -30,8 +30,8 @@ import java.util.Objects;
 
 import javax.annotation.Nullable;
 
-class ConversionUtils {
-    static PublicKeyCredentialUserEntity publicKeyCredentialUserEntityFromMap(Map<String, ?> user) {
+public class ConversionUtils {
+    public static PublicKeyCredentialUserEntity publicKeyCredentialUserEntityFromMap(Map<String, ?> user) {
         return new PublicKeyCredentialUserEntity(
                 Objects.requireNonNull((String) user.get(PublicKeyCredentialUserEntity.NAME)),
                 Objects.requireNonNull((byte[]) user.get(PublicKeyCredentialUserEntity.ID)),

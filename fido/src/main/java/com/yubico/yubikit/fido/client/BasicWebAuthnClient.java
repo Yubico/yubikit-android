@@ -282,18 +282,17 @@ public class BasicWebAuthnClient implements Closeable {
      * @param pin             If needed, the PIN to authorize the credential creation.
      * @param state           If needed, the state to provide control over the ongoing operation
      * @return Webauthn public key credential with assertion response data.
-     * @throws MultipleAssertionsAvailable In case of multiple assertions, catch this to make a selection and get the result.
      * @throws IOException                 A communication error in the transport layer
      * @throws CommandException            A communication in the protocol layer
      * @throws ClientError                 A higher level error
      */
-    public Ctap2Session.AssertionData ctapGetAssertion(
+    public List<Ctap2Session.AssertionData> ctapGetAssertions(
             byte[] clientDataHash,
             PublicKeyCredentialRequestOptions options,
             String effectiveDomain,
             @Nullable char[] pin,
             @Nullable CommandState state
-    ) throws MultipleAssertionsAvailable, IOException, CommandException, ClientError {
+    ) throws IOException, CommandException, ClientError {
         String rpId = options.getRpId();
         if (rpId == null) {
             rpId = effectiveDomain;
@@ -322,7 +321,7 @@ public class BasicWebAuthnClient implements Closeable {
                     options.getAllowCredentials()
             );
 
-            List<Ctap2Session.AssertionData> assertions = ctap.getAssertions(
+            return ctap.getAssertions(
                     rpId,
                     clientDataHash,
                     getCredentialList(allowCredentials),
@@ -332,11 +331,6 @@ public class BasicWebAuthnClient implements Closeable {
                     pinUvAuthProtocol,
                     state
             );
-            if (assertions.size() == 1) {
-                return assertions.get(0);
-            } else {
-                throw new MultipleAssertionsAvailable(assertions);
-            }
         } catch (CtapException e) {
             if (e.getCtapError() == CtapException.ERR_PIN_INVALID) {
                 throw new PinInvalidClientError(e, clientPin.getPinRetries());
@@ -371,7 +365,7 @@ public class BasicWebAuthnClient implements Closeable {
         byte[] clientDataHash = hash(clientDataJson);
 
         try {
-            Ctap2Session.AssertionData assertion = ctapGetAssertion(
+            final List<Ctap2Session.AssertionData> assertions = ctapGetAssertions(
                     clientDataHash,
                     options,
                     effectiveDomain,
@@ -382,7 +376,16 @@ public class BasicWebAuthnClient implements Closeable {
             final List<PublicKeyCredentialDescriptor> allowCredentials = removeUnsupportedCredentials(
                     options.getAllowCredentials()
             );
-            return PublicKeyCredential.fromAssertion(assertion, clientDataJson, allowCredentials);
+
+            if (assertions.size() == 1) {
+                return PublicKeyCredential.fromAssertion(
+                        assertions.get(0),
+                        clientDataJson,
+                        allowCredentials);
+            } else {
+                throw new MultipleAssertionsAvailable(clientDataJson, assertions);
+            }
+
         } catch (CtapException e) {
             if (e.getCtapError() == CtapException.ERR_PIN_INVALID) {
                 throw new PinInvalidClientError(e, clientPin.getPinRetries());
