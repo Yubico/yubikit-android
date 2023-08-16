@@ -59,26 +59,4 @@ class ConversionUtils {
         credentialDescriptorMap.put(ID, credentialDescriptor.getId());
         return credentialDescriptorMap;
     }
-
-    static PublicKeyCredential publicKeyCredentialFromAssertion(
-            Ctap2Session.AssertionData assertion,
-            byte[] credentialId,
-            byte[] clientDataJson) {
-        byte[] userId = null;
-        Map<String, ?> userMap = assertion.getUser();
-        if (userMap != null) {
-            // This is not a complete UserEntity object, it may contain only "id".
-            userId = Objects.requireNonNull((byte[]) userMap.get(ID));
-        }
-
-        return new PublicKeyCredential(
-                credentialId,
-                new AuthenticatorAssertionResponse(
-                        clientDataJson,
-                        assertion.getAuthenticatorData(),
-                        assertion.getSignature(),
-                        userId
-                )
-        );
-    }
 }
