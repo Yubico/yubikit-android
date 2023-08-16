@@ -80,7 +80,7 @@ public class MultipleAssertionsAvailable extends Throwable {
         List<PublicKeyCredentialUserEntity> users = new ArrayList<>();
         for (Ctap2Session.AssertionData assertion : assertions) {
             try {
-                users.add(ConversionUtils.publicKeyCredentialUserEntityFromMap(Objects.requireNonNull(assertion.getUser())));
+                users.add(PublicKeyCredentialUserEntity.fromMap(Objects.requireNonNull(assertion.getUser())));
             } catch (NullPointerException e) {
                 throw new UserInformationNotAvailableError();
             }
