@@ -117,10 +117,25 @@ public class BasicWebAuthnClient implements Closeable {
         ctap.close();
     }
 
+    /**
+     * Create a new WebAuthn credential.
+     * <p>
+     * PIN is always required if a PIN is configured.
+     *
+     * @param clientDataHash  Hash of client data.
+     * @param options         The options for creating the credential.
+     * @param effectiveDomain The effective domain for the request, which is used to validate the RP ID against.
+     * @param pin             If needed, the PIN to authorize the credential creation.
+     * @param state           If needed, the state to provide control over the ongoing operation
+     * @return A WebAuthn public key credential.
+     * @throws IOException      A communication error in the transport layer
+     * @throws CommandException A communication in the protocol layer
+     * @throws ClientError      A higher level error
+     */
     @SuppressWarnings("unchecked")
     public Ctap2Session.CredentialData ctapMakeCredential(
-            PublicKeyCredentialCreationOptions options,
             byte[] clientDataHash,
+            PublicKeyCredentialCreationOptions options,
             String effectiveDomain,
             @Nullable char[] pin,
             @Nullable CommandState state
@@ -219,8 +234,8 @@ public class BasicWebAuthnClient implements Closeable {
 
         try {
             Ctap2Session.CredentialData credential = ctapMakeCredential(
-                    options,
                     clientDataHash,
+                    options,
                     effectiveDomain,
                     pin,
                     state
@@ -251,9 +266,26 @@ public class BasicWebAuthnClient implements Closeable {
         }
     }
 
+    /**
+     * Authenticate an existing WebAuthn credential.
+     * PIN is required if UV is "required", or if UV is "preferred" and a PIN is configured.
+     * If no allowCredentials list is provided (which is the case for a passwordless flow) the Authenticator may contain multiple discoverable credentials for the given RP.
+     * In such cases MultipleAssertionsAvailable will be thrown, and can be handled to select an assertion.
+     *
+     * @param clientDataHash  Hash of client data.
+     * @param options         The options for authenticating the credential.
+     * @param effectiveDomain The effective domain for the request, which is used to validate the RP ID against.
+     * @param pin             If needed, the PIN to authorize the credential creation.
+     * @param state           If needed, the state to provide control over the ongoing operation
+     * @return Webauthn public key credential with assertion response data.
+     * @throws MultipleAssertionsAvailable In case of multiple assertions, catch this to make a selection and get the result.
+     * @throws IOException                 A communication error in the transport layer
+     * @throws CommandException            A communication in the protocol layer
+     * @throws ClientError                 A higher level error
+     */
     public Ctap2Session.AssertionData ctapGetAssertion(
-            PublicKeyCredentialRequestOptions options,
             byte[] clientDataHash,
+            PublicKeyCredentialRequestOptions options,
             String effectiveDomain,
             @Nullable char[] pin,
             @Nullable CommandState state
@@ -336,8 +368,8 @@ public class BasicWebAuthnClient implements Closeable {
 
         try {
             Ctap2Session.AssertionData assertion = ctapGetAssertion(
-                    options,
                     clientDataHash,
+                    options,
                     effectiveDomain,
                     pin,
                     state
