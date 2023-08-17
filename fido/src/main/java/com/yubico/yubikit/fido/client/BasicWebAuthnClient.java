@@ -393,7 +393,7 @@ public class BasicWebAuthnClient implements Closeable {
                 options.getExcludeCredentials()
         );
 
-        final Map<String, Object> user = ConversionUtils.publicKeyCredentialUserEntityToMap(options.getUser());
+        final Map<String, Object> user = CredentialManager.credentialUserEntityToMap(options.getUser());
 
         List<Map<String, ?>> pubKeyCredParams = new ArrayList<>();
         for (PublicKeyCredentialParameters param : options.getPubKeyCredParams()) {
@@ -541,7 +541,7 @@ public class BasicWebAuthnClient implements Closeable {
      * @return new list containing only descriptors with valid {@code PublicKeyCredentialType} type
      */
     @Nullable
-    public static List<PublicKeyCredentialDescriptor> removeUnsupportedCredentials(
+    private static List<PublicKeyCredentialDescriptor> removeUnsupportedCredentials(
             @Nullable List<PublicKeyCredentialDescriptor> descriptors
     ) {
         if (descriptors == null || descriptors.isEmpty()) {
@@ -567,7 +567,7 @@ public class BasicWebAuthnClient implements Closeable {
         }
         List<Map<String, ?>> list = new ArrayList<>();
         for (PublicKeyCredentialDescriptor credential : descriptors) {
-            list.add(ConversionUtils.publicKeyCredentialDescriptorToMap(credential));
+            list.add(CredentialManager.credentialDescriptorToMap(credential));
         }
         return list;
     }
