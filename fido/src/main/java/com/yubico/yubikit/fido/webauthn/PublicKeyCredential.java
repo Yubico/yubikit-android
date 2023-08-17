@@ -20,16 +20,21 @@ import static com.yubico.yubikit.fido.webauthn.AuthenticatorAssertionResponse.AU
 import static com.yubico.yubikit.fido.webauthn.Base64Utils.decode;
 import static com.yubico.yubikit.fido.webauthn.Base64Utils.encode;
 
+import com.yubico.yubikit.fido.ctap.Ctap2Session;
+
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-public class PublicKeyCredential extends Credential {
-    static final String RAW_ID = "rawId";
-    static final String RESPONSE = "response";
+import javax.annotation.Nullable;
 
-    static final String PUBLIC_KEY_CREDENTIAL_TYPE = "public-key";
+public class PublicKeyCredential extends Credential {
+    public static final String RAW_ID = "rawId";
+    public static final String RESPONSE = "response";
+
+    public static final String PUBLIC_KEY_CREDENTIAL_TYPE = "public-key";
 
     private final byte[] rawId;
     private final AuthenticatorResponse response;
@@ -100,6 +105,36 @@ public class PublicKeyCredential extends Credential {
         return new PublicKeyCredential(
                 Objects.requireNonNull((String) map.get(ID)),
                 response
+        );
+    }
+
+    /**
+     * Constructs new PublicKeyCredential from AssertionData
+     *
+     * @param assertion data base for the new credential
+     * @param clientDataJson response client data
+     * @param allowCredentials used for querying credential id for incomplete assertion objects
+     * @return new PublicKeyCredential object
+     */
+    public static PublicKeyCredential fromAssertion(
+            Ctap2Session.AssertionData assertion,
+            byte[] clientDataJson,
+            @Nullable List<PublicKeyCredentialDescriptor> allowCredentials) {
+        byte[] userId = null;
+        Map<String, ?> userMap = assertion.getUser();
+        if (userMap != null) {
+            // This is not a complete UserEntity object, it may contain only "id".
+            userId = Objects.requireNonNull((byte[]) userMap.get(PublicKeyCredentialUserEntity.ID));
+        }
+
+        return new PublicKeyCredential(
+                assertion.getCredentialId(allowCredentials),
+                new AuthenticatorAssertionResponse(
+                        clientDataJson,
+                        assertion.getAuthenticatorData(),
+                        assertion.getSignature(),
+                        userId
+                )
         );
     }
 }

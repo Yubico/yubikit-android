@@ -301,6 +301,7 @@ public class SerializationTest {
     private void compareAttestations(AuthenticatorAttestationResponse a, AuthenticatorAttestationResponse b) {
         Assert.assertArrayEquals(a.getAttestationObject(), b.getAttestationObject());
         Assert.assertArrayEquals(a.getClientDataJson(), b.getClientDataJson());
+        Assert.assertEquals(a.getTransports(), b.getTransports());
     }
 
     AuthenticatorAttestationResponse randomAuthenticatorAttestationResponse() {
@@ -308,9 +309,11 @@ public class SerializationTest {
         random.nextBytes(attestationObject);
         byte[] clientDataJson = new byte[64 + random.nextInt(64)];
         random.nextBytes(clientDataJson);
+        List<String> transports = Arrays.asList("nfc", "usb");
 
         return new AuthenticatorAttestationResponse(
                 clientDataJson,
+                transports,
                 attestationObject
         );
     }

@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Provides management of resident key type credentials, which are stored on a YubiKey.
@@ -97,12 +98,15 @@ public class CredentialManager {
             if (rpIdHash == null) {
                 rpIdHash = BasicWebAuthnClient.hash(rpId.getBytes(StandardCharsets.UTF_8));
             }
+
             for (CredentialManagement.CredentialData credData : credentialManagement.enumerateCredentials(rpIdHash)) {
+                final Map<String, ?> credentialIdMap = credData.getCredentialId();
                 credentials.put(
-                        ConversionUtils.publicKeyCredentialDescriptorFromMap(credData.getCredentialId()),
-                        ConversionUtils.publicKeyCredentialUserEntityFromMap(credData.getUser())
+                        getPublicKeyCredentialDescriptor(credData.getCredentialId()),
+                        getPublicKeyCredentialUserEntity(credData.getUser())
                 );
             }
+
             return credentials;
         } catch (CtapException e) {
             throw ClientError.wrapCtapException(e);
@@ -119,9 +123,58 @@ public class CredentialManager {
      */
     public void deleteCredential(PublicKeyCredentialDescriptor credential) throws IOException, CommandException, ClientError {
         try {
-            credentialManagement.deleteCredential(ConversionUtils.publicKeyCredentialDescriptorToMap(credential));
+            credentialManagement.deleteCredential(credentialDescriptorToMap(credential));
         } catch (CtapException e) {
             throw ClientError.wrapCtapException(e);
         }
+    }
+
+    /**
+     * Helper method for converting map object to a public key credential descriptor.
+     * <p>
+     * No conversions to binary data are performed. This method is for internal use only.
+     */
+    static PublicKeyCredentialDescriptor getPublicKeyCredentialDescriptor(Map<String, ?> credential) {
+        return new PublicKeyCredentialDescriptor(
+                Objects.requireNonNull((String) credential.get(PublicKeyCredentialDescriptor.TYPE)),
+                Objects.requireNonNull((byte[]) credential.get(PublicKeyCredentialDescriptor.ID))
+        );
+    }
+
+    /**
+     * Helper method for converting map object to a public key credential user entity.
+     * <p>
+     * No conversions to binary data are performed. This method is for internal use only.
+     */
+    static PublicKeyCredentialUserEntity getPublicKeyCredentialUserEntity(Map<String, ?> user) {
+        return new PublicKeyCredentialUserEntity(
+                Objects.requireNonNull((String) user.get(PublicKeyCredentialUserEntity.NAME)),
+                Objects.requireNonNull((byte[]) user.get(PublicKeyCredentialUserEntity.ID)),
+                Objects.requireNonNull((String) user.get(PublicKeyCredentialUserEntity.DISPLAY_NAME)));
+    }
+
+    /**
+     * Helper method for converting a public key credential user entity to a map.
+     * <p>
+     * No conversions to binary data are performed. This method is for internal use only.
+     */
+    static Map<String, Object> credentialUserEntityToMap(PublicKeyCredentialUserEntity userEntity) {
+        final Map<String, Object> user = new HashMap<>();
+        user.put(PublicKeyCredentialUserEntity.NAME, userEntity.getName());
+        user.put(PublicKeyCredentialUserEntity.ID, userEntity.getId());
+        user.put(PublicKeyCredentialUserEntity.DISPLAY_NAME, userEntity.getDisplayName());
+        return user;
+    }
+
+    /**
+     * Helper method for converting a public key credential descriptor to a map.
+     * <p>
+     * No conversions to binary data are performed. This method is for internal use only.
+     */
+    static Map<String, Object> credentialDescriptorToMap(PublicKeyCredentialDescriptor credentialDescriptor) {
+        Map<String, Object> credentialDescriptorMap = new HashMap<>();
+        credentialDescriptorMap.put(PublicKeyCredentialDescriptor.TYPE, credentialDescriptor.getType());
+        credentialDescriptorMap.put(PublicKeyCredentialDescriptor.ID, credentialDescriptor.getId());
+        return credentialDescriptorMap;
     }
 }
