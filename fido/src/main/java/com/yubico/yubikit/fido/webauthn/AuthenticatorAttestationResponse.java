@@ -61,7 +61,7 @@ public class AuthenticatorAttestationResponse extends AuthenticatorResponse {
     @SuppressWarnings("unchecked")
     public static AuthenticatorAttestationResponse fromMap(Map<String, ?> map) {
         return new AuthenticatorAttestationResponse(
-                decode(map.get(CLIENT_DATA_JSON)),
+                decode(Objects.requireNonNull(map.get(CLIENT_DATA_JSON))),
                 (List<String>) Objects.requireNonNull(map.get(TRANSPORTS)),
                 decode(Objects.requireNonNull(map.get(ATTESTATION_OBJECT)))
         );
