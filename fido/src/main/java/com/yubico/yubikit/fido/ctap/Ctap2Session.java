@@ -347,9 +347,13 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
             return new InfoData(
                     (List<String>) data.get(RESULT_VERSIONS),
                     (byte[]) data.get(RESULT_AAGUID),
-                    data.containsKey(RESULT_OPTIONS) ? (Map<String, Object>) data.get(RESULT_OPTIONS) : Collections.emptyMap(),
+                    data.containsKey(RESULT_OPTIONS)
+                            ? (Map<String, Object>) data.get(RESULT_OPTIONS)
+                            : Collections.emptyMap(),
                     (List<Integer>) data.get(RESULT_PIN_PROTOCOLS),
-                    (List<String>) data.get(RESULT_TRANSPORTS)
+                    data.containsKey(RESULT_TRANSPORTS)
+                            ? (List<String>) data.get(RESULT_TRANSPORTS)
+                            : Collections.emptyList()
             );
         }
 

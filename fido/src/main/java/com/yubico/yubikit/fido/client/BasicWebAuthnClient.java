@@ -75,7 +75,8 @@ public class BasicWebAuthnClient implements Closeable {
     public static final String KEY_ATTESTATION_STATEMENT = "attStmt";
 
     private final Ctap2Session ctap;
-    private final Ctap2Session.InfoData info;
+
+    private final List<String> transports;
 
     private final boolean pinSupported;
     private final boolean uvSupported;
@@ -89,7 +90,9 @@ public class BasicWebAuthnClient implements Closeable {
 
     public BasicWebAuthnClient(Ctap2Session session) throws IOException, CommandException {
         this.ctap = session;
-        this.info = ctap.getInfo();
+        Ctap2Session.InfoData info = ctap.getInfo();
+
+        transports = info.getTransports();
 
         Map<String, ?> options = info.getOptions();
 
@@ -107,10 +110,6 @@ public class BasicWebAuthnClient implements Closeable {
         uvConfigured = uvSupported && uv;
 
         credentialManagementSupported = Boolean.TRUE.equals(options.get(OPTION_CREDENTIAL_MANAGEMENT));
-    }
-
-    public Ctap2Session.InfoData getSessionInfoData() {
-        return info;
     }
 
     @Override
@@ -164,7 +163,7 @@ public class BasicWebAuthnClient implements Closeable {
                     credentialId,
                     new AuthenticatorAttestationResponse(
                             clientDataJson,
-                            info.getTransports(),
+                            getTransports(),
                             Cbor.encode(attestationObject)
                     )
             );
@@ -487,6 +486,15 @@ public class BasicWebAuthnClient implements Closeable {
             }
             throw ClientError.wrapCtapException(e);
         }
+    }
+
+    /**
+     * Returns list of transports the authenticator is believed to support. This can be empty if
+     * the information is not available.
+     * @return list of transports
+     */
+    protected List<String> getTransports() {
+        return transports;
     }
 
     /*
