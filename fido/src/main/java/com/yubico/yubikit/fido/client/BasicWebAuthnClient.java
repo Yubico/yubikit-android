@@ -157,7 +157,7 @@ public class BasicWebAuthnClient implements Closeable {
             attestationObject.put(KEY_AUTHENTICATOR_DATA, authenticatorData);
             attestationObject.put(KEY_ATTESTATION_STATEMENT, credential.getAttestationStatement());
 
-            int credentialIdLength = authenticatorData[54];
+            int credentialIdLength = (authenticatorData[53] & 0xFF) << 8 | (authenticatorData[54] & 0xFF);
             byte[] credentialId = Arrays.copyOfRange(authenticatorData, 55, 55 + credentialIdLength);
 
             return new PublicKeyCredential(
