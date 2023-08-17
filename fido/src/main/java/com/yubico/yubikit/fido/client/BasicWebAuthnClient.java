@@ -16,10 +16,6 @@
 
 package com.yubico.yubikit.fido.client;
 
-import static com.yubico.yubikit.fido.webauthn.AttestationObject.KEY_ATTESTATION_STATEMENT;
-import static com.yubico.yubikit.fido.webauthn.AttestationObject.KEY_AUTHENTICATOR_DATA;
-import static com.yubico.yubikit.fido.webauthn.AttestationObject.KEY_FORMAT;
-
 import com.yubico.yubikit.core.application.CommandException;
 import com.yubico.yubikit.core.application.CommandState;
 import com.yubico.yubikit.core.fido.CtapException;
@@ -73,6 +69,10 @@ public class BasicWebAuthnClient implements Closeable {
     private static final String OPTION_CREDENTIAL_MANAGEMENT = "credentialMgmtPreview";
     private static final String OPTION_USER_VERIFICATION = "uv";
     private static final String OPTION_RESIDENT_KEY = "rk";
+
+    public static final String KEY_FORMAT = "fmt";
+    public static final String KEY_AUTHENTICATOR_DATA = "authData";
+    public static final String KEY_ATTESTATION_STATEMENT = "attStmt";
 
     private final Ctap2Session ctap;
     private final Ctap2Session.InfoData info;
@@ -432,9 +432,9 @@ public class BasicWebAuthnClient implements Closeable {
      * @param pin             If needed, the PIN to authorize the credential creation.
      * @param state           If needed, the state to provide control over the ongoing operation
      * @return Webauthn public key credential with assertion response data.
-     * @throws IOException                 A communication error in the transport layer
-     * @throws CommandException            A communication in the protocol layer
-     * @throws ClientError                 A higher level error
+     * @throws IOException      A communication error in the transport layer
+     * @throws CommandException A communication in the protocol layer
+     * @throws ClientError      A higher level error
      */
     protected List<Ctap2Session.AssertionData> ctapGetAssertions(
             byte[] clientDataHash,
