@@ -16,7 +16,7 @@
 
 package com.yubico.yubikit.fido.webauthn;
 
-import com.yubico.yubikit.core.codec.Base64;
+import com.yubico.yubikit.core.internal.codec.Base64;
 
 import java.util.HashMap;
 import java.util.Map;

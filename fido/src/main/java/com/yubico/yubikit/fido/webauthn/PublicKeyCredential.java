@@ -16,8 +16,7 @@
 
 package com.yubico.yubikit.fido.webauthn;
 
-import static com.yubico.yubikit.fido.webauthn.AuthenticatorAssertionResponse.AUTHENTICATOR_DATA;
-import com.yubico.yubikit.core.codec.Base64;
+import com.yubico.yubikit.core.internal.codec.Base64;
 
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
 
@@ -92,7 +91,7 @@ public class PublicKeyCredential extends Credential {
         Map<String, ?> responseMap = Objects.requireNonNull((Map<String, ?>) map.get(RESPONSE));
         AuthenticatorResponse response;
         try {
-            if (responseMap.containsKey(AUTHENTICATOR_DATA)) {
+            if (responseMap.containsKey(AuthenticatorAssertionResponse.AUTHENTICATOR_DATA)) {
                 response = AuthenticatorAssertionResponse.fromMap(responseMap);
             } else {
                 response = AuthenticatorAttestationResponse.fromMap(responseMap);

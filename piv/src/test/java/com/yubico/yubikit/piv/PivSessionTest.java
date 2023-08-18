@@ -15,6 +15,8 @@
  */
 package com.yubico.yubikit.piv;
 
+import com.yubico.yubikit.core.internal.codec.Base64Codec;
+import com.yubico.yubikit.core.internal.codec.Base64;
 import com.yubico.yubikit.testing.Codec;
 
 import org.junit.Test;
@@ -71,7 +73,11 @@ public class PivSessionTest {
 
     @Test
     public void testParsePkcs8RsaKeyValues() throws UnsupportedEncodingException {
-        PivSession.parsePkcs8RsaKeyValues(Codec.fromBase64("MIICdQIBADANBgkqhkiG9w0BAQEFAASCAl8wggJbAgEAAoGBALWeZ0E5O2l/iHfc" +
+
+        Base64Codec base64Codec = Base64.getBase64Codec();
+
+        PivSession.parsePkcs8RsaKeyValues(base64Codec.fromString(
+                "MIICdQIBADANBgkqhkiG9w0BAQEFAASCAl8wggJbAgEAAoGBALWeZ0E5O2l/iHfc" +
                 "k9mokf1iWH2eZDWQoJoQKUOAeVoKUecNp250J5tL3EHONqWoF6VLO+B+6jTET4Iz" +
                 "97BeUj7gOJHmEw+nqFfguTVmNeeiZ711TNYNpF7kwW7yWghWG+Q7iQEoMXfY3x4B" +
                 "L33H2gKRWtMHK66GJViL1l9s3qDXAgMBAAECgYBO753pFzrfS3LAxbns6/snqcrU" +

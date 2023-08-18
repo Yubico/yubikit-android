@@ -14,10 +14,7 @@
  * limitations under the License.
  */
 
-package com.yubico.yubikit.core.codec;
+@PackageNonnullByDefault
+package com.yubico.yubikit.android.internal;
 
-public interface Base64Codec {
-    String encode(byte[] data);
-
-    byte[] decode(String data);
-}
+import com.yubico.yubikit.core.PackageNonnullByDefault;

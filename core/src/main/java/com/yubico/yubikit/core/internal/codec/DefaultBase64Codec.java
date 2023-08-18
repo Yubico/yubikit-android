@@ -14,23 +14,32 @@
  * limitations under the License.
  */
 
-package com.yubico.yubikit.fido.codec;
+package com.yubico.yubikit.core.internal.codec;
 
 import java.util.Base64;
 
-import com.yubico.yubikit.core.codec.Base64Codec;
-
-public class TestBase64Codec implements Base64Codec {
+/**
+ * Default implementation of Base64Codec
+ * <p>
+ * Only for internal use.
+ */
+public class DefaultBase64Codec implements Base64Codec {
 
     @Override
-    public String encode(byte[] data) {
-        //return Base64.encodeToString(data, Base64.URL_SAFE | Base64.NO_WRAP | Base64.NO_PADDING);
+    public String toUrlSafeString(byte[] data) {
         return new String(Base64.getUrlEncoder().withoutPadding().encode(data));
     }
 
+    public String toString(byte[] data) {
+        return new String(Base64.getEncoder().withoutPadding().encode(data));
+    }
+
     @Override
-    public byte[] decode(String data) {
+    public byte[] fromUrlSafeString(String data) {
         return Base64.getUrlDecoder().decode(data);
     }
-}
 
+    public byte[] fromString(String data) {
+        return Base64.getDecoder().decode(data);
+    }
+}
