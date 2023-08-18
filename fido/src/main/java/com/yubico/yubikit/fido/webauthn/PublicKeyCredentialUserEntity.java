@@ -16,8 +16,7 @@
 
 package com.yubico.yubikit.fido.webauthn;
 
-import static com.yubico.yubikit.fido.webauthn.Base64Utils.decode;
-import static com.yubico.yubikit.fido.webauthn.Base64Utils.encode;
+import com.yubico.yubikit.core.codec.Base64;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -47,7 +46,7 @@ public class PublicKeyCredentialUserEntity extends PublicKeyCredentialEntity {
     public Map<String, ?> toMap() {
         Map<String, Object> map = new HashMap<>();
         map.put(NAME, getName());
-        map.put(ID, encode(id));
+        map.put(ID, Base64.encode(id));
         map.put(DISPLAY_NAME, displayName);
         return map;
     }
@@ -55,7 +54,7 @@ public class PublicKeyCredentialUserEntity extends PublicKeyCredentialEntity {
     public static PublicKeyCredentialUserEntity fromMap(Map<String, ?> map) {
         return new PublicKeyCredentialUserEntity(
                 Objects.requireNonNull((String) map.get(NAME)),
-                decode(Objects.requireNonNull(map.get(ID))),
+                Base64.decode(Objects.requireNonNull((String) map.get(ID))),
                 Objects.requireNonNull((String) map.get(DISPLAY_NAME))
         );
     }

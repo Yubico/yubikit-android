@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Yubico.
+ * Copyright (C) 2023 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,19 +14,10 @@
  * limitations under the License.
  */
 
-package com.yubico.yubikit.fido.webauthn;
+package com.yubico.yubikit.core.codec;
 
-import org.apache.commons.codec.binary.Base64;
+public interface Base64Codec {
+    String encode(byte[] data);
 
-class Base64Utils {
-
-    static String encode(byte[] data) {
-        return Base64.encodeBase64URLSafeString(data);
-    }
-
-    static byte[] decode(Object data) {
-        return Base64.decodeBase64((String) data);
-    }
+    byte[] decode(String data);
 }
-
-

@@ -16,8 +16,7 @@
 
 package com.yubico.yubikit.fido.webauthn;
 
-import static com.yubico.yubikit.fido.webauthn.Base64Utils.decode;
-import static com.yubico.yubikit.fido.webauthn.Base64Utils.encode;
+import com.yubico.yubikit.core.codec.Base64;
 
 import javax.annotation.Nullable;
 
@@ -63,21 +62,21 @@ public class AuthenticatorAssertionResponse extends AuthenticatorResponse {
     @Override
     public Map<String, ?> toMap() {
         Map<String, Object> map = new HashMap<>();
-        map.put(CLIENT_DATA_JSON, encode(getClientDataJson()));
-        map.put(AUTHENTICATOR_DATA, encode(authenticatorData));
-        map.put(SIGNATURE, encode(signature));
+        map.put(CLIENT_DATA_JSON, Base64.encode(getClientDataJson()));
+        map.put(AUTHENTICATOR_DATA, Base64.encode(authenticatorData));
+        map.put(SIGNATURE, Base64.encode(signature));
         if (userHandle != null) {
-            map.put(USER_HANDLE, encode(userHandle));
+            map.put(USER_HANDLE, Base64.encode(userHandle));
         }
         return map;
     }
 
     public static AuthenticatorAssertionResponse fromMap(Map<String, ?> map) {
         return new AuthenticatorAssertionResponse(
-                decode(Objects.requireNonNull(map.get(CLIENT_DATA_JSON))),
-                decode(Objects.requireNonNull(map.get(AUTHENTICATOR_DATA))),
-                decode(Objects.requireNonNull(map.get(SIGNATURE))),
-                decode(map.get(USER_HANDLE))
+                Base64.decode(Objects.requireNonNull((String) map.get(CLIENT_DATA_JSON))),
+                Base64.decode(Objects.requireNonNull((String) map.get(AUTHENTICATOR_DATA))),
+                Base64.decode(Objects.requireNonNull((String) map.get(SIGNATURE))),
+                Base64.decode((String) map.get(USER_HANDLE))
         );
     }
 }

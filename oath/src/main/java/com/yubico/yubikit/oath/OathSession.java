@@ -23,6 +23,7 @@ import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
 import com.yubico.yubikit.core.application.ApplicationSession;
 import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.application.Feature;
+import com.yubico.yubikit.core.codec.Base64;
 import com.yubico.yubikit.core.smartcard.Apdu;
 import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.core.smartcard.SW;
@@ -32,7 +33,6 @@ import com.yubico.yubikit.core.util.RandomUtils;
 import com.yubico.yubikit.core.util.Tlv;
 import com.yubico.yubikit.core.util.Tlvs;
 
-import org.apache.commons.codec.binary.Base64;
 import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
@@ -754,10 +754,7 @@ public class OathSession extends ApplicationSession<OathSession> {
             }
             messageDigest.update(salt);
             byte[] digest = messageDigest.digest();
-            return new String(
-                    Base64.encodeBase64(Arrays.copyOfRange(digest, 0, 16)),
-                    StandardCharsets.US_ASCII)
-                .replaceAll("=", "");
+            return Base64.encode(Arrays.copyOfRange(digest, 0, 16));
         }
     }
 }

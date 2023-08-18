@@ -16,8 +16,7 @@
 
 package com.yubico.yubikit.fido.webauthn;
 
-import static com.yubico.yubikit.fido.webauthn.Base64Utils.decode;
-import static com.yubico.yubikit.fido.webauthn.Base64Utils.encode;
+import com.yubico.yubikit.core.codec.Base64;
 
 import javax.annotation.Nullable;
 
@@ -90,7 +89,7 @@ public class PublicKeyCredentialRequestOptions {
 
     public Map<String, ?> toMap() {
         Map<String, Object> map = new HashMap<>();
-        map.put(CHALLENGE, encode(challenge));
+        map.put(CHALLENGE, Base64.encode(challenge));
         if (timeout != null) {
             map.put(TIMEOUT, timeout);
         }
@@ -123,7 +122,7 @@ public class PublicKeyCredentialRequestOptions {
         Number timeout = ((Number) map.get(TIMEOUT));
 
         return new PublicKeyCredentialRequestOptions(
-                decode(Objects.requireNonNull(map.get(CHALLENGE))),
+                Base64.decode(Objects.requireNonNull((String) map.get(CHALLENGE))),
                 timeout == null ? null : timeout.longValue(),
                 (String) map.get(RP_ID),
                 allowCredentials,
