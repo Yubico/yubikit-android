@@ -15,8 +15,8 @@
  */
 package com.yubico.yubikit.testing.piv;
 
+import com.yubico.yubikit.core.internal.codec.Base64;
 import com.yubico.yubikit.piv.KeyType;
-import com.yubico.yubikit.testing.Codec;
 
 import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.x500.X500Name;
@@ -154,8 +154,8 @@ public class PivTestUtils {
             try {
                 KeyFactory kf = KeyFactory.getInstance(keyType.params.algorithm.name());
                 return new KeyPair(
-                        kf.generatePublic(new X509EncodedKeySpec(Codec.fromBase64(publicKey))),
-                        kf.generatePrivate(new PKCS8EncodedKeySpec(Codec.fromBase64(privateKey)))
+                        kf.generatePublic(new X509EncodedKeySpec(Base64.decode(publicKey))),
+                        kf.generatePrivate(new PKCS8EncodedKeySpec(Base64.decode(privateKey)))
                 );
             } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
                 throw new IllegalStateException(e);

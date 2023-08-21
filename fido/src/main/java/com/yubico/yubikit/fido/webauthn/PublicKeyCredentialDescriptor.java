@@ -16,8 +16,7 @@
 
 package com.yubico.yubikit.fido.webauthn;
 
-import static com.yubico.yubikit.fido.webauthn.Base64Utils.decode;
-import static com.yubico.yubikit.fido.webauthn.Base64Utils.encode;
+import com.yubico.yubikit.core.internal.codec.Base64;
 
 import javax.annotation.Nullable;
 
@@ -65,7 +64,7 @@ public class PublicKeyCredentialDescriptor {
     public Map<String, ?> toMap() {
         Map<String, Object> map = new HashMap<>();
         map.put(TYPE, type);
-        map.put(ID,encode(id));
+        map.put(ID, Base64.encode(id));
         if (transports != null) {
             map.put(TRANSPORTS, transports);
         }
@@ -76,7 +75,7 @@ public class PublicKeyCredentialDescriptor {
     public static PublicKeyCredentialDescriptor fromMap(Map<String, ?> map) {
         return new PublicKeyCredentialDescriptor(
                 Objects.requireNonNull((String) map.get(TYPE)),
-                decode(Objects.requireNonNull((String) map.get(ID))),
+                Base64.decode(Objects.requireNonNull((String) map.get(ID))),
                 (List<String>) map.get(TRANSPORTS)
         );
     }

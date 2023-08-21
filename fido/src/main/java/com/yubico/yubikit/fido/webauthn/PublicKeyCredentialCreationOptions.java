@@ -16,8 +16,7 @@
 
 package com.yubico.yubikit.fido.webauthn;
 
-import static com.yubico.yubikit.fido.webauthn.Base64Utils.decode;
-import static com.yubico.yubikit.fido.webauthn.Base64Utils.encode;
+import com.yubico.yubikit.core.internal.codec.Base64;
 
 import javax.annotation.Nullable;
 
@@ -117,7 +116,7 @@ public class PublicKeyCredentialCreationOptions {
         Map<String, Object> map = new HashMap<>();
         map.put(RP, rp.toMap());
         map.put(USER, user.toMap());
-        map.put(CHALLENGE, encode(challenge));
+        map.put(CHALLENGE, Base64.encode(challenge));
         List<Map<String, ?>> paramsList = new ArrayList<>();
         for (PublicKeyCredentialParameters params : pubKeyCredParams) {
             paramsList.add(params.toMap());
@@ -164,7 +163,7 @@ public class PublicKeyCredentialCreationOptions {
         return new PublicKeyCredentialCreationOptions(
                 PublicKeyCredentialRpEntity.fromMap(Objects.requireNonNull((Map<String, ?>) map.get(RP))),
                 PublicKeyCredentialUserEntity.fromMap(Objects.requireNonNull((Map<String, ?>) map.get(USER))),
-                decode(Objects.requireNonNull(map.get(CHALLENGE))),
+                Base64.decode(Objects.requireNonNull((String) map.get(CHALLENGE))),
                 pubKeyCredParams,
                 timeout == null ? null : timeout.longValue(),
                 excludeCredentials,

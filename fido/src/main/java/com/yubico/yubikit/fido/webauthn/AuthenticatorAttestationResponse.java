@@ -16,8 +16,7 @@
 
 package com.yubico.yubikit.fido.webauthn;
 
-import static com.yubico.yubikit.fido.webauthn.Base64Utils.decode;
-import static com.yubico.yubikit.fido.webauthn.Base64Utils.encode;
+import com.yubico.yubikit.core.internal.codec.Base64;
 
 import java.util.HashMap;
 import java.util.List;
@@ -52,18 +51,18 @@ public class AuthenticatorAttestationResponse extends AuthenticatorResponse {
     @Override
     public Map<String, ?> toMap() {
         Map<String, Object> map = new HashMap<>();
-        map.put(CLIENT_DATA_JSON, encode(getClientDataJson()));
+        map.put(CLIENT_DATA_JSON, Base64.encode(getClientDataJson()));
         map.put(TRANSPORTS, transports);
-        map.put(ATTESTATION_OBJECT, encode(attestationObject));
+        map.put(ATTESTATION_OBJECT, Base64.encode(attestationObject));
         return map;
     }
 
     @SuppressWarnings("unchecked")
     public static AuthenticatorAttestationResponse fromMap(Map<String, ?> map) {
         return new AuthenticatorAttestationResponse(
-                decode(Objects.requireNonNull(map.get(CLIENT_DATA_JSON))),
+                Base64.decode(Objects.requireNonNull((String) map.get(CLIENT_DATA_JSON))),
                 (List<String>) Objects.requireNonNull(map.get(TRANSPORTS)),
-                decode(Objects.requireNonNull(map.get(ATTESTATION_OBJECT)))
+                Base64.decode(Objects.requireNonNull((String) map.get(ATTESTATION_OBJECT)))
         );
     }
 }

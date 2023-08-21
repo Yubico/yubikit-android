@@ -16,7 +16,8 @@
 
 package com.yubico.yubikit.fido.webauthn;
 
-import org.apache.commons.codec.binary.Base64;
+import com.yubico.yubikit.core.internal.codec.Base64;
+
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -72,7 +73,7 @@ public class SerializationTest {
 
         Map<String, ?> map = user.toMap();
 
-        Assert.assertEquals(Base64.encodeBase64URLSafeString(user.getId()), (String) map.get("id"));
+        Assert.assertEquals(Base64.encode(user.getId()), (String) map.get("id"));
         Assert.assertEquals(user.getName(), map.get("name"));
         Assert.assertEquals(user.getDisplayName(), map.get("displayName"));
 
@@ -132,12 +133,12 @@ public class SerializationTest {
 
         Map<String, ?> base64Map = descriptor.toMap();
         Assert.assertEquals(descriptor.getType(), base64Map.get("type"));
-        Assert.assertArrayEquals(descriptor.getId(), Base64.decodeBase64((String) base64Map.get("id")));
+        Assert.assertArrayEquals(descriptor.getId(), Base64.decode((String) base64Map.get("id")));
         compareDescriptors(descriptor, PublicKeyCredentialDescriptor.fromMap(base64Map));
 
         Map<String, ?> map = descriptor.toMap();
         Assert.assertEquals(descriptor.getType(), map.get("type"));
-        Assert.assertEquals(Base64.encodeBase64URLSafeString(descriptor.getId()), (String) map.get("id"));
+        Assert.assertEquals(Base64.encode(descriptor.getId()), (String) map.get("id"));
         compareDescriptors(descriptor, PublicKeyCredentialDescriptor.fromMap(map));
     }
 
@@ -346,7 +347,7 @@ public class SerializationTest {
     public void testPublicKeyCredentialCreation() {
         byte[] credentialId = new byte[1 + random.nextInt(64)];
         random.nextBytes(credentialId);
-        String credentialIdB64UrlEncoded = Base64.encodeBase64URLSafeString(credentialId);
+        String credentialIdB64UrlEncoded = Base64.encode(credentialId);
 
         AuthenticatorAttestationResponse response = randomAuthenticatorAttestationResponse();
 
@@ -375,7 +376,7 @@ public class SerializationTest {
     public void testPublicKeyCredentialWithAssertion() {
         byte[] credentialId = new byte[1 + random.nextInt(64)];
         random.nextBytes(credentialId);
-        String credentialIdB64UrlEncoded = Base64.encodeBase64URLSafeString(credentialId);
+        String credentialIdB64UrlEncoded = Base64.encode(credentialId);
 
         AuthenticatorAssertionResponse response = randomAuthenticatorAssertionResponse();
 
@@ -395,7 +396,7 @@ public class SerializationTest {
     public void testPublicKeyCredentialWithAttestation() {
         byte[] credentialId = new byte[1 + random.nextInt(64)];
         random.nextBytes(credentialId);
-        String credentialIdB64UrlEncoded = Base64.encodeBase64URLSafeString(credentialId);
+        String credentialIdB64UrlEncoded = Base64.encode(credentialId);
 
         AuthenticatorAttestationResponse response = randomAuthenticatorAttestationResponse();
 

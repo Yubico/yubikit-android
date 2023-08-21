@@ -13,20 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+@PackageNonnullByDefault
+package com.yubico.yubikit.android.ui;
 
-package com.yubico.yubikit.fido.webauthn;
-
-import org.apache.commons.codec.binary.Base64;
-
-class Base64Utils {
-
-    static String encode(byte[] data) {
-        return Base64.encodeBase64URLSafeString(data);
-    }
-
-    static byte[] decode(Object data) {
-        return Base64.decodeBase64((String) data);
-    }
-}
-
-
+import com.yubico.yubikit.core.PackageNonnullByDefault;

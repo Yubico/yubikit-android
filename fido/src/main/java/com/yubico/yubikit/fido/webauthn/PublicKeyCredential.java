@@ -16,9 +16,7 @@
 
 package com.yubico.yubikit.fido.webauthn;
 
-import static com.yubico.yubikit.fido.webauthn.AuthenticatorAssertionResponse.AUTHENTICATOR_DATA;
-import static com.yubico.yubikit.fido.webauthn.Base64Utils.decode;
-import static com.yubico.yubikit.fido.webauthn.Base64Utils.encode;
+import com.yubico.yubikit.core.internal.codec.Base64;
 
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
 
@@ -49,7 +47,7 @@ public class PublicKeyCredential extends Credential {
      */
     public PublicKeyCredential(String id, AuthenticatorResponse response) {
         super(id, PUBLIC_KEY_CREDENTIAL_TYPE);
-        this.rawId = decode(id);
+        this.rawId = Base64.decode(id);
         this.response = response;
     }
 
@@ -62,7 +60,7 @@ public class PublicKeyCredential extends Credential {
      * @see AuthenticatorAssertionResponse
      */
     public PublicKeyCredential(byte[] id, AuthenticatorResponse response) {
-        super(encode(id), PUBLIC_KEY_CREDENTIAL_TYPE);
+        super(Base64.encode(id), PUBLIC_KEY_CREDENTIAL_TYPE);
         this.rawId = id;
         this.response = response;
     }
@@ -79,7 +77,7 @@ public class PublicKeyCredential extends Credential {
         Map<String, Object> map = new HashMap<>();
         map.put(ID, getId());
         map.put(TYPE, getType());
-        map.put(RAW_ID, encode(getRawId()));
+        map.put(RAW_ID, Base64.encode(getRawId()));
         map.put(RESPONSE, getResponse().toMap());
         return map;
     }
@@ -93,7 +91,7 @@ public class PublicKeyCredential extends Credential {
         Map<String, ?> responseMap = Objects.requireNonNull((Map<String, ?>) map.get(RESPONSE));
         AuthenticatorResponse response;
         try {
-            if (responseMap.containsKey(AUTHENTICATOR_DATA)) {
+            if (responseMap.containsKey(AuthenticatorAssertionResponse.AUTHENTICATOR_DATA)) {
                 response = AuthenticatorAssertionResponse.fromMap(responseMap);
             } else {
                 response = AuthenticatorAttestationResponse.fromMap(responseMap);

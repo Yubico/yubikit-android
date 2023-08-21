@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Yubico.
+ * Copyright (C) 2023 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,12 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.yubico.yubikit.testing;
 
-import org.bouncycastle.util.encoders.Hex;
+@PackageNonnullByDefault
+package com.yubico.yubikit.android.internal;
 
-public class Codec {
-    public static byte[] fromHex(String hex) {
-        return Hex.decode(hex);
-    }
-}
+import com.yubico.yubikit.core.PackageNonnullByDefault;
