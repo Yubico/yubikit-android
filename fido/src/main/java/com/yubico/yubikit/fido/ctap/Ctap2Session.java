@@ -28,6 +28,7 @@ import com.yubico.yubikit.core.application.CommandState;
 import com.yubico.yubikit.core.fido.CtapException;
 import com.yubico.yubikit.core.fido.FidoConnection;
 import com.yubico.yubikit.core.fido.FidoProtocol;
+import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.smartcard.Apdu;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.smartcard.SmartCardProtocol;
@@ -35,6 +36,8 @@ import com.yubico.yubikit.core.util.Callback;
 import com.yubico.yubikit.core.util.Result;
 import com.yubico.yubikit.fido.Cbor;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialDescriptor;
+
+import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
@@ -67,8 +70,10 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
     private final Version version;
     private final Backend<?> backend;
 
+    private static final org.slf4j.Logger logger = LoggerFactory.getLogger(Ctap2Session.class);
+
     /**
-     * Construct a new Ctap2Session for a given YubiKey.
+     * Construct a new Ctap2Session for a given YubiKey
      *
      * @param device a YubiKeyDevice over NFC or USB.
      * @param callback a callback to invoke with the session.
@@ -86,7 +91,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
     public Ctap2Session(SmartCardConnection connection) throws IOException, ApplicationNotAvailableException {
         SmartCardProtocol protocol = new SmartCardProtocol(connection);
         protocol.select(AID);
-        version = null;  // TODO
+        version = null;
         backend = new Backend<SmartCardProtocol>(protocol) {
             @Override
             byte[] sendCbor(byte[] data, @Nullable CommandState state) throws IOException, CommandException {
@@ -94,6 +99,8 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
                 return delegate.sendAndReceive(new Apdu(0x80, INS_CBOR, 0x00, 0x00, data));
             }
         };
+        Logger.debug(logger, "Ctap2Session session initialized for connection={}",
+                connection.getClass().getSimpleName());
     }
 
     public Ctap2Session(FidoConnection connection) throws IOException {
@@ -105,6 +112,9 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
                 return delegate.sendAndReceive(CTAPHID_CBOR, data, state);
             }
         };
+        Logger.debug(logger, "Ctap2Session session initialized for connection={}, version={}",
+                connection.getClass().getSimpleName(),
+                version);
     }
 
     /**
@@ -222,17 +232,27 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
             int pinUvAuthProtocol,
             @Nullable CommandState state
     ) throws IOException, CommandException {
-        return CredentialData.fromData(Objects.requireNonNull(sendCbor(CMD_MAKE_CREDENTIAL, args(
-                clientDataHash,
-                rp,
-                user,
-                pubKeyCredParams,
-                excludeList,
-                extensions,
-                options,
-                pinUvAuthParam,
-                pinUvAuthParam == null ? null : pinUvAuthProtocol
-        ), state)));
+        Logger.debug(logger, "makeCredential for rp={},user={},clientDataHash={}," +
+                        "pubKeyCredParams={},excludeList={},extensions={},options={}," +
+                        "pinUvAuthParam={}," +
+                        "pinUvAuthProtocol={},state={}",
+                rp, user, clientDataHash, pubKeyCredParams, excludeList, extensions, options,
+                pinUvAuthParam, pinUvAuthProtocol, state);
+
+        CredentialData credentialData = CredentialData.fromData(Objects.requireNonNull(
+                sendCbor(CMD_MAKE_CREDENTIAL, args(
+                        clientDataHash,
+                        rp,
+                        user,
+                        pubKeyCredParams,
+                        excludeList,
+                        extensions,
+                        options,
+                        pinUvAuthParam,
+                        pinUvAuthParam == null ? null : pinUvAuthProtocol
+                ), state)));
+        Logger.info(logger, "Success calling makeCredential");
+        return credentialData;
     }
 
     /**
@@ -264,6 +284,10 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
             int pinUvAuthProtocol,
             @Nullable CommandState state
     ) throws IOException, CommandException {
+        Logger.debug(logger, "getAssertions for rpId={},clientDataHash={}," +
+                        "allowList={},extensions={},options={},pinUvAuthParam={}," +
+                        "pinUvAuthProtocol={},state={}",
+                rpId, clientDataHash, allowList, extensions, options, pinUvAuthParam, pinUvAuthProtocol);
         Map<Integer, ?> assertion = Objects.requireNonNull(sendCbor(CMD_GET_ASSERTION, args(
                 rpId,
                 clientDataHash,
@@ -276,9 +300,11 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
         List<AssertionData> assertions = new ArrayList<>();
         assertions.add(AssertionData.fromData(assertion));
         Integer nCreds = (Integer) assertion.get(AssertionData.RESULT_N_CREDS);
-        for (int i = nCreds != null ? nCreds : 1; i > 1; i--) {
+        int credentialCount = nCreds != null ? nCreds : 1;
+        for (int i = credentialCount; i > 1; i--) {
             assertions.add(AssertionData.fromData(Objects.requireNonNull(sendCbor(CMD_GET_NEXT_ASSERTION, null, null))));
         }
+        Logger.info(logger, "Success getting {} assertions.", credentialCount);
         return assertions;
     }
 

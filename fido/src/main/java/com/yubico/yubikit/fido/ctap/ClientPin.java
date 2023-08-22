@@ -17,7 +17,10 @@
 package com.yubico.yubikit.fido.ctap;
 
 import com.yubico.yubikit.core.application.CommandException;
+import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.util.Pair;
+
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -51,6 +54,8 @@ public class ClientPin {
     private final Ctap2Session ctap;
     private final PinUvAuthProtocol pinUvAuth;
 
+    private static final org.slf4j.Logger logger = LoggerFactory.getLogger(ClientPin.class);
+
     /**
      * Construct a new ClientPin object using a specified PIN/UV Auth protocol.
      *
@@ -63,6 +68,7 @@ public class ClientPin {
     }
 
     private Pair<Map<Integer, ?>, byte[]> getSharedSecret() throws IOException, CommandException {
+        Logger.debug(logger, "Getting shared secret");
         Map<Integer, ?> result = ctap.clientPin(
                 pinUvAuth.getVersion(),
                 CMD_GET_KEY_AGREEMENT,
@@ -74,6 +80,7 @@ public class ClientPin {
 
         @SuppressWarnings("unchecked")
         Map<Integer, ?> peerCoseKey = Objects.requireNonNull((Map<Integer, ?>) result.get(RESULT_KEY_AGREEMENT));
+        Logger.info(logger, "Success getting shared secret");
         return pinUvAuth.encapsulate(peerCoseKey);
     }
 
@@ -94,6 +101,7 @@ public class ClientPin {
      * @throws CommandException A communication in the protocol layer.
      */
     public int getPinRetries() throws IOException, CommandException {
+        Logger.debug(logger, "Getting PIN retries");
         Map<Integer, ?> result = ctap.clientPin(
                 pinUvAuth.getVersion(),
                 CMD_GET_RETRIES,
@@ -103,7 +111,9 @@ public class ClientPin {
                 null
         );
 
-        return Objects.requireNonNull((Integer) result.get(RESULT_RETRIES));
+        int retries = Objects.requireNonNull((Integer) result.get(RESULT_RETRIES));
+        Logger.info(logger, "Success getting PIN retries");
+        return retries;
     }
 
     /**
@@ -121,6 +131,8 @@ public class ClientPin {
             byte[] pinHash = Arrays.copyOf(MessageDigest.getInstance("SHA-256").digest(preparePin(pin, false)), PIN_HASH_LEN);
             byte[] pinHashEnc = pinUvAuth.encrypt(pair.second, pinHash);
 
+            Logger.debug(logger, "Getting PIN token");
+
             Map<Integer, ?> result = ctap.clientPin(
                     pinUvAuth.getVersion(),
                     CMD_GET_PIN_TOKEN,
@@ -131,8 +143,11 @@ public class ClientPin {
             );
 
             byte[] pinTokenEnc = (byte[]) result.get(RESULT_PIN_TOKEN);
-            return pinUvAuth.decrypt(pair.second, pinTokenEnc);
+            byte[] pinToken = pinUvAuth.decrypt(pair.second, pinTokenEnc);
+            Logger.info(logger, "Success getting PIN token");
+            return pinToken;
         } catch (NoSuchAlgorithmException e) {
+            Logger.error(logger, "Failure getting PIN token: ", e);
             throw new IllegalStateException(e);
         }
     }
@@ -148,6 +163,7 @@ public class ClientPin {
         Pair<Map<Integer, ?>, byte[]> pair = getSharedSecret();
 
         byte[] pinEnc = pinUvAuth.encrypt(pair.second, preparePin(pin, true));
+        Logger.debug(logger, "Setting PIN");
         ctap.clientPin(
                 pinUvAuth.getVersion(),
                 CMD_SET_PIN,
@@ -156,6 +172,7 @@ public class ClientPin {
                 pinEnc,
                 null
         );
+        Logger.info(logger, "Success setting PIN");
     }
 
     /**
@@ -174,7 +191,15 @@ public class ClientPin {
             byte[] pinHash = Arrays.copyOf(MessageDigest.getInstance("SHA-256").digest(preparePin(currentPin, false)), PIN_HASH_LEN);
             byte[] pinHashEnc = pinUvAuth.encrypt(pair.second, pinHash);
             byte[] newPinEnc = pinUvAuth.encrypt(pair.second, newPinBytes);
-            byte[] pinUvAuthParam = pinUvAuth.authenticate(pair.second, ByteBuffer.allocate(newPinEnc.length + pinHashEnc.length).put(newPinEnc).put(pinHashEnc).array());
+
+            Logger.debug(logger, "Changing PIN");
+
+            byte[] pinUvAuthParam = pinUvAuth.authenticate(
+                    pair.second,
+                    ByteBuffer.allocate(newPinEnc.length + pinHashEnc.length)
+                            .put(newPinEnc)
+                            .put(pinHashEnc).array()
+            );
             ctap.clientPin(
                     pinUvAuth.getVersion(),
                     CMD_CHANGE_PIN,
@@ -183,7 +208,9 @@ public class ClientPin {
                     newPinEnc,
                     pinHashEnc
             );
+            Logger.info(logger, "Success changing PIN");
         } catch (NoSuchAlgorithmException e) {
+            Logger.error(logger, "Failure changing PIN: ", e);
             throw new IllegalStateException(e);
         }
     }
