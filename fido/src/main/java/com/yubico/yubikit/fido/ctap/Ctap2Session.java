@@ -234,8 +234,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
     ) throws IOException, CommandException {
         Logger.debug(logger, "makeCredential for rp={},user={},clientDataHash={}," +
                         "pubKeyCredParams={},excludeList={},extensions={},options={}," +
-                        "pinUvAuthParam={}," +
-                        "pinUvAuthProtocol={},state={}",
+                        "pinUvAuthParam={},pinUvAuthProtocol={},state={}",
                 rp, user, clientDataHash, pubKeyCredParams, excludeList, extensions, options,
                 pinUvAuthParam, pinUvAuthProtocol, state);
 
