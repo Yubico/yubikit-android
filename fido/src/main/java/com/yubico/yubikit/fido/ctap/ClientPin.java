@@ -80,7 +80,6 @@ public class ClientPin {
 
         @SuppressWarnings("unchecked")
         Map<Integer, ?> peerCoseKey = Objects.requireNonNull((Map<Integer, ?>) result.get(RESULT_KEY_AGREEMENT));
-        Logger.info(logger, "Success getting shared secret");
         return pinUvAuth.encapsulate(peerCoseKey);
     }
 
@@ -111,9 +110,7 @@ public class ClientPin {
                 null
         );
 
-        int retries = Objects.requireNonNull((Integer) result.get(RESULT_RETRIES));
-        Logger.info(logger, "Success getting PIN retries");
-        return retries;
+        return Objects.requireNonNull((Integer) result.get(RESULT_RETRIES));
     }
 
     /**
@@ -143,9 +140,7 @@ public class ClientPin {
             );
 
             byte[] pinTokenEnc = (byte[]) result.get(RESULT_PIN_TOKEN);
-            byte[] pinToken = pinUvAuth.decrypt(pair.second, pinTokenEnc);
-            Logger.info(logger, "Success getting PIN token");
-            return pinToken;
+            return pinUvAuth.decrypt(pair.second, pinTokenEnc);
         } catch (NoSuchAlgorithmException e) {
             Logger.error(logger, "Failure getting PIN token: ", e);
             throw new IllegalStateException(e);
@@ -172,7 +167,7 @@ public class ClientPin {
                 pinEnc,
                 null
         );
-        Logger.info(logger, "Success setting PIN");
+        Logger.info(logger, "PIN set");
     }
 
     /**
@@ -208,7 +203,7 @@ public class ClientPin {
                     newPinEnc,
                     pinHashEnc
             );
-            Logger.info(logger, "Success changing PIN");
+            Logger.info(logger, "PIN changed");
         } catch (NoSuchAlgorithmException e) {
             Logger.error(logger, "Failure changing PIN: ", e);
             throw new IllegalStateException(e);

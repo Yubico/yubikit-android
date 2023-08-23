@@ -251,7 +251,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
                         pinUvAuthParam,
                         pinUvAuthParam == null ? null : pinUvAuthProtocol
                 ), state)));
-        Logger.info(logger, "Success calling makeCredential");
+        Logger.info(logger, "Credential created");
         return credentialData;
     }
 
@@ -304,7 +304,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
         for (int i = credentialCount; i > 1; i--) {
             assertions.add(AssertionData.fromData(Objects.requireNonNull(sendCbor(CMD_GET_NEXT_ASSERTION, null, null))));
         }
-        Logger.info(logger, "Success getting {} assertions.", credentialCount);
+        Logger.info(logger, "Authenticator returned {} assertions.", credentialCount);
         return assertions;
     }
 
