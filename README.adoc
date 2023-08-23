@@ -35,8 +35,8 @@ This module provides concrete implementations for the interfaces in *core*, the
 *YubiKitManager* class which is used to get a reference to a YubiKey, as well as
 various reusable UI elements.
 
-link:./management/[Fido]::
-This module adds FIDO2 support. Current implementation supports Webauthn Level 2 and CTAP 2.0 for managing FIDO credentials on YubiKey's.
+link:./fido/[Fido]::
+This module adds FIDO2 support. Current implementation supports Webauthn Level 2 and CTAP 2.0 for managing FIDO credentials on YubiKeys.
 
 link:./management/[Management]::
 This module provides the ability to read out metadata from a YubiKey, such as
