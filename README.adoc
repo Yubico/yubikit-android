@@ -93,7 +93,7 @@ cannot prevent your app from launching automatically whenever the YubiKey is
 connected.
 
 ==== Q4. Does the YubiKit support both USB and NFC?
-A5. Yes. The link:./android/[Android module] provides functionality to detect
+A4. Yes. The link:./android/[Android module] provides functionality to detect
 and connect to YubiKeys over both USB and NFC.
 
 
