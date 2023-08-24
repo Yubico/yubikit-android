@@ -105,32 +105,32 @@ public class CoseTest {
     private static final String EDDSA_RAW_KEY = "3wIKsJK63Ctb-nLkcwG8fJOp2vZxz8lmhv3BcFI-ves";
 
     static {
-        RS256.put(1, 3);              // kty
-        RS256.put(3, (int) -257);       // alg
+        RS256.put(1, 3);                // kty
+        RS256.put(3, -257);             // alg
         RS256.put(-1, decode(RS256_N)); // n
         RS256.put(-2, decode(RS256_E)); // e
 
-        ES256.put(1, 2);              // kty
-        ES256.put(3, (int) -7);         // alg
-        ES256.put(-1, (int) 1);         // crv
+        ES256.put(1, 2);                // kty
+        ES256.put(3, -7);               // alg
+        ES256.put(-1, 1);               // crv
         ES256.put(-2, decode(ES256_X)); // x
         ES256.put(-3, decode(ES256_Y)); // y
 
-        ES384.put(1, 2);              // kty
-        ES384.put(3, (int) -7);         // alg
-        ES384.put(-1, (int) 2);         // crv
+        ES384.put(1, 2);                // kty
+        ES384.put(3, -7);               // alg
+        ES384.put(-1, 2);               // crv
         ES384.put(-2, decode(ES384_X)); // x
         ES384.put(-3, decode(ES384_Y)); // y
 
-        ES512.put(1, 2);              // kty
-        ES512.put(3, (int) -7);         // alg
-        ES512.put(-1, (int) 3);         // crv
+        ES512.put(1, 2);                // kty
+        ES512.put(3, -7);               // alg
+        ES512.put(-1, 3);               // crv
         ES512.put(-2, decode(ES512_X)); // x
         ES512.put(-3, decode(ES512_Y)); // y
 
-        EDDSA.put(1, 1);                    // kty
-        EDDSA.put(3, (int) -8);               // alg
-        EDDSA.put(-1, (int) 6);               // crv
+        EDDSA.put(1, 1);                      // kty
+        EDDSA.put(3, -8);                     // alg
+        EDDSA.put(-1, 6);                     // crv
         EDDSA.put(-2, decode(EDDSA_RAW_KEY)); // raw key
     }
 
@@ -142,11 +142,11 @@ public class CoseTest {
     @Test
     public void getAlgorithm() {
         Assert.assertNull(Cose.getAlgorithm(NULL_COSE));
-        Assert.assertEquals(Integer.valueOf((int) -257), Cose.getAlgorithm(RS256));
-        Assert.assertEquals(Integer.valueOf((int) -7), Cose.getAlgorithm(ES256));
-        Assert.assertEquals(Integer.valueOf((int) -7), Cose.getAlgorithm(ES384));
-        Assert.assertEquals(Integer.valueOf((int) -7), Cose.getAlgorithm(ES512));
-        Assert.assertEquals(Integer.valueOf((int) -8), Cose.getAlgorithm(EDDSA));
+        Assert.assertEquals(Integer.valueOf(-257), Cose.getAlgorithm(RS256));
+        Assert.assertEquals(Integer.valueOf(-7), Cose.getAlgorithm(ES256));
+        Assert.assertEquals(Integer.valueOf(-7), Cose.getAlgorithm(ES384));
+        Assert.assertEquals(Integer.valueOf(-7), Cose.getAlgorithm(ES512));
+        Assert.assertEquals(Integer.valueOf(-8), Cose.getAlgorithm(EDDSA));
     }
 
     @Test

@@ -35,7 +35,6 @@ import java.util.Objects;
 import javax.annotation.Nullable;
 
 public class Cose {
-
     /**
      * OID 1.2.840.10045.2.1 ecPublicKey (ANSI X9.62 public key type)
      */
@@ -161,7 +160,6 @@ public class Cose {
                 encodeDerObjectId(curveOid)
         );
 
-
         final byte[] derBitString = ByteBuffer.allocate(1 + x.length + y.length)
                 .put(new byte[]{0x04})
                 .put(x)
@@ -169,8 +167,6 @@ public class Cose {
                 .array();
 
         final byte[] rawKey = encodeDerBitStringWithZeroUnused(derBitString);
-
-
         final byte[] x509Key = encodeDerSequence(algId, rawKey);
 
         KeyFactory kFact = KeyFactory.getInstance("EC");
@@ -210,7 +206,6 @@ public class Cose {
             for (byte[] item : items) {
                 contentBuffer.put(item);
             }
-
             content = contentBuffer.array();
         }
 
@@ -238,7 +233,6 @@ public class Cose {
     }
 
     private static byte[] encodeDerBitStringWithZeroUnused(final byte[] content) {
-
         byte[] encodedDerLength = encodeDerLength(1 + content.length);
         return ByteBuffer.allocate(1 + encodedDerLength.length + 1 + content.length)
                 .put((byte) 0x03)
@@ -247,5 +241,4 @@ public class Cose {
                 .put(content)
                 .array();
     }
-
 }
