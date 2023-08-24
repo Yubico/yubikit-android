@@ -315,8 +315,8 @@ public class SerializationTest {
         List<String> transports = Arrays.asList("nfc", "usb");
 
         return new AuthenticatorAttestationResponse(
-                authenticatorData,
                 clientDataJson,
+                authenticatorData,
                 transports,
                 null,
                 attestationObject

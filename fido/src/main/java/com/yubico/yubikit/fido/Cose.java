@@ -113,15 +113,10 @@ public class Cose {
             throws InvalidKeySpecException, NoSuchAlgorithmException {
         final byte[] rawKey = (byte[]) Objects.requireNonNull(cosePublicKey.get(-2));
         Logger.debug(logger, "raw: {}", Base64.encode(rawKey));
-        byte dataLength = (byte) (ED25519_CURVE_OID.length + 3 + rawKey.length);
-        final byte[] x509Key =
-                ByteBuffer.allocate(2 + dataLength)
-                        .put((byte) 0x30)
-                        .put(dataLength)
-                        .put(ED25519_CURVE_OID)
-                        .put(new byte[]{0x03, (byte) (rawKey.length + 1), 0})
-                        .put(rawKey)
-                        .array();
+        final byte[] x509Key = encodeDerSequence(
+                ED25519_CURVE_OID,
+                encodeDerBitStringWithZeroUnused(rawKey)
+        );
 
         KeyFactory kFact = KeyFactory.getInstance("EdDSA");
         return kFact.generatePublic(new X509EncodedKeySpec(x509Key));
@@ -195,7 +190,7 @@ public class Cose {
         byte[] content;
 
         if (items.length == 0) {
-            content = new byte[]{0};
+            content = new byte[0];
         } else {
             int contentLength = 0;
             for (byte[] item : items) {
