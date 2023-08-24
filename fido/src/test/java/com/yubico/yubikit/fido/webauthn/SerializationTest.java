@@ -310,11 +310,15 @@ public class SerializationTest {
         random.nextBytes(attestationObject);
         byte[] clientDataJson = new byte[64 + random.nextInt(64)];
         random.nextBytes(clientDataJson);
+        byte[] authenticatorData = new byte[64 + random.nextInt(64)];
+        random.nextBytes(authenticatorData);
         List<String> transports = Arrays.asList("nfc", "usb");
 
         return new AuthenticatorAttestationResponse(
+                authenticatorData,
                 clientDataJson,
                 transports,
+                null,
                 attestationObject
         );
     }
