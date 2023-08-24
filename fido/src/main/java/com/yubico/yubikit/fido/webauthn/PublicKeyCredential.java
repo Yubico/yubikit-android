@@ -91,10 +91,10 @@ public class PublicKeyCredential extends Credential {
         Map<String, ?> responseMap = Objects.requireNonNull((Map<String, ?>) map.get(RESPONSE));
         AuthenticatorResponse response;
         try {
-            if (responseMap.containsKey(AuthenticatorAssertionResponse.AUTHENTICATOR_DATA)) {
-                response = AuthenticatorAssertionResponse.fromMap(responseMap);
-            } else {
+            if (responseMap.containsKey(AuthenticatorAttestationResponse.ATTESTATION_OBJECT)) {
                 response = AuthenticatorAttestationResponse.fromMap(responseMap);
+            } else {
+                response = AuthenticatorAssertionResponse.fromMap(responseMap);
             }
         } catch (Exception e) {
             throw new IllegalArgumentException("Unknown AuthenticatorResponse format", e);
