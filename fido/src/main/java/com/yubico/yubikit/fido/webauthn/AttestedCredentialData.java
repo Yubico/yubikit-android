@@ -43,7 +43,7 @@ public class AttestedCredentialData {
 
     @SuppressWarnings("unchecked")
     public static AttestedCredentialData parseFrom(ByteBuffer buffer) {
-        if (buffer.capacity() < 18) {
+        if (buffer.remaining() < 18) {
             throw new IllegalArgumentException("Invalid attested credential data");
         }
 
@@ -51,7 +51,7 @@ public class AttestedCredentialData {
         buffer.get(aaguid);
         int credentialIdLength = buffer.getShort();
 
-        if (buffer.capacity() < 18 + credentialIdLength) {
+        if (buffer.remaining() < 18 + credentialIdLength) {
             throw new IllegalArgumentException("Invalid attested credential data");
         }
 

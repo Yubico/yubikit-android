@@ -73,12 +73,9 @@ public class AuthenticatorData {
         boolean flagAT = getFlag(flags, FLAG_AT);
         boolean flagED = getFlag(flags, FLAG_ED);
 
-        AttestedCredentialData attestedCredentialData = null;
-        if (flagAT) {
-            ByteBuffer attestedCredentialDatBuffer = buffer.slice();
-            attestedCredentialData = AttestedCredentialData.parseFrom(attestedCredentialDatBuffer);
-            buffer.position(buffer.position() + attestedCredentialDatBuffer.position());
-        }
+        AttestedCredentialData attestedCredentialData = flagAT
+                ? AttestedCredentialData.parseFrom(buffer)
+                : null;
 
         // if there are any remaining data after the public key, use it for extensions
         byte[] extensions = null;
