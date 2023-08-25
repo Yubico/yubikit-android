@@ -62,9 +62,6 @@ public class AuthenticatorData {
     }
 
     public static AuthenticatorData parseFrom(ByteBuffer buffer) {
-        if (buffer.capacity() < 37) {
-            throw new IllegalArgumentException("Invalid authenticatorData data");
-        }
         final byte[] rpIdHash = new byte[32];
         buffer.get(rpIdHash);
         final byte flags = buffer.get();

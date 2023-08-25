@@ -43,19 +43,9 @@ public class AttestedCredentialData {
 
     @SuppressWarnings("unchecked")
     public static AttestedCredentialData parseFrom(ByteBuffer buffer) {
-        if (buffer.remaining() < 18) {
-            throw new IllegalArgumentException("Invalid attested credential data");
-        }
-
         final byte[] aaguid = new byte[16];
         buffer.get(aaguid);
-        int credentialIdLength = buffer.getShort();
-
-        if (buffer.remaining() < 18 + credentialIdLength) {
-            throw new IllegalArgumentException("Invalid attested credential data");
-        }
-
-        final byte[] credentialId = new byte[credentialIdLength];
+        final byte[] credentialId = new byte[buffer.getShort()];
         buffer.get(credentialId);
         Map<Integer, ?> cosePublicKey = (Map<Integer, ?>) Cbor.decodeFrom(buffer);
         if (cosePublicKey == null) {
