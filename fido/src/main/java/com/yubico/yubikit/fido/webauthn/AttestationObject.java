@@ -42,69 +42,25 @@ public class AttestationObject {
     public static final String KEY_ATTESTATION_STATEMENT = "attStmt";
 
     private final String format;
-    private final byte[] authenticatorData;
+    private final AuthenticatorData authenticatorData;
     private final Map<String, ?> attestationStatement;
-
-    private final byte[] credentialId;
-    @Nullable
-    private final byte[] publicKey;
-    private final int publicKeyAlgorithm;
 
     public AttestationObject(
             String format,
-            byte[] authenticatorData,
+            AuthenticatorData authenticatorData,
             Map<String, ?> attestationStatement
     ) {
         this.format = format;
-        this.authenticatorData = Arrays.copyOf(authenticatorData, authenticatorData.length);
+        this.authenticatorData = authenticatorData;
         this.attestationStatement = attestationStatement;
-
-        // parse authenticator data
-        AuthenticatorData attestationAuthenticatorData =
-                AuthenticatorData.parseFrom(ByteBuffer.wrap(this.authenticatorData));
-
-        if (!attestationAuthenticatorData.isAt()) {
-            throw new IllegalArgumentException("Invalid attestation for makeCredential");
-        }
-
-        AttestedCredentialData attestedCredentialData =
-                Objects.requireNonNull(attestationAuthenticatorData.getAttestedCredentialData());
-        this.credentialId = attestedCredentialData.getCredentialId();
-
-        // compute public key information
-        Map<Integer, ?> cosePublicKey = attestedCredentialData.getCosePublicKey();
-        this.publicKeyAlgorithm = Cose.getAlgorithm(cosePublicKey);
-        byte[] resultPublicKey = null;
-        try {
-            PublicKey publicKey = Cose.getPublicKey(cosePublicKey);
-            resultPublicKey = publicKey == null
-                    ? null
-                    : publicKey.getEncoded();
-        } catch (InvalidKeySpecException | NoSuchAlgorithmException exception) {
-            // library does not support this public key format
-        }
-        this.publicKey = resultPublicKey;
     }
 
     static public AttestationObject fromCredential(Ctap2Session.CredentialData credential) {
         return new AttestationObject(
                 credential.getFormat(),
-                credential.getAuthenticatorData(),
+                AuthenticatorData.parseFrom(ByteBuffer.wrap(credential.getAuthenticatorData())),
                 credential.getAttestationStatement()
         );
-    }
-
-    public byte[] getCredentialId() {
-        return Arrays.copyOf(credentialId, credentialId.length);
-    }
-
-    @Nullable
-    public byte[] getPublicKey() {
-        return publicKey == null ? null : Arrays.copyOf(publicKey, publicKey.length);
-    }
-
-    public int getPublicKeyAlgorithm() {
-        return publicKeyAlgorithm;
     }
 
     @SuppressWarnings("unused")
@@ -112,7 +68,7 @@ public class AttestationObject {
         return format;
     }
 
-    public byte[] getAuthenticatorData() {
+    public AuthenticatorData getAuthenticatorData() {
         return authenticatorData;
     }
 
@@ -124,7 +80,7 @@ public class AttestationObject {
     public byte[] toBytes() {
         Map<String, Object> attestationObject = new HashMap<>();
         attestationObject.put(AttestationObject.KEY_FORMAT, format);
-        attestationObject.put(AttestationObject.KEY_AUTHENTICATOR_DATA, authenticatorData);
+        attestationObject.put(AttestationObject.KEY_AUTHENTICATOR_DATA, authenticatorData.getBytes());
         attestationObject.put(AttestationObject.KEY_ATTESTATION_STATEMENT, attestationStatement);
         return Cbor.encode(attestationObject);
     }

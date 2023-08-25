@@ -17,7 +17,12 @@
 package com.yubico.yubikit.fido.webauthn;
 
 import com.yubico.yubikit.core.internal.codec.Base64;
+import com.yubico.yubikit.fido.Cose;
 
+import java.nio.ByteBuffer;
+import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
+import java.security.spec.InvalidKeySpecException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,7 +37,7 @@ public class AuthenticatorAttestationResponse extends AuthenticatorResponse {
     public static final String PUBLIC_KEY = "publicKey";
     public static final String PUBLIC_KEY_ALGORITHM = "publicKeyAlgorithm";
 
-    private final byte[] authenticatorData;
+    private final AuthenticatorData authenticatorData;
     private final List<String> transports;
     @Nullable
     private final byte[] publicKey;
@@ -41,7 +46,7 @@ public class AuthenticatorAttestationResponse extends AuthenticatorResponse {
 
     public AuthenticatorAttestationResponse(
             byte[] clientDataJson,
-            byte[] authenticatorData,
+            AuthenticatorData authenticatorData,
             List<String> transports,
             @Nullable byte[] publicKey,
             int publicKeyAlgorithm,
@@ -65,12 +70,31 @@ public class AuthenticatorAttestationResponse extends AuthenticatorResponse {
         this.authenticatorData = attestationObject.getAuthenticatorData();
         this.transports = transports;
         this.attestationObject = attestationObject.toBytes();
-        this.publicKey = attestationObject.getPublicKey();
-        this.publicKeyAlgorithm = attestationObject.getPublicKeyAlgorithm();
+
+        if (!authenticatorData.isAt()) {
+            throw new IllegalArgumentException("Invalid attestation for makeCredential");
+        }
+
+        AttestedCredentialData attestedCredentialData =
+                Objects.requireNonNull(authenticatorData.getAttestedCredentialData());
+
+        // compute public key information
+        Map<Integer, ?> cosePublicKey = attestedCredentialData.getCosePublicKey();
+        this.publicKeyAlgorithm = Cose.getAlgorithm(cosePublicKey);
+        byte[] resultPublicKey = null;
+        try {
+            PublicKey publicKey = Cose.getPublicKey(cosePublicKey);
+            resultPublicKey = publicKey == null
+                    ? null
+                    : publicKey.getEncoded();
+        } catch (InvalidKeySpecException | NoSuchAlgorithmException exception) {
+            // library does not support this public key format
+        }
+        this.publicKey = resultPublicKey;
     }
 
     @SuppressWarnings("unused")
-    public byte[] getAuthenticatorData() {
+    public AuthenticatorData getAuthenticatorData() {
         return authenticatorData;
     }
 
@@ -97,7 +121,7 @@ public class AuthenticatorAttestationResponse extends AuthenticatorResponse {
     public Map<String, ?> toMap() {
         Map<String, Object> map = new HashMap<>();
         map.put(CLIENT_DATA_JSON, Base64.encode(getClientDataJson()));
-        map.put(AUTHENTICATOR_DATA, Base64.encode(authenticatorData));
+        map.put(AUTHENTICATOR_DATA, Base64.encode(authenticatorData.getBytes()));
         map.put(TRANSPORTS, transports);
         if (publicKey != null) {
             map.put(PUBLIC_KEY, Base64.encode(publicKey));
@@ -112,7 +136,8 @@ public class AuthenticatorAttestationResponse extends AuthenticatorResponse {
         String publicKey = (String) map.get(PUBLIC_KEY);
         return new AuthenticatorAttestationResponse(
                 Base64.decode(Objects.requireNonNull((String) map.get(CLIENT_DATA_JSON))),
-                Base64.decode((String) map.get(AUTHENTICATOR_DATA)),
+                AuthenticatorData.parseFrom(ByteBuffer.wrap(
+                        Base64.decode((String) map.get(AUTHENTICATOR_DATA)))),
                 (List<String>) Objects.requireNonNull(map.get(TRANSPORTS)),
                 publicKey == null ? null : Base64.decode(publicKey),
                 (Integer) map.get(PUBLIC_KEY_ALGORITHM),

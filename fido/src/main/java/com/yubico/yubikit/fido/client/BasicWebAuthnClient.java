@@ -25,7 +25,9 @@ import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.fido.ctap.PinUvAuthDummyProtocol;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV1;
 import com.yubico.yubikit.fido.webauthn.AttestationObject;
+import com.yubico.yubikit.fido.webauthn.AttestedCredentialData;
 import com.yubico.yubikit.fido.webauthn.AuthenticatorAttestationResponse;
+import com.yubico.yubikit.fido.webauthn.AuthenticatorData;
 import com.yubico.yubikit.fido.webauthn.AuthenticatorSelectionCriteria;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredential;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialCreationOptions;
@@ -38,12 +40,14 @@ import com.yubico.yubikit.fido.webauthn.UserVerificationRequirement;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import javax.annotation.Nullable;
 
@@ -146,13 +150,17 @@ public class BasicWebAuthnClient implements Closeable {
             );
 
             final AttestationObject attestationObject = AttestationObject.fromCredential(credential);
+
+            AuthenticatorAttestationResponse response = new AuthenticatorAttestationResponse(
+                    clientDataJson,
+                    getTransports(),
+                    attestationObject
+            );
+
             return new PublicKeyCredential(
-                    attestationObject.getCredentialId(),
-                    new AuthenticatorAttestationResponse(
-                            clientDataJson,
-                            getTransports(),
-                            attestationObject
-                    )
+                    Objects.requireNonNull(attestationObject.getAuthenticatorData()
+                            .getAttestedCredentialData()).getCredentialId(),
+                    response
             );
         } catch (CtapException e) {
             if (e.getCtapError() == CtapException.ERR_PIN_INVALID) {

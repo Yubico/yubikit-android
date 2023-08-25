@@ -43,6 +43,8 @@ public class AuthenticatorData {
     @Nullable
     private final byte[] extensions;
 
+    private final byte[] rawData;
+
     private static boolean getFlag(byte flags, int bitIndex) {
         return (flags >> bitIndex & 1) == 1;
     }
@@ -52,16 +54,19 @@ public class AuthenticatorData {
             byte flags,
             int signCount,
             @Nullable AttestedCredentialData attestedCredentialData,
-            @Nullable byte[] extensions
+            @Nullable byte[] extensions,
+            byte[] rawData
     ) {
         this.rpIdHash = rpIdHash;
         this.flags = flags;
         this.signCount = signCount;
         this.attestedCredentialData = attestedCredentialData;
         this.extensions = extensions;
+        this.rawData = rawData;
     }
 
     public static AuthenticatorData parseFrom(ByteBuffer buffer) {
+        int startPos = buffer.position();
         final byte[] rpIdHash = new byte[32];
         buffer.get(rpIdHash);
         final byte flags = buffer.get();
@@ -92,12 +97,17 @@ public class AuthenticatorData {
             throw new IllegalArgumentException("Unexpected data in authenticatorData");
         }
 
+        byte[] originalData = new byte[buffer.position() - startPos];
+        buffer.position(startPos);
+        buffer.get(originalData);
+
         return new AuthenticatorData(
                 rpIdHash,
                 flags,
                 signCount,
                 attestedCredentialData,
-                extensions
+                extensions,
+                originalData
         );
     }
 
@@ -146,5 +156,10 @@ public class AuthenticatorData {
     @SuppressWarnings("unused")
     public boolean isEd() {
         return getFlag(flags, FLAG_ED);
+    }
+
+    @SuppressWarnings("unused")
+    public byte[] getBytes() {
+        return rawData;
     }
 }
