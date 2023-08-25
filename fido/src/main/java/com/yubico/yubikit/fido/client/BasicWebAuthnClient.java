@@ -19,12 +19,12 @@ package com.yubico.yubikit.fido.client;
 import com.yubico.yubikit.core.application.CommandException;
 import com.yubico.yubikit.core.application.CommandState;
 import com.yubico.yubikit.core.fido.CtapException;
-import com.yubico.yubikit.fido.Cbor;
 import com.yubico.yubikit.fido.ctap.ClientPin;
 import com.yubico.yubikit.fido.ctap.CredentialManagement;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.fido.ctap.PinUvAuthDummyProtocol;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV1;
+import com.yubico.yubikit.fido.webauthn.AttestationObject;
 import com.yubico.yubikit.fido.webauthn.AuthenticatorAttestationResponse;
 import com.yubico.yubikit.fido.webauthn.AuthenticatorSelectionCriteria;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredential;
@@ -41,7 +41,6 @@ import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -69,10 +68,6 @@ public class BasicWebAuthnClient implements Closeable {
     private static final String OPTION_CREDENTIAL_MANAGEMENT = "credentialMgmtPreview";
     private static final String OPTION_USER_VERIFICATION = "uv";
     private static final String OPTION_RESIDENT_KEY = "rk";
-
-    public static final String KEY_FORMAT = "fmt";
-    public static final String KEY_AUTHENTICATOR_DATA = "authData";
-    public static final String KEY_ATTESTATION_STATEMENT = "attStmt";
 
     private final Ctap2Session ctap;
 
@@ -150,24 +145,13 @@ public class BasicWebAuthnClient implements Closeable {
                     state
             );
 
-            byte[] authenticatorData = credential.getAuthenticatorData();
-            Map<String, Object> attestationObject = new HashMap<>();
-            attestationObject.put(KEY_FORMAT, credential.getFormat());
-            attestationObject.put(KEY_AUTHENTICATOR_DATA, authenticatorData);
-            attestationObject.put(KEY_ATTESTATION_STATEMENT, credential.getAttestationStatement());
-
-            int credentialIdLength = (authenticatorData[53] & 0xFF) << 8 | (authenticatorData[54] & 0xFF);
-            byte[] credentialId = Arrays.copyOfRange(authenticatorData, 55, 55 + credentialIdLength);
-            byte[] cosePublicKey = Arrays.copyOfRange(authenticatorData, 55 + credentialIdLength, authenticatorData.length);
-
+            final AttestationObject attestationObject = AttestationObject.fromCredential(credential);
             return new PublicKeyCredential(
-                    credentialId,
+                    attestationObject.getCredentialId(),
                     new AuthenticatorAttestationResponse(
-                            authenticatorData,
                             clientDataJson,
                             getTransports(),
-                            cosePublicKey,
-                            Cbor.encode(attestationObject)
+                            attestationObject
                     )
             );
         } catch (CtapException e) {

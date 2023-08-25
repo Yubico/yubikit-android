@@ -59,11 +59,7 @@ public class Cose {
 
     private static final org.slf4j.Logger logger = LoggerFactory.getLogger(Cose.class);
 
-    @Nullable
-    public static Integer getAlgorithm(@Nullable Map<Integer, ?> cosePublicKey) {
-        if (cosePublicKey == null) {
-            return null;
-        }
+    public static Integer getAlgorithm(Map<Integer, ?> cosePublicKey) {
         Integer alg = (Integer) Objects.requireNonNull(cosePublicKey.get(3));
         Logger.debug(logger, "alg: {}", alg);
         return (int) alg;
@@ -71,7 +67,7 @@ public class Cose {
 
     @Nullable
     public static PublicKey getPublicKey(@Nullable Map<Integer, ?> cosePublicKey)
-            throws InvalidKeySpecException, NoSuchAlgorithmException, NullPointerException {
+            throws InvalidKeySpecException, NoSuchAlgorithmException {
 
         if (cosePublicKey == null) {
             return null;
@@ -79,7 +75,7 @@ public class Cose {
 
         final Integer kty = (Integer) Objects.requireNonNull(cosePublicKey.get(1));
         Logger.debug(logger, "kty: {}", kty);
-        PublicKey publicKey = null;
+        PublicKey publicKey;
         switch (kty) {
             case 1:
                 publicKey = importCoseEdDsaPublicKey(cosePublicKey);

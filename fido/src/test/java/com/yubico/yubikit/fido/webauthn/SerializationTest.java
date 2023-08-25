@@ -319,6 +319,7 @@ public class SerializationTest {
                 authenticatorData,
                 transports,
                 null,
+                0,
                 attestationObject
         );
     }

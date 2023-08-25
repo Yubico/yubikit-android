@@ -31,7 +31,7 @@ import javax.annotation.Nullable;
 public class CoseTest {
 
     private static final @Nullable Map<Integer, Object> NULL_COSE = null;
-    private static final @Nullable Map<Integer, Object> EMPTY_COSE = new HashMap<>();
+    private static final Map<Integer, Object> EMPTY_COSE = new HashMap<>();
 
     private static final Map<Integer, Object> RS256 = new HashMap<>();
     @SuppressWarnings("SpellCheckingInspection")
@@ -141,7 +141,6 @@ public class CoseTest {
 
     @Test
     public void getAlgorithm() {
-        Assert.assertNull(Cose.getAlgorithm(NULL_COSE));
         Assert.assertEquals(Integer.valueOf(-257), Cose.getAlgorithm(RS256));
         Assert.assertEquals(Integer.valueOf(-7), Cose.getAlgorithm(ES256));
         Assert.assertEquals(Integer.valueOf(-7), Cose.getAlgorithm(ES384));
