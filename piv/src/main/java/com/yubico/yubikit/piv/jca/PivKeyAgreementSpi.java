@@ -18,17 +18,16 @@ package com.yubico.yubikit.piv.jca;
 
 import com.yubico.yubikit.core.util.Callback;
 import com.yubico.yubikit.core.util.Result;
-import com.yubico.yubikit.piv.KeyType;
 import com.yubico.yubikit.piv.PivSession;
 
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.Key;
 import java.security.NoSuchAlgorithmException;
-import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.security.interfaces.ECPublicKey;
 import java.security.spec.AlgorithmParameterSpec;
+import java.security.spec.ECPoint;
 
 import javax.annotation.Nullable;
 import javax.crypto.KeyAgreementSpi;
@@ -40,7 +39,7 @@ public class PivKeyAgreementSpi extends KeyAgreementSpi {
     @Nullable
     private PivPrivateKey.EcKey privateKey;
     @Nullable
-    private ECPublicKey publicKey;
+    private ECPoint publicPoint;
 
     PivKeyAgreementSpi(Callback<Callback<Result<PivSession, Exception>>> provider) {
         this.provider = provider;
@@ -69,8 +68,8 @@ public class PivKeyAgreementSpi extends KeyAgreementSpi {
         if (!lastPhase) {
             throw new IllegalStateException("Multiple phases not supported");
         }
-        if (key instanceof PublicKey && KeyType.fromKey(key) == privateKey.keyType) {
-            publicKey = (ECPublicKey) key;
+        if(key instanceof ECPublicKey && privateKey.getParams().getCurve().equals(((ECPublicKey) key).getParams().getCurve())) {
+            publicPoint = ((ECPublicKey) key).getW();
             return null;
         }
         throw new InvalidKeyException("Wrong key type");
@@ -78,13 +77,13 @@ public class PivKeyAgreementSpi extends KeyAgreementSpi {
 
     @Override
     protected byte[] engineGenerateSecret() throws IllegalStateException {
-        if (privateKey != null && publicKey != null) {
+        if (privateKey != null && publicPoint != null) {
             try {
-                return privateKey.keyAgreement(provider, publicKey);
+                return privateKey.keyAgreement(provider, publicPoint);
             } catch (Exception e) {
                 throw new IllegalStateException(e);
             } finally {
-                publicKey = null;
+                publicPoint = null;
             }
         }
         throw new IllegalStateException("Not initialized with both private and public keys");

@@ -59,6 +59,7 @@ public enum Slot {
 
     /**
      * Gets the String alias for the slot, which is a HEX representation of the slot value.
+     *
      * @return the slot alias
      */
     public String getStringAlias() {
@@ -79,8 +80,9 @@ public enum Slot {
 
     /**
      * Returns the PIV slot corresponding to the given String alias.
-     *
+     * <p>
      * The alias should be the HEX representation of the slot value.
+     *
      * @param alias a slot value as HEX string
      * @return a Slot
      */

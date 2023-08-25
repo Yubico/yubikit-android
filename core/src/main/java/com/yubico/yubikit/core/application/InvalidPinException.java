@@ -14,16 +14,24 @@
  * limitations under the License.
  */
 
-package com.yubico.yubikit.piv;
+package com.yubico.yubikit.core.application;
 
 /**
  * Thrown when the wrong PIN or PUK is used (or when the PIN or PUK is in a blocked state).
- *
- * @deprecated Use InvalidPinException from the code module instead
  */
-@Deprecated
-public class InvalidPinException extends com.yubico.yubikit.core.application.InvalidPinException {
+public class InvalidPinException extends CommandException {
+    private final int attemptsRemaining;
+
+    public InvalidPinException(int attemptsRemaining, String message) {
+        super(message);
+        this.attemptsRemaining = attemptsRemaining;
+    }
+
     public InvalidPinException(int attemptsRemaining) {
-        super(attemptsRemaining);
+        this(attemptsRemaining, "Invalid PIN/PUK. Remaining attempts: " + attemptsRemaining);
+    }
+
+    public int getAttemptsRemaining() {
+        return attemptsRemaining;
     }
 }
