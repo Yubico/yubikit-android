@@ -16,8 +16,12 @@
 
 package com.yubico.yubikit.piv;
 
+import static com.yubico.yubikit.core.util.ByteUtils.intToLength;
+
 import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.Version;
+import com.yubico.yubikit.core.keys.PrivateKeyValues;
+import com.yubico.yubikit.core.keys.PublicKeyValues;
 import com.yubico.yubikit.core.smartcard.AppId;
 import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
 import com.yubico.yubikit.core.application.ApplicationSession;
@@ -40,13 +44,11 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
-import java.security.KeyFactory;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
@@ -56,18 +58,14 @@ import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
-import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
-import java.security.interfaces.RSAPrivateCrtKey;
+import java.security.spec.ECPoint;
 import java.security.spec.InvalidKeySpecException;
-import java.security.spec.RSAPublicKeySpec;
-import java.security.spec.X509EncodedKeySpec;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 
 import javax.annotation.Nullable;
 import javax.crypto.BadPaddingException;
@@ -78,8 +76,11 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
 /**
- * Personal Identity Verification (PIV) interface specified in NIST SP 800-73 document "Cryptographic Algorithms and Key Sizes for PIV".
- * This enables you to perform RSA or ECC sign/decrypt operations using a private key stored on the smartcard, through common transports like PKCS#11.
+ * Personal Identity Verification (PIV) interface specified in NIST SP 800-73 document
+ * "Cryptographic Algorithms and Key Sizes for PIV".
+ * <p>
+ * This enables you to perform RSA or ECC sign/decrypt operations using a private key stored on the
+ * smart card, through common transports like PKCS#11.
  */
 public class PivSession extends ApplicationSession<PivSession> {
     // Features
@@ -177,9 +178,6 @@ public class PivSession extends ApplicationSession<PivSession> {
 
     private static final byte PIN_P2 = (byte) 0x80;
     private static final byte PUK_P2 = (byte) 0x81;
-
-    private static final byte[] KEY_PREFIX_P256 = new byte[]{0x30, 0x59, 0x30, 0x13, 0x06, 0x07, 0x2a, (byte) 0x86, 0x48, (byte) 0xce, 0x3d, 0x02, 0x01, 0x06, 0x08, 0x2a, (byte) 0x86, 0x48, (byte) 0xce, 0x3d, 0x03, 0x01, 0x07, 0x03, 0x42, 0x00};
-    private static final byte[] KEY_PREFIX_P384 = new byte[]{0x30, 0x76, 0x30, 0x10, 0x06, 0x07, 0x2a, (byte) 0x86, 0x48, (byte) 0xce, 0x3d, 0x02, 0x01, 0x06, 0x05, 0x2b, (byte) 0x81, 0x04, 0x00, 0x22, 0x03, 0x62, 0x00};
 
     private final SmartCardProtocol protocol;
     private final Version version;
@@ -304,7 +302,8 @@ public class PivSession extends ApplicationSession<PivSession> {
                         StringUtils.bytesToHex(encryptedData));
                 throw new BadResponseException("Calculated response for challenge is incorrect");
             }
-        } catch (NoSuchAlgorithmException | InvalidKeyException | NoSuchPaddingException | BadPaddingException | IllegalBlockSizeException e) {
+        } catch (NoSuchAlgorithmException | InvalidKeyException | NoSuchPaddingException |
+                 BadPaddingException | IllegalBlockSizeException e) {
             //This should never happen
             throw new RuntimeException(e);
         }
@@ -341,18 +340,18 @@ public class PivSession extends ApplicationSession<PivSession> {
      * <p>
      * More commonly, the JCA classes provided should be used instead of directly calling this.
      *
-     * @param slot      the slot containing the private key to use
-     * @param keyType   the type of the key stored in the slot
-     * @param payload   the data to operate on
+     * @param slot    the slot containing the private key to use
+     * @param keyType the type of the key stored in the slot
+     * @param payload the data to operate on
      * @return the result of the operation
-     * @throws IOException              in case of connection error
-     * @throws ApduException            in case of an error response from the YubiKey
-     * @throws BadResponseException     in case of incorrect YubiKey response
+     * @throws IOException          in case of connection error
+     * @throws ApduException        in case of an error response from the YubiKey
+     * @throws BadResponseException in case of incorrect YubiKey response
      */
     public byte[] rawSignOrDecrypt(Slot slot, KeyType keyType, byte[] payload) throws IOException, ApduException, BadResponseException {
         int byteLength = keyType.params.bitLength / 8;
         byte[] padded;
-        if(payload.length > byteLength) {
+        if (payload.length > byteLength) {
             if (keyType.params.algorithm == KeyType.Algorithm.EC) {
                 // Truncate
                 padded = Arrays.copyOf(payload, byteLength);
@@ -413,15 +412,26 @@ public class PivSession extends ApplicationSession<PivSession> {
      * @throws ApduException        in case of an error response from the YubiKey
      * @throws BadResponseException in case of incorrect YubiKey response
      */
+    @Deprecated
     public byte[] calculateSecret(Slot slot, ECPublicKey peerPublicKey) throws IOException, ApduException, BadResponseException {
-        KeyType keyType = KeyType.fromKey(peerPublicKey);
-        int byteLength = keyType.params.bitLength / 8;
+        return calculateSecret(slot, peerPublicKey.getW());
+    }
+
+    /**
+     * Perform an ECDH operation with a given public key to compute a shared secret.
+     *
+     * @param slot          the slot containing the private EC key
+     * @param peerPublicKey the peer public key for the operation
+     * @return the shared secret, comprising the x-coordinate of the ECDH result point.
+     * @throws IOException          in case of connection error
+     * @throws ApduException        in case of an error response from the YubiKey
+     * @throws BadResponseException in case of incorrect YubiKey response
+     */
+    public byte[] calculateSecret(Slot slot, ECPoint peerPublicKey) throws IOException, ApduException, BadResponseException {
+        KeyType keyType = peerPublicKey.getAffineX().bitLength() > 256 ? KeyType.ECCP384 : KeyType.ECCP256;
+        byte[] encodedPoint = new PublicKeyValues.Ec(((KeyType.EcKeyParams)keyType.params).getCurveParams(), peerPublicKey.getAffineX(), peerPublicKey.getAffineY()).getEncodedPoint();
         Logger.debug(logger, "Performing key agreement with key in slot {} of type {}", slot, keyType);
-        return usePrivateKey(slot, keyType, ByteBuffer.allocate(1 + 2 * byteLength)
-                .put((byte) 0x04)
-                .put(bytesToLength(peerPublicKey.getW().getAffineX(), byteLength))
-                .put(bytesToLength(peerPublicKey.getW().getAffineY(), byteLength))
-                .array(), true);
+        return usePrivateKey(slot, keyType, encodedPoint, true);
     }
 
     private byte[] usePrivateKey(Slot slot, KeyType keyType, byte[] message, boolean exponentiation) throws IOException, ApduException, BadResponseException {
@@ -733,7 +743,7 @@ public class PivSession extends ApplicationSession<PivSession> {
      */
     public void putCertificate(Slot slot, X509Certificate certificate, boolean compress) throws IOException, ApduException {
         byte[] certBytes;
-        byte[] certInfo = { compress ? (byte)0x01 : (byte)0x00 };
+        byte[] certInfo = {compress ? (byte) 0x01 : (byte) 0x00};
         Logger.debug(logger, "Storing {}certificate in slot {}",
                 compress ? "compressed " : "",
                 slot);
@@ -818,19 +828,18 @@ public class PivSession extends ApplicationSession<PivSession> {
     }
 
     /* Parses a PublicKey from data returned from a YubiKey. */
-    static PublicKey parsePublicKeyFromDevice(KeyType keyType, byte[] encoded) {
+    static PublicKeyValues parsePublicKeyFromDevice(KeyType keyType, byte[] encoded) {
         Map<Integer, byte[]> dataObjects = Tlvs.decodeMap(encoded);
 
-        try {
-            if (keyType.params.algorithm == KeyType.Algorithm.RSA) {
-                BigInteger modulus = new BigInteger(1, dataObjects.get(0x81));
-                BigInteger exponent = new BigInteger(1, dataObjects.get(0x82));
-                return publicRsaKey(modulus, exponent);
-            } else {
-                return publicEccKey(keyType, dataObjects.get(0x86));
+        if (keyType.params.algorithm == KeyType.Algorithm.RSA) {
+            BigInteger modulus = new BigInteger(1, dataObjects.get(0x81));
+            BigInteger exponent = new BigInteger(1, dataObjects.get(0x82));
+            return new PublicKeyValues.Rsa(modulus, exponent);
+        } else {
+            if (!(keyType.params instanceof KeyType.EcKeyParams)) {
+                throw new IllegalArgumentException("Unsupported key type");
             }
-        } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
-            throw new RuntimeException(e); // This shouldn't happen
+            return PublicKeyValues.Ec.fromEncodedPoint(((KeyType.EcKeyParams) keyType.params).getCurveParams(), dataObjects.get(0x86));
         }
     }
 
@@ -884,6 +893,7 @@ public class PivSession extends ApplicationSession<PivSession> {
      * TouchPolicy.CACHED requires {@link #FEATURE_TOUCH_CACHED}, available on YubiKey 4.3 or later.
      * <p>
      * NOTE: YubiKey FIPS does not allow RSA1024 nor PinProtocol.NEVER.
+     * NOTE: This method will be renamed to generateKey in the next major version release of this library.
      *
      * @param slot        Key reference '9A', '9C', '9D', or '9E'. {@link Slot}.
      * @param keyType     which algorithm is used for key generation {@link KeyType}
@@ -894,7 +904,7 @@ public class PivSession extends ApplicationSession<PivSession> {
      * @throws ApduException        in case of an error response from the YubiKey
      * @throws BadResponseException in case of incorrect YubiKey response
      */
-    public PublicKey generateKey(Slot slot, KeyType keyType, PinPolicy pinPolicy, TouchPolicy touchPolicy) throws IOException, ApduException, BadResponseException {
+    public PublicKeyValues generateKeyValues(Slot slot, KeyType keyType, PinPolicy pinPolicy, TouchPolicy touchPolicy) throws IOException, ApduException, BadResponseException {
         checkKeySupport(keyType, pinPolicy, touchPolicy, true);
 
         Map<Integer, byte[]> tlvs = new LinkedHashMap<>();
@@ -914,6 +924,37 @@ public class PivSession extends ApplicationSession<PivSession> {
     }
 
     /**
+     * Generates a new key pair within the YubiKey.
+     * This method requires verification with pin {@link #verifyPin}}
+     * and authentication with management key {@link #authenticate}.
+     * <p>
+     * RSA key types require {@link #FEATURE_RSA_GENERATION}, available on YubiKeys OTHER THAN 4.2.6-4.3.4.
+     * KeyType P348 requires {@link #FEATURE_P384}, available on YubiKey 4 or later.
+     * PinPolicy or TouchPolicy other than default require {@link #FEATURE_USAGE_POLICY}, available on YubiKey 4 or later.
+     * TouchPolicy.CACHED requires {@link #FEATURE_TOUCH_CACHED}, available on YubiKey 4.3 or later.
+     * <p>
+     * NOTE: YubiKey FIPS does not allow RSA1024 nor PinProtocol.NEVER.
+     *
+     * @param slot        Key reference '9A', '9C', '9D', or '9E'. {@link Slot}.
+     * @param keyType     which algorithm is used for key generation {@link KeyType}
+     * @param pinPolicy   the PIN policy for using the private key
+     * @param touchPolicy the touch policy for using the private key
+     * @return the public key of the generated key pair
+     * @throws IOException          in case of connection error
+     * @throws ApduException        in case of an error response from the YubiKey
+     * @throws BadResponseException in case of incorrect YubiKey response
+     * @deprecated use generateKeyValues instead, which will replace this method in the next major version release
+     */
+    @Deprecated
+    public PublicKey generateKey(Slot slot, KeyType keyType, PinPolicy pinPolicy, TouchPolicy touchPolicy) throws IOException, ApduException, BadResponseException {
+        try {
+            return generateKeyValues(slot, keyType, pinPolicy, touchPolicy).toPublicKey();
+        } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
      * Import a private key into a slot.
      * This method requires authentication {@link #authenticate}.
      * <p>
@@ -930,8 +971,8 @@ public class PivSession extends ApplicationSession<PivSession> {
      * @throws IOException   in case of connection error
      * @throws ApduException in case of an error response from the YubiKey
      */
-    public KeyType putKey(Slot slot, PrivateKey key, PinPolicy pinPolicy, TouchPolicy touchPolicy) throws IOException, ApduException {
-        KeyType keyType = KeyType.fromKey(key);
+    public KeyType putKey(Slot slot, PrivateKeyValues key, PinPolicy pinPolicy, TouchPolicy touchPolicy) throws IOException, ApduException {
+        KeyType keyType = KeyType.fromKeyParams(key);
         checkKeySupport(keyType, pinPolicy, touchPolicy, false);
 
         KeyType.KeyParams params = keyType.params;
@@ -939,40 +980,17 @@ public class PivSession extends ApplicationSession<PivSession> {
 
         switch (params.algorithm) {
             case RSA:
-                List<BigInteger> values;
-                if (key instanceof RSAPrivateCrtKey) {
-                    RSAPrivateCrtKey rsaPrivateKey = (RSAPrivateCrtKey) key;
-                    values = Arrays.asList(
-                            rsaPrivateKey.getModulus(),
-                            rsaPrivateKey.getPublicExponent(),
-                            rsaPrivateKey.getPrivateExponent(),
-                            rsaPrivateKey.getPrimeP(),
-                            rsaPrivateKey.getPrimeQ(),
-                            rsaPrivateKey.getPrimeExponentP(),
-                            rsaPrivateKey.getPrimeExponentQ(),
-                            rsaPrivateKey.getCrtCoefficient()
-                    );
-                } else if ("PKCS#8".equals(key.getFormat())) {
-                    values = parsePkcs8RsaKeyValues(key.getEncoded());
-                } else {
-                    throw new UnsupportedEncodingException("Unsupported private key encoding");
-                }
-
-                if (values.get(1).intValue() != 65537) {
-                    throw new UnsupportedEncodingException("Unsupported RSA public exponent");
-                }
-
-                int length = params.bitLength / 8 / 2;
-
-                tlvs.put(0x01, bytesToLength(values.get(3), length));    // p
-                tlvs.put(0x02, bytesToLength(values.get(4), length));    // q
-                tlvs.put(0x03, bytesToLength(values.get(5), length));    // dmp1
-                tlvs.put(0x04, bytesToLength(values.get(6), length));    // dmq1
-                tlvs.put(0x05, bytesToLength(values.get(7), length));    // iqmp
+                int byteLength = params.bitLength / 8 / 2;
+                PrivateKeyValues.Rsa values = (PrivateKeyValues.Rsa) key;
+                tlvs.put(0x01, intToLength(values.getPrimeP(), byteLength));    // p
+                tlvs.put(0x02, intToLength(values.getPrimeQ(), byteLength));    // q
+                tlvs.put(0x03, intToLength(Objects.requireNonNull(values.getPrimeExponentP()), byteLength));    // dmp1
+                tlvs.put(0x04, intToLength(Objects.requireNonNull(values.getPrimeExponentQ()), byteLength));    // dmq1
+                tlvs.put(0x05, intToLength(Objects.requireNonNull(values.getCrtCoefficient()), byteLength));    // iqmp
                 break;
             case EC:
-                ECPrivateKey ecPrivateKey = (ECPrivateKey) key;
-                tlvs.put(0x06, bytesToLength(ecPrivateKey.getS(), params.bitLength / 8));  // s
+                PrivateKeyValues.Ec ecPrivateKey = (PrivateKeyValues.Ec) key;
+                tlvs.put(0x06, ecPrivateKey.getSecret());  // s
                 break;
         }
 
@@ -987,6 +1005,29 @@ public class PivSession extends ApplicationSession<PivSession> {
         protocol.sendAndReceive(new Apdu(0, INS_IMPORT_KEY, keyType.value, slot.value, Tlvs.encodeMap(tlvs)));
         Logger.info(logger, "Private key imported in slot {} of type {}", slot, keyType);
         return keyType;
+    }
+
+    /**
+     * Import a private key into a slot.
+     * This method requires authentication {@link #authenticate}.
+     * <p>
+     * KeyType P348 requires {@link #FEATURE_P384}, available on YubiKey 4 or later.
+     * PinPolicy or TouchPolicy other than default require {@link #FEATURE_USAGE_POLICY}, available on YubiKey 4 or later.
+     * <p>
+     * NOTE: YubiKey FIPS does not allow RSA1024 nor PinProtocol.NEVER.
+     *
+     * @param slot        Key reference '9A', '9C', '9D', or '9E'. {@link Slot}.
+     * @param key         the private key to import
+     * @param pinPolicy   the PIN policy for using the private key
+     * @param touchPolicy the touch policy for using the private key
+     * @return the KeyType value of the imported key
+     * @throws IOException   in case of connection error
+     * @throws ApduException in case of an error response from the YubiKey
+     * @deprecated use {@link #putKey(Slot, PrivateKeyValues, PinPolicy, TouchPolicy)} instead
+     */
+    @Deprecated
+    public KeyType putKey(Slot slot, PrivateKey key, PinPolicy pinPolicy, TouchPolicy touchPolicy) throws IOException, ApduException {
+        return putKey(slot, PrivateKeyValues.fromPrivateKey(key), pinPolicy, touchPolicy);
     }
 
     /**
@@ -1028,22 +1069,6 @@ public class PivSession extends ApplicationSession<PivSession> {
         InputStream stream = new ByteArrayInputStream(data);
         CertificateFactory cf = CertificateFactory.getInstance("X.509");
         return (X509Certificate) cf.generateCertificate(stream);
-    }
-
-    /*
-     * Shortens to length or left-pads with 0.
-     */
-    private static byte[] bytesToLength(BigInteger value, int length) {
-        byte[] data = value.toByteArray();
-        if (data.length == length) {
-            return data;
-        } else if (data.length > length) {
-            return Arrays.copyOfRange(data, data.length - length, data.length);
-        } else {
-            byte[] padded = new byte[length];
-            System.arraycopy(data, 0, padded, length - data.length, data.length);
-            return padded;
-        }
     }
 
     private void changeReference(byte instruction, byte p2, char[] value1, char[] value2) throws IOException, ApduException, InvalidPinException {
@@ -1142,59 +1167,5 @@ public class PivSession extends ApplicationSession<PivSession> {
             }
         }
         return -1;
-    }
-
-    static PublicKey publicEccKey(KeyType keyType, byte[] encoded) throws NoSuchAlgorithmException, InvalidKeySpecException {
-        byte[] prefix;
-        switch (keyType) {
-            case ECCP256:
-                prefix = KEY_PREFIX_P256;
-                break;
-            case ECCP384:
-                prefix = KEY_PREFIX_P384;
-                break;
-            default:
-                throw new IllegalArgumentException("Unsupported key type");
-        }
-        KeyFactory keyFactory = KeyFactory.getInstance(keyType.params.algorithm.name());
-        return keyFactory.generatePublic(
-                new X509EncodedKeySpec(
-                        ByteBuffer.allocate(prefix.length + encoded.length)
-                                .put(prefix)
-                                .put(encoded)
-                                .array()
-                )
-        );
-    }
-
-    static PublicKey publicRsaKey(BigInteger modulus, BigInteger publicExponent) throws NoSuchAlgorithmException, InvalidKeySpecException {
-        KeyFactory factory = KeyFactory.getInstance(KeyType.Algorithm.RSA.name());
-        return factory.generatePublic(new RSAPublicKeySpec(modulus, publicExponent));
-    }
-
-    /*
-    Parse a DER encoded PKCS#8 RSA key
-     */
-    static List<BigInteger> parsePkcs8RsaKeyValues(byte[] derKey) throws UnsupportedEncodingException {
-        try {
-            List<Tlv> numbers = Tlvs.decodeList(
-                    Tlvs.decodeMap(
-                            Tlvs.decodeMap(
-                                    Tlvs.unpackValue(0x30, derKey)
-                            ).get(0x04)
-                    ).get(0x30)
-            );
-            List<BigInteger> values = new ArrayList<>();
-            for (Tlv number : numbers) {
-                values.add(new BigInteger(number.getValue()));
-            }
-            BigInteger first = values.remove(0);
-            if (first.intValue() != 0) {
-                throw new UnsupportedEncodingException("Expected value 0");
-            }
-            return values;
-        } catch (BadResponseException e) {
-            throw new UnsupportedEncodingException(e.getMessage());
-        }
     }
 }
