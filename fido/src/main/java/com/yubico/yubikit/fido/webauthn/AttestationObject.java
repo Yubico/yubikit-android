@@ -35,7 +35,6 @@ import javax.annotation.Nullable;
  * Webauthn AttestationObject which exposes attestation authenticator data.
  * <p>
  * Internal use only
- * <p>
  *
  * @see <a href="https://www.w3.org/TR/2021/REC-webauthn-2-20210408/#sctn-attestation">6.5. Attestation</a>
  */
