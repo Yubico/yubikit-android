@@ -18,44 +18,23 @@ package com.yubico.yubikit.fido;
 
 import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.internal.codec.Base64;
+import com.yubico.yubikit.core.keys.EllipticCurveValues;
+import com.yubico.yubikit.core.keys.PublicKeyValues.Cv25519;
+import com.yubico.yubikit.core.keys.PublicKeyValues.Ec;
+import com.yubico.yubikit.core.keys.PublicKeyValues.Rsa;
 
 import org.slf4j.LoggerFactory;
 
 import java.math.BigInteger;
-import java.nio.ByteBuffer;
-import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
-import java.security.spec.RSAPublicKeySpec;
-import java.security.spec.X509EncodedKeySpec;
 import java.util.Map;
 import java.util.Objects;
 
 import javax.annotation.Nullable;
 
 public class Cose {
-    /**
-     * OID 1.2.840.10045.2.1 ecPublicKey (ANSI X9.62 public key type)
-     */
-    private static final byte[] EC_PUBLIC_KEY_OID = {(byte) 0x2A, -122, 0x48, -50, 0x3D, 0x02, 0x01};
-
-    /**
-     * OID 1.2.840.10045.3.1.7
-     */
-    private static final byte[] P256_CURVE_OID = {(byte) 0x2A, -122, 0x48, -50, 0x3D, 0x03, 0x01, 7};
-
-    /**
-     * OID 1.3.132.0.34
-     */
-    private static final byte[] P384_CURVE_OID = {(byte) 0x2B, -127, 0x04, 0, 34};
-
-    /**
-     * OID 1.3.132.0.35
-     */
-    private static final byte[] P512_CURVE_OID = {(byte) 0x2B, -127, 0x04, 0, 35};
-
-    private static final byte[] ED25519_CURVE_OID = {(byte) 0x30, 0x05, 0x06, 0x03, 0x2B, 0x65, 0x70};
 
     private static final org.slf4j.Logger logger = LoggerFactory.getLogger(Cose.class);
 
@@ -109,13 +88,7 @@ public class Cose {
             throws InvalidKeySpecException, NoSuchAlgorithmException {
         final byte[] rawKey = (byte[]) Objects.requireNonNull(cosePublicKey.get(-2));
         Logger.debug(logger, "raw: {}", Base64.encode(rawKey));
-        final byte[] x509Key = encodeDerSequence(
-                ED25519_CURVE_OID,
-                encodeDerBitStringWithZeroUnused(rawKey)
-        );
-
-        KeyFactory kFact = KeyFactory.getInstance("EdDSA");
-        return kFact.generatePublic(new X509EncodedKeySpec(x509Key));
+        return new Cv25519(EllipticCurveValues.Ed25519, rawKey).toPublicKey();
     }
 
     private static PublicKey importCoseEcdsaPublicKey(Map<Integer, ?> cosePublicKey)
@@ -128,40 +101,26 @@ public class Cose {
         Logger.debug(logger, "x: {}", Base64.encode(x));
         Logger.debug(logger, "y: {}", Base64.encode(y));
 
-        final byte[] curveOid;
+        EllipticCurveValues ellipticCurveValues;
+
         switch (crv) {
             case 1:
-                curveOid = P256_CURVE_OID;
+                ellipticCurveValues = EllipticCurveValues.SECP256R1;
                 break;
 
             case 2:
-                curveOid = P384_CURVE_OID;
+                ellipticCurveValues = EllipticCurveValues.SECP384R1;
                 break;
 
             case 3:
-                curveOid = P512_CURVE_OID;
+                ellipticCurveValues = EllipticCurveValues.SECP521R1;
                 break;
 
             default:
                 throw new IllegalArgumentException("Unknown COSE EC2 curve: " + crv);
         }
 
-        final byte[] algId = encodeDerSequence(
-                encodeDerObjectId(EC_PUBLIC_KEY_OID),
-                encodeDerObjectId(curveOid)
-        );
-
-        final byte[] derBitString = ByteBuffer.allocate(1 + x.length + y.length)
-                .put(new byte[]{0x04})
-                .put(x)
-                .put(y)
-                .array();
-
-        final byte[] rawKey = encodeDerBitStringWithZeroUnused(derBitString);
-        final byte[] x509Key = encodeDerSequence(algId, rawKey);
-
-        KeyFactory kFact = KeyFactory.getInstance("EC");
-        return kFact.generatePublic(new X509EncodedKeySpec(x509Key));
+        return new Ec(ellipticCurveValues, new BigInteger(x), new BigInteger(y)).toPublicKey();
     }
 
     private static PublicKey importCoseRsaPublicKey(Map<Integer, ?> cosePublicKey)
@@ -170,66 +129,6 @@ public class Cose {
         byte[] e = (byte[]) Objects.requireNonNull(cosePublicKey.get(-2));
         Logger.debug(logger, "n: {}", Base64.encode(n));
         Logger.debug(logger, "e: {}", Base64.encode(e));
-        RSAPublicKeySpec spec = new RSAPublicKeySpec(new BigInteger(1, n), new BigInteger(1, e));
-        return KeyFactory.getInstance("RSA").generatePublic(spec);
-    }
-
-    private static byte[] encodeDerObjectId(final byte[] oid) {
-        return ByteBuffer.allocate(2 + oid.length)
-                .put((byte) 0x06)
-                .put((byte) oid.length)
-                .put(oid)
-                .array();
-    }
-
-    private static byte[] encodeDerSequence(final byte[]... items) {
-        byte[] content;
-
-        if (items.length == 0) {
-            content = new byte[0];
-        } else {
-            int contentLength = 0;
-            for (byte[] item : items) {
-                contentLength += item.length;
-            }
-
-            ByteBuffer contentBuffer = ByteBuffer.allocate(contentLength);
-            for (byte[] item : items) {
-                contentBuffer.put(item);
-            }
-            content = contentBuffer.array();
-        }
-
-        byte[] encodedDerLength = encodeDerLength(content.length);
-
-        return ByteBuffer.allocate(1 + encodedDerLength.length + content.length)
-                .put((byte) 0x30)
-                .put(encodedDerLength)
-                .put(content)
-                .array();
-    }
-
-    private static byte[] encodeDerLength(final int length) {
-        if (length <= 127) {
-            return new byte[]{(byte) length};
-        } else if (length <= 0xffff) {
-            if (length <= 255) {
-                return new byte[]{-127, (byte) length};
-            } else {
-                return new byte[]{-126, (byte) (length >> 8), (byte) (length % 0x0100)};
-            }
-        } else {
-            throw new UnsupportedOperationException("Too long: " + length);
-        }
-    }
-
-    private static byte[] encodeDerBitStringWithZeroUnused(final byte[] content) {
-        byte[] encodedDerLength = encodeDerLength(1 + content.length);
-        return ByteBuffer.allocate(1 + encodedDerLength.length + 1 + content.length)
-                .put((byte) 0x03)
-                .put(encodedDerLength)
-                .put(new byte[]{0})
-                .put(content)
-                .array();
+        return new Rsa(new BigInteger(1, n), new BigInteger(1, e)).toPublicKey();
     }
 }
