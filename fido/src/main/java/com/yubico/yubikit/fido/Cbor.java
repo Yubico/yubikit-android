@@ -102,23 +102,6 @@ public class Cbor {
     }
 
     /**
-     * Decodes an Object from CBOR data and returns map containing the decoded object and integer
-     * to index to the data array where the decoder stopped.
-     *
-     * @param data   The CBOR encoded byte array.
-     * @param offset The offset of where the CBOR encoded data is in the given byte array.
-     * @param length The length of CBOR encoded data.
-     * @return A Map with two keys: {@code @Nullable object} and {@code int index}
-     */
-    public static Object decodePart(byte[] data, int offset, int length) {
-        ByteBuffer buf = ByteBuffer.wrap(data, offset, length);
-        Map<String, Object> result = new HashMap<>();
-        result.put("object", decodeFrom(buf));
-        result.put("index", buf.position());
-        return result;
-    }
-
-    /**
      * Decodes an Object from CBOR data.
      *
      * @param data The CBOR encoded byte array.
