@@ -180,7 +180,7 @@ final class UsbDeviceManager {
         @Override
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
-            UsbDevice usbDevice = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
+            UsbDevice usbDevice = getUsbManagerExtraDevice(intent);
             if (usbDevice == null || usbDevice.getVendorId() != YUBICO_VENDOR_ID) {
                 return;
             }
@@ -201,7 +201,7 @@ final class UsbDeviceManager {
         @Override
         public void onReceive(Context context, Intent intent) {
             if (ACTION_USB_PERMISSION.equals(intent.getAction())) {
-                UsbDevice device = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
+                UsbDevice device = getUsbManagerExtraDevice(intent);
                 UsbManager usbManager = (UsbManager) context.getSystemService(Context.USB_SERVICE);
                 if (device != null) {
                     onPermission(context, device, usbManager.hasPermission(device));
@@ -217,5 +217,21 @@ final class UsbDeviceManager {
         } else {
             context.registerReceiver(permissionReceiver, new IntentFilter(ACTION_USB_PERMISSION));
         }
+    }
+
+    /**
+     * Helper method to call {@code Intent.getParcelableExtra} based on build version
+     *
+     * @implNote The new API is used only on 34+ devices because of bug in API 33
+     * @see <a href="https://issuetracker.google.com/issues/240585930">The new Intent.getParcelableExtra(String,Class) throws an NPE internally </a>
+     * @param intent Intent to get the usb device from
+     * @return UsbDevice from intent's parcelable
+     */
+    @Nullable
+    @SuppressWarnings("deprecation")
+    private static UsbDevice getUsbManagerExtraDevice(Intent intent) {
+        return (Build.VERSION.SDK_INT > Build.VERSION_CODES.TIRAMISU)
+                ? intent.getParcelableExtra(UsbManager.EXTRA_DEVICE, UsbDevice.class)
+                : intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
     }
 }

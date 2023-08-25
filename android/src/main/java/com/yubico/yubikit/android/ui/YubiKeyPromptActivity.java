@@ -19,6 +19,7 @@ package com.yubico.yubikit.android.ui;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
@@ -211,7 +212,10 @@ public class YubiKeyPromptActivity extends Activity {
         allowNfc = args.getBoolean(ARG_ALLOW_NFC, true);
 
         // Get the action to perform on YubiKey connected
-        Class<?> actionType = (Class<?>) args.getSerializable(ARG_ACTION_CLASS);
+        @SuppressWarnings("deprecation")
+        Class<?> actionType = (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
+                ? (Class<?>) args.getSerializable(ARG_ACTION_CLASS, Class.class)
+                : (Class<?>) args.getSerializable(ARG_ACTION_CLASS);
         try {
             if (actionType != null && YubiKeyPromptAction.class.isAssignableFrom(actionType)) {
                 action = (YubiKeyPromptAction) actionType.newInstance();
