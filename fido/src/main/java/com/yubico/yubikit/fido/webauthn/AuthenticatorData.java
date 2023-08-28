@@ -16,8 +16,11 @@
 
 package com.yubico.yubikit.fido.webauthn;
 
+import com.yubico.yubikit.fido.Cbor;
+
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.Map;
 
 import javax.annotation.Nullable;
 
@@ -41,7 +44,7 @@ public class AuthenticatorData {
     @Nullable
     private final AttestedCredentialData attestedCredentialData;
     @Nullable
-    private final byte[] extensions;
+    private final Map<String, ?> extensions;
 
     private final byte[] rawData;
 
@@ -54,7 +57,7 @@ public class AuthenticatorData {
             byte flags,
             int signCount,
             @Nullable AttestedCredentialData attestedCredentialData,
-            @Nullable byte[] extensions,
+            @Nullable Map<String, ?> extensions,
             byte[] rawData
     ) {
         this.rpIdHash = rpIdHash;
@@ -65,6 +68,7 @@ public class AuthenticatorData {
         this.rawData = rawData;
     }
 
+    @SuppressWarnings("unchecked")
     public static AuthenticatorData parseFrom(ByteBuffer buffer) {
         int startPos = buffer.position();
         final byte[] rpIdHash = new byte[32];
@@ -79,20 +83,21 @@ public class AuthenticatorData {
                 ? AttestedCredentialData.parseFrom(buffer)
                 : null;
 
-        // if there are any remaining data after the public key, use it for extensions
-        byte[] extensions = null;
-        if (!flagED) {
-            if (buffer.hasRemaining()) {
-                throw new IllegalArgumentException("Unexpected extensions data");
-            }
-        } else {
-            if (!buffer.hasRemaining()) {
-                throw new IllegalArgumentException("Missing extensions data");
-            }
-            extensions = new byte[buffer.remaining()];
-            buffer.get(extensions);
+
+        int remaining = buffer.remaining();
+        if (!flagED && remaining > 0) {
+            throw new IllegalArgumentException("Unexpected extensions data");
         }
 
+        if (flagED && remaining == 0) {
+            throw new IllegalArgumentException("Missing extensions data");
+        }
+
+        byte[] extensionsData = new byte[remaining];
+        buffer.get(extensionsData);
+        Map<String, ?> extensions = (Map<String, ?>) Cbor.decode(extensionsData);
+
+        // there should not be anything more in the buffer at this point
         if (buffer.hasRemaining()) {
             throw new IllegalArgumentException("Unexpected data in authenticatorData");
         }
@@ -134,7 +139,7 @@ public class AuthenticatorData {
 
     @Nullable
     @SuppressWarnings("unused")
-    public byte[] getExtensions() {
+    public Map<String, ?> getExtensions() {
         return extensions;
     }
 
