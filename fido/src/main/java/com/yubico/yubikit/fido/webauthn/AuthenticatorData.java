@@ -83,19 +83,17 @@ public class AuthenticatorData {
                 ? AttestedCredentialData.parseFrom(buffer)
                 : null;
 
-
-        int remaining = buffer.remaining();
-        if (!flagED && remaining > 0) {
+        if (!flagED && buffer.hasRemaining()) {
             throw new IllegalArgumentException("Unexpected extensions data");
         }
 
-        if (flagED && remaining == 0) {
+        if (flagED && !buffer.hasRemaining()) {
             throw new IllegalArgumentException("Missing extensions data");
         }
 
-        byte[] extensionsData = new byte[remaining];
-        buffer.get(extensionsData);
-        Map<String, ?> extensions = (Map<String, ?>) Cbor.decode(extensionsData);
+        Map<String, ?> extensions = flagED
+                ? (Map<String, ?>) Cbor.decodeFrom(buffer)
+                : null;
 
         // there should not be anything more in the buffer at this point
         if (buffer.hasRemaining()) {
