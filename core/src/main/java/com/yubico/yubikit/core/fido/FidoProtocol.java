@@ -90,7 +90,7 @@ public class FidoProtocol implements Closeable {
         do {
             toSend.get(buffer, packet.position(), Math.min(toSend.remaining(), packet.remaining()));
             connection.send(buffer);
-            Logger.debug(logger, "{} bytes sent over fido: {}", buffer.length, StringUtils.bytesToHex(buffer));
+            Logger.trace(logger, "{} bytes sent over fido: {}", buffer.length, StringUtils.bytesToHex(buffer));
             Arrays.fill(buffer, (byte) 0);
             packet.clear();
             packet.putInt(channelId).put((byte) (0x7f & seq++));

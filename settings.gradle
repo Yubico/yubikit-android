@@ -1,2 +1,2 @@
-include ':core', ':oath', ':yubiotp', ':management', ':piv', ':openpgp', ':support', ':testing'
+include ':core', ':oath', ':yubiotp', ':management', ':piv', ':openpgp', ':support', ':fido', ':testing'
 include ':android', ':AndroidDemo', ':testing-android'

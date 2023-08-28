@@ -21,8 +21,10 @@ import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
 
 import com.yubico.yubikit.android.transport.usb.connection.ConnectionManager;
+import com.yubico.yubikit.android.transport.usb.connection.FidoConnectionHandler;
 import com.yubico.yubikit.android.transport.usb.connection.OtpConnectionHandler;
 import com.yubico.yubikit.android.transport.usb.connection.SmartCardConnectionHandler;
+import com.yubico.yubikit.android.transport.usb.connection.UsbFidoConnection;
 import com.yubico.yubikit.android.transport.usb.connection.UsbOtpConnection;
 import com.yubico.yubikit.android.transport.usb.connection.UsbSmartCardConnection;
 import com.yubico.yubikit.core.internal.Logger;
@@ -39,6 +41,7 @@ public class UsbYubiKeyManager {
     static {
         ConnectionManager.registerConnectionHandler(UsbSmartCardConnection.class, new SmartCardConnectionHandler());
         ConnectionManager.registerConnectionHandler(UsbOtpConnection.class, new OtpConnectionHandler());
+        ConnectionManager.registerConnectionHandler(UsbFidoConnection.class, new FidoConnectionHandler());
     }
 
     private final Context context;
