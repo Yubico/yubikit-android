@@ -124,8 +124,11 @@ public class ClientPin {
      */
     public byte[] getPinToken(char[] pin) throws IOException, CommandException {
         Pair<Map<Integer, ?>, byte[]> pair = getSharedSecret();
+        byte[] pinHash = null;
         try {
-            byte[] pinHash = Arrays.copyOf(MessageDigest.getInstance("SHA-256").digest(preparePin(pin, false)), PIN_HASH_LEN);
+            pinHash = Arrays.copyOf(
+                    MessageDigest.getInstance("SHA-256").digest(preparePin(pin, false)),
+                    PIN_HASH_LEN);
             byte[] pinHashEnc = pinUvAuth.encrypt(pair.second, pinHash);
 
             Logger.debug(logger, "Getting PIN token");
@@ -144,6 +147,10 @@ public class ClientPin {
         } catch (NoSuchAlgorithmException e) {
             Logger.error(logger, "Failure getting PIN token: ", e);
             throw new IllegalStateException(e);
+        } finally {
+            if (pinHash != null) {
+                Arrays.fill(pinHash, (byte) 0);
+            }
         }
     }
 
@@ -178,12 +185,18 @@ public class ClientPin {
      * @throws IOException                   A communication error in the transport layer.
      * @throws CommandException A communication in the protocol layer.
      */
-    public void changePin(char[] currentPin, char[] newPin) throws IOException, CommandException {
+    public void changePin(char[] currentPin, char[] newPin)
+            throws IOException, CommandException
+    {
         byte[] newPinBytes = preparePin(newPin, true);
         Pair<Map<Integer, ?>, byte[]> pair = getSharedSecret();
 
+        byte[] pinHash = null;
         try {
-            byte[] pinHash = Arrays.copyOf(MessageDigest.getInstance("SHA-256").digest(preparePin(currentPin, false)), PIN_HASH_LEN);
+            pinHash = Arrays.copyOf(
+                    MessageDigest.getInstance("SHA-256").digest(preparePin(currentPin, false)),
+                    PIN_HASH_LEN
+            );
             byte[] pinHashEnc = pinUvAuth.encrypt(pair.second, pinHash);
             byte[] newPinEnc = pinUvAuth.encrypt(pair.second, newPinBytes);
 
@@ -207,6 +220,10 @@ public class ClientPin {
         } catch (NoSuchAlgorithmException e) {
             Logger.error(logger, "Failure changing PIN: ", e);
             throw new IllegalStateException(e);
+        } finally {
+            if (pinHash != null) {
+                Arrays.fill(pinHash, (byte) 0);
+            }
         }
     }
 
@@ -215,13 +232,15 @@ public class ClientPin {
      */
     static byte[] preparePin(char[] pin, boolean pad) {
         if (pin.length < MIN_PIN_LEN) {
-            throw new IllegalArgumentException("PIN must be at least " + MIN_PIN_LEN + " characters");
+            throw new IllegalArgumentException(
+                    "PIN must be at least " + MIN_PIN_LEN + " characters");
         }
         ByteBuffer byteBuffer = StandardCharsets.UTF_8.encode(CharBuffer.wrap(pin));
         try {
             int byteLen = byteBuffer.limit() - byteBuffer.position();
             if (byteLen > MAX_PIN_LEN) {
-                throw new IllegalArgumentException("PIN must be no more than " + MAX_PIN_LEN + " bytes");
+                throw new IllegalArgumentException(
+                        "PIN must be no more than " + MAX_PIN_LEN + " bytes");
             }
             byte[] pinBytes = new byte[pad ? PIN_BUFFER_LEN : byteLen];
             System.arraycopy(byteBuffer.array(), byteBuffer.position(), pinBytes, 0, byteLen);

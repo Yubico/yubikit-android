@@ -25,9 +25,7 @@ import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.fido.ctap.PinUvAuthDummyProtocol;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV1;
 import com.yubico.yubikit.fido.webauthn.AttestationObject;
-import com.yubico.yubikit.fido.webauthn.AttestedCredentialData;
 import com.yubico.yubikit.fido.webauthn.AuthenticatorAttestationResponse;
-import com.yubico.yubikit.fido.webauthn.AuthenticatorData;
 import com.yubico.yubikit.fido.webauthn.AuthenticatorSelectionCriteria;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredential;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialCreationOptions;
@@ -40,10 +38,10 @@ import com.yubico.yubikit.fido.webauthn.UserVerificationRequirement;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -340,74 +338,90 @@ public class BasicWebAuthnClient implements Closeable {
             @Nullable CommandState state
     ) throws IOException, CommandException, ClientError {
 
-        if (options.getExtensions() != null) {
-            throw new ClientError(ClientError.Code.CONFIGURATION_UNSUPPORTED, "Extensions not supported");
-        }
-
-        Map<String, ?> rp = options.getRp().toMap();
-        String rpId = options.getRp().getId();
-        if (rpId == null) {
-            ((Map<String, Object>) rp).put("id", effectiveDomain);
-        } else if (!(effectiveDomain.equals(rpId) || effectiveDomain.endsWith("." + rpId))) {
-            throw new ClientError(ClientError.Code.BAD_REQUEST, "RP ID is not valid for effective domain");
-        }
-
-        byte[] pinUvAuthParam = null;
-        int pinUvAuthProtocol = 0;
-
-        Map<String, Boolean> ctapOptions = new HashMap<>();
-        AuthenticatorSelectionCriteria authenticatorSelection = options.getAuthenticatorSelection();
-        if (authenticatorSelection != null) {
-            String residentKeyRequirement = authenticatorSelection.getResidentKey();
-            if (ResidentKeyRequirement.REQUIRED.equals(residentKeyRequirement) ||
-                    (ResidentKeyRequirement.PREFERRED.equals(residentKeyRequirement) &&
-                            (pinSupported || uvSupported)
-                    )
-            ) {
-                ctapOptions.put(OPTION_RESIDENT_KEY, true);
+        byte[] pinToken = null;
+        try {
+            if (options.getExtensions() != null) {
+                throw new ClientError(
+                        ClientError.Code.CONFIGURATION_UNSUPPORTED,
+                        "Extensions not supported");
             }
-            if (getCtapUv(authenticatorSelection.getUserVerification(), pin != null)) {
-                ctapOptions.put(OPTION_USER_VERIFICATION, true);
+
+            Map<String, ?> rp = options.getRp().toMap();
+            String rpId = options.getRp().getId();
+            if (rpId == null) {
+                ((Map<String, Object>) rp).put("id", effectiveDomain);
+            } else if (!(effectiveDomain.equals(rpId) || effectiveDomain.endsWith("." + rpId))) {
+                throw new ClientError(
+                        ClientError.Code.BAD_REQUEST,
+                        "RP ID is not valid for effective domain");
             }
-        } else {
-            if (getCtapUv(UserVerificationRequirement.PREFERRED, pin != null)) {
-                ctapOptions.put(OPTION_USER_VERIFICATION, true);
+
+            byte[] pinUvAuthParam = null;
+            int pinUvAuthProtocol = 0;
+
+            Map<String, Boolean> ctapOptions = new HashMap<>();
+            AuthenticatorSelectionCriteria authenticatorSelection =
+                    options.getAuthenticatorSelection();
+            if (authenticatorSelection != null) {
+                String residentKeyRequirement = authenticatorSelection.getResidentKey();
+                if (ResidentKeyRequirement.REQUIRED.equals(residentKeyRequirement) ||
+                        (ResidentKeyRequirement.PREFERRED.equals(residentKeyRequirement) &&
+                                (pinSupported || uvSupported)
+                        )
+                ) {
+                    ctapOptions.put(OPTION_RESIDENT_KEY, true);
+                }
+                if (getCtapUv(authenticatorSelection.getUserVerification(), pin != null)) {
+                    ctapOptions.put(OPTION_USER_VERIFICATION, true);
+                }
+            } else {
+                if (getCtapUv(UserVerificationRequirement.PREFERRED, pin != null)) {
+                    ctapOptions.put(OPTION_USER_VERIFICATION, true);
+                }
             }
-        }
 
-        if (pin != null) {
-            byte[] pinToken = clientPin.getPinToken(pin);
-            pinUvAuthParam = clientPin.getPinUvAuth().authenticate(pinToken, clientDataHash);
-            pinUvAuthProtocol = clientPin.getPinUvAuth().getVersion();
-        } else if (pinConfigured && !ctapOptions.containsKey(OPTION_USER_VERIFICATION)) {
-            throw new PinRequiredClientError();
-        }
-
-        final List<PublicKeyCredentialDescriptor> excludeCredentials = removeUnsupportedCredentials(
-                options.getExcludeCredentials()
-        );
-
-        final Map<String, Object> user = CredentialManager.credentialUserEntityToMap(options.getUser());
-
-        List<Map<String, ?>> pubKeyCredParams = new ArrayList<>();
-        for (PublicKeyCredentialParameters param : options.getPubKeyCredParams()) {
-            if (isPublicKeyCredentialTypeSupported(param.getType())) {
-                pubKeyCredParams.add(param.toMap());
+            if (pin != null) {
+                pinToken = clientPin.getPinToken(pin);
+                pinUvAuthParam = clientPin.getPinUvAuth().authenticate(pinToken, clientDataHash);
+                pinUvAuthProtocol = clientPin.getPinUvAuth().getVersion();
+            } else if (pinConfigured && !ctapOptions.containsKey(OPTION_USER_VERIFICATION)) {
+                throw new PinRequiredClientError();
             }
-        }
 
-        return ctap.makeCredential(
-                clientDataHash,
-                rp,
-                user,
-                pubKeyCredParams,
-                getCredentialList(excludeCredentials),
-                null,
-                ctapOptions.isEmpty() ? null : ctapOptions,
-                pinUvAuthParam,
-                pinUvAuthProtocol,
-                state
-        );
+            final List<PublicKeyCredentialDescriptor> excludeCredentials =
+                    removeUnsupportedCredentials(
+                            options.getExcludeCredentials()
+                    );
+
+            final Map<String, Object> user = CredentialManager.credentialUserEntityToMap(
+                    options.getUser()
+            );
+
+            List<Map<String, ?>> pubKeyCredParams = new ArrayList<>();
+            for (PublicKeyCredentialParameters param : options.getPubKeyCredParams()) {
+                if (isPublicKeyCredentialTypeSupported(param.getType())) {
+                    pubKeyCredParams.add(param.toMap());
+                }
+            }
+
+            return ctap.makeCredential(
+                    clientDataHash,
+                    rp,
+                    user,
+                    pubKeyCredParams,
+                    getCredentialList(excludeCredentials),
+                    null,
+                    ctapOptions.isEmpty() ? null : ctapOptions,
+                    pinUvAuthParam,
+                    pinUvAuthProtocol,
+                    state
+            );
+        } catch (Exception e) {
+            if (pinToken != null) {
+                Arrays.fill(pinToken, (byte) 0);
+            }
+            throw e;
+        }
     }
 
     /**
@@ -454,9 +468,10 @@ public class BasicWebAuthnClient implements Closeable {
 
         byte[] pinUvAuthParam = null;
         int pinUvAuthProtocol = 0;
+        byte[] pinToken = null;
         try {
             if (pin != null) {
-                byte[] pinToken = clientPin.getPinToken(pin);
+                pinToken = clientPin.getPinToken(pin);
                 pinUvAuthParam = clientPin.getPinUvAuth().authenticate(pinToken, clientDataHash);
                 pinUvAuthProtocol = clientPin.getPinUvAuth().getVersion();
             }
@@ -480,6 +495,10 @@ public class BasicWebAuthnClient implements Closeable {
                 throw new PinInvalidClientError(e, clientPin.getPinRetries());
             }
             throw ClientError.wrapCtapException(e);
+        } finally {
+            if (pinToken != null) {
+                Arrays.fill(pinToken, (byte) 0);
+            }
         }
     }
 
