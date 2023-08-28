@@ -416,11 +416,10 @@ public class BasicWebAuthnClient implements Closeable {
                     pinUvAuthProtocol,
                     state
             );
-        } catch (Exception e) {
+        } finally {
             if (pinToken != null) {
                 Arrays.fill(pinToken, (byte) 0);
             }
-            throw e;
         }
     }
 
