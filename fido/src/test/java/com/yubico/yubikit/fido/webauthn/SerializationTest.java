@@ -21,6 +21,7 @@ import com.yubico.yubikit.core.internal.codec.Base64;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.nio.ByteBuffer;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -312,9 +313,20 @@ public class SerializationTest {
         random.nextBytes(clientDataJson);
         List<String> transports = Arrays.asList("nfc", "usb");
 
+        @SuppressWarnings("SpellCheckingInspection")
+        AuthenticatorData authenticatorData = AuthenticatorData.parseFrom(
+                ByteBuffer.wrap(Base64.decode("5Yaf4EYzO6ALp_K7s-p-BQLPSCYVYcKLZptoXwxqQztFAAAAA" +
+                        "hSaICGO9kEzlriB-NW38fUAMA5hR7Wj16h_z28qvtukB63QcIhzJ_sUkkJPfsU-KzdCFeaF" +
+                        "2mZ80gSROEtELSHniKUBAgMmIAEhWCAOYUe1o9eof89vKr7bLZhH7nLY4wjKx5oxa66Kv0J" +
+                        "jXiJYIKyPUlRxXHJjLrACafd_1stM7DyX120jDO7BlwqYsJyJ")
+                ));
+
         return new AuthenticatorAttestationResponse(
                 clientDataJson,
+                authenticatorData,
                 transports,
+                null,
+                0,
                 attestationObject
         );
     }

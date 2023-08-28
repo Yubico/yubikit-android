@@ -31,6 +31,7 @@ import javax.annotation.Nullable;
 public class PublicKeyCredential extends Credential {
     public static final String RAW_ID = "rawId";
     public static final String RESPONSE = "response";
+    public static final String AUTHENTICATOR_ATTACHMENT = "authenticatorAttachment";
 
     public static final String PUBLIC_KEY_CREDENTIAL_TYPE = "public-key";
 
@@ -78,6 +79,7 @@ public class PublicKeyCredential extends Credential {
         map.put(ID, getId());
         map.put(TYPE, getType());
         map.put(RAW_ID, Base64.encode(getRawId()));
+        map.put(AUTHENTICATOR_ATTACHMENT, AuthenticatorAttachment.CROSS_PLATFORM);
         map.put(RESPONSE, getResponse().toMap());
         return map;
     }
@@ -91,10 +93,10 @@ public class PublicKeyCredential extends Credential {
         Map<String, ?> responseMap = Objects.requireNonNull((Map<String, ?>) map.get(RESPONSE));
         AuthenticatorResponse response;
         try {
-            if (responseMap.containsKey(AuthenticatorAssertionResponse.AUTHENTICATOR_DATA)) {
-                response = AuthenticatorAssertionResponse.fromMap(responseMap);
-            } else {
+            if (responseMap.containsKey(AuthenticatorAttestationResponse.ATTESTATION_OBJECT)) {
                 response = AuthenticatorAttestationResponse.fromMap(responseMap);
+            } else {
+                response = AuthenticatorAssertionResponse.fromMap(responseMap);
             }
         } catch (Exception e) {
             throw new IllegalArgumentException("Unknown AuthenticatorResponse format", e);
