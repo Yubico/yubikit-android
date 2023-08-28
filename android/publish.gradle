@@ -2,7 +2,6 @@ apply plugin: 'maven-publish'
 apply plugin: 'signing'
 
 ext.isReleaseVersion = !version.endsWith("SNAPSHOT")
-ext.isPreviewVersion = version.indexOf("preview") != -1
 
 task javadoc(type: Javadoc) {
     source = android.sourceSets.main.java.srcDirs
@@ -29,10 +28,7 @@ task sourcesJar(type: Jar) {
 
 artifacts {
     archives javadocJar
-
-    if (!isPreviewVersion) {
-        archives sourcesJar
-    }
+    archives sourcesJar
 }
 
 afterEvaluate {
@@ -41,9 +37,7 @@ afterEvaluate {
             maven(MavenPublication) {
                 from components.release
                 artifact javadocJar
-                if (!isPreviewVersion) {
-                    artifact sourcesJar
-                }
+                artifact sourcesJar
 
                 groupId = rootProject.group
                 artifactId = project.name
