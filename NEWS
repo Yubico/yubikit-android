@@ -1,3 +1,13 @@
+* Version 2.4.0-beta01 (released 2023-09-01)
+ ** core module:
+ *** Added support for Le in APDU
+ *** Added PublicKeyValues and PrivateKeyValues classes for unified handling ofasymmetric keys
+ ** piv module:
+ *** deprecated classes: InvalidPinException, Padding
+ *** deprecated methods: SlotMetadata.getPublicKey(), PivSession.generateKey(), PivSession.putKey()
+ ** fido module:
+ *** added support for WebAuthn and CTAP2
+
 * Version 2.3.0 (released 2023-05-29)
  ** core module:
  *** deprecated `com.yubico.yubikit.core.Logger`
