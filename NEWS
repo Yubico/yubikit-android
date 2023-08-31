@@ -1,8 +1,8 @@
 * Version 2.4.0-beta01 (released 2023-09-01)
  ** core module:
- *** Added support for Le in APDU
- *** Added PublicKeyValues and PrivateKeyValues classes for unified handling ofasymmetric keys
- ** piv module:
+ *** added support for Le in APDU
+ *** added PublicKeyValues and PrivateKeyValues classes for unified handling of asymmetric keys
+ ** PIV module:
  *** deprecated classes: InvalidPinException, Padding
  *** deprecated methods: SlotMetadata.getPublicKey(), PivSession.generateKey(), PivSession.putKey()
  ** fido module:
