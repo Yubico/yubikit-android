@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-package com.yubico.yubikit.testing;
+package com.yubico.yubikit.testing.openpgp;
 
 import com.yubico.yubikit.testing.framework.OpenPgpInstrumentedTests;
-import com.yubico.yubikit.testing.openpgp.OpenPgpDeviceTests;
 
 import org.junit.Test;
 
@@ -71,6 +70,7 @@ public class OpenPgpTests extends OpenPgpInstrumentedTests {
     public void testGenerateEcKeys() throws Throwable {
         withOpenPgpSession(OpenPgpDeviceTests::testGenerateEcKeys);
     }
+
     @Test
     public void testGenerateEd25519() throws Throwable {
         withOpenPgpSession(OpenPgpDeviceTests::testGenerateEd25519);
@@ -85,6 +85,7 @@ public class OpenPgpTests extends OpenPgpInstrumentedTests {
     public void testAttestation() throws Throwable {
         withOpenPgpSession(OpenPgpDeviceTests::testAttestation);
     }
+
     @Test
     public void testSigPinPolicy() throws Throwable {
         withOpenPgpSession(OpenPgpDeviceTests::testSigPinPolicy);
