@@ -35,14 +35,16 @@ public class FidoProtocol implements Closeable {
 
     public static final byte TYPE_INIT = (byte) 0x80;
 
-    private static final byte CMD_PING = TYPE_INIT | 0x01;
-    private static final byte CMD_APDU = TYPE_INIT | 0x03;
-    private static final byte CMD_INIT = TYPE_INIT | 0x06;
-    private static final byte CMD_WINK = TYPE_INIT | 0x08;
-    private static final byte CMD_CANCEL = TYPE_INIT | 0x11;
+    public static final byte CTAPHID_PING = TYPE_INIT | 0x01;
+    public static final byte CTAPHID_MSG = TYPE_INIT | 0x03;
+    public static final byte CTAPHID_LOCK = TYPE_INIT | 0x04;
+    public static final byte CTAPHID_INIT = TYPE_INIT | 0x06;
+    public static final byte CTAPHID_WINK = TYPE_INIT | 0x08;
+    public static final byte CTAPHID_CBOR = TYPE_INIT | 0x10;
+    public static final byte CTAPHID_CANCEL = TYPE_INIT | 0x11;
 
-    private static final byte STATUS_ERROR = TYPE_INIT | 0x3f;
-    private static final byte STATUS_KEEPALIVE = TYPE_INIT | 0x3b;
+    public static final byte CTAPHID_ERROR = TYPE_INIT | 0x3f;
+    public static final byte CTAPHID_KEEPALIVE = TYPE_INIT | 0x3b;
 
     private final CommandState defaultState = new CommandState();
 
@@ -61,7 +63,7 @@ public class FidoProtocol implements Closeable {
         new SecureRandom().nextBytes(nonce);
 
         channelId = 0xffffffff;
-        ByteBuffer buffer = ByteBuffer.wrap(sendAndReceive(CMD_INIT, nonce, null));
+        ByteBuffer buffer = ByteBuffer.wrap(sendAndReceive(CTAPHID_INIT, nonce, null));
         byte[] responseNonce = new byte[nonce.length];
         buffer.get(responseNonce);
         if (!MessageDigest.isEqual(nonce, responseNonce)) {
@@ -104,7 +106,7 @@ public class FidoProtocol implements Closeable {
             if (state.waitForCancel(0)) {
                 Logger.debug(logger, "sending CTAP cancel...");
                 Arrays.fill(buffer, (byte) 0);
-                packet.putInt(channelId).put(CMD_CANCEL);
+                packet.putInt(channelId).put(CTAPHID_CANCEL);
                 connection.send(buffer);
                 Logger.trace(logger, "Sent over fido: {}", StringUtils.bytesToHex(buffer));
                 packet.clear();
@@ -120,10 +122,10 @@ public class FidoProtocol implements Closeable {
                 byte responseCmd = packet.get();
                 if (responseCmd == cmd) {
                     response = ByteBuffer.allocate(packet.getShort());
-                } else if (responseCmd == STATUS_KEEPALIVE) {
+                } else if (responseCmd == CTAPHID_KEEPALIVE) {
                     state.onKeepAliveStatus(packet.get());
                     continue;
-                } else if (responseCmd == STATUS_ERROR) {
+                } else if (responseCmd == CTAPHID_ERROR) {
                     throw new IOException(String.format("CTAPHID error: %02x", packet.get()));
                 } else {
                     throw new IOException(String.format("Wrong response command. Expecting: %x, Got: %x", cmd, responseCmd));

@@ -19,6 +19,7 @@ package com.yubico.yubikit.fido.client;
 import com.yubico.yubikit.core.application.CommandException;
 import com.yubico.yubikit.core.application.CommandState;
 import com.yubico.yubikit.core.fido.CtapException;
+import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.fido.ctap.ClientPin;
 import com.yubico.yubikit.fido.ctap.CredentialManagement;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
@@ -35,6 +36,8 @@ import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialRequestOptions;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialType;
 import com.yubico.yubikit.fido.webauthn.ResidentKeyRequirement;
 import com.yubico.yubikit.fido.webauthn.UserVerificationRequirement;
+
+import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -85,9 +88,13 @@ public class BasicWebAuthnClient implements Closeable {
 
     final private boolean credentialManagementSupported;
 
+    private static final org.slf4j.Logger logger = LoggerFactory.getLogger(BasicWebAuthnClient.class);
+
     public BasicWebAuthnClient(Ctap2Session session) throws IOException, CommandException {
         this.ctap = session;
         Ctap2Session.InfoData info = ctap.getInfo();
+
+        Logger.debug(logger, "Ctap2.InfoData: {}", info);
 
         transports = info.getTransports();
 

@@ -16,8 +16,6 @@
 
 package com.yubico.yubikit.fido.ctap;
 
-import javax.annotation.Nullable;
-
 import com.yubico.yubikit.core.Version;
 import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
@@ -30,12 +28,15 @@ import com.yubico.yubikit.core.fido.FidoConnection;
 import com.yubico.yubikit.core.fido.FidoProtocol;
 import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.smartcard.Apdu;
+import com.yubico.yubikit.core.smartcard.AppId;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.smartcard.SmartCardProtocol;
 import com.yubico.yubikit.core.util.Callback;
 import com.yubico.yubikit.core.util.Result;
+import com.yubico.yubikit.core.util.StringUtils;
 import com.yubico.yubikit.fido.Cbor;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialDescriptor;
+import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialParameters;
 
 import org.slf4j.LoggerFactory;
 
@@ -49,15 +50,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import javax.annotation.Nullable;
+
+/**
+ * Implements CTAP 2.1
+ *
+ * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html">Client to Authenticator Protocol (CTAP)</a>
+ */
 @SuppressWarnings("unused")
 public class Ctap2Session extends ApplicationSession<Ctap2Session> {
 
-    private static final byte[] AID = new byte[]{(byte) 0xa0, 0x00, 0x00, 0x06, 0x47, 0x2f, 0x00, 0x01};
-
-    private static final byte INS_GET_VERSION = 0x03;
-    private static final byte INS_CBOR = 0x10;
-
-    private static final byte CTAPHID_CBOR = (byte) (0x80 | 0x10);
+    private static final byte NFCCTAP_MSG = 0x10;
 
     private static final byte CMD_MAKE_CREDENTIAL = 0x01;
     private static final byte CMD_GET_ASSERTION = 0x02;
@@ -75,7 +78,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
     /**
      * Construct a new Ctap2Session for a given YubiKey
      *
-     * @param device a YubiKeyDevice over NFC or USB.
+     * @param device   a YubiKeyDevice over NFC or USB.
      * @param callback a callback to invoke with the session.
      */
     public static void create(YubiKeyDevice device, Callback<Result<Ctap2Session, Exception>> callback) {
@@ -90,13 +93,14 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
 
     public Ctap2Session(SmartCardConnection connection) throws IOException, ApplicationNotAvailableException {
         SmartCardProtocol protocol = new SmartCardProtocol(connection);
-        protocol.select(AID);
-        version = null;
+        protocol.select(AppId.FIDO);
+        // it is not possible to get the applet version over NFC/CCID in CTAP2.0
+        version = new Version(0, 0, 0);
         backend = new Backend<SmartCardProtocol>(protocol) {
             @Override
             byte[] sendCbor(byte[] data, @Nullable CommandState state) throws IOException, CommandException {
                 //Cancellation is not implemented for NFC, and most likely not needed.
-                return delegate.sendAndReceive(new Apdu(0x80, INS_CBOR, 0x00, 0x00, data));
+                return delegate.sendAndReceive(new Apdu(0x80, NFCCTAP_MSG, 0x00, 0x00, data));
             }
         };
         Logger.debug(logger, "Ctap2Session session initialized for connection={}",
@@ -108,8 +112,8 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
         version = protocol.getVersion();
         backend = new Backend<FidoProtocol>(protocol) {
             @Override
-            byte[] sendCbor(byte[] data, @Nullable CommandState state) throws IOException, CommandException {
-                return delegate.sendAndReceive(CTAPHID_CBOR, data, state);
+            byte[] sendCbor(byte[] data, @Nullable CommandState state) throws IOException {
+                return delegate.sendAndReceive(FidoProtocol.CTAPHID_CBOR, data, state);
             }
         };
         Logger.debug(logger, "Ctap2Session session initialized for connection={}, version={}",
@@ -130,7 +134,6 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
         return argMap;
     }
 
-    @Nullable
     private Map<Integer, ?> sendCbor(byte command, @Nullable Object payload, @Nullable CommandState state) throws IOException, CommandException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         baos.write(command);
@@ -143,13 +146,13 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
             throw new CtapException(status);
         }
         if (response.length == 1) {
-            return null;  // Empty response
+            return Collections.emptyMap();  // Empty response
         }
 
         try {
             @SuppressWarnings("unchecked")
             Map<Integer, ?> value = (Map<Integer, ?>) Cbor.decode(response, 1, response.length - 1);
-            return value;
+            return value != null ? value : Collections.emptyMap();
         } catch (ClassCastException e) {
             throw new BadResponseException("Unexpected CBOR data in response");
         }
@@ -204,8 +207,6 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
     /**
      * This method is invoked by the host to request generation of a new credential in the authenticator.
      *
-     * @see <a href="https://fidoalliance.org/specs/fido-v2.0-ps-20190130/fido-client-to-authenticator-protocol-v2.0-ps-20190130.html#authenticatorMakeCredential">authenticatorMakeCredential</a>
-     *
      * @param clientDataHash    a SHA-256 hash of the clientDataJson
      * @param rp                a Map containing the RpEntity data
      * @param user              a Map containing the UserEntity data
@@ -219,6 +220,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
      * @return a new credential
      * @throws IOException      A communication error in the transport layer.
      * @throws CommandException A communication in the protocol layer.
+     * @see <a href="https://fidoalliance.org/specs/fido-v2.0-ps-20190130/fido-client-to-authenticator-protocol-v2.0-ps-20190130.html#authenticatorMakeCredential">authenticatorMakeCredential</a>
      */
     public CredentialData makeCredential(
             byte[] clientDataHash,
@@ -259,8 +261,6 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
      * as user consent to a given transaction, using a previously generated credential that is bound
      * to the authenticator and relying party identifier.
      *
-     * @see <a href="https://fidoalliance.org/specs/fido-v2.0-ps-20190130/fido-client-to-authenticator-protocol-v2.0-ps-20190130.html#authenticatorGetAssertion">authenticatorGetAssertion</a>
-     *
      * @param rpId              the RP ID for the request
      * @param clientDataHash    a SHA-256 hash of the clientDataJson
      * @param allowList         a List of Maps of already registered credentials
@@ -272,6 +272,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
      * @return a List of available assertions
      * @throws IOException      A communication error in the transport layer.
      * @throws CommandException A communication in the protocol layer.
+     * @see <a href="https://fidoalliance.org/specs/fido-v2.0-ps-20190130/fido-client-to-authenticator-protocol-v2.0-ps-20190130.html#authenticatorGetAssertion">authenticatorGetAssertion</a>
      */
     public List<AssertionData> getAssertions(
             String rpId,
@@ -334,7 +335,8 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
 
     /**
      * Data object containing the information readable form a YubiKey using the getInfo command.
-     * @see <a href="https://fidoalliance.org/specs/fido-v2.0-ps-20190130/fido-client-to-authenticator-protocol-v2.0-ps-20190130.html#authenticatorGetInfo">authenticatorGetInfo</a>
+     *
+     * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#authenticatorGetInfo">authenticatorGetInfo</a>
      */
     public static class InfoData {
         private final static int RESULT_VERSIONS = 0x01;
@@ -342,42 +344,164 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
         private final static int RESULT_AAGUID = 0x03;
         private final static int RESULT_OPTIONS = 0x04;
         private final static int RESULT_MAX_MSG_SIZE = 0x05;
-        private final static int RESULT_PIN_PROTOCOLS = 0x06;
+        private final static int RESULT_PIN_UV_AUTH_PROTOCOLS = 0x06;
         private final static int RESULT_MAX_CREDS_IN_LIST = 0x07;
         private final static int RESULT_MAX_CRED_ID_LENGTH = 0x08;
         private final static int RESULT_TRANSPORTS = 0x09;
         private final static int RESULT_ALGORITHMS = 0x0A;
+        private final static int RESULT_MAX_SERIALIZED_LARGE_BLOB_ARRAY = 0x0B;
+        private final static int RESULT_FORCE_PIN_CHANGE = 0x0C;
+        private final static int RESULT_MIN_PIN_LENGTH = 0x0D;
+        private final static int RESULT_FIRMWARE_VERSION = 0x0E;
+        private final static int RESULT_MAX_CRED_BLOB_LENGTH = 0x0F;
+        private final static int RESULT_MAX_RPID_FOR_SET_MIN_PIN_LENGTH = 0x10;
+        private final static int RESULT_PREFERRED_PLATFORM_UV_ATTEMPTS = 0x11;
+        private final static int RESULT_UV_MODALITY = 0x12;
+        private final static int RESULT_CERTIFICATIONS = 0x13;
+        private final static int RESULT_REMAINING_DISCOVERABLE_CREDENTIALS = 0x14;
+        private final static int RESULT_VENDOR_PROTOTYPE_CONFIG_COMMANDS = 0x15;
 
         private final List<String> versions;
+        private final List<String> extensions;
         private final byte[] aaguid;
+        private final int maxMsgSize;
         private final Map<String, Object> options;
         private final List<Integer> pinUvAuthProtocols;
+        @Nullable
+        private final Integer maxCredentialCountInList;
+        @Nullable
+        private final Integer maxCredentialIdLength;
         private final List<String> transports;
+        @Nullable
+        private final List<PublicKeyCredentialParameters> algorithms;
+        @Nullable
+        private final Integer maxSerializedLargeBlobArray;
+        @Nullable
+        private final Boolean forcePINChange;
+        @Nullable
+        private final Integer minPINLength;
+        @Nullable
+        private final Integer firmwareVersion;
+        @Nullable
+        private final Integer maxCredBlobLength;
+        @Nullable
+        private final Integer maxRPIDsForSetMinPINLength;
+        @Nullable
+        private final Integer preferredPlatformUvAttempts;
+        @Nullable
+        private final Integer uvModality;
+        private final Map<String, Object> certifications;
+        @Nullable
+        private final Integer remainingDiscoverableCredentials;
+        private final List<Integer> vendorPrototypeConfigCommands;
 
         private InfoData(
                 List<String> versions,
+                List<String> extensions,
                 byte[] aaguid,
                 Map<String, Object> options,
+                int maxMsgSize,
                 List<Integer> pinUvAuthProtocols,
-                List<String> transports) {
+                @Nullable Integer maxCredentialCountInList,
+                @Nullable Integer maxCredentialIdLength,
+                List<String> transports,
+                @Nullable List<PublicKeyCredentialParameters> algorithms,
+                @Nullable Integer maxSerializedLargeBlobArray,
+                @Nullable Boolean forcePINChange,
+                @Nullable Integer minPINLength,
+                @Nullable Integer firmwareVersion,
+                @Nullable Integer maxCredBlobLength,
+                @Nullable Integer maxRPIDsForSetMinPINLength,
+                @Nullable Integer preferredPlatformUvAttempts,
+                @Nullable Integer uvModality,
+                Map<String, Object> certifications,
+                @Nullable Integer remainingDiscoverableCredentials,
+                List<Integer> vendorPrototypeConfigCommands) {
             this.versions = versions;
+            this.extensions = extensions;
             this.aaguid = aaguid;
             this.options = options;
+            this.maxMsgSize = maxMsgSize;
             this.pinUvAuthProtocols = pinUvAuthProtocols;
+            this.maxCredentialCountInList = maxCredentialCountInList;
+            this.maxCredentialIdLength = maxCredentialIdLength;
             this.transports = transports;
+            this.algorithms = algorithms;
+            this.maxSerializedLargeBlobArray = maxSerializedLargeBlobArray;
+            this.forcePINChange = forcePINChange;
+            this.minPINLength = minPINLength;
+            this.firmwareVersion = firmwareVersion;
+            this.maxCredBlobLength = maxCredBlobLength;
+            this.maxRPIDsForSetMinPINLength = maxRPIDsForSetMinPINLength;
+            this.preferredPlatformUvAttempts = preferredPlatformUvAttempts;
+            this.uvModality = uvModality;
+            this.certifications = certifications;
+            this.remainingDiscoverableCredentials = remainingDiscoverableCredentials;
+            this.vendorPrototypeConfigCommands = vendorPrototypeConfigCommands;
+
         }
 
         @SuppressWarnings("unchecked")
         private static InfoData fromData(Map<Integer, ?> data) {
             return new InfoData(
                     (List<String>) data.get(RESULT_VERSIONS),
+                    data.containsKey(RESULT_EXTENSIONS)
+                            ? (List<String>) data.get(RESULT_EXTENSIONS)
+                            : Collections.emptyList(),
                     (byte[]) data.get(RESULT_AAGUID),
                     data.containsKey(RESULT_OPTIONS)
                             ? (Map<String, Object>) data.get(RESULT_OPTIONS)
                             : Collections.emptyMap(),
-                    (List<Integer>) data.get(RESULT_PIN_PROTOCOLS),
+                    data.containsKey(RESULT_MAX_MSG_SIZE)
+                            ? (Integer) data.get(RESULT_MAX_MSG_SIZE)
+                            : 1024,
+                    data.containsKey(RESULT_PIN_UV_AUTH_PROTOCOLS)
+                            ? (List<Integer>) data.get(RESULT_PIN_UV_AUTH_PROTOCOLS)
+                            : Collections.emptyList(),
+                    data.containsKey(RESULT_MAX_CREDS_IN_LIST)
+                            ? (Integer) data.get(RESULT_MAX_CREDS_IN_LIST)
+                            : null,
+                    data.containsKey(RESULT_MAX_CRED_ID_LENGTH)
+                            ? (Integer) data.get(RESULT_MAX_CRED_ID_LENGTH)
+                            : null,
                     data.containsKey(RESULT_TRANSPORTS)
                             ? (List<String>) data.get(RESULT_TRANSPORTS)
+                            : Collections.emptyList(),
+                    data.containsKey(RESULT_ALGORITHMS)
+                            ? (List<PublicKeyCredentialParameters>) data.get(RESULT_ALGORITHMS)
+                            : null,
+                    data.containsKey(RESULT_MAX_SERIALIZED_LARGE_BLOB_ARRAY)
+                            ? (Integer) data.get(RESULT_MAX_SERIALIZED_LARGE_BLOB_ARRAY)
+                            : null,
+                    data.containsKey(RESULT_FORCE_PIN_CHANGE)
+                            ? (Boolean) data.get(RESULT_FORCE_PIN_CHANGE)
+                            : null,
+                    data.containsKey(RESULT_MIN_PIN_LENGTH)
+                            ? (Integer) data.get(RESULT_MIN_PIN_LENGTH)
+                            : null,
+                    data.containsKey(RESULT_FIRMWARE_VERSION)
+                            ? (Integer) data.get(RESULT_FIRMWARE_VERSION)
+                            : null,
+                    data.containsKey(RESULT_MAX_CRED_BLOB_LENGTH)
+                            ? (Integer) data.get(RESULT_MAX_CRED_BLOB_LENGTH)
+                            : null,
+                    data.containsKey(RESULT_MAX_RPID_FOR_SET_MIN_PIN_LENGTH)
+                            ? (Integer) data.get(RESULT_MAX_RPID_FOR_SET_MIN_PIN_LENGTH)
+                            : null,
+                    data.containsKey(RESULT_PREFERRED_PLATFORM_UV_ATTEMPTS)
+                            ? (Integer) data.get(RESULT_PREFERRED_PLATFORM_UV_ATTEMPTS)
+                            : null,
+                    data.containsKey(RESULT_UV_MODALITY)
+                            ? (Integer) data.get(RESULT_UV_MODALITY)
+                            : null,
+                    data.containsKey(RESULT_CERTIFICATIONS)
+                            ? (Map<String, Object>) data.get(RESULT_CERTIFICATIONS)
+                            : Collections.emptyMap(),
+                    data.containsKey(RESULT_REMAINING_DISCOVERABLE_CREDENTIALS)
+                            ? (Integer) data.get(RESULT_REMAINING_DISCOVERABLE_CREDENTIALS)
+                            : null,
+                    data.containsKey(RESULT_VENDOR_PROTOTYPE_CONFIG_COMMANDS)
+                            ? (List<Integer>) data.get(RESULT_VENDOR_PROTOTYPE_CONFIG_COMMANDS)
                             : Collections.emptyList()
             );
         }
@@ -391,6 +515,15 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
          */
         public List<String> getVersions() {
             return versions;
+        }
+
+        /**
+         * List of supported extensions.
+         *
+         * @return list of supported extensions
+         */
+        public List<String> getExtensions() {
+            return extensions;
         }
 
         /**
@@ -412,12 +545,31 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
         }
 
         /**
+         * Get maximum message size supported by the authenticator.
+         *
+         * @return maximum message size
+         */
+        public int getMaxMsgSize() {
+            return maxMsgSize;
+        }
+
+        /**
          * Get a list of the supported PIN/UV Auth protocol versions.
          *
          * @return a list of supported versions.
          */
         public List<Integer> getPinUvAuthProtocols() {
             return pinUvAuthProtocols;
+        }
+
+        @Nullable
+        Integer getMaxCredentialCountInList() {
+            return maxCredentialCountInList;
+        }
+
+        @Nullable
+        Integer getMaxCredentialIdLength() {
+            return maxCredentialIdLength;
         }
 
         /**
@@ -427,6 +579,91 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
          */
         public List<String> getTransports() {
             return transports;
+        }
+
+        @Nullable
+        public List<PublicKeyCredentialParameters> getAlgorithms() {
+            return algorithms;
+        }
+
+        @Nullable
+        public Integer getMaxSerializedLargeBlobArray() {
+            return maxSerializedLargeBlobArray;
+        }
+
+        @Nullable
+        public Boolean getForcePINChange() {
+            return forcePINChange;
+        }
+
+        @Nullable
+        public Integer getMinPINLength() {
+            return minPINLength;
+        }
+
+        @Nullable
+        Integer getFirmwareVersion() {
+            return firmwareVersion;
+        }
+
+        @Nullable
+        public Integer getMaxCredBlobLength() {
+            return maxCredBlobLength;
+        }
+
+        @Nullable
+        public Integer getMaxRPIDsForSetMinPINLength() {
+            return maxRPIDsForSetMinPINLength;
+        }
+
+        @Nullable
+        public Integer getPreferredPlatformUvAttempts() {
+            return preferredPlatformUvAttempts;
+        }
+
+        @Nullable
+        public Integer getUvModality() {
+            return uvModality;
+        }
+
+        public final Map<String, Object> getCertifications() {
+            return certifications;
+        }
+
+        @Nullable
+        public Integer getRemainingDiscoverableCredentials() {
+            return remainingDiscoverableCredentials;
+        }
+
+        public List<Integer> getVendorPrototypeConfigCommands() {
+            return vendorPrototypeConfigCommands;
+        }
+
+        @Override
+        public String toString() {
+            return "Ctap2Session.InfoData{" +
+                    "versions=" + versions +
+                    ", extensions=" + extensions +
+                    ", aaguid=" + StringUtils.bytesToHex(aaguid) +
+                    ", options=" + options +
+                    ", maxMsgSize=" + maxMsgSize +
+                    ", pinUvAuthProtocols=" + pinUvAuthProtocols +
+                    ", maxCredentialCountInList=" + maxCredentialCountInList +
+                    ", maxCredentialIdLength=" + maxCredentialIdLength +
+                    ", transports=" + transports +
+                    ", algorithms=" + algorithms +
+                    ", maxSerializedLargeBlobArray=" + maxSerializedLargeBlobArray +
+                    ", forcePINChange=" + forcePINChange +
+                    ", minPINLength=" + minPINLength +
+                    ", firmwareVersion=" + firmwareVersion +
+                    ", maxCredBlobLength=" + maxCredBlobLength +
+                    ", maxRPIDsForSetMinPINLength=" + maxRPIDsForSetMinPINLength +
+                    ", preferredPlatformUvAttempts=" + preferredPlatformUvAttempts +
+                    ", uvModality=" + uvModality +
+                    ", certifications=" + certifications +
+                    ", remainingDiscoverableCredentials=" + remainingDiscoverableCredentials +
+                    ", vendorPrototypeConfigCommands=" + vendorPrototypeConfigCommands +
+                    '}';
         }
     }
 
@@ -459,9 +696,9 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
 
         /**
          * The AuthenticatorData object.
-         * @see <a href="https://www.w3.org/TR/webauthn/#authenticator-data">authenticator-data</a>
          *
          * @return the AuthenticatorData
+         * @see <a href="https://www.w3.org/TR/webauthn/#authenticator-data">authenticator-data</a>
          */
         public byte[] getAuthenticatorData() {
             return authenticatorData;
@@ -551,9 +788,9 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
 
         /**
          * The AuthenticatorData object.
-         * @see <a href="https://www.w3.org/TR/webauthn/#authenticator-data">authenticator-data</a>
          *
          * @return the AuthenticatorData
+         * @see <a href="https://www.w3.org/TR/webauthn/#authenticator-data">authenticator-data</a>
          */
         public byte[] getAuthenticatorData() {
             return authenticatorData;
