@@ -62,7 +62,6 @@ import java.util.Objects;
 
 import javax.annotation.Nullable;
 
-
 /**
  * OpenPGP card application as specified on <a href="https://gnupg.org/ftp/specs/">gnupg.org</a>.
  * <p>
@@ -158,7 +157,8 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
      * @throws ApduException                    in case of an error response from the YubiKey
      * @throws ApplicationNotAvailableException if the application is missing or disabled
      */
-    public OpenPgpSession(SmartCardConnection connection) throws IOException, ApplicationNotAvailableException, ApduException {
+    public OpenPgpSession(SmartCardConnection connection) throws
+            IOException, ApplicationNotAvailableException, ApduException {
         protocol = new SmartCardProtocol(connection);
 
         try {
@@ -485,7 +485,8 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
      * @throws ApduException in case of an error response from the YubiKey
      * @throws IOException   in case of connection error
      */
-    public void setPinAttempts(int userAttempts, int resetAttempts, int adminAttempts) throws ApduException, IOException {
+    public void setPinAttempts(int userAttempts, int resetAttempts, int adminAttempts) throws
+            ApduException, IOException {
         require(FEATURE_PIN_ATTEMPTS);
 
         Logger.debug(logger, "Setting PIN attempts to ({}, {}, {})", userAttempts, resetAttempts, adminAttempts);
@@ -586,7 +587,8 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
      * @throws IOException         in case of connection error
      * @throws InvalidPinException in case of the wrong PIN
      */
-    public void resetPin(String newPin, @Nullable String resetCode) throws ApduException, IOException, InvalidPinException {
+    public void resetPin(String newPin, @Nullable String resetCode) throws
+            ApduException, IOException, InvalidPinException {
         Logger.debug(logger, "Resetting User PIN");
         byte p1 = 2;
         Kdf kdf = getKdf();
@@ -918,12 +920,13 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
         Logger.info(logger, "Certificate deleted for key {}", keyRef);
     }
 
-    static AlgorithmAttributes getKeyAttributes(PrivateKeyValues values, KeyRef keyRef, Version
-            version) {
+    static AlgorithmAttributes getKeyAttributes(PrivateKeyValues values, KeyRef keyRef, Version version) {
         if (values instanceof PrivateKeyValues.Rsa) {
             return AlgorithmAttributes.Rsa.create(
                     values.getBitLength(),
-                    version.isLessThan(4, 0, 0) ? AlgorithmAttributes.Rsa.ImportFormat.CRT_W_MOD : AlgorithmAttributes.Rsa.ImportFormat.STANDARD
+                    version.isLessThan(4, 0, 0)
+                            ? AlgorithmAttributes.Rsa.ImportFormat.CRT_W_MOD
+                            : AlgorithmAttributes.Rsa.ImportFormat.STANDARD
             );
         } else if (values instanceof PrivateKeyValues.Ec) {
             return AlgorithmAttributes.Ec.create(
@@ -935,8 +938,7 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
         }
     }
 
-    static PrivateKeyTemplate getKeyTemplate(PrivateKeyValues values, KeyRef keyRef,
-                                             boolean useCrt) {
+    static PrivateKeyTemplate getKeyTemplate(PrivateKeyValues values, KeyRef keyRef, boolean useCrt) {
         if (values instanceof PrivateKeyValues.Rsa) {
             int byteLength = values.getBitLength() / 8 / 2;
             PrivateKeyValues.Rsa rsaValues = (PrivateKeyValues.Rsa) values;
@@ -1058,7 +1060,8 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
         if (getExtendedCapabilities().getFlags().contains(ExtendedCapabilityFlag.ALGORITHM_ATTRIBUTES_CHANGEABLE)) {
             setAlgorithmAttributes(keyRef, attributes);
         } else {
-            if (!(attributes instanceof AlgorithmAttributes.Rsa && ((AlgorithmAttributes.Rsa) attributes).getNLen() == 2048)) {
+            if (!(attributes instanceof AlgorithmAttributes.Rsa &&
+                    ((AlgorithmAttributes.Rsa) attributes).getNLen() == 2048)) {
                 throw new UnsupportedOperationException("This YubiKey only supports RSA 2048 keys");
             }
         }
@@ -1188,7 +1191,13 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
      */
     public byte[] decrypt(byte[] payload) throws ApduException, IOException {
         Logger.debug(logger, "Decrypting a value");
-        byte[] response = protocol.sendAndReceive(new Apdu(0, INS_PSO, 0x80, 0x86, ByteBuffer.allocate(payload.length + 1).put((byte) 0).put(payload).array()));
+        byte[] response = protocol.sendAndReceive(
+                new Apdu(0, INS_PSO, 0x80, 0x86,
+                        ByteBuffer.allocate(payload.length + 1)
+                                .put((byte) 0)
+                                .put(payload).array()
+                )
+        );
         Logger.info(logger, "Value decrypted");
         return response;
     }
@@ -1267,7 +1276,7 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
 
         logger.debug("Attesting key {}", keyRef);
         protocol.sendAndReceive(new Apdu(0x80, INS_GET_ATTESTATION, keyRef.getValue(), 0, null));
-        logger.info("Attestation certificate created for {key_ref.name}");
+        logger.info("Attestation certificate created for {}", keyRef);
 
         return Objects.requireNonNull(getCertificate(keyRef));
     }

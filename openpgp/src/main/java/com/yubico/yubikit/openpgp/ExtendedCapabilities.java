@@ -30,7 +30,15 @@ public class ExtendedCapabilities {
     private final boolean pinBlock2Format;
     private final boolean mseCommand;
 
-    public ExtendedCapabilities(EnumSet<ExtendedCapabilityFlag> flags, int smAlgorithm, int challengeMaxLength, int certificateMaxLength, int specialDoMaxLength, boolean pinBlock2Format, boolean mseCommand) {
+    public ExtendedCapabilities(
+            EnumSet<ExtendedCapabilityFlag> flags,
+            int smAlgorithm,
+            int challengeMaxLength,
+            int certificateMaxLength,
+            int specialDoMaxLength,
+            boolean pinBlock2Format,
+            boolean mseCommand
+    ) {
         this.flags = flags;
         this.smAlgorithm = smAlgorithm;
         this.challengeMaxLength = challengeMaxLength;

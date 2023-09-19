@@ -27,7 +27,14 @@ public class PwStatus {
     private final int attemptsReset;
     private final int attemptsAdmin;
 
-    PwStatus(PinPolicy pinPolicyUser, int maxLenUser, int maxLenReset, int maxLenAdmin, int attemptsUser, int attemptsReset, int attemptsAdmin) {
+    PwStatus(PinPolicy pinPolicyUser,
+             int maxLenUser,
+             int maxLenReset,
+             int maxLenAdmin,
+             int attemptsUser,
+             int attemptsReset,
+             int attemptsAdmin
+    ) {
         this.pinPolicyUser = pinPolicyUser;
         this.maxLenUser = maxLenUser;
         this.maxLenReset = maxLenReset;

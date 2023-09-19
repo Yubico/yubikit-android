@@ -37,7 +37,13 @@ public class ApplicationRelatedData {
     private final EnumSet<GeneralFeatureManagement> generalFeatureManagement;
     private final DiscretionaryDataObjects discretionary;
 
-    public ApplicationRelatedData(OpenPgpAid aid, byte[] historical, @Nullable ExtendedLengthInfo extendedLengthInfo, @Nullable EnumSet<GeneralFeatureManagement> generalFeatureManagement, DiscretionaryDataObjects discretionary) {
+    public ApplicationRelatedData(
+            OpenPgpAid aid,
+            byte[] historical,
+            @Nullable ExtendedLengthInfo extendedLengthInfo,
+            @Nullable EnumSet<GeneralFeatureManagement> generalFeatureManagement,
+            DiscretionaryDataObjects discretionary
+    ) {
         this.aid = aid;
         this.historical = historical;
         this.extendedLengthInfo = extendedLengthInfo;
@@ -86,7 +92,9 @@ public class ApplicationRelatedData {
             return new ApplicationRelatedData(
                     new OpenPgpAid(data.get(Do.AID)),
                     data.get(Do.HISTORICAL_BYTES),
-                    data.containsKey(Do.EXTENDED_LENGTH_INFO) ? ExtendedLengthInfo.parse(data.get(Do.EXTENDED_LENGTH_INFO)) : null,
+                    data.containsKey(Do.EXTENDED_LENGTH_INFO)
+                            ? ExtendedLengthInfo.parse(data.get(Do.EXTENDED_LENGTH_INFO))
+                            : null,
                     generalFeatureManagement,
                     DiscretionaryDataObjects.parse(
                             // Older keys have data in outer dict

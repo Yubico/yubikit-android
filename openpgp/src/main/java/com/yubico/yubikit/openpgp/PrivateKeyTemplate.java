@@ -51,7 +51,10 @@ abstract class PrivateKeyTemplate {
         byte[] valuesBytes = new byte[values.remaining()];
         values.get(valuesBytes);
 
-        byte[] tlvBytes = Tlvs.encodeList(Arrays.asList(new Tlv(0x7f48, headersBytes), new Tlv(0x5f48, valuesBytes)));
+        byte[] tlvBytes = Tlvs.encodeList(
+                Arrays.asList(
+                        new Tlv(0x7f48, headersBytes),
+                        new Tlv(0x5f48, valuesBytes)));
 
         return new Tlv(0x4d, ByteBuffer.allocate(crt.length + tlvBytes.length)
                 .put(crt)

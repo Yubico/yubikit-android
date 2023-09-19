@@ -52,7 +52,22 @@ public class DiscretionaryDataObjects {
     @Nullable
     private final Uif uifAtt;
 
-    public DiscretionaryDataObjects(ExtendedCapabilities extendedCapabilities, AlgorithmAttributes attributesSig, AlgorithmAttributes attributesDec, AlgorithmAttributes attributesAut, @Nullable AlgorithmAttributes attributesAtt, PwStatus pwStatus, Map<KeyRef, byte[]> fingerprints, Map<KeyRef, byte[]> caFingerprints, Map<KeyRef, Integer> generationTimes, Map<KeyRef, KeyStatus> keyInformation, @Nullable Uif uifSig, @Nullable Uif uifDec, @Nullable Uif uifAut, @Nullable Uif uifAtt) {
+    public DiscretionaryDataObjects(
+            ExtendedCapabilities extendedCapabilities,
+            AlgorithmAttributes attributesSig,
+            AlgorithmAttributes attributesDec,
+            AlgorithmAttributes attributesAut,
+            @Nullable AlgorithmAttributes attributesAtt,
+            PwStatus pwStatus,
+            Map<KeyRef, byte[]> fingerprints,
+            Map<KeyRef, byte[]> caFingerprints,
+            Map<KeyRef, Integer> generationTimes,
+            Map<KeyRef, KeyStatus> keyInformation,
+            @Nullable Uif uifSig,
+            @Nullable Uif uifDec,
+            @Nullable Uif uifAut,
+            @Nullable Uif uifAtt
+    ) {
         this.extendedCapabilities = extendedCapabilities;
         this.attributesSig = attributesSig;
         this.attributesDec = attributesDec;
@@ -114,7 +129,7 @@ public class DiscretionaryDataObjects {
     public int getGenerationTime(KeyRef keyRef) {
         Integer time = generationTimes.get(keyRef);
         if (time != null) {
-            return time.intValue();
+            return time;
         }
         return -1;
     }
@@ -179,12 +194,16 @@ public class DiscretionaryDataObjects {
                 AlgorithmAttributes.parse(data.get(Do.ALGORITHM_ATTRIBUTES_SIG)),
                 AlgorithmAttributes.parse(data.get(Do.ALGORITHM_ATTRIBUTES_DEC)),
                 AlgorithmAttributes.parse(data.get(Do.ALGORITHM_ATTRIBUTES_AUT)),
-                data.containsKey(Do.ALGORITHM_ATTRIBUTES_ATT) ? AlgorithmAttributes.parse(data.get(Do.ALGORITHM_ATTRIBUTES_ATT)) : null,
+                data.containsKey(Do.ALGORITHM_ATTRIBUTES_ATT)
+                        ? AlgorithmAttributes.parse(data.get(Do.ALGORITHM_ATTRIBUTES_ATT))
+                        : null,
                 PwStatus.parse(data.get(Do.PW_STATUS_BYTES)),
                 parseFingerprints(data.get(TAG_FINGERPRINTS)),
                 parseFingerprints(data.get(TAG_CA_FINGERPRINTS)),
                 parseTimestamps(data.get(TAG_GENERATION_TIMES)),
-                parseKeyInformation(data.containsKey(TAG_KEY_INFORMATION) ? data.get(TAG_KEY_INFORMATION) : new byte[0]),
+                parseKeyInformation(data.containsKey(TAG_KEY_INFORMATION)
+                        ? data.get(TAG_KEY_INFORMATION)
+                        : new byte[0]),
                 data.containsKey(Do.UIF_SIG) ? Uif.fromValue(data.get(Do.UIF_SIG)[0]) : null,
                 data.containsKey(Do.UIF_DEC) ? Uif.fromValue(data.get(Do.UIF_DEC)[0]) : null,
                 data.containsKey(Do.UIF_AUT) ? Uif.fromValue(data.get(Do.UIF_AUT)[0]) : null,

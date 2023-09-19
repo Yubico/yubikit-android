@@ -112,7 +112,15 @@ public abstract class Kdf {
         @Nullable
         private final byte[] initialHashAdmin;
 
-        public IterSaltedS2k(HashAlgorithm hashAlgorithm, int iterationCount, byte[] saltUser, @Nullable byte[] saltReset, @Nullable byte[] saltAdmin, @Nullable byte[] initialHashUser, @Nullable byte[] initialHashAdmin) {
+        public IterSaltedS2k(
+                HashAlgorithm hashAlgorithm,
+                int iterationCount,
+                byte[] saltUser,
+                @Nullable byte[] saltReset,
+                @Nullable byte[] saltAdmin,
+                @Nullable byte[] initialHashUser,
+                @Nullable byte[] initialHashAdmin
+        ) {
             super((byte) 3);
             this.hashAlgorithm = hashAlgorithm;
             this.iterationCount = iterationCount;
