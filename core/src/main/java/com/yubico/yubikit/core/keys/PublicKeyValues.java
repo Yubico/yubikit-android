@@ -19,6 +19,7 @@ package com.yubico.yubikit.core.keys;
 import static com.yubico.yubikit.core.util.ByteUtils.intToLength;
 
 import com.yubico.yubikit.core.application.BadResponseException;
+import com.yubico.yubikit.core.util.StringUtils;
 import com.yubico.yubikit.core.util.Tlv;
 import com.yubico.yubikit.core.util.Tlvs;
 
@@ -36,6 +37,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Values defining a public key, such as an RSA or EC key.
+ */
 public abstract class PublicKeyValues {
     private static final byte[] OID_ECDSA = new byte[]{0x2a, (byte) 0x86, 0x48, (byte) 0xce, 0x3d, 0x02, 0x01};
     private static final byte[] OID_RSA_ENCRYPTION = new byte[]{0x2a, (byte) 0x86, 0x48, (byte) 0x86, (byte) 0xf7, 0x0d, 0x01, 0x01, 0x01};
@@ -52,6 +56,14 @@ public abstract class PublicKeyValues {
 
     public abstract byte[] getEncoded();
 
+    /**
+     * Instantiates a JCA PublicKey using the contained parameters.
+     * This requires a SecurityProvider capable of handling the key type.
+     *
+     * @return a public key, usable for cryptographic operations
+     * @throws NoSuchAlgorithmException
+     * @throws InvalidKeySpecException
+     */
     public abstract PublicKey toPublicKey() throws NoSuchAlgorithmException, InvalidKeySpecException;
 
     public static PublicKeyValues fromPublicKey(PublicKey publicKey) {
@@ -117,6 +129,15 @@ public abstract class PublicKeyValues {
             KeyFactory keyFactory = KeyFactory.getInstance(ellipticCurveValues.name());
             return keyFactory.generatePublic(new X509EncodedKeySpec(getEncoded()));
         }
+
+        @Override
+        public String toString() {
+            return "PublicKeyValues.Cv25519{" +
+                    "curve=" + ellipticCurveValues.name() +
+                    ", publicKey=" + StringUtils.bytesToHex(bytes) +
+                    ", bitLength=" + bitLength +
+                    '}';
+        }
     }
 
     public static class Ec extends PublicKeyValues {
@@ -171,6 +192,16 @@ public abstract class PublicKeyValues {
         public ECPublicKey toPublicKey() throws NoSuchAlgorithmException, InvalidKeySpecException {
             KeyFactory keyFactory = KeyFactory.getInstance("EC");
             return (ECPublicKey) keyFactory.generatePublic(new X509EncodedKeySpec(getEncoded()));
+        }
+
+        @Override
+        public String toString() {
+            return "PublicKeyValues.Ec{" +
+                    "curve=" + ellipticCurveValues.name() +
+                    ", x=" + x +
+                    ", y=" + y +
+                    ", bitLength=" + bitLength +
+                    '}';
         }
 
         public static Ec fromEncodedPoint(EllipticCurveValues curve, byte[] encoded) {
@@ -229,6 +260,15 @@ public abstract class PublicKeyValues {
         public RSAPublicKey toPublicKey() throws NoSuchAlgorithmException, InvalidKeySpecException {
             KeyFactory factory = KeyFactory.getInstance("RSA");
             return (RSAPublicKey) factory.generatePublic(new RSAPublicKeySpec(modulus, publicExponent));
+        }
+
+        @Override
+        public String toString() {
+            return "PublicKeyValues.Rsa{" +
+                    "modulus=" + modulus +
+                    ", publicExponent=" + publicExponent +
+                    ", bitLength=" + bitLength +
+                    '}';
         }
     }
 }

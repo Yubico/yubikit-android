@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Yubico.
+ * Copyright (C) 2020-2023 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,15 +15,10 @@
  */
 package com.yubico.yubikit.testing;
 
-import org.bouncycastle.util.encoders.Base64;
 import org.bouncycastle.util.encoders.Hex;
 
 public class Codec {
     public static byte[] fromHex(String hex) {
         return Hex.decode(hex);
-    }
-
-    public static byte[] fromBase64(String base64) {
-        return Base64.decode(base64);
     }
 }

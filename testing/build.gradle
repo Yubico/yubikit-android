@@ -4,6 +4,7 @@ dependencies {
     implementation 'com.github.tony19:logback-android:3.0.0'
 
     api project(':core')
+    api project(':fido')
     api project(':oath')
     api project(':piv')
     api project(':yubiotp')
@@ -13,4 +14,9 @@ dependencies {
     api 'junit:junit:4.13.2'
 
     implementation 'org.bouncycastle:bcpkix-jdk15to18:1.75'
+
+    implementation 'org.hamcrest:hamcrest:2.2'
+    implementation 'org.hamcrest:hamcrest-library:2.2'
+
+    implementation 'com.squareup.moshi:moshi:1.14.0'
 }

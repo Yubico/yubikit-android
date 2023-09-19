@@ -1,0 +1,38 @@
+== FIDO module
+The FIDO module enables applications to authenticate WebAuthn credentials on a YubiKey.
+
+The current implementation follows the https://www.w3.org/TR/webauthn-2/[Webauthn Level 2] and https://fidoalliance.org/specs/fido-v2.0-ps-20190130/fido-client-to-authenticator-protocol-v2.0-ps-20190130.html[CTAP 2.0] specifications and can include more properties from newer standard versions.
+
+https://developers.yubico.com/yubikit-android/JavaDoc/fido/latest/[JavaDoc API documentation]
+
+=== Dependency
+To add the Fido module, along with the link:../android/[Android] module as a dependencies to your project, add the following to your gradle configuration:
+
+[source,groovy]
+----
+dependencies {
+  implementation 'com.yubico.yubikit:android:(insert version here)'
+  implementation 'com.yubico.yubikit:fido:(insert version here)'
+}
+----
+
+This module depends on the link:../core/[core] module, which will automatically
+be added as a transitive dependency to your project.
+
+
+==== Communication with the FIDO Application
+To communicate with the Fido application on a YubiKey, use the
+Ctap2Session class. The class provides constructors for Fido or SmartCard connections, as well as a factory method which takes a YubiKeyDevice and will use the best suited connection type available.
+
+The SDK provides a WebAuthn client implementation which communicates with the YubiKey through CTAP2 and can make new credentials or assert existing credentials. The client has also functionality for working with the PIN.
+
+Credential operations provided by BasicWebAuthnClient use classes which map to standard Webauthn types and allow easier interoperability with RPs. For example `PublicKeyCredential.toMap()` returns a standard Java `Map` object which can be serialized to JSON representation:
+
+[source,java]
+----
+Ctap2Session session = ...;
+BasicWebauthnClient client = new BasicWebAuthnClient(session);
+PublicKeyCredential credential = client.makeCredential(params);
+String response = JSONObject(credential.toMap()).toString();
+----
+

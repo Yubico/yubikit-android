@@ -1,0 +1,10 @@
+apply plugin: 'yubikit-java-library'
+
+dependencies {
+    api project(':core')
+}
+
+ext.pomName = "Yubico YubiKit ${project.name.capitalize()}"
+description = "This module provides FIDO support for the YubiKit SDK."
+
+apply from: rootProject.file('publish.gradle')

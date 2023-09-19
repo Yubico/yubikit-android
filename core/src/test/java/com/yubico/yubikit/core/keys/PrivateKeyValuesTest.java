@@ -16,28 +16,25 @@
 
 package com.yubico.yubikit.core.keys;
 
-import com.yubico.yubikit.testing.Codec;
+import com.yubico.yubikit.core.internal.codec.Base64;
 
 import org.junit.Test;
 
-import java.io.UnsupportedEncodingException;
-
+@SuppressWarnings("SpellCheckingInspection")
 public class PrivateKeyValuesTest {
     @Test
-    public void testParsePkcs8RsaKeyValues() throws UnsupportedEncodingException {
-        PrivateKeyValues.Rsa.parsePkcs8RsaKeyValues(Codec.fromBase64("MIICdQIBADANBgkqhkiG9w0BAQEFAASCAl8wggJbAgEAAoGBALWeZ0E5O2l/iHfc" +
-                "k9mokf1iWH2eZDWQoJoQKUOAeVoKUecNp250J5tL3EHONqWoF6VLO+B+6jTET4Iz" +
-                "97BeUj7gOJHmEw+nqFfguTVmNeeiZ711TNYNpF7kwW7yWghWG+Q7iQEoMXfY3x4B" +
-                "L33H2gKRWtMHK66GJViL1l9s3qDXAgMBAAECgYBO753pFzrfS3LAxbns6/snqcrU" +
-                "LjdXoJhs3YFRuVEE9V9LkP+oXguoz3vXjgzqSvib+ur3U7HvZTM5X+TTXutXdQ5C" +
-                "yORLLtXEZcyCKQI9ihH5fSNJRWRbJ3xe+xi5NANRkRDkro7tm4a5ZD4PYvO4r29y" +
-                "VB5PXlMkOTLoxNSwwQJBAN5lW93Agi9Ge5B2+B2EnKSlUvj0+jJBkHYAFTiHyTZV" +
-                "Ej6baeHBvJklhVczpWvTXb6Nr8cjAKVshFbdQoBwHmkCQQDRD7djZGIWH1Lz0rkL" +
-                "01nDj4z4QYMgUs3AQhnrXPBjEgNzphtJ2u7QrCSOBQQHlmAPBDJ/MTxFJMzDIJGD" +
-                "A10/AkATJjEZz/ilr3D2SHgmuoNuXdneG+HrL+ALeQhavL5jkkGm6GTejnr5yNRJ" +
-                "ZOYKecGppbOL9wSYOdbPT+/o9T55AkATXCY6cRBYRhxTcf8q5i6Y2pFOaBqxgpmF" +
-                "JVnrHtcwBXoGWqqKQ1j8QAS+lh5SaY2JtnTKrI+NQ6Qmqbxv6n7XAkBkhLO7pplI" +
-                "nVh2WjqXOV4ZAoOAAJlfpG5+z6mWzCZ9+286OJQLr6OVVQMcYExUO9yVocZQX+4X" +
-                "qEIF0qAB7m31"));
+    public void testParsePkcs8RsaKeyValues() {
+        PrivateKeyValues.Rsa.parsePkcs8RsaKeyValues(Base64.decode("MIICdQIBADANBgkqhkiG9w0BAQEFA" +
+                "ASCAl8wggJbAgEAAoGBALWeZ0E5O2l_iHfck9mokf1iWH2eZDWQoJoQKUOAeVoKUecNp250J5tL3EHO" +
+                "NqWoF6VLO-B-6jTET4Iz97BeUj7gOJHmEw-nqFfguTVmNeeiZ711TNYNpF7kwW7yWghWG-Q7iQEoMXf" +
+                "Y3x4BL33H2gKRWtMHK66GJViL1l9s3qDXAgMBAAECgYBO753pFzrfS3LAxbns6_snqcrULjdXoJhs3Y" +
+                "FRuVEE9V9LkP-oXguoz3vXjgzqSvib-ur3U7HvZTM5X-TTXutXdQ5CyORLLtXEZcyCKQI9ihH5fSNJR" +
+                "WRbJ3xe-xi5NANRkRDkro7tm4a5ZD4PYvO4r29yVB5PXlMkOTLoxNSwwQJBAN5lW93Agi9Ge5B2-B2E" +
+                "nKSlUvj0-jJBkHYAFTiHyTZVEj6baeHBvJklhVczpWvTXb6Nr8cjAKVshFbdQoBwHmkCQQDRD7djZGI" +
+                "WH1Lz0rkL01nDj4z4QYMgUs3AQhnrXPBjEgNzphtJ2u7QrCSOBQQHlmAPBDJ_MTxFJMzDIJGDA10_Ak" +
+                "ATJjEZz_ilr3D2SHgmuoNuXdneG-HrL-ALeQhavL5jkkGm6GTejnr5yNRJZOYKecGppbOL9wSYOdbPT" +
+                "-_o9T55AkATXCY6cRBYRhxTcf8q5i6Y2pFOaBqxgpmFJVnrHtcwBXoGWqqKQ1j8QAS-lh5SaY2JtnTK" +
+                "rI-NQ6Qmqbxv6n7XAkBkhLO7pplInVh2WjqXOV4ZAoOAAJlfpG5-z6mWzCZ9-286OJQLr6OVVQMcYEx" +
+                "UO9yVocZQX-4XqEIF0qAB7m31"));
     }
 }

@@ -63,7 +63,12 @@ public abstract class PrivateKeyValues implements Destroyable {
         destroyed = true;
     }
 
-
+    /**
+     * Constructs a PrivateKeyValues instance using values from a JCA {@link PrivateKey}.
+     *
+     * @param privateKey the private key to extract values from
+     * @return private key values
+     */
     public static PrivateKeyValues fromPrivateKey(PrivateKey privateKey) {
         if (privateKey instanceof RSAPrivateKey) {
             return Rsa.fromRsaPrivateKey((RSAPrivateKey) privateKey);
@@ -79,7 +84,7 @@ public abstract class PrivateKeyValues implements Destroyable {
                     sequence = Tlvs.decodeList(Tlvs.unpackValue(0x30, tlvs.get(0x04)));
                     return new Ec(curve, sequence.get(1).getValue());
                 } else {
-                    for (EllipticCurveValues curve: Arrays.asList(EllipticCurveValues.Ed25519, EllipticCurveValues.X25519)) {
+                    for (EllipticCurveValues curve : Arrays.asList(EllipticCurveValues.Ed25519, EllipticCurveValues.X25519)) {
                         if (Arrays.equals(curve.getOid(), algorithm)) {
                             return new Ec(curve, Tlvs.unpackValue(0x04, tlvs.get(0x04)));
                         }
@@ -117,6 +122,15 @@ public abstract class PrivateKeyValues implements Destroyable {
             Arrays.fill(secret, (byte) 0);
             super.destroy();
         }
+
+        @Override
+        public String toString() {
+            return "PrivateKeyValues.Ec{" +
+                    "curve=" + ellipticCurveValues.name() +
+                    ", bitLength=" + bitLength +
+                    ", destroyed=" + isDestroyed() +
+                    '}';
+        }
     }
 
     public static class Rsa extends PrivateKeyValues {
@@ -133,15 +147,13 @@ public abstract class PrivateKeyValues implements Destroyable {
 
         @Override
         public String toString() {
-            return "Rsa{" +
+            boolean hasCrt = crtCoefficient != null;
+            return "PrivateKeyValues.Rsa{" +
                     "modulus=" + modulus +
                     ", publicExponent=" + publicExponent +
-                    ", primeP=" + primeP +
-                    ", primeQ=" + primeQ +
-                    ", primeExponentP=" + primeExponentP +
-                    ", primeExponentQ=" + primeExponentQ +
-                    ", crtCoefficient=" + crtCoefficient +
                     ", bitLength=" + bitLength +
+                    ", hasCrtValues=" + hasCrt +
+                    ", destroyed=" + isDestroyed() +
                     '}';
         }
 
@@ -154,6 +166,13 @@ public abstract class PrivateKeyValues implements Destroyable {
             this.primeExponentP = primeExponentP;
             this.primeExponentQ = primeExponentQ;
             this.crtCoefficient = crtCoefficient;
+
+            if (!(
+                    (primeExponentP != null && primeExponentQ != null && crtCoefficient != null)
+                            || (primeExponentP == null && primeExponentQ == null && crtCoefficient == null)
+            )) {
+                throw new IllegalArgumentException("All CRT values must either be present or omitted");
+            }
         }
 
         public BigInteger getModulus() {
@@ -222,7 +241,7 @@ public abstract class PrivateKeyValues implements Destroyable {
 
             return new Rsa(
                     values.get(0), // n
-                    values.get(1),  // e = 65537
+                    values.get(1), // e
                     values.get(3), // p
                     values.get(4), // q
                     values.get(5), // dmp1
