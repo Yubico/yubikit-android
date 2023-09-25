@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.yubico.yubikit.testing;
+package com.yubico.yubikit.testing.piv;
 
 import com.yubico.yubikit.testing.framework.PivInstrumentedTests;
 import com.yubico.yubikit.testing.piv.PivCertificateTests;
