@@ -594,7 +594,7 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
         Kdf kdf = getKdf();
         byte[] data = kdf.process(Pw.USER, newPin);
         if (resetCode != null) {
-            logger.debug("Using Reset Code");
+            Logger.debug(logger, "Using Reset Code");
             byte[] resetCodeBytes = kdf.process(Pw.RESET, resetCode);
             data = ByteBuffer
                     .allocate(resetCodeBytes.length + data.length)
@@ -1274,9 +1274,9 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
     public X509Certificate attestKey(KeyRef keyRef) throws ApduException, IOException {
         require(FEATURE_ATTESTATION);
 
-        logger.debug("Attesting key {}", keyRef);
+        Logger.debug(logger, "Attesting key {}", keyRef);
         protocol.sendAndReceive(new Apdu(0x80, INS_GET_ATTESTATION, keyRef.getValue(), 0, null));
-        logger.info("Attestation certificate created for {}", keyRef);
+        Logger.info(logger, "Attestation certificate created for {}", keyRef);
 
         return Objects.requireNonNull(getCertificate(keyRef));
     }
