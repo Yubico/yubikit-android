@@ -17,19 +17,11 @@
 package com.yubico.yubikit.fido.webauthn;
 
 import com.yubico.yubikit.fido.Cbor;
-import com.yubico.yubikit.fido.Cose;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
 
 import java.nio.ByteBuffer;
-import java.security.NoSuchAlgorithmException;
-import java.security.PublicKey;
-import java.security.spec.InvalidKeySpecException;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
-
-import javax.annotation.Nullable;
 
 /**
  * Webauthn AttestationObject which exposes attestation authenticator data.

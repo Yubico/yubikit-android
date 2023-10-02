@@ -34,6 +34,7 @@ import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialParameters;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialRequestOptions;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialType;
 import com.yubico.yubikit.fido.webauthn.ResidentKeyRequirement;
+import com.yubico.yubikit.fido.webauthn.SerializationType;
 import com.yubico.yubikit.fido.webauthn.UserVerificationRequirement;
 
 import java.io.Closeable;
@@ -393,9 +394,7 @@ public class BasicWebAuthnClient implements Closeable {
                             options.getExcludeCredentials()
                     );
 
-            final Map<String, Object> user = CredentialManager.credentialUserEntityToMap(
-                    options.getUser()
-            );
+            final Map<String, ?> user = options.getUser().toMap(SerializationType.CBOR);
 
             List<Map<String, ?>> pubKeyCredParams = new ArrayList<>();
             for (PublicKeyCredentialParameters param : options.getPubKeyCredParams()) {
@@ -588,7 +587,7 @@ public class BasicWebAuthnClient implements Closeable {
         }
         List<Map<String, ?>> list = new ArrayList<>();
         for (PublicKeyCredentialDescriptor credential : descriptors) {
-            list.add(CredentialManager.credentialDescriptorToMap(credential));
+            list.add(credential.toMap(SerializationType.CBOR));
         }
         return list;
     }

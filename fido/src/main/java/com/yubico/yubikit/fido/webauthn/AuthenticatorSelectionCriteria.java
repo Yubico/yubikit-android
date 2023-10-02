@@ -20,7 +20,6 @@ import javax.annotation.Nullable;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 
 public class AuthenticatorSelectionCriteria {
     private static final String AUTHENTICATOR_ATTACHMENT = "authenticatorAttachment";

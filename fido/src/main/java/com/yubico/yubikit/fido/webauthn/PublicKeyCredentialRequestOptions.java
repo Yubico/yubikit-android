@@ -18,14 +18,14 @@ package com.yubico.yubikit.fido.webauthn;
 
 import com.yubico.yubikit.core.internal.codec.Base64;
 
-import javax.annotation.Nullable;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+
+import javax.annotation.Nullable;
 
 public class PublicKeyCredentialRequestOptions {
     private final static String CHALLENGE = "challenge";
@@ -87,13 +87,20 @@ public class PublicKeyCredentialRequestOptions {
         return extensions;
     }
 
-    public Map<String, ?> toMap() {
+    public Map<String, ?> toMap(SerializationType serializationType) {
         Map<String, Object> map = new HashMap<>();
-        map.put(CHALLENGE, Base64.encode(challenge));
+        switch (serializationType) {
+            case JSON:
+                map.put(CHALLENGE, Base64.encode(challenge));
+                break;
+            case CBOR:
+                map.put(CHALLENGE, challenge);
+                break;
+        }
         if (timeout != null) {
             map.put(TIMEOUT, timeout);
         }
-        if(rpId != null) {
+        if (rpId != null) {
             map.put(RP_ID, rpId);
         }
         List<Map<String, ?>> allowCredentialsList = new ArrayList<>();
@@ -108,8 +115,12 @@ public class PublicKeyCredentialRequestOptions {
         return map;
     }
 
+    public Map<String, ?> toMap() {
+        return toMap(SerializationType.DEFAULT);
+    }
+
     @SuppressWarnings("unchecked")
-    public static PublicKeyCredentialRequestOptions fromMap(Map<String, ?> map) {
+    public static PublicKeyCredentialRequestOptions fromMap(Map<String, ?> map, SerializationType serializationType) {
         List<PublicKeyCredentialDescriptor> allowCredentials = null;
         List<Map<String, ?>> allowCredentialsList = (List<Map<String, ?>>) map.get(ALLOW_CREDENTIALS);
         if (allowCredentialsList != null) {
@@ -122,7 +133,9 @@ public class PublicKeyCredentialRequestOptions {
         Number timeout = ((Number) map.get(TIMEOUT));
 
         return new PublicKeyCredentialRequestOptions(
-                Base64.decode(Objects.requireNonNull((String) map.get(CHALLENGE))),
+                serializationType == SerializationType.JSON
+                        ? Base64.decode(Objects.requireNonNull((String) map.get(CHALLENGE)))
+                        : Objects.requireNonNull((byte[]) map.get(CHALLENGE)),
                 timeout == null ? null : timeout.longValue(),
                 (String) map.get(RP_ID),
                 allowCredentials,
@@ -130,4 +143,9 @@ public class PublicKeyCredentialRequestOptions {
                 null  // Extensions currently ignored
         );
     }
+
+    public static PublicKeyCredentialRequestOptions fromMap(Map<String, ?> map) {
+        return fromMap(map, SerializationType.DEFAULT);
+    }
+
 }

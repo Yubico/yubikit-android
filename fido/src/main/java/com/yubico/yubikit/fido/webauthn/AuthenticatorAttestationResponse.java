@@ -127,30 +127,66 @@ public class AuthenticatorAttestationResponse extends AuthenticatorResponse {
     }
 
     @Override
-    public Map<String, ?> toMap() {
+    public Map<String, ?> toMap(SerializationType serializationType) {
         Map<String, Object> map = new HashMap<>();
-        map.put(CLIENT_DATA_JSON, Base64.encode(getClientDataJson()));
-        map.put(AUTHENTICATOR_DATA, Base64.encode(authenticatorData.getBytes()));
-        map.put(TRANSPORTS, transports);
-        if (publicKey != null) {
-            map.put(PUBLIC_KEY, Base64.encode(publicKey));
+        switch (serializationType) {
+            case JSON: {
+                map.put(CLIENT_DATA_JSON, Base64.encode(getClientDataJson()));
+                map.put(AUTHENTICATOR_DATA, Base64.encode(authenticatorData.getBytes()));
+                map.put(TRANSPORTS, transports);
+                if (publicKey != null) {
+                    map.put(PUBLIC_KEY, Base64.encode(publicKey));
+                }
+                map.put(PUBLIC_KEY_ALGORITHM, publicKeyAlgorithm);
+                map.put(ATTESTATION_OBJECT, Base64.encode(attestationObject));
+                break;
+            }
+            case CBOR: {
+                map.put(CLIENT_DATA_JSON, getClientDataJson());
+                map.put(AUTHENTICATOR_DATA, authenticatorData.getBytes());
+                map.put(TRANSPORTS, transports);
+                if (publicKey != null) {
+                    map.put(PUBLIC_KEY, publicKey);
+                }
+                map.put(PUBLIC_KEY_ALGORITHM, publicKeyAlgorithm);
+                map.put(ATTESTATION_OBJECT, attestationObject);
+                break;
+            }
         }
-        map.put(PUBLIC_KEY_ALGORITHM, publicKeyAlgorithm);
-        map.put(ATTESTATION_OBJECT, Base64.encode(attestationObject));
         return map;
     }
 
+    public Map<String, ?> toMap() {
+        return toMap(SerializationType.DEFAULT);
+    }
+
     @SuppressWarnings("unchecked")
-    public static AuthenticatorAttestationResponse fromMap(Map<String, ?> map) {
-        String publicKey = (String) map.get(PUBLIC_KEY);
+    public static AuthenticatorAttestationResponse fromMap(Map<String, ?> map, SerializationType serializationType) {
+        Object publicKey = serializationType == SerializationType.JSON
+                ? (String) map.get(PUBLIC_KEY)
+                : (byte[]) map.get(PUBLIC_KEY);
         return new AuthenticatorAttestationResponse(
-                Base64.decode(Objects.requireNonNull((String) map.get(CLIENT_DATA_JSON))),
+                serializationType == SerializationType.JSON
+                        ? Base64.decode(Objects.requireNonNull((String) map.get(CLIENT_DATA_JSON)))
+                        : Objects.requireNonNull((byte[]) map.get(CLIENT_DATA_JSON)),
                 AuthenticatorData.parseFrom(ByteBuffer.wrap(
-                        Base64.decode((String) map.get(AUTHENTICATOR_DATA)))),
+                        serializationType == SerializationType.JSON
+                                ? Base64.decode((String) map.get(AUTHENTICATOR_DATA))
+                                : (byte[]) map.get(AUTHENTICATOR_DATA))),
                 (List<String>) Objects.requireNonNull(map.get(TRANSPORTS)),
-                publicKey == null ? null : Base64.decode(publicKey),
+                publicKey == null ? null : serializationType == SerializationType.JSON
+                        ? Base64.decode((String) publicKey)
+                        : (byte[]) publicKey,
                 (Integer) map.get(PUBLIC_KEY_ALGORITHM),
-                Base64.decode(Objects.requireNonNull((String) map.get(ATTESTATION_OBJECT)))
+                serializationType == SerializationType.JSON
+                        ? Base64.decode(Objects.requireNonNull((String) map.get(ATTESTATION_OBJECT)))
+                        : Objects.requireNonNull((byte[]) map.get(ATTESTATION_OBJECT))
         );
     }
+
+    public static AuthenticatorAttestationResponse fromMap(Map<String, ?> map) {
+        return fromMap(map, SerializationType.DEFAULT);
+    }
+
+
 }

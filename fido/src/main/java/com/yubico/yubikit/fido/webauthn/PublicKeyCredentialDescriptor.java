@@ -18,13 +18,13 @@ package com.yubico.yubikit.fido.webauthn;
 
 import com.yubico.yubikit.core.internal.codec.Base64;
 
-import javax.annotation.Nullable;
-
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+
+import javax.annotation.Nullable;
 
 public class PublicKeyCredentialDescriptor {
     public static final String TYPE = "type";
@@ -61,23 +61,43 @@ public class PublicKeyCredentialDescriptor {
         return transports;
     }
 
-    public Map<String, ?> toMap() {
+    public Map<String, ?> toMap(SerializationType serializationType) {
         Map<String, Object> map = new HashMap<>();
         map.put(TYPE, type);
-        map.put(ID, Base64.encode(id));
+        switch (serializationType) {
+            case JSON:
+                map.put(ID, Base64.encode(id));
+                break;
+            case CBOR:
+                map.put(ID, id);
+                break;
+        }
         if (transports != null) {
             map.put(TRANSPORTS, transports);
         }
         return map;
     }
 
+    public Map<String, ?> toMap() {
+        return toMap(SerializationType.DEFAULT);
+    }
+
     @SuppressWarnings("unchecked")
-    public static PublicKeyCredentialDescriptor fromMap(Map<String, ?> map) {
+    public static PublicKeyCredentialDescriptor fromMap(
+            Map<String, ?> map,
+            SerializationType serializationType
+    ) {
         return new PublicKeyCredentialDescriptor(
                 Objects.requireNonNull((String) map.get(TYPE)),
-                Base64.decode(Objects.requireNonNull((String) map.get(ID))),
+                serializationType == SerializationType.JSON
+                        ? Base64.decode(Objects.requireNonNull((String) map.get(ID)))
+                        : Objects.requireNonNull((byte[]) map.get(ID)),
                 (List<String>) map.get(TRANSPORTS)
         );
+    }
+
+    public static PublicKeyCredentialDescriptor fromMap(Map<String, ?> map) {
+        return fromMap(map, SerializationType.DEFAULT);
     }
 
     @Override

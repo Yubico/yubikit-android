@@ -72,13 +72,17 @@ public class SerializationTest {
                 "A. User"
         );
 
-        Map<String, ?> map = user.toMap();
+        Map<String, ?> cborMap = user.toMap(SerializationType.CBOR);
+        Assert.assertEquals(user.getId(), cborMap.get("id"));
+        Assert.assertEquals(user.getName(), cborMap.get("name"));
+        Assert.assertEquals(user.getDisplayName(), cborMap.get("displayName"));
+        compareUserEntities(user, PublicKeyCredentialUserEntity.fromMap(cborMap, SerializationType.CBOR));
 
-        Assert.assertEquals(Base64.encode(user.getId()), (String) map.get("id"));
-        Assert.assertEquals(user.getName(), map.get("name"));
-        Assert.assertEquals(user.getDisplayName(), map.get("displayName"));
-
-        compareUserEntities(user, PublicKeyCredentialUserEntity.fromMap(map));
+        Map<String, ?> jsonMap = user.toMap(SerializationType.JSON);
+        Assert.assertEquals(Base64.encode(user.getId()), jsonMap.get("id"));
+        Assert.assertEquals(user.getName(), jsonMap.get("name"));
+        Assert.assertEquals(user.getDisplayName(), jsonMap.get("displayName"));
+        compareUserEntities(user, PublicKeyCredentialUserEntity.fromMap(jsonMap, SerializationType.JSON));
     }
 
     private void compareParameters(PublicKeyCredentialParameters a, PublicKeyCredentialParameters b) {
@@ -132,15 +136,15 @@ public class SerializationTest {
                 Arrays.asList("USB", "NFC")
         );
 
-        Map<String, ?> base64Map = descriptor.toMap();
-        Assert.assertEquals(descriptor.getType(), base64Map.get("type"));
-        Assert.assertArrayEquals(descriptor.getId(), Base64.decode((String) base64Map.get("id")));
-        compareDescriptors(descriptor, PublicKeyCredentialDescriptor.fromMap(base64Map));
+        Map<String, ?> cborMap = descriptor.toMap(SerializationType.CBOR);
+        Assert.assertEquals(descriptor.getType(), cborMap.get("type"));
+        Assert.assertArrayEquals(descriptor.getId(), (byte[]) cborMap.get("id"));
+        compareDescriptors(descriptor, PublicKeyCredentialDescriptor.fromMap(cborMap, SerializationType.CBOR));
 
-        Map<String, ?> map = descriptor.toMap();
-        Assert.assertEquals(descriptor.getType(), map.get("type"));
-        Assert.assertEquals(Base64.encode(descriptor.getId()), (String) map.get("id"));
-        compareDescriptors(descriptor, PublicKeyCredentialDescriptor.fromMap(map));
+        Map<String, ?> jsonMap = descriptor.toMap(SerializationType.JSON);
+        Assert.assertEquals(descriptor.getType(), jsonMap.get("type"));
+        Assert.assertEquals(Base64.encode(descriptor.getId()), jsonMap.get("id"));
+        compareDescriptors(descriptor, PublicKeyCredentialDescriptor.fromMap(jsonMap, SerializationType.JSON));
     }
 
     private void compareSelectionCriteria(@Nullable AuthenticatorSelectionCriteria a, @Nullable AuthenticatorSelectionCriteria b) {
@@ -217,7 +221,15 @@ public class SerializationTest {
                 null
         );
 
-        compareCreationOptions(options, PublicKeyCredentialCreationOptions.fromMap(options.toMap()));
+        compareCreationOptions(options, PublicKeyCredentialCreationOptions.fromMap(
+                options.toMap(SerializationType.CBOR),
+                SerializationType.CBOR)
+        );
+
+        compareCreationOptions(options, PublicKeyCredentialCreationOptions.fromMap(
+                options.toMap(SerializationType.JSON),
+                SerializationType.JSON)
+        );
     }
 
     @Test
@@ -258,7 +270,17 @@ public class SerializationTest {
                 null
         );
 
-        compareRequestOptions(options, PublicKeyCredentialRequestOptions.fromMap(options.toMap()));
+        compareRequestOptions(options,
+                PublicKeyCredentialRequestOptions.fromMap(
+                        options.toMap(SerializationType.JSON),
+                        SerializationType.JSON)
+        );
+
+        compareRequestOptions(options,
+                PublicKeyCredentialRequestOptions.fromMap(
+                        options.toMap(SerializationType.CBOR),
+                        SerializationType.CBOR)
+        );
     }
 
     @Test
@@ -297,7 +319,20 @@ public class SerializationTest {
     @Test
     public void testAssertionResponse() {
         AuthenticatorAssertionResponse response = randomAuthenticatorAssertionResponse();
-        compareAssertions(response, AuthenticatorAssertionResponse.fromMap(response.toMap()));
+
+        compareAssertions(response,
+                AuthenticatorAssertionResponse.fromMap(
+                        response.toMap(SerializationType.CBOR),
+                        SerializationType.CBOR
+                )
+        );
+
+        compareAssertions(response,
+                AuthenticatorAssertionResponse.fromMap(
+                        response.toMap(SerializationType.JSON),
+                        SerializationType.JSON
+                )
+        );
     }
 
     private void compareAttestations(AuthenticatorAttestationResponse a, AuthenticatorAttestationResponse b) {
@@ -334,7 +369,19 @@ public class SerializationTest {
     @Test
     public void testAttestationResponse() {
         AuthenticatorAttestationResponse response = randomAuthenticatorAttestationResponse();
-        compareAttestations(response, AuthenticatorAttestationResponse.fromMap(response.toMap()));
+        compareAttestations(
+                response,
+                AuthenticatorAttestationResponse.fromMap(
+                        response.toMap(SerializationType.CBOR),
+                        SerializationType.CBOR)
+        );
+
+        compareAttestations(
+                response,
+                AuthenticatorAttestationResponse.fromMap(
+                        response.toMap(SerializationType.JSON),
+                        SerializationType.JSON)
+        );
     }
 
     void comparePublicKeyCredentialsWithAttestation(PublicKeyCredential a, PublicKeyCredential b) {
@@ -401,7 +448,19 @@ public class SerializationTest {
         Assert.assertArrayEquals(credentialId, credential.getRawId());
         Assert.assertEquals(PublicKeyCredential.PUBLIC_KEY_CREDENTIAL_TYPE, credential.getType());
 
-        comparePublicKeyCredentialsWithAssertion(credential, PublicKeyCredential.fromMap(credential.toMap()));
+        comparePublicKeyCredentialsWithAssertion(credential,
+                PublicKeyCredential.fromMap(
+                        credential.toMap(SerializationType.CBOR),
+                        SerializationType.CBOR
+                )
+        );
+
+        comparePublicKeyCredentialsWithAssertion(credential,
+                PublicKeyCredential.fromMap(
+                        credential.toMap(SerializationType.JSON),
+                        SerializationType.JSON
+                )
+        );
     }
 
     @Test
@@ -421,7 +480,17 @@ public class SerializationTest {
         Assert.assertArrayEquals(credentialId, credential.getRawId());
         Assert.assertEquals(PublicKeyCredential.PUBLIC_KEY_CREDENTIAL_TYPE, credential.getType());
 
-        comparePublicKeyCredentialsWithAttestation(credential, PublicKeyCredential.fromMap(credential.toMap()));
+        comparePublicKeyCredentialsWithAttestation(credential,
+                PublicKeyCredential.fromMap(
+                        credential.toMap(SerializationType.CBOR),
+                        SerializationType.CBOR)
+        );
+
+        comparePublicKeyCredentialsWithAttestation(credential,
+                PublicKeyCredential.fromMap(
+                        credential.toMap(SerializationType.JSON),
+                        SerializationType.JSON)
+        );
     }
 
 }

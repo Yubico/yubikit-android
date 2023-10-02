@@ -21,6 +21,7 @@ import com.yubico.yubikit.fido.ctap.ClientPin;
 import com.yubico.yubikit.fido.ctap.CredentialManagement;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV1;
+import com.yubico.yubikit.fido.webauthn.SerializationType;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -89,7 +90,7 @@ public class Ctap2CredentialManagementTests {
         session.makeCredential(
                 TestData.CLIENT_DATA_HASH,
                 TestData.RP.toMap(),
-                TestData.USER.toMap(),
+                TestData.USER.toMap(SerializationType.CBOR),
                 Collections.singletonList(TestData.PUB_KEY_CRED_PARAMS_ES256.toMap()),
                 null,
                 null,
@@ -110,7 +111,7 @@ public class Ctap2CredentialManagementTests {
         Map<String, ?> userData = credData.getUser();
         assertThat(userData.get("id"), equalTo(TestData.USER_ID));
         assertThat(userData.get("name"), equalTo(TestData.USER_NAME));
-        assertThat(userData.get("displayName"), equalTo(TestData.USER_DISPLAYNAME));
+        assertThat(userData.get("displayName"), equalTo(TestData.USER_DISPLAY_NAME));
 
         deleteAllCredentials(session);
     }

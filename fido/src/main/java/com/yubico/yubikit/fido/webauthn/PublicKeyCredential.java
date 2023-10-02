@@ -74,18 +74,30 @@ public class PublicKeyCredential extends Credential {
         return response;
     }
 
-    public Map<String, ?> toMap() {
+    public Map<String, ?> toMap(SerializationType serializationType) {
         Map<String, Object> map = new HashMap<>();
         map.put(ID, getId());
         map.put(TYPE, getType());
-        map.put(RAW_ID, Base64.encode(getRawId()));
+        switch (serializationType) {
+            case CBOR:
+                map.put(RAW_ID, getRawId());
+                break;
+            case JSON:
+                map.put(RAW_ID, Base64.encode(getRawId()));
+                break;
+        }
+
         map.put(AUTHENTICATOR_ATTACHMENT, AuthenticatorAttachment.CROSS_PLATFORM);
-        map.put(RESPONSE, getResponse().toMap());
+        map.put(RESPONSE, getResponse().toMap(serializationType));
         return map;
     }
 
+    public Map<String, ?> toMap() {
+        return toMap(SerializationType.DEFAULT);
+    }
+
     @SuppressWarnings("unchecked")
-    public static PublicKeyCredential fromMap(Map<String, ?> map) {
+    public static PublicKeyCredential fromMap(Map<String, ?> map, SerializationType serializationType) {
         if (!PUBLIC_KEY_CREDENTIAL_TYPE.equals(Objects.requireNonNull((String) map.get(TYPE)))) {
             throw new IllegalArgumentException("Expecting type=" + PUBLIC_KEY_CREDENTIAL_TYPE);
         }
@@ -94,9 +106,9 @@ public class PublicKeyCredential extends Credential {
         AuthenticatorResponse response;
         try {
             if (responseMap.containsKey(AuthenticatorAttestationResponse.ATTESTATION_OBJECT)) {
-                response = AuthenticatorAttestationResponse.fromMap(responseMap);
+                response = AuthenticatorAttestationResponse.fromMap(responseMap, serializationType);
             } else {
-                response = AuthenticatorAssertionResponse.fromMap(responseMap);
+                response = AuthenticatorAssertionResponse.fromMap(responseMap, serializationType);
             }
         } catch (Exception e) {
             throw new IllegalArgumentException("Unknown AuthenticatorResponse format", e);
@@ -106,6 +118,10 @@ public class PublicKeyCredential extends Credential {
                 Objects.requireNonNull((String) map.get(ID)),
                 response
         );
+    }
+
+    public static PublicKeyCredential fromMap(Map<String, ?> map) {
+        return fromMap(map, SerializationType.DEFAULT);
     }
 
     /**

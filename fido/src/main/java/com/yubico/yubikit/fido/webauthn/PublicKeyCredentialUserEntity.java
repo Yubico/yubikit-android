@@ -43,19 +43,36 @@ public class PublicKeyCredentialUserEntity extends PublicKeyCredentialEntity {
         return displayName;
     }
 
-    public Map<String, ?> toMap() {
+    public Map<String, ?> toMap(SerializationType serializationType) {
         Map<String, Object> map = new HashMap<>();
         map.put(NAME, getName());
-        map.put(ID, Base64.encode(id));
+        switch (serializationType) {
+            case JSON:
+                map.put(ID, Base64.encode(id));
+                break;
+            case CBOR:
+                map.put(ID, id);
+                break;
+        }
         map.put(DISPLAY_NAME, displayName);
         return map;
     }
 
-    public static PublicKeyCredentialUserEntity fromMap(Map<String, ?> map) {
+//    public Map<String, ?> toMap() {
+//        return toMap(SerializationType.DEFAULT);
+//    }
+
+    public static PublicKeyCredentialUserEntity fromMap(Map<String, ?> map, SerializationType serializationType) {
         return new PublicKeyCredentialUserEntity(
                 Objects.requireNonNull((String) map.get(NAME)),
-                Base64.decode(Objects.requireNonNull((String) map.get(ID))),
+                serializationType == SerializationType.JSON
+                        ? Base64.decode(Objects.requireNonNull((String) map.get(ID)))
+                        : Objects.requireNonNull((byte[]) map.get(ID)),
                 Objects.requireNonNull((String) map.get(DISPLAY_NAME))
         );
     }
+
+//    public static PublicKeyCredentialUserEntity fromMap(Map<String, ?> map) {
+//        return fromMap(map, SerializationType.DEFAULT);
+//    }
 }

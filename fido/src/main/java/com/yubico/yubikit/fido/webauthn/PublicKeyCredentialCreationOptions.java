@@ -18,14 +18,14 @@ package com.yubico.yubikit.fido.webauthn;
 
 import com.yubico.yubikit.core.internal.codec.Base64;
 
-import javax.annotation.Nullable;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+
+import javax.annotation.Nullable;
 
 public class PublicKeyCredentialCreationOptions {
     private final static String RP = "rp";
@@ -112,11 +112,18 @@ public class PublicKeyCredentialCreationOptions {
         return extensions;
     }
 
-    public Map<String, ?> toMap() {
+    public Map<String, ?> toMap(SerializationType serializationType) {
         Map<String, Object> map = new HashMap<>();
         map.put(RP, rp.toMap());
-        map.put(USER, user.toMap());
-        map.put(CHALLENGE, Base64.encode(challenge));
+        map.put(USER, user.toMap(serializationType));
+        switch (serializationType) {
+            case JSON:
+                map.put(CHALLENGE, Base64.encode(challenge));
+                break;
+            case CBOR:
+                map.put(CHALLENGE, challenge);
+                break;
+        }
         List<Map<String, ?>> paramsList = new ArrayList<>();
         for (PublicKeyCredentialParameters params : pubKeyCredParams) {
             paramsList.add(params.toMap());
@@ -128,7 +135,7 @@ public class PublicKeyCredentialCreationOptions {
         if (!excludeCredentials.isEmpty()) {
             List<Map<String, ?>> excludeCredentialsList = new ArrayList<>();
             for (PublicKeyCredentialDescriptor cred : excludeCredentials) {
-                excludeCredentialsList.add(cred.toMap());
+                excludeCredentialsList.add(cred.toMap(serializationType));
             }
             map.put(EXCLUDE_CREDENTIALS, excludeCredentialsList);
         }
@@ -142,8 +149,12 @@ public class PublicKeyCredentialCreationOptions {
         return map;
     }
 
+    public Map<String, ?> toMap() {
+        return toMap(SerializationType.DEFAULT);
+    }
+
     @SuppressWarnings("unchecked")
-    public static PublicKeyCredentialCreationOptions fromMap(Map<String, ?> map) {
+    public static PublicKeyCredentialCreationOptions fromMap(Map<String, ?> map, SerializationType serializationType) {
         List<PublicKeyCredentialParameters> pubKeyCredParams = new ArrayList<>();
         for (Map<String, ?> params : Objects.requireNonNull((List<Map<String, ?>>) map.get(PUB_KEY_CRED_PARAMS))) {
             pubKeyCredParams.add(PublicKeyCredentialParameters.fromMap(params));
@@ -153,7 +164,7 @@ public class PublicKeyCredentialCreationOptions {
         if (excludeCredentialsList != null) {
             excludeCredentials = new ArrayList<>();
             for (Map<String, ?> cred : excludeCredentialsList) {
-                excludeCredentials.add(PublicKeyCredentialDescriptor.fromMap(cred));
+                excludeCredentials.add(PublicKeyCredentialDescriptor.fromMap(cred, serializationType));
             }
         }
 
@@ -162,8 +173,10 @@ public class PublicKeyCredentialCreationOptions {
 
         return new PublicKeyCredentialCreationOptions(
                 PublicKeyCredentialRpEntity.fromMap(Objects.requireNonNull((Map<String, ?>) map.get(RP))),
-                PublicKeyCredentialUserEntity.fromMap(Objects.requireNonNull((Map<String, ?>) map.get(USER))),
-                Base64.decode(Objects.requireNonNull((String) map.get(CHALLENGE))),
+                PublicKeyCredentialUserEntity.fromMap(Objects.requireNonNull((Map<String, ?>) map.get(USER)), serializationType),
+                serializationType == SerializationType.JSON
+                        ? Base64.decode(Objects.requireNonNull((String) map.get(CHALLENGE)))
+                        : Objects.requireNonNull((byte[]) map.get(CHALLENGE)),
                 pubKeyCredParams,
                 timeout == null ? null : timeout.longValue(),
                 excludeCredentials,
@@ -171,5 +184,9 @@ public class PublicKeyCredentialCreationOptions {
                 (String) map.get(ATTESTATION),
                 null  // Extensions currently ignored
         );
+    }
+
+    public static PublicKeyCredentialCreationOptions fromMap(Map<String, ?> map) {
+        return fromMap(map, SerializationType.DEFAULT);
     }
 }
