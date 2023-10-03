@@ -17,7 +17,6 @@
 package com.yubico.yubikit.fido.webauthn;
 
 import com.yubico.yubikit.fido.Cbor;
-import com.yubico.yubikit.fido.MapExt;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -85,14 +84,14 @@ public class AttestedCredentialData {
 
         if (!Arrays.equals(aaguid, that.aaguid)) return false;
         if (!Arrays.equals(credentialId, that.credentialId)) return false;
-        return MapExt.equals(cosePublicKey, that.cosePublicKey);
+        return Arrays.equals(Cbor.encode(cosePublicKey), Cbor.encode(that.cosePublicKey));
     }
 
     @Override
     public int hashCode() {
         int result = Arrays.hashCode(aaguid);
         result = 31 * result + Arrays.hashCode(credentialId);
-        result = 31 * result + cosePublicKey.hashCode();
+        result = 31 * result + Arrays.hashCode(Cbor.encode(cosePublicKey));
         return result;
     }
 }

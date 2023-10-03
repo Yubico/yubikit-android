@@ -17,10 +17,10 @@
 package com.yubico.yubikit.fido.webauthn;
 
 import com.yubico.yubikit.fido.Cbor;
-import com.yubico.yubikit.fido.MapExt;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -87,14 +87,16 @@ public class AttestationObject {
 
         if (!format.equals(that.format)) return false;
         if (!authenticatorData.equals(that.authenticatorData)) return false;
-        return MapExt.equals(attestationStatement, that.attestationStatement);
+        return Arrays.equals(
+                Cbor.encode(attestationStatement),
+                Cbor.encode(that.attestationStatement));
     }
 
     @Override
     public int hashCode() {
         int result = format.hashCode();
         result = 31 * result + authenticatorData.hashCode();
-        result = 31 * result + attestationStatement.hashCode();
+        result = 31 * result + Arrays.hashCode(Cbor.encode(attestationStatement));
         return result;
     }
 }

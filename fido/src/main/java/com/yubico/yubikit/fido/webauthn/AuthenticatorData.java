@@ -17,7 +17,6 @@
 package com.yubico.yubikit.fido.webauthn;
 
 import com.yubico.yubikit.fido.Cbor;
-import com.yubico.yubikit.fido.MapExt;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -179,10 +178,14 @@ public class AuthenticatorData {
         if (flags != that.flags) return false;
         if (signCount != that.signCount) return false;
         if (!Arrays.equals(rpIdHash, that.rpIdHash)) return false;
-        if (!Objects.equals(attestedCredentialData, that.attestedCredentialData))
+        if (!Objects.equals(attestedCredentialData, that.attestedCredentialData)) {
             return false;
-        if (!MapExt.equals(extensions, that.extensions))
-            return false;
+        }
+        if (extensions != null && that.extensions != null) {
+            if (!Arrays.equals(Cbor.encode(extensions), Cbor.encode(that.extensions)))
+                return false;
+        }
+
         return Arrays.equals(rawData, that.rawData);
     }
 
@@ -192,7 +195,7 @@ public class AuthenticatorData {
         result = 31 * result + (int) flags;
         result = 31 * result + signCount;
         result = 31 * result + (attestedCredentialData != null ? attestedCredentialData.hashCode() : 0);
-        result = 31 * result + (extensions != null ? extensions.hashCode() : 0);
+        result = 31 * result + (extensions != null ? Arrays.hashCode(Cbor.encode(extensions)) : 0);
         result = 31 * result + Arrays.hashCode(rawData);
         return result;
     }
