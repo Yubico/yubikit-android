@@ -18,6 +18,7 @@ package com.yubico.yubikit.fido.webauthn;
 
 import com.yubico.yubikit.core.internal.codec.Base64;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -58,9 +59,9 @@ public class PublicKeyCredentialUserEntity extends PublicKeyCredentialEntity {
         return map;
     }
 
-//    public Map<String, ?> toMap() {
-//        return toMap(SerializationType.DEFAULT);
-//    }
+    public Map<String, ?> toMap() {
+        return toMap(SerializationType.DEFAULT);
+    }
 
     public static PublicKeyCredentialUserEntity fromMap(Map<String, ?> map, SerializationType serializationType) {
         return new PublicKeyCredentialUserEntity(
@@ -72,7 +73,25 @@ public class PublicKeyCredentialUserEntity extends PublicKeyCredentialEntity {
         );
     }
 
-//    public static PublicKeyCredentialUserEntity fromMap(Map<String, ?> map) {
-//        return fromMap(map, SerializationType.DEFAULT);
-//    }
+    public static PublicKeyCredentialUserEntity fromMap(Map<String, ?> map) {
+        return fromMap(map, SerializationType.DEFAULT);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        PublicKeyCredentialUserEntity that = (PublicKeyCredentialUserEntity) o;
+
+        if (!Arrays.equals(id, that.id)) return false;
+        return displayName.equals(that.displayName);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Arrays.hashCode(id);
+        result = 31 * result + displayName.hashCode();
+        return result;
+    }
 }

@@ -19,6 +19,7 @@ package com.yubico.yubikit.fido.webauthn;
 import com.yubico.yubikit.core.internal.codec.Base64;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -148,4 +149,29 @@ public class PublicKeyCredentialRequestOptions {
         return fromMap(map, SerializationType.DEFAULT);
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        PublicKeyCredentialRequestOptions that = (PublicKeyCredentialRequestOptions) o;
+
+        if (!Arrays.equals(challenge, that.challenge)) return false;
+        if (!Objects.equals(timeout, that.timeout)) return false;
+        if (!Objects.equals(rpId, that.rpId)) return false;
+        if (!allowCredentials.equals(that.allowCredentials)) return false;
+        if (!userVerification.equals(that.userVerification)) return false;
+        return Objects.equals(extensions, that.extensions);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Arrays.hashCode(challenge);
+        result = 31 * result + (timeout != null ? timeout.hashCode() : 0);
+        result = 31 * result + (rpId != null ? rpId.hashCode() : 0);
+        result = 31 * result + allowCredentials.hashCode();
+        result = 31 * result + userVerification.hashCode();
+        result = 31 * result + (extensions != null ? extensions.hashCode() : 0);
+        return result;
+    }
 }

@@ -17,6 +17,7 @@
 package com.yubico.yubikit.fido.webauthn;
 
 import com.yubico.yubikit.fido.Cbor;
+import com.yubico.yubikit.fido.MapExt;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
 
 import java.nio.ByteBuffer;
@@ -75,5 +76,25 @@ public class AttestationObject {
         attestationObject.put(AttestationObject.KEY_AUTHENTICATOR_DATA, authenticatorData.getBytes());
         attestationObject.put(AttestationObject.KEY_ATTESTATION_STATEMENT, attestationStatement);
         return Cbor.encode(attestationObject);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        AttestationObject that = (AttestationObject) o;
+
+        if (!format.equals(that.format)) return false;
+        if (!authenticatorData.equals(that.authenticatorData)) return false;
+        return MapExt.equals(attestationStatement, that.attestationStatement);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = format.hashCode();
+        result = 31 * result + authenticatorData.hashCode();
+        result = 31 * result + attestationStatement.hashCode();
+        return result;
     }
 }

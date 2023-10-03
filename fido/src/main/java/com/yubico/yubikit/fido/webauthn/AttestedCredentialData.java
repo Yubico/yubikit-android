@@ -17,8 +17,10 @@
 package com.yubico.yubikit.fido.webauthn;
 
 import com.yubico.yubikit.fido.Cbor;
+import com.yubico.yubikit.fido.MapExt;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.Map;
 
 /**
@@ -72,5 +74,25 @@ public class AttestedCredentialData {
     @SuppressWarnings("unused")
     public Map<Integer, ?> getCosePublicKey() {
         return cosePublicKey;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        AttestedCredentialData that = (AttestedCredentialData) o;
+
+        if (!Arrays.equals(aaguid, that.aaguid)) return false;
+        if (!Arrays.equals(credentialId, that.credentialId)) return false;
+        return MapExt.equals(cosePublicKey, that.cosePublicKey);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Arrays.hashCode(aaguid);
+        result = 31 * result + Arrays.hashCode(credentialId);
+        result = 31 * result + cosePublicKey.hashCode();
+        return result;
     }
 }

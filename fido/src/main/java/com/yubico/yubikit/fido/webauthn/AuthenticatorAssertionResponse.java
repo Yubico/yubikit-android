@@ -18,6 +18,7 @@ package com.yubico.yubikit.fido.webauthn;
 
 import com.yubico.yubikit.core.internal.codec.Base64;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -110,5 +111,25 @@ public class AuthenticatorAssertionResponse extends AuthenticatorResponse {
 
     public static AuthenticatorAssertionResponse fromMap(Map<String, ?> map) {
         return fromMap(map, SerializationType.DEFAULT);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        AuthenticatorAssertionResponse that = (AuthenticatorAssertionResponse) o;
+
+        if (!Arrays.equals(authenticatorData, that.authenticatorData)) return false;
+        if (!Arrays.equals(signature, that.signature)) return false;
+        return Arrays.equals(userHandle, that.userHandle);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Arrays.hashCode(authenticatorData);
+        result = 31 * result + Arrays.hashCode(signature);
+        result = 31 * result + Arrays.hashCode(userHandle);
+        return result;
     }
 }

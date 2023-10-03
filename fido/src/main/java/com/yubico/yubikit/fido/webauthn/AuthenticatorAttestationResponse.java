@@ -26,6 +26,7 @@ import java.nio.ByteBuffer;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -188,5 +189,27 @@ public class AuthenticatorAttestationResponse extends AuthenticatorResponse {
         return fromMap(map, SerializationType.DEFAULT);
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
 
+        AuthenticatorAttestationResponse that = (AuthenticatorAttestationResponse) o;
+
+        if (!authenticatorData.equals(that.authenticatorData)) return false;
+        if (!transports.equals(that.transports)) return false;
+        if (!Arrays.equals(publicKey, that.publicKey)) return false;
+        if (!publicKeyAlgorithm.equals(that.publicKeyAlgorithm)) return false;
+        return Arrays.equals(attestationObject, that.attestationObject);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = authenticatorData.hashCode();
+        result = 31 * result + transports.hashCode();
+        result = 31 * result + Arrays.hashCode(publicKey);
+        result = 31 * result + publicKeyAlgorithm.hashCode();
+        result = 31 * result + Arrays.hashCode(attestationObject);
+        return result;
+    }
 }

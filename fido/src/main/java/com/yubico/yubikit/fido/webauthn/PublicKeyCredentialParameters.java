@@ -53,4 +53,22 @@ public class PublicKeyCredentialParameters {
                 Objects.requireNonNull((Integer) map.get(ALG))
         );
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        PublicKeyCredentialParameters that = (PublicKeyCredentialParameters) o;
+
+        if (alg != that.alg) return false;
+        return type.equals(that.type);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = type.hashCode();
+        result = 31 * result + alg;
+        return result;
+    }
 }

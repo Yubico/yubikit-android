@@ -153,4 +153,22 @@ public class PublicKeyCredential extends Credential {
                 )
         );
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        PublicKeyCredential that = (PublicKeyCredential) o;
+
+        if (!Arrays.equals(rawId, that.rawId)) return false;
+        return response.equals(that.response);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Arrays.hashCode(rawId);
+        result = 31 * result + response.hashCode();
+        return result;
+    }
 }

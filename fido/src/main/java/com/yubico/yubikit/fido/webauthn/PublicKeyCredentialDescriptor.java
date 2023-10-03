@@ -104,15 +104,19 @@ public class PublicKeyCredentialDescriptor {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
+
         PublicKeyCredentialDescriptor that = (PublicKeyCredentialDescriptor) o;
-        return type.equals(that.type) &&
-                Arrays.equals(id, that.id);
+
+        if (!type.equals(that.type)) return false;
+        if (!Arrays.equals(id, that.id)) return false;
+        return Objects.equals(transports, that.transports);
     }
 
     @Override
     public int hashCode() {
-        int result = Objects.hash(type);
+        int result = type.hashCode();
         result = 31 * result + Arrays.hashCode(id);
+        result = 31 * result + (transports != null ? transports.hashCode() : 0);
         return result;
     }
 }
