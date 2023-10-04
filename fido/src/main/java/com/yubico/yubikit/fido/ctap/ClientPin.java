@@ -75,6 +75,8 @@ public class ClientPin {
                 null,
                 null,
                 null,
+                null,
+                null,
                 null
         );
 
@@ -104,6 +106,8 @@ public class ClientPin {
         Map<Integer, ?> result = ctap.clientPin(
                 pinUvAuth.getVersion(),
                 CMD_GET_RETRIES,
+                null,
+                null,
                 null,
                 null,
                 null,
@@ -139,7 +143,9 @@ public class ClientPin {
                     pair.first,
                     null,
                     null,
-                    pinHashEnc
+                    pinHashEnc,
+                    null,
+                    null
             );
 
             byte[] pinTokenEnc = (byte[]) result.get(RESULT_PIN_TOKEN);
@@ -172,6 +178,8 @@ public class ClientPin {
                 pair.first,
                 pinUvAuth.authenticate(pair.second, pinEnc),
                 pinEnc,
+                null,
+                null,
                 null
         );
         Logger.info(logger, "PIN set");
@@ -214,7 +222,9 @@ public class ClientPin {
                     pair.first,
                     pinUvAuthParam,
                     newPinEnc,
-                    pinHashEnc
+                    pinHashEnc,
+                    null,
+                    null
             );
             Logger.info(logger, "PIN changed");
         } catch (NoSuchAlgorithmException e) {

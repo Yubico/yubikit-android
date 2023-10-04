@@ -41,9 +41,11 @@ public class CredentialManagement {
     private static final byte CMD_ENUMERATE_CREDS_BEGIN = 0x04;
     private static final byte CMD_ENUMERATE_CREDS_NEXT = 0x05;
     private static final byte CMD_DELETE_CREDENTIAL = 0x06;
+    private static final byte CMD_UPDATE_USER_INFORMATION = 0x07;
 
     private static final byte PARAM_RP_ID_HASH = 0x01;
     private static final byte PARAM_CREDENTIAL_ID = 0x02;
+    private static final byte PARAM_USER = 0x03;
 
     private static final int RESULT_EXISTING_CRED_COUNT = 0x01;
     private static final int RESULT_MAX_REMAINING_COUNT = 0x02;
@@ -54,10 +56,13 @@ public class CredentialManagement {
     private static final int RESULT_CREDENTIAL_ID = 0x07;
     private static final int RESULT_PUBLIC_KEY = 0x08;
     private static final int RESULT_TOTAL_CREDENTIALS = 0x09;
+    private static final int RESULT_CRED_PROTECT = 0x0A;
+    private static final int RESULT_LARGE_BLOB_KEY = 0x0B;
 
     private final Ctap2Session ctap;
     private final PinUvAuthProtocol pinUvAuth;
     private final byte[] pinUvToken;
+    private final boolean usePreview;
 
     /**
      * Construct a new CredentialManagement object.
@@ -65,14 +70,25 @@ public class CredentialManagement {
      * @param ctap       an active CTAP2 connection.
      * @param pinUvAuth  the PIN/UV Auth protocol to use
      * @param pinUvToken a pinUvToken to be used, which must match the protocol and have the proper permissions
+     * @param usePreview use a preview version of credential management
      */
-    public CredentialManagement(Ctap2Session ctap, PinUvAuthProtocol pinUvAuth, byte[] pinUvToken) {
+    public CredentialManagement(
+            Ctap2Session ctap,
+            PinUvAuthProtocol pinUvAuth,
+            byte[] pinUvToken,
+            boolean usePreview
+    ) {
         this.ctap = ctap;
         this.pinUvAuth = pinUvAuth;
         this.pinUvToken = pinUvToken;
+        this.usePreview = usePreview;
     }
 
-    private Map<Integer, ?> call(byte subCommand, @Nullable Map<?, ?> subCommandParams, boolean authenticate) throws IOException, CommandException {
+    private Map<Integer, ?> call(
+            byte subCommand,
+            @Nullable Map<?, ?> subCommandParams,
+            boolean authenticate
+    ) throws IOException, CommandException {
         byte[] pinUvAuthParam = null;
         if (authenticate) {
             ByteArrayOutputStream output = new ByteArrayOutputStream();
@@ -82,7 +98,21 @@ public class CredentialManagement {
             }
             pinUvAuthParam = pinUvAuth.authenticate(pinUvToken, output.toByteArray());
         }
-        return ctap.credentialManagement(subCommand, subCommandParams, pinUvAuth.getVersion(), pinUvAuthParam);
+
+        if (usePreview) {
+            return ctap.credentialManagementPreview(
+                    subCommand,
+                    subCommandParams,
+                    pinUvAuth.getVersion(),
+                    pinUvAuthParam
+            );
+        } else {
+            return ctap.credentialManagement(
+                    subCommand,
+                    subCommandParams,
+                    pinUvAuth.getVersion(),
+                    pinUvAuthParam);
+        }
     }
 
     /**

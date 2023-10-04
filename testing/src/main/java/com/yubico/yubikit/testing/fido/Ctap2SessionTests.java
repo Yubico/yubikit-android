@@ -110,6 +110,7 @@ public class Ctap2SessionTests {
                     null,
                     pinAuth,
                     1,
+                    null,
                     state);
             fail("Make credential completed without being cancelled.");
         } catch (CtapException e) {

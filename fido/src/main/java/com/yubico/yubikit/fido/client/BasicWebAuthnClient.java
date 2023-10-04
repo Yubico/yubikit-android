@@ -19,7 +19,6 @@ package com.yubico.yubikit.fido.client;
 import com.yubico.yubikit.core.application.CommandException;
 import com.yubico.yubikit.core.application.CommandState;
 import com.yubico.yubikit.core.fido.CtapException;
-import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.fido.ctap.ClientPin;
 import com.yubico.yubikit.fido.ctap.CredentialManagement;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
@@ -70,10 +69,12 @@ import javax.annotation.Nullable;
  */
 @SuppressWarnings("unused")
 public class BasicWebAuthnClient implements Closeable {
-    private static final String OPTION_CLIENT_PIN = "clientPin";
-    private static final String OPTION_CREDENTIAL_MANAGEMENT = "credentialMgmtPreview";
-    private static final String OPTION_USER_VERIFICATION = "uv";
-    private static final String OPTION_RESIDENT_KEY = "rk";
+    public static final String OPTION_CLIENT_PIN = "clientPin";
+    public static final String OPTION_CREDENTIAL_MANAGEMENT = "credMgmt";
+    public static final String OPTION_CREDENTIAL_MANAGEMENT_PREVIEW = "credentialMgmtPreview";
+    public static final String OPTION_USER_VERIFICATION = "uv";
+    public static final String OPTION_RESIDENT_KEY = "rk";
+    public static final String OPTION_EP = "ep";
 
     private final Ctap2Session ctap;
 
@@ -87,15 +88,14 @@ public class BasicWebAuthnClient implements Closeable {
     private boolean pinConfigured;
     private final boolean uvConfigured;
 
-    final private boolean credentialManagementSupported;
+    final private boolean epSupported;
+    final private CredentialManagementSupport credentialManagementSupport;
 
     private static final org.slf4j.Logger logger = LoggerFactory.getLogger(BasicWebAuthnClient.class);
 
     public BasicWebAuthnClient(Ctap2Session session) throws IOException, CommandException {
         this.ctap = session;
         Ctap2Session.InfoData info = ctap.getInfo();
-
-        Logger.debug(logger, "Ctap2.InfoData: {}", info);
 
         transports = info.getTransports();
 
@@ -114,7 +114,15 @@ public class BasicWebAuthnClient implements Closeable {
         uvSupported = uv != null;
         uvConfigured = uvSupported && uv;
 
-        credentialManagementSupported = Boolean.TRUE.equals(options.get(OPTION_CREDENTIAL_MANAGEMENT));
+        epSupported = Boolean.TRUE.equals(options.get(OPTION_EP));
+
+        if (Boolean.TRUE.equals(options.get(OPTION_CREDENTIAL_MANAGEMENT))) {
+            credentialManagementSupport = CredentialManagementSupport.FULL;
+        } else if (Boolean.TRUE.equals(options.get(OPTION_CREDENTIAL_MANAGEMENT_PREVIEW))) {
+            credentialManagementSupport = CredentialManagementSupport.PREVIEW;
+        } else {
+            credentialManagementSupport = CredentialManagementSupport.NONE;
+        }
     }
 
     @Override
@@ -142,6 +150,7 @@ public class BasicWebAuthnClient implements Closeable {
             PublicKeyCredentialCreationOptions options,
             String effectiveDomain,
             @Nullable char[] pin,
+            @Nullable Integer enterpriseAttestation,
             @Nullable CommandState state
     ) throws IOException, CommandException, ClientError {
         byte[] clientDataHash = hash(clientDataJson);
@@ -152,6 +161,7 @@ public class BasicWebAuthnClient implements Closeable {
                     options,
                     effectiveDomain,
                     pin,
+                    epSupported ? enterpriseAttestation : null,
                     state
             );
 
@@ -251,6 +261,18 @@ public class BasicWebAuthnClient implements Closeable {
     }
 
     /**
+     * Check if the Authenticator supports Enterprise Attestation feature.
+     *
+     * @return true if the authenticator is enterprise attestation capable and enterprise
+     * attestation is enabled.
+     *
+     * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#sctn-feature-descriptions-enterp-attstn">Enterprise Attestation</a>
+     */
+    public boolean isEpSupported() {
+        return epSupported;
+    }
+
+    /**
      * Set the PIN for an Authenticator which supports PIN, but doesn't have one configured.
      *
      * @param pin The PIN to set.
@@ -305,15 +327,25 @@ public class BasicWebAuthnClient implements Closeable {
      * @throws CommandException A communication in the protocol layer.
      * @throws ClientError      A higher level error.
      */
-    public CredentialManager getCredentialManager(char[] pin) throws IOException, CommandException, ClientError {
-        if (!credentialManagementSupported) {
-            throw new ClientError(ClientError.Code.CONFIGURATION_UNSUPPORTED, "Credential management is not supported on this device");
+    public CredentialManager getCredentialManager(char[] pin)
+            throws IOException, CommandException, ClientError {
+        if (credentialManagementSupport == CredentialManagementSupport.NONE) {
+            throw new ClientError(ClientError.Code.CONFIGURATION_UNSUPPORTED,
+                    "Credential management is not supported on this device");
         }
         if (!pinConfigured) {
-            throw new ClientError(ClientError.Code.BAD_REQUEST, "No PIN currently configured on this device");
+            throw new ClientError(ClientError.Code.BAD_REQUEST,
+                    "No PIN currently configured on this device");
         }
         try {
-            return new CredentialManager(new CredentialManagement(ctap, clientPin.getPinUvAuth(), clientPin.getPinToken(pin)));
+            return new CredentialManager(
+                    new CredentialManagement(
+                            ctap,
+                            clientPin.getPinUvAuth(),
+                            clientPin.getPinToken(pin),
+                            credentialManagementSupport == CredentialManagementSupport.PREVIEW
+                    )
+            );
         } catch (CtapException e) {
             throw ClientError.wrapCtapException(e);
         }
@@ -343,6 +375,7 @@ public class BasicWebAuthnClient implements Closeable {
             PublicKeyCredentialCreationOptions options,
             String effectiveDomain,
             @Nullable char[] pin,
+            @Nullable Integer enterpriseAttestation,
             @Nullable CommandState state
     ) throws IOException, CommandException, ClientError {
 
@@ -422,6 +455,7 @@ public class BasicWebAuthnClient implements Closeable {
                     ctapOptions.isEmpty() ? null : ctapOptions,
                     pinUvAuthParam,
                     pinUvAuthProtocol,
+                    enterpriseAttestation,
                     state
             );
         } finally {

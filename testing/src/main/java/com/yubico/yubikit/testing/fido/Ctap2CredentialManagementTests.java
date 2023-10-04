@@ -16,6 +16,9 @@
 
 package com.yubico.yubikit.testing.fido;
 
+import static com.yubico.yubikit.fido.client.BasicWebAuthnClient.OPTION_CREDENTIAL_MANAGEMENT;
+import static com.yubico.yubikit.fido.client.BasicWebAuthnClient.OPTION_CREDENTIAL_MANAGEMENT_PREVIEW;
+
 import com.yubico.yubikit.core.application.CommandException;
 import com.yubico.yubikit.fido.ctap.ClientPin;
 import com.yubico.yubikit.fido.ctap.CredentialManagement;
@@ -35,16 +38,37 @@ import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.greaterThan;
 
 public class Ctap2CredentialManagementTests {
+    /**
+     * Asserts support of credential manager and returns if preview version of credential manager
+     * should be used. If none of credential manager is supported, ends test.
+     * @param session - the connected ctap2 session
+     *
+     * @return true if the session supports credentialManagerPreview, false if only
+     * credentialManager is supported
+     */
+    private static boolean useCredentialMgmtPreview(Ctap2Session session)
+            throws IOException, CommandException {
+        final Ctap2Session.InfoData info = session.getInfo();
+
+        final boolean credMgmt = supportsCredentialManager(info);
+        final boolean credentialMgmtPreview = supportsCredentialManagerPreview(info);
+
+        assertThat("No credential management support", credMgmt || credentialMgmtPreview);
+
+        return credentialMgmtPreview && !credMgmt;
+    }
 
     /**
      * Deletes all resident keys. Assumes TestData.PIN is currently set as the PIN.
      */
-    public static void deleteAllCredentials(Ctap2Session session) throws IOException, CommandException {
+    public static void deleteAllCredentials(Ctap2Session session, boolean usePreview)
+            throws IOException, CommandException {
         ClientPin clientPin = new ClientPin(session, new PinUvAuthProtocolV1());
         CredentialManagement credentialManagement = new CredentialManagement(
                 session,
                 clientPin.getPinUvAuth(),
-                clientPin.getPinToken(TestData.PIN)
+                clientPin.getPinToken(TestData.PIN),
+                usePreview
         );
 
         for (CredentialManagement.RpData rpData : credentialManagement.enumerateRps()) {
@@ -58,19 +82,30 @@ public class Ctap2CredentialManagementTests {
     }
 
     private static CredentialManagement setupCredentialManagement(
-            Ctap2Session session
+            Ctap2Session session,
+            boolean usePreview
     ) throws IOException, CommandException {
         Ctap2ClientPinTests.ensureDefaultPinSet(session);
         ClientPin clientPin = new ClientPin(session, new PinUvAuthProtocolV1());
         return new CredentialManagement(
                 session,
                 clientPin.getPinUvAuth(),
-                clientPin.getPinToken(TestData.PIN)
+                clientPin.getPinToken(TestData.PIN),
+                usePreview
         );
     }
 
+    private static boolean supportsCredentialManager(Ctap2Session.InfoData info) {
+        return Boolean.TRUE.equals(info.getOptions().get(OPTION_CREDENTIAL_MANAGEMENT));
+    }
+
+    private static boolean supportsCredentialManagerPreview(Ctap2Session.InfoData info) {
+        return Boolean.TRUE.equals(info.getOptions().get(OPTION_CREDENTIAL_MANAGEMENT_PREVIEW));
+    }
+
     public static void testReadMetadata(Ctap2Session session) throws Throwable {
-        CredentialManagement credentialManagement = setupCredentialManagement(session);
+        final boolean usePreview = useCredentialMgmtPreview(session);
+        CredentialManagement credentialManagement = setupCredentialManagement(session, usePreview);
         CredentialManagement.Metadata metadata = credentialManagement.getMetadata();
 
         assertThat(metadata.getExistingResidentCredentialsCount(), equalTo(0));
@@ -78,7 +113,9 @@ public class Ctap2CredentialManagementTests {
     }
 
     public static void testManagement(Ctap2Session session) throws Throwable {
-        CredentialManagement credentialManagement = setupCredentialManagement(session);
+        final boolean usePreview = useCredentialMgmtPreview(session);
+
+        CredentialManagement credentialManagement = setupCredentialManagement(session, usePreview);
 
         final SerializationType cborType = SerializationType.CBOR;
 
@@ -99,6 +136,7 @@ public class Ctap2CredentialManagementTests {
                 options,
                 pinAuth,
                 1,
+                null,
                 null
         );
 
@@ -115,6 +153,6 @@ public class Ctap2CredentialManagementTests {
         assertThat(userData.get("name"), equalTo(TestData.USER_NAME));
         assertThat(userData.get("displayName"), equalTo(TestData.USER_DISPLAY_NAME));
 
-        deleteAllCredentials(session);
+        deleteAllCredentials(session, usePreview);
     }
 }

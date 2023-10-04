@@ -86,6 +86,7 @@ public class BasicWebAuthnClientTests {
                 creationOptionsNonRk,
                 Objects.requireNonNull(creationOptionsNonRk.getRp().getId()),
                 TestData.PIN,
+                null,
                 null
         );
         AuthenticatorAttestationResponse responseNonRk = (AuthenticatorAttestationResponse) credNonRk.getResponse();
@@ -108,6 +109,7 @@ public class BasicWebAuthnClientTests {
                 creationOptionsRk,
                 Objects.requireNonNull(creationOptionsRk.getRp().getId()),
                 TestData.PIN,
+                null,
                 null
         );
         AuthenticatorAttestationResponse responseRk = (AuthenticatorAttestationResponse) credRk.getResponse();
@@ -172,6 +174,7 @@ public class BasicWebAuthnClientTests {
                     creationOptions,
                     Objects.requireNonNull(creationOptions.getRp().getId()),
                     TestData.PIN,
+                    null,
                     null
             );
             AuthenticatorAttestationResponse response = (AuthenticatorAttestationResponse) credential.getResponse();
@@ -257,6 +260,7 @@ public class BasicWebAuthnClientTests {
                 creationOptions1,
                 Objects.requireNonNull(TestData.RP.getId()),
                 TestData.PIN,
+                null,
                 null
         );
 
@@ -267,6 +271,7 @@ public class BasicWebAuthnClientTests {
                 creationOptions2,
                 Objects.requireNonNull(TestData.RP.getId()),
                 TestData.PIN,
+                null,
                 null
         );
         byte[] credId2 = cred2.getRawId();
@@ -332,6 +337,7 @@ public class BasicWebAuthnClientTests {
                 creationOptions,
                 Objects.requireNonNull(creationOptions.getRp().getId()),
                 TestData.PIN,
+                null,
                 null
         );
         excludeList.add(
@@ -355,6 +361,7 @@ public class BasicWebAuthnClientTests {
                     creationOptions,
                     Objects.requireNonNull(creationOptions.getRp().getId()),
                     TestData.PIN,
+                    null,
                     null
             );
             fail("Succeeded in making credential even though the credential was excluded");
@@ -374,6 +381,7 @@ public class BasicWebAuthnClientTests {
                 creationOptions,
                 Objects.requireNonNull(creationOptions.getRp().getId()),
                 TestData.PIN,
+                null,
                 null
         );
     }
@@ -394,6 +402,7 @@ public class BasicWebAuthnClientTests {
                     creationOptions,
                     Objects.requireNonNull(creationOptions.getRp().getId()),
                     TestData.PIN,
+                    null,
                     null
             );
             AuthenticatorAttestationResponse attestation = (AuthenticatorAttestationResponse) credential.getResponse();
@@ -420,6 +429,7 @@ public class BasicWebAuthnClientTests {
                 creationOptions,
                 Objects.requireNonNull(creationOptions.getRp().getId()),
                 TestData.PIN,
+                null,
                 null
         );
         AuthenticatorAttestationResponse attestation = (AuthenticatorAttestationResponse) credential.getResponse();
@@ -440,6 +450,7 @@ public class BasicWebAuthnClientTests {
                 creationOptions,
                 Objects.requireNonNull(creationOptions.getRp().getId()),
                 TestData.PIN,
+                null,
                 null
         );
         attestation = (AuthenticatorAttestationResponse) credential.getResponse();
@@ -487,6 +498,7 @@ public class BasicWebAuthnClientTests {
                 creationOptions,
                 Objects.requireNonNull(creationOptions.getRp().getId()),
                 TestData.PIN,
+                null,
                 null);
 
         CredentialManager credmgmt = webauthn.getCredentialManager(TestData.PIN);
@@ -586,7 +598,11 @@ public class BasicWebAuthnClientTests {
     ) throws IOException, CommandException, ClientError {
         CredentialManager credentialManager = webAuthnClient.getCredentialManager(TestData.PIN);
         for (byte[] credId : credIds) {
-            credentialManager.deleteCredential(new PublicKeyCredentialDescriptor(PublicKeyCredentialType.PUBLIC_KEY, credId, null));
+            credentialManager.deleteCredential(
+                    new PublicKeyCredentialDescriptor(
+                            PublicKeyCredentialType.PUBLIC_KEY,
+                            credId,
+                            null));
         }
     }
 }

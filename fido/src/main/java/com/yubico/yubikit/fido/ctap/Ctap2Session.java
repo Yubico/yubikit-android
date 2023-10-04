@@ -68,6 +68,12 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
     private static final byte CMD_CLIENT_PIN = 0x06;
     private static final byte CMD_RESET = 0x07;
     private static final byte CMD_GET_NEXT_ASSERTION = 0x08;
+    private static final byte CMD_BIO_ENROLLMENT = 0x09;
+    private static final byte CMD_CREDENTIAL_MANAGEMENT = 0x0A;
+    private static final byte CMD_SELECTION = 0x0B;
+    private static final byte CMD_LARGE_BLOBS = 0x0C;
+    private static final byte CMD_CONFIG = 0x0D;
+    private static final byte CMD_BIO_ENROLLMENT_PRE = 0x40;
     private static final byte CMD_CREDENTIAL_MANAGEMENT_PRE = 0x41;
 
     private final Version version;
@@ -94,7 +100,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
     public Ctap2Session(SmartCardConnection connection) throws IOException, ApplicationNotAvailableException {
         SmartCardProtocol protocol = new SmartCardProtocol(connection);
         protocol.select(AppId.FIDO);
-        // it is not possible to get the applet version over NFC/CCID in CTAP2.0
+        // it is not possible to get the applet version over NFC/CCID
         version = new Version(0, 0, 0);
         backend = new Backend<SmartCardProtocol>(protocol) {
             @Override
@@ -134,7 +140,11 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
         return argMap;
     }
 
-    private Map<Integer, ?> sendCbor(byte command, @Nullable Object payload, @Nullable CommandState state) throws IOException, CommandException {
+    private Map<Integer, ?> sendCbor(
+            byte command,
+            @Nullable Object payload,
+            @Nullable CommandState state
+    ) throws IOException, CommandException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         baos.write(command);
         if (payload != null) {
@@ -146,7 +156,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
             throw new CtapException(status);
         }
         if (response.length == 1) {
-            return Collections.emptyMap();  // Empty response
+            return Collections.emptyMap(); // Empty response
         }
 
         try {
@@ -159,68 +169,25 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
     }
 
     /**
-     * Read CTAP information from a Yubikey.
+     * This method is invoked by the host to request generation of a new credential in the
+     * authenticator.
      *
-     * @return an InfoData object with information about the YubiKey
-     * @throws IOException      A communication error in the transport layer.
-     * @throws CommandException A communication in the protocol layer.
-     */
-    public InfoData getInfo() throws IOException, CommandException {
-        return InfoData.fromData(Objects.requireNonNull(sendCbor(CMD_GET_INFO, null, null)));
-    }
-
-    Map<Integer, ?> clientPin(
-            int version,
-            byte subCommand,
-            @Nullable Map<Integer, ?> keyAgreement,
-            @Nullable byte[] pinUvAuthParam,
-            @Nullable byte[] newPinEnc,
-            @Nullable byte[] pinHashEnc
-    ) throws IOException, CommandException {
-        return sendCbor(CMD_CLIENT_PIN, args(version, subCommand, keyAgreement, pinUvAuthParam, newPinEnc, pinHashEnc), null);
-    }
-
-    Map<Integer, ?> credentialManagement(
-            byte subCommand,
-            @Nullable Map<?, ?> subCommandParams,
-            int pinUvAuthProtocol,
-            @Nullable byte[] pinUvAuthParam
-    ) throws IOException, CommandException {
-        //TODO: Figure out when to use the PRE command byte, and when to use the final one.
-        return sendCbor(CMD_CREDENTIAL_MANAGEMENT_PRE, args(subCommand, subCommandParams, pinUvAuthParam != null ? pinUvAuthProtocol : null, pinUvAuthParam), null);
-    }
-
-    /**
-     * Issues a CTAP2 reset, which will delete/invalidate all FIDO credentials.
-     * <p>
-     * NOTE: Over USB this command must be sent within a few seconds of plugging the YubiKey in, and
-     * it requires touch confirmation.
-     *
-     * @param state If needed, the state to provide control over the ongoing operation.
-     * @throws IOException      A communication error in the transport layer.
-     * @throws CommandException A communication in the protocol layer.
-     */
-    public void reset(@Nullable CommandState state) throws IOException, CommandException {
-        sendCbor(CMD_RESET, null, state);
-    }
-
-    /**
-     * This method is invoked by the host to request generation of a new credential in the authenticator.
-     *
-     * @param clientDataHash    a SHA-256 hash of the clientDataJson
-     * @param rp                a Map containing the RpEntity data
-     * @param user              a Map containing the UserEntity data
-     * @param pubKeyCredParams  a List of Maps containing the supported credential algorithms
-     * @param excludeList       a List of Maps of already registered credentials
-     * @param extensions        a Map of CTAP extension inputs
-     * @param options           a Map of CTAP options
-     * @param pinUvAuthParam    a byte array derived from a pinToken
-     * @param pinUvAuthProtocol the PIN protocol version used for the pinUvAuthParam
-     * @param state             an optional state object to cancel a request and handle keepalive signals
+     * @param clientDataHash        a SHA-256 hash of the clientDataJson
+     * @param rp                    a Map containing the RpEntity data
+     * @param user                  a Map containing the UserEntity data
+     * @param pubKeyCredParams      a List of Maps containing the supported credential algorithms
+     * @param excludeList           a List of Maps of already registered credentials
+     * @param extensions            a Map of CTAP extension inputs
+     * @param options               a Map of CTAP options
+     * @param pinUvAuthParam        a byte array derived from a pinToken
+     * @param pinUvAuthProtocol     the PIN protocol version used for the pinUvAuthParam
+     * @param enterpriseAttestation an enterprise attestation request
+     * @param state                 an optional state object to cancel a request and handle
+     *                              keepalive signals
      * @return a new credential
      * @throws IOException      A communication error in the transport layer.
      * @throws CommandException A communication in the protocol layer.
-     * @see <a href="https://fidoalliance.org/specs/fido-v2.0-ps-20190130/fido-client-to-authenticator-protocol-v2.0-ps-20190130.html#authenticatorMakeCredential">authenticatorMakeCredential</a>
+     * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#authenticatorMakeCredential">authenticatorMakeCredential</a>
      */
     public CredentialData makeCredential(
             byte[] clientDataHash,
@@ -231,17 +198,21 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
             @Nullable Map<String, ?> extensions,
             @Nullable Map<String, ?> options,
             @Nullable byte[] pinUvAuthParam,
-            int pinUvAuthProtocol,
+            @Nullable Integer pinUvAuthProtocol,
+            @Nullable Integer enterpriseAttestation,
             @Nullable CommandState state
     ) throws IOException, CommandException {
-        Logger.debug(logger, "makeCredential for rp={},user={},clientDataHash={}," +
+        Logger.debug(logger, "makeCredential for clientDataHash={},rp={},user={}," +
                         "pubKeyCredParams={},excludeList={},extensions={},options={}," +
-                        "pinUvAuthParam={},pinUvAuthProtocol={},state={}",
-                rp, user, clientDataHash, pubKeyCredParams, excludeList, extensions, options,
-                pinUvAuthParam, pinUvAuthProtocol, state);
+                        "pinUvAuthParam={},pinUvAuthProtocol={},enterpriseAttestation={},state={}",
+                clientDataHash, rp, user, pubKeyCredParams, excludeList, extensions, options,
+                pinUvAuthParam, pinUvAuthProtocol, enterpriseAttestation, state);
 
-        CredentialData credentialData = CredentialData.fromData(Objects.requireNonNull(
-                sendCbor(CMD_MAKE_CREDENTIAL, args(
+        Logger.trace(logger,
+                "Call CMD_MAKE_CREDENTIAL ({})",
+                String.format("0x%02X", CMD_MAKE_CREDENTIAL));
+
+        final Map<Integer, ?> data = sendCbor(CMD_MAKE_CREDENTIAL, args(
                         clientDataHash,
                         rp,
                         user,
@@ -250,8 +221,11 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
                         extensions,
                         options,
                         pinUvAuthParam,
-                        pinUvAuthParam == null ? null : pinUvAuthProtocol
-                ), state)));
+                        pinUvAuthProtocol,
+                        enterpriseAttestation),
+                state);
+
+        CredentialData credentialData = CredentialData.fromData(data);
         Logger.info(logger, "Credential created");
         return credentialData;
     }
@@ -272,7 +246,8 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
      * @return a List of available assertions
      * @throws IOException      A communication error in the transport layer.
      * @throws CommandException A communication in the protocol layer.
-     * @see <a href="https://fidoalliance.org/specs/fido-v2.0-ps-20190130/fido-client-to-authenticator-protocol-v2.0-ps-20190130.html#authenticatorGetAssertion">authenticatorGetAssertion</a>
+     * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#authenticatorGetAssertion">authenticatorGetAssertion</a>
+     * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#authenticatorGetNextAssertion">authenticatorGetNextAssertion</a>
      */
     public List<AssertionData> getAssertions(
             String rpId,
@@ -281,22 +256,27 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
             @Nullable Map<String, ?> extensions,
             @Nullable Map<String, ?> options,
             @Nullable byte[] pinUvAuthParam,
-            int pinUvAuthProtocol,
+            @Nullable Integer pinUvAuthProtocol,
             @Nullable CommandState state
     ) throws IOException, CommandException {
         Logger.debug(logger, "getAssertions for rpId={},clientDataHash={}," +
                         "allowList={},extensions={},options={},pinUvAuthParam={}," +
                         "pinUvAuthProtocol={},state={}",
                 rpId, clientDataHash, allowList, extensions, options, pinUvAuthParam, pinUvAuthProtocol);
-        Map<Integer, ?> assertion = Objects.requireNonNull(sendCbor(CMD_GET_ASSERTION, args(
-                rpId,
-                clientDataHash,
-                allowList,
-                extensions,
-                options,
-                pinUvAuthParam,
-                pinUvAuthParam == null ? null : pinUvAuthProtocol
-        ), state));
+
+        Logger.trace(logger,
+                "Call CMD_GET_ASSERTION ({})",
+                String.format("0x%02X", CMD_GET_ASSERTION));
+
+        final Map<Integer, ?> assertion = sendCbor(CMD_GET_ASSERTION, args(
+                        rpId,
+                        clientDataHash,
+                        allowList,
+                        extensions,
+                        options,
+                        pinUvAuthParam,
+                        pinUvAuthProtocol),
+                state);
         List<AssertionData> assertions = new ArrayList<>();
         assertions.add(AssertionData.fromData(assertion));
         Integer nCreds = (Integer) assertion.get(AssertionData.RESULT_N_CREDS);
@@ -306,6 +286,181 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
         }
         Logger.info(logger, "Authenticator returned {} assertions.", credentialCount);
         return assertions;
+    }
+
+    /**
+     * Using this method, platforms can request that the authenticator report a list of its
+     * supported protocol versions and extensions, its AAGUID, and other aspects of its overall
+     * capabilities. Platforms should use this information to tailor their command parameters
+     * choices.
+     *
+     * @return an InfoData object with information about the YubiKey
+     * @throws IOException      A communication error in the transport layer.
+     * @throws CommandException A communication in the protocol layer.
+     * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#authenticatorGetInfo">authenticatorGetInfo</a>
+     */
+    public InfoData getInfo() throws IOException, CommandException {
+        Logger.trace(logger,
+                "Call CMD_GET_INFO ({})",
+                String.format("0x%02X", CMD_GET_INFO));
+        final Map<Integer, ?> infoData = sendCbor(CMD_GET_INFO, null, null);
+        final InfoData info = InfoData.fromData(infoData);
+        Logger.trace(logger, "Ctap2.InfoData: {}", info);
+        return info;
+    }
+
+    /**
+     * This command exists so that plaintext PINs are not sent to the authenticator.
+     *
+     * @param pinUvAuthProtocol PIN/UV protocol version chosen by the platform.
+     * @param subCommand        The specific action being requested.
+     * @param keyAgreement      The platform key-agreement key.
+     * @param pinUvAuthParam    The output of calling authenticate(key, message) → signature on some
+     *                          context specific to the subcommand.
+     * @param newPinEnc         An encrypted PIN.
+     * @param pinHashEnc        An encrypted proof-of-knowledge of a PIN.
+     * @param permissions       Bitfield of permissions.
+     * @param rpId              The RP ID to assign as the permissions RP ID.
+     * @return an InfoData object with information about the YubiKey
+     * @throws IOException      A communication error in the transport layer.
+     * @throws CommandException A communication in the protocol layer.
+     * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#authenticatorClientPIN">authenticatorClientPIN</a>
+     */
+    Map<Integer, ?> clientPin(
+            @Nullable Integer pinUvAuthProtocol,
+            int subCommand,
+            @Nullable Map<Integer, ?> keyAgreement,
+            @Nullable byte[] pinUvAuthParam,
+            @Nullable byte[] newPinEnc,
+            @Nullable byte[] pinHashEnc,
+            @Nullable Integer permissions,
+            @Nullable String rpId
+    ) throws IOException, CommandException {
+        Logger.debug(logger, "clientPin for pinUvAuthProtocol={},subCommand={}," +
+                        "keyAgreement={},pinUvAuthParam={},newPinEnc={},pinHashEnc={}," +
+                        "permissions={},rpId={}", pinUvAuthProtocol, subCommand, keyAgreement,
+                pinUvAuthParam, newPinEnc, pinHashEnc, permissions, rpId);
+        Logger.trace(logger,
+                "Call CMD_CLIENT_PIN ({})",
+                String.format("0x%02X", CMD_CLIENT_PIN));
+        return sendCbor(
+                CMD_CLIENT_PIN, args(
+                        pinUvAuthProtocol,
+                        subCommand,
+                        keyAgreement,
+                        pinUvAuthParam,
+                        newPinEnc,
+                        pinHashEnc,
+                        permissions,
+                        rpId), null);
+    }
+
+    /**
+     * Issues a CTAP2 reset, which will delete/invalidate all FIDO credentials.
+     * <p>
+     * NOTE: Over USB this command must be sent within a few seconds of plugging the YubiKey in, and
+     * it requires touch confirmation.
+     *
+     * @param state If needed, the state to provide control over the ongoing operation.
+     * @throws IOException      A communication error in the transport layer.
+     * @throws CommandException A communication in the protocol layer.
+     * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#authenticatorReset">authenticatorReset</a>
+     */
+    public void reset(@Nullable CommandState state) throws IOException, CommandException {
+        Logger.trace(logger,
+                "Call CMD_RESET ({})",
+                String.format("0x%02X", CMD_RESET));
+        sendCbor(CMD_RESET, null, state);
+    }
+
+    /**
+     * This command is used by the platform to manage discoverable credentials on the
+     * authenticator.
+     *
+     * @param subCommand        The subCommand currently being requested
+     * @param subCommandParams  A map of subCommands parameters.
+     * @param pinUvAuthProtocol PIN/UV protocol version chosen by the platform.
+     * @param pinUvAuthParam    First 16 bytes of HMAC-SHA-256 of contents using pinUvAuthToken.
+     * @throws IOException      A communication error in the transport layer.
+     * @throws CommandException A communication in the protocol layer.
+     * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#authenticatorCredentialManagement">authenticatorCredentialManagement</a>
+     */
+    Map<Integer, ?> credentialManagement(
+            int subCommand,
+            @Nullable Map<?, ?> subCommandParams,
+            @Nullable Integer pinUvAuthProtocol,
+            @Nullable byte[] pinUvAuthParam
+    ) throws IOException, CommandException {
+        Logger.trace(logger,
+                "Call CMD_CREDENTIAL_MANAGEMENT ({})",
+                String.format("0x%02X", CMD_CREDENTIAL_MANAGEMENT));
+        return sendCbor(CMD_CREDENTIAL_MANAGEMENT, args(
+                subCommand,
+                subCommandParams,
+                pinUvAuthProtocol,
+                pinUvAuthParam), null);
+    }
+
+    /**
+     * This command allows the platform to let a user select a certain authenticator by asking for
+     * user presence.
+     *
+     * @throws IOException      A communication error in the transport layer.
+     * @throws CommandException A communication in the protocol layer.
+     * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#authenticatorSelection">authenticatorSelection</a>
+     */
+    public void selection(@Nullable CommandState state) throws IOException, CommandException {
+        Logger.trace(logger,
+                "Call CMD_SELECTION ({})",
+                String.format("0x%02X", CMD_SELECTION));
+        sendCbor(CMD_SELECTION, null, state);
+    }
+
+    /**
+     * This command is used to configure various authenticator features through the use of its
+     * subcommands.
+     * <p>
+     * Note: Platforms MUST NOT invoke this command unless the authnrCfg option ID is present and
+     * true in the response to an authenticatorGetInfo command.
+     *
+     * @param subCommand        The subCommand currently being requested
+     * @param subCommandParams  A map of subCommands parameters.
+     * @param pinUvAuthProtocol PIN/UV protocol version chosen by the platform.
+     * @param pinUvAuthParam    First 16 bytes of HMAC-SHA-256 of contents using pinUvAuthToken.
+     * @throws IOException      A communication error in the transport layer.
+     * @throws CommandException A communication in the protocol layer.
+     * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#authenticatorConfig">authenticatorConfig</a>
+     */
+    public Map<Integer, ?> config(
+            byte subCommand,
+            @Nullable Map<?, ?> subCommandParams,
+            @Nullable Integer pinUvAuthProtocol,
+            @Nullable byte[] pinUvAuthParam
+    ) throws IOException, CommandException {
+        Logger.trace(logger,
+                "Call CMD_CONFIG ({})",
+                String.format("0x%02X", CMD_CONFIG));
+        return sendCbor(CMD_CONFIG, args(
+                subCommand,
+                subCommandParams,
+                pinUvAuthParam != null ? pinUvAuthProtocol : null,
+                pinUvAuthParam), null);
+    }
+
+    Map<Integer, ?> credentialManagementPreview(
+            byte subCommand,
+            @Nullable Map<?, ?> subCommandParams,
+            int pinUvAuthProtocol,
+            @Nullable byte[] pinUvAuthParam
+    ) throws IOException, CommandException {
+        Logger.trace(logger,
+                "Call CMD_CREDENTIAL_MANAGEMENT_PRE ({})",
+                String.format("0x%02X", CMD_CREDENTIAL_MANAGEMENT_PRE));
+        return sendCbor(CMD_CREDENTIAL_MANAGEMENT_PRE, args(
+                subCommand,
+                subCommandParams,
+                pinUvAuthParam != null ? pinUvAuthProtocol : null,
+                pinUvAuthParam), null);
     }
 
     @Override
@@ -390,9 +545,11 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
         private final Integer preferredPlatformUvAttempts;
         @Nullable
         private final Integer uvModality;
+        @Nullable
         private final Map<String, Object> certifications;
         @Nullable
         private final Integer remainingDiscoverableCredentials;
+        @Nullable
         private final List<Integer> vendorPrototypeConfigCommands;
 
         private InfoData(
@@ -414,9 +571,9 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
                 @Nullable Integer maxRPIDsForSetMinPINLength,
                 @Nullable Integer preferredPlatformUvAttempts,
                 @Nullable Integer uvModality,
-                Map<String, Object> certifications,
+                @Nullable Map<String, Object> certifications,
                 @Nullable Integer remainingDiscoverableCredentials,
-                List<Integer> vendorPrototypeConfigCommands) {
+                @Nullable List<Integer> vendorPrototypeConfigCommands) {
             this.versions = versions;
             this.extensions = extensions;
             this.aaguid = aaguid;
@@ -458,51 +615,23 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
                     data.containsKey(RESULT_PIN_UV_AUTH_PROTOCOLS)
                             ? (List<Integer>) data.get(RESULT_PIN_UV_AUTH_PROTOCOLS)
                             : Collections.emptyList(),
-                    data.containsKey(RESULT_MAX_CREDS_IN_LIST)
-                            ? (Integer) data.get(RESULT_MAX_CREDS_IN_LIST)
-                            : null,
-                    data.containsKey(RESULT_MAX_CRED_ID_LENGTH)
-                            ? (Integer) data.get(RESULT_MAX_CRED_ID_LENGTH)
-                            : null,
+                    (Integer) data.get(RESULT_MAX_CREDS_IN_LIST),
+                    (Integer) data.get(RESULT_MAX_CRED_ID_LENGTH),
                     data.containsKey(RESULT_TRANSPORTS)
                             ? (List<String>) data.get(RESULT_TRANSPORTS)
                             : Collections.emptyList(),
-                    data.containsKey(RESULT_ALGORITHMS)
-                            ? (List<PublicKeyCredentialParameters>) data.get(RESULT_ALGORITHMS)
-                            : null,
-                    data.containsKey(RESULT_MAX_SERIALIZED_LARGE_BLOB_ARRAY)
-                            ? (Integer) data.get(RESULT_MAX_SERIALIZED_LARGE_BLOB_ARRAY)
-                            : null,
-                    data.containsKey(RESULT_FORCE_PIN_CHANGE)
-                            ? (Boolean) data.get(RESULT_FORCE_PIN_CHANGE)
-                            : null,
-                    data.containsKey(RESULT_MIN_PIN_LENGTH)
-                            ? (Integer) data.get(RESULT_MIN_PIN_LENGTH)
-                            : null,
-                    data.containsKey(RESULT_FIRMWARE_VERSION)
-                            ? (Integer) data.get(RESULT_FIRMWARE_VERSION)
-                            : null,
-                    data.containsKey(RESULT_MAX_CRED_BLOB_LENGTH)
-                            ? (Integer) data.get(RESULT_MAX_CRED_BLOB_LENGTH)
-                            : null,
-                    data.containsKey(RESULT_MAX_RPID_FOR_SET_MIN_PIN_LENGTH)
-                            ? (Integer) data.get(RESULT_MAX_RPID_FOR_SET_MIN_PIN_LENGTH)
-                            : null,
-                    data.containsKey(RESULT_PREFERRED_PLATFORM_UV_ATTEMPTS)
-                            ? (Integer) data.get(RESULT_PREFERRED_PLATFORM_UV_ATTEMPTS)
-                            : null,
-                    data.containsKey(RESULT_UV_MODALITY)
-                            ? (Integer) data.get(RESULT_UV_MODALITY)
-                            : null,
-                    data.containsKey(RESULT_CERTIFICATIONS)
-                            ? (Map<String, Object>) data.get(RESULT_CERTIFICATIONS)
-                            : Collections.emptyMap(),
-                    data.containsKey(RESULT_REMAINING_DISCOVERABLE_CREDENTIALS)
-                            ? (Integer) data.get(RESULT_REMAINING_DISCOVERABLE_CREDENTIALS)
-                            : null,
-                    data.containsKey(RESULT_VENDOR_PROTOTYPE_CONFIG_COMMANDS)
-                            ? (List<Integer>) data.get(RESULT_VENDOR_PROTOTYPE_CONFIG_COMMANDS)
-                            : Collections.emptyList()
+                    (List<PublicKeyCredentialParameters>) data.get(RESULT_ALGORITHMS),
+                    (Integer) data.get(RESULT_MAX_SERIALIZED_LARGE_BLOB_ARRAY),
+                    (Boolean) data.get(RESULT_FORCE_PIN_CHANGE),
+                    (Integer) data.get(RESULT_MIN_PIN_LENGTH),
+                    (Integer) data.get(RESULT_FIRMWARE_VERSION),
+                    (Integer) data.get(RESULT_MAX_CRED_BLOB_LENGTH),
+                    (Integer) data.get(RESULT_MAX_RPID_FOR_SET_MIN_PIN_LENGTH),
+                    (Integer) data.get(RESULT_PREFERRED_PLATFORM_UV_ATTEMPTS),
+                    (Integer) data.get(RESULT_UV_MODALITY),
+                    (Map<String, Object>) data.get(RESULT_CERTIFICATIONS),
+                    (Integer) data.get(RESULT_REMAINING_DISCOVERABLE_CREDENTIALS),
+                    (List<Integer>) data.get(RESULT_VENDOR_PROTOTYPE_CONFIG_COMMANDS)
             );
         }
 
@@ -562,79 +691,141 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
             return pinUvAuthProtocols;
         }
 
+        /**
+         * @return Maximum number of credentials supported in credentialID list
+         * at a time by the authenticator.
+         */
         @Nullable
         Integer getMaxCredentialCountInList() {
             return maxCredentialCountInList;
         }
 
+        /**
+         * @return Maximum Credential ID Length supported by the authenticator.
+         */
         @Nullable
         Integer getMaxCredentialIdLength() {
             return maxCredentialIdLength;
         }
 
         /**
-         * Get a list of the supported transports.
-         *
-         * @return a list of supported transports.
+         * @return List of supported transports. Values are taken from the AuthenticatorTransport
+         * enum in WebAuthn.
+         * @see <a href="https://www.w3.org/TR/webauthn/#enumdef-authenticatortransport">AuthenticatorTransport
+         * enum</a>
          */
         public List<String> getTransports() {
             return transports;
         }
 
+        /**
+         * @return List of supported algorithms for credential generation, as specified in WebAuthn.
+         */
         @Nullable
         public List<PublicKeyCredentialParameters> getAlgorithms() {
             return algorithms;
         }
 
+        /**
+         * @return The maximum size, in bytes, of the serialized large-blob array that this
+         * authenticator can store.
+         * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#authenticatorLargeBlobs">
+         * 6.10. authenticatorLargeBlobs (0x0C)</a>
+         */
         @Nullable
         public Integer getMaxSerializedLargeBlobArray() {
             return maxSerializedLargeBlobArray;
         }
 
+        /**
+         * Returns requirement whether the authenticator requires PIN Change before use.
+         *
+         * @return force PIN Change requirement.
+         * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#changingExistingPin">PIN Change</a>
+         */
         @Nullable
         public Boolean getForcePINChange() {
             return forcePINChange;
         }
 
+        /**
+         * @return The current minimum PIN length, in Unicode code points, the authenticator
+         * enforces for ClientPIN.
+         */
         @Nullable
         public Integer getMinPINLength() {
             return minPINLength;
         }
 
+        /**
+         * @return The firmware version of the authenticator model identified by AAGUID.
+         */
         @Nullable
         Integer getFirmwareVersion() {
             return firmwareVersion;
         }
 
+        /**
+         * @return Maximum credBlob length in bytes supported by the authenticator.
+         */
         @Nullable
         public Integer getMaxCredBlobLength() {
             return maxCredBlobLength;
         }
 
+        /**
+         * @return The max number of RP IDs that authenticator can set via setMinPINLength
+         * subcommand.
+         */
         @Nullable
         public Integer getMaxRPIDsForSetMinPINLength() {
             return maxRPIDsForSetMinPINLength;
         }
 
+        /**
+         * @return The preferred number of invocations of the
+         * getPinUvAuthTokenUsingUvWithPermissions subCommand the platform may attempt before
+         * falling back to the getPinUvAuthTokenUsingPinWithPermissions subCommand or displaying
+         * an error.
+         */
         @Nullable
         public Integer getPreferredPlatformUvAttempts() {
             return preferredPlatformUvAttempts;
         }
 
+        /**
+         * @return The user verification modality supported by the authenticator via
+         * authenticatorClientPIN's getPinUvAuthTokenUsingUvWithPermissions subcommand.
+         */
         @Nullable
         public Integer getUvModality() {
             return uvModality;
         }
 
+        /**
+         * Provides a hint to the platform with additional information about certifications that
+         * the authenticator has received.
+         *
+         * @return Certifications in the form key-value pairs with string IDs and integer values.
+         * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#sctn-feature-descriptions-certifications">Authenticator Certifications</a>
+         */
+        @Nullable
         public final Map<String, Object> getCertifications() {
             return certifications;
         }
 
+        /**
+         * @return The estimated number of additional discoverable credentials that can be stored.
+         */
         @Nullable
         public Integer getRemainingDiscoverableCredentials() {
             return remainingDiscoverableCredentials;
         }
 
+        /**
+         * @return List of authenticatorConfig vendorCommandId values supported.
+         */
+        @Nullable
         public List<Integer> getVendorPrototypeConfigCommands() {
             return vendorPrototypeConfigCommands;
         }
@@ -671,18 +862,32 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
      * Data class holding the result of makeCredential.
      */
     public static class CredentialData {
-        private final static int RESULT_FMT = 1;
-        private final static int RESULT_AUTH_DATA = 2;
-        private final static int RESULT_ATT_STMT = 3;
+        private final static int RESULT_FMT = 0x01;
+        private final static int RESULT_AUTH_DATA = 0x02;
+        private final static int RESULT_ATT_STMT = 0x03;
+        private final static int RESULT_EP_ATT = 0x04;
+        private final static int RESULT_LARGE_BLOB_KEY = 0x05;
 
         private final String format;
         private final byte[] authenticatorData;
         private final Map<String, ?> attestationStatement;
+        @Nullable
+        private final Boolean enterpriseAttestation;
+        @Nullable
+        private final byte[] largeBlobKey;
 
-        private CredentialData(String format, byte[] authenticatorData, Map<String, ?> attestationStatement) {
+        private CredentialData(
+                String format,
+                byte[] authenticatorData,
+                Map<String, ?> attestationStatement,
+                @Nullable Boolean enterpriseAttestation,
+                @Nullable byte[] largeBlobKey
+        ) {
             this.format = format;
             this.authenticatorData = authenticatorData;
             this.attestationStatement = attestationStatement;
+            this.enterpriseAttestation = enterpriseAttestation;
+            this.largeBlobKey = largeBlobKey;
         }
 
         @SuppressWarnings("unchecked")
@@ -690,7 +895,9 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
             return new CredentialData(
                     Objects.requireNonNull((String) data.get(RESULT_FMT)),
                     Objects.requireNonNull((byte[]) data.get(RESULT_AUTH_DATA)),
-                    Objects.requireNonNull((Map<String, ?>) data.get(RESULT_ATT_STMT))
+                    Objects.requireNonNull((Map<String, ?>) data.get(RESULT_ATT_STMT)),
+                    (Boolean) data.get(RESULT_EP_ATT),
+                    (byte[]) data.get(RESULT_LARGE_BLOB_KEY)
             );
         }
 
@@ -720,6 +927,26 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
          */
         public Map<String, ?> getAttestationStatement() {
             return attestationStatement;
+        }
+
+        /**
+         * Indicates whether an enterprise attestation was returned for this credential.
+         *
+         * @return null or false if enterprise attestation was not returned, otherwise true.
+         */
+        @Nullable
+        public Boolean getEnterpriseAttestation() {
+            return enterpriseAttestation;
+        }
+
+        /**
+         * The largeBlobKey for the credential, if requested with the largeBlobKey extension.
+         *
+         * @return The largeBlobKey for the credential.
+         */
+        @Nullable
+        public byte[] getLargeBlobKey() {
+            return largeBlobKey;
         }
     }
 

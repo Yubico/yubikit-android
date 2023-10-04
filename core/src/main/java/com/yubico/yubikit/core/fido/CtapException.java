@@ -23,7 +23,7 @@ import java.util.Locale;
  * An error on the CTAP-level, returned from the Authenticator.
  * <p>
  * These error codes are defined by the
- * <a href="https://fidoalliance.org/specs/fido-v2.0-id-20180227/fido-client-to-authenticator-protocol-v2.0-id-20180227.html#error-responses">CTAP2 specification</a>
+ * <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#error-responses">CTAP2 specification</a>
  */
 public class CtapException extends CommandException {
     public static final byte ERR_SUCCESS = 0x00;
@@ -68,6 +68,11 @@ public class CtapException extends CommandException {
     public static final byte ERR_REQUEST_TOO_LARGE = 0x39;
     public static final byte ERR_ACTION_TIMEOUT = 0x3A;
     public static final byte ERR_UP_REQUIRED = 0x3B;
+    public static final byte ERR_UV_BLOCKED = 0x3C;
+    public static final byte ERR_INTEGRITY_FAILURE = 0x3D;
+    public static final byte ERR_INVALID_SUBCOMMAND = 0x3E;
+    public static final byte ERR_UV_INVALID = 0x3F;
+    public static final byte ERR_UNAUTHORIZED_PERMISSION = 0x40;
     public static final byte ERR_OTHER = 0x7F;
     public static final byte ERR_SPEC_LAST = (byte) 0xDF;
     public static final byte ERR_EXTENSION_FIRST = (byte) 0xE0;
