@@ -16,6 +16,8 @@
 
 package com.yubico.yubikit.fido.webauthn;
 
+import static com.yubico.yubikit.fido.webauthn.SerializationUtils.serializeBytes;
+
 import com.yubico.yubikit.core.internal.codec.Base64;
 
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
@@ -74,18 +76,22 @@ public class PublicKeyCredential extends Credential {
         return response;
     }
 
-    public Map<String, ?> toMap() {
+    public Map<String, ?> toMap(SerializationType serializationType) {
         Map<String, Object> map = new HashMap<>();
         map.put(ID, getId());
         map.put(TYPE, getType());
-        map.put(RAW_ID, Base64.encode(getRawId()));
+        map.put(RAW_ID, serializeBytes(getRawId(), serializationType));
         map.put(AUTHENTICATOR_ATTACHMENT, AuthenticatorAttachment.CROSS_PLATFORM);
-        map.put(RESPONSE, getResponse().toMap());
+        map.put(RESPONSE, getResponse().toMap(serializationType));
         return map;
     }
 
+    public Map<String, ?> toMap() {
+        return toMap(SerializationType.DEFAULT);
+    }
+
     @SuppressWarnings("unchecked")
-    public static PublicKeyCredential fromMap(Map<String, ?> map) {
+    public static PublicKeyCredential fromMap(Map<String, ?> map, SerializationType serializationType) {
         if (!PUBLIC_KEY_CREDENTIAL_TYPE.equals(Objects.requireNonNull((String) map.get(TYPE)))) {
             throw new IllegalArgumentException("Expecting type=" + PUBLIC_KEY_CREDENTIAL_TYPE);
         }
@@ -94,9 +100,9 @@ public class PublicKeyCredential extends Credential {
         AuthenticatorResponse response;
         try {
             if (responseMap.containsKey(AuthenticatorAttestationResponse.ATTESTATION_OBJECT)) {
-                response = AuthenticatorAttestationResponse.fromMap(responseMap);
+                response = AuthenticatorAttestationResponse.fromMap(responseMap, serializationType);
             } else {
-                response = AuthenticatorAssertionResponse.fromMap(responseMap);
+                response = AuthenticatorAssertionResponse.fromMap(responseMap, serializationType);
             }
         } catch (Exception e) {
             throw new IllegalArgumentException("Unknown AuthenticatorResponse format", e);
@@ -106,6 +112,10 @@ public class PublicKeyCredential extends Credential {
                 Objects.requireNonNull((String) map.get(ID)),
                 response
         );
+    }
+
+    public static PublicKeyCredential fromMap(Map<String, ?> map) {
+        return fromMap(map, SerializationType.DEFAULT);
     }
 
     /**
@@ -136,5 +146,23 @@ public class PublicKeyCredential extends Credential {
                         userId
                 )
         );
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        PublicKeyCredential that = (PublicKeyCredential) o;
+
+        if (!Arrays.equals(rawId, that.rawId)) return false;
+        return response.equals(that.response);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Arrays.hashCode(rawId);
+        result = 31 * result + response.hashCode();
+        return result;
     }
 }

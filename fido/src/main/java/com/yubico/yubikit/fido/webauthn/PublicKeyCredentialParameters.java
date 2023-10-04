@@ -40,17 +40,37 @@ public class PublicKeyCredentialParameters {
         return alg;
     }
 
-    public Map<String, ?> toMap() {
+    public Map<String, ?> toMap(@SuppressWarnings("unused") SerializationType serializationType) {
         Map<String, Object> map = new HashMap<>();
         map.put(TYPE, type);
         map.put(ALG, alg);
         return map;
     }
 
-    public static PublicKeyCredentialParameters fromMap(Map<String, ?> map) {
+    public static PublicKeyCredentialParameters fromMap(
+            Map<String, ?> map,
+            @SuppressWarnings("unused") SerializationType serializationType) {
         return new PublicKeyCredentialParameters(
                 Objects.requireNonNull((String) map.get(TYPE)),
                 Objects.requireNonNull((Integer) map.get(ALG))
         );
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        PublicKeyCredentialParameters that = (PublicKeyCredentialParameters) o;
+
+        if (alg != that.alg) return false;
+        return type.equals(that.type);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = type.hashCode();
+        result = 31 * result + alg;
+        return result;
     }
 }

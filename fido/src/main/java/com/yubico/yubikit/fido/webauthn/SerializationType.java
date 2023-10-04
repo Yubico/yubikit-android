@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Yubico.
+ * Copyright (C) 2023 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,20 +16,9 @@
 
 package com.yubico.yubikit.fido.webauthn;
 
-import java.util.Map;
+public enum SerializationType {
+    CBOR,
+    JSON;
 
-public abstract class AuthenticatorResponse {
-    static final String CLIENT_DATA_JSON = "clientDataJSON";
-
-    private final byte[] clientDataJson;
-
-    AuthenticatorResponse(byte[] clientDataJson) {
-        this.clientDataJson = clientDataJson;
-    }
-
-    public byte[] getClientDataJson() {
-        return clientDataJson;
-    }
-
-    public abstract Map<String, ?> toMap(SerializationType serializationType);
+    public static final SerializationType DEFAULT = SerializationType.JSON;
 }

@@ -20,7 +20,9 @@ import com.yubico.yubikit.fido.Cbor;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.Arrays;
 import java.util.Map;
+import java.util.Objects;
 
 import javax.annotation.Nullable;
 
@@ -164,5 +166,42 @@ public class AuthenticatorData {
     @SuppressWarnings("unused")
     public byte[] getBytes() {
         return rawData;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        AuthenticatorData that = (AuthenticatorData) o;
+
+        if (flags != that.flags) return false;
+        if (signCount != that.signCount) return false;
+        if (!Arrays.equals(rpIdHash, that.rpIdHash)) return false;
+        if (!Objects.equals(attestedCredentialData, that.attestedCredentialData)) {
+            return false;
+        }
+        if (extensions != null && that.extensions != null) {
+            if (!Arrays.equals(Cbor.encode(extensions), Cbor.encode(that.extensions)))
+                return false;
+        }
+
+        if ((extensions != null && that.extensions == null) ||
+                (extensions == null && that.extensions != null)) {
+            return false;
+        }
+
+        return Arrays.equals(rawData, that.rawData);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Arrays.hashCode(rpIdHash);
+        result = 31 * result + (int) flags;
+        result = 31 * result + signCount;
+        result = 31 * result + (attestedCredentialData != null ? attestedCredentialData.hashCode() : 0);
+        result = 31 * result + (extensions != null ? Arrays.hashCode(Cbor.encode(extensions)) : 0);
+        result = 31 * result + Arrays.hashCode(rawData);
+        return result;
     }
 }

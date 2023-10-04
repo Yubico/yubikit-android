@@ -50,8 +50,8 @@ class TestData {
 
     public static final String USER_NAME = "john.doe@example.com";
     public static final byte[] USER_ID = USER_NAME.getBytes(StandardCharsets.UTF_8);
-    public static final String USER_DISPLAYNAME = "John Doe";
-    public static final PublicKeyCredentialUserEntity USER = new PublicKeyCredentialUserEntity(USER_NAME, USER_ID, USER_DISPLAYNAME);
+    public static final String USER_DISPLAY_NAME = "John Doe";
+    public static final PublicKeyCredentialUserEntity USER = new PublicKeyCredentialUserEntity(USER_NAME, USER_ID, USER_DISPLAY_NAME);
 
     public static final String ORIGIN = "https://" + RP_ID;
     public static final byte[] CHALLENGE = new byte[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};

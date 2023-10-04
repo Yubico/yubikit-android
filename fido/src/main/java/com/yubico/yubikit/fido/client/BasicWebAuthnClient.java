@@ -34,6 +34,7 @@ import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialParameters;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialRequestOptions;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialType;
 import com.yubico.yubikit.fido.webauthn.ResidentKeyRequirement;
+import com.yubico.yubikit.fido.webauthn.SerializationType;
 import com.yubico.yubikit.fido.webauthn.UserVerificationRequirement;
 
 import java.io.Closeable;
@@ -338,6 +339,8 @@ public class BasicWebAuthnClient implements Closeable {
             @Nullable CommandState state
     ) throws IOException, CommandException, ClientError {
 
+        final SerializationType serializationType = SerializationType.CBOR;
+
         byte[] pinToken = null;
         try {
             if (options.getExtensions() != null) {
@@ -346,7 +349,7 @@ public class BasicWebAuthnClient implements Closeable {
                         "Extensions not supported");
             }
 
-            Map<String, ?> rp = options.getRp().toMap();
+            Map<String, ?> rp = options.getRp().toMap(serializationType);
             String rpId = options.getRp().getId();
             if (rpId == null) {
                 ((Map<String, Object>) rp).put("id", effectiveDomain);
@@ -393,14 +396,12 @@ public class BasicWebAuthnClient implements Closeable {
                             options.getExcludeCredentials()
                     );
 
-            final Map<String, Object> user = CredentialManager.credentialUserEntityToMap(
-                    options.getUser()
-            );
+            final Map<String, ?> user = options.getUser().toMap(serializationType);
 
             List<Map<String, ?>> pubKeyCredParams = new ArrayList<>();
             for (PublicKeyCredentialParameters param : options.getPubKeyCredParams()) {
                 if (isPublicKeyCredentialTypeSupported(param.getType())) {
-                    pubKeyCredParams.add(param.toMap());
+                    pubKeyCredParams.add(param.toMap(serializationType));
                 }
             }
 
@@ -588,7 +589,7 @@ public class BasicWebAuthnClient implements Closeable {
         }
         List<Map<String, ?>> list = new ArrayList<>();
         for (PublicKeyCredentialDescriptor credential : descriptors) {
-            list.add(CredentialManager.credentialDescriptorToMap(credential));
+            list.add(credential.toMap(SerializationType.CBOR));
         }
         return list;
     }
