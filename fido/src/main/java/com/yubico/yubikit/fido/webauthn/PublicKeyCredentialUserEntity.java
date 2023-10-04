@@ -16,8 +16,10 @@
 
 package com.yubico.yubikit.fido.webauthn;
 
-import com.yubico.yubikit.core.internal.codec.Base64;
+import static com.yubico.yubikit.fido.webauthn.SerializationUtils.deserializeBytes;
+import static com.yubico.yubikit.fido.webauthn.SerializationUtils.serializeBytes;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -43,19 +45,37 @@ public class PublicKeyCredentialUserEntity extends PublicKeyCredentialEntity {
         return displayName;
     }
 
-    public Map<String, ?> toMap() {
+    public Map<String, ?> toMap(SerializationType serializationType) {
         Map<String, Object> map = new HashMap<>();
         map.put(NAME, getName());
-        map.put(ID, Base64.encode(id));
+        map.put(ID, serializeBytes(id, serializationType));
         map.put(DISPLAY_NAME, displayName);
         return map;
     }
 
-    public static PublicKeyCredentialUserEntity fromMap(Map<String, ?> map) {
+    public static PublicKeyCredentialUserEntity fromMap(Map<String, ?> map, SerializationType serializationType) {
         return new PublicKeyCredentialUserEntity(
                 Objects.requireNonNull((String) map.get(NAME)),
-                Base64.decode(Objects.requireNonNull((String) map.get(ID))),
+                deserializeBytes(Objects.requireNonNull(map.get(ID)), serializationType),
                 Objects.requireNonNull((String) map.get(DISPLAY_NAME))
         );
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        PublicKeyCredentialUserEntity that = (PublicKeyCredentialUserEntity) o;
+
+        if (!Arrays.equals(id, that.id)) return false;
+        return displayName.equals(that.displayName);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Arrays.hashCode(id);
+        result = 31 * result + displayName.hashCode();
+        return result;
     }
 }

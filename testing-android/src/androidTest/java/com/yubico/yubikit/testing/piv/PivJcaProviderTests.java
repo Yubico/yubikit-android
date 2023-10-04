@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Yubico.
+ * Copyright (C) 2022-2023 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.yubico.yubikit.testing;
+package com.yubico.yubikit.testing.piv;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 

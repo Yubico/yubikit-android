@@ -16,16 +16,18 @@
 
 package com.yubico.yubikit.fido.webauthn;
 
-import com.yubico.yubikit.core.internal.codec.Base64;
-
-import javax.annotation.Nullable;
+import static com.yubico.yubikit.fido.webauthn.SerializationUtils.deserializeBytes;
+import static com.yubico.yubikit.fido.webauthn.SerializationUtils.serializeBytes;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+
+import javax.annotation.Nullable;
 
 public class PublicKeyCredentialRequestOptions {
     private final static String CHALLENGE = "challenge";
@@ -87,18 +89,18 @@ public class PublicKeyCredentialRequestOptions {
         return extensions;
     }
 
-    public Map<String, ?> toMap() {
+    public Map<String, ?> toMap(SerializationType serializationType) {
         Map<String, Object> map = new HashMap<>();
-        map.put(CHALLENGE, Base64.encode(challenge));
+        map.put(CHALLENGE, serializeBytes(challenge, serializationType));
         if (timeout != null) {
             map.put(TIMEOUT, timeout);
         }
-        if(rpId != null) {
+        if (rpId != null) {
             map.put(RP_ID, rpId);
         }
         List<Map<String, ?>> allowCredentialsList = new ArrayList<>();
         for (PublicKeyCredentialDescriptor cred : allowCredentials) {
-            allowCredentialsList.add(cred.toMap());
+            allowCredentialsList.add(cred.toMap(serializationType));
         }
         map.put(ALLOW_CREDENTIALS, allowCredentialsList);
         map.put(USER_VERIFICATION, userVerification);
@@ -109,25 +111,55 @@ public class PublicKeyCredentialRequestOptions {
     }
 
     @SuppressWarnings("unchecked")
-    public static PublicKeyCredentialRequestOptions fromMap(Map<String, ?> map) {
+    public static PublicKeyCredentialRequestOptions fromMap(Map<String, ?> map, SerializationType serializationType) {
         List<PublicKeyCredentialDescriptor> allowCredentials = null;
         List<Map<String, ?>> allowCredentialsList = (List<Map<String, ?>>) map.get(ALLOW_CREDENTIALS);
         if (allowCredentialsList != null) {
             allowCredentials = new ArrayList<>();
             for (Map<String, ?> cred : allowCredentialsList) {
-                allowCredentials.add(PublicKeyCredentialDescriptor.fromMap(cred));
+                allowCredentials.add(PublicKeyCredentialDescriptor.fromMap(cred, serializationType));
             }
         }
 
         Number timeout = ((Number) map.get(TIMEOUT));
 
         return new PublicKeyCredentialRequestOptions(
-                Base64.decode(Objects.requireNonNull((String) map.get(CHALLENGE))),
+                deserializeBytes(Objects.requireNonNull(map.get(CHALLENGE)), serializationType),
                 timeout == null ? null : timeout.longValue(),
                 (String) map.get(RP_ID),
                 allowCredentials,
                 (String) map.get(USER_VERIFICATION),
                 null  // Extensions currently ignored
         );
+    }
+
+    public static PublicKeyCredentialRequestOptions fromMap(Map<String, ?> map) {
+        return fromMap(map, SerializationType.DEFAULT);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        PublicKeyCredentialRequestOptions that = (PublicKeyCredentialRequestOptions) o;
+
+        if (!Arrays.equals(challenge, that.challenge)) return false;
+        if (!Objects.equals(timeout, that.timeout)) return false;
+        if (!Objects.equals(rpId, that.rpId)) return false;
+        if (!allowCredentials.equals(that.allowCredentials)) return false;
+        if (!userVerification.equals(that.userVerification)) return false;
+        return Objects.equals(extensions, that.extensions);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Arrays.hashCode(challenge);
+        result = 31 * result + (timeout != null ? timeout.hashCode() : 0);
+        result = 31 * result + (rpId != null ? rpId.hashCode() : 0);
+        result = 31 * result + allowCredentials.hashCode();
+        result = 31 * result + userVerification.hashCode();
+        result = 31 * result + (extensions != null ? extensions.hashCode() : 0);
+        return result;
     }
 }

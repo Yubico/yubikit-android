@@ -21,6 +21,7 @@ import com.yubico.yubikit.fido.webauthn.AuthenticatorAssertionResponse;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredential;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialDescriptor;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialUserEntity;
+import com.yubico.yubikit.fido.webauthn.SerializationType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -66,8 +67,9 @@ public class MultipleAssertionsAvailable extends Throwable {
         List<PublicKeyCredentialUserEntity> users = new ArrayList<>();
         for (Ctap2Session.AssertionData assertion : assertions) {
             try {
-                users.add(CredentialManager.getPublicKeyCredentialUserEntity(
-                        Objects.requireNonNull(assertion.getUser())
+                users.add(PublicKeyCredentialUserEntity.fromMap(
+                        Objects.requireNonNull(assertion.getUser()),
+                        SerializationType.CBOR
                 ));
             } catch (NullPointerException e) {
                 throw new UserInformationNotAvailableError();

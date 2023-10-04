@@ -31,5 +31,5 @@ public abstract class AuthenticatorResponse {
         return clientDataJson;
     }
 
-    public abstract Map<String, ?> toMap();
+    public abstract Map<String, ?> toMap(SerializationType serializationType);
 }

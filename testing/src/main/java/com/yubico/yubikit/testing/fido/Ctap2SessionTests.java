@@ -30,6 +30,7 @@ import com.yubico.yubikit.core.fido.CtapException;
 import com.yubico.yubikit.fido.ctap.ClientPin;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV1;
+import com.yubico.yubikit.fido.webauthn.SerializationType;
 
 import java.util.Collections;
 import java.util.List;
@@ -96,10 +97,20 @@ public class Ctap2SessionTests {
             state.cancel();
         }
 
+        final SerializationType cborType = SerializationType.CBOR;
+
         try {
             session.makeCredential(
-                    TestData.CLIENT_DATA_HASH, TestData.RP.toMap(), TestData.USER.toMap(), Collections.singletonList(TestData.PUB_KEY_CRED_PARAMS_ES256.toMap()),
-                    null, null, null, pinAuth, 1, state);
+                    TestData.CLIENT_DATA_HASH,
+                    TestData.RP.toMap(cborType),
+                    TestData.USER.toMap(cborType),
+                    Collections.singletonList(TestData.PUB_KEY_CRED_PARAMS_ES256.toMap(cborType)),
+                    null,
+                    null,
+                    null,
+                    pinAuth,
+                    1,
+                    state);
             fail("Make credential completed without being cancelled.");
         } catch (CtapException e) {
             assertThat(e.getCtapError(), is(CtapException.ERR_KEEPALIVE_CANCEL));

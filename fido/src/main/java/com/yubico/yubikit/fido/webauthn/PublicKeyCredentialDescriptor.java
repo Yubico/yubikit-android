@@ -16,15 +16,16 @@
 
 package com.yubico.yubikit.fido.webauthn;
 
-import com.yubico.yubikit.core.internal.codec.Base64;
-
-import javax.annotation.Nullable;
+import static com.yubico.yubikit.fido.webauthn.SerializationUtils.deserializeBytes;
+import static com.yubico.yubikit.fido.webauthn.SerializationUtils.serializeBytes;
 
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+
+import javax.annotation.Nullable;
 
 public class PublicKeyCredentialDescriptor {
     public static final String TYPE = "type";
@@ -61,10 +62,10 @@ public class PublicKeyCredentialDescriptor {
         return transports;
     }
 
-    public Map<String, ?> toMap() {
+    public Map<String, ?> toMap(SerializationType serializationType) {
         Map<String, Object> map = new HashMap<>();
         map.put(TYPE, type);
-        map.put(ID, Base64.encode(id));
+        map.put(ID, serializeBytes(id, serializationType));
         if (transports != null) {
             map.put(TRANSPORTS, transports);
         }
@@ -72,27 +73,33 @@ public class PublicKeyCredentialDescriptor {
     }
 
     @SuppressWarnings("unchecked")
-    public static PublicKeyCredentialDescriptor fromMap(Map<String, ?> map) {
+    public static PublicKeyCredentialDescriptor fromMap(
+            Map<String, ?> map,
+            SerializationType serializationType
+    ) {
         return new PublicKeyCredentialDescriptor(
                 Objects.requireNonNull((String) map.get(TYPE)),
-                Base64.decode(Objects.requireNonNull((String) map.get(ID))),
-                (List<String>) map.get(TRANSPORTS)
-        );
+                deserializeBytes(Objects.requireNonNull(map.get(ID)), serializationType),
+                (List<String>) map.get(TRANSPORTS));
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
+
         PublicKeyCredentialDescriptor that = (PublicKeyCredentialDescriptor) o;
-        return type.equals(that.type) &&
-                Arrays.equals(id, that.id);
+
+        if (!type.equals(that.type)) return false;
+        if (!Arrays.equals(id, that.id)) return false;
+        return Objects.equals(transports, that.transports);
     }
 
     @Override
     public int hashCode() {
-        int result = Objects.hash(type);
+        int result = type.hashCode();
         result = 31 * result + Arrays.hashCode(id);
+        result = 31 * result + (transports != null ? transports.hashCode() : 0);
         return result;
     }
 }

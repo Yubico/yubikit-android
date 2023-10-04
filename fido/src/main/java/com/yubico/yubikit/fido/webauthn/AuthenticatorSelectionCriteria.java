@@ -60,7 +60,7 @@ public class AuthenticatorSelectionCriteria {
         return userVerification;
     }
 
-    public Map<String, ?> toMap() {
+    public Map<String, ?> toMap(@SuppressWarnings("unused") SerializationType serializationType) {
         Map<String, Object> map = new HashMap<>();
         if (authenticatorAttachment != null) {
             map.put(AUTHENTICATOR_ATTACHMENT, authenticatorAttachment);
@@ -73,7 +73,9 @@ public class AuthenticatorSelectionCriteria {
         return map;
     }
 
-    public static AuthenticatorSelectionCriteria fromMap(Map<String, ?> map) {
+    public static AuthenticatorSelectionCriteria fromMap(
+            Map<String, ?> map,
+            @SuppressWarnings("unused") SerializationType serializationType) {
         String residentKeyRequirement = (String) map.get(RESIDENT_KEY);
         if (residentKeyRequirement == null) {
             // Backwards compatibility with WebAuthn level 1
@@ -88,5 +90,29 @@ public class AuthenticatorSelectionCriteria {
                 residentKeyRequirement,
                 (String) map.get(USER_VERIFICATION)
         );
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        AuthenticatorSelectionCriteria that = (AuthenticatorSelectionCriteria) o;
+
+        if (requireResidentKey != that.requireResidentKey) return false;
+        if (!Objects.equals(authenticatorAttachment, that.authenticatorAttachment))
+            return false;
+        if (!Objects.equals(residentKey, that.residentKey))
+            return false;
+        return userVerification.equals(that.userVerification);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = authenticatorAttachment != null ? authenticatorAttachment.hashCode() : 0;
+        result = 31 * result + (residentKey != null ? residentKey.hashCode() : 0);
+        result = 31 * result + (requireResidentKey ? 1 : 0);
+        result = 31 * result + userVerification.hashCode();
+        return result;
     }
 }

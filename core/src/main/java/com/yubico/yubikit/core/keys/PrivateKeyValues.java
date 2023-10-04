@@ -63,7 +63,6 @@ public abstract class PrivateKeyValues implements Destroyable {
         destroyed = true;
     }
 
-
     /**
      * Constructs a PrivateKeyValues instance using values from a JCA {@link PrivateKey}.
      *
@@ -167,13 +166,13 @@ public abstract class PrivateKeyValues implements Destroyable {
             this.primeExponentP = primeExponentP;
             this.primeExponentQ = primeExponentQ;
             this.crtCoefficient = crtCoefficient;
+
             if (!(
                     (primeExponentP != null && primeExponentQ != null && crtCoefficient != null)
                             || (primeExponentP == null && primeExponentQ == null && crtCoefficient == null)
             )) {
                 throw new IllegalArgumentException("All CRT values must either be present or omitted");
             }
-
         }
 
         public BigInteger getModulus() {

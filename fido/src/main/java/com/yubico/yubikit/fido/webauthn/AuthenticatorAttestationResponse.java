@@ -16,8 +16,10 @@
 
 package com.yubico.yubikit.fido.webauthn;
 
+import static com.yubico.yubikit.fido.webauthn.SerializationUtils.deserializeBytes;
+import static com.yubico.yubikit.fido.webauthn.SerializationUtils.serializeBytes;
+
 import com.yubico.yubikit.core.internal.Logger;
-import com.yubico.yubikit.core.internal.codec.Base64;
 import com.yubico.yubikit.fido.Cose;
 
 import org.slf4j.LoggerFactory;
@@ -26,6 +28,7 @@ import java.nio.ByteBuffer;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -127,30 +130,55 @@ public class AuthenticatorAttestationResponse extends AuthenticatorResponse {
     }
 
     @Override
-    public Map<String, ?> toMap() {
+    public Map<String, ?> toMap(SerializationType serializationType) {
         Map<String, Object> map = new HashMap<>();
-        map.put(CLIENT_DATA_JSON, Base64.encode(getClientDataJson()));
-        map.put(AUTHENTICATOR_DATA, Base64.encode(authenticatorData.getBytes()));
+        map.put(CLIENT_DATA_JSON, serializeBytes(getClientDataJson(), serializationType));
+        map.put(AUTHENTICATOR_DATA, serializeBytes(authenticatorData.getBytes(), serializationType));
         map.put(TRANSPORTS, transports);
         if (publicKey != null) {
-            map.put(PUBLIC_KEY, Base64.encode(publicKey));
+            map.put(PUBLIC_KEY, serializeBytes(publicKey, serializationType));
         }
         map.put(PUBLIC_KEY_ALGORITHM, publicKeyAlgorithm);
-        map.put(ATTESTATION_OBJECT, Base64.encode(attestationObject));
+        map.put(ATTESTATION_OBJECT, serializeBytes(attestationObject, serializationType));
         return map;
     }
 
     @SuppressWarnings("unchecked")
-    public static AuthenticatorAttestationResponse fromMap(Map<String, ?> map) {
-        String publicKey = (String) map.get(PUBLIC_KEY);
+    public static AuthenticatorAttestationResponse fromMap(Map<String, ?> map, SerializationType serializationType) {
+        Object publicKey = map.get(PUBLIC_KEY);
         return new AuthenticatorAttestationResponse(
-                Base64.decode(Objects.requireNonNull((String) map.get(CLIENT_DATA_JSON))),
-                AuthenticatorData.parseFrom(ByteBuffer.wrap(
-                        Base64.decode((String) map.get(AUTHENTICATOR_DATA)))),
+                deserializeBytes(Objects.requireNonNull(map.get(CLIENT_DATA_JSON)), serializationType),
+                AuthenticatorData.parseFrom(
+                        ByteBuffer.wrap(
+                                deserializeBytes(map.get(AUTHENTICATOR_DATA), serializationType))),
                 (List<String>) Objects.requireNonNull(map.get(TRANSPORTS)),
-                publicKey == null ? null : Base64.decode(publicKey),
+                publicKey == null ? null : deserializeBytes(publicKey, serializationType),
                 (Integer) map.get(PUBLIC_KEY_ALGORITHM),
-                Base64.decode(Objects.requireNonNull((String) map.get(ATTESTATION_OBJECT)))
+                deserializeBytes(Objects.requireNonNull(map.get(ATTESTATION_OBJECT)), serializationType)
         );
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        AuthenticatorAttestationResponse that = (AuthenticatorAttestationResponse) o;
+
+        if (!authenticatorData.equals(that.authenticatorData)) return false;
+        if (!transports.equals(that.transports)) return false;
+        if (!Arrays.equals(publicKey, that.publicKey)) return false;
+        if (!publicKeyAlgorithm.equals(that.publicKeyAlgorithm)) return false;
+        return Arrays.equals(attestationObject, that.attestationObject);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = authenticatorData.hashCode();
+        result = 31 * result + transports.hashCode();
+        result = 31 * result + Arrays.hashCode(publicKey);
+        result = 31 * result + publicKeyAlgorithm.hashCode();
+        result = 31 * result + Arrays.hashCode(attestationObject);
+        return result;
     }
 }

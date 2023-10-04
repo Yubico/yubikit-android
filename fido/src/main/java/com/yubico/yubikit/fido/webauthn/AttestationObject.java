@@ -17,19 +17,12 @@
 package com.yubico.yubikit.fido.webauthn;
 
 import com.yubico.yubikit.fido.Cbor;
-import com.yubico.yubikit.fido.Cose;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
 
 import java.nio.ByteBuffer;
-import java.security.NoSuchAlgorithmException;
-import java.security.PublicKey;
-import java.security.spec.InvalidKeySpecException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
-
-import javax.annotation.Nullable;
 
 /**
  * Webauthn AttestationObject which exposes attestation authenticator data.
@@ -83,5 +76,27 @@ public class AttestationObject {
         attestationObject.put(AttestationObject.KEY_AUTHENTICATOR_DATA, authenticatorData.getBytes());
         attestationObject.put(AttestationObject.KEY_ATTESTATION_STATEMENT, attestationStatement);
         return Cbor.encode(attestationObject);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        AttestationObject that = (AttestationObject) o;
+
+        if (!format.equals(that.format)) return false;
+        if (!authenticatorData.equals(that.authenticatorData)) return false;
+        return Arrays.equals(
+                Cbor.encode(attestationStatement),
+                Cbor.encode(that.attestationStatement));
+    }
+
+    @Override
+    public int hashCode() {
+        int result = format.hashCode();
+        result = 31 * result + authenticatorData.hashCode();
+        result = 31 * result + Arrays.hashCode(Cbor.encode(attestationStatement));
+        return result;
     }
 }
