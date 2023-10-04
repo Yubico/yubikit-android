@@ -186,6 +186,11 @@ public class AuthenticatorData {
                 return false;
         }
 
+        if ((extensions != null && that.extensions == null) ||
+                (extensions == null && that.extensions != null)) {
+            return false;
+        }
+
         return Arrays.equals(rawData, that.rawData);
     }
 

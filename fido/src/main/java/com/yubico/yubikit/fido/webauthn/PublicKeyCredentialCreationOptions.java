@@ -143,10 +143,6 @@ public class PublicKeyCredentialCreationOptions {
         return map;
     }
 
-    public Map<String, ?> toMap() {
-        return toMap(SerializationType.DEFAULT);
-    }
-
     @SuppressWarnings("unchecked")
     public static PublicKeyCredentialCreationOptions fromMap(
             Map<String, ?> map,

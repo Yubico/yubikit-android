@@ -124,7 +124,7 @@ public class PublicKeyCredentialRequestOptions {
         Number timeout = ((Number) map.get(TIMEOUT));
 
         return new PublicKeyCredentialRequestOptions(
-                Objects.requireNonNull(deserializeBytes(map.get(CHALLENGE), serializationType)),
+                deserializeBytes(Objects.requireNonNull(map.get(CHALLENGE)), serializationType),
                 timeout == null ? null : timeout.longValue(),
                 (String) map.get(RP_ID),
                 allowCredentials,

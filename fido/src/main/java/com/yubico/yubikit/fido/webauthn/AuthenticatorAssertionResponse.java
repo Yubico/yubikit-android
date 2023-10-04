@@ -81,7 +81,7 @@ public class AuthenticatorAssertionResponse extends AuthenticatorResponse {
                 deserializeBytes(Objects.requireNonNull(map.get(CLIENT_DATA_JSON)), serializationType),
                 deserializeBytes(Objects.requireNonNull(map.get(AUTHENTICATOR_DATA)), serializationType),
                 deserializeBytes(Objects.requireNonNull(map.get(SIGNATURE)), serializationType),
-                deserializeBytes(Objects.requireNonNull(map.get(USER_HANDLE)), serializationType));
+                deserializeBytes(map.get(USER_HANDLE), serializationType));
     }
 
     @Override
