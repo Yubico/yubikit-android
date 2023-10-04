@@ -16,8 +16,10 @@
 
 package com.yubico.yubikit.fido.webauthn;
 
+import static com.yubico.yubikit.fido.webauthn.SerializationUtils.deserializeBytes;
+import static com.yubico.yubikit.fido.webauthn.SerializationUtils.serializeBytes;
+
 import com.yubico.yubikit.core.internal.Logger;
-import com.yubico.yubikit.core.internal.codec.Base64;
 import com.yubico.yubikit.fido.Cose;
 
 import org.slf4j.LoggerFactory;
@@ -130,63 +132,30 @@ public class AuthenticatorAttestationResponse extends AuthenticatorResponse {
     @Override
     public Map<String, ?> toMap(SerializationType serializationType) {
         Map<String, Object> map = new HashMap<>();
-        switch (serializationType) {
-            case JSON: {
-                map.put(CLIENT_DATA_JSON, Base64.encode(getClientDataJson()));
-                map.put(AUTHENTICATOR_DATA, Base64.encode(authenticatorData.getBytes()));
-                map.put(TRANSPORTS, transports);
-                if (publicKey != null) {
-                    map.put(PUBLIC_KEY, Base64.encode(publicKey));
-                }
-                map.put(PUBLIC_KEY_ALGORITHM, publicKeyAlgorithm);
-                map.put(ATTESTATION_OBJECT, Base64.encode(attestationObject));
-                break;
-            }
-            case CBOR: {
-                map.put(CLIENT_DATA_JSON, getClientDataJson());
-                map.put(AUTHENTICATOR_DATA, authenticatorData.getBytes());
-                map.put(TRANSPORTS, transports);
-                if (publicKey != null) {
-                    map.put(PUBLIC_KEY, publicKey);
-                }
-                map.put(PUBLIC_KEY_ALGORITHM, publicKeyAlgorithm);
-                map.put(ATTESTATION_OBJECT, attestationObject);
-                break;
-            }
+        map.put(CLIENT_DATA_JSON, serializeBytes(getClientDataJson(), serializationType));
+        map.put(AUTHENTICATOR_DATA, serializeBytes(authenticatorData.getBytes(), serializationType));
+        map.put(TRANSPORTS, transports);
+        if (publicKey != null) {
+            map.put(PUBLIC_KEY, serializeBytes(publicKey, serializationType));
         }
+        map.put(PUBLIC_KEY_ALGORITHM, publicKeyAlgorithm);
+        map.put(ATTESTATION_OBJECT, serializeBytes(attestationObject, serializationType));
         return map;
-    }
-
-    public Map<String, ?> toMap() {
-        return toMap(SerializationType.DEFAULT);
     }
 
     @SuppressWarnings("unchecked")
     public static AuthenticatorAttestationResponse fromMap(Map<String, ?> map, SerializationType serializationType) {
-        Object publicKey = serializationType == SerializationType.JSON
-                ? (String) map.get(PUBLIC_KEY)
-                : (byte[]) map.get(PUBLIC_KEY);
+        Object publicKey = map.get(PUBLIC_KEY);
         return new AuthenticatorAttestationResponse(
-                serializationType == SerializationType.JSON
-                        ? Base64.decode(Objects.requireNonNull((String) map.get(CLIENT_DATA_JSON)))
-                        : Objects.requireNonNull((byte[]) map.get(CLIENT_DATA_JSON)),
-                AuthenticatorData.parseFrom(ByteBuffer.wrap(
-                        serializationType == SerializationType.JSON
-                                ? Base64.decode((String) map.get(AUTHENTICATOR_DATA))
-                                : (byte[]) map.get(AUTHENTICATOR_DATA))),
+                deserializeBytes(Objects.requireNonNull(map.get(CLIENT_DATA_JSON)), serializationType),
+                AuthenticatorData.parseFrom(
+                        ByteBuffer.wrap(
+                                deserializeBytes(map.get(AUTHENTICATOR_DATA), serializationType))),
                 (List<String>) Objects.requireNonNull(map.get(TRANSPORTS)),
-                publicKey == null ? null : serializationType == SerializationType.JSON
-                        ? Base64.decode((String) publicKey)
-                        : (byte[]) publicKey,
+                publicKey == null ? null : deserializeBytes(publicKey, serializationType),
                 (Integer) map.get(PUBLIC_KEY_ALGORITHM),
-                serializationType == SerializationType.JSON
-                        ? Base64.decode(Objects.requireNonNull((String) map.get(ATTESTATION_OBJECT)))
-                        : Objects.requireNonNull((byte[]) map.get(ATTESTATION_OBJECT))
+                deserializeBytes(Objects.requireNonNull(map.get(ATTESTATION_OBJECT)), serializationType)
         );
-    }
-
-    public static AuthenticatorAttestationResponse fromMap(Map<String, ?> map) {
-        return fromMap(map, SerializationType.DEFAULT);
     }
 
     @Override

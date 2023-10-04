@@ -37,7 +37,7 @@ public class PublicKeyCredentialRpEntity extends PublicKeyCredentialEntity {
         return id;
     }
 
-    public Map<String, ?> toMap() {
+    public Map<String, ?> toMap(@SuppressWarnings("unused") SerializationType serializationType) {
         Map<String, Object> map = new HashMap<>();
         map.put(NAME, getName());
         if (id != null) {
@@ -46,7 +46,10 @@ public class PublicKeyCredentialRpEntity extends PublicKeyCredentialEntity {
         return map;
     }
 
-    public static PublicKeyCredentialRpEntity fromMap(Map<String, ?> map) {
+    public static PublicKeyCredentialRpEntity fromMap(
+            Map<String, ?> map,
+            @SuppressWarnings("unused") SerializationType serializationType
+    ) {
         return new PublicKeyCredentialRpEntity(
                 Objects.requireNonNull((String) map.get(NAME)),
                 (String) map.get(ID)

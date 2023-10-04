@@ -16,7 +16,8 @@
 
 package com.yubico.yubikit.fido.webauthn;
 
-import com.yubico.yubikit.core.internal.codec.Base64;
+import static com.yubico.yubikit.fido.webauthn.SerializationUtils.deserializeBytes;
+import static com.yubico.yubikit.fido.webauthn.SerializationUtils.serializeBytes;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -63,31 +64,13 @@ public class AuthenticatorAssertionResponse extends AuthenticatorResponse {
     @Override
     public Map<String, ?> toMap(SerializationType serializationType) {
         Map<String, Object> map = new HashMap<>();
-        switch (serializationType) {
-            case JSON: {
-                map.put(CLIENT_DATA_JSON, Base64.encode(getClientDataJson()));
-                map.put(AUTHENTICATOR_DATA, Base64.encode(authenticatorData));
-                map.put(SIGNATURE, Base64.encode(signature));
-                if (userHandle != null) {
-                    map.put(USER_HANDLE, Base64.encode(userHandle));
-                }
-                break;
-            }
-            case CBOR: {
-                map.put(CLIENT_DATA_JSON, getClientDataJson());
-                map.put(AUTHENTICATOR_DATA, authenticatorData);
-                map.put(SIGNATURE, signature);
-                if (userHandle != null) {
-                    map.put(USER_HANDLE, userHandle);
-                }
-                break;
-            }
+        map.put(CLIENT_DATA_JSON, serializeBytes(getClientDataJson(), serializationType));
+        map.put(AUTHENTICATOR_DATA, serializeBytes(authenticatorData, serializationType));
+        map.put(SIGNATURE, serializeBytes(signature, serializationType));
+        if (userHandle != null) {
+            map.put(USER_HANDLE, serializeBytes(userHandle, serializationType));
         }
         return map;
-    }
-
-    public Map<String, ?> toMap() {
-        return toMap(SerializationType.DEFAULT);
     }
 
     public static AuthenticatorAssertionResponse fromMap(
@@ -95,22 +78,10 @@ public class AuthenticatorAssertionResponse extends AuthenticatorResponse {
             SerializationType serializationType
     ) {
         return new AuthenticatorAssertionResponse(
-                serializationType == SerializationType.JSON
-                        ? Base64.decode(Objects.requireNonNull((String) map.get(CLIENT_DATA_JSON)))
-                        : Objects.requireNonNull((byte[]) map.get(CLIENT_DATA_JSON)),
-                serializationType == SerializationType.JSON
-                        ? Base64.decode(Objects.requireNonNull((String) map.get(AUTHENTICATOR_DATA)))
-                        : Objects.requireNonNull((byte[]) map.get(AUTHENTICATOR_DATA)),
-                serializationType == SerializationType.JSON
-                        ? Base64.decode(Objects.requireNonNull((String) map.get(SIGNATURE)))
-                        : Objects.requireNonNull((byte[]) map.get(SIGNATURE)),
-                serializationType == SerializationType.JSON
-                        ? Base64.decode((String) map.get(USER_HANDLE))
-                        : (byte[]) map.get(USER_HANDLE));
-    }
-
-    public static AuthenticatorAssertionResponse fromMap(Map<String, ?> map) {
-        return fromMap(map, SerializationType.DEFAULT);
+                deserializeBytes(Objects.requireNonNull(map.get(CLIENT_DATA_JSON)), serializationType),
+                deserializeBytes(Objects.requireNonNull(map.get(AUTHENTICATOR_DATA)), serializationType),
+                deserializeBytes(Objects.requireNonNull(map.get(SIGNATURE)), serializationType),
+                deserializeBytes(Objects.requireNonNull(map.get(USER_HANDLE)), serializationType));
     }
 
     @Override

@@ -80,6 +80,8 @@ public class Ctap2CredentialManagementTests {
     public static void testManagement(Ctap2Session session) throws Throwable {
         CredentialManagement credentialManagement = setupCredentialManagement(session);
 
+        final SerializationType cborType = SerializationType.CBOR;
+
         assertThat(credentialManagement.enumerateRps(), empty());
 
         Map<String, Object> options = new HashMap<>();
@@ -89,9 +91,9 @@ public class Ctap2CredentialManagementTests {
         byte[] pinAuth = credentialManagement.getPinUvAuth().authenticate(pinToken, TestData.CLIENT_DATA_HASH);
         session.makeCredential(
                 TestData.CLIENT_DATA_HASH,
-                TestData.RP.toMap(),
-                TestData.USER.toMap(SerializationType.CBOR),
-                Collections.singletonList(TestData.PUB_KEY_CRED_PARAMS_ES256.toMap()),
+                TestData.RP.toMap(cborType),
+                TestData.USER.toMap(cborType),
+                Collections.singletonList(TestData.PUB_KEY_CRED_PARAMS_ES256.toMap(cborType)),
                 null,
                 null,
                 options,

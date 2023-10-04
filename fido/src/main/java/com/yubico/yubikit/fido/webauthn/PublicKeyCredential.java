@@ -16,6 +16,8 @@
 
 package com.yubico.yubikit.fido.webauthn;
 
+import static com.yubico.yubikit.fido.webauthn.SerializationUtils.serializeBytes;
+
 import com.yubico.yubikit.core.internal.codec.Base64;
 
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
@@ -78,15 +80,7 @@ public class PublicKeyCredential extends Credential {
         Map<String, Object> map = new HashMap<>();
         map.put(ID, getId());
         map.put(TYPE, getType());
-        switch (serializationType) {
-            case CBOR:
-                map.put(RAW_ID, getRawId());
-                break;
-            case JSON:
-                map.put(RAW_ID, Base64.encode(getRawId()));
-                break;
-        }
-
+        map.put(RAW_ID, serializeBytes(getRawId(), serializationType));
         map.put(AUTHENTICATOR_ATTACHMENT, AuthenticatorAttachment.CROSS_PLATFORM);
         map.put(RESPONSE, getResponse().toMap(serializationType));
         return map;

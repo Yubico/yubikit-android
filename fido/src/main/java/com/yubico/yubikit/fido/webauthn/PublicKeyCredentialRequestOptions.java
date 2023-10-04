@@ -16,7 +16,8 @@
 
 package com.yubico.yubikit.fido.webauthn;
 
-import com.yubico.yubikit.core.internal.codec.Base64;
+import static com.yubico.yubikit.fido.webauthn.SerializationUtils.deserializeBytes;
+import static com.yubico.yubikit.fido.webauthn.SerializationUtils.serializeBytes;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -90,14 +91,7 @@ public class PublicKeyCredentialRequestOptions {
 
     public Map<String, ?> toMap(SerializationType serializationType) {
         Map<String, Object> map = new HashMap<>();
-        switch (serializationType) {
-            case JSON:
-                map.put(CHALLENGE, Base64.encode(challenge));
-                break;
-            case CBOR:
-                map.put(CHALLENGE, challenge);
-                break;
-        }
+        map.put(CHALLENGE, serializeBytes(challenge, serializationType));
         if (timeout != null) {
             map.put(TIMEOUT, timeout);
         }
@@ -106,7 +100,7 @@ public class PublicKeyCredentialRequestOptions {
         }
         List<Map<String, ?>> allowCredentialsList = new ArrayList<>();
         for (PublicKeyCredentialDescriptor cred : allowCredentials) {
-            allowCredentialsList.add(cred.toMap());
+            allowCredentialsList.add(cred.toMap(serializationType));
         }
         map.put(ALLOW_CREDENTIALS, allowCredentialsList);
         map.put(USER_VERIFICATION, userVerification);
@@ -116,10 +110,6 @@ public class PublicKeyCredentialRequestOptions {
         return map;
     }
 
-    public Map<String, ?> toMap() {
-        return toMap(SerializationType.DEFAULT);
-    }
-
     @SuppressWarnings("unchecked")
     public static PublicKeyCredentialRequestOptions fromMap(Map<String, ?> map, SerializationType serializationType) {
         List<PublicKeyCredentialDescriptor> allowCredentials = null;
@@ -127,16 +117,14 @@ public class PublicKeyCredentialRequestOptions {
         if (allowCredentialsList != null) {
             allowCredentials = new ArrayList<>();
             for (Map<String, ?> cred : allowCredentialsList) {
-                allowCredentials.add(PublicKeyCredentialDescriptor.fromMap(cred));
+                allowCredentials.add(PublicKeyCredentialDescriptor.fromMap(cred, serializationType));
             }
         }
 
         Number timeout = ((Number) map.get(TIMEOUT));
 
         return new PublicKeyCredentialRequestOptions(
-                serializationType == SerializationType.JSON
-                        ? Base64.decode(Objects.requireNonNull((String) map.get(CHALLENGE)))
-                        : Objects.requireNonNull((byte[]) map.get(CHALLENGE)),
+                Objects.requireNonNull(deserializeBytes(map.get(CHALLENGE), serializationType)),
                 timeout == null ? null : timeout.longValue(),
                 (String) map.get(RP_ID),
                 allowCredentials,

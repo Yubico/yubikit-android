@@ -60,7 +60,7 @@ public class AuthenticatorSelectionCriteria {
         return userVerification;
     }
 
-    public Map<String, ?> toMap() {
+    public Map<String, ?> toMap(@SuppressWarnings("unused") SerializationType serializationType) {
         Map<String, Object> map = new HashMap<>();
         if (authenticatorAttachment != null) {
             map.put(AUTHENTICATOR_ATTACHMENT, authenticatorAttachment);
@@ -73,7 +73,9 @@ public class AuthenticatorSelectionCriteria {
         return map;
     }
 
-    public static AuthenticatorSelectionCriteria fromMap(Map<String, ?> map) {
+    public static AuthenticatorSelectionCriteria fromMap(
+            Map<String, ?> map,
+            @SuppressWarnings("unused") SerializationType serializationType) {
         String residentKeyRequirement = (String) map.get(RESIDENT_KEY);
         if (residentKeyRequirement == null) {
             // Backwards compatibility with WebAuthn level 1

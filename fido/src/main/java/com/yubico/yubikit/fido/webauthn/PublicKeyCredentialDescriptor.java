@@ -16,7 +16,8 @@
 
 package com.yubico.yubikit.fido.webauthn;
 
-import com.yubico.yubikit.core.internal.codec.Base64;
+import static com.yubico.yubikit.fido.webauthn.SerializationUtils.deserializeBytes;
+import static com.yubico.yubikit.fido.webauthn.SerializationUtils.serializeBytes;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -64,22 +65,11 @@ public class PublicKeyCredentialDescriptor {
     public Map<String, ?> toMap(SerializationType serializationType) {
         Map<String, Object> map = new HashMap<>();
         map.put(TYPE, type);
-        switch (serializationType) {
-            case JSON:
-                map.put(ID, Base64.encode(id));
-                break;
-            case CBOR:
-                map.put(ID, id);
-                break;
-        }
+        map.put(ID, serializeBytes(id, serializationType));
         if (transports != null) {
             map.put(TRANSPORTS, transports);
         }
         return map;
-    }
-
-    public Map<String, ?> toMap() {
-        return toMap(SerializationType.DEFAULT);
     }
 
     @SuppressWarnings("unchecked")
@@ -89,15 +79,8 @@ public class PublicKeyCredentialDescriptor {
     ) {
         return new PublicKeyCredentialDescriptor(
                 Objects.requireNonNull((String) map.get(TYPE)),
-                serializationType == SerializationType.JSON
-                        ? Base64.decode(Objects.requireNonNull((String) map.get(ID)))
-                        : Objects.requireNonNull((byte[]) map.get(ID)),
-                (List<String>) map.get(TRANSPORTS)
-        );
-    }
-
-    public static PublicKeyCredentialDescriptor fromMap(Map<String, ?> map) {
-        return fromMap(map, SerializationType.DEFAULT);
+                deserializeBytes(Objects.requireNonNull(map.get(ID)), serializationType),
+                (List<String>) map.get(TRANSPORTS));
     }
 
     @Override

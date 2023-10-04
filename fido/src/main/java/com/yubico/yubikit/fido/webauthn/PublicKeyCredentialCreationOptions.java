@@ -16,7 +16,8 @@
 
 package com.yubico.yubikit.fido.webauthn;
 
-import com.yubico.yubikit.core.internal.codec.Base64;
+import static com.yubico.yubikit.fido.webauthn.SerializationUtils.deserializeBytes;
+import static com.yubico.yubikit.fido.webauthn.SerializationUtils.serializeBytes;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -114,19 +115,12 @@ public class PublicKeyCredentialCreationOptions {
 
     public Map<String, ?> toMap(SerializationType serializationType) {
         Map<String, Object> map = new HashMap<>();
-        map.put(RP, rp.toMap());
+        map.put(RP, rp.toMap(serializationType));
         map.put(USER, user.toMap(serializationType));
-        switch (serializationType) {
-            case JSON:
-                map.put(CHALLENGE, Base64.encode(challenge));
-                break;
-            case CBOR:
-                map.put(CHALLENGE, challenge);
-                break;
-        }
+        map.put(CHALLENGE, serializeBytes(challenge, serializationType));
         List<Map<String, ?>> paramsList = new ArrayList<>();
         for (PublicKeyCredentialParameters params : pubKeyCredParams) {
-            paramsList.add(params.toMap());
+            paramsList.add(params.toMap(serializationType));
         }
         map.put(PUB_KEY_CRED_PARAMS, paramsList);
         if (timeout != null) {
@@ -140,7 +134,7 @@ public class PublicKeyCredentialCreationOptions {
             map.put(EXCLUDE_CREDENTIALS, excludeCredentialsList);
         }
         if (authenticatorSelection != null) {
-            map.put(AUTHENTICATOR_SELECTION, authenticatorSelection.toMap());
+            map.put(AUTHENTICATOR_SELECTION, authenticatorSelection.toMap(serializationType));
         }
         map.put(ATTESTATION, attestation);
         if (extensions != null) {
@@ -154,10 +148,13 @@ public class PublicKeyCredentialCreationOptions {
     }
 
     @SuppressWarnings("unchecked")
-    public static PublicKeyCredentialCreationOptions fromMap(Map<String, ?> map, SerializationType serializationType) {
+    public static PublicKeyCredentialCreationOptions fromMap(
+            Map<String, ?> map,
+            SerializationType serializationType) {
         List<PublicKeyCredentialParameters> pubKeyCredParams = new ArrayList<>();
-        for (Map<String, ?> params : Objects.requireNonNull((List<Map<String, ?>>) map.get(PUB_KEY_CRED_PARAMS))) {
-            pubKeyCredParams.add(PublicKeyCredentialParameters.fromMap(params));
+        for (Map<String, ?> params :
+                Objects.requireNonNull((List<Map<String, ?>>) map.get(PUB_KEY_CRED_PARAMS))) {
+            pubKeyCredParams.add(PublicKeyCredentialParameters.fromMap(params, serializationType));
         }
         List<PublicKeyCredentialDescriptor> excludeCredentials = null;
         List<Map<String, ?>> excludeCredentialsList = (List<Map<String, ?>>) map.get(EXCLUDE_CREDENTIALS);
@@ -172,15 +169,19 @@ public class PublicKeyCredentialCreationOptions {
         Number timeout = (Number) map.get(TIMEOUT);
 
         return new PublicKeyCredentialCreationOptions(
-                PublicKeyCredentialRpEntity.fromMap(Objects.requireNonNull((Map<String, ?>) map.get(RP))),
-                PublicKeyCredentialUserEntity.fromMap(Objects.requireNonNull((Map<String, ?>) map.get(USER)), serializationType),
-                serializationType == SerializationType.JSON
-                        ? Base64.decode(Objects.requireNonNull((String) map.get(CHALLENGE)))
-                        : Objects.requireNonNull((byte[]) map.get(CHALLENGE)),
+                PublicKeyCredentialRpEntity.fromMap(
+                        Objects.requireNonNull((Map<String, ?>) map.get(RP)),
+                        serializationType),
+                PublicKeyCredentialUserEntity.fromMap(
+                        Objects.requireNonNull((Map<String, ?>) map.get(USER)),
+                        serializationType),
+                deserializeBytes(Objects.requireNonNull(map.get(CHALLENGE)), serializationType),
                 pubKeyCredParams,
                 timeout == null ? null : timeout.longValue(),
                 excludeCredentials,
-                authenticatorSelection == null ? null : AuthenticatorSelectionCriteria.fromMap(authenticatorSelection),
+                authenticatorSelection == null ? null : AuthenticatorSelectionCriteria.fromMap(
+                        authenticatorSelection,
+                        serializationType),
                 (String) map.get(ATTESTATION),
                 null  // Extensions currently ignored
         );

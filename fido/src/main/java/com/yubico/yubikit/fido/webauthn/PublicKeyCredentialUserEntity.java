@@ -16,7 +16,8 @@
 
 package com.yubico.yubikit.fido.webauthn;
 
-import com.yubico.yubikit.core.internal.codec.Base64;
+import static com.yubico.yubikit.fido.webauthn.SerializationUtils.deserializeBytes;
+import static com.yubico.yubikit.fido.webauthn.SerializationUtils.serializeBytes;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -47,34 +48,17 @@ public class PublicKeyCredentialUserEntity extends PublicKeyCredentialEntity {
     public Map<String, ?> toMap(SerializationType serializationType) {
         Map<String, Object> map = new HashMap<>();
         map.put(NAME, getName());
-        switch (serializationType) {
-            case JSON:
-                map.put(ID, Base64.encode(id));
-                break;
-            case CBOR:
-                map.put(ID, id);
-                break;
-        }
+        map.put(ID, serializeBytes(id, serializationType));
         map.put(DISPLAY_NAME, displayName);
         return map;
-    }
-
-    public Map<String, ?> toMap() {
-        return toMap(SerializationType.DEFAULT);
     }
 
     public static PublicKeyCredentialUserEntity fromMap(Map<String, ?> map, SerializationType serializationType) {
         return new PublicKeyCredentialUserEntity(
                 Objects.requireNonNull((String) map.get(NAME)),
-                serializationType == SerializationType.JSON
-                        ? Base64.decode(Objects.requireNonNull((String) map.get(ID)))
-                        : Objects.requireNonNull((byte[]) map.get(ID)),
+                deserializeBytes(Objects.requireNonNull(map.get(ID)), serializationType),
                 Objects.requireNonNull((String) map.get(DISPLAY_NAME))
         );
-    }
-
-    public static PublicKeyCredentialUserEntity fromMap(Map<String, ?> map) {
-        return fromMap(map, SerializationType.DEFAULT);
     }
 
     @Override

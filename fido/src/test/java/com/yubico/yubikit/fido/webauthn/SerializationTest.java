@@ -43,12 +43,12 @@ public class SerializationTest {
                 "An Example Company", "example.com"
         );
 
-        Map<String, ?> map = rp.toMap();
+        Map<String, ?> map = rp.toMap(SerializationType.CBOR);
 
         Assert.assertEquals(rp.getId(), map.get("id"));
         Assert.assertEquals(rp.getName(), map.get("name"));
 
-        Assert.assertEquals(rp, PublicKeyCredentialRpEntity.fromMap(map));
+        Assert.assertEquals(rp, PublicKeyCredentialRpEntity.fromMap(map, SerializationType.CBOR));
     }
 
     @Test
@@ -88,12 +88,12 @@ public class SerializationTest {
                 -7
         );
 
-        Map<String, ?> map = param.toMap();
+        Map<String, ?> map = param.toMap(SerializationType.CBOR);
 
         Assert.assertEquals(param.getType(), map.get("type"));
         Assert.assertEquals(param.getAlg(), map.get("alg"));
 
-        Assert.assertEquals(param, PublicKeyCredentialParameters.fromMap(map));
+        Assert.assertEquals(param, PublicKeyCredentialParameters.fromMap(map, SerializationType.CBOR));
     }
 
     private void compareDescriptorLists(List<PublicKeyCredentialDescriptor> a, List<PublicKeyCredentialDescriptor> b) {
@@ -133,7 +133,7 @@ public class SerializationTest {
                 UserVerificationRequirement.PREFERRED
         );
 
-        Map<String, ?> map = criteria.toMap();
+        Map<String, ?> map = criteria.toMap(SerializationType.CBOR);
 
         Assert.assertNotNull(criteria.getAuthenticatorAttachment());
         Assert.assertNotNull(criteria.getResidentKey());
@@ -141,7 +141,7 @@ public class SerializationTest {
         Assert.assertEquals(criteria.getUserVerification(), map.get("userVerification"));
         Assert.assertEquals(criteria.getResidentKey(), map.get("residentKey"));
 
-        Assert.assertEquals(criteria, AuthenticatorSelectionCriteria.fromMap(map));
+        Assert.assertEquals(criteria, AuthenticatorSelectionCriteria.fromMap(map, SerializationType.CBOR));
     }
 
     private void compareCreationOptions(PublicKeyCredentialCreationOptions a, PublicKeyCredentialCreationOptions b) {

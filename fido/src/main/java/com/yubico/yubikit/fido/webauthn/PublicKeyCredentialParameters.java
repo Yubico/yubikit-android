@@ -40,14 +40,16 @@ public class PublicKeyCredentialParameters {
         return alg;
     }
 
-    public Map<String, ?> toMap() {
+    public Map<String, ?> toMap(@SuppressWarnings("unused") SerializationType serializationType) {
         Map<String, Object> map = new HashMap<>();
         map.put(TYPE, type);
         map.put(ALG, alg);
         return map;
     }
 
-    public static PublicKeyCredentialParameters fromMap(Map<String, ?> map) {
+    public static PublicKeyCredentialParameters fromMap(
+            Map<String, ?> map,
+            @SuppressWarnings("unused") SerializationType serializationType) {
         return new PublicKeyCredentialParameters(
                 Objects.requireNonNull((String) map.get(TYPE)),
                 Objects.requireNonNull((Integer) map.get(ALG))

@@ -97,12 +97,14 @@ public class Ctap2SessionTests {
             state.cancel();
         }
 
+        final SerializationType cborType = SerializationType.CBOR;
+
         try {
             session.makeCredential(
                     TestData.CLIENT_DATA_HASH,
-                    TestData.RP.toMap(),
-                    TestData.USER.toMap(SerializationType.CBOR),
-                    Collections.singletonList(TestData.PUB_KEY_CRED_PARAMS_ES256.toMap()),
+                    TestData.RP.toMap(cborType),
+                    TestData.USER.toMap(cborType),
+                    Collections.singletonList(TestData.PUB_KEY_CRED_PARAMS_ES256.toMap(cborType)),
                     null,
                     null,
                     null,
