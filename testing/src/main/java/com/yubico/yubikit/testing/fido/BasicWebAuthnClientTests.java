@@ -34,6 +34,7 @@ import com.yubico.yubikit.fido.client.ClientError;
 import com.yubico.yubikit.fido.client.CredentialManager;
 import com.yubico.yubikit.fido.client.MultipleAssertionsAvailable;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
+import com.yubico.yubikit.fido.ctap.FidoVersion;
 import com.yubico.yubikit.fido.webauthn.AuthenticatorAssertionResponse;
 import com.yubico.yubikit.fido.webauthn.AuthenticatorAttestationResponse;
 import com.yubico.yubikit.fido.webauthn.AuthenticatorSelectionCriteria;
@@ -501,22 +502,22 @@ public class BasicWebAuthnClientTests {
                 null,
                 null);
 
-        CredentialManager credmgmt = webauthn.getCredentialManager(TestData.PIN);
+        CredentialManager credentialManager = webauthn.getCredentialManager(TestData.PIN);
 
-        assertThat(credmgmt.getCredentialCount(), equalTo(1));
+        assertThat(credentialManager.getCredentialCount(), equalTo(1));
 
-        List<String> rpIds = credmgmt.getRpIdList();
+        List<String> rpIds = credentialManager.getRpIdList();
         assertThat(rpIds, equalTo(Collections.singletonList(TestData.RP_ID)));
 
-        Map<PublicKeyCredentialDescriptor, PublicKeyCredentialUserEntity> credentials = credmgmt.getCredentials(TestData.RP_ID);
+        Map<PublicKeyCredentialDescriptor, PublicKeyCredentialUserEntity> credentials = credentialManager.getCredentials(TestData.RP_ID);
         assertThat(credentials.size(), equalTo(1));
         PublicKeyCredentialDescriptor key = credentials.keySet().iterator().next();
         assertThat(Objects.requireNonNull(credentials.get(key)).getId(), equalTo(TestData.USER_ID));
 
-        credmgmt.deleteCredential(key);
-        assertThat(credmgmt.getCredentialCount(), equalTo(0));
-        assertTrue(credmgmt.getCredentials(TestData.RP_ID).isEmpty());
-        assertTrue(credmgmt.getRpIdList().isEmpty());
+        credentialManager.deleteCredential(key);
+        assertThat(credentialManager.getCredentialCount(), equalTo(0));
+        assertTrue(credentialManager.getCredentials(TestData.RP_ID).isEmpty());
+        assertTrue(credentialManager.getRpIdList().isEmpty());
     }
 
     private static PublicKeyCredentialCreationOptions getCreateOptions(

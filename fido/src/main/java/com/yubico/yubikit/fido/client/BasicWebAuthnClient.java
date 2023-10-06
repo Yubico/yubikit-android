@@ -22,6 +22,7 @@ import com.yubico.yubikit.core.fido.CtapException;
 import com.yubico.yubikit.fido.ctap.ClientPin;
 import com.yubico.yubikit.fido.ctap.CredentialManagement;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
+import com.yubico.yubikit.fido.ctap.FidoVersion;
 import com.yubico.yubikit.fido.ctap.PinUvAuthDummyProtocol;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV1;
 import com.yubico.yubikit.fido.webauthn.AttestationObject;
@@ -100,13 +101,16 @@ public class BasicWebAuthnClient implements Closeable {
         transports = info.getTransports();
 
         Map<String, ?> options = info.getOptions();
+        List<String> versions = info.getVersions();
+
+        FidoVersion version = FidoVersion.get(versions);
 
         Boolean clientPin = (Boolean) options.get(OPTION_CLIENT_PIN);
         pinSupported = clientPin != null;
         if (pinSupported && info.getPinUvAuthProtocols().contains(PinUvAuthProtocolV1.VERSION)) {
-            this.clientPin = new ClientPin(ctap, new PinUvAuthProtocolV1());
+            this.clientPin = new ClientPin(ctap, version, new PinUvAuthProtocolV1());
         } else {
-            this.clientPin = new ClientPin(ctap, new PinUvAuthDummyProtocol());
+            this.clientPin = new ClientPin(ctap, version, new PinUvAuthDummyProtocol());
         }
         pinConfigured = pinSupported && clientPin;
 
@@ -327,8 +331,9 @@ public class BasicWebAuthnClient implements Closeable {
      * @throws CommandException A communication in the protocol layer.
      * @throws ClientError      A higher level error.
      */
-    public CredentialManager getCredentialManager(char[] pin)
+    public CredentialManager getCredentialManager(@Nullable char[] pin)
             throws IOException, CommandException, ClientError {
+
         if (credentialManagementSupport == CredentialManagementSupport.NONE) {
             throw new ClientError(ClientError.Code.CONFIGURATION_UNSUPPORTED,
                     "Credential management is not supported on this device");
@@ -342,7 +347,7 @@ public class BasicWebAuthnClient implements Closeable {
                     new CredentialManagement(
                             ctap,
                             clientPin.getPinUvAuth(),
-                            clientPin.getPinToken(pin),
+                            clientPin.getPinToken(pin, ClientPin.PIN_PERMISSION_CM, null),
                             credentialManagementSupport == CredentialManagementSupport.PREVIEW
                     )
             );
@@ -424,7 +429,7 @@ public class BasicWebAuthnClient implements Closeable {
             }
 
             if (pin != null) {
-                pinToken = clientPin.getPinToken(pin);
+                pinToken = clientPin.getPinToken(pin, ClientPin.PIN_PERMISSION_MC, rpId);
                 pinUvAuthParam = clientPin.getPinUvAuth().authenticate(pinToken, clientDataHash);
                 pinUvAuthProtocol = clientPin.getPinUvAuth().getVersion();
             } else if (pinConfigured && !ctapOptions.containsKey(OPTION_USER_VERIFICATION)) {
@@ -512,7 +517,7 @@ public class BasicWebAuthnClient implements Closeable {
         byte[] pinToken = null;
         try {
             if (pin != null) {
-                pinToken = clientPin.getPinToken(pin);
+                pinToken = clientPin.getPinToken(pin, ClientPin.PIN_PERMISSION_GA, rpId);
                 pinUvAuthParam = clientPin.getPinUvAuth().authenticate(pinToken, clientDataHash);
                 pinUvAuthProtocol = clientPin.getPinUvAuth().getVersion();
             }

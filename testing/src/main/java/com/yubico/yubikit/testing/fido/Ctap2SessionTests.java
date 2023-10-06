@@ -29,6 +29,7 @@ import com.yubico.yubikit.core.application.CommandState;
 import com.yubico.yubikit.core.fido.CtapException;
 import com.yubico.yubikit.fido.ctap.ClientPin;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
+import com.yubico.yubikit.fido.ctap.FidoVersion;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV1;
 import com.yubico.yubikit.fido.webauthn.SerializationType;
 
@@ -44,8 +45,11 @@ public class Ctap2SessionTests {
         Ctap2Session.InfoData info = session.getInfo();
 
         List<String> versions = info.getVersions();
-        assertTrue("Returned version does not contain 'FIDO_2_0'", versions.contains("FIDO_2_0"));
-        assertTrue("Returned version does not contain 'U2F_V2'", versions.contains("U2F_V2"));
+        assertTrue("Returned version does not contain any recognized version",
+                versions.contains("U2F_V2") ||
+                        versions.contains("FIDO_2_0") ||
+                        versions.contains("FIDO_2_1_PRE") ||
+                        versions.contains("FIDO_2_1"));
 
         // Check AAGUID
         byte[] aaguid = info.getAaguid();
@@ -86,8 +90,10 @@ public class Ctap2SessionTests {
         // assumeThat("Using USB connection", device, instanceOf(UsbYubiKeyDevice.class));
         ensureDefaultPinSet(session);
 
-        ClientPin pin = new ClientPin(session, new PinUvAuthProtocolV1());
-        byte[] pinToken = pin.getPinToken(TestData.PIN);
+        Ctap2Session.InfoData info = session.getInfo();
+
+        ClientPin pin = new ClientPin(session, FidoVersion.get(info.getVersions()), new PinUvAuthProtocolV1());
+        byte[] pinToken = pin.getPinToken(TestData.PIN, ClientPin.PIN_PERMISSION_MC, TestData.RP.getId());
         byte[] pinAuth = pin.getPinUvAuth().authenticate(pinToken, TestData.CLIENT_DATA_HASH);
 
         CommandState state = new CommandState();
@@ -109,7 +115,7 @@ public class Ctap2SessionTests {
                     null,
                     null,
                     pinAuth,
-                    1,
+                    pin.getPinUvAuth().getVersion(),
                     null,
                     state);
             fail("Make credential completed without being cancelled.");

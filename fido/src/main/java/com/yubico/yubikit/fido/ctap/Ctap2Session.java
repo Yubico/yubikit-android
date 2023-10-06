@@ -62,19 +62,19 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
 
     private static final byte NFCCTAP_MSG = 0x10;
 
-    private static final byte CMD_MAKE_CREDENTIAL = 0x01;
-    private static final byte CMD_GET_ASSERTION = 0x02;
-    private static final byte CMD_GET_INFO = 0x04;
-    private static final byte CMD_CLIENT_PIN = 0x06;
-    private static final byte CMD_RESET = 0x07;
-    private static final byte CMD_GET_NEXT_ASSERTION = 0x08;
-    private static final byte CMD_BIO_ENROLLMENT = 0x09;
-    private static final byte CMD_CREDENTIAL_MANAGEMENT = 0x0A;
-    private static final byte CMD_SELECTION = 0x0B;
-    private static final byte CMD_LARGE_BLOBS = 0x0C;
-    private static final byte CMD_CONFIG = 0x0D;
-    private static final byte CMD_BIO_ENROLLMENT_PRE = 0x40;
-    private static final byte CMD_CREDENTIAL_MANAGEMENT_PRE = 0x41;
+    public static final byte CMD_MAKE_CREDENTIAL = 0x01;
+    public static final byte CMD_GET_ASSERTION = 0x02;
+    public static final byte CMD_GET_INFO = 0x04;
+    public static final byte CMD_CLIENT_PIN = 0x06;
+    public static final byte CMD_RESET = 0x07;
+    public static final byte CMD_GET_NEXT_ASSERTION = 0x08;
+    public static final byte CMD_BIO_ENROLLMENT = 0x09;
+    public static final byte CMD_CREDENTIAL_MANAGEMENT = 0x0A;
+    public static final byte CMD_SELECTION = 0x0B;
+    public static final byte CMD_LARGE_BLOBS = 0x0C;
+    public static final byte CMD_CONFIG = 0x0D;
+    public static final byte CMD_BIO_ENROLLMENT_PRE = 0x40;
+    public static final byte CMD_CREDENTIAL_MANAGEMENT_PRE = 0x41;
 
     private final Version version;
     private final Backend<?> backend;
@@ -150,6 +150,8 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
         if (payload != null) {
             Cbor.encodeTo(baos, payload);
         }
+
+        logger.debug("{}", StringUtils.bytesToHex(baos.toByteArray()));
         byte[] response = backend.sendCbor(baos.toByteArray(), state);
         byte status = response[0];
         if (status != 0x00) {
@@ -350,9 +352,13 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
                         keyAgreement,
                         pinUvAuthParam,
                         newPinEnc,
-                        pinHashEnc,
+                        pinHashEnc
+                        ,
+                        null,
+                        null,
                         permissions,
-                        rpId), null);
+                        rpId
+                ), null);
     }
 
     /**
@@ -377,6 +383,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
      * This command is used by the platform to manage discoverable credentials on the
      * authenticator.
      *
+     * @param command           Either CMD_CREDENTIAL_MANAGEMENT or CMD_CREDENTIAL_MANAGEMENT_PRE
      * @param subCommand        The subCommand currently being requested
      * @param subCommandParams  A map of subCommands parameters.
      * @param pinUvAuthProtocol PIN/UV protocol version chosen by the platform.
@@ -386,6 +393,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
      * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#authenticatorCredentialManagement">authenticatorCredentialManagement</a>
      */
     Map<Integer, ?> credentialManagement(
+            byte command,
             int subCommand,
             @Nullable Map<?, ?> subCommandParams,
             @Nullable Integer pinUvAuthProtocol,
@@ -393,8 +401,8 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
     ) throws IOException, CommandException {
         Logger.trace(logger,
                 "Call CMD_CREDENTIAL_MANAGEMENT ({})",
-                String.format("0x%02X", CMD_CREDENTIAL_MANAGEMENT));
-        return sendCbor(CMD_CREDENTIAL_MANAGEMENT, args(
+                String.format("0x%02X", command));
+        return sendCbor(command, args(
                 subCommand,
                 subCommandParams,
                 pinUvAuthProtocol,
@@ -441,22 +449,6 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
                 "Call CMD_CONFIG ({})",
                 String.format("0x%02X", CMD_CONFIG));
         return sendCbor(CMD_CONFIG, args(
-                subCommand,
-                subCommandParams,
-                pinUvAuthParam != null ? pinUvAuthProtocol : null,
-                pinUvAuthParam), null);
-    }
-
-    Map<Integer, ?> credentialManagementPreview(
-            byte subCommand,
-            @Nullable Map<?, ?> subCommandParams,
-            int pinUvAuthProtocol,
-            @Nullable byte[] pinUvAuthParam
-    ) throws IOException, CommandException {
-        Logger.trace(logger,
-                "Call CMD_CREDENTIAL_MANAGEMENT_PRE ({})",
-                String.format("0x%02X", CMD_CREDENTIAL_MANAGEMENT_PRE));
-        return sendCbor(CMD_CREDENTIAL_MANAGEMENT_PRE, args(
                 subCommand,
                 subCommandParams,
                 pinUvAuthParam != null ? pinUvAuthProtocol : null,

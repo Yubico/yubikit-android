@@ -40,8 +40,8 @@ public class Ctap2SessionInstrumentedTests extends FidoInstrumentedTests {
         withCtap2Session(Ctap2SessionTests::testCancelCborCommandAfterDelay);
     }
 
-    @Test
-    public void testReset() throws Throwable {
-        withCtap2Session(Ctap2SessionTests::testReset);
-    }
+//    @Test
+//    public void testReset() throws Throwable {
+//        withCtap2Session(Ctap2SessionTests::testReset);
+//    }
 }

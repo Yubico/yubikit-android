@@ -100,7 +100,8 @@ public class CredentialManagement {
         }
 
         if (usePreview) {
-            return ctap.credentialManagementPreview(
+            return ctap.credentialManagement(
+                    Ctap2Session.CMD_CREDENTIAL_MANAGEMENT_PRE,
                     subCommand,
                     subCommandParams,
                     pinUvAuth.getVersion(),
@@ -108,6 +109,7 @@ public class CredentialManagement {
             );
         } else {
             return ctap.credentialManagement(
+                    Ctap2Session.CMD_CREDENTIAL_MANAGEMENT,
                     subCommand,
                     subCommandParams,
                     pinUvAuth.getVersion(),
@@ -147,15 +149,23 @@ public class CredentialManagement {
      * @throws CommandException A communication in the protocol layer.
      */
     public List<RpData> enumerateRps() throws IOException, CommandException {
-        Map<Integer, ?> first = call(CMD_ENUMERATE_RPS_BEGIN, null, true);
-        Integer nRps = (Integer) first.get(RESULT_TOTAL_RPS);
         List<RpData> list = new ArrayList<>();
-        if (nRps != null && nRps > 0) {
-            list.add(RpData.fromData(first));
-            for (int i = nRps; i > 1; i--) {
-                list.add(RpData.fromData(call(CMD_ENUMERATE_RPS_NEXT, null, false)));
+        try {
+            Map<Integer, ?> first = call(CMD_ENUMERATE_RPS_BEGIN, null, true);
+            Integer nRps = (Integer) first.get(RESULT_TOTAL_RPS);
+
+            if (nRps != null && nRps > 0) {
+                list.add(RpData.fromData(first));
+                for (int i = nRps; i > 1; i--) {
+                    list.add(RpData.fromData(call(CMD_ENUMERATE_RPS_NEXT, null, false)));
+                }
+            }
+        } catch (CtapException e) {
+            if (e.getCtapError() != CtapException.ERR_NO_CREDENTIALS) {
+                throw e;
             }
         }
+
         return list;
     }
 

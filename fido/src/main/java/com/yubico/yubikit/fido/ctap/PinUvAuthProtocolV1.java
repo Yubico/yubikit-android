@@ -16,6 +16,8 @@
 
 package com.yubico.yubikit.fido.ctap;
 
+import com.yubico.yubikit.core.keys.EllipticCurveValues;
+import com.yubico.yubikit.core.keys.PublicKeyValues;
 import com.yubico.yubikit.core.util.Pair;
 
 import java.math.BigInteger;
