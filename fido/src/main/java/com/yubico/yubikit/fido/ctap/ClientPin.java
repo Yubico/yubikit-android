@@ -17,6 +17,7 @@
 package com.yubico.yubikit.fido.ctap;
 
 import com.yubico.yubikit.core.application.CommandException;
+import com.yubico.yubikit.core.application.CommandState;
 import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.util.Pair;
 
@@ -48,45 +49,45 @@ public class ClientPin {
     private static final byte CMD_GET_PIN_TOKEN_USING_PIN_WITH_PERMISSIONS = 0x09;
 
     private static final int RESULT_KEY_AGREEMENT = 0x01;
-    private static final int RESULT_PIN_TOKEN = 0x02;
+    private static final int RESULT_PIN_UV_TOKEN = 0x02;
     private static final int RESULT_RETRIES = 0x03;
+    private static final int RESULT_POWER_CYCLE_STATE = 0x04;
+    private static final int RESULT_UV_RETRIES = 0x05;
 
     private static final int MIN_PIN_LEN = 4;
     private static final int PIN_BUFFER_LEN = 64;
     private static final int MAX_PIN_LEN = PIN_BUFFER_LEN - 1;
     private static final int PIN_HASH_LEN = 16;
 
-    public static final int PIN_PERMISSION_NONE = 0x00;
     public static final int PIN_PERMISSION_MC = 0x01;
     public static final int PIN_PERMISSION_GA = 0x02;
     public static final int PIN_PERMISSION_CM = 0x04;
     public static final int PIN_PERMISSION_BE = 0x08;
     public static final int PIN_PERMISSION_LBW = 0x10;
     public static final int PIN_PERMISSION_ACFG = 0x20;
-    public static final int PIN_PERMISSION_DEFAULT = PIN_PERMISSION_MC | PIN_PERMISSION_GA;
-    public static final String PIN_PERMISSION_DEFAULT_RPID = "localhost";
 
     private final Ctap2Session ctap;
     private final PinUvAuthProtocol pinUvAuth;
-    private final FidoVersion fidoVersion;
 
     private static final org.slf4j.Logger logger = LoggerFactory.getLogger(ClientPin.class);
 
     /**
      * Construct a new ClientPin object using a specified PIN/UV Auth protocol.
      *
-     * @param ctap       an active CTAP2 connection
+     * @param ctap      an active CTAP2 connection
      * @param pinUvAuth the PIN/UV Auth protocol to use
      */
-    public ClientPin(Ctap2Session ctap, FidoVersion fidoVersion, PinUvAuthProtocol pinUvAuth) {
-
-        if (fidoVersion == FidoVersion.U2F_V2 || fidoVersion == FidoVersion.INVALID) {
-            throw new IllegalArgumentException("Unsupported version");
-        }
-
+    public ClientPin(Ctap2Session ctap, PinUvAuthProtocol pinUvAuth) {
         this.ctap = ctap;
         this.pinUvAuth = pinUvAuth;
-        this.fidoVersion = fidoVersion;
+    }
+
+    public static boolean isSupported(Ctap2Session.InfoData infoData) {
+        return infoData.getOptions().containsKey("clientPin");
+    }
+
+    public static boolean isTokenSupported(Ctap2Session.InfoData infoData) {
+        return Boolean.TRUE.equals(infoData.getOptions().get("pinUvAuthToken"));
     }
 
     private Pair<Map<Integer, ?>, byte[]> getSharedSecret() throws IOException, CommandException {
@@ -94,6 +95,7 @@ public class ClientPin {
         Map<Integer, ?> result = ctap.clientPin(
                 pinUvAuth.getVersion(),
                 CMD_GET_KEY_AGREEMENT,
+                null,
                 null,
                 null,
                 null,
@@ -117,103 +119,25 @@ public class ClientPin {
     }
 
     /**
-     * Get the number of invalid PIN attempts available before the PIN becomes blocked.
-     *
-     * @return The number of PIN attempts remaining
-     * @throws IOException                   A communication error in the transport layer.
-     * @throws CommandException A communication in the protocol layer.
-     */
-    public int getPinRetries() throws IOException, CommandException {
-        Logger.debug(logger, "Getting PIN retries");
-        Map<Integer, ?> result = ctap.clientPin(
-                pinUvAuth.getVersion(),
-                CMD_GET_RETRIES,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null
-        );
-
-        return Objects.requireNonNull((Integer) result.get(RESULT_RETRIES));
-    }
-
-    private Integer getPermissions(byte command) {
-        switch(command) {
-            case Ctap2Session.CMD_MAKE_CREDENTIAL:
-                return PIN_PERMISSION_MC;
-            case Ctap2Session.CMD_GET_ASSERTION:
-                return PIN_PERMISSION_GA;
-            case Ctap2Session.CMD_BIO_ENROLLMENT:
-            case Ctap2Session.CMD_BIO_ENROLLMENT_PRE:
-                return PIN_PERMISSION_BE;
-
-            case Ctap2Session.CMD_CREDENTIAL_MANAGEMENT:
-            case Ctap2Session.CMD_CREDENTIAL_MANAGEMENT_PRE:
-                return PIN_PERMISSION_CM;
-
-            case Ctap2Session.CMD_LARGE_BLOBS:
-                return PIN_PERMISSION_LBW;
-
-            case Ctap2Session.CMD_CONFIG:
-                return PIN_PERMISSION_ACFG;
-
-            case Ctap2Session.CMD_GET_INFO:
-            case Ctap2Session.CMD_CLIENT_PIN:
-            case Ctap2Session.CMD_RESET:
-            case Ctap2Session.CMD_GET_NEXT_ASSERTION:
-            case Ctap2Session.CMD_SELECTION:
-            default:
-                return PIN_PERMISSION_NONE;
-        }
-    }
-
-
-    /**
-//     * Get a pinToken from the YubiKey which can be use to authenticate commands for the given
-//     * session.
-//     *
-//     * @param pin The FIDO PIN set for the YubiKey.
-//     * @return A pinToken valid for the current CTAP2 session.
-//     * @throws IOException                   A communication error in the transport layer.
-//     * @throws CommandException A communication in the protocol layer.
-//     */
-//    public byte[] getPinToken(@Nullable char[] pin)
-//            throws IOException, CommandException {
-//        return getPinToken(pin, null, null);
-//    }
-//
-//    /**
-//     * Get a pinToken from the YubiKey which can be use to authenticate commands for the given
-//     * session.
-//     *
-//     * @param pin The FIDO PIN set for the YubiKey.
-//     * @param permissions requested permissions
-//     * @return A pinToken valid for the current CTAP2 session.
-//     * @throws IOException                   A communication error in the transport layer.
-//     * @throws CommandException A communication in the protocol layer.
-//     */
-//    public byte[] getPinToken(@Nullable char[] pin, @Nullable Integer permissions)
-//            throws IOException, CommandException {
-//        return getPinToken(pin, permissions, null);
-//    }
-
-    /**
      * Get a pinToken from the YubiKey which can be use to authenticate commands for the given
      * session.
      *
-     * @param pin The FIDO PIN set for the YubiKey.
-     * @param permissions requested permissions
-     * @param rpId rpId for token
+     * @param pin             The FIDO PIN set for the YubiKey.
+     * @param permissions     requested permissions
+     * @param permissionsRpId rpId for token used in permission context
      * @return A pinToken valid for the current CTAP2 session.
-     * @throws IOException                   A communication error in the transport layer.
+     * @throws IOException      A communication error in the transport layer.
      * @throws CommandException A communication in the protocol layer.
      */
-    public byte[] getPinToken(@Nullable char[] pin,
+    public byte[] getPinToken(char[] pin,
                               @Nullable Integer permissions,
-                              @Nullable String rpId)
+                              @Nullable String permissionsRpId)
             throws IOException, CommandException {
+
+        if (!isSupported(ctap.getCachedInfo())) {
+            throw new IllegalStateException("Not supported");
+        }
+
         Pair<Map<Integer, ?>, byte[]> pair = getSharedSecret();
         byte[] pinHash = null;
         try {
@@ -226,21 +150,12 @@ public class ClientPin {
 
             byte subCommand;
 
-            switch (fidoVersion) {
-                case FIDO_2_1:
-                    if (pin == null) {
-                        subCommand = CMD_GET_PIN_TOKEN_USING_UV_WITH_PERMISSIONS;
-                    } else {
-                        subCommand = CMD_GET_PIN_TOKEN_USING_PIN_WITH_PERMISSIONS;
-                    }
-                    break;
-
-                case FIDO_2_1_PRE:
-                case FIDO_2_0:
-                    subCommand = CMD_GET_PIN_TOKEN;
-                    break;
-                default:
-                    throw new IllegalArgumentException("PIN not supported");
+            if (isTokenSupported(ctap.getCachedInfo())) {
+                subCommand = CMD_GET_PIN_TOKEN_USING_PIN_WITH_PERMISSIONS;
+            } else {
+                subCommand = CMD_GET_PIN_TOKEN;
+                permissions = null;
+                permissionsRpId = null;
             }
 
             Map<Integer, ?> result = ctap.clientPin(
@@ -250,11 +165,12 @@ public class ClientPin {
                     null,
                     null,
                     pinHashEnc,
-                    subCommand != CMD_GET_PIN_TOKEN ? permissions : null,
-                    subCommand != CMD_GET_PIN_TOKEN ? rpId : null
+                    permissions,
+                    permissionsRpId,
+                    null
             );
 
-            byte[] pinTokenEnc = (byte[]) result.get(RESULT_PIN_TOKEN);
+            byte[] pinTokenEnc = (byte[]) result.get(RESULT_PIN_UV_TOKEN);
             return pinUvAuth.decrypt(pair.second, pinTokenEnc);
         } catch (NoSuchAlgorithmException e) {
             Logger.error(logger, "Failure getting PIN token: ", e);
@@ -267,13 +183,109 @@ public class ClientPin {
     }
 
     /**
+     * Get a UV Token from the YubiKey which can be use to authenticate commands for the given
+     * session.
+     *
+     * @param permissions     requested permissions
+     * @param permissionsRpId rpId for token used in permission context
+     * @param state           If needed, the state to provide control over the ongoing operation
+     * @return A pinToken valid for the current CTAP2 session.
+     * @throws IOException      A communication error in the transport layer.
+     * @throws CommandException A communication in the protocol layer.
+     */
+    public byte[] getUvToken(@Nullable Integer permissions,
+                             @Nullable String permissionsRpId,
+                             @Nullable CommandState state)
+            throws IOException, CommandException {
+
+        if (!isTokenSupported(ctap.getCachedInfo())) {
+            throw new IllegalStateException("Not supported");
+        }
+
+        Pair<Map<Integer, ?>, byte[]> pair = getSharedSecret();
+
+        Map<Integer, ?> result = ctap.clientPin(
+                pinUvAuth.getVersion(),
+                CMD_GET_PIN_TOKEN_USING_UV_WITH_PERMISSIONS,
+                pair.first,
+                null,
+                null,
+                null,
+                permissions,
+                permissionsRpId,
+                state
+        );
+
+        byte[] pinTokenEnc = (byte[]) result.get(RESULT_PIN_UV_TOKEN);
+        return pinUvAuth.decrypt(pair.second, pinTokenEnc);
+    }
+
+    /**
+     * Get the number of invalid PIN attempts available before the PIN becomes blocked and the power
+     * cycle state, if available.
+     *
+     * @return A pair invalid PIN attempts available before the PIN becomes blocked and the power
+     * cycle state, if available.
+     * @throws IOException      A communication error in the transport layer.
+     * @throws CommandException A communication in the protocol layer.
+     */
+    public Pair<Integer, Integer> getPinRetries() throws IOException, CommandException {
+        Logger.debug(logger, "Getting PIN retries");
+        Map<Integer, ?> result = ctap.clientPin(
+                pinUvAuth.getVersion(),
+                CMD_GET_RETRIES,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+        );
+
+        return new Pair<>(
+                Objects.requireNonNull((Integer) result.get(RESULT_RETRIES)),
+                (Integer) result.get(RESULT_POWER_CYCLE_STATE));
+    }
+
+
+    /**
+     * Get the number of UV retries remaining.
+     *
+     * @return The number of UV retries remaining.
+     * @throws IOException      A communication error in the transport layer.
+     * @throws CommandException A communication in the protocol layer.
+     */
+    public int getUvRetries() throws IOException, CommandException {
+        Logger.debug(logger, "Getting UV retries");
+        Map<Integer, ?> result = ctap.clientPin(
+                pinUvAuth.getVersion(),
+                CMD_GET_UV_RETRIES,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+        );
+
+        return Objects.requireNonNull((Integer) result.get(RESULT_UV_RETRIES));
+    }
+
+    /**
      * Set the FIDO PIN on a YubiKey with no PIN currently set.
      *
      * @param pin The PIN to set
-     * @throws IOException                   A communication error in the transport layer.
+     * @throws IOException      A communication error in the transport layer.
      * @throws CommandException A communication in the protocol layer.
      */
     public void setPin(char[] pin) throws IOException, CommandException {
+
+        if (!isSupported(ctap.getCachedInfo())) {
+            throw new IllegalStateException("Not supported");
+        }
+
         Pair<Map<Integer, ?>, byte[]> pair = getSharedSecret();
 
         byte[] pinEnc = pinUvAuth.encrypt(pair.second, preparePin(pin, true));
@@ -285,7 +297,8 @@ public class ClientPin {
                 pinUvAuth.authenticate(pair.second, pinEnc),
                 pinEnc,
                 null,
-                PIN_PERMISSION_CM,
+                null,
+                null,
                 null
         );
         Logger.info(logger, "PIN set");
@@ -296,12 +309,16 @@ public class ClientPin {
      *
      * @param currentPin The currently set PIN
      * @param newPin     The new PIN to set
-     * @throws IOException                   A communication error in the transport layer.
+     * @throws IOException      A communication error in the transport layer.
      * @throws CommandException A communication in the protocol layer.
      */
     public void changePin(char[] currentPin, char[] newPin)
-            throws IOException, CommandException
-    {
+            throws IOException, CommandException {
+
+        if (!isSupported(ctap.getCachedInfo())) {
+            throw new IllegalStateException("Not supported");
+        }
+
         byte[] newPinBytes = preparePin(newPin, true);
         Pair<Map<Integer, ?>, byte[]> pair = getSharedSecret();
 
@@ -329,7 +346,8 @@ public class ClientPin {
                     pinUvAuthParam,
                     newPinEnc,
                     pinHashEnc,
-                    fidoVersion != FidoVersion.FIDO_2_0 ? PIN_PERMISSION_CM : null,
+                    null,
+                    null,
                     null
             );
             Logger.info(logger, "PIN changed");
@@ -346,11 +364,7 @@ public class ClientPin {
     /**
      * Check PIN length, encode to bytes, and optionally pad.
      */
-    static @Nullable byte[] preparePin(@Nullable char[] pin, boolean pad) {
-        if (pin == null) {
-            return null;
-        }
-
+    static byte[] preparePin(char[] pin, boolean pad) {
         if (pin.length < MIN_PIN_LEN) {
             throw new IllegalArgumentException(
                     "PIN must be at least " + MIN_PIN_LEN + " characters");

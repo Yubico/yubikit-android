@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Yubico.
+ * Copyright (C) 2023 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,12 +44,13 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 /**
- * Implements PIN/UV Auth Protocol 1
+ * Implements PIN/UV Auth Protocol 2
  * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#authenticatorClientPIN">authenticatorClientPIN</a>.
- * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#pinProto1">PIN/UV Auth Protocol One</a>.
+ * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#pinProto2">PIN/UV Auth Protocol Two</a>.
  */
-public class PinUvAuthProtocolV1 implements PinUvAuthProtocol {
-    public static final int VERSION = 1;
+
+public class PinUvAuthProtocolV2 extends PinUvAuthProtocolV1 {
+    public static final int VERSION = 2;
 
     private static final String HASH_ALG = "SHA-256";
     private static final String MAC_ALG = "HmacSHA256";
@@ -61,7 +62,7 @@ public class PinUvAuthProtocolV1 implements PinUvAuthProtocol {
     private static final byte[] IV = new byte[16];  // All zero IV
 
     private static final int COORDINATE_SIZE = 32;
-    private static final int AUTHENTICATE_HASH_LEN = 16;
+    private static final int AUTHENTICATE_HASH_LEN = 32;
 
     private static final int KEY_SHAREDSECRET_POINT_X = -2;
     private static final int KEY_SHAREDSECRET_POINT_Y = -3;
@@ -109,17 +110,19 @@ public class PinUvAuthProtocolV1 implements PinUvAuthProtocol {
             Cipher cipher = Cipher.getInstance(CIPHER_TRANSFORMATION);
             cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(key, CIPHER_ALG), new IvParameterSpec(IV));
             return cipher.doFinal(demPlaintext);
-        } catch (NoSuchAlgorithmException | InvalidKeyException | InvalidAlgorithmParameterException | NoSuchPaddingException | BadPaddingException | IllegalBlockSizeException e) {
+        } catch (NoSuchAlgorithmException | InvalidKeyException |
+                 InvalidAlgorithmParameterException | NoSuchPaddingException | BadPaddingException |
+                 IllegalBlockSizeException e) {
             throw new IllegalStateException(e);
         }
     }
 
     @Override
-    public byte[] decrypt(byte[] key, byte[] demCiphertext) {
+    public byte[] decrypt(byte[] key, byte[] ciphertext) {
         try {
             Cipher cipher = Cipher.getInstance(CIPHER_TRANSFORMATION);
             cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(key, CIPHER_ALG), new IvParameterSpec(IV));
-            return cipher.doFinal(demCiphertext);
+            return cipher.doFinal(ciphertext);
         } catch (NoSuchAlgorithmException | InvalidKeyException | InvalidAlgorithmParameterException | NoSuchPaddingException | BadPaddingException | IllegalBlockSizeException e) {
             throw new IllegalStateException(e);
         }
@@ -127,14 +130,16 @@ public class PinUvAuthProtocolV1 implements PinUvAuthProtocol {
 
     @Override
     public byte[] authenticate(byte[] key, byte[] message) {
+        byte[] hmacKey = Arrays.copyOf(key, AUTHENTICATE_HASH_LEN);
         Mac mac;
         try {
             mac = Mac.getInstance(MAC_ALG);
-            mac.init(new SecretKeySpec(key, MAC_ALG));
+            mac.init(new SecretKeySpec(hmacKey, MAC_ALG));
         } catch (NoSuchAlgorithmException | InvalidKeyException e) {
             throw new RuntimeException(e);
         }
-        return Arrays.copyOf(mac.doFinal(message), AUTHENTICATE_HASH_LEN);
+        byte[] result = mac.doFinal(message);
+        return Arrays.copyOf(result, result.length);
     }
 
     /**

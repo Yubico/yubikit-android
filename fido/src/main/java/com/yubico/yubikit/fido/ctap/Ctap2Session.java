@@ -78,6 +78,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
 
     private final Version version;
     private final Backend<?> backend;
+    private final InfoData info;
 
     private static final org.slf4j.Logger logger = LoggerFactory.getLogger(Ctap2Session.class);
 
@@ -97,7 +98,8 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
         }
     }
 
-    public Ctap2Session(SmartCardConnection connection) throws IOException, ApplicationNotAvailableException {
+    public Ctap2Session(SmartCardConnection connection)
+            throws IOException, ApplicationNotAvailableException, CommandException {
         SmartCardProtocol protocol = new SmartCardProtocol(connection);
         protocol.select(AppId.FIDO);
         // it is not possible to get the applet version over NFC/CCID
@@ -109,11 +111,12 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
                 return delegate.sendAndReceive(new Apdu(0x80, NFCCTAP_MSG, 0x00, 0x00, data));
             }
         };
+        info = getInfo();
         Logger.debug(logger, "Ctap2Session session initialized for connection={}",
                 connection.getClass().getSimpleName());
     }
 
-    public Ctap2Session(FidoConnection connection) throws IOException {
+    public Ctap2Session(FidoConnection connection) throws IOException, CommandException {
         FidoProtocol protocol = new FidoProtocol(connection);
         version = protocol.getVersion();
         backend = new Backend<FidoProtocol>(protocol) {
@@ -122,6 +125,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
                 return delegate.sendAndReceive(FidoProtocol.CTAPHID_CBOR, data, state);
             }
         };
+        info = getInfo();
         Logger.debug(logger, "Ctap2Session session initialized for connection={}, version={}",
                 connection.getClass().getSimpleName(),
                 version);
@@ -336,7 +340,8 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
             @Nullable byte[] newPinEnc,
             @Nullable byte[] pinHashEnc,
             @Nullable Integer permissions,
-            @Nullable String rpId
+            @Nullable String rpId,
+            @Nullable CommandState state
     ) throws IOException, CommandException {
         Logger.debug(logger, "clientPin for pinUvAuthProtocol={},subCommand={}," +
                         "keyAgreement={},pinUvAuthParam={},newPinEnc={},pinHashEnc={}," +
@@ -352,13 +357,12 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
                         keyAgreement,
                         pinUvAuthParam,
                         newPinEnc,
-                        pinHashEnc
-                        ,
+                        pinHashEnc,
                         null,
                         null,
                         permissions,
                         rpId
-                ), null);
+                ), state);
     }
 
     /**
@@ -463,6 +467,10 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
     @Override
     public Version getVersion() {
         return version;
+    }
+
+    public InfoData getCachedInfo() {
+        return info;
     }
 
     private static abstract class Backend<T extends Closeable> implements Closeable {

@@ -25,7 +25,6 @@ import com.yubico.yubikit.core.application.CommandException;
 import com.yubico.yubikit.core.fido.CtapException;
 import com.yubico.yubikit.fido.ctap.ClientPin;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
-import com.yubico.yubikit.fido.ctap.FidoVersion;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV1;
 
 import java.io.IOException;
@@ -39,7 +38,7 @@ public class Ctap2ClientPinTests {
 
         Ctap2Session.InfoData info = session.getInfo();
 
-        ClientPin pin = new ClientPin(session, FidoVersion.get(info.getVersions()), new PinUvAuthProtocolV1());
+        ClientPin pin = new ClientPin(session, new PinUvAuthProtocolV1());
         boolean pinSet = Objects.requireNonNull((Boolean) info.getOptions().get("clientPin"));
 
         if (!pinSet) {
@@ -52,26 +51,27 @@ public class Ctap2ClientPinTests {
     public static void testSetPinProtocol(Ctap2Session session) throws Throwable {
         char[] otherPin = "123123".toCharArray();
 
+        Integer permissions = ClientPin.PIN_PERMISSION_MC | ClientPin.PIN_PERMISSION_GA;
+        String permissionRpId = "localhost";
+
         ensureDefaultPinSet(session);
 
-        Ctap2Session.InfoData info = session.getInfo();
-
-        ClientPin pin = new ClientPin(session, FidoVersion.get(info.getVersions()), new PinUvAuthProtocolV1());
+        ClientPin pin = new ClientPin(session, new PinUvAuthProtocolV1());
         assertThat(pin.getPinUvAuth().getVersion(), is(1));
-        assertThat(pin.getPinRetries(), is(8));
+        assertThat(pin.getPinRetries().first, is(8));
 
         pin.changePin(TestData.PIN, otherPin);
         try {
-            pin.getPinToken(TestData.PIN, ClientPin.PIN_PERMISSION_DEFAULT, ClientPin.PIN_PERMISSION_DEFAULT_RPID);
+            pin.getPinToken(TestData.PIN, permissions, permissionRpId);
             fail("Wrong PIN was accepted");
         } catch (CtapException e) {
             assertThat(e.getCtapError(), is(CtapException.ERR_PIN_INVALID));
 
         }
-        assertThat(pin.getPinRetries(), is(7));
+        assertThat(pin.getPinRetries().first, is(7));
 
-        assertThat(pin.getPinToken(otherPin, ClientPin.PIN_PERMISSION_DEFAULT, ClientPin.PIN_PERMISSION_DEFAULT_RPID), notNullValue());
-        assertThat(pin.getPinRetries(), is(8));
+        assertThat(pin.getPinToken(otherPin, permissions, permissionRpId), notNullValue());
+        assertThat(pin.getPinRetries().first, is(8));
         pin.changePin(otherPin, TestData.PIN);
     }
 

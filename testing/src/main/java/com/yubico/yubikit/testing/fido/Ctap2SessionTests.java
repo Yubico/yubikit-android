@@ -29,7 +29,6 @@ import com.yubico.yubikit.core.application.CommandState;
 import com.yubico.yubikit.core.fido.CtapException;
 import com.yubico.yubikit.fido.ctap.ClientPin;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
-import com.yubico.yubikit.fido.ctap.FidoVersion;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV1;
 import com.yubico.yubikit.fido.webauthn.SerializationType;
 
@@ -92,7 +91,7 @@ public class Ctap2SessionTests {
 
         Ctap2Session.InfoData info = session.getInfo();
 
-        ClientPin pin = new ClientPin(session, FidoVersion.get(info.getVersions()), new PinUvAuthProtocolV1());
+        ClientPin pin = new ClientPin(session, new PinUvAuthProtocolV1());
         byte[] pinToken = pin.getPinToken(TestData.PIN, ClientPin.PIN_PERMISSION_MC, TestData.RP.getId());
         byte[] pinAuth = pin.getPinUvAuth().authenticate(pinToken, TestData.CLIENT_DATA_HASH);
 

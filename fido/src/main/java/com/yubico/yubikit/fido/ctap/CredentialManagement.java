@@ -16,8 +16,6 @@
 
 package com.yubico.yubikit.fido.ctap;
 
-import javax.annotation.Nullable;
-
 import com.yubico.yubikit.core.application.CommandException;
 import com.yubico.yubikit.core.fido.CtapException;
 import com.yubico.yubikit.fido.Cbor;
@@ -29,6 +27,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+
+import javax.annotation.Nullable;
 
 /**
  * Provides Credential management on the CTAP level.
@@ -62,7 +62,7 @@ public class CredentialManagement {
     private final Ctap2Session ctap;
     private final PinUvAuthProtocol pinUvAuth;
     private final byte[] pinUvToken;
-    private final boolean usePreview;
+    private final byte cmd;
 
     /**
      * Construct a new CredentialManagement object.
@@ -70,18 +70,28 @@ public class CredentialManagement {
      * @param ctap       an active CTAP2 connection.
      * @param pinUvAuth  the PIN/UV Auth protocol to use
      * @param pinUvToken a pinUvToken to be used, which must match the protocol and have the proper permissions
-     * @param usePreview use a preview version of credential management
      */
     public CredentialManagement(
             Ctap2Session ctap,
             PinUvAuthProtocol pinUvAuth,
-            byte[] pinUvToken,
-            boolean usePreview
+            byte[] pinUvToken
     ) {
         this.ctap = ctap;
+        Ctap2Session.InfoData ctapInfo = ctap.getCachedInfo();
+        Map<String, ?> options = ctapInfo.getOptions();
+
+        if (Boolean.TRUE.equals(options.get("credMgmt"))) {
+            cmd = Ctap2Session.CMD_CREDENTIAL_MANAGEMENT;
+        } else if (ctapInfo.getVersions().contains("FIDO_2_1_PRE")
+                &&
+                Boolean.TRUE.equals(options.get("credentialMgmtPreview"))) {
+            cmd = Ctap2Session.CMD_CREDENTIAL_MANAGEMENT_PRE;
+        } else {
+            throw new IllegalStateException("Credential manager not supported");
+        }
+
         this.pinUvAuth = pinUvAuth;
         this.pinUvToken = pinUvToken;
-        this.usePreview = usePreview;
     }
 
     private Map<Integer, ?> call(
@@ -99,22 +109,13 @@ public class CredentialManagement {
             pinUvAuthParam = pinUvAuth.authenticate(pinUvToken, output.toByteArray());
         }
 
-        if (usePreview) {
-            return ctap.credentialManagement(
-                    Ctap2Session.CMD_CREDENTIAL_MANAGEMENT_PRE,
-                    subCommand,
-                    subCommandParams,
-                    pinUvAuth.getVersion(),
-                    pinUvAuthParam
-            );
-        } else {
-            return ctap.credentialManagement(
-                    Ctap2Session.CMD_CREDENTIAL_MANAGEMENT,
-                    subCommand,
-                    subCommandParams,
-                    pinUvAuth.getVersion(),
-                    pinUvAuthParam);
-        }
+        return ctap.credentialManagement(
+                cmd,
+                subCommand,
+                subCommandParams,
+                pinUvAuth.getVersion(),
+                pinUvAuthParam
+        );
     }
 
     /**
@@ -130,7 +131,7 @@ public class CredentialManagement {
      * Read metadata about credential management from the YubiKey.
      *
      * @return Metadata from the YubiKey.
-     * @throws IOException                   A communication error in the transport layer.
+     * @throws IOException      A communication error in the transport layer.
      * @throws CommandException A communication in the protocol layer.
      */
     public Metadata getMetadata() throws IOException, CommandException {
@@ -145,7 +146,7 @@ public class CredentialManagement {
      * Enumerate which RPs this YubiKey has credentials stored for.
      *
      * @return A list of RPs.
-     * @throws IOException                   A communication error in the transport layer.
+     * @throws IOException      A communication error in the transport layer.
      * @throws CommandException A communication in the protocol layer.
      */
     public List<RpData> enumerateRps() throws IOException, CommandException {
@@ -174,7 +175,7 @@ public class CredentialManagement {
      *
      * @param rpIdHash The SHA-256 hash of an RP ID to enumerate for.
      * @return A list of Credentials.
-     * @throws IOException                   A communication error in the transport layer.
+     * @throws IOException      A communication error in the transport layer.
      * @throws CommandException A communication in the protocol layer.
      */
     public List<CredentialData> enumerateCredentials(byte[] rpIdHash) throws IOException, CommandException {
@@ -198,7 +199,7 @@ public class CredentialManagement {
      * Delete a stored credential.
      *
      * @param credentialId A Map representing a PublicKeyCredentialDescriptor identifying a credential to delete.
-     * @throws IOException                   A communication error in the transport layer.
+     * @throws IOException      A communication error in the transport layer.
      * @throws CommandException A communication in the protocol layer.
      */
     public void deleteCredential(Map<String, ?> credentialId) throws IOException, CommandException {

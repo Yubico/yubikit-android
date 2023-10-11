@@ -16,15 +16,10 @@
 
 package com.yubico.yubikit.testing.fido;
 
-import static com.yubico.yubikit.fido.client.BasicWebAuthnClient.OPTION_CREDENTIAL_MANAGEMENT;
-import static com.yubico.yubikit.fido.client.BasicWebAuthnClient.OPTION_CREDENTIAL_MANAGEMENT_PREVIEW;
-
 import com.yubico.yubikit.core.application.CommandException;
-import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.fido.ctap.ClientPin;
 import com.yubico.yubikit.fido.ctap.CredentialManagement;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
-import com.yubico.yubikit.fido.ctap.FidoVersion;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV1;
 import com.yubico.yubikit.fido.webauthn.SerializationType;
 
@@ -38,8 +33,6 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.greaterThan;
-
-import javax.annotation.Nullable;
 
 public class Ctap2CredentialManagementTests {
     /**
@@ -58,33 +51,20 @@ public class Ctap2CredentialManagementTests {
         assertThat(credentialManagement.getMetadata().getExistingResidentCredentialsCount(), equalTo(0));
     }
 
-    private static @Nullable CredentialManagement setupCredentialManagement(Ctap2Session session) throws IOException, CommandException {
-
-        final Ctap2Session.InfoData info = session.getInfo();
-        final boolean credMgmt = Boolean.TRUE.equals(info.getOptions().get(OPTION_CREDENTIAL_MANAGEMENT));
-        final boolean credMgmtPre = Boolean.TRUE.equals(info.getOptions().get(OPTION_CREDENTIAL_MANAGEMENT_PREVIEW));
-
-        if (!credMgmtPre && !credMgmt) {
-            return null;
-        }
+    private static CredentialManagement setupCredentialManagement(Ctap2Session session) throws IOException, CommandException {
 
         Ctap2ClientPinTests.ensureDefaultPinSet(session);
-        ClientPin clientPin = new ClientPin(session, FidoVersion.get(session.getInfo().getVersions()), new PinUvAuthProtocolV1());
+        ClientPin clientPin = new ClientPin(session, new PinUvAuthProtocolV1());
 
         return new CredentialManagement(
                 session,
                 clientPin.getPinUvAuth(),
-                clientPin.getPinToken(TestData.PIN, ClientPin.PIN_PERMISSION_CM, null),
-                credMgmtPre && !credMgmt
+                clientPin.getPinToken(TestData.PIN, ClientPin.PIN_PERMISSION_CM, null)
         );
     }
 
     public static void testReadMetadata(Ctap2Session session) throws Throwable {
         CredentialManagement credentialManagement = setupCredentialManagement(session);
-
-        if (credentialManagement == null) {
-            return;
-        }
 
         CredentialManagement.Metadata metadata = credentialManagement.getMetadata();
 
@@ -96,11 +76,6 @@ public class Ctap2CredentialManagementTests {
         Ctap2Session.InfoData info = session.getInfo();
         CredentialManagement credentialManagement = setupCredentialManagement(session);
 
-        if (credentialManagement == null) {
-            // no credential management available
-            return;
-        }
-
         final SerializationType cborType = SerializationType.CBOR;
 
         assertThat(credentialManagement.enumerateRps(), empty());
@@ -108,7 +83,7 @@ public class Ctap2CredentialManagementTests {
         Map<String, Object> options = new HashMap<>();
         options.put("rk", true);
 
-        byte[] pinToken = new ClientPin(session, FidoVersion.get(info.getVersions()), credentialManagement.getPinUvAuth())
+        byte[] pinToken = new ClientPin(session, credentialManagement.getPinUvAuth())
                 .getPinToken(TestData.PIN, ClientPin.PIN_PERMISSION_MC, TestData.RP.getId());
         byte[] pinAuth = credentialManagement.getPinUvAuth().authenticate(pinToken, TestData.CLIENT_DATA_HASH);
         session.makeCredential(
