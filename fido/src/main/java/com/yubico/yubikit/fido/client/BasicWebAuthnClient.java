@@ -24,6 +24,7 @@ import com.yubico.yubikit.fido.ctap.CredentialManagement;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.fido.ctap.PinUvAuthDummyProtocol;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV1;
+import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV2;
 import com.yubico.yubikit.fido.webauthn.AttestationObject;
 import com.yubico.yubikit.fido.webauthn.AuthenticatorAttestationResponse;
 import com.yubico.yubikit.fido.webauthn.AuthenticatorSelectionCriteria;
@@ -100,14 +101,24 @@ public class BasicWebAuthnClient implements Closeable {
 
         Boolean clientPin = (Boolean) options.get(OPTION_CLIENT_PIN);
         pinSupported = clientPin != null;
-//        if (pinSupported && info.getPinUvAuthProtocols().contains(PinUvAuthProtocolV2.VERSION)) {
-//            this.clientPin = new ClientPin(ctap, new PinUvAuthProtocolV2());
-//        } else
-        if (pinSupported && info.getPinUvAuthProtocols().contains(PinUvAuthProtocolV1.VERSION)) {
-            this.clientPin = new ClientPin(ctap, new PinUvAuthProtocolV1());
+
+        final List<Integer> pinUvAuthProtocols = info.getPinUvAuthProtocols();
+        if (pinUvAuthProtocols != null) {
+            // List of supported PIN/UV auth protocols in order of decreasing authenticator
+            // preference. MUST NOT contain duplicate values nor be empty if present.
+            int preferredPinUvAuthProtocol = pinUvAuthProtocols.get(0);
+
+            if (pinSupported && preferredPinUvAuthProtocol == 2) {
+                this.clientPin = new ClientPin(ctap, new PinUvAuthProtocolV2());
+            } else if (pinSupported && preferredPinUvAuthProtocol == 1) {
+                this.clientPin = new ClientPin(ctap, new PinUvAuthProtocolV1());
+            } else {
+                this.clientPin = new ClientPin(ctap, new PinUvAuthDummyProtocol());
+            }
         } else {
             this.clientPin = new ClientPin(ctap, new PinUvAuthDummyProtocol());
         }
+
         pinConfigured = pinSupported && clientPin;
 
         Boolean uv = (Boolean) options.get(OPTION_USER_VERIFICATION);

@@ -42,6 +42,11 @@ public interface PinUvAuthProtocol {
     Pair<Map<Integer, ?>, byte[]> encapsulate(Map<Integer, ?> peerCoseKey);
 
     /**
+     * Computes shared secret
+     */
+    byte[] kdf(byte[] z);
+
+    /**
      * Encrypts a plaintext to produce a ciphertext, which may be longer than the plaintext. The plaintext is restricted to being a multiple of the AES block size (16 bytes) in length.
      *
      * @param key          the secret key to use

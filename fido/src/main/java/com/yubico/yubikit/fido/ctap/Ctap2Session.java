@@ -521,6 +521,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
         private final byte[] aaguid;
         private final int maxMsgSize;
         private final Map<String, Object> options;
+        @Nullable
         private final List<Integer> pinUvAuthProtocols;
         @Nullable
         private final Integer maxCredentialCountInList;
@@ -558,6 +559,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
                 byte[] aaguid,
                 Map<String, Object> options,
                 int maxMsgSize,
+                @Nullable
                 List<Integer> pinUvAuthProtocols,
                 @Nullable Integer maxCredentialCountInList,
                 @Nullable Integer maxCredentialIdLength,
@@ -687,6 +689,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
          *
          * @return a list of supported versions.
          */
+        @Nullable
         public List<Integer> getPinUvAuthProtocols() {
             return pinUvAuthProtocols;
         }

@@ -50,4 +50,9 @@ public class PinUvAuthDummyProtocol implements PinUvAuthProtocol {
     public byte[] authenticate(byte[] key, byte[] message) {
         throw new UnsupportedPinUvAuthProtocolError();
     }
+
+    @Override
+    public byte[] kdf(byte[] z) {
+        throw new UnsupportedPinUvAuthProtocolError();
+    }
 }

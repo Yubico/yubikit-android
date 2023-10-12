@@ -97,7 +97,7 @@ public class Config {
         Integer pinUvProtocol = null;
         byte[] pinUvAuthParam = null;
 
-        final byte[] header = ByteBuffer.allocate(32).array();
+        final byte[] header = new byte[32];
         Arrays.fill(header, (byte) 0xff);
 
         if (pinUv != null) {

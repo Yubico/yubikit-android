@@ -16,28 +16,18 @@
 
 package com.yubico.yubikit.fido.ctap;
 
-import com.yubico.yubikit.core.util.Pair;
+import com.yubico.yubikit.core.util.RandomUtils;
 
-import java.math.BigInteger;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
-import java.security.KeyFactory;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.security.interfaces.ECPublicKey;
-import java.security.spec.ECPoint;
-import java.security.spec.ECPublicKeySpec;
-import java.security.spec.InvalidKeySpecException;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.KeyAgreement;
 import javax.crypto.Mac;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.IvParameterSpec;
@@ -45,6 +35,7 @@ import javax.crypto.spec.SecretKeySpec;
 
 /**
  * Implements PIN/UV Auth Protocol 2
+ *
  * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#authenticatorClientPIN">authenticatorClientPIN</a>.
  * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#pinProto2">PIN/UV Auth Protocol Two</a>.
  */
@@ -52,20 +43,11 @@ import javax.crypto.spec.SecretKeySpec;
 public class PinUvAuthProtocolV2 extends PinUvAuthProtocolV1 {
     public static final int VERSION = 2;
 
-    private static final String HASH_ALG = "SHA-256";
-    private static final String MAC_ALG = "HmacSHA256";
-    private static final String CIPHER_ALG = "AES";
-    private static final String CIPHER_TRANSFORMATION = "AES/CBC/NoPadding";
-    private static final String KEY_AGREEMENT_ALG = "ECDH";
-    private static final String KEY_AGREEMENT_KEY_ALG = "EC";
-
-    private static final byte[] IV = new byte[16];  // All zero IV
-
-    private static final int COORDINATE_SIZE = 32;
-    private static final int AUTHENTICATE_HASH_LEN = 32;
-
-    private static final int KEY_SHAREDSECRET_POINT_X = -2;
-    private static final int KEY_SHAREDSECRET_POINT_Y = -3;
+    private static final String HKDF_ALG = "HmacSHA256";
+    private static final byte[] HKDF_SALT = new byte[32];
+    private static final byte[] HKDF_INFO_HMAC = "CTAP2 HMAC key".getBytes(StandardCharsets.UTF_8);
+    private static final byte[] HKDF_INFO_AES = "CTAP2 AES key".getBytes(StandardCharsets.UTF_8);
+    private static final int HKDF_LENGTH = 32;
 
     @Override
     public int getVersion() {
@@ -73,46 +55,45 @@ public class PinUvAuthProtocolV2 extends PinUvAuthProtocolV1 {
     }
 
     @Override
-    public Pair<Map<Integer, ?>, byte[]> encapsulate(Map<Integer, ?> peerCoseKey) {
+    public byte[] kdf(byte[] z) {
         try {
-            KeyPairGenerator kpg = KeyPairGenerator.getInstance(KEY_AGREEMENT_KEY_ALG);
-            kpg.initialize(256); // SECP256R1
-            KeyPair kp = kpg.generateKeyPair();
-            ECPoint point = ((ECPublicKey) kp.getPublic()).getW();
-            Map<Integer, Object> keyAgreement = new HashMap<>();
-            keyAgreement.put(1, 2);
-            keyAgreement.put(3, -25);
-            keyAgreement.put(-1, 1);
-            keyAgreement.put(KEY_SHAREDSECRET_POINT_X, encodeCoordinate(point.getAffineX()));
-            keyAgreement.put(KEY_SHAREDSECRET_POINT_Y, encodeCoordinate(point.getAffineY()));
+            byte[] hmacKey = new Hkdf(
+                    HKDF_ALG,
+                    HKDF_SALT,
+                    HKDF_INFO_HMAC,
+                    HKDF_LENGTH
+            ).digest(z);
 
-            ECPoint w = new ECPoint(
-                    new BigInteger(1, ((byte[]) peerCoseKey.get(KEY_SHAREDSECRET_POINT_X))),
-                    new BigInteger(1, ((byte[]) peerCoseKey.get(KEY_SHAREDSECRET_POINT_Y)))
-            );
-            ECPublicKeySpec otherKeySpec = new ECPublicKeySpec(w, ((ECPublicKey) kp.getPublic()).getParams());
-            KeyFactory keyFactory = KeyFactory.getInstance(KEY_AGREEMENT_KEY_ALG);
-            ECPublicKey otherKey = (ECPublicKey) keyFactory.generatePublic(otherKeySpec);
+            byte[] aesKey = new Hkdf(
+                    HKDF_ALG,
+                    HKDF_SALT,
+                    HKDF_INFO_AES,
+                    HKDF_LENGTH
+            ).digest(z);
 
-            KeyAgreement ecdh = KeyAgreement.getInstance(KEY_AGREEMENT_ALG);
-            ecdh.init(kp.getPrivate());
-            ecdh.doPhase(otherKey, true);
-            byte[] sharedSecret = MessageDigest.getInstance(HASH_ALG).digest(ecdh.generateSecret());
-            return new Pair<>(keyAgreement, sharedSecret);
-        } catch (NoSuchAlgorithmException | InvalidKeySpecException | InvalidKeyException e) {
+            return ByteBuffer.allocate(hmacKey.length + aesKey.length)
+                    .put(hmacKey)
+                    .put(aesKey)
+                    .array();
+        } catch (NoSuchAlgorithmException | InvalidKeyException e) {
             throw new IllegalStateException(e);
         }
     }
 
     @Override
-    public byte[] encrypt(byte[] key, byte[] demPlaintext) {
+    public byte[] encrypt(byte[] key, byte[] plaintext) {
         try {
-            Cipher cipher = Cipher.getInstance(CIPHER_TRANSFORMATION);
-            cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(key, CIPHER_ALG), new IvParameterSpec(IV));
-            return cipher.doFinal(demPlaintext);
-        } catch (NoSuchAlgorithmException | InvalidKeyException |
-                 InvalidAlgorithmParameterException | NoSuchPaddingException | BadPaddingException |
-                 IllegalBlockSizeException e) {
+            byte[] aesKey = Arrays.copyOfRange(key, 32, key.length);
+            byte[] iv = RandomUtils.getRandomBytes(16);
+
+            final byte[] ciphertext =
+                    getCipher(Cipher.ENCRYPT_MODE, aesKey, iv)
+                            .doFinal(plaintext);
+            return ByteBuffer.allocate(iv.length + ciphertext.length)
+                    .put(iv)
+                    .put(ciphertext)
+                    .array();
+        } catch (IllegalBlockSizeException | BadPaddingException e) {
             throw new IllegalStateException(e);
         }
     }
@@ -120,17 +101,20 @@ public class PinUvAuthProtocolV2 extends PinUvAuthProtocolV1 {
     @Override
     public byte[] decrypt(byte[] key, byte[] ciphertext) {
         try {
-            Cipher cipher = Cipher.getInstance(CIPHER_TRANSFORMATION);
-            cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(key, CIPHER_ALG), new IvParameterSpec(IV));
-            return cipher.doFinal(ciphertext);
-        } catch (NoSuchAlgorithmException | InvalidKeyException | InvalidAlgorithmParameterException | NoSuchPaddingException | BadPaddingException | IllegalBlockSizeException e) {
+            byte[] aesKey = Arrays.copyOfRange(key, 32, key.length);
+            byte[] iv = Arrays.copyOf(ciphertext, 16);
+            byte[] ct = Arrays.copyOfRange(ciphertext, 16, ciphertext.length);
+            byte[] plaintext = getCipher(Cipher.DECRYPT_MODE, aesKey, iv).doFinal(ct);
+            return Arrays.copyOf(plaintext, plaintext.length);
+        } catch (BadPaddingException | IllegalBlockSizeException e) {
             throw new IllegalStateException(e);
         }
     }
 
     @Override
     public byte[] authenticate(byte[] key, byte[] message) {
-        byte[] hmacKey = Arrays.copyOf(key, AUTHENTICATE_HASH_LEN);
+        final String MAC_ALG = "HmacSHA256";
+        byte[] hmacKey = Arrays.copyOf(key, 32);
         Mac mac;
         try {
             mac = Mac.getInstance(MAC_ALG);
@@ -142,19 +126,19 @@ public class PinUvAuthProtocolV2 extends PinUvAuthProtocolV1 {
         return Arrays.copyOf(result, result.length);
     }
 
-    /**
-     * Encode a BigInteger as a 32 byte array.
-     */
-    static byte[] encodeCoordinate(BigInteger value) {
-        byte[] valueBytes = value.toByteArray();
-        byte[] result = new byte[COORDINATE_SIZE];
-        if (valueBytes.length < COORDINATE_SIZE) { // Left pad with zeroes
-            System.arraycopy(valueBytes, 0, result, result.length - valueBytes.length, valueBytes.length);
-        } else if (valueBytes.length > COORDINATE_SIZE) { // Truncate from left
-            System.arraycopy(valueBytes, valueBytes.length - COORDINATE_SIZE, result, 0, COORDINATE_SIZE);
-        } else {
-            result = valueBytes;
+    private Cipher getCipher(int mode, byte[] secret, byte[] iv) {
+        try {
+            Cipher cipher = Cipher.getInstance("AES/CBC/NoPadding");
+            cipher.init(
+                    mode,
+                    new SecretKeySpec(secret, "AES"),
+                    new IvParameterSpec(iv));
+            return cipher;
+        } catch (NoSuchPaddingException |
+                 NoSuchAlgorithmException |
+                 InvalidAlgorithmParameterException |
+                 InvalidKeyException e) {
+            throw new IllegalStateException(e);
         }
-        return result;
     }
 }

@@ -105,7 +105,8 @@ public class ClientPin {
         );
 
         @SuppressWarnings("unchecked")
-        Map<Integer, ?> peerCoseKey = Objects.requireNonNull((Map<Integer, ?>) result.get(RESULT_KEY_AGREEMENT));
+        Map<Integer, ?> peerCoseKey =
+                Objects.requireNonNull((Map<Integer, ?>) result.get(RESULT_KEY_AGREEMENT));
         return pinUvAuth.encapsulate(peerCoseKey);
     }
 
@@ -148,15 +149,10 @@ public class ClientPin {
 
             Logger.debug(logger, "Getting PIN token");
 
-            byte subCommand;
-
-            if (isTokenSupported(ctap.getCachedInfo())) {
-                subCommand = CMD_GET_PIN_TOKEN_USING_PIN_WITH_PERMISSIONS;
-            } else {
-                subCommand = CMD_GET_PIN_TOKEN;
-                permissions = null;
-                permissionsRpId = null;
-            }
+            final boolean tokenSupported = isTokenSupported(ctap.getCachedInfo());
+            byte subCommand = tokenSupported
+                    ? CMD_GET_PIN_TOKEN_USING_PIN_WITH_PERMISSIONS
+                    : CMD_GET_PIN_TOKEN;
 
             Map<Integer, ?> result = ctap.clientPin(
                     pinUvAuth.getVersion(),
@@ -165,12 +161,15 @@ public class ClientPin {
                     null,
                     null,
                     pinHashEnc,
-                    permissions,
-                    permissionsRpId,
+                    tokenSupported ? permissions : null,
+                    tokenSupported ? permissionsRpId : null,
                     null
             );
 
             byte[] pinTokenEnc = (byte[]) result.get(RESULT_PIN_UV_TOKEN);
+            Logger.debug(logger, "Got PIN token for permissions: {}, permissions rpID: {}",
+                    permissions != null ? permissions : "none",
+                    permissionsRpId != null ? permissionsRpId : "none");
             return pinUvAuth.decrypt(pair.second, pinTokenEnc);
         } catch (NoSuchAlgorithmException e) {
             Logger.error(logger, "Failure getting PIN token: ", e);
@@ -204,6 +203,8 @@ public class ClientPin {
 
         Pair<Map<Integer, ?>, byte[]> pair = getSharedSecret();
 
+        Logger.debug(logger, "Getting UV token");
+
         Map<Integer, ?> result = ctap.clientPin(
                 pinUvAuth.getVersion(),
                 CMD_GET_PIN_TOKEN_USING_UV_WITH_PERMISSIONS,
@@ -217,6 +218,11 @@ public class ClientPin {
         );
 
         byte[] pinTokenEnc = (byte[]) result.get(RESULT_PIN_UV_TOKEN);
+
+        Logger.debug(logger, "Got UV token for permissions: {}, permissions rpID: {}",
+                permissions != null ? permissions : "none",
+                permissionsRpId != null ? permissionsRpId : "none");
+
         return pinUvAuth.decrypt(pair.second, pinTokenEnc);
     }
 
@@ -247,7 +253,6 @@ public class ClientPin {
                 Objects.requireNonNull((Integer) result.get(RESULT_RETRIES)),
                 (Integer) result.get(RESULT_POWER_CYCLE_STATE));
     }
-
 
     /**
      * Get the number of UV retries remaining.
