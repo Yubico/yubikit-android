@@ -62,7 +62,7 @@ public class Hkdf {
         byte[] okm = new byte[0];
         byte i = 0;
         while (okm.length < length) {
-            i += 1;
+            i++;
             byte[] data = ByteBuffer.allocate(t.length + info.length + 1)
                     .put(t)
                     .put(info)
