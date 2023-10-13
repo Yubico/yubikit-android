@@ -18,14 +18,45 @@ package com.yubico.yubikit.testing.fido;
 
 import androidx.test.filters.LargeTest;
 
+import com.yubico.yubikit.fido.ctap.Ctap2Session;
+import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
+import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV1;
+import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV2;
 import com.yubico.yubikit.testing.framework.FidoInstrumentedTests;
 
 import org.junit.Test;
 
+import java.util.List;
+
 @LargeTest
 public class Ctap2ClientPinInstrumentedTests extends FidoInstrumentedTests {
+
+    public static boolean supportsPinUvAuthProtocol(
+            Ctap2Session session,
+            PinUvAuthProtocol pinUvAuthProtocol) {
+        final List<Integer> pinUvAuthProtocols =
+                session.getCachedInfo().getPinUvAuthProtocols();
+        return pinUvAuthProtocols != null && pinUvAuthProtocols.contains(pinUvAuthProtocol.getVersion());
+    }
+
     @Test
-    public void testSetPinProtocol() throws Throwable {
-        withCtap2Session(Ctap2ClientPinTests::testSetPinProtocol);
+    public void testSetPinProtocolV1() throws Throwable {
+        withCtap2Session(
+                Ctap2ClientPinTests::testSetPinProtocol,
+                new PinUvAuthProtocolV1()
+        );
+    }
+
+    @Test
+    public void testSetPinProtocolV2() throws Throwable {
+        final PinUvAuthProtocol pinUvAuthProtocol = new PinUvAuthProtocolV2();
+        withCtap2Session(
+                "PIN/UV Auth Protocol not supported",
+                (device, session) -> supportsPinUvAuthProtocol(
+                        session,
+                        pinUvAuthProtocol),
+                Ctap2ClientPinTests::testSetPinProtocol,
+                pinUvAuthProtocol
+        );
     }
 }

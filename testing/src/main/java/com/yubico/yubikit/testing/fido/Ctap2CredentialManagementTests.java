@@ -16,11 +16,16 @@
 
 package com.yubico.yubikit.testing.fido;
 
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.greaterThan;
+
 import com.yubico.yubikit.core.application.CommandException;
 import com.yubico.yubikit.fido.ctap.ClientPin;
 import com.yubico.yubikit.fido.ctap.CredentialManagement;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
-import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV1;
+import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
 import com.yubico.yubikit.fido.webauthn.SerializationType;
 
 import java.io.IOException;
@@ -28,11 +33,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.greaterThan;
 
 public class Ctap2CredentialManagementTests {
     /**
@@ -51,10 +51,13 @@ public class Ctap2CredentialManagementTests {
         assertThat(credentialManagement.getMetadata().getExistingResidentCredentialsCount(), equalTo(0));
     }
 
-    private static CredentialManagement setupCredentialManagement(Ctap2Session session) throws IOException, CommandException {
+    private static CredentialManagement setupCredentialManagement(
+            Ctap2Session session,
+            PinUvAuthProtocol pinUvAuthProtocol
+    ) throws IOException, CommandException {
 
-        Ctap2ClientPinTests.ensureDefaultPinSet(session);
-        ClientPin clientPin = new ClientPin(session, new PinUvAuthProtocolV1());
+        Ctap2ClientPinTests.ensureDefaultPinSet(session, pinUvAuthProtocol);
+        ClientPin clientPin = new ClientPin(session, pinUvAuthProtocol);
 
         return new CredentialManagement(
                 session,
@@ -63,8 +66,10 @@ public class Ctap2CredentialManagementTests {
         );
     }
 
-    public static void testReadMetadata(Ctap2Session session) throws Throwable {
-        CredentialManagement credentialManagement = setupCredentialManagement(session);
+    public static void testReadMetadata(Ctap2Session session, Object... args) throws Throwable {
+        CredentialManagement credentialManagement = setupCredentialManagement(
+                session,
+                Ctap2ClientPinTests.getPinUvAuthProtocol(args));
 
         CredentialManagement.Metadata metadata = credentialManagement.getMetadata();
 
@@ -72,9 +77,10 @@ public class Ctap2CredentialManagementTests {
         assertThat(metadata.getMaxPossibleRemainingResidentCredentialsCount(), greaterThan(0));
     }
 
-    public static void testManagement(Ctap2Session session) throws Throwable {
-        Ctap2Session.InfoData info = session.getInfo();
-        CredentialManagement credentialManagement = setupCredentialManagement(session);
+    public static void testManagement(Ctap2Session session, Object... args) throws Throwable {
+
+        final PinUvAuthProtocol pinUvAuthProtocol = Ctap2ClientPinTests.getPinUvAuthProtocol(args);
+        CredentialManagement credentialManagement = setupCredentialManagement(session, pinUvAuthProtocol);
 
         final SerializationType cborType = SerializationType.CBOR;
 
@@ -102,7 +108,7 @@ public class Ctap2CredentialManagementTests {
 
 
         // this sets correct permission for handling credential management commands
-        credentialManagement = setupCredentialManagement(session);
+        credentialManagement = setupCredentialManagement(session, pinUvAuthProtocol);
 
         List<CredentialManagement.RpData> rps = credentialManagement.enumerateRps();
         assertThat(rps.size(), equalTo(1));

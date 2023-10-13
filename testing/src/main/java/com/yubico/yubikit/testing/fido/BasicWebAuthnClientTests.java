@@ -63,9 +63,11 @@ import javax.annotation.Nullable;
 
 public class BasicWebAuthnClientTests {
 
-    public static void testMakeCredentialGetAssertion(Ctap2Session session) throws Throwable {
+    public static void testMakeCredentialGetAssertion(
+            Ctap2Session session,
+            Object... args) throws Throwable {
 
-        Ctap2ClientPinTests.ensureDefaultPinSet(session);
+        Ctap2ClientPinTests.ensureDefaultPinSet(session, Ctap2ClientPinTests.getPinUvAuthProtocol(args));
 
         BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
         List<byte[]> deleteCredIds = new ArrayList<>();
@@ -147,9 +149,9 @@ public class BasicWebAuthnClientTests {
         deleteCredentials(webauthn, deleteCredIds);
     }
 
-    public static void testGetAssertionMultipleUsersRk(Ctap2Session session) throws Throwable {
+    public static void testGetAssertionMultipleUsersRk(Ctap2Session session, Object... args) throws Throwable {
 
-        Ctap2ClientPinTests.ensureDefaultPinSet(session);
+        Ctap2ClientPinTests.ensureDefaultPinSet(session, Ctap2ClientPinTests.getPinUvAuthProtocol(args));
 
         BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
         List<byte[]> deleteCredIds = new ArrayList<>();
@@ -227,9 +229,9 @@ public class BasicWebAuthnClientTests {
         deleteCredentials(webauthn, deleteCredIds);
     }
 
-    public static void testGetAssertionWithAllowList(Ctap2Session session) throws Throwable {
+    public static void testGetAssertionWithAllowList(Ctap2Session session, Object... args) throws Throwable {
 
-        Ctap2ClientPinTests.ensureDefaultPinSet(session);
+        Ctap2ClientPinTests.ensureDefaultPinSet(session, Ctap2ClientPinTests.getPinUvAuthProtocol(args));
 
         BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
 
@@ -317,9 +319,9 @@ public class BasicWebAuthnClientTests {
         assertArrayEquals(credId2, credential.getRawId());
     }
 
-    public static void testMakeCredentialWithExcludeList(Ctap2Session session) throws Throwable {
+    public static void testMakeCredentialWithExcludeList(Ctap2Session session, Object... args) throws Throwable {
 
-        Ctap2ClientPinTests.ensureDefaultPinSet(session);
+        Ctap2ClientPinTests.ensureDefaultPinSet(session, Ctap2ClientPinTests.getPinUvAuthProtocol(args));
 
         BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
         List<PublicKeyCredentialDescriptor> excludeList = new ArrayList<>();
@@ -386,8 +388,8 @@ public class BasicWebAuthnClientTests {
         );
     }
 
-    public static void testMakeCredentialKeyAlgorithms(Ctap2Session session) throws Throwable {
-        Ctap2ClientPinTests.ensureDefaultPinSet(session);
+    public static void testMakeCredentialKeyAlgorithms(Ctap2Session session, Object... args) throws Throwable {
+        Ctap2ClientPinTests.ensureDefaultPinSet(session, Ctap2ClientPinTests.getPinUvAuthProtocol(args));
         BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
         List<PublicKeyCredentialParameters> allCredParams = Arrays.asList(
                 TestData.PUB_KEY_CRED_PARAMS_ES256,
@@ -462,8 +464,8 @@ public class BasicWebAuthnClientTests {
         assertEquals(credParams.get(0).getAlg(), alg);
     }
 
-    public static void testClientPinManagement(Ctap2Session session) throws Throwable {
-        Ctap2ClientPinTests.ensureDefaultPinSet(session);
+    public static void testClientPinManagement(Ctap2Session session, Object... args) throws Throwable {
+        Ctap2ClientPinTests.ensureDefaultPinSet(session, Ctap2ClientPinTests.getPinUvAuthProtocol(args));
 
         BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
         assertTrue(webauthn.isPinSupported());
@@ -487,8 +489,8 @@ public class BasicWebAuthnClientTests {
     }
 
 
-    public static void testClientCredentialManagement(Ctap2Session session) throws Throwable {
-        Ctap2ClientPinTests.ensureDefaultPinSet(session);
+    public static void testClientCredentialManagement(Ctap2Session session, Object... args) throws Throwable {
+        Ctap2ClientPinTests.ensureDefaultPinSet(session, Ctap2ClientPinTests.getPinUvAuthProtocol(args));
         BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
         PublicKeyCredentialCreationOptions creationOptions = getCreateOptions(null, true,
                 Collections.singletonList(TestData.PUB_KEY_CRED_PARAMS_ES256),

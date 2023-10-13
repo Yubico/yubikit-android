@@ -17,9 +17,9 @@
 package com.yubico.yubikit.testing.fido;
 
 import static com.yubico.yubikit.testing.fido.Ctap2ClientPinTests.ensureDefaultPinSet;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -29,6 +29,7 @@ import com.yubico.yubikit.core.application.CommandState;
 import com.yubico.yubikit.core.fido.CtapException;
 import com.yubico.yubikit.fido.ctap.ClientPin;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
+import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV1;
 import com.yubico.yubikit.fido.webauthn.SerializationType;
 
@@ -40,8 +41,8 @@ import java.util.concurrent.TimeUnit;
 
 public class Ctap2SessionTests {
 
-    public static void testCtap2GetInfo(Ctap2Session session) throws Throwable {
-        Ctap2Session.InfoData info = session.getInfo();
+    public static void testCtap2GetInfo(Ctap2Session session, Object... ignoredArgs) throws Throwable {
+        Ctap2Session.InfoData info = session.getCachedInfo();
 
         List<String> versions = info.getVersions();
         assertTrue("Returned version does not contain any recognized version",
@@ -67,15 +68,16 @@ public class Ctap2SessionTests {
         assertTrue("PIN protocol incorrect", pinUvAuthProtocols.contains(1));
     }
 
-    public static void testCancelCborCommandImmediate(Ctap2Session session) throws Throwable {
-        doTestCancelCborCommand(session, false);
+    public static void testCancelCborCommandImmediate(Ctap2Session session, Object... args) throws Throwable {
+        doTestCancelCborCommand(session, Ctap2ClientPinTests.getPinUvAuthProtocol(args), false);
     }
 
-    public static void testCancelCborCommandAfterDelay(Ctap2Session session) throws Throwable {
-        doTestCancelCborCommand(session, true);
+    public static void testCancelCborCommandAfterDelay(Ctap2Session session, Object... args) throws Throwable {
+
+        doTestCancelCborCommand(session, Ctap2ClientPinTests.getPinUvAuthProtocol(args), true);
     }
 
-    public static void testReset(Ctap2Session session) throws Throwable {
+    public static void testReset(Ctap2Session session, Object... ignoredArgs) throws Throwable {
         // assumeThat("Connected over NFC", device, instanceOf(NfcYubiKeyDevice.class));
         session.reset(null);
 
@@ -85,11 +87,12 @@ public class Ctap2SessionTests {
         assertFalse("PIN should not be configured after a reset", pinConfigured);
     }
 
-    private static void doTestCancelCborCommand(Ctap2Session session, boolean delay) throws Throwable {
-        // assumeThat("Using USB connection", device, instanceOf(UsbYubiKeyDevice.class));
-        ensureDefaultPinSet(session);
-
-        Ctap2Session.InfoData info = session.getInfo();
+    private static void doTestCancelCborCommand(
+            Ctap2Session session,
+            PinUvAuthProtocol pinUvAuthProtocol,
+            boolean delay
+    ) throws Throwable {
+        ensureDefaultPinSet(session, pinUvAuthProtocol);
 
         ClientPin pin = new ClientPin(session, new PinUvAuthProtocolV1());
         byte[] pinToken = pin.getPinToken(TestData.PIN, ClientPin.PIN_PERMISSION_MC, TestData.RP.getId());
