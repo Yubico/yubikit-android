@@ -108,9 +108,9 @@ public class BasicWebAuthnClient implements Closeable {
             // preference. MUST NOT contain duplicate values nor be empty if present.
             int preferredPinUvAuthProtocol = pinUvAuthProtocols.get(0);
 
-            if (pinSupported && preferredPinUvAuthProtocol == 2) {
+            if (pinSupported && preferredPinUvAuthProtocol == PinUvAuthProtocolV2.VERSION) {
                 this.clientPin = new ClientPin(ctap, new PinUvAuthProtocolV2());
-            } else if (pinSupported && preferredPinUvAuthProtocol == 1) {
+            } else if (pinSupported && preferredPinUvAuthProtocol == PinUvAuthProtocolV1.VERSION) {
                 this.clientPin = new ClientPin(ctap, new PinUvAuthProtocolV1());
             } else {
                 this.clientPin = new ClientPin(ctap, new PinUvAuthDummyProtocol());
@@ -118,7 +118,6 @@ public class BasicWebAuthnClient implements Closeable {
         } else {
             this.clientPin = new ClientPin(ctap, new PinUvAuthDummyProtocol());
         }
-
         pinConfigured = pinSupported && clientPin;
 
         Boolean uv = (Boolean) options.get(OPTION_USER_VERIFICATION);
