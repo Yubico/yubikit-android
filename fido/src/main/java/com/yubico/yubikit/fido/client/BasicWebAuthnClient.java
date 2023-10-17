@@ -70,10 +70,10 @@ import javax.annotation.Nullable;
  */
 @SuppressWarnings("unused")
 public class BasicWebAuthnClient implements Closeable {
-    public static final String OPTION_CLIENT_PIN = "clientPin";
-    public static final String OPTION_USER_VERIFICATION = "uv";
-    public static final String OPTION_RESIDENT_KEY = "rk";
-    public static final String OPTION_EP = "ep";
+    private static final String OPTION_CLIENT_PIN = "clientPin";
+    private static final String OPTION_USER_VERIFICATION = "uv";
+    private static final String OPTION_RESIDENT_KEY = "rk";
+    private static final String OPTION_EP = "ep";
 
     private final Ctap2Session ctap;
 
