@@ -57,19 +57,17 @@ public class PinUvAuthProtocolV2 extends PinUvAuthProtocolV1 {
     @Override
     public byte[] kdf(byte[] z) {
         try {
-            byte[] hmacKey = new Hkdf(
-                    HKDF_ALG,
+            byte[] hmacKey = new Hkdf(HKDF_ALG).digest(
+                    z,
                     HKDF_SALT,
                     HKDF_INFO_HMAC,
-                    HKDF_LENGTH
-            ).digest(z);
+                    HKDF_LENGTH);
 
-            byte[] aesKey = new Hkdf(
-                    HKDF_ALG,
+            byte[] aesKey = new Hkdf(HKDF_ALG).digest(
+                    z,
                     HKDF_SALT,
                     HKDF_INFO_AES,
-                    HKDF_LENGTH
-            ).digest(z);
+                    HKDF_LENGTH);
 
             return ByteBuffer.allocate(hmacKey.length + aesKey.length)
                     .put(hmacKey)

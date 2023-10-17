@@ -21,7 +21,6 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 
-import javax.annotation.Nullable;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
@@ -32,32 +31,26 @@ import javax.crypto.spec.SecretKeySpec;
  */
 class Hkdf {
 
-    private final int length;
-    private final byte[] salt;
-    private final byte[] info;
     private final Mac mac;
 
-    Hkdf(String algo, @Nullable byte[] salt, byte[] info, int length) throws NoSuchAlgorithmException {
-        this.salt = salt == null ? new byte[0] : salt;
-        this.info = info;
-        this.length = length;
+    Hkdf(String algo) throws NoSuchAlgorithmException {
         this.mac = Mac.getInstance(algo);
     }
 
-    byte[] hmacDigest(byte[] key, byte[] data) throws NoSuchAlgorithmException, InvalidKeyException {
+    byte[] hmacDigest(byte[] key, byte[] data) throws InvalidKeyException {
         mac.init(new SecretKeySpec(key, mac.getAlgorithm()));
         return mac.doFinal(data);
     }
 
-    byte[] extract(byte[] salt, byte[] ikm) throws NoSuchAlgorithmException, InvalidKeyException {
-        if (salt.length == 0) {
-            int saltLen = mac.getMacLength();
-            salt = new byte[saltLen];
-        }
-        return hmacDigest(salt, ikm);
+    byte[] extract(byte[] salt, byte[] ikm) throws InvalidKeyException {
+        return hmacDigest(
+                salt.length != 0
+                        ? salt
+                        : new byte[mac.getMacLength()],
+                ikm);
     }
 
-    byte[] expand(byte[] prk) throws NoSuchAlgorithmException, InvalidKeyException {
+    byte[] expand(byte[] prk, byte[] info, int length) throws InvalidKeyException {
         byte[] t = new byte[0];
         byte[] okm = new byte[0];
         byte i = 0;
@@ -79,8 +72,9 @@ class Hkdf {
         return Arrays.copyOf(okm, length);
     }
 
-    byte[] digest(byte[] ikm) throws NoSuchAlgorithmException, InvalidKeyException {
+    byte[] digest(byte[] ikm, byte[] salt, byte[] info, int length)
+            throws NoSuchAlgorithmException, InvalidKeyException {
         byte[] prk = extract(salt, ikm);
-        return expand(prk);
+        return expand(prk, info, length);
     }
 }
