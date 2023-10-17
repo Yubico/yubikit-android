@@ -134,6 +134,7 @@ public class Config {
      *
      * @throws IOException      A communication error in the transport layer.
      * @throws CommandException A communication in the protocol layer.
+     * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#enable-enterprise-attestation">Enable Enterprise Attestation</a>
      */
     public void enableEnterpriseAttestation() throws IOException, CommandException {
         Logger.debug(logger, "Enabling enterprise attestation");
@@ -143,10 +144,11 @@ public class Config {
 
     /**
      * Toggle the alwaysUV setting.
-     * When true, the Authenticator always requires UV for credential assertion..
+     * When true, the Authenticator always requires UV for credential assertion.
      *
      * @throws IOException      A communication error in the transport layer.
      * @throws CommandException A communication in the protocol layer.
+     * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#toggle-alwaysUv">Toggle Always Require User Verification</a>
      */
     public void toggleAlwaysUv() throws IOException, CommandException {
         Logger.debug(logger, "Toggling always UV");
@@ -165,6 +167,7 @@ public class Config {
      *                       PIN before the next use.
      * @throws IOException      A communication error in the transport layer.
      * @throws CommandException A communication in the protocol layer.
+     * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#setMinPINLength">Setting a minimum PIN Length</a>
      */
     public void setMinPinLength(@Nullable Integer minPinLength,
                                 @Nullable List<String> rpIds,
@@ -180,12 +183,12 @@ public class Config {
     }
 
     /**
-     * Set the minimum PIN length allowed when setting/changing the PIN.
-     * When true, the Authenticator always requires UV for credential assertion.
+     * Allows vendors to test authenticator configuration features.
      *
-     * @param vendorCommandId The minimum PIN length the Authenticator should allow.
+     * @param vendorCommandId Vendor-assigned command ID.
      * @throws IOException      A communication error in the transport layer.
      * @throws CommandException A communication in the protocol layer.
+     * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#vendorPrototype">Vendor Prototype Command</a>
      */
     public Map<Integer, ?> vendorPrototype(Integer vendorCommandId)
             throws IOException, CommandException {
