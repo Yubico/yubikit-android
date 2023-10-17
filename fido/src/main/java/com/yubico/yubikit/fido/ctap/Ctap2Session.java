@@ -82,6 +82,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
         FULL(CMD_CREDENTIAL_MANAGEMENT);
 
         final byte command;
+
         CredentialManagerSupport(byte command) {
             this.command = command;
         }
@@ -146,7 +147,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
     }
 
     private Ctap2Session(FidoProtocol protocol) throws IOException, CommandException {
-        this(protocol.getVersion(),  new Backend<FidoProtocol>(protocol) {
+        this(protocol.getVersion(), new Backend<FidoProtocol>(protocol) {
             @Override
             byte[] sendCbor(byte[] data, @Nullable CommandState state) throws IOException {
                 return delegate.sendAndReceive(FidoProtocol.CTAPHID_CBOR, data, state);
@@ -209,6 +210,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
 
     /**
      * Get information about authenticator support of credential manager commands.
+     *
      * @return true if the authenticator supports credential manager or credential manager preview
      * commands are supported.
      * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#ref-for-getinfo-credmgmt">credMgmt option</a>
@@ -543,32 +545,23 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
         private final byte[] aaguid;
         private final int maxMsgSize;
         private final Map<String, Object> options;
-        @Nullable
         private final List<Integer> pinUvAuthProtocols;
         @Nullable
         private final Integer maxCredentialCountInList;
         @Nullable
         private final Integer maxCredentialIdLength;
         private final List<String> transports;
-        @Nullable
         private final List<PublicKeyCredentialParameters> algorithms;
-        @Nullable
-        private final Integer maxSerializedLargeBlobArray;
-        @Nullable
-        private final Boolean forcePINChange;
-        @Nullable
-        private final Integer minPINLength;
+        private final int maxSerializedLargeBlobArray;
+        private final boolean forcePINChange;
+        private final int minPINLength;
         @Nullable
         private final Integer firmwareVersion;
-        @Nullable
-        private final Integer maxCredBlobLength;
-        @Nullable
-        private final Integer maxRPIDsForSetMinPINLength;
+        private final int maxCredBlobLength;
+        private final int maxRPIDsForSetMinPINLength;
         @Nullable
         private final Integer preferredPlatformUvAttempts;
-        @Nullable
-        private final Integer uvModality;
-        @Nullable
+        private final int uvModality;
         private final Map<String, Object> certifications;
         @Nullable
         private final Integer remainingDiscoverableCredentials;
@@ -581,21 +574,20 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
                 byte[] aaguid,
                 Map<String, Object> options,
                 int maxMsgSize,
-                @Nullable
                 List<Integer> pinUvAuthProtocols,
                 @Nullable Integer maxCredentialCountInList,
                 @Nullable Integer maxCredentialIdLength,
                 List<String> transports,
-                @Nullable List<PublicKeyCredentialParameters> algorithms,
-                @Nullable Integer maxSerializedLargeBlobArray,
-                @Nullable Boolean forcePINChange,
-                @Nullable Integer minPINLength,
+                List<PublicKeyCredentialParameters> algorithms,
+                int maxSerializedLargeBlobArray,
+                boolean forcePINChange,
+                int minPINLength,
                 @Nullable Integer firmwareVersion,
-                @Nullable Integer maxCredBlobLength,
-                @Nullable Integer maxRPIDsForSetMinPINLength,
+                int maxCredBlobLength,
+                int maxRPIDsForSetMinPINLength,
                 @Nullable Integer preferredPlatformUvAttempts,
-                @Nullable Integer uvModality,
-                @Nullable Map<String, Object> certifications,
+                int uvModality,
+                Map<String, Object> certifications,
                 @Nullable Integer remainingDiscoverableCredentials,
                 @Nullable List<Integer> vendorPrototypeConfigCommands) {
             this.versions = versions;
@@ -644,16 +636,32 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
                     data.containsKey(RESULT_TRANSPORTS)
                             ? (List<String>) data.get(RESULT_TRANSPORTS)
                             : Collections.emptyList(),
-                    (List<PublicKeyCredentialParameters>) data.get(RESULT_ALGORITHMS),
-                    (Integer) data.get(RESULT_MAX_SERIALIZED_LARGE_BLOB_ARRAY),
-                    (Boolean) data.get(RESULT_FORCE_PIN_CHANGE),
-                    (Integer) data.get(RESULT_MIN_PIN_LENGTH),
+                    data.containsKey(RESULT_ALGORITHMS)
+                            ? (List<PublicKeyCredentialParameters>) data.get(RESULT_ALGORITHMS)
+                            : Collections.emptyList(),
+                    data.containsKey(RESULT_MAX_SERIALIZED_LARGE_BLOB_ARRAY)
+                            ? (Integer) data.get(RESULT_MAX_SERIALIZED_LARGE_BLOB_ARRAY)
+                            : 1024,
+                    data.containsKey(RESULT_FORCE_PIN_CHANGE)
+                            ? (Boolean) data.get(RESULT_FORCE_PIN_CHANGE)
+                            : false,
+                    data.containsKey(RESULT_MIN_PIN_LENGTH)
+                            ? (Integer) data.get(RESULT_MIN_PIN_LENGTH)
+                            : 4,
                     (Integer) data.get(RESULT_FIRMWARE_VERSION),
-                    (Integer) data.get(RESULT_MAX_CRED_BLOB_LENGTH),
-                    (Integer) data.get(RESULT_MAX_RPID_FOR_SET_MIN_PIN_LENGTH),
+                    data.containsKey(RESULT_MAX_CRED_BLOB_LENGTH)
+                            ? (Integer) data.get(RESULT_MAX_CRED_BLOB_LENGTH)
+                            : 32,
+                    data.containsKey(RESULT_MAX_RPID_FOR_SET_MIN_PIN_LENGTH)
+                            ? (Integer) data.get(RESULT_MAX_RPID_FOR_SET_MIN_PIN_LENGTH)
+                            : 0,
                     (Integer) data.get(RESULT_PREFERRED_PLATFORM_UV_ATTEMPTS),
-                    (Integer) data.get(RESULT_UV_MODALITY),
-                    (Map<String, Object>) data.get(RESULT_CERTIFICATIONS),
+                    data.containsKey(RESULT_UV_MODALITY)
+                            ? (Integer) data.get(RESULT_UV_MODALITY)
+                            :  UserVerify.NONE.value,
+                    data.containsKey(RESULT_CERTIFICATIONS)
+                            ? (Map<String, Object>) data.get(RESULT_CERTIFICATIONS)
+                            : Collections.emptyMap(),
                     (Integer) data.get(RESULT_REMAINING_DISCOVERABLE_CREDENTIALS),
                     (List<Integer>) data.get(RESULT_VENDOR_PROTOTYPE_CONFIG_COMMANDS)
             );
@@ -709,11 +717,12 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
         }
 
         /**
-         * Get a list of the supported PIN/UV Auth protocol versions.
+         * Get a list of the supported PIN/UV Auth protocol versions in order of decreasing
+         * authenticator preference.
          *
-         * @return a list of supported versions
+         * @return a list of supported protocol versions
+         * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#getinfo-pinuvauthprotocols">pinUvAuthProtocols</a>
          */
-        @Nullable
         public List<Integer> getPinUvAuthProtocols() {
             return pinUvAuthProtocols;
         }
@@ -753,10 +762,11 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
 
         /**
          * Get a list of supported algorithms for credential generation, as specified in WebAuthn.
+         * <p>Empty return value indicates that the authenticator does not provide this information.
          *
          * @return list of supported algorithms
+         * @see <a href="https://www.iana.org/assignments/cose/cose.xhtml#algorithms">COSE Algorithms</a>
          */
-        @Nullable
         public List<PublicKeyCredentialParameters> getAlgorithms() {
             return algorithms;
         }
@@ -764,36 +774,39 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
         /**
          * Get the maximum size, in bytes, of the serialized large-blob array that this
          * authenticator can store.
+         * <p>
+         * Only valid if the authenticator supports {@code authenticatorLargeBlobs} command.
          *
          * @return maximum size of serialized large-blob array the authenticator can store
          * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#authenticatorLargeBlobs">
          * 6.10. authenticatorLargeBlobs (0x0C)</a>
          */
-        @Nullable
-        public Integer getMaxSerializedLargeBlobArray() {
+        public int getMaxSerializedLargeBlobArray() {
             return maxSerializedLargeBlobArray;
         }
 
         /**
          * Get the requirement whether the authenticator requires PIN Change before use.
+         * <p>
          *
          * @return force PIN Change requirement
          * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#changingExistingPin">PIN Change</a>
          */
-        @Nullable
-        public Boolean getForcePINChange() {
+        public boolean getForcePINChange() {
             return forcePINChange;
         }
 
         /**
          * The current minimum PIN length, in Unicode code points, the authenticator
          * enforces for ClientPIN.
+         * <p>
+         * Only valid if options contain {@code clientPin} meaning that the authenticator supports
+         * {@code authenticatorClientPin} command.
          *
          * @return current minimum PIN length
          * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#getinfo-minpinlength">Minimum PIN length</a>
          */
-        @Nullable
-        public Integer getMinPINLength() {
+        public int getMinPINLength() {
             return minPINLength;
         }
 
@@ -809,23 +822,25 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
 
         /**
          * Get maximum credBlob length in bytes supported by the authenticator.
+         * Only valid if {@code credBlob} is included in the supported extensions list.
          *
          * @return maximum credBlob length
          * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#getinfo-maxcredbloblength">Maximum credBlob lenght</a>
          */
-        @Nullable
-        public Integer getMaxCredBlobLength() {
+        public int getMaxCredBlobLength() {
             return maxCredBlobLength;
         }
 
         /**
          * Get the maximum number of RP IDs that authenticator can set via setMinPINLength
          * subcommand.
+         * <p>
+         * Only valid if {@code setMinPINLength} option ID is present.
          *
          * @return the maximum number of RP IDs
+         * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#setMinPINLength">Setting a minimum PIN Length</a>
          */
-        @Nullable
-        public Integer getMaxRPIDsForSetMinPINLength() {
+        public int getMaxRPIDsForSetMinPINLength() {
             return maxRPIDsForSetMinPINLength;
         }
 
@@ -848,9 +863,9 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
          * authenticatorClientPIN's getPinUvAuthTokenUsingUvWithPermissions subcommand.
          *
          * @return the user verification modality
+         * @see <a href="https://fidoalliance.org/specs/common-specs/fido-registry-v2.1-ps-20191217.html#user-verification-methods">User Verification Methods</a>
          */
-        @Nullable
-        public Integer getUvModality() {
+        public int getUvModality() {
             return uvModality;
         }
 
@@ -861,7 +876,6 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
          * @return certifications in the form key-value pairs with string IDs and integer values
          * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#sctn-feature-descriptions-certifications">Authenticator Certifications</a>
          */
-        @Nullable
         public final Map<String, Object> getCertifications() {
             return certifications;
         }

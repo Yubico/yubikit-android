@@ -103,7 +103,7 @@ public class BasicWebAuthnClient implements Closeable {
         pinSupported = clientPin != null;
 
         final List<Integer> pinUvAuthProtocols = info.getPinUvAuthProtocols();
-        if (pinUvAuthProtocols != null) {
+        if (pinUvAuthProtocols.size() > 0) {
             // List of supported PIN/UV auth protocols in order of decreasing authenticator
             // preference. MUST NOT contain duplicate values nor be empty if present.
             int preferredPinUvAuthProtocol = pinUvAuthProtocols.get(0);

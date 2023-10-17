@@ -82,6 +82,7 @@ public class ClientPin {
         this.pinUvAuth = pinUvAuth;
     }
 
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public static boolean isSupported(Ctap2Session.InfoData infoData) {
         return infoData.getOptions().containsKey("clientPin");
     }
