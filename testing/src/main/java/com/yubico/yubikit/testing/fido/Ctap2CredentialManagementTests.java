@@ -101,7 +101,7 @@ public class Ctap2CredentialManagementTests {
                 null,
                 options,
                 pinAuth,
-                1,
+                pinUvAuthProtocol.getVersion(),
                 null,
                 null
         );

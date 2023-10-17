@@ -62,23 +62,35 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
 
     private static final byte NFCCTAP_MSG = 0x10;
 
-    public static final byte CMD_MAKE_CREDENTIAL = 0x01;
-    public static final byte CMD_GET_ASSERTION = 0x02;
-    public static final byte CMD_GET_INFO = 0x04;
-    public static final byte CMD_CLIENT_PIN = 0x06;
-    public static final byte CMD_RESET = 0x07;
-    public static final byte CMD_GET_NEXT_ASSERTION = 0x08;
-    public static final byte CMD_BIO_ENROLLMENT = 0x09;
-    public static final byte CMD_CREDENTIAL_MANAGEMENT = 0x0A;
-    public static final byte CMD_SELECTION = 0x0B;
-    public static final byte CMD_LARGE_BLOBS = 0x0C;
-    public static final byte CMD_CONFIG = 0x0D;
-    public static final byte CMD_BIO_ENROLLMENT_PRE = 0x40;
-    public static final byte CMD_CREDENTIAL_MANAGEMENT_PRE = 0x41;
+    private static final byte CMD_MAKE_CREDENTIAL = 0x01;
+    private static final byte CMD_GET_ASSERTION = 0x02;
+    private static final byte CMD_GET_INFO = 0x04;
+    private static final byte CMD_CLIENT_PIN = 0x06;
+    private static final byte CMD_RESET = 0x07;
+    private static final byte CMD_GET_NEXT_ASSERTION = 0x08;
+    private static final byte CMD_BIO_ENROLLMENT = 0x09;
+    private static final byte CMD_CREDENTIAL_MANAGEMENT = 0x0A;
+    private static final byte CMD_SELECTION = 0x0B;
+    private static final byte CMD_LARGE_BLOBS = 0x0C;
+    private static final byte CMD_CONFIG = 0x0D;
+    private static final byte CMD_BIO_ENROLLMENT_PRE = 0x40;
+    private static final byte CMD_CREDENTIAL_MANAGEMENT_PRE = 0x41;
+
+    private enum CredentialManagerSupport {
+        NONE((byte) 0x00),
+        PREVIEW(CMD_CREDENTIAL_MANAGEMENT_PRE),
+        FULL(CMD_CREDENTIAL_MANAGEMENT);
+
+        final byte command;
+        CredentialManagerSupport(byte command) {
+            this.command = command;
+        }
+    }
 
     private final Version version;
     private final Backend<?> backend;
     private final InfoData info;
+    private final CredentialManagerSupport credentialManagerSupport;
 
     private static final org.slf4j.Logger logger = LoggerFactory.getLogger(Ctap2Session.class);
 
@@ -99,36 +111,47 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
     }
 
     public Ctap2Session(SmartCardConnection connection)
-            throws IOException, ApplicationNotAvailableException, CommandException {
-        SmartCardProtocol protocol = new SmartCardProtocol(connection);
-        protocol.select(AppId.FIDO);
-        // it is not possible to get the applet version over NFC/CCID
-        version = new Version(0, 0, 0);
-        backend = new Backend<SmartCardProtocol>(protocol) {
-            @Override
-            byte[] sendCbor(byte[] data, @Nullable CommandState state) throws IOException, CommandException {
-                //Cancellation is not implemented for NFC, and most likely not needed.
-                return delegate.sendAndReceive(new Apdu(0x80, NFCCTAP_MSG, 0x00, 0x00, data));
-            }
-        };
-        info = getInfo();
+            throws IOException, CommandException {
+        this(new Version(0, 0, 0), getSmartCardBackend(connection));
         Logger.debug(logger, "Ctap2Session session initialized for connection={}",
                 connection.getClass().getSimpleName());
     }
 
     public Ctap2Session(FidoConnection connection) throws IOException, CommandException {
-        FidoProtocol protocol = new FidoProtocol(connection);
-        version = protocol.getVersion();
-        backend = new Backend<FidoProtocol>(protocol) {
+        this(new FidoProtocol(connection));
+        Logger.debug(logger, "Ctap2Session session initialized for connection={}, version={}",
+                connection.getClass().getSimpleName(),
+                version);
+    }
+
+    private Ctap2Session(Version version, Backend<?> backend)
+            throws IOException, CommandException {
+        this.version = version;
+        this.backend = backend;
+        this.info = getInfo();
+        this.credentialManagerSupport = getCredentialManagementSupport(info);
+    }
+
+    private static Backend<SmartCardProtocol> getSmartCardBackend(SmartCardConnection connection)
+            throws IOException, ApplicationNotAvailableException {
+        final SmartCardProtocol protocol = new SmartCardProtocol(connection);
+        protocol.select(AppId.FIDO);
+        return new Backend<SmartCardProtocol>(protocol) {
+            byte[] sendCbor(byte[] data, @Nullable CommandState state)
+                    throws IOException, CommandException {
+                //Cancellation is not implemented for NFC, and most likely not needed.
+                return delegate.sendAndReceive(new Apdu(0x80, NFCCTAP_MSG, 0x00, 0x00, data));
+            }
+        };
+    }
+
+    private Ctap2Session(FidoProtocol protocol) throws IOException, CommandException {
+        this(protocol.getVersion(),  new Backend<FidoProtocol>(protocol) {
             @Override
             byte[] sendCbor(byte[] data, @Nullable CommandState state) throws IOException {
                 return delegate.sendAndReceive(FidoProtocol.CTAPHID_CBOR, data, state);
             }
-        };
-        info = getInfo();
-        Logger.debug(logger, "Ctap2Session session initialized for connection={}, version={}",
-                connection.getClass().getSimpleName(),
-                version);
+        });
     }
 
     /**
@@ -170,6 +193,29 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
         } catch (ClassCastException e) {
             throw new BadResponseException("Unexpected CBOR data in response");
         }
+    }
+
+    private CredentialManagerSupport getCredentialManagementSupport(InfoData info) {
+        final Map<String, ?> options = info.getOptions();
+        if (Boolean.TRUE.equals(options.get("credMgmt"))) {
+            return CredentialManagerSupport.FULL;
+        } else if (info.getVersions().contains("FIDO_2_1_PRE") &&
+                Boolean.TRUE.equals(options.get("credentialMgmtPreview"))) {
+            return CredentialManagerSupport.PREVIEW;
+        }
+
+        return CredentialManagerSupport.NONE;
+    }
+
+    /**
+     * Get information about authenticator support of credential manager commands.
+     * @return true if the authenticator supports credential manager or credential manager preview
+     * commands are supported.
+     * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#ref-for-getinfo-credmgmt">credMgmt option</a>
+     * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#ref-for-getinfo-credentialmgmtpreview">credentialMgmtPreview option</a>
+     */
+    public boolean isCredentialManagerSupported() {
+        return credentialManagerSupport != CredentialManagerSupport.NONE;
     }
 
     /**
@@ -368,7 +414,6 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
      * This command is used by the platform to manage discoverable credentials on the
      * authenticator.
      *
-     * @param command           either CMD_CREDENTIAL_MANAGEMENT or CMD_CREDENTIAL_MANAGEMENT_PRE
      * @param subCommand        the subCommand currently being requested
      * @param subCommandParams  a map of subCommands parameters
      * @param pinUvAuthProtocol PIN/UV protocol version chosen by the platform
@@ -378,17 +423,22 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
      * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#authenticatorCredentialManagement">authenticatorCredentialManagement</a>
      */
     Map<Integer, ?> credentialManagement(
-            byte command,
             int subCommand,
             @Nullable Map<?, ?> subCommandParams,
             @Nullable Integer pinUvAuthProtocol,
             @Nullable byte[] pinUvAuthParam
     ) throws IOException, CommandException {
-        return sendCbor(command, args(
-                subCommand,
-                subCommandParams,
-                pinUvAuthProtocol,
-                pinUvAuthParam), null);
+        if (!isCredentialManagerSupported()) {
+            throw new IllegalStateException("Authenticator does not support credential manager");
+        }
+        return sendCbor(
+                credentialManagerSupport.command,
+                args(
+                        subCommand,
+                        subCommandParams,
+                        pinUvAuthProtocol,
+                        pinUvAuthParam),
+                null);
     }
 
     /**
@@ -669,7 +719,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
         }
 
         /**
-         * Get the aximum number of credentials supported in credentialID list
+         * Get the maximum number of credentials supported in credentialID list
          * at a time by the authenticator.
          *
          * @return maximum number of credentials

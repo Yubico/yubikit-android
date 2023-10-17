@@ -62,7 +62,6 @@ public class CredentialManagement {
     private final Ctap2Session ctap;
     private final PinUvAuthProtocol pinUvAuth;
     private final byte[] pinUvToken;
-    private final byte cmd;
 
     /**
      * Construct a new CredentialManagement object.
@@ -76,20 +75,10 @@ public class CredentialManagement {
             PinUvAuthProtocol pinUvAuth,
             byte[] pinUvToken
     ) {
-        this.ctap = ctap;
-        Ctap2Session.InfoData ctapInfo = ctap.getCachedInfo();
-        Map<String, ?> options = ctapInfo.getOptions();
-
-        if (Boolean.TRUE.equals(options.get("credMgmt"))) {
-            cmd = Ctap2Session.CMD_CREDENTIAL_MANAGEMENT;
-        } else if (ctapInfo.getVersions().contains("FIDO_2_1_PRE")
-                &&
-                Boolean.TRUE.equals(options.get("credentialMgmtPreview"))) {
-            cmd = Ctap2Session.CMD_CREDENTIAL_MANAGEMENT_PRE;
-        } else {
+        if (!ctap.isCredentialManagerSupported()) {
             throw new IllegalStateException("Credential manager not supported");
         }
-
+        this.ctap = ctap;
         this.pinUvAuth = pinUvAuth;
         this.pinUvToken = pinUvToken;
     }
@@ -110,7 +99,6 @@ public class CredentialManagement {
         }
 
         return ctap.credentialManagement(
-                cmd,
                 subCommand,
                 subCommandParams,
                 pinUvAuth.getVersion(),

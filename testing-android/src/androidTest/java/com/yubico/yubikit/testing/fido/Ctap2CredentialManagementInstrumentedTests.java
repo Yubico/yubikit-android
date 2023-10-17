@@ -20,7 +20,6 @@ import static com.yubico.yubikit.testing.fido.Ctap2ClientPinInstrumentedTests.su
 
 import androidx.test.filters.LargeTest;
 
-import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV1;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV2;
@@ -33,16 +32,9 @@ import org.junit.runners.Parameterized;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Map;
 
 @RunWith(Enclosed.class)
 public class Ctap2CredentialManagementInstrumentedTests {
-
-    public static boolean supportsCredentialManager(Ctap2Session session) {
-        final Map<String, ?> options = session.getCachedInfo().getOptions();
-        return options.containsKey("credMgmt") || options.containsKey("credentialMgmtPreview");
-    }
-
     @LargeTest
     @RunWith(Parameterized.class)
     public static class ParametrizedCtap2CredentialManagementTests extends FidoInstrumentedTests {
@@ -61,8 +53,7 @@ public class Ctap2CredentialManagementInstrumentedTests {
         public void testReadMetadata() throws Throwable {
             withCtap2Session(
                     "Credential management or PIN/UV Auth protocol not supported",
-                    (device, session) -> Ctap2CredentialManagementInstrumentedTests
-                            .supportsCredentialManager(session) &&
+                    (device, session) -> session.isCredentialManagerSupported() &&
                             supportsPinUvAuthProtocol(session, pinUvAuthProtocol),
                     Ctap2CredentialManagementTests::testReadMetadata,
                     pinUvAuthProtocol);
@@ -72,8 +63,7 @@ public class Ctap2CredentialManagementInstrumentedTests {
         public void testManagement() throws Throwable {
             withCtap2Session(
                     "Credential management or PIN/UV Auth protocol not supported",
-                    (device, session) -> Ctap2CredentialManagementInstrumentedTests
-                            .supportsCredentialManager(session) &&
+                    (device, session) -> session.isCredentialManagerSupported() &&
                             supportsPinUvAuthProtocol(session, pinUvAuthProtocol),
                     Ctap2CredentialManagementTests::testManagement,
                     pinUvAuthProtocol);
