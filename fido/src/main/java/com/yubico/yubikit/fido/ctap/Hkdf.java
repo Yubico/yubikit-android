@@ -30,14 +30,14 @@ import javax.crypto.spec.SecretKeySpec;
  *
  * @see <a href="https://datatracker.ietf.org/doc/html/rfc5869">rfc5869</a>
  */
-public class Hkdf {
+class Hkdf {
 
     private final int length;
     private final byte[] salt;
     private final byte[] info;
     private final Mac mac;
 
-    public Hkdf(String algo, @Nullable byte[] salt, byte[] info, int length) throws NoSuchAlgorithmException {
+    Hkdf(String algo, @Nullable byte[] salt, byte[] info, int length) throws NoSuchAlgorithmException {
         this.salt = salt == null ? new byte[0] : salt;
         this.info = info;
         this.length = length;
@@ -79,7 +79,7 @@ public class Hkdf {
         return Arrays.copyOf(okm, length);
     }
 
-    public byte[] digest(byte[] ikm) throws NoSuchAlgorithmException, InvalidKeyException {
+    byte[] digest(byte[] ikm) throws NoSuchAlgorithmException, InvalidKeyException {
         byte[] prk = extract(salt, ikm);
         return expand(prk);
     }

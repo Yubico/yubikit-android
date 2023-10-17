@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.yubico.yubikit.fido;
+package com.yubico.yubikit.fido.ctap;
 
 import com.yubico.yubikit.fido.ctap.Hkdf;
 import com.yubico.yubikit.testing.Codec;
