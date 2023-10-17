@@ -34,9 +34,15 @@ public class Ctap2ClientPinInstrumentedTests extends FidoInstrumentedTests {
     public static boolean supportsPinUvAuthProtocol(
             Ctap2Session session,
             PinUvAuthProtocol pinUvAuthProtocol) {
+        return supportsPinUvAuthProtocol(session, pinUvAuthProtocol.getVersion());
+    }
+
+    public static boolean supportsPinUvAuthProtocol(
+            Ctap2Session session,
+            int pinUvAuthProtocolVersion) {
         final List<Integer> pinUvAuthProtocols =
                 session.getCachedInfo().getPinUvAuthProtocols();
-        return pinUvAuthProtocols != null && pinUvAuthProtocols.contains(pinUvAuthProtocol.getVersion());
+        return pinUvAuthProtocols != null && pinUvAuthProtocols.contains(pinUvAuthProtocolVersion);
     }
 
     @Test

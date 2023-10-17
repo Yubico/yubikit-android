@@ -74,10 +74,5 @@ public class Ctap2SessionInstrumentedTests {
                     Ctap2SessionTests::testCancelCborCommandAfterDelay,
                     pinUvAuthProtocol);
         }
-
-//        @Test
-//        public void testReset() throws Throwable {
-//            withCtap2Session(Ctap2SessionTests::testReset);
-//        }
     }
 }
