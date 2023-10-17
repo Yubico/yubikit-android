@@ -25,7 +25,7 @@ import java.util.Map;
 /**
  * Webauthn AttestedCredentialData structure
  *
- * @see <a href="https://www.w3.org/TR/2021/REC-webauthn-2-20210408/#sctn-attested-credential-data">6.5.1. Attested Credential Data</a>
+ * @see <a href="https://www.w3.org/TR/2021/REC-webauthn-2-20210408/#sctn-attested-credential-data">WebAuthn Attested Credential Data</a>
  */
 public class AttestedCredentialData {
     private final byte[] aaguid;

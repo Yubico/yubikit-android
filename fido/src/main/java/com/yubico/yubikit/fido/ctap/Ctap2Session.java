@@ -553,12 +553,12 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
         private final List<String> transports;
         private final List<PublicKeyCredentialParameters> algorithms;
         private final int maxSerializedLargeBlobArray;
-        private final boolean forcePINChange;
-        private final int minPINLength;
+        private final boolean forcePinChange;
+        private final int minPinLength;
         @Nullable
         private final Integer firmwareVersion;
         private final int maxCredBlobLength;
-        private final int maxRPIDsForSetMinPINLength;
+        private final int maxRPIDsForSetMinPinLength;
         @Nullable
         private final Integer preferredPlatformUvAttempts;
         private final int uvModality;
@@ -580,11 +580,11 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
                 List<String> transports,
                 List<PublicKeyCredentialParameters> algorithms,
                 int maxSerializedLargeBlobArray,
-                boolean forcePINChange,
-                int minPINLength,
+                boolean forcePinChange,
+                int minPinLength,
                 @Nullable Integer firmwareVersion,
                 int maxCredBlobLength,
-                int maxRPIDsForSetMinPINLength,
+                int maxRPIDsForSetMinPinLength,
                 @Nullable Integer preferredPlatformUvAttempts,
                 int uvModality,
                 Map<String, Object> certifications,
@@ -601,11 +601,11 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
             this.transports = transports;
             this.algorithms = algorithms;
             this.maxSerializedLargeBlobArray = maxSerializedLargeBlobArray;
-            this.forcePINChange = forcePINChange;
-            this.minPINLength = minPINLength;
+            this.forcePinChange = forcePinChange;
+            this.minPinLength = minPinLength;
             this.firmwareVersion = firmwareVersion;
             this.maxCredBlobLength = maxCredBlobLength;
-            this.maxRPIDsForSetMinPINLength = maxRPIDsForSetMinPINLength;
+            this.maxRPIDsForSetMinPinLength = maxRPIDsForSetMinPinLength;
             this.preferredPlatformUvAttempts = preferredPlatformUvAttempts;
             this.uvModality = uvModality;
             this.certifications = certifications;
@@ -658,7 +658,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
                     (Integer) data.get(RESULT_PREFERRED_PLATFORM_UV_ATTEMPTS),
                     data.containsKey(RESULT_UV_MODALITY)
                             ? (Integer) data.get(RESULT_UV_MODALITY)
-                            :  UserVerify.NONE.value,
+                            : UserVerify.NONE.value,
                     data.containsKey(RESULT_CERTIFICATIONS)
                             ? (Map<String, Object>) data.get(RESULT_CERTIFICATIONS)
                             : Collections.emptyMap(),
@@ -753,8 +753,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
          * enum in WebAuthn.
          *
          * @return list of supported transports
-         * @see <a href="https://www.w3.org/TR/webauthn/#enumdef-authenticatortransport">AuthenticatorTransport
-         * enum</a>
+         * @see <a href="https://www.w3.org/TR/webauthn/#enumdef-authenticatortransport">AuthenticatorTransport enum</a>
          */
         public List<String> getTransports() {
             return transports;
@@ -778,8 +777,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
          * Only valid if the authenticator supports {@code authenticatorLargeBlobs} command.
          *
          * @return maximum size of serialized large-blob array the authenticator can store
-         * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#authenticatorLargeBlobs">
-         * 6.10. authenticatorLargeBlobs (0x0C)</a>
+         * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#authenticatorLargeBlobs">authenticatorLargeBlobs</a>
          */
         public int getMaxSerializedLargeBlobArray() {
             return maxSerializedLargeBlobArray;
@@ -792,8 +790,8 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
          * @return force PIN Change requirement
          * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#changingExistingPin">PIN Change</a>
          */
-        public boolean getForcePINChange() {
-            return forcePINChange;
+        public boolean getForcePinChange() {
+            return forcePinChange;
         }
 
         /**
@@ -806,8 +804,8 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
          * @return current minimum PIN length
          * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#getinfo-minpinlength">Minimum PIN length</a>
          */
-        public int getMinPINLength() {
-            return minPINLength;
+        public int getMinPinLength() {
+            return minPinLength;
         }
 
         /**
@@ -840,8 +838,8 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
          * @return the maximum number of RP IDs
          * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#setMinPINLength">Setting a minimum PIN Length</a>
          */
-        public int getMaxRPIDsForSetMinPINLength() {
-            return maxRPIDsForSetMinPINLength;
+        public int getMaxRPIDsForSetMinPinLength() {
+            return maxRPIDsForSetMinPinLength;
         }
 
         /**
@@ -915,11 +913,11 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
                     ", transports=" + transports +
                     ", algorithms=" + algorithms +
                     ", maxSerializedLargeBlobArray=" + maxSerializedLargeBlobArray +
-                    ", forcePINChange=" + forcePINChange +
-                    ", minPINLength=" + minPINLength +
+                    ", forcePinChange=" + forcePinChange +
+                    ", minPinLength=" + minPinLength +
                     ", firmwareVersion=" + firmwareVersion +
                     ", maxCredBlobLength=" + maxCredBlobLength +
-                    ", maxRPIDsForSetMinPINLength=" + maxRPIDsForSetMinPINLength +
+                    ", maxRPIDsForSetMinPinLength=" + maxRPIDsForSetMinPinLength +
                     ", preferredPlatformUvAttempts=" + preferredPlatformUvAttempts +
                     ", uvModality=" + uvModality +
                     ", certifications=" + certifications +
