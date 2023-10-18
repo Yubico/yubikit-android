@@ -76,22 +76,12 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
     private static final byte CMD_BIO_ENROLLMENT_PRE = 0x40;
     private static final byte CMD_CREDENTIAL_MANAGEMENT_PRE = 0x41;
 
-    private enum CredentialManagerSupport {
-        NONE((byte) 0x00),
-        PREVIEW(CMD_CREDENTIAL_MANAGEMENT_PRE),
-        FULL(CMD_CREDENTIAL_MANAGEMENT);
-
-        final byte command;
-
-        CredentialManagerSupport(byte command) {
-            this.command = command;
-        }
-    }
 
     private final Version version;
     private final Backend<?> backend;
     private final InfoData info;
-    private final CredentialManagerSupport credentialManagerSupport;
+    @Nullable
+    private final Byte credentialManagerCommand;
 
     private static final org.slf4j.Logger logger = LoggerFactory.getLogger(Ctap2Session.class);
 
@@ -136,7 +126,13 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
         this.version = version;
         this.backend = backend;
         this.info = getInfo();
-        this.credentialManagerSupport = getCredentialManagementSupport(info);
+        final CredentialManagement.Support cmSupport = CredentialManagement.Support.fromInfo(info);
+        this.credentialManagerCommand =
+                cmSupport == CredentialManagement.Support.FULL
+                        ? Byte.valueOf(CMD_CREDENTIAL_MANAGEMENT)
+                        : cmSupport == CredentialManagement.Support.PREVIEW
+                        ? Byte.valueOf(CMD_CREDENTIAL_MANAGEMENT_PRE)
+                        : (Byte) null;
     }
 
     private static Backend<SmartCardProtocol> getSmartCardBackend(SmartCardConnection connection)
@@ -200,30 +196,6 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
         } catch (ClassCastException e) {
             throw new BadResponseException("Unexpected CBOR data in response");
         }
-    }
-
-    private CredentialManagerSupport getCredentialManagementSupport(InfoData info) {
-        final Map<String, ?> options = info.getOptions();
-        if (Boolean.TRUE.equals(options.get("credMgmt"))) {
-            return CredentialManagerSupport.FULL;
-        } else if (info.getVersions().contains("FIDO_2_1_PRE") &&
-                Boolean.TRUE.equals(options.get("credentialMgmtPreview"))) {
-            return CredentialManagerSupport.PREVIEW;
-        }
-
-        return CredentialManagerSupport.NONE;
-    }
-
-    /**
-     * Get information about authenticator support of credential manager commands.
-     *
-     * @return true if the authenticator supports credential manager or credential manager preview
-     * commands are supported.
-     * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#ref-for-getinfo-credmgmt">credMgmt option</a>
-     * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#ref-for-getinfo-credentialmgmtpreview">credentialMgmtPreview option</a>
-     */
-    public boolean isCredentialManagerSupported() {
-        return credentialManagerSupport != CredentialManagerSupport.NONE;
     }
 
     /**
@@ -436,11 +408,11 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
             @Nullable Integer pinUvAuthProtocol,
             @Nullable byte[] pinUvAuthParam
     ) throws IOException, CommandException {
-        if (!isCredentialManagerSupported()) {
-            throw new IllegalStateException("Authenticator does not support credential manager");
+        if (credentialManagerCommand == null) {
+            throw new IllegalStateException("Credential manager not supported");
         }
         return sendCbor(
-                credentialManagerSupport.command,
+                credentialManagerCommand,
                 args(
                         subCommand,
                         subCommandParams,

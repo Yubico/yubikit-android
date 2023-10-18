@@ -20,6 +20,8 @@ import static com.yubico.yubikit.testing.fido.Ctap2ClientPinInstrumentedTests.su
 
 import androidx.test.filters.LargeTest;
 
+import com.yubico.yubikit.fido.ctap.CredentialManagement;
+import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV1;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV2;
@@ -35,6 +37,13 @@ import java.util.Collection;
 
 @RunWith(Enclosed.class)
 public class Ctap2CredentialManagementInstrumentedTests {
+
+    static boolean isCredentialManagementSupported(Ctap2Session session) {
+        final Ctap2Session.InfoData info = session.getCachedInfo();
+        return CredentialManagement.Support.fromInfo(info) !=
+                CredentialManagement.Support.NONE;
+    }
+
     @LargeTest
     @RunWith(Parameterized.class)
     public static class ParametrizedCtap2CredentialManagementTests extends FidoInstrumentedTests {
@@ -53,7 +62,7 @@ public class Ctap2CredentialManagementInstrumentedTests {
         public void testReadMetadata() throws Throwable {
             withCtap2Session(
                     "Credential management or PIN/UV Auth protocol not supported",
-                    (device, session) -> session.isCredentialManagerSupported() &&
+                    (device, session) -> isCredentialManagementSupported(session) &&
                             supportsPinUvAuthProtocol(session, pinUvAuthProtocol),
                     Ctap2CredentialManagementTests::testReadMetadata,
                     pinUvAuthProtocol);
@@ -63,7 +72,7 @@ public class Ctap2CredentialManagementInstrumentedTests {
         public void testManagement() throws Throwable {
             withCtap2Session(
                     "Credential management or PIN/UV Auth protocol not supported",
-                    (device, session) -> session.isCredentialManagerSupported() &&
+                    (device, session) -> isCredentialManagementSupported(session) &&
                             supportsPinUvAuthProtocol(session, pinUvAuthProtocol),
                     Ctap2CredentialManagementTests::testManagement,
                     pinUvAuthProtocol);

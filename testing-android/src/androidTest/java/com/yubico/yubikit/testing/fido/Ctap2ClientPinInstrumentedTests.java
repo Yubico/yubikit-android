@@ -42,7 +42,7 @@ public class Ctap2ClientPinInstrumentedTests extends FidoInstrumentedTests {
             int pinUvAuthProtocolVersion) {
         final List<Integer> pinUvAuthProtocols =
                 session.getCachedInfo().getPinUvAuthProtocols();
-        return pinUvAuthProtocols != null && pinUvAuthProtocols.contains(pinUvAuthProtocolVersion);
+        return pinUvAuthProtocols.contains(pinUvAuthProtocolVersion);
     }
 
     @Test

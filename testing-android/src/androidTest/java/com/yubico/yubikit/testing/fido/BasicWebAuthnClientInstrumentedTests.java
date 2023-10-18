@@ -101,8 +101,10 @@ public class BasicWebAuthnClientInstrumentedTests {
         public void testClientCredentialManagement() throws Throwable {
             withCtap2Session(
                     "Credential management or PIN/UV Auth protocol not supported",
-                    (device, session) -> session.isCredentialManagerSupported() &&
-                            supportsPinUvAuthProtocol(session, pinUvAuthProtocol),
+                    (device, session) ->
+                            Ctap2CredentialManagementInstrumentedTests
+                                    .isCredentialManagementSupported(session) &&
+                                    supportsPinUvAuthProtocol(session, pinUvAuthProtocol),
                     BasicWebAuthnClientTests::testClientCredentialManagement,
                     pinUvAuthProtocol);
         }
