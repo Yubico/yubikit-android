@@ -113,9 +113,15 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
 
     public Ctap2Session(SmartCardConnection connection)
             throws IOException, CommandException {
-        this(new Version(0, 0, 0), getSmartCardBackend(connection));
-        Logger.debug(logger, "Ctap2Session session initialized for connection={}",
-                connection.getClass().getSimpleName());
+        this(connection, new Version(0, 0, 0));
+    }
+
+    public Ctap2Session(SmartCardConnection connection, Version version)
+            throws IOException, CommandException {
+        this(version, getSmartCardBackend(connection));
+        Logger.debug(logger, "Ctap2Session session initialized for connection={}, version={}",
+                connection.getClass().getSimpleName(),
+                version);
     }
 
     public Ctap2Session(FidoConnection connection) throws IOException, CommandException {
@@ -641,7 +647,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
                             : Collections.emptyList(),
                     data.containsKey(RESULT_MAX_SERIALIZED_LARGE_BLOB_ARRAY)
                             ? (Integer) data.get(RESULT_MAX_SERIALIZED_LARGE_BLOB_ARRAY)
-                            : 1024,
+                            : 0,
                     data.containsKey(RESULT_FORCE_PIN_CHANGE)
                             ? (Boolean) data.get(RESULT_FORCE_PIN_CHANGE)
                             : false,
@@ -651,7 +657,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
                     (Integer) data.get(RESULT_FIRMWARE_VERSION),
                     data.containsKey(RESULT_MAX_CRED_BLOB_LENGTH)
                             ? (Integer) data.get(RESULT_MAX_CRED_BLOB_LENGTH)
-                            : 32,
+                            : 0,
                     data.containsKey(RESULT_MAX_RPID_FOR_SET_MIN_PIN_LENGTH)
                             ? (Integer) data.get(RESULT_MAX_RPID_FOR_SET_MIN_PIN_LENGTH)
                             : 0,
@@ -773,10 +779,9 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
         /**
          * Get the maximum size, in bytes, of the serialized large-blob array that this
          * authenticator can store.
-         * <p>
-         * Only valid if the authenticator supports {@code authenticatorLargeBlobs} command.
          *
-         * @return maximum size of serialized large-blob array the authenticator can store
+         * @return maximum size of serialized large-blob array the authenticator can store if
+         * {@code authenticatorLargeBlobs} command is supported by the authenticator, 0 otherwise
          * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#authenticatorLargeBlobs">authenticatorLargeBlobs</a>
          */
         public int getMaxSerializedLargeBlobArray() {
@@ -785,7 +790,6 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
 
         /**
          * Get the requirement whether the authenticator requires PIN Change before use.
-         * <p>
          *
          * @return force PIN Change requirement
          * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#changingExistingPin">PIN Change</a>
@@ -820,9 +824,9 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
 
         /**
          * Get maximum credBlob length in bytes supported by the authenticator.
-         * Only valid if {@code credBlob} is included in the supported extensions list.
          *
-         * @return maximum credBlob length
+         * @return maximum credBlob length if the authenticator supports {@code credBlob}
+         * extension, 0 otherwise
          * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#getinfo-maxcredbloblength">Maximum credBlob lenght</a>
          */
         public int getMaxCredBlobLength() {
