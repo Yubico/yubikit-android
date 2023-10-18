@@ -40,8 +40,7 @@ public class Ctap2CredentialManagementInstrumentedTests {
 
     static boolean isCredentialManagementSupported(Ctap2Session session) {
         final Ctap2Session.InfoData info = session.getCachedInfo();
-        return CredentialManagement.Support.fromInfo(info) !=
-                CredentialManagement.Support.NONE;
+        return CredentialManagement.isSupported(info);
     }
 
     @LargeTest

@@ -75,7 +75,7 @@ public class CredentialManagement {
             PinUvAuthProtocol pinUvAuth,
             byte[] pinUvToken
     ) {
-        if (Support.fromInfo(ctap.getCachedInfo()) == Support.NONE) {
+        if (!isSupported(ctap.getCachedInfo())) {
             throw new IllegalStateException("Credential manager not supported");
         }
         this.ctap = ctap;
@@ -83,22 +83,12 @@ public class CredentialManagement {
         this.pinUvToken = pinUvToken;
     }
 
-    public enum Support {
-        NONE,
-        PREVIEW,
-        FULL;
-
-        public static Support fromInfo(Ctap2Session.InfoData info) {
-            final Map<String, ?> options = info.getOptions();
-            if (Boolean.TRUE.equals(options.get("credMgmt"))) {
-                return FULL;
-            } else if (info.getVersions().contains("FIDO_2_1_PRE") &&
-                    Boolean.TRUE.equals(options.get("credentialMgmtPreview"))) {
-                return PREVIEW;
-            }
-
-            return NONE;
-        }
+    public static boolean isSupported(Ctap2Session.InfoData info) {
+        final Map<String, ?> options = info.getOptions();
+        if (Boolean.TRUE.equals(options.get("credMgmt"))) {
+            return true;
+        } else return info.getVersions().contains("FIDO_2_1_PRE") &&
+                Boolean.TRUE.equals(options.get("credentialMgmtPreview"));
     }
 
     private Map<Integer, ?> call(

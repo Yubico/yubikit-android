@@ -126,13 +126,16 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
         this.version = version;
         this.backend = backend;
         this.info = getInfo();
-        final CredentialManagement.Support cmSupport = CredentialManagement.Support.fromInfo(info);
-        this.credentialManagerCommand =
-                cmSupport == CredentialManagement.Support.FULL
-                        ? Byte.valueOf(CMD_CREDENTIAL_MANAGEMENT)
-                        : cmSupport == CredentialManagement.Support.PREVIEW
-                        ? Byte.valueOf(CMD_CREDENTIAL_MANAGEMENT_PRE)
-                        : (Byte) null;
+
+        final Map<String, ?> options = info.getOptions();
+        if (Boolean.TRUE.equals(options.get("credMgmt"))) {
+            this.credentialManagerCommand = CMD_CREDENTIAL_MANAGEMENT;
+        } else if (info.getVersions().contains("FIDO_2_1_PRE") &&
+                Boolean.TRUE.equals(options.get("credentialMgmtPreview"))) {
+            this.credentialManagerCommand = CMD_CREDENTIAL_MANAGEMENT_PRE;
+        } else {
+            this.credentialManagerCommand = null;
+        }
     }
 
     private static Backend<SmartCardProtocol> getSmartCardBackend(SmartCardConnection connection)
