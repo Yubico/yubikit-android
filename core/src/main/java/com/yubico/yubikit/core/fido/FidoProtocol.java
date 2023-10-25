@@ -33,18 +33,18 @@ import javax.annotation.Nullable;
 
 public class FidoProtocol implements Closeable {
 
-    public static final byte TYPE_INIT = (byte) 0x80;
+    private static final byte TYPE_INIT = (byte) 0x80;
 
-    public static final byte CTAPHID_PING = TYPE_INIT | 0x01;
-    public static final byte CTAPHID_MSG = TYPE_INIT | 0x03;
-    public static final byte CTAPHID_LOCK = TYPE_INIT | 0x04;
-    public static final byte CTAPHID_INIT = TYPE_INIT | 0x06;
-    public static final byte CTAPHID_WINK = TYPE_INIT | 0x08;
-    public static final byte CTAPHID_CBOR = TYPE_INIT | 0x10;
-    public static final byte CTAPHID_CANCEL = TYPE_INIT | 0x11;
+    private static final byte CTAPHID_PING = TYPE_INIT | 0x01;
+    private static final byte CTAPHID_MSG = TYPE_INIT | 0x03;
+    private static final byte CTAPHID_LOCK = TYPE_INIT | 0x04;
+    private static final byte CTAPHID_INIT = TYPE_INIT | 0x06;
+    private static final byte CTAPHID_WINK = TYPE_INIT | 0x08;
+    private static final byte CTAPHID_CBOR = TYPE_INIT | 0x10;
+    private static final byte CTAPHID_CANCEL = TYPE_INIT | 0x11;
 
-    public static final byte CTAPHID_ERROR = TYPE_INIT | 0x3f;
-    public static final byte CTAPHID_KEEPALIVE = TYPE_INIT | 0x3b;
+    private static final byte CTAPHID_ERROR = TYPE_INIT | 0x3f;
+    private static final byte CTAPHID_KEEPALIVE = TYPE_INIT | 0x3b;
 
     private final CommandState defaultState = new CommandState();
 
