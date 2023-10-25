@@ -71,6 +71,26 @@ public class ClientPin {
 
     private static final org.slf4j.Logger logger = LoggerFactory.getLogger(ClientPin.class);
 
+    public static class PinRetries {
+        final int count;
+        @Nullable
+        final Boolean powerCycleState;
+
+        PinRetries(int count, @Nullable Boolean powerCycleState) {
+            this.count = count;
+            this.powerCycleState = powerCycleState;
+        }
+
+        public int getCount() {
+            return count;
+        }
+
+        @Nullable
+        public Boolean getPowerCycleState() {
+            return powerCycleState;
+        }
+    }
+
     /**
      * Construct a new ClientPin object using a specified PIN/UV Auth protocol.
      *
@@ -236,7 +256,7 @@ public class ClientPin {
      * @throws IOException      A communication error in the transport layer.
      * @throws CommandException A communication in the protocol layer.
      */
-    public Pair<Integer, Integer> getPinRetries() throws IOException, CommandException {
+    public PinRetries getPinRetries() throws IOException, CommandException {
         Logger.debug(logger, "Getting PIN retries");
         Map<Integer, ?> result = ctap.clientPin(
                 pinUvAuth.getVersion(),
@@ -250,9 +270,9 @@ public class ClientPin {
                 null
         );
 
-        return new Pair<>(
+        return new PinRetries(
                 Objects.requireNonNull((Integer) result.get(RESULT_RETRIES)),
-                (Integer) result.get(RESULT_POWER_CYCLE_STATE));
+                (Boolean) result.get(RESULT_POWER_CYCLE_STATE));
     }
 
     /**
