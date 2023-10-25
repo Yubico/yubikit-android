@@ -99,6 +99,8 @@ public class ClientError extends Exception {
             case CtapException.ERR_PIN_TOKEN_EXPIRED:
             case CtapException.ERR_PIN_AUTH_INVALID:
             case CtapException.ERR_PIN_AUTH_BLOCKED:
+            case CtapException.ERR_UV_BLOCKED:
+            case CtapException.ERR_UV_INVALID:
             case CtapException.ERR_REQUEST_TOO_LARGE:
             case CtapException.ERR_OPERATION_DENIED:
                 return new ClientError(Code.BAD_REQUEST, error);

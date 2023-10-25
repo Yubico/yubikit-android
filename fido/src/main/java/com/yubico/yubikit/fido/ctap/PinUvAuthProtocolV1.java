@@ -45,7 +45,9 @@ import javax.crypto.spec.SecretKeySpec;
 
 /**
  * Implements PIN/UV Auth Protocol 1
- * @see <a href="https://fidoalliance.org/specs/fido-v2.0-ps-20190130/fido-client-to-authenticator-protocol-v2.0-ps-20190130.html#authenticatorClientPIN">authenticatorClientPIN</a>.
+ *
+ * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#authenticatorClientPIN">authenticatorClientPIN</a>.
+ * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#pinProto1">PIN/UV Auth Protocol One</a>.
  */
 public class PinUvAuthProtocolV1 implements PinUvAuthProtocol {
     public static final int VERSION = 1;
@@ -95,9 +97,18 @@ public class PinUvAuthProtocolV1 implements PinUvAuthProtocol {
             KeyAgreement ecdh = KeyAgreement.getInstance(KEY_AGREEMENT_ALG);
             ecdh.init(kp.getPrivate());
             ecdh.doPhase(otherKey, true);
-            byte[] sharedSecret = MessageDigest.getInstance(HASH_ALG).digest(ecdh.generateSecret());
+            byte[] sharedSecret = kdf(ecdh.generateSecret());
             return new Pair<>(keyAgreement, sharedSecret);
         } catch (NoSuchAlgorithmException | InvalidKeySpecException | InvalidKeyException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    @Override
+    public byte[] kdf(byte[] z) {
+        try {
+            return MessageDigest.getInstance(HASH_ALG).digest(z);
+        } catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException(e);
         }
     }
@@ -108,7 +119,9 @@ public class PinUvAuthProtocolV1 implements PinUvAuthProtocol {
             Cipher cipher = Cipher.getInstance(CIPHER_TRANSFORMATION);
             cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(key, CIPHER_ALG), new IvParameterSpec(IV));
             return cipher.doFinal(demPlaintext);
-        } catch (NoSuchAlgorithmException | InvalidKeyException | InvalidAlgorithmParameterException | NoSuchPaddingException | BadPaddingException | IllegalBlockSizeException e) {
+        } catch (NoSuchAlgorithmException | InvalidKeyException |
+                 InvalidAlgorithmParameterException | NoSuchPaddingException | BadPaddingException |
+                 IllegalBlockSizeException e) {
             throw new IllegalStateException(e);
         }
     }
@@ -119,7 +132,9 @@ public class PinUvAuthProtocolV1 implements PinUvAuthProtocol {
             Cipher cipher = Cipher.getInstance(CIPHER_TRANSFORMATION);
             cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(key, CIPHER_ALG), new IvParameterSpec(IV));
             return cipher.doFinal(demCiphertext);
-        } catch (NoSuchAlgorithmException | InvalidKeyException | InvalidAlgorithmParameterException | NoSuchPaddingException | BadPaddingException | IllegalBlockSizeException e) {
+        } catch (NoSuchAlgorithmException | InvalidKeyException |
+                 InvalidAlgorithmParameterException | NoSuchPaddingException | BadPaddingException |
+                 IllegalBlockSizeException e) {
             throw new IllegalStateException(e);
         }
     }

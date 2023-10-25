@@ -63,9 +63,11 @@ import javax.annotation.Nullable;
 
 public class BasicWebAuthnClientTests {
 
-    public static void testMakeCredentialGetAssertion(Ctap2Session session) throws Throwable {
+    public static void testMakeCredentialGetAssertion(
+            Ctap2Session session,
+            Object... args) throws Throwable {
 
-        Ctap2ClientPinTests.ensureDefaultPinSet(session);
+        Ctap2ClientPinTests.ensureDefaultPinSet(session, Ctap2ClientPinTests.getPinUvAuthProtocol(args));
 
         BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
         List<byte[]> deleteCredIds = new ArrayList<>();
@@ -86,6 +88,7 @@ public class BasicWebAuthnClientTests {
                 creationOptionsNonRk,
                 Objects.requireNonNull(creationOptionsNonRk.getRp().getId()),
                 TestData.PIN,
+                null,
                 null
         );
         AuthenticatorAttestationResponse responseNonRk = (AuthenticatorAttestationResponse) credNonRk.getResponse();
@@ -108,6 +111,7 @@ public class BasicWebAuthnClientTests {
                 creationOptionsRk,
                 Objects.requireNonNull(creationOptionsRk.getRp().getId()),
                 TestData.PIN,
+                null,
                 null
         );
         AuthenticatorAttestationResponse responseRk = (AuthenticatorAttestationResponse) credRk.getResponse();
@@ -145,9 +149,9 @@ public class BasicWebAuthnClientTests {
         deleteCredentials(webauthn, deleteCredIds);
     }
 
-    public static void testGetAssertionMultipleUsersRk(Ctap2Session session) throws Throwable {
+    public static void testGetAssertionMultipleUsersRk(Ctap2Session session, Object... args) throws Throwable {
 
-        Ctap2ClientPinTests.ensureDefaultPinSet(session);
+        Ctap2ClientPinTests.ensureDefaultPinSet(session, Ctap2ClientPinTests.getPinUvAuthProtocol(args));
 
         BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
         List<byte[]> deleteCredIds = new ArrayList<>();
@@ -172,6 +176,7 @@ public class BasicWebAuthnClientTests {
                     creationOptions,
                     Objects.requireNonNull(creationOptions.getRp().getId()),
                     TestData.PIN,
+                    null,
                     null
             );
             AuthenticatorAttestationResponse response = (AuthenticatorAttestationResponse) credential.getResponse();
@@ -224,9 +229,9 @@ public class BasicWebAuthnClientTests {
         deleteCredentials(webauthn, deleteCredIds);
     }
 
-    public static void testGetAssertionWithAllowList(Ctap2Session session) throws Throwable {
+    public static void testGetAssertionWithAllowList(Ctap2Session session, Object... args) throws Throwable {
 
-        Ctap2ClientPinTests.ensureDefaultPinSet(session);
+        Ctap2ClientPinTests.ensureDefaultPinSet(session, Ctap2ClientPinTests.getPinUvAuthProtocol(args));
 
         BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
 
@@ -257,6 +262,7 @@ public class BasicWebAuthnClientTests {
                 creationOptions1,
                 Objects.requireNonNull(TestData.RP.getId()),
                 TestData.PIN,
+                null,
                 null
         );
 
@@ -267,6 +273,7 @@ public class BasicWebAuthnClientTests {
                 creationOptions2,
                 Objects.requireNonNull(TestData.RP.getId()),
                 TestData.PIN,
+                null,
                 null
         );
         byte[] credId2 = cred2.getRawId();
@@ -312,9 +319,9 @@ public class BasicWebAuthnClientTests {
         assertArrayEquals(credId2, credential.getRawId());
     }
 
-    public static void testMakeCredentialWithExcludeList(Ctap2Session session) throws Throwable {
+    public static void testMakeCredentialWithExcludeList(Ctap2Session session, Object... args) throws Throwable {
 
-        Ctap2ClientPinTests.ensureDefaultPinSet(session);
+        Ctap2ClientPinTests.ensureDefaultPinSet(session, Ctap2ClientPinTests.getPinUvAuthProtocol(args));
 
         BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
         List<PublicKeyCredentialDescriptor> excludeList = new ArrayList<>();
@@ -332,6 +339,7 @@ public class BasicWebAuthnClientTests {
                 creationOptions,
                 Objects.requireNonNull(creationOptions.getRp().getId()),
                 TestData.PIN,
+                null,
                 null
         );
         excludeList.add(
@@ -355,6 +363,7 @@ public class BasicWebAuthnClientTests {
                     creationOptions,
                     Objects.requireNonNull(creationOptions.getRp().getId()),
                     TestData.PIN,
+                    null,
                     null
             );
             fail("Succeeded in making credential even though the credential was excluded");
@@ -374,12 +383,13 @@ public class BasicWebAuthnClientTests {
                 creationOptions,
                 Objects.requireNonNull(creationOptions.getRp().getId()),
                 TestData.PIN,
+                null,
                 null
         );
     }
 
-    public static void testMakeCredentialKeyAlgorithms(Ctap2Session session) throws Throwable {
-        Ctap2ClientPinTests.ensureDefaultPinSet(session);
+    public static void testMakeCredentialKeyAlgorithms(Ctap2Session session, Object... args) throws Throwable {
+        Ctap2ClientPinTests.ensureDefaultPinSet(session, Ctap2ClientPinTests.getPinUvAuthProtocol(args));
         BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
         List<PublicKeyCredentialParameters> allCredParams = Arrays.asList(
                 TestData.PUB_KEY_CRED_PARAMS_ES256,
@@ -394,6 +404,7 @@ public class BasicWebAuthnClientTests {
                     creationOptions,
                     Objects.requireNonNull(creationOptions.getRp().getId()),
                     TestData.PIN,
+                    null,
                     null
             );
             AuthenticatorAttestationResponse attestation = (AuthenticatorAttestationResponse) credential.getResponse();
@@ -420,6 +431,7 @@ public class BasicWebAuthnClientTests {
                 creationOptions,
                 Objects.requireNonNull(creationOptions.getRp().getId()),
                 TestData.PIN,
+                null,
                 null
         );
         AuthenticatorAttestationResponse attestation = (AuthenticatorAttestationResponse) credential.getResponse();
@@ -440,6 +452,7 @@ public class BasicWebAuthnClientTests {
                 creationOptions,
                 Objects.requireNonNull(creationOptions.getRp().getId()),
                 TestData.PIN,
+                null,
                 null
         );
         attestation = (AuthenticatorAttestationResponse) credential.getResponse();
@@ -451,8 +464,8 @@ public class BasicWebAuthnClientTests {
         assertEquals(credParams.get(0).getAlg(), alg);
     }
 
-    public static void testClientPinManagement(Ctap2Session session) throws Throwable {
-        Ctap2ClientPinTests.ensureDefaultPinSet(session);
+    public static void testClientPinManagement(Ctap2Session session, Object... args) throws Throwable {
+        Ctap2ClientPinTests.ensureDefaultPinSet(session, Ctap2ClientPinTests.getPinUvAuthProtocol(args));
 
         BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
         assertTrue(webauthn.isPinSupported());
@@ -476,8 +489,8 @@ public class BasicWebAuthnClientTests {
     }
 
 
-    public static void testClientCredentialManagement(Ctap2Session session) throws Throwable {
-        Ctap2ClientPinTests.ensureDefaultPinSet(session);
+    public static void testClientCredentialManagement(Ctap2Session session, Object... args) throws Throwable {
+        Ctap2ClientPinTests.ensureDefaultPinSet(session, Ctap2ClientPinTests.getPinUvAuthProtocol(args));
         BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
         PublicKeyCredentialCreationOptions creationOptions = getCreateOptions(null, true,
                 Collections.singletonList(TestData.PUB_KEY_CRED_PARAMS_ES256),
@@ -487,24 +500,25 @@ public class BasicWebAuthnClientTests {
                 creationOptions,
                 Objects.requireNonNull(creationOptions.getRp().getId()),
                 TestData.PIN,
+                null,
                 null);
 
-        CredentialManager credmgmt = webauthn.getCredentialManager(TestData.PIN);
+        CredentialManager credentialManager = webauthn.getCredentialManager(TestData.PIN);
 
-        assertThat(credmgmt.getCredentialCount(), equalTo(1));
+        assertThat(credentialManager.getCredentialCount(), equalTo(1));
 
-        List<String> rpIds = credmgmt.getRpIdList();
+        List<String> rpIds = credentialManager.getRpIdList();
         assertThat(rpIds, equalTo(Collections.singletonList(TestData.RP_ID)));
 
-        Map<PublicKeyCredentialDescriptor, PublicKeyCredentialUserEntity> credentials = credmgmt.getCredentials(TestData.RP_ID);
+        Map<PublicKeyCredentialDescriptor, PublicKeyCredentialUserEntity> credentials = credentialManager.getCredentials(TestData.RP_ID);
         assertThat(credentials.size(), equalTo(1));
         PublicKeyCredentialDescriptor key = credentials.keySet().iterator().next();
         assertThat(Objects.requireNonNull(credentials.get(key)).getId(), equalTo(TestData.USER_ID));
 
-        credmgmt.deleteCredential(key);
-        assertThat(credmgmt.getCredentialCount(), equalTo(0));
-        assertTrue(credmgmt.getCredentials(TestData.RP_ID).isEmpty());
-        assertTrue(credmgmt.getRpIdList().isEmpty());
+        credentialManager.deleteCredential(key);
+        assertThat(credentialManager.getCredentialCount(), equalTo(0));
+        assertTrue(credentialManager.getCredentials(TestData.RP_ID).isEmpty());
+        assertTrue(credentialManager.getRpIdList().isEmpty());
     }
 
     private static PublicKeyCredentialCreationOptions getCreateOptions(
@@ -586,7 +600,11 @@ public class BasicWebAuthnClientTests {
     ) throws IOException, CommandException, ClientError {
         CredentialManager credentialManager = webAuthnClient.getCredentialManager(TestData.PIN);
         for (byte[] credId : credIds) {
-            credentialManager.deleteCredential(new PublicKeyCredentialDescriptor(PublicKeyCredentialType.PUBLIC_KEY, credId, null));
+            credentialManager.deleteCredential(
+                    new PublicKeyCredentialDescriptor(
+                            PublicKeyCredentialType.PUBLIC_KEY,
+                            credId,
+                            null));
         }
     }
 }

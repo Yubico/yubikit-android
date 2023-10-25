@@ -27,7 +27,7 @@ import java.util.Map;
 /**
  * Webauthn AttestationObject which exposes attestation authenticator data.
  *
- * @see <a href="https://www.w3.org/TR/2021/REC-webauthn-2-20210408/#sctn-attestation">6.5. Attestation</a>
+ * @see <a href="https://www.w3.org/TR/2021/REC-webauthn-2-20210408/#sctn-attestation">WebAuthn Attestation</a>
  */
 public class AttestationObject {
     public static final String KEY_FORMAT = "fmt";

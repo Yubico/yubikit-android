@@ -25,47 +25,69 @@ import com.yubico.yubikit.core.application.CommandException;
 import com.yubico.yubikit.core.fido.CtapException;
 import com.yubico.yubikit.fido.ctap.ClientPin;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
+import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV1;
 
 import java.io.IOException;
 import java.util.Objects;
 
 public class Ctap2ClientPinTests {
+
+    static PinUvAuthProtocol getPinUvAuthProtocol(Object... args) {
+        assertThat("Missing required argument: PinUvAuthProtocol", args.length > 0);
+        return (PinUvAuthProtocol) args[0];
+    }
+
     /**
      * Attempts to set (or verify) the default PIN, or fails.
      */
-    static void ensureDefaultPinSet(Ctap2Session session) throws IOException, CommandException {
-        ClientPin pin = new ClientPin(session, new PinUvAuthProtocolV1());
-        boolean pinSet = Objects.requireNonNull((Boolean) session.getInfo().getOptions().get("clientPin"));
+    static void ensureDefaultPinSet(Ctap2Session session, PinUvAuthProtocol pinUvAuthProtocol)
+            throws IOException, CommandException {
+
+        Ctap2Session.InfoData info = session.getCachedInfo();
+
+        ClientPin pin = new ClientPin(session, pinUvAuthProtocol);
+        boolean pinSet = Objects.requireNonNull((Boolean) info.getOptions().get("clientPin"));
 
         if (!pinSet) {
             pin.setPin(TestData.PIN);
         } else {
-            pin.getPinToken(TestData.PIN);
+            pin.getPinToken(
+                    TestData.PIN,
+                    ClientPin.PIN_PERMISSION_MC | ClientPin.PIN_PERMISSION_GA,
+                    "localhost");
         }
     }
 
-    public static void testSetPinProtocol(Ctap2Session ctap2) throws Throwable {
+    public static void testSetPinProtocol(Ctap2Session session, Object... args) throws Throwable {
+
+        assertThat("Missing required argument: PinUvAuthProtocol", args.length > 0);
+
+        final PinUvAuthProtocol pinUvAuthProtocol = (PinUvAuthProtocol) args[0];
+
         char[] otherPin = "123123".toCharArray();
 
-        ensureDefaultPinSet(ctap2);
+        Integer permissions = ClientPin.PIN_PERMISSION_MC | ClientPin.PIN_PERMISSION_GA;
+        String permissionRpId = "localhost";
 
-        ClientPin pin = new ClientPin(ctap2, new PinUvAuthProtocolV1());
+        ensureDefaultPinSet(session, pinUvAuthProtocol);
+
+        ClientPin pin = new ClientPin(session, new PinUvAuthProtocolV1());
         assertThat(pin.getPinUvAuth().getVersion(), is(1));
-        assertThat(pin.getPinRetries(), is(8));
+        assertThat(pin.getPinRetries().first, is(8));
 
         pin.changePin(TestData.PIN, otherPin);
         try {
-            pin.getPinToken(TestData.PIN);
+            pin.getPinToken(TestData.PIN, permissions, permissionRpId);
             fail("Wrong PIN was accepted");
         } catch (CtapException e) {
             assertThat(e.getCtapError(), is(CtapException.ERR_PIN_INVALID));
 
         }
-        assertThat(pin.getPinRetries(), is(7));
+        assertThat(pin.getPinRetries().first, is(7));
 
-        assertThat(pin.getPinToken(otherPin), notNullValue());
-        assertThat(pin.getPinRetries(), is(8));
+        assertThat(pin.getPinToken(otherPin, permissions, permissionRpId), notNullValue());
+        assertThat(pin.getPinRetries().first, is(8));
         pin.changePin(otherPin, TestData.PIN);
     }
 

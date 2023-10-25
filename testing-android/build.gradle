@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    compileSdk 33
+    compileSdk 34
 
     defaultConfig {
         minSdkVersion 19
-        targetSdkVersion 33
+        targetSdkVersion 34
 
         testApplicationId 'com.yubico.yubikit.testing'
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
