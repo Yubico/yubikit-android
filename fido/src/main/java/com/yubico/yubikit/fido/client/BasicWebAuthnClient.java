@@ -23,6 +23,7 @@ import com.yubico.yubikit.fido.ctap.ClientPin;
 import com.yubico.yubikit.fido.ctap.CredentialManagement;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.fido.ctap.PinUvAuthDummyProtocol;
+import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV1;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV2;
 import com.yubico.yubikit.fido.webauthn.AttestationConveyancePreference;
@@ -113,12 +114,8 @@ public class BasicWebAuthnClient implements Closeable {
         final Boolean optionClientPin = (Boolean) options.get(OPTION_CLIENT_PIN);
         pinSupported = optionClientPin != null;
 
-        final int protocolVersion = getPreferredPinUvAuthProtocol(info.getPinUvAuthProtocols());
-        this.clientPin = new ClientPin(ctap, protocolVersion == PinUvAuthProtocolV2.VERSION
-                ? new PinUvAuthProtocolV2()
-                : protocolVersion == PinUvAuthProtocolV1.VERSION
-                ? new PinUvAuthProtocolV1()
-                : new PinUvAuthDummyProtocol());
+        this.clientPin =
+                new ClientPin(ctap, getPreferredPinUvAuthProtocol(info.getPinUvAuthProtocols()));
 
         pinConfigured = pinSupported && Boolean.TRUE.equals(optionClientPin);
 
@@ -607,24 +604,22 @@ public class BasicWebAuthnClient implements Closeable {
     }
 
     /**
-     * Calculates the preferred pinUvAuth protocol version for authenticator provided list.
-     * Returns PinUvAuthDummyProtocol.VERSION if the authenticator does not support any of the SDK
+     * Calculates the preferred pinUvAuth protocol for authenticator provided list.
+     * Returns PinUvAuthDummyProtocol if the authenticator does not support any of the SDK
      * supported protocols.
      */
-    private int getPreferredPinUvAuthProtocol(List<Integer> pinUvAuthProtocols) {
-
-        final List<Integer> supportedPinUvAuthProtocols = Arrays.asList(
-                PinUvAuthProtocolV1.VERSION,
-                PinUvAuthProtocolV2.VERSION);
-
+    private PinUvAuthProtocol getPreferredPinUvAuthProtocol(List<Integer> pinUvAuthProtocols) {
         for (int protocol : pinUvAuthProtocols) {
-            for (int supportedProtocol : supportedPinUvAuthProtocols) {
-                if (pinSupported && protocol == supportedProtocol) {
-                    return supportedProtocol;
-                }
+            if (pinSupported && protocol == PinUvAuthProtocolV1.VERSION) {
+                return new PinUvAuthProtocolV1();
+            }
+
+            if (pinSupported && protocol == PinUvAuthProtocolV2.VERSION) {
+                return new PinUvAuthProtocolV2();
             }
         }
-        return PinUvAuthDummyProtocol.VERSION;
+
+        return new PinUvAuthDummyProtocol();
     }
 
     private static boolean isPublicKeyCredentialTypeSupported(String type) {
