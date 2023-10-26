@@ -99,26 +99,17 @@ public class BasicWebAuthnClient implements Closeable {
 
         Map<String, ?> options = info.getOptions();
 
-        Boolean clientPin = (Boolean) options.get(OPTION_CLIENT_PIN);
-        pinSupported = clientPin != null;
+        final Boolean optionClientPin = (Boolean) options.get(OPTION_CLIENT_PIN);
+        pinSupported = optionClientPin != null;
 
-        final List<Integer> pinUvAuthProtocols = info.getPinUvAuthProtocols();
-        if (pinUvAuthProtocols.size() > 0) {
-            // List of supported PIN/UV auth protocols in order of decreasing authenticator
-            // preference. MUST NOT contain duplicate values nor be empty if present.
-            int preferredPinUvAuthProtocol = pinUvAuthProtocols.get(0);
+        final int protocolVersion = getPreferredPinUvAuthProtocol(info.getPinUvAuthProtocols());
+        this.clientPin = new ClientPin(ctap, protocolVersion == PinUvAuthProtocolV2.VERSION
+                ? new PinUvAuthProtocolV2()
+                : protocolVersion == PinUvAuthProtocolV1.VERSION
+                ? new PinUvAuthProtocolV1()
+                : new PinUvAuthDummyProtocol());
 
-            if (pinSupported && preferredPinUvAuthProtocol == PinUvAuthProtocolV2.VERSION) {
-                this.clientPin = new ClientPin(ctap, new PinUvAuthProtocolV2());
-            } else if (pinSupported && preferredPinUvAuthProtocol == PinUvAuthProtocolV1.VERSION) {
-                this.clientPin = new ClientPin(ctap, new PinUvAuthProtocolV1());
-            } else {
-                this.clientPin = new ClientPin(ctap, new PinUvAuthDummyProtocol());
-            }
-        } else {
-            this.clientPin = new ClientPin(ctap, new PinUvAuthDummyProtocol());
-        }
-        pinConfigured = pinSupported && clientPin;
+        pinConfigured = pinSupported && Boolean.TRUE.equals(optionClientPin);
 
         Boolean uv = (Boolean) options.get(OPTION_USER_VERIFICATION);
         uvSupported = uv != null;
@@ -599,6 +590,27 @@ public class BasicWebAuthnClient implements Closeable {
                 // uv is configured, uv = true.
                 return true;
         }
+    }
+
+    /**
+     * Calculates the preferred pinUvAuth protocol version for authenticator provided list.
+     * Returns PinUvAuthDummyProtocol.VERSION if the authenticator does not support any of the SDK
+     * supported protocols.
+     */
+    private int getPreferredPinUvAuthProtocol(List<Integer> pinUvAuthProtocols) {
+
+        final List<Integer> supportedPinUvAuthProtocols = Arrays.asList(
+                PinUvAuthProtocolV1.VERSION,
+                PinUvAuthProtocolV2.VERSION);
+
+        for (int protocol : pinUvAuthProtocols) {
+            for (int supportedProtocol : supportedPinUvAuthProtocols) {
+                if (pinSupported && protocol == supportedProtocol) {
+                    return supportedProtocol;
+                }
+            }
+        }
+        return PinUvAuthDummyProtocol.VERSION;
     }
 
     private static boolean isPublicKeyCredentialTypeSupported(String type) {

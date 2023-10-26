@@ -25,10 +25,11 @@ import java.util.Map;
  * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#authnrClientPin-puaprot-abstract-dfn">PIN/UV Auth Protocol Abstract Definition</a>.
  */
 public class PinUvAuthDummyProtocol implements PinUvAuthProtocol {
+    public static final int VERSION = -1;
 
     @Override
     public int getVersion() {
-        throw new UnsupportedPinUvAuthProtocolError();
+        return VERSION;
     }
 
     @Override
