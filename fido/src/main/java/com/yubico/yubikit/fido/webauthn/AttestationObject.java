@@ -23,6 +23,9 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
+
+import javax.annotation.Nullable;
 
 /**
  * Webauthn AttestationObject which exposes attestation authenticator data.
@@ -33,26 +36,38 @@ public class AttestationObject {
     public static final String KEY_FORMAT = "fmt";
     public static final String KEY_AUTHENTICATOR_DATA = "authData";
     public static final String KEY_ATTESTATION_STATEMENT = "attStmt";
+    public static final String KEY_EP_ATT = "epAtt";
+    public static final String KEY_LARGE_BLOB_KEY = "largeBlobKey";
 
     private final String format;
     private final AuthenticatorData authenticatorData;
     private final Map<String, ?> attestationStatement;
+    @Nullable
+    private final Boolean enterpriseAttestation;
+    @Nullable
+    private final byte[] largeBlobKey;
 
     public AttestationObject(
             String format,
             AuthenticatorData authenticatorData,
-            Map<String, ?> attestationStatement
+            Map<String, ?> attestationStatement,
+            @Nullable Boolean enterpriseAttestation,
+            @Nullable byte[] largeBlobKey
     ) {
         this.format = format;
         this.authenticatorData = authenticatorData;
         this.attestationStatement = attestationStatement;
+        this.enterpriseAttestation = enterpriseAttestation;
+        this.largeBlobKey = largeBlobKey;
     }
 
     static public AttestationObject fromCredential(Ctap2Session.CredentialData credential) {
         return new AttestationObject(
                 credential.getFormat(),
                 AuthenticatorData.parseFrom(ByteBuffer.wrap(credential.getAuthenticatorData())),
-                credential.getAttestationStatement()
+                credential.getAttestationStatement(),
+                credential.getEnterpriseAttestation(),
+                credential.getLargeBlobKey()
         );
     }
 
@@ -70,11 +85,29 @@ public class AttestationObject {
         return attestationStatement;
     }
 
+    @SuppressWarnings("unused")
+    @Nullable
+    public Boolean getEnterpriseAttestation() {
+        return enterpriseAttestation;
+    }
+
+    @SuppressWarnings("unused")
+    @Nullable
+    public byte[] getLargeBlobKey() {
+        return largeBlobKey;
+    }
+
     public byte[] toBytes() {
         Map<String, Object> attestationObject = new HashMap<>();
         attestationObject.put(AttestationObject.KEY_FORMAT, format);
         attestationObject.put(AttestationObject.KEY_AUTHENTICATOR_DATA, authenticatorData.getBytes());
         attestationObject.put(AttestationObject.KEY_ATTESTATION_STATEMENT, attestationStatement);
+        if (enterpriseAttestation != null) {
+            attestationObject.put(AttestationObject.KEY_EP_ATT, enterpriseAttestation);
+        }
+        if (largeBlobKey != null) {
+            attestationObject.put(AttestationObject.KEY_LARGE_BLOB_KEY, largeBlobKey);
+        }
         return Cbor.encode(attestationObject);
     }
 
@@ -87,6 +120,8 @@ public class AttestationObject {
 
         if (!format.equals(that.format)) return false;
         if (!authenticatorData.equals(that.authenticatorData)) return false;
+        if (!Objects.equals(enterpriseAttestation, that.enterpriseAttestation)) return false;
+        if (!Arrays.equals(largeBlobKey, that.largeBlobKey)) return false;
         return Arrays.equals(
                 Cbor.encode(attestationStatement),
                 Cbor.encode(that.attestationStatement));
@@ -97,6 +132,8 @@ public class AttestationObject {
         int result = format.hashCode();
         result = 31 * result + authenticatorData.hashCode();
         result = 31 * result + Arrays.hashCode(Cbor.encode(attestationStatement));
+        result = 31 * result + (enterpriseAttestation != null ? enterpriseAttestation.hashCode() : 0);
+        result = 31 * result + Arrays.hashCode(largeBlobKey);
         return result;
     }
 }
