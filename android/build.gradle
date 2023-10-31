@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    compileSdk 33
+    compileSdk 34
 
     defaultConfig {
         minSdkVersion 19
-        targetSdkVersion 33
+        targetSdk 34
 
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         consumerProguardFiles "consumer-rules.pro"
@@ -36,13 +36,13 @@ android {
 dependencies {
     api project(':core')
 
-    compileOnly 'androidx.annotation:annotation:1.6.0'
+    compileOnly 'androidx.annotation:annotation:1.7.0'
     compileOnly 'com.github.spotbugs:spotbugs-annotations:4.7.3'
 
     testImplementation project(':testing')
     testImplementation 'androidx.test.ext:junit:1.1.5'
-    testImplementation 'org.robolectric:robolectric:4.9'
-    testImplementation 'org.mockito:mockito-core:5.4.0'
+    testImplementation 'org.robolectric:robolectric:4.10.3'
+    testImplementation 'org.mockito:mockito-core:5.6.0'
 
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test:runner:1.5.2'
