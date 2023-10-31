@@ -609,13 +609,15 @@ public class BasicWebAuthnClient implements Closeable {
      * supported protocols.
      */
     private PinUvAuthProtocol getPreferredPinUvAuthProtocol(List<Integer> pinUvAuthProtocols) {
-        for (int protocol : pinUvAuthProtocols) {
-            if (pinSupported && protocol == PinUvAuthProtocolV1.VERSION) {
-                return new PinUvAuthProtocolV1();
-            }
+        if (pinSupported) {
+            for (int protocol : pinUvAuthProtocols) {
+                if (protocol == PinUvAuthProtocolV1.VERSION) {
+                    return new PinUvAuthProtocolV1();
+                }
 
-            if (pinSupported && protocol == PinUvAuthProtocolV2.VERSION) {
-                return new PinUvAuthProtocolV2();
+                if (protocol == PinUvAuthProtocolV2.VERSION) {
+                    return new PinUvAuthProtocolV2();
+                }
             }
         }
 
