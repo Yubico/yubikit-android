@@ -74,7 +74,7 @@ public class Ctap2ClientPinTests {
 
         ClientPin pin = new ClientPin(session, new PinUvAuthProtocolV1());
         assertThat(pin.getPinUvAuth().getVersion(), is(1));
-        assertThat(pin.getPinRetries().first, is(8));
+        assertThat(pin.getPinRetries().getCount(), is(8));
 
         pin.changePin(TestData.PIN, otherPin);
         try {
@@ -84,10 +84,10 @@ public class Ctap2ClientPinTests {
             assertThat(e.getCtapError(), is(CtapException.ERR_PIN_INVALID));
 
         }
-        assertThat(pin.getPinRetries().first, is(7));
+        assertThat(pin.getPinRetries().getCount(), is(7));
 
         assertThat(pin.getPinToken(otherPin, permissions, permissionRpId), notNullValue());
-        assertThat(pin.getPinRetries().first, is(8));
+        assertThat(pin.getPinRetries().getCount(), is(8));
         pin.changePin(otherPin, TestData.PIN);
     }
 

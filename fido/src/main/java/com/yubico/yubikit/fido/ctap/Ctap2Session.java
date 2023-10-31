@@ -155,7 +155,8 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
         this(protocol.getVersion(), new Backend<FidoProtocol>(protocol) {
             @Override
             byte[] sendCbor(byte[] data, @Nullable CommandState state) throws IOException {
-                return delegate.sendAndReceive(FidoProtocol.CTAPHID_CBOR, data, state);
+                byte CTAPHID_CBOR = (byte) 0x80 | 0x10;
+                return delegate.sendAndReceive(CTAPHID_CBOR, data, state);
             }
         });
     }
