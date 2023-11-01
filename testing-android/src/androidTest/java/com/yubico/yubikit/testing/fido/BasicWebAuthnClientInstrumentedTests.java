@@ -37,7 +37,7 @@ import java.util.Collection;
 public class BasicWebAuthnClientInstrumentedTests {
     @LargeTest
     @RunWith(Parameterized.class)
-    public static class ParametrizedBasicWebAuthnClientTests extends FidoInstrumentedTests {
+    public static class BasicWebAuthnClientParametrizedTests extends FidoInstrumentedTests {
 
         @Parameterized.Parameter
         public PinUvAuthProtocol pinUvAuthProtocol;

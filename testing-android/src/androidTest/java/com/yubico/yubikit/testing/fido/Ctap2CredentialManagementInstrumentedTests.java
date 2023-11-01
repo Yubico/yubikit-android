@@ -45,7 +45,7 @@ public class Ctap2CredentialManagementInstrumentedTests {
 
     @LargeTest
     @RunWith(Parameterized.class)
-    public static class ParametrizedCtap2CredentialManagementTests extends FidoInstrumentedTests {
+    public static class Ctap2CredentialManagementParametrizedTests extends FidoInstrumentedTests {
 
         @Parameterized.Parameter
         public PinUvAuthProtocol pinUvAuthProtocol;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Yubico.
+ * Copyright (C) 2022-2023 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 package com.yubico.yubikit.testing.framework;
 
-import androidx.test.rule.ActivityTestRule;
+import androidx.test.ext.junit.rules.ActivityScenarioRule;
 
 import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.testing.TestActivity;
@@ -34,18 +34,29 @@ public class YKInstrumentedTests {
     public final TestName name = new TestName();
 
     @Rule
-    public final ActivityTestRule<TestActivity> rule = new ActivityTestRule<>(TestActivity.class);
+    public final ActivityScenarioRule<TestActivity> scenarioRule = new ActivityScenarioRule<>(TestActivity.class);
 
     @Before
-    public void getYubiKey() throws InterruptedException {
-        device = rule.getActivity().awaitSession(
-                getClass().getSimpleName() + " / " + name.getMethodName()
-        );
+    public void getYubiKey() {
+        scenarioRule.getScenario().onActivity(action -> {
+            try {
+                device = action.awaitSession(getClass().getSimpleName(), name.getMethodName());
+            } catch (Throwable t) {
+                throw new RuntimeException(t);
+            }
+        });
     }
 
     @After
-    public void releaseYubiKey() throws InterruptedException {
-        rule.getActivity().returnSession(device);
-        device = null;
+    public void releaseYubiKey() {
+        scenarioRule.getScenario().onActivity(action -> {
+            try {
+                action.returnSession(device);
+                device = null;
+            } catch (Throwable t) {
+                throw new RuntimeException(t);
+            }
+        });
     }
 }
+

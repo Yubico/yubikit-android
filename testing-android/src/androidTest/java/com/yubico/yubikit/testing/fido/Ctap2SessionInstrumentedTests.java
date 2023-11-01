@@ -38,7 +38,7 @@ import java.util.Collection;
 public class Ctap2SessionInstrumentedTests {
     @LargeTest
     @RunWith(Parameterized.class)
-    public static class ParametrizedCtap2SessionTests extends FidoInstrumentedTests {
+    public static class Ctap2SessionParametrizedTests extends FidoInstrumentedTests {
         @Parameterized.Parameter
         public PinUvAuthProtocol pinUvAuthProtocol;
 
