@@ -42,7 +42,8 @@ import java.util.concurrent.Semaphore;
 
 public class TestActivity extends AppCompatActivity {
 
-    private TextView testNameText;
+    private TextView testClassNameText;
+    private TextView testMethodNameText;
     private TextView statusText;
     private TextView bottomText;
     private ProgressBar progressBar;
@@ -60,7 +61,8 @@ public class TestActivity extends AppCompatActivity {
         setContentView(R.layout.test_activity);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
-        testNameText = findViewById(R.id.testNameText);
+        testClassNameText = findViewById(R.id.testClassNameText);
+        testMethodNameText = findViewById(R.id.testMethodNameText);
         statusText = findViewById(R.id.statusText);
         bottomText = findViewById(R.id.bottomText);
         progressBar = findViewById(R.id.progressBar);
@@ -104,11 +106,12 @@ public class TestActivity extends AppCompatActivity {
         });
     }
 
-    public synchronized YubiKeyDevice awaitSession(String name) throws InterruptedException {
+    public synchronized YubiKeyDevice awaitSession(String testClassName, String testMethodName) throws InterruptedException {
         YubiKeyDevice device = sessionQueue.peek();
 
         runOnUiThread(() -> {
-            testNameText.setText(name);
+            testClassNameText.setText(testClassName);
+            testMethodNameText.setText(testMethodName);
             if (device instanceof UsbYubiKeyDevice) {
                 statusText.setText(R.string.processing);
             } else {

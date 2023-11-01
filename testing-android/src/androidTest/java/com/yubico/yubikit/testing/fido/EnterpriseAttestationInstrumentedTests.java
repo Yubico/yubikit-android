@@ -38,7 +38,7 @@ import java.util.Collection;
 public class EnterpriseAttestationInstrumentedTests {
     @LargeTest
     @RunWith(Parameterized.class)
-    public static class ParametrizedEnterpriseAttestationTests extends FidoInstrumentedTests {
+    public static class EnterpriseAttestationParametrizedTests extends FidoInstrumentedTests {
 
         @Parameterized.Parameter
         public PinUvAuthProtocol pinUvAuthProtocol;
