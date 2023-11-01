@@ -23,5 +23,5 @@ spotbugs {
     effort = "max"
     reportLevel = "low"
 
-    reportsDir = file("$project.buildDir/reports/spotbugs")
+    reportsDir = project.layout.getBuildDirectory().dir('reports/spotbugs').get().asFile
 }
