@@ -1,0 +1,92 @@
+== OpenPGP module
+The OpenPGP module enables pin, keys and data management, as well as execution of signing, verification, encryption, decryption, and authentication operations on supported YubiKeys. The supported features depend on the YubiKey firmware, refer to link:../openpgp/main/java/com/yubico/yubikit/openpgp/OpenPgpSession.java[OpenPGPSession] for details. The OpenPGP card specification can be found at https://gnupg.org/ftp/specs/[https://gnupg.org/ftp/specs/].
+
+https://developers.yubico.com/yubikit-android/JavaDoc/openpgp/latest/[JavaDoc API documentation]
+
+=== Dependency
+To add the OpenPGP module, along with the link:../android/[android] module as a dependencies to your project, add the following to your gradle configuration:
+
+[source,groovy]
+----
+dependencies {
+  def yubiKitVersion = '2.4.0' // update with desired version
+  implementation "com.yubico.yubikit:android:$yubiKitVersion"
+  implementation "com.yubico.yubikit:openpgp:$yubiKitVersion"
+}
+----
+
+This module depends on the link:../core/[core] module, which will automatically
+be added as a transitive dependency to your project.
+
+==== Communication with the OpenPGP Application
+To communicate with the OpenPGP application on a YubiKey, use the OpenPgpSession instance. The following snippet shows an example of obtaining the instance:
+
+[source,java]
+----
+// obtain YubiKeyDevice by observing NFC or USB connections
+YubiKeyDevice device = ...;
+
+// open SmartCardConnection on the device
+try(SmartCardConnection connection = device.openConnection(SmartCardConnection.class)) {
+    // create OpenPgpSession instance on the connection
+    OpenPgpSession openpgp = new OpenPgpSession(connection));
+    // use the session
+    openpgp.callMethods();
+}
+----
+
+===== User verification and PIN management
+OpenPgpSession has support for managing and verifying OpenPGP user and admin PIN (the specification refers to those as user password PW1 and admin password PW3). Before executing an OpenPGP operation, verify the PIN based on the operation's security requirement:
+
+[source,java]
+----
+
+OpenPgpSession openpgp = ...; //
+// for verification of user PIN
+String userPin = "...";
+openpgp.verifyUserPin(userPin, false); // see documentation
+
+// for verification of admin PIN
+String adminPin = "...";
+openpgp.verifyAdminPin(adminPin);
+----
+
+These functions throw `InvalidPinException` if the verification failed. Otherwise call the desired operation on the openpgp instance.
+
+Other PIN related operations include:
+
+* getting status: `getPinStatus()`
+* changing user or admin PIN: `changeUserPin()`, `changeAdminPin()`
+* changing PIN attempts: `setPinAttempts()`
+* unverification of user and admin PIN: `unverifyUserPin()`, `unverifyAdminPin()`
+
+See tests in link:../testing/src/main/java/com/yubico/yubikit/testing/openpgp/OpenPgpDeviceTests.java[OpenPgpDeviceTests.java] for usage examples.
+
+
+===== Key import and generation
+The openpgp session can be used to import or generate keys. Supported are RSA (RSA3072 and RSA4096 since YubiKey firmware 4.0.0) and EC (since firmware 5.2.0) keys.
+
+Example shows import of RSA2048 signature key:
+[source,java]
+----
+
+OpenPgpSession openpgp = ...;
+KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA");
+kpg.initialize(2048);
+KeyPair pair = kpg.generateKeyPair();
+openpgp.putKey(KeyRef.SIG, PrivateKeyValues.fromPrivateKey(pair.getPrivate()));
+
+----
+
+The following example shows how an X25519 decryption key can be generated on YubiKey:
+[source,java]
+----
+
+OpenPgpSession openpgp = ...;
+PublicKey publicKey = openpgp.generateEcKey(KeyRef.DEC, OpenPgpCurve.X25519).toPublicKey();
+
+----
+
+===== Encryption and decryption
+
+===== Signature verification
