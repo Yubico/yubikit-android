@@ -2,34 +2,37 @@ apply plugin: 'maven-publish'
 apply plugin: 'signing'
 
 ext.isReleaseVersion = !version.endsWith("SNAPSHOT")
-
-task javadoc(type: Javadoc) {
-    source = android.sourceSets.main.java.srcDirs
-    classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
-    android.libraryVariants.all { variant ->
+android {
+    libraryVariants.configureEach { variant ->
         if (variant.name == 'release') {
-            owner.classpath += variant.javaCompileProvider.get().classpath
+            tasks.register('javadoc', Javadoc) {
+                source = android.sourceSets.main.java.srcDirs
+                classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
+                owner.classpath += variant.javaCompileProvider.get().classpath
+                exclude '**/R.html', '**/R.*.html', '**/index.html'
+            }
+
+            // build a jar with javadoc
+            tasks.register('javadocJar', Jar) {
+                dependsOn javadoc
+                archiveClassifier.set('javadoc')
+                from javadoc.destinationDir
+            }
+
+            // build a jar with source
+            tasks.register('sourcesJar', Jar) {
+                archiveClassifier.set('sources')
+                from android.sourceSets.main.java.srcDirs
+            }
+
+            artifacts {
+                archives javadocJar
+                archives sourcesJar
+            }
         }
     }
-    exclude '**/R.html', '**/R.*.html', '**/index.html'
 }
 
-// build a jar with javadoc
-task javadocJar(type: Jar, dependsOn: javadoc) {
-    archiveClassifier.set('javadoc')
-    from javadoc.destinationDir
-}
-
-// build a jar with source
-task sourcesJar(type: Jar) {
-    archiveClassifier.set('sources')
-    from android.sourceSets.main.java.srcDirs
-}
-
-artifacts {
-    archives javadocJar
-    archives sourcesJar
-}
 
 afterEvaluate {
     publishing {
@@ -58,7 +61,7 @@ afterEvaluate {
             }
         }
     }
-    tasks.withType(Sign) {
+    tasks.withType(Sign).configureEach {
         onlyIf { isReleaseVersion && System.getenv("NO_GPG_SIGN") != "true" }
     }
     signing {
