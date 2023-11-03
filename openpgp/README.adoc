@@ -1,0 +1,52 @@
+== OpenPGP module
+The OpenPGP module enables key and PIN management, as well as execution of signing, verification, encryption, decryption, and authentication operations on supported YubiKeys. The features support depends on the YubiKey firmware version, refer to link:../openpgp/src/main/java/com/yubico/yubikit/openpgp/OpenPgpSession.java[OpenPgpSession.java] for details. The OpenPGP card specification can be found at https://gnupg.org/ftp/specs/[https://gnupg.org/ftp/specs/].
+
+https://developers.yubico.com/yubikit-android/JavaDoc/openpgp/latest/[JavaDoc API documentation]
+
+=== Dependency
+To add the OpenPGP module, along with the link:../android/[android] module as a dependencies to your project, add the following to your gradle configuration:
+
+[source,groovy]
+----
+dependencies {
+  implementation "com.yubico.yubikit:android:(insert version here)"
+  implementation "com.yubico.yubikit:openpgp:(insert version here)"
+}
+----
+
+This module depends on the link:../core/[core] module, which will automatically
+be added as a transitive dependency to your project.
+
+==== Communication with the OpenPGP Application
+To communicate with the OpenPGP application on a YubiKey, use the OpenPgpSession class. You will need a SmartCardConnection to a YubiKey:
+
+[source,java]
+----
+OpenPgpSession openpgp = new OpenPgpSession(smartCardConnection));
+
+// OpenPGP functionality needs to be unlocked by verifying user or admin PIN depending on the operation
+openpgp.verifyAdminPin(adminPin);
+
+byte[] message = "hello".getBytes(StandardCharsets.UTF_8);
+PublicKey publicKey = openpgp.generateRsaKey(KeyRef.SIG, 4096).toPublicKey();
+
+// signature
+openpgp.verifyUserPin(userPin, false);
+byte[] signature = openpgp.sign(message);
+Signature verifier = Signature.getInstance("NONEwithRSA");
+verifier.initVerify(publicKey);
+verifier.update(message);
+assert verifier.verify(signature);
+
+// decryption
+publicKey = openpgp.generateRsaKey(KeyRef.DEC, 4096).toPublicKey();
+Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+cipher.init(Cipher.ENCRYPT_MODE, publicKey);
+byte[] cipherText = cipher.doFinal(message);
+
+openpgp.verifyUserPin(userPin, true);
+byte[] decrypted = openpgp.decrypt(cipherText);
+Assert.assertArrayEquals(message, decrypted);
+----
+
+Find more examples in link:../testing/src/main/java/com/yubico/yubikit/testing/openpgp/OpenPgpDeviceTests.java[OpenPgpDeviceTests.java].
