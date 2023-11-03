@@ -24,14 +24,14 @@ To communicate with the OpenPGP application on a YubiKey, use the OpenPgpSession
 ----
 OpenPgpSession openpgp = new OpenPgpSession(smartCardConnection));
 
-// PIN verification mandatory based on
+// OpenPGP functionality needs to be unlocked by verifying user or admin PIN depending on the operation
 openpgp.verifyAdminPin(adminPin);
 
 byte[] message = "hello".getBytes(StandardCharsets.UTF_8);
 PublicKey publicKey = openpgp.generateRsaKey(KeyRef.SIG, 4096).toPublicKey();
 
 // signature
-openpgp.verifyUserPin(DEFAULT_PIN, false);
+openpgp.verifyUserPin(userPin, false);
 byte[] signature = openpgp.sign(message);
 Signature verifier = Signature.getInstance("NONEwithRSA");
 verifier.initVerify(publicKey);
@@ -44,7 +44,7 @@ Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
 cipher.init(Cipher.ENCRYPT_MODE, publicKey);
 byte[] cipherText = cipher.doFinal(message);
 
-openpgp.verifyUserPin(DEFAULT_PIN, true);
+openpgp.verifyUserPin(userPin, true);
 byte[] decrypted = openpgp.decrypt(cipherText);
 Assert.assertArrayEquals(message, decrypted);
 ----
