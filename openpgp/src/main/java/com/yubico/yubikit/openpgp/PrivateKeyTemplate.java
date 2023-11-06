@@ -35,6 +35,10 @@ abstract class PrivateKeyTemplate {
 
     abstract List<Tlv> getTemplate();
 
+    void destroy() {
+        Arrays.fill(crt, (byte) 0);
+    };
+
     byte[] getBytes() {
         ByteBuffer headers = ByteBuffer.allocate(1024);
         ByteBuffer values = ByteBuffer.allocate(1024);
@@ -82,6 +86,14 @@ abstract class PrivateKeyTemplate {
                     new Tlv(0x93, q)
             );
         }
+
+        @Override
+        void destroy() {
+            super.destroy();
+            Arrays.fill(e, (byte) 0);
+            Arrays.fill(p, (byte) 0);
+            Arrays.fill(q, (byte) 0);
+        }
     }
 
     static class RsaCrt extends Rsa {
@@ -110,6 +122,15 @@ abstract class PrivateKeyTemplate {
             ));
             return tlvs;
         }
+
+        @Override
+        void destroy() {
+            super.destroy();
+            Arrays.fill(iqmp, (byte) 0);
+            Arrays.fill(dmp1, (byte) 0);
+            Arrays.fill(dmq1, (byte) 0);
+            Arrays.fill(n, (byte) 0);
+        }
     }
 
     static class Ec extends PrivateKeyTemplate {
@@ -131,6 +152,15 @@ abstract class PrivateKeyTemplate {
                 tlvs.add(new Tlv(0x99, publicKey));
             }
             return tlvs;
+        }
+
+        @Override
+        void destroy() {
+            super.destroy();
+            Arrays.fill(privateKey, (byte) 0);
+            if (publicKey != null) {
+                Arrays.fill(publicKey, (byte) 0);
+            }
         }
     }
 }

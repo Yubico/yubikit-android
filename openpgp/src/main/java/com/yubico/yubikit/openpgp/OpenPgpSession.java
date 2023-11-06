@@ -1092,8 +1092,21 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
                 throw new UnsupportedOperationException("This YubiKey only supports RSA 2048 keys");
             }
         }
-        PrivateKeyTemplate template = getKeyTemplate(privateKey, keyRef, version.isLessThan(4, 0, 0));
-        protocol.sendAndReceive(new Apdu(0, INS_PUT_DATA_ODD, 0x3f, 0xff, template.getBytes()));
+        PrivateKeyTemplate template = null;
+        byte[] templateBytes = null;
+        try {
+            template = getKeyTemplate(privateKey, keyRef, version.isLessThan(4, 0, 0));
+            templateBytes = template.getBytes();
+            protocol.sendAndReceive(new Apdu(0, INS_PUT_DATA_ODD, 0x3f, 0xff, templateBytes));
+        } finally {
+            if (templateBytes != null) {
+                Arrays.fill(templateBytes, (byte) 0);
+            }
+            if (template != null) {
+                template.destroy();
+            }
+        }
+
         if (version.isLessThan(5, 0, 0)) {
             setGenerationTime(keyRef, 0);
         }
