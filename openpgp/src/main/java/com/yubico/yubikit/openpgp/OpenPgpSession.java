@@ -46,6 +46,8 @@ import java.io.InputStream;
 import java.math.BigInteger;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.StandardCharsets;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateEncodingException;
@@ -320,7 +322,7 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
         Logger.info(logger, "KDF settings changed");
     }
 
-    private void doVerify(Pw pw, String pin) throws ApduException, IOException, InvalidPinException {
+    private void doVerify(Pw pw, char[] pin) throws ApduException, IOException, InvalidPinException {
         byte[] pinEnc = getKdf().process(pw, pin);
         try {
             protocol.sendAndReceive(new Apdu(0, INS_VERIFY, 0, pw.getValue(), pinEnc));
@@ -330,6 +332,8 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
                 throw new InvalidPinException(remaining);
             }
             throw e;
+        } finally {
+            Arrays.fill(pinEnc, (byte) 0);
         }
     }
 
@@ -346,7 +350,7 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
      * @throws IOException         in case of connection error
      * @throws InvalidPinException in case of the wrong PIN
      */
-    public void verifyUserPin(String pin, boolean extended) throws ApduException, IOException, InvalidPinException {
+    public void verifyUserPin(char[] pin, boolean extended) throws ApduException, IOException, InvalidPinException {
         doVerify(extended ? Pw.RESET : Pw.USER, pin);
     }
 
@@ -360,7 +364,7 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
      * @throws IOException         in case of connection error
      * @throws InvalidPinException in case of the wrong PIN
      */
-    public void verifyAdminPin(String pin) throws ApduException, IOException, InvalidPinException {
+    public void verifyAdminPin(char[] pin) throws ApduException, IOException, InvalidPinException {
         doVerify(Pw.ADMIN, pin);
     }
 
@@ -500,22 +504,27 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
         Logger.info(logger, "Number of PIN attempts has been changed");
     }
 
-    private void changePw(Pw pw, String pin, String newPin) throws ApduException, IOException, InvalidPinException {
+    private void changePw(Pw pw, char[] pin, char[] newPin) throws ApduException, IOException, InvalidPinException {
         Logger.debug(logger, "Changing {} PIN", pw);
         Kdf kdf = getKdf();
-        byte[] pinBytes = kdf.process(pw, pin);
-        byte[] newPinBytes = kdf.process(pw, newPin);
+        byte[] pinBytes = null;
+        byte[] newPinBytes = null;
+        byte[] data = null;
         try {
+            pinBytes = kdf.process(pw, pin);
+            newPinBytes = kdf.process(pw, newPin);
+            data = ByteBuffer
+                    .allocate(pinBytes.length + newPinBytes.length)
+                    .put(pinBytes)
+                    .put(newPinBytes)
+                    .array();
             protocol.sendAndReceive(new Apdu(
                     0,
                     INS_CHANGE_PIN,
                     0,
                     pw.getValue(),
-                    ByteBuffer
-                            .allocate(pinBytes.length + newPinBytes.length)
-                            .put(pinBytes)
-                            .put(newPinBytes)
-                            .array()
+                    data
+
             ));
         } catch (ApduException e) {
             if (e.getSw() == SW.SECURITY_CONDITION_NOT_SATISFIED) {
@@ -524,6 +533,16 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
 
             }
             throw e;
+        } finally {
+            if (data != null) {
+                Arrays.fill(data, (byte) 0);
+            }
+            if (pinBytes != null) {
+                Arrays.fill(pinBytes, (byte) 0);
+            }
+            if (newPinBytes != null) {
+                Arrays.fill(newPinBytes, (byte) 0);
+            }
         }
         Logger.info(logger, "New {} PIN set", pw);
     }
@@ -537,7 +556,7 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
      * @throws IOException         in case of connection error
      * @throws InvalidPinException in case of the wrong PIN in case of the wrong PIN
      */
-    public void changeUserPin(String pin, String newPin) throws ApduException, IOException, InvalidPinException {
+    public void changeUserPin(char[] pin, char[] newPin) throws ApduException, IOException, InvalidPinException {
         changePw(Pw.USER, pin, newPin);
     }
 
@@ -550,7 +569,7 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
      * @throws IOException         in case of connection error
      * @throws InvalidPinException in case of the wrong PIN
      */
-    public void changeAdminPin(String pin, String newPin) throws ApduException, IOException, InvalidPinException {
+    public void changeAdminPin(char[] pin, char[] newPin) throws ApduException, IOException, InvalidPinException {
         changePw(Pw.ADMIN, pin, newPin);
     }
 
@@ -566,10 +585,18 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
      * @throws ApduException in case of an error response from the YubiKey
      * @throws IOException   in case of connection error
      */
-    public void setResetCode(String resetCode) throws ApduException, IOException {
+    public void setResetCode(char[] resetCode) throws ApduException, IOException {
         Logger.debug(logger, "Setting a new PIN Reset Code");
-        byte[] data = getKdf().process(Pw.RESET, resetCode);
-        putData(Do.RESETTING_CODE, data);
+        byte[] data = null;
+        try {
+            data = getKdf().process(Pw.RESET, resetCode);
+            putData(Do.RESETTING_CODE, data);
+        } finally {
+            if (data != null) {
+                Arrays.fill(data, (byte) 0);
+            }
+        }
+
         Logger.info(logger, "New Reset Code has been set");
     }
 
@@ -587,7 +614,7 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
      * @throws IOException         in case of connection error
      * @throws InvalidPinException in case of the wrong PIN
      */
-    public void resetPin(String newPin, @Nullable String resetCode) throws
+    public void resetPin(char[] newPin, @Nullable char[] resetCode) throws
             ApduException, IOException, InvalidPinException {
         Logger.debug(logger, "Resetting User PIN");
         byte p1 = 2;

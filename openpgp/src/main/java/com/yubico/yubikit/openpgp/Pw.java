@@ -18,8 +18,8 @@ package com.yubico.yubikit.openpgp;
 
 public enum Pw {
     USER((byte) 0x81), RESET((byte) 0x82), ADMIN((byte) 0x83);
-    public static final String DEFAULT_USER_PIN = "123456";
-    public static final String DEFAULT_ADMIN_PIN = "12345678";
+    public static final char[] DEFAULT_USER_PIN = "123456".toCharArray();
+    public static final char[] DEFAULT_ADMIN_PIN = "12345678".toCharArray();
 
     private final byte value;
 
