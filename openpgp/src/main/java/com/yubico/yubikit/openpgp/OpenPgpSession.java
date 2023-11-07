@@ -338,7 +338,7 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
      * <p>
      * This will unlock functionality that requires User PIN verification.
      * Note that with extended=false only sign operations are allowed.
-     * Inversely, with extended=false sign operations are NOT allowed.
+     * Inversely, with extended=true sign operations are NOT allowed.
      *
      * @param pin      the User PIN to verify
      * @param extended false to verify for signature use, true for other uses
