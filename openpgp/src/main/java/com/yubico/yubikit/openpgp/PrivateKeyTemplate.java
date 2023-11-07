@@ -25,9 +25,12 @@ import java.util.Arrays;
 import java.util.List;
 
 import javax.annotation.Nullable;
+import javax.security.auth.Destroyable;
 
-abstract class PrivateKeyTemplate {
+abstract class PrivateKeyTemplate implements Destroyable {
     private final byte[] crt;
+
+    private boolean destroyed = false;
 
     PrivateKeyTemplate(byte[] crt) {
         this.crt = crt;
@@ -35,9 +38,16 @@ abstract class PrivateKeyTemplate {
 
     abstract List<Tlv> getTemplate();
 
-    void destroy() {
+    @Override
+    public void destroy() {
         Arrays.fill(crt, (byte) 0);
-    };
+        destroyed = true;
+    }
+
+    @Override
+    public boolean isDestroyed() {
+        return destroyed;
+    }
 
     byte[] getBytes() {
         ByteBuffer headers = ByteBuffer.allocate(1024);
@@ -88,11 +98,11 @@ abstract class PrivateKeyTemplate {
         }
 
         @Override
-        void destroy() {
-            super.destroy();
+        public void destroy() {
             Arrays.fill(e, (byte) 0);
             Arrays.fill(p, (byte) 0);
             Arrays.fill(q, (byte) 0);
+            super.destroy();
         }
     }
 
@@ -124,13 +134,14 @@ abstract class PrivateKeyTemplate {
         }
 
         @Override
-        void destroy() {
-            super.destroy();
+        public void destroy() {
             Arrays.fill(iqmp, (byte) 0);
             Arrays.fill(dmp1, (byte) 0);
             Arrays.fill(dmq1, (byte) 0);
             Arrays.fill(n, (byte) 0);
+            super.destroy();
         }
+
     }
 
     static class Ec extends PrivateKeyTemplate {
@@ -155,12 +166,12 @@ abstract class PrivateKeyTemplate {
         }
 
         @Override
-        void destroy() {
-            super.destroy();
+        public void destroy() {
             Arrays.fill(privateKey, (byte) 0);
             if (publicKey != null) {
                 Arrays.fill(publicKey, (byte) 0);
             }
+            super.destroy();
         }
     }
 }
