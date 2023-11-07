@@ -22,10 +22,12 @@ import com.yubico.yubikit.core.util.Tlvs;
 
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -42,7 +44,7 @@ public abstract class Kdf {
         return algorithm;
     }
 
-    abstract byte[] process(Pw pw, String pin);
+    abstract byte[] process(Pw pw, char[] pin);
 
     abstract byte[] getBytes();
 
@@ -62,8 +64,8 @@ public abstract class Kdf {
         }
 
         @Override
-        public byte[] process(Pw pw, String pin) {
-            return pin.getBytes(StandardCharsets.UTF_8);
+        public byte[] process(Pw pw, char[] pin) {
+            return pinBytes(pin);
         }
 
         @Override
@@ -169,17 +171,29 @@ public abstract class Kdf {
         }
 
         @Override
-        public byte[] process(Pw pw, String pin) {
-            byte[] salt = getSalt(pw);
-            byte[] pinEncoded = pin.getBytes(StandardCharsets.UTF_8);
-            return doProcess(
-                    hashAlgorithm,
-                    iterationCount,
-                    ByteBuffer.allocate(salt.length + pinEncoded.length)
-                            .put(salt)
-                            .put(pinEncoded)
-                            .array()
-            );
+        public byte[] process(Pw pw, char[] pin) {
+            byte[] pinBytes = null;
+            byte[] data = null;
+            try {
+                final byte[] salt = getSalt(pw);
+                pinBytes = pinBytes(pin);
+                data = ByteBuffer.allocate(salt.length + pinBytes.length)
+                        .put(salt)
+                        .put(pinBytes)
+                        .array();
+                return doProcess(
+                        hashAlgorithm,
+                        iterationCount,
+                        data
+                );
+            } finally {
+                if (pinBytes != null) {
+                    Arrays.fill(pinBytes, (byte) 0);
+                }
+                if (data != null) {
+                    Arrays.fill(data, (byte) 0);
+                }
+            }
         }
 
         @Override
@@ -208,8 +222,8 @@ public abstract class Kdf {
         public static IterSaltedS2k create(HashAlgorithm hashAlgorithm, int iterationCount) {
             byte[] saltUser = RandomUtils.getRandomBytes(8);
             byte[] saltAdmin = RandomUtils.getRandomBytes(8);
-            byte[] defaultUserPinEncoded = Pw.DEFAULT_USER_PIN.getBytes(StandardCharsets.UTF_8);
-            byte[] defaultAdminPinEncoded = Pw.DEFAULT_ADMIN_PIN.getBytes(StandardCharsets.UTF_8);
+            byte[] defaultUserPinEncoded = pinBytes(Pw.DEFAULT_USER_PIN);
+            byte[] defaultAdminPinEncoded = pinBytes(Pw.DEFAULT_ADMIN_PIN);
             return new IterSaltedS2k(
                     hashAlgorithm,
                     iterationCount,
@@ -225,6 +239,15 @@ public abstract class Kdf {
                             .put(defaultAdminPinEncoded)
                             .array())
             );
+        }
+    }
+
+    private static byte[] pinBytes(char[] pin) {
+        ByteBuffer byteBuffer = StandardCharsets.UTF_8.encode(CharBuffer.wrap(pin));
+        try {
+            return Arrays.copyOf(byteBuffer.array(), byteBuffer.limit());
+        } finally {
+            Arrays.fill(byteBuffer.array(), (byte) 0);
         }
     }
 }

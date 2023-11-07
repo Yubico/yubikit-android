@@ -3,6 +3,7 @@
     <string name="app_name">YubiKit Tester</string>
     <string name="touch">Touch button when flashing…</string>
     <string name="remove_yubikey">Remove YubiKey now</string>
-    <string name="tap_yubikey">Tap and hold YubiKey…</string>
+    <string name="connect_or_tap">Connect or tap YubiKey…</string>
     <string name="processing">Processing…</string>
+    <string name="processing_hold">Processing… hold…</string>
 </resources>

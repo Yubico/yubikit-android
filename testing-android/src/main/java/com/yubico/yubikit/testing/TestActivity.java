@@ -112,14 +112,19 @@ public class TestActivity extends AppCompatActivity {
         runOnUiThread(() -> {
             testClassNameText.setText(testClassName);
             testMethodNameText.setText(testMethodName);
-            if (device instanceof UsbYubiKeyDevice) {
-                statusText.setText(R.string.processing);
-            } else {
-                statusText.setText(R.string.tap_yubikey);
+            if (device == null) {
+                statusText.setText(R.string.connect_or_tap);
             }
         });
 
         YubiKeyDevice connectedDevice = sessionQueue.take();
+        runOnUiThread(() -> {
+            if (connectedDevice instanceof UsbYubiKeyDevice) {
+                statusText.setText(R.string.processing);
+            } else {
+                statusText.setText(R.string.processing_hold);
+            }
+        });
         setBusy(true);
         return connectedDevice;
 

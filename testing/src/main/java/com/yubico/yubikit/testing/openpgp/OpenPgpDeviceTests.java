@@ -67,10 +67,10 @@ import javax.crypto.Cipher;
 import javax.crypto.KeyAgreement;
 
 public class OpenPgpDeviceTests {
-    private static final String DEFAULT_PIN = Pw.DEFAULT_USER_PIN;
-    private static final String DEFAULT_ADMIN = Pw.DEFAULT_ADMIN_PIN;
-    private static final String CHANGED_PIN = "12341234";
-    private static final String RESET_CODE = "43214321";
+    private static final char[] DEFAULT_PIN = Pw.DEFAULT_USER_PIN;
+    private static final char[] DEFAULT_ADMIN = Pw.DEFAULT_ADMIN_PIN;
+    private static final char[] CHANGED_PIN = "12341234".toCharArray();
+    private static final char[] RESET_CODE = "43214321".toCharArray();
     private static final Logger logger = LoggerFactory.getLogger(OpenPgpDeviceTests.class);
 
     private static final List<OpenPgpCurve> ecdsaCurves = Stream.of(OpenPgpCurve.values())
