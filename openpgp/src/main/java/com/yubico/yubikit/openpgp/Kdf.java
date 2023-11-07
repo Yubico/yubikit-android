@@ -173,11 +173,10 @@ public abstract class Kdf {
         @Override
         public byte[] process(Pw pw, char[] pin) {
             byte[] pinBytes = null;
-            byte[] salt = null;
             byte[] data = null;
             try {
+                final byte[] salt = getSalt(pw);
                 pinBytes = pinBytes(pin);
-                salt = getSalt(pw);
                 data = ByteBuffer.allocate(salt.length + pinBytes.length)
                         .put(salt)
                         .put(pinBytes)
@@ -190,9 +189,6 @@ public abstract class Kdf {
             } finally {
                 if (pinBytes != null) {
                     Arrays.fill(pinBytes, (byte) 0);
-                }
-                if (salt != null) {
-                    Arrays.fill(salt, (byte) 0);
                 }
                 if (data != null) {
                     Arrays.fill(data, (byte) 0);
