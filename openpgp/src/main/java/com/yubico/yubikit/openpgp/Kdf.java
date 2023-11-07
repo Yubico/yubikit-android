@@ -245,8 +245,7 @@ public abstract class Kdf {
     private static byte[] pinBytes(char[] pin) {
         ByteBuffer byteBuffer = StandardCharsets.UTF_8.encode(CharBuffer.wrap(pin));
         try {
-            int byteLen = byteBuffer.limit() - byteBuffer.position();
-            return Arrays.copyOf(byteBuffer.array(), byteLen);
+            return Arrays.copyOf(byteBuffer.array(), byteBuffer.limit());
         } finally {
             Arrays.fill(byteBuffer.array(), (byte) 0);
         }
