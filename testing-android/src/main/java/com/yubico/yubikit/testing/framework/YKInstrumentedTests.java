@@ -28,6 +28,7 @@ import org.junit.rules.TestName;
 
 public class YKInstrumentedTests {
 
+    private TestActivity activity;
     protected YubiKeyDevice device = null;
 
     @Rule
@@ -37,26 +38,16 @@ public class YKInstrumentedTests {
     public final ActivityScenarioRule<TestActivity> scenarioRule = new ActivityScenarioRule<>(TestActivity.class);
 
     @Before
-    public void getYubiKey() {
-        scenarioRule.getScenario().onActivity(action -> {
-            try {
-                device = action.awaitSession(getClass().getSimpleName(), name.getMethodName());
-            } catch (Throwable t) {
-                throw new RuntimeException(t);
-            }
-        });
+    public void getYubiKey() throws InterruptedException {
+        scenarioRule.getScenario().onActivity((TestActivity activity) -> this.activity = activity);
+        device = activity.awaitSession(getClass().getSimpleName(), name.getMethodName());
     }
 
     @After
-    public void releaseYubiKey() {
-        scenarioRule.getScenario().onActivity(action -> {
-            try {
-                action.returnSession(device);
-                device = null;
-            } catch (Throwable t) {
-                throw new RuntimeException(t);
-            }
-        });
+    public void releaseYubiKey() throws InterruptedException {
+        activity.returnSession(device);
+        device = null;
+        activity = null;
     }
 }
 
