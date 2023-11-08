@@ -48,6 +48,10 @@ This module lets you configure the YubiOTP application. This includes
 configuring the two "keyboard slots", and using the Challenge-Response
 functionality.
 
+link:./openpgp/[OpenPGP]::
+This module lets you use the OpenPGP smart card application on a YubiKey and execute operations such as OpenPGP PIN management,
+key import and generation (including RSA4096, ECDSA and Curve25519 on supported YubiKeys), encryption, decryption, signature and signature verification.
+
 link:./oath/[OATH]::
 This module lets you configure and use the OATH application on a YubiKey. It can
 store and use up to 32 OATH (TOTP or HOTP) credentials.
