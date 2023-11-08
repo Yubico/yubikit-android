@@ -1,3 +1,26 @@
+* Version 2.4.0 (released 2023-11-10)
+ ** fido module (new):
+ *** implemented WebAuthn specification Level 2
+ *** implemented following CTAP2.1 features
+     - support for FIDO_2_0, FIDO_2_1_PRE and FIDO_2_1
+     - Credential Management
+     - Client PIN with PIN U/V Auth Protocols One and Two
+     - Config
+     - Enterprise Attestation
+ ** openpgp module (new):
+ *** implemented PIN operations
+     - PIN verification, status querying and changing
+ *** implemented core openpgp key operations
+     - key import and generation
+     - signature and signature verification
+     - encryption and decryption
+ ** core module:
+ *** added support for Le in APDU
+ *** added PublicKeyValues and PrivateKeyValues classes for unified handling of asymmetric keys
+ ** PIV module:
+ *** deprecated classes: InvalidPinException, Padding
+ *** deprecated methods: SlotMetadata.getPublicKey(), PivSession.generateKey(), PivSession.putKey()
+
 * Version 2.4.0-beta01 (released 2023-09-01)
  ** core module:
  *** added support for Le in APDU
