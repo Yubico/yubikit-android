@@ -753,7 +753,7 @@ public class OathSession extends ApplicationSession<OathSession> {
             }
             messageDigest.update(salt);
             byte[] digest = messageDigest.digest();
-            return Base64.encode(Arrays.copyOfRange(digest, 0, 16));
+            return Base64.toUrlSafeString(Arrays.copyOfRange(digest, 0, 16));
         }
     }
 }

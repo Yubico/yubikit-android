@@ -41,7 +41,7 @@ public class Base64 {
      * @param data date to encode
      * @return Encoded data in Base64 URL safe format
      */
-    public static String encode(byte[] data) {
+    public static String toUrlSafeString(byte[] data) {
         return base64Codec.toUrlSafeString(data);
     }
 
@@ -52,7 +52,7 @@ public class Base64 {
      * @param data data to decode in Base64 URL safe format
      * @return decoded data
      */
-    public static byte[] decode(String data) {
+    public static byte[] fromUrlSafeString(String data) {
         return base64Codec.fromUrlSafeString(data);
     }
 

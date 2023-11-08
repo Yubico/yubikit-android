@@ -24,17 +24,17 @@ import org.junit.Test;
 public class PrivateKeyValuesTest {
     @Test
     public void testParsePkcs8RsaKeyValues() {
-        PrivateKeyValues.Rsa.parsePkcs8RsaKeyValues(Base64.decode("MIICdQIBADANBgkqhkiG9w0BAQEFA" +
-                "ASCAl8wggJbAgEAAoGBALWeZ0E5O2l_iHfck9mokf1iWH2eZDWQoJoQKUOAeVoKUecNp250J5tL3EHO" +
-                "NqWoF6VLO-B-6jTET4Iz97BeUj7gOJHmEw-nqFfguTVmNeeiZ711TNYNpF7kwW7yWghWG-Q7iQEoMXf" +
-                "Y3x4BL33H2gKRWtMHK66GJViL1l9s3qDXAgMBAAECgYBO753pFzrfS3LAxbns6_snqcrULjdXoJhs3Y" +
-                "FRuVEE9V9LkP-oXguoz3vXjgzqSvib-ur3U7HvZTM5X-TTXutXdQ5CyORLLtXEZcyCKQI9ihH5fSNJR" +
-                "WRbJ3xe-xi5NANRkRDkro7tm4a5ZD4PYvO4r29yVB5PXlMkOTLoxNSwwQJBAN5lW93Agi9Ge5B2-B2E" +
-                "nKSlUvj0-jJBkHYAFTiHyTZVEj6baeHBvJklhVczpWvTXb6Nr8cjAKVshFbdQoBwHmkCQQDRD7djZGI" +
-                "WH1Lz0rkL01nDj4z4QYMgUs3AQhnrXPBjEgNzphtJ2u7QrCSOBQQHlmAPBDJ_MTxFJMzDIJGDA10_Ak" +
-                "ATJjEZz_ilr3D2SHgmuoNuXdneG-HrL-ALeQhavL5jkkGm6GTejnr5yNRJZOYKecGppbOL9wSYOdbPT" +
-                "-_o9T55AkATXCY6cRBYRhxTcf8q5i6Y2pFOaBqxgpmFJVnrHtcwBXoGWqqKQ1j8QAS-lh5SaY2JtnTK" +
-                "rI-NQ6Qmqbxv6n7XAkBkhLO7pplInVh2WjqXOV4ZAoOAAJlfpG5-z6mWzCZ9-286OJQLr6OVVQMcYEx" +
-                "UO9yVocZQX-4XqEIF0qAB7m31"));
+        PrivateKeyValues.Rsa.parsePkcs8RsaKeyValues(Base64.fromUrlSafeString("MIICdQIBADANBgkqhk" +
+                "iG9w0BAQEFAASCAl8wggJbAgEAAoGBALWeZ0E5O2l_iHfck9mokf1iWH2eZDWQoJoQKUOAeVoKUecNp" +
+                "250J5tL3EHONqWoF6VLO-B-6jTET4Iz97BeUj7gOJHmEw-nqFfguTVmNeeiZ711TNYNpF7kwW7yWghW" +
+                "G-Q7iQEoMXfY3x4BL33H2gKRWtMHK66GJViL1l9s3qDXAgMBAAECgYBO753pFzrfS3LAxbns6_snqcr" +
+                "ULjdXoJhs3YFRuVEE9V9LkP-oXguoz3vXjgzqSvib-ur3U7HvZTM5X-TTXutXdQ5CyORLLtXEZcyCKQ" +
+                "I9ihH5fSNJRWRbJ3xe-xi5NANRkRDkro7tm4a5ZD4PYvO4r29yVB5PXlMkOTLoxNSwwQJBAN5lW93Ag" +
+                "i9Ge5B2-B2EnKSlUvj0-jJBkHYAFTiHyTZVEj6baeHBvJklhVczpWvTXb6Nr8cjAKVshFbdQoBwHmkC" +
+                "QQDRD7djZGIWH1Lz0rkL01nDj4z4QYMgUs3AQhnrXPBjEgNzphtJ2u7QrCSOBQQHlmAPBDJ_MTxFJMz" +
+                "DIJGDA10_AkATJjEZz_ilr3D2SHgmuoNuXdneG-HrL-ALeQhavL5jkkGm6GTejnr5yNRJZOYKecGppb" +
+                "OL9wSYOdbPT-_o9T55AkATXCY6cRBYRhxTcf8q5i6Y2pFOaBqxgpmFJVnrHtcwBXoGWqqKQ1j8QAS-l" +
+                "h5SaY2JtnTKrI-NQ6Qmqbxv6n7XAkBkhLO7pplInVh2WjqXOV4ZAoOAAJlfpG5-z6mWzCZ9-286OJQL" +
+                "r6OVVQMcYExUO9yVocZQX-4XqEIF0qAB7m31"));
     }
 }

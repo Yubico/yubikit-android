@@ -137,8 +137,8 @@ public class PivTestUtils {
             try {
                 KeyFactory kf = KeyFactory.getInstance(keyType.params.algorithm.name());
                 return new KeyPair(
-                        kf.generatePublic(new X509EncodedKeySpec(Base64.decode(publicKey))),
-                        kf.generatePrivate(new PKCS8EncodedKeySpec(Base64.decode(privateKey)))
+                        kf.generatePublic(new X509EncodedKeySpec(Base64.fromUrlSafeString(publicKey))),
+                        kf.generatePrivate(new PKCS8EncodedKeySpec(Base64.fromUrlSafeString(privateKey)))
                 );
             } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
                 throw new IllegalStateException(e);

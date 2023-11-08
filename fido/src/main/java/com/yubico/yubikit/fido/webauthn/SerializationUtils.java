@@ -22,7 +22,7 @@ class SerializationUtils {
     static Object serializeBytes(byte[] value, SerializationType serializationType) {
         switch (serializationType) {
             case JSON: {
-                return Base64.encode(value);
+                return Base64.toUrlSafeString(value);
             }
 
             case CBOR: {
@@ -36,7 +36,7 @@ class SerializationUtils {
     static byte[] deserializeBytes(Object value, SerializationType serializationType) {
         switch (serializationType) {
             case JSON: {
-                return Base64.decode((String) value);
+                return Base64.fromUrlSafeString((String) value);
             }
 
             case CBOR: {
