@@ -5,6 +5,8 @@
  ** openpgp module (new):
   - PIN operations: (un)verification, user and admin password management
   - key operations: import/generate, sign/verify, encrypt/decrypt
+ ** android module:
+  - targetSdk is now 34 (Android 14)
  ** core module:
   - added support for Le in APDU
   - added PublicKeyValues and PrivateKeyValues classes for unified handling of asymmetric keys
