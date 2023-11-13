@@ -37,7 +37,7 @@ dependencies {
     api project(':core')
 
     compileOnly 'androidx.annotation:annotation:1.7.0'
-    compileOnly 'com.github.spotbugs:spotbugs-annotations:4.7.3'
+    compileOnly 'com.github.spotbugs:spotbugs-annotations:4.8.0'
 
     testImplementation project(':testing')
     testImplementation 'androidx.test.ext:junit:1.1.5'
