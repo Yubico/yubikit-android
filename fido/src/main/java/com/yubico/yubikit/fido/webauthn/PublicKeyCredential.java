@@ -50,7 +50,7 @@ public class PublicKeyCredential extends Credential {
      */
     public PublicKeyCredential(String id, AuthenticatorResponse response) {
         super(id, PUBLIC_KEY_CREDENTIAL_TYPE);
-        this.rawId = Base64.decode(id);
+        this.rawId = Base64.fromUrlSafeString(id);
         this.response = response;
     }
 
@@ -63,7 +63,7 @@ public class PublicKeyCredential extends Credential {
      * @see AuthenticatorAssertionResponse
      */
     public PublicKeyCredential(byte[] id, AuthenticatorResponse response) {
-        super(Base64.encode(id), PUBLIC_KEY_CREDENTIAL_TYPE);
+        super(Base64.toUrlSafeString(id), PUBLIC_KEY_CREDENTIAL_TYPE);
         this.rawId = id;
         this.response = response;
     }

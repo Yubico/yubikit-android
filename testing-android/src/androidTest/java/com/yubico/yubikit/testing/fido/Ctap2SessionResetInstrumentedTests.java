@@ -16,11 +16,7 @@
 
 package com.yubico.yubikit.testing.fido;
 
-import static com.yubico.yubikit.testing.fido.Ctap2ClientPinInstrumentedTests.supportsPinUvAuthProtocol;
-
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
-import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV1;
-import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV2;
 import com.yubico.yubikit.testing.framework.FidoInstrumentedTests;
 
 import org.junit.Test;
@@ -29,7 +25,6 @@ import java.util.Map;
 
 /**
  * Tests FIDO Reset.
- * <p>
  * <p>
  * Notes:
  * <ul>
@@ -45,28 +40,15 @@ public class Ctap2SessionResetInstrumentedTests extends FidoInstrumentedTests {
      */
     private static boolean supportsBioEnroll(Ctap2Session session) {
         final Map<String, ?> options = session.getCachedInfo().getOptions();
-        return Boolean.TRUE.equals(options.get("bioEnroll"));
+        return options.containsKey("bioEnroll");
     }
 
     @Test
-    public void testResetWithPinUVAuthProtocolV1() throws Throwable {
+    public void testReset() throws Throwable {
         withCtap2Session(
                 "Skipping reset test - authenticator supports bio enrollment",
                 (device, session) -> !supportsBioEnroll(session),
-                Ctap2SessionTests::testReset,
-                new PinUvAuthProtocolV1()
-        );
-    }
-
-    @Test
-    public void testResetWithPinUVAuthProtocolV2() throws Throwable {
-        withCtap2Session(
-                "Skipping reset test - authenticator supports bio enrollment or does not" +
-                        " support pinUvAuthProtocol Two",
-                (device, session) -> supportsPinUvAuthProtocol(session, 2) &&
-                        !supportsBioEnroll(session),
-                Ctap2SessionTests::testReset,
-                new PinUvAuthProtocolV2()
+                Ctap2SessionTests::testReset
         );
     }
 }

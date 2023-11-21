@@ -68,7 +68,7 @@ public class SerializationTest {
         Assert.assertEquals(user, PublicKeyCredentialUserEntity.fromMap(cborMap, SerializationType.CBOR));
 
         Map<String, ?> jsonMap = user.toMap(SerializationType.JSON);
-        Assert.assertEquals(Base64.encode(user.getId()), jsonMap.get("id"));
+        Assert.assertEquals(Base64.toUrlSafeString(user.getId()), jsonMap.get("id"));
         Assert.assertEquals(user.getName(), jsonMap.get("name"));
         Assert.assertEquals(user.getDisplayName(), jsonMap.get("displayName"));
         Assert.assertEquals(user, PublicKeyCredentialUserEntity.fromMap(jsonMap, SerializationType.JSON));
@@ -121,7 +121,7 @@ public class SerializationTest {
 
         Map<String, ?> jsonMap = descriptor.toMap(SerializationType.JSON);
         Assert.assertEquals(descriptor.getType(), jsonMap.get("type"));
-        Assert.assertEquals(Base64.encode(descriptor.getId()), jsonMap.get("id"));
+        Assert.assertEquals(Base64.toUrlSafeString(descriptor.getId()), jsonMap.get("id"));
         Assert.assertEquals(descriptor, PublicKeyCredentialDescriptor.fromMap(jsonMap, SerializationType.JSON));
     }
 
@@ -295,10 +295,10 @@ public class SerializationTest {
 
         @SuppressWarnings("SpellCheckingInspection")
         AuthenticatorData authenticatorData = AuthenticatorData.parseFrom(
-                ByteBuffer.wrap(Base64.decode("5Yaf4EYzO6ALp_K7s-p-BQLPSCYVYcKLZptoXwxqQztFAAAAA" +
-                        "hSaICGO9kEzlriB-NW38fUAMA5hR7Wj16h_z28qvtukB63QcIhzJ_sUkkJPfsU-KzdCFeaF" +
-                        "2mZ80gSROEtELSHniKUBAgMmIAEhWCAOYUe1o9eof89vKr7bLZhH7nLY4wjKx5oxa66Kv0J" +
-                        "jXiJYIKyPUlRxXHJjLrACafd_1stM7DyX120jDO7BlwqYsJyJ")
+                ByteBuffer.wrap(Base64.fromUrlSafeString("5Yaf4EYzO6ALp_K7s-p-BQLPSCYVYcKLZptoXw" +
+                        "xqQztFAAAAAhSaICGO9kEzlriB-NW38fUAMA5hR7Wj16h_z28qvtukB63QcIhzJ_sUkkJPf" +
+                        "sU-KzdCFeaF2mZ80gSROEtELSHniKUBAgMmIAEhWCAOYUe1o9eof89vKr7bLZhH7nLY4wjK" +
+                        "x5oxa66Kv0JjXiJYIKyPUlRxXHJjLrACafd_1stM7DyX120jDO7BlwqYsJyJ")
                 ));
 
         return new AuthenticatorAttestationResponse(
@@ -333,7 +333,7 @@ public class SerializationTest {
     public void testPublicKeyCredentialCreation() {
         byte[] credentialId = new byte[1 + random.nextInt(64)];
         random.nextBytes(credentialId);
-        String credentialIdB64UrlEncoded = Base64.encode(credentialId);
+        String credentialIdB64UrlEncoded = Base64.toUrlSafeString(credentialId);
 
         AuthenticatorAttestationResponse response = randomAuthenticatorAttestationResponse();
 
@@ -362,7 +362,7 @@ public class SerializationTest {
     public void testPublicKeyCredentialWithAssertion() {
         byte[] credentialId = new byte[1 + random.nextInt(64)];
         random.nextBytes(credentialId);
-        String credentialIdB64UrlEncoded = Base64.encode(credentialId);
+        String credentialIdB64UrlEncoded = Base64.toUrlSafeString(credentialId);
 
         AuthenticatorAssertionResponse response = randomAuthenticatorAssertionResponse();
 
@@ -394,7 +394,7 @@ public class SerializationTest {
     public void testPublicKeyCredentialWithAttestation() {
         byte[] credentialId = new byte[1 + random.nextInt(64)];
         random.nextBytes(credentialId);
-        String credentialIdB64UrlEncoded = Base64.encode(credentialId);
+        String credentialIdB64UrlEncoded = Base64.toUrlSafeString(credentialId);
 
         AuthenticatorAttestationResponse response = randomAuthenticatorAttestationResponse();
 
