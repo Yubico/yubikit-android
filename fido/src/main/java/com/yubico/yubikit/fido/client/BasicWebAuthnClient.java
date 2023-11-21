@@ -19,6 +19,7 @@ package com.yubico.yubikit.fido.client;
 import com.yubico.yubikit.core.application.CommandException;
 import com.yubico.yubikit.core.application.CommandState;
 import com.yubico.yubikit.core.fido.CtapException;
+import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.fido.ctap.ClientPin;
 import com.yubico.yubikit.fido.ctap.CredentialManagement;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
@@ -449,12 +450,22 @@ public class BasicWebAuthnClient implements Closeable {
             }
 
             @Nullable Integer validatedEnterpriseAttestation = null;
-            if (isEnterpriseAttestationSupported() &&
+            boolean enterpriseAttestationSupported = isEnterpriseAttestationSupported();
+
+            if (!enterpriseAttestationSupported && enterpriseAttestation != null) {
+                Logger.warn(logger, "Ignoring provided enterpriseAttestation parameter because" +
+                        " the authenticator does not support enterprise attestation.");
+            }
+
+            if (enterpriseAttestationSupported &&
                     AttestationConveyancePreference.ENTERPRISE.equals(options.getAttestation()) &&
-                    userAgentConfiguration.supportsEpForRpId(rpId) &&
-                    enterpriseAttestation != null &&
-                    (enterpriseAttestation == 1 || enterpriseAttestation == 2)) {
-                validatedEnterpriseAttestation = enterpriseAttestation;
+                    userAgentConfiguration.supportsEpForRpId(rpId)) {
+                if (enterpriseAttestation == null ||
+                        (enterpriseAttestation != 1 && enterpriseAttestation != 2)) {
+                    Logger.warn(logger, "Invalid value for enterpriseAttestation parameter.");
+                } else {
+                    validatedEnterpriseAttestation = enterpriseAttestation;
+                }
             }
 
             return ctap.makeCredential(

@@ -175,6 +175,11 @@ public class ClientPin {
                     ? CMD_GET_PIN_TOKEN_USING_PIN_WITH_PERMISSIONS
                     : CMD_GET_PIN_TOKEN;
 
+            if (!tokenSupported && (permissions != null || permissionsRpId != null)) {
+                Logger.warn(logger, "Ignoring permissions/permissionsRpId parameters as the " +
+                        " authenticator does not support PIN U/V Token");
+            }
+
             Map<Integer, ?> result = ctap.clientPin(
                     pinUvAuth.getVersion(),
                     subCommand,
