@@ -61,20 +61,29 @@ class Hkdf {
                     .put(info)
                     .put(i)
                     .array();
-            t = hmacDigest(prk, data);
+            Arrays.fill(t, (byte) 0);
+            byte[] digest = hmacDigest(prk, data);
 
-            okm = ByteBuffer.allocate(okm.length + t.length)
+            byte[] result = ByteBuffer.allocate(okm.length + digest.length)
                     .put(okm)
-                    .put(t)
+                    .put(digest)
                     .array();
+            Arrays.fill(okm, (byte) 0);
+            Arrays.fill(data, (byte) 0);
+            okm = result;
+            t = digest;
         }
 
-        return Arrays.copyOf(okm, length);
+        byte[] result = Arrays.copyOf(okm, length);
+        Arrays.fill(okm, (byte) 0);
+        return result;
     }
 
     byte[] digest(byte[] ikm, byte[] salt, byte[] info, int length)
             throws NoSuchAlgorithmException, InvalidKeyException {
         byte[] prk = extract(salt, ikm);
-        return expand(prk, info, length);
+        byte[] result = expand(prk, info, length);
+        Arrays.fill(prk, (byte) 0);
+        return result;
     }
 }
