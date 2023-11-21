@@ -117,8 +117,7 @@ public class PinUvAuthProtocolV2 extends PinUvAuthProtocolV1 {
             aesKey = Arrays.copyOfRange(key, 32, key.length);
             byte[] iv = Arrays.copyOf(ciphertext, 16);
             byte[] ct = Arrays.copyOfRange(ciphertext, 16, ciphertext.length);
-            byte[] plaintext = getCipher(Cipher.DECRYPT_MODE, aesKey, iv).doFinal(ct);
-            return Arrays.copyOf(plaintext, plaintext.length);
+            return getCipher(Cipher.DECRYPT_MODE, aesKey, iv).doFinal(ct);
         } catch (BadPaddingException | IllegalBlockSizeException e) {
             throw new IllegalStateException(e);
         } finally {
@@ -139,8 +138,7 @@ public class PinUvAuthProtocolV2 extends PinUvAuthProtocolV1 {
         } catch (NoSuchAlgorithmException | InvalidKeyException e) {
             throw new RuntimeException(e);
         }
-        byte[] result = mac.doFinal(message);
-        return Arrays.copyOf(result, result.length);
+        return mac.doFinal(message);
     }
 
     private Cipher getCipher(int mode, byte[] secret, byte[] iv) {
