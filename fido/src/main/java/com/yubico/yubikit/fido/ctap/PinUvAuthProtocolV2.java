@@ -56,14 +56,16 @@ public class PinUvAuthProtocolV2 extends PinUvAuthProtocolV1 {
 
     @Override
     public byte[] kdf(byte[] z) {
+        byte[] hmacKey = null;
+        byte[] aesKey = null;
         try {
-            byte[] hmacKey = new Hkdf(HKDF_ALG).digest(
+            hmacKey = new Hkdf(HKDF_ALG).digest(
                     z,
                     HKDF_SALT,
                     HKDF_INFO_HMAC,
                     HKDF_LENGTH);
 
-            byte[] aesKey = new Hkdf(HKDF_ALG).digest(
+            aesKey = new Hkdf(HKDF_ALG).digest(
                     z,
                     HKDF_SALT,
                     HKDF_INFO_AES,
@@ -75,13 +77,21 @@ public class PinUvAuthProtocolV2 extends PinUvAuthProtocolV1 {
                     .array();
         } catch (NoSuchAlgorithmException | InvalidKeyException e) {
             throw new IllegalStateException(e);
+        } finally {
+            if (hmacKey != null) {
+                Arrays.fill(hmacKey, (byte) 0);
+            }
+            if (aesKey != null) {
+                Arrays.fill(aesKey, (byte) 0);
+            }
         }
     }
 
     @Override
     public byte[] encrypt(byte[] key, byte[] plaintext) {
+        byte[] aesKey = null;
         try {
-            byte[] aesKey = Arrays.copyOfRange(key, 32, key.length);
+            aesKey = Arrays.copyOfRange(key, 32, key.length);
             byte[] iv = RandomUtils.getRandomBytes(16);
 
             final byte[] ciphertext =
@@ -93,19 +103,28 @@ public class PinUvAuthProtocolV2 extends PinUvAuthProtocolV1 {
                     .array();
         } catch (IllegalBlockSizeException | BadPaddingException e) {
             throw new IllegalStateException(e);
+        } finally {
+            if (aesKey != null) {
+                Arrays.fill(aesKey, (byte) 0);
+            }
         }
     }
 
     @Override
     public byte[] decrypt(byte[] key, byte[] ciphertext) {
+        byte[] aesKey = null;
         try {
-            byte[] aesKey = Arrays.copyOfRange(key, 32, key.length);
+            aesKey = Arrays.copyOfRange(key, 32, key.length);
             byte[] iv = Arrays.copyOf(ciphertext, 16);
             byte[] ct = Arrays.copyOfRange(ciphertext, 16, ciphertext.length);
             byte[] plaintext = getCipher(Cipher.DECRYPT_MODE, aesKey, iv).doFinal(ct);
             return Arrays.copyOf(plaintext, plaintext.length);
         } catch (BadPaddingException | IllegalBlockSizeException e) {
             throw new IllegalStateException(e);
+        } finally {
+            if (aesKey != null) {
+                Arrays.fill(aesKey, (byte) 0);
+            }
         }
     }
 
