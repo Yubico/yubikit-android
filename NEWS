@@ -1,4 +1,4 @@
-* Version 2.4.0 (released 2023-11-10)
+* Version 2.4.0 (released 2023-11-21)
  ** fido module (new):
   - support for WebAuthn Level 2
   - support for CTAP2.1 features: Credential Management, Client PIN, Config, Enterprise Attestation
