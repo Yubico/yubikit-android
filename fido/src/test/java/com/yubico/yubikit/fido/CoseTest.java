@@ -16,21 +16,19 @@
 
 package com.yubico.yubikit.fido;
 
+import com.yubico.yubikit.core.internal.codec.Base64;
+
 import org.junit.Assert;
 import org.junit.Test;
 
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
-import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.annotation.Nullable;
-
 public class CoseTest {
 
-    private static final @Nullable Map<Integer, Object> NULL_COSE = null;
     private static final Map<Integer, Object> EMPTY_COSE = new HashMap<>();
 
     private static final Map<Integer, Object> RS256 = new HashMap<>();
@@ -189,10 +187,10 @@ public class CoseTest {
     }
 
     private static byte[] decode(String urlSafeBase64) {
-        return Base64.getUrlDecoder().decode(urlSafeBase64);
+        return Base64.fromUrlSafeString(urlSafeBase64);
     }
 
     private static String encode(byte[] data) {
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(data);
+        return Base64.toUrlSafeString(data);
     }
 }

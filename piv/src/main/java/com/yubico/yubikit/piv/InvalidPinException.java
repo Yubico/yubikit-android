@@ -19,7 +19,7 @@ package com.yubico.yubikit.piv;
 /**
  * Thrown when the wrong PIN or PUK is used (or when the PIN or PUK is in a blocked state).
  *
- * @deprecated Use InvalidPinException from the code module instead
+ * @deprecated Use InvalidPinException from the core module instead
  */
 @Deprecated
 public class InvalidPinException extends com.yubico.yubikit.core.application.InvalidPinException {

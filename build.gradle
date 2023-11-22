@@ -9,7 +9,7 @@ buildscript {
         google()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.1.2'
+        classpath 'com.android.tools.build:gradle:8.1.4'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
 }
@@ -35,7 +35,7 @@ allprojects {
 }
 
 subprojects {
-    version = '2.4.0-SNAPSHOT'
+    version = '2.4.0'
     ext.pomName = "Yubico YubiKit ${project.name.capitalize()}"
 
 
