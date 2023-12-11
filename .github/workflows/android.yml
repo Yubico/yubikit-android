@@ -16,7 +16,7 @@ jobs:
           java-version: '17'
 
       - name: Build with Gradle
-        run: NO_GPG_SIGN=true ./gradlew --stacktrace check test build javadocJar publishToMavenLocal
+        run: NO_GPG_SIGN=true ./gradlew --stacktrace build javadocJar publishToMavenLocal
 
       - name: Upload jars
         uses: actions/upload-artifact@v3
@@ -24,21 +24,17 @@ jobs:
           name: maven-repo
           path: ~/.m2/repository/com/yubico/yubikit/
 
-      - name: Upload build reports
-        uses: actions/upload-artifact@v3
-        if: always()
-        with:
-          name: build-reports
-          path: ./*/build/reports/*
-
-  spotbugs-report:
+  check:
     runs-on: ubuntu-latest
+
     permissions:
       checks: write
+
     steps:
       - uses: actions/checkout@v3
         with:
           ref: ${{ github.event.pull_request.head.sha }}
+
       - name: set up JDK
         uses: actions/setup-java@v3
         with:
@@ -46,10 +42,16 @@ jobs:
           java-version: '17'
 
       - name: Build with Gradle
-        run: NO_GPG_SIGN=true ./gradlew --stacktrace check
-
+        run: NO_GPG_SIGN=true ./gradlew --stacktrace check test
 
       - name: Publish SpotBugs reports
         uses: lcollins/spotbugs-github-action@v2.0.0
         with:
           path: ./**/build/reports/spotbugs/*.xml
+
+      - name: Upload build reports
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: build-reports
+          path: ./*/build/reports/*
