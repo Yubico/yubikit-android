@@ -44,17 +44,17 @@ jobs:
       - name: Build with Gradle
         run: NO_GPG_SIGN=true ./gradlew --stacktrace check test
 
-      - name: Publish SpotBugs reports
-        uses: lcollins/spotbugs-github-action@v2.0.0
-        with:
-          path: ./**/build/reports/spotbugs/*.xml
-
       - name: Publish Test Results
         uses: EnricoMi/publish-unit-test-result-action@v2
         if: always()
         with:
           files: |
             ./**/build/test-results/test/*.xml
+
+      - name: Publish SpotBugs reports
+        uses: lcollins/spotbugs-github-action@v2.0.0
+        with:
+          path: ./**/build/reports/spotbugs/*.xml
 
       - name: Upload build reports
         uses: actions/upload-artifact@v3
