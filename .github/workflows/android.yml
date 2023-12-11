@@ -24,6 +24,11 @@ jobs:
           name: maven-repo
           path: ~/.m2/repository/com/yubico/yubikit/
 
+      - name: Publish SpotBugs reports
+        uses: lcollins/spotbugs-github-action@v2.0.0
+        with:
+          path: ./**/build/reports/spotbugs/*.xml
+
       - name: Upload build reports
         uses: actions/upload-artifact@v3
         if: always()
