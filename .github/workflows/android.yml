@@ -4,8 +4,10 @@ on: [ push ]
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
+
+    permissions:
+      checks: write
 
     steps:
       - uses: actions/checkout@v3
@@ -16,17 +18,21 @@ jobs:
           java-version: '17'
 
       - name: Build with Gradle
-        run: NO_GPG_SIGN=true ./gradlew --stacktrace check test build javadocJar publishToMavenLocal
+        run: NO_GPG_SIGN=true ./gradlew --stacktrace check test #build javadocJar publishToMavenLocal
 
-      - name: Upload jars
-        uses: actions/upload-artifact@v3
-        with:
-          name: maven-repo
-          path: ~/.m2/repository/com/yubico/yubikit/
+#      - name: Upload jars
+#        uses: actions/upload-artifact@v3
+#        with:
+#          name: maven-repo
+#          path: ~/.m2/repository/com/yubico/yubikit/
+#
+#      - name: Upload build reports
+#        uses: actions/upload-artifact@v3
+#        if: always()
+#        with:
+#          name: build-reports
+#          path: ./*/build/reports/*
 
-      - name: Upload build reports
-        uses: actions/upload-artifact@v3
-        if: always()
-        with:
-          name: build-reports
-          path: ./*/build/reports/*
+
+      - name: Publish SpotBugs
+        uses: ./.github/actions/publish-spotbugs-reports

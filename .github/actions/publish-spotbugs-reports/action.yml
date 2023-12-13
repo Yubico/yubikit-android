@@ -1,5 +1,9 @@
 name: 'Publish SpotBugs reports'
 description: ''
+inputs:
+  token:
+    description: Personal access token
+    default: ${{ github.token }}
 runs:
   using: 'node20'
   main: 'dist/index.js'
