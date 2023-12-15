@@ -33564,6 +33564,14 @@ module.exports = require("node:events");
 
 /***/ }),
 
+/***/ 9411:
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("node:path");
+
+/***/ }),
+
 /***/ 4492:
 /***/ ((module) => {
 
@@ -35349,16 +35357,16 @@ const { getOctokit, context } = __nccwpck_require__(3617)
 const glob = __nccwpck_require__(3823)
 const { XMLParser } = __nccwpck_require__(8396)
 const { readFileSync } = __nccwpck_require__(7147)
+const path = __nccwpck_require__(9411)
 
-function bugAnnotation(bug) {
+function bugAnnotation(moduleDirName, bug) {
   if (Object.hasOwn(bug, 'Method') && !Array.isArray(bug.Method)) {
-    console.log(`Processing ${JSON.stringify(bug, null, 4)}`)
+    //console.log(`Processing ${JSON.stringify(bug, null, 4)}`)
     const title = `${bug.ShortMessage} (${bug['@_category']})`
     const message = `${bug.LongMessage}\n\nSummary:\n...`
     const rawDetails = bug.LongMessage
-    const path = bug.Method.SourceLine.hasOwnProperty('@_relSourcePath')
-      ? bug.Method.SourceLine['@_relSourcepath']
-      : bug.Method.SourceLine['@_sourcepath']
+    const path =
+      moduleDirName + '/src/main/java/' + bug.Method.SourceLine['@_sourcepath']
     return {
       title: title,
       message: message,
@@ -35385,6 +35393,11 @@ async function getAnnotations() {
   annotations = []
 
   for await (const reportFile of globber.globGenerator()) {
+    console.log(`Processing ${reportFile}`)
+    const moduleDirName = path.basename(
+      path.normalize(path.dirname(reportFile) + '../../../../'),
+    )
+    console.log(`dirname: ${moduleDirName}`)
     const parser = new XMLParser(parseOptions)
     let data = parser.parse(readFileSync(reportFile))
 
@@ -35394,7 +35407,7 @@ async function getAnnotations() {
       )
 
       for (const bugInstance of data.BugCollection.BugInstance) {
-        const annotation = bugAnnotation(bugInstance)
+        const annotation = bugAnnotation(moduleDirName, bugInstance)
         if (annotation != null) {
           annotations.push(annotation)
         }

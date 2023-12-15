@@ -3,16 +3,16 @@ const { getOctokit, context } = require('@actions/github')
 const glob = require('@actions/glob')
 const { XMLParser } = require('fast-xml-parser')
 const { readFileSync } = require('fs')
+const path = require('node:path')
 
-function bugAnnotation(bug) {
+function bugAnnotation(moduleDirName, bug) {
   if (Object.hasOwn(bug, 'Method') && !Array.isArray(bug.Method)) {
-    console.log(`Processing ${JSON.stringify(bug, null, 4)}`)
+    //console.log(`Processing ${JSON.stringify(bug, null, 4)}`)
     const title = `${bug.ShortMessage} (${bug['@_category']})`
     const message = `${bug.LongMessage}\n\nSummary:\n...`
     const rawDetails = bug.LongMessage
-    const path = bug.Method.SourceLine.hasOwnProperty('@_relSourcePath')
-      ? bug.Method.SourceLine['@_relSourcepath']
-      : bug.Method.SourceLine['@_sourcepath']
+    const path =
+      moduleDirName + '/src/main/java/' + bug.Method.SourceLine['@_sourcepath']
     return {
       title: title,
       message: message,
@@ -39,6 +39,11 @@ async function getAnnotations() {
   annotations = []
 
   for await (const reportFile of globber.globGenerator()) {
+    console.log(`Processing ${reportFile}`)
+    const moduleDirName = path.basename(
+      path.normalize(path.dirname(reportFile) + '../../../../'),
+    )
+    console.log(`dirname: ${moduleDirName}`)
     const parser = new XMLParser(parseOptions)
     let data = parser.parse(readFileSync(reportFile))
 
@@ -48,7 +53,7 @@ async function getAnnotations() {
       )
 
       for (const bugInstance of data.BugCollection.BugInstance) {
-        const annotation = bugAnnotation(bugInstance)
+        const annotation = bugAnnotation(moduleDirName, bugInstance)
         if (annotation != null) {
           annotations.push(annotation)
         }
