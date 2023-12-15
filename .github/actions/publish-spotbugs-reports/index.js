@@ -9,6 +9,9 @@ function bugAnnotation(bug) {
     const title = bug['@_bad_practice']
     const message = bug.ShortMessage
     const rawDetails = bug.LongMessage
+    const path = bug.Method.SourceLine.hasOwn('@_relSourcePath')
+      ? bug.Method.SourceLine['@_relSourcepath']
+      : bug.Method.SourceLine['@_sourcepath']
     return {
       title: title,
       message: message,
