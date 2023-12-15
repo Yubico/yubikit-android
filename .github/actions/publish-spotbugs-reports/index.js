@@ -138,7 +138,7 @@ async function run() {
     for (let annotation of annotations) {
       console.log(`Annotation: ${JSON.stringify(annotation, null, 4)}`)
     }
-    // await publishCheckRun(annotations)
+    await publishCheckRun(annotations)
   } catch (error) {
     core.setFailed(error.message)
   }
