@@ -6,17 +6,18 @@ const { readFileSync } = require('fs')
 
 function bugAnnotation(bug) {
   if (Object.hasOwn(bug, 'Method') && !Array.isArray(bug.Method)) {
-    const title = bug['@_bad_practice']
-    const message = bug.ShortMessage
+    console.log(`Processing ${JSON.stringify(bug, null, 4)}`)
+    const title = `${bug.ShortMessage} (${bug['@_category']})`
+    const message = `${bug.LongMessage}\n\nSummary:\n...`
     const rawDetails = bug.LongMessage
-    const path = bug.Method.SourceLine.hasOwn('@_relSourcePath')
+    const path = bug.Method.SourceLine.hasOwnProperty('@_relSourcePath')
       ? bug.Method.SourceLine['@_relSourcepath']
       : bug.Method.SourceLine['@_sourcepath']
     return {
       title: title,
       message: message,
       raw_details: rawDetails,
-      path: bug.Method.SourceLine['@_relSourcepath'],
+      path: path,
       start_line: Number(bug.Method.SourceLine['@_start']),
       end_line: Number(bug.Method.SourceLine['@_end']),
       annotation_level: 'warning',
@@ -134,7 +135,10 @@ async function publishCheckRun(annotations) {
 async function run() {
   try {
     const annotations = await getAnnotations()
-    await publishCheckRun(annotations)
+    for (let annotation of annotations) {
+      console.log(`Annotation: ${JSON.stringify(annotation, null, 4)}`)
+    }
+    // await publishCheckRun(annotations)
   } catch (error) {
     core.setFailed(error.message)
   }
