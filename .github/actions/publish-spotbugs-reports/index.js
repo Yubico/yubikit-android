@@ -4,6 +4,24 @@ const glob = require('@actions/glob')
 const { XMLParser } = require('fast-xml-parser')
 const { readFileSync } = require('fs')
 
+function bugAnnotation(bug) {
+  if (Object.hasOwn(bug, 'Method') && !Array.isArray(bug.Method)) {
+    const title = bug['@_bad_practice']
+    const message = bug.ShortMessage
+    const rawDetails = bug.LongMessage
+    return {
+      title: title,
+      message: message,
+      raw_details: rawDetails,
+      path: bug.Method.SourceLine['@_relSourcepath'],
+      start_line: Number(bug.Method.SourceLine['@_start']),
+      end_line: Number(bug.Method.SourceLine['@_end']),
+      annotation_level: 'warning',
+    }
+  }
+  return null
+}
+
 async function getAnnotations() {
   const parseOptions = {
     ignoreAttributes: false,
@@ -26,18 +44,9 @@ async function getAnnotations() {
       )
 
       for (const bugInstance of data.BugCollection.BugInstance) {
-        if (
-          Object.hasOwn(bugInstance, 'Method') &&
-          !Array.isArray(bugInstance.Method)
-        ) {
-          annotations.push({
-            path: bugInstance.Method.SourceLine['@_sourcepath'],
-            start_line: Number(bugInstance.Method.SourceLine['@_start']),
-            end_line: Number(bugInstance.Method.SourceLine['@_end']),
-            annotation_level: 'warning',
-            title: bugInstance.ShortMessage,
-            message: bugInstance.LongMessage,
-          })
+        const annotation = bugAnnotation(bugInstance)
+        if (annotation != null) {
+          annotations.push(annotation)
         }
       }
     }
