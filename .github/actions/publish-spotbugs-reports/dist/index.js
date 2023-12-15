@@ -35366,7 +35366,13 @@ function bugAnnotation(moduleDirName, bug) {
     const message = `${bug.LongMessage}\n\nSummary:\n...`
     const rawDetails = bug.LongMessage
     const path =
-      moduleDirName + '/src/main/java/' + bug.Method.SourceLine['@_sourcepath']
+      'tree/' +
+      context.sha +
+      '/' +
+      moduleDirName +
+      '/src/main/java/' +
+      bug.Method.SourceLine['@_sourcepath']
+
     return {
       title: title,
       message: message,
