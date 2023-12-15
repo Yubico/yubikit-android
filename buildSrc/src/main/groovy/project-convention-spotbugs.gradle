@@ -1,27 +1,43 @@
+import com.github.spotbugs.snom.Confidence
+import com.github.spotbugs.snom.Effort
+
 plugins {
     id 'com.github.spotbugs'
 }
 
 dependencies {
-    spotbugs 'com.github.spotbugs:spotbugs:4.8.0'
+    spotbugs 'com.github.spotbugs:spotbugs:4.8.3'
     spotbugsPlugins 'com.h3xstream.findsecbugs:findsecbugs-plugin:1.12.0'
 
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
-    compileOnly 'com.github.spotbugs:spotbugs-annotations:4.8.0'
+    compileOnly 'com.github.spotbugs:spotbugs-annotations:4.8.3'
 
     testImplementation 'com.google.code.findbugs:jsr305:3.0.2'
 }
 
 spotbugs {
-    // ignore failures unless all issues are fixed
-    // find current issues in reports/spotbugs for each library
     ignoreFailures = true
-
-    showStackTraces = true
+    showStackTraces = false
     showProgress = false
 
-    effort = "max"
-    reportLevel = "low"
+    effort = Effort.MAX
+    reportLevel = Confidence.valueOf('LOW')
+}
 
-    reportsDir = project.layout.getBuildDirectory().dir('reports/spotbugs').get().asFile
+tasks.matching {
+    it.name == "spotbugsTest"
+}.configureEach {
+    enabled = false
+}
+
+tasks.matching {
+    it.name == "spotbugsMain" || it.name == "spotbugsRelease"
+}.configureEach {
+    enabled = true
+    reports.create("html") {
+        outputLocation = file("${project.rootDir}/build/spotbugs-html/spotbugs-${project.name}.html")
+    }
+    reports.create("sarif") {
+        outputLocation = file("${project.rootDir}/build/spotbugs/spotbugs-${project.name}.sarif")
+    }
 }
