@@ -20,8 +20,8 @@ spotbugs {
     showStackTraces = false
     showProgress = false
 
-    effort = Effort.MAX
-    reportLevel = Confidence.valueOf('LOW')
+    effort = Effort.MORE
+    reportLevel = Confidence.valueOf('DEFAULT')
 }
 
 tasks.matching {
