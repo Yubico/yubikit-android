@@ -1,3 +1,14 @@
 plugins {
     id 'groovy-gradle-plugin'
 }
+
+repositories {
+    mavenCentral()
+    google()
+    gradlePluginPortal()
+}
+
+dependencies {
+    implementation 'com.github.spotbugs.snom:spotbugs-gradle-plugin:6.0.4'
+    implementation 'com.android.tools.build:gradle:8.2.0'
+}

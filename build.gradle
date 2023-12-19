@@ -9,14 +9,13 @@ buildscript {
         google()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.1.4'
+        classpath 'com.android.tools.build:gradle:8.2.0'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
 }
 
 plugins {
     id 'maven-publish'
-    id 'com.github.spotbugs' version '5.0.14'
 }
 
 allprojects {
@@ -42,21 +41,6 @@ subprojects {
     tasks.withType(Javadoc).tap {
         configureEach {
             options.addStringOption('Xdoclint:all,-missing', '-quiet')
-        }
-    }
-
-    //noinspection UnnecessaryQualifiedReference
-    tasks.withType(com.github.spotbugs.snom.SpotBugsTask).tap {
-        configureEach {
-            if (it.name == 'spotbugsTest' || it.name == 'spotbugsDebug') {
-                enabled = false
-            } else {
-                group 'verification'
-                reports {
-                    xml.enabled = true
-                    html.enabled = true
-                }
-            }
         }
     }
 }
