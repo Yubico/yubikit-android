@@ -2,9 +2,13 @@ name: "SpotBugs"
 
 on:
   push:
-    branches: [adamve/spotbugs-reports-v3]
+    branches:
+      - main
+      - adamve/spotbugs-reports-v3
   pull_request:
-    branches: [adamve/spotbugs-reports-v3]
+    branches:
+      - main
+      - adamve/spotbugs-reports-v3
   schedule:
     - cron: "25 16 * * 0"
 
