@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Yubico.
+ * Copyright (C) 2020-2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -46,6 +47,7 @@ import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialRpEntity;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialType;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialUserEntity;
 import com.yubico.yubikit.fido.webauthn.ResidentKeyRequirement;
+import com.yubico.yubikit.fido.webauthn.UserVerificationRequirement;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -147,6 +149,119 @@ public class BasicWebAuthnClientTests {
         }
 
         deleteCredentials(webauthn, deleteCredIds);
+    }
+
+    public static void testUvDiscouragedMakeCredentialGetAssertion(
+            Ctap2Session session,
+            Object... unusedArgs) throws Throwable {
+
+        BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
+
+        // Test non rk credential
+        PublicKeyCredentialCreationOptions creationOptionsNonRk = getCreateOptions(
+                new PublicKeyCredentialUserEntity(
+                        "user",
+                        "user".getBytes(StandardCharsets.UTF_8),
+                        "User"
+                ),
+                false,
+                Collections.singletonList(TestData.PUB_KEY_CRED_PARAMS_ES256),
+                null,
+                UserVerificationRequirement.DISCOURAGED
+        );
+        PublicKeyCredential credNonRk = webauthn.makeCredential(
+                TestData.CLIENT_DATA_JSON_CREATE,
+                creationOptionsNonRk,
+                Objects.requireNonNull(creationOptionsNonRk.getRp().getId()),
+                null,
+                null,
+                null
+        );
+
+        AuthenticatorAttestationResponse responseNonRk = (AuthenticatorAttestationResponse) credNonRk.getResponse();
+        assertNotNull("Failed to make non resident key credential", responseNonRk);
+        assertNotNull("Credential missing attestation object", responseNonRk.getAttestationObject());
+        assertNotNull("Credential missing client data JSON", responseNonRk.getClientDataJson());
+
+        // Get assertions
+        PublicKeyCredentialRequestOptions requestOptionsNonRk = new PublicKeyCredentialRequestOptions(
+                TestData.CHALLENGE,
+                (long) 90000,
+                TestData.RP_ID,
+                Collections.singletonList(new PublicKeyCredentialDescriptor(credNonRk.getType(), credNonRk.getRawId())),
+                UserVerificationRequirement.DISCOURAGED,
+                null
+        );
+
+        try {
+            PublicKeyCredential credential = webauthn.getAssertion(
+                    TestData.CLIENT_DATA_JSON_GET,
+                    requestOptionsNonRk,
+                    TestData.RP_ID,
+                    null,
+                    null
+            );
+            AuthenticatorAssertionResponse response = (AuthenticatorAssertionResponse) credential.getResponse();
+            assertNotNull("Assertion response missing authenticator data", response.getAuthenticatorData());
+            assertNotNull("Assertion response missing signature", response.getSignature());
+            // User identifiable information (name, DisplayName, icon) MUST NOT be returned if user verification is not done by the authenticator.
+            assertNull("Assertion response contains user handle", response.getUserHandle());
+        } catch (MultipleAssertionsAvailable multipleAssertionsAvailable) {
+            fail("Got MultipleAssertionsAvailable even though there should only be one credential");
+        }
+
+
+        // test rk credential
+        PublicKeyCredentialCreationOptions creationOptionsRk = getCreateOptions(
+                new PublicKeyCredentialUserEntity(
+                        "rkuser",
+                        "rkuser".getBytes(StandardCharsets.UTF_8),
+                        "RkUser"
+                ),
+                true,
+                Collections.singletonList(TestData.PUB_KEY_CRED_PARAMS_ES256),
+                null,
+                UserVerificationRequirement.DISCOURAGED
+        );
+        PublicKeyCredential credRk = webauthn.makeCredential(
+                TestData.CLIENT_DATA_JSON_CREATE,
+                creationOptionsRk,
+                Objects.requireNonNull(creationOptionsRk.getRp().getId()),
+                null,
+                null,
+                null
+        );
+
+        AuthenticatorAttestationResponse responseRk = (AuthenticatorAttestationResponse) credRk.getResponse();
+        assertNotNull("Failed to make non resident key credential", responseRk);
+        assertNotNull("Credential missing attestation object", responseRk.getAttestationObject());
+        assertNotNull("Credential missing client data JSON", responseRk.getClientDataJson());
+
+        // Get assertions
+        PublicKeyCredentialRequestOptions requestOptionsRk = new PublicKeyCredentialRequestOptions(
+                TestData.CHALLENGE,
+                (long) 90000,
+                TestData.RP_ID,
+                Collections.singletonList(new PublicKeyCredentialDescriptor(credRk.getType(), credRk.getRawId())),
+                UserVerificationRequirement.DISCOURAGED,
+                null
+        );
+
+        try {
+            PublicKeyCredential credential = webauthn.getAssertion(
+                    TestData.CLIENT_DATA_JSON_GET,
+                    requestOptionsRk,
+                    TestData.RP_ID,
+                    null,
+                    null
+            );
+            AuthenticatorAssertionResponse response = (AuthenticatorAssertionResponse) credential.getResponse();
+            assertNotNull("Assertion response missing authenticator data", response.getAuthenticatorData());
+            assertNotNull("Assertion response missing signature", response.getSignature());
+            assertNotNull("Assertion response missing user handle", response.getUserHandle());
+        } catch (MultipleAssertionsAvailable multipleAssertionsAvailable) {
+            fail("Got MultipleAssertionsAvailable even though there should only be one credential");
+        }
     }
 
     public static void testGetAssertionMultipleUsersRk(Ctap2Session session, Object... args) throws Throwable {
@@ -527,6 +642,21 @@ public class BasicWebAuthnClientTests {
             List<PublicKeyCredentialParameters> credParams,
             @Nullable List<PublicKeyCredentialDescriptor> excludeCredentials
     ) {
+        return getCreateOptions(
+                user,
+                rk,
+                credParams,
+                excludeCredentials,
+                null);
+    }
+
+    private static PublicKeyCredentialCreationOptions getCreateOptions(
+            @Nullable PublicKeyCredentialUserEntity user,
+            boolean rk,
+            List<PublicKeyCredentialParameters> credParams,
+            @Nullable List<PublicKeyCredentialDescriptor> excludeCredentials,
+            @Nullable String userVerification
+    ) {
         if (user == null) {
             user = TestData.USER;
         }
@@ -536,7 +666,7 @@ public class BasicWebAuthnClientTests {
                 rk
                         ? ResidentKeyRequirement.REQUIRED
                         : ResidentKeyRequirement.DISCOURAGED,
-                null
+                userVerification
         );
         return new PublicKeyCredentialCreationOptions(
                 rp,
