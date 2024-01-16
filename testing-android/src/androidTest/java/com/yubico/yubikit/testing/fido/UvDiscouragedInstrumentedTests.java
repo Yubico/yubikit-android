@@ -18,7 +18,7 @@ package com.yubico.yubikit.testing.fido;
 
 import androidx.test.filters.LargeTest;
 
-import com.yubico.yubikit.fido.client.ClientError;
+import com.yubico.yubikit.fido.client.PinRequiredClientError;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.testing.framework.FidoInstrumentedTests;
 
@@ -43,9 +43,9 @@ public class UvDiscouragedInstrumentedTests extends FidoInstrumentedTests {
 
     /**
      * Run this test only on devices with PIN set
-     * this is expected to fail with 0x36
+     * Expected to fail with PinRequiredClientError
      */
-    @Test(expected = ClientError.class)
+    @Test(expected = PinRequiredClientError.class)
     public void testMakeCredentialGetAssertionOnProtected() throws Throwable {
         withCtap2Session(
                 "This device has no PIN set",

@@ -19,7 +19,6 @@ package com.yubico.yubikit.fido.client;
 import com.yubico.yubikit.core.application.CommandException;
 import com.yubico.yubikit.core.application.CommandState;
 import com.yubico.yubikit.core.fido.CtapException;
-import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.fido.ctap.ClientPin;
 import com.yubico.yubikit.fido.ctap.CredentialManagement;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
@@ -188,7 +187,6 @@ public class BasicWebAuthnClient implements Closeable {
             if (e.getCtapError() == CtapException.ERR_PIN_INVALID) {
                 throw new PinInvalidClientError(e, clientPin.getPinRetries().getCount());
             }
-            Logger.debug(logger, "makeCredential CTAP error: {}", String.format("0x%02x", e.getCtapError()));
             throw ClientError.wrapCtapException(e);
         }
     }
@@ -432,9 +430,8 @@ public class BasicWebAuthnClient implements Closeable {
                 pinToken = clientPin.getUvToken(ClientPin.PIN_PERMISSION_MC, rpId, null);
                 pinUvAuthParam = clientPin.getPinUvAuth().authenticate(pinToken, clientDataHash);
                 pinUvAuthProtocol = clientPin.getPinUvAuth().getVersion();
-            } else if (pinConfigured && Boolean.TRUE.equals(ctapOptions.get(OPTION_RESIDENT_KEY))) {
-                // the authenticator supports pin and a discoverable credential creation has been
-                // requested, but no PIN was provided
+            } else if (pinConfigured) {
+                // the authenticator supports pin but no PIN was provided
                 throw new PinRequiredClientError();
             }
 
@@ -555,7 +552,6 @@ public class BasicWebAuthnClient implements Closeable {
             if (e.getCtapError() == CtapException.ERR_PIN_INVALID) {
                 throw new PinInvalidClientError(e, clientPin.getPinRetries().getCount());
             }
-            Logger.debug(logger, "getAssertion CTAP error: {}", String.format("0x%02x", e.getCtapError()));
             throw ClientError.wrapCtapException(e);
         } finally {
             if (pinToken != null) {
