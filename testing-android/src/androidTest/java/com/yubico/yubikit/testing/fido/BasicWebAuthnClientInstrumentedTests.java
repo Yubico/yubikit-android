@@ -20,6 +20,7 @@ import static com.yubico.yubikit.testing.fido.Ctap2ClientPinInstrumentedTests.su
 
 import androidx.test.filters.LargeTest;
 
+import com.yubico.yubikit.fido.ctap.ClientPin;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV1;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV2;
@@ -54,7 +55,18 @@ public class BasicWebAuthnClientInstrumentedTests {
             withCtap2Session(
                     (device, session) -> supportsPinUvAuthProtocol(session, pinUvAuthProtocol),
                     BasicWebAuthnClientTests::testMakeCredentialGetAssertion,
-                    pinUvAuthProtocol);
+                    pinUvAuthProtocol,
+                    TestData.PIN);
+        }
+
+        @Test
+        public void testMakeCredentialGetAssertionTokenUvOnly() throws Throwable {
+            withCtap2Session(
+                    (device, session) -> supportsPinUvAuthProtocol(session, pinUvAuthProtocol)
+                            && ClientPin.isTokenSupported(session.getCachedInfo()),
+                    BasicWebAuthnClientTests::testMakeCredentialGetAssertion,
+                    pinUvAuthProtocol,
+                    null);
         }
 
         @Test

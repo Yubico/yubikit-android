@@ -71,6 +71,8 @@ public class BasicWebAuthnClientTests {
 
         Ctap2ClientPinTests.ensureDefaultPinSet(session, Ctap2ClientPinTests.getPinUvAuthProtocol(args));
 
+        char[] pin = (char[]) args[1];
+
         BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
         List<byte[]> deleteCredIds = new ArrayList<>();
 
@@ -89,7 +91,7 @@ public class BasicWebAuthnClientTests {
                 TestData.CLIENT_DATA_JSON_CREATE,
                 creationOptionsNonRk,
                 Objects.requireNonNull(creationOptionsNonRk.getRp().getId()),
-                TestData.PIN,
+                pin,
                 null,
                 null
         );
@@ -112,7 +114,7 @@ public class BasicWebAuthnClientTests {
                 TestData.CLIENT_DATA_JSON_CREATE,
                 creationOptionsRk,
                 Objects.requireNonNull(creationOptionsRk.getRp().getId()),
-                TestData.PIN,
+                pin,
                 null,
                 null
         );
@@ -137,7 +139,7 @@ public class BasicWebAuthnClientTests {
                     TestData.CLIENT_DATA_JSON_GET,
                     requestOptions,
                     TestData.RP_ID,
-                    TestData.PIN,
+                    pin,
                     null
             );
             AuthenticatorAssertionResponse response = (AuthenticatorAssertionResponse) credential.getResponse();

@@ -19,6 +19,7 @@ package com.yubico.yubikit.fido.client;
 import com.yubico.yubikit.core.application.CommandException;
 import com.yubico.yubikit.core.application.CommandState;
 import com.yubico.yubikit.core.fido.CtapException;
+import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.fido.ctap.ClientPin;
 import com.yubico.yubikit.fido.ctap.CredentialManagement;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
@@ -423,16 +424,25 @@ public class BasicWebAuthnClient implements Closeable {
             }
 
             if (pin != null) {
+                Logger.debug(logger, "Using PIN token");
                 pinToken = clientPin.getPinToken(pin, ClientPin.PIN_PERMISSION_MC, rpId);
                 pinUvAuthParam = clientPin.getPinUvAuth().authenticate(pinToken, clientDataHash);
                 pinUvAuthProtocol = clientPin.getPinUvAuth().getVersion();
-            } else if (pinConfigured && ctapOptions.containsKey(OPTION_USER_VERIFICATION)) {
-                pinToken = clientPin.getUvToken(ClientPin.PIN_PERMISSION_MC, rpId, null);
-                pinUvAuthParam = clientPin.getPinUvAuth().authenticate(pinToken, clientDataHash);
-                pinUvAuthProtocol = clientPin.getPinUvAuth().getVersion();
             } else if (pinConfigured) {
-                // the authenticator supports pin but no PIN was provided
-                throw new PinRequiredClientError();
+                if (ctapOptions.containsKey(OPTION_USER_VERIFICATION) && uvConfigured) {
+                    if (ClientPin.isTokenSupported(ctap.getCachedInfo())) {
+                        Logger.debug(logger, "Using UV token");
+                        pinToken = clientPin.getUvToken(ClientPin.PIN_PERMISSION_MC, rpId, null);
+                        pinUvAuthParam = clientPin.getPinUvAuth().authenticate(pinToken, clientDataHash);
+                        pinUvAuthProtocol = clientPin.getPinUvAuth().getVersion();
+                    } else {
+                        // here we use internal UV
+                        Logger.debug(logger, "Using internal UV");
+                    }
+                } else {
+                    // the authenticator supports pin but no PIN was provided
+                    throw new PinRequiredClientError();
+                }
             }
 
             final List<PublicKeyCredentialDescriptor> excludeCredentials =
@@ -525,13 +535,25 @@ public class BasicWebAuthnClient implements Closeable {
         byte[] pinToken = null;
         try {
             if (pin != null) {
+                Logger.debug(logger, "Using PIN token");
                 pinToken = clientPin.getPinToken(pin, ClientPin.PIN_PERMISSION_GA, rpId);
                 pinUvAuthParam = clientPin.getPinUvAuth().authenticate(pinToken, clientDataHash);
                 pinUvAuthProtocol = clientPin.getPinUvAuth().getVersion();
-            } else if (pinConfigured && ctapOptions.containsKey(OPTION_USER_VERIFICATION)) {
-                pinToken = clientPin.getUvToken(ClientPin.PIN_PERMISSION_GA, rpId, null);
-                pinUvAuthParam = clientPin.getPinUvAuth().authenticate(pinToken, clientDataHash);
-                pinUvAuthProtocol = clientPin.getPinUvAuth().getVersion();
+            } else if (pinConfigured) {
+                if (ctapOptions.containsKey(OPTION_USER_VERIFICATION) && uvConfigured) {
+                    if (ClientPin.isTokenSupported(ctap.getCachedInfo())) {
+                        Logger.debug(logger, "Using UV token");
+                        pinToken = clientPin.getUvToken(ClientPin.PIN_PERMISSION_GA, rpId, null);
+                        pinUvAuthParam = clientPin.getPinUvAuth().authenticate(pinToken, clientDataHash);
+                        pinUvAuthProtocol = clientPin.getPinUvAuth().getVersion();
+                    } else {
+                        // here we use internal UV
+                        Logger.debug(logger, "Using internal UV");
+                    }
+                } else {
+                    // the authenticator supports pin but no PIN was provided
+                    throw new PinRequiredClientError();
+                }
             }
 
             final List<PublicKeyCredentialDescriptor> allowCredentials = removeUnsupportedCredentials(
