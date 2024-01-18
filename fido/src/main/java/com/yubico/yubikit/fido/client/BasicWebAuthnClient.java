@@ -114,7 +114,7 @@ public class BasicWebAuthnClient implements Closeable {
         AuthParams(
                 @Nullable byte[] pinUvAuthParam,
                 @Nullable Integer pinUvAuthProtocol) {
-            this.pinUvAuthParam = pinUvAuthParam != null ? pinUvAuthParam.clone() : null;
+            this.pinUvAuthParam = pinUvAuthParam;
             this.pinUvAuthProtocol = pinUvAuthProtocol;
         }
     }
@@ -438,48 +438,42 @@ public class BasicWebAuthnClient implements Closeable {
                 ClientPin.PIN_PERMISSION_MC,
                 rpId);
 
-        try {
-            final List<PublicKeyCredentialDescriptor> excludeCredentials =
-                    removeUnsupportedCredentials(
-                            options.getExcludeCredentials()
-                    );
+        final List<PublicKeyCredentialDescriptor> excludeCredentials =
+                removeUnsupportedCredentials(
+                        options.getExcludeCredentials()
+                );
 
-            final Map<String, ?> user = options.getUser().toMap(serializationType);
+        final Map<String, ?> user = options.getUser().toMap(serializationType);
 
-            List<Map<String, ?>> pubKeyCredParams = new ArrayList<>();
-            for (PublicKeyCredentialParameters param : options.getPubKeyCredParams()) {
-                if (isPublicKeyCredentialTypeSupported(param.getType())) {
-                    pubKeyCredParams.add(param.toMap(serializationType));
-                }
-            }
-
-            @Nullable Integer validatedEnterpriseAttestation = null;
-            if (isEnterpriseAttestationSupported() &&
-                    AttestationConveyancePreference.ENTERPRISE.equals(options.getAttestation()) &&
-                    userAgentConfiguration.supportsEpForRpId(rpId) &&
-                    enterpriseAttestation != null &&
-                    (enterpriseAttestation == 1 || enterpriseAttestation == 2)) {
-                validatedEnterpriseAttestation = enterpriseAttestation;
-            }
-
-            return ctap.makeCredential(
-                    clientDataHash,
-                    rp,
-                    user,
-                    pubKeyCredParams,
-                    getCredentialList(excludeCredentials),
-                    null,
-                    ctapOptions.isEmpty() ? null : ctapOptions,
-                    authParams.pinUvAuthParam != null ? authParams.pinUvAuthParam.clone() : null,
-                    authParams.pinUvAuthProtocol,
-                    validatedEnterpriseAttestation,
-                    state
-            );
-        } finally {
-            if (authParams.pinUvAuthParam != null) {
-                Arrays.fill(authParams.pinUvAuthParam, (byte) 0);
+        List<Map<String, ?>> pubKeyCredParams = new ArrayList<>();
+        for (PublicKeyCredentialParameters param : options.getPubKeyCredParams()) {
+            if (isPublicKeyCredentialTypeSupported(param.getType())) {
+                pubKeyCredParams.add(param.toMap(serializationType));
             }
         }
+
+        @Nullable Integer validatedEnterpriseAttestation = null;
+        if (isEnterpriseAttestationSupported() &&
+                AttestationConveyancePreference.ENTERPRISE.equals(options.getAttestation()) &&
+                userAgentConfiguration.supportsEpForRpId(rpId) &&
+                enterpriseAttestation != null &&
+                (enterpriseAttestation == 1 || enterpriseAttestation == 2)) {
+            validatedEnterpriseAttestation = enterpriseAttestation;
+        }
+
+        return ctap.makeCredential(
+                clientDataHash,
+                rp,
+                user,
+                pubKeyCredParams,
+                getCredentialList(excludeCredentials),
+                null,
+                ctapOptions.isEmpty() ? null : ctapOptions,
+                authParams.pinUvAuthParam,
+                authParams.pinUvAuthProtocol,
+                validatedEnterpriseAttestation,
+                state
+        );
     }
 
     /**
@@ -542,7 +536,7 @@ public class BasicWebAuthnClient implements Closeable {
                     getCredentialList(allowCredentials),
                     null,
                     ctapOptions.isEmpty() ? null : ctapOptions,
-                    authParams.pinUvAuthParam != null ? authParams.pinUvAuthParam.clone() : null,
+                    authParams.pinUvAuthParam,
                     authParams.pinUvAuthProtocol,
                     state
             );
@@ -551,10 +545,6 @@ public class BasicWebAuthnClient implements Closeable {
                 throw new PinInvalidClientError(e, clientPin.getPinRetries().getCount());
             }
             throw ClientError.wrapCtapException(e);
-        } finally {
-            if (authParams.pinUvAuthParam != null) {
-                Arrays.fill(authParams.pinUvAuthParam, (byte) 0);
-            }
         }
     }
 
@@ -639,9 +629,6 @@ public class BasicWebAuthnClient implements Closeable {
         } finally {
             if (authToken != null) {
                 Arrays.fill(authToken, (byte) 0);
-            }
-            if (authParam != null) {
-                Arrays.fill(authParam, (byte) 0);
             }
         }
     }
