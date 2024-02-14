@@ -82,6 +82,8 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
     private final InfoData info;
     @Nullable
     private final Byte credentialManagerCommand;
+    @Nullable
+    private final Byte bioEnrollmentCommand;
 
     private static final org.slf4j.Logger logger = LoggerFactory.getLogger(Ctap2Session.class);
 
@@ -135,6 +137,15 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
             this.credentialManagerCommand = CMD_CREDENTIAL_MANAGEMENT_PRE;
         } else {
             this.credentialManagerCommand = null;
+        }
+
+        if (options.containsKey("bioEnroll")) {
+            this.bioEnrollmentCommand = CMD_BIO_ENROLLMENT;
+        } else if (info.getVersions().contains("FIDO_2_1_PRE") &&
+                options.containsKey("userVerificationMgmtPreview")) {
+            this.bioEnrollmentCommand = CMD_BIO_ENROLLMENT_PRE;
+        } else {
+            this.bioEnrollmentCommand = null;
         }
     }
 
@@ -392,6 +403,42 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
      */
     public void reset(@Nullable CommandState state) throws IOException, CommandException {
         sendCbor(CMD_RESET, null, state);
+    }
+
+    /**
+     * This command is used by the platform to provision/enumerate/delete bio enrollments in the
+     * authenticator.
+     *
+     * @param modality          the user verification modality being requested
+     * @param subCommand        the user verification sub command currently being requested
+     * @param subCommandParams  a map of subCommands parameters
+     * @param pinUvAuthProtocol PIN/UV protocol version chosen by the platform
+     * @param pinUvAuthParam    first 16 bytes of HMAC-SHA-256 of contents using pinUvAuthToken
+     * @throws IOException      A communication error in the transport layer.
+     * @throws CommandException A communication in the protocol layer.
+     * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#authenticatorBioEnrollment">authenticatorBioEnrollment</a>
+     */
+    Map<Integer, ?> bioEnrollment(
+            @Nullable Integer modality,
+            @Nullable Integer subCommand,
+            @Nullable Map<?, ?> subCommandParams,
+            @Nullable Integer pinUvAuthProtocol,
+            @Nullable byte[] pinUvAuthParam,
+            @Nullable Boolean getModality
+    ) throws IOException, CommandException {
+        if (bioEnrollmentCommand == null) {
+            throw new IllegalStateException("Bio enrollment not supported");
+        }
+        return sendCbor(
+                bioEnrollmentCommand,
+                args(
+                        modality,
+                        subCommand,
+                        subCommandParams,
+                        pinUvAuthProtocol,
+                        pinUvAuthParam,
+                        getModality),
+                null);
     }
 
     /**

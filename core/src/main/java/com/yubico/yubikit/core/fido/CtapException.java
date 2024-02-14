@@ -40,6 +40,7 @@ public class CtapException extends CommandException {
     public static final byte ERR_MISSING_PARAMETER = 0x14;
     public static final byte ERR_LIMIT_EXCEEDED = 0x15;
     public static final byte ERR_UNSUPPORTED_EXTENSION = 0x16;
+    public static final byte ERR_FP_DATABASE_FULL = 0x17;
     public static final byte ERR_CREDENTIAL_EXCLUDED = 0x19;
     public static final byte ERR_PROCESSING = 0x21;
     public static final byte ERR_INVALID_CREDENTIAL = 0x22;
