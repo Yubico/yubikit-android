@@ -34,6 +34,11 @@ import java.util.Objects;
 
 import javax.annotation.Nullable;
 
+/**
+ * Implements Fingerprint Bio Enrollment commands.
+ *
+ * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#authenticatorConfig">authenticatorConfig</a>
+ */
 public class FingerprintBioEnrollment extends BioEnrollment {
     private static final int CMD_ENROLL_BEGIN = 0x01;
     private static final int CMD_ENROLL_CAPTURE_NEXT = 0x02;
@@ -42,6 +47,17 @@ public class FingerprintBioEnrollment extends BioEnrollment {
     private static final int CMD_SET_NAME = 0x05;
     private static final int CMD_REMOVE_ENROLLMENT = 0x06;
     private static final int CMD_GET_SENSOR_INFO = 0x07;
+
+    private static final int RESULT_FINGERPRINT_KIND = 0x02;
+    private static final int RESULT_MAX_SAMPLES_REQUIRED = 0x03;
+    private static final int RESULT_TEMPLATE_ID = 0x04;
+    private static final int RESULT_LAST_SAMPLE_STATUS = 0x05;
+    private static final int RESULT_REMAINING_SAMPLES = 0x06;
+    private static final int RESULT_TEMPLATE_INFOS = 0x07;
+    private static final int RESULT_MAX_TEMPLATE_FRIENDLY_NAME = 0x08;
+
+    protected static final int TEMPLATE_INFO_ID = 0x01;
+    protected static final int TEMPLATE_INFO_FRIENDLY_NAME = 0x02;
 
     private static final int PARAM_TEMPLATE_ID = 0x01;
     private static final int PARAM_TEMPLATE_FRIENDLY_NAME = 0x02;
