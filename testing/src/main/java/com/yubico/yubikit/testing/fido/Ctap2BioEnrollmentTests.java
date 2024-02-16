@@ -16,8 +16,6 @@
 
 package com.yubico.yubikit.testing.fido;
 
-import static com.yubico.yubikit.core.fido.CtapException.ERR_INVALID_LENGTH;
-import static com.yubico.yubikit.fido.ctap.BioEnrollment.RESULT_MAX_TEMPLATE_FRIENDLY_NAME;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -79,14 +77,16 @@ public class Ctap2BioEnrollmentTests {
         Map<byte[], String> enrollments = fingerprintBioEnrollment.enumerateEnrollments();
         assertTrue(isEnrolled(templateId, enrollments));
 
-        final int maxNameLen = getMaxTemplateFriendlyName(fingerprintBioEnrollment);
+        final int maxNameLen = fingerprintBioEnrollment
+                .getCachedSensorInfo()
+                .getMaxTemplateFriendlyName();
 
         renameFingerprint(fingerprintBioEnrollment, templateId, maxNameLen);
         try {
             renameFingerprint(fingerprintBioEnrollment, templateId, maxNameLen + 1);
             fail("Expected exception after rename with long name");
         } catch (CtapException e) {
-            assertEquals(ERR_INVALID_LENGTH, e.getCtapError());
+            assertEquals(CtapException.ERR_INVALID_LENGTH, e.getCtapError());
             logger.debug("Caught ERR_INVALID_LENGTH when using long name.");
         }
 
@@ -151,7 +151,7 @@ public class Ctap2BioEnrollmentTests {
 
         fingerprintBioEnrollment.setName(templateId, newName);
         Map<byte[], String> enrollments = fingerprintBioEnrollment.enumerateEnrollments();
-        assertEquals(newName, getName(templateId,enrollments));
+        assertEquals(newName, getName(templateId, enrollments));
     }
 
     public static void removeAllFingerprints(FingerprintBioEnrollment fingerprintBioEnrollment) throws Throwable {
@@ -163,12 +163,6 @@ public class Ctap2BioEnrollmentTests {
 
         enrollments = fingerprintBioEnrollment.enumerateEnrollments();
         assertThat("Fingerprints still exists after removal", enrollments.isEmpty());
-    }
-
-    public static int getMaxTemplateFriendlyName(FingerprintBioEnrollment fingerprintBioEnrollment) throws Throwable {
-        final Map<Integer, ?> sensorInfo = fingerprintBioEnrollment.getFingerprintSensorInfo();
-        assertTrue(sensorInfo.containsKey(RESULT_MAX_TEMPLATE_FRIENDLY_NAME) && sensorInfo.get(RESULT_MAX_TEMPLATE_FRIENDLY_NAME) instanceof Integer);
-        return (Integer) sensorInfo.get((Integer) RESULT_MAX_TEMPLATE_FRIENDLY_NAME);
     }
 
     public static boolean isEnrolled(byte[] templateId, Map<byte[], String> enrollments) {

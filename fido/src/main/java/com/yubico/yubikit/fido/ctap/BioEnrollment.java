@@ -26,19 +26,20 @@ import java.util.Objects;
 
 @SuppressWarnings("unused")
 public class BioEnrollment {
-    private static final int RESULT_MODALITY = 0x01;
-    private static final int RESULT_FINGERPRINT_KIND = 0x02;
-    private static final int RESULT_MAX_SAMPLES_REQUIRED = 0x03;
-    public static final int RESULT_TEMPLATE_ID = 0x04;
-    public static final int RESULT_LAST_SAMPLE_STATUS = 0x05;
-    public static final int RESULT_REMAINING_SAMPLES = 0x06;
-    public static final int RESULT_TEMPLATE_INFOS = 0x07;
-    public static final int RESULT_MAX_TEMPLATE_FRIENDLY_NAME = 0x08;
+    protected static final int RESULT_MODALITY = 0x01;
+    protected static final int RESULT_FINGERPRINT_KIND = 0x02;
+    protected static final int RESULT_MAX_SAMPLES_REQUIRED = 0x03;
+
+    protected static final int RESULT_TEMPLATE_ID = 0x04;
+    protected static final int RESULT_LAST_SAMPLE_STATUS = 0x05;
+    protected static final int RESULT_REMAINING_SAMPLES = 0x06;
+    protected static final int RESULT_TEMPLATE_INFOS = 0x07;
+    protected static final int RESULT_MAX_TEMPLATE_FRIENDLY_NAME = 0x08;
 
     protected static final int TEMPLATE_INFO_ID = 0x01;
     protected static final int TEMPLATE_INFO_NAME = 0x02;
 
-    static final int MODALITY_FINGERPRINT = 0x01;
+    protected static final int MODALITY_FINGERPRINT = 0x01;
 
     protected final Ctap2Session ctap;
     protected final int modality;

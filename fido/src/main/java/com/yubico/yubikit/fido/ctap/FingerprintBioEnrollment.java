@@ -70,7 +70,48 @@ public class FingerprintBioEnrollment extends BioEnrollment {
 
     private final PinUvAuthProtocol pinUvAuth;
     private final byte[] pinUvToken;
+    private final SensorInfo cachedSensorInfo;
+
     private final org.slf4j.Logger logger = LoggerFactory.getLogger(FingerprintBioEnrollment.class);
+
+    public static class SensorInfo {
+        public final int fingerprintKind;
+        public final int maxCaptureSamplesRequiredForEnroll;
+        public final int maxTemplateFriendlyName;
+
+        public SensorInfo(int fingerprintKind, int maxCaptureSamplesRequiredForEnroll, int maxTemplateFriendlyName) {
+            this.fingerprintKind = fingerprintKind;
+            this.maxCaptureSamplesRequiredForEnroll = maxCaptureSamplesRequiredForEnroll;
+            this.maxTemplateFriendlyName = maxTemplateFriendlyName;
+        }
+
+        /**
+         * Indicates type of fingerprint sensor.
+         *
+         * @return For touch type fingerprints returns 1, for swipe type fingerprints returns 2.
+         */
+        public int getFingerprintKind() {
+            return fingerprintKind;
+        }
+
+        /**
+         * Indicates the maximum good samples required for enrollment.
+         *
+         * @return Maximum good samples required for enrollment.
+         */
+        public int getMaxCaptureSamplesRequiredForEnroll() {
+            return maxCaptureSamplesRequiredForEnroll;
+        }
+
+        /**
+         * Indicates the maximum number of bytes the authenticator will accept as a templateFriendlyName.
+         *
+         * @return Maximum number of bytes the authenticator will accept as a templateFriendlyName.
+         */
+        public int getMaxTemplateFriendlyName() {
+            return maxTemplateFriendlyName;
+        }
+    }
 
     public static class CaptureError extends Exception {
         private final int code;
@@ -193,6 +234,7 @@ public class FingerprintBioEnrollment extends BioEnrollment {
         super(ctap, BioEnrollment.MODALITY_FINGERPRINT);
         this.pinUvAuth = pinUvAuthProtocol;
         this.pinUvToken = pinUvToken;
+        this.cachedSensorInfo = readFingerprintSensorInfo();
     }
 
     private Map<Integer, ?> call(
@@ -236,8 +278,22 @@ public class FingerprintBioEnrollment extends BioEnrollment {
      * @throws IOException      A communication error in the transport layer.
      * @throws CommandException A communication in the protocol layer.
      */
-    public Map<Integer, ?> getFingerprintSensorInfo() throws IOException, CommandException {
-        return call(CMD_GET_SENSOR_INFO, null, null, false);
+    public SensorInfo readFingerprintSensorInfo() throws IOException, CommandException {
+        final Map<Integer, ?> result = call(
+                CMD_GET_SENSOR_INFO,
+                null,
+                null,
+                false);
+
+        return new SensorInfo(
+                Objects.requireNonNull((Integer) result.get(RESULT_FINGERPRINT_KIND)),
+                Objects.requireNonNull((Integer) result.get(RESULT_MAX_SAMPLES_REQUIRED)),
+                Objects.requireNonNull((Integer) result.get(RESULT_MAX_TEMPLATE_FRIENDLY_NAME))
+        );
+    }
+
+    public SensorInfo getCachedSensorInfo() {
+        return cachedSensorInfo;
     }
 
     /**
