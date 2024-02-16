@@ -21,7 +21,6 @@ import com.yubico.yubikit.core.fido.CtapException;
 import com.yubico.yubikit.core.internal.codec.Base64;
 import com.yubico.yubikit.fido.Cbor;
 
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
@@ -85,11 +84,11 @@ public class FingerprintBioEnrollment extends BioEnrollment {
         }
     }
 
-    static class FingerprintCapture {
+    static class CaptureStatus {
         private final int sampleStatus;
         private final int remaining;
 
-        public FingerprintCapture(int sampleStatus, int remaining) {
+        public CaptureStatus(int sampleStatus, int remaining) {
             this.sampleStatus = sampleStatus;
             this.remaining = remaining;
         }
@@ -103,10 +102,10 @@ public class FingerprintBioEnrollment extends BioEnrollment {
         }
     }
 
-    static class FingerprintInitialCapture extends FingerprintCapture {
+    static class EnrollBeginStatus extends CaptureStatus {
         private final byte[] templateId;
 
-        public FingerprintInitialCapture(byte[] templateId, int sampleStatus, int remaining) {
+        public EnrollBeginStatus(byte[] templateId, int sampleStatus, int remaining) {
             super(sampleStatus, remaining);
             this.templateId = templateId;
         }
@@ -116,7 +115,7 @@ public class FingerprintBioEnrollment extends BioEnrollment {
         }
     }
 
-    public static class FingerprintEnrollmentContext {
+    public static class Context {
         private final FingerprintBioEnrollment bioEnrollment;
         @Nullable
         private final Integer timeout;
@@ -125,7 +124,7 @@ public class FingerprintBioEnrollment extends BioEnrollment {
         @Nullable
         private Integer remaining;
 
-        public FingerprintEnrollmentContext(
+        public Context(
                 FingerprintBioEnrollment bioEnrollment,
                 @Nullable Integer timeout,
                 @Nullable byte[] templateId,
@@ -153,15 +152,14 @@ public class FingerprintBioEnrollment extends BioEnrollment {
         public byte[] capture() throws IOException, CommandException, CaptureError {
             int sampleStatus;
             if (templateId == null) {
-                final FingerprintInitialCapture initialCapture = bioEnrollment.enrollBegin(timeout);
-                templateId = initialCapture.getTemplateId();
-                remaining = initialCapture.getRemaining();
-                sampleStatus = initialCapture.getSampleStatus();
+                final EnrollBeginStatus status = bioEnrollment.enrollBegin(timeout);
+                templateId = status.getTemplateId();
+                remaining = status.getRemaining();
+                sampleStatus = status.getSampleStatus();
             } else {
-                final FingerprintCapture capture =
-                        bioEnrollment.enrollCaptureNext(templateId, timeout);
-                remaining = capture.getRemaining();
-                sampleStatus = capture.getSampleStatus();
+                final CaptureStatus status = bioEnrollment.enrollCaptureNext(templateId, timeout);
+                remaining = status.getRemaining();
+                sampleStatus = status.getSampleStatus();
             }
 
             if (sampleStatus != FEEDBACK_FP_GOOD) {
@@ -245,10 +243,10 @@ public class FingerprintBioEnrollment extends BioEnrollment {
      * to scan their fingerprint once to provide an initial sample.
      *
      * @param timeout Optional timeout in milliseconds.
-     * @return A capture result object containing the new template ID, the sample status,
+     * @return A status object containing the new template ID, the sample status,
      * and the number of samples remaining to complete the enrollment.
      */
-    public FingerprintInitialCapture enrollBegin(@Nullable Integer timeout)
+    public EnrollBeginStatus enrollBegin(@Nullable Integer timeout)
             throws IOException, CommandException {
         logger.debug("Starting fingerprint enrollment");
 
@@ -257,7 +255,7 @@ public class FingerprintBioEnrollment extends BioEnrollment {
 
         final Map<Integer, ?> result = call(CMD_ENROLL_BEGIN, parameters);
         logger.debug("Sample capture result: {}", result);
-        return new FingerprintInitialCapture(
+        return new EnrollBeginStatus(
                 Objects.requireNonNull((byte[]) result.get(RESULT_TEMPLATE_ID)),
                 Objects.requireNonNull((Integer) result.get(RESULT_LAST_SAMPLE_STATUS)),
                 Objects.requireNonNull((Integer) result.get(RESULT_REMAINING_SAMPLES)));
@@ -272,10 +270,10 @@ public class FingerprintBioEnrollment extends BioEnrollment {
      *
      * @param templateId The template ID returned by a call to {@link #enrollBegin(Integer timeout)}.
      * @param timeout    Optional timeout in milliseconds.
-     * @return A capture result containing the sample status, and the number of samples
+     * @return A status object containing the sample status, and the number of samples
      * remaining to complete the enrollment.
      */
-    public FingerprintCapture enrollCaptureNext(
+    public CaptureStatus enrollCaptureNext(
             byte[] templateId,
             @Nullable Integer timeout) throws IOException, CommandException {
         logger.debug("Capturing next sample with (timeout={})", timeout);
@@ -286,7 +284,7 @@ public class FingerprintBioEnrollment extends BioEnrollment {
 
         final Map<Integer, ?> result = call(CMD_ENROLL_CAPTURE_NEXT, parameters);
         logger.debug("Sample capture result: {}", result);
-        return new FingerprintCapture(
+        return new CaptureStatus(
                 Objects.requireNonNull((Integer) result.get(RESULT_LAST_SAMPLE_STATUS)),
                 Objects.requireNonNull((Integer) result.get(RESULT_REMAINING_SAMPLES)));
     }
@@ -307,8 +305,8 @@ public class FingerprintBioEnrollment extends BioEnrollment {
      * @param timeout Optional timeout in milliseconds.
      * @return An initialized FingerprintEnrollmentContext.
      */
-    public FingerprintEnrollmentContext enroll(@Nullable Integer timeout) {
-        return new FingerprintEnrollmentContext(this, timeout, null, null);
+    public Context enroll(@Nullable Integer timeout) {
+        return new Context(this, timeout, null, null);
     }
 
     /**

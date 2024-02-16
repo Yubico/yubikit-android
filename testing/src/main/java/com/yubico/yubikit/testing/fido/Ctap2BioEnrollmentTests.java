@@ -97,7 +97,7 @@ public class Ctap2BioEnrollmentTests {
 
     private static byte[] enrollFingerprint(FingerprintBioEnrollment bioEnrollment) throws Throwable {
 
-        final FingerprintBioEnrollment.FingerprintEnrollmentContext context = bioEnrollment.enroll(null);
+        final FingerprintBioEnrollment.Context context = bioEnrollment.enroll(null);
 
         byte[] templateId = null;
         while (templateId == null) {
