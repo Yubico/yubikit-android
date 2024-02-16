@@ -73,7 +73,8 @@ public class BioEnrollment {
                 null,
                 null,
                 null,
-                Boolean.TRUE);
+                Boolean.TRUE,
+                null);
         return Objects.requireNonNull((Integer) result.get(RESULT_MODALITY));
     }
 }

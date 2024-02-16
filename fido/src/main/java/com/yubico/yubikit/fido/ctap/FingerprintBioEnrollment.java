@@ -17,6 +17,7 @@
 package com.yubico.yubikit.fido.ctap;
 
 import com.yubico.yubikit.core.application.CommandException;
+import com.yubico.yubikit.core.application.CommandState;
 import com.yubico.yubikit.core.fido.CtapException;
 import com.yubico.yubikit.core.internal.codec.Base64;
 import com.yubico.yubikit.fido.Cbor;
@@ -196,13 +197,15 @@ public class FingerprintBioEnrollment extends BioEnrollment {
 
     private Map<Integer, ?> call(
             Integer subCommand,
-            @Nullable Map<?, ?> subCommandParams) throws IOException, CommandException {
-        return call(subCommand, subCommandParams, true);
+            @Nullable Map<?, ?> subCommandParams,
+            @Nullable CommandState state) throws IOException, CommandException {
+        return call(subCommand, subCommandParams, state, true);
     }
 
     private Map<Integer, ?> call(
             Integer subCommand,
             @Nullable Map<?, ?> subCommandParams,
+            @Nullable CommandState state,
             boolean authenticate) throws IOException, CommandException {
         byte[] pinUvAuthParam = null;
         if (authenticate) {
@@ -221,7 +224,8 @@ public class FingerprintBioEnrollment extends BioEnrollment {
                 subCommandParams,
                 pinUvAuth.getVersion(),
                 pinUvAuthParam,
-                null);
+                null,
+                state);
     }
 
     /**
@@ -233,7 +237,7 @@ public class FingerprintBioEnrollment extends BioEnrollment {
      * @throws CommandException A communication in the protocol layer.
      */
     public Map<Integer, ?> getFingerprintSensorInfo() throws IOException, CommandException {
-        return call(CMD_GET_SENSOR_INFO, null, false);
+        return call(CMD_GET_SENSOR_INFO, null, null, false);
     }
 
     /**
@@ -253,7 +257,7 @@ public class FingerprintBioEnrollment extends BioEnrollment {
         Map<Integer, Object> parameters = new HashMap<>();
         if (timeout != null) parameters.put(PARAM_TIMEOUT_MS, timeout);
 
-        final Map<Integer, ?> result = call(CMD_ENROLL_BEGIN, parameters);
+        final Map<Integer, ?> result = call(CMD_ENROLL_BEGIN, parameters, null);
         logger.debug("Sample capture result: {}", result);
         return new EnrollBeginStatus(
                 Objects.requireNonNull((byte[]) result.get(RESULT_TEMPLATE_ID)),
@@ -282,7 +286,7 @@ public class FingerprintBioEnrollment extends BioEnrollment {
         parameters.put(PARAM_TEMPLATE_ID, templateId);
         if (timeout != null) parameters.put(PARAM_TIMEOUT_MS, timeout);
 
-        final Map<Integer, ?> result = call(CMD_ENROLL_CAPTURE_NEXT, parameters);
+        final Map<Integer, ?> result = call(CMD_ENROLL_CAPTURE_NEXT, parameters, null);
         logger.debug("Sample capture result: {}", result);
         return new CaptureStatus(
                 Objects.requireNonNull((Integer) result.get(RESULT_LAST_SAMPLE_STATUS)),
@@ -294,7 +298,7 @@ public class FingerprintBioEnrollment extends BioEnrollment {
      */
     public void enrollCancel() throws IOException, CommandException {
         logger.debug("Cancelling fingerprint enrollment.");
-        call(CMD_ENROLL_CANCEL, null, false);
+        call(CMD_ENROLL_CANCEL, null, null, false);
     }
 
     /**
@@ -317,7 +321,7 @@ public class FingerprintBioEnrollment extends BioEnrollment {
      */
     public Map<byte[], String> enumerateEnrollments() throws IOException, CommandException {
         try {
-            final Map<Integer, ?> result = call(CMD_ENUMERATE_ENROLLMENTS, null);
+            final Map<Integer, ?> result = call(CMD_ENUMERATE_ENROLLMENTS, null, null);
 
             @SuppressWarnings("unchecked")
             final List<Map<Integer, ?>> infos = (List<Map<Integer, ?>>) result.get(RESULT_TEMPLATE_INFOS);
@@ -353,7 +357,7 @@ public class FingerprintBioEnrollment extends BioEnrollment {
         parameters.put(TEMPLATE_INFO_ID, templateId);
         parameters.put(TEMPLATE_INFO_NAME, name);
 
-        call(CMD_SET_NAME, parameters);
+        call(CMD_SET_NAME, parameters, null);
         logger.info("Fingerprint template renamed");
     }
 
@@ -368,7 +372,7 @@ public class FingerprintBioEnrollment extends BioEnrollment {
         Map<Integer, Object> parameters = new HashMap<>();
         parameters.put(TEMPLATE_INFO_ID, templateId);
 
-        call(CMD_REMOVE_ENROLLMENT, parameters);
+        call(CMD_REMOVE_ENROLLMENT, parameters, null);
         logger.info("Fingerprint template deleted");
     }
 }

@@ -414,6 +414,8 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
      * @param subCommandParams  a map of subCommands parameters
      * @param pinUvAuthProtocol PIN/UV protocol version chosen by the platform
      * @param pinUvAuthParam    first 16 bytes of HMAC-SHA-256 of contents using pinUvAuthToken
+     * @param state             an optional state object to cancel a request and handle
+     *                          keepalive signals
      * @throws IOException      A communication error in the transport layer.
      * @throws CommandException A communication in the protocol layer.
      * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#authenticatorBioEnrollment">authenticatorBioEnrollment</a>
@@ -424,21 +426,21 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
             @Nullable Map<?, ?> subCommandParams,
             @Nullable Integer pinUvAuthProtocol,
             @Nullable byte[] pinUvAuthParam,
-            @Nullable Boolean getModality
+            @Nullable Boolean getModality,
+            @Nullable CommandState state
     ) throws IOException, CommandException {
         if (bioEnrollmentCommand == null) {
             throw new IllegalStateException("Bio enrollment not supported");
         }
         return sendCbor(
-                bioEnrollmentCommand,
-                args(
+                bioEnrollmentCommand, args(
                         modality,
                         subCommand,
                         subCommandParams,
                         pinUvAuthProtocol,
                         pinUvAuthParam,
-                        getModality),
-                null);
+                        getModality
+                ), state);
     }
 
     /**
