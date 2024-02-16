@@ -18,13 +18,10 @@ package com.yubico.yubikit.fido.ctap;
 
 import com.yubico.yubikit.core.application.CommandException;
 
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.util.Map;
 import java.util.Objects;
 
-@SuppressWarnings("unused")
 public class BioEnrollment {
     protected static final int RESULT_MODALITY = 0x01;
     protected static final int RESULT_FINGERPRINT_KIND = 0x02;
@@ -37,14 +34,12 @@ public class BioEnrollment {
     protected static final int RESULT_MAX_TEMPLATE_FRIENDLY_NAME = 0x08;
 
     protected static final int TEMPLATE_INFO_ID = 0x01;
-    protected static final int TEMPLATE_INFO_NAME = 0x02;
+    protected static final int TEMPLATE_INFO_FRIENDLY_NAME = 0x02;
 
     protected static final int MODALITY_FINGERPRINT = 0x01;
 
     protected final Ctap2Session ctap;
     protected final int modality;
-
-    private static final org.slf4j.Logger logger = LoggerFactory.getLogger(BioEnrollment.class);
 
     public BioEnrollment(Ctap2Session ctap, int modality) throws IOException, CommandException {
         if (!isSupported(ctap.getCachedInfo())) {

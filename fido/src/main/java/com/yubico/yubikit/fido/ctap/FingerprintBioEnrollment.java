@@ -34,10 +34,7 @@ import java.util.Objects;
 
 import javax.annotation.Nullable;
 
-@SuppressWarnings("unused")
 public class FingerprintBioEnrollment extends BioEnrollment {
-
-    /* commands */
     private static final int CMD_ENROLL_BEGIN = 0x01;
     private static final int CMD_ENROLL_CAPTURE_NEXT = 0x02;
     private static final int CMD_ENROLL_CANCEL = 0x03;
@@ -46,12 +43,10 @@ public class FingerprintBioEnrollment extends BioEnrollment {
     private static final int CMD_REMOVE_ENROLLMENT = 0x06;
     private static final int CMD_GET_SENSOR_INFO = 0x07;
 
-    /* parameters */
     private static final int PARAM_TEMPLATE_ID = 0x01;
     private static final int PARAM_TEMPLATE_FRIENDLY_NAME = 0x02;
     private static final int PARAM_TIMEOUT_MS = 0x03;
 
-    /* feedback */
     public static final int FEEDBACK_FP_GOOD = 0x00;
     public static final int FEEDBACK_FP_TOO_HIGH = 0x01;
     public static final int FEEDBACK_FP_TOO_LOW = 0x02;
@@ -383,10 +378,9 @@ public class FingerprintBioEnrollment extends BioEnrollment {
             final List<Map<Integer, ?>> infos = (List<Map<Integer, ?>>) result.get(RESULT_TEMPLATE_INFOS);
             final Map<byte[], String> retval = new HashMap<>();
             for (Map<Integer, ?> info : infos) {
-                final byte[] templateId =
-                        Objects.requireNonNull((byte[]) info.get(TEMPLATE_INFO_ID));
-                final String templateFriendlyName = (String) info.get(TEMPLATE_INFO_NAME);
-                retval.put(templateId, templateFriendlyName);
+                final byte[] id = Objects.requireNonNull((byte[]) info.get(TEMPLATE_INFO_ID));
+                final String friendlyName = (String) info.get(TEMPLATE_INFO_FRIENDLY_NAME);
+                retval.put(id, friendlyName);
             }
 
             logger.debug("Enumerated enrollments: {}", retval);
@@ -410,8 +404,8 @@ public class FingerprintBioEnrollment extends BioEnrollment {
         logger.debug("Changing name of template: {} {}", Base64.toUrlSafeString(templateId), name);
 
         Map<Integer, Object> parameters = new HashMap<>();
-        parameters.put(TEMPLATE_INFO_ID, templateId);
-        parameters.put(TEMPLATE_INFO_NAME, name);
+        parameters.put(PARAM_TEMPLATE_ID, templateId);
+        parameters.put(PARAM_TEMPLATE_FRIENDLY_NAME, name);
 
         call(CMD_SET_NAME, parameters, null);
         logger.info("Fingerprint template renamed");
@@ -426,7 +420,7 @@ public class FingerprintBioEnrollment extends BioEnrollment {
         logger.debug("Deleting template: {}", Base64.toUrlSafeString(templateId));
 
         Map<Integer, Object> parameters = new HashMap<>();
-        parameters.put(TEMPLATE_INFO_ID, templateId);
+        parameters.put(PARAM_TEMPLATE_ID, templateId);
 
         call(CMD_REMOVE_ENROLLMENT, parameters, null);
         logger.info("Fingerprint template deleted");
