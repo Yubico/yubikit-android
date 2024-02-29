@@ -244,11 +244,8 @@ public class FingerprintBioEnrollment extends BioEnrollment {
 
         /**
          * Cancels ongoing enrollment.
-         *
-         * @throws IOException      A communication error in the transport layer.
-         * @throws CommandException A communication error in the protocol layer.
          */
-        public void cancel() throws IOException, CommandException {
+        public void cancel() {
             state.cancel();
         }
 
