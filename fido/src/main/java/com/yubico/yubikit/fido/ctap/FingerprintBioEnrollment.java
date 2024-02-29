@@ -19,6 +19,7 @@ package com.yubico.yubikit.fido.ctap;
 import com.yubico.yubikit.core.application.CommandException;
 import com.yubico.yubikit.core.application.CommandState;
 import com.yubico.yubikit.core.fido.CtapException;
+import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.internal.codec.Base64;
 import com.yubico.yubikit.fido.Cbor;
 
@@ -352,13 +353,13 @@ public class FingerprintBioEnrollment extends BioEnrollment {
      */
     public EnrollBeginStatus enrollBegin(@Nullable Integer timeout, @Nullable CommandState state)
             throws IOException, CommandException {
-        logger.debug("Starting fingerprint enrollment");
+        Logger.debug(logger, "Starting fingerprint enrollment");
 
         Map<Integer, Object> parameters = new HashMap<>();
         if (timeout != null) parameters.put(PARAM_TIMEOUT_MS, timeout);
 
         final Map<Integer, ?> result = call(CMD_ENROLL_BEGIN, parameters, state);
-        logger.debug("Sample capture result: {}", result);
+        Logger.debug(logger, "Sample capture result: {}", result);
         return new EnrollBeginStatus(
                 Objects.requireNonNull((byte[]) result.get(RESULT_TEMPLATE_ID)),
                 Objects.requireNonNull((Integer) result.get(RESULT_LAST_SAMPLE_STATUS)),
@@ -386,14 +387,17 @@ public class FingerprintBioEnrollment extends BioEnrollment {
             byte[] templateId,
             @Nullable Integer timeout,
             @Nullable CommandState state) throws IOException, CommandException {
-        logger.debug("Capturing next sample with (timeout={})", timeout);
+        Logger.debug(logger, "Capturing next sample with (timeout={})",
+                timeout != null
+                        ? timeout
+                        : "none specified");
 
         Map<Integer, Object> parameters = new HashMap<>();
         parameters.put(PARAM_TEMPLATE_ID, templateId);
         if (timeout != null) parameters.put(PARAM_TIMEOUT_MS, timeout);
 
         final Map<Integer, ?> result = call(CMD_ENROLL_CAPTURE_NEXT, parameters, state);
-        logger.debug("Sample capture result: {}", result);
+        Logger.debug(logger, "Sample capture result: {}", result);
         return new CaptureStatus(
                 Objects.requireNonNull((Integer) result.get(RESULT_LAST_SAMPLE_STATUS)),
                 Objects.requireNonNull((Integer) result.get(RESULT_REMAINING_SAMPLES)));
@@ -407,7 +411,7 @@ public class FingerprintBioEnrollment extends BioEnrollment {
      * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#cancelEnrollment">Cancel current enrollment</a>
      */
     public void enrollCancel() throws IOException, CommandException {
-        logger.debug("Cancelling fingerprint enrollment.");
+        Logger.debug(logger, "Cancelling fingerprint enrollment.");
         call(CMD_ENROLL_CANCEL, null, null, false);
     }
 
@@ -444,7 +448,7 @@ public class FingerprintBioEnrollment extends BioEnrollment {
                 retval.put(id, friendlyName);
             }
 
-            logger.debug("Enumerated enrollments: {}", retval);
+            Logger.debug(logger, "Enumerated enrollments: {}", retval);
 
             return retval;
         } catch (CtapException e) {
@@ -465,14 +469,14 @@ public class FingerprintBioEnrollment extends BioEnrollment {
      * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#setFriendlyName">Rename/Set FriendlyName</a>
      */
     public void setName(byte[] templateId, String name) throws IOException, CommandException {
-        logger.debug("Changing name of template: {} {}", Base64.toUrlSafeString(templateId), name);
+        Logger.debug(logger, "Changing name of template: {} {}", Base64.toUrlSafeString(templateId), name);
 
         Map<Integer, Object> parameters = new HashMap<>();
         parameters.put(PARAM_TEMPLATE_ID, templateId);
         parameters.put(PARAM_TEMPLATE_FRIENDLY_NAME, name);
 
         call(CMD_SET_NAME, parameters, null);
-        logger.info("Fingerprint template renamed");
+        Logger.info(logger, "Fingerprint template renamed");
     }
 
     /**
@@ -484,12 +488,12 @@ public class FingerprintBioEnrollment extends BioEnrollment {
      * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#removeEnrollment">Remove enrollment</a>
      */
     public void removeEnrollment(byte[] templateId) throws IOException, CommandException {
-        logger.debug("Deleting template: {}", Base64.toUrlSafeString(templateId));
+        Logger.debug(logger, "Deleting template: {}", Base64.toUrlSafeString(templateId));
 
         Map<Integer, Object> parameters = new HashMap<>();
         parameters.put(PARAM_TEMPLATE_ID, templateId);
 
         call(CMD_REMOVE_ENROLLMENT, parameters, null);
-        logger.info("Fingerprint template deleted");
+        Logger.info(logger, "Fingerprint template deleted");
     }
 }
