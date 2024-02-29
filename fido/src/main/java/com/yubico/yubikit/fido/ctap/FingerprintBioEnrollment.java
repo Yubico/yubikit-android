@@ -179,6 +179,7 @@ public class FingerprintBioEnrollment extends BioEnrollment {
         private byte[] templateId;
         @Nullable
         private Integer remaining;
+        private final CommandState state = new CommandState();
 
         public Context(
                 FingerprintBioEnrollment bioEnrollment,
@@ -207,23 +208,34 @@ public class FingerprintBioEnrollment extends BioEnrollment {
         @Nullable
         public byte[] capture() throws IOException, CommandException, CaptureError {
             int sampleStatus;
-            if (templateId == null) {
-                final EnrollBeginStatus status = bioEnrollment.enrollBegin(timeout);
-                templateId = status.getTemplateId();
-                remaining = status.getRemaining();
-                sampleStatus = status.getSampleStatus();
-            } else {
-                final CaptureStatus status = bioEnrollment.enrollCaptureNext(templateId, timeout);
-                remaining = status.getRemaining();
-                sampleStatus = status.getSampleStatus();
-            }
+            try {
+                if (templateId == null) {
+                    final EnrollBeginStatus status = bioEnrollment.enrollBegin(timeout, state);
+                    templateId = status.getTemplateId();
+                    remaining = status.getRemaining();
+                    sampleStatus = status.getSampleStatus();
+                } else {
+                    final CaptureStatus status = bioEnrollment.enrollCaptureNext(
+                            templateId,
+                            timeout,
+                            state);
+                    remaining = status.getRemaining();
+                    sampleStatus = status.getSampleStatus();
+                }
 
-            if (sampleStatus != FEEDBACK_FP_GOOD) {
-                throw new CaptureError(sampleStatus);
-            }
+                if (sampleStatus != FEEDBACK_FP_GOOD) {
+                    throw new CaptureError(sampleStatus);
+                }
 
-            if (remaining == 0) {
-                return templateId;
+                if (remaining == 0) {
+                    return templateId;
+                }
+            } catch (CtapException ctapException) {
+                if (ctapException.getCtapError() == CtapException.ERR_KEEPALIVE_CANCEL) {
+                    bioEnrollment.enrollCancel();
+                    templateId = null;
+                }
+                throw ctapException;
             }
 
             return null;
@@ -236,8 +248,15 @@ public class FingerprintBioEnrollment extends BioEnrollment {
          * @throws CommandException A communication error in the protocol layer.
          */
         public void cancel() throws IOException, CommandException {
-            bioEnrollment.enrollCancel();
-            templateId = null;
+            state.cancel();
+        }
+
+        /**
+         * @return number of remaining captures for successful enrollment
+         */
+        @Nullable
+        public Integer getRemaining() {
+            return remaining;
         }
     }
 
@@ -324,20 +343,21 @@ public class FingerprintBioEnrollment extends BioEnrollment {
      * to scan their fingerprint once to provide an initial sample.
      *
      * @param timeout Optional timeout in milliseconds.
+     * @param state   If needed, the state to provide control over the ongoing operation.
      * @return A status object containing the new template ID, the sample status,
      * and the number of samples remaining to complete the enrollment.
      * @throws IOException      A communication error in the transport layer.
      * @throws CommandException A communication error in the protocol layer.
      * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#enrollingFingerprint">Enrolling fingerprint</a>
      */
-    public EnrollBeginStatus enrollBegin(@Nullable Integer timeout)
+    public EnrollBeginStatus enrollBegin(@Nullable Integer timeout, @Nullable CommandState state)
             throws IOException, CommandException {
         logger.debug("Starting fingerprint enrollment");
 
         Map<Integer, Object> parameters = new HashMap<>();
         if (timeout != null) parameters.put(PARAM_TIMEOUT_MS, timeout);
 
-        final Map<Integer, ?> result = call(CMD_ENROLL_BEGIN, parameters, null);
+        final Map<Integer, ?> result = call(CMD_ENROLL_BEGIN, parameters, state);
         logger.debug("Sample capture result: {}", result);
         return new EnrollBeginStatus(
                 Objects.requireNonNull((byte[]) result.get(RESULT_TEMPLATE_ID)),
@@ -352,8 +372,10 @@ public class FingerprintBioEnrollment extends BioEnrollment {
      * fingerprint once to provide a new sample.
      * Once the number of samples remaining is 0, the enrollment is completed.
      *
-     * @param templateId The template ID returned by a call to {@link #enrollBegin(Integer timeout)}.
+     * @param templateId The template ID returned by a call to
+     *                   {@link #enrollBegin(Integer timeout, CommandState state)}.
      * @param timeout    Optional timeout in milliseconds.
+     * @param state      If needed, the state to provide control over the ongoing operation.
      * @return A status object containing the sample status, and the number of samples
      * remaining to complete the enrollment.
      * @throws IOException      A communication error in the transport layer.
@@ -362,14 +384,15 @@ public class FingerprintBioEnrollment extends BioEnrollment {
      */
     public CaptureStatus enrollCaptureNext(
             byte[] templateId,
-            @Nullable Integer timeout) throws IOException, CommandException {
+            @Nullable Integer timeout,
+            @Nullable CommandState state) throws IOException, CommandException {
         logger.debug("Capturing next sample with (timeout={})", timeout);
 
         Map<Integer, Object> parameters = new HashMap<>();
         parameters.put(PARAM_TEMPLATE_ID, templateId);
         if (timeout != null) parameters.put(PARAM_TIMEOUT_MS, timeout);
 
-        final Map<Integer, ?> result = call(CMD_ENROLL_CAPTURE_NEXT, parameters, null);
+        final Map<Integer, ?> result = call(CMD_ENROLL_CAPTURE_NEXT, parameters, state);
         logger.debug("Sample capture result: {}", result);
         return new CaptureStatus(
                 Objects.requireNonNull((Integer) result.get(RESULT_LAST_SAMPLE_STATUS)),
