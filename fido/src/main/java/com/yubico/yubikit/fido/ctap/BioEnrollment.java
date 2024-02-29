@@ -40,7 +40,7 @@ public class BioEnrollment {
         }
 
         this.ctap = ctap;
-        this.modality = getModality();
+        this.modality = getModality(ctap);
 
         if (this.modality != modality) {
             throw new IllegalStateException("Device does not support modality " + modality);
@@ -55,7 +55,16 @@ public class BioEnrollment {
                 options.containsKey("userVerificationMgmtPreview");
     }
 
-    public int getModality() throws IOException, CommandException {
+    /**
+     * Get the type of modality the authenticator supports.
+     *
+     * @param ctap CTAP2 session
+     * @return The type of modality authenticator supports. For fingerprint, its value is 1.
+     * @throws IOException      A communication error in the transport layer.
+     * @throws CommandException A communication in the protocol layer.
+     * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#getUserVerificationModality">Get bio modality</a>
+     */
+    public static int getModality(Ctap2Session ctap) throws IOException, CommandException {
         final Map<Integer, ?> result = ctap.bioEnrollment(
                 null,
                 null,

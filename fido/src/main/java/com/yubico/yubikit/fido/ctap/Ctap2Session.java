@@ -414,6 +414,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
      * @param subCommandParams  a map of subCommands parameters
      * @param pinUvAuthProtocol PIN/UV protocol version chosen by the platform
      * @param pinUvAuthParam    first 16 bytes of HMAC-SHA-256 of contents using pinUvAuthToken
+     * @param getModality       get the user verification type modality
      * @param state             an optional state object to cancel a request and handle
      *                          keepalive signals
      * @throws IOException      A communication error in the transport layer.

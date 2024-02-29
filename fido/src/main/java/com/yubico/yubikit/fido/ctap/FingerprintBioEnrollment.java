@@ -168,6 +168,9 @@ public class FingerprintBioEnrollment extends BioEnrollment {
         }
     }
 
+    /**
+     * Convenience class for handling one fingerprint enrollment
+     */
     public static class Context {
         private final FingerprintBioEnrollment bioEnrollment;
         @Nullable
@@ -198,7 +201,7 @@ public class FingerprintBioEnrollment extends BioEnrollment {
          * @return None, if more samples are needed, or the template ID if enrollment is
          * completed.
          * @throws IOException      A communication error in the transport layer.
-         * @throws CommandException A communication in the protocol layer.
+         * @throws CommandException A communication error in the protocol layer.
          * @throws CaptureError     An error during fingerprint capture.
          */
         @Nullable
@@ -230,7 +233,7 @@ public class FingerprintBioEnrollment extends BioEnrollment {
          * Cancels ongoing enrollment.
          *
          * @throws IOException      A communication error in the transport layer.
-         * @throws CommandException A communication in the protocol layer.
+         * @throws CommandException A communication error in the protocol layer.
          */
         public void cancel() throws IOException, CommandException {
             bioEnrollment.enrollCancel();
@@ -245,7 +248,7 @@ public class FingerprintBioEnrollment extends BioEnrollment {
         super(ctap, BioEnrollment.MODALITY_FINGERPRINT);
         this.pinUvAuth = pinUvAuthProtocol;
         this.pinUvToken = pinUvToken;
-        this.cachedSensorInfo = readFingerprintSensorInfo();
+        this.cachedSensorInfo = readFingerprintSensorInfo(ctap);
     }
 
     private Map<Integer, ?> call(
@@ -284,17 +287,24 @@ public class FingerprintBioEnrollment extends BioEnrollment {
     /**
      * Get fingerprint sensor info.
      *
+     * @param ctap CTAP2 session
      * @return A dict containing FINGERPRINT_KIND, MAX_SAMPLES_REQUIRES and
      * MAX_TEMPLATE_FRIENDLY_NAME.
      * @throws IOException      A communication error in the transport layer.
-     * @throws CommandException A communication in the protocol layer.
+     * @throws CommandException A communication error in the protocol layer.
+     * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#getFingerprintSensorInfo">Get fingerprint sensor info</a>
      */
-    public SensorInfo readFingerprintSensorInfo() throws IOException, CommandException {
-        final Map<Integer, ?> result = call(
+    public static SensorInfo readFingerprintSensorInfo(Ctap2Session ctap)
+            throws IOException, CommandException {
+
+        final Map<Integer, ?> result = ctap.bioEnrollment(
+                MODALITY_FINGERPRINT,
                 CMD_GET_SENSOR_INFO,
                 null,
                 null,
-                false);
+                null,
+                null,
+                null);
 
         return new SensorInfo(
                 Objects.requireNonNull((Integer) result.get(RESULT_FINGERPRINT_KIND)),
@@ -316,6 +326,9 @@ public class FingerprintBioEnrollment extends BioEnrollment {
      * @param timeout Optional timeout in milliseconds.
      * @return A status object containing the new template ID, the sample status,
      * and the number of samples remaining to complete the enrollment.
+     * @throws IOException      A communication error in the transport layer.
+     * @throws CommandException A communication error in the protocol layer.
+     * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#enrollingFingerprint">Enrolling fingerprint</a>
      */
     public EnrollBeginStatus enrollBegin(@Nullable Integer timeout)
             throws IOException, CommandException {
@@ -343,6 +356,9 @@ public class FingerprintBioEnrollment extends BioEnrollment {
      * @param timeout    Optional timeout in milliseconds.
      * @return A status object containing the sample status, and the number of samples
      * remaining to complete the enrollment.
+     * @throws IOException      A communication error in the transport layer.
+     * @throws CommandException A communication error in the protocol layer.
+     * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#enrollingFingerprint">Enrolling fingerprint</a>
      */
     public CaptureStatus enrollCaptureNext(
             byte[] templateId,
@@ -362,6 +378,10 @@ public class FingerprintBioEnrollment extends BioEnrollment {
 
     /**
      * Cancel any ongoing fingerprint enrollment.
+     *
+     * @throws IOException      A communication error in the transport layer.
+     * @throws CommandException A communication error in the protocol layer.
+     * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#cancelEnrollment">Cancel current enrollment</a>
      */
     public void enrollCancel() throws IOException, CommandException {
         logger.debug("Cancelling fingerprint enrollment.");
@@ -370,11 +390,10 @@ public class FingerprintBioEnrollment extends BioEnrollment {
 
     /**
      * Convenience wrapper for doing fingerprint enrollment.
-     * <p>
-     * See FingerprintEnrollmentContext for details.
      *
      * @param timeout Optional timeout in milliseconds.
-     * @return An initialized FingerprintEnrollmentContext.
+     * @return An initialized FingerprintEnrollment.Context.
+     * @see FingerprintBioEnrollment.Context
      */
     public Context enroll(@Nullable Integer timeout) {
         return new Context(this, timeout, null, null);
@@ -385,6 +404,9 @@ public class FingerprintBioEnrollment extends BioEnrollment {
      * their friendly names.
      *
      * @return A Map of enrolled templateId -> name pairs.
+     * @throws IOException      A communication error in the transport layer.
+     * @throws CommandException A communication error in the protocol layer.
+     * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#enumerateEnrollments">Enumerate enrollments</a>
      */
     public Map<byte[], String> enumerateEnrollments() throws IOException, CommandException {
         try {
@@ -415,6 +437,9 @@ public class FingerprintBioEnrollment extends BioEnrollment {
      *
      * @param templateId The ID of the template to change.
      * @param name       A friendly name to give the template.
+     * @throws IOException      A communication error in the transport layer.
+     * @throws CommandException A communication error in the protocol layer.
+     * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#setFriendlyName">Rename/Set FriendlyName</a>
      */
     public void setName(byte[] templateId, String name) throws IOException, CommandException {
         logger.debug("Changing name of template: {} {}", Base64.toUrlSafeString(templateId), name);
@@ -431,6 +456,9 @@ public class FingerprintBioEnrollment extends BioEnrollment {
      * Remove a previously enrolled fingerprint template.
      *
      * @param templateId The Id of the template to remove.
+     * @throws IOException      A communication error in the transport layer.
+     * @throws CommandException A communication error in the protocol layer.
+     * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#removeEnrollment">Remove enrollment</a>
      */
     public void removeEnrollment(byte[] templateId) throws IOException, CommandException {
         logger.debug("Deleting template: {}", Base64.toUrlSafeString(templateId));
