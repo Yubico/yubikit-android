@@ -103,7 +103,7 @@ public class Ctap2BioEnrollmentTests {
         while (templateId == null) {
             logger.debug("Touch the fingerprint");
             try {
-                templateId = context.capture();
+                templateId = context.capture(null);
             } catch (FingerprintBioEnrollment.CaptureError captureError) {
                 // capture errors are expected
                 logger.debug("Received capture error: ", captureError);

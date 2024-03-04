@@ -179,7 +179,6 @@ public class FingerprintBioEnrollment extends BioEnrollment {
         private byte[] templateId;
         @Nullable
         private Integer remaining;
-        private final CommandState state = new CommandState();
 
         public Context(
                 FingerprintBioEnrollment bioEnrollment,
@@ -199,6 +198,7 @@ public class FingerprintBioEnrollment extends BioEnrollment {
          * timeout not specified) waiting for the user to scan their fingerprint to
          * collect one sample.
          *
+         * @param state If needed, the state to provide control over the ongoing operation.
          * @return None, if more samples are needed, or the template ID if enrollment is
          * completed.
          * @throws IOException      A communication error in the transport layer.
@@ -206,46 +206,39 @@ public class FingerprintBioEnrollment extends BioEnrollment {
          * @throws CaptureError     An error during fingerprint capture.
          */
         @Nullable
-        public byte[] capture() throws IOException, CommandException, CaptureError {
+        public byte[] capture(@Nullable CommandState state)
+                throws IOException, CommandException, CaptureError {
             int sampleStatus;
-            try {
-                if (templateId == null) {
-                    final EnrollBeginStatus status = bioEnrollment.enrollBegin(timeout, state);
-                    templateId = status.getTemplateId();
-                    remaining = status.getRemaining();
-                    sampleStatus = status.getSampleStatus();
-                } else {
-                    final CaptureStatus status = bioEnrollment.enrollCaptureNext(
-                            templateId,
-                            timeout,
-                            state);
-                    remaining = status.getRemaining();
-                    sampleStatus = status.getSampleStatus();
-                }
-
-                if (sampleStatus != FEEDBACK_FP_GOOD) {
-                    throw new CaptureError(sampleStatus);
-                }
-
-                if (remaining == 0) {
-                    return templateId;
-                }
-            } catch (CtapException ctapException) {
-                if (ctapException.getCtapError() == CtapException.ERR_KEEPALIVE_CANCEL) {
-                    bioEnrollment.enrollCancel();
-                    templateId = null;
-                }
-                throw ctapException;
+            if (templateId == null) {
+                final EnrollBeginStatus status = bioEnrollment.enrollBegin(timeout, state);
+                templateId = status.getTemplateId();
+                remaining = status.getRemaining();
+                sampleStatus = status.getSampleStatus();
+            } else {
+                final CaptureStatus status = bioEnrollment.enrollCaptureNext(
+                        templateId,
+                        timeout,
+                        state);
+                remaining = status.getRemaining();
+                sampleStatus = status.getSampleStatus();
             }
 
+            if (sampleStatus != FEEDBACK_FP_GOOD) {
+                throw new CaptureError(sampleStatus);
+            }
+
+            if (remaining == 0) {
+                return templateId;
+            }
             return null;
         }
 
         /**
          * Cancels ongoing enrollment.
          */
-        public void cancel() {
-            state.cancel();
+        public void cancel() throws IOException, CommandException {
+            bioEnrollment.enrollCancel();
+            templateId = null;
         }
 
         /**
