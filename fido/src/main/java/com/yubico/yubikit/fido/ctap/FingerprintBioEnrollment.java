@@ -423,16 +423,22 @@ public class FingerprintBioEnrollment extends BioEnrollment {
 
             @SuppressWarnings("unchecked")
             final List<Map<Integer, ?>> infos = (List<Map<Integer, ?>>) result.get(RESULT_TEMPLATE_INFOS);
-            final Map<byte[], String> retval = new HashMap<>();
+            final Map<byte[], String> enrollments = new HashMap<>();
             for (Map<Integer, ?> info : infos) {
                 final byte[] id = Objects.requireNonNull((byte[]) info.get(TEMPLATE_INFO_ID));
-                final String friendlyName = (String) info.get(TEMPLATE_INFO_FRIENDLY_NAME);
-                retval.put(id, friendlyName);
+                @Nullable
+                String friendlyName = (String) info.get(TEMPLATE_INFO_FRIENDLY_NAME);
+                // treat empty strings as null values
+                if (friendlyName != null) {
+                    friendlyName = friendlyName.trim();
+                    if (friendlyName.isEmpty()) {
+                        friendlyName = null;
+                    }
+                }
+                enrollments.put(id, friendlyName);
             }
 
-            Logger.debug(logger, "Enumerated enrollments: {}", retval);
-
-            return retval;
+            return enrollments;
         } catch (CtapException e) {
             if (e.getCtapError() == CtapException.ERR_INVALID_OPTION) {
                 return Collections.emptyMap();
