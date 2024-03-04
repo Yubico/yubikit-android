@@ -138,7 +138,7 @@ public class FingerprintBioEnrollment extends BioEnrollment {
         }
     }
 
-    static class CaptureStatus {
+    public static class CaptureStatus {
         private final int sampleStatus;
         private final int remaining;
 
@@ -156,7 +156,7 @@ public class FingerprintBioEnrollment extends BioEnrollment {
         }
     }
 
-    static class EnrollBeginStatus extends CaptureStatus {
+    public static class EnrollBeginStatus extends CaptureStatus {
         private final byte[] templateId;
 
         public EnrollBeginStatus(byte[] templateId, int sampleStatus, int remaining) {
