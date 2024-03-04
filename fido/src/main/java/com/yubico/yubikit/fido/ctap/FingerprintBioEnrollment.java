@@ -82,7 +82,6 @@ public class FingerprintBioEnrollment extends BioEnrollment {
 
     private final PinUvAuthProtocol pinUvAuth;
     private final byte[] pinUvToken;
-    private final SensorInfo cachedSensorInfo;
 
     private final org.slf4j.Logger logger = LoggerFactory.getLogger(FingerprintBioEnrollment.class);
 
@@ -265,7 +264,6 @@ public class FingerprintBioEnrollment extends BioEnrollment {
         super(ctap, BioEnrollment.MODALITY_FINGERPRINT);
         this.pinUvAuth = pinUvAuthProtocol;
         this.pinUvToken = pinUvToken;
-        this.cachedSensorInfo = readFingerprintSensorInfo(ctap);
     }
 
     private Map<Integer, ?> call(
@@ -304,15 +302,13 @@ public class FingerprintBioEnrollment extends BioEnrollment {
     /**
      * Get fingerprint sensor info.
      *
-     * @param ctap CTAP2 session
      * @return A dict containing FINGERPRINT_KIND, MAX_SAMPLES_REQUIRES and
      * MAX_TEMPLATE_FRIENDLY_NAME.
      * @throws IOException      A communication error in the transport layer.
      * @throws CommandException A communication error in the protocol layer.
      * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#getFingerprintSensorInfo">Get fingerprint sensor info</a>
      */
-    public static SensorInfo readFingerprintSensorInfo(Ctap2Session ctap)
-            throws IOException, CommandException {
+    public SensorInfo getSensorInfo() throws IOException, CommandException {
 
         final Map<Integer, ?> result = ctap.bioEnrollment(
                 MODALITY_FINGERPRINT,
@@ -328,10 +324,6 @@ public class FingerprintBioEnrollment extends BioEnrollment {
                 Objects.requireNonNull((Integer) result.get(RESULT_MAX_SAMPLES_REQUIRED)),
                 Objects.requireNonNull((Integer) result.get(RESULT_MAX_TEMPLATE_FRIENDLY_NAME))
         );
-    }
-
-    public SensorInfo getCachedSensorInfo() {
-        return cachedSensorInfo;
     }
 
     /**

@@ -78,7 +78,7 @@ public class Ctap2BioEnrollmentTests {
         assertTrue(isEnrolled(templateId, enrollments));
 
         final int maxNameLen = fingerprintBioEnrollment
-                .getCachedSensorInfo()
+                .getSensorInfo()
                 .getMaxTemplateFriendlyName();
 
         renameFingerprint(fingerprintBioEnrollment, templateId, maxNameLen);
