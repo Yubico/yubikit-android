@@ -288,12 +288,9 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
             if (this.sequence != sequence) {
                 return false;
             }
-            if (this.status != 0) {
-                return false;
-            }
 
             // Note: according to documentation ignore error if status is 0
-            return true;
+            return this.status == 0;
         }
     }
 

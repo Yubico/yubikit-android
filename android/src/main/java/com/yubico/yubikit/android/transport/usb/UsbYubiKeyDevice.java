@@ -79,6 +79,7 @@ public class UsbYubiKeyDevice implements YubiKeyDevice, Closeable {
         this.usbManager = usbManager;
     }
 
+    /** @noinspection BooleanMethodIsAlwaysInverted*/
     public boolean hasPermission() {
         return usbManager.hasPermission(usbDevice);
     }
@@ -190,7 +191,7 @@ public class UsbYubiKeyDevice implements YubiKeyDevice, Closeable {
                                 Logger.error(logger, "OtpConnection callback threw an exception", e);
                             }
                         } catch (InterruptedException e) {
-                            e.printStackTrace();
+                            Logger.error(logger, "InterruptedException when processing OtpConnection: ", e);
                         }
                     }
                 } catch (IOException e) {

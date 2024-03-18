@@ -228,7 +228,6 @@ final class UsbDeviceManager {
      * @return UsbDevice from intent's parcelable
      */
     @Nullable
-    @SuppressWarnings("deprecation")
     private static UsbDevice getUsbManagerExtraDevice(Intent intent) {
         return (Build.VERSION.SDK_INT > Build.VERSION_CODES.TIRAMISU)
                 ? intent.getParcelableExtra(UsbManager.EXTRA_DEVICE, UsbDevice.class)
