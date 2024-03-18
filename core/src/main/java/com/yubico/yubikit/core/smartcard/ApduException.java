@@ -25,7 +25,7 @@ import java.util.Locale;
  * See {@link SW} for a list of status codes.
  */
 public class ApduException extends CommandException {
-    static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
 
     private final short sw;
 
