@@ -96,13 +96,11 @@ public abstract class PivEcSignatureSpi extends SignatureSpi {
         throw new SignatureException("Not initialized");
     }
 
-    @SuppressWarnings("deprecation")
     @Override
     protected void engineSetParameter(String param, Object value) throws InvalidParameterException {
         throw new InvalidParameterException("ECDSA doesn't take parameters");
     }
 
-    @SuppressWarnings("deprecation")
     @Override
     protected Object engineGetParameter(String param) throws InvalidParameterException {
         throw new InvalidParameterException("ECDSA doesn't take parameters");

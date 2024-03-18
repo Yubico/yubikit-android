@@ -151,11 +151,6 @@ public class PivProvider extends Provider {
         return o instanceof PivProvider && super.equals(o);
     }
 
-    @Override
-    public synchronized int hashCode() {
-        return super.hashCode();
-    }
-
     private class PivEcSignatureService extends Service {
         private final String digest;
 
