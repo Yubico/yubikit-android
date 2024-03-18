@@ -20,7 +20,7 @@ package com.yubico.yubikit.oath;
  * Thrown when an OATH otpauth:// URI couldn't be parsed.
  */
 public class ParseUriException extends Exception {
-    static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
 
     public ParseUriException(String message) {
         super(message);
