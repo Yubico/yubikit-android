@@ -41,7 +41,7 @@ import java.util.concurrent.TimeUnit;
 
 public class Ctap2SessionTests {
 
-    public static void testCtap2GetInfo(Ctap2Session session, Object... ignoredArgs) throws Throwable {
+    public static void testCtap2GetInfo(Ctap2Session session, Object... ignoredArgs) {
         Ctap2Session.InfoData info = session.getCachedInfo();
 
         List<String> versions = info.getVersions();

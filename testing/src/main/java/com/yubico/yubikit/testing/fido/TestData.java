@@ -29,10 +29,10 @@ import java.nio.charset.StandardCharsets;
 class TestData {
 
     static class ClientData {
-        public String type;
-        public String origin;
-        public String challenge;
-        public String androidPackageName;
+        @SuppressWarnings("unused") public final String type;
+        @SuppressWarnings("unused") public final String origin;
+        @SuppressWarnings("unused") public final String challenge;
+        @SuppressWarnings("unused") public final String androidPackageName;
 
         public ClientData(String type, String origin, byte[] challenge, String androidPackageName) {
             this.type = type;

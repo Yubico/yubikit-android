@@ -49,6 +49,8 @@ import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialUserEntity;
 import com.yubico.yubikit.fido.webauthn.ResidentKeyRequirement;
 import com.yubico.yubikit.fido.webauthn.UserVerificationRequirement;
 
+import org.junit.Assert;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -155,7 +157,7 @@ public class BasicWebAuthnClientTests {
 
     public static void testUvDiscouragedMakeCredentialGetAssertion(
             Ctap2Session session,
-            Object... unusedArgs) throws Throwable {
+            Object... ignoredUnusedArgs) throws Throwable {
 
         BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
 
@@ -687,6 +689,7 @@ public class BasicWebAuthnClientTests {
         byte[] attestObjBytes = response.getAttestationObject();
         @SuppressWarnings("unchecked")
         Map<String, Object> attestObj = (Map<String, Object>) Cbor.decode(attestObjBytes);
+        Assert.assertNotNull(attestObj);
         return (byte[]) attestObj.get("authData");
     }
 
@@ -723,6 +726,7 @@ public class BasicWebAuthnClientTests {
     private static int getAlgoFromCredentialPublicKey(byte[] pubKey) {
         @SuppressWarnings("unchecked")
         Map<Integer, ?> credPublicKey = (Map<Integer, ?>) Cbor.decode(pubKey);
+        Assert.assertNotNull(credPublicKey);
         return (Integer) Objects.requireNonNull(credPublicKey.get(3));
     }
 
