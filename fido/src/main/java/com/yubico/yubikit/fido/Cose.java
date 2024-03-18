@@ -41,7 +41,7 @@ public class Cose {
     public static Integer getAlgorithm(Map<Integer, ?> cosePublicKey) {
         Integer alg = (Integer) Objects.requireNonNull(cosePublicKey.get(3));
         Logger.debug(logger, "alg: {}", alg);
-        return (int) alg;
+        return alg;
     }
 
     @Nullable

@@ -213,17 +213,15 @@ public class SerializationTest {
         random.nextBytes(challenge);
         random.nextBytes(credentialId);
 
-        List<PublicKeyCredentialDescriptor> allowCredentials = new ArrayList<>(
-                Arrays.asList(
-                        new PublicKeyCredentialDescriptor(PublicKeyCredentialType.PUBLIC_KEY, credentialId, null),
-                        new PublicKeyCredentialDescriptor("unknown public key type", credentialId, null))
-        );
-
         PublicKeyCredentialRequestOptions options = new PublicKeyCredentialRequestOptions(
                 challenge,
                 timeout,
                 "example.com",
-                allowCredentials,
+                new ArrayList<>(
+                        Arrays.asList(
+                                new PublicKeyCredentialDescriptor(PublicKeyCredentialType.PUBLIC_KEY, credentialId, null),
+                                new PublicKeyCredentialDescriptor("unknown public key type", credentialId, null))
+                ),
                 UserVerificationRequirement.REQUIRED,
                 null
         );

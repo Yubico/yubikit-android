@@ -24,7 +24,7 @@ import java.util.Locale;
  * An error thrown by the WebAuthn client upon failure to complete a command.
  */
 public class ClientError extends Exception {
-    static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
 
     /**
      * Client error types
