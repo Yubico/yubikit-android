@@ -20,7 +20,7 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Objects;
 
-abstract class AlgorithmAttributes {
+public abstract class AlgorithmAttributes {
     private final byte algorithmId;
 
     AlgorithmAttributes(byte algorithmId) {
