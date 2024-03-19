@@ -23,7 +23,7 @@ import com.yubico.yubikit.core.util.Tlvs;
 import java.nio.ByteBuffer;
 import java.util.List;
 
-class ExtendedLengthInfo {
+public class ExtendedLengthInfo {
     private final int requestMaxBytes;
     private final int responseMaxBytes;
 

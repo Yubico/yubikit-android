@@ -79,8 +79,7 @@ class Hkdf {
         return result;
     }
 
-    byte[] digest(byte[] ikm, byte[] salt, byte[] info, int length)
-            throws NoSuchAlgorithmException, InvalidKeyException {
+    byte[] digest(byte[] ikm, byte[] salt, byte[] info, int length) throws InvalidKeyException {
         byte[] prk = extract(salt, ikm);
         byte[] result = expand(prk, info, length);
         Arrays.fill(prk, (byte) 0);

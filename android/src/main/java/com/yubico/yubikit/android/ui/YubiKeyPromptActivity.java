@@ -39,6 +39,7 @@ import com.yubico.yubikit.core.application.CommandState;
 
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.Objects;
 
 import javax.annotation.Nullable;
@@ -218,11 +219,12 @@ public class YubiKeyPromptActivity extends Activity {
                 : (Class<?>) args.getSerializable(ARG_ACTION_CLASS);
         try {
             if (actionType != null && YubiKeyPromptAction.class.isAssignableFrom(actionType)) {
-                action = (YubiKeyPromptAction) actionType.newInstance();
+                action = (YubiKeyPromptAction) actionType.getDeclaredConstructor().newInstance();
             } else {
                 throw new IllegalStateException("Missing or invalid ConnectionAction class");
             }
-        } catch (IllegalStateException | IllegalAccessException | InstantiationException e) {
+        } catch (IllegalStateException | IllegalAccessException | InstantiationException |
+                 NoSuchMethodException | InvocationTargetException e) {
             Logger.error(logger, "Unable to instantiate ConnectionAction", e);
             finish();
         }

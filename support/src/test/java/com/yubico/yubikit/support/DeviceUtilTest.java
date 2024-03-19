@@ -29,7 +29,7 @@ import org.junit.Test;
 
 public class DeviceUtilTest {
 
-    YubiKeyType keyType = YubiKeyType.YK4;
+    final YubiKeyType keyType = YubiKeyType.YK4;
 
     @Test
     public void getYubiKeyName() {

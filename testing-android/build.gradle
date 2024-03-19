@@ -37,7 +37,7 @@ android {
 
 dependencies {
 
-    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.1.6'
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.4'
 
     implementation 'androidx.test:core:1.5.0'
     implementation 'androidx.test:rules:1.5.0'
@@ -49,7 +49,7 @@ dependencies {
     api project(':piv')
     api project(':testing')
 
-    implementation 'com.google.android.material:material:1.10.0'
+    implementation 'com.google.android.material:material:1.11.0'
 
     implementation 'androidx.multidex:multidex:2.0.1'
 

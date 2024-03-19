@@ -95,7 +95,7 @@ public class Ctap2BioEnrollmentTests {
         assertThat("Fingerprints still exists after removal", enrollments.isEmpty());
     }
 
-    private static byte[] enrollFingerprint(FingerprintBioEnrollment bioEnrollment) throws Throwable {
+    private static byte[] enrollFingerprint(FingerprintBioEnrollment bioEnrollment) {
 
         final FingerprintBioEnrollment.Context context = bioEnrollment.enroll(null);
 

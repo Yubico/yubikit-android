@@ -3,7 +3,7 @@ apply plugin: 'yubikit-java-library'
 dependencies {
     api project(':core')
 
-    implementation 'commons-codec:commons-codec:1.15' // for Base32
+    implementation 'commons-codec:commons-codec:1.16.1' // for Base32
 }
 
 ext.pomName = "Yubico YubiKit ${project.name.capitalize()}"

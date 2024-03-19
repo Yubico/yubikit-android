@@ -12,7 +12,6 @@ import android.hardware.usb.UsbInterface;
 import com.yubico.yubikit.core.fido.FidoConnection;
 
 import java.io.IOException;
-import java.util.concurrent.Semaphore;
 
 public class UsbFidoConnection extends UsbYubiKeyConnection implements FidoConnection {
     private static final int TIMEOUT = 1000;

@@ -25,7 +25,7 @@ import javax.annotation.Nullable;
 /**
  * Used internally in YubiKit, don't use from applications.
  */
-@SuppressWarnings("unused")
+@SuppressWarnings({"unused", "deprecation"})
 public final class Logger {
 
     @Nullable

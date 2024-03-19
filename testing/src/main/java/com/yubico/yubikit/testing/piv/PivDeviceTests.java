@@ -36,6 +36,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
+@SuppressWarnings("deprecation")
 public class PivDeviceTests {
 
     private static final Logger logger = LoggerFactory.getLogger(PivDeviceTests.class);

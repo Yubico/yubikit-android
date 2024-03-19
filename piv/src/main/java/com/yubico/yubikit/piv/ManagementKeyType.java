@@ -29,7 +29,7 @@ public enum ManagementKeyType {
      */
     AES128((byte) 0x08, "AES", 16, 16),
     /**
-     * AES-191.
+     * AES-192.
      */
     AES192((byte) 0x0a, "AES", 24, 16),
     /**

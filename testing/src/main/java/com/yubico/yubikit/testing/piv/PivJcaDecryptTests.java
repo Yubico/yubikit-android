@@ -44,7 +44,6 @@ import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -55,7 +54,7 @@ public class PivJcaDecryptTests {
 
     private static final Logger logger = LoggerFactory.getLogger(PivJcaDecryptTests.class);
 
-    public static void testDecrypt(PivSession piv) throws BadResponseException, IOException, ApduException, NoSuchPaddingException, NoSuchAlgorithmException, NoSuchProviderException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException, InvalidAlgorithmParameterException {
+    public static void testDecrypt(PivSession piv) throws BadResponseException, IOException, ApduException, NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException, InvalidAlgorithmParameterException {
         setupJca(piv);
         for (KeyType keyType : KeyType.values()) {
             if (keyType.params.algorithm.name().equals("RSA")) {
@@ -65,7 +64,7 @@ public class PivJcaDecryptTests {
         tearDownJca();
     }
 
-    public static void testDecrypt(PivSession piv, KeyType keyType) throws BadResponseException, IOException, ApduException, NoSuchPaddingException, NoSuchAlgorithmException, NoSuchProviderException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException, InvalidAlgorithmParameterException {
+    public static void testDecrypt(PivSession piv, KeyType keyType) throws BadResponseException, IOException, ApduException, NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException, InvalidAlgorithmParameterException {
 
         if (keyType.params.algorithm != KeyType.Algorithm.RSA) {
             throw new IllegalArgumentException("Unsupported");

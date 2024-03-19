@@ -61,8 +61,8 @@ public abstract class PublicKeyValues {
      * This requires a SecurityProvider capable of handling the key type.
      *
      * @return a public key, usable for cryptographic operations
-     * @throws NoSuchAlgorithmException
-     * @throws InvalidKeySpecException
+     * @throws NoSuchAlgorithmException if no Provider supports an implementation for the specified algorithm.
+     * @throws InvalidKeySpecException  if the given key specification is inappropriate for this key factory to produce a public key.
      */
     public abstract PublicKey toPublicKey() throws NoSuchAlgorithmException, InvalidKeySpecException;
 
