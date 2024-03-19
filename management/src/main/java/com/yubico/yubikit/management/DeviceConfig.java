@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Yubico.
+ * Copyright (C) 2020-2022,2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import javax.annotation.Nullable;
 
@@ -134,6 +135,22 @@ public class DeviceConfig {
             throw new IllegalStateException("DeviceConfiguration too large");
         }
         return ByteBuffer.allocate(data.length + 1).put((byte) data.length).put(data).array();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        DeviceConfig that = (DeviceConfig) o;
+        return Objects.equals(enabledCapabilities, that.enabledCapabilities) &&
+                Objects.equals(autoEjectTimeout, that.autoEjectTimeout) &&
+                Objects.equals(challengeResponseTimeout, that.challengeResponseTimeout) &&
+                Objects.equals(deviceFlags, that.deviceFlags);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(enabledCapabilities, autoEjectTimeout, challengeResponseTimeout, deviceFlags);
     }
 
     /**

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Yubico.
+ * Copyright (C) 2022-2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package com.yubico.yubikit.support;
 
 import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.Version;
-import com.yubico.yubikit.management.DeviceConfig;
 import com.yubico.yubikit.management.DeviceInfo;
 import com.yubico.yubikit.management.FormFactor;
 
@@ -63,12 +62,13 @@ public class Util {
                     }
                 }
             };
-            return new DeviceInfo(new DeviceConfig.Builder().build(),
-                    serialNumber,
-                    new Version(5, 3, 0),
-                    formFactor,
-                    supportedCapabilities,
-                    false, false, isSky);
+            return new DeviceInfo.Builder()
+                    .serialNumber(serialNumber)
+                    .version(new Version(5, 3, 0))
+                    .formFactor(formFactor)
+                    .supportedCapabilities(supportedCapabilities)
+                    .isSky(isSky)
+                    .build();
         }
     }
 

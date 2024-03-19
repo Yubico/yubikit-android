@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 Yubico.
+ * Copyright (C) 2019-2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package com.yubico.yubikit.management;
 
+import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.UsbInterface;
@@ -38,6 +39,7 @@ import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.smartcard.SmartCardProtocol;
 import com.yubico.yubikit.core.util.Callback;
 import com.yubico.yubikit.core.util.Result;
+import com.yubico.yubikit.core.util.Tlvs;
 
 import org.slf4j.LoggerFactory;
 
@@ -46,6 +48,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.annotation.Nullable;
 
@@ -127,7 +131,7 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
         if (version.major == 3) {  // NEO, using the OTP application
             backend = new Backend<SmartCardProtocol>(protocol) {
                 @Override
-                byte[] readConfig() {
+                byte[] readConfig(int page) {
                     throw new UnsupportedOperationException("readConfig not supported on YubiKey NEO");
                 }
 
@@ -144,8 +148,8 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
         } else {
             backend = new Backend<SmartCardProtocol>(protocol) {
                 @Override
-                byte[] readConfig() throws IOException, CommandException {
-                    return delegate.sendAndReceive(new Apdu(0, INS_READ_CONFIG, 0, 0, null));
+                byte[] readConfig(int page) throws IOException, CommandException {
+                    return delegate.sendAndReceive(new Apdu(0, INS_READ_CONFIG, page, 0, null));
                 }
 
                 @Override
@@ -177,8 +181,8 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
         }
         backend = new Backend<OtpProtocol>(protocol) {
             @Override
-            byte[] readConfig() throws IOException, CommandException {
-                byte[] response = delegate.sendAndReceive(CMD_YK4_CAPABILITIES, null, null);
+            byte[] readConfig(int page) throws IOException, CommandException {
+                byte[] response = delegate.sendAndReceive(CMD_YK4_CAPABILITIES, int2bytes(page), null);
                 if (ChecksumUtils.checkCrc(response, response[0] + 1 + 2)) {
                     return Arrays.copyOf(response, response[0] + 1);
                 }
@@ -209,9 +213,9 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
         version = protocol.getVersion();
         backend = new Backend<FidoProtocol>(protocol) {
             @Override
-            byte[] readConfig() throws IOException {
-                Logger.debug(logger, "Reading fido config...");
-                return delegate.sendAndReceive(CTAP_READ_CONFIG, new byte[0], null);
+            byte[] readConfig(int page) throws IOException {
+                Logger.debug(logger, "Reading fido config page {}...", page);
+                return delegate.sendAndReceive(CTAP_READ_CONFIG, int2bytes(page), null);
             }
 
             @Override
@@ -267,7 +271,26 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
      */
     public DeviceInfo getDeviceInfo() throws IOException, CommandException {
         require(FEATURE_DEVICE_INFO);
-        return DeviceInfo.parse(backend.readConfig(), version);
+
+        final Map<Integer, byte[]> tlvs = new HashMap<>();
+        boolean hasMoreData = true;
+        int page = 0;
+
+        while (hasMoreData) {
+            final byte[] encoded = backend.readConfig(page);
+            if (encoded.length - 1 != encoded[0]) {
+                throw new BadResponseException("Invalid length");
+            }
+            Map<Integer, byte[]> decoded =
+                    Tlvs.decodeMap(Arrays.copyOfRange(encoded, 1, encoded.length));
+            byte[] moreData = decoded.get(0x10); // YK_MORE_DEVICE_INFO
+            hasMoreData = moreData != null &&
+                    moreData.length == 1 &&
+                    moreData[0] == (byte) 1;
+            tlvs.putAll(decoded);
+            page++;
+        }
+        return DeviceInfo.parseTlvs(tlvs, version);
     }
 
     /**
@@ -342,7 +365,11 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
             this.delegate = delegate;
         }
 
-        abstract byte[] readConfig() throws IOException, CommandException;
+        byte[] readConfig() throws IOException, CommandException {
+            return readConfig(0);
+        }
+
+        abstract byte[] readConfig(int page) throws IOException, CommandException;
 
         abstract void writeConfig(byte[] config) throws IOException, CommandException;
 
@@ -351,6 +378,10 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
         @Override
         public void close() throws IOException {
             delegate.close();
+        }
+
+        static byte[] int2bytes(int value) {
+            return ByteBuffer.allocate(4).putInt(value).array();
         }
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Yubico.
+ * Copyright (C) 2020-2022,2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,7 @@ package com.yubico.yubikit.management;
 
 import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.Version;
-import com.yubico.yubikit.core.application.BadResponseException;
-import com.yubico.yubikit.core.util.Tlvs;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -41,6 +38,7 @@ public class DeviceInfo {
     private static final int TAG_NFC_SUPPORTED = 0x0d;
     private static final int TAG_NFC_ENABLED = 0x0e;
     private static final int TAG_CONFIG_LOCKED = 0x0a;
+    private static final int TAG_PIN_COMPLEXITY = 0x16;
 
     private final DeviceConfig config;
     @Nullable
@@ -51,27 +49,52 @@ public class DeviceInfo {
     private final boolean isLocked;
     private final boolean isFips;
     private final boolean isSky;
+    private final boolean pinComplexity;
+
+    private DeviceInfo(Builder builder) {
+        this.config = builder.config;
+        this.serialNumber = builder.serialNumber;
+        this.version = builder.version;
+        this.formFactor = builder.formFactor;
+        this.supportedCapabilities = builder.supportedCapabilities;
+        this.isLocked = builder.isLocked;
+        this.isFips = builder.isFips;
+        this.isSky = builder.isSky;
+        this.pinComplexity = builder.pinComplexity;
+    }
 
     /**
      * Constructs a new DeviceInfo.
-     * @param config the mutable configuration of the YubiKey
-     * @param serialNumber the YubiKeys serial number
-     * @param version the firmware version of the YubiKey
-     * @param formFactor the YubiKeys physical form factor
+     *
+     * @param config                the mutable configuration of the YubiKey
+     * @param serialNumber          the YubiKeys serial number
+     * @param version               the firmware version of the YubiKey
+     * @param formFactor            the YubiKeys physical form factor
      * @param supportedCapabilities the capabilities supported by the YubiKey
-     * @param isLocked whether or not the configuration is protected by a lock code
-     * @param isFips whether or not the YubiKey is a FIPS model
-     * @param isSky whether or not the YubiKey is a Security Key by Yubico model
+     * @param isLocked              whether or not the configuration is protected by a lock code
+     * @param isFips                whether or not the YubiKey is a FIPS model
+     * @param isSky                 whether or not the YubiKey is a Security Key by Yubico model
+     * @deprecated Replaced with {@link Builder#build()}.
      */
-    public DeviceInfo(DeviceConfig config, @Nullable Integer serialNumber, Version version, FormFactor formFactor, Map<Transport, Integer> supportedCapabilities, boolean isLocked, boolean isFips, boolean isSky) {
-        this.config = config;
-        this.serialNumber = serialNumber;
-        this.version = version;
-        this.formFactor = formFactor;
-        this.supportedCapabilities = supportedCapabilities;
-        this.isLocked = isLocked;
-        this.isFips = isFips;
-        this.isSky = isSky;
+    @Deprecated
+    public DeviceInfo(
+            DeviceConfig config,
+            @Nullable Integer serialNumber,
+            Version version,
+            FormFactor formFactor,
+            Map<Transport, Integer> supportedCapabilities,
+            boolean isLocked,
+            boolean isFips,
+            boolean isSky) {
+        this(new Builder()
+                .config(config)
+                .serialNumber(serialNumber)
+                .version(version)
+                .formFactor(formFactor)
+                .supportedCapabilities(supportedCapabilities)
+                .isLocked(isLocked)
+                .isFips(isFips)
+                .isSky(isSky));
     }
 
     /**
@@ -150,19 +173,20 @@ public class DeviceInfo {
         return isSky;
     }
 
-    static DeviceInfo parse(byte[] response, Version defaultVersion) throws BadResponseException {
-        int length = response[0] & 0xff;
-        if (length != response.length - 1) {
-            throw new BadResponseException("Invalid length");
-        }
+    /**
+     * Returns value of PIN complexity
+     */
+    public boolean getPinComplexity() {
+        return pinComplexity;
+    }
 
-        Map<Integer, byte[]> data = Tlvs.decodeMap(Arrays.copyOfRange(response, 1, response.length));
-
+    static DeviceInfo parseTlvs(Map<Integer, byte[]> data, Version defaultVersion) {
         boolean isLocked = readInt(data.get(TAG_CONFIG_LOCKED)) == 1;
         int serialNumber = readInt(data.get(TAG_SERIAL_NUMBER));
         int formFactorTagData = readInt(data.get(TAG_FORMFACTOR));
         boolean isFips = (formFactorTagData & 0x80) != 0;
         boolean isSky = (formFactorTagData & 0x40) != 0;
+        boolean pinComplexity = readInt(data.get(TAG_PIN_COMPLEXITY)) == 1;
         FormFactor formFactor = FormFactor.valueOf(formFactorTagData);
 
         Version version;
@@ -195,22 +219,99 @@ public class DeviceInfo {
             enabledCapabilities.put(Transport.NFC, readInt(data.get(TAG_NFC_ENABLED)));
         }
 
-        return new DeviceInfo(
-                new DeviceConfig(
-                        enabledCapabilities,
-                        autoEjectTimeout,
-                        challengeResponseTimeout,
-                        deviceFlags
-                ),
-                serialNumber == 0 ? null : serialNumber,
-                version,
-                formFactor,
-                supportedCapabilities,
-                isLocked,
-                isFips,
-                isSky
-        );
+        DeviceConfig.Builder deviceConfigBuilder = new DeviceConfig.Builder()
+                .autoEjectTimeout(autoEjectTimeout)
+                .challengeResponseTimeout(challengeResponseTimeout)
+                .deviceFlags(deviceFlags);
+
+        for (Transport transport : Transport.values()) {
+            if (enabledCapabilities.containsKey(transport)) {
+                deviceConfigBuilder.enabledCapabilities(
+                        transport,
+                        enabledCapabilities.get(transport)
+                );
+            }
+
+        }
+
+        return new DeviceInfo.Builder()
+                .config(deviceConfigBuilder.build())
+                .serialNumber(serialNumber == 0 ? null : serialNumber)
+                .version(version)
+                .formFactor(formFactor)
+                .supportedCapabilities(supportedCapabilities)
+                .isLocked(isLocked)
+                .isFips(isFips)
+                .isSky(isSky)
+                .pinComplexity(pinComplexity)
+                .build();
     }
+
+    public static class Builder {
+        private DeviceConfig config = new DeviceConfig.Builder().build();
+        @Nullable
+        private Integer serialNumber = null;
+        private Version version = new Version(0, 0, 0);
+        private FormFactor formFactor = FormFactor.UNKNOWN;
+        private Map<Transport, Integer> supportedCapabilities = new HashMap<>();
+        private boolean isLocked = false;
+        private boolean isFips = false;
+        private boolean isSky = false;
+        private boolean pinComplexity = false;
+
+        public Builder() {
+        }
+
+        public DeviceInfo build() {
+            return new DeviceInfo(this);
+        }
+
+        public Builder config(DeviceConfig deviceConfig) {
+            this.config = deviceConfig;
+            return this;
+        }
+
+        public Builder serialNumber(@Nullable Integer serialNumber) {
+            this.serialNumber = serialNumber;
+            return this;
+        }
+
+        public Builder version(Version version) {
+            this.version = version;
+            return this;
+        }
+
+        public Builder formFactor(FormFactor formFactor) {
+            this.formFactor = formFactor;
+            return this;
+        }
+
+        public Builder supportedCapabilities(Map<Transport, Integer> supportedCapabilities) {
+            this.supportedCapabilities = supportedCapabilities;
+            return this;
+        }
+
+        public Builder isLocked(boolean locked) {
+            this.isLocked = locked;
+            return this;
+        }
+
+        public Builder isFips(boolean fips) {
+            this.isFips = fips;
+            return this;
+        }
+
+        public Builder isSky(boolean sky) {
+            this.isSky = sky;
+            return this;
+        }
+
+        public Builder pinComplexity(boolean pinComplexity) {
+            this.pinComplexity = pinComplexity;
+            return this;
+        }
+    }
+
 
     /**
      * Reads an int from a variable length byte array.
@@ -238,6 +339,7 @@ public class DeviceInfo {
                 ", isLocked=" + isLocked +
                 ", isFips=" + isFips +
                 ", isSky=" + isSky +
+                ", pinComplexity=" + pinComplexity +
                 '}';
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Yubico.
+ * Copyright (C) 2022-2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -146,16 +146,11 @@ public class DeviceUtil {
         supportedCapabilities.put(Transport.USB, capabilities);
         supportedCapabilities.put(Transport.NFC, capabilities);
 
-        return new DeviceInfo(
-                new DeviceConfig.Builder().build(),
-                serial,
-                version,
-                FormFactor.UNKNOWN,
-                supportedCapabilities,
-                false,
-                false,
-                false);
-
+        return new DeviceInfo.Builder()
+                .serialNumber(serial)
+                .version(version)
+                .supportedCapabilities(supportedCapabilities)
+                .build();
     }
 
     static DeviceInfo readInfoOtp(OtpConnection connection, YubiKeyType keyType, int interfaces)
@@ -224,15 +219,11 @@ public class DeviceUtil {
             capabilities.put(Transport.USB, Capability.OTP.bit);
         }
 
-        return new DeviceInfo(
-                new DeviceConfig.Builder().build(), // defaults
-                serial,
-                version,
-                FormFactor.UNKNOWN,
-                capabilities,
-                false,
-                false,
-                false);
+        return new DeviceInfo.Builder()
+                .serialNumber(serial)
+                .version(version)
+                .supportedCapabilities(capabilities)
+                .build();
     }
 
     static DeviceInfo readInfoFido(FidoConnection connection, YubiKeyType keyType)
@@ -256,15 +247,11 @@ public class DeviceUtil {
                 supportedApps.put(Transport.NFC, supportedApps.get(Transport.USB));
             }
 
-            return new DeviceInfo(
-                    new DeviceConfig.Builder().build(), // defaults
-                    null,
-                    version,
-                    FormFactor.USB_A_KEYCHAIN,
-                    supportedApps,
-                    false,
-                    false,
-                    false);
+            return new DeviceInfo.Builder()
+                    .version(version)
+                    .formFactor(FormFactor.USB_A_KEYCHAIN)
+                    .supportedCapabilities(supportedApps)
+                    .build();
         }
     }
 
@@ -358,6 +345,7 @@ public class DeviceUtil {
         final boolean isSky = info.isSky() || keyType == YubiKeyType.SKY;
         final boolean isFips = info.isFips() ||
                 (version.isAtLeast(4, 4, 0) && version.isLessThan(4, 5, 0));
+        final boolean pinComplexity = info.getPinComplexity();
 
         // Set nfc_enabled if missing (pre YubiKey 5)
         if (info.hasTransport(Transport.NFC) && enabledNfcCapabilities == null) {
@@ -410,17 +398,17 @@ public class DeviceUtil {
             capabilities.put(Transport.NFC, supportedNfcCapabilities);
         }
 
-        return new DeviceInfo(
-                configBuilder.build(),
-                info.getSerialNumber(),
-                version,
-                formFactor,
-                capabilities,
-                info.isLocked(),
-                isFips,
-                isSky
-        );
-
+        return new DeviceInfo.Builder()
+                .config(configBuilder.build())
+                .version(version)
+                .formFactor(formFactor)
+                .serialNumber(info.getSerialNumber())
+                .supportedCapabilities(capabilities)
+                .isLocked(info.isLocked())
+                .isFips(isFips)
+                .isSky(isSky)
+                .pinComplexity(pinComplexity)
+                .build();
     }
 
     /**
