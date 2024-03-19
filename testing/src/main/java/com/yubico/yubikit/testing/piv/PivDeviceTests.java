@@ -22,7 +22,7 @@ import static com.yubico.yubikit.testing.piv.PivTestConstants.DEFAULT_PUK;
 import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.core.smartcard.SW;
-import com.yubico.yubikit.core.application.InvalidPinException;
+import com.yubico.yubikit.piv.InvalidPinException;
 import com.yubico.yubikit.piv.ManagementKeyType;
 import com.yubico.yubikit.piv.PivSession;
 
@@ -36,6 +36,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
+@SuppressWarnings("deprecation")
 public class PivDeviceTests {
 
     private static final Logger logger = LoggerFactory.getLogger(PivDeviceTests.class);
