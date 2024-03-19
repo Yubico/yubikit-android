@@ -79,7 +79,7 @@ public class UsbYubiKeyDevice implements YubiKeyDevice, Closeable {
         this.usbManager = usbManager;
     }
 
-    /** @noinspection BooleanMethodIsAlwaysInverted*/
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public boolean hasPermission() {
         return usbManager.hasPermission(usbDevice);
     }
