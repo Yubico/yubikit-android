@@ -76,12 +76,17 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
      * Support for writing DeviceConfig data to the YubiKey.
      */
     public static final Feature<ManagementSession> FEATURE_DEVICE_CONFIG = new Feature.Versioned<>("Device Config", 5, 0, 0);
+    /**
+     * Support for device-wide reset.
+     */
+    public static final Feature<ManagementSession> FEATURE_DEVICE_RESET = new Feature.Versioned<>("Device Reset", 5, 6, 0);
 
     // Smart card command constants
     private static final byte OTP_INS_CONFIG = 0x01;
     private static final byte INS_READ_CONFIG = 0x1d;
     private static final byte INS_WRITE_CONFIG = 0x1c;
     private static final byte INS_SET_MODE = 0x16;
+    private static final byte INS_DEVICE_RESET = 0x1f;
     private static final byte P1_DEVICE_CONFIG = 0x11;
 
     // OTP command constants
@@ -144,6 +149,11 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
                 void setMode(byte[] data) throws IOException, CommandException {
                     delegate.sendAndReceive(new Apdu(0, OTP_INS_CONFIG, CMD_DEVICE_CONFIG, 0, data));
                 }
+
+                @Override
+                void deviceReset() throws IOException, CommandException {
+                    throw new UnsupportedOperationException("deviceReset not supported on YubiKey NEO");
+                }
             };
         } else {
             backend = new Backend<SmartCardProtocol>(protocol) {
@@ -160,6 +170,11 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
                 @Override
                 void setMode(byte[] data) throws IOException, CommandException {
                     delegate.sendAndReceive(new Apdu(0, INS_SET_MODE, P1_DEVICE_CONFIG, 0, data));
+                }
+
+                @Override
+                void deviceReset() throws IOException, CommandException {
+                    delegate.sendAndReceive(new Apdu(0, INS_DEVICE_RESET, 0, 0, null));
                 }
             };
         }
@@ -198,6 +213,11 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
             void setMode(byte[] data) throws IOException, CommandException {
                 delegate.sendAndReceive(CMD_DEVICE_CONFIG, data, null);
             }
+
+            @Override
+            void deviceReset() {
+                throw new UnsupportedOperationException("deviceReset is only available over CCID");
+            }
         };
         logCtor(connection);
     }
@@ -226,6 +246,11 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
             @Override
             void setMode(byte[] data) throws IOException {
                 delegate.sendAndReceive(CTAP_YUBIKEY_DEVICE_CONFIG, data, null);
+            }
+
+            @Override
+            void deviceReset() {
+                throw new UnsupportedOperationException("deviceReset is only available over CCID");
             }
         };
         logCtor(connection);
@@ -358,6 +383,20 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
         }
     }
 
+    /**
+     * Perform a device-wide reset in Bio Multi-protocol Edition devices.
+     * <p>
+     * This functionality requires support for {@link #FEATURE_DEVICE_RESET}.
+     *
+     * @throws IOException   in case of connection error
+     * @throws ApduException in case of communication or not supported operation error
+     */
+    public void deviceReset() throws IOException, CommandException {
+        require(FEATURE_DEVICE_RESET);
+        backend.deviceReset();
+        Logger.info(logger, "Device reset");
+    }
+
     private static abstract class Backend<T extends Closeable> implements Closeable {
         protected final T delegate;
 
@@ -374,6 +413,8 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
         abstract void writeConfig(byte[] config) throws IOException, CommandException;
 
         abstract void setMode(byte[] data) throws IOException, CommandException;
+
+        abstract void deviceReset() throws IOException, CommandException;
 
         @Override
         public void close() throws IOException {
