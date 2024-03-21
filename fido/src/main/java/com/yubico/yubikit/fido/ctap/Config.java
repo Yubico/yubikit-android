@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Yubico.
+ * Copyright (C) 2023-2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -174,12 +174,14 @@ public class Config {
                                 @Nullable Boolean forceChangePin) throws IOException, CommandException {
         Logger.debug(logger, "Setting minimum PIN length");
         Map<Byte, Object> parameters = new HashMap<>();
-        parameters.put(PARAM_NEW_MIN_PIN_LENGTH, minPinLength);
-        parameters.put(PARAM_MIN_PIN_LENGTH_RPIDS, rpIds);
-        parameters.put(PARAM_FORCE_CHANGE_PIN, forceChangePin != null && forceChangePin);
+        if (minPinLength != null) parameters.put(PARAM_NEW_MIN_PIN_LENGTH, minPinLength);
+        if (rpIds != null) parameters.put(PARAM_MIN_PIN_LENGTH_RPIDS, rpIds);
+        if (forceChangePin != null) parameters.put(PARAM_FORCE_CHANGE_PIN, forceChangePin);
 
-        call(CMD_SET_MIN_PIN_LENGTH, parameters);
-        Logger.info(logger, "Minimum PIN length set");
+        call(CMD_SET_MIN_PIN_LENGTH, parameters.isEmpty() ? null : parameters);
+
+        if (minPinLength != null) Logger.info(logger, "Minimum PIN length set");
+        if (forceChangePin != null) Logger.info(logger, "ForcePINChange set");
     }
 
     /**
