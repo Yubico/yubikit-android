@@ -16,25 +16,25 @@
 
 package com.yubico.yubikit.management;
 
-import com.yubico.yubikit.core.application.BadResponseException;
-import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.UsbInterface;
 import com.yubico.yubikit.core.Version;
 import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.YubiKeyDevice;
-import com.yubico.yubikit.core.smartcard.AppId;
 import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
 import com.yubico.yubikit.core.application.ApplicationSession;
+import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.application.CommandException;
 import com.yubico.yubikit.core.application.Feature;
 import com.yubico.yubikit.core.fido.FidoConnection;
 import com.yubico.yubikit.core.fido.FidoProtocol;
+import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.otp.ChecksumUtils;
 import com.yubico.yubikit.core.otp.OtpConnection;
 import com.yubico.yubikit.core.otp.OtpProtocol;
 import com.yubico.yubikit.core.smartcard.Apdu;
 import com.yubico.yubikit.core.smartcard.ApduException;
+import com.yubico.yubikit.core.smartcard.AppId;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.smartcard.SmartCardProtocol;
 import com.yubico.yubikit.core.util.Callback;
@@ -159,6 +159,7 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
             backend = new Backend<SmartCardProtocol>(protocol) {
                 @Override
                 byte[] readConfig(int page) throws IOException, CommandException {
+                    Logger.debug(logger, "Reading config page {}...", page);
                     return delegate.sendAndReceive(new Apdu(0, INS_READ_CONFIG, page, 0, null));
                 }
 
@@ -197,7 +198,8 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
         backend = new Backend<OtpProtocol>(protocol) {
             @Override
             byte[] readConfig(int page) throws IOException, CommandException {
-                byte[] response = delegate.sendAndReceive(CMD_YK4_CAPABILITIES, int2bytes(page), null);
+                Logger.debug(logger, "Reading config page {}...", page);
+                byte[] response = delegate.sendAndReceive(CMD_YK4_CAPABILITIES, pagePayload(page), null);
                 if (ChecksumUtils.checkCrc(response, response[0] + 1 + 2)) {
                     return Arrays.copyOf(response, response[0] + 1);
                 }
@@ -234,8 +236,8 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
         backend = new Backend<FidoProtocol>(protocol) {
             @Override
             byte[] readConfig(int page) throws IOException {
-                Logger.debug(logger, "Reading fido config page {}...", page);
-                return delegate.sendAndReceive(CTAP_READ_CONFIG, int2bytes(page), null);
+                Logger.debug(logger, "Reading config page {}...", page);
+                return delegate.sendAndReceive(CTAP_READ_CONFIG, pagePayload(page), null);
             }
 
             @Override
@@ -420,15 +422,18 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
         public void close() throws IOException {
             delegate.close();
         }
-
-        static byte[] int2bytes(int value) {
-            return ByteBuffer.allocate(4).putInt(value).array();
-        }
     }
 
     private void logCtor(YubiKeyConnection connection) {
         Logger.debug(logger, "Management session initialized for connection={}, version={}",
                 connection.getClass().getSimpleName(),
                 getVersion());
+    }
+
+    private static byte[] pagePayload(int page) {
+        if (page > 255 || page < 0) {
+            throw new IllegalArgumentException("Invalid page value " + page);
+        }
+        return new byte[]{(byte) page};
     }
 }
