@@ -390,7 +390,7 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
     }
 
     private static byte[] pagePayload(int page) {
-        if (page > 255 || page < Byte.MIN_VALUE) {
+        if (page > 255 || page < 0) {
             throw new IllegalArgumentException("Invalid page value " + page);
         }
         return new byte[]{(byte) page};
