@@ -1,3 +1,15 @@
+* Version 2.5.0 (released 2024-03-25)
+ ** fido module:
+  - added support for authenticatorBioEnrollment
+  - fixed setMinPinLength implementation
+  - fixed handling of UserVerificationRequirement.DISCOURAGED
+ ** management module:
+  - deprecated constructors of DeviceInfo
+  - added DeviceInfo.Builder which replaces deprecated constructors
+  - added support for reading all pages of YubiKey configuration
+  - added support for device wide reset
+ ** general updates:
+  - updated build dependencies and libraries
 * Version 2.4.0 (released 2023-11-21)
  ** fido module (new):
   - support for WebAuthn Level 2
