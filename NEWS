@@ -1,4 +1,4 @@
-* Version 2.5.0 (unreleased)
+* Version 2.5.0 (released 2024-03-25)
  ** fido module:
   - added support for authenticatorBioEnrollment
   - fixed setMinPinLength implementation
