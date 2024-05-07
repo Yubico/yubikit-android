@@ -31,13 +31,13 @@ import com.yubico.yubikit.android.app.ui.getSecret
 import com.yubico.yubikit.core.smartcard.ApduException
 import com.yubico.yubikit.core.smartcard.SW
 import com.yubico.yubikit.core.util.RandomUtils
+import com.yubico.yubikit.oath.Base32
 import com.yubico.yubikit.oath.CredentialData
 import com.yubico.yubikit.oath.HashAlgorithm
 import com.yubico.yubikit.oath.OathSession
 import com.yubico.yubikit.oath.OathType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import org.apache.commons.codec.binary.Base32
 
 class OathFragment : YubiKeyFragment<OathSession, OathViewModel>() {
     override val viewModel: OathViewModel by activityViewModels()
@@ -107,13 +107,13 @@ class OathFragment : YubiKeyFragment<OathSession, OathViewModel>() {
         }
 
         binding.textLayoutKey.setEndIconOnClickListener {
-            binding.editTextKey.setText(Base32().encodeToString(RandomUtils.getRandomBytes(10)))
+            binding.editTextKey.setText(Base32.encode(RandomUtils.getRandomBytes(10)))
         }
-        binding.editTextKey.setText(Base32().encodeToString(RandomUtils.getRandomBytes(10)))
+        binding.editTextKey.setText(Base32.encode(RandomUtils.getRandomBytes(10)))
 
         binding.btnSave.setOnClickListener {
             try {
-                val secret = Base32().decode(binding.editTextKey.text.toString())
+                val secret = Base32.decode(binding.editTextKey.text.toString())
                 val issuer = binding.editTextIssuer.text.toString()
                 if (issuer.isBlank()) {
                     binding.editTextIssuer.error = "Issuer must not be empty"

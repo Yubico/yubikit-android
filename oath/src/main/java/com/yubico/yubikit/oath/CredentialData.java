@@ -18,8 +18,6 @@ package com.yubico.yubikit.oath;
 
 import com.yubico.yubikit.core.util.Pair;
 
-import org.apache.commons.codec.binary.Base32;
-
 import java.io.Serializable;
 import java.net.URI;
 import java.util.Arrays;
@@ -291,11 +289,10 @@ public class CredentialData implements Serializable {
      */
     private static byte[] decodeSecret(String secret) throws ParseUriException {
         secret = secret.toUpperCase();
-        Base32 base32 = new Base32();
-        if (base32.isInAlphabet(secret)) {
-            return base32.decode(secret);
+        try {
+            return Base32.decode(secret);
+        } catch (IllegalArgumentException illegalArgumentException) {
+            throw new ParseUriException("secret must be base32 encoded");
         }
-
-        throw new ParseUriException("secret must be base32 encoded");
     }
 }
