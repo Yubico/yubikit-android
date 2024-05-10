@@ -26,7 +26,7 @@ import java.util.Arrays;
  */
 @SuppressWarnings("SpellCheckingInspection")
 public class Base32 {
-    private static final char[] ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567=".toCharArray();
+    private static final char[] ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567".toCharArray();
 
     private static final char PADDING = '=';
 
@@ -64,7 +64,26 @@ public class Base32 {
     }
 
     public static boolean isValid(String encoded) {
-        return encoded.matches("[A-Z2-7=]*");
+        if (!encoded.matches("^$|^[A-Z2-7]{2,}(=*)$")) {
+            return false;
+        }
+
+        int finalUnitLength = encoded.length() % 8;
+        int paddingIndex = encoded.indexOf("=");
+        if (paddingIndex == -1) {
+            // no padding; input is valid only if a correct padding can be appended
+            return finalUnitLength == 0 || finalUnitLength == 7 || finalUnitLength == 5 ||
+                    finalUnitLength == 4 || finalUnitLength == 2;
+        }
+
+        if (finalUnitLength != 0) {
+            // wrong input length
+            return false;
+        }
+
+        int paddingLength = encoded.length() - paddingIndex;
+        // padding can only be 1, 3, 4 or 6 characters long, otherwise this is not a valid input
+        return paddingLength == 1 || paddingLength == 3 || paddingLength == 4 || paddingLength == 6;
     }
 
     public static byte[] decode(String encoded) {
@@ -105,17 +124,6 @@ public class Base32 {
             byte v5 = getValue(c5);
             byte v6 = getValue(c6);
             byte v7 = getValue(c7);
-
-            // validate padding characters
-            if (c0 == PADDING || c1 == PADDING) {
-                throw new IllegalArgumentException("Invalid base32 padding");
-            }
-
-            if ((c2 == PADDING && c3 != PADDING) ||
-                    (c3 == PADDING && c4 != PADDING) || (c4 == PADDING && c5 != PADDING) ||
-                    (c5 == PADDING && c6 != PADDING) || (c6 == PADDING && c7 != PADDING)) {
-                throw new IllegalArgumentException("Non-base32 digit found");
-            }
 
             // build result until padding is found
             bb.put((byte) (v0 << 3 | v1 >> 2));

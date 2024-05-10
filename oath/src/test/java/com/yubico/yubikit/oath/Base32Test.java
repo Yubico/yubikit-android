@@ -32,7 +32,14 @@ public class Base32Test {
     @Test
     public void testValidInput() {
         assertTrue(Base32.isValid(""));
-        assertTrue(Base32.isValid("ABCDEFGHIJKLMNOPQRSTUVWXYZ234567="));
+        assertTrue(Base32.isValid("ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"));
+        assertTrue(Base32.isValid("AA======"));
+        assertTrue(Base32.isValid("MZXQ===="));
+        assertTrue(Base32.isValid("AA"));
+        assertTrue(Base32.isValid("AAAA"));
+        assertTrue(Base32.isValid("AAAAA"));
+        assertTrue(Base32.isValid("AAAAAAA"));
+
     }
 
     @Test
@@ -40,7 +47,22 @@ public class Base32Test {
         assertFalse(Base32.isValid("0189"));
         assertFalse(Base32.isValid(";.*"));
         assertFalse(Base32.isValid("😀"));
-        assertFalse(Base32.isValid("abcdefghijklmnopqrstuvwxyz234567="));
+        assertFalse(Base32.isValid("abcdefghijklmnopqrstuvwxyz234567"));
+        assertFalse(Base32.isValid("AA="));
+        assertFalse(Base32.isValid("AA=="));
+        assertFalse(Base32.isValid("AA==="));
+        assertFalse(Base32.isValid("AA===="));
+        assertFalse(Base32.isValid("AA====="));
+        assertFalse(Base32.isValid("AA======="));
+        assertFalse(Base32.isValid("A"));
+        assertFalse(Base32.isValid("AAA"));
+        assertFalse(Base32.isValid("AAAAAA"));
+        assertFalse(Base32.isValid("="));
+        assertFalse(Base32.isValid("=="));
+        assertFalse(Base32.isValid("==="));
+        assertFalse(Base32.isValid("AAAAAAA=A"));
+        assertFalse(Base32.isValid("MZ=XW6YTB"));
+        assertFalse(Base32.isValid("MZXQ=="));
     }
 
     @Test
@@ -60,41 +82,79 @@ public class Base32Test {
 
     @Test
     public void testDecode() {
-        assertArrayEquals("".getBytes(), Base32.decode(""));
-        assertArrayEquals("f".getBytes(), Base32.decode("MY"));
         assertArrayEquals("f".getBytes(), Base32.decode("MY======"));
-        assertArrayEquals("fo".getBytes(), Base32.decode("MZXQ"));
         assertArrayEquals("fo".getBytes(), Base32.decode("MZXQ===="));
-        assertArrayEquals("foo".getBytes(), Base32.decode("MZXW6"));
         assertArrayEquals("foo".getBytes(), Base32.decode("MZXW6==="));
-        assertArrayEquals("foob".getBytes(), Base32.decode("MZXW6YQ"));
         assertArrayEquals("foob".getBytes(), Base32.decode("MZXW6YQ="));
         assertArrayEquals("fooba".getBytes(), Base32.decode("MZXW6YTB"));
-        assertArrayEquals("foobar".getBytes(), Base32.decode("MZXW6YTBOI"));
         assertArrayEquals("foobar".getBytes(), Base32.decode("MZXW6YTBOI======"));
-        assertArrayEquals("yubikit-sdk 2.X.0   !".getBytes(), Base32.decode("PF2WE2LLNF2C243ENMQDELSYFYYCAIBAEE"));
         assertArrayEquals("yubikit-sdk 2.X.0   !".getBytes(), Base32.decode("PF2WE2LLNF2C243ENMQDELSYFYYCAIBAEE======"));
         assertArrayEquals("The quick brown fox jumps over the lazy dog.".getBytes(), Base32.decode("KRUGKIDROVUWG2ZAMJZG653OEBTG66BANJ2W24DTEBXXMZLSEB2GQZJANRQXU6JAMRXWOLQ="));
-        assertArrayEquals(Codec.fromHex("b6481c8be8f22179b58a"), Base32.decode("WZEBZC7I6IQXTNMK"));
         assertArrayEquals(Codec.fromHex("69b6481c8baba2b60e8f22179b58cd56"), Base32.decode("NG3EQHELVORLMDUPEILZWWGNKY======"));
     }
 
-    @Test //(expected = IllegalArgumentException.class)
+    @Test
+    public void testDecodeWithoutPadding() {
+        assertArrayEquals("".getBytes(), Base32.decode(""));
+        assertArrayEquals("f".getBytes(), Base32.decode("MY"));
+        assertArrayEquals("fo".getBytes(), Base32.decode("MZXQ"));
+        assertArrayEquals("foo".getBytes(), Base32.decode("MZXW6"));
+        assertArrayEquals("foob".getBytes(), Base32.decode("MZXW6YQ"));
+        assertArrayEquals("fooba".getBytes(), Base32.decode("MZXW6YTB"));
+        assertArrayEquals("foobar".getBytes(), Base32.decode("MZXW6YTBOI"));
+        assertArrayEquals("yubikit-sdk 2.X.0   !".getBytes(), Base32.decode("PF2WE2LLNF2C243ENMQDELSYFYYCAIBAEE"));
+        assertArrayEquals("The quick brown fox jumps over the lazy dog.".getBytes(), Base32.decode("KRUGKIDROVUWG2ZAMJZG653OEBTG66BANJ2W24DTEBXXMZLSEB2GQZJANRQXU6JAMRXWOLQ"));
+        assertArrayEquals(Codec.fromHex("b6481c8be8f22179b58a"), Base32.decode("WZEBZC7I6IQXTNMK"));
+    }
+
+    @Test
     public void testDecodeThrows() {
+        byte[] invalid = new byte[]{0};
+
         try {
-            assertArrayEquals("invalid".getBytes(), Base32.decode("invalidinput"));
+            assertArrayEquals(invalid, Base32.decode("invalidinput"));
             fail();
         } catch (IllegalArgumentException ignored) {
         }
 
         try {
-            assertArrayEquals("".getBytes(), Base32.decode("M="));
+            assertArrayEquals(invalid, Base32.decode("M="));
             fail();
         } catch (IllegalArgumentException ignored) {
         }
 
         try {
-            assertArrayEquals("".getBytes(), Base32.decode("A=A"));
+            assertArrayEquals(invalid, Base32.decode("A=A"));
+            fail();
+        } catch (IllegalArgumentException ignored) {
+        }
+
+        try {
+            assertArrayEquals(invalid, Base32.decode("="));
+            fail();
+        } catch (IllegalArgumentException ignored) {
+        }
+
+        try {
+            assertArrayEquals(invalid, Base32.decode("MZXQ=="));
+            fail();
+        } catch (IllegalArgumentException ignored) {
+        }
+
+        try {
+            assertArrayEquals(invalid, Base32.decode("A"));
+            fail();
+        } catch (IllegalArgumentException ignored) {
+        }
+
+        try {
+            assertArrayEquals(invalid, Base32.decode("AAA"));
+            fail();
+        } catch (IllegalArgumentException ignored) {
+        }
+
+        try {
+            assertArrayEquals(invalid, Base32.decode("AAAAAA"));
             fail();
         } catch (IllegalArgumentException ignored) {
         }
