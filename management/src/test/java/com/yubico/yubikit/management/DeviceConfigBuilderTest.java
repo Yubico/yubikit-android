@@ -16,7 +16,11 @@
 
 package com.yubico.yubikit.management;
 
-import static org.junit.Assert.assertEquals;
+import static com.yubico.yubikit.management.TestUtil.assertByteEquals;
+import static com.yubico.yubikit.management.TestUtil.assertIntegerEquals;
+import static com.yubico.yubikit.management.TestUtil.assertIsTrue;
+import static com.yubico.yubikit.management.TestUtil.assertShortEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
 import com.yubico.yubikit.core.Transport;
@@ -24,7 +28,6 @@ import com.yubico.yubikit.core.Transport;
 import org.junit.Test;
 
 public class DeviceConfigBuilderTest {
-
     @Test
     public void testDefaults() {
         DeviceConfig defaultConfig = new DeviceConfig.Builder().build();
@@ -33,21 +36,25 @@ public class DeviceConfigBuilderTest {
         assertNull(defaultConfig.getAutoEjectTimeout());
         assertNull(defaultConfig.getChallengeResponseTimeout());
         assertNull(defaultConfig.getDeviceFlags());
+        assertNull(defaultConfig.getNfcRestricted());
     }
 
     @Test
     public void testBuild() {
-        DeviceConfig defaultConfig = new DeviceConfig.Builder()
+        DeviceConfig config = new DeviceConfig.Builder()
                 .enabledCapabilities(Transport.USB, 12345)
                 .enabledCapabilities(Transport.NFC, 67890)
-                .autoEjectTimeout((short)128)
-                .challengeResponseTimeout((byte)55)
+                .autoEjectTimeout((short) 128)
+                .challengeResponseTimeout((byte) 55)
                 .deviceFlags(98765)
+                .nfcRestricted(true)
                 .build();
-        assertEquals(Integer.valueOf(12345), defaultConfig.getEnabledCapabilities(Transport.USB));
-        assertEquals(Integer.valueOf(67890), defaultConfig.getEnabledCapabilities(Transport.NFC));
-        assertEquals(Short.valueOf((short)128), defaultConfig.getAutoEjectTimeout());
-        assertEquals(Byte.valueOf((byte)55), defaultConfig.getChallengeResponseTimeout());
-        assertEquals(Integer.valueOf(98765), defaultConfig.getDeviceFlags());
+        assertIntegerEquals(12345, config.getEnabledCapabilities(Transport.USB));
+        assertIntegerEquals(67890, config.getEnabledCapabilities(Transport.NFC));
+        assertShortEquals(128, config.getAutoEjectTimeout());
+        assertByteEquals(55, config.getChallengeResponseTimeout());
+        assertIntegerEquals(98765, config.getDeviceFlags());
+        assertNotNull(config.getNfcRestricted());
+        assertIsTrue(config.getNfcRestricted());
     }
 }
