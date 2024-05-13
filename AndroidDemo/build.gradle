@@ -77,7 +77,6 @@ dependencies {
     implementation "androidx.navigation:navigation-dynamic-features-fragment:$nav_version"
 
     implementation 'org.bouncycastle:bcpkix-jdk15to18:1.77'
-    implementation 'commons-codec:commons-codec:1.16.1' // for Base32
 
     implementation 'com.github.tony19:logback-android:3.0.0'
 
