@@ -16,6 +16,11 @@
 
 package com.yubico.yubikit.management;
 
+import static com.yubico.yubikit.management.Capability.FIDO2;
+import static com.yubico.yubikit.management.Capability.HSMAUTH;
+import static com.yubico.yubikit.management.Capability.OATH;
+import static com.yubico.yubikit.management.Capability.OPENPGP;
+import static com.yubico.yubikit.management.Capability.PIV;
 import static com.yubico.yubikit.management.TestUtil.defaultVersion;
 import static com.yubico.yubikit.management.TestUtil.emptyTlvs;
 import static com.yubico.yubikit.management.TestUtil.tlvs;
@@ -87,13 +92,23 @@ public class DeviceInfoTest {
     @Test
     public void testParseFipsCapable() {
         assertEquals(0, defaultInfo().getFipsCapable());
-        assertEquals(15, infoOf(0x14, new byte[]{0x00, 0x0F}).getFipsCapable());
+        assertEquals(FIDO2.bit, infoOf(0x14, new byte[]{0x00, 0x01}).getFipsCapable());
+        assertEquals(PIV.bit, infoOf(0x14, new byte[]{0x00, 0x02}).getFipsCapable());
+        assertEquals(OPENPGP.bit, infoOf(0x14, new byte[]{0x00, 0x04}).getFipsCapable());
+        assertEquals(OATH.bit, infoOf(0x14, new byte[]{0x00, 0x08}).getFipsCapable());
+        assertEquals(HSMAUTH.bit, infoOf(0x14, new byte[]{0x00, 0x10}).getFipsCapable());
+        assertEquals(PIV.bit | OATH.bit, infoOf(0x14, new byte[]{0x00, 0xA}).getFipsCapable());
     }
 
     @Test
     public void testParseFipsApproved() {
         assertEquals(0, defaultInfo().getFipsApproved());
-        assertEquals(31, infoOf(0x15, new byte[]{0x00, 0x1F}).getFipsApproved());
+        assertEquals(FIDO2.bit, infoOf(0x15, new byte[]{0x00, 0x01}).getFipsApproved());
+        assertEquals(PIV.bit, infoOf(0x15, new byte[]{0x00, 0x02}).getFipsApproved());
+        assertEquals(OPENPGP.bit, infoOf(0x15, new byte[]{0x00, 0x04}).getFipsApproved());
+        assertEquals(OATH.bit, infoOf(0x15, new byte[]{0x00, 0x08}).getFipsApproved());
+        assertEquals(HSMAUTH.bit, infoOf(0x15, new byte[]{0x00, 0x10}).getFipsApproved());
+        assertEquals(PIV.bit | OATH.bit, infoOf(0x15, new byte[]{0x00, 0xA}).getFipsApproved());
     }
 
     @Test

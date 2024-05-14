@@ -241,8 +241,8 @@ public class DeviceInfo {
         int formFactorTagData = readInt(data.get(TAG_FORMFACTOR));
         boolean isFips = (formFactorTagData & 0x80) != 0;
         boolean isSky = (formFactorTagData & 0x40) != 0;
-        int fipsCapable = readInt(data.get(TAG_FIPS_CAPABLE));
-        int fipsApproved = readInt(data.get(TAG_FIPS_APPROVED));
+        int fipsCapable = fromFips(readInt(data.get(TAG_FIPS_CAPABLE)));
+        int fipsApproved = fromFips(readInt(data.get(TAG_FIPS_APPROVED)));
         boolean pinComplexity = readInt(data.get(TAG_PIN_COMPLEXITY)) == 1;
         int resetBlocked = readInt(data.get(TAG_RESET_BLOCKED));
         FormFactor formFactor = FormFactor.valueOf(formFactorTagData);
@@ -410,6 +410,16 @@ public class DeviceInfo {
         }
     }
 
+    /**
+     * Convert value to use bits of the {@link Capability} enum
+     */
+    private static int fromFips(int fips) {
+        return (fips & 1) << 9 & Capability.FIDO2.bit |
+                (fips & 2) << 3 & Capability.PIV.bit |
+                (fips & 4) << 1 & Capability.OPENPGP.bit |
+                (fips & 8) << 2 & Capability.OATH.bit |
+                (fips & 16) << 4 & Capability.HSMAUTH.bit;
+    }
 
     /**
      * Reads an int from a variable length byte array.
