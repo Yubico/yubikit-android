@@ -24,12 +24,14 @@ import static com.yubico.yubikit.management.Capability.PIV;
 import static com.yubico.yubikit.management.TestUtil.defaultVersion;
 import static com.yubico.yubikit.management.TestUtil.emptyTlvs;
 import static com.yubico.yubikit.management.TestUtil.tlvs;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import com.yubico.yubikit.core.Version;
+import com.yubico.yubikit.testing.Codec;
 
 import org.junit.Test;
 
@@ -87,6 +89,17 @@ public class DeviceInfoTest {
         assertTrue(infoOf(0x04, new byte[]{0x40}).isSky());
         assertTrue(infoOf(0x04, new byte[]{(byte) 0xC0}).isSky());
         assertFalse(infoOf(0x04, new byte[]{(byte) 0x80}).isSky());
+    }
+
+    @Test
+    public void testParsePartNumber() {
+        assertArrayEquals(new byte[0], defaultInfo().getPartNumber());
+        assertArrayEquals(new byte[0], infoOf(0x13, new byte[0]).getPartNumber());
+        assertArrayEquals(new byte[]{0x40}, infoOf(0x13, new byte[]{0x40}).getPartNumber());
+        assertArrayEquals(Codec.fromHex("000102030405060708090A0B0C0D0E0F"),
+                infoOf(0x13, new byte[]{
+                        0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+                        0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F}).getPartNumber());
     }
 
     @Test

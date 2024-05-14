@@ -18,8 +18,10 @@ package com.yubico.yubikit.management;
 import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.Version;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import javax.annotation.Nullable;
 
@@ -38,6 +40,7 @@ public class DeviceInfo {
     private static final int TAG_NFC_SUPPORTED = 0x0d;
     private static final int TAG_NFC_ENABLED = 0x0e;
     private static final int TAG_CONFIG_LOCKED = 0x0a;
+    private static final int TAG_PART_NUMBER = 0x13;
     private static final int TAG_FIPS_CAPABLE = 0x14;
     private static final int TAG_FIPS_APPROVED = 0x15;
     private static final int TAG_PIN_COMPLEXITY = 0x16;
@@ -55,6 +58,7 @@ public class DeviceInfo {
     private final boolean isLocked;
     private final boolean isFips;
     private final boolean isSky;
+    private final byte[] partNumber;
     private final int fipsCapable;
     private final int fipsApproved;
     private final boolean pinComplexity;
@@ -73,6 +77,7 @@ public class DeviceInfo {
         this.isLocked = builder.isLocked;
         this.isFips = builder.isFips;
         this.isSky = builder.isSky;
+        this.partNumber = builder.partNumber.clone();
         this.fipsCapable = builder.fipsCapable;
         this.fipsApproved = builder.fipsApproved;
         this.pinComplexity = builder.pinComplexity;
@@ -192,6 +197,13 @@ public class DeviceInfo {
     }
 
     /**
+     * Returns part number
+     */
+    public byte[] getPartNumber() {
+        return partNumber.clone();
+    }
+
+    /**
      * Returns FIPS capable flags
      */
     public int getFipsCapable() {
@@ -241,6 +253,9 @@ public class DeviceInfo {
         int formFactorTagData = readInt(data.get(TAG_FORMFACTOR));
         boolean isFips = (formFactorTagData & 0x80) != 0;
         boolean isSky = (formFactorTagData & 0x40) != 0;
+        byte[] partNumber = data.containsKey(TAG_PART_NUMBER)
+                ? data.get(TAG_PART_NUMBER)
+                : new byte[0];
         int fipsCapable = fromFips(readInt(data.get(TAG_FIPS_CAPABLE)));
         int fipsApproved = fromFips(readInt(data.get(TAG_FIPS_APPROVED)));
         boolean pinComplexity = readInt(data.get(TAG_PIN_COMPLEXITY)) == 1;
@@ -307,6 +322,7 @@ public class DeviceInfo {
                 .isLocked(isLocked)
                 .isFips(isFips)
                 .isSky(isSky)
+                .partNumber(partNumber)
                 .fipsCapable(fipsCapable)
                 .fipsApproved(fipsApproved)
                 .pinComplexity(pinComplexity)
@@ -326,6 +342,7 @@ public class DeviceInfo {
         private boolean isLocked = false;
         private boolean isFips = false;
         private boolean isSky = false;
+        private byte[] partNumber = new byte[0];
         private int fipsCapable = 0;
         private int fipsApproved = 0;
         private boolean pinComplexity = false;
@@ -376,6 +393,12 @@ public class DeviceInfo {
 
         public Builder isSky(boolean sky) {
             this.isSky = sky;
+            return this;
+        }
+
+        public Builder partNumber(byte[] partNumber) {
+            Arrays.fill(this.partNumber, (byte) 0x00);
+            this.partNumber = partNumber.clone();
             return this;
         }
 
@@ -437,6 +460,37 @@ public class DeviceInfo {
     }
 
     @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        DeviceInfo that = (DeviceInfo) o;
+        return isLocked == that.isLocked &&
+                isFips == that.isFips &&
+                isSky == that.isSky &&
+                fipsCapable == that.fipsCapable &&
+                fipsApproved == that.fipsApproved &&
+                pinComplexity == that.pinComplexity &&
+                resetBlocked == that.resetBlocked &&
+                Objects.equals(config, that.config) &&
+                Objects.equals(serialNumber, that.serialNumber) &&
+                Objects.equals(version, that.version) &&
+                formFactor == that.formFactor &&
+                Objects.equals(supportedCapabilities, that.supportedCapabilities) &&
+                Arrays.equals(partNumber, that.partNumber) &&
+                Objects.equals(fpsVersion, that.fpsVersion) &&
+                Objects.equals(stmVersion, that.stmVersion);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Objects.hash(config, serialNumber, version, formFactor,
+                supportedCapabilities, isLocked, isFips, isSky, fipsCapable, fipsApproved,
+                pinComplexity, resetBlocked, fpsVersion, stmVersion);
+        result = 31 * result + Arrays.hashCode(partNumber);
+        return result;
+    }
+
+    @Override
     public String toString() {
         return "DeviceInfo{" +
                 "config=" + config +
@@ -447,7 +501,13 @@ public class DeviceInfo {
                 ", isLocked=" + isLocked +
                 ", isFips=" + isFips +
                 ", isSky=" + isSky +
+                ", partNumber=" + Arrays.toString(partNumber) +
+                ", fipsCapable=" + fipsCapable +
+                ", fipsApproved=" + fipsApproved +
                 ", pinComplexity=" + pinComplexity +
+                ", resetBlocked=" + resetBlocked +
+                ", fpsVersion=" + fpsVersion +
+                ", stmVersion=" + stmVersion +
                 '}';
     }
 }
