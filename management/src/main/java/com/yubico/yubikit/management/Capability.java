@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Yubico.
+ * Copyright (C) 2020-2022,2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +39,10 @@ public enum Capability {
      * Identifies the OATH application, implementing the YKOATH protocol.
      */
     OATH(0x0020),
+    /**
+     * Identifies the HSMAUTH application.
+     */
+    HSMAUTH(0x0100),
     /**
      * Identifies the FIDO2 (CTAP2) portion of the FIDO application.
      */
