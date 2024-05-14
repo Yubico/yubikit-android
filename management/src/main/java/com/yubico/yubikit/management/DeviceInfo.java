@@ -437,11 +437,24 @@ public class DeviceInfo {
      * Convert value to use bits of the {@link Capability} enum
      */
     private static int fromFips(int fips) {
-        return (fips & 1) << 9 & Capability.FIDO2.bit |
-                (fips & 2) << 3 & Capability.PIV.bit |
-                (fips & 4) << 1 & Capability.OPENPGP.bit |
-                (fips & 8) << 2 & Capability.OATH.bit |
-                (fips & 16) << 4 & Capability.HSMAUTH.bit;
+        int capabilities = 0;
+        if ((fips & 0b00000001) != 0) {
+            capabilities |= Capability.FIDO2.bit;
+        }
+        if ((fips & 0b00000010) != 0) {
+            capabilities |= Capability.PIV.bit;
+        }
+        if ((fips & 0b00000100) != 0) {
+            capabilities |= Capability.OPENPGP.bit;
+        }
+        if ((fips & 0b00001000) != 0) {
+            capabilities |= Capability.OATH.bit;
+        }
+        if ((fips & 0b00010000) != 0) {
+            capabilities |= Capability.HSMAUTH.bit;
+        }
+
+        return capabilities;
     }
 
     /**
