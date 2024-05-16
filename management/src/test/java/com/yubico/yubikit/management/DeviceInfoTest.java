@@ -24,14 +24,13 @@ import static com.yubico.yubikit.management.Capability.PIV;
 import static com.yubico.yubikit.management.TestUtil.defaultVersion;
 import static com.yubico.yubikit.management.TestUtil.emptyTlvs;
 import static com.yubico.yubikit.management.TestUtil.tlvs;
-import static org.junit.Assert.assertArrayEquals;
+import static com.yubico.yubikit.testing.Codec.fromHex;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import com.yubico.yubikit.core.Version;
-import com.yubico.yubikit.testing.Codec;
 
 import org.junit.Test;
 
@@ -93,13 +92,28 @@ public class DeviceInfoTest {
 
     @Test
     public void testParsePartNumber() {
-        assertArrayEquals(new byte[0], defaultInfo().getPartNumber());
-        assertArrayEquals(new byte[0], infoOf(0x13, new byte[0]).getPartNumber());
-        assertArrayEquals(new byte[]{0x40}, infoOf(0x13, new byte[]{0x40}).getPartNumber());
-        assertArrayEquals(Codec.fromHex("000102030405060708090A0B0C0D0E0F"),
-                infoOf(0x13, new byte[]{
-                        0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
-                        0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F}).getPartNumber());
+        // valid UTF-8
+        assertEquals("", defaultInfo().getPartNumber());
+        assertEquals("", infoOf(0x13, new byte[0]).getPartNumber());
+        assertEquals("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_=+-",
+                infoOf(0x13, fromHex("6162636465666768696A6B6C6D6E6F707172737475767778797A41" +
+                        "42434445464748494A4B4C4D4E4F505152535455565758595A303132333435363738395" +
+                        "F3D2B2D")).getPartNumber());
+        assertEquals("ÖÄÅöäåěščřžýáíúůĚŠČŘŽÝÁÍÚŮ",
+                infoOf(0x13, fromHex("C396C384C385C3B6C3A4C3A5C49BC5A1C48DC599C5BEC3BDC3A1C3" +
+                        "ADC3BAC5AFC49AC5A0C48CC598C5BDC39DC381C38DC39AC5AE")).getPartNumber());
+        assertEquals("😀",infoOf(0x13, fromHex("F09F9880")).getPartNumber());
+        assertEquals("0123456789ABCDEF",
+                infoOf(0x13, fromHex("30313233343536373839414243444546")).getPartNumber());
+
+        // invalid UTF-8
+        assertEquals("", infoOf(0x13, fromHex("c328")).getPartNumber());
+        assertEquals("", infoOf(0x13, fromHex("a0a1")).getPartNumber());
+        assertEquals("", infoOf(0x13, fromHex("e228a1")).getPartNumber());
+        assertEquals("", infoOf(0x13, fromHex("e28228")).getPartNumber());
+        assertEquals("", infoOf(0x13, fromHex("f0288cbc")).getPartNumber());
+        assertEquals("", infoOf(0x13, fromHex("f09028bc")).getPartNumber());
+        assertEquals("", infoOf(0x13, fromHex("f0288c28")).getPartNumber());
     }
 
     @Test
