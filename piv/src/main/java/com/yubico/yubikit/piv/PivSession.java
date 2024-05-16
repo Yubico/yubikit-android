@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 Yubico.
+ * Copyright (C) 2019-2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,18 +18,18 @@ package com.yubico.yubikit.piv;
 
 import static com.yubico.yubikit.core.util.ByteUtils.intToLength;
 
-import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.Version;
-import com.yubico.yubikit.core.keys.PrivateKeyValues;
-import com.yubico.yubikit.core.keys.PublicKeyValues;
-import com.yubico.yubikit.core.smartcard.AppId;
 import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
 import com.yubico.yubikit.core.application.ApplicationSession;
 import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.application.Feature;
+import com.yubico.yubikit.core.internal.Logger;
+import com.yubico.yubikit.core.keys.PrivateKeyValues;
+import com.yubico.yubikit.core.keys.PublicKeyValues;
 import com.yubico.yubikit.core.smartcard.Apdu;
 import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.core.smartcard.ApduFormat;
+import com.yubico.yubikit.core.smartcard.AppId;
 import com.yubico.yubikit.core.smartcard.SW;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.smartcard.SmartCardProtocol;
@@ -123,6 +123,11 @@ public class PivSession extends ApplicationSession<PivSession> {
         }
     };
 
+    /**
+     * Support for moving and deleting keys.
+     */
+    public static final Feature<PivSession> FEATURE_MOVE_KEY = new Feature.Versioned<>("Move or delete keys", 5, 7, 0);
+
     private static final int PIN_LEN = 8;
 
     // Special slot for the Management Key
@@ -136,6 +141,7 @@ public class PivSession extends ApplicationSession<PivSession> {
     private static final byte INS_AUTHENTICATE = (byte) 0x87;
     private static final byte INS_GET_DATA = (byte) 0xcb;
     private static final byte INS_PUT_DATA = (byte) 0xdb;
+    private static final byte INS_MOVE_KEY = (byte) 0xf6;
     private static final byte INS_GET_METADATA = (byte) 0xf7;
     private static final byte INS_GET_SERIAL = (byte) 0xf8;
     private static final byte INS_ATTEST = (byte) 0xf9;
@@ -1028,6 +1034,42 @@ public class PivSession extends ApplicationSession<PivSession> {
     @Deprecated
     public KeyType putKey(Slot slot, PrivateKey key, PinPolicy pinPolicy, TouchPolicy touchPolicy) throws IOException, ApduException {
         return putKey(slot, PrivateKeyValues.fromPrivateKey(key), pinPolicy, touchPolicy);
+    }
+
+    /**
+     * Move key from one slot to another. The source slot must not be {@link Slot#ATTESTATION} and the
+     * destination slot must be empty. This method requires authentication with management key
+     * {@link #authenticate}.
+     *
+     * @param sourceSlot      Slot to move the key from
+     * @param destinationSlot Slot to move the key to
+     * @throws IOException   in case of connection error
+     * @throws ApduException in case of an error response from the YubiKey
+     * @see Slot
+     */
+    public void moveKey(Slot sourceSlot, Slot destinationSlot) throws IOException, ApduException {
+        require(FEATURE_MOVE_KEY);
+        if (sourceSlot == Slot.ATTESTATION) {
+            throw new IllegalArgumentException("Can't move Attestation key (F9)");
+        }
+        Logger.debug(logger, "Move key from {} to {}", sourceSlot.getStringAlias(), destinationSlot.getStringAlias());
+        protocol.sendAndReceive(new Apdu(0, INS_MOVE_KEY, destinationSlot.value, sourceSlot.value, null));
+        Logger.info(logger, "Moved key from {} to {}", sourceSlot.getStringAlias(), destinationSlot.getStringAlias());
+    }
+
+    /**
+     * Delete key from slot. This method requires authentication with management key {@link #authenticate}.
+     *
+     * @param slot Slot to delete key from. It is not possible to delete key from {@link Slot#ATTESTATION}
+     * @throws IOException   in case of connection error
+     * @throws ApduException in case of an error response from the YubiKey
+     * @see Slot
+     */
+    public void deleteKey(Slot slot) throws IOException, ApduException {
+        require(FEATURE_MOVE_KEY);
+        Logger.debug(logger, "Delete key from {}", slot.getStringAlias());
+        protocol.sendAndReceive(new Apdu(0, INS_MOVE_KEY, 0xff, slot.value, null));
+        Logger.info(logger, "Deleted key from {}", slot.getStringAlias());
     }
 
     /**
