@@ -499,6 +499,8 @@ public class DeviceUtil {
                 namePartsList.add("Bio");
                 if (isFidoOnly) {
                     namePartsList.add("- FIDO Edition");
+                } else if ((supportedUsbCapabilities & Capability.PIV.bit) == Capability.PIV.bit) {
+                    namePartsList.add("- Multi-protocol Edition");
                 }
             }
 
