@@ -128,6 +128,11 @@ public class PivSession extends ApplicationSession<PivSession> {
      */
     public static final Feature<PivSession> FEATURE_MOVE_KEY = new Feature.Versioned<>("Move or delete keys", 5, 7, 0);
 
+    /**
+     * Support for the large key sizes in Yubikey 5.7 and onwards.
+     */
+    public static final Feature<PivSession> FEATURE_RSA3072_RSA4096 = new Feature.Versioned<>("RSA3072 and RSA 4096 keys", 5, 7, 0);
+
     private static final int PIN_LEN = 8;
 
     // Special slot for the Management Key
