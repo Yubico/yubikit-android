@@ -33,20 +33,18 @@ public class DeviceInfoBuilderTest {
 
     @Test
     public void testDefaults() {
-        DeviceConfig defaultConfig = new DeviceConfig.Builder().build();
-        DeviceInfo defaultInfo = new DeviceInfo.Builder().build();
-        assertEquals(defaultConfig, defaultInfo.getConfig());
-        assertNull(defaultInfo.getSerialNumber());
-        assertEquals(new Version(0, 0, 0), defaultInfo.getVersion());
-        assertEquals(FormFactor.UNKNOWN, defaultInfo.getFormFactor());
-        assertEquals(0, defaultInfo.getSupportedCapabilities(Transport.USB));
-        assertEquals(0, defaultInfo.getSupportedCapabilities(Transport.NFC));
-        assertFalse(defaultInfo.isLocked());
-        assertFalse(defaultInfo.isFips());
-        assertFalse(defaultInfo.isSky());
-        assertFalse(defaultInfo.getPinComplexity());
-        assertFalse(defaultInfo.hasTransport(Transport.USB));
-        assertFalse(defaultInfo.hasTransport(Transport.NFC));
+        assertEquals(defaultConfig(), defaultInfo().getConfig());
+        assertNull(defaultInfo().getSerialNumber());
+        assertEquals(new Version(0, 0, 0), defaultInfo().getVersion());
+        assertEquals(FormFactor.UNKNOWN, defaultInfo().getFormFactor());
+        assertEquals(0, defaultInfo().getSupportedCapabilities(Transport.USB));
+        assertEquals(0, defaultInfo().getSupportedCapabilities(Transport.NFC));
+        assertFalse(defaultInfo().isLocked());
+        assertFalse(defaultInfo().isFips());
+        assertFalse(defaultInfo().isSky());
+        assertFalse(defaultInfo().getPinComplexity());
+        assertFalse(defaultInfo().hasTransport(Transport.USB));
+        assertFalse(defaultInfo().hasTransport(Transport.NFC));
     }
 
     @Test
@@ -54,9 +52,8 @@ public class DeviceInfoBuilderTest {
         Map<Transport, Integer> supportedCapabilities = new HashMap<>();
         supportedCapabilities.put(Transport.USB, 123);
         supportedCapabilities.put(Transport.NFC, 456);
-        DeviceConfig deviceConfig = new DeviceConfig.Builder().build();
         DeviceInfo deviceInfo = new DeviceInfo.Builder()
-                .config(deviceConfig)
+                .config(defaultConfig())
                 .serialNumber(987654321)
                 .version(new Version(3, 1, 1))
                 .formFactor(FormFactor.USB_A_KEYCHAIN)
@@ -66,7 +63,7 @@ public class DeviceInfoBuilderTest {
                 .isSky(true)
                 .pinComplexity(true)
                 .build();
-        assertEquals(deviceConfig, deviceInfo.getConfig());
+        assertEquals(defaultConfig(), deviceInfo.getConfig());
         assertEquals(Integer.valueOf(987654321), deviceInfo.getSerialNumber());
         assertEquals(new Version(3, 1, 1), deviceInfo.getVersion());
         assertEquals(FormFactor.USB_A_KEYCHAIN, deviceInfo.getFormFactor());
@@ -78,5 +75,56 @@ public class DeviceInfoBuilderTest {
         assertTrue(deviceInfo.getPinComplexity());
         assertTrue(deviceInfo.hasTransport(Transport.USB));
         assertTrue(deviceInfo.hasTransport(Transport.NFC));
+    }
+
+    @Test
+    public void testPartNumber() {
+        assertEquals("", defaultInfo().getPartNumber());
+        assertEquals("", new DeviceInfo.Builder().partNumber("").build().getPartNumber());
+        assertEquals("0123456789ABCDEF", new DeviceInfo.Builder()
+                .partNumber("0123456789ABCDEF").build().getPartNumber());
+    }
+
+    @Test
+    public void testFipsCapable() {
+        assertEquals(0, defaultInfo().getFipsCapable());
+        DeviceInfo deviceInfo = new DeviceInfo.Builder().fipsCapable(145).build();
+        assertEquals(145, deviceInfo.getFipsCapable());
+    }
+
+    @Test
+    public void testFipsApproved() {
+        assertEquals(0, defaultInfo().getFipsApproved());
+        DeviceInfo deviceInfo = new DeviceInfo.Builder().fipsApproved(43445).build();
+        assertEquals(43445, deviceInfo.getFipsApproved());
+    }
+
+    @Test
+    public void testResetBlocked() {
+        assertEquals(0, defaultInfo().getResetBlocked());
+        DeviceInfo deviceInfo = new DeviceInfo.Builder().resetBlocked(874344).build();
+        assertEquals(874344, deviceInfo.getResetBlocked());
+    }
+
+    @Test
+    public void testFpsVersion() {
+        assertNull(defaultInfo().getFpsVersion());
+        DeviceInfo deviceInfo = new DeviceInfo.Builder().fpsVersion(new Version(5, 4, 3)).build();
+        assertEquals(new Version(5, 4, 3), deviceInfo.getFpsVersion());
+    }
+
+    @Test
+    public void testStmVersion() {
+        assertNull(defaultInfo().getStmVersion());
+        DeviceInfo deviceInfo = new DeviceInfo.Builder().stmVersion(new Version(5, 6, 2)).build();
+        assertEquals(new Version(5, 6, 2), deviceInfo.getStmVersion());
+    }
+
+    private DeviceInfo defaultInfo() {
+        return new DeviceInfo.Builder().build();
+    }
+
+    private DeviceConfig defaultConfig() {
+        return new DeviceConfig.Builder().build();
     }
 }
