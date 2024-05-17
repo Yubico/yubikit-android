@@ -23,7 +23,6 @@ import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.core.smartcard.SW;
 import com.yubico.yubikit.piv.InvalidPinException;
-import com.yubico.yubikit.piv.ManagementKeyType;
 import com.yubico.yubikit.piv.PivSession;
 
 import org.bouncycastle.util.encoders.Hex;
@@ -46,32 +45,32 @@ public class PivDeviceTests {
 
         logger.debug("Authenticate with the wrong key");
         try {
-            piv.authenticate(ManagementKeyType.TDES, key2);
+            PivTestUtils.authenticate(piv, key2);
             Assert.fail("Authenticated with wrong key");
         } catch (ApduException e) {
             Assert.assertEquals(SW.SECURITY_CONDITION_NOT_SATISFIED, e.getSw());
         }
 
         logger.debug("Change management key");
-        piv.authenticate(ManagementKeyType.TDES, DEFAULT_MANAGEMENT_KEY);
-        piv.setManagementKey(ManagementKeyType.TDES, key2, false);
+        PivTestUtils.authenticate(piv, DEFAULT_MANAGEMENT_KEY);
+        PivTestUtils.setManagementKey(piv, key2, false);
 
         logger.debug("Authenticate with the old key");
         try {
-            piv.authenticate(ManagementKeyType.TDES, DEFAULT_MANAGEMENT_KEY);
+            PivTestUtils.authenticate(piv, DEFAULT_MANAGEMENT_KEY);
             Assert.fail("Authenticated with wrong key");
         } catch (ApduException e) {
             Assert.assertEquals(SW.SECURITY_CONDITION_NOT_SATISFIED, e.getSw());
         }
 
         logger.debug("Change management key");
-        piv.authenticate(ManagementKeyType.TDES, key2);
-        piv.setManagementKey(ManagementKeyType.TDES, DEFAULT_MANAGEMENT_KEY, false);
+        PivTestUtils.authenticate(piv, key2);
+        PivTestUtils.setManagementKey(piv, DEFAULT_MANAGEMENT_KEY, false);
     }
 
     public static void testPin(PivSession piv) throws ApduException, InvalidPinException, IOException, BadResponseException {
         // Ensure we only try this if the default management key is set.
-        piv.authenticate(ManagementKeyType.TDES, DEFAULT_MANAGEMENT_KEY);
+        PivTestUtils.authenticate(piv, DEFAULT_MANAGEMENT_KEY);
 
         logger.debug("Verify PIN");
         char[] pin2 = "123123".toCharArray();
@@ -115,7 +114,7 @@ public class PivDeviceTests {
 
     public static void testPuk(PivSession piv) throws ApduException, InvalidPinException, IOException, BadResponseException {
         // Ensure we only try this if the default management key is set.
-        piv.authenticate(ManagementKeyType.TDES, DEFAULT_MANAGEMENT_KEY);
+        PivTestUtils.authenticate(piv, DEFAULT_MANAGEMENT_KEY);
 
         // Change PUK
         char[] puk2 = "12341234".toCharArray();

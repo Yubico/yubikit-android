@@ -21,7 +21,6 @@ import static com.yubico.yubikit.testing.piv.PivTestConstants.DEFAULT_MANAGEMENT
 import static com.yubico.yubikit.testing.piv.PivTestConstants.DEFAULT_PIN;
 
 import com.yubico.yubikit.piv.KeyType;
-import com.yubico.yubikit.piv.ManagementKeyType;
 import com.yubico.yubikit.piv.PinPolicy;
 import com.yubico.yubikit.piv.PivSession;
 import com.yubico.yubikit.piv.Slot;
@@ -46,12 +45,12 @@ public class PivJcaDeviceTests {
     @SuppressWarnings("NewApi") // casting to Destroyable is supported from API 26
     public static void testImportKeys(PivSession piv) throws Exception {
         setupJca(piv);
-        piv.authenticate(ManagementKeyType.TDES, DEFAULT_MANAGEMENT_KEY);
+        PivTestUtils.authenticate(piv, DEFAULT_MANAGEMENT_KEY);
 
         KeyStore keyStore = KeyStore.getInstance("YKPiv");
         keyStore.load(null);
 
-        for (KeyType keyType : Arrays.asList(KeyType.RSA1024, KeyType.RSA2048)) {
+        for (KeyType keyType : Arrays.asList(KeyType.RSA1024, KeyType.RSA2048, KeyType.RSA3072, KeyType.RSA4096)) {
             String alias = Slot.SIGNATURE.getStringAlias();
 
             KeyPair keyPair = PivTestUtils.loadKey(keyType);
@@ -89,7 +88,7 @@ public class PivJcaDeviceTests {
 
     public static void testGenerateKeys(PivSession piv) throws Exception {
         setupJca(piv);
-        piv.authenticate(ManagementKeyType.TDES, DEFAULT_MANAGEMENT_KEY);
+        PivTestUtils.authenticate(piv, DEFAULT_MANAGEMENT_KEY);
 
         KeyPairGenerator ecGen = KeyPairGenerator.getInstance("YKPivEC");
         for (KeyType keyType : Arrays.asList(KeyType.ECCP256, KeyType.ECCP384)) {
@@ -101,7 +100,7 @@ public class PivJcaDeviceTests {
         }
 
         KeyPairGenerator rsaGen = KeyPairGenerator.getInstance("YKPivRSA");
-        for (KeyType keyType : Arrays.asList(KeyType.RSA1024, KeyType.RSA2048)) {
+        for (KeyType keyType : Arrays.asList(KeyType.RSA1024, KeyType.RSA2048, KeyType.RSA3072, KeyType.RSA4096)) {
             rsaGen.initialize(new PivAlgorithmParameterSpec(Slot.AUTHENTICATION, keyType, null, null, DEFAULT_PIN));
             KeyPair keyPair = rsaGen.generateKeyPair();
             PivTestUtils.rsaEncryptAndDecrypt(keyPair.getPrivate(), keyPair.getPublic());

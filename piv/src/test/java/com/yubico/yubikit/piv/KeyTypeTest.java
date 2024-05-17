@@ -33,6 +33,7 @@ public class KeyTypeTest {
     private static KeyPair secp521r1;
     private static KeyPair rsa1024;
     private static KeyPair rsa2048;
+    private static KeyPair rsa3072;
     private static KeyPair rsa4096;
 
     @BeforeClass
@@ -50,6 +51,8 @@ public class KeyTypeTest {
         rsa1024 = kpg.generateKeyPair();
         kpg.initialize(2048);
         rsa2048 = kpg.generateKeyPair();
+        kpg.initialize(3072);
+        rsa3072 = kpg.generateKeyPair();
         kpg.initialize(4096);
         rsa4096 = kpg.generateKeyPair();
     }
@@ -80,15 +83,11 @@ public class KeyTypeTest {
 
         MatcherAssert.assertThat(KeyType.fromKey(rsa2048.getPrivate()), CoreMatchers.is(KeyType.RSA2048));
         MatcherAssert.assertThat(KeyType.fromKey(rsa2048.getPublic()), CoreMatchers.is(KeyType.RSA2048));
-    }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void testRsa4096Public() {
-        KeyType.fromKey(rsa4096.getPublic());
-    }
+        MatcherAssert.assertThat(KeyType.fromKey(rsa3072.getPrivate()), CoreMatchers.is(KeyType.RSA3072));
+        MatcherAssert.assertThat(KeyType.fromKey(rsa3072.getPublic()), CoreMatchers.is(KeyType.RSA3072));
 
-    @Test(expected = IllegalArgumentException.class)
-    public void testRsa4096Private() {
-        KeyType.fromKey(rsa4096.getPrivate());
+        MatcherAssert.assertThat(KeyType.fromKey(rsa4096.getPrivate()), CoreMatchers.is(KeyType.RSA4096));
+        MatcherAssert.assertThat(KeyType.fromKey(rsa4096.getPublic()), CoreMatchers.is(KeyType.RSA4096));
     }
 }

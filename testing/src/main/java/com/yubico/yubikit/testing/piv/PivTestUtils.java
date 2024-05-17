@@ -15,8 +15,12 @@
  */
 package com.yubico.yubikit.testing.piv;
 
+import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.internal.codec.Base64;
+import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.piv.KeyType;
+import com.yubico.yubikit.piv.ManagementKeyType;
+import com.yubico.yubikit.piv.PivSession;
 
 import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.x500.X500Name;
@@ -157,7 +161,7 @@ public class PivTestUtils {
             case ECCP384:
                 return generateEcKey("secp384r1");
             case RSA1024:
-            case RSA2048:
+            case RSA2048: //TODO Add 3072 and 4096
                 return generateRsaKey(keyType.params.bitLength);
         }
         throw new IllegalArgumentException("Invalid algorithm");
@@ -268,7 +272,7 @@ public class PivTestUtils {
     }
 
     public static void rsaTests() throws Exception {
-        for (KeyPair keyPair : new KeyPair[]{generateKey(KeyType.RSA1024), generateKey(KeyType.RSA2048)}) {
+        for (KeyPair keyPair : new KeyPair[]{generateKey(KeyType.RSA1024), generateKey(KeyType.RSA2048), generateKey(KeyType.RSA3072), generateKey(KeyType.RSA4096)}) {
             rsaEncryptAndDecrypt(keyPair.getPrivate(), keyPair.getPublic());
             rsaSignAndVerify(keyPair.getPrivate(), keyPair.getPublic());
         }
@@ -306,5 +310,19 @@ public class PivTestUtils {
         byte[] peerSecret = ka.generateSecret();
 
         Assert.assertArrayEquals("Secret mismatch", secret, peerSecret);
+    }
+
+    public static void authenticate(PivSession piv, byte[] key) throws BadResponseException, ApduException, IOException {
+        piv.authenticate(getDefaultManagementKeyType(piv), key);
+    }
+
+    public static void setManagementKey(PivSession piv, byte[] key, boolean requireTouch) throws ApduException, IOException {
+        piv.setManagementKey(getDefaultManagementKeyType(piv), key, requireTouch);
+    }
+
+    private static ManagementKeyType getDefaultManagementKeyType(PivSession piv) {
+        return piv.getVersion().isAtLeast(5, 7, 0)
+                ? ManagementKeyType.AES192
+                : ManagementKeyType.TDES;
     }
 }

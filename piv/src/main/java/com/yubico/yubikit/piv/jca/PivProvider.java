@@ -82,7 +82,8 @@ public class PivProvider extends Provider {
         try {
             KeyPairGenerator rsaGen = KeyPairGenerator.getInstance("RSA");
             long start = System.currentTimeMillis();
-            for (KeyType keyType : new KeyType[]{KeyType.RSA1024, KeyType.RSA2048}) {
+              for (KeyType keyType : new KeyType[]{KeyType.RSA1024, KeyType.RSA2048, KeyType.RSA3072, KeyType.RSA4096}) {
+
                 //TODO: import static keys to avoid slow generation?
                 rsaGen.initialize(keyType.params.bitLength);
                 rsaDummyKeys.put(keyType, rsaGen.generateKeyPair());

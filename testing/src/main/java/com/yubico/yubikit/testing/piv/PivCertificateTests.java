@@ -21,7 +21,6 @@ import static com.yubico.yubikit.testing.piv.PivTestConstants.DEFAULT_MANAGEMENT
 import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.piv.KeyType;
-import com.yubico.yubikit.piv.ManagementKeyType;
 import com.yubico.yubikit.piv.PivSession;
 import com.yubico.yubikit.piv.Slot;
 
@@ -48,9 +47,9 @@ public class PivCertificateTests {
 
     private static void putCertificate(PivSession piv, boolean compressed) throws IOException, ApduException, CertificateException, BadResponseException {
 
-        piv.authenticate(ManagementKeyType.TDES, DEFAULT_MANAGEMENT_KEY);
+        PivTestUtils.authenticate(piv, DEFAULT_MANAGEMENT_KEY);
 
-        for (KeyType keyType : Arrays.asList(KeyType.ECCP256, KeyType.ECCP384, KeyType.RSA1024, KeyType.RSA2048)) {
+        for (KeyType keyType : Arrays.asList(KeyType.ECCP256, KeyType.ECCP384, KeyType.RSA1024, KeyType.RSA2048, KeyType.RSA3072, KeyType.RSA4096)) {
             Slot slot = Slot.SIGNATURE;
             logger.info("Putting {} {} certificate to slot {}",
                     compressed ? "compressed" : "not compressed",

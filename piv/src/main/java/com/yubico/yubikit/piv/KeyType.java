@@ -35,10 +35,22 @@ public enum KeyType {
      * RSA with a 1024 bit key.
      */
     RSA1024((byte) 0x06, new RsaKeyParams(1024)),
+
     /**
      * RSA with a 2048 bit key.
      */
     RSA2048((byte) 0x07, new RsaKeyParams(2048)),
+
+    /**
+     * RSA with a 3072 bit key.
+     */
+    RSA3072((byte) 0x05, new RsaKeyParams(3072)),
+
+    /**
+     * RSA with a 4096 bit key.
+     */
+    RSA4096((byte) 0x16, new RsaKeyParams(4096)),
+
     /**
      * Elliptic Curve key, using NIST Curve P-256.
      */

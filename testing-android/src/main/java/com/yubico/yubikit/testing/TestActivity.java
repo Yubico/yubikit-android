@@ -80,7 +80,7 @@ public class TestActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         try {
-            yubiKitManager.startNfcDiscovery(new NfcConfiguration().timeout(15000), this, sessionQueue::add);
+            yubiKitManager.startNfcDiscovery(new NfcConfiguration().timeout(50000), this, sessionQueue::add);
         } catch (NfcNotAvailable e) {
             if (e.isDisabled()) {
                 logger.error("NFC is disabled", e);
@@ -127,7 +127,6 @@ public class TestActivity extends AppCompatActivity {
         });
         setBusy(true);
         return connectedDevice;
-
     }
 
     public synchronized void returnSession(YubiKeyDevice device) throws InterruptedException {
