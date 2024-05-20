@@ -266,13 +266,24 @@ public class DeviceInfo {
                 ? Version.fromBytes(data.get(TAG_FIRMWARE_VERSION))
                 : defaultVersion;
 
-        Version fpsVersion = data.containsKey(TAG_FPS_VERSION)
-                ? Version.fromBytes(data.get(TAG_FPS_VERSION))
-                : null;
 
-        Version stmVersion = data.containsKey(TAG_STM_VERSION)
-                ? Version.fromBytes(data.get(TAG_STM_VERSION))
-                : null;
+        final Version versionZero = new Version(0,0,0);
+
+        Version fpsVersion = null;
+        if (data.containsKey(TAG_FPS_VERSION)) {
+            Version tempVersion = Version.fromBytes(data.get(TAG_FPS_VERSION));
+            if (!tempVersion.equals(versionZero)) {
+                fpsVersion = tempVersion;
+            }
+        }
+
+        Version stmVersion = null;
+        if (data.containsKey(TAG_STM_VERSION)) {
+            Version tempVersion = Version.fromBytes(data.get(TAG_STM_VERSION));
+            if (!tempVersion.equals(versionZero)) {
+                stmVersion = tempVersion;
+            }
+        }
 
         short autoEjectTimeout = (short) readInt(data.get(TAG_AUTO_EJECT_TIMEOUT));
         byte challengeResponseTimeout = (byte) readInt(data.get(TAG_CHALLENGE_RESPONSE_TIMEOUT));

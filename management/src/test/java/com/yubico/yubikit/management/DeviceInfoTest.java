@@ -154,12 +154,18 @@ public class DeviceInfoTest {
     @Test
     public void testParseFpsVersion() {
         assertNull(defaultInfo().getFpsVersion());
+        assertNull(infoOf(0x20, fromHex("000000")).getFpsVersion());
+        assertNull(infoOf(0x20, fromHex("000000000000000000")).getFpsVersion());
+        assertEquals(new Version(0,0,1), infoOf(0x20, fromHex("000001")).getFpsVersion());
         assertEquals(new Version(5, 6, 6), infoOf(0x20, fromHex("050606")).getFpsVersion());
     }
 
     @Test
     public void testParseStmVersion() {
         assertNull(defaultInfo().getStmVersion());
+        assertNull(infoOf(0x21, fromHex("000000")).getStmVersion());
+        assertNull(infoOf(0x21, fromHex("000000000000000000")).getStmVersion());
+        assertEquals(new Version(0,0,1), infoOf(0x21, fromHex("000001")).getStmVersion());
         assertEquals(new Version(7, 0, 5), infoOf(0x21, fromHex("070005")).getStmVersion());
     }
 
