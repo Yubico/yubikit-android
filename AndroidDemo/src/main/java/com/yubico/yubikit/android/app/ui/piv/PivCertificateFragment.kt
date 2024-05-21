@@ -152,7 +152,7 @@ class PivCertificateFragment : Fragment() {
                 .generatePrivate(PKCS8EncodedKeySpec(Base64.decode(DER_KEY, Base64.DEFAULT)))
             lifecycleScope.launch(Dispatchers.Main) {
                 pivViewModel.pendingAction.value = {
-                    authenticate(pivViewModel.mgmtKeyType, pivViewModel.mgmtKey)
+                    authenticate(pivViewModel.getMgmtKeyType(this), pivViewModel.mgmtKey)
                     putKey(slot, PrivateKeyValues.fromPrivateKey(key), PinPolicy.DEFAULT, TouchPolicy.DEFAULT)
                     putCertificate(slot, cert)
                     "Imported certificate ${cert.subjectDN} issued by ${cert.issuerDN}"
@@ -165,7 +165,7 @@ class PivCertificateFragment : Fragment() {
             lifecycleScope.launch(Dispatchers.Main) {
                 getSecret(requireContext(), R.string.enter_pin)?.let { pin ->
                     pivViewModel.pendingAction.value = {
-                        authenticate(pivViewModel.mgmtKeyType, pivViewModel.mgmtKey)
+                        authenticate(pivViewModel.getMgmtKeyType(this), pivViewModel.mgmtKey)
 
                         val provider = PivProvider(this)
                         val factory = KeyPairGenerator.getInstance("YKPivEC", provider)
@@ -214,11 +214,66 @@ class PivCertificateFragment : Fragment() {
             }
         }
 
+        // Generate a key, then a self-signed certificate, and import
+        binding.generateEd25519Cert.setOnClickListener {
+            lifecycleScope.launch(Dispatchers.Main) {
+                getSecret(requireContext(), R.string.enter_pin)?.let { pin ->
+                    pivViewModel.pendingAction.value = {
+                        authenticate(pivViewModel.getMgmtKeyType(this), pivViewModel.mgmtKey)
+
+                        val provider = PivProvider(this)
+                        val factory = KeyPairGenerator.getInstance("YKPivEC", provider)
+                        factory.initialize(
+                            PivAlgorithmParameterSpec(
+                                slot,
+                                KeyType.ED25519,
+                                PinPolicy.DEFAULT,
+                                TouchPolicy.DEFAULT,
+                                pin.toCharArray()
+                            )
+                        )
+                        val keyPair = factory.generateKeyPair()
+
+                        // Generate a certificate
+                        val name = X500Name("CN=Generated Ed25519 Example")
+                        val serverCertGen = X509v3CertificateBuilder(
+                            name,
+                            BigInteger("123456789"),
+                            Date(),
+                            Date(),
+                            name,
+                            SubjectPublicKeyInfo.getInstance(ASN1Sequence.getInstance(keyPair.public.encoded))
+                        )
+
+                        val certBytes = serverCertGen.build(object : ContentSigner {
+                            val messageBuffer = ByteArrayOutputStream()
+                            override fun getAlgorithmIdentifier(): AlgorithmIdentifier =
+                                AlgorithmIdentifier(X9ObjectIdentifiers.ecdsa_with_SHA256)
+
+                            override fun getOutputStream(): OutputStream = messageBuffer
+                            override fun getSignature(): ByteArray {
+                                return Signature.getInstance("Ed25519", provider).apply {
+                                    initSign(keyPair.private)
+                                    update(messageBuffer.toByteArray())
+                                }.sign()
+                            }
+                        }).encoded
+
+                        val cert = CertificateFactory.getInstance("X.509")
+                            .generateCertificate(ByteArrayInputStream(certBytes)) as X509Certificate
+                        putCertificate(slot, cert)
+
+                        "Generated Ed25519 key in slot $slot"
+                    }
+                }
+            }
+        }
+
         binding.generateRsaCert.setOnClickListener {
             lifecycleScope.launch(Dispatchers.Main) {
                 getSecret(requireContext(), R.string.enter_pin)?.let { pin ->
                     pivViewModel.pendingAction.value = {
-                        authenticate(pivViewModel.mgmtKeyType, pivViewModel.mgmtKey)
+                        authenticate(pivViewModel.getMgmtKeyType(this), pivViewModel.mgmtKey)
 
                         val provider = PivProvider(this)
                         val factory = KeyPairGenerator.getInstance("YKPivRSA", provider)
@@ -278,7 +333,7 @@ class PivCertificateFragment : Fragment() {
         // Delete the certificate
         binding.delete.setOnClickListener {
             pivViewModel.pendingAction.value = {
-                authenticate(pivViewModel.mgmtKeyType, pivViewModel.mgmtKey)
+                authenticate(pivViewModel.getMgmtKeyType(this), pivViewModel.mgmtKey)
                 deleteCertificate(slot)
                 "Deleted certificate in slot $slot"
             }
@@ -296,9 +351,11 @@ class PivCertificateFragment : Fragment() {
                         keyStore.load(null)
                         val publicKey = keyStore.getCertificate(slot.stringAlias).publicKey
                         val privateKey = keyStore.getKey(slot.stringAlias, pin.toCharArray()) as PrivateKey
-                        val algorithm = when (KeyType.fromKey(publicKey).params.algorithm) {
+
+                        val keyType = KeyType.fromKey(publicKey)
+                        val algorithm = when (keyType.params.algorithm) {
                             KeyType.Algorithm.RSA -> "SHA256withRSA"
-                            KeyType.Algorithm.EC -> "SHA256withECDSA"
+                            KeyType.Algorithm.EC -> if (keyType == KeyType.ED25519) "Ed25519" else "SHA256withECDSA"
                         }
 
                         // Create signature

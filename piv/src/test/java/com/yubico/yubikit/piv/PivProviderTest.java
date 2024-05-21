@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Yubico.
+ * Copyright (C) 2022,2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ public class PivProviderTest {
     public void testStandardAlgorithms() throws Exception {
         PivTestUtils.rsaTests();
         PivTestUtils.ecTests();
+        PivTestUtils.cv25519Tests();
     }
 
     @Test
@@ -38,5 +39,6 @@ public class PivProviderTest {
 
         PivTestUtils.rsaTests();
         PivTestUtils.ecTests();
+        PivTestUtils.cv25519Tests();
     }
 }

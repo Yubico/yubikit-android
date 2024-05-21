@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Yubico.
+ * Copyright (C) 2022,2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ import javax.annotation.Nullable;
 public abstract class PivEcSignatureSpi extends SignatureSpi {
     private final Callback<Callback<Result<PivSession, Exception>>> provider;
     @Nullable
-    private PivPrivateKey.EcKey privateKey;
+    private PivPrivateKey privateKey;
 
     protected PivEcSignatureSpi(Callback<Callback<Result<PivSession, Exception>>> provider) {
         this.provider = provider;
@@ -50,6 +50,8 @@ public abstract class PivEcSignatureSpi extends SignatureSpi {
     protected void engineInitSign(PrivateKey privateKey) throws InvalidKeyException {
         if (privateKey instanceof PivPrivateKey.EcKey) {
             this.privateKey = (PivPrivateKey.EcKey) privateKey;
+        } else if (privateKey instanceof PivPrivateKey.Ed25519Key) {
+            this.privateKey = (PivPrivateKey.Ed25519Key) privateKey;
         } else {
             throw new InvalidKeyException("Unsupported key type");
         }

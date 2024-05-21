@@ -128,6 +128,11 @@ public class PivSession extends ApplicationSession<PivSession> {
      */
     public static final Feature<PivSession> FEATURE_MOVE_KEY = new Feature.Versioned<>("Move or delete keys", 5, 7, 0);
 
+    /**
+     * Support for the curve 25519 keys.
+     */
+    public static final Feature<PivSession> FEATURE_CV25519 = new Feature.Versioned<>("Curve 25519", 5, 7, 0);
+
     private static final int PIN_LEN = 8;
 
     // Special slot for the Management Key
@@ -357,7 +362,9 @@ public class PivSession extends ApplicationSession<PivSession> {
     public byte[] rawSignOrDecrypt(Slot slot, KeyType keyType, byte[] payload) throws IOException, ApduException, BadResponseException {
         int byteLength = keyType.params.bitLength / 8;
         byte[] padded;
-        if (payload.length > byteLength) {
+        if (keyType == KeyType.ED25519 || keyType == KeyType.X25519) {
+            padded = payload;
+        } else if (payload.length > byteLength) {
             if (keyType.params.algorithm == KeyType.Algorithm.EC) {
                 // Truncate
                 padded = Arrays.copyOf(payload, byteLength);
@@ -842,8 +849,8 @@ public class PivSession extends ApplicationSession<PivSession> {
             BigInteger exponent = new BigInteger(1, dataObjects.get(0x82));
             return new PublicKeyValues.Rsa(modulus, exponent);
         } else {
-            if (!(keyType.params instanceof KeyType.EcKeyParams)) {
-                throw new IllegalArgumentException("Unsupported key type");
+            if (keyType == KeyType.ED25519) {
+                return new PublicKeyValues.Cv25519(((KeyType.EcKeyParams) keyType.params).getCurveParams(), dataObjects.get(0x86));
             }
             return PublicKeyValues.Ec.fromEncodedPoint(((KeyType.EcKeyParams) keyType.params).getCurveParams(), dataObjects.get(0x86));
         }
@@ -862,6 +869,9 @@ public class PivSession extends ApplicationSession<PivSession> {
             return;
         }
 
+        if (keyType == KeyType.ED25519 || keyType == KeyType.X25519) {
+            require(FEATURE_CV25519);
+        }
         if (keyType == KeyType.ECCP384) {
             require(FEATURE_P384);
         }
@@ -996,7 +1006,7 @@ public class PivSession extends ApplicationSession<PivSession> {
                 break;
             case EC:
                 PrivateKeyValues.Ec ecPrivateKey = (PrivateKeyValues.Ec) key;
-                tlvs.put(0x06, ecPrivateKey.getSecret());  // s
+                tlvs.put((keyType == KeyType.ED25519) ? 0x07 : 0x06, ecPrivateKey.getSecret());  // s
                 break;
         }
 

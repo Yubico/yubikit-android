@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Yubico.
+ * Copyright (C) 2020-2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,11 @@
 package com.yubico.yubikit.testing.piv;
 
 import com.yubico.yubikit.core.internal.codec.Base64;
+import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.piv.KeyType;
+import com.yubico.yubikit.piv.ManagementKeyMetadata;
+import com.yubico.yubikit.piv.ManagementKeyType;
+import com.yubico.yubikit.piv.PivSession;
 
 import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.x500.X500Name;
@@ -121,6 +125,10 @@ public class PivTestUtils {
                 "TzKlvkGLYui_UZR0GVzyM1KSMww", "MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAEPafXj6uGGPzHz0UF" +
                 "H8fzj8YtQoenuLiIYFWEVCWIFv5H2YchkapRJ8V8W3QYgooDwx01oNG6Lac5oRlnwJkOt7_9oJbrwdb" +
                 "HqaqI008ypb5Bi2Lov1GUdBlc8jNSkjMM"
+        ),
+        ED25519(
+                KeyType.ED25519, "MC4CAQAwBQYDK2VwBCIEIO_yEBZ291rK6lY8BH3RVtO61LnzLv78VxVxBZDj3uvi",
+                "MCowBQYDK2VwAyEA7m2UD-6mR8vVSpGFFYCnsDgXTuFRT5_M7yVOMM_7uHw="
         );
 
         private final KeyType keyType;
@@ -135,7 +143,7 @@ public class PivTestUtils {
 
         private KeyPair getKeyPair() {
             try {
-                KeyFactory kf = KeyFactory.getInstance(keyType.params.algorithm.name());
+                KeyFactory kf = KeyFactory.getInstance(keyType == KeyType.ED25519 ? keyType.name() : keyType.params.algorithm.name());
                 return new KeyPair(
                         kf.generatePublic(new X509EncodedKeySpec(Base64.fromUrlSafeString(publicKey))),
                         kf.generatePrivate(new PKCS8EncodedKeySpec(Base64.fromUrlSafeString(privateKey)))
@@ -156,6 +164,8 @@ public class PivTestUtils {
                 return generateEcKey("secp256r1");
             case ECCP384:
                 return generateEcKey("secp384r1");
+            case ED25519:
+                return generateEd25519Key();
             case RSA1024:
             case RSA2048:
                 return generateRsaKey(keyType.params.bitLength);
@@ -169,6 +179,15 @@ public class PivTestUtils {
             kpg.initialize(new ECGenParameterSpec(curve), new SecureRandom());
             return kpg.generateKeyPair();
         } catch (NoSuchAlgorithmException | InvalidAlgorithmParameterException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    private static KeyPair generateEd25519Key() {
+        try {
+            KeyPairGenerator kpg = KeyPairGenerator.getInstance("ED25519");
+            return kpg.generateKeyPair();
+        } catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException(e);
         }
     }
@@ -207,7 +226,7 @@ public class PivTestUtils {
         KeyType keyType = KeyType.fromKey(keyPair.getPrivate());
         switch (keyType.params.algorithm) {
             case EC:
-                algorithm = "SHA256WithECDSA";
+                algorithm = keyType == KeyType.ED25519 ? "ED25519" : "SHA256WithECDSA";
                 break;
             case RSA:
                 algorithm = "SHA256WithRSA";
@@ -281,11 +300,22 @@ public class PivTestUtils {
         }
     }
 
+    public static void cv25519Tests() throws Exception {
+        KeyPair ed25519KeyPair = generateKey(KeyType.ED25519);
+        ed25519SignAndVerify(ed25519KeyPair.getPrivate(), ed25519KeyPair.getPublic());
+    }
+
     public static void ecSignAndVerify(PrivateKey privateKey, PublicKey publicKey) throws Exception {
         for (String algorithm : EC_SIGNATURE_ALGORITHMS) {
             logger.debug("Test {}", algorithm);
             verify(publicKey, Signature.getInstance(algorithm), sign(privateKey, Signature.getInstance(algorithm)));
         }
+    }
+
+    public static void ed25519SignAndVerify(PrivateKey privateKey, PublicKey publicKey) throws Exception {
+        String algorithm = "ED25519";
+        logger.debug("Test {}", algorithm);
+        verify(publicKey, Signature.getInstance(algorithm), sign(privateKey, Signature.getInstance(algorithm)));
     }
 
     public static void ecKeyAgreement(PrivateKey privateKey, PublicKey publicKey) throws Exception {
@@ -306,5 +336,14 @@ public class PivTestUtils {
         byte[] peerSecret = ka.generateSecret();
 
         Assert.assertArrayEquals("Secret mismatch", secret, peerSecret);
+    }
+
+    static ManagementKeyType getManagementKeyType(PivSession session) {
+        try {
+            ManagementKeyMetadata metadata = session.getManagementKeyMetadata();
+            return metadata.getKeyType();
+        } catch (IOException | ApduException exception) {
+            return ManagementKeyType.TDES;
+        }
     }
 }

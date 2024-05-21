@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2022 Yubico.
+ * Copyright (C) 2019-2022,2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,9 @@ package com.yubico.yubikit.piv;
 import com.yubico.yubikit.core.keys.EllipticCurveValues;
 import com.yubico.yubikit.core.keys.PrivateKeyValues;
 import com.yubico.yubikit.core.keys.PublicKeyValues;
+
+import org.bouncycastle.jcajce.provider.asymmetric.edec.BCEdDSAPrivateKey;
+import org.bouncycastle.jcajce.provider.asymmetric.edec.BCEdDSAPublicKey;
 
 import java.security.Key;
 import java.security.interfaces.ECPrivateKey;
@@ -46,7 +49,15 @@ public enum KeyType {
     /**
      * Elliptic Curve key, using NIST Curve P-384.
      */
-    ECCP384((byte) 0x14, new EcKeyParams(EllipticCurveValues.SECP384R1));
+    ECCP384((byte) 0x14, new EcKeyParams(EllipticCurveValues.SECP384R1)),
+    /**
+     * Edwards Digital Signature Algorithm (EdDSA) key, using Curve25519.
+     */
+    ED25519((byte) 0xE0, new EcKeyParams(EllipticCurveValues.Ed25519)),
+    /**
+     * Elliptic-Curve Diffie-Hellman (ECDH) protocol key, using Curve25519.
+     */
+    X25519((byte) 0xE1, new EcKeyParams(EllipticCurveValues.X25519));
 
     public final byte value;
     public final KeyParams params;
@@ -105,6 +116,10 @@ public enum KeyType {
                 ellipticCurveValues = ((PublicKeyValues.Ec) PublicKeyValues.fromPublicKey((ECPublicKey) key)).getCurveParams();
             } else if (key instanceof ECPrivateKey) {
                 ellipticCurveValues = ((PrivateKeyValues.Ec) PrivateKeyValues.fromPrivateKey((ECPrivateKey) key)).getCurveParams();
+            } else if (key instanceof BCEdDSAPrivateKey) {
+                ellipticCurveValues = ((PrivateKeyValues.Ec) PrivateKeyValues.fromPrivateKey((BCEdDSAPrivateKey) key)).getCurveParams();
+            } else if (key instanceof BCEdDSAPublicKey) {
+                ellipticCurveValues = ((PublicKeyValues.Cv25519) PublicKeyValues.fromPublicKey((BCEdDSAPublicKey) key)).getCurveParams();
             } else {
                 throw new IllegalArgumentException("Unsupported key type");
             }

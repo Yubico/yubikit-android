@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Yubico.
+ * Copyright (C) 2020-2022,2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@ import static com.yubico.yubikit.testing.piv.PivTestConstants.DEFAULT_MANAGEMENT
 import static com.yubico.yubikit.testing.piv.PivTestConstants.DEFAULT_PIN;
 
 import com.yubico.yubikit.piv.KeyType;
-import com.yubico.yubikit.piv.ManagementKeyType;
 import com.yubico.yubikit.piv.PinPolicy;
 import com.yubico.yubikit.piv.PivSession;
 import com.yubico.yubikit.piv.Slot;
@@ -38,6 +37,7 @@ import java.security.PrivateKey;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
+import java.util.Collections;
 
 import javax.security.auth.Destroyable;
 
@@ -46,7 +46,7 @@ public class PivJcaDeviceTests {
     @SuppressWarnings("NewApi") // casting to Destroyable is supported from API 26
     public static void testImportKeys(PivSession piv) throws Exception {
         setupJca(piv);
-        piv.authenticate(ManagementKeyType.TDES, DEFAULT_MANAGEMENT_KEY);
+        piv.authenticate(PivTestUtils.getManagementKeyType(piv), DEFAULT_MANAGEMENT_KEY);
 
         KeyStore keyStore = KeyStore.getInstance("YKPiv");
         keyStore.load(null);
@@ -84,17 +84,41 @@ public class PivJcaDeviceTests {
             Assert.assertEquals(cert, keyStore.getCertificate(keyStore.getCertificateAlias(cert)));
         }
 
+        for (KeyType keyType : Collections.singletonList(KeyType.ED25519)) {
+            String alias = Slot.SIGNATURE.getStringAlias();
+
+            KeyPair keyPair = PivTestUtils.loadKey(keyType);
+            X509Certificate cert = PivTestUtils.createCertificate(keyPair);
+
+            keyStore.setEntry(alias, new KeyStore.PrivateKeyEntry(keyPair.getPrivate(), new Certificate[]{cert}), new PivKeyStoreKeyParameters(PinPolicy.DEFAULT, TouchPolicy.DEFAULT));
+            PrivateKey privateKey = (PrivateKey) keyStore.getKey(alias, DEFAULT_PIN);
+
+            //PivTestUtils.ecKeyAgreement(privateKey, keyPair.getPublic());
+            PivTestUtils.ed25519SignAndVerify(privateKey, keyPair.getPublic());
+
+            //noinspection RedundantCast
+            ((Destroyable) privateKey).destroy();
+
+            Assert.assertEquals(cert, keyStore.getCertificate(keyStore.getCertificateAlias(cert)));
+        }
+
         tearDownJca();
     }
 
     public static void testGenerateKeys(PivSession piv) throws Exception {
         setupJca(piv);
-        piv.authenticate(ManagementKeyType.TDES, DEFAULT_MANAGEMENT_KEY);
+        piv.authenticate(PivTestUtils.getManagementKeyType(piv), DEFAULT_MANAGEMENT_KEY);
 
         KeyPairGenerator ecGen = KeyPairGenerator.getInstance("YKPivEC");
-        for (KeyType keyType : Arrays.asList(KeyType.ECCP256, KeyType.ECCP384)) {
+        for (KeyType keyType : Arrays.asList(KeyType.ECCP256, KeyType.ECCP384, KeyType.ED25519)) {
             ecGen.initialize(new PivAlgorithmParameterSpec(Slot.AUTHENTICATION, keyType, null, null, DEFAULT_PIN));
             KeyPair keyPair = ecGen.generateKeyPair();
+
+            if (keyType == KeyType.ED25519) {
+                PivTestUtils.ed25519SignAndVerify(keyPair.getPrivate(), keyPair.getPublic());
+                continue;
+            }
+
             PivTestUtils.ecSignAndVerify(keyPair.getPrivate(), keyPair.getPublic());
             PivTestUtils.ecKeyAgreement(keyPair.getPrivate(), keyPair.getPublic());
             //TODO: Test with key loaded from KeyStore

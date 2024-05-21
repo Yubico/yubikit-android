@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Yubico.
+ * Copyright (C) 2022-2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,6 +41,7 @@ import javax.crypto.NoSuchPaddingException;
 public class PivProvider extends Provider {
     private static final Map<String, String> ecAttributes = Collections.singletonMap("SupportedKeyClasses", PivPrivateKey.EcKey.class.getName());
     private static final Map<String, String> rsaAttributes = Collections.singletonMap("SupportedKeyClasses", PivPrivateKey.RsaKey.class.getName());
+    private static final Map<String, String> cv25519Attributes = Collections.singletonMap("SupportedKeyClasses", PivPrivateKey.Ed25519Key.class.getName());
 
     private final Callback<Callback<Result<PivSession, Exception>>> sessionRequester;
     private final Map<KeyType, KeyPair> rsaDummyKeys = new HashMap<>();
@@ -73,6 +74,13 @@ public class PivProvider extends Provider {
 
         //noinspection SpellCheckingInspection
         putService(new Service(this, "Signature", "NONEwithECDSA", PivEcSignatureSpi.Prehashed.class.getName(), null, ecAttributes) {
+            @Override
+            public Object newInstance(Object constructorParameter) {
+                return new PivEcSignatureSpi.Prehashed(sessionRequester);
+            }
+        });
+
+        putService(new Service(this, "Signature", "Ed25519", PivEcSignatureSpi.Prehashed.class.getName(), null, cv25519Attributes) {
             @Override
             public Object newInstance(Object constructorParameter) {
                 return new PivEcSignatureSpi.Prehashed(sessionRequester);

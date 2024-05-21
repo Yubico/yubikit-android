@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Yubico.
+ * Copyright (C) 2022,2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -71,7 +71,7 @@ abstract class PivKeyPairGeneratorSpi extends KeyPairGeneratorSpi {
             BlockingQueue<Result<KeyPair, Exception>> queue = new ArrayBlockingQueue<>(1);
             provider.invoke(result -> queue.add(Result.of(() -> {
                 PivSession session = result.getValue();
-                PublicKey publicKey = session.generateKey(spec.slot, spec.keyType, spec.pinPolicy, spec.touchPolicy);
+                PublicKey publicKey = session.generateKeyValues(spec.slot, spec.keyType, spec.pinPolicy, spec.touchPolicy).toPublicKey();
                 PrivateKey privateKey = PivPrivateKey.from(publicKey, spec.slot, spec.pinPolicy, spec.touchPolicy, spec.pin);
                 return new KeyPair(publicKey, privateKey);
             })));

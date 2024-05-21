@@ -48,9 +48,16 @@ class PivViewModel : YubiKeyViewModel<PivSession>() {
     private val _certificates = MutableLiveData<SparseArray<X509Certificate>?>()
     val certificates: LiveData<SparseArray<X509Certificate>?> = _certificates
 
-    var mgmtKeyType = ManagementKeyType.TDES
     var mgmtKey: ByteArray =
         byteArrayOf(1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8)
+
+    fun getMgmtKeyType(session: PivSession) : ManagementKeyType {
+        return try {
+            session.managementKeyMetadata.keyType
+        } catch (ignored: Exception) {
+            ManagementKeyType.TDES
+        }
+    }
 
     override fun getSession(
         device: YubiKeyDevice,

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Yubico.
+ * Copyright (C) 2022-2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,6 @@ import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.core.util.StringUtils;
 import com.yubico.yubikit.piv.KeyType;
-import com.yubico.yubikit.piv.ManagementKeyType;
 import com.yubico.yubikit.piv.PinPolicy;
 import com.yubico.yubikit.piv.PivSession;
 import com.yubico.yubikit.piv.Slot;
@@ -70,7 +69,7 @@ public class PivJcaDecryptTests {
             throw new IllegalArgumentException("Unsupported");
         }
 
-        piv.authenticate(ManagementKeyType.TDES, DEFAULT_MANAGEMENT_KEY);
+        piv.authenticate(PivTestUtils.getManagementKeyType(piv), DEFAULT_MANAGEMENT_KEY);
         logger.debug("Generate key: {}", keyType);
         KeyPairGenerator kpg = KeyPairGenerator.getInstance("YKPivRSA");
         kpg.initialize(new PivAlgorithmParameterSpec(Slot.KEY_MANAGEMENT, keyType, PinPolicy.DEFAULT, TouchPolicy.DEFAULT, DEFAULT_PIN));

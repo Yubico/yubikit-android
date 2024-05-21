@@ -28,7 +28,6 @@ import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.keys.PrivateKeyValues;
 import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.piv.KeyType;
-import com.yubico.yubikit.piv.ManagementKeyType;
 import com.yubico.yubikit.piv.PinPolicy;
 import com.yubico.yubikit.piv.PivSession;
 import com.yubico.yubikit.piv.Slot;
@@ -58,9 +57,9 @@ public class PivMoveKeyTests {
         Slot srcSlot = Slot.RETIRED1;
         Slot dstSlot = Slot.RETIRED2;
 
-        piv.authenticate(ManagementKeyType.AES192, DEFAULT_MANAGEMENT_KEY);
+        piv.authenticate(PivTestUtils.getManagementKeyType(piv), DEFAULT_MANAGEMENT_KEY);
 
-        for (KeyType keyType : Arrays.asList(KeyType.ECCP256, KeyType.ECCP384, KeyType.RSA1024, KeyType.RSA2048)) {
+        for (KeyType keyType : Arrays.asList(KeyType.ECCP256, KeyType.ECCP384, KeyType.RSA1024, KeyType.RSA2048, KeyType.ED25519)) {
 
             KeyPair keyPair = PivTestUtils.loadKey(keyType);
             PrivateKeyValues privateKeyValues = PrivateKeyValues.fromPrivateKey(keyPair.getPrivate());
@@ -82,7 +81,7 @@ public class PivMoveKeyTests {
                 KeyPair signingKeyPair = new KeyPair(publicKey, privateKey);
 
                 testSign(signingKeyPair, keyType.params.algorithm == EC
-                        ? "SHA256withECDSA"
+                        ? keyType == KeyType.ED25519 ? "ED25519" : "SHA256withECDSA"
                         : "SHA256withRSA", null);
 
             } catch (KeyStoreException | UnrecoverableKeyException |

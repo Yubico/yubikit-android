@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Yubico.
+ * Copyright (C) 2022,2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,6 +55,8 @@ public abstract class PivPrivateKey implements PrivateKey, Destroyable {
         KeyType keyType = KeyType.fromKey(publicKey);
         if (keyType.params.algorithm == KeyType.Algorithm.RSA) {
             return new PivPrivateKey.RsaKey(slot, keyType, pinPolicy, touchPolicy, ((RSAPublicKey) publicKey).getModulus(), pin);
+        } else if (keyType == KeyType.ED25519) {
+            return new PivPrivateKey.Ed25519Key(slot, keyType, pinPolicy, touchPolicy, pin);
         } else {
             return new PivPrivateKey.EcKey(slot, keyType, pinPolicy, touchPolicy, ((ECPublicKey) publicKey).getParams(), pin);
         }
@@ -188,6 +190,12 @@ public abstract class PivPrivateKey implements PrivateKey, Destroyable {
         @Override
         public BigInteger getModulus() {
             return modulus;
+        }
+    }
+
+    static class Ed25519Key extends PivPrivateKey implements PrivateKey {
+        private Ed25519Key(Slot slot, KeyType keyType, @Nullable PinPolicy pinPolicy, @Nullable TouchPolicy touchPolicy, @Nullable char[] pin) {
+            super(slot, keyType, pinPolicy, touchPolicy, pin);
         }
     }
 }
