@@ -406,6 +406,12 @@ public class PivSession extends ApplicationSession<PivSession> {
             case 2048 / 8:
                 keyType = KeyType.RSA2048;
                 break;
+            case 3072 / 8:
+                keyType = KeyType.RSA3072;
+                break;
+            case 4096 / 8:
+                keyType = KeyType.RSA4096;
+                break;
             default:
                 throw new IllegalArgumentException("Invalid length of ciphertext");
         }

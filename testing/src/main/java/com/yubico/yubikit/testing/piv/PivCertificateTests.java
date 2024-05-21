@@ -16,6 +16,7 @@
 
 package com.yubico.yubikit.testing.piv;
 
+import static com.yubico.yubikit.piv.PivSession.FEATURE_RSA3072_RSA4096;
 import static com.yubico.yubikit.testing.piv.PivTestConstants.DEFAULT_MANAGEMENT_KEY;
 
 import com.yubico.yubikit.core.application.BadResponseException;
@@ -50,6 +51,10 @@ public class PivCertificateTests {
         PivTestUtils.authenticate(piv, DEFAULT_MANAGEMENT_KEY);
 
         for (KeyType keyType : Arrays.asList(KeyType.ECCP256, KeyType.ECCP384, KeyType.RSA1024, KeyType.RSA2048, KeyType.RSA3072, KeyType.RSA4096)) {
+
+            if (((keyType == KeyType.RSA3072 || keyType == KeyType.RSA4096) && !piv.supports(FEATURE_RSA3072_RSA4096)))
+                continue; // Run only on compatible keys
+
             Slot slot = Slot.SIGNATURE;
             logger.info("Putting {} {} certificate to slot {}",
                     compressed ? "compressed" : "not compressed",

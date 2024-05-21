@@ -264,7 +264,9 @@ public class PivTestUtils {
             case ECCP384:
                 return generateEcKey("secp384r1");
             case RSA1024:
-            case RSA2048: //TODO Add 3072 and 4096
+            case RSA2048:
+            case RSA3072:
+            case RSA4096:
                 return generateRsaKey(keyType.params.bitLength);
         }
         throw new IllegalArgumentException("Invalid algorithm");

@@ -16,6 +16,7 @@
 
 package com.yubico.yubikit.testing.piv;
 
+import static com.yubico.yubikit.piv.PivSession.FEATURE_RSA3072_RSA4096;
 import static com.yubico.yubikit.testing.piv.PivJcaUtils.setupJca;
 import static com.yubico.yubikit.testing.piv.PivJcaUtils.tearDownJca;
 import static com.yubico.yubikit.testing.piv.PivTestConstants.DEFAULT_MANAGEMENT_KEY;
@@ -61,6 +62,8 @@ public class PivJcaSigningTests {
     public static void testSign(PivSession piv) throws NoSuchAlgorithmException, IOException, ApduException, InvalidKeyException, BadResponseException, InvalidAlgorithmParameterException, SignatureException {
         setupJca(piv);
         for (KeyType keyType : KeyType.values()) {
+            if (((keyType == KeyType.RSA3072 || keyType == KeyType.RSA4096) && !piv.supports(FEATURE_RSA3072_RSA4096)))
+                continue; // Run only on compatible keys
             testSign(piv, keyType);
         }
         tearDownJca();
@@ -134,29 +137,7 @@ public class PivJcaSigningTests {
                 }
 
                 // RSA1024 is too small for SHA512WITHRSA/PSS
-                if (keyType == KeyType.RSA2048) {
-                    signatureAlgorithm = "SHA512WITHRSA/PSS";
-                    if (signatureAlgorithmsWithPss.contains(signatureAlgorithm)) {
-                        testSign(keyPair, signatureAlgorithm, new PSSParameterSpec("SHA-512", "MGF1", MGF1ParameterSpec.SHA512, 8, 1));
-                        PSSParameterSpec param = new PSSParameterSpec("SHA-512", "MGF1", MGF1ParameterSpec.SHA512, 0, 1);
-                        byte[] sig1 = testSign(keyPair, signatureAlgorithm, param);
-                        byte[] sig2 = testSign(keyPair, signatureAlgorithm, param);
-                        Assert.assertArrayEquals("PSS parameters not used, signatures are not identical!", sig1, sig2);
-                    }
-                }
-                //TODO Only do test on compatible Yubikeys
-                if (keyType == KeyType.RSA3072) {
-                    signatureAlgorithm = "SHA512WITHRSA/PSS";
-                    if (signatureAlgorithmsWithPss.contains(signatureAlgorithm)) {
-                        testSign(keyPair, signatureAlgorithm, new PSSParameterSpec("SHA-512", "MGF1", MGF1ParameterSpec.SHA512, 8, 1));
-                        PSSParameterSpec param = new PSSParameterSpec("SHA-512", "MGF1", MGF1ParameterSpec.SHA512, 0, 1);
-                        byte[] sig1 = testSign(keyPair, signatureAlgorithm, param);
-                        byte[] sig2 = testSign(keyPair, signatureAlgorithm, param);
-                        Assert.assertArrayEquals("PSS parameters not used, signatures are not identical!", sig1, sig2);
-                    }
-                }
-
-                if (keyType == KeyType.RSA4096) {
+                if (keyType != KeyType.RSA1024) {
                     signatureAlgorithm = "SHA512WITHRSA/PSS";
                     if (signatureAlgorithmsWithPss.contains(signatureAlgorithm)) {
                         testSign(keyPair, signatureAlgorithm, new PSSParameterSpec("SHA-512", "MGF1", MGF1ParameterSpec.SHA512, 8, 1));
