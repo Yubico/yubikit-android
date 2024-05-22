@@ -22,6 +22,8 @@ import com.yubico.yubikit.core.keys.PublicKeyValues;
 
 import org.bouncycastle.jcajce.provider.asymmetric.edec.BCEdDSAPrivateKey;
 import org.bouncycastle.jcajce.provider.asymmetric.edec.BCEdDSAPublicKey;
+import org.bouncycastle.jcajce.provider.asymmetric.edec.BCXDHPrivateKey;
+import org.bouncycastle.jcajce.provider.asymmetric.edec.BCXDHPublicKey;
 
 import java.security.Key;
 import java.security.interfaces.ECPrivateKey;
@@ -120,6 +122,10 @@ public enum KeyType {
                 ellipticCurveValues = ((PrivateKeyValues.Ec) PrivateKeyValues.fromPrivateKey((BCEdDSAPrivateKey) key)).getCurveParams();
             } else if (key instanceof BCEdDSAPublicKey) {
                 ellipticCurveValues = ((PublicKeyValues.Cv25519) PublicKeyValues.fromPublicKey((BCEdDSAPublicKey) key)).getCurveParams();
+            } else if (key instanceof BCXDHPublicKey) {
+                ellipticCurveValues = ((PublicKeyValues.Cv25519) PublicKeyValues.fromPublicKey((BCXDHPublicKey) key)).getCurveParams();
+            } else if (key instanceof BCXDHPrivateKey) {
+                ellipticCurveValues = ((PrivateKeyValues.Ec) PrivateKeyValues.fromPrivateKey((BCXDHPrivateKey) key)).getCurveParams();
             } else {
                 throw new IllegalArgumentException("Unsupported key type");
             }

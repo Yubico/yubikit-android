@@ -85,7 +85,6 @@ public class PivJcaSigningTests {
 
         signatureAlgorithmsWithPss = getAllSignatureAlgorithmsWithPSS();
 
-
         switch (keyType.params.algorithm) {
             case EC:
                 if (keyType != KeyType.ED25519) {

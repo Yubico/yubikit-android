@@ -63,9 +63,9 @@ public class PivMoveKeyTests {
 
         piv.authenticate(PivTestUtils.getManagementKeyType(piv), DEFAULT_MANAGEMENT_KEY);
 
-        for (KeyType keyType : Arrays.asList(KeyType.ECCP256, KeyType.ECCP384, KeyType.RSA1024, KeyType.RSA2048, KeyType.ED25519)) {
+        for (KeyType keyType : Arrays.asList(KeyType.ECCP256, KeyType.ECCP384, KeyType.RSA1024, KeyType.RSA2048, KeyType.ED25519, KeyType.X25519)) {
 
-            if (!piv.supports(FEATURE_CV25519) && keyType == KeyType.ED25519) {
+            if (!piv.supports(FEATURE_CV25519) && (keyType == KeyType.ED25519 || keyType == KeyType.X25519)) {
                 continue;
             }
 
@@ -88,9 +88,11 @@ public class PivMoveKeyTests {
                 PrivateKey privateKey = (PrivateKey) keyStore.getKey(dstSlot.getStringAlias(), DEFAULT_PIN);
                 KeyPair signingKeyPair = new KeyPair(publicKey, privateKey);
 
-                testSign(signingKeyPair, keyType.params.algorithm == EC
-                        ? keyType == KeyType.ED25519 ? "ED25519" : "SHA256withECDSA"
-                        : "SHA256withRSA", null);
+                if (keyType != KeyType.X25519) {
+                    testSign(signingKeyPair, keyType.params.algorithm == EC
+                            ? keyType == KeyType.ED25519 ? "ED25519" : "SHA256withECDSA"
+                            : "SHA256withRSA", null);
+                }
 
             } catch (KeyStoreException | UnrecoverableKeyException |
                      InvalidAlgorithmParameterException | InvalidKeyException |

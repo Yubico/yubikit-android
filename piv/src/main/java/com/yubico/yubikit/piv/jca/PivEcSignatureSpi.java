@@ -52,6 +52,8 @@ public abstract class PivEcSignatureSpi extends SignatureSpi {
             this.privateKey = (PivPrivateKey.EcKey) privateKey;
         } else if (privateKey instanceof PivPrivateKey.Ed25519Key) {
             this.privateKey = (PivPrivateKey.Ed25519Key) privateKey;
+        } else if (privateKey instanceof PivPrivateKey.X25519Key) {
+            this.privateKey = (PivPrivateKey.X25519Key) privateKey;
         } else {
             throw new InvalidKeyException("Unsupported key type");
         }

@@ -38,6 +38,7 @@ import com.yubico.yubikit.core.util.StringUtils;
 import com.yubico.yubikit.core.util.Tlv;
 import com.yubico.yubikit.core.util.Tlvs;
 
+import org.bouncycastle.jcajce.provider.asymmetric.edec.BCXDHPublicKey;
 import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
@@ -440,11 +441,36 @@ public class PivSession extends ApplicationSession<PivSession> {
      * @throws ApduException        in case of an error response from the YubiKey
      * @throws BadResponseException in case of incorrect YubiKey response
      */
+    @Deprecated
     public byte[] calculateSecret(Slot slot, ECPoint peerPublicKey) throws IOException, ApduException, BadResponseException {
         KeyType keyType = peerPublicKey.getAffineX().bitLength() > 256 ? KeyType.ECCP384 : KeyType.ECCP256;
         byte[] encodedPoint = new PublicKeyValues.Ec(((KeyType.EcKeyParams)keyType.params).getCurveParams(), peerPublicKey.getAffineX(), peerPublicKey.getAffineY()).getEncodedPoint();
         Logger.debug(logger, "Performing key agreement with key in slot {} of type {}", slot, keyType);
         return usePrivateKey(slot, keyType, encodedPoint, true);
+    }
+
+    /**
+     * Perform an ECDH operation with a given public key to compute a shared secret.
+     *
+     * @param slot            the slot containing the private EC key
+     * @param publicKeyValues the peer public key for the operation
+     * @return the shared secret, comprising the x-coordinate of the ECDH result point.
+     * @throws IOException          in case of connection error
+     * @throws ApduException        in case of an error response from the YubiKey
+     * @throws BadResponseException in case of incorrect YubiKey response
+     * @throws NoSuchAlgorithmException in case of unsupported PublicKey type
+     */
+    public byte[] calculateSecret(Slot slot, PublicKeyValues publicKeyValues) throws IOException, ApduException, BadResponseException, NoSuchAlgorithmException, InvalidKeySpecException {
+        PublicKey publicKey = publicKeyValues.toPublicKey();
+        KeyType keyType = KeyType.fromKey(publicKey);
+        Logger.debug(logger, "Performing key agreement with key in slot {} of type {}", slot, keyType);
+        if (keyType == KeyType.X25519) {
+            return usePrivateKey(slot, keyType, ((BCXDHPublicKey) publicKey).getUEncoding(), true);
+        } else {
+            ECPoint w = ((ECPublicKey) publicKey).getW();
+            byte[] encodedPoint = new PublicKeyValues.Ec(((KeyType.EcKeyParams)keyType.params).getCurveParams(), w.getAffineX(), w.getAffineY()).getEncodedPoint();
+            return usePrivateKey(slot, keyType, encodedPoint, true);
+        }
     }
 
     private byte[] usePrivateKey(Slot slot, KeyType keyType, byte[] message, boolean exponentiation) throws IOException, ApduException, BadResponseException {
@@ -849,7 +875,7 @@ public class PivSession extends ApplicationSession<PivSession> {
             BigInteger exponent = new BigInteger(1, dataObjects.get(0x82));
             return new PublicKeyValues.Rsa(modulus, exponent);
         } else {
-            if (keyType == KeyType.ED25519) {
+            if (keyType == KeyType.ED25519 || keyType == KeyType.X25519) {
                 return new PublicKeyValues.Cv25519(((KeyType.EcKeyParams) keyType.params).getCurveParams(), dataObjects.get(0x86));
             }
             return PublicKeyValues.Ec.fromEncodedPoint(((KeyType.EcKeyParams) keyType.params).getCurveParams(), dataObjects.get(0x86));
@@ -1006,7 +1032,11 @@ public class PivSession extends ApplicationSession<PivSession> {
                 break;
             case EC:
                 PrivateKeyValues.Ec ecPrivateKey = (PrivateKeyValues.Ec) key;
-                tlvs.put((keyType == KeyType.ED25519) ? 0x07 : 0x06, ecPrivateKey.getSecret());  // s
+                tlvs.put(keyType == KeyType.ED25519
+                        ? 0x07
+                        : keyType == KeyType.X25519
+                        ? 0x08
+                        : 0x06, ecPrivateKey.getSecret());  // s
                 break;
         }
 

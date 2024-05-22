@@ -86,7 +86,7 @@ public class PivJcaDeviceTests {
         }
 
         if (piv.supports(FEATURE_CV25519)) {
-            for (KeyType keyType : Collections.singletonList(KeyType.ED25519)) {
+            for (KeyType keyType : Arrays.asList(KeyType.ED25519, KeyType.X25519)) {
                 String alias = Slot.SIGNATURE.getStringAlias();
 
                 KeyPair keyPair = PivTestUtils.loadKey(keyType);
@@ -95,8 +95,13 @@ public class PivJcaDeviceTests {
                 keyStore.setEntry(alias, new KeyStore.PrivateKeyEntry(keyPair.getPrivate(), new Certificate[]{cert}), new PivKeyStoreKeyParameters(PinPolicy.DEFAULT, TouchPolicy.DEFAULT));
                 PrivateKey privateKey = (PrivateKey) keyStore.getKey(alias, DEFAULT_PIN);
 
-                //PivTestUtils.ecKeyAgreement(privateKey, keyPair.getPublic());
-                PivTestUtils.ed25519SignAndVerify(privateKey, keyPair.getPublic());
+                if (keyType == KeyType.X25519) {
+                    PivTestUtils.x25519KeyAgreement(privateKey, keyPair.getPublic());
+                }
+
+                if (keyType == KeyType.ED25519) {
+                    PivTestUtils.ed25519SignAndVerify(privateKey, keyPair.getPublic());
+                }
 
                 //noinspection RedundantCast
                 ((Destroyable) privateKey).destroy();
@@ -113,9 +118,9 @@ public class PivJcaDeviceTests {
         piv.authenticate(PivTestUtils.getManagementKeyType(piv), DEFAULT_MANAGEMENT_KEY);
 
         KeyPairGenerator ecGen = KeyPairGenerator.getInstance("YKPivEC");
-        for (KeyType keyType : Arrays.asList(KeyType.ECCP256, KeyType.ECCP384, KeyType.ED25519)) {
+        for (KeyType keyType : Arrays.asList(KeyType.ECCP256, KeyType.ECCP384, KeyType.ED25519, KeyType.X25519)) {
 
-            if (!piv.supports(FEATURE_CV25519) && keyType == KeyType.ED25519) {
+            if (!piv.supports(FEATURE_CV25519) && (keyType == KeyType.ED25519 || keyType == KeyType.X25519)) {
                 continue;
             }
 
@@ -127,8 +132,15 @@ public class PivJcaDeviceTests {
                 continue;
             }
 
-            PivTestUtils.ecSignAndVerify(keyPair.getPrivate(), keyPair.getPublic());
-            PivTestUtils.ecKeyAgreement(keyPair.getPrivate(), keyPair.getPublic());
+            if (keyType != KeyType.X25519) {
+                PivTestUtils.ecSignAndVerify(keyPair.getPrivate(), keyPair.getPublic());
+            }
+
+            if (keyType != KeyType.X25519) {
+                PivTestUtils.ecKeyAgreement(keyPair.getPrivate(), keyPair.getPublic());
+            } else {
+                PivTestUtils.x25519KeyAgreement(keyPair.getPrivate(), keyPair.getPublic());
+            }
             //TODO: Test with key loaded from KeyStore
         }
 
