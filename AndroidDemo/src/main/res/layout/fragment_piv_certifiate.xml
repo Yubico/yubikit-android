@@ -90,7 +90,6 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:enabled="false"
                     android:text="@string/piv_generate_x25519_cert" />
             </TableRow>
 

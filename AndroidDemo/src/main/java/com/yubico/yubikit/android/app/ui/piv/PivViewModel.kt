@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Yubico.
+ * Copyright (C) 2022-2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,7 +54,7 @@ class PivViewModel : YubiKeyViewModel<PivSession>() {
     fun getMgmtKeyType(session: PivSession) : ManagementKeyType {
         return try {
             session.managementKeyMetadata.keyType
-        } catch (ignored: Exception) {
+        } catch (ignored: UnsupportedOperationException) {
             ManagementKeyType.TDES
         }
     }
