@@ -15,6 +15,7 @@
  */
 package com.yubico.yubikit.testing.piv;
 
+import static com.yubico.yubikit.piv.PivSession.FEATURE_CV25519;
 import static com.yubico.yubikit.testing.piv.PivJcaUtils.setupJca;
 import static com.yubico.yubikit.testing.piv.PivJcaUtils.tearDownJca;
 import static com.yubico.yubikit.testing.piv.PivTestConstants.DEFAULT_MANAGEMENT_KEY;
@@ -84,22 +85,24 @@ public class PivJcaDeviceTests {
             Assert.assertEquals(cert, keyStore.getCertificate(keyStore.getCertificateAlias(cert)));
         }
 
-        for (KeyType keyType : Collections.singletonList(KeyType.ED25519)) {
-            String alias = Slot.SIGNATURE.getStringAlias();
+        if (piv.supports(FEATURE_CV25519)) {
+            for (KeyType keyType : Collections.singletonList(KeyType.ED25519)) {
+                String alias = Slot.SIGNATURE.getStringAlias();
 
-            KeyPair keyPair = PivTestUtils.loadKey(keyType);
-            X509Certificate cert = PivTestUtils.createCertificate(keyPair);
+                KeyPair keyPair = PivTestUtils.loadKey(keyType);
+                X509Certificate cert = PivTestUtils.createCertificate(keyPair);
 
-            keyStore.setEntry(alias, new KeyStore.PrivateKeyEntry(keyPair.getPrivate(), new Certificate[]{cert}), new PivKeyStoreKeyParameters(PinPolicy.DEFAULT, TouchPolicy.DEFAULT));
-            PrivateKey privateKey = (PrivateKey) keyStore.getKey(alias, DEFAULT_PIN);
+                keyStore.setEntry(alias, new KeyStore.PrivateKeyEntry(keyPair.getPrivate(), new Certificate[]{cert}), new PivKeyStoreKeyParameters(PinPolicy.DEFAULT, TouchPolicy.DEFAULT));
+                PrivateKey privateKey = (PrivateKey) keyStore.getKey(alias, DEFAULT_PIN);
 
-            //PivTestUtils.ecKeyAgreement(privateKey, keyPair.getPublic());
-            PivTestUtils.ed25519SignAndVerify(privateKey, keyPair.getPublic());
+                //PivTestUtils.ecKeyAgreement(privateKey, keyPair.getPublic());
+                PivTestUtils.ed25519SignAndVerify(privateKey, keyPair.getPublic());
 
-            //noinspection RedundantCast
-            ((Destroyable) privateKey).destroy();
+                //noinspection RedundantCast
+                ((Destroyable) privateKey).destroy();
 
-            Assert.assertEquals(cert, keyStore.getCertificate(keyStore.getCertificateAlias(cert)));
+                Assert.assertEquals(cert, keyStore.getCertificate(keyStore.getCertificateAlias(cert)));
+            }
         }
 
         tearDownJca();
@@ -111,6 +114,11 @@ public class PivJcaDeviceTests {
 
         KeyPairGenerator ecGen = KeyPairGenerator.getInstance("YKPivEC");
         for (KeyType keyType : Arrays.asList(KeyType.ECCP256, KeyType.ECCP384, KeyType.ED25519)) {
+
+            if (!piv.supports(FEATURE_CV25519) && keyType == KeyType.ED25519) {
+                continue;
+            }
+
             ecGen.initialize(new PivAlgorithmParameterSpec(Slot.AUTHENTICATION, keyType, null, null, DEFAULT_PIN));
             KeyPair keyPair = ecGen.generateKeyPair();
 

@@ -16,6 +16,7 @@
 
 package com.yubico.yubikit.testing.piv;
 
+import static com.yubico.yubikit.piv.PivSession.FEATURE_CV25519;
 import static com.yubico.yubikit.testing.piv.PivJcaUtils.setupJca;
 import static com.yubico.yubikit.testing.piv.PivJcaUtils.tearDownJca;
 import static com.yubico.yubikit.testing.piv.PivTestConstants.DEFAULT_MANAGEMENT_KEY;
@@ -67,6 +68,10 @@ public class PivJcaSigningTests {
     }
 
     public static void testSign(PivSession piv, KeyType keyType) throws NoSuchAlgorithmException, IOException, ApduException, InvalidKeyException, BadResponseException, InvalidAlgorithmParameterException, SignatureException {
+        if (!piv.supports(FEATURE_CV25519) && (keyType == KeyType.ED25519 || keyType == KeyType.X25519)) {
+            return;
+        }
+
         if (keyType == KeyType.X25519) {
             logger.debug("Ignoring keyType: {}", keyType);
             return;

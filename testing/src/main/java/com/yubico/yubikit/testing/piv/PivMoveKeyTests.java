@@ -18,6 +18,8 @@ package com.yubico.yubikit.testing.piv;
 
 import static com.yubico.yubikit.core.smartcard.SW.REFERENCED_DATA_NOT_FOUND;
 import static com.yubico.yubikit.piv.KeyType.Algorithm.EC;
+import static com.yubico.yubikit.piv.PivSession.FEATURE_CV25519;
+import static com.yubico.yubikit.piv.PivSession.FEATURE_MOVE_KEY;
 import static com.yubico.yubikit.testing.piv.PivJcaSigningTests.testSign;
 import static com.yubico.yubikit.testing.piv.PivJcaUtils.setupJca;
 import static com.yubico.yubikit.testing.piv.PivJcaUtils.tearDownJca;
@@ -34,6 +36,7 @@ import com.yubico.yubikit.piv.Slot;
 import com.yubico.yubikit.piv.TouchPolicy;
 
 import org.junit.Assert;
+import org.junit.Assume;
 
 import java.io.IOException;
 import java.security.InvalidAlgorithmParameterException;
@@ -53,6 +56,7 @@ public class PivMoveKeyTests {
 
     static void moveKey(PivSession piv)
             throws IOException, ApduException, BadResponseException, NoSuchAlgorithmException {
+        Assume.assumeTrue("Key does not support move instruction", piv.supports(FEATURE_MOVE_KEY));
         setupJca(piv);
         Slot srcSlot = Slot.RETIRED1;
         Slot dstSlot = Slot.RETIRED2;
@@ -60,6 +64,10 @@ public class PivMoveKeyTests {
         piv.authenticate(PivTestUtils.getManagementKeyType(piv), DEFAULT_MANAGEMENT_KEY);
 
         for (KeyType keyType : Arrays.asList(KeyType.ECCP256, KeyType.ECCP384, KeyType.RSA1024, KeyType.RSA2048, KeyType.ED25519)) {
+
+            if (!piv.supports(FEATURE_CV25519) && keyType == KeyType.ED25519) {
+                continue;
+            }
 
             KeyPair keyPair = PivTestUtils.loadKey(keyType);
             PrivateKeyValues privateKeyValues = PrivateKeyValues.fromPrivateKey(keyPair.getPrivate());
