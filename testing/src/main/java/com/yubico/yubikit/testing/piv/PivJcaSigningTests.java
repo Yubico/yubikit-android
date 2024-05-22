@@ -25,6 +25,7 @@ import static com.yubico.yubikit.testing.piv.PivTestConstants.DEFAULT_PIN;
 import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.piv.KeyType;
+import com.yubico.yubikit.piv.ManagementKeyType;
 import com.yubico.yubikit.piv.PinPolicy;
 import com.yubico.yubikit.piv.PivSession;
 import com.yubico.yubikit.piv.Slot;
@@ -70,7 +71,7 @@ public class PivJcaSigningTests {
     }
 
     public static void testSign(PivSession piv, KeyType keyType) throws NoSuchAlgorithmException, IOException, ApduException, InvalidKeyException, BadResponseException, InvalidAlgorithmParameterException, SignatureException {
-        PivTestUtils.authenticate(piv, DEFAULT_MANAGEMENT_KEY);
+        piv.authenticate(ManagementKeyType.TDES, DEFAULT_MANAGEMENT_KEY);
         logger.debug("Generate key: {}", keyType);
 
         KeyPairGenerator kpg = KeyPairGenerator.getInstance("YKPiv" + keyType.params.algorithm.name());

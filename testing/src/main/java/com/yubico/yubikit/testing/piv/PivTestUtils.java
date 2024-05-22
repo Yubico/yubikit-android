@@ -416,16 +416,8 @@ public class PivTestUtils {
 
         Assert.assertArrayEquals("Secret mismatch", secret, peerSecret);
     }
-
-    public static void authenticate(PivSession piv, byte[] key) throws BadResponseException, ApduException, IOException {
-        piv.authenticate(getDefaultManagementKeyType(piv), key);
-    }
-
-    public static void setManagementKey(PivSession piv, byte[] key, boolean requireTouch) throws ApduException, IOException {
-        piv.setManagementKey(getDefaultManagementKeyType(piv), key, requireTouch);
-    }
-
-    private static ManagementKeyType getDefaultManagementKeyType(PivSession piv) {
+    
+    public static ManagementKeyType getManagementKeyType(PivSession piv) {
         return piv.getVersion().isAtLeast(5, 7, 0)
                 ? ManagementKeyType.AES192
                 : ManagementKeyType.TDES;

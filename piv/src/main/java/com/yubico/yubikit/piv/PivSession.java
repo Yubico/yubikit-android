@@ -884,8 +884,13 @@ public class PivSession extends ApplicationSession<PivSession> {
         }
 
         // ROCA
-        if (generate && keyType.params.algorithm == KeyType.Algorithm.RSA) {
-            require(FEATURE_RSA_GENERATION);
+        if (keyType.params.algorithm == KeyType.Algorithm.RSA) {
+            if (generate) {
+                require(FEATURE_RSA_GENERATION);
+            }
+            if (keyType.params.bitLength == 3072 || keyType.params.bitLength == 4096) {
+                require(FEATURE_RSA3072_RSA4096);
+            }
         }
 
         // FIPS
@@ -921,8 +926,7 @@ public class PivSession extends ApplicationSession<PivSession> {
      * @throws ApduException        in case of an error response from the YubiKey
      * @throws BadResponseException in case of incorrect YubiKey response
      */
-    public PublicKeyValues generateKeyValues(Slot slot, KeyType keyType, PinPolicy pinPolicy, TouchPolicy touchPolicy) throws IOException, ApduException, BadResponseException
-    {
+    public PublicKeyValues generateKeyValues(Slot slot, KeyType keyType, PinPolicy pinPolicy, TouchPolicy touchPolicy) throws IOException, ApduException, BadResponseException {
         checkKeySupport(keyType, pinPolicy, touchPolicy, true);
 
         Map<Integer, byte[]> tlvs = new LinkedHashMap<>();

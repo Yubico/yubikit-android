@@ -45,32 +45,31 @@ public class PivDeviceTests {
 
         logger.debug("Authenticate with the wrong key");
         try {
-            PivTestUtils.authenticate(piv, key2);
+            piv.authenticate(PivTestUtils.getManagementKeyType(piv), key2);
             Assert.fail("Authenticated with wrong key");
         } catch (ApduException e) {
             Assert.assertEquals(SW.SECURITY_CONDITION_NOT_SATISFIED, e.getSw());
         }
 
         logger.debug("Change management key");
-        PivTestUtils.authenticate(piv, DEFAULT_MANAGEMENT_KEY);
-        PivTestUtils.setManagementKey(piv, key2, false);
+        piv.authenticate(PivTestUtils.getManagementKeyType(piv), DEFAULT_MANAGEMENT_KEY);
+        piv.setManagementKey(PivTestUtils.getManagementKeyType(piv), key2, false);
 
         logger.debug("Authenticate with the old key");
         try {
-            PivTestUtils.authenticate(piv, DEFAULT_MANAGEMENT_KEY);
+            piv.authenticate(PivTestUtils.getManagementKeyType(piv), DEFAULT_MANAGEMENT_KEY);
             Assert.fail("Authenticated with wrong key");
         } catch (ApduException e) {
             Assert.assertEquals(SW.SECURITY_CONDITION_NOT_SATISFIED, e.getSw());
         }
 
         logger.debug("Change management key");
-        PivTestUtils.authenticate(piv, key2);
-        PivTestUtils.setManagementKey(piv, DEFAULT_MANAGEMENT_KEY, false);
+        piv.setManagementKey(PivTestUtils.getManagementKeyType(piv), DEFAULT_MANAGEMENT_KEY, false);
     }
 
     public static void testPin(PivSession piv) throws ApduException, InvalidPinException, IOException, BadResponseException {
         // Ensure we only try this if the default management key is set.
-        PivTestUtils.authenticate(piv, DEFAULT_MANAGEMENT_KEY);
+        piv.authenticate(PivTestUtils.getManagementKeyType(piv), DEFAULT_MANAGEMENT_KEY);
 
         logger.debug("Verify PIN");
         char[] pin2 = "123123".toCharArray();
@@ -114,7 +113,7 @@ public class PivDeviceTests {
 
     public static void testPuk(PivSession piv) throws ApduException, InvalidPinException, IOException, BadResponseException {
         // Ensure we only try this if the default management key is set.
-        PivTestUtils.authenticate(piv, DEFAULT_MANAGEMENT_KEY);
+        piv.authenticate(PivTestUtils.getManagementKeyType(piv), DEFAULT_MANAGEMENT_KEY);
 
         // Change PUK
         char[] puk2 = "12341234".toCharArray();
