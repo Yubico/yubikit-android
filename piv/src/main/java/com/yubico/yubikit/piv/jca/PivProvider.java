@@ -88,13 +88,6 @@ public class PivProvider extends Provider {
             }
         });
 
-        putService(new Service(this, "Signature", "X25519", PivEcSignatureSpi.Prehashed.class.getName(), null, x25519Attributes) {
-            @Override
-            public Object newInstance(Object constructorParameter) {
-                return new PivEcSignatureSpi.Prehashed(sessionRequester);
-            }
-        });
-
         putService(new Service(this, "KeyAgreement", "X25519", PivKeyAgreementSpi.class.getName(), null, x25519Attributes) {
             @Override
             public Object newInstance(Object constructorParameter) {

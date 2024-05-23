@@ -130,8 +130,6 @@ class PivCertificateFragment : Fragment() {
         binding.title.text = getString(requireArguments().getInt(ARG_TITLE))
         showCerts(false)
 
-        pivViewModel.certificates
-
         pivViewModel.certificates.observe(viewLifecycleOwner, Observer {
             it ?: return@Observer
             val cert = it.get(slot.value)

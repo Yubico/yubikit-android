@@ -178,7 +178,6 @@ public class PivJcaSigningTests {
 
                 break;
         }
-
     }
 
     public static byte[] testSign(KeyPair keyPair, String signatureAlgorithm, AlgorithmParameterSpec param) throws NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidKeyException, SignatureException {
