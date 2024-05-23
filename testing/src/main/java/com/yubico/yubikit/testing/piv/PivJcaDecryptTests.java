@@ -69,7 +69,7 @@ public class PivJcaDecryptTests {
             throw new IllegalArgumentException("Unsupported");
         }
 
-        piv.authenticate(PivTestUtils.getManagementKeyType(piv), DEFAULT_MANAGEMENT_KEY);
+        piv.authenticate(piv.getManagementKeyType(), DEFAULT_MANAGEMENT_KEY);
         logger.debug("Generate key: {}", keyType);
         KeyPairGenerator kpg = KeyPairGenerator.getInstance("YKPivRSA");
         kpg.initialize(new PivAlgorithmParameterSpec(Slot.KEY_MANAGEMENT, keyType, PinPolicy.DEFAULT, TouchPolicy.DEFAULT, DEFAULT_PIN));

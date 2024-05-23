@@ -387,14 +387,4 @@ public class PivTestUtils {
 
         Assert.assertArrayEquals("Secret mismatch", secret, peerSecret);
     }
-
-
-    static ManagementKeyType getManagementKeyType(PivSession session) {
-        try {
-            ManagementKeyMetadata metadata = session.getManagementKeyMetadata();
-            return metadata.getKeyType();
-        } catch (IOException | ApduException exception) {
-            return ManagementKeyType.TDES;
-        }
-    }
 }

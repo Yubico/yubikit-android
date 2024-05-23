@@ -47,7 +47,7 @@ public class PivJcaDeviceTests {
     @SuppressWarnings("NewApi") // casting to Destroyable is supported from API 26
     public static void testImportKeys(PivSession piv) throws Exception {
         setupJca(piv);
-        piv.authenticate(PivTestUtils.getManagementKeyType(piv), DEFAULT_MANAGEMENT_KEY);
+        piv.authenticate(piv.getManagementKeyType(), DEFAULT_MANAGEMENT_KEY);
 
         KeyStore keyStore = KeyStore.getInstance("YKPiv");
         keyStore.load(null);
@@ -115,7 +115,7 @@ public class PivJcaDeviceTests {
 
     public static void testGenerateKeys(PivSession piv) throws Exception {
         setupJca(piv);
-        piv.authenticate(PivTestUtils.getManagementKeyType(piv), DEFAULT_MANAGEMENT_KEY);
+        piv.authenticate(piv.getManagementKeyType(), DEFAULT_MANAGEMENT_KEY);
 
         KeyPairGenerator ecGen = KeyPairGenerator.getInstance("YKPivEC");
         for (KeyType keyType : Arrays.asList(KeyType.ECCP256, KeyType.ECCP384, KeyType.ED25519, KeyType.X25519)) {

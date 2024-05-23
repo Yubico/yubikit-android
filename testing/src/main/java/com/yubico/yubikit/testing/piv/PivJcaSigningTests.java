@@ -76,7 +76,7 @@ public class PivJcaSigningTests {
             logger.debug("Ignoring keyType: {}", keyType);
             return;
         }
-        piv.authenticate(PivTestUtils.getManagementKeyType(piv), DEFAULT_MANAGEMENT_KEY);
+        piv.authenticate(piv.getManagementKeyType(), DEFAULT_MANAGEMENT_KEY);
         logger.debug("Generate key: {}", keyType);
 
         KeyPairGenerator kpg = KeyPairGenerator.getInstance("YKPiv" + keyType.params.algorithm.name());

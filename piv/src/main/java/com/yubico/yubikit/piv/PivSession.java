@@ -195,6 +195,7 @@ public class PivSession extends ApplicationSession<PivSession> {
     private final Version version;
     private int currentPinAttempts = 3;  // Internal guess as to number of PIN retries.
     private int maxPinAttempts = 3; // Internal guess as to max number of PIN retries.
+    private ManagementKeyType managementKeyType;
 
     private static final org.slf4j.Logger logger = LoggerFactory.getLogger(PivSession.class);
 
@@ -216,6 +217,12 @@ public class PivSession extends ApplicationSession<PivSession> {
         // use extended length APDUs on compatible connections and devices
         if (connection.isExtendedLengthApduSupported() && version.isAtLeast(4, 0, 0)) {
             protocol.setApduFormat(ApduFormat.EXTENDED);
+        }
+
+        try {
+            managementKeyType = getManagementKeyMetadata().getKeyType();
+        } catch (UnsupportedOperationException unsupportedOperationException) {
+            managementKeyType = ManagementKeyType.TDES;
         }
         Logger.debug(logger, "PIV session initialized (version={})", version);
     }
@@ -522,6 +529,7 @@ public class PivSession extends ApplicationSession<PivSession> {
         // NOTE: if p2=0xfe key requires touch
         // Require touch is only available on YubiKey 4 & 5.
         protocol.sendAndReceive(new Apdu(0, INS_SET_MGMKEY, 0xff, requireTouch ? 0xfe : 0xff, stream.toByteArray()));
+        managementKeyType = keyType;
         Logger.info(logger, "Management key set");
     }
 
@@ -711,6 +719,13 @@ public class PivSession extends ApplicationSession<PivSession> {
                 data.get(TAG_METADATA_IS_DEFAULT)[0] != 0,
                 TouchPolicy.fromValue(data.get(TAG_METADATA_POLICY)[INDEX_TOUCH_POLICY])
         );
+    }
+
+    /**
+     * Get card management key type.
+     */
+    public ManagementKeyType getManagementKeyType() {
+        return managementKeyType;
     }
 
     /**
