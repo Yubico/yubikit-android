@@ -33,7 +33,7 @@ public class PivJcaUtils {
 
     public static void setupJca(PivSession piv) {
         Security.removeProvider("BC");
-        Security.insertProviderAt(new BouncyCastleProvider(), 1);
+        Security.addProvider(new BouncyCastleProvider());
         Security.insertProviderAt(new PivProvider(piv), 1);
         listJcaProviders();
     }

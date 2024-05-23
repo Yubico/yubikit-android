@@ -28,13 +28,16 @@ import com.yubico.yubikit.piv.Slot;
 import com.yubico.yubikit.piv.TouchPolicy;
 import com.yubico.yubikit.piv.jca.PivAlgorithmParameterSpec;
 import com.yubico.yubikit.piv.jca.PivKeyStoreKeyParameters;
+import com.yubico.yubikit.piv.jca.PivProvider;
 
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.Assert;
 
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.KeyStore;
 import java.security.PrivateKey;
+import java.security.Security;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
@@ -115,6 +118,23 @@ public class PivJcaDeviceTests {
 
     public static void testGenerateKeys(PivSession piv) throws Exception {
         setupJca(piv);
+        generateKeys(piv);
+        tearDownJca();
+    }
+
+    public static void testGenerateKeysPreferBC(PivSession piv) throws Exception {
+        // following is an alternate version of setupJca method
+        // the Bouncy Castle provider is set on second position and will provide Ed25519 and X25519
+        // cryptographic services on the host.
+        Security.removeProvider("BC");
+        Security.insertProviderAt(new BouncyCastleProvider(), 1);
+        Security.insertProviderAt(new PivProvider(piv), 1);
+
+        generateKeys(piv);
+        tearDownJca();
+    }
+
+    private static void generateKeys(PivSession piv) throws Exception {
         piv.authenticate(DEFAULT_MANAGEMENT_KEY);
 
         KeyPairGenerator ecGen = KeyPairGenerator.getInstance("YKPivEC");
@@ -152,6 +172,5 @@ public class PivJcaDeviceTests {
             PivTestUtils.rsaSignAndVerify(keyPair.getPrivate(), keyPair.getPublic());
             //TODO: Test with key loaded from KeyStore
         }
-        tearDownJca();
     }
 }
