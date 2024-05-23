@@ -281,35 +281,54 @@ public class PivSession extends ApplicationSession<PivSession> {
      * @param keyType       the algorithm used for the management key
      *                      The default key uses TDES
      * @param managementKey management key as byte array
-     *                      The default 3DES management key (9B) is 010203040506070801020304050607080102030405060708.
+     *                      The default 3DES/AES192 management key (9B) is 010203040506070801020304050607080102030405060708.
+     * @throws IllegalArgumentException in case of wrong keyType
+     * @throws IOException              in case of connection error
+     * @throws ApduException            in case of an error response from the YubiKey
+     * @throws BadResponseException     in case of incorrect YubiKey response
+     * @deprecated Replaced by {@link #authenticate(byte[])}
+     */
+    @Deprecated
+    public void authenticate(ManagementKeyType keyType, byte[] managementKey) throws IOException, ApduException, BadResponseException {
+        if (keyType != managementKeyType) {
+            throw new IllegalArgumentException("Invalid Management Key type " + keyType.name());
+        }
+        authenticate(managementKey);
+    }
+
+    /**
+     * Authenticate with the Management Key.
+     *
+     * @param managementKey management key as byte array
+     *                      The default 3DES/AES192 management key (9B) is 010203040506070801020304050607080102030405060708.
      * @throws IOException          in case of connection error
      * @throws ApduException        in case of an error response from the YubiKey
      * @throws BadResponseException in case of incorrect YubiKey response
      */
-    public void authenticate(ManagementKeyType keyType, byte[] managementKey) throws IOException, ApduException, BadResponseException {
-        Logger.debug(logger, "Authenticating with key type: {}", keyType);
-        if (managementKey.length != keyType.keyLength) {
-            throw new IllegalArgumentException(String.format("Management Key must be %d bytes", keyType.keyLength));
+    public void authenticate(byte[] managementKey) throws IOException, ApduException, BadResponseException {
+        Logger.debug(logger, "Authenticating with key type: {}", managementKeyType);
+        if (managementKey.length != managementKeyType.keyLength) {
+            throw new IllegalArgumentException(String.format("Management Key must be %d bytes", managementKeyType.keyLength));
         }
         // An empty witness is a request for a witness.
         byte[] request = new Tlv(TAG_DYN_AUTH, new Tlv(TAG_AUTH_WITNESS, null).getBytes()).getBytes();
-        byte[] response = protocol.sendAndReceive(new Apdu(0, INS_AUTHENTICATE, keyType.value, SLOT_CARD_MANAGEMENT, request));
+        byte[] response = protocol.sendAndReceive(new Apdu(0, INS_AUTHENTICATE, managementKeyType.value, SLOT_CARD_MANAGEMENT, request));
 
         // Witness (tag '80') contains encrypted data (unrevealed fact).
         byte[] witness = Tlvs.unpackValue(TAG_AUTH_WITNESS, Tlvs.unpackValue(TAG_DYN_AUTH, response));
-        SecretKey key = new SecretKeySpec(managementKey, keyType.cipherName);
+        SecretKey key = new SecretKeySpec(managementKey, managementKeyType.cipherName);
         try {
             Map<Integer, byte[]> dataTlvs = new LinkedHashMap<>();
-            Cipher cipher = Cipher.getInstance(keyType.cipherName + "/ECB/NoPadding");
+            Cipher cipher = Cipher.getInstance(managementKeyType.cipherName + "/ECB/NoPadding");
             // This decrypted witness
             cipher.init(Cipher.DECRYPT_MODE, key);
             dataTlvs.put(TAG_AUTH_WITNESS, cipher.doFinal(witness));
             //  The challenge (tag '81') contains clear data (byte sequence),
-            byte[] challenge = RandomUtils.getRandomBytes(keyType.challengeLength);
+            byte[] challenge = RandomUtils.getRandomBytes(managementKeyType.challengeLength);
             dataTlvs.put(TAG_AUTH_CHALLENGE, challenge);
 
             request = new Tlv(TAG_DYN_AUTH, Tlvs.encodeMap(dataTlvs)).getBytes();
-            response = protocol.sendAndReceive(new Apdu(0, INS_AUTHENTICATE, keyType.value, SLOT_CARD_MANAGEMENT, request));
+            response = protocol.sendAndReceive(new Apdu(0, INS_AUTHENTICATE, managementKeyType.value, SLOT_CARD_MANAGEMENT, request));
 
             // (tag '82') contains either the decrypted data from tag '80' or the encrypted data from tag '81'.
             byte[] encryptedData = Tlvs.unpackValue(TAG_AUTH_RESPONSE, Tlvs.unpackValue(TAG_DYN_AUTH, response));

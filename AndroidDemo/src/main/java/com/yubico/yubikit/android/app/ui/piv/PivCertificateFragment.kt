@@ -156,7 +156,7 @@ class PivCertificateFragment : Fragment() {
                 .generatePrivate(PKCS8EncodedKeySpec(Base64.decode(DER_KEY, Base64.DEFAULT)))
             lifecycleScope.launch(Dispatchers.Main) {
                 pivViewModel.pendingAction.value = {
-                    authenticate(managementKeyType, pivViewModel.mgmtKey)
+                    authenticate(pivViewModel.mgmtKey)
                     putKey(slot, PrivateKeyValues.fromPrivateKey(key), PinPolicy.DEFAULT, TouchPolicy.DEFAULT)
                     putCertificate(slot, cert)
                     "Imported certificate ${cert.subjectDN} issued by ${cert.issuerDN}"
@@ -201,7 +201,7 @@ class PivCertificateFragment : Fragment() {
         // Delete the certificate
         binding.delete.setOnClickListener {
             pivViewModel.pendingAction.value = {
-                authenticate(managementKeyType, pivViewModel.mgmtKey)
+                authenticate(pivViewModel.mgmtKey)
                 deleteCertificate(slot)
                 "Deleted certificate in slot $slot"
             }
@@ -270,7 +270,7 @@ class PivCertificateFragment : Fragment() {
     {
         getSecret(requireContext(), R.string.enter_pin)?.let { pin ->
             pivViewModel.pendingAction.value = {
-                authenticate(managementKeyType, pivViewModel.mgmtKey)
+                authenticate(pivViewModel.mgmtKey)
 
                 val provider = PivProvider(this)
                 val factory = KeyPairGenerator.getInstance(keyPairGen(keyType), provider)

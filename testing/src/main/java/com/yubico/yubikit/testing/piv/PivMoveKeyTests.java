@@ -61,7 +61,7 @@ public class PivMoveKeyTests {
         Slot srcSlot = Slot.RETIRED1;
         Slot dstSlot = Slot.RETIRED2;
 
-        piv.authenticate(piv.getManagementKeyType(), DEFAULT_MANAGEMENT_KEY);
+        piv.authenticate(DEFAULT_MANAGEMENT_KEY);
 
         for (KeyType keyType : Arrays.asList(KeyType.ECCP256, KeyType.ECCP384, KeyType.RSA1024, KeyType.RSA2048, KeyType.ED25519, KeyType.X25519)) {
 
