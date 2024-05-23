@@ -38,7 +38,6 @@ import com.yubico.yubikit.core.util.StringUtils;
 import com.yubico.yubikit.core.util.Tlv;
 import com.yubico.yubikit.core.util.Tlvs;
 
-import org.bouncycastle.jcajce.provider.asymmetric.edec.BCXDHPublicKey;
 import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
@@ -481,9 +480,9 @@ public class PivSession extends ApplicationSession<PivSession> {
      * @param slot            the slot containing the private EC key
      * @param publicKeyValues the peer public key for the operation
      * @return the shared secret, comprising the x-coordinate of the ECDH result point.
-     * @throws IOException          in case of connection error
-     * @throws ApduException        in case of an error response from the YubiKey
-     * @throws BadResponseException in case of incorrect YubiKey response
+     * @throws IOException              in case of connection error
+     * @throws ApduException            in case of an error response from the YubiKey
+     * @throws BadResponseException     in case of incorrect YubiKey response
      * @throws NoSuchAlgorithmException in case of unsupported PublicKey type
      */
     public byte[] calculateSecret(Slot slot, PublicKeyValues publicKeyValues) throws IOException, ApduException, BadResponseException, NoSuchAlgorithmException, InvalidKeySpecException {
@@ -491,10 +490,10 @@ public class PivSession extends ApplicationSession<PivSession> {
         KeyType keyType = KeyType.fromKey(publicKey);
         Logger.debug(logger, "Performing key agreement with key in slot {} of type {}", slot, keyType);
         if (keyType == KeyType.X25519) {
-            return usePrivateKey(slot, keyType, ((BCXDHPublicKey) publicKey).getUEncoding(), true);
+            return usePrivateKey(slot, keyType, ((PublicKeyValues.Cv25519) publicKeyValues).getBytes(), true);
         } else {
             ECPoint w = ((ECPublicKey) publicKey).getW();
-            byte[] encodedPoint = new PublicKeyValues.Ec(((KeyType.EcKeyParams)keyType.params).getCurveParams(), w.getAffineX(), w.getAffineY()).getEncodedPoint();
+            byte[] encodedPoint = new PublicKeyValues.Ec(((KeyType.EcKeyParams) keyType.params).getCurveParams(), w.getAffineX(), w.getAffineY()).getEncodedPoint();
             return usePrivateKey(slot, keyType, encodedPoint, true);
         }
     }

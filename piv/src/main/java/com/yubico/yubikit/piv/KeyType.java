@@ -20,14 +20,9 @@ import com.yubico.yubikit.core.keys.EllipticCurveValues;
 import com.yubico.yubikit.core.keys.PrivateKeyValues;
 import com.yubico.yubikit.core.keys.PublicKeyValues;
 
-import org.bouncycastle.jcajce.provider.asymmetric.edec.BCEdDSAPrivateKey;
-import org.bouncycastle.jcajce.provider.asymmetric.edec.BCEdDSAPublicKey;
-import org.bouncycastle.jcajce.provider.asymmetric.edec.BCXDHPrivateKey;
-import org.bouncycastle.jcajce.provider.asymmetric.edec.BCXDHPublicKey;
-
 import java.security.Key;
-import java.security.interfaces.ECPrivateKey;
-import java.security.interfaces.ECPublicKey;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.interfaces.RSAKey;
 
 import javax.annotation.Nonnull;
@@ -114,18 +109,17 @@ public enum KeyType {
             }
         } else {
             EllipticCurveValues ellipticCurveValues;
-            if (key instanceof ECPublicKey) {
-                ellipticCurveValues = ((PublicKeyValues.Ec) PublicKeyValues.fromPublicKey((ECPublicKey) key)).getCurveParams();
-            } else if (key instanceof ECPrivateKey) {
-                ellipticCurveValues = ((PrivateKeyValues.Ec) PrivateKeyValues.fromPrivateKey((ECPrivateKey) key)).getCurveParams();
-            } else if (key instanceof BCEdDSAPrivateKey) {
-                ellipticCurveValues = ((PrivateKeyValues.Ec) PrivateKeyValues.fromPrivateKey((BCEdDSAPrivateKey) key)).getCurveParams();
-            } else if (key instanceof BCEdDSAPublicKey) {
-                ellipticCurveValues = ((PublicKeyValues.Cv25519) PublicKeyValues.fromPublicKey((BCEdDSAPublicKey) key)).getCurveParams();
-            } else if (key instanceof BCXDHPublicKey) {
-                ellipticCurveValues = ((PublicKeyValues.Cv25519) PublicKeyValues.fromPublicKey((BCXDHPublicKey) key)).getCurveParams();
-            } else if (key instanceof BCXDHPrivateKey) {
-                ellipticCurveValues = ((PrivateKeyValues.Ec) PrivateKeyValues.fromPrivateKey((BCXDHPrivateKey) key)).getCurveParams();
+            if (key instanceof PublicKey) {
+                PublicKeyValues publicKeyValues = PublicKeyValues.fromPublicKey( (PublicKey) key);
+                if (publicKeyValues instanceof PublicKeyValues.Ec) {
+                    ellipticCurveValues = ((PublicKeyValues.Ec) publicKeyValues).getCurveParams();
+                } else if (publicKeyValues instanceof PublicKeyValues.Cv25519) {
+                    ellipticCurveValues = ((PublicKeyValues.Cv25519) publicKeyValues).getCurveParams();
+                } else {
+                    throw new IllegalArgumentException("Unsupported public key type");
+                }
+            } else if (key instanceof PrivateKey) {
+                ellipticCurveValues = ((PrivateKeyValues.Ec) PrivateKeyValues.fromPrivateKey((PrivateKey) key)).getCurveParams();
             } else {
                 throw new IllegalArgumentException("Unsupported key type");
             }

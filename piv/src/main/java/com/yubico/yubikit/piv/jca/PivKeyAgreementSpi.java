@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Yubico.
+ * Copyright (C) 2022,2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,21 +16,20 @@
 
 package com.yubico.yubikit.piv.jca;
 
+import com.yubico.yubikit.core.keys.EllipticCurveValues;
 import com.yubico.yubikit.core.keys.PublicKeyValues;
 import com.yubico.yubikit.core.util.Callback;
 import com.yubico.yubikit.core.util.Result;
 import com.yubico.yubikit.piv.PivSession;
 
-import org.bouncycastle.jcajce.provider.asymmetric.edec.BCXDHPublicKey;
-
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.Key;
 import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.security.interfaces.ECPublicKey;
 import java.security.spec.AlgorithmParameterSpec;
-import java.security.spec.ECPoint;
 
 import javax.annotation.Nullable;
 import javax.crypto.KeyAgreementSpi;
@@ -73,13 +72,25 @@ public class PivKeyAgreementSpi extends KeyAgreementSpi {
         if (!lastPhase) {
             throw new IllegalStateException("Multiple phases not supported");
         }
-        if(key instanceof ECPublicKey && ((PivPrivateKey.EcKey) privateKey).getParams().getCurve().equals(((ECPublicKey) key).getParams().getCurve())) {
-            publicKeyValues = PublicKeyValues.fromPublicKey((ECPublicKey) key);
-            return null;
-        } else if (key instanceof BCXDHPublicKey) {
-            publicKeyValues = PublicKeyValues.fromPublicKey((BCXDHPublicKey) key);
-            return null;
+
+        if (privateKey instanceof PivPrivateKey.EcKey && key instanceof ECPublicKey) {
+            PivPrivateKey.EcKey pivEcPrivateKey = (PivPrivateKey.EcKey) privateKey;
+            ECPublicKey ecPublicKey = (ECPublicKey) key;
+
+            if (pivEcPrivateKey.getParams().getCurve().equals(ecPublicKey.getParams().getCurve())) {
+                publicKeyValues = PublicKeyValues.fromPublicKey((PublicKey) key);
+                return null;
+            }
+        } else if (privateKey instanceof PivPrivateKey.X25519Key && key instanceof PublicKey) {
+            publicKeyValues = PublicKeyValues.fromPublicKey((PublicKey) key);
+            if (publicKeyValues instanceof PublicKeyValues.Cv25519) {
+                PublicKeyValues.Cv25519 cv25519PublicKeyValues = (PublicKeyValues.Cv25519) publicKeyValues;
+                if (cv25519PublicKeyValues.getCurveParams() == EllipticCurveValues.X25519) {
+                    return null;
+                }
+            }
         }
+
         throw new InvalidKeyException("Wrong key type");
     }
 
