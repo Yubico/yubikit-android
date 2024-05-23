@@ -78,7 +78,7 @@ public class PivKeyAgreementSpi extends KeyAgreementSpi {
             ECPublicKey ecPublicKey = (ECPublicKey) key;
 
             if (pivEcPrivateKey.getParams().getCurve().equals(ecPublicKey.getParams().getCurve())) {
-                publicKeyValues = PublicKeyValues.fromPublicKey((PublicKey) key);
+                publicKeyValues = PublicKeyValues.fromPublicKey(ecPublicKey);
                 return null;
             }
         } else if (privateKey instanceof PivPrivateKey.X25519Key && key instanceof PublicKey) {
