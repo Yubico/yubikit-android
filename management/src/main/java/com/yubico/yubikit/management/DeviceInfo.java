@@ -60,6 +60,7 @@ public class DeviceInfo {
     private final boolean isLocked;
     private final boolean isFips;
     private final boolean isSky;
+    @Nullable
     private final String partNumber;
     private final int fipsCapable;
     private final int fipsApproved;
@@ -201,6 +202,7 @@ public class DeviceInfo {
     /**
      * Returns part number
      */
+    @Nullable
     public String getPartNumber() {
         return partNumber;
     }
@@ -255,7 +257,8 @@ public class DeviceInfo {
         int formFactorTagData = readInt(data.get(TAG_FORMFACTOR));
         boolean isFips = (formFactorTagData & 0x80) != 0;
         boolean isSky = (formFactorTagData & 0x40) != 0;
-        String partNumber = "";
+        @Nullable
+        String partNumber = null;
         int fipsCapable = fromFips(readInt(data.get(TAG_FIPS_CAPABLE)));
         int fipsApproved = fromFips(readInt(data.get(TAG_FIPS_APPROVED)));
         boolean pinComplexity = readInt(data.get(TAG_PIN_COMPLEXITY)) == 1;
@@ -265,7 +268,6 @@ public class DeviceInfo {
         Version version = data.containsKey(TAG_FIRMWARE_VERSION)
                 ? Version.fromBytes(data.get(TAG_FIRMWARE_VERSION))
                 : defaultVersion;
-
 
         final Version versionZero = new Version(0,0,0);
 
@@ -363,6 +365,7 @@ public class DeviceInfo {
         private boolean isLocked = false;
         private boolean isFips = false;
         private boolean isSky = false;
+        @Nullable
         private String partNumber = "";
         private int fipsCapable = 0;
         private int fipsApproved = 0;
@@ -417,7 +420,7 @@ public class DeviceInfo {
             return this;
         }
 
-        public Builder partNumber(String partNumber) {
+        public Builder partNumber(@Nullable String partNumber) {
             this.partNumber = partNumber;
             return this;
         }

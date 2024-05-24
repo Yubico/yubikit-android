@@ -93,7 +93,7 @@ public class DeviceInfoTest {
     @Test
     public void testParsePartNumber() {
         // valid UTF-8
-        assertEquals("", defaultInfo().getPartNumber());
+        assertNull(defaultInfo().getPartNumber());
         assertEquals("", infoOf(0x13, new byte[0]).getPartNumber());
         assertEquals("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_=+-",
                 infoOf(0x13, fromHex("6162636465666768696A6B6C6D6E6F707172737475767778797A41" +
@@ -107,13 +107,13 @@ public class DeviceInfoTest {
                 infoOf(0x13, fromHex("30313233343536373839414243444546")).getPartNumber());
 
         // invalid UTF-8
-        assertEquals("", infoOf(0x13, fromHex("c328")).getPartNumber());
-        assertEquals("", infoOf(0x13, fromHex("a0a1")).getPartNumber());
-        assertEquals("", infoOf(0x13, fromHex("e228a1")).getPartNumber());
-        assertEquals("", infoOf(0x13, fromHex("e28228")).getPartNumber());
-        assertEquals("", infoOf(0x13, fromHex("f0288cbc")).getPartNumber());
-        assertEquals("", infoOf(0x13, fromHex("f09028bc")).getPartNumber());
-        assertEquals("", infoOf(0x13, fromHex("f0288c28")).getPartNumber());
+        assertNull(infoOf(0x13, fromHex("c328")).getPartNumber());
+        assertNull(infoOf(0x13, fromHex("a0a1")).getPartNumber());
+        assertNull(infoOf(0x13, fromHex("e228a1")).getPartNumber());
+        assertNull(infoOf(0x13, fromHex("e28228")).getPartNumber());
+        assertNull(infoOf(0x13, fromHex("f0288cbc")).getPartNumber());
+        assertNull(infoOf(0x13, fromHex("f09028bc")).getPartNumber());
+        assertNull(infoOf(0x13, fromHex("f0288c28")).getPartNumber());
     }
 
     @Test
