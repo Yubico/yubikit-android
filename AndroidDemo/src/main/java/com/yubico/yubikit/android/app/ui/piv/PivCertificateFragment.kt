@@ -136,15 +136,16 @@ class PivCertificateFragment : Fragment() {
             showCerts(cert != null)
             if (cert != null) {
                 val expiration = SimpleDateFormat("yyyy-MM-dd", Locale.ROOT).format(cert.notAfter)
-                val keyType = KeyType.fromKey(cert.publicKey)
-                val keyTypeStr = try {
-                    keyType.toString()
+                val keyType = try {
+                    KeyType.fromKey(cert.publicKey)
                 } catch (e: IllegalArgumentException) {
-                    cert.publicKey.algorithm
+                    null
                 }
-                binding.certInfo.text =
-                    "Issuer: ${cert.issuerDN}\nSubject name: ${cert.subjectDN}\nExpiration date: $expiration\nKey type: $keyTypeStr"
-                binding.sign.isEnabled = keyType != KeyType.X25519
+                binding.certInfo.text = "Issuer: ${cert.issuerDN}\n" +
+                        "Subject name: ${cert.subjectDN}\n" +
+                        "Expiration date: $expiration\n" +
+                        "Key type: ${keyType?.toString() ?: cert.publicKey.algorithm}"
+                binding.sign.isEnabled = (keyType != null && keyType != KeyType.X25519)
             }
         })
 
