@@ -69,7 +69,7 @@ public class DeviceConfig {
         this.autoEjectTimeout = autoEjectTimeout;
         this.challengeResponseTimeout = challengeResponseTimeout;
         this.deviceFlags = deviceFlags;
-        this.nfcRestricted = false;
+        this.nfcRestricted = null;
     }
 
     DeviceConfig(Builder builder) {
