@@ -24,6 +24,7 @@ import com.yubico.yubikit.core.application.ApplicationSession;
 import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.application.Feature;
 import com.yubico.yubikit.core.internal.Logger;
+import com.yubico.yubikit.core.keys.EllipticCurveValues;
 import com.yubico.yubikit.core.keys.PrivateKeyValues;
 import com.yubico.yubikit.core.keys.PublicKeyValues;
 import com.yubico.yubikit.core.smartcard.Apdu;
@@ -477,24 +478,33 @@ public class PivSession extends ApplicationSession<PivSession> {
     /**
      * Perform an ECDH operation with a given public key to compute a shared secret.
      *
-     * @param slot            the slot containing the private EC key
-     * @param publicKeyValues the peer public key for the operation
+     * @param slot                the slot containing the private EC key
+     * @param peerPublicKeyValues the peer public key values for the operation
      * @return the shared secret, comprising the x-coordinate of the ECDH result point.
      * @throws IOException              in case of connection error
      * @throws ApduException            in case of an error response from the YubiKey
      * @throws BadResponseException     in case of incorrect YubiKey response
      * @throws NoSuchAlgorithmException in case of unsupported PublicKey type
      */
-    public byte[] calculateSecret(Slot slot, PublicKeyValues publicKeyValues) throws IOException, ApduException, BadResponseException, NoSuchAlgorithmException, InvalidKeySpecException {
-        PublicKey publicKey = publicKeyValues.toPublicKey();
-        KeyType keyType = KeyType.fromKey(publicKey);
-        Logger.debug(logger, "Performing key agreement with key in slot {} of type {}", slot, keyType);
-        if (keyType == KeyType.X25519) {
-            return usePrivateKey(slot, keyType, ((PublicKeyValues.Cv25519) publicKeyValues).getBytes(), true);
+    public byte[] calculateSecret(Slot slot, PublicKeyValues peerPublicKeyValues) throws IOException, ApduException, BadResponseException, NoSuchAlgorithmException {
+        if (peerPublicKeyValues instanceof PublicKeyValues.Cv25519) {
+            PublicKeyValues.Cv25519 publicKeyValues = (PublicKeyValues.Cv25519) peerPublicKeyValues;
+            KeyType keyType;
+            if (publicKeyValues.getCurveParams() == EllipticCurveValues.X25519) {
+                keyType = KeyType.X25519;
+            } else {
+                throw new NoSuchAlgorithmException("Illegal public key");
+            }
+            Logger.debug(logger, "Performing key agreement with key in slot {} of type {}", slot, keyType);
+            return usePrivateKey(slot, keyType, publicKeyValues.getBytes(), true);
+        } else if (peerPublicKeyValues instanceof PublicKeyValues.Ec) {
+            PublicKeyValues.Ec publicKeyValues = (PublicKeyValues.Ec) peerPublicKeyValues;
+            EllipticCurveValues ellipticCurveValues = publicKeyValues.getCurveParams();
+            KeyType keyType = ellipticCurveValues.getBitLength() > 256 ? KeyType.ECCP384 : KeyType.ECCP256;
+            Logger.debug(logger, "Performing key agreement with key in slot {} of type {}", slot, keyType);
+            return usePrivateKey(slot, keyType, publicKeyValues.getEncodedPoint(), true);
         } else {
-            ECPoint w = ((ECPublicKey) publicKey).getW();
-            byte[] encodedPoint = new PublicKeyValues.Ec(((KeyType.EcKeyParams) keyType.params).getCurveParams(), w.getAffineX(), w.getAffineY()).getEncodedPoint();
-            return usePrivateKey(slot, keyType, encodedPoint, true);
+            throw new NoSuchAlgorithmException("Illegal public key");
         }
     }
 
