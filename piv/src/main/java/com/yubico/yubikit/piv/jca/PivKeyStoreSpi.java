@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Yubico.
+ * Copyright (C) 2022,2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package com.yubico.yubikit.piv.jca;
 
 import com.yubico.yubikit.core.application.BadResponseException;
+import com.yubico.yubikit.core.keys.PrivateKeyValues;
 import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.core.smartcard.SW;
 import com.yubico.yubikit.core.util.Callback;
@@ -59,7 +60,7 @@ public class PivKeyStoreSpi extends KeyStoreSpi {
         provider.invoke(result -> queue.add(Result.of(() -> {
             PivSession piv = result.getValue();
             if (key != null) {
-                piv.putKey(slot, key, pinPolicy, touchPolicy);
+                piv.putKey(slot, PrivateKeyValues.fromPrivateKey(key), pinPolicy, touchPolicy);
             }
             if (certificate != null) {
                 piv.putCertificate(slot, certificate);
@@ -79,7 +80,7 @@ public class PivKeyStoreSpi extends KeyStoreSpi {
                 PivSession session = result.getValue();
                 if (session.supports(PivSession.FEATURE_METADATA)) {
                     SlotMetadata data = session.getSlotMetadata(slot);
-                    return PivPrivateKey.from(data.getPublicKey(), slot, data.getPinPolicy(), data.getTouchPolicy(), password);
+                    return PivPrivateKey.from(data.getPublicKeyValues().toPublicKey(), slot, data.getPinPolicy(), data.getTouchPolicy(), password);
                 } else {
                     PublicKey publicKey = session.getCertificate(slot).getPublicKey();
                     return PivPrivateKey.from(publicKey, slot, null, null, password);
@@ -143,7 +144,7 @@ public class PivKeyStoreSpi extends KeyStoreSpi {
                 PrivateKey key;
                 if (session.supports(PivSession.FEATURE_METADATA)) {
                     SlotMetadata data = session.getSlotMetadata(slot);
-                    key = PivPrivateKey.from(data.getPublicKey(), slot, data.getPinPolicy(), data.getTouchPolicy(), pin);
+                    key = PivPrivateKey.from(data.getPublicKeyValues().toPublicKey(), slot, data.getPinPolicy(), data.getTouchPolicy(), pin);
                 } else {
                     PublicKey publicKey = certificate.getPublicKey();
                     key = PivPrivateKey.from(publicKey, slot, null, null, pin);

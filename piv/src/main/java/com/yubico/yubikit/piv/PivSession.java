@@ -24,6 +24,7 @@ import com.yubico.yubikit.core.application.ApplicationSession;
 import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.application.Feature;
 import com.yubico.yubikit.core.internal.Logger;
+import com.yubico.yubikit.core.keys.EllipticCurveValues;
 import com.yubico.yubikit.core.keys.PrivateKeyValues;
 import com.yubico.yubikit.core.keys.PublicKeyValues;
 import com.yubico.yubikit.core.smartcard.Apdu;
@@ -128,6 +129,11 @@ public class PivSession extends ApplicationSession<PivSession> {
      */
     public static final Feature<PivSession> FEATURE_MOVE_KEY = new Feature.Versioned<>("Move or delete keys", 5, 7, 0);
 
+    /**
+     * Support for the curve 25519 keys.
+     */
+    public static final Feature<PivSession> FEATURE_CV25519 = new Feature.Versioned<>("Curve 25519", 5, 7, 0);
+
     private static final int PIN_LEN = 8;
 
     // Special slot for the Management Key
@@ -189,6 +195,7 @@ public class PivSession extends ApplicationSession<PivSession> {
     private final Version version;
     private int currentPinAttempts = 3;  // Internal guess as to number of PIN retries.
     private int maxPinAttempts = 3; // Internal guess as to max number of PIN retries.
+    private ManagementKeyType managementKeyType;
 
     private static final org.slf4j.Logger logger = LoggerFactory.getLogger(PivSession.class);
 
@@ -210,6 +217,12 @@ public class PivSession extends ApplicationSession<PivSession> {
         // use extended length APDUs on compatible connections and devices
         if (connection.isExtendedLengthApduSupported() && version.isAtLeast(4, 0, 0)) {
             protocol.setApduFormat(ApduFormat.EXTENDED);
+        }
+
+        try {
+            managementKeyType = getManagementKeyMetadata().getKeyType();
+        } catch (UnsupportedOperationException unsupportedOperationException) {
+            managementKeyType = ManagementKeyType.TDES;
         }
         Logger.debug(logger, "PIV session initialized (version={})", version);
     }
@@ -268,35 +281,54 @@ public class PivSession extends ApplicationSession<PivSession> {
      * @param keyType       the algorithm used for the management key
      *                      The default key uses TDES
      * @param managementKey management key as byte array
-     *                      The default 3DES management key (9B) is 010203040506070801020304050607080102030405060708.
+     *                      The default 3DES/AES192 management key (9B) is 010203040506070801020304050607080102030405060708.
+     * @throws IllegalArgumentException in case of wrong keyType
+     * @throws IOException              in case of connection error
+     * @throws ApduException            in case of an error response from the YubiKey
+     * @throws BadResponseException     in case of incorrect YubiKey response
+     * @deprecated Replaced by {@link #authenticate(byte[])}
+     */
+    @Deprecated
+    public void authenticate(ManagementKeyType keyType, byte[] managementKey) throws IOException, ApduException, BadResponseException {
+        if (keyType != managementKeyType) {
+            throw new IllegalArgumentException("Invalid Management Key type " + keyType.name());
+        }
+        authenticate(managementKey);
+    }
+
+    /**
+     * Authenticate with the Management Key.
+     *
+     * @param managementKey management key as byte array
+     *                      The default 3DES/AES192 management key (9B) is 010203040506070801020304050607080102030405060708.
      * @throws IOException          in case of connection error
      * @throws ApduException        in case of an error response from the YubiKey
      * @throws BadResponseException in case of incorrect YubiKey response
      */
-    public void authenticate(ManagementKeyType keyType, byte[] managementKey) throws IOException, ApduException, BadResponseException {
-        Logger.debug(logger, "Authenticating with key type: {}", keyType);
-        if (managementKey.length != keyType.keyLength) {
-            throw new IllegalArgumentException(String.format("Management Key must be %d bytes", keyType.keyLength));
+    public void authenticate(byte[] managementKey) throws IOException, ApduException, BadResponseException {
+        Logger.debug(logger, "Authenticating with key type: {}", managementKeyType);
+        if (managementKey.length != managementKeyType.keyLength) {
+            throw new IllegalArgumentException(String.format("Management Key must be %d bytes", managementKeyType.keyLength));
         }
         // An empty witness is a request for a witness.
         byte[] request = new Tlv(TAG_DYN_AUTH, new Tlv(TAG_AUTH_WITNESS, null).getBytes()).getBytes();
-        byte[] response = protocol.sendAndReceive(new Apdu(0, INS_AUTHENTICATE, keyType.value, SLOT_CARD_MANAGEMENT, request));
+        byte[] response = protocol.sendAndReceive(new Apdu(0, INS_AUTHENTICATE, managementKeyType.value, SLOT_CARD_MANAGEMENT, request));
 
         // Witness (tag '80') contains encrypted data (unrevealed fact).
         byte[] witness = Tlvs.unpackValue(TAG_AUTH_WITNESS, Tlvs.unpackValue(TAG_DYN_AUTH, response));
-        SecretKey key = new SecretKeySpec(managementKey, keyType.cipherName);
+        SecretKey key = new SecretKeySpec(managementKey, managementKeyType.cipherName);
         try {
             Map<Integer, byte[]> dataTlvs = new LinkedHashMap<>();
-            Cipher cipher = Cipher.getInstance(keyType.cipherName + "/ECB/NoPadding");
+            Cipher cipher = Cipher.getInstance(managementKeyType.cipherName + "/ECB/NoPadding");
             // This decrypted witness
             cipher.init(Cipher.DECRYPT_MODE, key);
             dataTlvs.put(TAG_AUTH_WITNESS, cipher.doFinal(witness));
             //  The challenge (tag '81') contains clear data (byte sequence),
-            byte[] challenge = RandomUtils.getRandomBytes(keyType.challengeLength);
+            byte[] challenge = RandomUtils.getRandomBytes(managementKeyType.challengeLength);
             dataTlvs.put(TAG_AUTH_CHALLENGE, challenge);
 
             request = new Tlv(TAG_DYN_AUTH, Tlvs.encodeMap(dataTlvs)).getBytes();
-            response = protocol.sendAndReceive(new Apdu(0, INS_AUTHENTICATE, keyType.value, SLOT_CARD_MANAGEMENT, request));
+            response = protocol.sendAndReceive(new Apdu(0, INS_AUTHENTICATE, managementKeyType.value, SLOT_CARD_MANAGEMENT, request));
 
             // (tag '82') contains either the decrypted data from tag '80' or the encrypted data from tag '81'.
             byte[] encryptedData = Tlvs.unpackValue(TAG_AUTH_RESPONSE, Tlvs.unpackValue(TAG_DYN_AUTH, response));
@@ -357,7 +389,9 @@ public class PivSession extends ApplicationSession<PivSession> {
     public byte[] rawSignOrDecrypt(Slot slot, KeyType keyType, byte[] payload) throws IOException, ApduException, BadResponseException {
         int byteLength = keyType.params.bitLength / 8;
         byte[] padded;
-        if (payload.length > byteLength) {
+        if (keyType == KeyType.ED25519 || keyType == KeyType.X25519) {
+            padded = payload;
+        } else if (payload.length > byteLength) {
             if (keyType.params.algorithm == KeyType.Algorithm.EC) {
                 // Truncate
                 padded = Arrays.copyOf(payload, byteLength);
@@ -433,11 +467,45 @@ public class PivSession extends ApplicationSession<PivSession> {
      * @throws ApduException        in case of an error response from the YubiKey
      * @throws BadResponseException in case of incorrect YubiKey response
      */
+    @Deprecated
     public byte[] calculateSecret(Slot slot, ECPoint peerPublicKey) throws IOException, ApduException, BadResponseException {
         KeyType keyType = peerPublicKey.getAffineX().bitLength() > 256 ? KeyType.ECCP384 : KeyType.ECCP256;
         byte[] encodedPoint = new PublicKeyValues.Ec(((KeyType.EcKeyParams)keyType.params).getCurveParams(), peerPublicKey.getAffineX(), peerPublicKey.getAffineY()).getEncodedPoint();
         Logger.debug(logger, "Performing key agreement with key in slot {} of type {}", slot, keyType);
         return usePrivateKey(slot, keyType, encodedPoint, true);
+    }
+
+    /**
+     * Perform an ECDH operation with a given public key to compute a shared secret.
+     *
+     * @param slot                the slot containing the private EC key
+     * @param peerPublicKeyValues the peer public key values for the operation
+     * @return the shared secret, comprising the x-coordinate of the ECDH result point.
+     * @throws IOException              in case of connection error
+     * @throws ApduException            in case of an error response from the YubiKey
+     * @throws BadResponseException     in case of incorrect YubiKey response
+     * @throws NoSuchAlgorithmException in case of unsupported PublicKey type
+     */
+    public byte[] calculateSecret(Slot slot, PublicKeyValues peerPublicKeyValues) throws IOException, ApduException, BadResponseException, NoSuchAlgorithmException {
+        if (peerPublicKeyValues instanceof PublicKeyValues.Cv25519) {
+            PublicKeyValues.Cv25519 publicKeyValues = (PublicKeyValues.Cv25519) peerPublicKeyValues;
+            KeyType keyType;
+            if (publicKeyValues.getCurveParams() == EllipticCurveValues.X25519) {
+                keyType = KeyType.X25519;
+            } else {
+                throw new NoSuchAlgorithmException("Illegal public key");
+            }
+            Logger.debug(logger, "Performing key agreement with key in slot {} of type {}", slot, keyType);
+            return usePrivateKey(slot, keyType, publicKeyValues.getBytes(), true);
+        } else if (peerPublicKeyValues instanceof PublicKeyValues.Ec) {
+            PublicKeyValues.Ec publicKeyValues = (PublicKeyValues.Ec) peerPublicKeyValues;
+            EllipticCurveValues ellipticCurveValues = publicKeyValues.getCurveParams();
+            KeyType keyType = ellipticCurveValues.getBitLength() > 256 ? KeyType.ECCP384 : KeyType.ECCP256;
+            Logger.debug(logger, "Performing key agreement with key in slot {} of type {}", slot, keyType);
+            return usePrivateKey(slot, keyType, publicKeyValues.getEncodedPoint(), true);
+        } else {
+            throw new NoSuchAlgorithmException("Illegal public key");
+        }
     }
 
     private byte[] usePrivateKey(Slot slot, KeyType keyType, byte[] message, boolean exponentiation) throws IOException, ApduException, BadResponseException {
@@ -489,6 +557,7 @@ public class PivSession extends ApplicationSession<PivSession> {
         // NOTE: if p2=0xfe key requires touch
         // Require touch is only available on YubiKey 4 & 5.
         protocol.sendAndReceive(new Apdu(0, INS_SET_MGMKEY, 0xff, requireTouch ? 0xfe : 0xff, stream.toByteArray()));
+        managementKeyType = keyType;
         Logger.info(logger, "Management key set");
     }
 
@@ -681,6 +750,13 @@ public class PivSession extends ApplicationSession<PivSession> {
     }
 
     /**
+     * Get card management key type.
+     */
+    public ManagementKeyType getManagementKeyType() {
+        return managementKeyType;
+    }
+
+    /**
      * Reads metadata about the private key stored in a slot.
      * <p>
      * This functionality requires support for {@link #FEATURE_METADATA}, available on YubiKey 5.3 or later.
@@ -842,8 +918,8 @@ public class PivSession extends ApplicationSession<PivSession> {
             BigInteger exponent = new BigInteger(1, dataObjects.get(0x82));
             return new PublicKeyValues.Rsa(modulus, exponent);
         } else {
-            if (!(keyType.params instanceof KeyType.EcKeyParams)) {
-                throw new IllegalArgumentException("Unsupported key type");
+            if (keyType == KeyType.ED25519 || keyType == KeyType.X25519) {
+                return new PublicKeyValues.Cv25519(((KeyType.EcKeyParams) keyType.params).getCurveParams(), dataObjects.get(0x86));
             }
             return PublicKeyValues.Ec.fromEncodedPoint(((KeyType.EcKeyParams) keyType.params).getCurveParams(), dataObjects.get(0x86));
         }
@@ -862,6 +938,9 @@ public class PivSession extends ApplicationSession<PivSession> {
             return;
         }
 
+        if (keyType == KeyType.ED25519 || keyType == KeyType.X25519) {
+            require(FEATURE_CV25519);
+        }
         if (keyType == KeyType.ECCP384) {
             require(FEATURE_P384);
         }
@@ -996,7 +1075,11 @@ public class PivSession extends ApplicationSession<PivSession> {
                 break;
             case EC:
                 PrivateKeyValues.Ec ecPrivateKey = (PrivateKeyValues.Ec) key;
-                tlvs.put(0x06, ecPrivateKey.getSecret());  // s
+                tlvs.put(keyType == KeyType.ED25519
+                        ? 0x07
+                        : keyType == KeyType.X25519
+                        ? 0x08
+                        : 0x06, ecPrivateKey.getSecret());  // s
                 break;
         }
 

@@ -102,7 +102,6 @@ public abstract class PrivateKeyValues implements Destroyable {
         private final EllipticCurveValues ellipticCurveValues;
         private final byte[] secret;
 
-
         protected Ec(EllipticCurveValues ellipticCurveValues, byte[] secret) {
             super(ellipticCurveValues.getBitLength());
             this.ellipticCurveValues = ellipticCurveValues;

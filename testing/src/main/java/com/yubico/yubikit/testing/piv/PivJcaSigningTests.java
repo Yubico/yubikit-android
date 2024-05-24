@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Yubico.
+ * Copyright (C) 2022-2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package com.yubico.yubikit.testing.piv;
 
+import static com.yubico.yubikit.piv.PivSession.FEATURE_CV25519;
 import static com.yubico.yubikit.testing.piv.PivJcaUtils.setupJca;
 import static com.yubico.yubikit.testing.piv.PivJcaUtils.tearDownJca;
 import static com.yubico.yubikit.testing.piv.PivTestConstants.DEFAULT_MANAGEMENT_KEY;
@@ -24,7 +25,6 @@ import static com.yubico.yubikit.testing.piv.PivTestConstants.DEFAULT_PIN;
 import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.piv.KeyType;
-import com.yubico.yubikit.piv.ManagementKeyType;
 import com.yubico.yubikit.piv.PinPolicy;
 import com.yubico.yubikit.piv.PivSession;
 import com.yubico.yubikit.piv.Slot;
@@ -68,7 +68,15 @@ public class PivJcaSigningTests {
     }
 
     public static void testSign(PivSession piv, KeyType keyType) throws NoSuchAlgorithmException, IOException, ApduException, InvalidKeyException, BadResponseException, InvalidAlgorithmParameterException, SignatureException {
-        piv.authenticate(ManagementKeyType.TDES, DEFAULT_MANAGEMENT_KEY);
+        if (!piv.supports(FEATURE_CV25519) && (keyType == KeyType.ED25519 || keyType == KeyType.X25519)) {
+            return;
+        }
+
+        if (keyType == KeyType.X25519) {
+            logger.debug("Ignoring keyType: {}", keyType);
+            return;
+        }
+        piv.authenticate(DEFAULT_MANAGEMENT_KEY);
         logger.debug("Generate key: {}", keyType);
 
         KeyPairGenerator kpg = KeyPairGenerator.getInstance("YKPiv" + keyType.params.algorithm.name());
@@ -79,11 +87,15 @@ public class PivJcaSigningTests {
 
         switch (keyType.params.algorithm) {
             case EC:
-                testSign(keyPair, "SHA1withECDSA", null);
-                testSign(keyPair, "SHA256withECDSA", null);
-                //noinspection SpellCheckingInspection
-                testSign(keyPair, "NONEwithECDSA", null);
-                testSign(keyPair, "SHA3-256withECDSA", null);
+                if (keyType != KeyType.ED25519) {
+                    testSign(keyPair, "SHA1withECDSA", null);
+                    testSign(keyPair, "SHA256withECDSA", null);
+                    //noinspection SpellCheckingInspection
+                    testSign(keyPair, "NONEwithECDSA", null);
+                    testSign(keyPair, "SHA3-256withECDSA", null);
+                } else {
+                    testSign(keyPair, "ED25519", null);
+                }
                 break;
             case RSA:
                 testSign(keyPair, "SHA1withRSA", null);
