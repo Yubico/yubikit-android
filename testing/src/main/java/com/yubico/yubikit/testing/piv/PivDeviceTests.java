@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Yubico.
+ * Copyright (C) 2020-2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package com.yubico.yubikit.testing.piv;
 
+import static com.yubico.yubikit.piv.PivSession.FEATURE_AES_KEY;
 import static com.yubico.yubikit.testing.piv.PivTestConstants.DEFAULT_MANAGEMENT_KEY;
 import static com.yubico.yubikit.testing.piv.PivTestConstants.DEFAULT_PIN;
 import static com.yubico.yubikit.testing.piv.PivTestConstants.DEFAULT_PUK;
@@ -23,19 +24,19 @@ import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.core.smartcard.SW;
 import com.yubico.yubikit.piv.InvalidPinException;
+import com.yubico.yubikit.piv.ManagementKeyType;
 import com.yubico.yubikit.piv.PivSession;
 
 import org.bouncycastle.util.encoders.Hex;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
 import org.junit.Assert;
-
+import org.junit.Assume;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
-@SuppressWarnings("deprecation")
 public class PivDeviceTests {
 
     private static final Logger logger = LoggerFactory.getLogger(PivDeviceTests.class);
@@ -43,34 +44,59 @@ public class PivDeviceTests {
     public static void testManagementKey(PivSession piv) throws BadResponseException, IOException, ApduException {
         byte[] key2 = Hex.decode("010203040102030401020304010203040102030401020304");
 
+        ManagementKeyType managementKeyType = piv.getManagementKeyType();
+
         logger.debug("Authenticate with the wrong key");
         try {
-            piv.authenticate(PivTestUtils.getManagementKeyType(piv), key2);
+            piv.authenticate(key2);
             Assert.fail("Authenticated with wrong key");
         } catch (ApduException e) {
             Assert.assertEquals(SW.SECURITY_CONDITION_NOT_SATISFIED, e.getSw());
         }
 
         logger.debug("Change management key");
-        piv.authenticate(PivTestUtils.getManagementKeyType(piv), DEFAULT_MANAGEMENT_KEY);
-        piv.setManagementKey(PivTestUtils.getManagementKeyType(piv), key2, false);
+        piv.authenticate(DEFAULT_MANAGEMENT_KEY);
+        piv.setManagementKey(managementKeyType, key2, false);
 
         logger.debug("Authenticate with the old key");
         try {
-            piv.authenticate(PivTestUtils.getManagementKeyType(piv), DEFAULT_MANAGEMENT_KEY);
+            piv.authenticate(DEFAULT_MANAGEMENT_KEY);
             Assert.fail("Authenticated with wrong key");
         } catch (ApduException e) {
             Assert.assertEquals(SW.SECURITY_CONDITION_NOT_SATISFIED, e.getSw());
         }
 
         logger.debug("Change management key");
-        piv.authenticate(PivTestUtils.getManagementKeyType(piv), key2);
-        piv.setManagementKey(PivTestUtils.getManagementKeyType(piv), DEFAULT_MANAGEMENT_KEY, false);
+        piv.authenticate(key2);
+        piv.setManagementKey(managementKeyType, DEFAULT_MANAGEMENT_KEY, false);
+    }
+
+    public static void testManagementKeyType(PivSession piv) throws BadResponseException, IOException, ApduException {
+        Assume.assumeTrue("No AES key support", piv.supports(FEATURE_AES_KEY));
+
+        ManagementKeyType managementKeyType = piv.getManagementKeyType();
+        byte[] aes128Key = Hex.decode("01020304010203040102030401020304");
+
+        logger.debug("Change management key type");
+        piv.authenticate(DEFAULT_MANAGEMENT_KEY);
+        piv.setManagementKey(ManagementKeyType.AES128, aes128Key, false);
+        Assert.assertEquals(ManagementKeyType.AES128, piv.getManagementKeyType());
+
+        try {
+            piv.authenticate(ManagementKeyType.TDES, DEFAULT_MANAGEMENT_KEY);
+            Assert.fail("Authenticated with wrong key type");
+        } catch (IllegalArgumentException e) {
+            // ignored
+        }
+
+        // set original management key type
+        piv.authenticate(aes128Key);
+        piv.setManagementKey(managementKeyType, DEFAULT_MANAGEMENT_KEY, false);
     }
 
     public static void testPin(PivSession piv) throws ApduException, InvalidPinException, IOException, BadResponseException {
         // Ensure we only try this if the default management key is set.
-        piv.authenticate(PivTestUtils.getManagementKeyType(piv), DEFAULT_MANAGEMENT_KEY);
+        piv.authenticate(DEFAULT_MANAGEMENT_KEY);
 
         logger.debug("Verify PIN");
         char[] pin2 = "123123".toCharArray();
@@ -114,7 +140,7 @@ public class PivDeviceTests {
 
     public static void testPuk(PivSession piv) throws ApduException, InvalidPinException, IOException, BadResponseException {
         // Ensure we only try this if the default management key is set.
-        piv.authenticate(PivTestUtils.getManagementKeyType(piv), DEFAULT_MANAGEMENT_KEY);
+        piv.authenticate(DEFAULT_MANAGEMENT_KEY);
 
         // Change PUK
         char[] puk2 = "12341234".toCharArray();

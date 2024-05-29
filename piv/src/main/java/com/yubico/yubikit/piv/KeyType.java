@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2022 Yubico.
+ * Copyright (C) 2019-2022,2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,8 +21,8 @@ import com.yubico.yubikit.core.keys.PrivateKeyValues;
 import com.yubico.yubikit.core.keys.PublicKeyValues;
 
 import java.security.Key;
-import java.security.interfaces.ECPrivateKey;
-import java.security.interfaces.ECPublicKey;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.interfaces.RSAKey;
 
 import javax.annotation.Nonnull;
@@ -58,7 +58,15 @@ public enum KeyType {
     /**
      * Elliptic Curve key, using NIST Curve P-384.
      */
-    ECCP384((byte) 0x14, new EcKeyParams(EllipticCurveValues.SECP384R1));
+    ECCP384((byte) 0x14, new EcKeyParams(EllipticCurveValues.SECP384R1)),
+    /**
+     * Edwards Digital Signature Algorithm (EdDSA) key, using Curve25519.
+     */
+    ED25519((byte) 0xE0, new EcKeyParams(EllipticCurveValues.Ed25519)),
+    /**
+     * Elliptic-Curve Diffie-Hellman (ECDH) protocol key, using Curve25519.
+     */
+    X25519((byte) 0xE1, new EcKeyParams(EllipticCurveValues.X25519));
 
     public final byte value;
     public final KeyParams params;
@@ -113,10 +121,17 @@ public enum KeyType {
             }
         } else {
             EllipticCurveValues ellipticCurveValues;
-            if (key instanceof ECPublicKey) {
-                ellipticCurveValues = ((PublicKeyValues.Ec) PublicKeyValues.fromPublicKey((ECPublicKey) key)).getCurveParams();
-            } else if (key instanceof ECPrivateKey) {
-                ellipticCurveValues = ((PrivateKeyValues.Ec) PrivateKeyValues.fromPrivateKey((ECPrivateKey) key)).getCurveParams();
+            if (key instanceof PublicKey) {
+                PublicKeyValues publicKeyValues = PublicKeyValues.fromPublicKey( (PublicKey) key);
+                if (publicKeyValues instanceof PublicKeyValues.Ec) {
+                    ellipticCurveValues = ((PublicKeyValues.Ec) publicKeyValues).getCurveParams();
+                } else if (publicKeyValues instanceof PublicKeyValues.Cv25519) {
+                    ellipticCurveValues = ((PublicKeyValues.Cv25519) publicKeyValues).getCurveParams();
+                } else {
+                    throw new IllegalArgumentException("Unsupported public key type");
+                }
+            } else if (key instanceof PrivateKey) {
+                ellipticCurveValues = ((PrivateKeyValues.Ec) PrivateKeyValues.fromPrivateKey((PrivateKey) key)).getCurveParams();
             } else {
                 throw new IllegalArgumentException("Unsupported key type");
             }

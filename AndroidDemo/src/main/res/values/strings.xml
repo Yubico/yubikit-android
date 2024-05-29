@@ -45,6 +45,8 @@
     <string name="piv_attest">Attest</string>
     <string name="piv_generate_ec_cert">Generate EC256</string>
     <string name="piv_generate_rsa_cert">Generate RSA2048</string>
+    <string name="piv_generate_ed25519_cert">Generate ED25519</string>
+    <string name="piv_generate_x25519_cert">Generate X25519</string>
     <string name="piv_import_cert">Import</string>
     <string name="piv_message_hint">Message</string>
     <string name="piv_sign">Sign</string>

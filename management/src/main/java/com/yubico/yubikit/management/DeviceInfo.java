@@ -18,8 +18,12 @@ package com.yubico.yubikit.management;
 import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.Version;
 
+import java.nio.ByteBuffer;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import javax.annotation.Nullable;
 
@@ -38,7 +42,14 @@ public class DeviceInfo {
     private static final int TAG_NFC_SUPPORTED = 0x0d;
     private static final int TAG_NFC_ENABLED = 0x0e;
     private static final int TAG_CONFIG_LOCKED = 0x0a;
+    private static final int TAG_PART_NUMBER = 0x13;
+    private static final int TAG_FIPS_CAPABLE = 0x14;
+    private static final int TAG_FIPS_APPROVED = 0x15;
     private static final int TAG_PIN_COMPLEXITY = 0x16;
+    private static final int TAG_NFC_RESTRICTED = 0x17;
+    private static final int TAG_RESET_BLOCKED = 0x18;
+    private static final int TAG_FPS_VERSION = 0x20;
+    private static final int TAG_STM_VERSION = 0x21;
 
     private final DeviceConfig config;
     @Nullable
@@ -49,7 +60,16 @@ public class DeviceInfo {
     private final boolean isLocked;
     private final boolean isFips;
     private final boolean isSky;
+    @Nullable
+    private final String partNumber;
+    private final int fipsCapable;
+    private final int fipsApproved;
     private final boolean pinComplexity;
+    private final int resetBlocked;
+    @Nullable
+    private final Version fpsVersion;
+    @Nullable
+    private final Version stmVersion;
 
     private DeviceInfo(Builder builder) {
         this.config = builder.config;
@@ -60,7 +80,13 @@ public class DeviceInfo {
         this.isLocked = builder.isLocked;
         this.isFips = builder.isFips;
         this.isSky = builder.isSky;
+        this.partNumber = builder.partNumber;
+        this.fipsCapable = builder.fipsCapable;
+        this.fipsApproved = builder.fipsApproved;
         this.pinComplexity = builder.pinComplexity;
+        this.resetBlocked = builder.resetBlocked;
+        this.fpsVersion = builder.fpsVersion;
+        this.stmVersion = builder.stmVersion;
     }
 
     /**
@@ -174,10 +200,55 @@ public class DeviceInfo {
     }
 
     /**
+     * Returns part number
+     */
+    @Nullable
+    public String getPartNumber() {
+        return partNumber;
+    }
+
+    /**
+     * Returns FIPS capable flags
+     */
+    public int getFipsCapable() {
+        return fipsCapable;
+    }
+
+    /**
+     * Returns FIPS approved flags
+     */
+    public int getFipsApproved() {
+        return fipsApproved;
+    }
+
+    /**
      * Returns value of PIN complexity
      */
     public boolean getPinComplexity() {
         return pinComplexity;
+    }
+
+    /**
+     * Returns reset blocked flags
+     */
+    public int getResetBlocked() {
+        return resetBlocked;
+    }
+
+    /**
+     * Returns FPS version
+     */
+    @Nullable
+    public Version getFpsVersion() {
+        return fpsVersion;
+    }
+
+    /**
+     * Returns STM version
+     */
+    @Nullable
+    public Version getStmVersion() {
+        return stmVersion;
     }
 
     static DeviceInfo parseTlvs(Map<Integer, byte[]> data, Version defaultVersion) {
@@ -186,19 +257,40 @@ public class DeviceInfo {
         int formFactorTagData = readInt(data.get(TAG_FORMFACTOR));
         boolean isFips = (formFactorTagData & 0x80) != 0;
         boolean isSky = (formFactorTagData & 0x40) != 0;
+        @Nullable
+        String partNumber = null;
+        int fipsCapable = fromFips(readInt(data.get(TAG_FIPS_CAPABLE)));
+        int fipsApproved = fromFips(readInt(data.get(TAG_FIPS_APPROVED)));
         boolean pinComplexity = readInt(data.get(TAG_PIN_COMPLEXITY)) == 1;
+        int resetBlocked = readInt(data.get(TAG_RESET_BLOCKED));
         FormFactor formFactor = FormFactor.valueOf(formFactorTagData);
 
-        Version version;
-        if (data.containsKey(TAG_FIRMWARE_VERSION)) {
-            version = Version.fromBytes(data.get(TAG_FIRMWARE_VERSION));
-        } else {
-            version = defaultVersion;
+        Version version = data.containsKey(TAG_FIRMWARE_VERSION)
+                ? Version.fromBytes(data.get(TAG_FIRMWARE_VERSION))
+                : defaultVersion;
+
+        final Version versionZero = new Version(0,0,0);
+
+        Version fpsVersion = null;
+        if (data.containsKey(TAG_FPS_VERSION)) {
+            Version tempVersion = Version.fromBytes(data.get(TAG_FPS_VERSION));
+            if (!tempVersion.equals(versionZero)) {
+                fpsVersion = tempVersion;
+            }
+        }
+
+        Version stmVersion = null;
+        if (data.containsKey(TAG_STM_VERSION)) {
+            Version tempVersion = Version.fromBytes(data.get(TAG_STM_VERSION));
+            if (!tempVersion.equals(versionZero)) {
+                stmVersion = tempVersion;
+            }
         }
 
         short autoEjectTimeout = (short) readInt(data.get(TAG_AUTO_EJECT_TIMEOUT));
         byte challengeResponseTimeout = (byte) readInt(data.get(TAG_CHALLENGE_RESPONSE_TIMEOUT));
         int deviceFlags = readInt(data.get(TAG_DEVICE_FLAGS));
+        Boolean nfcRestricted = readInt(data.get(TAG_NFC_RESTRICTED)) == 1;
 
         Map<Transport, Integer> supportedCapabilities = new HashMap<>();
         Map<Transport, Integer> enabledCapabilities = new HashMap<>();
@@ -219,10 +311,21 @@ public class DeviceInfo {
             enabledCapabilities.put(Transport.NFC, readInt(data.get(TAG_NFC_ENABLED)));
         }
 
+        if (data.containsKey(TAG_PART_NUMBER)) {
+            try {
+                partNumber = StandardCharsets.UTF_8.newDecoder()
+                        .decode(ByteBuffer.wrap(data.get(TAG_PART_NUMBER)))
+                        .toString();
+            } catch (IllegalStateException | CharacterCodingException e) {
+                // ignored
+            }
+        }
+
         DeviceConfig.Builder deviceConfigBuilder = new DeviceConfig.Builder()
                 .autoEjectTimeout(autoEjectTimeout)
                 .challengeResponseTimeout(challengeResponseTimeout)
-                .deviceFlags(deviceFlags);
+                .deviceFlags(deviceFlags)
+                .nfcRestricted(nfcRestricted);
 
         for (Transport transport : Transport.values()) {
             if (enabledCapabilities.containsKey(transport)) {
@@ -231,10 +334,9 @@ public class DeviceInfo {
                         enabledCapabilities.get(transport)
                 );
             }
-
         }
 
-        return new DeviceInfo.Builder()
+        return new Builder()
                 .config(deviceConfigBuilder.build())
                 .serialNumber(serialNumber == 0 ? null : serialNumber)
                 .version(version)
@@ -243,7 +345,13 @@ public class DeviceInfo {
                 .isLocked(isLocked)
                 .isFips(isFips)
                 .isSky(isSky)
+                .partNumber(partNumber)
+                .fipsCapable(fipsCapable)
+                .fipsApproved(fipsApproved)
                 .pinComplexity(pinComplexity)
+                .resetBlocked(resetBlocked)
+                .fpsVersion(fpsVersion)
+                .stmVersion(stmVersion)
                 .build();
     }
 
@@ -257,10 +365,16 @@ public class DeviceInfo {
         private boolean isLocked = false;
         private boolean isFips = false;
         private boolean isSky = false;
+        @Nullable
+        private String partNumber = "";
+        private int fipsCapable = 0;
+        private int fipsApproved = 0;
         private boolean pinComplexity = false;
-
-        public Builder() {
-        }
+        private int resetBlocked = 0;
+        @Nullable
+        private Version fpsVersion = null;
+        @Nullable
+        private Version stmVersion = null;
 
         public DeviceInfo build() {
             return new DeviceInfo(this);
@@ -306,12 +420,65 @@ public class DeviceInfo {
             return this;
         }
 
+        public Builder partNumber(@Nullable String partNumber) {
+            this.partNumber = partNumber;
+            return this;
+        }
+
+        public Builder fipsCapable(int fipsCapable) {
+            this.fipsCapable = fipsCapable;
+            return this;
+        }
+
+        public Builder fipsApproved(int fipsApproved) {
+            this.fipsApproved = fipsApproved;
+            return this;
+        }
+
         public Builder pinComplexity(boolean pinComplexity) {
             this.pinComplexity = pinComplexity;
             return this;
         }
+
+        public Builder resetBlocked(int resetBlocked) {
+            this.resetBlocked = resetBlocked;
+            return this;
+        }
+
+        public Builder fpsVersion(@Nullable Version fpsVersion) {
+            this.fpsVersion = fpsVersion;
+            return this;
+        }
+
+        public Builder stmVersion(@Nullable Version stmVersion) {
+            this.stmVersion = stmVersion;
+            return this;
+        }
     }
 
+    /**
+     * Convert value to use bits of the {@link Capability} enum
+     */
+    private static int fromFips(int fips) {
+        int capabilities = 0;
+        if ((fips & 0b00000001) != 0) {
+            capabilities |= Capability.FIDO2.bit;
+        }
+        if ((fips & 0b00000010) != 0) {
+            capabilities |= Capability.PIV.bit;
+        }
+        if ((fips & 0b00000100) != 0) {
+            capabilities |= Capability.OPENPGP.bit;
+        }
+        if ((fips & 0b00001000) != 0) {
+            capabilities |= Capability.OATH.bit;
+        }
+        if ((fips & 0b00010000) != 0) {
+            capabilities |= Capability.HSMAUTH.bit;
+        }
+
+        return capabilities;
+    }
 
     /**
      * Reads an int from a variable length byte array.
@@ -329,6 +496,35 @@ public class DeviceInfo {
     }
 
     @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        DeviceInfo that = (DeviceInfo) o;
+        return isLocked == that.isLocked &&
+                isFips == that.isFips &&
+                isSky == that.isSky &&
+                fipsCapable == that.fipsCapable &&
+                fipsApproved == that.fipsApproved &&
+                pinComplexity == that.pinComplexity &&
+                resetBlocked == that.resetBlocked &&
+                Objects.equals(config, that.config) &&
+                Objects.equals(serialNumber, that.serialNumber) &&
+                Objects.equals(version, that.version) &&
+                formFactor == that.formFactor &&
+                Objects.equals(supportedCapabilities, that.supportedCapabilities) &&
+                Objects.equals(partNumber, that.partNumber) &&
+                Objects.equals(fpsVersion, that.fpsVersion) &&
+                Objects.equals(stmVersion, that.stmVersion);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(config, serialNumber, version, formFactor, supportedCapabilities,
+                isLocked, isFips, isSky, partNumber, fipsCapable, fipsApproved, pinComplexity,
+                resetBlocked, fpsVersion, stmVersion);
+    }
+
+    @Override
     public String toString() {
         return "DeviceInfo{" +
                 "config=" + config +
@@ -339,7 +535,13 @@ public class DeviceInfo {
                 ", isLocked=" + isLocked +
                 ", isFips=" + isFips +
                 ", isSky=" + isSky +
+                ", partNumber=" + partNumber +
+                ", fipsCapable=" + fipsCapable +
+                ", fipsApproved=" + fipsApproved +
                 ", pinComplexity=" + pinComplexity +
+                ", resetBlocked=" + resetBlocked +
+                ", fpsVersion=" + fpsVersion +
+                ", stmVersion=" + stmVersion +
                 '}';
     }
 }

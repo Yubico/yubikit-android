@@ -32,6 +32,11 @@ public class PivJcaProviderTests extends PivInstrumentedTests {
     }
 
     @Test
+    public void testGenerateKeysPreferBC() throws Throwable {
+        withPivSession(PivJcaDeviceTests::testGenerateKeysPreferBC);
+    }
+
+    @Test
     public void testImportKeys() throws Throwable {
         withPivSession(PivJcaDeviceTests::testImportKeys);
     }

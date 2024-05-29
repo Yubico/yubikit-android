@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Yubico.
+ * Copyright (C) 2022,2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package com.yubico.yubikit.piv.jca;
 
+import com.yubico.yubikit.core.keys.PublicKeyValues;
 import com.yubico.yubikit.core.util.Callback;
 import com.yubico.yubikit.core.util.Result;
 import com.yubico.yubikit.piv.KeyType;
@@ -32,7 +33,6 @@ import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.ECParameterSpec;
-import java.security.spec.ECPoint;
 import java.util.Arrays;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -55,6 +55,10 @@ public abstract class PivPrivateKey implements PrivateKey, Destroyable {
         KeyType keyType = KeyType.fromKey(publicKey);
         if (keyType.params.algorithm == KeyType.Algorithm.RSA) {
             return new PivPrivateKey.RsaKey(slot, keyType, pinPolicy, touchPolicy, ((RSAPublicKey) publicKey).getModulus(), pin);
+        } else if (keyType == KeyType.ED25519) {
+            return new PivPrivateKey.Ed25519Key(slot, keyType, pinPolicy, touchPolicy, pin);
+        } else if (keyType == KeyType.X25519) {
+            return new PivPrivateKey.X25519Key(slot, keyType, pinPolicy, touchPolicy, pin);
         } else {
             return new PivPrivateKey.EcKey(slot, keyType, pinPolicy, touchPolicy, ((ECPublicKey) publicKey).getParams(), pin);
         }
@@ -159,14 +163,16 @@ public abstract class PivPrivateKey implements PrivateKey, Destroyable {
             this.ecSpec = ecSpec;
         }
 
-        byte[] keyAgreement(Callback<Callback<Result<PivSession, Exception>>> provider, ECPoint peerPublicKey) throws Exception {
+        byte[] keyAgreement(
+                Callback<Callback<Result<PivSession, Exception>>> provider,
+                PublicKeyValues peerPublicKeyValues) throws Exception {
             BlockingQueue<Result<byte[], Exception>> queue = new ArrayBlockingQueue<>(1);
             provider.invoke(result -> queue.add(Result.of(() -> {
                 PivSession session = result.getValue();
                 if (pin != null) {
                     session.verifyPin(pin);
                 }
-                return session.calculateSecret(slot, peerPublicKey);
+                return session.calculateSecret(slot, peerPublicKeyValues);
             })));
             return queue.take().getValue();
         }
@@ -188,6 +194,37 @@ public abstract class PivPrivateKey implements PrivateKey, Destroyable {
         @Override
         public BigInteger getModulus() {
             return modulus;
+        }
+    }
+
+    static class Ed25519Key extends PivPrivateKey implements PrivateKey {
+        private Ed25519Key(Slot slot, KeyType keyType, @Nullable PinPolicy pinPolicy, @Nullable TouchPolicy touchPolicy, @Nullable char[] pin) {
+            super(slot, keyType, pinPolicy, touchPolicy, pin);
+        }
+    }
+
+    static class X25519Key extends PivPrivateKey implements PrivateKey {
+        private X25519Key(
+                Slot slot,
+                KeyType keyType,
+                @Nullable PinPolicy pinPolicy,
+                @Nullable TouchPolicy touchPolicy,
+                @Nullable char[] pin) {
+            super(slot, keyType, pinPolicy, touchPolicy, pin);
+        }
+
+        byte[] keyAgreement(
+                Callback<Callback<Result<PivSession, Exception>>> provider,
+                PublicKeyValues peerPublicKeyValues) throws Exception {
+            BlockingQueue<Result<byte[], Exception>> queue = new ArrayBlockingQueue<>(1);
+            provider.invoke(result -> queue.add(Result.of(() -> {
+                PivSession session = result.getValue();
+                if (pin != null) {
+                    session.verifyPin(pin);
+                }
+                return session.calculateSecret(slot, peerPublicKeyValues);
+            })));
+            return queue.take().getValue();
         }
     }
 }

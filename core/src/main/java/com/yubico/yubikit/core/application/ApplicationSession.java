@@ -46,7 +46,7 @@ public abstract class ApplicationSession<T extends ApplicationSession<T>> implem
         return feature.isSupportedBy(getVersion());
     }
 
-    protected void require(Feature<T> feature) throws UnsupportedOperationException {
+    protected void require(Feature<T> feature) {
         if (!supports(feature)) {
             throw new UnsupportedOperationException(feature.getRequiredMessage());
         }

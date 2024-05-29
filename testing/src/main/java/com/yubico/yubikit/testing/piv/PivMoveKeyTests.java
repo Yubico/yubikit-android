@@ -18,6 +18,7 @@ package com.yubico.yubikit.testing.piv;
 
 import static com.yubico.yubikit.core.smartcard.SW.REFERENCED_DATA_NOT_FOUND;
 import static com.yubico.yubikit.piv.KeyType.Algorithm.EC;
+import static com.yubico.yubikit.piv.PivSession.FEATURE_CV25519;
 import static com.yubico.yubikit.piv.PivSession.FEATURE_MOVE_KEY;
 import static com.yubico.yubikit.testing.piv.PivJcaSigningTests.testSign;
 import static com.yubico.yubikit.testing.piv.PivJcaUtils.setupJca;
@@ -29,7 +30,6 @@ import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.keys.PrivateKeyValues;
 import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.piv.KeyType;
-import com.yubico.yubikit.piv.ManagementKeyType;
 import com.yubico.yubikit.piv.PinPolicy;
 import com.yubico.yubikit.piv.PivSession;
 import com.yubico.yubikit.piv.Slot;
@@ -56,15 +56,18 @@ public class PivMoveKeyTests {
 
     static void moveKey(PivSession piv)
             throws IOException, ApduException, BadResponseException, NoSuchAlgorithmException {
-        Assume.assumeTrue("Skipped because the key does not support this feature", piv.supports(FEATURE_MOVE_KEY));
-
+        Assume.assumeTrue("Key does not support move instruction", piv.supports(FEATURE_MOVE_KEY));
         setupJca(piv);
         Slot srcSlot = Slot.RETIRED1;
         Slot dstSlot = Slot.RETIRED2;
 
-        piv.authenticate(PivTestUtils.getManagementKeyType(piv), DEFAULT_MANAGEMENT_KEY);
+        piv.authenticate(DEFAULT_MANAGEMENT_KEY);
 
-        for (KeyType keyType : Arrays.asList(KeyType.ECCP256, KeyType.ECCP384, KeyType.RSA1024, KeyType.RSA2048, KeyType.RSA3072, KeyType.RSA4096)) {
+        for (KeyType keyType : Arrays.asList(KeyType.ECCP256, KeyType.ECCP384, KeyType.RSA1024, KeyType.RSA2048, KeyType.ED25519, KeyType.X25519)) {
+
+            if (!piv.supports(FEATURE_CV25519) && (keyType == KeyType.ED25519 || keyType == KeyType.X25519)) {
+                continue;
+            }
 
             KeyPair keyPair = PivTestUtils.loadKey(keyType);
             PrivateKeyValues privateKeyValues = PrivateKeyValues.fromPrivateKey(keyPair.getPrivate());
@@ -85,9 +88,11 @@ public class PivMoveKeyTests {
                 PrivateKey privateKey = (PrivateKey) keyStore.getKey(dstSlot.getStringAlias(), DEFAULT_PIN);
                 KeyPair signingKeyPair = new KeyPair(publicKey, privateKey);
 
-                testSign(signingKeyPair, keyType.params.algorithm == EC
-                        ? "SHA256withECDSA"
-                        : "SHA256withRSA", null);
+                if (keyType != KeyType.X25519) {
+                    testSign(signingKeyPair, keyType.params.algorithm == EC
+                            ? keyType == KeyType.ED25519 ? "ED25519" : "SHA256withECDSA"
+                            : "SHA256withRSA", null);
+                }
 
             } catch (KeyStoreException | UnrecoverableKeyException |
                      InvalidAlgorithmParameterException | InvalidKeyException |

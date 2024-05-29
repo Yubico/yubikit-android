@@ -47,6 +47,7 @@ public class DeviceConfig {
     private static final int TAG_CONFIGURATION_LOCK = 0x0a;
     private static final int TAG_UNLOCK = 0x0b;
     private static final int TAG_REBOOT = 0x0c;
+    private static final int TAG_NFC_RESTRICTED = 0x17;
 
     private final Map<Transport, Integer> enabledCapabilities;
     @Nullable
@@ -55,12 +56,28 @@ public class DeviceConfig {
     private final Byte challengeResponseTimeout;
     @Nullable
     private final Integer deviceFlags;
+    @Nullable
+    private final Boolean nfcRestricted;
 
-    DeviceConfig(Map<Transport, Integer> enabledCapabilities, @Nullable Short autoEjectTimeout, @Nullable Byte challengeResponseTimeout, @Nullable Integer deviceFlags) {
+    @Deprecated
+    DeviceConfig(
+            Map<Transport, Integer> enabledCapabilities,
+            @Nullable Short autoEjectTimeout,
+            @Nullable Byte challengeResponseTimeout,
+            @Nullable Integer deviceFlags) {
         this.enabledCapabilities = enabledCapabilities;
         this.autoEjectTimeout = autoEjectTimeout;
         this.challengeResponseTimeout = challengeResponseTimeout;
         this.deviceFlags = deviceFlags;
+        this.nfcRestricted = null;
+    }
+
+    DeviceConfig(Builder builder) {
+        this.enabledCapabilities = builder.enabledCapabilities;
+        this.autoEjectTimeout = builder.autoEjectTimeout;
+        this.challengeResponseTimeout = builder.challengeResponseTimeout;
+        this.deviceFlags = builder.deviceFlags;
+        this.nfcRestricted = builder.nfcRestricted;
     }
 
     /**
@@ -91,6 +108,14 @@ public class DeviceConfig {
     @Nullable
     public Byte getChallengeResponseTimeout() {
         return challengeResponseTimeout;
+    }
+
+    /**
+     * Returns the NFC restricted flag.
+     */
+    @Nullable
+    public Boolean getNfcRestricted() {
+        return nfcRestricted;
     }
 
     /**
@@ -129,6 +154,9 @@ public class DeviceConfig {
         if (newLockCode != null) {
             values.put(TAG_CONFIGURATION_LOCK, newLockCode);
         }
+        if (nfcRestricted != null) {
+            values.put(TAG_NFC_RESTRICTED, new byte[]{nfcRestricted ? 0x01 : (byte) 0x00});
+        }
         byte[] data = Tlvs.encodeMap(values);
 
         if (data.length > 0xff) {
@@ -145,12 +173,13 @@ public class DeviceConfig {
         return Objects.equals(enabledCapabilities, that.enabledCapabilities) &&
                 Objects.equals(autoEjectTimeout, that.autoEjectTimeout) &&
                 Objects.equals(challengeResponseTimeout, that.challengeResponseTimeout) &&
-                Objects.equals(deviceFlags, that.deviceFlags);
+                Objects.equals(deviceFlags, that.deviceFlags) &&
+                Objects.equals(nfcRestricted, that.nfcRestricted);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(enabledCapabilities, autoEjectTimeout, challengeResponseTimeout, deviceFlags);
+        return Objects.hash(enabledCapabilities, autoEjectTimeout, challengeResponseTimeout, deviceFlags, nfcRestricted);
     }
 
     /**
@@ -164,12 +193,8 @@ public class DeviceConfig {
         private Byte challengeResponseTimeout;
         @Nullable
         private Integer deviceFlags;
-
-        /**
-         * Instantiates a new DeviceConfig.Builder.
-         */
-        public Builder() {
-        }
+        @Nullable
+        private Boolean nfcRestricted;
 
         /**
          * Sets the enabled capabilities for the given transport.
@@ -211,10 +236,18 @@ public class DeviceConfig {
         }
 
         /**
+         * Sets the NFC restricted flag of the YubiKey.
+         */
+        public Builder nfcRestricted(@Nullable Boolean nfcRestricted) {
+            this.nfcRestricted = nfcRestricted;
+            return this;
+        }
+
+        /**
          * Constructs a DeviceConfig using the current configuration.
          */
         public DeviceConfig build() {
-            return new DeviceConfig(enabledCapabilities, autoEjectTimeout, challengeResponseTimeout, deviceFlags);
+            return new DeviceConfig(this);
         }
     }
 
@@ -225,6 +258,7 @@ public class DeviceConfig {
                 ", autoEjectTimeout=" + autoEjectTimeout +
                 ", challengeResponseTimeout=" + challengeResponseTimeout +
                 ", deviceFlags=" + deviceFlags +
+                ", nfcRestricted=" + nfcRestricted +
                 '}';
     }
 }

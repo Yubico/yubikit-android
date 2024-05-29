@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Yubico.
+ * Copyright (C) 2022-2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,7 +48,6 @@ class PivViewModel : YubiKeyViewModel<PivSession>() {
     private val _certificates = MutableLiveData<SparseArray<X509Certificate>?>()
     val certificates: LiveData<SparseArray<X509Certificate>?> = _certificates
 
-    var mgmtKeyType = ManagementKeyType.TDES
     var mgmtKey: ByteArray =
         byteArrayOf(1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8)
 
