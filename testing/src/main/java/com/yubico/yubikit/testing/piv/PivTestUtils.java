@@ -15,7 +15,6 @@
  */
 package com.yubico.yubikit.testing.piv;
 
-import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.internal.codec.Base64;
 import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.piv.KeyType;
@@ -417,9 +416,13 @@ public class PivTestUtils {
         Assert.assertArrayEquals("Secret mismatch", secret, peerSecret);
     }
     
-    public static ManagementKeyType getManagementKeyType(PivSession piv) {
-        return piv.getVersion().isAtLeast(5, 7, 0)
-                ? ManagementKeyType.AES192
-                : ManagementKeyType.TDES;
+    public static ManagementKeyType getManagementKeyType(PivSession piv) throws ApduException, IOException {
+        try {
+            return piv.getManagementKeyMetadata().getKeyType();
+        }
+        catch (UnsupportedOperationException e){
+            // The YubiKey doesnt support keys other than TDES as the management key
+            return ManagementKeyType.TDES;
+        }
     }
 }

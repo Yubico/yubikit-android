@@ -64,6 +64,7 @@ public class PivDeviceTests {
         }
 
         logger.debug("Change management key");
+        piv.authenticate(PivTestUtils.getManagementKeyType(piv), key2);
         piv.setManagementKey(PivTestUtils.getManagementKeyType(piv), DEFAULT_MANAGEMENT_KEY, false);
     }
 

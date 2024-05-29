@@ -57,8 +57,9 @@ public class PivJcaDecryptTests {
     public static void testDecrypt(PivSession piv) throws BadResponseException, IOException, ApduException, NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException, InvalidAlgorithmParameterException {
         setupJca(piv);
         for (KeyType keyType : KeyType.values()) {
-            if (((keyType == KeyType.RSA3072 || keyType == KeyType.RSA4096) && !piv.supports(FEATURE_RSA3072_RSA4096)))
+            if (((keyType == KeyType.RSA3072 || keyType == KeyType.RSA4096) && !piv.supports(FEATURE_RSA3072_RSA4096))) {
                 continue; // Run only on compatible keys
+            }
             if (keyType.params.algorithm.name().equals("RSA")) {
                 testDecrypt(piv, keyType);
             }

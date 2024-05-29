@@ -129,9 +129,9 @@ public class PivSession extends ApplicationSession<PivSession> {
     public static final Feature<PivSession> FEATURE_MOVE_KEY = new Feature.Versioned<>("Move or delete keys", 5, 7, 0);
 
     /**
-     * Support for the large key sizes in Yubikey 5.7 and onwards.
+     * Support for larger RSA key sizes.
      */
-    public static final Feature<PivSession> FEATURE_RSA3072_RSA4096 = new Feature.Versioned<>("RSA3072 and RSA 4096 keys", 5, 7, 0);
+    public static final Feature<PivSession> FEATURE_RSA3072_RSA4096 = new Feature.Versioned<>("RSA3072 and RSA4096 keys", 5, 7, 0);
 
     private static final int PIN_LEN = 8;
 
@@ -680,7 +680,7 @@ public class PivSession extends ApplicationSession<PivSession> {
      * @throws IOException   in case of connection error
      * @throws ApduException in case of an error response from the YubiKey
      */
-    public ManagementKeyMetadata getManagementKeyMetadata() throws IOException, ApduException {
+    public ManagementKeyMetadata getManagementKeyMetadata() throws IOException, ApduException, UnsupportedOperationException{
         Logger.debug(logger, "Getting management key metadata");
         require(FEATURE_METADATA);
         Map<Integer, byte[]> data = Tlvs.decodeMap(protocol.sendAndReceive(new Apdu(0, INS_GET_METADATA, 0, SLOT_CARD_MANAGEMENT, null)));
