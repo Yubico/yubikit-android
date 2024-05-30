@@ -749,7 +749,7 @@ public class PivSession extends ApplicationSession<PivSession> {
      * @throws IOException   in case of connection error
      * @throws ApduException in case of an error response from the YubiKey
      */
-    public ManagementKeyMetadata getManagementKeyMetadata() throws IOException, ApduException, UnsupportedOperationException{
+    public ManagementKeyMetadata getManagementKeyMetadata() throws IOException, ApduException {
         Logger.debug(logger, "Getting management key metadata");
         require(FEATURE_METADATA);
         Map<Integer, byte[]> data = Tlvs.decodeMap(protocol.sendAndReceive(new Apdu(0, INS_GET_METADATA, 0, SLOT_CARD_MANAGEMENT, null)));
