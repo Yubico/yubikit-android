@@ -83,7 +83,7 @@ public class PivDeviceTests {
         Assert.assertEquals(ManagementKeyType.AES128, piv.getManagementKeyType());
 
         try {
-            piv.authenticate(ManagementKeyType.TDES, DEFAULT_MANAGEMENT_KEY);
+            piv.authenticate(DEFAULT_MANAGEMENT_KEY);
             Assert.fail("Authenticated with wrong key type");
         } catch (IllegalArgumentException e) {
             // ignored

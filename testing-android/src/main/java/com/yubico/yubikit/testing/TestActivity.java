@@ -127,7 +127,6 @@ public class TestActivity extends AppCompatActivity {
         });
         setBusy(true);
         return connectedDevice;
-
     }
 
     public synchronized void returnSession(YubiKeyDevice device) throws InterruptedException {

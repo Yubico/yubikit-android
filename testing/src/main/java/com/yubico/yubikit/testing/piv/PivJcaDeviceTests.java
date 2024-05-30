@@ -16,6 +16,7 @@
 package com.yubico.yubikit.testing.piv;
 
 import static com.yubico.yubikit.piv.PivSession.FEATURE_CV25519;
+import static com.yubico.yubikit.piv.PivSession.FEATURE_RSA3072_RSA4096;
 import static com.yubico.yubikit.testing.piv.PivJcaUtils.setupJca;
 import static com.yubico.yubikit.testing.piv.PivJcaUtils.tearDownJca;
 import static com.yubico.yubikit.testing.piv.PivTestConstants.DEFAULT_MANAGEMENT_KEY;
@@ -41,7 +42,6 @@ import java.security.Security;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
-import java.util.Collections;
 
 import javax.security.auth.Destroyable;
 
@@ -55,7 +55,12 @@ public class PivJcaDeviceTests {
         KeyStore keyStore = KeyStore.getInstance("YKPiv");
         keyStore.load(null);
 
-        for (KeyType keyType : Arrays.asList(KeyType.RSA1024, KeyType.RSA2048)) {
+        for (KeyType keyType : Arrays.asList(KeyType.RSA1024, KeyType.RSA2048, KeyType.RSA3072, KeyType.RSA4096)) {
+
+            if (!piv.supports(FEATURE_RSA3072_RSA4096) && (keyType == KeyType.RSA3072 || keyType == KeyType.RSA4096)) {
+                continue;
+            }
+
             String alias = Slot.SIGNATURE.getStringAlias();
 
             KeyPair keyPair = PivTestUtils.loadKey(keyType);
@@ -165,7 +170,12 @@ public class PivJcaDeviceTests {
         }
 
         KeyPairGenerator rsaGen = KeyPairGenerator.getInstance("YKPivRSA");
-        for (KeyType keyType : Arrays.asList(KeyType.RSA1024, KeyType.RSA2048)) {
+        for (KeyType keyType : Arrays.asList(KeyType.RSA1024, KeyType.RSA2048, KeyType.RSA3072, KeyType.RSA4096)) {
+
+            if (!piv.supports(FEATURE_RSA3072_RSA4096) && (keyType == KeyType.RSA3072 || keyType == KeyType.RSA4096)) {
+                continue;
+            }
+
             rsaGen.initialize(new PivAlgorithmParameterSpec(Slot.AUTHENTICATION, keyType, null, null, DEFAULT_PIN));
             KeyPair keyPair = rsaGen.generateKeyPair();
             PivTestUtils.rsaEncryptAndDecrypt(keyPair.getPrivate(), keyPair.getPublic());

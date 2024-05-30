@@ -134,6 +134,11 @@ public class PivSession extends ApplicationSession<PivSession> {
      */
     public static final Feature<PivSession> FEATURE_CV25519 = new Feature.Versioned<>("Curve 25519", 5, 7, 0);
 
+    /**
+     * Support for larger RSA key sizes.
+     */
+    public static final Feature<PivSession> FEATURE_RSA3072_RSA4096 = new Feature.Versioned<>("RSA3072 and RSA4096 keys", 5, 7, 0);
+
     private static final int PIN_LEN = 8;
 
     // Special slot for the Management Key
@@ -434,6 +439,12 @@ public class PivSession extends ApplicationSession<PivSession> {
                 break;
             case 2048 / 8:
                 keyType = KeyType.RSA2048;
+                break;
+            case 3072 / 8:
+                keyType = KeyType.RSA3072;
+                break;
+            case 4096 / 8:
+                keyType = KeyType.RSA4096;
                 break;
             default:
                 throw new IllegalArgumentException("Invalid length of ciphertext");
@@ -952,8 +963,13 @@ public class PivSession extends ApplicationSession<PivSession> {
         }
 
         // ROCA
-        if (generate && keyType.params.algorithm == KeyType.Algorithm.RSA) {
-            require(FEATURE_RSA_GENERATION);
+        if (keyType.params.algorithm == KeyType.Algorithm.RSA) {
+            if (generate) {
+                require(FEATURE_RSA_GENERATION);
+            }
+            if (keyType.params.bitLength == 3072 || keyType.params.bitLength == 4096) {
+                require(FEATURE_RSA3072_RSA4096);
+            }
         }
 
         // FIPS

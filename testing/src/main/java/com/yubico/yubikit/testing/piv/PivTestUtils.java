@@ -16,15 +16,7 @@
 package com.yubico.yubikit.testing.piv;
 
 import com.yubico.yubikit.core.internal.codec.Base64;
-import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.piv.KeyType;
-import com.yubico.yubikit.piv.ManagementKeyMetadata;
-import com.yubico.yubikit.piv.ManagementKeyType;
-import com.yubico.yubikit.piv.PinPolicy;
-import com.yubico.yubikit.piv.PivSession;
-import com.yubico.yubikit.piv.TouchPolicy;
-import com.yubico.yubikit.piv.jca.PivAlgorithmParameterSpec;
-import com.yubico.yubikit.piv.jca.PivPrivateKey;
 
 import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.x500.X500Name;
@@ -56,7 +48,6 @@ import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.ECKey;
-import java.security.spec.AlgorithmParameterSpec;
 import java.security.spec.ECGenParameterSpec;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
@@ -115,6 +106,109 @@ public class PivTestUtils {
                 "YB-S64ZRydIO2ntukVlt2eKTnpf0nl1iYCpuKa4Ss4ujq9zWdZeFqYOAv5ayw_f24S-l3VJq_5F3NlK" +
                 "JXVM9WckzZg6q9KMosedo1_k6cae1rD1Jl1KGqcVaboDkCpZAhhZbW-Y52ivFWK5QXzdGuzdKPhwkiE" +
                 "4YwS26-uailzplGIEvquTponcngs_9QCeTi8En-tzO9TVzLWaCYy3TAQIDAQAB"
+        ),
+        RSA3072(
+                KeyType.RSA3072, "MIIG_QIBADANBgkqhkiG9w0BAQEFAASCBucwggbjAgEAAoIBgQCe4Vci7OxOOx" +
+                "ek5ZJ_A7uklWpkiRvwAqguotUwDwXybJqvz2sf0TMgYbSweBLrnt253-w_cJUkXeRS6JgYJNPM5R7zt" +
+                "aWL8Jsl3ETZVwpWJYZ9cRXmI71kB3ys0ROQwP8Srqw0vT3R6d8DOJ6SbQveScG4Bu5QG_OpFvfwS9qx" +
+                "v7OJGVbTV1w5lPBzQGZ4AFz0annGgz2FVZ6q61LgabJfjMygxWPNQjbY8HdrsGz3T8RMjb3rRhNKxlZ" +
+                "mVZob3qGpHxcDqvWMSz9aPgSzFTBWyIKv16_rzMJWcISfm-Ye_jpRAFV1quKHau7XPJJoMDdOF0FPyJ" +
+                "SLckt97aRjGBG88OwdW-Aj8xMA25_Zrx4Ja_SmHTBX4RGQJgM4qwhZV-XeHfNX5uML0tZgMIi6PzzbX" +
+                "aF6VIpDF7DsQEkMNheSXcWoD7Mf_gHS_coj0DP8VEuaEd_u-L4EvJHrbfVZ1cwhlIlhE7MrfkqKWZAr" +
+                "ypLarrZ7V7shU5pZZe0GEQkc6i0CAwEAAQKCAYALPBd_jH3cPVD7c9FjYmXxKjCjCc_8LY_rdk-5bYK" +
+                "H5TaeAn6Kei5Rlp8ikGcUGsCGjYdE6CbfsrT7yN9Ca84_UZ9Z7-kUJ3AtIfGLZdyBAXfMZIP-KV5R1b" +
+                "ay-LjXtlIDJe9e7lfSAWXn8ifCZmwdrJ0CcJkG-KcG-K0RJKgDBDGDmxNY7_dBSh8jozTrvOjVzrasO" +
+                "ykNRePppajPXiIDIC9zGeooAEvlFMH5DzlxVoZkvGwm2CZylepTo695U4mB6FbzGxHDCXjYVAsQDULx" +
+                "-j670TjnWkmuqXNGEN_SGgAdsEA51gJv8ar1at3nJf2LleSYNAL6sHOski9uEYXJ3CacWvnZRzT_YNT" +
+                "7WKujhmIS3EwOZgbrYI3QreOls9Vy-Xo53oCwiAii5zvxDMkZmG6oOgblRsV4slXtNEaL1mN2vM2_a4" +
+                "_Kg_yRmzFMY9znYp46qDj5QbmQ5MhEKgC-_DOrX0ih09eNlrgK6nb9VxlI046zthxY3beq47Z59mkCg" +
+                "cEAy0KHoX4vA-llBohsGiB_mCa6vvpdYk-uKqUcnEBG9u7UFEXKFn3n7ern2v6D1Om69u4S4_PIw2uS" +
+                "MBZ89jhNpo2WbX5GI_zQ-DCct9HJEN7vHM9W9AVuWLdn6_HM8PzTvrke1ZKGXorug-IWww6uaaBj-9r" +
+                "HJTTq_Bg0oUk1jv2jianp2Ct5ScFm4--kIjmb1AuLebywCvMSxZ5VtYHfb4VRgCM-nAIOdv9s27FNky" +
+                "VKHCgjK0dkLCMB0DgoTjGlAoHBAMga6ETh49iQtCAJpq28cQnqLSOCUI7dLqJcnEitUL5PtyCFkrpS7" +
+                "ZfLr15cHi4Ud9ycxtbaxAlaNtLo31l8tpLgbeVck0Ke67OUMRGrq9ONVXTYMNNX3tq2M7XO2slKa82O" +
+                "_tUDMjVlVv6v7R-LXTeqXItgxdISg-ZAYQHG550n6Ldterc2WxGOFZNjD1fkgbdwnu9f9DT-jS-m_C_" +
+                "oGXD5iqAaV2ovcVFb19iubRrltcqDi1nyhXnyKyjYNXff6QKBwQCBdsPLAgNSO4PEkHpCffanY-vInt" +
+                "GCP_xQX1CE2ZAZ0m805mrcvp9OdDPv0fMIV0Nl6qgPl4SFrGu1w20eqygScNaisS5d17cGjngTwUSPQ" +
+                "WAN-qaI0TjCuzcvGpmN2YvJTEIuiKCbcWSQjh4vaZd_4dAtZ-E2eqk9nvFO1cGObVGP6rDupmofp1cw" +
+                "0b-6qPTvL9dL1_pNTxvi0YIIFUvKzaDmvAwx9EFgXDrrB9jAY5z7qDkWZOeSEU4jYNGTVJ0CgcBlfTg" +
+                "mj4b29NVWlm6CGVwfkjTYmKRxAP9A-8WMGtMj4txXU0fK1nqIjZbhPclUx67PJni2yfe5YpcBu3hkM5" +
+                "uJvOgf9yb9GAslZljIxI_-WOVpwKhq2FtABD8Py90tUGCCvi7DLL7PVBmeTO3wHMfnjrEnQ6qxVBCvv" +
+                "CE3PIGGNJKUTaN6vsfLjIum2AwVIOElf6oscDc0lZJYA9JOHeKhaP8FGrcRNQS9Jd7AmB7gEHd2Qedw" +
+                "dE98PPXk3lun89kCgcATb1Hcac_ASVlLfyNvhEWYS7yHfALvGlCSTv-zdsIhnZ0oeN8ILSmzM0QaRB6" +
+                "matSnt-ocYJmJYuVwuzHFwZ-eitjnEmVMuMAMykUV40flaATPqERZvJmVmZbbCBv5qdb48zFkXQtR4q" +
+                "USvg6GjGUL7CAlBEjqW479l3KtiUuUF7WlIfU-iHhbA7HfkSbN8gtTorX5_t3OwZeFf-OGki5Iaf92u" +
+                "oq716yEBvD45dbPnkJG5sQTWDIHIKmRcwQ9ibw=", "MIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIB" +
+                "igKCAYEAnuFXIuzsTjsXpOWSfwO7pJVqZIkb8AKoLqLVMA8F8myar89rH9EzIGG0sHgS657dud_sP3C" +
+                "VJF3kUuiYGCTTzOUe87Wli_CbJdxE2VcKViWGfXEV5iO9ZAd8rNETkMD_Eq6sNL090enfAziekm0L3k" +
+                "nBuAbuUBvzqRb38Evasb-ziRlW01dcOZTwc0BmeABc9Gp5xoM9hVWequtS4GmyX4zMoMVjzUI22PB3a" +
+                "7Bs90_ETI2960YTSsZWZlWaG96hqR8XA6r1jEs_Wj4EsxUwVsiCr9ev68zCVnCEn5vmHv46UQBVdari" +
+                "h2ru1zySaDA3ThdBT8iUi3JLfe2kYxgRvPDsHVvgI_MTANuf2a8eCWv0ph0wV-ERkCYDOKsIWVfl3h3" +
+                "zV-bjC9LWYDCIuj88212helSKQxew7EBJDDYXkl3FqA-zH_4B0v3KI9Az_FRLmhHf7vi-BLyR6231Wd" +
+                "XMIZSJYROzK35KilmQK8qS2q62e1e7IVOaWWXtBhEJHOotAgMBAAE="
+        ),
+        RSA4096(
+                KeyType.RSA4096, "MIIJQwIBADANBgkqhkiG9w0BAQEFAASCCS0wggkpAgEAAoICAQDLqdGZtBymZ0yz" +
+                "MPApteDlEc0hejP3Vee7i9L8V23HytZyQak6RrlsDPSLgpkn3p9IUZ6fpMN6ND5T" +
+                "PCvYiGu69Um1MUHlE9n3iZEPLHzu1EhgUHpZMlqAwJYPq1B_CA1yuiyjdafvb8t9" +
+                "CkKeVIg-ud9WZyQDc-NK1tneOpx87fKZaoqhrUoG4RySv3NwPJYiNgjIIzfZiNZ5" +
+                "hyGHzTV3zi8bXt7Qt-pzIDn0QBciWHHpxGBGpxdQ74xu0K2mctwsnmJSi69FqNWh" +
+                "Kekby0M-ZmBRw5d92ZfOWbYOslSUmI2dyDvNvojyNDPUFeWq1T8OaMYoAKe-CvXu" +
+                "pZpLSGTzgDUZ23kG5aiKFYCiePGBeeYdhCuZq_ybwM0CI-kCfmfZW1L2o-nZshTu" +
+                "SJxpnTcOVwzX_fkFVlN5dLwXCwLxhJNTJ7Vi5NnzS4Yp8NfY9iPkD97m76zLOMfI" +
+                "nt50qhxoyEjRK_r-Afjcv-hzrqyp9Q_dontQMVM-y0ck1MKhwl7N4-3k29hy_T9O" +
+                "fTF7qpV02RF36kVEeHZBLZN6ZlEkA89rib_IUj7wM6qWH3_m3NAELPCUhQ7jCBmn" +
+                "CzTssElwwYqy7jbpmImdWq6JCRyIv_LUubGYmrUrYKpEfNKTMHjGMhNdOJlkjwDZ" +
+                "ZqlPl6KvNcKe8xibAkHn1KCQxBH0SwIDAQABAoICAEaKicY2m8vJMMhKFY0k6YH-" +
+                "EfJb_N7Y2txbWFc9wxD2ASPu-TntoDC8JgGiWQD1u27Vkl8SNwC_Uq0KxNcJnWLS" +
+                "rdZ7-qppH1B9TgiW7KjeTzlI9q-pYK6CxhckS8vMErhforF1QZcNvkoPgTaM6ens" +
+                "AF7Rd6hYfewAkdLGs0gUNLiNrfnE50SNuRNdC5Ne8NNlqtIDXMdUfZD3TJZYbgIS" +
+                "oL9Ws09QvHxmt5wRjNHBF6eT9JLUMh--8QG69sKVuwwbScv0hN9YVLIvLYYKd76H" +
+                "wCnh2Llm4g0_hm79to0Hb9msLoabTZyylxcJBJUQqngHs0bMv0z0R-2CX3he2VPd" +
+                "rfrXEpX3UCpNu-BCmXxNNlfB65o8NtG_ro77RZrMAhMnr1H2Xrj-FdTE-Q5gs5oO" +
+                "qp21wThoZs9SjDF1S6SiOyES47EfRE1a8gVTCAC7HAgtLNauj4ik_qDTuah1ucUr" +
+                "gqu3f2ZaqWKxSVlYgewPPu9Xuwxgh2h0zv0a1dhT7OA7OC_Wn63KNgN7W2tr2CLN" +
+                "G5jWY7L723nVnJjorWmc2FynpOhi6k2IQoJ-DPVpKpttAI6f-rCvAIuPe_EIyKG1" +
+                "Pu_Em0To796_QLY-VstJoYscZwBd2ZH6ZTr1bwNSWHkp5nR9k05u108-WD03wtip" +
+                "6cl8-iGcaIpqI67Oo-bdAoIBAQDnX-RxftNxrMjiOF54Qtj-9Qt25lR72C74s5aJ" +
+                "Csci0jCBnhGyvrIQPYTufvgo5m2mqyEKjVJcOfprN9VpL3gZjfaDAq6Vl5WE6-Q-" +
+                "cxF2B9rpX9Tuzo4Fmj83ReElidel9w7am4U3TbToyZ1h0pSOJftr3BhnmMcOlOIi" +
+                "aplDawJ6THb03lkvV5JAwiAZR64TPGNv3njhkr295Hn1kIhMetZSzPGnEfbAbRmf" +
+                "hwFLfobcE5xdIlK2EhpJdMS5ovKINVA6Fw2xEEaC6CYn4xPkVJTPafGVK8TZZie-" +
+                "QFkAVsIk311oiftMiMK1K57d5RcE1hdXSdYUFpeVYmI30OT3AoIBAQDhVuWzt8wG" +
+                "kg7ZVwc_4VMd0cT1qA_XMCvQ4wl6mIMITLUYXFEjkpFnLSntkAy34tGTPOqpM9De" +
+                "Cbumtjj3HPd893ERNEkxlpfR2oY9L4XM6fQajCGxIbv5H1cLnsblJa_P5cKtRjYW" +
+                "qrY4adU2qOrX6VGaJkvckJC3BjO4xGNlvRE_y-xfmShwQEfW7L8ehgdEhb8_F14G" +
+                "bpyFz7ZzD4nGonecQwdkAsBBEgwPSnVF-4d7R3J1GwyGrtDHSEdaRsL_S-O3Hkep" +
+                "PADApntAIGVUR_MI_mCtmsUtc_5mUqg-bJQqh5dnFsIwXZLZQyQaVvewPUedkkHg" +
+                "Xn54_s0h5BpNAoIBAQCByT6Bk5zUFRISI4CKgSTrz1UA-y7E0X13sHVupgcSN0lS" +
+                "S_Kti16i0X9xsPNPLgKwDSpZmvBqH3OjFQy3FhOOch2nW6fG7eLHTvMXPMC8rqdT" +
+                "ZZgx5NexuNZhEOe8gNfglvdUFQzi-snSEtYfe1otaozf8fQWmJKAUW-P0q_qK2qW" +
+                "Y7IOpXLtpXe6r6oFxDmXPLail-7Cyed5T2JCJzLtg7IZfDDJgMAjLI_E9pv5Vx4a" +
+                "8T0y2QAAdaMdNUzsvMTDNvSrwSbC_dgvsj1E_pG38OIQfuMuxACF2lHM3JeQIxqA" +
+                "SHNDIrM-OTDPI4rX-Zux8M3i_t4BIrMg7rEdkiX9AoIBACapLgfDhPGrpXiMgeXn" +
+                "1sbK8qvjBbS5wwq3qSyrde-6mWdwj0s3HlNBYGwtxsDV3XcRgIE_LpqpuNRFd0iO" +
+                "Y7fBDFkTS2uCltGeWGGvAZnCmerkF_O4AfQf-GM5_o3aBWv504i-_xCsgU70eWxD" +
+                "VudsVF_KKkHRW8LLAZy1tQgDhC4Z4pgUQuffX3P0cmXeQOj0uXctnygjWh9rH7Zl" +
+                "-BFoVnUs2tvBzRJc8ky9TZmQKhJwk6ab2W5SF-fY8sT-Vv5OGueT_l9-t_JVndfG" +
+                "txvarEviuNuQLjw6Jm-PxuXO4yzYzpUVRoPdyhAUgOE0ApLuMJdMPJkuHSzNKoyi" +
+                "AhECggEBAJgn1SBkJqfa6cgx7W2eEn8kp4wBpIuPjkFzJcJJ7LBbfmzCMKX8SBZR" +
+                "cF2kOIOuM8TCFxkW5q8wRUTeqP2awgAMnYWeuxhJM0rzbVg3l6I1Lr1HIOxEExxE" +
+                "Rr11Qtz3tXM6I2UVJyEF4hu3P1CsZeXJp8458jySwhC4J0Tir5sQ8fj2M0wOiwHY" +
+                "XDY1A01EpicaeFv7882RHdlPUXXyHORvZ6vA8IVga_PyUovzmvmueOFp2HFmoqpP" +
+                "Lbtiz8UgfYVsAyGAPiJpTOXT2YipLMeUb7MXdAon100pIxjrfatE7iJRs6jW0o4t" +
+                "M7ctAhZ7IXQWuolas4ly8L0MABx9258=", "MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAy6nRmbQcpmdMszDwKbXg" +
+                "5RHNIXoz91Xnu4vS_Fdtx8rWckGpOka5bAz0i4KZJ96fSFGen6TDejQ-Uzwr2Ihr" +
+                "uvVJtTFB5RPZ94mRDyx87tRIYFB6WTJagMCWD6tQfwgNcroso3Wn72_LfQpCnlSI" +
+                "PrnfVmckA3PjStbZ3jqcfO3ymWqKoa1KBuEckr9zcDyWIjYIyCM32YjWeYchh801" +
+                "d84vG17e0LfqcyA59EAXIlhx6cRgRqcXUO-MbtCtpnLcLJ5iUouvRajVoSnpG8tD" +
+                "PmZgUcOXfdmXzlm2DrJUlJiNncg7zb6I8jQz1BXlqtU_DmjGKACnvgr17qWaS0hk" +
+                "84A1Gdt5BuWoihWAonjxgXnmHYQrmav8m8DNAiPpAn5n2VtS9qPp2bIU7kicaZ03" +
+                "DlcM1_35BVZTeXS8FwsC8YSTUye1YuTZ80uGKfDX2PYj5A_e5u-syzjHyJ7edKoc" +
+                "aMhI0Sv6_gH43L_oc66sqfUP3aJ7UDFTPstHJNTCocJezePt5NvYcv0_Tn0xe6qV" +
+                "dNkRd-pFRHh2QS2TemZRJAPPa4m_yFI-8DOqlh9_5tzQBCzwlIUO4wgZpws07LBJ" +
+                "cMGKsu426ZiJnVquiQkciL_y1LmxmJq1K2CqRHzSkzB4xjITXTiZZI8A2WapT5ei" +
+                "rzXCnvMYmwJB59SgkMQR9EsCAwEAAQ=="
         ),
         ECCP256(
                 KeyType.ECCP256, "MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgaEygF-BBlaq6Mk" +
@@ -180,6 +274,8 @@ public class PivTestUtils {
                 return generateEd25519Key();
             case RSA1024:
             case RSA2048:
+            case RSA3072:
+            case RSA4096:
                 return generateRsaKey(keyType.params.bitLength);
         }
         throw new IllegalArgumentException("Invalid algorithm");
@@ -318,7 +414,7 @@ public class PivTestUtils {
     }
 
     public static void rsaTests() throws Exception {
-        for (KeyPair keyPair : new KeyPair[]{generateKey(KeyType.RSA1024), generateKey(KeyType.RSA2048)}) {
+        for (KeyPair keyPair : new KeyPair[]{generateKey(KeyType.RSA1024), generateKey(KeyType.RSA2048), generateKey(KeyType.RSA3072), generateKey(KeyType.RSA4096)}) {
             rsaEncryptAndDecrypt(keyPair.getPrivate(), keyPair.getPublic());
             rsaSignAndVerify(keyPair.getPrivate(), keyPair.getPublic());
         }

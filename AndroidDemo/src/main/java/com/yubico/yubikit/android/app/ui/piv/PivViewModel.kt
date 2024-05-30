@@ -17,21 +17,16 @@
 package com.yubico.yubikit.android.app.ui.piv
 
 import android.util.SparseArray
-
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-
 import com.yubico.yubikit.android.app.ui.YubiKeyViewModel
 import com.yubico.yubikit.core.YubiKeyDevice
 import com.yubico.yubikit.core.application.BadResponseException
 import com.yubico.yubikit.core.smartcard.ApduException
 import com.yubico.yubikit.core.smartcard.SmartCardConnection
-import com.yubico.yubikit.piv.ManagementKeyType
 import com.yubico.yubikit.piv.PivSession
 import com.yubico.yubikit.piv.Slot
-
 import org.slf4j.LoggerFactory
-
 import java.security.cert.X509Certificate
 
 class PivViewModel : YubiKeyViewModel<PivSession>() {
