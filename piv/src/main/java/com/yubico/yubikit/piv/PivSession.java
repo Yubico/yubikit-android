@@ -140,9 +140,13 @@ public class PivSession extends ApplicationSession<PivSession> {
     public static final Feature<PivSession> FEATURE_RSA3072_RSA4096 = new Feature.Versioned<>("RSA3072 and RSA4096 keys", 5, 7, 0);
 
     private static final int PIN_LEN = 8;
+    private static final int TEMPORARY_PIN_LEN = 16;
 
     // Special slot for the Management Key
     private static final int SLOT_CARD_MANAGEMENT = 0x9b;
+
+    // Special slot for bio metadata
+    private static final int SLOT_OCC_AUTH = 0x96;
 
     // Instruction set
     private static final byte INS_VERIFY = 0x20;
@@ -184,6 +188,8 @@ public class PivSession extends ApplicationSession<PivSession> {
     private static final int TAG_METADATA_PUBLIC_KEY = 0x04;
     private static final int TAG_METADATA_IS_DEFAULT = 0x05;
     private static final int TAG_METADATA_RETRIES = 0x06;
+    private static final int TAG_METADATA_BIO_CONFIGURED = 0x07;
+    private static final int TAG_METADATA_TEMPORARY_PIN = 0x08;
 
     private static final byte ORIGIN_GENERATED = 1;
     private static final byte ORIGIN_IMPORTED = 2;
@@ -271,6 +277,16 @@ public class PivSession extends ApplicationSession<PivSession> {
      */
     public void reset() throws IOException, ApduException {
         Logger.debug(logger, "Preparing PIV reset");
+
+        try {
+            BioMetadata bioMetadata = getBioMetadata();
+            if (bioMetadata.isConfigured()) {
+                throw new IllegalArgumentException("Cannot perform PIV reset when biometrics are configured");
+            }
+        } catch (UnsupportedOperationException e) {
+            // ignored
+        }
+
         blockPin();
         blockPuk();
         Logger.debug(logger, "Sending reset");
@@ -593,6 +609,125 @@ public class PivSession extends ApplicationSession<PivSession> {
             if (retries >= 0) {
                 currentPinAttempts = retries;
                 throw new InvalidPinException(retries);
+            } else {
+                // status code returned error, not number of retries
+                throw e;
+            }
+        }
+    }
+
+    /**
+     * Reads metadata specific to YubiKey Bio multi-protocol.
+     *
+     * @return metadata about a slot
+     * @throws IOException                   in case of connection error
+     * @throws ApduException                 in case of an error response from the YubiKey
+     * @throws UnsupportedOperationException in case the metadata cannot be retrieved
+     */
+    public BioMetadata getBioMetadata() throws IOException, ApduException {
+        Logger.debug(logger, "Getting bio metadata");
+        try {
+            Map<Integer, byte[]> data = Tlvs.decodeMap(
+                    protocol.sendAndReceive(new Apdu(0, INS_GET_METADATA, 0, SLOT_OCC_AUTH, null)));
+            return new BioMetadata(
+                    data.get(TAG_METADATA_BIO_CONFIGURED)[0] == 1,
+                    data.get(TAG_METADATA_RETRIES)[0],
+                    data.get(TAG_METADATA_TEMPORARY_PIN)[0] == 1
+            );
+        } catch (ApduException apduException) {
+            if (apduException.getSw() == SW.REFERENCED_DATA_NOT_FOUND) {
+                throw new UnsupportedOperationException("Biometric verification not supported by this YubiKey");
+            }
+            throw apduException;
+        }
+    }
+
+    /**
+     * Authenticate with YubiKey Bio multi-protocol capabilities.
+     * <p>
+     * Before calling this method, clients must verify that the authenticator is bio-capable and
+     * not blocked for bio matching.
+     *
+     * @param requestTemporaryPin after successful match generate a temporary PIN
+     * @param checkOnly           check verification state of biometrics, don't perform UV
+     * @return temporary pin if requestTemporaryPin is true, otherwise null.
+     * @throws IOException                   in case of connection error
+     * @throws ApduException                 in case of an error response from the YubiKey
+     * @throws InvalidPinException           in case of unsuccessful match
+     * @throws IllegalArgumentException      in case of invalid key configuration
+     * @throws UnsupportedOperationException in case bio specific verification is not supported
+     */
+    @Nullable
+    public byte[] verifyUv(boolean requestTemporaryPin, boolean checkOnly)
+            throws IOException, ApduException,
+            com.yubico.yubikit.core.application.InvalidPinException {
+        if (requestTemporaryPin && checkOnly) {
+            throw new IllegalArgumentException("Cannot request temporary pin when doing check-only verification");
+        }
+
+        try {
+            final int TAG_GET_TEMPORARY_PIN = 0x02;
+            final int TAG_VERIFY_UV = 0x03;
+            byte[] data = null;
+            if (!checkOnly) {
+                if (requestTemporaryPin) {
+                    data = new Tlv(TAG_GET_TEMPORARY_PIN, null).getBytes();
+                } else {
+                    data = new Tlv(TAG_VERIFY_UV, null).getBytes();
+                }
+            }
+
+            byte[] response = protocol.sendAndReceive(new Apdu(0, INS_VERIFY, 0, SLOT_OCC_AUTH, data));
+            return requestTemporaryPin ? response : null;
+        } catch (ApduException e) {
+            if (e.getSw() == SW.REFERENCED_DATA_NOT_FOUND) {
+                throw new UnsupportedOperationException("Biometric verification not supported by this YubiKey");
+            }
+            int retries = getRetriesFromCode(e.getSw());
+            if (retries >= 0) {
+                throw new com.yubico.yubikit.core.application.InvalidPinException(
+                        retries, "Fingerprint mismatch, " + retries + " attempts remaining");
+            } else {
+                // status code returned error, not number of retries
+                throw e;
+            }
+        }
+    }
+
+    /**
+     * Authenticate YubiKey Bio multi-protocol with temporary PIN.
+     * <p>
+     * The PIN has to be generated by calling {@link #verifyUv(boolean, boolean)} and is valid only
+     * for operations during this session and depending on slot {@link PinPolicy}.
+     * <p>
+     * Before calling this method, clients must verify that the authenticator is bio-capable and
+     * not blocked for bio matching.
+     *
+     * @param pin temporary pin
+     * @throws IOException                   in case of connection error
+     * @throws ApduException                 in case of an error response from the YubiKey
+     * @throws InvalidPinException           in case of unsuccessful match
+     * @throws IllegalArgumentException      in case of invalid key configuration
+     * @throws UnsupportedOperationException in case bio specific verification is not supported
+     */
+    public void verifyTemporaryPin(byte[] pin)
+            throws IOException, ApduException,
+            com.yubico.yubikit.core.application.InvalidPinException {
+        if (pin.length != TEMPORARY_PIN_LEN) {
+            throw new IllegalArgumentException("Temporary PIN must be exactly " + TEMPORARY_PIN_LEN + " bytes");
+        }
+
+        try {
+            final int TAG_VERIFY_TEMPORARY_PIN = 0x01;
+            protocol.sendAndReceive(new Apdu(0, INS_VERIFY, 0, SLOT_OCC_AUTH, new Tlv(TAG_VERIFY_TEMPORARY_PIN, pin).getBytes()));
+        } catch (ApduException e) {
+            if (e.getSw() == SW.REFERENCED_DATA_NOT_FOUND) {
+                throw new UnsupportedOperationException("Biometric verification not supported by this YubiKey");
+            }
+            int retries = getRetriesFromCode(e.getSw());
+            if (retries >= 0) {
+                throw new com.yubico.yubikit.core.application.InvalidPinException(
+                        retries, "Invalid temporary PIN, " + retries + " attempts remaining");
             } else {
                 // status code returned error, not number of retries
                 throw e;
