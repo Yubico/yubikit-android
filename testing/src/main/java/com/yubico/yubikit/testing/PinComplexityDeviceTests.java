@@ -86,7 +86,7 @@ public class PinComplexityDeviceTests {
         piv.authenticate(Hex.decode("010203040506070801020304050607080102030405060708"));
 
         char[] defaultPin = "123456".toCharArray();
-        char[] complexDefaultPin = "1123456".toCharArray();
+        char[] complexDefaultPin = "11234567".toCharArray();
         char[] currentPin = defaultPin;
 
         // figure out what is the default pin
@@ -118,7 +118,7 @@ public class PinComplexityDeviceTests {
     private static void testOpenPgpPinComplexity(OpenPgpSession openpgp) throws IOException, ApduException, InvalidPinException, BadResponseException {
 
         char[] defaultPin = "123456".toCharArray();
-        char[] complexDefaultPin = "1123456".toCharArray();
+        char[] complexDefaultPin = "11234567".toCharArray();
         char[] currentPin = defaultPin;
 
         // figure out what is the default pin
