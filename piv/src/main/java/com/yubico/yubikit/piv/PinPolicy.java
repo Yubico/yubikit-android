@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2022 Yubico.
+ * Copyright (C) 2019-2022,2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,7 +40,17 @@ public enum PinPolicy {
     /**
      * The PIN must be verified each time the key is to be used, just prior to using it.
      */
-    ALWAYS(0x3);
+    ALWAYS(0x3),
+
+    /**
+     * PIN or biometrics must be verified for the session, prior to using the key.
+     */
+    MATCH_ONCE(0x4),
+
+    /**
+     * PIN or biometrics must be verified each time the key is to be used, just prior to using it.
+     */
+    MATCH_ALWAYS(0x5);
 
     public final int value;
 
