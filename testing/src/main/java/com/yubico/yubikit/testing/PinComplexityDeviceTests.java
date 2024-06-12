@@ -101,7 +101,7 @@ public class PinComplexityDeviceTests {
         MatcherAssert.assertThat(piv.getPinAttempts(), CoreMatchers.equalTo(3));
 
         // try to change to pin which breaks PIN complexity
-        char[] weakPin = "password".toCharArray();
+        char[] weakPin = "33333333".toCharArray();
         try {
             piv.changePin(currentPin, weakPin);
             Assert.fail("Set weak PIN");
@@ -133,7 +133,7 @@ public class PinComplexityDeviceTests {
 
         openpgp.verifyUserPin(currentPin, false);
 
-        char[] weakPin = "password".toCharArray();
+        char[] weakPin = "33333333".toCharArray();
         try {
             openpgp.changeUserPin(currentPin, weakPin);
         } catch (ApduException apduException) {
@@ -167,7 +167,7 @@ public class PinComplexityDeviceTests {
         assertThat(pin.getPinUvAuth().getVersion(), is(pinUvAuthProtocol.getVersion()));
         assertThat(pin.getPinRetries().getCount(), is(8));
 
-        char[] weakPin = "password".toCharArray();
+        char[] weakPin = "33333333".toCharArray();
         try {
             pin.changePin(defaultPin, weakPin);
             fail("Weak PIN was accepted");
