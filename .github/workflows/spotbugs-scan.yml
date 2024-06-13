@@ -2,12 +2,10 @@ name: "SpotBugs"
 
 on:
   push:
-    branches:
-      - main
-      - adamve/bumpdeps_20240605
+    branches: [ main ]
   pull_request:
-    branches:
-      - main
+    # The branches below must be a subset of the branches above
+    branches: [ main ]
   schedule:
     - cron: "25 16 * * 0"
 
