@@ -4,11 +4,10 @@ on:
   push:
     branches:
       - main
-      - adamve/spotbugs-reports-v3
+      - adamve/bumpdeps_20240605
   pull_request:
     branches:
       - main
-      - adamve/spotbugs-reports-v3
   schedule:
     - cron: "25 16 * * 0"
 
@@ -30,10 +29,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Java
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           distribution: "temurin"
           java-version: "17"
@@ -69,7 +68,7 @@ jobs:
           done
 
       - name: upload SARIF
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: build/spotbugs/
           category: spotbugs-analysis
