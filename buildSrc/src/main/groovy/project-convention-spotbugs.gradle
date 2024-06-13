@@ -10,7 +10,7 @@ dependencies {
     spotbugsPlugins 'com.h3xstream.findsecbugs:findsecbugs-plugin:1.13.0'
 
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
-    compileOnly 'com.github.spotbugs:spotbugs-annotations:4.8.3'
+    compileOnly 'com.github.spotbugs:spotbugs-annotations:4.8.5'
 
     testImplementation 'com.google.code.findbugs:jsr305:3.0.2'
 }
