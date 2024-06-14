@@ -77,10 +77,7 @@ jobs:
         with:
           name: sarif-files
 
-      - name: Fix SARIF of module ${{ matrix.module }}
-        run: >-
-          module=${{ matrix.module }}
-          SARIF=spotbugs-$module.sarif
+      - run: |
           jq '.runs |= map( if .taxonomies == [null] then .taxonomies = [] else . end)' < $SARIF |
           jq ".runs[].results[].locations[].physicalLocation.artifactLocation.uri |= \"$module/src/main/java/\" + ." |
           jq ".runs[].results[].locations[].physicalLocation.artifactLocation.uriBaseId |= \"%SRC_ROOT%\" " |
@@ -88,8 +85,7 @@ jobs:
           jq '.runs[].tool.driver.rules |= map( . += { name: ("SpotBugs_" + .id | ascii_downcase | sub("(^|_)(?<x>[a-z])";"\(.x|ascii_upcase)";"g")) } )' |
           jq '.runs[].tool.driver.rules |= map( . += { help: { text: .helpUri } } )' |
           jq 'del(.runs[].originalUriBaseIds)' |
-          jq -c '.' > $SARIF.json
-          mv $SARIF.json $SARIF
+          jq -c '.' > spotbugs-${{ matrix.module }}.sarif
 
       - name: Upload SARIF for ${{ matrix.module }}
         uses: github/codeql-action/upload-sarif@v3
