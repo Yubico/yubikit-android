@@ -293,6 +293,14 @@ public class PivSession extends ApplicationSession<PivSession> {
         protocol.sendAndReceive(new Apdu(0, INS_RESET, 0, 0, null));
         currentPinAttempts = 3;
         maxPinAttempts = 3;
+
+        // update management key type
+        try {
+            managementKeyType = getManagementKeyMetadata().getKeyType();
+        } catch (UnsupportedOperationException unsupportedOperationException) {
+            managementKeyType = ManagementKeyType.TDES;
+        }
+
         Logger.info(logger, "PIV application data reset performed");
     }
 
