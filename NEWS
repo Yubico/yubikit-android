@@ -1,3 +1,12 @@
+* Version 2.6.0 (released 2024-06-18)
+ ** piv module:
+  - support for RSA3072 and RSA4096 (keys with FW 5.7+)
+  - support for Ed25519 and X25519 (keys with FW 5.7+)
+  - support for move/delete private key (keys with FW 5.7+)
+  - support for metadata and verify extensions (Bio multi-protocol keys)
+  - new verification policies PIN_OR_MATCH_ONCE/ALWAYS (Bio multi-protocol keys)
+ ** general updates:
+  - updated build dependencies and libraries
 * Version 2.5.0 (released 2024-03-25)
  ** fido module:
   - added support for authenticatorBioEnrollment
