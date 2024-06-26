@@ -60,6 +60,8 @@ import javax.crypto.KeyAgreement;
 @SuppressWarnings("SpellCheckingInspection")
 public class PivTestUtils {
 
+    private static final SecureRandom secureRandom = new SecureRandom();
+
     private static final Logger logger = LoggerFactory.getLogger(PivTestUtils.class);
 
     private enum StaticKey {
@@ -284,7 +286,7 @@ public class PivTestUtils {
     private static KeyPair generateEcKey(String curve) {
         try {
             KeyPairGenerator kpg = KeyPairGenerator.getInstance(KeyType.Algorithm.EC.name());
-            kpg.initialize(new ECGenParameterSpec(curve), new SecureRandom());
+            kpg.initialize(new ECGenParameterSpec(curve), secureRandom);
             return kpg.generateKeyPair();
         } catch (NoSuchAlgorithmException | InvalidAlgorithmParameterException e) {
             throw new IllegalStateException(e);
