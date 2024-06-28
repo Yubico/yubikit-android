@@ -307,7 +307,16 @@ public class DeviceUtil {
         }
 
         Logger.debug(logger, "Read info {}", info);
+        return adjustDeviceInfo(info, keyType, interfaces);
+    }
 
+    /**
+     * This method adjusts the input DeviceInfo if required, for example it fixes known bad values.
+     */
+    static DeviceInfo adjustDeviceInfo(
+            DeviceInfo info,
+            @Nullable YubiKeyType keyType,
+            int interfaces) {
         final DeviceConfig config = info.getConfig();
         final Version version = info.getVersion();
         final FormFactor formFactor = info.getFormFactor();
@@ -365,23 +374,7 @@ public class DeviceUtil {
             }
         }
 
-        final Integer deviceFlags = config.getDeviceFlags();
-        final Short autoEjectTimeout = config.getAutoEjectTimeout();
-        final Byte challengeResponseTimeout = config.getChallengeResponseTimeout();
-
-        DeviceConfig.Builder configBuilder = new DeviceConfig.Builder();
-        if (deviceFlags != null) {
-            configBuilder.deviceFlags(deviceFlags);
-        }
-
-        if (autoEjectTimeout != null) {
-            configBuilder.autoEjectTimeout(autoEjectTimeout);
-        }
-
-        if (challengeResponseTimeout != null) {
-            configBuilder.challengeResponseTimeout(challengeResponseTimeout);
-        }
-
+        DeviceConfig.Builder configBuilder = deviceConfigBuilderFromConfig(config);
         if (enabledNfcCapabilities != null) {
             configBuilder.enabledCapabilities(Transport.NFC, enabledNfcCapabilities);
         }
@@ -407,8 +400,47 @@ public class DeviceUtil {
                 .isLocked(info.isLocked())
                 .isFips(isFips)
                 .isSky(isSky)
+                .partNumber(info.getPartNumber())
+                .fipsCapable(info.getFipsCapable())
+                .fipsApproved(info.getFipsApproved())
                 .pinComplexity(pinComplexity)
+                .resetBlocked(info.getResetBlocked())
+                .fpsVersion(info.getFpsVersion())
+                .stmVersion(info.getStmVersion())
                 .build();
+    }
+
+    private static DeviceConfig.Builder deviceConfigBuilderFromConfig(DeviceConfig config) {
+        final Integer deviceFlags = config.getDeviceFlags();
+        final Short autoEjectTimeout = config.getAutoEjectTimeout();
+        final Byte challengeResponseTimeout = config.getChallengeResponseTimeout();
+        final Integer enabledUsbCapabilities = config.getEnabledCapabilities(Transport.USB);
+        final Integer enabledNfcCapabilities = config.getEnabledCapabilities(Transport.NFC);
+
+        DeviceConfig.Builder configBuilder = new DeviceConfig.Builder();
+        if (deviceFlags != null) {
+            configBuilder.deviceFlags(deviceFlags);
+        }
+
+        if (autoEjectTimeout != null) {
+            configBuilder.autoEjectTimeout(autoEjectTimeout);
+        }
+
+        if (challengeResponseTimeout != null) {
+            configBuilder.challengeResponseTimeout(challengeResponseTimeout);
+        }
+
+        if (enabledUsbCapabilities != null) {
+            configBuilder.enabledCapabilities(Transport.USB, enabledUsbCapabilities);
+        }
+
+        if (enabledNfcCapabilities != null) {
+            configBuilder.enabledCapabilities(Transport.NFC, enabledNfcCapabilities);
+        }
+
+        configBuilder.nfcRestricted(config.getNfcRestricted());
+
+        return configBuilder;
     }
 
     /**
