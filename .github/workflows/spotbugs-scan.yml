@@ -23,7 +23,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: ["java"]
+        language: [ "java" ]
 
     steps:
       - name: Checkout repository
@@ -38,35 +38,57 @@ jobs:
       - name: Build with Gradle
         run: ./gradlew spotbugsRelease spotbugsMain
 
-      - name: Fix SARIF
-        run: >-
-          for module in \
-            "android" \
-            "AndroidDemo" \
-            "core" \
-            "fido" \
-            "management" \
-            "oath" \
-            "openpgp" \
-            "piv" \
-            "support" \
-            "testing" \
-            "yubiotp";
-          do
-            SARIF="./build/spotbugs/spotbugs-$module.sarif"
-            jq '.runs |= map( if .taxonomies == [null] then .taxonomies = [] else . end)' < $SARIF |
-            jq ".runs[].results[].locations[].physicalLocation.artifactLocation.uri |= \"$module/src/main/java/\" + ." |
-            jq ".runs[].results[].locations[].physicalLocation.artifactLocation.uriBaseId |= \"%SRC_ROOT%\" " |
-            jq '.runs[].tool.driver.rules |= map( . += { fullDescription: { text: .shortDescription.text } } )' |
-            jq '.runs[].tool.driver.rules |= map( . += { name: ("SpotBugs_" + .id | ascii_downcase | sub("(^|_)(?<x>[a-z])";"\(.x|ascii_upcase)";"g")) } )' |
-            jq '.runs[].tool.driver.rules |= map( . += { help: { text: .helpUri } } )' |
-            jq 'del(.runs[].originalUriBaseIds)' |
-            jq -c '.' > $SARIF.json
-            mv $SARIF.json $SARIF
-          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sarif-files
+          path: ./build/spotbugs/*.sarif
+          retention-days: 1
 
-      - name: upload SARIF
+  upload:
+    name: Upload SARIF
+    needs: analyze
+    runs-on: ubuntu-latest
+
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        module:
+          [
+            "android",
+            "AndroidDemo",
+            "core",
+            "fido",
+            "management",
+            "oath",
+            "openpgp",
+            "piv",
+            "support",
+            "testing",
+            "yubiotp",
+          ]
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: sarif-files
+
+      - run: |
+          jq '.runs |= map( if .taxonomies == [null] then .taxonomies = [] else . end)' < spotbugs-${{ matrix.module }}.sarif |
+          jq ".runs[].results[].locations[].physicalLocation.artifactLocation.uri |= \"$module/src/main/java/\" + ." |
+          jq ".runs[].results[].locations[].physicalLocation.artifactLocation.uriBaseId |= \"%SRC_ROOT%\" " |
+          jq '.runs[].tool.driver.rules |= map( . += { fullDescription: { text: .shortDescription.text } } )' |
+          jq '.runs[].tool.driver.rules |= map( . += { name: ("SpotBugs_" + .id | ascii_downcase | sub("(^|_)(?<x>[a-z])";"\(.x|ascii_upcase)";"g")) } )' |
+          jq '.runs[].tool.driver.rules |= map( . += { help: { text: .helpUri } } )' |
+          jq 'del(.runs[].originalUriBaseIds)' |
+          jq -c '.' > spotbugs-${{ matrix.module }}.json
+
+      - name: Upload SARIF for ${{ matrix.module }}
         uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: build/spotbugs/
-          category: spotbugs-analysis
+          sarif_file: spotbugs-${{ matrix.module }}.json
+          category: spotbugs-analysis-${{ matrix.module }}
