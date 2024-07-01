@@ -242,8 +242,7 @@ public class DeviceUtil {
             Map<Transport, Integer> supportedApps = new EnumMap<>(Transport.class);
             supportedApps.put(Transport.USB, Capability.U2F.bit);
             if (keyType == YubiKeyType.NEO) {
-                int usbApps = supportedApps.get(Transport.USB);
-                supportedApps.put(Transport.USB, usbApps | baseNeoApps);
+                supportedApps.put(Transport.USB, Capability.U2F.bit | baseNeoApps);
                 supportedApps.put(Transport.NFC, supportedApps.get(Transport.USB));
             }
 
@@ -324,6 +323,12 @@ public class DeviceUtil {
         int supportedUsbCapabilities = info.getSupportedCapabilities(Transport.USB);
         int supportedNfcCapabilities = info.getSupportedCapabilities(Transport.NFC);
 
+        // config properties
+        final Integer deviceFlags = config.getDeviceFlags();
+        final Short autoEjectTimeout = config.getAutoEjectTimeout();
+        final Byte challengeResponseTimeout = config.getChallengeResponseTimeout();
+        final Boolean isNfcRestricted = config.getNfcRestricted();
+
         Integer enabledUsbCapabilities = config.getEnabledCapabilities(Transport.USB);
         Integer enabledNfcCapabilities = config.getEnabledCapabilities(Transport.NFC);
 
@@ -351,11 +356,6 @@ public class DeviceUtil {
             enabledUsbCapabilities = usbEnabled;
         }
 
-        final boolean isSky = info.isSky() || keyType == YubiKeyType.SKY;
-        final boolean isFips = info.isFips() ||
-                (version.isAtLeast(4, 4, 0) && version.isLessThan(4, 5, 0));
-        final boolean pinComplexity = info.getPinComplexity();
-
         // Set nfc_enabled if missing (pre YubiKey 5)
         if (info.hasTransport(Transport.NFC) && enabledNfcCapabilities == null) {
             enabledNfcCapabilities = supportedNfcCapabilities;
@@ -374,14 +374,34 @@ public class DeviceUtil {
             }
         }
 
-        DeviceConfig.Builder configBuilder = deviceConfigBuilderFromConfig(config);
-        if (enabledNfcCapabilities != null) {
-            configBuilder.enabledCapabilities(Transport.NFC, enabledNfcCapabilities);
+        DeviceConfig.Builder configBuilder = new DeviceConfig.Builder();
+        if (deviceFlags != null) {
+            configBuilder.deviceFlags(deviceFlags);
+        }
+
+        if (autoEjectTimeout != null) {
+            configBuilder.autoEjectTimeout(autoEjectTimeout);
+        }
+
+        if (challengeResponseTimeout != null) {
+            configBuilder.challengeResponseTimeout(challengeResponseTimeout);
         }
 
         if (enabledUsbCapabilities != null) {
             configBuilder.enabledCapabilities(Transport.USB, enabledUsbCapabilities);
         }
+
+        if (enabledNfcCapabilities != null) {
+            configBuilder.enabledCapabilities(Transport.NFC, enabledNfcCapabilities);
+        }
+
+        configBuilder.nfcRestricted(isNfcRestricted);
+
+        // info properties
+        final boolean isSky = info.isSky() || keyType == YubiKeyType.SKY;
+        final boolean isFips = info.isFips() ||
+                (version.isAtLeast(4, 4, 0) && version.isLessThan(4, 5, 0));
+        final boolean pinComplexity = info.getPinComplexity();
 
         Map<Transport, Integer> capabilities = new EnumMap<>(Transport.class);
         if (supportedUsbCapabilities != 0) {
@@ -408,39 +428,6 @@ public class DeviceUtil {
                 .fpsVersion(info.getFpsVersion())
                 .stmVersion(info.getStmVersion())
                 .build();
-    }
-
-    private static DeviceConfig.Builder deviceConfigBuilderFromConfig(DeviceConfig config) {
-        final Integer deviceFlags = config.getDeviceFlags();
-        final Short autoEjectTimeout = config.getAutoEjectTimeout();
-        final Byte challengeResponseTimeout = config.getChallengeResponseTimeout();
-        final Integer enabledUsbCapabilities = config.getEnabledCapabilities(Transport.USB);
-        final Integer enabledNfcCapabilities = config.getEnabledCapabilities(Transport.NFC);
-
-        DeviceConfig.Builder configBuilder = new DeviceConfig.Builder();
-        if (deviceFlags != null) {
-            configBuilder.deviceFlags(deviceFlags);
-        }
-
-        if (autoEjectTimeout != null) {
-            configBuilder.autoEjectTimeout(autoEjectTimeout);
-        }
-
-        if (challengeResponseTimeout != null) {
-            configBuilder.challengeResponseTimeout(challengeResponseTimeout);
-        }
-
-        if (enabledUsbCapabilities != null) {
-            configBuilder.enabledCapabilities(Transport.USB, enabledUsbCapabilities);
-        }
-
-        if (enabledNfcCapabilities != null) {
-            configBuilder.enabledCapabilities(Transport.NFC, enabledNfcCapabilities);
-        }
-
-        configBuilder.nfcRestricted(config.getNfcRestricted());
-
-        return configBuilder;
     }
 
     /**
@@ -561,7 +548,7 @@ public class DeviceUtil {
     }
 
     // Applet and capability it provides
-    private enum CcidApplet {
+    enum CcidApplet {
         OPENPGP(AppId.OPENPGP, Capability.OPENPGP),
         OATH(AppId.OATH, Capability.OATH),
         PIV(AppId.PIV, Capability.PIV),
