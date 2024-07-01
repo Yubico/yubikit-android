@@ -16,15 +16,10 @@
 
 package com.yubico.yubikit.support;
 
-import com.yubico.yubikit.core.UsbInterface;
-import com.yubico.yubikit.core.YubiKeyType;
 import com.yubico.yubikit.management.DeviceConfig;
 import com.yubico.yubikit.management.DeviceInfo;
 
-import javax.annotation.Nullable;
-
 class TestUtil {
-    // helper builders
     interface DeviceConfigBuilder {
         void createWith(DeviceConfig.Builder builder);
     }
@@ -40,19 +35,8 @@ class TestUtil {
     }
 
     static DeviceInfo info(DeviceInfoBuilder infoBuilder) {
-        YubiKeyType yubiKeyType = YubiKeyType.YK4;
-        int interfaces = UsbInterface.CCID | UsbInterface.OTP | UsbInterface.FIDO;
-
-        return info(infoBuilder, yubiKeyType, interfaces);
-    }
-
-    // this calls the function under test DeviceUtil.fixDeviceInfo
-    static DeviceInfo info(
-            DeviceInfoBuilder infoBuilder,
-            @Nullable YubiKeyType keyType,
-            int interfaces) {
         DeviceInfo.Builder builder = new DeviceInfo.Builder();
         infoBuilder.createWith(builder);
-        return DeviceUtil.adjustDeviceInfo(builder.build(), keyType, interfaces);
+        return builder.build();
     }
 }

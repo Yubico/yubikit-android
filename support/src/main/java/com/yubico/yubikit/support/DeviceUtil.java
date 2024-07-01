@@ -323,12 +323,6 @@ public class DeviceUtil {
         int supportedUsbCapabilities = info.getSupportedCapabilities(Transport.USB);
         int supportedNfcCapabilities = info.getSupportedCapabilities(Transport.NFC);
 
-        // config properties
-        final Integer deviceFlags = config.getDeviceFlags();
-        final Short autoEjectTimeout = config.getAutoEjectTimeout();
-        final Byte challengeResponseTimeout = config.getChallengeResponseTimeout();
-        final Boolean isNfcRestricted = config.getNfcRestricted();
-
         Integer enabledUsbCapabilities = config.getEnabledCapabilities(Transport.USB);
         Integer enabledNfcCapabilities = config.getEnabledCapabilities(Transport.NFC);
 
@@ -356,6 +350,11 @@ public class DeviceUtil {
             enabledUsbCapabilities = usbEnabled;
         }
 
+        final boolean isSky = info.isSky() || keyType == YubiKeyType.SKY;
+        final boolean isFips = info.isFips() ||
+                (version.isAtLeast(4, 4, 0) && version.isLessThan(4, 5, 0));
+        final boolean pinComplexity = info.getPinComplexity();
+
         // Set nfc_enabled if missing (pre YubiKey 5)
         if (info.hasTransport(Transport.NFC) && enabledNfcCapabilities == null) {
             enabledNfcCapabilities = supportedNfcCapabilities;
@@ -374,6 +373,11 @@ public class DeviceUtil {
             }
         }
 
+        final Integer deviceFlags = config.getDeviceFlags();
+        final Short autoEjectTimeout = config.getAutoEjectTimeout();
+        final Byte challengeResponseTimeout = config.getChallengeResponseTimeout();
+        final Boolean isNfcRestricted = config.getNfcRestricted();
+
         DeviceConfig.Builder configBuilder = new DeviceConfig.Builder();
         if (deviceFlags != null) {
             configBuilder.deviceFlags(deviceFlags);
@@ -387,21 +391,15 @@ public class DeviceUtil {
             configBuilder.challengeResponseTimeout(challengeResponseTimeout);
         }
 
-        if (enabledUsbCapabilities != null) {
-            configBuilder.enabledCapabilities(Transport.USB, enabledUsbCapabilities);
-        }
-
         if (enabledNfcCapabilities != null) {
             configBuilder.enabledCapabilities(Transport.NFC, enabledNfcCapabilities);
         }
 
-        configBuilder.nfcRestricted(isNfcRestricted);
+        if (enabledUsbCapabilities != null) {
+            configBuilder.enabledCapabilities(Transport.USB, enabledUsbCapabilities);
+        }
 
-        // info properties
-        final boolean isSky = info.isSky() || keyType == YubiKeyType.SKY;
-        final boolean isFips = info.isFips() ||
-                (version.isAtLeast(4, 4, 0) && version.isLessThan(4, 5, 0));
-        final boolean pinComplexity = info.getPinComplexity();
+        configBuilder.nfcRestricted(isNfcRestricted);
 
         Map<Transport, Integer> capabilities = new EnumMap<>(Transport.class);
         if (supportedUsbCapabilities != 0) {
