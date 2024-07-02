@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Yubico.
+ * Copyright (C) 2020-2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -79,7 +79,7 @@ public class AuthenticatorSelectionCriteria {
         String residentKeyRequirement = (String) map.get(RESIDENT_KEY);
         if (residentKeyRequirement == null) {
             // Backwards compatibility with WebAuthn level 1
-            if(map.get(REQUIRE_RESIDENT_KEY) == Boolean.TRUE) {
+            if(Boolean.TRUE.equals(map.get(REQUIRE_RESIDENT_KEY))) {
                 residentKeyRequirement = ResidentKeyRequirement.REQUIRED;
             } else {
                 residentKeyRequirement = ResidentKeyRequirement.DISCOURAGED;

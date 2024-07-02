@@ -43,7 +43,7 @@ public class Ctap2ConfigTests {
     public static void testReadWriteEnterpriseAttestation(Ctap2Session session, Object... args) throws Throwable {
         Config config = getConfig(session, Ctap2ClientPinTests.getPinUvAuthProtocol(args));
         config.enableEnterpriseAttestation();
-        assertSame(TRUE, session.getInfo().getOptions().get("ep"));
+        assertEquals(TRUE, session.getInfo().getOptions().get("ep"));
     }
 
     public static void testToggleAlwaysUv(Ctap2Session session, Object... args) throws Throwable {
@@ -68,6 +68,6 @@ public class Ctap2ConfigTests {
     }
 
     static boolean getAlwaysUv(Ctap2Session session) throws IOException, CommandException {
-        return session.getInfo().getOptions().get("alwaysUv") == TRUE;
+        return TRUE.equals(session.getInfo().getOptions().get("alwaysUv"));
     }
 }

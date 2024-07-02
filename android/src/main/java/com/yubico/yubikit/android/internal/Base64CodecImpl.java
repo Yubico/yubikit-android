@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Yubico.
+ * Copyright (C) 2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package com.yubico.yubikit.android.internal;
 
 import android.util.Base64;
 
-public class Base64Codec implements com.yubico.yubikit.core.internal.codec.Base64Codec {
+public class Base64CodecImpl implements com.yubico.yubikit.core.internal.codec.Base64Codec {
 
     @Override
     public String toUrlSafeString(byte[] data) {

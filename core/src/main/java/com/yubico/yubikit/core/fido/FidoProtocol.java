@@ -18,6 +18,7 @@ package com.yubico.yubikit.core.fido;
 import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.Version;
 import com.yubico.yubikit.core.application.CommandState;
+import com.yubico.yubikit.core.util.RandomUtils;
 import com.yubico.yubikit.core.util.StringUtils;
 
 import org.slf4j.LoggerFactory;
@@ -59,8 +60,7 @@ public class FidoProtocol implements Closeable {
         this.connection = connection;
 
         // init
-        byte[] nonce = new byte[8];
-        new SecureRandom().nextBytes(nonce);
+        byte[] nonce = RandomUtils.getRandomBytes(8);
 
         channelId = 0xffffffff;
         ByteBuffer buffer = ByteBuffer.wrap(sendAndReceive(CTAPHID_INIT, nonce, null));

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Yubico.
+ * Copyright (C) 2020-2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,7 +52,7 @@ public class EnterpriseAttestationTests {
     static void enableEp(Ctap2Session session, PinUvAuthProtocol pinUvAuthProtocol)
             throws CommandException, IOException {
         // enable ep if not enabled
-        if (session.getCachedInfo().getOptions().get("ep") == FALSE) {
+        if (FALSE.equals(session.getCachedInfo().getOptions().get("ep"))) {
 
             ClientPin clientPin = new ClientPin(session, pinUvAuthProtocol);
             byte[] pinToken = clientPin.getPinToken(TestData.PIN, ClientPin.PIN_PERMISSION_ACFG, null);

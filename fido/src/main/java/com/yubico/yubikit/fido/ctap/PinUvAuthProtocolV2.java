@@ -33,6 +33,8 @@ import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 /**
  * Implements PIN/UV Auth Protocol 2
  *
@@ -141,6 +143,10 @@ public class PinUvAuthProtocolV2 extends PinUvAuthProtocolV1 {
         return mac.doFinal(message);
     }
 
+    @SuppressFBWarnings(value = {"CIPHER_INTEGRITY", "STATIC_IV"},
+            justification = "No padding is performed as the size of demPlaintext is required " +
+                    "to be a multiple of the AES block length. The IV is randomly generated " +
+                    "for every encrypt operation")
     private Cipher getCipher(int mode, byte[] secret, byte[] iv) {
         try {
             Cipher cipher = Cipher.getInstance("AES/CBC/NoPadding");

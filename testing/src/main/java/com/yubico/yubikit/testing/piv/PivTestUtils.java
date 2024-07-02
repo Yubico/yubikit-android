@@ -53,12 +53,15 @@ import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Date;
+import java.util.Objects;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyAgreement;
 
 @SuppressWarnings("SpellCheckingInspection")
 public class PivTestUtils {
+
+    private static final SecureRandom secureRandom = new SecureRandom();
 
     private static final Logger logger = LoggerFactory.getLogger(PivTestUtils.class);
 
@@ -271,7 +274,9 @@ public class PivTestUtils {
             case ECCP384:
                 return generateEcKey("secp384r1");
             case ED25519:
-                return generateEd25519Key();
+                return generateCv25519Key("ED25519");
+            case X25519:
+                return generateCv25519Key("X25519");
             case RSA1024:
             case RSA2048:
             case RSA3072:
@@ -284,16 +289,19 @@ public class PivTestUtils {
     private static KeyPair generateEcKey(String curve) {
         try {
             KeyPairGenerator kpg = KeyPairGenerator.getInstance(KeyType.Algorithm.EC.name());
-            kpg.initialize(new ECGenParameterSpec(curve), new SecureRandom());
+            kpg.initialize(new ECGenParameterSpec(curve), secureRandom);
             return kpg.generateKeyPair();
         } catch (NoSuchAlgorithmException | InvalidAlgorithmParameterException e) {
             throw new IllegalStateException(e);
         }
     }
 
-    private static KeyPair generateEd25519Key() {
+    private static KeyPair generateCv25519Key(String keyType) {
+        if (!Objects.equals(keyType, "ED25519") && !Objects.equals(keyType, "X25519")) {
+            throw new IllegalArgumentException("Invalid key keyType");
+        }
         try {
-            KeyPairGenerator kpg = KeyPairGenerator.getInstance("ED25519");
+            KeyPairGenerator kpg = KeyPairGenerator.getInstance(keyType);
             return kpg.generateKeyPair();
         } catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException(e);
@@ -434,14 +442,14 @@ public class PivTestUtils {
 
     public static void ecSignAndVerify(PrivateKey privateKey, PublicKey publicKey) throws Exception {
         for (String algorithm : EC_SIGNATURE_ALGORITHMS) {
-            logger.debug("Test {}", algorithm);
+            logger.debug("Sign and verify test for {}", algorithm);
             verify(publicKey, Signature.getInstance(algorithm), sign(privateKey, Signature.getInstance(algorithm)));
         }
     }
 
     public static void ed25519SignAndVerify(PrivateKey privateKey, PublicKey publicKey) throws Exception {
         String algorithm = "ED25519";
-        logger.debug("Test {}", algorithm);
+        logger.debug("Sign and verify test for Ed25519");
         verify(publicKey, Signature.getInstance(algorithm), sign(privateKey, Signature.getInstance(algorithm)));
     }
 
