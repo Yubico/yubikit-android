@@ -35,6 +35,7 @@ import com.yubico.yubikit.core.smartcard.AppId;
 import com.yubico.yubikit.core.smartcard.SW;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.smartcard.SmartCardProtocol;
+import com.yubico.yubikit.core.smartcard.scp.ScpKeyParams;
 import com.yubico.yubikit.core.util.Tlv;
 import com.yubico.yubikit.core.util.Tlvs;
 
@@ -159,6 +160,20 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
      */
     public OpenPgpSession(SmartCardConnection connection) throws
             IOException, ApplicationNotAvailableException, ApduException {
+        this(connection, null);
+    }
+
+    /**
+     * Create new instance of {@link OpenPgpSession} and selects the application for use.
+     *
+     * @param connection a smart card connection to a YubiKey
+     * @param scpKeyParams SCP key parameters to establish a secure connection
+     * @throws IOException                      in case of communication error
+     * @throws ApduException                    in case of an error response from the YubiKey
+     * @throws ApplicationNotAvailableException if the application is missing or disabled
+     */
+    public OpenPgpSession(SmartCardConnection connection, @Nullable ScpKeyParams scpKeyParams) throws
+            IOException, ApplicationNotAvailableException, ApduException {
         protocol = new SmartCardProtocol(connection);
 
         try {
@@ -166,6 +181,14 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
         } catch (IOException e) {
             // The OpenPGP applet can be in an inactive state, in which case it needs activation.
             activate(e);
+        }
+
+        if (scpKeyParams != null) {
+            try {
+                protocol.initScp(scpKeyParams);
+            } catch (BadResponseException e) {
+                throw new IOException("Failed setting up SCP session", e);
+            }
         }
 
         Logger.debug(logger, "Getting version number");

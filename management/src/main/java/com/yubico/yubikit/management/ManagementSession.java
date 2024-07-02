@@ -37,6 +37,7 @@ import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.core.smartcard.AppId;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.smartcard.SmartCardProtocol;
+import com.yubico.yubikit.core.smartcard.scp.ScpKeyParams;
 import com.yubico.yubikit.core.util.Callback;
 import com.yubico.yubikit.core.util.Result;
 import com.yubico.yubikit.core.util.Tlvs;
@@ -114,11 +115,25 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
      * @throws ApplicationNotAvailableException in case the application is missing/disabled
      */
     public ManagementSession(SmartCardConnection connection) throws IOException, ApplicationNotAvailableException {
+        this(connection, null);
+    }
+
+    /**
+     * Establishes a new session with a YubiKeys Management application, over a {@link SmartCardConnection}.
+     *
+     * @param connection   connection with YubiKey
+     * @param scpKeyParams SCP key parameters to establish a secure connection
+     * @throws IOException                      in case of connection error
+     * @throws ApplicationNotAvailableException in case the application is missing/disabled
+     */
+    public ManagementSession(SmartCardConnection connection, @Nullable ScpKeyParams scpKeyParams) throws IOException, ApplicationNotAvailableException {
         SmartCardProtocol protocol = new SmartCardProtocol(connection);
         Version version;
         try {
             version = Version.parse(new String(protocol.select(AppId.MANAGEMENT), StandardCharsets.UTF_8));
-            if (version.major == 3) {
+            if (scpKeyParams != null) {
+                protocol.initScp(scpKeyParams);
+            } else if (version.major == 3) {
                 // Workaround to "de-select" on NEO
                 connection.sendAndReceive(new byte[]{(byte) 0xa4, 0x04, 0x00, 0x08});
                 protocol.select(AppId.OTP);
@@ -130,6 +145,8 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
             } else {
                 throw e;
             }
+        } catch (BadResponseException | ApduException e) {
+            throw new IOException("Failed setting up SCP session", e);
         }
         this.version = version;
 

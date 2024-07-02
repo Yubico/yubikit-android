@@ -1,0 +1,358 @@
+/*
+ * Copyright (C) 2024 Yubico.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.yubico.yubikit.core.smartcard.scp;
+
+import com.yubico.yubikit.core.Version;
+import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
+import com.yubico.yubikit.core.application.ApplicationSession;
+import com.yubico.yubikit.core.application.BadResponseException;
+import com.yubico.yubikit.core.internal.Logger;
+import com.yubico.yubikit.core.keys.EllipticCurveValues;
+import com.yubico.yubikit.core.keys.PrivateKeyValues;
+import com.yubico.yubikit.core.keys.PublicKeyValues;
+import com.yubico.yubikit.core.smartcard.Apdu;
+import com.yubico.yubikit.core.smartcard.ApduException;
+import com.yubico.yubikit.core.smartcard.AppId;
+import com.yubico.yubikit.core.smartcard.SW;
+import com.yubico.yubikit.core.smartcard.SmartCardConnection;
+import com.yubico.yubikit.core.smartcard.SmartCardProtocol;
+import com.yubico.yubikit.core.util.StringUtils;
+import com.yubico.yubikit.core.util.Tlv;
+import com.yubico.yubikit.core.util.Tlvs;
+
+import org.slf4j.LoggerFactory;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.math.BigInteger;
+import java.nio.ByteBuffer;
+import java.security.cert.CertificateEncodingException;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+
+import javax.annotation.Nullable;
+
+public class SecurityDomainSession extends ApplicationSession<SecurityDomainSession> {
+    private static final byte INS_GET_DATA = (byte) 0xCA;
+    private static final byte INS_PUT_KEY = (byte) 0xD8;
+    private static final byte INS_STORE_DATA = (byte) 0xE2;
+    private static final byte INS_DELETE = (byte) 0xE4;
+    private static final byte INS_GENERATE_KEY = (byte) 0xF1;
+
+    private static final short TAG_KEY_INFORMATION = 0xE0;
+    private static final short TAG_CARD_RECOGNITION_DATA = 0x66;
+    private static final short TAG_CA_KLOC_IDENTIFIERS = (short) 0xFF33;
+    private static final short TAG_CA_KLCC_IDENTIFIERS = (short) 0xFF34;
+    private static final short TAG_CERTIFICATE_STORE = (short) 0xBF21;
+
+    private static final byte KEY_TYPE_AES = (byte) 0x88;
+    private static final byte KEY_TYPE_ECC_PUBLIC_KEY = (byte) 0xB0;
+    private static final byte KEY_TYPE_ECC_PRIVATE_KEY = (byte) 0xB1;
+    private static final byte KEY_TYPE_ECC_KEY_PARAMS = (byte) 0xF0;
+
+    private final SmartCardProtocol protocol;
+
+    private static final org.slf4j.Logger logger = LoggerFactory.getLogger(SecurityDomainSession.class);
+
+    public SecurityDomainSession(SmartCardConnection connection) throws IOException, ApplicationNotAvailableException {
+        protocol = new SmartCardProtocol(connection);
+        protocol.select(AppId.SECURITYDOMAIN);
+        // We don't know the version, but we know it's at least 5.3.0
+        protocol.enableWorkarounds(new Version(5, 3, 0));
+        Logger.debug(logger, "Security Domain session initialized");
+    }
+
+    @Override
+    public Version getVersion() {
+        throw new UnsupportedOperationException("Version cannot be read from Security Domain application");
+    }
+
+    @Override
+    public void close() throws IOException {
+        protocol.close();
+    }
+
+    /**
+     * Initialize SCP and authenticate the session.
+     * SCP11b does not authenticate the off-card entity, and will not allow the usage of commands which require such authentication.
+     */
+    public void authenticate(ScpKeyParams keyParams) throws BadResponseException, ApduException, IOException {
+        protocol.initScp(keyParams);
+    }
+
+    public byte[] getData(short tag, @Nullable byte[] data) throws ApduException, IOException {
+        return protocol.sendAndReceive(new Apdu(0, INS_GET_DATA, tag >> 8, tag & 0xff, data));
+    }
+
+    public byte[] getCardRecognitionData() throws ApduException, IOException, BadResponseException {
+        return Tlvs.unpackValue(0x73, getData(TAG_CARD_RECOGNITION_DATA, null));
+    }
+
+    public Map<KeyRef, Map<Byte, Byte>> getKeyInformation() throws ApduException, IOException, BadResponseException {
+        Map<KeyRef, Map<Byte, Byte>> keys = new HashMap<>();
+        for (Tlv tlv : Tlvs.decodeList(getData(TAG_KEY_INFORMATION, null))) {
+            ByteBuffer data = ByteBuffer.wrap(Tlvs.unpackValue(0xC0, tlv.getBytes()));
+            KeyRef keyRef = new KeyRef(data.get(), data.get());
+            Map<Byte, Byte> components = new HashMap<>();
+            while (data.hasRemaining()) {
+                components.put(data.get(), data.get());
+            }
+            keys.put(keyRef, components);
+        }
+        return keys;
+    }
+
+    public List<X509Certificate> getCertificateBundle(KeyRef keyRef) throws ApduException, IOException, CertificateException {
+        Logger.debug(logger, "Getting certificate bundle for key={}", keyRef);
+        List<X509Certificate> certificates = new ArrayList<>();
+        try {
+            byte[] resp = getData(TAG_CERTIFICATE_STORE, new Tlv(0xA6, new Tlv(0x83, keyRef.getBytes()).getBytes()).getBytes());
+            CertificateFactory cf = CertificateFactory.getInstance("X.509");
+            for (Tlv der : Tlvs.decodeList(resp)) {
+                InputStream stream = new ByteArrayInputStream(der.getBytes());
+                certificates.add((X509Certificate) cf.generateCertificate(stream));
+            }
+        } catch (ApduException e) {
+            // On REFERENCED_DATA_NOT_FOUND return empty list
+            if (e.getSw() != SW.REFERENCED_DATA_NOT_FOUND) {
+                throw e;
+            }
+        }
+        return certificates;
+    }
+
+    public Map<KeyRef, byte[]> getSupportedCaIdentifiers(boolean kloc, boolean klcc) throws ApduException, IOException {
+        if (!kloc && !klcc) {
+            throw new IllegalArgumentException("At least one of kloc and klcc must be true");
+        }
+        Logger.debug(logger, "Getting CA identifiers KLOC={}, KLCC={}", kloc, klcc);
+        ByteArrayOutputStream data = new ByteArrayOutputStream();
+        if (kloc) {
+            try {
+                data.write(getData(TAG_CA_KLOC_IDENTIFIERS, null));
+            } catch (ApduException e) {
+                if (e.getSw() != SW.REFERENCED_DATA_NOT_FOUND) {
+                    throw e;
+                }
+            }
+        }
+        if (klcc) {
+            try {
+                data.write(getData(TAG_CA_KLCC_IDENTIFIERS, null));
+            } catch (ApduException e) {
+                if (e.getSw() != SW.REFERENCED_DATA_NOT_FOUND) {
+                    throw e;
+                }
+            }
+        }
+        List<Tlv> tlvs = Tlvs.decodeList(data.toByteArray());
+        Map<KeyRef, byte[]> identifiers = new HashMap<>();
+        for (int i = 0; i < tlvs.size(); i += 2) {
+            ByteBuffer ref = ByteBuffer.wrap(tlvs.get(i + 1).getValue());
+            identifiers.put(new KeyRef(ref.get(), ref.get()), tlvs.get(i).getValue());
+        }
+        return identifiers;
+    }
+
+    public void storeData(byte[] data) throws ApduException, IOException {
+        protocol.sendAndReceive(new Apdu(0, INS_STORE_DATA, 0x90, 0x00, data));
+    }
+
+    /**
+     * Store the certificate chain for a given key.
+     * Requires off-card entity verification.
+     * Certificates should be in order, with the leaf certificate last.
+     *
+     * @param keyRef       a reference to the key for which to store the certificates
+     * @param certificates the certificates to store
+     */
+    public void storeCertificateBundle(KeyRef keyRef, List<X509Certificate> certificates) throws ApduException, IOException {
+        Logger.debug(logger, "Storing certificate bundle for {}", keyRef);
+        ByteArrayOutputStream data = new ByteArrayOutputStream();
+        for (X509Certificate cert : certificates) {
+            try {
+                data.write(cert.getEncoded());
+            } catch (CertificateEncodingException e) {
+                throw new IllegalArgumentException("Failed to get encoded version of certificate", e);
+            }
+        }
+        storeData(Tlvs.encodeList(Arrays.asList(
+                new Tlv(0xA6, new Tlv(0x83, keyRef.getBytes()).getBytes()),
+                new Tlv(TAG_CERTIFICATE_STORE, data.toByteArray())
+        )));
+        Logger.info(logger, "Certificate bundle stored");
+    }
+
+    /**
+     * Store which certificate serial numbers that can be used for a given key.
+     * Requires off-card entity verification.
+     * If no allowlist is stored, any certificate signed by the CA can be used.
+     *
+     * @param keyRef  a reference to the key for which to store the allowlist
+     * @param serials the list of serial numbers to store
+     */
+    public void storeAllowlist(KeyRef keyRef, List<BigInteger> serials) throws ApduException, IOException {
+        Logger.debug(logger, "Storing serial allowlist for {}", keyRef);
+        ByteArrayOutputStream data = new ByteArrayOutputStream();
+        for (BigInteger serial : serials) {
+            data.write(serial.toByteArray());
+        }
+        storeData(Tlvs.encodeList(Arrays.asList(
+                new Tlv(0xA6, new Tlv(0x83, keyRef.getBytes()).getBytes()),
+                new Tlv(0x70, data.toByteArray())
+        )));
+        Logger.info(logger, "Serial allowlist stored");
+    }
+
+    /**
+     * Store the SKI (Subject Key Identifier) for the CA of a given key.
+     * Requires off-card entity verification.
+     *
+     * @param keyRef a reference to the key for which to store the CA issuer
+     * @param ski    the Subject Key Identifier to store
+     */
+    public void storeCaIssuer(KeyRef keyRef, byte[] ski) throws ApduException, IOException {
+        Logger.debug(logger, "Storing CA issuer SKI for {}: {}", keyRef, StringUtils.bytesToHex(ski));
+        byte klcc = 0;
+        switch (keyRef.getKid()) {
+            case ScpKid.SCP11a:
+            case ScpKid.SCP11b:
+            case ScpKid.SCP11c:
+                klcc = 1;
+        }
+        storeData(new Tlv(0xA6, Tlvs.encodeList(Arrays.asList(
+                new Tlv(0x80, new byte[]{klcc}),
+                new Tlv(0x42, ski),
+                new Tlv(0x83, keyRef.getBytes())
+        ))).getBytes());
+        Logger.info(logger, "CA issuer SKI stored");
+    }
+
+    /**
+     * Delete one (or more) keys.
+     * Requires off-card entity verification.
+     * All keys matching the given KID and/or KVN will be deleted (0 is treated as a wildcard).
+     * To delete the final key you must set deleteLast = true.
+     *
+     * @param keyRef     a reference to the key to delete
+     * @param deleteLast must be true if deleting the final key, false otherwise
+     */
+    public void deleteKey(KeyRef keyRef, boolean deleteLast) throws ApduException, IOException {
+        byte kid = keyRef.getKid();
+        byte kvn = keyRef.getKvn();
+        if (kid == 0 && kvn == 0) {
+            throw new IllegalArgumentException("At least one of KID, KVN must be nonzero");
+        }
+        if (kid == 1 || kid == 2 || kid == 3) {
+            if (kvn != 0) {
+                kid = 0;
+            } else {
+                throw new IllegalArgumentException("SCP03 keys can only be deleted by KVN");
+            }
+        }
+        Logger.debug(logger, "Deleting keys matching {}", keyRef);
+        List<Tlv> tlvs = new ArrayList<>();
+        if (kid != 0) {
+            tlvs.add(new Tlv(0xD0, new byte[]{kid}));
+        }
+        if (kvn != 0) {
+            tlvs.add(new Tlv(0xD2, new byte[]{kvn}));
+        }
+        protocol.sendAndReceive(new Apdu(0x80, INS_DELETE, 0, deleteLast ? 1 : 0, Tlvs.encodeList(tlvs)));
+        Logger.info(logger, "Keys deleted");
+    }
+
+    /**
+     * Generate a new SCP11 key.
+     * Requires off-card entity verification.
+     *
+     * @param keyRef     the KID-KVN pair to assign the new key
+     * @param replaceKvn 0 to generate a new keypair, non-zero to replace an existing KVN
+     * @return the public key from the generated key pair
+     */
+    public PublicKeyValues.Ec generateEcKey(KeyRef keyRef, int replaceKvn) throws ApduException, IOException, BadResponseException {
+        Logger.debug(logger, "Generating new key for {}" +
+                (replaceKvn == 0 ? "" : String.format(Locale.ROOT, ", replacing KVN=0x%02x", replaceKvn)), keyRef);
+
+        byte[] params = new Tlv(KEY_TYPE_ECC_KEY_PARAMS, new byte[]{0}).getBytes();
+        byte[] data = ByteBuffer.allocate(params.length + 1).put(keyRef.getKvn()).put(params).array();
+        byte[] resp = protocol.sendAndReceive(new Apdu(0x80, INS_GENERATE_KEY, replaceKvn, keyRef.getKid(), data));
+        byte[] encodedPoint = Tlvs.unpackValue(KEY_TYPE_ECC_PUBLIC_KEY, resp);
+        return PublicKeyValues.Ec.fromEncodedPoint(EllipticCurveValues.SECP256R1, encodedPoint);
+    }
+
+    /**
+     * Imports an SCP03 key set.
+     * Requires off-card entity verification.
+     *
+     * @param keyRef     the KID-KVN pair to assign the new key set, KID must be 1
+     * @param keys       the key material to import
+     * @param replaceKvn 0 to generate a new keypair, non-zero to replace an existing KVN
+     */
+    public void putKey(KeyRef keyRef, StaticKeys keys, int replaceKvn) {
+        if (keyRef.getKid() != ScpKid.SCP11a) {
+            throw new IllegalArgumentException("KID must be 0x01 for SCP03 key sets");
+        }
+        // TODO
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Imports a secret key for SCP11.
+     * Requires off-card entity verification.
+     *
+     * @param keyRef     the KID-KVN pair to assign the new secret key, KID must be 0x11, 0x13, or 0x15
+     * @param secretKey  a private EC key used to authenticate the SD
+     * @param replaceKvn 0 to generate a new keypair, non-zero to replace an existing KVN
+     */
+    public void putKey(KeyRef keyRef, PrivateKeyValues secretKey, int replaceKvn) {
+        // TODO
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Imports a public key for authentication of the off-card entity for SCP11a/c.
+     * Requires off-card entity verification.
+     *
+     * @param keyRef     the KID-KVN pair to assign the new public key
+     * @param publicKey  a public EC key used as CA to authenticate the off-card entity
+     * @param replaceKvn 0 to generate a new keypair, non-zero to replace an existing KVN
+     */
+    public void putKey(KeyRef keyRef, PublicKeyValues publicKey, int replaceKvn) {
+        // TODO
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Perform a factory reset of the Security Domain.
+     * This will remove all keys and associated data, as well as restore the default SCP03 static keys,
+     * and generate a new (attestable) SCP11b key.
+     */
+    public void reset() {
+        // TODO
+        throw new UnsupportedOperationException();
+    }
+}
