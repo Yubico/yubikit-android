@@ -242,8 +242,7 @@ public class DeviceUtil {
             Map<Transport, Integer> supportedApps = new EnumMap<>(Transport.class);
             supportedApps.put(Transport.USB, Capability.U2F.bit);
             if (keyType == YubiKeyType.NEO) {
-                int usbApps = supportedApps.get(Transport.USB);
-                supportedApps.put(Transport.USB, usbApps | baseNeoApps);
+                supportedApps.put(Transport.USB, Capability.U2F.bit | baseNeoApps);
                 supportedApps.put(Transport.NFC, supportedApps.get(Transport.USB));
             }
 
@@ -307,7 +306,16 @@ public class DeviceUtil {
         }
 
         Logger.debug(logger, "Read info {}", info);
+        return adjustDeviceInfo(info, keyType, interfaces);
+    }
 
+    /**
+     * This method adjusts the input DeviceInfo if required, for example it fixes known bad values.
+     */
+    static DeviceInfo adjustDeviceInfo(
+            DeviceInfo info,
+            @Nullable YubiKeyType keyType,
+            int interfaces) {
         final DeviceConfig config = info.getConfig();
         final Version version = info.getVersion();
         final FormFactor formFactor = info.getFormFactor();
@@ -368,6 +376,7 @@ public class DeviceUtil {
         final Integer deviceFlags = config.getDeviceFlags();
         final Short autoEjectTimeout = config.getAutoEjectTimeout();
         final Byte challengeResponseTimeout = config.getChallengeResponseTimeout();
+        final Boolean isNfcRestricted = config.getNfcRestricted();
 
         DeviceConfig.Builder configBuilder = new DeviceConfig.Builder();
         if (deviceFlags != null) {
@@ -390,6 +399,8 @@ public class DeviceUtil {
             configBuilder.enabledCapabilities(Transport.USB, enabledUsbCapabilities);
         }
 
+        configBuilder.nfcRestricted(isNfcRestricted);
+
         Map<Transport, Integer> capabilities = new EnumMap<>(Transport.class);
         if (supportedUsbCapabilities != 0) {
             capabilities.put(Transport.USB, supportedUsbCapabilities);
@@ -407,7 +418,13 @@ public class DeviceUtil {
                 .isLocked(info.isLocked())
                 .isFips(isFips)
                 .isSky(isSky)
+                .partNumber(info.getPartNumber())
+                .fipsCapable(info.getFipsCapable())
+                .fipsApproved(info.getFipsApproved())
                 .pinComplexity(pinComplexity)
+                .resetBlocked(info.getResetBlocked())
+                .fpsVersion(info.getFpsVersion())
+                .stmVersion(info.getStmVersion())
                 .build();
     }
 
@@ -529,7 +546,7 @@ public class DeviceUtil {
     }
 
     // Applet and capability it provides
-    private enum CcidApplet {
+    enum CcidApplet {
         OPENPGP(AppId.OPENPGP, Capability.OPENPGP),
         OATH(AppId.OATH, Capability.OATH),
         PIV(AppId.PIV, Capability.PIV),
