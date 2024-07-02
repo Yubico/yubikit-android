@@ -29,6 +29,7 @@ import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.core.smartcard.SW;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.smartcard.SmartCardProtocol;
+import com.yubico.yubikit.core.smartcard.scp.ScpKeyParams;
 import com.yubico.yubikit.core.util.RandomUtils;
 import com.yubico.yubikit.core.util.Tlv;
 import com.yubico.yubikit.core.util.Tlvs;
@@ -79,6 +80,11 @@ public class OathSession extends ApplicationSession<OathSession> {
      */
     public static final Feature<OathSession> FEATURE_RENAME = new Feature.Versioned<>("Rename Credential", 5, 3, 0);
 
+    /**
+     * Support for secure messaging.
+     */
+    public static final Feature<OathSession> FEATURE_SCP = new Feature.Versioned<>("SCP", 5, 6, 3);
+
     // Tlv tags YKOATH data
     private static final int TAG_NAME = 0x71;
     private static final int TAG_KEY = 0x73;
@@ -109,6 +115,8 @@ public class OathSession extends ApplicationSession<OathSession> {
 
     private final SmartCardProtocol protocol;
     private final Version version;
+    @Nullable
+    private final ScpKeyParams scpKeyParams;
 
     private String deviceId;
     private byte[] salt;
@@ -126,8 +134,29 @@ public class OathSession extends ApplicationSession<OathSession> {
      * @throws ApplicationNotAvailableException if the application is missing or disabled
      */
     public OathSession(SmartCardConnection connection) throws IOException, ApplicationNotAvailableException {
+        this(connection, null);
+    }
+
+    /**
+     * Establishes a new session with a YubiKeys OATH application.
+     *
+     * @param connection to the YubiKey
+     * @param scpKeyParams SCP key parameters to establish a secure connection
+     * @throws IOException                      in case of connection error
+     * @throws ApplicationNotAvailableException if the application is missing or disabled
+     */
+    public OathSession(SmartCardConnection connection, @Nullable ScpKeyParams scpKeyParams) throws IOException, ApplicationNotAvailableException {
         protocol = new SmartCardProtocol(connection, INS_SEND_REMAINING);
         SelectResponse selectResponse = new SelectResponse(protocol.select(AppId.OATH));
+        this.scpKeyParams = scpKeyParams;
+        if (scpKeyParams != null) {
+            require(FEATURE_SCP);
+            try {
+                protocol.initScp(scpKeyParams);
+            } catch (ApduException | BadResponseException e) {
+                throw new IOException("Failed setting up SCP session", e);
+            }
+        }
         version = selectResponse.version;
         deviceId = selectResponse.getDeviceId();
         salt = selectResponse.salt;
@@ -171,6 +200,17 @@ public class OathSession extends ApplicationSession<OathSession> {
             salt = selectResponse.salt;
             challenge = null;
             isAccessKeySet = false;
+            if (scpKeyParams != null) {
+                if (!scpKeyParams.isDestroyed()) {
+                    try {
+                        protocol.initScp(scpKeyParams);
+                    } catch (BadResponseException e) {
+                        throw new IOException("Failed setting up SCP session", e);
+                    }
+                } else {
+                    Logger.warn(logger, "SCP session cannot be re-initialized, ScpKeyParams have been destroyed");
+                }
+            }
             Logger.info(logger, "OATH application data reset performed");
         } catch (ApplicationNotAvailableException e) {
             throw new IllegalStateException(e);  // This shouldn't happen
