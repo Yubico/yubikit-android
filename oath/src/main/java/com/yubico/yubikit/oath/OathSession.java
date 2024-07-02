@@ -149,6 +149,12 @@ public class OathSession extends ApplicationSession<OathSession> {
         protocol = new SmartCardProtocol(connection, INS_SEND_REMAINING);
         SelectResponse selectResponse = new SelectResponse(protocol.select(AppId.OATH));
         this.scpKeyParams = scpKeyParams;
+        version = selectResponse.version;
+        deviceId = selectResponse.getDeviceId();
+        salt = selectResponse.salt;
+        challenge = selectResponse.challenge;
+        isAccessKeySet = challenge != null && challenge.length != 0;
+        protocol.enableWorkarounds(version);
         if (scpKeyParams != null) {
             require(FEATURE_SCP);
             try {
@@ -157,12 +163,6 @@ public class OathSession extends ApplicationSession<OathSession> {
                 throw new IOException("Failed setting up SCP session", e);
             }
         }
-        version = selectResponse.version;
-        deviceId = selectResponse.getDeviceId();
-        salt = selectResponse.salt;
-        challenge = selectResponse.challenge;
-        isAccessKeySet = challenge != null && challenge.length != 0;
-        protocol.enableWorkarounds(version);
         Logger.debug(logger, "OATH session initialized (version={}, isAccessKeySet={})", version, isAccessKeySet);
     }
 
