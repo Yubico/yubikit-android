@@ -158,7 +158,7 @@ public class ScpState {
             hostChallenge = RandomUtils.getRandomBytes(8);
         }
 
-        ApduResponse resp = new ApduResponse(processor.sendApdu(new Apdu(0x80, 0x50, keyParams.getKeyRef().getKvn(), 0x00, hostChallenge)));
+        ApduResponse resp = processor.sendApdu(new Apdu(0x80, 0x50, keyParams.getKeyRef().getKvn(), 0x00, hostChallenge));
         if (resp.getSw() != SW.OK) {
             throw new ApduException(resp.getSw());
         }
@@ -215,7 +215,7 @@ public class ScpState {
                 try {
                     byte[] data = keyParams.certificates.get(i).getEncoded();
                     byte p2 = (byte) (oceRef.getKid() | (i < n ? 0x80 : 0x00));
-                    ApduResponse resp = new ApduResponse(processor.sendApdu(new Apdu(0x80, 0x2A, oceRef.getKvn(), p2, data)));
+                    ApduResponse resp = processor.sendApdu(new Apdu(0x80, 0x2A, oceRef.getKvn(), p2, data));
                     if (resp.getSw() != SW.OK) {
                         throw new ApduException(resp.getSw());
                     }
@@ -261,7 +261,7 @@ public class ScpState {
             // Static host key (SCP11a/c), or ephemeral key again (SCP11b)
             PrivateKey skOceEcka = keyParams.skOceEcka != null ? keyParams.skOceEcka : ephemeralOceEcka.getPrivate();
             int ins = keyParams.getKeyRef().getKid() == ScpKid.SCP11b ? 0x88 : 0x82;
-            ApduResponse resp = new ApduResponse(processor.sendApdu(new Apdu(0x80, ins, keyParams.getKeyRef().getKvn(), keyParams.getKeyRef().getKid(), data)));
+            ApduResponse resp = processor.sendApdu(new Apdu(0x80, ins, keyParams.getKeyRef().getKvn(), keyParams.getKeyRef().getKid(), data));
             if (resp.getSw() != SW.OK) {
                 throw new ApduException(resp.getSw());
             }

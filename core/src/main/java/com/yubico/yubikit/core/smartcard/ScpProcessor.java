@@ -32,11 +32,11 @@ public class ScpProcessor extends ChainedResponseProcessor {
     }
 
     @Override
-    public byte[] sendApdu(Apdu apdu) throws IOException, BadResponseException {
+    public ApduResponse sendApdu(Apdu apdu) throws IOException, BadResponseException {
         return sendApdu(apdu, true);
     }
 
-    public byte[] sendApdu(Apdu apdu, boolean encrypt) throws IOException, BadResponseException {
+    public ApduResponse sendApdu(Apdu apdu, boolean encrypt) throws IOException, BadResponseException {
         byte[] data = apdu.getData();
         if (encrypt) {
             data = state.encrypt(data);
@@ -50,7 +50,7 @@ public class ScpProcessor extends ChainedResponseProcessor {
         byte[] mac = state.mac(Arrays.copyOf(apduData, apduData.length - 8));
         System.arraycopy(mac, 0, macedData, macedData.length - 8, 8);
 
-        ApduResponse resp = new ApduResponse(super.sendApdu(new Apdu(cla, apdu.getIns(), apdu.getP1(), apdu.getP2(), macedData, apdu.getLe())));
+        ApduResponse resp = super.sendApdu(new Apdu(cla, apdu.getIns(), apdu.getP1(), apdu.getP2(), macedData, apdu.getLe()));
         byte[] respData = resp.getData();
 
         // Un-MAC and decrypt, if needed
@@ -61,6 +61,6 @@ public class ScpProcessor extends ChainedResponseProcessor {
             respData = state.decrypt(respData);
         }
 
-        return ByteBuffer.allocate(respData.length + 2).put(respData).putShort(resp.getSw()).array();
+        return new ApduResponse(ByteBuffer.allocate(respData.length + 2).put(respData).putShort(resp.getSw()).array());
     }
 }

@@ -39,8 +39,8 @@ class ChainedResponseProcessor implements ApduProcessor {
     }
 
     @Override
-    public byte[] sendApdu(Apdu apdu) throws IOException, BadResponseException {
-        ApduResponse response = new ApduResponse(processor.sendApdu(apdu));
+    public ApduResponse sendApdu(Apdu apdu) throws IOException, BadResponseException {
+        ApduResponse response = processor.sendApdu(apdu);
         // Read full response
         ByteArrayOutputStream readBuffer = new ByteArrayOutputStream();
         while (response.getSw() >> 8 == SW1_HAS_MORE_DATA) {
@@ -50,6 +50,6 @@ class ChainedResponseProcessor implements ApduProcessor {
         readBuffer.write(response.getData());
         readBuffer.write(response.getSw() >> 8);
         readBuffer.write(response.getSw() & 0xff);
-        return readBuffer.toByteArray();
+        return new ApduResponse(readBuffer.toByteArray());
     }
 }

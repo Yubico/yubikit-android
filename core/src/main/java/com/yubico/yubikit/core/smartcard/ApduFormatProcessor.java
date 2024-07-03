@@ -28,8 +28,9 @@ abstract class ApduFormatProcessor implements ApduProcessor {
     abstract byte[] formatApdu(byte cla, byte ins, byte p1, byte p2, byte[] data, int offset, int length, int le);
 
     @Override
-    public byte[] sendApdu(Apdu apdu) throws IOException {
+    public ApduResponse sendApdu(Apdu apdu) throws IOException {
         byte[] data = apdu.getData();
-        return connection.sendAndReceive(formatApdu(apdu.getCla(), apdu.getIns(), apdu.getP1(), apdu.getP2(), data, 0, data.length, apdu.getLe()));
+        byte[] payload = formatApdu(apdu.getCla(), apdu.getIns(), apdu.getP1(), apdu.getP2(), data, 0, data.length, apdu.getLe());
+        return new ApduResponse(connection.sendAndReceive(payload));
     }
 }

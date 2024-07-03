@@ -28,14 +28,14 @@ class TouchWorkaroundProcessor extends ChainedResponseProcessor {
     }
 
     @Override
-    public byte[] sendApdu(Apdu apdu) throws IOException, BadResponseException {
+    public ApduResponse sendApdu(Apdu apdu) throws IOException, BadResponseException {
         if (lastLongResponse > 0 && System.currentTimeMillis() - lastLongResponse < 2000) {
             super.sendApdu(new Apdu(0, 0, 0, 0, null)); // Dummy APDU; returns an error
             lastLongResponse = 0;
         }
-        byte[] response = super.sendApdu(apdu);
+        ApduResponse response = super.sendApdu(apdu);
 
-        if (response.length > 54) {
+        if (response.getBytes().length > 54) {
             lastLongResponse = System.currentTimeMillis();
         } else {
             lastLongResponse = 0;

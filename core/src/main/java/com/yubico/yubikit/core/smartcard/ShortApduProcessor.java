@@ -50,16 +50,16 @@ class ShortApduProcessor extends ApduFormatProcessor {
     }
 
     @Override
-    public byte[] sendApdu(Apdu apdu) throws IOException {
+    public ApduResponse sendApdu(Apdu apdu) throws IOException {
         byte[] data = apdu.getData();
         int offset = 0;
         while (data.length - offset > SHORT_APDU_MAX_CHUNK) {
-            byte[] response = connection.sendAndReceive(formatApdu((byte) (apdu.getCla() | 0x10), apdu.getIns(), apdu.getP1(), apdu.getP2(), data, offset, SHORT_APDU_MAX_CHUNK, apdu.getLe()));
-            if (new ApduResponse(response).getSw() != SW.OK) {
+            ApduResponse response = new ApduResponse(connection.sendAndReceive(formatApdu((byte) (apdu.getCla() | 0x10), apdu.getIns(), apdu.getP1(), apdu.getP2(), data, offset, SHORT_APDU_MAX_CHUNK, apdu.getLe())));
+            if (response.getSw() != SW.OK) {
                 return response;
             }
             offset += SHORT_APDU_MAX_CHUNK;
         }
-        return connection.sendAndReceive(formatApdu(apdu.getCla(), apdu.getIns(), apdu.getP1(), apdu.getP2(), data, offset, data.length - offset, apdu.getLe()));
+        return new ApduResponse(connection.sendAndReceive(formatApdu(apdu.getCla(), apdu.getIns(), apdu.getP1(), apdu.getP2(), data, offset, data.length - offset, apdu.getLe())));
     }
 }

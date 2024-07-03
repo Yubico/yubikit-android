@@ -167,7 +167,7 @@ public class SmartCardProtocol implements Closeable {
      */
     public byte[] sendAndReceive(Apdu command) throws IOException, ApduException {
         try {
-            ApduResponse response = new ApduResponse(processor.sendApdu(command));
+            ApduResponse response = processor.sendApdu(command);
             if (response.getSw() != SW.OK) {
                 throw new ApduException(response.getSw());
             }
@@ -202,7 +202,7 @@ public class SmartCardProtocol implements Closeable {
 
         // Send EXTERNAL AUTHENTICATE
         // P1 = C-DECRYPTION, R-ENCRYPTION, C-MAC, and R-MAC
-        ApduResponse resp = new ApduResponse(processor.sendApdu(new Apdu(0x84, 0x82, 0x33, 0, pair.second), false));
+        ApduResponse resp = processor.sendApdu(new Apdu(0x84, 0x82, 0x33, 0, pair.second), false);
         if (resp.getSw() != SW.OK) {
             throw new ApduException(resp.getSw());
         }

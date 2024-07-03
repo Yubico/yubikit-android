@@ -21,5 +21,5 @@ import com.yubico.yubikit.core.application.BadResponseException;
 import java.io.IOException;
 
 public interface ApduProcessor {
-    byte[] sendApdu(Apdu apdu) throws IOException, BadResponseException;
+    ApduResponse sendApdu(Apdu apdu) throws IOException, BadResponseException;
 }
