@@ -15,8 +15,6 @@
  */
 package com.yubico.yubikit.piv;
 
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -77,9 +75,7 @@ class Padding {
                 }
                 String hashAlgorithm = matcher.group(1);
                 byte[] hash;
-                if (MessageDigest.isEqual(
-                        "NONE".getBytes(StandardCharsets.UTF_8),
-                        hashAlgorithm.getBytes(StandardCharsets.UTF_8))) {
+                if ("NONE".equals(hashAlgorithm)) {
                     hash = message;
                 } else {
                     if (SHA_PATTERN.matcher(hashAlgorithm).matches())
