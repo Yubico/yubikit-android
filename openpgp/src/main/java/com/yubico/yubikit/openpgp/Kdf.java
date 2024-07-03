@@ -75,10 +75,6 @@ public abstract class Kdf {
     }
 
     public static class IterSaltedS2k extends Kdf {
-
-        private static final char[] DEFAULT_USER_PIN = "123456".toCharArray();
-        private static final char[] DEFAULT_ADMIN_PIN = "12345678".toCharArray();
-
         public enum HashAlgorithm {
             SHA256((byte) 0x08),
             SHA512((byte) 0x0a);
@@ -226,8 +222,8 @@ public abstract class Kdf {
         public static IterSaltedS2k create(HashAlgorithm hashAlgorithm, int iterationCount) {
             byte[] saltUser = RandomUtils.getRandomBytes(8);
             byte[] saltAdmin = RandomUtils.getRandomBytes(8);
-            byte[] defaultUserPinEncoded = pinBytes(DEFAULT_USER_PIN);
-            byte[] defaultAdminPinEncoded = pinBytes(DEFAULT_ADMIN_PIN);
+            byte[] defaultUserPinEncoded = pinBytes(Pw.DEFAULT_USER_PIN);
+            byte[] defaultAdminPinEncoded = pinBytes(Pw.DEFAULT_ADMIN_PIN);
             return new IterSaltedS2k(
                     hashAlgorithm,
                     iterationCount,
