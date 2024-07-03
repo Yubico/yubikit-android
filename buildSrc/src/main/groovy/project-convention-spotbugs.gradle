@@ -22,6 +22,7 @@ spotbugs {
 
     effort = Effort.MORE
     reportLevel = Confidence.valueOf('DEFAULT')
+    excludeFilter = file("../spotbugs/excludeFilter.xml")
 }
 
 tasks.matching {
