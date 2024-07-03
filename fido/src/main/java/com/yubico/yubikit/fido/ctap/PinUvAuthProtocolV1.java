@@ -43,6 +43,8 @@ import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+
 /**
  * Implements PIN/UV Auth Protocol 1
  *
@@ -113,6 +115,10 @@ public class PinUvAuthProtocolV1 implements PinUvAuthProtocol {
         }
     }
 
+    @SuppressFBWarnings(value = {"CIPHER_INTEGRITY", "STATIC_IV"},
+            justification = "No padding is performed as the size of demPlaintext is required " +
+                    "to be a multiple of the AES block length. The specification for " +
+                    "PIN/UV Auth Protocol One expects all null IV")
     @Override
     public byte[] encrypt(byte[] key, byte[] demPlaintext) {
         try {
@@ -126,6 +132,10 @@ public class PinUvAuthProtocolV1 implements PinUvAuthProtocol {
         }
     }
 
+
+    @SuppressFBWarnings(value = "CIPHER_INTEGRITY",
+            justification = "No padding is performed as the size of demPlaintext is required " +
+                    "to be a multiple of the AES block length.")
     @Override
     public byte[] decrypt(byte[] key, byte[] demCiphertext) {
         try {
