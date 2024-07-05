@@ -72,6 +72,13 @@ public class ScpState implements Destroyable {
         this.macChain = macChain;
     }
 
+    public @Nullable DataEncryptor getDataEncryptor() {
+        if (keys.dek == null) {
+            return null;
+        }
+        return data -> cbcEncrypt(keys.dek, data);
+    }
+
     public byte[] encrypt(byte[] data) {
         // Pad the data
         int padLen = 16 - (data.length % 16);
@@ -352,5 +359,17 @@ public class ScpState implements Destroyable {
     @Override
     public boolean isDestroyed() {
         return keys.isDestroyed();
+    }
+
+    static byte[] cbcEncrypt(SecretKey key, byte[] data) {
+        try {
+            Cipher cipher = Cipher.getInstance("AES/CBC/NoPadding");
+            cipher.init(Cipher.ENCRYPT_MODE, key, new IvParameterSpec(new byte[16]));
+            return cipher.doFinal(data);
+        } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException |
+                 InvalidAlgorithmParameterException | IllegalBlockSizeException |
+                 BadPaddingException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

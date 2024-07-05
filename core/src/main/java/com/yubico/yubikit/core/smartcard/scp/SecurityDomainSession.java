@@ -42,6 +42,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
+import java.security.MessageDigest;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
@@ -54,8 +55,11 @@ import java.util.Locale;
 import java.util.Map;
 
 import javax.annotation.Nullable;
+import javax.crypto.SecretKey;
 
 public class SecurityDomainSession extends ApplicationSession<SecurityDomainSession> {
+    private static final byte[] DEFAULT_KCV_IV = new byte[]{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+
     private static final byte INS_GET_DATA = (byte) 0xCA;
     private static final byte INS_PUT_KEY = (byte) 0xD8;
     private static final byte INS_STORE_DATA = (byte) 0xE2;
@@ -79,6 +83,8 @@ public class SecurityDomainSession extends ApplicationSession<SecurityDomainSess
     private static final byte KEY_TYPE_ECC_KEY_PARAMS = (byte) 0xF0;
 
     private final SmartCardProtocol protocol;
+    @Nullable
+    private DataEncryptor dataEncryptor;
 
     private static final org.slf4j.Logger logger = LoggerFactory.getLogger(SecurityDomainSession.class);
 
@@ -105,7 +111,7 @@ public class SecurityDomainSession extends ApplicationSession<SecurityDomainSess
      * SCP11b does not authenticate the off-card entity, and will not allow the usage of commands which require such authentication.
      */
     public void authenticate(ScpKeyParams keyParams) throws BadResponseException, ApduException, IOException {
-        protocol.initScp(keyParams);
+        dataEncryptor = protocol.initScp(keyParams);
     }
 
     public byte[] getData(short tag, @Nullable byte[] data) throws ApduException, IOException {
@@ -317,12 +323,38 @@ public class SecurityDomainSession extends ApplicationSession<SecurityDomainSess
      * @param keys       the key material to import
      * @param replaceKvn 0 to generate a new keypair, non-zero to replace an existing KVN
      */
-    public void putKey(KeyRef keyRef, StaticKeys keys, int replaceKvn) {
-        if (keyRef.getKid() != ScpKid.SCP11a) {
+    public void putKey(KeyRef keyRef, StaticKeys keys, int replaceKvn) throws ApduException, IOException, BadResponseException {
+        Logger.debug(logger, "Importing SCP03 key set into {}", keyRef);
+        if (keyRef.getKid() != ScpKid.SCP03) {
             throw new IllegalArgumentException("KID must be 0x01 for SCP03 key sets");
         }
-        // TODO
-        throw new UnsupportedOperationException();
+        if (keys.dek == null) {
+            throw new IllegalArgumentException("New DEK must be set in static keys");
+        }
+        if (dataEncryptor == null) {
+            throw new IllegalStateException("No session DEK key available");
+        }
+
+        ByteBuffer data = ByteBuffer.allocate(1 + 3 * (16 + 4)).put(keyRef.getKvn());
+        ByteBuffer expected = ByteBuffer.allocate(1 + 3 * 3).put(keyRef.getKvn());
+        for (SecretKey key : Arrays.asList(keys.enc, keys.mac, keys.dek)) {
+            byte[] kcv = Arrays.copyOf(ScpState.cbcEncrypt(key, DEFAULT_KCV_IV), 3);
+            byte[] keyBytes = key.getEncoded();
+            try {
+                data.put(new Tlv(KEY_TYPE_AES, dataEncryptor.encrypt(keyBytes)).getBytes())
+                        .put((byte) kcv.length)
+                        .put(kcv);
+            } finally {
+                Arrays.fill(keyBytes, (byte) 0);
+            }
+            expected.put(kcv);
+        }
+
+        byte[] resp = protocol.sendAndReceive(new Apdu(0x80, INS_PUT_KEY, replaceKvn, 0x80 | keyRef.getKid(), data.array()));
+        if (!MessageDigest.isEqual(resp, expected.array())) {
+            throw new BadResponseException("Incorrect key check value");
+        }
+        Logger.info(logger, "SCP03 Key set imported");
     }
 
     /**
@@ -333,9 +365,33 @@ public class SecurityDomainSession extends ApplicationSession<SecurityDomainSess
      * @param secretKey  a private EC key used to authenticate the SD
      * @param replaceKvn 0 to generate a new keypair, non-zero to replace an existing KVN
      */
-    public void putKey(KeyRef keyRef, PrivateKeyValues secretKey, int replaceKvn) {
-        // TODO
-        throw new UnsupportedOperationException();
+    public void putKey(KeyRef keyRef, PrivateKeyValues secretKey, int replaceKvn) throws ApduException, IOException, BadResponseException {
+        Logger.debug(logger, "Importing SCP11 private key into {}", keyRef);
+        if (!(secretKey instanceof PrivateKeyValues.Ec) || !((PrivateKeyValues.Ec) secretKey).getCurveParams().equals(EllipticCurveValues.SECP256R1)) {
+            throw new IllegalArgumentException("Private key must be of type SECP256R1");
+        }
+        if (dataEncryptor == null) {
+            throw new IllegalStateException("No session DEK key available");
+        }
+
+        ByteArrayOutputStream data = new ByteArrayOutputStream();
+        data.write(keyRef.getKvn());
+        byte[] expected = new byte[]{keyRef.getKvn()};
+
+        byte[] keyBytes = ((PrivateKeyValues.Ec) secretKey).getSecret();
+        try {
+            data.write(new Tlv(KEY_TYPE_ECC_PRIVATE_KEY, dataEncryptor.encrypt(keyBytes)).getBytes());
+        } finally {
+            Arrays.fill(keyBytes, (byte) 0);
+        }
+        data.write(new Tlv(KEY_TYPE_ECC_KEY_PARAMS, new byte[]{0x00}).getBytes());
+        data.write((byte) 0);
+
+        byte[] resp = protocol.sendAndReceive(new Apdu(0x80, INS_PUT_KEY, replaceKvn, keyRef.getKid(), data.toByteArray()));
+        if (!MessageDigest.isEqual(resp, expected)) {
+            throw new BadResponseException("Incorrect key check value");
+        }
+        Logger.info(logger, "SCP11 private key imported");
     }
 
     /**
@@ -346,9 +402,25 @@ public class SecurityDomainSession extends ApplicationSession<SecurityDomainSess
      * @param publicKey  a public EC key used as CA to authenticate the off-card entity
      * @param replaceKvn 0 to generate a new keypair, non-zero to replace an existing KVN
      */
-    public void putKey(KeyRef keyRef, PublicKeyValues publicKey, int replaceKvn) {
-        // TODO
-        throw new UnsupportedOperationException();
+    public void putKey(KeyRef keyRef, PublicKeyValues publicKey, int replaceKvn) throws ApduException, IOException, BadResponseException {
+        Logger.debug(logger, "Importing SCP11 public key into {}", keyRef);
+        if (!(publicKey instanceof PublicKeyValues.Ec) || !((PublicKeyValues.Ec) publicKey).getCurveParams().equals(EllipticCurveValues.SECP256R1)) {
+            throw new IllegalArgumentException("Public key must be of type SECP256R1");
+        }
+
+        ByteArrayOutputStream data = new ByteArrayOutputStream();
+        data.write(keyRef.getKvn());
+        byte[] expected = new byte[]{keyRef.getKvn()};
+
+        data.write(new Tlv(KEY_TYPE_ECC_PUBLIC_KEY, ((PublicKeyValues.Ec) publicKey).getEncodedPoint()).getBytes());
+        data.write(new Tlv(KEY_TYPE_ECC_KEY_PARAMS, new byte[]{0x00}).getBytes());
+        data.write((byte) 0);
+
+        byte[] resp = protocol.sendAndReceive(new Apdu(0x80, INS_PUT_KEY, replaceKvn, keyRef.getKid(), data.toByteArray()));
+        if (!MessageDigest.isEqual(resp, expected)) {
+            throw new BadResponseException("Incorrect key check value");
+        }
+        Logger.info(logger, "SCP11 public key imported");
     }
 
     /**

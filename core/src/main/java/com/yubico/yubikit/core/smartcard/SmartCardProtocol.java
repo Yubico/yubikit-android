@@ -20,6 +20,7 @@ import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.Version;
 import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
 import com.yubico.yubikit.core.application.BadResponseException;
+import com.yubico.yubikit.core.smartcard.scp.DataEncryptor;
 import com.yubico.yubikit.core.smartcard.scp.Scp03KeyParams;
 import com.yubico.yubikit.core.smartcard.scp.Scp11KeyParams;
 import com.yubico.yubikit.core.smartcard.scp.ScpKeyParams;
@@ -215,12 +216,13 @@ public class SmartCardProtocol implements Closeable {
         }
     }
 
-    public void initScp(ScpKeyParams keyParams) throws IOException, ApduException, BadResponseException {
+    public @Nullable DataEncryptor initScp(ScpKeyParams keyParams) throws IOException, ApduException, BadResponseException {
         try {
+            ScpState state;
             if (keyParams instanceof Scp03KeyParams) {
-                initScp03((Scp03KeyParams) keyParams);
+                state = initScp03((Scp03KeyParams) keyParams);
             } else if (keyParams instanceof Scp11KeyParams) {
-                initScp11((Scp11KeyParams) keyParams);
+                state = initScp11((Scp11KeyParams) keyParams);
             } else {
                 throw new IllegalArgumentException("Unsupported ScpKeyParams");
             }
@@ -229,6 +231,7 @@ public class SmartCardProtocol implements Closeable {
             }
             extendedApdus = true;
             maxApduSize = MaxApduSize.YK4_3;
+            return state.getDataEncryptor();
         } catch (ApduException e) {
             if (e.getSw() == SW.CLASS_NOT_SUPPORTED) {
                 throw new UnsupportedOperationException("This YubiKey does not support secure messaging");
@@ -237,7 +240,7 @@ public class SmartCardProtocol implements Closeable {
         }
     }
 
-    private void initScp03(Scp03KeyParams keyParams) throws IOException, ApduException, BadResponseException {
+    private ScpState initScp03(Scp03KeyParams keyParams) throws IOException, ApduException, BadResponseException {
         Pair<ScpState, byte[]> pair = ScpState.scp03Init(processor, keyParams, null);
         ScpProcessor processor = new ScpProcessor(connection, pair.first, MaxApduSize.YK4_3, insSendRemaining);
 
@@ -248,10 +251,12 @@ public class SmartCardProtocol implements Closeable {
             throw new ApduException(resp.getSw());
         }
         resetProcessor(processor);
+        return pair.first;
     }
 
-    private void initScp11(Scp11KeyParams keyParams) throws IOException, ApduException, BadResponseException {
+    private ScpState initScp11(Scp11KeyParams keyParams) throws IOException, ApduException, BadResponseException {
         ScpState scp = ScpState.scp11Init(processor, keyParams);
         resetProcessor(new ScpProcessor(connection, scp, MaxApduSize.YK4_3, insSendRemaining));
+        return scp;
     }
 }
