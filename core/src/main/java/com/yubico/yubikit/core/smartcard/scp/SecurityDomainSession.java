@@ -62,6 +62,11 @@ public class SecurityDomainSession extends ApplicationSession<SecurityDomainSess
     private static final byte INS_DELETE = (byte) 0xE4;
     private static final byte INS_GENERATE_KEY = (byte) 0xF1;
 
+    static final byte INS_INITIALIZE_UPDATE = (byte) 0x50;
+    static final byte INS_EXTERNAL_AUTHENTICATE = (byte) 0x82;
+    static final byte INS_INTERNAL_AUTHENTICATE = (byte) 0x88;
+    static final byte INS_PERFORM_SECURITY_OPERATION = (byte) 0x2A;
+
     private static final short TAG_KEY_INFORMATION = 0xE0;
     private static final short TAG_CARD_RECOGNITION_DATA = 0x66;
     private static final short TAG_CA_KLOC_IDENTIFIERS = (short) 0xFF33;
@@ -351,8 +356,51 @@ public class SecurityDomainSession extends ApplicationSession<SecurityDomainSess
      * This will remove all keys and associated data, as well as restore the default SCP03 static keys,
      * and generate a new (attestable) SCP11b key.
      */
-    public void reset() {
-        // TODO
-        throw new UnsupportedOperationException();
+    public void reset() throws BadResponseException, ApduException, IOException {
+        Logger.debug(logger, "Resetting all SCP keys");
+        // Reset is done by blocking all available keys
+        byte[] data = new byte[8];
+        for (KeyRef keyRef : getKeyInformation().keySet()) {
+            byte ins;
+            switch (keyRef.getKid()) {
+                case ScpKid.SCP03:
+                    // SCP03 uses KID=0, we use KVN=0 to allow deleting the default keys
+                    // which have an invalid KVN (0xff).
+                    keyRef = new KeyRef((byte) 0, (byte) 0);
+                    ins = INS_INITIALIZE_UPDATE;
+                    break;
+                case 0x02:
+                case 0x03:
+                    continue;  // Skip these as they are deleted by 0x01
+                case ScpKid.SCP11a:
+                case ScpKid.SCP11c:
+                    ins = INS_EXTERNAL_AUTHENTICATE;
+                    break;
+                case ScpKid.SCP11b:
+                    ins = INS_INTERNAL_AUTHENTICATE;
+                    break;
+                default:  // 0x10, 0x20-0x2F
+                    ins = INS_PERFORM_SECURITY_OPERATION;
+            }
+
+            // Keys have 65 attempts before blocking (and thus removal)
+            for (int i = 0; i < 65; i++) {
+                try {
+                    protocol.sendAndReceive(new Apdu(0x80, ins, keyRef.getKvn(), keyRef.getKid(), data));
+                } catch (ApduException e) {
+                    switch (e.getSw()) {
+                        case SW.AUTH_METHOD_BLOCKED:
+                        case SW.SECURITY_CONDITION_NOT_SATISFIED:
+                            i = 65;
+                            break;
+                        case SW.INCORRECT_PARAMETERS:
+                            continue;
+                        default:
+                            throw e;
+                    }
+                }
+            }
+        }
+        Logger.info(logger, "SCP keys reset");
     }
 }

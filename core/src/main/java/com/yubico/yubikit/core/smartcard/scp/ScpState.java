@@ -158,7 +158,7 @@ public class ScpState {
             hostChallenge = RandomUtils.getRandomBytes(8);
         }
 
-        ApduResponse resp = processor.sendApdu(new Apdu(0x80, 0x50, keyParams.getKeyRef().getKvn(), 0x00, hostChallenge));
+        ApduResponse resp = processor.sendApdu(new Apdu(0x80, SecurityDomainSession.INS_INITIALIZE_UPDATE, keyParams.getKeyRef().getKvn(), 0x00, hostChallenge));
         if (resp.getSw() != SW.OK) {
             throw new ApduException(resp.getSw());
         }
@@ -215,7 +215,7 @@ public class ScpState {
                 try {
                     byte[] data = keyParams.certificates.get(i).getEncoded();
                     byte p2 = (byte) (oceRef.getKid() | (i < n ? 0x80 : 0x00));
-                    ApduResponse resp = processor.sendApdu(new Apdu(0x80, 0x2A, oceRef.getKvn(), p2, data));
+                    ApduResponse resp = processor.sendApdu(new Apdu(0x80, SecurityDomainSession.INS_PERFORM_SECURITY_OPERATION, oceRef.getKvn(), p2, data));
                     if (resp.getSw() != SW.OK) {
                         throw new ApduException(resp.getSw());
                     }
@@ -260,7 +260,7 @@ public class ScpState {
 
             // Static host key (SCP11a/c), or ephemeral key again (SCP11b)
             PrivateKey skOceEcka = keyParams.skOceEcka != null ? keyParams.skOceEcka : ephemeralOceEcka.getPrivate();
-            int ins = keyParams.getKeyRef().getKid() == ScpKid.SCP11b ? 0x88 : 0x82;
+            int ins = keyParams.getKeyRef().getKid() == ScpKid.SCP11b ? SecurityDomainSession.INS_INTERNAL_AUTHENTICATE : SecurityDomainSession.INS_EXTERNAL_AUTHENTICATE;
             ApduResponse resp = processor.sendApdu(new Apdu(0x80, ins, keyParams.getKeyRef().getKvn(), keyParams.getKeyRef().getKid(), data));
             if (resp.getSw() != SW.OK) {
                 throw new ApduException(resp.getSw());
@@ -305,7 +305,7 @@ public class ScpState {
                 byte[] digest = hash.digest();
                 keys.add(new SecretKeySpec(digest, 0, 16, "AES"));
                 keys.add(new SecretKeySpec(digest, 16, 16, "AES"));
-                Arrays.fill(digest, (byte)0);
+                Arrays.fill(digest, (byte) 0);
             }
 
             // 6 keys were derived. one for verification of receipt, 4 keys to use, and 1 which is discarded
