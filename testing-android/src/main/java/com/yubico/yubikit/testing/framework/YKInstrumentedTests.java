@@ -49,5 +49,13 @@ public class YKInstrumentedTests {
         device = null;
         activity = null;
     }
+
+    public interface Callback {
+        void invoke(YubiKeyDevice value) throws Throwable;
+    }
+
+    protected void withDevice(Callback callback) throws Throwable {
+        callback.invoke(device);
+    }
 }
 

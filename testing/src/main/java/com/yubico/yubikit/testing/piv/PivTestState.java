@@ -14,16 +14,10 @@
  * limitations under the License.
  */
 
-package com.yubico.yubikit.testing;
+package com.yubico.yubikit.testing.piv;
 
-import com.yubico.yubikit.testing.framework.YKInstrumentedTests;
-
-import org.junit.Test;
-
-public class PinComplexityTests extends YKInstrumentedTests {
-
-    @Test
-    public void testPinComplexity() throws Throwable {
-        withDevice(PinComplexityDeviceTests::testPinComplexity);
-    }
+class PivTestState {
+    static char[] DEFAULT_PIN = PivTestConstants.DEFAULT_PIN;
+    static char[] DEFAULT_PUK = PivTestConstants.DEFAULT_PUK;
+    static byte[] DEFAULT_MANAGEMENT_KEY = PivTestConstants.DEFAULT_MANAGEMENT_KEY;
 }

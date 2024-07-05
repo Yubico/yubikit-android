@@ -14,17 +14,18 @@
  * limitations under the License.
  */
 
-package com.yubico.yubikit.testing.framework;
+package com.yubico.yubikit.testing.piv;
 
-import com.yubico.yubikit.core.YubiKeyDevice;
+import com.yubico.yubikit.core.smartcard.scp.ScpKid;
 
-public class DeviceInstrumentedTests extends YKInstrumentedTests {
+import org.junit.Before;
 
-    public interface Callback {
-        void invoke(YubiKeyDevice value) throws Throwable;
-    }
 
-    protected void withDevice(Callback callback) throws Throwable {
-        callback.invoke(device);
+public class PivFipsTests extends PivTests {
+
+    @Before
+    public void setup() throws Throwable {
+        kid = ScpKid.SCP11b;
+        super.setup();
     }
 }

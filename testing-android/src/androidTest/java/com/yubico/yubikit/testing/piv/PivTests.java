@@ -18,9 +18,19 @@ package com.yubico.yubikit.testing.piv;
 
 import com.yubico.yubikit.testing.framework.PivInstrumentedTests;
 
+import org.junit.Before;
 import org.junit.Test;
 
+import javax.annotation.Nullable;
+
 public class PivTests extends PivInstrumentedTests {
+
+    @Nullable protected Byte kid;
+
+    @Before
+    public void setup() throws Throwable {
+        withDevice(device -> PivDeviceTests.verifyAndSetup(device, kid));
+    }
 
     @Test
     public void testPin() throws Throwable {

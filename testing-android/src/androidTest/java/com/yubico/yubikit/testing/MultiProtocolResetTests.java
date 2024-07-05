@@ -16,12 +16,12 @@
 
 package com.yubico.yubikit.testing;
 
-import com.yubico.yubikit.testing.framework.DeviceInstrumentedTests;
+import com.yubico.yubikit.testing.framework.YKInstrumentedTests;
 
 import org.junit.Before;
 import org.junit.Test;
 
-public class MultiProtocolResetTests extends DeviceInstrumentedTests {
+public class MultiProtocolResetTests extends YKInstrumentedTests {
 
     @Before
     public void setupDevice() throws Throwable {

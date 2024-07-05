@@ -16,16 +16,26 @@
 package com.yubico.yubikit.testing.piv;
 
 import static com.yubico.yubikit.piv.PivSession.FEATURE_AES_KEY;
-import static com.yubico.yubikit.testing.piv.PivTestConstants.DEFAULT_MANAGEMENT_KEY;
-import static com.yubico.yubikit.testing.piv.PivTestConstants.DEFAULT_PIN;
-import static com.yubico.yubikit.testing.piv.PivTestConstants.DEFAULT_PUK;
+import static com.yubico.yubikit.testing.piv.PivTestState.DEFAULT_MANAGEMENT_KEY;
+import static com.yubico.yubikit.testing.piv.PivTestState.DEFAULT_PIN;
+import static com.yubico.yubikit.testing.piv.PivTestState.DEFAULT_PUK;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 
+import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.core.smartcard.SW;
+import com.yubico.yubikit.core.smartcard.SmartCardConnection;
+import com.yubico.yubikit.management.Capability;
+import com.yubico.yubikit.management.DeviceInfo;
+import com.yubico.yubikit.management.ManagementSession;
 import com.yubico.yubikit.piv.InvalidPinException;
 import com.yubico.yubikit.piv.ManagementKeyType;
 import com.yubico.yubikit.piv.PivSession;
+import com.yubico.yubikit.testing.TestState;
 
 import org.bouncycastle.util.encoders.Hex;
 import org.hamcrest.CoreMatchers;
@@ -37,9 +47,19 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
+import javax.annotation.Nullable;
+
 public class PivDeviceTests {
 
     private static final Logger logger = LoggerFactory.getLogger(PivDeviceTests.class);
+
+    private static final char[] COMPLEX_PIN = "11234567".toCharArray();
+    private static final char[] COMPLEX_PUK = "11234567".toCharArray();
+    private static final byte[] COMPLEX_MANAGEMENT_KEY = new byte[]{
+            0x01, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+            0x01, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+            0x01, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+    };
 
     public static void testManagementKey(PivSession piv) throws BadResponseException, IOException, ApduException {
         byte[] key2 = Hex.decode("010203040102030401020304010203040102030401020304");
@@ -99,7 +119,7 @@ public class PivDeviceTests {
         piv.authenticate(DEFAULT_MANAGEMENT_KEY);
 
         logger.debug("Verify PIN");
-        char[] pin2 = "123123".toCharArray();
+        char[] pin2 = "11231123".toCharArray();
         piv.verifyPin(DEFAULT_PIN);
         MatcherAssert.assertThat(piv.getPinAttempts(), CoreMatchers.equalTo(3));
 
@@ -185,5 +205,58 @@ public class PivDeviceTests {
 
         // Change PUK
         piv.changePuk(puk2, DEFAULT_PUK);
+    }
+
+    //
+    public static void verifyAndSetup(YubiKeyDevice device, @Nullable Byte kid) throws Throwable {
+
+        PivTestState.DEFAULT_PIN = PivTestConstants.DEFAULT_PIN;
+        PivTestState.DEFAULT_PUK = PivTestConstants.DEFAULT_PUK;
+        PivTestState.DEFAULT_MANAGEMENT_KEY = PivTestConstants.DEFAULT_MANAGEMENT_KEY;
+
+        boolean isPivFipsCapable;
+
+        try (SmartCardConnection connection = device.openConnection(SmartCardConnection.class)) {
+            ManagementSession managementSession = new ManagementSession(connection);
+            DeviceInfo deviceInfo = managementSession.getDeviceInfo();
+            assertNotNull(deviceInfo);
+
+            isPivFipsCapable = (deviceInfo.getFipsCapable() & Capability.PIV.bit) == Capability.PIV.bit;
+
+            if (kid != null) {
+                assumeTrue("Device is not PIV FIPS capable", isPivFipsCapable);
+            } else {
+                assumeFalse("Device is PIV FIPS capable but no SCP version provided", isPivFipsCapable);
+            }
+        }
+
+        // don't read SCP params on non capable devices
+        TestState.keyParams = isPivFipsCapable ? TestState.readScpKeyParams(device, kid) : null;
+
+        try (SmartCardConnection connection = device.openConnection(SmartCardConnection.class)) {
+            PivSession pivSession = new PivSession(connection, TestState.keyParams);
+            pivSession.reset();
+            if (kid == null) {
+                // as this is not a FIPS capable device, don't change any pins and
+                // don't require FIPS approved
+                return;
+            }
+
+            pivSession.changePin(DEFAULT_PIN, COMPLEX_PIN);
+            pivSession.changePuk(DEFAULT_PUK, COMPLEX_PUK);
+            pivSession.authenticate(DEFAULT_MANAGEMENT_KEY);
+            pivSession.setManagementKey(ManagementKeyType.AES192, COMPLEX_MANAGEMENT_KEY, false);
+
+            PivTestState.DEFAULT_PIN = COMPLEX_PIN;
+            PivTestState.DEFAULT_PUK = COMPLEX_PUK;
+            PivTestState.DEFAULT_MANAGEMENT_KEY = COMPLEX_MANAGEMENT_KEY;
+
+            ManagementSession managementSession = new ManagementSession(connection);
+            DeviceInfo deviceInfo = managementSession.getDeviceInfo();
+
+            assertNotNull(deviceInfo);
+            assertEquals("Device not PIV FIPS approved", (deviceInfo.getFipsApproved() & Capability.PIV.bit), Capability.PIV.bit);
+
+        }
     }
 }
