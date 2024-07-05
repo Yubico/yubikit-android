@@ -62,4 +62,8 @@ class ShortApduProcessor extends ApduFormatProcessor {
         }
         return new ApduResponse(connection.sendAndReceive(formatApdu(apdu.getCla(), apdu.getIns(), apdu.getP1(), apdu.getP2(), data, offset, data.length - offset, apdu.getLe())));
     }
+
+    @Override
+    public void close() throws IOException {
+    }
 }

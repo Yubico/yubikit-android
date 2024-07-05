@@ -56,12 +56,13 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import javax.security.auth.DestroyFailedException;
+import javax.security.auth.Destroyable;
 
 
 /**
  * Internal SCP state class for managing SCP state, handling encryption/decryption and MAC.
  */
-public class ScpState {
+public class ScpState implements Destroyable {
     private final SessionKeys keys;
     private byte[] macChain;
     private int encCounter = 1;
@@ -74,9 +75,8 @@ public class ScpState {
     public byte[] encrypt(byte[] data) {
         // Pad the data
         int padLen = 16 - (data.length % 16);
-        byte[] msg = new byte[data.length + padLen];
-        System.arraycopy(data, 0, msg, 0, data.length);
-        msg[data.length] = (byte) 0x80;
+        byte[] padded = Arrays.copyOf(data, data.length + padLen);
+        padded[data.length] = (byte) 0x80;
 
         // Encrypt
         try {
@@ -87,17 +87,20 @@ public class ScpState {
 
             cipher = Cipher.getInstance("AES/CBC/NoPadding");
             cipher.init(Cipher.ENCRYPT_MODE, keys.senc, new IvParameterSpec(iv));
-            return cipher.doFinal(msg);
+            return cipher.doFinal(padded);
         } catch (InvalidKeyException | NoSuchPaddingException | NoSuchAlgorithmException |
                  IllegalBlockSizeException | BadPaddingException |
                  InvalidAlgorithmParameterException e) {
             //This should never happen
             throw new RuntimeException(e);
+        } finally {
+            Arrays.fill(padded, (byte) 0);
         }
     }
 
     public byte[] decrypt(byte[] encrypted) throws BadResponseException {
         // Decrypt
+        byte[] decrypted = null;
         try {
             @SuppressWarnings("GetInstance") Cipher cipher = Cipher.getInstance("AES/ECB/NoPadding");
             cipher.init(Cipher.ENCRYPT_MODE, keys.senc);
@@ -106,7 +109,7 @@ public class ScpState {
 
             cipher = Cipher.getInstance("AES/CBC/NoPadding");
             cipher.init(Cipher.DECRYPT_MODE, keys.senc, new IvParameterSpec(iv));
-            byte[] decrypted = cipher.doFinal(encrypted);
+            decrypted = cipher.doFinal(encrypted);
             for (int i = decrypted.length - 1; i > 0; i--) {
                 if (decrypted[i] == (byte) 0x80) {
                     return Arrays.copyOf(decrypted, i);
@@ -120,6 +123,10 @@ public class ScpState {
                  InvalidAlgorithmParameterException e) {
             //This should never happen
             throw new RuntimeException(e);
+        } finally {
+            if (decrypted != null) {
+                Arrays.fill(decrypted, (byte) 0);
+            }
         }
     }
 
@@ -335,5 +342,15 @@ public class ScpState {
                  InvalidAlgorithmParameterException | InvalidKeyException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public void destroy() throws DestroyFailedException {
+        keys.destroy();
+    }
+
+    @Override
+    public boolean isDestroyed() {
+        return keys.isDestroyed();
     }
 }

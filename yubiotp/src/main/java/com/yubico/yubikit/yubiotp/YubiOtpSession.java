@@ -21,6 +21,7 @@ import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.Version;
 import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.YubiKeyDevice;
+import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.core.smartcard.AppId;
 import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
 import com.yubico.yubikit.core.application.ApplicationSession;
@@ -34,6 +35,7 @@ import com.yubico.yubikit.core.otp.OtpProtocol;
 import com.yubico.yubikit.core.smartcard.Apdu;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.smartcard.SmartCardProtocol;
+import com.yubico.yubikit.core.smartcard.scp.ScpKeyParams;
 import com.yubico.yubikit.core.util.Callback;
 import com.yubico.yubikit.core.util.Result;
 
@@ -146,6 +148,19 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
      * @throws ApplicationNotAvailableException if the application is missing or disabled
      */
     public YubiOtpSession(SmartCardConnection connection) throws IOException, ApplicationNotAvailableException {
+        this(connection, null);
+    }
+
+    /**
+     * Create new instance of {@link YubiOtpSession} using an {@link SmartCardConnection}.
+     * NOTE: Not all functionality is available over all transports. Over USB, some functionality may be blocked when
+     * not using an OtpConnection.
+     *
+     * @param connection an Iso7816Connection with a YubiKey
+     * @throws IOException                      in case of connection error
+     * @throws ApplicationNotAvailableException if the application is missing or disabled
+     */
+    public YubiOtpSession(SmartCardConnection connection, @Nullable ScpKeyParams scpKeyParams) throws IOException, ApplicationNotAvailableException {
         Version version = null;
         SmartCardProtocol protocol = new SmartCardProtocol(connection);
 
@@ -166,7 +181,14 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
             version = Version.fromBytes(statusBytes);
         }
 
-        protocol.enableWorkarounds(version);
+        if (scpKeyParams != null) {
+            try {
+                protocol.initScp(scpKeyParams);
+            } catch (ApduException | BadResponseException e) {
+                throw new IOException(e);
+            }
+        }
+        protocol.configure(version);
 
         backend = new Backend<SmartCardProtocol>(protocol, version, parseConfigState(version, statusBytes)) {
             // 5.0.0-5.2.5 have an issue with status over NFC

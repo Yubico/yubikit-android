@@ -29,6 +29,8 @@ import com.yubico.yubikit.core.util.Pair;
 import java.io.Closeable;
 import java.io.IOException;
 
+import javax.annotation.Nullable;
+
 /**
  * Support class for communication over a SmartCardConnection.
  * <p>
@@ -45,7 +47,7 @@ public class SmartCardProtocol implements Closeable {
 
     private final SmartCardConnection connection;
 
-    private ApduFormat apduFormat = ApduFormat.SHORT;
+    private boolean extendedApdus = false;
 
     private int maxApduSize = MaxApduSize.NEO;
 
@@ -64,33 +66,54 @@ public class SmartCardProtocol implements Closeable {
     public SmartCardProtocol(SmartCardConnection connection, byte insSendRemaining) {
         this.connection = connection;
         this.insSendRemaining = insSendRemaining;
-        processor = resetProcessor();
+        processor = new ChainedResponseProcessor(connection, false, maxApduSize, insSendRemaining);
     }
 
-    private ApduProcessor resetProcessor() {
-        return new ChainedResponseProcessor(connection, apduFormat == ApduFormat.EXTENDED, maxApduSize, insSendRemaining);
+    private void resetProcessor(@Nullable ApduProcessor processor) throws IOException {
+        this.processor.close();
+        if (processor != null) {
+            this.processor = processor;
+        } else {
+            this.processor = new ChainedResponseProcessor(connection, extendedApdus, maxApduSize, insSendRemaining);
+        }
     }
 
     @Override
     public void close() throws IOException {
+        processor.close();
         connection.close();
     }
 
     /**
-     * Enable all relevant workarounds given the firmware version of the YubiKey.
+     * Enable all relevant settings and workarounds given the firmware version of the YubiKey.
      *
-     * @param firmwareVersion the firmware version to use for detection to enable the workarounds
+     * @param firmwareVersion the firmware version to use to configure relevant settings
      */
-    public void enableWorkarounds(Version firmwareVersion) {
+    public void configure(Version firmwareVersion) throws IOException {
         if (connection.getTransport() == Transport.USB
                 && firmwareVersion.isAtLeast(4, 2, 0)
                 && firmwareVersion.isLessThan(4, 2, 7)) {
             //noinspection deprecation
             setEnableTouchWorkaround(true);
         } else if (firmwareVersion.isAtLeast(4, 0, 0) && !(processor instanceof ScpProcessor)) {
-            apduFormat = ApduFormat.EXTENDED;
+            extendedApdus = connection.isExtendedLengthApduSupported();
             maxApduSize = firmwareVersion.isAtLeast(4, 3, 0) ? MaxApduSize.YK4_3 : MaxApduSize.YK4;
-            processor = resetProcessor();
+            resetProcessor(null);
+        }
+    }
+
+    /**
+     * Enable all relevant workarounds given the firmware version of the YubiKey.
+     *
+     * @param firmwareVersion the firmware version to use for detection to enable the workarounds
+     * @deprecated use {@link #configure(Version)} instead.
+     */
+    @Deprecated
+    public void enableWorkarounds(Version firmwareVersion) {
+        try {
+            configure(firmwareVersion);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -99,16 +122,20 @@ public class SmartCardProtocol implements Closeable {
      * on such devices to trigger sending a dummy command which mitigates the issue.
      *
      * @param enableTouchWorkaround true to enable the workaround, false to disable it
-     * @deprecated use {@link #enableWorkarounds} instead.
+     * @deprecated use {@link #configure(Version)} instead.
      */
     @Deprecated
     public void setEnableTouchWorkaround(boolean enableTouchWorkaround) {
-        if (enableTouchWorkaround) {
-            apduFormat = ApduFormat.EXTENDED;
-            maxApduSize = MaxApduSize.YK4;
-            processor = new TouchWorkaroundProcessor(connection, insSendRemaining);
-        } else {
-            processor = resetProcessor();
+        try {
+            if (enableTouchWorkaround) {
+                extendedApdus = true;
+                maxApduSize = MaxApduSize.YK4;
+                resetProcessor(new TouchWorkaroundProcessor(connection, insSendRemaining));
+            } else {
+                resetProcessor(null);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -116,16 +143,27 @@ public class SmartCardProtocol implements Closeable {
      * YubiKey NEO doesn't support extended APDU's for most applications.
      *
      * @param apduFormat the APDU encoding to use when sending commands
+     * @deprecated use {@link #configure(Version)} instead.
      */
+    @Deprecated
     public void setApduFormat(ApduFormat apduFormat) {
-        if (this.apduFormat == apduFormat) {
-            return;
+        switch (apduFormat) {
+            case SHORT:
+                if (extendedApdus) {
+                    throw new UnsupportedOperationException("Cannot change from EXTENDED to SHORT APDU format");
+                }
+                break;
+            case EXTENDED:
+                if (!extendedApdus) {
+                    extendedApdus = true;
+                    try {
+                        resetProcessor(null);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+                break;
         }
-        if (apduFormat != ApduFormat.EXTENDED) {
-            throw new UnsupportedOperationException("Cannot change from EXTENDED to SHORT APDU format");
-        }
-        this.apduFormat = apduFormat;
-        processor = resetProcessor();
     }
 
     /**
@@ -144,7 +182,7 @@ public class SmartCardProtocol implements Closeable {
      * @throws ApplicationNotAvailableException in case the AID doesn't match an available application
      */
     public byte[] select(byte[] aid) throws IOException, ApplicationNotAvailableException {
-        processor = resetProcessor();
+        resetProcessor(null);
         try {
             return sendAndReceive(new Apdu(0, INS_SELECT, P1_SELECT, P2_SELECT, aid));
         } catch (ApduException e) {
@@ -186,7 +224,10 @@ public class SmartCardProtocol implements Closeable {
             } else {
                 throw new IllegalArgumentException("Unsupported ScpKeyParams");
             }
-            apduFormat = ApduFormat.EXTENDED;
+            if (!connection.isExtendedLengthApduSupported()) {
+                throw new IllegalStateException("SCP requires extended APDU support");
+            }
+            extendedApdus = true;
             maxApduSize = MaxApduSize.YK4_3;
         } catch (ApduException e) {
             if (e.getSw() == SW.CLASS_NOT_SUPPORTED) {
@@ -206,11 +247,11 @@ public class SmartCardProtocol implements Closeable {
         if (resp.getSw() != SW.OK) {
             throw new ApduException(resp.getSw());
         }
-        this.processor = processor;
+        resetProcessor(processor);
     }
 
     private void initScp11(Scp11KeyParams keyParams) throws IOException, ApduException, BadResponseException {
         ScpState scp = ScpState.scp11Init(processor, keyParams);
-        processor = new ScpProcessor(connection, scp, MaxApduSize.YK4_3, insSendRemaining);
+        resetProcessor(new ScpProcessor(connection, scp, MaxApduSize.YK4_3, insSendRemaining));
     }
 }

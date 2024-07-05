@@ -16,6 +16,7 @@
 
 package com.yubico.yubikit.core.smartcard;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 
 class ExtendedApduProcessor extends ApduFormatProcessor {
@@ -44,5 +45,9 @@ class ExtendedApduProcessor extends ApduFormatProcessor {
             throw new UnsupportedOperationException("APDU length exceeds YubiKey capability");
         }
         return buf.array();
+    }
+
+    @Override
+    public void close() throws IOException {
     }
 }

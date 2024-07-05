@@ -52,4 +52,9 @@ class ChainedResponseProcessor implements ApduProcessor {
         readBuffer.write(response.getSw() & 0xff);
         return new ApduResponse(readBuffer.toByteArray());
     }
+
+    @Override
+    public void close() throws IOException {
+        processor.close();
+    }
 }

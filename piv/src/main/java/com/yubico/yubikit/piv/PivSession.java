@@ -245,12 +245,7 @@ public class PivSession extends ApplicationSession<PivSession> {
         }
 
         version = Version.fromBytes(protocol.sendAndReceive(new Apdu(0, INS_GET_VERSION, 0, 0, null)));
-        protocol.enableWorkarounds(version);
-
-        // use extended length APDUs on compatible connections and devices
-        if (connection.isExtendedLengthApduSupported() && version.isAtLeast(4, 0, 0)) {
-            protocol.setApduFormat(ApduFormat.EXTENDED);
-        }
+        protocol.configure(version);
 
         try {
             managementKeyType = getManagementKeyMetadata().getKeyType();

@@ -154,7 +154,7 @@ public class OathSession extends ApplicationSession<OathSession> {
         salt = selectResponse.salt;
         challenge = selectResponse.challenge;
         isAccessKeySet = challenge != null && challenge.length != 0;
-        protocol.enableWorkarounds(version);
+        protocol.configure(version);
         if (scpKeyParams != null) {
             require(FEATURE_SCP);
             try {

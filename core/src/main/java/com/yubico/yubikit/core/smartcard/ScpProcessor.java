@@ -23,6 +23,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
+import javax.security.auth.DestroyFailedException;
+
 public class ScpProcessor extends ChainedResponseProcessor {
     private final ScpState state;
 
@@ -62,5 +64,15 @@ public class ScpProcessor extends ChainedResponseProcessor {
         }
 
         return new ApduResponse(ByteBuffer.allocate(respData.length + 2).put(respData).putShort(resp.getSw()).array());
+    }
+
+    @Override
+    public void close() throws IOException {
+        try {
+            state.destroy();
+        } catch (DestroyFailedException e) {
+            throw new IOException(e);
+        }
+        super.close();
     }
 }

@@ -198,12 +198,7 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
             versionBytes[i] = decodeBcd(versionBcd[i]);
         }
         version = Version.fromBytes(versionBytes);
-        protocol.enableWorkarounds(version);
-
-        // use extended length APDUs on compatible connections and devices
-        if (connection.isExtendedLengthApduSupported() && version.isAtLeast(4, 0, 0)) {
-            protocol.setApduFormat(ApduFormat.EXTENDED);
-        }
+        protocol.configure(version);
 
         // Note: This value is cached!
         // Do not rely on contained information that can change!

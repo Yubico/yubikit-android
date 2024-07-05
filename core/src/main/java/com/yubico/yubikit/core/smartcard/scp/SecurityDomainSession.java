@@ -86,7 +86,7 @@ public class SecurityDomainSession extends ApplicationSession<SecurityDomainSess
         protocol = new SmartCardProtocol(connection);
         protocol.select(AppId.SECURITYDOMAIN);
         // We don't know the version, but we know it's at least 5.3.0
-        protocol.enableWorkarounds(new Version(5, 3, 0));
+        protocol.configure(new Version(5, 3, 0));
         Logger.debug(logger, "Security Domain session initialized");
     }
 
