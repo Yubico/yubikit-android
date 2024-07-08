@@ -16,11 +16,11 @@
 
 package com.yubico.yubikit.testing;
 
-import com.yubico.yubikit.testing.framework.DeviceInstrumentedTests;
+import com.yubico.yubikit.testing.framework.YKInstrumentedTests;
 
 import org.junit.Test;
 
-public class PinComplexityTests extends DeviceInstrumentedTests {
+public class PinComplexityTests extends YKInstrumentedTests {
 
     @Test
     public void testPinComplexity() throws Throwable {

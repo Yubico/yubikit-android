@@ -1458,7 +1458,7 @@ public class PivSession extends ApplicationSession<PivSession> {
         if (statusCode == SW.AUTH_METHOD_BLOCKED) {
             return 0;
         }
-        if (version.isLessThan(1, 0, 4)) {
+        if (version.isAtLeast(1, 0, 0) && version.isLessThan(1, 0, 4)) {
             if (statusCode >= 0x6300 && statusCode <= 0x63ff) {
                 return statusCode & 0xff;
             }

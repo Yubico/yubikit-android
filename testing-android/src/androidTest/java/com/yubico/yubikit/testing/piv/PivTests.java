@@ -16,39 +16,60 @@
 
 package com.yubico.yubikit.testing.piv;
 
+import com.yubico.yubikit.core.smartcard.scp.ScpKid;
 import com.yubico.yubikit.testing.framework.PivInstrumentedTests;
 
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
-public class PivTests extends PivInstrumentedTests {
+import javax.annotation.Nullable;
 
-    @Test
-    public void testPin() throws Throwable {
-        withPivSession(PivDeviceTests::testPin);
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+        PivTests.NoScpTests.class,
+        PivTests.Scp11bTests.class,
+        PivJcaProviderTests.NoScpTests.class,
+        PivJcaProviderTests.Scp11bTests.class
+})
+public class PivTests {
+    public static class NoScpTests extends PivInstrumentedTests {
+        @Test
+        public void testPin() throws Throwable {
+            withPivSession(PivDeviceTests::testPin);
+        }
+
+        @Test
+        public void testPuk() throws Throwable {
+            withPivSession(PivDeviceTests::testPuk);
+        }
+
+        @Test
+        public void testManagementKey() throws Throwable {
+            withPivSession(PivDeviceTests::testManagementKey);
+        }
+
+        @Test
+        public void testManagementKeyType() throws Throwable {
+            withPivSession(PivDeviceTests::testManagementKeyType);
+        }
+
+        @Test
+        public void testPutUncompressedCertificate() throws Throwable {
+            withPivSession(PivCertificateTests::putUncompressedCertificate);
+        }
+
+        @Test
+        public void testPutCompressedCertificate() throws Throwable {
+            withPivSession(PivCertificateTests::putCompressedCertificate);
+        }
     }
 
-    @Test
-    public void testPuk() throws Throwable {
-        withPivSession(PivDeviceTests::testPuk);
-    }
-
-    @Test
-    public void testManagementKey() throws Throwable {
-        withPivSession(PivDeviceTests::testManagementKey);
-    }
-
-    @Test
-    public void testManagementKeyType() throws Throwable {
-        withPivSession(PivDeviceTests::testManagementKeyType);
-    }
-
-    @Test
-    public void testPutUncompressedCertificate() throws Throwable {
-        withPivSession(PivCertificateTests::putUncompressedCertificate);
-    }
-
-    @Test
-    public void testPutCompressedCertificate() throws Throwable {
-        withPivSession(PivCertificateTests::putCompressedCertificate);
+    public static class Scp11bTests extends NoScpTests {
+        @Override
+        @Nullable
+        protected Byte getScpKid() {
+            return ScpKid.SCP11b;
+        }
     }
 }

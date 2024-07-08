@@ -19,8 +19,8 @@ import static com.yubico.yubikit.piv.PivSession.FEATURE_CV25519;
 import static com.yubico.yubikit.piv.PivSession.FEATURE_RSA3072_RSA4096;
 import static com.yubico.yubikit.testing.piv.PivJcaUtils.setupJca;
 import static com.yubico.yubikit.testing.piv.PivJcaUtils.tearDownJca;
-import static com.yubico.yubikit.testing.piv.PivTestConstants.DEFAULT_MANAGEMENT_KEY;
-import static com.yubico.yubikit.testing.piv.PivTestConstants.DEFAULT_PIN;
+import static com.yubico.yubikit.testing.piv.PivTestState.DEFAULT_MANAGEMENT_KEY;
+import static com.yubico.yubikit.testing.piv.PivTestState.DEFAULT_PIN;
 
 import com.yubico.yubikit.piv.KeyType;
 import com.yubico.yubikit.piv.PinPolicy;
@@ -56,6 +56,10 @@ public class PivJcaDeviceTests {
         keyStore.load(null);
 
         for (KeyType keyType : Arrays.asList(KeyType.RSA1024, KeyType.RSA2048, KeyType.RSA3072, KeyType.RSA4096)) {
+
+            if (PivTestState.isInvalidKeyType(keyType)) {
+                continue;
+            }
 
             if (!piv.supports(FEATURE_RSA3072_RSA4096) && (keyType == KeyType.RSA3072 || keyType == KeyType.RSA4096)) {
                 continue;
@@ -95,6 +99,11 @@ public class PivJcaDeviceTests {
 
         if (piv.supports(FEATURE_CV25519)) {
             for (KeyType keyType : Arrays.asList(KeyType.ED25519, KeyType.X25519)) {
+
+                if (PivTestState.isInvalidKeyType(keyType)) {
+                    continue;
+                }
+
                 String alias = Slot.SIGNATURE.getStringAlias();
 
                 KeyPair keyPair = PivTestUtils.loadKey(keyType);
@@ -145,6 +154,10 @@ public class PivJcaDeviceTests {
         KeyPairGenerator ecGen = KeyPairGenerator.getInstance("YKPivEC");
         for (KeyType keyType : Arrays.asList(KeyType.ECCP256, KeyType.ECCP384, KeyType.ED25519, KeyType.X25519)) {
 
+            if (PivTestState.isInvalidKeyType(keyType)) {
+                continue;
+            }
+
             if (!piv.supports(FEATURE_CV25519) && (keyType == KeyType.ED25519 || keyType == KeyType.X25519)) {
                 continue;
             }
@@ -171,6 +184,10 @@ public class PivJcaDeviceTests {
 
         KeyPairGenerator rsaGen = KeyPairGenerator.getInstance("YKPivRSA");
         for (KeyType keyType : Arrays.asList(KeyType.RSA1024, KeyType.RSA2048, KeyType.RSA3072, KeyType.RSA4096)) {
+
+            if (PivTestState.isInvalidKeyType(keyType)) {
+                continue;
+            }
 
             if (!piv.supports(FEATURE_RSA3072_RSA4096) && (keyType == KeyType.RSA3072 || keyType == KeyType.RSA4096)) {
                 continue;

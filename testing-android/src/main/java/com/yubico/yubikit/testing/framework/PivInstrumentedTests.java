@@ -18,6 +18,8 @@ package com.yubico.yubikit.testing.framework;
 
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.piv.PivSession;
+import com.yubico.yubikit.testing.TestState;
+import com.yubico.yubikit.testing.piv.PivTestUtils;
 
 
 public class PivInstrumentedTests extends YKInstrumentedTests {
@@ -27,8 +29,11 @@ public class PivInstrumentedTests extends YKInstrumentedTests {
     }
 
     protected void withPivSession(Callback callback) throws Throwable {
+
+        PivTestUtils.verifyAndSetup(device, getScpKid());
+
         try (SmartCardConnection c = device.openConnection(SmartCardConnection.class)) {
-            PivSession pivSession = new PivSession(c);
+            PivSession pivSession = new PivSession(c, TestState.keyParams);
             callback.invoke(pivSession);
         }
     }

@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
-package com.yubico.yubikit.testing.framework;
+package com.yubico.yubikit.testing.piv;
 
-import com.yubico.yubikit.core.YubiKeyDevice;
+import com.yubico.yubikit.piv.KeyType;
 
-public class DeviceInstrumentedTests extends YKInstrumentedTests {
+class PivTestState {
+    static char[] DEFAULT_PIN = PivTestConstants.DEFAULT_PIN;
+    static char[] DEFAULT_PUK = PivTestConstants.DEFAULT_PUK;
+    static byte[] DEFAULT_MANAGEMENT_KEY = PivTestConstants.DEFAULT_MANAGEMENT_KEY;
+    static boolean FIPS_APPROVED = false;
 
-    public interface Callback {
-        void invoke(YubiKeyDevice value) throws Throwable;
-    }
-
-    protected void withDevice(Callback callback) throws Throwable {
-        callback.invoke(device);
+    static boolean isInvalidKeyType(KeyType keyType) {
+        return FIPS_APPROVED && (keyType == KeyType.RSA1024 || keyType == KeyType.X25519);
     }
 }

@@ -19,8 +19,8 @@ package com.yubico.yubikit.testing.piv;
 import static com.yubico.yubikit.piv.PivSession.FEATURE_RSA3072_RSA4096;
 import static com.yubico.yubikit.testing.piv.PivJcaUtils.setupJca;
 import static com.yubico.yubikit.testing.piv.PivJcaUtils.tearDownJca;
-import static com.yubico.yubikit.testing.piv.PivTestConstants.DEFAULT_MANAGEMENT_KEY;
-import static com.yubico.yubikit.testing.piv.PivTestConstants.DEFAULT_PIN;
+import static com.yubico.yubikit.testing.piv.PivTestState.DEFAULT_MANAGEMENT_KEY;
+import static com.yubico.yubikit.testing.piv.PivTestState.DEFAULT_PIN;
 
 import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.smartcard.ApduException;
@@ -71,6 +71,10 @@ public class PivJcaDecryptTests {
 
         if (keyType.params.algorithm != KeyType.Algorithm.RSA) {
             throw new IllegalArgumentException("Unsupported");
+        }
+
+        if (PivTestState.isInvalidKeyType(keyType)) {
+            return;
         }
 
         piv.authenticate(DEFAULT_MANAGEMENT_KEY);
