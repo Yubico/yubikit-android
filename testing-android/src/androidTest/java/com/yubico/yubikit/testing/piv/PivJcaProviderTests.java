@@ -20,11 +20,21 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.yubico.yubikit.testing.framework.PivInstrumentedTests;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import javax.annotation.Nullable;
+
 @RunWith(AndroidJUnit4.class)
 public class PivJcaProviderTests extends PivInstrumentedTests {
+
+    @Nullable protected Byte kid;
+
+    @Before
+    public void setup() throws Throwable {
+        withDevice(device -> PivDeviceTests.verifyAndSetup(device, kid));
+    }
 
     @Test
     public void testGenerateKeys() throws Throwable {

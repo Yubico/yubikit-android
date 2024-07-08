@@ -20,8 +20,8 @@ import static com.yubico.yubikit.piv.PivSession.FEATURE_RSA3072_RSA4096;
 import static com.yubico.yubikit.piv.PivSession.FEATURE_CV25519;
 import static com.yubico.yubikit.testing.piv.PivJcaUtils.setupJca;
 import static com.yubico.yubikit.testing.piv.PivJcaUtils.tearDownJca;
-import static com.yubico.yubikit.testing.piv.PivTestConstants.DEFAULT_MANAGEMENT_KEY;
-import static com.yubico.yubikit.testing.piv.PivTestConstants.DEFAULT_PIN;
+import static com.yubico.yubikit.testing.piv.PivTestState.DEFAULT_MANAGEMENT_KEY;
+import static com.yubico.yubikit.testing.piv.PivTestState.DEFAULT_PIN;
 
 import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.smartcard.ApduException;
@@ -73,6 +73,10 @@ public class PivJcaSigningTests {
 
     public static void testSign(PivSession piv, KeyType keyType) throws NoSuchAlgorithmException, IOException, ApduException, InvalidKeyException, BadResponseException, InvalidAlgorithmParameterException, SignatureException {
         if (!piv.supports(FEATURE_CV25519) && (keyType == KeyType.ED25519 || keyType == KeyType.X25519)) {
+            return;
+        }
+
+        if (PivTestState.isInvalidKeyType(keyType)) {
             return;
         }
 

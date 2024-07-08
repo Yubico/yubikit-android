@@ -16,15 +16,14 @@
 
 package com.yubico.yubikit.testing.piv;
 
-import com.yubico.yubikit.piv.KeyType;
+import com.yubico.yubikit.core.smartcard.scp.ScpKid;
 
-class PivTestState {
-    static char[] DEFAULT_PIN = PivTestConstants.DEFAULT_PIN;
-    static char[] DEFAULT_PUK = PivTestConstants.DEFAULT_PUK;
-    static byte[] DEFAULT_MANAGEMENT_KEY = PivTestConstants.DEFAULT_MANAGEMENT_KEY;
-    static boolean FIPS_APPROVED = false;
+import org.junit.Before;
 
-    static boolean isInvalidKeyType(KeyType keyType) {
-        return FIPS_APPROVED && (keyType == KeyType.RSA1024 || keyType == KeyType.X25519);
+public class PivFipsJcaProviderTests extends PivJcaProviderTests {
+    @Before
+    public void setup() throws Throwable {
+        kid = ScpKid.SCP11b;
+        super.setup();
     }
 }

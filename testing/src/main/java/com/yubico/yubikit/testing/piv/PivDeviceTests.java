@@ -19,6 +19,7 @@ import static com.yubico.yubikit.piv.PivSession.FEATURE_AES_KEY;
 import static com.yubico.yubikit.testing.piv.PivTestState.DEFAULT_MANAGEMENT_KEY;
 import static com.yubico.yubikit.testing.piv.PivTestState.DEFAULT_PIN;
 import static com.yubico.yubikit.testing.piv.PivTestState.DEFAULT_PUK;
+import static com.yubico.yubikit.testing.piv.PivTestState.FIPS_APPROVED;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
@@ -254,21 +255,17 @@ public class PivDeviceTests {
                 PivTestState.DEFAULT_MANAGEMENT_KEY = COMPLEX_MANAGEMENT_KEY;
             }
 
-            if (kid == null && device.getTransport() == Transport.USB) {
-                // this might be a FIPS capable (and now approved) device,
-                // but the test client did not provide any kid, so the session is not
-                // in SCP mode and we don't require this test to run in SCP for USB transports.
-                // FIPS devices have to use SCP over NFC transport
-                return;
-            }
-
             ManagementSession managementSession = new ManagementSession(connection);
             DeviceInfo deviceInfo = managementSession.getDeviceInfo();
 
-            final boolean fipsApproved = (deviceInfo.getFipsApproved() & Capability.PIV.bit) == Capability.PIV.bit;
+            FIPS_APPROVED = (deviceInfo.getFipsApproved() & Capability.PIV.bit) == Capability.PIV.bit;
 
-            assertNotNull(deviceInfo);
-            assertTrue("Device not PIV FIPS approved", fipsApproved);
+            // after changing PIN, PUK and management key, we expect a FIPS capable device
+            // to be FIPS approved
+            if (isPivFipsCapable) {
+                assertNotNull(deviceInfo);
+                assertTrue("Device not PIV FIPS approved as expected", FIPS_APPROVED);
+            }
         }
     }
 }

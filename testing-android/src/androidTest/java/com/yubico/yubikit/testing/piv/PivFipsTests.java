@@ -20,7 +20,6 @@ import com.yubico.yubikit.core.smartcard.scp.ScpKid;
 
 import org.junit.Before;
 
-
 public class PivFipsTests extends PivTests {
 
     @Before

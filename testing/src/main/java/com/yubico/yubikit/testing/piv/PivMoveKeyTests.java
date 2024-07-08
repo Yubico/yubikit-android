@@ -23,8 +23,8 @@ import static com.yubico.yubikit.piv.PivSession.FEATURE_MOVE_KEY;
 import static com.yubico.yubikit.testing.piv.PivJcaSigningTests.testSign;
 import static com.yubico.yubikit.testing.piv.PivJcaUtils.setupJca;
 import static com.yubico.yubikit.testing.piv.PivJcaUtils.tearDownJca;
-import static com.yubico.yubikit.testing.piv.PivTestConstants.DEFAULT_MANAGEMENT_KEY;
-import static com.yubico.yubikit.testing.piv.PivTestConstants.DEFAULT_PIN;
+import static com.yubico.yubikit.testing.piv.PivTestState.DEFAULT_MANAGEMENT_KEY;
+import static com.yubico.yubikit.testing.piv.PivTestState.DEFAULT_PIN;
 
 import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.keys.PrivateKeyValues;
@@ -64,6 +64,10 @@ public class PivMoveKeyTests {
         piv.authenticate(DEFAULT_MANAGEMENT_KEY);
 
         for (KeyType keyType : Arrays.asList(KeyType.ECCP256, KeyType.ECCP384, KeyType.RSA1024, KeyType.RSA2048, KeyType.ED25519, KeyType.X25519)) {
+
+            if (PivTestState.isInvalidKeyType(keyType)) {
+                continue;
+            }
 
             if (!piv.supports(FEATURE_CV25519) && (keyType == KeyType.ED25519 || keyType == KeyType.X25519)) {
                 continue;
