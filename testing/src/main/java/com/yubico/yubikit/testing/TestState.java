@@ -43,6 +43,9 @@ public class TestState {
         try (SmartCardConnection connection = device.openConnection(SmartCardConnection.class)) {
             SecurityDomainSession scp = new SecurityDomainSession(connection);
             KeyRef keyRef = getKeyRef(scp, kid);
+            if (keyRef == null) {
+                return null;
+            }
             List<X509Certificate> certs = scp.getCertificateBundle(keyRef);
 
             return certs.isEmpty()
@@ -53,7 +56,8 @@ public class TestState {
         }
     }
 
-    private static KeyRef getKeyRef(SecurityDomainSession scp, byte kid) throws ApduException, IOException, BadResponseException {
+    private static KeyRef getKeyRef(SecurityDomainSession scp, byte kid)
+            throws ApduException, IOException, BadResponseException {
         Map<KeyRef, Map<Byte, Byte>> keyInformation = scp.getKeyInformation();
         KeyRef keyRef = null;
         for (KeyRef info : keyInformation.keySet()) {
@@ -61,10 +65,6 @@ public class TestState {
                 keyRef = info;
                 break;
             }
-        }
-
-        if (keyRef == null) {
-            throw new IllegalStateException("Failed to find required key");
         }
         return keyRef;
     }

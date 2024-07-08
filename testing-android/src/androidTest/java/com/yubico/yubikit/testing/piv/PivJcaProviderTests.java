@@ -16,53 +16,55 @@
 
 package com.yubico.yubikit.testing.piv;
 
+import androidx.annotation.Nullable;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
+import com.yubico.yubikit.core.smartcard.scp.ScpKid;
 import com.yubico.yubikit.testing.framework.PivInstrumentedTests;
 
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import javax.annotation.Nullable;
-
 @RunWith(AndroidJUnit4.class)
-public class PivJcaProviderTests extends PivInstrumentedTests {
+public class PivJcaProviderTests {
 
-    @Nullable protected Byte kid;
+    public static class NoScpTests extends PivInstrumentedTests {
+        @Test
+        public void testGenerateKeys() throws Throwable {
+            withPivSession(PivJcaDeviceTests::testGenerateKeys);
+        }
 
-    @Before
-    public void setup() throws Throwable {
-        withDevice(device -> PivDeviceTests.verifyAndSetup(device, kid));
+        @Test
+        public void testGenerateKeysPreferBC() throws Throwable {
+            withPivSession(PivJcaDeviceTests::testGenerateKeysPreferBC);
+        }
+
+        @Test
+        public void testImportKeys() throws Throwable {
+            withPivSession(PivJcaDeviceTests::testImportKeys);
+        }
+
+        @Test
+        public void testSigning() throws Throwable {
+            withPivSession(PivJcaSigningTests::testSign);
+        }
+
+        @Test
+        public void testDecrypt() throws Throwable {
+            withPivSession(PivJcaDecryptTests::testDecrypt);
+        }
+
+        @Test
+        public void testMoveKey() throws Throwable {
+            withPivSession(PivMoveKeyTests::moveKey);
+        }
     }
 
-    @Test
-    public void testGenerateKeys() throws Throwable {
-        withPivSession(PivJcaDeviceTests::testGenerateKeys);
-    }
-
-    @Test
-    public void testGenerateKeysPreferBC() throws Throwable {
-        withPivSession(PivJcaDeviceTests::testGenerateKeysPreferBC);
-    }
-
-    @Test
-    public void testImportKeys() throws Throwable {
-        withPivSession(PivJcaDeviceTests::testImportKeys);
-    }
-
-    @Test
-    public void testSigning() throws Throwable {
-        withPivSession(PivJcaSigningTests::testSign);
-    }
-
-    @Test
-    public void testDecrypt() throws Throwable {
-        withPivSession(PivJcaDecryptTests::testDecrypt);
-    }
-
-    @Test
-    public void testMoveKey() throws Throwable {
-        withPivSession(PivMoveKeyTests::moveKey);
+    public static class Scp11bTests extends NoScpTests {
+        @Nullable
+        @Override
+        protected Byte getScpKid() {
+            return ScpKid.SCP11b;
+        }
     }
 }

@@ -26,6 +26,8 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.TestName;
 
+import javax.annotation.Nullable;
+
 public class YKInstrumentedTests {
 
     private TestActivity activity;
@@ -56,6 +58,11 @@ public class YKInstrumentedTests {
 
     protected void withDevice(Callback callback) throws Throwable {
         callback.invoke(device);
+    }
+
+    @Nullable
+    protected Byte getScpKid() {
+        return null;
     }
 }
 

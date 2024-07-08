@@ -48,19 +48,9 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
-import javax.annotation.Nullable;
-
 public class PivDeviceTests {
 
     private static final Logger logger = LoggerFactory.getLogger(PivDeviceTests.class);
-
-    private static final char[] COMPLEX_PIN = "11234567".toCharArray();
-    private static final char[] COMPLEX_PUK = "11234567".toCharArray();
-    private static final byte[] COMPLEX_MANAGEMENT_KEY = new byte[]{
-            0x01, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
-            0x01, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
-            0x01, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
-    };
 
     public static void testManagementKey(PivSession piv) throws BadResponseException, IOException, ApduException {
         byte[] key2 = Hex.decode("010203040102030401020304010203040102030401020304");
@@ -206,66 +196,5 @@ public class PivDeviceTests {
 
         // Change PUK
         piv.changePuk(puk2, DEFAULT_PUK);
-    }
-
-    public static void verifyAndSetup(YubiKeyDevice device, @Nullable Byte kid) throws Throwable {
-
-        PivTestState.DEFAULT_PIN = PivTestConstants.DEFAULT_PIN;
-        PivTestState.DEFAULT_PUK = PivTestConstants.DEFAULT_PUK;
-        PivTestState.DEFAULT_MANAGEMENT_KEY = PivTestConstants.DEFAULT_MANAGEMENT_KEY;
-
-        boolean isPivFipsCapable;
-        boolean hasPinComplexity;
-
-        try (SmartCardConnection connection = device.openConnection(SmartCardConnection.class)) {
-            ManagementSession managementSession = new ManagementSession(connection);
-            DeviceInfo deviceInfo = managementSession.getDeviceInfo();
-            assertNotNull(deviceInfo);
-
-            isPivFipsCapable = (deviceInfo.getFipsCapable() & Capability.PIV.bit) == Capability.PIV.bit;
-            hasPinComplexity = deviceInfo.getPinComplexity();
-        }
-
-        if (kid != null) {
-            assumeTrue("Device is not PIV FIPS capable", isPivFipsCapable);
-        } else if (isPivFipsCapable) {
-            Assume.assumeTrue("Trying to use PIV FIPS capable device over NFC without SCP",
-                    device.getTransport() != Transport.NFC);
-        }
-
-        // don't read SCP params on non capable devices
-        TestState.keyParams = (isPivFipsCapable && kid != null)
-                ? TestState.readScpKeyParams(device, kid)
-                : null;
-
-        try (SmartCardConnection connection = device.openConnection(SmartCardConnection.class)) {
-            PivSession pivSession = new PivSession(connection, TestState.keyParams);
-            pivSession.reset();
-
-            if (hasPinComplexity) {
-                // only use complex pins if pin complexity is required
-                pivSession.changePin(DEFAULT_PIN, COMPLEX_PIN);
-                pivSession.changePuk(DEFAULT_PUK, COMPLEX_PUK);
-                pivSession.authenticate(DEFAULT_MANAGEMENT_KEY);
-
-                pivSession.setManagementKey(ManagementKeyType.AES192, COMPLEX_MANAGEMENT_KEY, false);
-
-                PivTestState.DEFAULT_PIN = COMPLEX_PIN;
-                PivTestState.DEFAULT_PUK = COMPLEX_PUK;
-                PivTestState.DEFAULT_MANAGEMENT_KEY = COMPLEX_MANAGEMENT_KEY;
-            }
-
-            ManagementSession managementSession = new ManagementSession(connection);
-            DeviceInfo deviceInfo = managementSession.getDeviceInfo();
-
-            FIPS_APPROVED = (deviceInfo.getFipsApproved() & Capability.PIV.bit) == Capability.PIV.bit;
-
-            // after changing PIN, PUK and management key, we expect a FIPS capable device
-            // to be FIPS approved
-            if (isPivFipsCapable) {
-                assertNotNull(deviceInfo);
-                assertTrue("Device not PIV FIPS approved as expected", FIPS_APPROVED);
-            }
-        }
     }
 }
