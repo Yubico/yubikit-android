@@ -269,7 +269,7 @@ public class DeviceInfo {
                 ? Version.fromBytes(data.get(TAG_FIRMWARE_VERSION))
                 : defaultVersion;
 
-        final Version versionZero = new Version(0,0,0);
+        final Version versionZero = new Version(0, 0, 0);
 
         Version fpsVersion = null;
         if (data.containsKey(TAG_FPS_VERSION)) {

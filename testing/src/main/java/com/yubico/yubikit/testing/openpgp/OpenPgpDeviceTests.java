@@ -16,6 +16,9 @@
 
 package com.yubico.yubikit.testing.openpgp;
 
+import static com.yubico.yubikit.testing.openpgp.OpenPgpTestState.DEFAULT_ADMIN;
+import static com.yubico.yubikit.testing.openpgp.OpenPgpTestState.DEFAULT_PIN;
+
 import com.yubico.yubikit.core.application.InvalidPinException;
 import com.yubico.yubikit.core.keys.PrivateKeyValues;
 import com.yubico.yubikit.core.keys.PublicKeyValues;
@@ -67,8 +70,6 @@ import javax.crypto.Cipher;
 import javax.crypto.KeyAgreement;
 
 public class OpenPgpDeviceTests {
-    private static final char[] DEFAULT_PIN = Pw.DEFAULT_USER_PIN;
-    private static final char[] DEFAULT_ADMIN = Pw.DEFAULT_ADMIN_PIN;
     private static final char[] CHANGED_PIN = "12341234".toCharArray();
     private static final char[] RESET_CODE = "43214321".toCharArray();
     private static final Logger logger = LoggerFactory.getLogger(OpenPgpDeviceTests.class);
@@ -82,11 +83,21 @@ public class OpenPgpDeviceTests {
     }
 
     public static void testGenerateRequiresAdmin(OpenPgpSession openpgp) throws Exception {
+
         try {
-            openpgp.generateRsaKey(KeyRef.DEC, 2048);
+            openpgp.generateEcKey(KeyRef.DEC, OpenPgpCurve.BrainpoolP256R1);
             Assert.fail();
         } catch (ApduException e) {
             Assert.assertEquals(SW.SECURITY_CONDITION_NOT_SATISFIED, e.getSw());
+        }
+
+        if (!OpenPgpTestState.FIPS_APPROVED) {
+            try {
+                openpgp.generateRsaKey(KeyRef.DEC, 2048);
+                Assert.fail();
+            } catch (ApduException e) {
+                Assert.assertEquals(SW.SECURITY_CONDITION_NOT_SATISFIED, e.getSw());
+            }
         }
     }
 
@@ -176,14 +187,16 @@ public class OpenPgpDeviceTests {
             verifier.update(message);
             assert verifier.verify(signature);
 
-            publicKey = openpgp.generateRsaKey(KeyRef.DEC, keySize).toPublicKey();
-            Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
-            cipher.init(Cipher.ENCRYPT_MODE, publicKey);
-            byte[] cipherText = cipher.doFinal(message);
+            if (!OpenPgpTestState.FIPS_APPROVED) {
+                publicKey = openpgp.generateRsaKey(KeyRef.DEC, keySize).toPublicKey();
+                Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+                cipher.init(Cipher.ENCRYPT_MODE, publicKey);
+                byte[] cipherText = cipher.doFinal(message);
 
-            openpgp.verifyUserPin(DEFAULT_PIN, true);
-            byte[] decrypted = openpgp.decrypt(cipherText);
-            Assert.assertArrayEquals(message, decrypted);
+                openpgp.verifyUserPin(DEFAULT_PIN, true);
+                byte[] decrypted = openpgp.decrypt(cipherText);
+                Assert.assertArrayEquals(message, decrypted);
+            }
         }
     }
 
@@ -196,6 +209,11 @@ public class OpenPgpDeviceTests {
 
         byte[] message = "hello".getBytes(StandardCharsets.UTF_8);
         for (OpenPgpCurve curve : ecdsaCurves) {
+            if (OpenPgpTestState.FIPS_APPROVED) {
+                if (curve == OpenPgpCurve.SECP256K1) {
+                    continue;
+                }
+            }
             logger.info("Curve: {}", curve);
             PublicKey publicKey = openpgp.generateEcKey(KeyRef.SIG, curve).toPublicKey();
             openpgp.verifyUserPin(DEFAULT_PIN, false);
@@ -242,6 +260,8 @@ public class OpenPgpDeviceTests {
     public static void testGenerateX25519(OpenPgpSession openpgp) throws Exception {
         Assume.assumeTrue("EC support", openpgp.supports(OpenPgpSession.FEATURE_EC_KEYS));
 
+        Assume.assumeFalse("X25519 not supported in FIPS OpenPGP.", OpenPgpTestState.FIPS_APPROVED);
+
         Security.removeProvider("BC");
         Security.insertProviderAt(new BouncyCastleProvider(), 1);
         openpgp.verifyAdminPin(DEFAULT_ADMIN);
@@ -282,14 +302,17 @@ public class OpenPgpDeviceTests {
             verifier.update(message);
             assert verifier.verify(signature);
 
-            openpgp.putKey(KeyRef.DEC, PrivateKeyValues.fromPrivateKey(pair.getPrivate()));
-            Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
-            cipher.init(Cipher.ENCRYPT_MODE, publicKey);
-            byte[] cipherText = cipher.doFinal(message);
+            if (!OpenPgpTestState.FIPS_APPROVED) {
+                openpgp.putKey(KeyRef.DEC, PrivateKeyValues.fromPrivateKey(pair.getPrivate()));
+                Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+                cipher.init(Cipher.ENCRYPT_MODE, publicKey);
+                byte[] cipherText = cipher.doFinal(message);
 
-            openpgp.verifyUserPin(DEFAULT_PIN, true);
-            byte[] decrypted = openpgp.decrypt(cipherText);
-            Assert.assertArrayEquals(message, decrypted);
+
+                openpgp.verifyUserPin(DEFAULT_PIN, true);
+                byte[] decrypted = openpgp.decrypt(cipherText);
+                Assert.assertArrayEquals(message, decrypted);
+            }
         }
     }
 
@@ -306,6 +329,9 @@ public class OpenPgpDeviceTests {
         curves.remove(OpenPgpCurve.Ed25519);
         curves.remove(OpenPgpCurve.X25519);
 
+        if (OpenPgpTestState.FIPS_APPROVED) {
+            curves.remove(OpenPgpCurve.SECP256K1);
+        }
 
         byte[] message = "hello".getBytes(StandardCharsets.UTF_8);
         for (OpenPgpCurve curve : curves) {
@@ -365,6 +391,7 @@ public class OpenPgpDeviceTests {
 
     public static void testImportX25519(OpenPgpSession openpgp) throws Exception {
         Assume.assumeTrue("EC support", openpgp.supports(OpenPgpSession.FEATURE_EC_KEYS));
+        Assume.assumeFalse("X25519 not supported in FIPS OpenPGP.", OpenPgpTestState.FIPS_APPROVED);
 
         Security.removeProvider("BC");
         Security.insertProviderAt(new BouncyCastleProvider(), 1);
@@ -449,9 +476,6 @@ public class OpenPgpDeviceTests {
             Assert.assertEquals(SW.SECURITY_CONDITION_NOT_SATISFIED, e.getSw());
         }
 
-        // KDF can only be set in a mostly clean state
-        openpgp.reset();
-
         // Set a non-default PINs to ensure that they reset
         openpgp.changeUserPin(DEFAULT_PIN, CHANGED_PIN);
         openpgp.changeAdminPin(DEFAULT_ADMIN, CHANGED_PIN);
@@ -460,17 +484,19 @@ public class OpenPgpDeviceTests {
         openpgp.setKdf(
                 Kdf.IterSaltedS2k.create(Kdf.IterSaltedS2k.HashAlgorithm.SHA256, 0x780000)
         );
-        openpgp.verifyUserPin(DEFAULT_PIN, false);
-        openpgp.verifyAdminPin(DEFAULT_ADMIN);
+        // this reset the device to defaults - it is not FIPS approved anymore and
+        // default PINs have to be used
+        openpgp.verifyUserPin(Pw.DEFAULT_USER_PIN, false);
+        openpgp.verifyAdminPin(Pw.DEFAULT_ADMIN_PIN);
 
-        openpgp.changeUserPin(DEFAULT_PIN, CHANGED_PIN);
+        openpgp.changeUserPin(Pw.DEFAULT_USER_PIN, CHANGED_PIN);
         openpgp.verifyUserPin(CHANGED_PIN, false);
-        openpgp.changeAdminPin(DEFAULT_ADMIN, CHANGED_PIN);
+        openpgp.changeAdminPin(Pw.DEFAULT_ADMIN_PIN, CHANGED_PIN);
         openpgp.verifyAdminPin(CHANGED_PIN);
 
         openpgp.setKdf(new Kdf.None());
-        openpgp.verifyAdminPin(DEFAULT_ADMIN);
-        openpgp.verifyUserPin(DEFAULT_PIN, false);
+        openpgp.verifyAdminPin(Pw.DEFAULT_ADMIN_PIN);
+        openpgp.verifyUserPin(Pw.DEFAULT_USER_PIN, false);
     }
 
     public static void testUnverifyPin(OpenPgpSession openpgp) throws Exception {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Yubico.
+ * Copyright (C) 2022,2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,8 @@ package com.yubico.yubikit.testing.framework;
 
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.openpgp.OpenPgpSession;
+import com.yubico.yubikit.testing.TestState;
+import com.yubico.yubikit.testing.openpgp.OpenPgpTestUtils;
 
 public class OpenPgpInstrumentedTests extends YKInstrumentedTests {
 
@@ -26,8 +28,11 @@ public class OpenPgpInstrumentedTests extends YKInstrumentedTests {
     }
 
     protected void withOpenPgpSession(Callback callback) throws Throwable {
-        try(SmartCardConnection connection = device.openConnection(SmartCardConnection.class)) {
-            callback.invoke(new OpenPgpSession(connection));
+
+        OpenPgpTestUtils.verifyAndSetup(device, getScpKid());
+
+        try (SmartCardConnection connection = device.openConnection(SmartCardConnection.class)) {
+            callback.invoke(new OpenPgpSession(connection, TestState.keyParams));
         }
     }
 }

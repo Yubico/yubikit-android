@@ -1,0 +1,104 @@
+/*
+ * Copyright (C) 2024 Yubico.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package com.yubico.yubikit.testing.openpgp;
+
+import static com.yubico.yubikit.testing.openpgp.OpenPgpTestState.DEFAULT_ADMIN;
+import static com.yubico.yubikit.testing.openpgp.OpenPgpTestState.DEFAULT_PIN;
+import static com.yubico.yubikit.testing.openpgp.OpenPgpTestState.FIPS_APPROVED;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
+import com.yubico.yubikit.core.Transport;
+import com.yubico.yubikit.core.YubiKeyDevice;
+import com.yubico.yubikit.core.smartcard.SmartCardConnection;
+import com.yubico.yubikit.management.Capability;
+import com.yubico.yubikit.management.DeviceInfo;
+import com.yubico.yubikit.management.ManagementSession;
+import com.yubico.yubikit.openpgp.OpenPgpSession;
+import com.yubico.yubikit.openpgp.Pw;
+import com.yubico.yubikit.testing.TestState;
+
+import org.junit.Assume;
+
+import javax.annotation.Nullable;
+
+public class OpenPgpTestUtils {
+
+    private static final char[] COMPLEX_USER_PIN = "112345678".toCharArray();
+    private static final char[] COMPLEX_ADMIN_PIN = "112345678".toCharArray();
+
+    public static void verifyAndSetup(YubiKeyDevice device, @Nullable Byte kid) throws Throwable {
+
+        OpenPgpTestState.DEFAULT_PIN = Pw.DEFAULT_USER_PIN;
+        OpenPgpTestState.DEFAULT_ADMIN = Pw.DEFAULT_ADMIN_PIN;
+
+        boolean isOpenPgpFipsCapable;
+        boolean hasPinComplexity;
+
+        try (SmartCardConnection connection = device.openConnection(SmartCardConnection.class)) {
+            ManagementSession managementSession = new ManagementSession(connection);
+            DeviceInfo deviceInfo = managementSession.getDeviceInfo();
+            assertNotNull(deviceInfo);
+
+            isOpenPgpFipsCapable =
+                    (deviceInfo.getFipsCapable() & Capability.OPENPGP.bit) == Capability.OPENPGP.bit;
+            hasPinComplexity = deviceInfo.getPinComplexity();
+        }
+
+        if (kid == null && isOpenPgpFipsCapable) {
+            Assume.assumeTrue("Trying to use OpenPgp FIPS capable device over NFC without SCP",
+                    device.getTransport() != Transport.NFC);
+        }
+
+        // don't read SCP params on non capable devices
+        TestState.keyParams = (isOpenPgpFipsCapable && kid != null)
+                ? TestState.readScpKeyParams(device, kid)
+                : null;
+
+        if (kid != null) {
+            // skip the test if the connected key does not provide matching SCP keys
+            Assume.assumeTrue(
+                    "No matching key params found for required kid",
+                    TestState.keyParams != null
+            );
+        }
+
+        try (SmartCardConnection connection = device.openConnection(SmartCardConnection.class)) {
+            OpenPgpSession openPgp = new OpenPgpSession(connection, TestState.keyParams);
+            openPgp.reset();
+
+            if (hasPinComplexity) {
+                // only use complex pins if pin complexity is required
+                openPgp.changeUserPin(DEFAULT_PIN, COMPLEX_USER_PIN);
+                openPgp.changeAdminPin(DEFAULT_ADMIN, COMPLEX_ADMIN_PIN);
+                OpenPgpTestState.DEFAULT_PIN = COMPLEX_USER_PIN;
+                OpenPgpTestState.DEFAULT_ADMIN = COMPLEX_ADMIN_PIN;
+            }
+
+            ManagementSession managementSession = new ManagementSession(connection);
+            DeviceInfo deviceInfo = managementSession.getDeviceInfo();
+
+            FIPS_APPROVED = (deviceInfo.getFipsApproved() & Capability.OPENPGP.bit) == Capability.OPENPGP.bit;
+
+            // after changing the user and admin PINs, we expect a FIPS capable device
+            // to be FIPS approved
+            if (isOpenPgpFipsCapable) {
+                assertNotNull(deviceInfo);
+                assertTrue("Device not OpenPgp FIPS approved as expected", FIPS_APPROVED);
+            }
+        }
+    }
+}
