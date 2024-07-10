@@ -19,9 +19,11 @@ package com.yubico.yubikit.testing.openpgp;
 import androidx.annotation.Nullable;
 
 import com.yubico.yubikit.core.smartcard.scp.ScpKid;
+import com.yubico.yubikit.testing.SlowTest;
 import com.yubico.yubikit.testing.framework.OpenPgpInstrumentedTests;
 
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -73,6 +75,7 @@ public class OpenPgpTests {
         }
 
         @Test
+        @Category(SlowTest.class)
         public void testGenerateRsaKeys() throws Throwable {
             withOpenPgpSession(OpenPgpDeviceTests::testGenerateRsaKeys);
         }

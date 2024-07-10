@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Yubico.
+ * Copyright (C) 2022-2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -80,7 +80,7 @@ public class TestActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         try {
-            yubiKitManager.startNfcDiscovery(new NfcConfiguration().timeout(15000), this, sessionQueue::add);
+            yubiKitManager.startNfcDiscovery(new NfcConfiguration().timeout(1000 * 60 * 5), this, sessionQueue::add);
         } catch (NfcNotAvailable e) {
             if (e.isDisabled()) {
                 logger.error("NFC is disabled", e);
@@ -139,7 +139,17 @@ public class TestActivity extends AppCompatActivity {
             setBusy(false);
         });
         if (device instanceof NfcYubiKeyDevice) {
-            ((NfcYubiKeyDevice) device).remove(lock::release);
+            // TODO make waitForRemoval configurable from a test case
+            final boolean waitForRemoval = false;
+
+            //noinspection ConstantValue
+            if (waitForRemoval) {
+                // this causes the app to wait for removal of NFC key from the NFC sensor
+                ((NfcYubiKeyDevice) device).remove(lock::release);
+            } else {
+                lock.release();
+            }
+
             lock.acquire();
         }
     }
