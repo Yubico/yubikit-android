@@ -17,6 +17,7 @@
 package com.yubico.yubikit.core.smartcard.scp;
 
 import com.yubico.yubikit.core.application.BadResponseException;
+import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.keys.PublicKeyValues;
 import com.yubico.yubikit.core.smartcard.Apdu;
 import com.yubico.yubikit.core.smartcard.ApduException;
@@ -27,6 +28,8 @@ import com.yubico.yubikit.core.util.Pair;
 import com.yubico.yubikit.core.util.RandomUtils;
 import com.yubico.yubikit.core.util.Tlv;
 import com.yubico.yubikit.core.util.Tlvs;
+
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -56,13 +59,14 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import javax.security.auth.DestroyFailedException;
-import javax.security.auth.Destroyable;
 
 
 /**
  * Internal SCP state class for managing SCP state, handling encryption/decryption and MAC.
  */
-public class ScpState implements Destroyable {
+public class ScpState {
+    private static final org.slf4j.Logger logger = LoggerFactory.getLogger(ScpState.class);
+
     private final SessionKeys keys;
     private byte[] macChain;
     private int encCounter = 1;
@@ -324,41 +328,22 @@ public class ScpState implements Destroyable {
 
             // 6 keys were derived. one for verification of receipt, 4 keys to use, and 1 which is discarded
             SecretKey key = keys.get(0);
-            try {
-                Mac mac = Mac.getInstance("AESCMAC");
-                mac.init(key);
-                byte[] genReceipt = mac.doFinal(keyAgreementData);
-                if (!MessageDigest.isEqual(receipt, genReceipt)) {
-                    throw new BadResponseException("Receipt does not match");
-                }
-                return new ScpState(new SessionKeys(
-                        keys.get(1),
-                        keys.get(2),
-                        keys.get(3),
-                        keys.get(4)
-                ), receipt);
-            } finally {
-                try {
-                    key.destroy();
-                    keys.get(5).destroy();
-                } catch (DestroyFailedException e) {
-                    // TODO: Log error
-                }
+            Mac mac = Mac.getInstance("AESCMAC");
+            mac.init(key);
+            byte[] genReceipt = mac.doFinal(keyAgreementData);
+            if (!MessageDigest.isEqual(receipt, genReceipt)) {
+                throw new BadResponseException("Receipt does not match");
             }
+            return new ScpState(new SessionKeys(
+                    keys.get(1),
+                    keys.get(2),
+                    keys.get(3),
+                    keys.get(4)
+            ), receipt);
         } catch (NoSuchAlgorithmException | InvalidKeySpecException |
                  InvalidAlgorithmParameterException | InvalidKeyException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    @Override
-    public void destroy() throws DestroyFailedException {
-        keys.destroy();
-    }
-
-    @Override
-    public boolean isDestroyed() {
-        return keys.isDestroyed();
     }
 
     static byte[] cbcEncrypt(SecretKey key, byte[] data) {

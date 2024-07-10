@@ -25,10 +25,8 @@ import javax.annotation.Nullable;
 import javax.crypto.Mac;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
-import javax.security.auth.DestroyFailedException;
-import javax.security.auth.Destroyable;
 
-public class StaticKeys implements Destroyable {
+public class StaticKeys {
     private static final byte[] DEFAULT_KEY = new byte[]{0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4a, 0x4b, 0x4c, 0x4d, 0x4e, 0x4f};
 
     final SecretKey enc;
@@ -36,34 +34,13 @@ public class StaticKeys implements Destroyable {
     @Nullable
     final SecretKey dek;
 
-    private boolean destroyed = false;
-
     public StaticKeys(byte[] enc, byte[] mac, @Nullable byte[] dek) {
         this.enc = new SecretKeySpec(enc, "AES");
         this.mac = new SecretKeySpec(mac, "AES");
         this.dek = dek != null ? new SecretKeySpec(dek, "AES") : null;
     }
 
-    @Override
-    public void destroy() throws DestroyFailedException {
-        enc.destroy();
-        mac.destroy();
-        if (dek != null) {
-            dek.destroy();
-        }
-        destroyed = true;
-    }
-
-    @Override
-    public boolean isDestroyed() {
-        return destroyed;
-    }
-
     public SessionKeys derive(byte[] context) {
-        if (destroyed) {
-            throw new SecurityException("StaticKeys has been destroyed");
-        }
-        // TODO: Implement
         return new SessionKeys(
                 deriveKey(enc, (byte) 0x4, context, (short) 0x80),
                 deriveKey(mac, (byte) 0x6, context, (short) 0x80),

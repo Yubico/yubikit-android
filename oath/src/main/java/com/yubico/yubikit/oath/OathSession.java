@@ -140,7 +140,7 @@ public class OathSession extends ApplicationSession<OathSession> {
     /**
      * Establishes a new session with a YubiKeys OATH application.
      *
-     * @param connection to the YubiKey
+     * @param connection   to the YubiKey
      * @param scpKeyParams SCP key parameters to establish a secure connection
      * @throws IOException                      in case of connection error
      * @throws ApplicationNotAvailableException if the application is missing or disabled
@@ -201,14 +201,10 @@ public class OathSession extends ApplicationSession<OathSession> {
             challenge = null;
             isAccessKeySet = false;
             if (scpKeyParams != null) {
-                if (!scpKeyParams.isDestroyed()) {
-                    try {
-                        protocol.initScp(scpKeyParams);
-                    } catch (BadResponseException e) {
-                        throw new IOException("Failed setting up SCP session", e);
-                    }
-                } else {
-                    Logger.warn(logger, "SCP session cannot be re-initialized, ScpKeyParams have been destroyed");
+                try {
+                    protocol.initScp(scpKeyParams);
+                } catch (BadResponseException e) {
+                    throw new IOException("Failed setting up SCP session", e);
                 }
             }
             Logger.info(logger, "OATH application data reset performed");

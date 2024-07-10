@@ -65,14 +65,4 @@ public class ScpProcessor extends ChainedResponseProcessor {
 
         return new ApduResponse(ByteBuffer.allocate(respData.length + 2).put(respData).putShort(resp.getSw()).array());
     }
-
-    @Override
-    public void close() throws IOException {
-        try {
-            state.destroy();
-        } catch (DestroyFailedException e) {
-            throw new IOException(e);
-        }
-        super.close();
-    }
 }

@@ -24,7 +24,6 @@ import java.util.Collections;
 import java.util.List;
 
 import javax.annotation.Nullable;
-import javax.security.auth.DestroyFailedException;
 
 /**
  * SCP key parameters for performing SCP11 authentication.
@@ -70,20 +69,5 @@ public class Scp11KeyParams implements ScpKeyParams {
     @Override
     public KeyRef getKeyRef() {
         return keyRef;
-    }
-
-    @Override
-    public void destroy() throws DestroyFailedException {
-        if (skOceEcka != null) {
-            skOceEcka.destroy();
-        }
-    }
-
-    @Override
-    public boolean isDestroyed() {
-        if (skOceEcka != null) {
-            return skOceEcka.isDestroyed();
-        }
-        return false;
     }
 }

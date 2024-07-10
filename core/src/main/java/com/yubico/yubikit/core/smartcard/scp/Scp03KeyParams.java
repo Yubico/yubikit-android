@@ -16,8 +16,6 @@
 
 package com.yubico.yubikit.core.smartcard.scp;
 
-import javax.security.auth.DestroyFailedException;
-
 /**
  * SCP key parameters for performing an SCP03 authentication.
  * SCP03 uses a set of three keys, each with their own KID, but a shared KVN.
@@ -41,15 +39,5 @@ public class Scp03KeyParams implements ScpKeyParams {
     @Override
     public KeyRef getKeyRef() {
         return keyRef;
-    }
-
-    @Override
-    public void destroy() throws DestroyFailedException {
-        keys.destroy();
-    }
-
-    @Override
-    public boolean isDestroyed() {
-        return keys.isDestroyed();
     }
 }

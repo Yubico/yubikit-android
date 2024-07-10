@@ -16,12 +16,10 @@
 
 package com.yubico.yubikit.core.smartcard.scp;
 
-import javax.security.auth.Destroyable;
-
 /**
  * SCP key parameters for performing an SCP authentication with a YubiKey.
  */
-public interface ScpKeyParams extends Destroyable {
+public interface ScpKeyParams {
     /**
      * @return the identifier of the SCP key to target on the YubiKey.
      */
