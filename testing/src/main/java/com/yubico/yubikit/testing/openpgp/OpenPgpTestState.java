@@ -19,7 +19,7 @@ package com.yubico.yubikit.testing.openpgp;
 import com.yubico.yubikit.openpgp.Pw;
 
 class OpenPgpTestState {
-    static char[] DEFAULT_PIN = Pw.DEFAULT_USER_PIN;
-    static char[] DEFAULT_ADMIN = Pw.DEFAULT_ADMIN_PIN;
+    static char[] USER_PIN = Pw.DEFAULT_USER_PIN;
+    static char[] ADMIN_PIN = Pw.DEFAULT_ADMIN_PIN;
     static boolean FIPS_APPROVED = false;
 }

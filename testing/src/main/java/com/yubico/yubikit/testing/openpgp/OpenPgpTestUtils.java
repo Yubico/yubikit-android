@@ -15,8 +15,8 @@
  */
 package com.yubico.yubikit.testing.openpgp;
 
-import static com.yubico.yubikit.testing.openpgp.OpenPgpTestState.DEFAULT_ADMIN;
-import static com.yubico.yubikit.testing.openpgp.OpenPgpTestState.DEFAULT_PIN;
+import static com.yubico.yubikit.testing.openpgp.OpenPgpTestState.ADMIN_PIN;
+import static com.yubico.yubikit.testing.openpgp.OpenPgpTestState.USER_PIN;
 import static com.yubico.yubikit.testing.openpgp.OpenPgpTestState.FIPS_APPROVED;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -42,8 +42,8 @@ public class OpenPgpTestUtils {
 
     public static void verifyAndSetup(YubiKeyDevice device, @Nullable Byte kid) throws Throwable {
 
-        OpenPgpTestState.DEFAULT_PIN = Pw.DEFAULT_USER_PIN;
-        OpenPgpTestState.DEFAULT_ADMIN = Pw.DEFAULT_ADMIN_PIN;
+        OpenPgpTestState.USER_PIN = Pw.DEFAULT_USER_PIN;
+        OpenPgpTestState.ADMIN_PIN = Pw.DEFAULT_ADMIN_PIN;
 
         boolean isOpenPgpFipsCapable;
         boolean hasPinComplexity;
@@ -82,10 +82,10 @@ public class OpenPgpTestUtils {
 
             if (hasPinComplexity) {
                 // only use complex pins if pin complexity is required
-                openPgp.changeUserPin(DEFAULT_PIN, COMPLEX_USER_PIN);
-                openPgp.changeAdminPin(DEFAULT_ADMIN, COMPLEX_ADMIN_PIN);
-                OpenPgpTestState.DEFAULT_PIN = COMPLEX_USER_PIN;
-                OpenPgpTestState.DEFAULT_ADMIN = COMPLEX_ADMIN_PIN;
+                openPgp.changeUserPin(USER_PIN, COMPLEX_USER_PIN);
+                openPgp.changeAdminPin(ADMIN_PIN, COMPLEX_ADMIN_PIN);
+                OpenPgpTestState.USER_PIN = COMPLEX_USER_PIN;
+                OpenPgpTestState.ADMIN_PIN = COMPLEX_ADMIN_PIN;
             }
 
             ManagementSession managementSession = new ManagementSession(connection);
