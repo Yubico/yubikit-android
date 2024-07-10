@@ -30,7 +30,6 @@ import com.yubico.yubikit.core.keys.PrivateKeyValues;
 import com.yubico.yubikit.core.keys.PublicKeyValues;
 import com.yubico.yubikit.core.smartcard.Apdu;
 import com.yubico.yubikit.core.smartcard.ApduException;
-import com.yubico.yubikit.core.smartcard.ApduFormat;
 import com.yubico.yubikit.core.smartcard.AppId;
 import com.yubico.yubikit.core.smartcard.SW;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
@@ -198,6 +197,7 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
             versionBytes[i] = decodeBcd(versionBcd[i]);
         }
         version = Version.fromBytes(versionBytes);
+        // version = new Version (5,7, 2);
         protocol.configure(version);
 
         // Note: This value is cached!
@@ -824,7 +824,8 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
         if (!supported.containsKey(keyRef)) {
             throw new UnsupportedOperationException("Key slot not supported");
         }
-        if (!supported.get(keyRef).contains(attributes)) {
+        List<AlgorithmAttributes> supportedAttributes = supported.get(keyRef);
+        if (!supportedAttributes.contains(attributes)) {
             throw new UnsupportedOperationException("Algorithm attributes not supported: " + attributes);
         }
 
