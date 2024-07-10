@@ -48,7 +48,7 @@ public class ScpProcessor extends ChainedResponseProcessor {
         // Calculate and add MAC to data
         byte[] macedData = new byte[data.length + 8];
         System.arraycopy(data, 0, macedData, 0, data.length);
-        byte[] apduData = processor.formatApdu(cla, apdu.getIns(), apdu.getP1(), apdu.getP2(), macedData, 0, macedData.length, apdu.getLe());
+        byte[] apduData = processor.formatApdu(cla, apdu.getIns(), apdu.getP1(), apdu.getP2(), macedData, 0, macedData.length, 0);
         byte[] mac = state.mac(Arrays.copyOf(apduData, apduData.length - 8));
         System.arraycopy(mac, 0, macedData, macedData.length - 8, 8);
 
