@@ -16,6 +16,7 @@
 
 package com.yubico.yubikit.testing;
 
+import com.yubico.yubikit.testing.oath.OathTests;
 import com.yubico.yubikit.testing.openpgp.OpenPgpTests;
 import com.yubico.yubikit.testing.piv.PivTests;
 
@@ -29,6 +30,7 @@ import org.junit.runners.Suite;
 @Suite.SuiteClasses({
         PivTests.class,
         OpenPgpTests.class,
+        OathTests.class
 })
 public class DeviceTests {
 }
