@@ -16,9 +16,6 @@
 
 package com.yubico.yubikit.testing.fido;
 
-import androidx.test.filters.LargeTest;
-
-import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV2;
 import com.yubico.yubikit.testing.framework.FidoInstrumentedTests;
 
 import org.junit.Test;
@@ -27,27 +24,16 @@ import org.junit.Test;
  * NOTE: Run the testcases in this suite manually one by one. See test case documentation
  * and reset the FIDO application where needed.
  */
-@LargeTest
 public class Ctap2ConfigInstrumentedTests extends FidoInstrumentedTests {
 
     @Test
     public void testReadWriteEnterpriseAttestation() throws Throwable {
-        withCtap2Session(
-                "Device has no support for EnterpriseAttestation",
-                (ignoredDevice, session) -> session.getInfo().getOptions().containsKey("ep"),
-                Ctap2ConfigTests::testReadWriteEnterpriseAttestation,
-                new PinUvAuthProtocolV2()
-        );
+        withCtap2Session(Ctap2ConfigTests::testReadWriteEnterpriseAttestation);
     }
 
     @Test
     public void testToggleAlwaysUv() throws Throwable {
-        withCtap2Session(
-                "Device has no support for alwaysUV",
-                (ignoredDevice, session) -> session.getInfo().getOptions().containsKey("alwaysUv"),
-                Ctap2ConfigTests::testToggleAlwaysUv,
-                new PinUvAuthProtocolV2()
-        );
+        withCtap2Session(Ctap2ConfigTests::testToggleAlwaysUv);
     }
 
     /**
@@ -57,10 +43,7 @@ public class Ctap2ConfigInstrumentedTests extends FidoInstrumentedTests {
      */
     @Test
     public void testSetForcePinChange() throws Throwable {
-        withCtap2Session(
-                Ctap2ConfigTests::testSetForcePinChange,
-                new PinUvAuthProtocolV2()
-        );
+        withCtap2Session(Ctap2ConfigTests::testSetForcePinChange);
     }
 
     /**
@@ -70,9 +53,6 @@ public class Ctap2ConfigInstrumentedTests extends FidoInstrumentedTests {
      */
     @Test
     public void testSetMinPinLength() throws Throwable {
-        withCtap2Session(
-                Ctap2ConfigTests::testSetMinPinLength,
-                new PinUvAuthProtocolV2()
-        );
+        withCtap2Session(Ctap2ConfigTests::testSetMinPinLength);
     }
 }

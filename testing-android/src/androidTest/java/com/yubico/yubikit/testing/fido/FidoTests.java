@@ -16,16 +16,20 @@
 
 package com.yubico.yubikit.testing.fido;
 
-import androidx.test.filters.LargeTest;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
-import com.yubico.yubikit.testing.framework.FidoInstrumentedTests;
-
-import org.junit.Test;
-
-@LargeTest
-public class Ctap2BioEnrollmentInstrumentedTests extends FidoInstrumentedTests {
-    @Test
-    public void testFingerprintEnrollment() throws Throwable {
-        withCtap2Session(Ctap2BioEnrollmentTests::testFingerprintEnrollment);
-    }
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+        BasicWebAuthnClientInstrumentedTests.class,
+        Ctap2BioEnrollmentInstrumentedTests.class,
+        Ctap2ClientPinInstrumentedTests.class,
+        Ctap2ConfigInstrumentedTests.class,
+        Ctap2CredentialManagementInstrumentedTests.class,
+        Ctap2SessionInstrumentedTests.class,
+        Ctap2SessionResetInstrumentedTests.class,
+        EnterpriseAttestationInstrumentedTests.class,
+        UvDiscouragedInstrumentedTests.class,
+})
+public class FidoTests {
 }

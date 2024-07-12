@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Yubico.
+ * Copyright (C) 2022-2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,65 +16,39 @@
 
 package com.yubico.yubikit.testing.fido;
 
-import static com.yubico.yubikit.testing.fido.Ctap2ClientPinInstrumentedTests.supportsPinUvAuthProtocol;
-
-import androidx.test.filters.LargeTest;
-
-import com.yubico.yubikit.fido.ctap.CredentialManagement;
-import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV1;
-import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV2;
+import com.yubico.yubikit.testing.PinUvAuthProtocolV1Category;
 import com.yubico.yubikit.testing.framework.FidoInstrumentedTests;
 
 import org.junit.Test;
-import org.junit.experimental.runners.Enclosed;
+import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.runners.Suite;
 
-import java.util.Arrays;
-import java.util.Collection;
-
-@RunWith(Enclosed.class)
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+        Ctap2CredentialManagementInstrumentedTests.PinUvAuthV2Test.class,
+        Ctap2CredentialManagementInstrumentedTests.PinUvAuthV1Test.class,
+})
 public class Ctap2CredentialManagementInstrumentedTests {
-
-    static boolean isCredentialManagementSupported(Ctap2Session session) {
-        final Ctap2Session.InfoData info = session.getCachedInfo();
-        return CredentialManagement.isSupported(info);
-    }
-
-    @LargeTest
-    @RunWith(Parameterized.class)
-    public static class Ctap2CredentialManagementParametrizedTests extends FidoInstrumentedTests {
-
-        @Parameterized.Parameter
-        public PinUvAuthProtocol pinUvAuthProtocol;
-
-        @Parameterized.Parameters
-        public static Collection<PinUvAuthProtocol> data() {
-            return Arrays.asList(
-                    new PinUvAuthProtocolV1(),
-                    new PinUvAuthProtocolV2());
-        }
-
+    public static class PinUvAuthV2Test extends FidoInstrumentedTests {
         @Test
         public void testReadMetadata() throws Throwable {
-            withCtap2Session(
-                    "Credential management or PIN/UV Auth protocol not supported",
-                    (device, session) -> isCredentialManagementSupported(session) &&
-                            supportsPinUvAuthProtocol(session, pinUvAuthProtocol),
-                    Ctap2CredentialManagementTests::testReadMetadata,
-                    pinUvAuthProtocol);
+            withCtap2Session(Ctap2CredentialManagementTests::testReadMetadata);
         }
 
         @Test
         public void testManagement() throws Throwable {
-            withCtap2Session(
-                    "Credential management or PIN/UV Auth protocol not supported",
-                    (device, session) -> isCredentialManagementSupported(session) &&
-                            supportsPinUvAuthProtocol(session, pinUvAuthProtocol),
-                    Ctap2CredentialManagementTests::testManagement,
-                    pinUvAuthProtocol);
+            withCtap2Session(Ctap2CredentialManagementTests::testManagement);
+        }
+    }
+
+    @Category(PinUvAuthProtocolV1Category.class)
+    public static class PinUvAuthV1Test extends PinUvAuthV2Test {
+        @Override
+        protected PinUvAuthProtocol getPinUvAuthProtocol() {
+            return new PinUvAuthProtocolV1();
         }
     }
 }

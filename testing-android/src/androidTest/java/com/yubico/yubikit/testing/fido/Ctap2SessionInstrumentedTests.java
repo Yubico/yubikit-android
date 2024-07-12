@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Yubico.
+ * Copyright (C) 2022-2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,63 +16,44 @@
 
 package com.yubico.yubikit.testing.fido;
 
-import static com.yubico.yubikit.testing.fido.Ctap2ClientPinInstrumentedTests.supportsPinUvAuthProtocol;
-
-import androidx.test.filters.LargeTest;
-
-import com.yubico.yubikit.android.transport.usb.UsbYubiKeyDevice;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV1;
-import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV2;
+import com.yubico.yubikit.testing.PinUvAuthProtocolV1Category;
 import com.yubico.yubikit.testing.framework.FidoInstrumentedTests;
 
 import org.junit.Test;
-import org.junit.experimental.runners.Enclosed;
+import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.runners.Suite;
 
-import java.util.Arrays;
-import java.util.Collection;
-
-@RunWith(Enclosed.class)
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+        Ctap2SessionInstrumentedTests.PinUvAuthV2Test.class,
+        Ctap2SessionInstrumentedTests.PinUvAuthV1Test.class,
+})
 public class Ctap2SessionInstrumentedTests {
-    @LargeTest
-    @RunWith(Parameterized.class)
-    public static class Ctap2SessionParametrizedTests extends FidoInstrumentedTests {
-        @Parameterized.Parameter
-        public PinUvAuthProtocol pinUvAuthProtocol;
-
-        @Parameterized.Parameters
-        public static Collection<PinUvAuthProtocol> data() {
-            return Arrays.asList(
-                    new PinUvAuthProtocolV1(),
-                    new PinUvAuthProtocolV2());
-        }
-
+    public static class PinUvAuthV2Test extends FidoInstrumentedTests {
         @Test
         public void testCtap2GetInfo() throws Throwable {
-            withCtap2Session(
-                    (device, session) -> supportsPinUvAuthProtocol(session, pinUvAuthProtocol),
-                    Ctap2SessionTests::testCtap2GetInfo,
-                    pinUvAuthProtocol);
+            withCtap2Session(Ctap2SessionTests::testCtap2GetInfo);
         }
 
         @Test
         public void testCancelCborCommandImmediate() throws Throwable {
-            withCtap2Session(
-                    (device, session) -> device instanceof UsbYubiKeyDevice &&
-                            supportsPinUvAuthProtocol(session, pinUvAuthProtocol),
-                    Ctap2SessionTests::testCancelCborCommandImmediate,
-                    pinUvAuthProtocol);
+            withCtap2Session(Ctap2SessionTests::testCancelCborCommandImmediate);
         }
 
         @Test
         public void testCancelCborCommandAfterDelay() throws Throwable {
-            withCtap2Session(
-                    (device, session) -> device instanceof UsbYubiKeyDevice &&
-                            supportsPinUvAuthProtocol(session, pinUvAuthProtocol),
-                    Ctap2SessionTests::testCancelCborCommandAfterDelay,
-                    pinUvAuthProtocol);
+            withCtap2Session(Ctap2SessionTests::testCancelCborCommandAfterDelay);
+        }
+    }
+
+    @Category(PinUvAuthProtocolV1Category.class)
+    public static class PinUvAuthV1Test extends PinUvAuthV2Test {
+        @Override
+        protected PinUvAuthProtocol getPinUvAuthProtocol() {
+            return new PinUvAuthProtocolV1();
         }
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Yubico.
+ * Copyright (C) 2020-2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,13 +24,13 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 
 import com.yubico.yubikit.core.application.CommandState;
 import com.yubico.yubikit.core.fido.CtapException;
 import com.yubico.yubikit.fido.ctap.ClientPin;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
-import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
-import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV1;
 import com.yubico.yubikit.fido.webauthn.SerializationType;
 
 import java.util.Collections;
@@ -68,17 +68,18 @@ public class Ctap2SessionTests {
         assertTrue("PIN protocol incorrect", pinUvAuthProtocols.contains(1));
     }
 
-    public static void testCancelCborCommandImmediate(Ctap2Session session, Object... args) throws Throwable {
-        doTestCancelCborCommand(session, Ctap2ClientPinTests.getPinUvAuthProtocol(args), false);
+    public static void testCancelCborCommandImmediate(Ctap2Session session) throws Throwable {
+        doTestCancelCborCommand(session, false);
     }
 
-    public static void testCancelCborCommandAfterDelay(Ctap2Session session, Object... args) throws Throwable {
-
-        doTestCancelCborCommand(session, Ctap2ClientPinTests.getPinUvAuthProtocol(args), true);
+    public static void testCancelCborCommandAfterDelay(Ctap2Session session) throws Throwable {
+        doTestCancelCborCommand(session, true);
     }
 
-    public static void testReset(Ctap2Session session, Object... ignoredArgs) throws Throwable {
-        // assumeThat("Connected over NFC", device, instanceOf(NfcYubiKeyDevice.class));
+    public static void testReset(Ctap2Session session) throws Throwable {
+        assumeFalse("Skipping reset test - authenticator supports bio enrollment",
+                session.getCachedInfo().getOptions().containsKey("bioEnroll"));
+
         session.reset(null);
 
         // Verify that the pin is no longer configured
@@ -89,18 +90,21 @@ public class Ctap2SessionTests {
 
     private static void doTestCancelCborCommand(
             Ctap2Session session,
-            PinUvAuthProtocol pinUvAuthProtocol,
             boolean delay
     ) throws Throwable {
-        ensureDefaultPinSet(session, pinUvAuthProtocol);
 
-        ClientPin pin = new ClientPin(session, new PinUvAuthProtocolV1());
+        assumeTrue("Not a USB connection", TestData.TRANSPORT_USB);
+
+        // ensureDefaultPinSet(session);
+
+        ClientPin pin = new ClientPin(session, TestData.PIN_UV_AUTH_PROTOCOL);
         byte[] pinToken = pin.getPinToken(TestData.PIN, ClientPin.PIN_PERMISSION_MC, TestData.RP.getId());
         byte[] pinAuth = pin.getPinUvAuth().authenticate(pinToken, TestData.CLIENT_DATA_HASH);
 
         CommandState state = new CommandState();
         if (delay) {
-            Executors.newSingleThreadScheduledExecutor().schedule(state::cancel, 500, TimeUnit.MILLISECONDS);
+            Executors.newSingleThreadScheduledExecutor()
+                    .schedule(state::cancel, 500, TimeUnit.MILLISECONDS);
         } else {
             state.cancel();
         }

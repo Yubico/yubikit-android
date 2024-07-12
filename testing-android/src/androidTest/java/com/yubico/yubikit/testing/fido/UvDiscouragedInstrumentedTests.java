@@ -16,30 +16,16 @@
 
 package com.yubico.yubikit.testing.fido;
 
-import androidx.test.filters.LargeTest;
-
 import com.yubico.yubikit.fido.client.PinRequiredClientError;
-import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.testing.framework.FidoInstrumentedTests;
 
 import org.junit.Test;
 
-@LargeTest
 public class UvDiscouragedInstrumentedTests extends FidoInstrumentedTests {
-
-    static boolean hasPin(Ctap2Session session) {
-        final Ctap2Session.InfoData info = session.getCachedInfo();
-        return Boolean.TRUE.equals(info.getOptions().get("clientPin"));
-    }
-
     @Test
     public void testMakeCredentialGetAssertion() throws Throwable {
-        withCtap2Session(
-                "This device has a PIN set",
-                (device, session) -> !hasPin(session),
-                BasicWebAuthnClientTests::testUvDiscouragedMakeCredentialGetAssertion);
+        withCtap2Session(BasicWebAuthnClientTests::testUvDiscouragedMakeCredentialGetAssertionWithoutPin);
     }
-
 
     /**
      * Run this test only on devices with PIN set
@@ -47,9 +33,6 @@ public class UvDiscouragedInstrumentedTests extends FidoInstrumentedTests {
      */
     @Test(expected = PinRequiredClientError.class)
     public void testMakeCredentialGetAssertionOnProtected() throws Throwable {
-        withCtap2Session(
-                "This device has no PIN set",
-                (device, session) -> hasPin(session),
-                BasicWebAuthnClientTests::testUvDiscouragedMakeCredentialGetAssertion);
+        withCtap2Session(BasicWebAuthnClientTests::testUvDiscouragedMakeCredentialGetAssertionWithPin);
     }
 }

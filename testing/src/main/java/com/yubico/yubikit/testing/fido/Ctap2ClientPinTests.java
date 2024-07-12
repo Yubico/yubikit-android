@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Yubico.
+ * Copyright (C) 2020-2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,28 +25,19 @@ import com.yubico.yubikit.core.application.CommandException;
 import com.yubico.yubikit.core.fido.CtapException;
 import com.yubico.yubikit.fido.ctap.ClientPin;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
-import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
-import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV1;
 
 import java.io.IOException;
 import java.util.Objects;
 
 public class Ctap2ClientPinTests {
-
-    static PinUvAuthProtocol getPinUvAuthProtocol(Object... args) {
-        assertThat("Missing required argument: PinUvAuthProtocol", args.length > 0);
-        return (PinUvAuthProtocol) args[0];
-    }
-
     /**
      * Attempts to set (or verify) the default PIN, or fails.
      */
-    static void ensureDefaultPinSet(Ctap2Session session, PinUvAuthProtocol pinUvAuthProtocol)
-            throws IOException, CommandException {
+    static void ensureDefaultPinSet(Ctap2Session session) throws IOException, CommandException {
 
-        Ctap2Session.InfoData info = session.getCachedInfo();
+        Ctap2Session.InfoData info = session.getInfo();
 
-        ClientPin pin = new ClientPin(session, pinUvAuthProtocol);
+        ClientPin pin = new ClientPin(session, TestData.PIN_UV_AUTH_PROTOCOL);
         boolean pinSet = Objects.requireNonNull((Boolean) info.getOptions().get("clientPin"));
 
         if (!pinSet) {
@@ -59,21 +50,16 @@ public class Ctap2ClientPinTests {
         }
     }
 
-    public static void testSetPinProtocol(Ctap2Session session, Object... args) throws Throwable {
-
-        assertThat("Missing required argument: PinUvAuthProtocol", args.length > 0);
-
-        final PinUvAuthProtocol pinUvAuthProtocol = (PinUvAuthProtocol) args[0];
-
-        char[] otherPin = "123123".toCharArray();
+    public static void testClientPin(Ctap2Session session) throws Throwable {
+        char[] otherPin = "12312312".toCharArray();
 
         Integer permissions = ClientPin.PIN_PERMISSION_MC | ClientPin.PIN_PERMISSION_GA;
         String permissionRpId = "localhost";
 
-        ensureDefaultPinSet(session, pinUvAuthProtocol);
+        // ensureDefaultPinSet(session);
 
-        ClientPin pin = new ClientPin(session, new PinUvAuthProtocolV1());
-        assertThat(pin.getPinUvAuth().getVersion(), is(1));
+        ClientPin pin = new ClientPin(session, TestData.PIN_UV_AUTH_PROTOCOL);
+        assertThat(pin.getPinUvAuth().getVersion(), is(TestData.PIN_UV_AUTH_PROTOCOL.getVersion()));
         assertThat(pin.getPinRetries().getCount(), is(8));
 
         pin.changePin(TestData.PIN, otherPin);
@@ -90,5 +76,4 @@ public class Ctap2ClientPinTests {
         assertThat(pin.getPinRetries().getCount(), is(8));
         pin.changePin(otherPin, TestData.PIN);
     }
-
 }

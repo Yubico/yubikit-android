@@ -17,6 +17,7 @@
 package com.yubico.yubikit.testing;
 
 import com.yubico.yubikit.testing.mpe.MultiProtocolResetTests;
+import com.yubico.yubikit.testing.fido.FidoTests;
 import com.yubico.yubikit.testing.oath.OathTests;
 import com.yubico.yubikit.testing.openpgp.OpenPgpTests;
 import com.yubico.yubikit.testing.piv.PivTests;
@@ -32,7 +33,8 @@ import org.junit.runners.Suite;
         PivTests.class,
         OpenPgpTests.class,
         OathTests.class,
-        MultiProtocolResetTests.class
+        MultiProtocolResetTests.class,
+        FidoTests.class
 })
 public class DeviceTests {
 }

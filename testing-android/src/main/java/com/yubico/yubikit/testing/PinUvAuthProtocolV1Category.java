@@ -16,18 +16,5 @@
 
 package com.yubico.yubikit.testing;
 
-import org.junit.experimental.categories.Categories;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-
-/**
- * These tests are here to make testing a bit faster and exclude following:
- * <ul>
- *     <li>{@link SlowTest}</li>
- * </ul>
- */
-@RunWith(Categories.class)
-@Suite.SuiteClasses(DeviceTests.class)
-@Categories.ExcludeCategory(SlowTest.class)
-public class FastDeviceTests {
+public interface PinUvAuthProtocolV1Category {
 }

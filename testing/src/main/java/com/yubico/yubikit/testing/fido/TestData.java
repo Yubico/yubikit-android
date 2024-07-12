@@ -17,6 +17,7 @@
 package com.yubico.yubikit.testing.fido;
 
 import com.squareup.moshi.Moshi;
+import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialParameters;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialRpEntity;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialType;
@@ -42,7 +43,12 @@ class TestData {
         }
     }
 
-    public static final char[] PIN = "123456".toCharArray();
+    // state
+    public static PinUvAuthProtocol PIN_UV_AUTH_PROTOCOL;
+    public static boolean TRANSPORT_USB = false;
+    public static boolean FIPS_APPROVED = false;
+
+    public static final char[] PIN = "11234567".toCharArray();
 
     public static final String RP_ID = "example.com";
     public static final String RP_NAME = "Example Company";

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Yubico.
+ * Copyright (C) 2022-2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,53 +16,34 @@
 
 package com.yubico.yubikit.testing.fido;
 
-import androidx.test.filters.LargeTest;
-
-import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV1;
-import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV2;
+import com.yubico.yubikit.testing.PinUvAuthProtocolV1Category;
 import com.yubico.yubikit.testing.framework.FidoInstrumentedTests;
 
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
-import java.util.List;
-
-@LargeTest
-public class Ctap2ClientPinInstrumentedTests extends FidoInstrumentedTests {
-
-    public static boolean supportsPinUvAuthProtocol(
-            Ctap2Session session,
-            PinUvAuthProtocol pinUvAuthProtocol) {
-        return supportsPinUvAuthProtocol(session, pinUvAuthProtocol.getVersion());
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+        Ctap2ClientPinInstrumentedTests.PinUvAuthV2Test.class,
+        Ctap2ClientPinInstrumentedTests.PinUvAuthV1Test.class,
+})
+public class Ctap2ClientPinInstrumentedTests {
+    public static class PinUvAuthV2Test extends FidoInstrumentedTests {
+        @Test
+        public void testClientPin() throws Throwable {
+            withCtap2Session(Ctap2ClientPinTests::testClientPin);
+        }
     }
 
-    public static boolean supportsPinUvAuthProtocol(
-            Ctap2Session session,
-            int pinUvAuthProtocolVersion) {
-        final List<Integer> pinUvAuthProtocols =
-                session.getCachedInfo().getPinUvAuthProtocols();
-        return pinUvAuthProtocols.contains(pinUvAuthProtocolVersion);
-    }
-
-    @Test
-    public void testSetPinProtocolV1() throws Throwable {
-        withCtap2Session(
-                Ctap2ClientPinTests::testSetPinProtocol,
-                new PinUvAuthProtocolV1()
-        );
-    }
-
-    @Test
-    public void testSetPinProtocolV2() throws Throwable {
-        final PinUvAuthProtocol pinUvAuthProtocol = new PinUvAuthProtocolV2();
-        withCtap2Session(
-                "PIN/UV Auth Protocol not supported",
-                (device, session) -> supportsPinUvAuthProtocol(
-                        session,
-                        pinUvAuthProtocol),
-                Ctap2ClientPinTests::testSetPinProtocol,
-                pinUvAuthProtocol
-        );
+   @Category(PinUvAuthProtocolV1Category.class)
+    public static class PinUvAuthV1Test extends PinUvAuthV2Test {
+        @Override
+        protected PinUvAuthProtocol getPinUvAuthProtocol() {
+            return new PinUvAuthProtocolV1();
+        }
     }
 }

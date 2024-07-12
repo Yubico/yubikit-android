@@ -16,59 +16,36 @@
 
 package com.yubico.yubikit.testing.fido;
 
+import static com.yubico.yubikit.testing.fido.Ctap2ClientPinTests.ensureDefaultPinSet;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
-import com.yubico.yubikit.core.application.CommandException;
 import com.yubico.yubikit.core.fido.CtapException;
+import com.yubico.yubikit.fido.ctap.BioEnrollment;
 import com.yubico.yubikit.fido.ctap.ClientPin;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.fido.ctap.FingerprintBioEnrollment;
-import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
 import com.yubico.yubikit.testing.piv.PivCertificateTests;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Map;
-import java.util.Objects;
 
 public class Ctap2BioEnrollmentTests {
 
     private static final Logger logger = LoggerFactory.getLogger(PivCertificateTests.class);
 
-    static PinUvAuthProtocol getPinUvAuthProtocol(Object... args) {
-        assertThat("Missing required argument: PinUvAuthProtocol", args.length > 0);
-        return (PinUvAuthProtocol) args[0];
-    }
+    public static void testFingerprintEnrollment(Ctap2Session session) throws Throwable {
 
-    /**
-     * Attempts to set (or verify) the default PIN, or fails.
-     */
-    static void ensureDefaultPinSet(Ctap2Session session, PinUvAuthProtocol pinUvAuthProtocol)
-            throws IOException, CommandException {
+        assumeTrue(" Bio enrollment not supported",
+                BioEnrollment.isSupported(session.getCachedInfo()));
 
-        Ctap2Session.InfoData info = session.getCachedInfo();
-
-        ClientPin pin = new ClientPin(session, pinUvAuthProtocol);
-        boolean pinSet = Objects.requireNonNull((Boolean) info.getOptions().get("clientPin"));
-
-        if (!pinSet) {
-            pin.setPin(TestData.PIN);
-        } else {
-            pin.getPinToken(
-                    TestData.PIN,
-                    ClientPin.PIN_PERMISSION_BE,
-                    "localhost");
-        }
-    }
-
-    public static void testFingerprintEnrollment(Ctap2Session session, Object... args) throws Throwable {
-        final FingerprintBioEnrollment fingerprintBioEnrollment = fpBioEnrollment(session, args);
+        final FingerprintBioEnrollment fingerprintBioEnrollment = fpBioEnrollment(session);
 
         removeAllFingerprints(fingerprintBioEnrollment);
 
@@ -123,21 +100,17 @@ public class Ctap2BioEnrollmentTests {
     }
 
     private static FingerprintBioEnrollment fpBioEnrollment(
-            Ctap2Session session,
-            Object... args) throws Throwable {
+            Ctap2Session session) throws Throwable {
 
-        assertThat("Missing required argument: PinUvAuthProtocol", args.length > 0);
-        final PinUvAuthProtocol pinUvAuthProtocol = getPinUvAuthProtocol(args);
+        // ensureDefaultPinSet(session);
 
-        ensureDefaultPinSet(session, pinUvAuthProtocol);
-
-        final ClientPin pin = new ClientPin(session, pinUvAuthProtocol);
+        final ClientPin pin = new ClientPin(session, TestData.PIN_UV_AUTH_PROTOCOL);
         final byte[] pinToken = pin.getPinToken(
                 TestData.PIN,
                 ClientPin.PIN_PERMISSION_BE,
                 "localhost");
 
-        return new FingerprintBioEnrollment(session, pinUvAuthProtocol, pinToken);
+        return new FingerprintBioEnrollment(session, TestData.PIN_UV_AUTH_PROTOCOL, pinToken);
     }
 
     public static void renameFingerprint(
