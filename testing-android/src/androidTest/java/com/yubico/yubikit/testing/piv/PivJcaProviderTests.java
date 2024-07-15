@@ -19,12 +19,13 @@ package com.yubico.yubikit.testing.piv;
 import javax.annotation.Nullable;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
-import androidx.test.filters.LargeTest;
 
 import com.yubico.yubikit.core.smartcard.scp.ScpKid;
+import com.yubico.yubikit.testing.SlowTest;
 import com.yubico.yubikit.testing.framework.PivInstrumentedTests;
 
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 
 @RunWith(AndroidJUnit4.class)
@@ -32,13 +33,13 @@ public class PivJcaProviderTests {
 
     public static class NoScpTests extends PivInstrumentedTests {
         @Test
-        @LargeTest
+        @Category(SlowTest.class)
         public void testGenerateKeys() throws Throwable {
             withPivSession(PivJcaDeviceTests::testGenerateKeys);
         }
 
         @Test
-        @LargeTest
+        @Category(SlowTest.class)
         public void testGenerateKeysPreferBC() throws Throwable {
             withPivSession(PivJcaDeviceTests::testGenerateKeysPreferBC);
         }
@@ -50,13 +51,13 @@ public class PivJcaProviderTests {
         }
 
         @Test
-        @LargeTest
+        @Category(SlowTest.class)
         public void testSigning() throws Throwable {
             withPivSession(PivJcaSigningTests::testSign);
         }
 
         @Test
-        @LargeTest
+        @Category(SlowTest.class)
         public void testDecrypt() throws Throwable {
             withPivSession(PivJcaDecryptTests::testDecrypt);
         }

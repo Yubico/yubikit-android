@@ -24,14 +24,20 @@ import com.yubico.yubikit.testing.fido.FidoTestUtils;
 import java.util.Optional;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import javax.annotation.Nullable;
+
 public class FidoInstrumentedTests extends YKInstrumentedTests {
     public interface Callback {
         void invoke(Ctap2Session session) throws Throwable;
     }
 
     protected void withCtap2Session(Callback callback) throws Throwable {
+        withCtap2Session(callback, true);
+    }
 
-        FidoTestUtils.verifyAndSetup(device, getPinUvAuthProtocol());
+    protected void withCtap2Session(Callback callback, boolean setPin) throws Throwable {
+
+        FidoTestUtils.verifyAndSetup(device, getPinUvAuthProtocol(), setPin);
 
         LinkedBlockingQueue<Optional<Throwable>> result = new LinkedBlockingQueue<>();
         Ctap2Session.create(device, value -> {

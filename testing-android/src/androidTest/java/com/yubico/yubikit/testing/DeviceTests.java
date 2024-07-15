@@ -26,7 +26,12 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 /**
- * All integration tests.
+ * All integration tests for PIV, OpenPGP and OATH.
+ * <p>
+ * The YubiKey applications will be reset several times.
+ * <p>
+ * FIDO integration tests cannot be ran in this suite and can be found in
+ * {@link com.yubico.yubikit.testing.fido.FidoTests}
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({

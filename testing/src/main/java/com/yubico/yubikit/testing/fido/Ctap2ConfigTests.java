@@ -16,11 +16,14 @@
 
 package com.yubico.yubikit.testing.fido;
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 import static java.lang.Boolean.TRUE;
 
@@ -34,7 +37,6 @@ import java.io.IOException;
 public class Ctap2ConfigTests {
 
     static Config getConfig(Ctap2Session session) throws IOException, CommandException {
-        // Ctap2ClientPinTests.ensureDefaultPinSet(session);
         ClientPin clientPin = new ClientPin(session, TestData.PIN_UV_AUTH_PROTOCOL);
         byte[] pinToken = clientPin.getPinToken(TestData.PIN, ClientPin.PIN_PERMISSION_ACFG, null);
         return new Config(session, TestData.PIN_UV_AUTH_PROTOCOL, pinToken);
@@ -60,10 +62,23 @@ public class Ctap2ConfigTests {
     public static void testSetForcePinChange(Ctap2Session session) throws Throwable {
         assumeTrue("authenticatorConfig not supported",
                 Config.isSupported(session.getCachedInfo()));
-        assertFalse(session.getInfo().getForcePinChange());
+        assumeFalse("Force PIN change already set. Reset key and retry", session.getInfo().getForcePinChange());
         Config config = getConfig(session);
         config.setMinPinLength(null, null, true);
         assertTrue(session.getInfo().getForcePinChange());
+
+        // set a new PIN
+        ClientPin pin = new ClientPin(session, TestData.PIN_UV_AUTH_PROTOCOL);
+        assertThat(pin.getPinUvAuth().getVersion(), is(TestData.PIN_UV_AUTH_PROTOCOL.getVersion()));
+        assertThat(pin.getPinRetries().getCount(), is(8));
+
+        pin.changePin(TestData.PIN, TestData.OTHER_PIN);
+        assertFalse(session.getInfo().getForcePinChange());
+
+        // set to a default PIN
+        pin.changePin(TestData.OTHER_PIN, TestData.PIN);
+        assertFalse(session.getInfo().getForcePinChange());
+
     }
 
     public static void testSetMinPinLength(Ctap2Session session) throws Throwable {

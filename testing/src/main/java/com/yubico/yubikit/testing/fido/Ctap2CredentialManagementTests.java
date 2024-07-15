@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Yubico.
+ * Copyright (C) 2020-2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,7 +58,6 @@ public class Ctap2CredentialManagementTests {
         assumeTrue("Credential management not supported",
                 CredentialManagement.isSupported(session.getCachedInfo()));
 
-        // Ctap2ClientPinTests.ensureDefaultPinSet(session);
         ClientPin clientPin = new ClientPin(session, TestData.PIN_UV_AUTH_PROTOCOL);
 
         return new CredentialManagement(

@@ -16,7 +16,6 @@
 
 package com.yubico.yubikit.testing.fido;
 
-import static com.yubico.yubikit.testing.fido.Ctap2ClientPinTests.ensureDefaultPinSet;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
@@ -94,8 +93,6 @@ public class Ctap2SessionTests {
     ) throws Throwable {
 
         assumeTrue("Not a USB connection", TestData.TRANSPORT_USB);
-
-        // ensureDefaultPinSet(session);
 
         ClientPin pin = new ClientPin(session, TestData.PIN_UV_AUTH_PROTOCOL);
         byte[] pinToken = pin.getPinToken(TestData.PIN, ClientPin.PIN_PERMISSION_MC, TestData.RP.getId());

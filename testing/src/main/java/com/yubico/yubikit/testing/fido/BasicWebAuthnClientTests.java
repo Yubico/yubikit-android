@@ -77,11 +77,6 @@ public class BasicWebAuthnClientTests {
     }
 
     public static void testMakeCredentialGetAssertion(Ctap2Session session) throws Throwable {
-
-        // // Ctap2ClientPinTests.ensureDefaultPinSet(session);
-
-        char[] pin = TestData.PIN;
-
         BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
         List<byte[]> deleteCredIds = new ArrayList<>();
 
@@ -100,7 +95,7 @@ public class BasicWebAuthnClientTests {
                 TestData.CLIENT_DATA_JSON_CREATE,
                 creationOptionsNonRk,
                 Objects.requireNonNull(creationOptionsNonRk.getRp().getId()),
-                pin,
+                TestData.PIN,
                 null,
                 null
         );
@@ -123,7 +118,7 @@ public class BasicWebAuthnClientTests {
                 TestData.CLIENT_DATA_JSON_CREATE,
                 creationOptionsRk,
                 Objects.requireNonNull(creationOptionsRk.getRp().getId()),
-                pin,
+                TestData.PIN,
                 null,
                 null
         );
@@ -148,7 +143,7 @@ public class BasicWebAuthnClientTests {
                     TestData.CLIENT_DATA_JSON_GET,
                     requestOptions,
                     TestData.RP_ID,
-                    pin,
+                    TestData.PIN,
                     null
             );
             AuthenticatorAssertionResponse response = (AuthenticatorAssertionResponse) credential.getResponse();
@@ -162,19 +157,21 @@ public class BasicWebAuthnClientTests {
         deleteCredentials(webauthn, deleteCredIds);
     }
 
-    public static void testUvDiscouragedMakeCredentialGetAssertionWithPin(Ctap2Session session) throws Throwable {
-        assumeTrue("Device has a PIN set",
+    public static void testUvDiscouragedMcGa_withPin(Ctap2Session session) throws Throwable {
+        assumeTrue("Device has no PIN set",
                 Boolean.TRUE.equals(session.getCachedInfo().getOptions().get("clientPin")));
         testUvDiscouragedMakeCredentialGetAssertion(session);
     }
 
-    public static void testUvDiscouragedMakeCredentialGetAssertionWithoutPin(Ctap2Session session) throws Throwable {
-        assumeFalse("Device has no PIN set",
+    public static void testUvDiscouragedMcGa_noPin(Ctap2Session session) throws Throwable {
+        assumeFalse("Device has PIN set. Reset and try again.",
                 Boolean.TRUE.equals(session.getCachedInfo().getOptions().get("clientPin")));
+        assumeFalse("Ignoring FIPS approved devices", TestData.FIPS_APPROVED);
         testUvDiscouragedMakeCredentialGetAssertion(session);
     }
 
-    private static void testUvDiscouragedMakeCredentialGetAssertion(Ctap2Session session) throws Throwable {
+    private static void testUvDiscouragedMakeCredentialGetAssertion(Ctap2Session session)
+            throws Throwable {
 
         BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
 
@@ -231,7 +228,6 @@ public class BasicWebAuthnClientTests {
             fail("Got MultipleAssertionsAvailable even though there should only be one credential");
         }
 
-
         // test rk credential
         PublicKeyCredentialCreationOptions creationOptionsRk = getCreateOptions(
                 new PublicKeyCredentialUserEntity(
@@ -286,9 +282,6 @@ public class BasicWebAuthnClientTests {
     }
 
     public static void testGetAssertionMultipleUsersRk(Ctap2Session session) throws Throwable {
-
-        // Ctap2ClientPinTests.ensureDefaultPinSet(session);
-
         BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
         List<byte[]> deleteCredIds = new ArrayList<>();
 
@@ -366,8 +359,6 @@ public class BasicWebAuthnClientTests {
     }
 
     public static void testGetAssertionWithAllowList(Ctap2Session session) throws Throwable {
-
-        // Ctap2ClientPinTests.ensureDefaultPinSet(session);
 
         BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
 
@@ -457,8 +448,6 @@ public class BasicWebAuthnClientTests {
 
     public static void testMakeCredentialWithExcludeList(Ctap2Session session) throws Throwable {
 
-        // Ctap2ClientPinTests.ensureDefaultPinSet(session);
-
         BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
         List<PublicKeyCredentialDescriptor> excludeList = new ArrayList<>();
 
@@ -525,7 +514,6 @@ public class BasicWebAuthnClientTests {
     }
 
     public static void testMakeCredentialKeyAlgorithms(Ctap2Session session) throws Throwable {
-        // Ctap2ClientPinTests.ensureDefaultPinSet(session);
         BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
         List<PublicKeyCredentialParameters> allCredParams = Arrays.asList(
                 TestData.PUB_KEY_CRED_PARAMS_ES256,
@@ -601,18 +589,14 @@ public class BasicWebAuthnClientTests {
     }
 
     public static void testClientPinManagement(Ctap2Session session) throws Throwable {
-        // Ctap2ClientPinTests.ensureDefaultPinSet(session);
-
         BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
         assertTrue(webauthn.isPinSupported());
         assertTrue(webauthn.isPinConfigured());
 
-        char[] otherPin = "123123".toCharArray();
-
-        webauthn.changePin(TestData.PIN, otherPin);
+        webauthn.changePin(TestData.PIN, TestData.OTHER_PIN);
 
         try {
-            webauthn.changePin(TestData.PIN, otherPin);
+            webauthn.changePin(TestData.PIN, TestData.OTHER_PIN);
             fail("Wrong PIN was accepted");
         } catch (ClientError e) {
             assertThat(e.getErrorCode(), equalTo(ClientError.Code.BAD_REQUEST));
@@ -621,14 +605,13 @@ public class BasicWebAuthnClientTests {
                     is(CtapException.ERR_PIN_INVALID));
         }
 
-        webauthn.changePin(otherPin, TestData.PIN);
+        webauthn.changePin(TestData.OTHER_PIN, TestData.PIN);
     }
 
 
     public static void testClientCredentialManagement(Ctap2Session session) throws Throwable {
         assumeTrue("Credential management not supported",
                 CredentialManagement.isSupported(session.getCachedInfo()));
-        // Ctap2ClientPinTests.ensureDefaultPinSet(session);
         BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
         PublicKeyCredentialCreationOptions creationOptions = getCreateOptions(null, true,
                 Collections.singletonList(TestData.PUB_KEY_CRED_PARAMS_ES256),

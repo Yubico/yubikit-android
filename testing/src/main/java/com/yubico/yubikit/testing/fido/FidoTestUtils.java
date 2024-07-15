@@ -16,8 +16,10 @@
 
 package com.yubico.yubikit.testing.fido;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
 import com.yubico.yubikit.core.Transport;
@@ -26,20 +28,41 @@ import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.application.CommandException;
 import com.yubico.yubikit.core.fido.FidoConnection;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
+import com.yubico.yubikit.fido.client.BasicWebAuthnClient;
+import com.yubico.yubikit.fido.client.ClientError;
+import com.yubico.yubikit.fido.client.CredentialManager;
+import com.yubico.yubikit.fido.ctap.ClientPin;
 import com.yubico.yubikit.fido.ctap.Config;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
+import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialDescriptor;
+import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialUserEntity;
 import com.yubico.yubikit.management.Capability;
 import com.yubico.yubikit.management.DeviceInfo;
 import com.yubico.yubikit.management.ManagementSession;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 public class FidoTestUtils {
+
+    /**
+     * Prepares the device for a test and sets variables in {@link TestData}. If {@code setPin}
+     * is true, then sets the FIDO2 PIN, verifies FIPS approval state and removes existing
+     * credentials.
+     *
+     * @param device The YubiKey which should be setup for a test.
+     * @param pinUvAuthProtocol Pin UV/Auth protocol to use during the test.
+     * @param setPin Whether a FIDO2 PIN should be set. Several tests need a device without a PIN.
+     *
+     * @throws Throwable if an error occurred
+     */
     public static void verifyAndSetup(
             YubiKeyDevice device,
-            PinUvAuthProtocol pinUvAuthProtocol)
+            PinUvAuthProtocol pinUvAuthProtocol,
+            boolean setPin)
             throws Throwable {
 
         boolean isFidoFipsCapable;
@@ -66,15 +89,9 @@ public class FidoTestUtils {
             TestData.PIN_UV_AUTH_PROTOCOL = pinUvAuthProtocol;
             TestData.TRANSPORT_USB = device.getTransport() == Transport.USB;
 
-//            // cannot reset over neither transport
-//
-//            if (!TestData.TRANSPORT_USB) {
-//                // only reset FIDO over NFC
-//                session.reset(null);
-//            }
-
-            // always set a PIN
-            Ctap2ClientPinTests.ensureDefaultPinSet(session);
+            if (setPin) {
+                verifyOrSetPin(session);
+            }
 
             if (isFidoFipsCapable &&
                     Boolean.FALSE.equals(session.getInfo().getOptions().get("alwaysUv"))) {
@@ -83,18 +100,24 @@ public class FidoTestUtils {
                 config.toggleAlwaysUv();
             }
 
+            managementSession = getManagementSession(connection);
             deviceInfo = managementSession.getDeviceInfo();
             TestData.FIPS_APPROVED =
                     (deviceInfo.getFipsApproved() & Capability.FIDO2.bit) == Capability.FIDO2.bit;
 
             // after changing the user and admin PINs, we expect a FIPS capable device
             // to be FIPS approved
-            if (isFidoFipsCapable) {
+            if (setPin && isFidoFipsCapable) {
                 assertNotNull(deviceInfo);
                 assertTrue("Device not FIDO FIPS approved as expected", TestData.FIPS_APPROVED);
             }
-        }
 
+            // remove existing credentials
+            if (setPin) {
+                // cannot use CredentialManager if there is no PIN set
+                deleteExistingCredentials(session);
+            }
+        }
     }
 
     private static boolean supportsPinUvAuthProtocol(
@@ -141,5 +164,45 @@ public class FidoTestUtils {
         }
 
         return session;
+    }
+
+    private static void deleteExistingCredentials(Ctap2Session session)
+            throws IOException, CommandException, ClientError {
+        final BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
+        final CredentialManager credentialManager = webauthn.getCredentialManager(TestData.PIN);
+        final List<String> rpIds = credentialManager.getRpIdList();
+        for (String rpId : rpIds) {
+            Map<PublicKeyCredentialDescriptor, PublicKeyCredentialUserEntity> credentials
+                    = credentialManager.getCredentials(rpId);
+            for (PublicKeyCredentialDescriptor credential : credentials.keySet()) {
+                credentialManager.deleteCredential(credential);
+            }
+        }
+        assertEquals("Failed to remove all credentials", 0, credentialManager.getCredentialCount());
+    }
+
+    /**
+     * Attempts to set (or verify) the default PIN, or fails.
+     */
+    private static void verifyOrSetPin(Ctap2Session session) throws IOException, CommandException {
+
+        Ctap2Session.InfoData info = session.getInfo();
+
+        ClientPin pin = new ClientPin(session, TestData.PIN_UV_AUTH_PROTOCOL);
+        boolean pinSet = Objects.requireNonNull((Boolean) info.getOptions().get("clientPin"));
+
+        try {
+            if (!pinSet) {
+                pin.setPin(TestData.PIN);
+            } else {
+                pin.getPinToken(
+                        TestData.PIN,
+                        ClientPin.PIN_PERMISSION_MC | ClientPin.PIN_PERMISSION_GA,
+                        "localhost");
+            }
+        } catch (CommandException e) {
+            fail("YubiKey cannot be used for test, failed to set/verify PIN. Please reset " +
+                    "and try again.");
+        }
     }
 }

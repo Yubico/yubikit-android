@@ -16,22 +16,24 @@
 
 package com.yubico.yubikit.testing.fido;
 
+import com.yubico.yubikit.testing.AlwaysManualTestCategory;
 import com.yubico.yubikit.testing.framework.FidoInstrumentedTests;
 
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 /**
  * Tests FIDO Reset.
  * <p>
- * Notes:
+ * This is a manual test which will reset the FIDO application.
  * <ul>
- *     <li>The tests for different protocols are meant to be ran separately.</li>
- *     <li>Before running any of the tests, disconnect the security Key from the device</li>
- *     <li>Bio devices are currently ignored.</li>
+ *     <li>Before running the test, disconnect the YubiKey from the Android device.</li>
+ *     <li>YubiKey Bio devices are currently ignored.</li>
  * </ul>
  */
 public class Ctap2SessionResetInstrumentedTests extends FidoInstrumentedTests {
     @Test
+    @Category(AlwaysManualTestCategory.class)
     public void testReset() throws Throwable {
         withCtap2Session(Ctap2SessionTests::testReset);
     }

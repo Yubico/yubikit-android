@@ -16,7 +16,6 @@
 
 package com.yubico.yubikit.testing.fido;
 
-import static com.yubico.yubikit.testing.fido.Ctap2ClientPinTests.ensureDefaultPinSet;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -42,7 +41,7 @@ public class Ctap2BioEnrollmentTests {
 
     public static void testFingerprintEnrollment(Ctap2Session session) throws Throwable {
 
-        assumeTrue(" Bio enrollment not supported",
+        assumeTrue("Bio enrollment not supported",
                 BioEnrollment.isSupported(session.getCachedInfo()));
 
         final FingerprintBioEnrollment fingerprintBioEnrollment = fpBioEnrollment(session);

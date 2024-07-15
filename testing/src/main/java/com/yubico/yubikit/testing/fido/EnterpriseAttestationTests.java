@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Yubico.
+ * Copyright (C) 2020-2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,7 +46,6 @@ import java.util.Objects;
 
 import javax.annotation.Nullable;
 
-@SuppressWarnings("unchecked")
 public class EnterpriseAttestationTests {
 
     static void enableEp(Ctap2Session session)
@@ -66,7 +65,6 @@ public class EnterpriseAttestationTests {
     public static void testSupportedPlatformManagedEA(Ctap2Session session) throws Throwable {
         assumeTrue("Enterprise attestation not supported",
                 session.getCachedInfo().getOptions().containsKey("ep"));
-        // // Ctap2ClientPinTests.ensureDefaultPinSet(session);
         enableEp(session);
         BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
         webauthn.getUserAgentConfiguration().setEpSupportedRpIds(Collections.singletonList(TestData.RP_ID));
@@ -183,6 +181,7 @@ public class EnterpriseAttestationTests {
     /**
      * Helper method which extracts AuthenticatorAttestationResponse from the credential
      */
+    @SuppressWarnings("unchecked")
     private static Map<String, ?> getAttestationObject(AuthenticatorResponse response) {
         AuthenticatorAttestationResponse authenticatorAttestationResponse =
                 (AuthenticatorAttestationResponse) response;
