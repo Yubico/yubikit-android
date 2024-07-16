@@ -19,6 +19,7 @@ package com.yubico.yubikit.testing.framework;
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
 
 import com.yubico.yubikit.core.YubiKeyDevice;
+import com.yubico.yubikit.testing.ScpParameters;
 import com.yubico.yubikit.testing.TestActivity;
 
 import org.junit.After;
@@ -32,6 +33,7 @@ public class YKInstrumentedTests {
 
     private TestActivity activity;
     protected YubiKeyDevice device = null;
+    protected ScpParameters scpParameters;
 
     @Rule
     public final TestName name = new TestName();
@@ -43,6 +45,7 @@ public class YKInstrumentedTests {
     public void getYubiKey() throws InterruptedException {
         scenarioRule.getScenario().onActivity((TestActivity activity) -> this.activity = activity);
         device = activity.awaitSession(getClass().getSimpleName(), name.getMethodName());
+        scpParameters = new ScpParameters(device, getScpKid());
     }
 
     @After

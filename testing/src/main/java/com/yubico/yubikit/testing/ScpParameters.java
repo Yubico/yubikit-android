@@ -33,10 +33,32 @@ import java.util.Map;
 
 import javax.annotation.Nullable;
 
-public class TestState {
-    public static ScpKeyParams keyParams = null;
+public class ScpParameters {
+    @Nullable
+    private final Byte kid;
+    @Nullable
+    private ScpKeyParams keyParams = null;
 
-    public static ScpKeyParams readScpKeyParams(YubiKeyDevice device, @Nullable Byte kid) throws Throwable {
+    public ScpParameters(YubiKeyDevice device, @Nullable Byte kid) {
+        this.kid = kid;
+        try {
+            keyParams = readScpKeyParams(device);
+        } catch (Throwable e) {
+            keyParams = null;
+        }
+    }
+
+    @Nullable
+    public Byte getKid() {
+        return kid;
+    }
+
+    @Nullable
+    public ScpKeyParams getKeyParams() {
+        return keyParams;
+    }
+
+    private ScpKeyParams readScpKeyParams(YubiKeyDevice device) throws Throwable {
         if (kid == null) {
             return null;
         }
@@ -56,7 +78,7 @@ public class TestState {
         }
     }
 
-    private static KeyRef getKeyRef(SecurityDomainSession scp, byte kid)
+    private KeyRef getKeyRef(SecurityDomainSession scp, byte kid)
             throws ApduException, IOException, BadResponseException {
         Map<KeyRef, Map<Byte, Byte>> keyInformation = scp.getKeyInformation();
         KeyRef keyRef = null;

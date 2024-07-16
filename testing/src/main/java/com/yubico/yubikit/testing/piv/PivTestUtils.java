@@ -34,7 +34,7 @@ import com.yubico.yubikit.management.ManagementSession;
 import com.yubico.yubikit.piv.KeyType;
 import com.yubico.yubikit.piv.ManagementKeyType;
 import com.yubico.yubikit.piv.PivSession;
-import com.yubico.yubikit.testing.TestState;
+import com.yubico.yubikit.testing.ScpParameters;
 
 import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.x500.X500Name;
@@ -45,7 +45,6 @@ import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.junit.Assert;
-import org.junit.Assume;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,7 +72,6 @@ import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Date;
 
-import javax.annotation.Nullable;
 import javax.crypto.Cipher;
 import javax.crypto.KeyAgreement;
 
@@ -512,53 +510,57 @@ public class PivTestUtils {
         Assert.assertArrayEquals("Secret mismatch", secret, peerSecret);
     }
 
-    public static void verifyAndSetup(YubiKeyDevice device, @Nullable Byte kid) throws Throwable {
+    public static void verifyAndSetup(YubiKeyDevice device, ScpParameters scpParameters)
+            throws Throwable {
 
         PivTestState.DEFAULT_PIN = PivTestConstants.DEFAULT_PIN;
         PivTestState.DEFAULT_PUK = PivTestConstants.DEFAULT_PUK;
         PivTestState.DEFAULT_MANAGEMENT_KEY = PivTestConstants.DEFAULT_MANAGEMENT_KEY;
 
-        boolean isPivFipsCapable;
-        boolean hasPinComplexity;
+        boolean isPivFipsCapable = false;
+        boolean hasPinComplexity = false;
 
         assumeTrue("No SmartCard support", device.supportsConnection(SmartCardConnection.class));
 
         try (SmartCardConnection connection = device.openConnection(SmartCardConnection.class)) {
             ManagementSession managementSession = new ManagementSession(connection);
-            DeviceInfo deviceInfo = managementSession.getDeviceInfo();
-            assertNotNull(deviceInfo);
+            try {
+                DeviceInfo deviceInfo = managementSession.getDeviceInfo();
+                assertNotNull(deviceInfo);
 
-            isPivFipsCapable = (deviceInfo.getFipsCapable() & Capability.PIV.bit) == Capability.PIV.bit;
-            hasPinComplexity = deviceInfo.getPinComplexity();
+                isPivFipsCapable = (deviceInfo.getFipsCapable() & Capability.PIV.bit) == Capability.PIV.bit;
+                hasPinComplexity = deviceInfo.getPinComplexity();
+            } catch (UnsupportedOperationException ignored) {
+
+            }
         }
 
-        if (kid == null && isPivFipsCapable) {
+        if (scpParameters.getKid() == null && isPivFipsCapable) {
             assumeTrue("Trying to use PIV FIPS capable device over NFC without SCP",
                     device.getTransport() != Transport.NFC);
         }
 
-        // don't read SCP params on non capable devices
-        TestState.keyParams = (isPivFipsCapable && kid != null)
-                ? TestState.readScpKeyParams(device, kid)
-                : null;
-
-        if (kid != null) {
+        if (scpParameters.getKid() != null) {
             // skip the test if the connected key does not provide matching SCP keys
             assumeTrue(
                     "No matching key params found for required kid",
-                    TestState.keyParams != null
+                    scpParameters.getKeyParams() != null
             );
         }
 
         try (SmartCardConnection connection = device.openConnection(SmartCardConnection.class)) {
             PivSession pivSession = null;
             try {
-                pivSession = new PivSession(connection, TestState.keyParams);
+                pivSession = new PivSession(connection, scpParameters.getKeyParams());
             } catch (ApplicationNotAvailableException ignored) {
 
             }
             assumeTrue("PIV not available", pivSession != null);
-            pivSession.reset();
+            try {
+                pivSession.reset();
+            } catch (Exception e) {
+
+            }
 
             if (hasPinComplexity) {
                 // only use complex pins if pin complexity is required

@@ -19,24 +19,13 @@ import static com.yubico.yubikit.piv.PivSession.FEATURE_AES_KEY;
 import static com.yubico.yubikit.testing.piv.PivTestState.DEFAULT_MANAGEMENT_KEY;
 import static com.yubico.yubikit.testing.piv.PivTestState.DEFAULT_PIN;
 import static com.yubico.yubikit.testing.piv.PivTestState.DEFAULT_PUK;
-import static com.yubico.yubikit.testing.piv.PivTestState.FIPS_APPROVED;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
 
-import com.yubico.yubikit.core.Transport;
-import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.core.smartcard.SW;
-import com.yubico.yubikit.core.smartcard.SmartCardConnection;
-import com.yubico.yubikit.management.Capability;
-import com.yubico.yubikit.management.DeviceInfo;
-import com.yubico.yubikit.management.ManagementSession;
 import com.yubico.yubikit.piv.InvalidPinException;
 import com.yubico.yubikit.piv.ManagementKeyType;
 import com.yubico.yubikit.piv.PivSession;
-import com.yubico.yubikit.testing.TestState;
 
 import org.bouncycastle.util.encoders.Hex;
 import org.hamcrest.CoreMatchers;

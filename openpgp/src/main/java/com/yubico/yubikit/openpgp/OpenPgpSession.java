@@ -197,7 +197,6 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
             versionBytes[i] = decodeBcd(versionBcd[i]);
         }
         version = Version.fromBytes(versionBytes);
-        // version = new Version (5,7, 2);
         protocol.configure(version);
 
         // Note: This value is cached!

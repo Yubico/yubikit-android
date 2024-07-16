@@ -18,7 +18,6 @@ package com.yubico.yubikit.testing.framework;
 
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.oath.OathSession;
-import com.yubico.yubikit.testing.TestState;
 import com.yubico.yubikit.testing.oath.OathTestUtils;
 
 import org.junit.Before;
@@ -43,14 +42,14 @@ public class OathInstrumentedTests extends YKInstrumentedTests {
      */
     protected void withOathSession(Callback callback) throws Throwable {
         if (shouldVerifyAndSetupSession) {
-            OathTestUtils.verifyAndSetup(device, getScpKid());
+            OathTestUtils.verifyAndSetup(device, scpParameters);
             shouldVerifyAndSetupSession = false;
         } else {
             OathTestUtils.updateFipsApprovedValue(device);
         }
 
         try (SmartCardConnection connection = device.openConnection(SmartCardConnection.class)) {
-            callback.invoke(new OathSession(connection, TestState.keyParams));
+            callback.invoke(new OathSession(connection, scpParameters.getKeyParams()));
         }
     }
 }

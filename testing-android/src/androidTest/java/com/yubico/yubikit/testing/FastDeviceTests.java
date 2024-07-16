@@ -23,7 +23,7 @@ import org.junit.runners.Suite;
 /**
  * These tests are here to make testing a bit faster and exclude following:
  * <ul>
- *     <li>LargeTests</li>
+ *     <li>{@link SlowTest}</li>
  * </ul>
  */
 @RunWith(Categories.class)

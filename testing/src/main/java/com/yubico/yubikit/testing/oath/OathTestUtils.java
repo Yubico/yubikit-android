@@ -27,11 +27,7 @@ import com.yubico.yubikit.management.Capability;
 import com.yubico.yubikit.management.DeviceInfo;
 import com.yubico.yubikit.management.ManagementSession;
 import com.yubico.yubikit.oath.OathSession;
-import com.yubico.yubikit.testing.TestState;
-
-import org.junit.Assume;
-
-import javax.annotation.Nullable;
+import com.yubico.yubikit.testing.ScpParameters;
 
 public class OathTestUtils {
 
@@ -45,7 +41,7 @@ public class OathTestUtils {
         }
     }
 
-    public static void verifyAndSetup(YubiKeyDevice device, @Nullable Byte kid) throws Throwable {
+    public static void verifyAndSetup(YubiKeyDevice device, ScpParameters scpParameters) throws Throwable {
 
         OathDeviceTests.OATH_PASSWORD = "".toCharArray();
 
@@ -60,28 +56,23 @@ public class OathTestUtils {
                     (deviceInfo.getFipsCapable() & Capability.OATH.bit) == Capability.OATH.bit;
         }
 
-        if (kid == null && isOathFipsCapable) {
+        if (scpParameters.getKid() == null && isOathFipsCapable) {
             assumeTrue("Trying to use OATH FIPS capable device over NFC without SCP",
                     device.getTransport() != Transport.NFC);
         }
 
-        // don't read SCP params on non capable devices
-        TestState.keyParams = (isOathFipsCapable && kid != null)
-                ? TestState.readScpKeyParams(device, kid)
-                : null;
-
-        if (kid != null) {
+        if (scpParameters.getKid() != null) {
             // skip the test if the connected key does not provide matching SCP keys
             assumeTrue(
                     "No matching key params found for required kid",
-                    TestState.keyParams != null
+                    scpParameters.getKeyParams() != null
             );
         }
 
         try (SmartCardConnection connection = device.openConnection(SmartCardConnection.class)) {
             OathSession oath = null;
             try {
-                oath = new OathSession(connection, TestState.keyParams);
+                oath = new OathSession(connection, scpParameters.getKeyParams());
             } catch (ApplicationNotAvailableException ignored) {
 
             }

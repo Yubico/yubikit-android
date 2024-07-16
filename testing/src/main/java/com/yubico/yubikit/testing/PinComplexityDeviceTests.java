@@ -115,7 +115,7 @@ public class PinComplexityDeviceTests {
 
     }
 
-    private static void testOpenPgpPinComplexity(OpenPgpSession openpgp) throws IOException, ApduException, InvalidPinException, BadResponseException {
+    private static void testOpenPgpPinComplexity(OpenPgpSession openpgp) throws IOException, ApduException, InvalidPinException {
 
         char[] defaultPin = "123456".toCharArray();
         char[] complexDefaultPin = "11234567".toCharArray();

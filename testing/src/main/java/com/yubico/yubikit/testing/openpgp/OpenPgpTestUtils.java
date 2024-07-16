@@ -29,21 +29,18 @@ import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.management.Capability;
 import com.yubico.yubikit.management.DeviceInfo;
 import com.yubico.yubikit.management.ManagementSession;
-import com.yubico.yubikit.oath.OathSession;
 import com.yubico.yubikit.openpgp.OpenPgpSession;
 import com.yubico.yubikit.openpgp.Pw;
-import com.yubico.yubikit.testing.TestState;
+import com.yubico.yubikit.testing.ScpParameters;
 
 import org.junit.Assume;
-
-import javax.annotation.Nullable;
 
 public class OpenPgpTestUtils {
 
     private static final char[] COMPLEX_USER_PIN = "112345678".toCharArray();
     private static final char[] COMPLEX_ADMIN_PIN = "112345678".toCharArray();
 
-    public static void verifyAndSetup(YubiKeyDevice device, @Nullable Byte kid) throws Throwable {
+    public static void verifyAndSetup(YubiKeyDevice device, ScpParameters scpParameters) throws Throwable {
 
         OpenPgpTestState.USER_PIN = Pw.DEFAULT_USER_PIN;
         OpenPgpTestState.ADMIN_PIN = Pw.DEFAULT_ADMIN_PIN;
@@ -61,28 +58,23 @@ public class OpenPgpTestUtils {
             hasPinComplexity = deviceInfo.getPinComplexity();
         }
 
-        if (kid == null && isOpenPgpFipsCapable) {
+        if (scpParameters.getKid() == null && isOpenPgpFipsCapable) {
             Assume.assumeTrue("Trying to use OpenPgp FIPS capable device over NFC without SCP",
                     device.getTransport() != Transport.NFC);
         }
 
-        // don't read SCP params on non capable devices
-        TestState.keyParams = (isOpenPgpFipsCapable && kid != null)
-                ? TestState.readScpKeyParams(device, kid)
-                : null;
-
-        if (kid != null) {
+        if (scpParameters.getKid() != null) {
             // skip the test if the connected key does not provide matching SCP keys
             Assume.assumeTrue(
                     "No matching key params found for required kid",
-                    TestState.keyParams != null
+                    scpParameters.getKeyParams() != null
             );
         }
 
         try (SmartCardConnection connection = device.openConnection(SmartCardConnection.class)) {
             OpenPgpSession openPgp = null;
             try {
-                openPgp = new OpenPgpSession(connection, TestState.keyParams);
+                openPgp = new OpenPgpSession(connection, scpParameters.getKeyParams());
             } catch (ApplicationNotAvailableException ignored) {
 
             }
