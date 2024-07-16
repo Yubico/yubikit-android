@@ -21,9 +21,11 @@ import static com.yubico.yubikit.testing.piv.PivTestState.DEFAULT_PUK;
 import static com.yubico.yubikit.testing.piv.PivTestState.FIPS_APPROVED;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
 import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.YubiKeyDevice;
+import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
 import com.yubico.yubikit.core.internal.codec.Base64;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.management.Capability;
@@ -519,6 +521,8 @@ public class PivTestUtils {
         boolean isPivFipsCapable;
         boolean hasPinComplexity;
 
+        assumeTrue("No SmartCard support", device.supportsConnection(SmartCardConnection.class));
+
         try (SmartCardConnection connection = device.openConnection(SmartCardConnection.class)) {
             ManagementSession managementSession = new ManagementSession(connection);
             DeviceInfo deviceInfo = managementSession.getDeviceInfo();
@@ -529,7 +533,7 @@ public class PivTestUtils {
         }
 
         if (kid == null && isPivFipsCapable) {
-            Assume.assumeTrue("Trying to use PIV FIPS capable device over NFC without SCP",
+            assumeTrue("Trying to use PIV FIPS capable device over NFC without SCP",
                     device.getTransport() != Transport.NFC);
         }
 
@@ -540,14 +544,20 @@ public class PivTestUtils {
 
         if (kid != null) {
             // skip the test if the connected key does not provide matching SCP keys
-            Assume.assumeTrue(
+            assumeTrue(
                     "No matching key params found for required kid",
                     TestState.keyParams != null
             );
         }
 
         try (SmartCardConnection connection = device.openConnection(SmartCardConnection.class)) {
-            PivSession pivSession = new PivSession(connection, TestState.keyParams);
+            PivSession pivSession = null;
+            try {
+                pivSession = new PivSession(connection, TestState.keyParams);
+            } catch (ApplicationNotAvailableException ignored) {
+
+            }
+            assumeTrue("PIV not available", pivSession != null);
             pivSession.reset();
 
             if (hasPinComplexity) {

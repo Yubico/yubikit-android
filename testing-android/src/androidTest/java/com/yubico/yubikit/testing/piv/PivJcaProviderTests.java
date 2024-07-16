@@ -16,7 +16,8 @@
 
 package com.yubico.yubikit.testing.piv;
 
-import androidx.annotation.Nullable;
+import javax.annotation.Nullable;
+
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.yubico.yubikit.core.smartcard.scp.ScpKid;

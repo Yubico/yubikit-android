@@ -16,7 +16,7 @@
 
 package com.yubico.yubikit.testing.openpgp;
 
-import androidx.annotation.Nullable;
+import javax.annotation.Nullable;
 
 import com.yubico.yubikit.core.smartcard.scp.ScpKid;
 import com.yubico.yubikit.testing.SlowTest;

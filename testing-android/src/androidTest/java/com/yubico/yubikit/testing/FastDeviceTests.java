@@ -21,12 +21,13 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 /**
- * All device tests excluding tests considered too slow.
+ * These tests are here to make testing a bit faster and exclude following:
+ * <ul>
+ *     <li>LargeTests</li>
+ * </ul>
  */
 @RunWith(Categories.class)
+@Suite.SuiteClasses(DeviceTests.class)
 @Categories.ExcludeCategory(SlowTest.class)
-@Suite.SuiteClasses({
-        DeviceTests.class
-})
 public class FastDeviceTests {
 }

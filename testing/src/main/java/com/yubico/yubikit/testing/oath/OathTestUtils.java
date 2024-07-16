@@ -17,9 +17,11 @@ package com.yubico.yubikit.testing.oath;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
 import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.YubiKeyDevice;
+import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.management.Capability;
 import com.yubico.yubikit.management.DeviceInfo;
@@ -59,7 +61,7 @@ public class OathTestUtils {
         }
 
         if (kid == null && isOathFipsCapable) {
-            Assume.assumeTrue("Trying to use OATH FIPS capable device over NFC without SCP",
+            assumeTrue("Trying to use OATH FIPS capable device over NFC without SCP",
                     device.getTransport() != Transport.NFC);
         }
 
@@ -70,15 +72,21 @@ public class OathTestUtils {
 
         if (kid != null) {
             // skip the test if the connected key does not provide matching SCP keys
-            Assume.assumeTrue(
+            assumeTrue(
                     "No matching key params found for required kid",
                     TestState.keyParams != null
             );
         }
 
         try (SmartCardConnection connection = device.openConnection(SmartCardConnection.class)) {
-            OathSession oath = new OathSession(connection, TestState.keyParams);
+            OathSession oath = null;
+            try {
+                oath = new OathSession(connection, TestState.keyParams);
+            } catch (ApplicationNotAvailableException ignored) {
 
+            }
+
+            assumeTrue("OATH not available", oath != null);
             oath.reset();
 
             final char[] oathPassword = "112345678".toCharArray();

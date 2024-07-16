@@ -20,13 +20,16 @@ import static com.yubico.yubikit.testing.openpgp.OpenPgpTestState.USER_PIN;
 import static com.yubico.yubikit.testing.openpgp.OpenPgpTestState.FIPS_APPROVED;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
 import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.YubiKeyDevice;
+import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.management.Capability;
 import com.yubico.yubikit.management.DeviceInfo;
 import com.yubico.yubikit.management.ManagementSession;
+import com.yubico.yubikit.oath.OathSession;
 import com.yubico.yubikit.openpgp.OpenPgpSession;
 import com.yubico.yubikit.openpgp.Pw;
 import com.yubico.yubikit.testing.TestState;
@@ -77,7 +80,14 @@ public class OpenPgpTestUtils {
         }
 
         try (SmartCardConnection connection = device.openConnection(SmartCardConnection.class)) {
-            OpenPgpSession openPgp = new OpenPgpSession(connection, TestState.keyParams);
+            OpenPgpSession openPgp = null;
+            try {
+                openPgp = new OpenPgpSession(connection, TestState.keyParams);
+            } catch (ApplicationNotAvailableException ignored) {
+
+            }
+
+            assumeTrue("OpenPGP not available", openPgp != null);
             openPgp.reset();
 
             if (hasPinComplexity) {
