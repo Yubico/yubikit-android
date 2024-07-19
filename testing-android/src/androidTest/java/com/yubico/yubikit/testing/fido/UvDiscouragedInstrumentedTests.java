@@ -35,7 +35,7 @@ public class UvDiscouragedInstrumentedTests extends FidoInstrumentedTests {
     @Test
     @Category(AlwaysManualTest.class)
     public void testMakeCredentialGetAssertion() throws Throwable {
-        withCtap2Session(BasicWebAuthnClientTests::testUvDiscouragedMcGa_noPin, false);
+        withDevice(false, BasicWebAuthnClientTests::testUvDiscouragedMcGa_noPin);
     }
 
     /**
@@ -46,6 +46,6 @@ public class UvDiscouragedInstrumentedTests extends FidoInstrumentedTests {
      */
     @Test(expected = PinRequiredClientError.class)
     public void testMakeCredentialGetAssertionWithPin() throws Throwable {
-        withCtap2Session(BasicWebAuthnClientTests::testUvDiscouragedMcGa_withPin);
+        withDevice(BasicWebAuthnClientTests::testUvDiscouragedMcGa_withPin);
     }
 }

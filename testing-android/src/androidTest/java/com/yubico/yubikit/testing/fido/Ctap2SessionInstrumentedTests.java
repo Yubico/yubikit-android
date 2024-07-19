@@ -19,6 +19,7 @@ package com.yubico.yubikit.testing.fido;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV1;
 import com.yubico.yubikit.testing.PinUvAuthProtocolV1Test;
+import com.yubico.yubikit.testing.SmokeTest;
 import com.yubico.yubikit.testing.framework.FidoInstrumentedTests;
 
 import org.junit.Test;
@@ -34,6 +35,7 @@ import org.junit.runners.Suite;
 public class Ctap2SessionInstrumentedTests {
     public static class PinUvAuthV2Test extends FidoInstrumentedTests {
         @Test
+        @Category(SmokeTest.class)
         public void testCtap2GetInfo() throws Throwable {
             withCtap2Session(Ctap2SessionTests::testCtap2GetInfo);
         }

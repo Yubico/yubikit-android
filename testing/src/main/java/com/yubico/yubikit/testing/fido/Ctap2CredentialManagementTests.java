@@ -52,13 +52,13 @@ public class Ctap2CredentialManagementTests {
     }
 
     private static CredentialManagement setupCredentialManagement(
-            Ctap2Session session
+            Ctap2Session session, FidoTestState state
     ) throws IOException, CommandException {
 
         assumeTrue("Credential management not supported",
                 CredentialManagement.isSupported(session.getCachedInfo()));
 
-        ClientPin clientPin = new ClientPin(session, TestData.PIN_UV_AUTH_PROTOCOL);
+        ClientPin clientPin = new ClientPin(session, state.getPinUvAuthProtocol());
 
         return new CredentialManagement(
                 session,
@@ -67,8 +67,8 @@ public class Ctap2CredentialManagementTests {
         );
     }
 
-    public static void testReadMetadata(Ctap2Session session) throws Throwable {
-        CredentialManagement credentialManagement = setupCredentialManagement(session);
+    public static void testReadMetadata(Ctap2Session session, FidoTestState state) throws Throwable {
+        CredentialManagement credentialManagement = setupCredentialManagement(session, state);
 
         CredentialManagement.Metadata metadata = credentialManagement.getMetadata();
 
@@ -76,9 +76,9 @@ public class Ctap2CredentialManagementTests {
         assertThat(metadata.getMaxPossibleRemainingResidentCredentialsCount(), greaterThan(0));
     }
 
-    public static void testManagement(Ctap2Session session) throws Throwable {
+    public static void testManagement(Ctap2Session session, FidoTestState state) throws Throwable {
 
-        CredentialManagement credentialManagement = setupCredentialManagement(session);
+        CredentialManagement credentialManagement = setupCredentialManagement(session, state);
 
         final SerializationType cborType = SerializationType.CBOR;
 
@@ -99,14 +99,14 @@ public class Ctap2CredentialManagementTests {
                 null,
                 options,
                 pinAuth,
-                TestData.PIN_UV_AUTH_PROTOCOL.getVersion(),
+                state.getPinUvAuthProtocol().getVersion(),
                 null,
                 null
         );
 
 
         // this sets correct permission for handling credential management commands
-        credentialManagement = setupCredentialManagement(session);
+        credentialManagement = setupCredentialManagement(session, state);
 
         List<CredentialManagement.RpData> rps = credentialManagement.enumerateRps();
         assertThat(rps.size(), equalTo(1));

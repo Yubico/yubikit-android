@@ -26,12 +26,12 @@ import com.yubico.yubikit.fido.ctap.ClientPin;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
 
 public class Ctap2ClientPinTests {
-    public static void testClientPin(Ctap2Session session) throws Throwable {
+    public static void testClientPin(Ctap2Session session, FidoTestState state) throws Throwable {
         Integer permissions = ClientPin.PIN_PERMISSION_MC | ClientPin.PIN_PERMISSION_GA;
         String permissionRpId = "localhost";
 
-        ClientPin pin = new ClientPin(session, TestData.PIN_UV_AUTH_PROTOCOL);
-        assertThat(pin.getPinUvAuth().getVersion(), is(TestData.PIN_UV_AUTH_PROTOCOL.getVersion()));
+        ClientPin pin = new ClientPin(session, state.getPinUvAuthProtocol());
+        assertThat(pin.getPinUvAuth().getVersion(), is(state.getPinUvAuthProtocol().getVersion()));
         assertThat(pin.getPinRetries().getCount(), is(8));
 
         pin.changePin(TestData.PIN, TestData.OTHER_PIN);

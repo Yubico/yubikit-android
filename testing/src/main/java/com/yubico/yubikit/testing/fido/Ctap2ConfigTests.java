@@ -36,40 +36,40 @@ import java.io.IOException;
 
 public class Ctap2ConfigTests {
 
-    static Config getConfig(Ctap2Session session) throws IOException, CommandException {
-        ClientPin clientPin = new ClientPin(session, TestData.PIN_UV_AUTH_PROTOCOL);
+    static Config getConfig(Ctap2Session session, FidoTestState state) throws IOException, CommandException {
+        ClientPin clientPin = new ClientPin(session, state.getPinUvAuthProtocol());
         byte[] pinToken = clientPin.getPinToken(TestData.PIN, ClientPin.PIN_PERMISSION_ACFG, null);
-        return new Config(session, TestData.PIN_UV_AUTH_PROTOCOL, pinToken);
+        return new Config(session, state.getPinUvAuthProtocol(), pinToken);
     }
 
-    public static void testReadWriteEnterpriseAttestation(Ctap2Session session) throws Throwable {
+    public static void testReadWriteEnterpriseAttestation(Ctap2Session session, FidoTestState state) throws Throwable {
         assumeTrue("Enterprise attestation not supported",
                 session.getInfo().getOptions().containsKey("ep"));
-        Config config = getConfig(session);
+        Config config = getConfig(session, state);
         config.enableEnterpriseAttestation();
         assertSame(TRUE, session.getInfo().getOptions().get("ep"));
     }
 
-    public static void testToggleAlwaysUv(Ctap2Session session) throws Throwable {
+    public static void testToggleAlwaysUv(Ctap2Session session, FidoTestState state) throws Throwable {
         assumeTrue("Device does not support alwaysUv",
                 session.getInfo().getOptions().containsKey("alwaysUv"));
-        Config config = getConfig(session);
+        Config config = getConfig(session, state);
         Object alwaysUv = getAlwaysUv(session);
         config.toggleAlwaysUv();
         assertNotSame(getAlwaysUv(session), alwaysUv);
     }
 
-    public static void testSetForcePinChange(Ctap2Session session) throws Throwable {
+    public static void testSetForcePinChange(Ctap2Session session, FidoTestState state) throws Throwable {
         assumeTrue("authenticatorConfig not supported",
                 Config.isSupported(session.getCachedInfo()));
         assumeFalse("Force PIN change already set. Reset key and retry", session.getInfo().getForcePinChange());
-        Config config = getConfig(session);
+        Config config = getConfig(session, state);
         config.setMinPinLength(null, null, true);
         assertTrue(session.getInfo().getForcePinChange());
 
         // set a new PIN
-        ClientPin pin = new ClientPin(session, TestData.PIN_UV_AUTH_PROTOCOL);
-        assertThat(pin.getPinUvAuth().getVersion(), is(TestData.PIN_UV_AUTH_PROTOCOL.getVersion()));
+        ClientPin pin = new ClientPin(session, state.getPinUvAuthProtocol());
+        assertThat(pin.getPinUvAuth().getVersion(), is(state.getPinUvAuthProtocol().getVersion()));
         assertThat(pin.getPinRetries().getCount(), is(8));
 
         pin.changePin(TestData.PIN, TestData.OTHER_PIN);
@@ -81,10 +81,10 @@ public class Ctap2ConfigTests {
 
     }
 
-    public static void testSetMinPinLength(Ctap2Session session) throws Throwable {
+    public static void testSetMinPinLength(Ctap2Session session, FidoTestState state) throws Throwable {
         assumeTrue("authenticatorConfig not supported",
                 Config.isSupported(session.getCachedInfo()));
-        Config config = getConfig(session);
+        Config config = getConfig(session, state);
         // after calling this the key must be reset to get the default min pin length value
         config.setMinPinLength(50, null, null);
         assertEquals(50, session.getInfo().getMinPinLength());

@@ -38,7 +38,6 @@ import com.yubico.yubikit.fido.client.CredentialManager;
 import com.yubico.yubikit.fido.client.MultipleAssertionsAvailable;
 import com.yubico.yubikit.fido.ctap.ClientPin;
 import com.yubico.yubikit.fido.ctap.CredentialManagement;
-import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.fido.webauthn.AuthenticatorAssertionResponse;
 import com.yubico.yubikit.fido.webauthn.AuthenticatorAttestationResponse;
 import com.yubico.yubikit.fido.webauthn.AuthenticatorSelectionCriteria;
@@ -71,62 +70,276 @@ import javax.annotation.Nullable;
 
 public class BasicWebAuthnClientTests {
 
-    public static void testMakeCredentialGetAssertionTokenUvOnly(Ctap2Session session) throws Throwable {
-        assumeTrue("UV Token not supported", ClientPin.isTokenSupported(session.getCachedInfo()));
-        testMakeCredentialGetAssertion(session);
+    public static void testMakeCredentialGetAssertionTokenUvOnly(FidoTestState state) throws Throwable {
+        state.withCtap2((session) -> {
+            assumeTrue("UV Token not supported", ClientPin.isTokenSupported(session.getCachedInfo()));
+        });
+        testMakeCredentialGetAssertion(state);
     }
 
-    public static void testMakeCredentialGetAssertion(Ctap2Session session) throws Throwable {
-        BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
+    public static void testMakeCredentialGetAssertion(FidoTestState state) throws Throwable {
         List<byte[]> deleteCredIds = new ArrayList<>();
 
         // Make a non rk credential
-        PublicKeyCredentialCreationOptions creationOptionsNonRk = getCreateOptions(
-                new PublicKeyCredentialUserEntity(
-                        "rkuser",
-                        "rkuser".getBytes(StandardCharsets.UTF_8),
-                        "RkUser"
-                ),
-                false,
-                Collections.singletonList(TestData.PUB_KEY_CRED_PARAMS_ES256),
-                null
-        );
-        PublicKeyCredential credNonRk = webauthn.makeCredential(
-                TestData.CLIENT_DATA_JSON_CREATE,
-                creationOptionsNonRk,
-                Objects.requireNonNull(creationOptionsNonRk.getRp().getId()),
-                TestData.PIN,
-                null,
-                null
-        );
-        AuthenticatorAttestationResponse responseNonRk = (AuthenticatorAttestationResponse) credNonRk.getResponse();
-        assertNotNull("Failed to make non resident key credential", responseNonRk);
-        assertNotNull("Credential missing attestation object", responseNonRk.getAttestationObject());
-        assertNotNull("Credential missing client data JSON", responseNonRk.getClientDataJson());
+        state.withCtap2((session) -> {
+            BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
+
+            PublicKeyCredentialCreationOptions creationOptionsNonRk = getCreateOptions(
+                    new PublicKeyCredentialUserEntity(
+                            "user",
+                            "user".getBytes(StandardCharsets.UTF_8),
+                            "User"
+                    ),
+                    false,
+                    Collections.singletonList(TestData.PUB_KEY_CRED_PARAMS_ES256),
+                    null
+            );
+            PublicKeyCredential credNonRk = webauthn.makeCredential(
+                    TestData.CLIENT_DATA_JSON_CREATE,
+                    creationOptionsNonRk,
+                    Objects.requireNonNull(creationOptionsNonRk.getRp().getId()),
+                    TestData.PIN,
+                    null,
+                    null
+            );
+            AuthenticatorAttestationResponse responseNonRk = (AuthenticatorAttestationResponse) credNonRk.getResponse();
+            assertNotNull("Failed to make non resident key credential", responseNonRk);
+            assertNotNull("Credential missing attestation object", responseNonRk.getAttestationObject());
+            assertNotNull("Credential missing client data JSON", responseNonRk.getClientDataJson());
+        });
 
         // make a rk credential
-        PublicKeyCredentialCreationOptions creationOptionsRk = getCreateOptions(
-                new PublicKeyCredentialUserEntity(
-                        "user",
-                        "user".getBytes(StandardCharsets.UTF_8),
-                        "User"
-                ),
-                true,
-                Collections.singletonList(TestData.PUB_KEY_CRED_PARAMS_ES256),
-                null);
-        PublicKeyCredential credRk = webauthn.makeCredential(
-                TestData.CLIENT_DATA_JSON_CREATE,
-                creationOptionsRk,
-                Objects.requireNonNull(creationOptionsRk.getRp().getId()),
-                TestData.PIN,
-                null,
-                null
-        );
-        AuthenticatorAttestationResponse responseRk = (AuthenticatorAttestationResponse) credRk.getResponse();
-        assertNotNull("Failed to make resident key credential", responseRk);
-        assertNotNull("Credential missing attestation object", responseRk.getAttestationObject());
-        assertNotNull("Credential missing client data JSON", responseRk.getClientDataJson());
-        deleteCredIds.add((byte[]) parseCredentialData(getAuthenticatorDataFromAttestationResponse(responseRk)).get("credId"));
+        state.withCtap2((session) -> {
+            BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
+            PublicKeyCredentialCreationOptions creationOptionsRk = getCreateOptions(
+                    new PublicKeyCredentialUserEntity(
+                            "rkuser",
+                            "rkuser".getBytes(StandardCharsets.UTF_8),
+                            "RkUser"
+                    ),
+                    true,
+                    Collections.singletonList(TestData.PUB_KEY_CRED_PARAMS_ES256),
+                    null);
+            PublicKeyCredential credRk = webauthn.makeCredential(
+                    TestData.CLIENT_DATA_JSON_CREATE,
+                    creationOptionsRk,
+                    Objects.requireNonNull(creationOptionsRk.getRp().getId()),
+                    TestData.PIN,
+                    null,
+                    null
+            );
+            AuthenticatorAttestationResponse responseRk = (AuthenticatorAttestationResponse) credRk.getResponse();
+            assertNotNull("Failed to make resident key credential", responseRk);
+            assertNotNull("Credential missing attestation object", responseRk.getAttestationObject());
+            assertNotNull("Credential missing client data JSON", responseRk.getClientDataJson());
+            deleteCredIds.add((byte[]) parseCredentialData(getAuthenticatorDataFromAttestationResponse(responseRk)).get("credId"));
+        });
+
+        // Get assertions
+        state.withCtap2((session) -> {
+            BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
+            PublicKeyCredentialRequestOptions requestOptions = new PublicKeyCredentialRequestOptions(
+                    TestData.CHALLENGE,
+                    (long) 90000,
+                    TestData.RP_ID,
+                    null,
+                    null,
+                    null
+            );
+
+            try {
+                PublicKeyCredential credential = webauthn.getAssertion(
+                        TestData.CLIENT_DATA_JSON_GET,
+                        requestOptions,
+                        TestData.RP_ID,
+                        TestData.PIN,
+                        null
+                );
+                AuthenticatorAssertionResponse response = (AuthenticatorAssertionResponse) credential.getResponse();
+                assertNotNull("Assertion response missing authenticator data", response.getAuthenticatorData());
+                assertNotNull("Assertion response missing signature", response.getSignature());
+                assertNotNull("Assertion response missing user handle", response.getUserHandle());
+            } catch (MultipleAssertionsAvailable multipleAssertionsAvailable) {
+                fail("Got MultipleAssertionsAvailable even though there should only be one credential");
+            }
+
+            deleteCredentials(webauthn, deleteCredIds);
+        });
+    }
+
+    public static void testUvDiscouragedMcGa_withPin(FidoTestState state) throws Throwable {
+        state.withCtap2(session -> {
+            assumeTrue("Device has no PIN set",
+                    Boolean.TRUE.equals(session.getCachedInfo().getOptions().get("clientPin")));
+        });
+        testUvDiscouragedMakeCredentialGetAssertion(state);
+    }
+
+    public static void testUvDiscouragedMcGa_noPin(FidoTestState state) throws Throwable {
+        state.withCtap2(session -> {
+            assumeFalse("Device has PIN set. Reset and try again.",
+                    Boolean.TRUE.equals(session.getCachedInfo().getOptions().get("clientPin")));
+            assumeFalse("Ignoring FIPS approved devices", state.isFipsApproved());
+        });
+        testUvDiscouragedMakeCredentialGetAssertion(state);
+    }
+
+    private static void testUvDiscouragedMakeCredentialGetAssertion(FidoTestState state) throws Throwable {
+        // Test non rk credential
+        PublicKeyCredential credNonRk = state.withCtap2((session) -> {
+            BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
+
+            PublicKeyCredentialCreationOptions creationOptionsNonRk = getCreateOptions(
+                    new PublicKeyCredentialUserEntity(
+                            "user",
+                            "user".getBytes(StandardCharsets.UTF_8),
+                            "User"
+                    ),
+                    false,
+                    Collections.singletonList(TestData.PUB_KEY_CRED_PARAMS_ES256),
+                    null,
+                    UserVerificationRequirement.DISCOURAGED
+            );
+            PublicKeyCredential publicKeyCredential = webauthn.makeCredential(
+                    TestData.CLIENT_DATA_JSON_CREATE,
+                    creationOptionsNonRk,
+                    Objects.requireNonNull(creationOptionsNonRk.getRp().getId()),
+                    null,
+                    null,
+                    null
+            );
+
+            AuthenticatorAttestationResponse responseNonRk = (AuthenticatorAttestationResponse) publicKeyCredential.getResponse();
+            assertNotNull("Failed to make non resident key credential", responseNonRk);
+            assertNotNull("Credential missing attestation object", responseNonRk.getAttestationObject());
+            assertNotNull("Credential missing client data JSON", responseNonRk.getClientDataJson());
+            return publicKeyCredential;
+        });
+
+        // Get assertions
+        state.withCtap2(session -> {
+            BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
+            PublicKeyCredentialRequestOptions requestOptionsNonRk = new PublicKeyCredentialRequestOptions(
+                    TestData.CHALLENGE,
+                    (long) 90000,
+                    TestData.RP_ID,
+                    Collections.singletonList(new PublicKeyCredentialDescriptor(credNonRk.getType(), credNonRk.getRawId())),
+                    UserVerificationRequirement.DISCOURAGED,
+                    null
+            );
+
+            try {
+                PublicKeyCredential credential = webauthn.getAssertion(
+                        TestData.CLIENT_DATA_JSON_GET,
+                        requestOptionsNonRk,
+                        TestData.RP_ID,
+                        null,
+                        null
+                );
+                AuthenticatorAssertionResponse response = (AuthenticatorAssertionResponse) credential.getResponse();
+                assertNotNull("Assertion response missing authenticator data", response.getAuthenticatorData());
+                assertNotNull("Assertion response missing signature", response.getSignature());
+                // User identifiable information (name, DisplayName, icon) MUST NOT be returned if user verification is not done by the authenticator.
+                assertNull("Assertion response contains user handle", response.getUserHandle());
+            } catch (MultipleAssertionsAvailable multipleAssertionsAvailable) {
+                fail("Got MultipleAssertionsAvailable even though there should only be one credential");
+            }
+        });
+
+        // test rk credential
+        PublicKeyCredential credRk = state.withCtap2(session -> {
+            BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
+            PublicKeyCredentialCreationOptions creationOptionsRk = getCreateOptions(
+                    new PublicKeyCredentialUserEntity(
+                            "rkuser",
+                            "rkuser".getBytes(StandardCharsets.UTF_8),
+                            "RkUser"
+                    ),
+                    true,
+                    Collections.singletonList(TestData.PUB_KEY_CRED_PARAMS_ES256),
+                    null,
+                    UserVerificationRequirement.DISCOURAGED
+            );
+            PublicKeyCredential publicKeyCredential = webauthn.makeCredential(
+                    TestData.CLIENT_DATA_JSON_CREATE,
+                    creationOptionsRk,
+                    Objects.requireNonNull(creationOptionsRk.getRp().getId()),
+                    null,
+                    null,
+                    null
+            );
+
+            AuthenticatorAttestationResponse responseRk = (AuthenticatorAttestationResponse) publicKeyCredential.getResponse();
+            assertNotNull("Failed to make non resident key credential", responseRk);
+            assertNotNull("Credential missing attestation object", responseRk.getAttestationObject());
+            assertNotNull("Credential missing client data JSON", responseRk.getClientDataJson());
+            return publicKeyCredential;
+        });
+
+        // Get assertions
+        state.withCtap2(session -> {
+            BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
+            PublicKeyCredentialRequestOptions requestOptionsRk = new PublicKeyCredentialRequestOptions(
+                    TestData.CHALLENGE,
+                    (long) 90000,
+                    TestData.RP_ID,
+                    Collections.singletonList(new PublicKeyCredentialDescriptor(credRk.getType(), credRk.getRawId())),
+                    UserVerificationRequirement.DISCOURAGED,
+                    null
+            );
+
+            try {
+                PublicKeyCredential credential = webauthn.getAssertion(
+                        TestData.CLIENT_DATA_JSON_GET,
+                        requestOptionsRk,
+                        TestData.RP_ID,
+                        null,
+                        null
+                );
+                AuthenticatorAssertionResponse response = (AuthenticatorAssertionResponse) credential.getResponse();
+                assertNotNull("Assertion response missing authenticator data", response.getAuthenticatorData());
+                assertNotNull("Assertion response missing signature", response.getSignature());
+                assertNotNull("Assertion response missing user handle", response.getUserHandle());
+            } catch (MultipleAssertionsAvailable multipleAssertionsAvailable) {
+                fail("Got MultipleAssertionsAvailable even though there should only be one credential");
+            }
+        });
+    }
+
+    public static void testGetAssertionMultipleUsersRk(FidoTestState state) throws Throwable {
+        List<byte[]> deleteCredIds = new ArrayList<>();
+        Map<byte[], byte[]> userIdCredIdMap = new HashMap<>();
+
+        // make 3 rk credential
+        for (int i = 0; i < 3; i++) {
+            final int userIndex = i;
+            state.withCtap2(session -> {
+                BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
+                PublicKeyCredentialUserEntity user = new PublicKeyCredentialUserEntity(
+                        "user" + userIndex,
+                        ("user" + userIndex).getBytes(StandardCharsets.UTF_8),
+                        "User" + userIndex
+                );
+                PublicKeyCredentialCreationOptions creationOptions = getCreateOptions(
+                        user,
+                        true,
+                        Collections.singletonList(TestData.PUB_KEY_CRED_PARAMS_ES256),
+                        null
+                );
+                PublicKeyCredential credential = webauthn.makeCredential(
+                        TestData.CLIENT_DATA_JSON_CREATE,
+                        creationOptions,
+                        Objects.requireNonNull(creationOptions.getRp().getId()),
+                        TestData.PIN,
+                        null,
+                        null
+                );
+                AuthenticatorAttestationResponse response = (AuthenticatorAttestationResponse) credential.getResponse();
+                byte[] credId = (byte[]) parseCredentialData(getAuthenticatorDataFromAttestationResponse(response)).get("credId");
+                userIdCredIdMap.put(user.getId(), credId);
+                deleteCredIds.add(credId);
+            });
+        }
 
         // Get assertions
         PublicKeyCredentialRequestOptions requestOptions = new PublicKeyCredentialRequestOptions(
@@ -138,7 +351,122 @@ public class BasicWebAuthnClientTests {
                 null
         );
 
-        try {
+        for (int i = 0; i < 3; i++) {
+            final int userIndex = i;
+            state.withCtap2(session -> {
+                BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
+                try {
+                    webauthn.getAssertion(
+                            TestData.CLIENT_DATA_JSON_GET,
+                            requestOptions,
+                            TestData.RP_ID,
+                            TestData.PIN,
+                            null
+                    );
+                    fail("Got single assertion even though multiple credentials exist");
+                } catch (MultipleAssertionsAvailable multipleAssertionsAvailable) {
+                    List<PublicKeyCredentialUserEntity> users = multipleAssertionsAvailable.getUsers();
+                    assertNotNull("Assertion failed to return user list", users);
+                    assertTrue("There should be at least 3 users found", users.size() >= 3);
+                    PublicKeyCredentialUserEntity user = users.get(userIndex);
+                    assertNotNull(user.getId());
+                    assertNotNull(user.getName());
+                    assertNotNull(user.getDisplayName());
+                    if (userIdCredIdMap.containsKey(user.getId())) {
+                        PublicKeyCredential credential = multipleAssertionsAvailable.select(userIndex);
+                        AuthenticatorAssertionResponse assertion = (AuthenticatorAssertionResponse) credential.getResponse();
+                        assertNotNull("Failed to get assertion", assertion);
+                        assertNotNull("Assertion response missing authenticator data", assertion.getAuthenticatorData());
+                        assertNotNull("Assertion response missing signature", assertion.getSignature());
+                        assertNotNull("Assertion response missing user handle", assertion.getUserHandle());
+                        assertArrayEquals(userIdCredIdMap.get(users.get(userIndex)
+                                .getId()), credential.getRawId());
+                    }
+                }
+            });
+        }
+
+        state.withCtap2(session -> {
+            BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
+            if (CredentialManagement.isSupported(session.getCachedInfo())) {
+                deleteCredentials(webauthn, deleteCredIds);
+            }
+        });
+    }
+
+    public static void testGetAssertionWithAllowList(FidoTestState state) throws Throwable {
+
+        PublicKeyCredential cred1 = state.withCtap2(session -> {
+            BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
+
+            // Make 2 new credentials
+            PublicKeyCredentialCreationOptions creationOptions1 = getCreateOptions(
+                    new PublicKeyCredentialUserEntity(
+                            "user1",
+                            "user1".getBytes(StandardCharsets.UTF_8),
+                            "testUser1"
+                    ),
+                    false,
+                    Collections.singletonList(TestData.PUB_KEY_CRED_PARAMS_ES256),
+                    null
+            );
+
+
+            return webauthn.makeCredential(
+                    TestData.CLIENT_DATA_JSON_CREATE,
+                    creationOptions1,
+                    Objects.requireNonNull(TestData.RP.getId()),
+                    TestData.PIN,
+                    null,
+                    null
+            );
+        });
+
+        PublicKeyCredential cred2 = state.withCtap2(session -> {
+            BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
+
+            PublicKeyCredentialCreationOptions creationOptions2 = getCreateOptions(
+                    new PublicKeyCredentialUserEntity(
+                            "user2",
+                            "user2".getBytes(StandardCharsets.UTF_8),
+                            "testUser2"
+                    ),
+                    false,
+                    Collections.singletonList(TestData.PUB_KEY_CRED_PARAMS_ES256),
+                    null
+            );
+
+            return webauthn.makeCredential(
+                    TestData.CLIENT_DATA_JSON_CREATE,
+                    creationOptions2,
+                    Objects.requireNonNull(TestData.RP.getId()),
+                    TestData.PIN,
+                    null,
+                    null
+            );
+        });
+
+
+        state.withCtap2(session -> {
+            BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
+
+            // GetAssertions with allowList containing only credId1
+            List<PublicKeyCredentialDescriptor> allowCreds = Collections.singletonList(
+                    new PublicKeyCredentialDescriptor(
+                            PublicKeyCredentialType.PUBLIC_KEY,
+                            cred1.getRawId(),
+                            null
+                    )
+            );
+            PublicKeyCredentialRequestOptions requestOptions = new PublicKeyCredentialRequestOptions(
+                    TestData.CHALLENGE,
+                    (long) 90000,
+                    TestData.RP_ID,
+                    allowCreds,
+                    null,
+                    null
+            );
+
             PublicKeyCredential credential = webauthn.getAssertion(
                     TestData.CLIENT_DATA_JSON_GET,
                     requestOptions,
@@ -146,160 +474,43 @@ public class BasicWebAuthnClientTests {
                     TestData.PIN,
                     null
             );
-            AuthenticatorAssertionResponse response = (AuthenticatorAssertionResponse) credential.getResponse();
-            assertNotNull("Assertion response missing authenticator data", response.getAuthenticatorData());
-            assertNotNull("Assertion response missing signature", response.getSignature());
-            assertNotNull("Assertion response missing user handle", response.getUserHandle());
-        } catch (MultipleAssertionsAvailable multipleAssertionsAvailable) {
-            fail("Got MultipleAssertionsAvailable even though there should only be one credential");
-        }
+            assertArrayEquals(cred1.getRawId(), credential.getRawId());
 
-        deleteCredentials(webauthn, deleteCredIds);
-    }
+        });
 
-    public static void testUvDiscouragedMcGa_withPin(Ctap2Session session) throws Throwable {
-        assumeTrue("Device has no PIN set",
-                Boolean.TRUE.equals(session.getCachedInfo().getOptions().get("clientPin")));
-        testUvDiscouragedMakeCredentialGetAssertion(session);
-    }
+        state.withCtap2(session -> {
+            // GetAssertions with allowList containing only credId2
+            List<PublicKeyCredentialDescriptor> allowCreds = Collections.singletonList(
+                    new PublicKeyCredentialDescriptor(PublicKeyCredentialType.PUBLIC_KEY, cred2.getRawId(), null));
+            PublicKeyCredentialRequestOptions requestOptions = new PublicKeyCredentialRequestOptions(
+                    TestData.CHALLENGE, (long) 90000, TestData.RP_ID, allowCreds, null, null);
 
-    public static void testUvDiscouragedMcGa_noPin(Ctap2Session session) throws Throwable {
-        assumeFalse("Device has PIN set. Reset and try again.",
-                Boolean.TRUE.equals(session.getCachedInfo().getOptions().get("clientPin")));
-        assumeFalse("Ignoring FIPS approved devices", TestData.FIPS_APPROVED);
-        testUvDiscouragedMakeCredentialGetAssertion(session);
-    }
-
-    private static void testUvDiscouragedMakeCredentialGetAssertion(Ctap2Session session)
-            throws Throwable {
-
-        BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
-
-        // Test non rk credential
-        PublicKeyCredentialCreationOptions creationOptionsNonRk = getCreateOptions(
-                new PublicKeyCredentialUserEntity(
-                        "user",
-                        "user".getBytes(StandardCharsets.UTF_8),
-                        "User"
-                ),
-                false,
-                Collections.singletonList(TestData.PUB_KEY_CRED_PARAMS_ES256),
-                null,
-                UserVerificationRequirement.DISCOURAGED
-        );
-        PublicKeyCredential credNonRk = webauthn.makeCredential(
-                TestData.CLIENT_DATA_JSON_CREATE,
-                creationOptionsNonRk,
-                Objects.requireNonNull(creationOptionsNonRk.getRp().getId()),
-                null,
-                null,
-                null
-        );
-
-        AuthenticatorAttestationResponse responseNonRk = (AuthenticatorAttestationResponse) credNonRk.getResponse();
-        assertNotNull("Failed to make non resident key credential", responseNonRk);
-        assertNotNull("Credential missing attestation object", responseNonRk.getAttestationObject());
-        assertNotNull("Credential missing client data JSON", responseNonRk.getClientDataJson());
-
-        // Get assertions
-        PublicKeyCredentialRequestOptions requestOptionsNonRk = new PublicKeyCredentialRequestOptions(
-                TestData.CHALLENGE,
-                (long) 90000,
-                TestData.RP_ID,
-                Collections.singletonList(new PublicKeyCredentialDescriptor(credNonRk.getType(), credNonRk.getRawId())),
-                UserVerificationRequirement.DISCOURAGED,
-                null
-        );
-
-        try {
+            BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
             PublicKeyCredential credential = webauthn.getAssertion(
                     TestData.CLIENT_DATA_JSON_GET,
-                    requestOptionsNonRk,
+                    requestOptions,
                     TestData.RP_ID,
-                    null,
+                    TestData.PIN,
                     null
             );
-            AuthenticatorAssertionResponse response = (AuthenticatorAssertionResponse) credential.getResponse();
-            assertNotNull("Assertion response missing authenticator data", response.getAuthenticatorData());
-            assertNotNull("Assertion response missing signature", response.getSignature());
-            // User identifiable information (name, DisplayName, icon) MUST NOT be returned if user verification is not done by the authenticator.
-            assertNull("Assertion response contains user handle", response.getUserHandle());
-        } catch (MultipleAssertionsAvailable multipleAssertionsAvailable) {
-            fail("Got MultipleAssertionsAvailable even though there should only be one credential");
-        }
-
-        // test rk credential
-        PublicKeyCredentialCreationOptions creationOptionsRk = getCreateOptions(
-                new PublicKeyCredentialUserEntity(
-                        "rkuser",
-                        "rkuser".getBytes(StandardCharsets.UTF_8),
-                        "RkUser"
-                ),
-                true,
-                Collections.singletonList(TestData.PUB_KEY_CRED_PARAMS_ES256),
-                null,
-                UserVerificationRequirement.DISCOURAGED
-        );
-        PublicKeyCredential credRk = webauthn.makeCredential(
-                TestData.CLIENT_DATA_JSON_CREATE,
-                creationOptionsRk,
-                Objects.requireNonNull(creationOptionsRk.getRp().getId()),
-                null,
-                null,
-                null
-        );
-
-        AuthenticatorAttestationResponse responseRk = (AuthenticatorAttestationResponse) credRk.getResponse();
-        assertNotNull("Failed to make non resident key credential", responseRk);
-        assertNotNull("Credential missing attestation object", responseRk.getAttestationObject());
-        assertNotNull("Credential missing client data JSON", responseRk.getClientDataJson());
-
-        // Get assertions
-        PublicKeyCredentialRequestOptions requestOptionsRk = new PublicKeyCredentialRequestOptions(
-                TestData.CHALLENGE,
-                (long) 90000,
-                TestData.RP_ID,
-                Collections.singletonList(new PublicKeyCredentialDescriptor(credRk.getType(), credRk.getRawId())),
-                UserVerificationRequirement.DISCOURAGED,
-                null
-        );
-
-        try {
-            PublicKeyCredential credential = webauthn.getAssertion(
-                    TestData.CLIENT_DATA_JSON_GET,
-                    requestOptionsRk,
-                    TestData.RP_ID,
-                    null,
-                    null
-            );
-            AuthenticatorAssertionResponse response = (AuthenticatorAssertionResponse) credential.getResponse();
-            assertNotNull("Assertion response missing authenticator data", response.getAuthenticatorData());
-            assertNotNull("Assertion response missing signature", response.getSignature());
-            assertNotNull("Assertion response missing user handle", response.getUserHandle());
-        } catch (MultipleAssertionsAvailable multipleAssertionsAvailable) {
-            fail("Got MultipleAssertionsAvailable even though there should only be one credential");
-        }
+            assertArrayEquals(cred2.getRawId(), credential.getRawId());
+        });
     }
 
-    public static void testGetAssertionMultipleUsersRk(Ctap2Session session) throws Throwable {
-        BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
-        List<byte[]> deleteCredIds = new ArrayList<>();
+    public static void testMakeCredentialWithExcludeList(FidoTestState state) throws Throwable {
+        List<PublicKeyCredentialDescriptor> excludeList = new ArrayList<>();
 
-        Map<byte[], byte[]> userIdCredIdMap = new HashMap<>();
+        state.withCtap2(session -> {
+            BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
 
-        // make 3 rk credential
-        for (int i = 0; i < 3; i++) {
-            PublicKeyCredentialUserEntity user = new PublicKeyCredentialUserEntity(
-                    "user" + i,
-                    ("user" + i).getBytes(StandardCharsets.UTF_8),
-                    "User" + i
-            );
+            // Make a non RK credential
             PublicKeyCredentialCreationOptions creationOptions = getCreateOptions(
-                    user,
-                    true,
+                    null,
+                    false,
                     Collections.singletonList(TestData.PUB_KEY_CRED_PARAMS_ES256),
                     null
             );
+
             PublicKeyCredential credential = webauthn.makeCredential(
                     TestData.CLIENT_DATA_JSON_CREATE,
                     creationOptions,
@@ -308,181 +519,51 @@ public class BasicWebAuthnClientTests {
                     null,
                     null
             );
-            AuthenticatorAttestationResponse response = (AuthenticatorAttestationResponse) credential.getResponse();
-            byte[] credId = (byte[]) parseCredentialData(getAuthenticatorDataFromAttestationResponse(response)).get("credId");
-            userIdCredIdMap.put(user.getId(), credId);
-            deleteCredIds.add(credId);
-        }
-
-        // Get assertions
-        PublicKeyCredentialRequestOptions requestOptions = new PublicKeyCredentialRequestOptions(
-                TestData.CHALLENGE,
-                (long) 90000,
-                TestData.RP_ID,
-                null,
-                null,
-                null
-        );
-
-        for (int i = 0; i < 3; i++) {
-            try {
-                webauthn.getAssertion(
-                        TestData.CLIENT_DATA_JSON_GET,
-                        requestOptions,
-                        TestData.RP_ID,
-                        TestData.PIN,
-                        null
-                );
-                fail("Got single assertion even though multiple credentials exist");
-            } catch (MultipleAssertionsAvailable multipleAssertionsAvailable) {
-                List<PublicKeyCredentialUserEntity> users = multipleAssertionsAvailable.getUsers();
-                assertNotNull("Assertion failed to return user list", users);
-                assertTrue("There should be at least 3 users found", users.size() >= 3);
-                PublicKeyCredentialUserEntity user = users.get(i);
-                assertNotNull(user.getId());
-                assertNotNull(user.getName());
-                assertNotNull(user.getDisplayName());
-                if (userIdCredIdMap.containsKey(user.getId())) {
-                    PublicKeyCredential credential = multipleAssertionsAvailable.select(i);
-                    AuthenticatorAssertionResponse assertion = (AuthenticatorAssertionResponse) credential.getResponse();
-                    assertNotNull("Failed to get assertion", assertion);
-                    assertNotNull("Assertion response missing authenticator data", assertion.getAuthenticatorData());
-                    assertNotNull("Assertion response missing signature", assertion.getSignature());
-                    assertNotNull("Assertion response missing user handle", assertion.getUserHandle());
-
-                    assertArrayEquals(userIdCredIdMap.get(users.get(i).getId()), credential.getRawId());
-                }
-            }
-        }
-
-        deleteCredentials(webauthn, deleteCredIds);
-    }
-
-    public static void testGetAssertionWithAllowList(Ctap2Session session) throws Throwable {
-
-        BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
-
-        // Make 2 new credentials
-        PublicKeyCredentialCreationOptions creationOptions1 = getCreateOptions(
-                new PublicKeyCredentialUserEntity(
-                        "user1",
-                        "user1".getBytes(StandardCharsets.UTF_8),
-                        "testUser1"
-                ),
-                false,
-                Collections.singletonList(TestData.PUB_KEY_CRED_PARAMS_ES256),
-                null
-        );
-        PublicKeyCredentialCreationOptions creationOptions2 = getCreateOptions(
-                new PublicKeyCredentialUserEntity(
-                        "user2",
-                        "user2".getBytes(StandardCharsets.UTF_8),
-                        "testUser2"
-                ),
-                false,
-                Collections.singletonList(TestData.PUB_KEY_CRED_PARAMS_ES256),
-                null
-        );
-
-        PublicKeyCredential cred1 = webauthn.makeCredential(
-                TestData.CLIENT_DATA_JSON_CREATE,
-                creationOptions1,
-                Objects.requireNonNull(TestData.RP.getId()),
-                TestData.PIN,
-                null,
-                null
-        );
-
-        byte[] credId1 = cred1.getRawId();
-
-        PublicKeyCredential cred2 = webauthn.makeCredential(
-                TestData.CLIENT_DATA_JSON_CREATE,
-                creationOptions2,
-                Objects.requireNonNull(TestData.RP.getId()),
-                TestData.PIN,
-                null,
-                null
-        );
-        byte[] credId2 = cred2.getRawId();
-
-        // GetAssertions with allowList containing only credId1
-        List<PublicKeyCredentialDescriptor> allowCreds = Collections.singletonList(
-                new PublicKeyCredentialDescriptor(
-                        PublicKeyCredentialType.PUBLIC_KEY,
-                        credId1,
-                        null
-                )
-        );
-        PublicKeyCredentialRequestOptions requestOptions = new PublicKeyCredentialRequestOptions(
-                TestData.CHALLENGE,
-                (long) 90000,
-                TestData.RP_ID,
-                allowCreds,
-                null,
-                null
-        );
-
-        PublicKeyCredential credential = webauthn.getAssertion(
-                TestData.CLIENT_DATA_JSON_GET,
-                requestOptions,
-                TestData.RP_ID,
-                TestData.PIN,
-                null
-        );
-        assertArrayEquals(credId1, credential.getRawId());
-
-        // GetAssertions with allowList containing only credId2
-        allowCreds = Collections.singletonList(new PublicKeyCredentialDescriptor(PublicKeyCredentialType.PUBLIC_KEY, credId2, null));
-        requestOptions = new PublicKeyCredentialRequestOptions(
-                TestData.CHALLENGE, (long) 90000, TestData.RP_ID, allowCreds, null, null);
-
-        credential = webauthn.getAssertion(
-                TestData.CLIENT_DATA_JSON_GET,
-                requestOptions,
-                TestData.RP_ID,
-                TestData.PIN,
-                null
-        );
-        assertArrayEquals(credId2, credential.getRawId());
-    }
-
-    public static void testMakeCredentialWithExcludeList(Ctap2Session session) throws Throwable {
-
-        BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
-        List<PublicKeyCredentialDescriptor> excludeList = new ArrayList<>();
-
-        // Make a non RK credential
-        PublicKeyCredentialCreationOptions creationOptions = getCreateOptions(
-                null,
-                false,
-                Collections.singletonList(TestData.PUB_KEY_CRED_PARAMS_ES256),
-                null
-        );
-
-        PublicKeyCredential credential = webauthn.makeCredential(
-                TestData.CLIENT_DATA_JSON_CREATE,
-                creationOptions,
-                Objects.requireNonNull(creationOptions.getRp().getId()),
-                TestData.PIN,
-                null,
-                null
-        );
-        excludeList.add(
-                new PublicKeyCredentialDescriptor(
-                        PublicKeyCredentialType.PUBLIC_KEY,
-                        credential.getRawId(),
-                        null
-                )
-        );
+            excludeList.add(
+                    new PublicKeyCredentialDescriptor(
+                            PublicKeyCredentialType.PUBLIC_KEY,
+                            credential.getRawId(),
+                            null
+                    )
+            );
+        });
 
         // Make another non RK credential with exclude list including credId. Should fail
-        creationOptions = getCreateOptions(
-                null,
-                false,
-                Collections.singletonList(TestData.PUB_KEY_CRED_PARAMS_ES256),
-                excludeList
-        );
-        try {
+        state.withCtap2(session -> {
+            BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
+
+            PublicKeyCredentialCreationOptions creationOptions = getCreateOptions(
+                    null,
+                    false,
+                    Collections.singletonList(TestData.PUB_KEY_CRED_PARAMS_ES256),
+                    excludeList
+            );
+            try {
+                webauthn.makeCredential(
+                        TestData.CLIENT_DATA_JSON_CREATE,
+                        creationOptions,
+                        Objects.requireNonNull(creationOptions.getRp().getId()),
+                        TestData.PIN,
+                        null,
+                        null
+                );
+                fail("Succeeded in making credential even though the credential was excluded");
+            } catch (ClientError clientError) {
+                assertEquals(ClientError.Code.DEVICE_INELIGIBLE, clientError.getErrorCode());
+            }
+        });
+
+
+        // Make another non RK credential with exclude list null. Should succeed
+        state.withCtap2(session -> {
+            BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
+
+            PublicKeyCredentialCreationOptions creationOptions = getCreateOptions(
+                    null,
+                    false,
+                    Collections.singletonList(TestData.PUB_KEY_CRED_PARAMS_ES256),
+                    null
+            );
             webauthn.makeCredential(
                     TestData.CLIENT_DATA_JSON_CREATE,
                     creationOptions,
@@ -491,38 +572,53 @@ public class BasicWebAuthnClientTests {
                     null,
                     null
             );
-            fail("Succeeded in making credential even though the credential was excluded");
-        } catch (ClientError clientError) {
-            assertEquals(ClientError.Code.DEVICE_INELIGIBLE, clientError.getErrorCode());
-        }
+        });
 
-        // Make another non RK credential with exclude list null. Should succeed
-        creationOptions = getCreateOptions(
-                null,
-                false,
-                Collections.singletonList(TestData.PUB_KEY_CRED_PARAMS_ES256),
-                null
-        );
-        webauthn.makeCredential(
-                TestData.CLIENT_DATA_JSON_CREATE,
-                creationOptions,
-                Objects.requireNonNull(creationOptions.getRp().getId()),
-                TestData.PIN,
-                null,
-                null
-        );
     }
 
-    public static void testMakeCredentialKeyAlgorithms(Ctap2Session session) throws Throwable {
-        BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
+    public static void testMakeCredentialKeyAlgorithms(FidoTestState state) throws Throwable {
+
         List<PublicKeyCredentialParameters> allCredParams = Arrays.asList(
                 TestData.PUB_KEY_CRED_PARAMS_ES256,
                 TestData.PUB_KEY_CRED_PARAMS_EDDSA);
 
         // Test individual algorithms
         for (PublicKeyCredentialParameters param : allCredParams) {
+            state.withCtap2(session -> {
+                BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
+
+                PublicKeyCredentialCreationOptions creationOptions = getCreateOptions(
+                        null, false, Collections.singletonList(param), null);
+                PublicKeyCredential credential = webauthn.makeCredential(
+                        TestData.CLIENT_DATA_JSON_CREATE,
+                        creationOptions,
+                        Objects.requireNonNull(creationOptions.getRp().getId()),
+                        TestData.PIN,
+                        null,
+                        null
+                );
+                AuthenticatorAttestationResponse attestation = (AuthenticatorAttestationResponse) credential.getResponse();
+                int alg = (Integer) Objects.requireNonNull(
+                        parseCredentialData(
+                                getAuthenticatorDataFromAttestationResponse(attestation)
+                        ).get("keyAlgo")
+                );
+                assertEquals(param.getAlg(), alg);
+            });
+        }
+
+        state.withCtap2(session -> {
+            BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
+            // Test algorithm order: ES256 - EdDSA
+            List<PublicKeyCredentialParameters> credParams = Arrays.asList(
+                    allCredParams.get(0),
+                    allCredParams.get(1));
             PublicKeyCredentialCreationOptions creationOptions = getCreateOptions(
-                    null, false, Collections.singletonList(param), null);
+                    null,
+                    false,
+                    credParams,
+                    null
+            );
             PublicKeyCredential credential = webauthn.makeCredential(
                     TestData.CLIENT_DATA_JSON_CREATE,
                     creationOptions,
@@ -537,109 +633,90 @@ public class BasicWebAuthnClientTests {
                             getAuthenticatorDataFromAttestationResponse(attestation)
                     ).get("keyAlgo")
             );
-            assertEquals(param.getAlg(), alg);
-        }
+            assertEquals(credParams.get(0).getAlg(), alg);
+        });
 
-        // Test algorithm order: ES256 - EdDSA
-        List<PublicKeyCredentialParameters> credParams = Arrays.asList(
-                allCredParams.get(0),
-                allCredParams.get(1));
-        PublicKeyCredentialCreationOptions creationOptions = getCreateOptions(
-                null,
-                false,
-                credParams,
-                null
-        );
-        PublicKeyCredential credential = webauthn.makeCredential(
-                TestData.CLIENT_DATA_JSON_CREATE,
-                creationOptions,
-                Objects.requireNonNull(creationOptions.getRp().getId()),
-                TestData.PIN,
-                null,
-                null
-        );
-        AuthenticatorAttestationResponse attestation = (AuthenticatorAttestationResponse) credential.getResponse();
-        int alg = (Integer) Objects.requireNonNull(
-                parseCredentialData(
-                        getAuthenticatorDataFromAttestationResponse(attestation)
-                ).get("keyAlgo")
-        );
-        assertEquals(credParams.get(0).getAlg(), alg);
-
-        // Test algorithm order: ALG_EdDSA - ALG_ES256
-        credParams = Arrays.asList(
-                allCredParams.get(1),
-                allCredParams.get(0));
-        creationOptions = getCreateOptions(null, false, credParams, null);
-        credential = webauthn.makeCredential(
-                TestData.CLIENT_DATA_JSON_CREATE,
-                creationOptions,
-                Objects.requireNonNull(creationOptions.getRp().getId()),
-                TestData.PIN,
-                null,
-                null
-        );
-        attestation = (AuthenticatorAttestationResponse) credential.getResponse();
-        alg = (Integer) Objects.requireNonNull(
-                parseCredentialData(
-                        getAuthenticatorDataFromAttestationResponse(attestation)
-                ).get("keyAlgo")
-        );
-        assertEquals(credParams.get(0).getAlg(), alg);
+        state.withCtap2(session -> {
+            BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
+            // Test algorithm order: ALG_EdDSA - ALG_ES256
+            List<PublicKeyCredentialParameters> credParams = Arrays.asList(
+                    allCredParams.get(1),
+                    allCredParams.get(0));
+            PublicKeyCredentialCreationOptions creationOptions = getCreateOptions(null, false, credParams, null);
+            PublicKeyCredential credential = webauthn.makeCredential(
+                    TestData.CLIENT_DATA_JSON_CREATE,
+                    creationOptions,
+                    Objects.requireNonNull(creationOptions.getRp().getId()),
+                    TestData.PIN,
+                    null,
+                    null
+            );
+            AuthenticatorAttestationResponse attestation = (AuthenticatorAttestationResponse) credential.getResponse();
+            int alg = (Integer) Objects.requireNonNull(
+                    parseCredentialData(
+                            getAuthenticatorDataFromAttestationResponse(attestation)
+                    ).get("keyAlgo")
+            );
+            assertEquals(credParams.get(0).getAlg(), alg);
+        });
     }
 
-    public static void testClientPinManagement(Ctap2Session session) throws Throwable {
-        BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
-        assertTrue(webauthn.isPinSupported());
-        assertTrue(webauthn.isPinConfigured());
+    public static void testClientPinManagement(FidoTestState state) throws Throwable {
+        state.withCtap2(session -> {
+            BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
+            assumeTrue("Pin not supported", webauthn.isPinSupported());
+            assertTrue(webauthn.isPinConfigured());
 
-        webauthn.changePin(TestData.PIN, TestData.OTHER_PIN);
-
-        try {
             webauthn.changePin(TestData.PIN, TestData.OTHER_PIN);
-            fail("Wrong PIN was accepted");
-        } catch (ClientError e) {
-            assertThat(e.getErrorCode(), equalTo(ClientError.Code.BAD_REQUEST));
-            assertThat(e.getCause(), instanceOf(CtapException.class));
-            assertThat(((CtapException) Objects.requireNonNull(e.getCause())).getCtapError(),
-                    is(CtapException.ERR_PIN_INVALID));
-        }
 
-        webauthn.changePin(TestData.OTHER_PIN, TestData.PIN);
+            try {
+                webauthn.changePin(TestData.PIN, TestData.OTHER_PIN);
+                fail("Wrong PIN was accepted");
+            } catch (ClientError e) {
+                assertThat(e.getErrorCode(), equalTo(ClientError.Code.BAD_REQUEST));
+                assertThat(e.getCause(), instanceOf(CtapException.class));
+                assertThat(((CtapException) Objects.requireNonNull(e.getCause())).getCtapError(),
+                        is(CtapException.ERR_PIN_INVALID));
+            }
+
+            webauthn.changePin(TestData.OTHER_PIN, TestData.PIN);
+        });
     }
 
+    public static void testClientCredentialManagement(FidoTestState state) throws Throwable {
+        state.withCtap2(session -> {
+            assumeTrue("Credential management not supported",
+                    CredentialManagement.isSupported(session.getCachedInfo()));
+            BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
+            PublicKeyCredentialCreationOptions creationOptions = getCreateOptions(null, true,
+                    Collections.singletonList(TestData.PUB_KEY_CRED_PARAMS_ES256),
+                    null);
+            webauthn.makeCredential(
+                    TestData.CLIENT_DATA_JSON_CREATE,
+                    creationOptions,
+                    Objects.requireNonNull(creationOptions.getRp().getId()),
+                    TestData.PIN,
+                    null,
+                    null);
 
-    public static void testClientCredentialManagement(Ctap2Session session) throws Throwable {
-        assumeTrue("Credential management not supported",
-                CredentialManagement.isSupported(session.getCachedInfo()));
-        BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
-        PublicKeyCredentialCreationOptions creationOptions = getCreateOptions(null, true,
-                Collections.singletonList(TestData.PUB_KEY_CRED_PARAMS_ES256),
-                null);
-        webauthn.makeCredential(
-                TestData.CLIENT_DATA_JSON_CREATE,
-                creationOptions,
-                Objects.requireNonNull(creationOptions.getRp().getId()),
-                TestData.PIN,
-                null,
-                null);
+            CredentialManager credentialManager = webauthn.getCredentialManager(TestData.PIN);
 
-        CredentialManager credentialManager = webauthn.getCredentialManager(TestData.PIN);
+            assertThat(credentialManager.getCredentialCount(), equalTo(1));
 
-        assertThat(credentialManager.getCredentialCount(), equalTo(1));
+            List<String> rpIds = credentialManager.getRpIdList();
+            assertThat(rpIds, equalTo(Collections.singletonList(TestData.RP_ID)));
 
-        List<String> rpIds = credentialManager.getRpIdList();
-        assertThat(rpIds, equalTo(Collections.singletonList(TestData.RP_ID)));
+            Map<PublicKeyCredentialDescriptor, PublicKeyCredentialUserEntity> credentials = credentialManager.getCredentials(TestData.RP_ID);
+            assertThat(credentials.size(), equalTo(1));
+            PublicKeyCredentialDescriptor key = credentials.keySet().iterator().next();
+            assertThat(Objects.requireNonNull(credentials.get(key))
+                    .getId(), equalTo(TestData.USER_ID));
 
-        Map<PublicKeyCredentialDescriptor, PublicKeyCredentialUserEntity> credentials = credentialManager.getCredentials(TestData.RP_ID);
-        assertThat(credentials.size(), equalTo(1));
-        PublicKeyCredentialDescriptor key = credentials.keySet().iterator().next();
-        assertThat(Objects.requireNonNull(credentials.get(key)).getId(), equalTo(TestData.USER_ID));
-
-        credentialManager.deleteCredential(key);
-        assertThat(credentialManager.getCredentialCount(), equalTo(0));
-        assertTrue(credentialManager.getCredentials(TestData.RP_ID).isEmpty());
-        assertTrue(credentialManager.getRpIdList().isEmpty());
+            credentialManager.deleteCredential(key);
+            assertThat(credentialManager.getCredentialCount(), equalTo(0));
+            assertTrue(credentialManager.getCredentials(TestData.RP_ID).isEmpty());
+            assertTrue(credentialManager.getRpIdList().isEmpty());
+        });
     }
 
     private static PublicKeyCredentialCreationOptions getCreateOptions(

@@ -22,6 +22,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import com.yubico.yubikit.core.smartcard.scp.ScpKid;
 import com.yubico.yubikit.testing.SlowTest;
+import com.yubico.yubikit.testing.SmokeTest;
 import com.yubico.yubikit.testing.framework.PivInstrumentedTests;
 
 import org.junit.Test;

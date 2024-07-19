@@ -28,9 +28,11 @@ import com.yubico.yubikit.core.fido.FidoConnection;
 import com.yubico.yubikit.core.fido.FidoProtocol;
 import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.smartcard.Apdu;
+import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.core.smartcard.AppId;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.smartcard.SmartCardProtocol;
+import com.yubico.yubikit.core.smartcard.scp.ScpKeyParams;
 import com.yubico.yubikit.core.util.Callback;
 import com.yubico.yubikit.core.util.Result;
 import com.yubico.yubikit.core.util.StringUtils;
@@ -57,7 +59,6 @@ import javax.annotation.Nullable;
  *
  * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html">Client to Authenticator Protocol (CTAP)</a>
  */
-@SuppressWarnings("unused")
 public class Ctap2Session extends ApplicationSession<Ctap2Session> {
 
     private static final byte NFCCTAP_MSG = 0x10;
@@ -103,6 +104,19 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
         }
     }
 
+    public Ctap2Session(SmartCardConnection connection, @Nullable ScpKeyParams scpKeyParams)
+            throws IOException, CommandException {
+        this(connection, new Version(0, 0, 0), scpKeyParams);
+    }
+
+    public Ctap2Session(SmartCardConnection connection, Version version, @Nullable ScpKeyParams scpKeyParams)
+            throws IOException, CommandException {
+        this(version, getSmartCardBackend(connection, scpKeyParams));
+        Logger.debug(logger, "Ctap2Session session initialized for connection={}, version={}",
+                connection.getClass().getSimpleName(),
+                version);
+    }
+
     public Ctap2Session(SmartCardConnection connection)
             throws IOException, CommandException {
         this(connection, new Version(0, 0, 0));
@@ -110,14 +124,15 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
 
     public Ctap2Session(SmartCardConnection connection, Version version)
             throws IOException, CommandException {
-        this(version, getSmartCardBackend(connection));
-        Logger.debug(logger, "Ctap2Session session initialized for connection={}, version={}",
-                connection.getClass().getSimpleName(),
-                version);
+        this(connection, version, null);
     }
 
     public Ctap2Session(FidoConnection connection) throws IOException, CommandException {
-        this(new FidoProtocol(connection));
+        this(connection, null);
+    }
+
+    public Ctap2Session(FidoConnection connection, @Nullable ScpKeyParams scpKeyParams) throws IOException, CommandException {
+        this(new FidoProtocol(connection), scpKeyParams);
         Logger.debug(logger, "Ctap2Session session initialized for connection={}, version={}",
                 connection.getClass().getSimpleName(),
                 version);
@@ -149,10 +164,17 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
         }
     }
 
-    private static Backend<SmartCardProtocol> getSmartCardBackend(SmartCardConnection connection)
+    private static Backend<SmartCardProtocol> getSmartCardBackend(SmartCardConnection connection, @Nullable ScpKeyParams scpKeyParams)
             throws IOException, ApplicationNotAvailableException {
         final SmartCardProtocol protocol = new SmartCardProtocol(connection);
         protocol.select(AppId.FIDO);
+        if (scpKeyParams != null) {
+            try {
+                protocol.initScp(scpKeyParams);
+            } catch (ApduException | BadResponseException e) {
+                throw new IOException("Failed setting up SCP session", e);
+            }
+        }
         return new Backend<SmartCardProtocol>(protocol) {
             byte[] sendCbor(byte[] data, @Nullable CommandState state)
                     throws IOException, CommandException {
@@ -163,6 +185,10 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
     }
 
     private Ctap2Session(FidoProtocol protocol) throws IOException, CommandException {
+        this(protocol, null);
+    }
+
+    private Ctap2Session(FidoProtocol protocol, @Nullable ScpKeyParams scpKeyParams) throws IOException, CommandException {
         this(protocol.getVersion(), new Backend<FidoProtocol>(protocol) {
             @Override
             byte[] sendCbor(byte[] data, @Nullable CommandState state) throws IOException {

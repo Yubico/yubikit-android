@@ -39,12 +39,13 @@ public class Ctap2BioEnrollmentTests {
 
     private static final Logger logger = LoggerFactory.getLogger(PivCertificateTests.class);
 
-    public static void testFingerprintEnrollment(Ctap2Session session) throws Throwable {
+    public static void testFingerprintEnrollment(Ctap2Session session, FidoTestState state)
+            throws Throwable {
 
         assumeTrue("Bio enrollment not supported",
                 BioEnrollment.isSupported(session.getCachedInfo()));
 
-        final FingerprintBioEnrollment fingerprintBioEnrollment = fpBioEnrollment(session);
+        final FingerprintBioEnrollment fingerprintBioEnrollment = fpBioEnrollment(session, state);
 
         removeAllFingerprints(fingerprintBioEnrollment);
 
@@ -98,18 +99,17 @@ public class Ctap2BioEnrollmentTests {
         return templateId;
     }
 
-    private static FingerprintBioEnrollment fpBioEnrollment(
-            Ctap2Session session) throws Throwable {
+    private static FingerprintBioEnrollment fpBioEnrollment(Ctap2Session session, FidoTestState state) throws Throwable {
 
         // ensureDefaultPinSet(session);
 
-        final ClientPin pin = new ClientPin(session, TestData.PIN_UV_AUTH_PROTOCOL);
+        final ClientPin pin = new ClientPin(session, state.getPinUvAuthProtocol());
         final byte[] pinToken = pin.getPinToken(
                 TestData.PIN,
                 ClientPin.PIN_PERMISSION_BE,
                 "localhost");
 
-        return new FingerprintBioEnrollment(session, TestData.PIN_UV_AUTH_PROTOCOL, pinToken);
+        return new FingerprintBioEnrollment(session, state.getPinUvAuthProtocol(), pinToken);
     }
 
     public static void renameFingerprint(

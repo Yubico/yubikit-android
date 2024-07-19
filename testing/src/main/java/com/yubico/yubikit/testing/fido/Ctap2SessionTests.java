@@ -17,6 +17,7 @@
 package com.yubico.yubikit.testing.fido;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
@@ -40,7 +41,7 @@ import java.util.concurrent.TimeUnit;
 
 public class Ctap2SessionTests {
 
-    public static void testCtap2GetInfo(Ctap2Session session, Object... ignoredArgs) {
+    public static void testCtap2GetInfo(Ctap2Session session, FidoTestState state) {
         Ctap2Session.InfoData info = session.getCachedInfo();
 
         List<String> versions = info.getVersions();
@@ -64,15 +65,24 @@ public class Ctap2SessionTests {
         // Check PIN/UV Auth protocol
         List<Integer> pinUvAuthProtocols = info.getPinUvAuthProtocols();
         assertThat("Number of PIN protocols incorrect", pinUvAuthProtocols.size(), greaterThanOrEqualTo(1));
-        assertTrue("PIN protocol incorrect", pinUvAuthProtocols.contains(1));
+
+        if (state.isFipsApproved() && !state.isUsbTransport()) {
+            // FIPS only supports PIN/UV Auth protocol 2 over NFC
+            assertThat("Number of PIN protocols incorrect", pinUvAuthProtocols.size(), equalTo(1));
+            assertTrue("PIN protocol incorrect", pinUvAuthProtocols.contains(2));
+        } else {
+            // we expect at least protocol 1 to be present
+            assertThat("Number of PIN protocols incorrect", pinUvAuthProtocols.size(), greaterThanOrEqualTo(1));
+            assertTrue("PIN protocol incorrect", pinUvAuthProtocols.contains(1));
+        }
     }
 
-    public static void testCancelCborCommandImmediate(Ctap2Session session) throws Throwable {
-        doTestCancelCborCommand(session, false);
+    public static void testCancelCborCommandImmediate(Ctap2Session session, FidoTestState state) throws Throwable {
+        doTestCancelCborCommand(session, state, false);
     }
 
-    public static void testCancelCborCommandAfterDelay(Ctap2Session session) throws Throwable {
-        doTestCancelCborCommand(session, true);
+    public static void testCancelCborCommandAfterDelay(Ctap2Session session, FidoTestState state) throws Throwable {
+        doTestCancelCborCommand(session, state, true);
     }
 
     public static void testReset(Ctap2Session session) throws Throwable {
@@ -89,12 +99,13 @@ public class Ctap2SessionTests {
 
     private static void doTestCancelCborCommand(
             Ctap2Session session,
+            FidoTestState testState,
             boolean delay
     ) throws Throwable {
 
-        assumeTrue("Not a USB connection", TestData.TRANSPORT_USB);
+        assumeTrue("Not a USB connection", testState.isUsbTransport());
 
-        ClientPin pin = new ClientPin(session, TestData.PIN_UV_AUTH_PROTOCOL);
+        ClientPin pin = new ClientPin(session, testState.getPinUvAuthProtocol());
         byte[] pinToken = pin.getPinToken(TestData.PIN, ClientPin.PIN_PERMISSION_MC, TestData.RP.getId());
         byte[] pinAuth = pin.getPinUvAuth().authenticate(pinToken, TestData.CLIENT_DATA_HASH);
 

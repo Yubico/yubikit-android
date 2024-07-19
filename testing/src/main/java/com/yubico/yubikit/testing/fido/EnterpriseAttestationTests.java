@@ -48,24 +48,24 @@ import javax.annotation.Nullable;
 
 public class EnterpriseAttestationTests {
 
-    static void enableEp(Ctap2Session session)
+    static void enableEp(Ctap2Session session, FidoTestState state)
             throws CommandException, IOException {
         // enable ep if not enabled
         if (session.getCachedInfo().getOptions().get("ep") == FALSE) {
 
-            ClientPin clientPin = new ClientPin(session, TestData.PIN_UV_AUTH_PROTOCOL);
+            ClientPin clientPin = new ClientPin(session, state.getPinUvAuthProtocol());
             byte[] pinToken = clientPin.getPinToken(TestData.PIN, ClientPin.PIN_PERMISSION_ACFG, null);
-            final Config config = new Config(session, TestData.PIN_UV_AUTH_PROTOCOL, pinToken);
+            final Config config = new Config(session, state.getPinUvAuthProtocol(), pinToken);
             config.enableEnterpriseAttestation();
 
         }
     }
 
     // test with RP ID in platform RP ID list
-    public static void testSupportedPlatformManagedEA(Ctap2Session session) throws Throwable {
+    public static void testSupportedPlatformManagedEA(Ctap2Session session, FidoTestState state) throws Throwable {
         assumeTrue("Enterprise attestation not supported",
                 session.getCachedInfo().getOptions().containsKey("ep"));
-        enableEp(session);
+        enableEp(session, state);
         BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
         webauthn.getUserAgentConfiguration().setEpSupportedRpIds(Collections.singletonList(TestData.RP_ID));
 
@@ -77,11 +77,11 @@ public class EnterpriseAttestationTests {
     }
 
     // test with RP ID which is not in platform RP ID list
-    public static void testUnsupportedPlatformManagedEA(Ctap2Session session) throws Throwable {
+    public static void testUnsupportedPlatformManagedEA(Ctap2Session session, FidoTestState state) throws Throwable {
         assumeTrue("Enterprise attestation not supported",
                 session.getCachedInfo().getOptions().containsKey("ep"));
         // Ctap2ClientPinTests.ensureDefaultPinSet(session);
-        enableEp(session);
+        enableEp(session, state);
         BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
 
         PublicKeyCredential credential = makeCredential(webauthn, AttestationConveyancePreference.ENTERPRISE, 2);
@@ -92,11 +92,11 @@ public class EnterpriseAttestationTests {
                 FALSE.equals(attestationObject.get("epAtt")));
     }
 
-    public static void testVendorFacilitatedEA(Ctap2Session session) throws Throwable {
+    public static void testVendorFacilitatedEA(Ctap2Session session, FidoTestState state) throws Throwable {
         assumeTrue("Enterprise attestation not supported",
                 session.getCachedInfo().getOptions().containsKey("ep"));
         // Ctap2ClientPinTests.ensureDefaultPinSet(session);
-        enableEp(session);
+        enableEp(session, state);
         BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
         webauthn.getUserAgentConfiguration().setEpSupportedRpIds(Collections.singletonList(TestData.RP_ID));
 
@@ -109,11 +109,11 @@ public class EnterpriseAttestationTests {
 
     // test with different PublicKeyCredentialCreationOptions AttestationConveyancePreference
     // values
-    public static void testCreateOptionsAttestationPreference(Ctap2Session session) throws Throwable {
+    public static void testCreateOptionsAttestationPreference(Ctap2Session session, FidoTestState state) throws Throwable {
         assumeTrue("Enterprise attestation not supported",
                 session.getCachedInfo().getOptions().containsKey("ep"));
         // Ctap2ClientPinTests.ensureDefaultPinSet(session);
-        enableEp(session);
+        enableEp(session, state);
 
         // setup
         BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);

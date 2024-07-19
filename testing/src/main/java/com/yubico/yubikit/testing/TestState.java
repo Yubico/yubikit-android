@@ -41,7 +41,6 @@ import java.io.IOException;
 import javax.annotation.Nullable;
 
 public class TestState {
-
     public static class Builder<T extends Builder<T>> {
         final protected YubiKeyDevice device;
         @Nullable
@@ -84,7 +83,7 @@ public class TestState {
         this.scpParameters = new ScpParameters(builder.device, this.scpKid);
         this.reconnectDeviceCallback = builder.reconnectDeviceCallback;
         this.isUsbTransport = builder.device.getTransport() == Transport.USB;
-    }
+   }
 
     public boolean isUsbTransport() {
         return isUsbTransport;

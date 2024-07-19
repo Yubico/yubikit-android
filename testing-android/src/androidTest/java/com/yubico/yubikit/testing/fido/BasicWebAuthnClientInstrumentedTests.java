@@ -19,6 +19,7 @@ package com.yubico.yubikit.testing.fido;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV1;
 import com.yubico.yubikit.testing.PinUvAuthProtocolV1Test;
+import com.yubico.yubikit.testing.SmokeTest;
 import com.yubico.yubikit.testing.framework.FidoInstrumentedTests;
 
 import org.junit.Test;
@@ -33,44 +34,46 @@ import org.junit.runners.Suite;
 })
 public class BasicWebAuthnClientInstrumentedTests {
     public static class PinUvAuthV2Test extends FidoInstrumentedTests {
+
         @Test
+        @Category(SmokeTest.class)
         public void testMakeCredentialGetAssertion() throws Throwable {
-            withCtap2Session(BasicWebAuthnClientTests::testMakeCredentialGetAssertion);
+           withDevice(BasicWebAuthnClientTests::testMakeCredentialGetAssertion);
         }
 
         @Test
         public void testMakeCredentialGetAssertionTokenUvOnly() throws Throwable {
-            withCtap2Session(BasicWebAuthnClientTests::testMakeCredentialGetAssertionTokenUvOnly);
+            withDevice(BasicWebAuthnClientTests::testMakeCredentialGetAssertionTokenUvOnly);
         }
 
         @Test
         public void testGetAssertionMultipleUsersRk() throws Throwable {
-            withCtap2Session(BasicWebAuthnClientTests::testGetAssertionMultipleUsersRk);
+            withDevice(BasicWebAuthnClientTests::testGetAssertionMultipleUsersRk);
         }
 
         @Test
         public void testGetAssertionWithAllowList() throws Throwable {
-            withCtap2Session(BasicWebAuthnClientTests::testGetAssertionWithAllowList);
+            withDevice(BasicWebAuthnClientTests::testGetAssertionWithAllowList);
         }
 
         @Test
         public void testMakeCredentialWithExcludeList() throws Throwable {
-            withCtap2Session(BasicWebAuthnClientTests::testMakeCredentialWithExcludeList);
+            withDevice(BasicWebAuthnClientTests::testMakeCredentialWithExcludeList);
         }
 
         @Test
         public void testMakeCredentialKeyAlgorithms() throws Throwable {
-            withCtap2Session(BasicWebAuthnClientTests::testMakeCredentialKeyAlgorithms);
+            withDevice(BasicWebAuthnClientTests::testMakeCredentialKeyAlgorithms);
         }
 
         @Test
         public void testClientPinManagement() throws Throwable {
-            withCtap2Session(BasicWebAuthnClientTests::testClientPinManagement);
+            withDevice(BasicWebAuthnClientTests::testClientPinManagement);
         }
 
         @Test
         public void testClientCredentialManagement() throws Throwable {
-            withCtap2Session(BasicWebAuthnClientTests::testClientCredentialManagement);
+            withDevice(BasicWebAuthnClientTests::testClientCredentialManagement);
         }
     }
 

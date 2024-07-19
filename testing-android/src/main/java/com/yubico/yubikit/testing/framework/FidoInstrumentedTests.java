@@ -16,44 +16,44 @@
 
 package com.yubico.yubikit.testing.framework;
 
+import androidx.annotation.Nullable;
+
+import com.yubico.yubikit.core.Transport;
+import com.yubico.yubikit.core.smartcard.scp.ScpKid;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV2;
-import com.yubico.yubikit.testing.fido.FidoTestUtils;
-
-import java.util.Optional;
-import java.util.concurrent.LinkedBlockingQueue;
-
-import javax.annotation.Nullable;
+import com.yubico.yubikit.testing.TestState;
+import com.yubico.yubikit.testing.fido.FidoTestState;
 
 public class FidoInstrumentedTests extends YKInstrumentedTests {
-    public interface Callback {
-        void invoke(Ctap2Session session) throws Throwable;
+
+    protected void withDevice(TestState.StatefulDeviceCallback<FidoTestState> callback) throws Throwable {
+        withDevice(true, callback);
     }
 
-    protected void withCtap2Session(Callback callback) throws Throwable {
-        withCtap2Session(callback, true);
+    protected void withDevice(boolean setPin, TestState.StatefulDeviceCallback<FidoTestState> callback) throws Throwable {
+        FidoTestState state = new FidoTestState(device, this::reconnectDevice, getScpKid(), getPinUvAuthProtocol(), setPin);
+        state.withDeviceCallback(callback);
     }
 
-    protected void withCtap2Session(Callback callback, boolean setPin) throws Throwable {
+    protected void withCtap2Session(TestState.SessionCallback<Ctap2Session> callback) throws Throwable {
+        FidoTestState state = new FidoTestState(device, this::reconnectDevice, getScpKid(), getPinUvAuthProtocol(), true);
+        state.withCtap2(callback);
+    }
 
-        FidoTestUtils.verifyAndSetup(device, getPinUvAuthProtocol(), setPin);
+    protected void withCtap2Session(TestState.StatefulSessionCallback<Ctap2Session, FidoTestState> callback) throws Throwable {
+        FidoTestState state = new FidoTestState(device, this::reconnectDevice, getScpKid(), getPinUvAuthProtocol(), true);
+        state.withCtap2(callback);
+    }
 
-        LinkedBlockingQueue<Optional<Throwable>> result = new LinkedBlockingQueue<>();
-        Ctap2Session.create(device, value -> {
-            try {
-                Ctap2Session session = value.getValue();
-                callback.invoke(session);
-                result.offer(Optional.empty());
-            } catch (Throwable e) {
-                result.offer(Optional.of(e));
-            }
-        });
-
-        Optional<Throwable> exception = result.take();
-        if (exception.isPresent()) {
-            throw exception.get();
+    @Nullable
+    @Override
+    protected Byte getScpKid() {
+        if (device.getTransport() == Transport.NFC) {
+            return ScpKid.SCP11b;
         }
+        return null;
     }
 
     protected PinUvAuthProtocol getPinUvAuthProtocol() {
