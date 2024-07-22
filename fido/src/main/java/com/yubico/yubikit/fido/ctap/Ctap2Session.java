@@ -28,11 +28,9 @@ import com.yubico.yubikit.core.fido.FidoConnection;
 import com.yubico.yubikit.core.fido.FidoProtocol;
 import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.smartcard.Apdu;
-import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.core.smartcard.AppId;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.smartcard.SmartCardProtocol;
-import com.yubico.yubikit.core.smartcard.scp.ScpKeyParams;
 import com.yubico.yubikit.core.util.Callback;
 import com.yubico.yubikit.core.util.Result;
 import com.yubico.yubikit.core.util.StringUtils;
@@ -164,10 +162,6 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
     }
 
     private Ctap2Session(FidoProtocol protocol) throws IOException, CommandException {
-        this(protocol, null);
-    }
-
-    private Ctap2Session(FidoProtocol protocol, @Nullable ScpKeyParams scpKeyParams) throws IOException, CommandException {
         this(protocol.getVersion(), new Backend<FidoProtocol>(protocol) {
             @Override
             byte[] sendCbor(byte[] data, @Nullable CommandState state) throws IOException {
