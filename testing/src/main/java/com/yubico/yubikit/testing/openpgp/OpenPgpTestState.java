@@ -21,14 +21,14 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 import com.yubico.yubikit.core.YubiKeyDevice;
-import com.yubico.yubikit.core.smartcard.SmartCardConnection;
-import com.yubico.yubikit.management.Capability;
-import com.yubico.yubikit.management.DeviceInfo;
-import com.yubico.yubikit.openpgp.OpenPgpSession;
-import com.yubico.yubikit.openpgp.Pw;
+import com.yubico.yubikit.testing.ScpParameters;
 import com.yubico.yubikit.testing.TestState;
 
 import org.junit.Assume;
+
+import java.io.IOException;
+
+import javax.annotation.Nullable;
 
 public class OpenPgpTestState extends TestState {
 

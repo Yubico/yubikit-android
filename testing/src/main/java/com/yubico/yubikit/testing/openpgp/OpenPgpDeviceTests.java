@@ -16,10 +16,6 @@
 
 package com.yubico.yubikit.testing.openpgp;
 
-import static com.yubico.yubikit.core.smartcard.SW.CONDITIONS_NOT_SATISFIED;
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeTrue;
-
 import com.yubico.yubikit.core.application.InvalidPinException;
 import com.yubico.yubikit.core.keys.PrivateKeyValues;
 import com.yubico.yubikit.core.keys.PublicKeyValues;

@@ -19,12 +19,20 @@ package com.yubico.yubikit.testing.oath;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
+import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
+import com.yubico.yubikit.core.application.CommandException;
+import com.yubico.yubikit.core.fido.FidoConnection;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.management.Capability;
 import com.yubico.yubikit.oath.OathSession;
+import com.yubico.yubikit.testing.ScpParameters;
 import com.yubico.yubikit.testing.TestState;
+
+import java.io.IOException;
+
+import javax.annotation.Nullable;
 
 public class OathTestState extends TestState {
     public boolean isFipsApproved;

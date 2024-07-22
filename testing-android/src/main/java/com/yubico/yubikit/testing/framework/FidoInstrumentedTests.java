@@ -33,17 +33,32 @@ public class FidoInstrumentedTests extends YKInstrumentedTests {
     }
 
     protected void withDevice(boolean setPin, TestState.StatefulDeviceCallback<FidoTestState> callback) throws Throwable {
-        FidoTestState state = new FidoTestState(device, this::reconnectDevice, getScpKid(), getPinUvAuthProtocol(), setPin);
+        FidoTestState state = new FidoTestState.Builder(device, getPinUvAuthProtocol())
+                .scpKid(getScpKid())
+                .reconnectDeviceCallback(this::reconnectDevice)
+                .setPin(setPin)
+                .build();
+
         state.withDeviceCallback(callback);
     }
 
     protected void withCtap2Session(TestState.SessionCallback<Ctap2Session> callback) throws Throwable {
-        FidoTestState state = new FidoTestState(device, this::reconnectDevice, getScpKid(), getPinUvAuthProtocol(), true);
+        FidoTestState state = new FidoTestState.Builder(device, getPinUvAuthProtocol())
+                .scpKid(getScpKid())
+                .reconnectDeviceCallback(this::reconnectDevice)
+                .setPin(true)
+                .build();
+
         state.withCtap2(callback);
     }
 
     protected void withCtap2Session(TestState.StatefulSessionCallback<Ctap2Session, FidoTestState> callback) throws Throwable {
-        FidoTestState state = new FidoTestState(device, this::reconnectDevice, getScpKid(), getPinUvAuthProtocol(), true);
+        FidoTestState state = new FidoTestState.Builder(device, getPinUvAuthProtocol())
+                .scpKid(getScpKid())
+                .reconnectDeviceCallback(this::reconnectDevice)
+                .setPin(true)
+                .build();
+
         state.withCtap2(callback);
     }
 

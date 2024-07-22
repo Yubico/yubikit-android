@@ -104,19 +104,6 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
         }
     }
 
-    public Ctap2Session(SmartCardConnection connection, @Nullable ScpKeyParams scpKeyParams)
-            throws IOException, CommandException {
-        this(connection, new Version(0, 0, 0), scpKeyParams);
-    }
-
-    public Ctap2Session(SmartCardConnection connection, Version version, @Nullable ScpKeyParams scpKeyParams)
-            throws IOException, CommandException {
-        this(version, getSmartCardBackend(connection, scpKeyParams));
-        Logger.debug(logger, "Ctap2Session session initialized for connection={}, version={}",
-                connection.getClass().getSimpleName(),
-                version);
-    }
-
     public Ctap2Session(SmartCardConnection connection)
             throws IOException, CommandException {
         this(connection, new Version(0, 0, 0));
@@ -124,15 +111,14 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
 
     public Ctap2Session(SmartCardConnection connection, Version version)
             throws IOException, CommandException {
-        this(connection, version, null);
+        this(version, getSmartCardBackend(connection));
+        Logger.debug(logger, "Ctap2Session session initialized for connection={}, version={}",
+                connection.getClass().getSimpleName(),
+                version);
     }
 
     public Ctap2Session(FidoConnection connection) throws IOException, CommandException {
-        this(connection, null);
-    }
-
-    public Ctap2Session(FidoConnection connection, @Nullable ScpKeyParams scpKeyParams) throws IOException, CommandException {
-        this(new FidoProtocol(connection), scpKeyParams);
+        this(new FidoProtocol(connection));
         Logger.debug(logger, "Ctap2Session session initialized for connection={}, version={}",
                 connection.getClass().getSimpleName(),
                 version);
@@ -164,17 +150,10 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
         }
     }
 
-    private static Backend<SmartCardProtocol> getSmartCardBackend(SmartCardConnection connection, @Nullable ScpKeyParams scpKeyParams)
+    private static Backend<SmartCardProtocol> getSmartCardBackend(SmartCardConnection connection)
             throws IOException, ApplicationNotAvailableException {
         final SmartCardProtocol protocol = new SmartCardProtocol(connection);
         protocol.select(AppId.FIDO);
-        if (scpKeyParams != null) {
-            try {
-                protocol.initScp(scpKeyParams);
-            } catch (ApduException | BadResponseException e) {
-                throw new IOException("Failed setting up SCP session", e);
-            }
-        }
         return new Backend<SmartCardProtocol>(protocol) {
             byte[] sendCbor(byte[] data, @Nullable CommandState state)
                     throws IOException, CommandException {

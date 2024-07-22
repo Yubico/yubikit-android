@@ -29,7 +29,12 @@ import com.yubico.yubikit.management.DeviceInfo;
 import com.yubico.yubikit.piv.KeyType;
 import com.yubico.yubikit.piv.ManagementKeyType;
 import com.yubico.yubikit.piv.PivSession;
+import com.yubico.yubikit.testing.ScpParameters;
 import com.yubico.yubikit.testing.TestState;
+
+import java.io.IOException;
+
+import javax.annotation.Nullable;
 
 public class PivTestState extends TestState {
 
@@ -75,10 +80,6 @@ public class PivTestState extends TestState {
         assumeTrue("No SmartCard support", currentDevice.supportsConnection(SmartCardConnection.class));
 
         DeviceInfo deviceInfo = getDeviceInfo();
-
-        // skip MPE devices
-        assumeFalse("Ignoring MPE device", isMpe(deviceInfo));
-
         boolean isPivFipsCapable = isFipsCapable(deviceInfo, Capability.PIV);
         boolean hasPinComplexity = deviceInfo != null && deviceInfo.getPinComplexity();
 
@@ -94,13 +95,14 @@ public class PivTestState extends TestState {
             );
         }
 
-        try (SmartCardConnection connection = openSmartCardConnection()) {
+        try (SmartCardConnection connection = currentDevice.openConnection(SmartCardConnection.class)) {
             PivSession pivSession = getPivSession(connection, scpParameters);
             assumeTrue("PIV not available", pivSession != null);
 
             try {
                 pivSession.reset();
             } catch (Exception ignored) {
+
             }
 
             if (hasPinComplexity) {
