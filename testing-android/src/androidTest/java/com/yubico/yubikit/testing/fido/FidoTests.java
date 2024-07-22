@@ -16,7 +16,7 @@
 
 package com.yubico.yubikit.testing.fido;
 
-import com.yubico.yubikit.testing.AlwaysManualTestCategory;
+import com.yubico.yubikit.testing.AlwaysManualTest;
 
 import org.junit.experimental.categories.Categories;
 import org.junit.runner.RunWith;
@@ -41,6 +41,6 @@ import org.junit.runners.Suite;
         Ctap2BioEnrollmentInstrumentedTests.class,
         Ctap2SessionResetInstrumentedTests.class,
 })
-@Categories.ExcludeCategory(AlwaysManualTestCategory.class)
+@Categories.ExcludeCategory(AlwaysManualTest.class)
 public class FidoTests {
 }

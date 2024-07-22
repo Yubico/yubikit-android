@@ -16,7 +16,7 @@
 
 package com.yubico.yubikit.testing.fido;
 
-import com.yubico.yubikit.testing.AlwaysManualTestCategory;
+import com.yubico.yubikit.testing.AlwaysManualTest;
 import com.yubico.yubikit.testing.framework.FidoInstrumentedTests;
 
 import org.junit.Test;
@@ -35,7 +35,7 @@ import org.junit.runners.Suite;
  */
 @RunWith(Categories.class)
 @Suite.SuiteClasses(Ctap2ConfigInstrumentedTests.ConfigTests.class)
-@Categories.ExcludeCategory(AlwaysManualTestCategory.class)
+@Categories.ExcludeCategory(AlwaysManualTest.class)
 public class Ctap2ConfigInstrumentedTests {
 
     public static class ConfigTests extends FidoInstrumentedTests {
@@ -51,7 +51,7 @@ public class Ctap2ConfigInstrumentedTests {
          * @throws Throwable if an error occurs
          */
         @Test
-        @Category(AlwaysManualTestCategory.class)
+        @Category(AlwaysManualTest.class)
         public void testToggleAlwaysUv() throws Throwable {
             withCtap2Session(Ctap2ConfigTests::testToggleAlwaysUv);
         }
@@ -74,7 +74,7 @@ public class Ctap2ConfigInstrumentedTests {
          * @throws Throwable if an error occurs
          */
         @Test
-        @Category(AlwaysManualTestCategory.class)
+        @Category(AlwaysManualTest.class)
         public void testSetMinPinLength() throws Throwable {
             withCtap2Session(Ctap2ConfigTests::testSetMinPinLength);
         }

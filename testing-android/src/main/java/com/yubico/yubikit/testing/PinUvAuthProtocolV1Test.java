@@ -16,5 +16,5 @@
 
 package com.yubico.yubikit.testing;
 
-public interface AlwaysManualTestCategory {
+public interface PinUvAuthProtocolV1Test {
 }

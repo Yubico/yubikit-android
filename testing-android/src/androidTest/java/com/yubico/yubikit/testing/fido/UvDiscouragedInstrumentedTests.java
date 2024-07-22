@@ -17,7 +17,7 @@
 package com.yubico.yubikit.testing.fido;
 
 import com.yubico.yubikit.fido.client.PinRequiredClientError;
-import com.yubico.yubikit.testing.AlwaysManualTestCategory;
+import com.yubico.yubikit.testing.AlwaysManualTest;
 import com.yubico.yubikit.testing.framework.FidoInstrumentedTests;
 
 import org.junit.Test;
@@ -33,7 +33,7 @@ public class UvDiscouragedInstrumentedTests extends FidoInstrumentedTests {
      * Skipped on FIPS approved devices.
      */
     @Test
-    @Category(AlwaysManualTestCategory.class)
+    @Category(AlwaysManualTest.class)
     public void testMakeCredentialGetAssertion() throws Throwable {
         withCtap2Session(BasicWebAuthnClientTests::testUvDiscouragedMcGa_noPin, false);
     }

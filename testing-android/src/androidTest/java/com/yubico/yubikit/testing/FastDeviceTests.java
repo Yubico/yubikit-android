@@ -24,10 +24,16 @@ import org.junit.runners.Suite;
  * These tests are here to make testing a bit faster and exclude following:
  * <ul>
  *     <li>{@link SlowTest}</li>
+ *     <li>{@link PinUvAuthProtocolV1Test}</li>
+ *     <li>{@link AlwaysManualTest}</li>
  * </ul>
  */
 @RunWith(Categories.class)
 @Suite.SuiteClasses(DeviceTests.class)
-@Categories.ExcludeCategory(SlowTest.class)
+@Categories.ExcludeCategory({
+        SlowTest.class,
+        PinUvAuthProtocolV1Test.class,
+        AlwaysManualTest.class
+})
 public class FastDeviceTests {
 }

@@ -16,7 +16,7 @@
 
 package com.yubico.yubikit.testing.fido;
 
-import com.yubico.yubikit.testing.AlwaysManualTestCategory;
+import com.yubico.yubikit.testing.AlwaysManualTest;
 import com.yubico.yubikit.testing.framework.FidoInstrumentedTests;
 
 import org.junit.Test;
@@ -33,7 +33,7 @@ import org.junit.experimental.categories.Category;
  */
 public class Ctap2SessionResetInstrumentedTests extends FidoInstrumentedTests {
     @Test
-    @Category(AlwaysManualTestCategory.class)
+    @Category(AlwaysManualTest.class)
     public void testReset() throws Throwable {
         withCtap2Session(Ctap2SessionTests::testReset);
     }
