@@ -20,21 +20,16 @@ import static com.yubico.yubikit.core.smartcard.SW.CONDITIONS_NOT_SATISFIED;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
-import com.yubico.yubikit.core.YubiKeyDevice;
-import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.application.CommandException;
-import com.yubico.yubikit.core.application.InvalidPinException;
 import com.yubico.yubikit.core.fido.CtapException;
-import com.yubico.yubikit.core.fido.FidoConnection;
 import com.yubico.yubikit.core.smartcard.ApduException;
-import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.fido.ctap.ClientPin;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV2;
 import com.yubico.yubikit.management.DeviceInfo;
-import com.yubico.yubikit.management.ManagementSession;
 import com.yubico.yubikit.openpgp.OpenPgpSession;
 import com.yubico.yubikit.piv.PivSession;
 
@@ -42,68 +37,42 @@ import org.bouncycastle.util.encoders.Hex;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
 import org.junit.Assert;
-import org.junit.Assume;
 
 import java.io.IOException;
 import java.util.Objects;
 
 public class PinComplexityDeviceTests {
 
+    private static void verifyDevice() {
+        final DeviceInfo deviceInfo = TestUtils.getDeviceInfo(StaticTestState.currentDevice);
+        assumeTrue("Device does not support PIN complexity", deviceInfo != null);
+        assumeTrue("Device does not require PIN complexity", deviceInfo.getPinComplexity());
+    }
+
     /**
      * For this test, one needs a key with PIN complexity set on. The test will change PINs.
      * <p>
-     * The test will verify that using "weak" PINs on PIV, OpenPGP and Fido2 sessions produces
-     * expected exceptions.
-     * <p>
-     * Best used over USB transport.
+     * The test will verify that trying to set a weak PIN for PIV produces expected exceptions.
      *
      * @see DeviceInfo#getPinComplexity()
      */
-    public static void testPinComplexity(YubiKeyDevice device) throws IOException, CommandException {
-        try (SmartCardConnection connection = device.openConnection(SmartCardConnection.class)) {
+    public static void testPivPinComplexity(PivSession piv) throws Throwable {
 
-            ManagementSession managementSession = new ManagementSession(connection);
-            DeviceInfo deviceInfo = managementSession.getDeviceInfo();
+        verifyDevice();
 
-            Assume.assumeTrue("Device does not require PIN complexity", deviceInfo.getPinComplexity());
-
-            PivSession piv = new PivSession(connection);
-            testPivPinComplexity(piv);
-
-            OpenPgpSession openPgp = new OpenPgpSession(connection);
-            testOpenPgpPinComplexity(openPgp);
-
-        }
-
-        try (FidoConnection connection = device.openConnection(FidoConnection.class)) {
-            Ctap2Session ctap2 = new Ctap2Session(connection);
-            testFidoPinComplexity(ctap2);
-        }
-    }
-
-    private static void testPivPinComplexity(PivSession piv) throws IOException, ApduException, InvalidPinException, BadResponseException {
-
+        piv.reset();
         piv.authenticate(Hex.decode("010203040506070801020304050607080102030405060708"));
 
         char[] defaultPin = "123456".toCharArray();
-        char[] complexDefaultPin = "11234567".toCharArray();
-        char[] currentPin = defaultPin;
 
-        // figure out what is the default pin
-        // on devices with PIN Complexity on, we cannot reset to default 123456
-        // that is why we use 1123456. For easier testing we figure out the current pin here.
-        try {
-            piv.verifyPin(currentPin);
-        } catch (Exception ignored) {
-            currentPin = complexDefaultPin;
-            piv.verifyPin(currentPin);
-        }
+        piv.verifyPin(defaultPin);
+
         MatcherAssert.assertThat(piv.getPinAttempts(), CoreMatchers.equalTo(3));
 
         // try to change to pin which breaks PIN complexity
         char[] weakPin = "33333333".toCharArray();
         try {
-            piv.changePin(currentPin, weakPin);
+            piv.changePin(defaultPin, weakPin);
             Assert.fail("Set weak PIN");
         } catch (ApduException apduException) {
             if (apduException.getSw() != CONDITIONS_NOT_SATISFIED) {
@@ -113,24 +82,33 @@ public class PinComplexityDeviceTests {
             Assert.fail("Unexpected exception:" + e.getMessage());
         }
 
-    }
+        piv.verifyPin(defaultPin);
 
-    private static void testOpenPgpPinComplexity(OpenPgpSession openpgp) throws IOException, ApduException, InvalidPinException {
-
-        char[] defaultPin = "123456".toCharArray();
-        char[] complexDefaultPin = "11234567".toCharArray();
-        char[] currentPin = defaultPin;
-
-        // figure out what is the default pin
-        // on devices with PIN Complexity on, we cannot reset to default 123456
-        // that is why we use 1123456. For easier testing we figure out the current pin here.
+        // change to complex pin
+        char[] complexPin = "11234567".toCharArray();
         try {
-            openpgp.verifyUserPin(currentPin, false);
-        } catch (Exception ignored) {
-            currentPin = complexDefaultPin;
-            openpgp.verifyUserPin(currentPin, false);
+            piv.changePin(defaultPin, complexPin);
+        } catch (Exception e) {
+            Assert.fail("Unexpected exception:" + e.getMessage());
         }
 
+        piv.verifyPin(complexPin);
+    }
+
+
+    /**
+     * For this test, one needs a key with PIN complexity set on. The test will change PINs.
+     * <p>
+     * The test will verify that trying to set a weak user PIN for OpenPgp produces expected exceptions.
+     *
+     * @see DeviceInfo#getPinComplexity()
+     */
+    public static void testOpenPgpPinComplexity(OpenPgpSession openpgp) throws Throwable {
+
+        verifyDevice();
+
+        char[] currentPin = "123456".toCharArray();
+        openpgp.reset();
         openpgp.verifyUserPin(currentPin, false);
 
         char[] weakPin = "33333333".toCharArray();
@@ -138,18 +116,27 @@ public class PinComplexityDeviceTests {
             openpgp.changeUserPin(currentPin, weakPin);
         } catch (ApduException apduException) {
             if (apduException.getSw() != CONDITIONS_NOT_SATISFIED) {
-                Assert.fail("Unexpected exception");
+                fail("Unexpected exception");
             }
+        } catch (Exception e) {
+            fail("Unexpected exception");
+        }
+
+        // set complex pin
+        char[] complexPin = "11234567".toCharArray();
+        try {
+            openpgp.changeUserPin(currentPin, complexPin);
         } catch (Exception e) {
             Assert.fail("Unexpected exception");
         }
     }
 
-    private static void testFidoPinComplexity(Ctap2Session ctap2) throws IOException, CommandException {
+    public static void testFidoPinComplexity(Ctap2Session ctap2, Object... ignoredArgs)
+            throws IOException, CommandException {
 
         PinUvAuthProtocol pinUvAuthProtocol = new PinUvAuthProtocolV2();
 
-        char[] defaultPin = "112345678".toCharArray();
+        char[] defaultPin = "11234567".toCharArray();
 
         Ctap2Session.InfoData info = ctap2.getCachedInfo();
         ClientPin pin = new ClientPin(ctap2, pinUvAuthProtocol);

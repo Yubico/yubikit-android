@@ -15,9 +15,10 @@
  */
 package com.yubico.yubikit.testing.openpgp;
 
+import static com.yubico.yubikit.testing.StaticTestState.scpParameters;
 import static com.yubico.yubikit.testing.openpgp.OpenPgpTestState.ADMIN_PIN;
-import static com.yubico.yubikit.testing.openpgp.OpenPgpTestState.USER_PIN;
 import static com.yubico.yubikit.testing.openpgp.OpenPgpTestState.FIPS_APPROVED;
+import static com.yubico.yubikit.testing.openpgp.OpenPgpTestState.USER_PIN;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
@@ -28,10 +29,9 @@ import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.management.Capability;
 import com.yubico.yubikit.management.DeviceInfo;
-import com.yubico.yubikit.management.ManagementSession;
 import com.yubico.yubikit.openpgp.OpenPgpSession;
 import com.yubico.yubikit.openpgp.Pw;
-import com.yubico.yubikit.testing.ScpParameters;
+import com.yubico.yubikit.testing.TestUtils;
 
 import org.junit.Assume;
 
@@ -40,23 +40,14 @@ public class OpenPgpTestUtils {
     private static final char[] COMPLEX_USER_PIN = "112345678".toCharArray();
     private static final char[] COMPLEX_ADMIN_PIN = "112345678".toCharArray();
 
-    public static void verifyAndSetup(YubiKeyDevice device, ScpParameters scpParameters) throws Throwable {
+    public static void verifyAndSetup(YubiKeyDevice device) throws Throwable {
 
         OpenPgpTestState.USER_PIN = Pw.DEFAULT_USER_PIN;
         OpenPgpTestState.ADMIN_PIN = Pw.DEFAULT_ADMIN_PIN;
 
-        boolean isOpenPgpFipsCapable;
-        boolean hasPinComplexity;
-
-        try (SmartCardConnection connection = device.openConnection(SmartCardConnection.class)) {
-            ManagementSession managementSession = new ManagementSession(connection);
-            DeviceInfo deviceInfo = managementSession.getDeviceInfo();
-            assertNotNull(deviceInfo);
-
-            isOpenPgpFipsCapable =
-                    (deviceInfo.getFipsCapable() & Capability.OPENPGP.bit) == Capability.OPENPGP.bit;
-            hasPinComplexity = deviceInfo.getPinComplexity();
-        }
+        DeviceInfo deviceInfo = TestUtils.getDeviceInfo(device);
+        boolean isOpenPgpFipsCapable = TestUtils.isFipsCapable(deviceInfo, Capability.OPENPGP);
+        boolean hasPinComplexity = deviceInfo != null && deviceInfo.getPinComplexity();
 
         if (scpParameters.getKid() == null && isOpenPgpFipsCapable) {
             Assume.assumeTrue("Trying to use OpenPgp FIPS capable device over NFC without SCP",
@@ -89,18 +80,16 @@ public class OpenPgpTestUtils {
                 OpenPgpTestState.USER_PIN = COMPLEX_USER_PIN;
                 OpenPgpTestState.ADMIN_PIN = COMPLEX_ADMIN_PIN;
             }
+        }
 
-            ManagementSession managementSession = new ManagementSession(connection);
-            DeviceInfo deviceInfo = managementSession.getDeviceInfo();
+        deviceInfo = TestUtils.getDeviceInfo(device);
+        FIPS_APPROVED = TestUtils.isFipsApproved(deviceInfo, Capability.OPENPGP);
 
-            FIPS_APPROVED = (deviceInfo.getFipsApproved() & Capability.OPENPGP.bit) == Capability.OPENPGP.bit;
-
-            // after changing the user and admin PINs, we expect a FIPS capable device
-            // to be FIPS approved
-            if (isOpenPgpFipsCapable) {
-                assertNotNull(deviceInfo);
-                assertTrue("Device not OpenPgp FIPS approved as expected", FIPS_APPROVED);
-            }
+        // after changing the user and admin PINs, we expect a FIPS capable device
+        // to be FIPS approved
+        if (isOpenPgpFipsCapable) {
+            assertNotNull(deviceInfo);
+            assertTrue("Device not OpenPgp FIPS approved as expected", FIPS_APPROVED);
         }
     }
 }

@@ -15,7 +15,7 @@
  */
 package com.yubico.yubikit.testing.oath;
 
-import static org.junit.Assert.assertNotNull;
+import static com.yubico.yubikit.testing.StaticTestState.scpParameters;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
@@ -24,37 +24,20 @@ import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.management.Capability;
-import com.yubico.yubikit.management.DeviceInfo;
-import com.yubico.yubikit.management.ManagementSession;
 import com.yubico.yubikit.oath.OathSession;
-import com.yubico.yubikit.testing.ScpParameters;
+import com.yubico.yubikit.testing.TestUtils;
 
 public class OathTestUtils {
 
     public static void updateFipsApprovedValue(YubiKeyDevice device) throws Throwable {
-        try (SmartCardConnection connection = device.openConnection(SmartCardConnection.class)) {
-            ManagementSession managementSession = new ManagementSession(connection);
-            DeviceInfo deviceInfo = managementSession.getDeviceInfo();
-            assertNotNull(deviceInfo);
-            OathDeviceTests.FIPS_APPROVED =
-                    (deviceInfo.getFipsApproved() & Capability.OATH.bit) == Capability.OATH.bit;
-        }
+        OathDeviceTests.FIPS_APPROVED = TestUtils.isFipsApproved(device, Capability.OATH);
     }
 
-    public static void verifyAndSetup(YubiKeyDevice device, ScpParameters scpParameters) throws Throwable {
+    public static void verifyAndSetup(YubiKeyDevice device) throws Throwable {
 
         OathDeviceTests.OATH_PASSWORD = "".toCharArray();
 
-        boolean isOathFipsCapable;
-
-        try (SmartCardConnection connection = device.openConnection(SmartCardConnection.class)) {
-            ManagementSession managementSession = new ManagementSession(connection);
-            DeviceInfo deviceInfo = managementSession.getDeviceInfo();
-            assertNotNull(deviceInfo);
-
-            isOathFipsCapable =
-                    (deviceInfo.getFipsCapable() & Capability.OATH.bit) == Capability.OATH.bit;
-        }
+        boolean isOathFipsCapable = TestUtils.isFipsCapable(device, Capability.OATH);
 
         if (scpParameters.getKid() == null && isOathFipsCapable) {
             assumeTrue("Trying to use OATH FIPS capable device over NFC without SCP",

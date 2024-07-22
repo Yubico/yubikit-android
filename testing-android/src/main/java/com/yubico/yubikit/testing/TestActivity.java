@@ -22,8 +22,6 @@ import android.view.WindowManager;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import javax.annotation.Nullable;
-
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.yubico.yubikit.android.YubiKitManager;
@@ -40,6 +38,8 @@ import org.slf4j.LoggerFactory;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Semaphore;
+
+import javax.annotation.Nullable;
 
 public class TestActivity extends AppCompatActivity {
 
@@ -148,19 +148,9 @@ public class TestActivity extends AppCompatActivity {
             setBusy(false);
         });
         if (device instanceof NfcYubiKeyDevice) {
-            // TODO make waitForRemoval configurable from a test case
-            final boolean waitForRemoval = false;
-
-            //noinspection ConstantValue
-            if (waitForRemoval) {
-                // this causes the app to wait for removal of NFC key from the NFC sensor
-                ((NfcYubiKeyDevice) device).remove(lock::release);
-            } else {
-                lock.release();
-                stopNfcDiscovery();
-                startNfcDiscovery();
-            }
-
+            lock.release();
+            stopNfcDiscovery();
+            startNfcDiscovery();
             lock.acquire();
         }
     }

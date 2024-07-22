@@ -17,9 +17,12 @@
 package com.yubico.yubikit.testing.piv;
 
 import com.yubico.yubikit.core.smartcard.scp.ScpKid;
+import com.yubico.yubikit.testing.PinComplexityDeviceTests;
+import com.yubico.yubikit.testing.SmokeTest;
 import com.yubico.yubikit.testing.framework.PivInstrumentedTests;
 
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -35,6 +38,7 @@ import javax.annotation.Nullable;
 public class PivTests {
     public static class NoScpTests extends PivInstrumentedTests {
         @Test
+        @Category(SmokeTest.class)
         public void testPin() throws Throwable {
             withPivSession(PivDeviceTests::testPin);
         }
@@ -60,8 +64,14 @@ public class PivTests {
         }
 
         @Test
+        @Category(SmokeTest.class)
         public void testPutCompressedCertificate() throws Throwable {
             withPivSession(PivCertificateTests::putCompressedCertificate);
+        }
+
+        @Test
+        public void testPinComplexity() throws Throwable {
+            withPivSession(PinComplexityDeviceTests::testPivPinComplexity);
         }
     }
 

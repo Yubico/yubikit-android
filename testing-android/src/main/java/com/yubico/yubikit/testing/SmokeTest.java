@@ -16,14 +16,5 @@
 
 package com.yubico.yubikit.testing;
 
-import com.yubico.yubikit.testing.framework.YKInstrumentedTests;
-
-import org.junit.Test;
-
-public class PinComplexityTests extends YKInstrumentedTests {
-
-    @Test
-    public void testPinComplexity() throws Throwable {
-        withDevice(PinComplexityDeviceTests::testPinComplexity);
-    }
+public interface SmokeTest {
 }

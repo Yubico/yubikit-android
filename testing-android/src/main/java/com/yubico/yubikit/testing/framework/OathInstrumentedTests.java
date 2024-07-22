@@ -18,6 +18,7 @@ package com.yubico.yubikit.testing.framework;
 
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.oath.OathSession;
+import com.yubico.yubikit.testing.StaticTestState;
 import com.yubico.yubikit.testing.oath.OathTestUtils;
 
 import org.junit.Before;
@@ -35,21 +36,22 @@ public class OathInstrumentedTests extends YKInstrumentedTests {
         shouldVerifyAndSetupSession = true;
     }
 
-    /** This method can be called several times during one test.
+    /**
+     * This method can be called several times during one test.
      * <p>
      * It will reset and setup the OATH session only the first time it is called.
      * The subsequent calls will not reset the device. This simulates YubiKey disconnecting/connecting.
      */
     protected void withOathSession(Callback callback) throws Throwable {
         if (shouldVerifyAndSetupSession) {
-            OathTestUtils.verifyAndSetup(device, scpParameters);
+            OathTestUtils.verifyAndSetup(device);
             shouldVerifyAndSetupSession = false;
         } else {
             OathTestUtils.updateFipsApprovedValue(device);
         }
 
         try (SmartCardConnection connection = device.openConnection(SmartCardConnection.class)) {
-            callback.invoke(new OathSession(connection, scpParameters.getKeyParams()));
+            callback.invoke(new OathSession(connection, StaticTestState.scpParameters.getKeyParams()));
         }
     }
 }

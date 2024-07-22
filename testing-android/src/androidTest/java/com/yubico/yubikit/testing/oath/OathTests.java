@@ -19,9 +19,11 @@ package com.yubico.yubikit.testing.oath;
 import javax.annotation.Nullable;
 
 import com.yubico.yubikit.core.smartcard.scp.ScpKid;
+import com.yubico.yubikit.testing.SmokeTest;
 import com.yubico.yubikit.testing.framework.OathInstrumentedTests;
 
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -33,6 +35,7 @@ import org.junit.runners.Suite;
 public class OathTests {
     public static class NoScpTests extends OathInstrumentedTests {
         @Test
+        @Category(SmokeTest.class)
         public void testChangePassword() throws Throwable {
             withOathSession(OathDeviceTests::testChangePassword);
             withOathSession(OathDeviceTests::testChangePasswordAfterReconnect);
@@ -44,6 +47,7 @@ public class OathTests {
         }
 
         @Test
+        @Category(SmokeTest.class)
         public void testAccountManagement() throws Throwable {
             withOathSession(OathDeviceTests::testAccountManagement);
         }

@@ -18,6 +18,7 @@ package com.yubico.yubikit.testing.framework;
 
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.openpgp.OpenPgpSession;
+import com.yubico.yubikit.testing.StaticTestState;
 import com.yubico.yubikit.testing.openpgp.OpenPgpTestUtils;
 
 public class OpenPgpInstrumentedTests extends YKInstrumentedTests {
@@ -28,10 +29,10 @@ public class OpenPgpInstrumentedTests extends YKInstrumentedTests {
 
     protected void withOpenPgpSession(Callback callback) throws Throwable {
 
-        OpenPgpTestUtils.verifyAndSetup(device, scpParameters);
+        OpenPgpTestUtils.verifyAndSetup(device);
 
         try (SmartCardConnection connection = device.openConnection(SmartCardConnection.class)) {
-            callback.invoke(new OpenPgpSession(connection, scpParameters.getKeyParams()));
+            callback.invoke(new OpenPgpSession(connection, StaticTestState.scpParameters.getKeyParams()));
         }
     }
 }

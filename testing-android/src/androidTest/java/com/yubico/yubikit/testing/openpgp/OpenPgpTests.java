@@ -19,7 +19,9 @@ package com.yubico.yubikit.testing.openpgp;
 import javax.annotation.Nullable;
 
 import com.yubico.yubikit.core.smartcard.scp.ScpKid;
+import com.yubico.yubikit.testing.PinComplexityDeviceTests;
 import com.yubico.yubikit.testing.SlowTest;
+import com.yubico.yubikit.testing.SmokeTest;
 import com.yubico.yubikit.testing.framework.OpenPgpInstrumentedTests;
 
 import org.junit.Test;
@@ -101,6 +103,7 @@ public class OpenPgpTests {
         }
 
         @Test
+        @Category(SmokeTest.class)
         public void testSigPinPolicy() throws Throwable {
             withOpenPgpSession(OpenPgpDeviceTests::testSigPinPolicy);
         }
@@ -126,6 +129,7 @@ public class OpenPgpTests {
         }
 
         @Test
+        @Category(SmokeTest.class)
         public void testGetChallenge() throws Throwable {
             withOpenPgpSession(OpenPgpDeviceTests::testGetChallenge);
         }
@@ -133,6 +137,11 @@ public class OpenPgpTests {
         @Test
         public void testSetUif() throws Throwable {
             withOpenPgpSession(OpenPgpDeviceTests::testSetUif);
+        }
+
+        @Test
+        public void testPinComplexity() throws Throwable {
+            withOpenPgpSession(PinComplexityDeviceTests::testOpenPgpPinComplexity);
         }
     }
 
