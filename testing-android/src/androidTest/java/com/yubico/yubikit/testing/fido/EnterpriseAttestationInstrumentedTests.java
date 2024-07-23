@@ -45,7 +45,7 @@ public class EnterpriseAttestationInstrumentedTests {
 
         @Test
         public void testCreateOptionsAttestationPreference() throws Throwable {
-            withCtap2Session(EnterpriseAttestationTests::testCreateOptionsAttestationPreference);
+            withDevice(EnterpriseAttestationTests::testCreateOptionsAttestationPreference);
         }
 
         @Test

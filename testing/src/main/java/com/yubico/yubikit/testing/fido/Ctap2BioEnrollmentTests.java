@@ -101,8 +101,6 @@ public class Ctap2BioEnrollmentTests {
 
     private static FingerprintBioEnrollment fpBioEnrollment(Ctap2Session session, FidoTestState state) throws Throwable {
 
-        // ensureDefaultPinSet(session);
-
         final ClientPin pin = new ClientPin(session, state.getPinUvAuthProtocol());
         final byte[] pinToken = pin.getPinToken(
                 TestData.PIN,

@@ -26,7 +26,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 /**
- * All integration tests for PIV, OpenPGP and OATH.
+ * All integration tests for PIV, OpenPGP, OATH, FIDO2 and MPE.
  * <p>
  * The YubiKey applications will be reset several times.
  * <p>
