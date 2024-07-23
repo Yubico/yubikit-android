@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Yubico.
+ * Copyright (C) 2022-2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package com.yubico.yubikit.testing.framework;
 
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
 
+import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.testing.ScpParameters;
 import com.yubico.yubikit.testing.StaticTestState;
@@ -68,6 +69,18 @@ public class YKInstrumentedTests {
 
     protected void withDevice(Callback callback) throws Throwable {
         callback.invoke(device);
+    }
+
+    protected YubiKeyDevice reconnectDevice() {
+        try {
+            if (device.getTransport() == Transport.NFC) {
+                releaseYubiKey();
+                getYubiKey();
+            }
+            return device;
+        } catch (InterruptedException e) {
+            throw new RuntimeException("Failure during reconnect", e);
+        }
     }
 
     @Nullable

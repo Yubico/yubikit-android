@@ -37,8 +37,7 @@ public class OathTests {
         @Test
         @Category(SmokeTest.class)
         public void testChangePassword() throws Throwable {
-            withOathSession(OathDeviceTests::testChangePassword);
-            withOathSession(OathDeviceTests::testChangePasswordAfterReconnect);
+            withDevice(OathDeviceTests::testChangePassword);
         }
 
         @Test

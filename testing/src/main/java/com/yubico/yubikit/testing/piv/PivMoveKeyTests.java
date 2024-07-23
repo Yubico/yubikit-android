@@ -23,8 +23,6 @@ import static com.yubico.yubikit.piv.PivSession.FEATURE_MOVE_KEY;
 import static com.yubico.yubikit.testing.piv.PivJcaSigningTests.testSign;
 import static com.yubico.yubikit.testing.piv.PivJcaUtils.setupJca;
 import static com.yubico.yubikit.testing.piv.PivJcaUtils.tearDownJca;
-import static com.yubico.yubikit.testing.piv.PivTestState.DEFAULT_MANAGEMENT_KEY;
-import static com.yubico.yubikit.testing.piv.PivTestState.DEFAULT_PIN;
 
 import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.keys.PrivateKeyValues;
@@ -54,18 +52,18 @@ import java.util.Arrays;
 
 public class PivMoveKeyTests {
 
-    static void moveKey(PivSession piv)
+    static void moveKey(PivSession piv, PivTestState state)
             throws IOException, ApduException, BadResponseException, NoSuchAlgorithmException {
         Assume.assumeTrue("Key does not support move instruction", piv.supports(FEATURE_MOVE_KEY));
         setupJca(piv);
         Slot srcSlot = Slot.RETIRED1;
         Slot dstSlot = Slot.RETIRED2;
 
-        piv.authenticate(DEFAULT_MANAGEMENT_KEY);
+        piv.authenticate(state.defaultManagementKey);
 
         for (KeyType keyType : Arrays.asList(KeyType.ECCP256, KeyType.ECCP384, KeyType.RSA1024, KeyType.RSA2048, KeyType.ED25519, KeyType.X25519)) {
 
-            if (PivTestState.isInvalidKeyType(keyType)) {
+            if (state.isInvalidKeyType(keyType)) {
                 continue;
             }
 
@@ -89,7 +87,7 @@ public class PivMoveKeyTests {
                 keyStore.load(null);
 
                 PublicKey publicKey = keyPair.getPublic();
-                PrivateKey privateKey = (PrivateKey) keyStore.getKey(dstSlot.getStringAlias(), DEFAULT_PIN);
+                PrivateKey privateKey = (PrivateKey) keyStore.getKey(dstSlot.getStringAlias(), state.defaultPin);
                 KeyPair signingKeyPair = new KeyPair(publicKey, privateKey);
 
                 if (keyType != KeyType.X25519) {

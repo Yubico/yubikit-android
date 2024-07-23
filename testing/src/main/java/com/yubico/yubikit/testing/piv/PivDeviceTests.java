@@ -16,9 +16,6 @@
 package com.yubico.yubikit.testing.piv;
 
 import static com.yubico.yubikit.piv.PivSession.FEATURE_AES_KEY;
-import static com.yubico.yubikit.testing.piv.PivTestState.DEFAULT_MANAGEMENT_KEY;
-import static com.yubico.yubikit.testing.piv.PivTestState.DEFAULT_PIN;
-import static com.yubico.yubikit.testing.piv.PivTestState.DEFAULT_PUK;
 
 import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.smartcard.ApduException;
@@ -41,7 +38,7 @@ public class PivDeviceTests {
 
     private static final Logger logger = LoggerFactory.getLogger(PivDeviceTests.class);
 
-    public static void testManagementKey(PivSession piv) throws BadResponseException, IOException, ApduException {
+    public static void testManagementKey(PivSession piv, PivTestState state) throws BadResponseException, IOException, ApduException {
         byte[] key2 = Hex.decode("010203040102030401020304010203040102030401020304");
 
         ManagementKeyType managementKeyType = piv.getManagementKeyType();
@@ -55,12 +52,12 @@ public class PivDeviceTests {
         }
 
         logger.debug("Change management key");
-        piv.authenticate(DEFAULT_MANAGEMENT_KEY);
+        piv.authenticate(state.defaultManagementKey);
         piv.setManagementKey(managementKeyType, key2, false);
 
         logger.debug("Authenticate with the old key");
         try {
-            piv.authenticate(DEFAULT_MANAGEMENT_KEY);
+            piv.authenticate(state.defaultManagementKey);
             Assert.fail("Authenticated with wrong key");
         } catch (ApduException e) {
             Assert.assertEquals(SW.SECURITY_CONDITION_NOT_SATISFIED, e.getSw());
@@ -68,22 +65,22 @@ public class PivDeviceTests {
 
         logger.debug("Change management key");
         piv.authenticate(key2);
-        piv.setManagementKey(managementKeyType, DEFAULT_MANAGEMENT_KEY, false);
+        piv.setManagementKey(managementKeyType, state.defaultManagementKey, false);
     }
 
-    public static void testManagementKeyType(PivSession piv) throws BadResponseException, IOException, ApduException {
+    public static void testManagementKeyType(PivSession piv, PivTestState state) throws BadResponseException, IOException, ApduException {
         Assume.assumeTrue("No AES key support", piv.supports(FEATURE_AES_KEY));
 
         ManagementKeyType managementKeyType = piv.getManagementKeyType();
         byte[] aes128Key = Hex.decode("01020304010203040102030401020304");
 
         logger.debug("Change management key type");
-        piv.authenticate(DEFAULT_MANAGEMENT_KEY);
+        piv.authenticate(state.defaultManagementKey);
         piv.setManagementKey(ManagementKeyType.AES128, aes128Key, false);
         Assert.assertEquals(ManagementKeyType.AES128, piv.getManagementKeyType());
 
         try {
-            piv.authenticate(DEFAULT_MANAGEMENT_KEY);
+            piv.authenticate(state.defaultManagementKey);
             Assert.fail("Authenticated with wrong key type");
         } catch (IllegalArgumentException e) {
             // ignored
@@ -91,16 +88,16 @@ public class PivDeviceTests {
 
         // set original management key type
         piv.authenticate(aes128Key);
-        piv.setManagementKey(managementKeyType, DEFAULT_MANAGEMENT_KEY, false);
+        piv.setManagementKey(managementKeyType, state.defaultManagementKey, false);
     }
 
-    public static void testPin(PivSession piv) throws ApduException, InvalidPinException, IOException, BadResponseException {
+    public static void testPin(PivSession piv, PivTestState state) throws ApduException, InvalidPinException, IOException, BadResponseException {
         // Ensure we only try this if the default management key is set.
-        piv.authenticate(DEFAULT_MANAGEMENT_KEY);
+        piv.authenticate(state.defaultManagementKey);
 
         logger.debug("Verify PIN");
         char[] pin2 = "11231123".toCharArray();
-        piv.verifyPin(DEFAULT_PIN);
+        piv.verifyPin(state.defaultPin);
         MatcherAssert.assertThat(piv.getPinAttempts(), CoreMatchers.equalTo(3));
 
         logger.debug("Verify with wrong PIN");
@@ -114,7 +111,7 @@ public class PivDeviceTests {
 
         logger.debug("Change PIN with wrong PIN");
         try {
-            piv.changePin(pin2, DEFAULT_PIN);
+            piv.changePin(pin2, state.defaultPin);
             Assert.fail("Change PIN with wrong PIN");
         } catch (InvalidPinException e) {
             MatcherAssert.assertThat(e.getAttemptsRemaining(), CoreMatchers.equalTo(1));
@@ -122,12 +119,12 @@ public class PivDeviceTests {
         }
 
         logger.debug("Change PIN");
-        piv.changePin(DEFAULT_PIN, pin2);
+        piv.changePin(state.defaultPin, pin2);
         piv.verifyPin(pin2);
 
         logger.debug("Verify with wrong PIN");
         try {
-            piv.verifyPin(DEFAULT_PIN);
+            piv.verifyPin(state.defaultPin);
             Assert.fail("Verify with wrong PIN");
         } catch (InvalidPinException e) {
             MatcherAssert.assertThat(e.getAttemptsRemaining(), CoreMatchers.equalTo(2));
@@ -135,17 +132,17 @@ public class PivDeviceTests {
         }
 
         logger.debug("Change PIN");
-        piv.changePin(pin2, DEFAULT_PIN);
+        piv.changePin(pin2, state.defaultPin);
     }
 
-    public static void testPuk(PivSession piv) throws ApduException, InvalidPinException, IOException, BadResponseException {
+    public static void testPuk(PivSession piv, PivTestState state) throws ApduException, InvalidPinException, IOException, BadResponseException {
         // Ensure we only try this if the default management key is set.
-        piv.authenticate(DEFAULT_MANAGEMENT_KEY);
+        piv.authenticate(state.defaultManagementKey);
 
         // Change PUK
         char[] puk2 = "12341234".toCharArray();
-        piv.changePuk(DEFAULT_PUK, puk2);
-        piv.verifyPin(DEFAULT_PIN);
+        piv.changePuk(state.defaultPuk, puk2);
+        piv.verifyPin(state.defaultPin);
 
         // Block PIN
         while (piv.getPinAttempts() > 0) {
@@ -158,7 +155,7 @@ public class PivDeviceTests {
 
         // Verify PIN blocked
         try {
-            piv.verifyPin(DEFAULT_PIN);
+            piv.verifyPin(state.defaultPin);
         } catch (InvalidPinException e) {
             MatcherAssert.assertThat(e.getAttemptsRemaining(), CoreMatchers.equalTo(0));
             MatcherAssert.assertThat(piv.getPinAttempts(), CoreMatchers.equalTo(0));
@@ -166,24 +163,24 @@ public class PivDeviceTests {
 
         // Try unblock with wrong PUK
         try {
-            piv.unblockPin(DEFAULT_PUK, DEFAULT_PIN);
+            piv.unblockPin(state.defaultPuk, state.defaultPin);
             Assert.fail("Unblock with wrong PUK");
         } catch (InvalidPinException e) {
             MatcherAssert.assertThat(e.getAttemptsRemaining(), CoreMatchers.equalTo(2));
         }
 
         // Unblock PIN
-        piv.unblockPin(puk2, DEFAULT_PIN);
+        piv.unblockPin(puk2, state.defaultPin);
 
         // Try to change PUK with wrong PUK
         try {
-            piv.changePuk(DEFAULT_PUK, puk2);
+            piv.changePuk(state.defaultPuk, puk2);
             Assert.fail("Change PUK with wrong PUK");
         } catch (InvalidPinException e) {
             MatcherAssert.assertThat(e.getAttemptsRemaining(), CoreMatchers.equalTo(2));
         }
 
         // Change PUK
-        piv.changePuk(puk2, DEFAULT_PUK);
+        piv.changePuk(puk2, state.defaultPuk);
     }
 }

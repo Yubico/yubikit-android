@@ -22,7 +22,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
-import com.yubico.yubikit.core.application.CommandException;
+import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.fido.CtapException;
 import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.fido.ctap.ClientPin;
@@ -32,19 +32,20 @@ import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV2;
 import com.yubico.yubikit.management.DeviceInfo;
 import com.yubico.yubikit.openpgp.OpenPgpSession;
 import com.yubico.yubikit.piv.PivSession;
+import com.yubico.yubikit.testing.fido.FidoTestState;
+import com.yubico.yubikit.testing.openpgp.OpenPgpTestState;
+import com.yubico.yubikit.testing.piv.PivTestState;
 
-import org.bouncycastle.util.encoders.Hex;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
 import org.junit.Assert;
 
-import java.io.IOException;
 import java.util.Objects;
 
 public class PinComplexityDeviceTests {
 
-    private static void verifyDevice() {
-        final DeviceInfo deviceInfo = TestUtils.getDeviceInfo(StaticTestState.currentDevice);
+    private static void verifyDevice(TestState state) {
+        final DeviceInfo deviceInfo = state.getDeviceInfo();
         assumeTrue("Device does not support PIN complexity", deviceInfo != null);
         assumeTrue("Device does not require PIN complexity", deviceInfo.getPinComplexity());
     }
@@ -56,23 +57,21 @@ public class PinComplexityDeviceTests {
      *
      * @see DeviceInfo#getPinComplexity()
      */
-    public static void testPivPinComplexity(PivSession piv) throws Throwable {
+    public static void testPivPinComplexity(PivSession piv, PivTestState state) throws Throwable {
 
-        verifyDevice();
+        verifyDevice(state);
 
         piv.reset();
-        piv.authenticate(Hex.decode("010203040506070801020304050607080102030405060708"));
+        piv.authenticate(state.defaultManagementKey);
 
-        char[] defaultPin = "123456".toCharArray();
-
-        piv.verifyPin(defaultPin);
+        piv.verifyPin(state.defaultPin);
 
         MatcherAssert.assertThat(piv.getPinAttempts(), CoreMatchers.equalTo(3));
 
         // try to change to pin which breaks PIN complexity
         char[] weakPin = "33333333".toCharArray();
         try {
-            piv.changePin(defaultPin, weakPin);
+            piv.changePin(state.defaultPin, weakPin);
             Assert.fail("Set weak PIN");
         } catch (ApduException apduException) {
             if (apduException.getSw() != CONDITIONS_NOT_SATISFIED) {
@@ -82,17 +81,19 @@ public class PinComplexityDeviceTests {
             Assert.fail("Unexpected exception:" + e.getMessage());
         }
 
-        piv.verifyPin(defaultPin);
+        piv.verifyPin(state.defaultPin);
 
         // change to complex pin
-        char[] complexPin = "11234567".toCharArray();
+        char[] complexPin = "CMPLXPIN".toCharArray();
         try {
-            piv.changePin(defaultPin, complexPin);
+            piv.changePin(state.defaultPin, complexPin);
         } catch (Exception e) {
             Assert.fail("Unexpected exception:" + e.getMessage());
         }
 
         piv.verifyPin(complexPin);
+
+        piv.changePin(complexPin, state.defaultPin);
     }
 
 
@@ -103,17 +104,16 @@ public class PinComplexityDeviceTests {
      *
      * @see DeviceInfo#getPinComplexity()
      */
-    public static void testOpenPgpPinComplexity(OpenPgpSession openpgp) throws Throwable {
+    public static void testOpenPgpPinComplexity(OpenPgpSession openpgp, OpenPgpTestState state) throws Throwable {
 
-        verifyDevice();
+        verifyDevice(state);
 
-        char[] currentPin = "123456".toCharArray();
         openpgp.reset();
-        openpgp.verifyUserPin(currentPin, false);
+        openpgp.verifyUserPin(state.defaultUserPin, false);
 
         char[] weakPin = "33333333".toCharArray();
         try {
-            openpgp.changeUserPin(currentPin, weakPin);
+            openpgp.changeUserPin(state.defaultUserPin, weakPin);
         } catch (ApduException apduException) {
             if (apduException.getSw() != CONDITIONS_NOT_SATISFIED) {
                 fail("Unexpected exception");
@@ -123,49 +123,57 @@ public class PinComplexityDeviceTests {
         }
 
         // set complex pin
-        char[] complexPin = "11234567".toCharArray();
+        char[] complexPin = "CMPLXPIN".toCharArray();
         try {
-            openpgp.changeUserPin(currentPin, complexPin);
+            openpgp.changeUserPin(state.defaultUserPin, complexPin);
         } catch (Exception e) {
             Assert.fail("Unexpected exception");
         }
+
+        openpgp.changeUserPin(complexPin, state.defaultUserPin);
     }
 
-    public static void testFidoPinComplexity(Ctap2Session ctap2, Object... ignoredArgs)
-            throws IOException, CommandException {
+    public static void testFido2PinComplexity(FidoTestState state) throws Throwable {
 
-        PinUvAuthProtocol pinUvAuthProtocol = new PinUvAuthProtocolV2();
+        verifyDevice(state);
 
-        char[] defaultPin = "11234567".toCharArray();
+        state.withCtap2(ctap2 -> {
+            PinUvAuthProtocol pinUvAuthProtocol = new PinUvAuthProtocolV2();
+            char[] defaultPin = "11234567".toCharArray();
 
-        Ctap2Session.InfoData info = ctap2.getCachedInfo();
-        ClientPin pin = new ClientPin(ctap2, pinUvAuthProtocol);
-        boolean pinSet = Objects.requireNonNull((Boolean) info.getOptions().get("clientPin"));
+            Ctap2Session.InfoData info = ctap2.getCachedInfo();
+            ClientPin pin = new ClientPin(ctap2, pinUvAuthProtocol);
+            boolean pinSet = Objects.requireNonNull((Boolean) info.getOptions().get("clientPin"));
 
-        if (!pinSet) {
-            pin.setPin(defaultPin);
-        } else {
-            pin.getPinToken(
-                    defaultPin,
-                    ClientPin.PIN_PERMISSION_MC | ClientPin.PIN_PERMISSION_GA,
-                    "localhost");
-        }
+            try {
+                if (!pinSet) {
+                    pin.setPin(defaultPin);
+                } else {
+                    pin.getPinToken(
+                            defaultPin,
+                            ClientPin.PIN_PERMISSION_MC | ClientPin.PIN_PERMISSION_GA,
+                            "localhost");
+                }
+            } catch (ApduException e) {
+                fail("Failed to set or use PIN. Reset the device and try again");
+            }
 
-        assertThat(pin.getPinUvAuth().getVersion(), is(pinUvAuthProtocol.getVersion()));
-        assertThat(pin.getPinRetries().getCount(), is(8));
+            assertThat(pin.getPinUvAuth().getVersion(), is(pinUvAuthProtocol.getVersion()));
+            assertThat(pin.getPinRetries().getCount(), is(8));
 
-        char[] weakPin = "33333333".toCharArray();
-        try {
-            pin.changePin(defaultPin, weakPin);
-            fail("Weak PIN was accepted");
-        } catch (CtapException e) {
-            assertThat(e.getCtapError(), is(ERR_PIN_POLICY_VIOLATION));
-        }
+            char[] weakPin = "33333333".toCharArray();
+            try {
+                pin.changePin(defaultPin, weakPin);
+                fail("Weak PIN was accepted");
+            } catch (CtapException e) {
+                assertThat(e.getCtapError(), is(ERR_PIN_POLICY_VIOLATION));
+            }
 
-        char[] strongPin = "STRONG PIN".toCharArray();
-        pin.changePin(defaultPin, strongPin);
-        pin.changePin(strongPin, defaultPin);
+            char[] strongPin = "STRONG PIN".toCharArray();
+            pin.changePin(defaultPin, strongPin);
+            pin.changePin(strongPin, defaultPin);
 
-        assertThat(pin.getPinRetries().getCount(), is(8));
+            assertThat(pin.getPinRetries().getCount(), is(8));
+        });
     }
 }

@@ -16,9 +16,6 @@
 
 package com.yubico.yubikit.testing.openpgp;
 
-import static com.yubico.yubikit.testing.openpgp.OpenPgpTestState.ADMIN_PIN;
-import static com.yubico.yubikit.testing.openpgp.OpenPgpTestState.USER_PIN;
-
 import com.yubico.yubikit.core.application.InvalidPinException;
 import com.yubico.yubikit.core.keys.PrivateKeyValues;
 import com.yubico.yubikit.core.keys.PublicKeyValues;
@@ -82,7 +79,7 @@ public class OpenPgpDeviceTests {
         return openpgp.supports(OpenPgpSession.FEATURE_RSA4096_KEYS) ? new int[]{2048, 3072, 4096} : new int[]{2048};
     }
 
-    public static void testGenerateRequiresAdmin(OpenPgpSession openpgp) throws Exception {
+    public static void testGenerateRequiresAdmin(OpenPgpSession openpgp, OpenPgpTestState state) throws Exception {
 
         try {
             openpgp.generateEcKey(KeyRef.DEC, OpenPgpCurve.BrainpoolP256R1);
@@ -91,7 +88,7 @@ public class OpenPgpDeviceTests {
             Assert.assertEquals(SW.SECURITY_CONDITION_NOT_SATISFIED, e.getSw());
         }
 
-        if (!OpenPgpTestState.FIPS_APPROVED) {
+        if (!state.isFipsApproved) {
             try {
                 openpgp.generateRsaKey(KeyRef.DEC, 2048);
                 Assert.fail();
@@ -101,18 +98,18 @@ public class OpenPgpDeviceTests {
         }
     }
 
-    public static void testChangePin(OpenPgpSession openpgp) throws Exception {
-        openpgp.verifyUserPin(USER_PIN, false);
+    public static void testChangePin(OpenPgpSession openpgp, OpenPgpTestState state) throws Exception {
+        openpgp.verifyUserPin(state.defaultUserPin, false);
         Assert.assertThrows(InvalidPinException.class, () -> openpgp.verifyUserPin(CHANGED_PIN, false));
-        Assert.assertThrows(InvalidPinException.class, () -> openpgp.changeUserPin(CHANGED_PIN, USER_PIN));
+        Assert.assertThrows(InvalidPinException.class, () -> openpgp.changeUserPin(CHANGED_PIN, state.defaultUserPin));
 
-        openpgp.changeUserPin(USER_PIN, CHANGED_PIN);
+        openpgp.changeUserPin(state.defaultUserPin, CHANGED_PIN);
         openpgp.verifyUserPin(CHANGED_PIN, false);
-        openpgp.changeUserPin(CHANGED_PIN, USER_PIN);
-        openpgp.verifyUserPin(USER_PIN, false);
+        openpgp.changeUserPin(CHANGED_PIN, state.defaultUserPin);
+        openpgp.verifyUserPin(state.defaultUserPin, false);
     }
 
-    public static void testResetPin(OpenPgpSession openpgp) throws Exception {
+    public static void testResetPin(OpenPgpSession openpgp, OpenPgpTestState state) throws Exception {
         int remaining = openpgp.getPinStatus().getAttemptsUser();
         for (int i = remaining; i > 0; i--) {
             try {
@@ -125,15 +122,15 @@ public class OpenPgpDeviceTests {
         assert openpgp.getPinStatus().getAttemptsUser() == 0;
 
         try {
-            openpgp.resetPin(USER_PIN, null);
+            openpgp.resetPin(state.defaultUserPin, null);
             Assert.fail();
         } catch (ApduException e) {
             Assert.assertEquals(e.getSw(), SW.SECURITY_CONDITION_NOT_SATISFIED);
         }
 
         // Reset PIN using Admin PIN
-        openpgp.verifyAdminPin(ADMIN_PIN);
-        openpgp.resetPin(USER_PIN, null);
+        openpgp.verifyAdminPin(state.defaultAdminPin);
+        openpgp.resetPin(state.defaultUserPin, null);
         remaining = openpgp.getPinStatus().getAttemptsUser();
         assert remaining > 0;
         for (int i = remaining; i > 0; i--) {
@@ -148,15 +145,15 @@ public class OpenPgpDeviceTests {
 
         // Reset PIN using Reset Code
         openpgp.setResetCode(RESET_CODE);
-        Assert.assertThrows(InvalidPinException.class, () -> openpgp.resetPin(USER_PIN, CHANGED_PIN));
-        openpgp.resetPin(USER_PIN, RESET_CODE);
+        Assert.assertThrows(InvalidPinException.class, () -> openpgp.resetPin(state.defaultUserPin, CHANGED_PIN));
+        openpgp.resetPin(state.defaultUserPin, RESET_CODE);
         assert openpgp.getPinStatus().getAttemptsUser() > 0;
     }
 
-    public static void testSetPinAttempts(OpenPgpSession openpgp) throws Exception {
+    public static void testSetPinAttempts(OpenPgpSession openpgp, OpenPgpTestState state) throws Exception {
         Assume.assumeTrue("RSA key generation", openpgp.supports(OpenPgpSession.FEATURE_PIN_ATTEMPTS));
 
-        openpgp.verifyAdminPin(ADMIN_PIN);
+        openpgp.verifyAdminPin(state.defaultAdminPin);
         openpgp.setPinAttempts(6, 3, 3);
         assert openpgp.getPinStatus().getAttemptsUser() == 6;
 
@@ -171,52 +168,52 @@ public class OpenPgpDeviceTests {
         assert openpgp.getPinStatus().getAttemptsUser() == 3;
     }
 
-    public static void testGenerateRsaKeys(OpenPgpSession openpgp) throws Exception {
+    public static void testGenerateRsaKeys(OpenPgpSession openpgp, OpenPgpTestState state) throws Exception {
         Assume.assumeTrue("RSA key generation", openpgp.supports(OpenPgpSession.FEATURE_RSA_GENERATION));
 
-        openpgp.verifyAdminPin(ADMIN_PIN);
+        openpgp.verifyAdminPin(state.defaultAdminPin);
 
         byte[] message = "hello".getBytes(StandardCharsets.UTF_8);
         for (int keySize : getSupportedRsaKeySizes(openpgp)) {
             logger.info("RSA key size: {}", keySize);
             PublicKey publicKey = openpgp.generateRsaKey(KeyRef.SIG, keySize).toPublicKey();
-            openpgp.verifyUserPin(USER_PIN, false);
+            openpgp.verifyUserPin(state.defaultUserPin, false);
             byte[] signature = openpgp.sign(message);
             Signature verifier = Signature.getInstance("NONEwithRSA");
             verifier.initVerify(publicKey);
             verifier.update(message);
             assert verifier.verify(signature);
 
-            if (!OpenPgpTestState.FIPS_APPROVED) {
+            if (!state.isFipsApproved) {
                 publicKey = openpgp.generateRsaKey(KeyRef.DEC, keySize).toPublicKey();
                 Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
                 cipher.init(Cipher.ENCRYPT_MODE, publicKey);
                 byte[] cipherText = cipher.doFinal(message);
 
-                openpgp.verifyUserPin(USER_PIN, true);
+                openpgp.verifyUserPin(state.defaultUserPin, true);
                 byte[] decrypted = openpgp.decrypt(cipherText);
                 Assert.assertArrayEquals(message, decrypted);
             }
         }
     }
 
-    public static void testGenerateEcKeys(OpenPgpSession openpgp) throws Exception {
+    public static void testGenerateEcKeys(OpenPgpSession openpgp, OpenPgpTestState state) throws Exception {
         Assume.assumeTrue("EC support", openpgp.supports(OpenPgpSession.FEATURE_EC_KEYS));
 
         Security.removeProvider("BC");
         Security.insertProviderAt(new BouncyCastleProvider(), 1);
-        openpgp.verifyAdminPin(ADMIN_PIN);
+        openpgp.verifyAdminPin(state.defaultAdminPin);
 
         byte[] message = "hello".getBytes(StandardCharsets.UTF_8);
         for (OpenPgpCurve curve : ecdsaCurves) {
-            if (OpenPgpTestState.FIPS_APPROVED) {
+            if (state.isFipsApproved) {
                 if (curve == OpenPgpCurve.SECP256K1) {
                     continue;
                 }
             }
             logger.info("Curve: {}", curve);
             PublicKey publicKey = openpgp.generateEcKey(KeyRef.SIG, curve).toPublicKey();
-            openpgp.verifyUserPin(USER_PIN, false);
+            openpgp.verifyUserPin(state.defaultUserPin, false);
             byte[] signature = openpgp.sign(message);
 
             Signature verifier = Signature.getInstance("NONEwithECDSA");
@@ -229,7 +226,7 @@ public class OpenPgpDeviceTests {
             kpg.initialize(new ECGenParameterSpec(curve.name()));
             KeyPair pair = kpg.generateKeyPair();
 
-            openpgp.verifyUserPin(USER_PIN, true);
+            openpgp.verifyUserPin(state.defaultUserPin, true);
             byte[] actual = openpgp.decrypt(PublicKeyValues.fromPublicKey(pair.getPublic()));
             KeyAgreement ka = KeyAgreement.getInstance("ECDH");
             ka.init(pair.getPrivate());
@@ -239,16 +236,16 @@ public class OpenPgpDeviceTests {
         }
     }
 
-    public static void testGenerateEd25519(OpenPgpSession openpgp) throws Exception {
+    public static void testGenerateEd25519(OpenPgpSession openpgp, OpenPgpTestState state) throws Exception {
         Assume.assumeTrue("EC support", openpgp.supports(OpenPgpSession.FEATURE_EC_KEYS));
 
         Security.removeProvider("BC");
         Security.insertProviderAt(new BouncyCastleProvider(), 1);
-        openpgp.verifyAdminPin(ADMIN_PIN);
+        openpgp.verifyAdminPin(state.defaultAdminPin);
 
         byte[] message = "hello".getBytes(StandardCharsets.UTF_8);
         PublicKey publicKey = openpgp.generateEcKey(KeyRef.SIG, OpenPgpCurve.Ed25519).toPublicKey();
-        openpgp.verifyUserPin(USER_PIN, false);
+        openpgp.verifyUserPin(state.defaultUserPin, false);
         byte[] signature = openpgp.sign(message);
 
         Signature verifier = Signature.getInstance("Ed25519");
@@ -257,20 +254,20 @@ public class OpenPgpDeviceTests {
         assert verifier.verify(signature);
     }
 
-    public static void testGenerateX25519(OpenPgpSession openpgp) throws Exception {
+    public static void testGenerateX25519(OpenPgpSession openpgp, OpenPgpTestState state) throws Exception {
         Assume.assumeTrue("EC support", openpgp.supports(OpenPgpSession.FEATURE_EC_KEYS));
 
-        Assume.assumeFalse("X25519 not supported in FIPS OpenPGP.", OpenPgpTestState.FIPS_APPROVED);
+        Assume.assumeFalse("X25519 not supported in FIPS OpenPGP.", state.isFipsApproved);
 
         Security.removeProvider("BC");
         Security.insertProviderAt(new BouncyCastleProvider(), 1);
-        openpgp.verifyAdminPin(ADMIN_PIN);
+        openpgp.verifyAdminPin(state.defaultAdminPin);
 
         PublicKey publicKey = openpgp.generateEcKey(KeyRef.DEC, OpenPgpCurve.X25519).toPublicKey();
         KeyPairGenerator kpg = KeyPairGenerator.getInstance("X25519");
         KeyPair pair = kpg.generateKeyPair();
 
-        openpgp.verifyUserPin(USER_PIN, true);
+        openpgp.verifyUserPin(state.defaultUserPin, true);
         byte[] actual = openpgp.decrypt(PublicKeyValues.fromPublicKey(pair.getPublic()));
         KeyAgreement ka = KeyAgreement.getInstance("XDH");
         ka.init(pair.getPrivate());
@@ -279,8 +276,8 @@ public class OpenPgpDeviceTests {
         Assert.assertArrayEquals(expected, actual);
     }
 
-    public static void testImportRsaKeys(OpenPgpSession openpgp) throws Exception {
-        openpgp.verifyAdminPin(ADMIN_PIN);
+    public static void testImportRsaKeys(OpenPgpSession openpgp, OpenPgpTestState state) throws Exception {
+        openpgp.verifyAdminPin(state.defaultAdminPin);
 
         KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA");
         byte[] message = "hello".getBytes(StandardCharsets.UTF_8);
@@ -294,7 +291,7 @@ public class OpenPgpDeviceTests {
             Assert.assertArrayEquals(pair.getPublic().getEncoded(), encoded);
 
             PublicKey publicKey = openpgp.getPublicKey(KeyRef.SIG).toPublicKey();
-            openpgp.verifyUserPin(USER_PIN, false);
+            openpgp.verifyUserPin(state.defaultUserPin, false);
             byte[] signature = openpgp.sign(message);
 
             Signature verifier = Signature.getInstance("NONEwithRSA");
@@ -302,34 +299,34 @@ public class OpenPgpDeviceTests {
             verifier.update(message);
             assert verifier.verify(signature);
 
-            if (!OpenPgpTestState.FIPS_APPROVED) {
+            if (!state.isFipsApproved) {
                 openpgp.putKey(KeyRef.DEC, PrivateKeyValues.fromPrivateKey(pair.getPrivate()));
                 Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
                 cipher.init(Cipher.ENCRYPT_MODE, publicKey);
                 byte[] cipherText = cipher.doFinal(message);
 
 
-                openpgp.verifyUserPin(USER_PIN, true);
+                openpgp.verifyUserPin(state.defaultUserPin, true);
                 byte[] decrypted = openpgp.decrypt(cipherText);
                 Assert.assertArrayEquals(message, decrypted);
             }
         }
     }
 
-    public static void testImportEcDsaKeys(OpenPgpSession openpgp) throws Exception {
+    public static void testImportEcDsaKeys(OpenPgpSession openpgp, OpenPgpTestState state) throws Exception {
         Assume.assumeTrue("EC support", openpgp.supports(OpenPgpSession.FEATURE_EC_KEYS));
 
         Security.removeProvider("BC");
         Security.insertProviderAt(new BouncyCastleProvider(), 1);
 
-        openpgp.verifyAdminPin(ADMIN_PIN);
+        openpgp.verifyAdminPin(state.defaultAdminPin);
 
         KeyPairGenerator kpg = KeyPairGenerator.getInstance("ECDSA");
         List<OpenPgpCurve> curves = new ArrayList<>(Arrays.asList(OpenPgpCurve.values()));
         curves.remove(OpenPgpCurve.Ed25519);
         curves.remove(OpenPgpCurve.X25519);
 
-        if (OpenPgpTestState.FIPS_APPROVED) {
+        if (state.isFipsApproved) {
             curves.remove(OpenPgpCurve.SECP256K1);
         }
 
@@ -342,7 +339,7 @@ public class OpenPgpDeviceTests {
             PublicKeyValues values = openpgp.getPublicKey(KeyRef.SIG);
             Assert.assertArrayEquals(pair.getPublic().getEncoded(), values.getEncoded());
             PublicKey publicKey = values.toPublicKey();
-            openpgp.verifyUserPin(USER_PIN, false);
+            openpgp.verifyUserPin(state.defaultUserPin, false);
             byte[] signature = openpgp.sign(message);
 
             Signature verifier = Signature.getInstance("NONEwithECDSA");
@@ -357,20 +354,20 @@ public class OpenPgpDeviceTests {
             ka.doPhase(openpgp.getPublicKey(KeyRef.DEC).toPublicKey(), true);
             byte[] expected = ka.generateSecret();
 
-            openpgp.verifyUserPin(USER_PIN, true);
+            openpgp.verifyUserPin(state.defaultUserPin, true);
             byte[] agreement = openpgp.decrypt(PublicKeyValues.fromPublicKey(pair2.getPublic()));
 
             Assert.assertArrayEquals(expected, agreement);
         }
     }
 
-    public static void testImportEd25519(OpenPgpSession openpgp) throws Exception {
+    public static void testImportEd25519(OpenPgpSession openpgp, OpenPgpTestState state) throws Exception {
         Assume.assumeTrue("EC support", openpgp.supports(OpenPgpSession.FEATURE_EC_KEYS));
 
         Security.removeProvider("BC");
         Security.insertProviderAt(new BouncyCastleProvider(), 1);
 
-        openpgp.verifyAdminPin(ADMIN_PIN);
+        openpgp.verifyAdminPin(state.defaultAdminPin);
 
         KeyPairGenerator kpg = KeyPairGenerator.getInstance("Ed25519");
         KeyPair pair = kpg.generateKeyPair();
@@ -378,7 +375,7 @@ public class OpenPgpDeviceTests {
 
         byte[] message = "hello".getBytes(StandardCharsets.UTF_8);
 
-        openpgp.verifyUserPin(USER_PIN, false);
+        openpgp.verifyUserPin(state.defaultUserPin, false);
         byte[] signature = openpgp.sign(message);
 
         Signature verifier = Signature.getInstance("Ed25519");
@@ -389,14 +386,14 @@ public class OpenPgpDeviceTests {
         Assert.assertArrayEquals(pair.getPublic().getEncoded(), openpgp.getPublicKey(KeyRef.SIG).getEncoded());
     }
 
-    public static void testImportX25519(OpenPgpSession openpgp) throws Exception {
+    public static void testImportX25519(OpenPgpSession openpgp, OpenPgpTestState state) throws Exception {
         Assume.assumeTrue("EC support", openpgp.supports(OpenPgpSession.FEATURE_EC_KEYS));
-        Assume.assumeFalse("X25519 not supported in FIPS OpenPGP.", OpenPgpTestState.FIPS_APPROVED);
+        Assume.assumeFalse("X25519 not supported in FIPS OpenPGP.", state.isFipsApproved);
 
         Security.removeProvider("BC");
         Security.insertProviderAt(new BouncyCastleProvider(), 1);
 
-        openpgp.verifyAdminPin(ADMIN_PIN);
+        openpgp.verifyAdminPin(state.defaultAdminPin);
 
         KeyPairGenerator kpg = KeyPairGenerator.getInstance("X25519");
         KeyPair pair = kpg.generateKeyPair();
@@ -409,27 +406,27 @@ public class OpenPgpDeviceTests {
         ka.doPhase(openpgp.getPublicKey(KeyRef.DEC).toPublicKey(), true);
         byte[] expected = ka.generateSecret();
 
-        openpgp.verifyUserPin(USER_PIN, true);
+        openpgp.verifyUserPin(state.defaultUserPin, true);
         byte[] agreement = openpgp.decrypt(PublicKeyValues.Ec.fromPublicKey(pair2.getPublic()));
 
         Assert.assertArrayEquals(expected, agreement);
     }
 
-    public static void testAttestation(OpenPgpSession openpgp) throws Exception {
+    public static void testAttestation(OpenPgpSession openpgp, OpenPgpTestState state) throws Exception {
         Assume.assumeTrue("Attestation support", openpgp.supports(OpenPgpSession.FEATURE_ATTESTATION));
 
-        openpgp.verifyAdminPin(ADMIN_PIN);
+        openpgp.verifyAdminPin(state.defaultAdminPin);
 
         PublicKey publicKey = openpgp.generateEcKey(KeyRef.SIG, OpenPgpCurve.SECP256R1).toPublicKey();
 
-        openpgp.verifyUserPin(USER_PIN, false);
+        openpgp.verifyUserPin(state.defaultUserPin, false);
         X509Certificate cert = openpgp.attestKey(KeyRef.SIG);
 
         Assert.assertEquals(publicKey, cert.getPublicKey());
     }
 
-    public static void testSigPinPolicy(OpenPgpSession openpgp) throws Exception {
-        openpgp.verifyAdminPin(ADMIN_PIN);
+    public static void testSigPinPolicy(OpenPgpSession openpgp, OpenPgpTestState state) throws Exception {
+        openpgp.verifyAdminPin(state.defaultAdminPin);
 
         KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA");
         byte[] message = "hello".getBytes(StandardCharsets.UTF_8);
@@ -446,7 +443,7 @@ public class OpenPgpDeviceTests {
         }
 
         openpgp.setSignaturePinPolicy(PinPolicy.ALWAYS);
-        openpgp.verifyUserPin(USER_PIN, false);
+        openpgp.verifyUserPin(state.defaultUserPin, false);
         openpgp.sign(message);
         Assert.assertEquals(1, openpgp.getSignatureCounter());
         try {
@@ -458,14 +455,14 @@ public class OpenPgpDeviceTests {
         Assert.assertEquals(1, openpgp.getSignatureCounter());
 
         openpgp.setSignaturePinPolicy(PinPolicy.ONCE);
-        openpgp.verifyUserPin(USER_PIN, false);
+        openpgp.verifyUserPin(state.defaultUserPin, false);
         openpgp.sign(message);
         Assert.assertEquals(2, openpgp.getSignatureCounter());
         openpgp.sign(message);
         Assert.assertEquals(3, openpgp.getSignatureCounter());
     }
 
-    public static void testKdf(OpenPgpSession openpgp) throws Exception {
+    public static void testKdf(OpenPgpSession openpgp, OpenPgpTestState state) throws Exception {
         Assume.assumeTrue("KDF Support", openpgp.getExtendedCapabilities().getFlags().contains(ExtendedCapabilityFlag.KDF));
 
         // Test setting KDF without admin PIN verification
@@ -477,8 +474,8 @@ public class OpenPgpDeviceTests {
         }
 
         // Set a non-default PINs to ensure that they reset
-        openpgp.changeUserPin(USER_PIN, CHANGED_PIN);
-        openpgp.changeAdminPin(ADMIN_PIN, CHANGED_PIN);
+        openpgp.changeUserPin(state.defaultUserPin, CHANGED_PIN);
+        openpgp.changeAdminPin(state.defaultAdminPin, CHANGED_PIN);
 
         openpgp.verifyAdminPin(CHANGED_PIN);
         openpgp.setKdf(
@@ -499,14 +496,14 @@ public class OpenPgpDeviceTests {
         openpgp.verifyUserPin(Pw.DEFAULT_USER_PIN, false);
     }
 
-    public static void testUnverifyPin(OpenPgpSession openpgp) throws Exception {
+    public static void testUnverifyPin(OpenPgpSession openpgp, OpenPgpTestState state) throws Exception {
         Assume.assumeTrue("Unverify PIN Support", openpgp.supports(OpenPgpSession.FEATURE_UNVERIFY_PIN));
 
         KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA");
         kpg.initialize(2048);
         KeyPair pair = kpg.generateKeyPair();
 
-        openpgp.verifyAdminPin(ADMIN_PIN);
+        openpgp.verifyAdminPin(state.defaultAdminPin);
         openpgp.putKey(KeyRef.SIG, PrivateKeyValues.fromPrivateKey(pair.getPrivate()));
         openpgp.setSignaturePinPolicy(PinPolicy.ONCE);
 
@@ -519,7 +516,7 @@ public class OpenPgpDeviceTests {
             Assert.assertEquals(SW.SECURITY_CONDITION_NOT_SATISFIED, e.getSw());
         }
 
-        openpgp.verifyUserPin(USER_PIN, false);
+        openpgp.verifyUserPin(state.defaultUserPin, false);
         byte[] message = "hello".getBytes(StandardCharsets.UTF_8);
         openpgp.sign(message);
 
@@ -533,15 +530,15 @@ public class OpenPgpDeviceTests {
         }
     }
 
-    public static void testDeleteKey(OpenPgpSession openpgp) throws Exception {
+    public static void testDeleteKey(OpenPgpSession openpgp, OpenPgpTestState state) throws Exception {
         KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA");
         kpg.initialize(2048);
         KeyPair pair = kpg.generateKeyPair();
 
-        openpgp.verifyAdminPin(ADMIN_PIN);
+        openpgp.verifyAdminPin(state.defaultAdminPin);
         openpgp.putKey(KeyRef.SIG, PrivateKeyValues.fromPrivateKey(pair.getPrivate()));
 
-        openpgp.verifyUserPin(USER_PIN, false);
+        openpgp.verifyUserPin(state.defaultUserPin, false);
         byte[] message = "hello".getBytes(StandardCharsets.UTF_8);
         openpgp.sign(message);
 
@@ -554,7 +551,7 @@ public class OpenPgpDeviceTests {
         }
     }
 
-    public static void testCertificateManagement(OpenPgpSession openpgp) throws Exception {
+    public static void testCertificateManagement(OpenPgpSession openpgp, OpenPgpTestState state) throws Exception {
         KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA");
         kpg.initialize(2048);
         KeyPair pair = kpg.generateKeyPair();
@@ -575,7 +572,7 @@ public class OpenPgpDeviceTests {
         CertificateFactory cf = CertificateFactory.getInstance("X.509");
         X509Certificate cert = (X509Certificate) cf.generateCertificate(stream);
 
-        openpgp.verifyAdminPin(ADMIN_PIN);
+        openpgp.verifyAdminPin(state.defaultAdminPin);
         openpgp.putCertificate(KeyRef.SIG, cert);
 
         X509Certificate actual = openpgp.getCertificate(KeyRef.SIG);
@@ -586,7 +583,7 @@ public class OpenPgpDeviceTests {
         Assert.assertNull(openpgp.getCertificate(KeyRef.SIG));
     }
 
-    public static void testGetChallenge(OpenPgpSession openpgp) throws Exception {
+    public static void testGetChallenge(OpenPgpSession openpgp, OpenPgpTestState ignored) throws Exception {
         Assume.assumeTrue("Get Challenge Support", openpgp.getExtendedCapabilities().getFlags().contains(ExtendedCapabilityFlag.GET_CHALLENGE));
 
         byte[] challenge = openpgp.getChallenge(1);
@@ -603,7 +600,7 @@ public class OpenPgpDeviceTests {
         Assert.assertEquals(255, challenge.length);
     }
 
-    public static void testSetUif(OpenPgpSession openpgp) throws Exception {
+    public static void testSetUif(OpenPgpSession openpgp, OpenPgpTestState state) throws Exception {
         Assume.assumeTrue("UIF Support", openpgp.supports(OpenPgpSession.FEATURE_UIF));
 
         try {
@@ -613,7 +610,7 @@ public class OpenPgpDeviceTests {
             Assert.assertEquals(SW.SECURITY_CONDITION_NOT_SATISFIED, e.getSw());
         }
 
-        openpgp.verifyAdminPin(ADMIN_PIN);
+        openpgp.verifyAdminPin(state.defaultAdminPin);
         openpgp.setUif(KeyRef.SIG, Uif.ON);
         Assert.assertEquals(Uif.ON, openpgp.getUif(KeyRef.SIG));
 
