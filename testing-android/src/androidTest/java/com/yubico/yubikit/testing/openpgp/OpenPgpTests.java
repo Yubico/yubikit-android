@@ -16,10 +16,7 @@
 
 package com.yubico.yubikit.testing.openpgp;
 
-import javax.annotation.Nullable;
-
 import com.yubico.yubikit.core.smartcard.scp.ScpKid;
-import com.yubico.yubikit.testing.PinComplexityDeviceTests;
 import com.yubico.yubikit.testing.SlowTest;
 import com.yubico.yubikit.testing.SmokeTest;
 import com.yubico.yubikit.testing.framework.OpenPgpInstrumentedTests;

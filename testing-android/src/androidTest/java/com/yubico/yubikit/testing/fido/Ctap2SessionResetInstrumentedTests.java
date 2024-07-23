@@ -16,11 +16,16 @@
 
 package com.yubico.yubikit.testing.fido;
 
+import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
+import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV1;
 import com.yubico.yubikit.testing.AlwaysManualTest;
+import com.yubico.yubikit.testing.PinUvAuthProtocolV1Test;
 import com.yubico.yubikit.testing.framework.FidoInstrumentedTests;
 
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
  * Tests FIDO Reset.
@@ -31,10 +36,25 @@ import org.junit.experimental.categories.Category;
  *     <li>YubiKey Bio devices are currently ignored.</li>
  * </ul>
  */
-public class Ctap2SessionResetInstrumentedTests extends FidoInstrumentedTests {
-    @Test
-    @Category(AlwaysManualTest.class)
-    public void testReset() throws Throwable {
-        withCtap2Session(Ctap2SessionTests::testReset);
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+        Ctap2SessionResetInstrumentedTests.PinUvAuthV2Test.class,
+        Ctap2SessionResetInstrumentedTests.PinUvAuthV1Test.class,
+})
+public class Ctap2SessionResetInstrumentedTests {
+    public static class PinUvAuthV2Test extends FidoInstrumentedTests {
+        @Test
+        @Category(AlwaysManualTest.class)
+        public void testReset() throws Throwable {
+            withDevice(false, Ctap2SessionTests::testReset);
+        }
+    }
+
+    @Category(PinUvAuthProtocolV1Test.class)
+    public static class PinUvAuthV1Test extends PinUvAuthV2Test {
+        @Override
+        protected PinUvAuthProtocol getPinUvAuthProtocol() {
+            return new PinUvAuthProtocolV1();
+        }
     }
 }

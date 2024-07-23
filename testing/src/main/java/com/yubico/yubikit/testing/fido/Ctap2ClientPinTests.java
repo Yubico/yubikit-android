@@ -16,14 +16,22 @@
 
 package com.yubico.yubikit.testing.fido;
 
+import static com.yubico.yubikit.core.fido.CtapException.ERR_PIN_POLICY_VIOLATION;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
 import com.yubico.yubikit.core.fido.CtapException;
+import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.fido.ctap.ClientPin;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
+import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
+import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV2;
+import com.yubico.yubikit.management.DeviceInfo;
+
+import java.util.Objects;
 
 public class Ctap2ClientPinTests {
     public static void testClientPin(Ctap2Session session, FidoTestState state) throws Throwable {
@@ -47,5 +55,51 @@ public class Ctap2ClientPinTests {
         assertThat(pin.getPinToken(TestData.OTHER_PIN, permissions, permissionRpId), notNullValue());
         assertThat(pin.getPinRetries().getCount(), is(8));
         pin.changePin(TestData.OTHER_PIN, TestData.PIN);
+    }
+
+    public static void testPinComplexity(FidoTestState state) throws Throwable {
+
+        final DeviceInfo deviceInfo = state.getDeviceInfo();
+        assumeTrue("Device does not support PIN complexity", deviceInfo != null);
+        assumeTrue("Device does not require PIN complexity", deviceInfo.getPinComplexity());
+
+        state.withCtap2(session -> {
+            PinUvAuthProtocol pinUvAuthProtocol = new PinUvAuthProtocolV2();
+            char[] defaultPin = "11234567".toCharArray();
+
+            Ctap2Session.InfoData info = session.getCachedInfo();
+            ClientPin pin = new ClientPin(session, pinUvAuthProtocol);
+            boolean pinSet = Objects.requireNonNull((Boolean) info.getOptions().get("clientPin"));
+
+            try {
+                if (!pinSet) {
+                    pin.setPin(defaultPin);
+                } else {
+                    pin.getPinToken(
+                            defaultPin,
+                            ClientPin.PIN_PERMISSION_MC | ClientPin.PIN_PERMISSION_GA,
+                            "localhost");
+                }
+            } catch (ApduException e) {
+                fail("Failed to set or use PIN. Reset the device and try again");
+            }
+
+            assertThat(pin.getPinUvAuth().getVersion(), is(pinUvAuthProtocol.getVersion()));
+            assertThat(pin.getPinRetries().getCount(), is(8));
+
+            char[] weakPin = "33333333".toCharArray();
+            try {
+                pin.changePin(defaultPin, weakPin);
+                fail("Weak PIN was accepted");
+            } catch (CtapException e) {
+                assertThat(e.getCtapError(), is(ERR_PIN_POLICY_VIOLATION));
+            }
+
+            char[] strongPin = "STRONG PIN".toCharArray();
+            pin.changePin(defaultPin, strongPin);
+            pin.changePin(strongPin, defaultPin);
+
+            assertThat(pin.getPinRetries().getCount(), is(8));
+        });
     }
 }

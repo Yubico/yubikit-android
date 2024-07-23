@@ -167,6 +167,26 @@ public class TestState {
     }
 
     // CTAP2 helpers
+    public <R> R withCtap2(SessionCallbackT<Ctap2Session, R> callback) throws Throwable {
+        R result;
+        try (YubiKeyConnection connection = openConnection()) {
+            final Ctap2Session ctap2 = getCtap2Session(connection);
+            assumeTrue("No CTAP2 support", ctap2 != null);
+            result = callback.invoke(ctap2);
+        }
+        reconnect();
+        return result;
+    }
+
+    public void withCtap2(SessionCallback<Ctap2Session> callback) throws Throwable {
+        try (YubiKeyConnection connection = openConnection()) {
+            final Ctap2Session ctap2 = getCtap2Session(connection);
+            assumeTrue("No CTAP2 support", ctap2 != null);
+            callback.invoke(ctap2);
+        }
+        reconnect();
+    }
+
     public <T extends TestState> void withCtap2(StatefulSessionCallback<Ctap2Session, T> callback)
             throws Throwable {
         try (YubiKeyConnection connection = openConnection()) {

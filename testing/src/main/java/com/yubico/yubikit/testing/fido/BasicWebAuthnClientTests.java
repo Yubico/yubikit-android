@@ -71,7 +71,7 @@ import javax.annotation.Nullable;
 public class BasicWebAuthnClientTests {
 
     public static void testMakeCredentialGetAssertionTokenUvOnly(FidoTestState state) throws Throwable {
-        state.withCtap2((session) -> {
+        state.withCtap2(session -> {
             assumeTrue("UV Token not supported", ClientPin.isTokenSupported(session.getCachedInfo()));
         });
         testMakeCredentialGetAssertion(state);
@@ -81,7 +81,7 @@ public class BasicWebAuthnClientTests {
         List<byte[]> deleteCredIds = new ArrayList<>();
 
         // Make a non rk credential
-        state.withCtap2((session) -> {
+        state.withCtap2(session -> {
             BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
 
             PublicKeyCredentialCreationOptions creationOptionsNonRk = getCreateOptions(
@@ -109,7 +109,7 @@ public class BasicWebAuthnClientTests {
         });
 
         // make a rk credential
-        state.withCtap2((session) -> {
+        state.withCtap2(session -> {
             BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
             PublicKeyCredentialCreationOptions creationOptionsRk = getCreateOptions(
                     new PublicKeyCredentialUserEntity(
@@ -136,7 +136,7 @@ public class BasicWebAuthnClientTests {
         });
 
         // Get assertions
-        state.withCtap2((session) -> {
+        state.withCtap2(session -> {
             BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
             PublicKeyCredentialRequestOptions requestOptions = new PublicKeyCredentialRequestOptions(
                     TestData.CHALLENGE,
@@ -186,7 +186,7 @@ public class BasicWebAuthnClientTests {
 
     private static void testUvDiscouragedMakeCredentialGetAssertion(FidoTestState state) throws Throwable {
         // Test non rk credential
-        PublicKeyCredential credNonRk = state.withCtap2((session) -> {
+        PublicKeyCredential credNonRk = state.withCtap2(session -> {
             BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
 
             PublicKeyCredentialCreationOptions creationOptionsNonRk = getCreateOptions(
@@ -445,7 +445,6 @@ public class BasicWebAuthnClientTests {
                     null
             );
         });
-
 
         state.withCtap2(session -> {
             BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);

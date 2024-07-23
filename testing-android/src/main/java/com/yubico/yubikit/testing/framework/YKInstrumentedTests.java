@@ -69,18 +69,6 @@ public class YKInstrumentedTests {
         }
     }
 
-    protected YubiKeyDevice reconnectDevice() {
-        try {
-            if (device.getTransport() == Transport.NFC) {
-                releaseYubiKey();
-                getYubiKey();
-            }
-            return device;
-        } catch (InterruptedException e) {
-            throw new RuntimeException("Failure during reconnect", e);
-        }
-    }
-
     @Nullable
     protected Byte getScpKid() {
         return null;

@@ -18,7 +18,6 @@ package com.yubico.yubikit.testing.fido;
 
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV1;
-import com.yubico.yubikit.testing.PinComplexityDeviceTests;
 import com.yubico.yubikit.testing.PinUvAuthProtocolV1Test;
 import com.yubico.yubikit.testing.framework.FidoInstrumentedTests;
 
@@ -41,7 +40,7 @@ public class Ctap2ClientPinInstrumentedTests {
 
         @Test
         public void testPinComplexity() throws Throwable {
-            withDevice(PinComplexityDeviceTests::testFido2PinComplexity);
+            withDevice(Ctap2ClientPinTests::testPinComplexity);
         }
     }
 

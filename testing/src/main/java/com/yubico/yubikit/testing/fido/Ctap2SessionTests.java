@@ -85,16 +85,19 @@ public class Ctap2SessionTests {
         doTestCancelCborCommand(session, state, true);
     }
 
-    public static void testReset(Ctap2Session session) throws Throwable {
-        assumeFalse("Skipping reset test - authenticator supports bio enrollment",
-                session.getCachedInfo().getOptions().containsKey("bioEnroll"));
+    public static void testReset(FidoTestState state) throws Throwable {
 
-        session.reset(null);
+        state.withCtap2(session -> {
+            assumeFalse("Skipping reset test - authenticator supports bio enrollment",
+                    session.getCachedInfo().getOptions().containsKey("bioEnroll"));
 
-        // Verify that the pin is no longer configured
-        Boolean clientPin = (Boolean) session.getInfo().getOptions().get("clientPin");
-        boolean pinConfigured = (clientPin != null) && clientPin;
-        assertFalse("PIN should not be configured after a reset", pinConfigured);
+            session.reset(null);
+
+            // Verify that the pin is no longer configured
+            Boolean clientPin = (Boolean) session.getInfo().getOptions().get("clientPin");
+            boolean pinConfigured = (clientPin != null) && clientPin;
+            assertFalse("PIN should not be configured after a reset", pinConfigured);
+        });
     }
 
     private static void doTestCancelCborCommand(
