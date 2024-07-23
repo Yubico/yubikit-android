@@ -75,15 +75,16 @@ public class PivTestState extends TestState {
         assumeTrue("No SmartCard support", currentDevice.supportsConnection(SmartCardConnection.class));
 
         DeviceInfo deviceInfo = getDeviceInfo();
+
+        // skip MPE devices
+        assumeFalse("Ignoring MPE device", isMpe(deviceInfo));
+
         boolean isPivFipsCapable = isFipsCapable(deviceInfo, Capability.PIV);
         boolean hasPinComplexity = deviceInfo != null && deviceInfo.getPinComplexity();
 
         if (scpParameters.getKid() == null && isPivFipsCapable) {
             assumeTrue("Trying to use PIV FIPS capable device over NFC without SCP", isUsbTransport());
         }
-
-        // skip MPE devices
-        assumeFalse("Ignoring MPE device", isMpe(deviceInfo));
 
         if (scpParameters.getKid() != null) {
             // skip the test if the connected key does not provide matching SCP keys
@@ -100,7 +101,6 @@ public class PivTestState extends TestState {
             try {
                 pivSession.reset();
             } catch (Exception ignored) {
-
             }
 
             if (hasPinComplexity) {
