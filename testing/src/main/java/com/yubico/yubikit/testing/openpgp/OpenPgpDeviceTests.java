@@ -644,11 +644,14 @@ public class OpenPgpDeviceTests {
         assumeTrue("Device does not require PIN complexity", deviceInfo.getPinComplexity());
 
         openpgp.reset();
-        openpgp.verifyUserPin(state.defaultUserPin, false);
+
+        // after reset we cannot use the pin values from the state as it has been updated based
+        // on the connected device
+        openpgp.verifyUserPin(Pw.DEFAULT_USER_PIN, false);
 
         char[] weakPin = "33333333".toCharArray();
         try {
-            openpgp.changeUserPin(state.defaultUserPin, weakPin);
+            openpgp.changeUserPin(Pw.DEFAULT_USER_PIN, weakPin);
         } catch (ApduException apduException) {
             if (apduException.getSw() != CONDITIONS_NOT_SATISFIED) {
                 fail("Unexpected exception");
@@ -660,11 +663,12 @@ public class OpenPgpDeviceTests {
         // set complex pin
         char[] complexPin = "CMPLXPIN".toCharArray();
         try {
-            openpgp.changeUserPin(state.defaultUserPin, complexPin);
+            openpgp.changeUserPin(Pw.DEFAULT_USER_PIN, complexPin);
         } catch (Exception e) {
             Assert.fail("Unexpected exception");
         }
 
+        // change the user pin to value stated in the state as it is correct for PIN complexity
         openpgp.changeUserPin(complexPin, state.defaultUserPin);
     }
 }
