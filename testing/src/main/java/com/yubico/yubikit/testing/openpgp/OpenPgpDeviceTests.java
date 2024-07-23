@@ -16,11 +16,16 @@
 
 package com.yubico.yubikit.testing.openpgp;
 
+import static com.yubico.yubikit.core.smartcard.SW.CONDITIONS_NOT_SATISFIED;
+import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
+
 import com.yubico.yubikit.core.application.InvalidPinException;
 import com.yubico.yubikit.core.keys.PrivateKeyValues;
 import com.yubico.yubikit.core.keys.PublicKeyValues;
 import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.core.smartcard.SW;
+import com.yubico.yubikit.management.DeviceInfo;
 import com.yubico.yubikit.openpgp.ExtendedCapabilityFlag;
 import com.yubico.yubikit.openpgp.Kdf;
 import com.yubico.yubikit.openpgp.KeyRef;
@@ -72,7 +77,8 @@ public class OpenPgpDeviceTests {
     private static final Logger logger = LoggerFactory.getLogger(OpenPgpDeviceTests.class);
 
     private static final List<OpenPgpCurve> ecdsaCurves = Stream.of(OpenPgpCurve.values())
-            .filter(curve -> !Arrays.asList(OpenPgpCurve.Ed25519, OpenPgpCurve.X25519).contains(curve))
+            .filter(curve -> !Arrays.asList(OpenPgpCurve.Ed25519, OpenPgpCurve.X25519)
+                    .contains(curve))
             .collect(Collectors.toList());
 
     private static int[] getSupportedRsaKeySizes(OpenPgpSession openpgp) {
@@ -622,5 +628,43 @@ public class OpenPgpDeviceTests {
 
         // Reset to remove FIXED UIF.
         openpgp.reset();
+    }
+
+    /**
+     * For this test, one needs a key with PIN complexity set on. The test will change PINs.
+     * <p>
+     * The test will verify that trying to set a weak user PIN for OpenPgp produces expected exceptions.
+     *
+     * @see DeviceInfo#getPinComplexity()
+     */
+    public static void testPinComplexity(OpenPgpSession openpgp, OpenPgpTestState state) throws Throwable {
+
+        final DeviceInfo deviceInfo = state.getDeviceInfo();
+        assumeTrue("Device does not support PIN complexity", deviceInfo != null);
+        assumeTrue("Device does not require PIN complexity", deviceInfo.getPinComplexity());
+
+        openpgp.reset();
+        openpgp.verifyUserPin(state.defaultUserPin, false);
+
+        char[] weakPin = "33333333".toCharArray();
+        try {
+            openpgp.changeUserPin(state.defaultUserPin, weakPin);
+        } catch (ApduException apduException) {
+            if (apduException.getSw() != CONDITIONS_NOT_SATISFIED) {
+                fail("Unexpected exception");
+            }
+        } catch (Exception e) {
+            fail("Unexpected exception");
+        }
+
+        // set complex pin
+        char[] complexPin = "CMPLXPIN".toCharArray();
+        try {
+            openpgp.changeUserPin(state.defaultUserPin, complexPin);
+        } catch (Exception e) {
+            Assert.fail("Unexpected exception");
+        }
+
+        openpgp.changeUserPin(complexPin, state.defaultUserPin);
     }
 }

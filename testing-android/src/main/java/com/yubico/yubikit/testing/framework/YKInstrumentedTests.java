@@ -20,8 +20,6 @@ import androidx.test.ext.junit.rules.ActivityScenarioRule;
 
 import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.YubiKeyDevice;
-import com.yubico.yubikit.testing.ScpParameters;
-import com.yubico.yubikit.testing.StaticTestState;
 import com.yubico.yubikit.testing.TestActivity;
 
 import org.junit.After;
@@ -46,8 +44,6 @@ public class YKInstrumentedTests {
     public void getYubiKey() throws InterruptedException {
         scenarioRule.getScenario().onActivity((TestActivity activity) -> this.activity = activity);
         device = activity.awaitSession(getClass().getSimpleName(), name.getMethodName());
-        StaticTestState.scpParameters = new ScpParameters(device, getScpKid());
-        StaticTestState.currentDevice = device;
     }
 
     @After
@@ -59,16 +55,6 @@ public class YKInstrumentedTests {
         activity.returnSession(device);
         device = null;
         activity = null;
-        StaticTestState.currentDevice = null;
-        StaticTestState.scpParameters = null;
-    }
-
-    public interface Callback {
-        void invoke(YubiKeyDevice value) throws Throwable;
-    }
-
-    protected void withDevice(Callback callback) throws Throwable {
-        callback.invoke(device);
     }
 
     protected YubiKeyDevice reconnectDevice() {

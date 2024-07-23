@@ -27,8 +27,6 @@ import com.yubico.yubikit.core.smartcard.scp.ScpKeyParams;
 import com.yubico.yubikit.management.Capability;
 import com.yubico.yubikit.management.DeviceInfo;
 import com.yubico.yubikit.management.ManagementSession;
-import com.yubico.yubikit.testing.fido.FidoTestState;
-import com.yubico.yubikit.testing.oath.OathTestState;
 
 import java.io.IOException;
 
@@ -37,10 +35,11 @@ import javax.annotation.Nullable;
 public class TestState {
 
     public static class Builder<T extends Builder<T>> {
-
         final protected YubiKeyDevice device;
-        private @Nullable Byte scpKid = null;
-        private @Nullable ReconnectDeviceCallback reconnectDeviceCallback = null;
+        @Nullable
+        private Byte scpKid = null;
+        @Nullable
+        private ReconnectDeviceCallback reconnectDeviceCallback = null;
 
         public Builder(YubiKeyDevice device) {
             this.device = device;
@@ -65,8 +64,10 @@ public class TestState {
 
     protected YubiKeyDevice currentDevice;
     protected ScpParameters scpParameters;
-    @Nullable public final Byte scpKid;
-    @Nullable private final ReconnectDeviceCallback reconnectDeviceCallback;
+    @Nullable
+    public final Byte scpKid;
+    @Nullable
+    private final ReconnectDeviceCallback reconnectDeviceCallback;
     private final boolean isUsbTransport;
 
     protected TestState(Builder<?> builder) {
@@ -117,7 +118,7 @@ public class TestState {
         }
     }
 
-    protected DeviceInfo getDeviceInfo() {
+    public DeviceInfo getDeviceInfo() {
         DeviceInfo deviceInfo = null;
         try (YubiKeyConnection connection = openConnection()) {
             ManagementSession managementSession = getManagementSession(connection, null);
@@ -129,7 +130,7 @@ public class TestState {
         return deviceInfo;
     }
 
-    private ManagementSession getManagementSession(YubiKeyConnection connection, ScpParameters scpParameters)
+    protected ManagementSession getManagementSession(YubiKeyConnection connection, ScpParameters scpParameters)
             throws IOException, CommandException {
         ScpKeyParams keyParams = scpParameters != null ? scpParameters.getKeyParams() : null;
         ManagementSession session = (connection instanceof FidoConnection)

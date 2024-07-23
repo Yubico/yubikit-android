@@ -22,7 +22,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
-import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.core.smartcard.SW;
 import com.yubico.yubikit.oath.Credential;
@@ -34,11 +33,6 @@ import java.util.List;
 
 public class OathDeviceTests {
 
-    // state of current test
-    //static char[] OATH_PASSWORD = "".toCharArray();
-    //static boolean FIPS_APPROVED = false;
-
-    // variables used by the test
     private static final char[] CHANGED_PASSWORD = "12341234".toCharArray();
 
     public static void testChangePassword(OathTestState state) throws Throwable {
