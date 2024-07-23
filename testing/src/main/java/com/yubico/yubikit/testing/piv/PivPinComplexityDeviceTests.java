@@ -42,16 +42,18 @@ public class PivPinComplexityDeviceTests {
         assumeTrue("Device does not require PIN complexity", deviceInfo.getPinComplexity());
 
         piv.reset();
-        piv.authenticate(state.defaultManagementKey);
 
-        piv.verifyPin(state.defaultPin);
+        // the values in state are not valid after reset and we need to use
+        // the default values
+        piv.authenticate(PivTestState.DEFAULT_MANAGEMENT_KEY);
+        piv.verifyPin(PivTestState.DEFAULT_PIN);
 
         MatcherAssert.assertThat(piv.getPinAttempts(), CoreMatchers.equalTo(3));
 
         // try to change to pin which breaks PIN complexity
         char[] weakPin = "33333333".toCharArray();
         try {
-            piv.changePin(state.defaultPin, weakPin);
+            piv.changePin(PivTestState.DEFAULT_PIN, weakPin);
             Assert.fail("Set weak PIN");
         } catch (ApduException apduException) {
             if (apduException.getSw() != CONDITIONS_NOT_SATISFIED) {
@@ -61,18 +63,19 @@ public class PivPinComplexityDeviceTests {
             Assert.fail("Unexpected exception:" + e.getMessage());
         }
 
-        piv.verifyPin(state.defaultPin);
+        piv.verifyPin(PivTestState.DEFAULT_PIN);
 
         // change to complex pin
         char[] complexPin = "CMPLXPIN".toCharArray();
         try {
-            piv.changePin(state.defaultPin, complexPin);
+            piv.changePin(PivTestState.DEFAULT_PIN, complexPin);
         } catch (Exception e) {
             Assert.fail("Unexpected exception:" + e.getMessage());
         }
 
         piv.verifyPin(complexPin);
 
+        // the value of default PIN in the state is correct for pin complexity settings
         piv.changePin(complexPin, state.defaultPin);
     }
 }

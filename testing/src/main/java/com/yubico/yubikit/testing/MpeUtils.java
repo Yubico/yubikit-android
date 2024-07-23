@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Yubico.
+ * Copyright (C) 2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-package com.yubico.yubikit.testing.framework;
+package com.yubico.yubikit.testing;
 
-import com.yubico.yubikit.piv.PivSession;
-import com.yubico.yubikit.testing.TestState;
-import com.yubico.yubikit.testing.piv.PivTestState;
+import com.yubico.yubikit.management.DeviceInfo;
+import com.yubico.yubikit.support.DeviceUtil;
 
-public class PivInstrumentedTests extends YKInstrumentedTests {
-    protected void withPivSession(TestState.StatefulSessionCallback<PivSession, PivTestState> callback) throws Throwable {
-        final PivTestState state = new PivTestState.Builder(device).scpKid(getScpKid()).build();
-        state.withPiv(callback);
+public class MpeUtils {
+    public static boolean isMpe(DeviceInfo deviceInfo) {
+        final String name = DeviceUtil.getName(deviceInfo, null);
+        return name.equals("YubiKey Bio - Multi-protocol Edition") ||
+                name.equals("YubiKey C Bio - Multi-protocol Edition");
     }
 }

@@ -19,20 +19,12 @@ package com.yubico.yubikit.testing.oath;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
-import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
-import com.yubico.yubikit.core.application.CommandException;
-import com.yubico.yubikit.core.fido.FidoConnection;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.management.Capability;
 import com.yubico.yubikit.oath.OathSession;
-import com.yubico.yubikit.testing.ScpParameters;
 import com.yubico.yubikit.testing.TestState;
-
-import java.io.IOException;
-
-import javax.annotation.Nullable;
 
 public class OathTestState extends TestState {
     public boolean isFipsApproved;
@@ -68,7 +60,7 @@ public class OathTestState extends TestState {
             );
         }
 
-        try (SmartCardConnection connection = currentDevice.openConnection(SmartCardConnection.class)) {
+        try (SmartCardConnection connection = openSmartCardConnection()) {
             OathSession oath = null;
             try {
                 oath = new OathSession(connection, scpParameters.getKeyParams());
@@ -90,34 +82,5 @@ public class OathTestState extends TestState {
         if (isOathFipsCapable) {
             assertTrue("Device not OATH FIPS approved as expected", isFipsApproved);
         }
-    }
-
-    public void withDeviceCallback(StatefulDeviceCallback<OathTestState> callback) throws Throwable {
-        callback.invoke(this);
-    }
-
-    public void withOath(SessionCallback<OathSession> callback) throws Throwable {
-        try (SmartCardConnection connection = openSmartCardConnection()) {
-            callback.invoke(getOathSession(connection, scpParameters));
-        }
-        reconnect();
-    }
-
-    public void withOath(StatefulSessionCallback<OathSession, OathTestState> callback) throws Throwable {
-        try (SmartCardConnection connection = openSmartCardConnection()) {
-            callback.invoke(getOathSession(connection, scpParameters), this);
-        }
-        reconnect();
-    }
-
-    @Nullable
-    private OathSession getOathSession(SmartCardConnection connection, ScpParameters scpParameters)
-            throws IOException {
-        try {
-                return new OathSession(connection, scpParameters.getKeyParams());
-        } catch (ApplicationNotAvailableException ignored) {
-            // no OATH support
-        }
-        return null;
     }
 }

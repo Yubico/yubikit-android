@@ -20,23 +20,15 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
-import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.YubiKeyDevice;
-import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
-import com.yubico.yubikit.core.application.CommandException;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.management.Capability;
 import com.yubico.yubikit.management.DeviceInfo;
 import com.yubico.yubikit.openpgp.OpenPgpSession;
 import com.yubico.yubikit.openpgp.Pw;
-import com.yubico.yubikit.testing.ScpParameters;
 import com.yubico.yubikit.testing.TestState;
 
 import org.junit.Assume;
-
-import java.io.IOException;
-
-import javax.annotation.Nullable;
 
 public class OpenPgpTestState extends TestState {
 
@@ -81,13 +73,8 @@ public class OpenPgpTestState extends TestState {
             );
         }
 
-        try (SmartCardConnection connection = currentDevice.openConnection(SmartCardConnection.class)) {
-            OpenPgpSession openPgp = null;
-            try {
-                openPgp = new OpenPgpSession(connection, scpParameters.getKeyParams());
-            } catch (ApplicationNotAvailableException ignored) {
-
-            }
+        try (SmartCardConnection connection = openSmartCardConnection()) {
+            OpenPgpSession openPgp = getOpenPgpSession(connection, scpParameters);
 
             assumeTrue("OpenPGP not available", openPgp != null);
             openPgp.reset();
@@ -110,23 +97,5 @@ public class OpenPgpTestState extends TestState {
             assertNotNull(deviceInfo);
             assertTrue("Device not OpenPgp FIPS approved as expected", isFipsApproved);
         }
-    }
-
-    public void withOpenPgp(StatefulSessionCallback<OpenPgpSession, OpenPgpTestState> callback) throws Throwable {
-        try (SmartCardConnection connection = openSmartCardConnection()) {
-            callback.invoke(getOpenPgpSession(connection, scpParameters), this);
-        }
-        reconnect();
-    }
-
-    @Nullable
-    private OpenPgpSession getOpenPgpSession(SmartCardConnection connection, ScpParameters scpParameters)
-            throws IOException, CommandException {
-        try {
-            return new OpenPgpSession(connection, scpParameters.getKeyParams());
-        } catch (ApplicationNotAvailableException ignored) {
-            // no OpenPgp support
-        }
-        return null;
     }
 }
