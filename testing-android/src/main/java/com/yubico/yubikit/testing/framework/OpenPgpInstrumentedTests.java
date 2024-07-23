@@ -16,23 +16,13 @@
 
 package com.yubico.yubikit.testing.framework;
 
-import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.openpgp.OpenPgpSession;
-import com.yubico.yubikit.testing.StaticTestState;
-import com.yubico.yubikit.testing.openpgp.OpenPgpTestUtils;
+import com.yubico.yubikit.testing.TestState;
+import com.yubico.yubikit.testing.openpgp.OpenPgpTestState;
 
 public class OpenPgpInstrumentedTests extends YKInstrumentedTests {
-
-    public interface Callback {
-        void invoke(OpenPgpSession value) throws Throwable;
-    }
-
-    protected void withOpenPgpSession(Callback callback) throws Throwable {
-
-        OpenPgpTestUtils.verifyAndSetup(device);
-
-        try (SmartCardConnection connection = device.openConnection(SmartCardConnection.class)) {
-            callback.invoke(new OpenPgpSession(connection, StaticTestState.scpParameters.getKeyParams()));
-        }
+    protected void withOpenPgpSession(TestState.StatefulSessionCallback<OpenPgpSession, OpenPgpTestState> callback) throws Throwable {
+        final OpenPgpTestState state = new OpenPgpTestState.Builder(device).scpKid(getScpKid()).build();
+        state.withOpenPgp(callback);
     }
 }

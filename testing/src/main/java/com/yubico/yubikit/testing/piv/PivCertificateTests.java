@@ -17,7 +17,6 @@
 package com.yubico.yubikit.testing.piv;
 
 import static com.yubico.yubikit.piv.PivSession.FEATURE_RSA3072_RSA4096;
-import static com.yubico.yubikit.testing.piv.PivTestState.DEFAULT_MANAGEMENT_KEY;
 
 import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.smartcard.ApduException;
@@ -38,16 +37,16 @@ import java.util.Arrays;
 public class PivCertificateTests {
     private static final Logger logger = LoggerFactory.getLogger(PivCertificateTests.class);
 
-    public static void putUncompressedCertificate(PivSession piv) throws IOException, ApduException, CertificateException, BadResponseException {
-        putCertificate(piv, false);
+    public static void putUncompressedCertificate(PivSession piv, PivTestState state) throws IOException, ApduException, CertificateException, BadResponseException {
+        putCertificate(piv, state, false);
     }
 
-    public static void putCompressedCertificate(PivSession piv) throws IOException, ApduException, CertificateException, BadResponseException {
-        putCertificate(piv, true);
+    public static void putCompressedCertificate(PivSession piv, PivTestState state) throws IOException, ApduException, CertificateException, BadResponseException {
+        putCertificate(piv, state, true);
     }
 
-    private static void putCertificate(PivSession piv, boolean compressed) throws IOException, ApduException, CertificateException, BadResponseException {
-        piv.authenticate(DEFAULT_MANAGEMENT_KEY);
+    private static void putCertificate(PivSession piv, PivTestState state, boolean compressed) throws IOException, ApduException, CertificateException, BadResponseException {
+        piv.authenticate(state.defaultManagementKey);
 
         for (KeyType keyType : Arrays.asList(KeyType.ECCP256, KeyType.ECCP384, KeyType.RSA1024, KeyType.RSA2048, KeyType.RSA3072, KeyType.RSA4096)) {
 

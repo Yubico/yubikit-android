@@ -17,7 +17,6 @@
 package com.yubico.yubikit.testing.piv;
 
 import com.yubico.yubikit.core.smartcard.scp.ScpKid;
-import com.yubico.yubikit.testing.PinComplexityDeviceTests;
 import com.yubico.yubikit.testing.SmokeTest;
 import com.yubico.yubikit.testing.framework.PivInstrumentedTests;
 
@@ -71,7 +70,7 @@ public class PivTests {
 
         @Test
         public void testPinComplexity() throws Throwable {
-            withPivSession(PinComplexityDeviceTests::testPivPinComplexity);
+            withPivSession(PivPinComplexityDeviceTests::testPinComplexity);
         }
     }
 

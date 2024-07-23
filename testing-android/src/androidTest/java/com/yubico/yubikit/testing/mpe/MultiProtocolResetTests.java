@@ -14,41 +14,37 @@
  * limitations under the License.
  */
 
-package com.yubico.yubikit.testing.oath;
-
-import javax.annotation.Nullable;
+package com.yubico.yubikit.testing.mpe;
 
 import com.yubico.yubikit.core.smartcard.scp.ScpKid;
-import com.yubico.yubikit.testing.SmokeTest;
-import com.yubico.yubikit.testing.framework.OathInstrumentedTests;
+import com.yubico.yubikit.testing.framework.MpeInstrumentedTests;
 
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
+import javax.annotation.Nullable;
+
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        OathTests.NoScpTests.class,
-        OathTests.Scp11bTests.class,
+        MultiProtocolResetTests.NoScpTests.class,
+        MultiProtocolResetTests.Scp11bTests.class,
 })
-public class OathTests {
-    public static class NoScpTests extends OathInstrumentedTests {
+public class MultiProtocolResetTests {
+    public static class NoScpTests extends MpeInstrumentedTests {
         @Test
-        @Category(SmokeTest.class)
-        public void testChangePassword() throws Throwable {
-            withDevice(OathDeviceTests::testChangePassword);
+        public void testSettingPivPinBlocksFidoReset() throws Throwable {
+            withPivSession(MultiProtocolResetDeviceTests::testSettingPivPinBlocksFidoReset);
         }
 
         @Test
-        public void testResetPassword() throws Throwable {
-            withOathSession(OathDeviceTests::testRemovePassword);
+        public void testPivOperationBlocksFidoReset() throws Throwable {
+            withPivSession(MultiProtocolResetDeviceTests::testPivOperationBlocksFidoReset);
         }
 
         @Test
-        @Category(SmokeTest.class)
-        public void testAccountManagement() throws Throwable {
-            withOathSession(OathDeviceTests::testAccountManagement);
+        public void testSettingFidoPinBlocksPivReset() throws Throwable {
+            withCtap2Session(MultiProtocolResetDeviceTests::testSettingFidoPinBlocksPivReset);
         }
     }
 

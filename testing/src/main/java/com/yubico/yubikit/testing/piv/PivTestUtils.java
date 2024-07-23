@@ -15,27 +15,8 @@
  */
 package com.yubico.yubikit.testing.piv;
 
-import static com.yubico.yubikit.testing.StaticTestState.scpParameters;
-import static com.yubico.yubikit.testing.piv.PivTestState.DEFAULT_MANAGEMENT_KEY;
-import static com.yubico.yubikit.testing.piv.PivTestState.DEFAULT_PIN;
-import static com.yubico.yubikit.testing.piv.PivTestState.DEFAULT_PUK;
-import static com.yubico.yubikit.testing.piv.PivTestState.FIPS_APPROVED;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
-
-import com.yubico.yubikit.core.Transport;
-import com.yubico.yubikit.core.YubiKeyDevice;
-import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
 import com.yubico.yubikit.core.internal.codec.Base64;
-import com.yubico.yubikit.core.smartcard.SmartCardConnection;
-import com.yubico.yubikit.management.Capability;
-import com.yubico.yubikit.management.DeviceInfo;
 import com.yubico.yubikit.piv.KeyType;
-import com.yubico.yubikit.piv.ManagementKeyType;
-import com.yubico.yubikit.piv.PivSession;
-import com.yubico.yubikit.testing.StaticTestState;
-import com.yubico.yubikit.testing.TestUtils;
 
 import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.x500.X500Name;
@@ -354,7 +335,8 @@ public class PivTestUtils {
                 new Date(),
                 new Date(),
                 name,
-                SubjectPublicKeyInfo.getInstance(ASN1Sequence.getInstance(keyPair.getPublic().getEncoded()))
+                SubjectPublicKeyInfo.getInstance(ASN1Sequence.getInstance(keyPair.getPublic()
+                        .getEncoded()))
         );
 
         String algorithm;
@@ -491,6 +473,7 @@ public class PivTestUtils {
 
         Assert.assertArrayEquals("Secret mismatch", secret, peerSecret);
     }
+
     public static void x25519KeyAgreement(PrivateKey privateKey, PublicKey publicKey) throws Exception {
         KeyPairGenerator kpg = KeyPairGenerator.getInstance("X25519");
         kpg.initialize(255);
@@ -509,71 +492,5 @@ public class PivTestUtils {
         byte[] peerSecret = ka.generateSecret();
 
         Assert.assertArrayEquals("Secret mismatch", secret, peerSecret);
-    }
-
-    public static void verifyAndSetup(YubiKeyDevice device) throws Throwable {
-
-        PivTestState.DEFAULT_PIN = PivTestConstants.DEFAULT_PIN;
-        PivTestState.DEFAULT_PUK = PivTestConstants.DEFAULT_PUK;
-        PivTestState.DEFAULT_MANAGEMENT_KEY = PivTestConstants.DEFAULT_MANAGEMENT_KEY;
-
-        assumeTrue("No SmartCard support", device.supportsConnection(SmartCardConnection.class));
-
-        DeviceInfo deviceInfo = TestUtils.getDeviceInfo(device);
-        boolean isPivFipsCapable = deviceInfo != null &&
-                (deviceInfo.getFipsCapable() & Capability.PIV.bit) == Capability.PIV.bit;
-        boolean hasPinComplexity = deviceInfo != null &&
-                deviceInfo.getPinComplexity();
-
-        if (scpParameters.getKid() == null && isPivFipsCapable) {
-            assumeTrue("Trying to use PIV FIPS capable device over NFC without SCP",
-                    device.getTransport() != Transport.NFC);
-        }
-
-        if (scpParameters.getKid() != null) {
-            // skip the test if the connected key does not provide matching SCP keys
-            assumeTrue(
-                    "No matching key params found for required kid",
-                    scpParameters.getKeyParams() != null
-            );
-        }
-
-        try (SmartCardConnection connection = device.openConnection(SmartCardConnection.class)) {
-            PivSession pivSession = null;
-            try {
-                pivSession = new PivSession(connection, scpParameters.getKeyParams());
-            } catch (ApplicationNotAvailableException ignored) {
-
-            }
-            assumeTrue("PIV not available", pivSession != null);
-            try {
-                pivSession.reset();
-            } catch (Exception e) {
-
-            }
-
-            if (hasPinComplexity) {
-                // only use complex pins if pin complexity is required
-                pivSession.changePin(DEFAULT_PIN, COMPLEX_PIN);
-                pivSession.changePuk(DEFAULT_PUK, COMPLEX_PUK);
-                pivSession.authenticate(DEFAULT_MANAGEMENT_KEY);
-
-                pivSession.setManagementKey(ManagementKeyType.AES192, COMPLEX_MANAGEMENT_KEY, false);
-
-                PivTestState.DEFAULT_PIN = COMPLEX_PIN;
-                PivTestState.DEFAULT_PUK = COMPLEX_PUK;
-                PivTestState.DEFAULT_MANAGEMENT_KEY = COMPLEX_MANAGEMENT_KEY;
-            }
-        }
-
-        deviceInfo = TestUtils.getDeviceInfo(device);
-        FIPS_APPROVED = deviceInfo != null && (deviceInfo.getFipsApproved() & Capability.PIV.bit) == Capability.PIV.bit;
-
-        // after changing PIN, PUK and management key, we expect a FIPS capable device
-        // to be FIPS approved
-        if (isPivFipsCapable) {
-            assertNotNull(deviceInfo);
-            assertTrue("Device not PIV FIPS approved as expected", FIPS_APPROVED);
-        }
     }
 }

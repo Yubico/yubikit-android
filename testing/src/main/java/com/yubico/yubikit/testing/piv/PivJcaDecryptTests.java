@@ -19,8 +19,6 @@ package com.yubico.yubikit.testing.piv;
 import static com.yubico.yubikit.piv.PivSession.FEATURE_RSA3072_RSA4096;
 import static com.yubico.yubikit.testing.piv.PivJcaUtils.setupJca;
 import static com.yubico.yubikit.testing.piv.PivJcaUtils.tearDownJca;
-import static com.yubico.yubikit.testing.piv.PivTestState.DEFAULT_MANAGEMENT_KEY;
-import static com.yubico.yubikit.testing.piv.PivTestState.DEFAULT_PIN;
 
 import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.smartcard.ApduException;
@@ -54,33 +52,33 @@ public class PivJcaDecryptTests {
 
     private static final Logger logger = LoggerFactory.getLogger(PivJcaDecryptTests.class);
 
-    public static void testDecrypt(PivSession piv) throws BadResponseException, IOException, ApduException, NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException, InvalidAlgorithmParameterException {
+    public static void testDecrypt(PivSession piv, PivTestState state) throws BadResponseException, IOException, ApduException, NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException, InvalidAlgorithmParameterException {
         setupJca(piv);
         for (KeyType keyType : KeyType.values()) {
             if (((keyType == KeyType.RSA3072 || keyType == KeyType.RSA4096) && !piv.supports(FEATURE_RSA3072_RSA4096))) {
                 continue; // Run only on compatible keys
             }
             if (keyType.params.algorithm.name().equals("RSA")) {
-                testDecrypt(piv, keyType);
+                testDecrypt(piv, state, keyType);
             }
         }
         tearDownJca();
     }
 
-    public static void testDecrypt(PivSession piv, KeyType keyType) throws BadResponseException, IOException, ApduException, NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException, InvalidAlgorithmParameterException {
+    public static void testDecrypt(PivSession piv, PivTestState state, KeyType keyType) throws BadResponseException, IOException, ApduException, NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException, InvalidAlgorithmParameterException {
 
         if (keyType.params.algorithm != KeyType.Algorithm.RSA) {
             throw new IllegalArgumentException("Unsupported");
         }
 
-        if (PivTestState.isInvalidKeyType(keyType)) {
+        if (state.isInvalidKeyType(keyType)) {
             return;
         }
 
-        piv.authenticate(DEFAULT_MANAGEMENT_KEY);
+        piv.authenticate(state.defaultManagementKey);
         logger.debug("Generate key: {}", keyType);
         KeyPairGenerator kpg = KeyPairGenerator.getInstance("YKPivRSA");
-        kpg.initialize(new PivAlgorithmParameterSpec(Slot.KEY_MANAGEMENT, keyType, PinPolicy.DEFAULT, TouchPolicy.DEFAULT, DEFAULT_PIN));
+        kpg.initialize(new PivAlgorithmParameterSpec(Slot.KEY_MANAGEMENT, keyType, PinPolicy.DEFAULT, TouchPolicy.DEFAULT, state.defaultPin));
         KeyPair pair = kpg.generateKeyPair();
 
         testDecrypt(pair, Cipher.getInstance("RSA/ECB/PKCS1Padding"));

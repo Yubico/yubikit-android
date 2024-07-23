@@ -33,33 +33,31 @@ import java.util.List;
 
 public class OathDeviceTests {
 
-    // state of current test
-    static char[] OATH_PASSWORD = "".toCharArray();
-    static boolean FIPS_APPROVED = false;
-
-    // variables used by the test
     private static final char[] CHANGED_PASSWORD = "12341234".toCharArray();
 
-    public static void testChangePassword(OathSession oath) throws Exception {
-        assertTrue(oath.isAccessKeySet());
-        assertTrue(oath.isLocked());
-        assertFalse(oath.unlock(CHANGED_PASSWORD));
-        assertTrue(oath.unlock(OATH_PASSWORD));
-        oath.setPassword(CHANGED_PASSWORD);
+    public static void testChangePassword(OathTestState state) throws Throwable {
+
+        state.withOath(oath -> {
+            assertTrue(oath.isAccessKeySet());
+            assertTrue(oath.isLocked());
+            assertFalse(oath.unlock(CHANGED_PASSWORD));
+            assertTrue(oath.unlock(state.password));
+            oath.setPassword(CHANGED_PASSWORD);
+        });
+
+        state.withOath(oath -> {
+            assertTrue(oath.isAccessKeySet());
+            assertTrue(oath.isLocked());
+            assertTrue(oath.unlock(CHANGED_PASSWORD));
+        });
     }
 
-    public static void testChangePasswordAfterReconnect(OathSession oath) throws Exception {
+    public static void testRemovePassword(OathSession oath, OathTestState state) throws Exception {
         assertTrue(oath.isAccessKeySet());
         assertTrue(oath.isLocked());
-        assertTrue(oath.unlock(CHANGED_PASSWORD));
-    }
+        assertTrue(oath.unlock(state.password));
 
-    public static void testRemovePassword(OathSession oath) throws Exception {
-        assertTrue(oath.isAccessKeySet());
-        assertTrue(oath.isLocked());
-        assertTrue(oath.unlock(OATH_PASSWORD));
-
-        if (FIPS_APPROVED) {
+        if (state.isFipsApproved) {
             // trying remove password from a FIPS approved key throws specific ApduException
             ApduException apduException = assertThrows(ApduException.class, oath::deleteAccessKey);
             assertEquals(SW.CONDITIONS_NOT_SATISFIED, apduException.getSw());
@@ -72,8 +70,8 @@ public class OathDeviceTests {
         }
     }
 
-    public static void testAccountManagement(OathSession oath) throws Exception {
-        assertTrue(oath.unlock(OATH_PASSWORD));
+    public static void testAccountManagement(OathSession oath, OathTestState state) throws Exception {
+        assertTrue(oath.unlock(state.password));
         List<Credential> credentials = oath.getCredentials();
         assertEquals(0, credentials.size());
         final String uri = "otpauth://totp/foobar:bob@example.com?secret=abba";

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Yubico.
+ * Copyright (C) 2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,15 @@
  * limitations under the License.
  */
 
-package com.yubico.yubikit.testing.piv;
+package com.yubico.yubikit.testing;
 
-import org.bouncycastle.util.encoders.Hex;
+import com.yubico.yubikit.management.DeviceInfo;
+import com.yubico.yubikit.support.DeviceUtil;
 
-public class PivTestConstants {
-    static final byte[] DEFAULT_MANAGEMENT_KEY = Hex.decode("010203040506070801020304050607080102030405060708");
-    static final char[] DEFAULT_PIN = "123456".toCharArray();
-    static final char[] DEFAULT_PUK = "12345678".toCharArray();
+public class MpeUtils {
+    public static boolean isMpe(DeviceInfo deviceInfo) {
+        final String name = DeviceUtil.getName(deviceInfo, null);
+        return name.equals("YubiKey Bio - Multi-protocol Edition") ||
+                name.equals("YubiKey C Bio - Multi-protocol Edition");
+    }
 }
