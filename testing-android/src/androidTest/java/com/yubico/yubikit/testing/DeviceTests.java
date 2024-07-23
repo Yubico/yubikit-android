@@ -17,6 +17,7 @@
 package com.yubico.yubikit.testing;
 
 import com.yubico.yubikit.testing.mpe.MultiProtocolResetTests;
+import com.yubico.yubikit.testing.fido.FidoTests;
 import com.yubico.yubikit.testing.oath.OathTests;
 import com.yubico.yubikit.testing.openpgp.OpenPgpTests;
 import com.yubico.yubikit.testing.piv.PivTests;
@@ -25,14 +26,18 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 /**
- * All integration tests.
+ * All integration tests for PIV, OpenPGP, OATH, FIDO2 and MPE.
+ * <p>
+ * The YubiKey applications will be reset several times.
+ * <p>
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
         PivTests.class,
         OpenPgpTests.class,
         OathTests.class,
-        MultiProtocolResetTests.class
+        MultiProtocolResetTests.class,
+        FidoTests.class
 })
 public class DeviceTests {
 }

@@ -16,24 +16,5 @@
 
 package com.yubico.yubikit.testing;
 
-import org.junit.experimental.categories.Categories;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-
-/**
- * These tests are here to make testing a bit faster and exclude following:
- * <ul>
- *     <li>{@link SlowTest}</li>
- *     <li>{@link PinUvAuthProtocolV1Test}</li>
- *     <li>{@link AlwaysManualTest}</li>
- * </ul>
- */
-@RunWith(Categories.class)
-@Suite.SuiteClasses(DeviceTests.class)
-@Categories.ExcludeCategory({
-        SlowTest.class,
-        PinUvAuthProtocolV1Test.class,
-        AlwaysManualTest.class
-})
-public class FastDeviceTests {
+public interface AlwaysManualTest {
 }

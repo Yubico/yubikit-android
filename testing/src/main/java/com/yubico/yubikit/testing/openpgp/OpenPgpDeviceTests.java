@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Yubico.
+ * Copyright (C) 2023-2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,6 @@
 package com.yubico.yubikit.testing.openpgp;
 
 import static com.yubico.yubikit.core.smartcard.SW.CONDITIONS_NOT_SATISFIED;
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeTrue;
 
 import com.yubico.yubikit.core.application.InvalidPinException;
 import com.yubico.yubikit.core.keys.PrivateKeyValues;
@@ -553,7 +551,7 @@ public class OpenPgpDeviceTests {
             openpgp.sign(message);
             Assert.fail();
         } catch (ApduException e) {
-            Assert.assertEquals(SW.CONDITIONS_NOT_SATISFIED, e.getSw());
+            Assert.assertEquals(CONDITIONS_NOT_SATISFIED, e.getSw());
         }
     }
 
@@ -640,8 +638,8 @@ public class OpenPgpDeviceTests {
     public static void testPinComplexity(OpenPgpSession openpgp, OpenPgpTestState state) throws Throwable {
 
         final DeviceInfo deviceInfo = state.getDeviceInfo();
-        assumeTrue("Device does not support PIN complexity", deviceInfo != null);
-        assumeTrue("Device does not require PIN complexity", deviceInfo.getPinComplexity());
+        Assume.assumeTrue("Device does not support PIN complexity", deviceInfo != null);
+        Assume.assumeTrue("Device does not require PIN complexity", deviceInfo.getPinComplexity());
 
         openpgp.reset();
 
@@ -654,10 +652,10 @@ public class OpenPgpDeviceTests {
             openpgp.changeUserPin(Pw.DEFAULT_USER_PIN, weakPin);
         } catch (ApduException apduException) {
             if (apduException.getSw() != CONDITIONS_NOT_SATISFIED) {
-                fail("Unexpected exception");
+                Assert.fail("Unexpected exception");
             }
         } catch (Exception e) {
-            fail("Unexpected exception");
+            Assert.fail("Unexpected exception");
         }
 
         // set complex pin

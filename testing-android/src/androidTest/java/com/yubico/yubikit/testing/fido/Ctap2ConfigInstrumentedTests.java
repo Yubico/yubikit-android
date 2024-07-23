@@ -16,63 +16,67 @@
 
 package com.yubico.yubikit.testing.fido;
 
-import androidx.test.filters.LargeTest;
-
-import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV2;
+import com.yubico.yubikit.testing.AlwaysManualTest;
 import com.yubico.yubikit.testing.framework.FidoInstrumentedTests;
 
 import org.junit.Test;
+import org.junit.experimental.categories.Categories;
+import org.junit.experimental.categories.Category;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
- * NOTE: Run the testcases in this suite manually one by one. See test case documentation
- * and reset the FIDO application where needed.
+ * Config tests.
+ * <p>
+ * These tests will change FIDO2 application configuration through authenticatorConfig. As these changes
+ * are irreversible.
+ * <p>
+ * Read documentation for each test for more information.
  */
-@LargeTest
-public class Ctap2ConfigInstrumentedTests extends FidoInstrumentedTests {
+@RunWith(Categories.class)
+@Suite.SuiteClasses(Ctap2ConfigInstrumentedTests.ConfigTests.class)
+@Categories.ExcludeCategory(AlwaysManualTest.class)
+public class Ctap2ConfigInstrumentedTests {
 
-    @Test
-    public void testReadWriteEnterpriseAttestation() throws Throwable {
-        withCtap2Session(
-                "Device has no support for EnterpriseAttestation",
-                (ignoredDevice, session) -> session.getInfo().getOptions().containsKey("ep"),
-                Ctap2ConfigTests::testReadWriteEnterpriseAttestation,
-                new PinUvAuthProtocolV2()
-        );
-    }
+    public static class ConfigTests extends FidoInstrumentedTests {
+        @Test
+        public void testReadWriteEnterpriseAttestation() throws Throwable {
+            withCtap2Session(Ctap2ConfigTests::testReadWriteEnterpriseAttestation);
+        }
 
-    @Test
-    public void testToggleAlwaysUv() throws Throwable {
-        withCtap2Session(
-                "Device has no support for alwaysUV",
-                (ignoredDevice, session) -> session.getInfo().getOptions().containsKey("alwaysUv"),
-                Ctap2ConfigTests::testToggleAlwaysUv,
-                new PinUvAuthProtocolV2()
-        );
-    }
+        /**
+         * Toggles the {@code alwaysUv} option to opposite value. It is not possible to set this
+         * option to `false` on a FIPS approved YubiKey.
+         *
+         * @throws Throwable if an error occurs
+         */
+        @Test
+        @Category(AlwaysManualTest.class)
+        public void testToggleAlwaysUv() throws Throwable {
+            withCtap2Session(Ctap2ConfigTests::testToggleAlwaysUv);
+        }
 
-    /**
-     * Reset the FIDO application after calling this test case.
-     *
-     * @throws Throwable on any error
-     */
-    @Test
-    public void testSetForcePinChange() throws Throwable {
-        withCtap2Session(
-                Ctap2ConfigTests::testSetForcePinChange,
-                new PinUvAuthProtocolV2()
-        );
-    }
+        /**
+         * Sets the {@code forcePinChange} flag, verifies that and then changes the PIN twice so
+         * that the device uses the {@code TestUtil.PIN}.
+         *
+         * @throws Throwable if an error occurs
+         */
+        @Test
+        public void testSetForcePinChange() throws Throwable {
+            withCtap2Session(Ctap2ConfigTests::testSetForcePinChange);
+        }
 
-    /**
-     * Reset the FIDO application after calling this test case.
-     *
-     * @throws Throwable on any error
-     */
-    @Test
-    public void testSetMinPinLength() throws Throwable {
-        withCtap2Session(
-                Ctap2ConfigTests::testSetMinPinLength,
-                new PinUvAuthProtocolV2()
-        );
+        /**
+         * Changes the {@code minPinLength} value. This change is irreversible and after running
+         * this test, the YubiKey should be reset.
+         *
+         * @throws Throwable if an error occurs
+         */
+        @Test
+        @Category(AlwaysManualTest.class)
+        public void testSetMinPinLength() throws Throwable {
+            withCtap2Session(Ctap2ConfigTests::testSetMinPinLength);
+        }
     }
 }

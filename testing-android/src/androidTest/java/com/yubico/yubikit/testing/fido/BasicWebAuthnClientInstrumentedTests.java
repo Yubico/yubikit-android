@@ -16,109 +16,72 @@
 
 package com.yubico.yubikit.testing.fido;
 
-import static com.yubico.yubikit.testing.fido.Ctap2ClientPinInstrumentedTests.supportsPinUvAuthProtocol;
-
-import androidx.test.filters.LargeTest;
-
-import com.yubico.yubikit.fido.ctap.ClientPin;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV1;
-import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV2;
+import com.yubico.yubikit.testing.PinUvAuthProtocolV1Test;
+import com.yubico.yubikit.testing.SmokeTest;
 import com.yubico.yubikit.testing.framework.FidoInstrumentedTests;
 
 import org.junit.Test;
-import org.junit.experimental.runners.Enclosed;
+import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.runners.Suite;
 
-import java.util.Arrays;
-import java.util.Collection;
-
-@RunWith(Enclosed.class)
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+        BasicWebAuthnClientInstrumentedTests.PinUvAuthV2Test.class,
+        BasicWebAuthnClientInstrumentedTests.PinUvAuthV1Test.class,
+})
 public class BasicWebAuthnClientInstrumentedTests {
-    @LargeTest
-    @RunWith(Parameterized.class)
-    public static class BasicWebAuthnClientParametrizedTests extends FidoInstrumentedTests {
-
-        @Parameterized.Parameter
-        public PinUvAuthProtocol pinUvAuthProtocol;
-
-        @Parameterized.Parameters
-        public static Collection<PinUvAuthProtocol> data() {
-            return Arrays.asList(
-                    new PinUvAuthProtocolV1(),
-                    new PinUvAuthProtocolV2());
-        }
+    public static class PinUvAuthV2Test extends FidoInstrumentedTests {
 
         @Test
+        @Category(SmokeTest.class)
         public void testMakeCredentialGetAssertion() throws Throwable {
-            withCtap2Session(
-                    (device, session) -> supportsPinUvAuthProtocol(session, pinUvAuthProtocol),
-                    BasicWebAuthnClientTests::testMakeCredentialGetAssertion,
-                    pinUvAuthProtocol,
-                    TestData.PIN);
+           withDevice(BasicWebAuthnClientTests::testMakeCredentialGetAssertion);
         }
 
         @Test
         public void testMakeCredentialGetAssertionTokenUvOnly() throws Throwable {
-            withCtap2Session(
-                    (device, session) -> supportsPinUvAuthProtocol(session, pinUvAuthProtocol)
-                            && ClientPin.isTokenSupported(session.getCachedInfo()),
-                    BasicWebAuthnClientTests::testMakeCredentialGetAssertion,
-                    pinUvAuthProtocol,
-                    null);
+            withDevice(BasicWebAuthnClientTests::testMakeCredentialGetAssertionTokenUvOnly);
         }
 
         @Test
         public void testGetAssertionMultipleUsersRk() throws Throwable {
-            withCtap2Session(
-                    (device, session) -> supportsPinUvAuthProtocol(session, pinUvAuthProtocol),
-                    BasicWebAuthnClientTests::testGetAssertionMultipleUsersRk,
-                    pinUvAuthProtocol);
+            withDevice(BasicWebAuthnClientTests::testGetAssertionMultipleUsersRk);
         }
 
         @Test
         public void testGetAssertionWithAllowList() throws Throwable {
-            withCtap2Session(
-                    (device, session) -> supportsPinUvAuthProtocol(session, pinUvAuthProtocol),
-                    BasicWebAuthnClientTests::testGetAssertionWithAllowList,
-                    pinUvAuthProtocol);
+            withDevice(BasicWebAuthnClientTests::testGetAssertionWithAllowList);
         }
 
         @Test
         public void testMakeCredentialWithExcludeList() throws Throwable {
-            withCtap2Session(
-                    (device, session) -> supportsPinUvAuthProtocol(session, pinUvAuthProtocol),
-                    BasicWebAuthnClientTests::testMakeCredentialWithExcludeList,
-                    pinUvAuthProtocol);
+            withDevice(BasicWebAuthnClientTests::testMakeCredentialWithExcludeList);
         }
 
         @Test
         public void testMakeCredentialKeyAlgorithms() throws Throwable {
-            withCtap2Session(
-                    (device, session) -> supportsPinUvAuthProtocol(session, pinUvAuthProtocol),
-                    BasicWebAuthnClientTests::testMakeCredentialKeyAlgorithms,
-                    pinUvAuthProtocol);
+            withDevice(BasicWebAuthnClientTests::testMakeCredentialKeyAlgorithms);
         }
 
         @Test
         public void testClientPinManagement() throws Throwable {
-            withCtap2Session(
-                    (device, session) -> supportsPinUvAuthProtocol(session, pinUvAuthProtocol),
-                    BasicWebAuthnClientTests::testClientPinManagement,
-                    pinUvAuthProtocol);
+            withDevice(BasicWebAuthnClientTests::testClientPinManagement);
         }
 
         @Test
         public void testClientCredentialManagement() throws Throwable {
-            withCtap2Session(
-                    "Credential management or PIN/UV Auth protocol not supported",
-                    (device, session) ->
-                            Ctap2CredentialManagementInstrumentedTests
-                                    .isCredentialManagementSupported(session) &&
-                                    supportsPinUvAuthProtocol(session, pinUvAuthProtocol),
-                    BasicWebAuthnClientTests::testClientCredentialManagement,
-                    pinUvAuthProtocol);
+            withDevice(BasicWebAuthnClientTests::testClientCredentialManagement);
+        }
+    }
+
+    @Category(PinUvAuthProtocolV1Test.class)
+    public static class PinUvAuthV1Test extends PinUvAuthV2Test {
+        @Override
+        protected PinUvAuthProtocol getPinUvAuthProtocol() {
+            return new PinUvAuthProtocolV1();
         }
     }
 }

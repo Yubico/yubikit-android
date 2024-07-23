@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Yubico.
+ * Copyright (C) 2020-2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,11 @@
 
 package com.yubico.yubikit.testing.fido;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 import static java.lang.Boolean.FALSE;
 
 import com.yubico.yubikit.core.application.CommandException;
@@ -28,7 +30,6 @@ import com.yubico.yubikit.fido.client.ClientError;
 import com.yubico.yubikit.fido.ctap.ClientPin;
 import com.yubico.yubikit.fido.ctap.Config;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
-import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
 import com.yubico.yubikit.fido.webauthn.AttestationConveyancePreference;
 import com.yubico.yubikit.fido.webauthn.AuthenticatorAttestationResponse;
 import com.yubico.yubikit.fido.webauthn.AuthenticatorResponse;
@@ -46,27 +47,26 @@ import java.util.Objects;
 
 import javax.annotation.Nullable;
 
-@SuppressWarnings("unchecked")
 public class EnterpriseAttestationTests {
 
-    static void enableEp(Ctap2Session session, PinUvAuthProtocol pinUvAuthProtocol)
+    static void enableEp(Ctap2Session session, FidoTestState state)
             throws CommandException, IOException {
         // enable ep if not enabled
         if (session.getCachedInfo().getOptions().get("ep") == FALSE) {
 
-            ClientPin clientPin = new ClientPin(session, pinUvAuthProtocol);
+            ClientPin clientPin = new ClientPin(session, state.getPinUvAuthProtocol());
             byte[] pinToken = clientPin.getPinToken(TestData.PIN, ClientPin.PIN_PERMISSION_ACFG, null);
-            final Config config = new Config(session, pinUvAuthProtocol, pinToken);
+            final Config config = new Config(session, state.getPinUvAuthProtocol(), pinToken);
             config.enableEnterpriseAttestation();
 
         }
     }
 
     // test with RP ID in platform RP ID list
-    public static void testSupportedPlatformManagedEA(Ctap2Session session, Object... args) throws Throwable {
-        PinUvAuthProtocol pinUvAuthProtocol = Ctap2ClientPinTests.getPinUvAuthProtocol(args);
-        Ctap2ClientPinTests.ensureDefaultPinSet(session, pinUvAuthProtocol);
-        enableEp(session, pinUvAuthProtocol);
+    public static void testSupportedPlatformManagedEA(Ctap2Session session, FidoTestState state) throws Throwable {
+        assumeTrue("Enterprise attestation not supported",
+                session.getCachedInfo().getOptions().containsKey("ep"));
+        enableEp(session, state);
         BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
         webauthn.getUserAgentConfiguration().setEpSupportedRpIds(Collections.singletonList(TestData.RP_ID));
 
@@ -78,10 +78,11 @@ public class EnterpriseAttestationTests {
     }
 
     // test with RP ID which is not in platform RP ID list
-    public static void testUnsupportedPlatformManagedEA(Ctap2Session session, Object... args) throws Throwable {
-        PinUvAuthProtocol pinUvAuthProtocol = Ctap2ClientPinTests.getPinUvAuthProtocol(args);
-        Ctap2ClientPinTests.ensureDefaultPinSet(session, pinUvAuthProtocol);
-        enableEp(session, pinUvAuthProtocol);
+    public static void testUnsupportedPlatformManagedEA(Ctap2Session session, FidoTestState state) throws Throwable {
+        assumeTrue("Enterprise attestation not supported",
+                session.getCachedInfo().getOptions().containsKey("ep"));
+
+        enableEp(session, state);
         BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
 
         PublicKeyCredential credential = makeCredential(webauthn, AttestationConveyancePreference.ENTERPRISE, 2);
@@ -92,10 +93,11 @@ public class EnterpriseAttestationTests {
                 FALSE.equals(attestationObject.get("epAtt")));
     }
 
-    public static void testVendorFacilitatedEA(Ctap2Session session, Object... args) throws Throwable {
-        PinUvAuthProtocol pinUvAuthProtocol = Ctap2ClientPinTests.getPinUvAuthProtocol(args);
-        Ctap2ClientPinTests.ensureDefaultPinSet(session, pinUvAuthProtocol);
-        enableEp(session, pinUvAuthProtocol);
+    public static void testVendorFacilitatedEA(Ctap2Session session, FidoTestState state) throws Throwable {
+        assumeTrue("Enterprise attestation not supported",
+                session.getCachedInfo().getOptions().containsKey("ep"));
+
+        enableEp(session, state);
         BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
         webauthn.getUserAgentConfiguration().setEpSupportedRpIds(Collections.singletonList(TestData.RP_ID));
 
@@ -103,51 +105,71 @@ public class EnterpriseAttestationTests {
 
         final Map<String, ?> attestationObject = getAttestationObject(credential.getResponse());
         assertNotNull(attestationObject);
-        assertTrue((Boolean) attestationObject.get("epAtt"));
+        assertEquals(Boolean.TRUE, attestationObject.get("epAtt"));
     }
 
     // test with different PublicKeyCredentialCreationOptions AttestationConveyancePreference
     // values
-    public static void testCreateOptionsAttestationPreference(Ctap2Session session, Object... args) throws Throwable {
-        PinUvAuthProtocol pinUvAuthProtocol = Ctap2ClientPinTests.getPinUvAuthProtocol(args);
-        Ctap2ClientPinTests.ensureDefaultPinSet(session, pinUvAuthProtocol);
-        enableEp(session, pinUvAuthProtocol);
+    public static void testCreateOptionsAttestationPreference(FidoTestState state) throws Throwable {
 
-        // setup
+        state.withCtap2(session -> {
+            assumeTrue("Enterprise attestation not supported",
+                    session.getCachedInfo().getOptions().containsKey("ep"));
+            enableEp(session, state);
+        });
+
+        // attestation = null
+        state.withCtap2(session -> {
+            final BasicWebAuthnClient webauthn = setupClient(session);
+            PublicKeyCredential credential = makeCredential(webauthn, null, 2);
+
+            Map<String, ?> attestationObject = getAttestationObject(credential.getResponse());
+            assertNull(attestationObject.get("epAtt"));
+        });
+
+        // attestation = DIRECT
+        state.withCtap2(session -> {
+            final BasicWebAuthnClient webauthn = setupClient(session);
+            PublicKeyCredential credential = makeCredential(webauthn, AttestationConveyancePreference.DIRECT, 2);
+            Map<String, ?> attestationObject = getAttestationObject(credential.getResponse());
+            assertNull(attestationObject.get("epAtt"));
+        });
+
+
+        // attestation = INDIRECT
+        state.withCtap2(session -> {
+            final BasicWebAuthnClient webauthn = setupClient(session);
+            PublicKeyCredential credential = makeCredential(webauthn, AttestationConveyancePreference.DIRECT, 2);
+
+            Map<String, ?> attestationObject = getAttestationObject(credential.getResponse());
+            assertNull(attestationObject.get("epAtt"));
+        });
+
+        // attestation = ENTERPRISE but null enterpriseAttestation
+        state.withCtap2(session -> {
+            final BasicWebAuthnClient webauthn = setupClient(session);
+            PublicKeyCredential credential = makeCredential(webauthn, AttestationConveyancePreference.ENTERPRISE, null);
+
+            Map<String, ?> attestationObject = getAttestationObject(credential.getResponse());
+            assertNull(attestationObject.get("epAtt"));
+        });
+
+        // attestation = ENTERPRISE
+        state.withCtap2(session -> {
+            final BasicWebAuthnClient webauthn = setupClient(session);
+            PublicKeyCredential credential = makeCredential(webauthn, AttestationConveyancePreference.ENTERPRISE, 2);
+
+            Map<String, ?> attestationObject = getAttestationObject(credential.getResponse());
+            assertEquals(Boolean.TRUE, attestationObject.get("epAtt"));
+        });
+    }
+
+    private static BasicWebAuthnClient setupClient(Ctap2Session session) throws IOException, CommandException {
         BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
         webauthn.getUserAgentConfiguration().setEpSupportedRpIds(Collections.singletonList(
                 TestData.RP_ID
         ));
-
-        // attestation = null
-        PublicKeyCredential credential = makeCredential(webauthn, null, 2);
-
-        Map<String, ?> attestationObject = getAttestationObject(credential.getResponse());
-        assertNull(attestationObject.get("epAtt"));
-
-        // attestation = DIRECT
-        credential = makeCredential(webauthn, AttestationConveyancePreference.DIRECT, 2);
-
-        attestationObject = getAttestationObject(credential.getResponse());
-        assertNull(attestationObject.get("epAtt"));
-
-        // attestation = INDIRECT
-        credential = makeCredential(webauthn, AttestationConveyancePreference.DIRECT, 2);
-
-        attestationObject = getAttestationObject(credential.getResponse());
-        assertNull(attestationObject.get("epAtt"));
-
-        // attestation = ENTERPRISE but null enterpriseAttestation
-        credential = makeCredential(webauthn, AttestationConveyancePreference.ENTERPRISE, null);
-
-        attestationObject = getAttestationObject(credential.getResponse());
-        assertNull(attestationObject.get("epAtt"));
-
-        // attestation = ENTERPRISE
-        credential = makeCredential(webauthn, AttestationConveyancePreference.ENTERPRISE, 2);
-
-        attestationObject = getAttestationObject(credential.getResponse());
-        assertTrue((Boolean) attestationObject.get("epAtt"));
+        return webauthn;
     }
 
     /**
@@ -179,6 +201,7 @@ public class EnterpriseAttestationTests {
     /**
      * Helper method which extracts AuthenticatorAttestationResponse from the credential
      */
+    @SuppressWarnings("unchecked")
     private static Map<String, ?> getAttestationObject(AuthenticatorResponse response) {
         AuthenticatorAttestationResponse authenticatorAttestationResponse =
                 (AuthenticatorAttestationResponse) response;
