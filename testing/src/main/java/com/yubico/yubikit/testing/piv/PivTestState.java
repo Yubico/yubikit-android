@@ -29,12 +29,7 @@ import com.yubico.yubikit.management.DeviceInfo;
 import com.yubico.yubikit.piv.KeyType;
 import com.yubico.yubikit.piv.ManagementKeyType;
 import com.yubico.yubikit.piv.PivSession;
-import com.yubico.yubikit.testing.ScpParameters;
 import com.yubico.yubikit.testing.TestState;
-
-import java.io.IOException;
-
-import javax.annotation.Nullable;
 
 public class PivTestState extends TestState {
 
@@ -87,6 +82,9 @@ public class PivTestState extends TestState {
             assumeTrue("Trying to use PIV FIPS capable device over NFC without SCP", isUsbTransport());
         }
 
+        // skip MPE devices
+        assumeFalse("Ignoring MPE device", isMpe(deviceInfo));
+
         if (scpParameters.getKid() != null) {
             // skip the test if the connected key does not provide matching SCP keys
             assumeTrue(
@@ -95,7 +93,7 @@ public class PivTestState extends TestState {
             );
         }
 
-        try (SmartCardConnection connection = currentDevice.openConnection(SmartCardConnection.class)) {
+        try (SmartCardConnection connection = openSmartCardConnection()) {
             PivSession pivSession = getPivSession(connection, scpParameters);
             assumeTrue("PIV not available", pivSession != null);
 
