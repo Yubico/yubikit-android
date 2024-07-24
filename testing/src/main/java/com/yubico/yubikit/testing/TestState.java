@@ -28,6 +28,7 @@ import com.yubico.yubikit.core.fido.FidoConnection;
 import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.smartcard.scp.ScpKeyParams;
+import com.yubico.yubikit.core.smartcard.scp.SecurityDomainSession;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.management.Capability;
 import com.yubico.yubikit.management.DeviceInfo;
@@ -226,10 +227,38 @@ public class TestState {
     }
 
     @Nullable
-    private OathSession getOathSession(SmartCardConnection connection, ScpParameters scpParameters)
+    protected OathSession getOathSession(SmartCardConnection connection, ScpParameters scpParameters)
             throws IOException {
         try {
             return new OathSession(connection, scpParameters.getKeyParams());
+        } catch (ApplicationNotAvailableException ignored) {
+            // no OATH support
+        }
+        return null;
+    }
+
+    // Security domain helpers
+    public void withSecurityDomain(SessionCallback<SecurityDomainSession> callback) throws Throwable {
+        try (SmartCardConnection connection = openSmartCardConnection()) {
+            callback.invoke(getSecurityDomainSession(connection));
+        }
+        reconnect();
+    }
+
+    public <T extends TestState> void withSecurityDomain(StatefulSessionCallback<SecurityDomainSession, T> callback)
+            throws Throwable {
+        try (SmartCardConnection connection = openSmartCardConnection()) {
+            //noinspection unchecked
+            callback.invoke(getSecurityDomainSession(connection), (T) this);
+        }
+        reconnect();
+    }
+
+    @Nullable
+    protected SecurityDomainSession getSecurityDomainSession(SmartCardConnection connection)
+            throws IOException {
+        try {
+            return new SecurityDomainSession(connection, scpParameters.getKeyParams());
         } catch (ApplicationNotAvailableException ignored) {
             // no OATH support
         }
@@ -286,7 +315,7 @@ public class TestState {
     public DeviceInfo getDeviceInfo() {
         DeviceInfo deviceInfo = null;
         try (YubiKeyConnection connection = openConnection()) {
-            ManagementSession managementSession = getManagementSession(connection, null);
+            ManagementSession managementSession = getManagementSession(connection, scpParameters);
             deviceInfo = managementSession.getDeviceInfo();
         } catch (IOException | CommandException ignored) {
 

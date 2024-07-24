@@ -89,10 +89,21 @@ public class SecurityDomainSession extends ApplicationSession<SecurityDomainSess
     private static final org.slf4j.Logger logger = LoggerFactory.getLogger(SecurityDomainSession.class);
 
     public SecurityDomainSession(SmartCardConnection connection) throws IOException, ApplicationNotAvailableException {
+        this(connection, null);
+    }
+
+    public SecurityDomainSession(SmartCardConnection connection, @Nullable ScpKeyParams scpKeyParams) throws IOException, ApplicationNotAvailableException {
         protocol = new SmartCardProtocol(connection);
         protocol.select(AppId.SECURITYDOMAIN);
         // We don't know the version, but we know it's at least 5.3.0
         protocol.configure(new Version(5, 3, 0));
+        if(scpKeyParams != null) {
+            try {
+                protocol.initScp(scpKeyParams);
+            } catch (BadResponseException | ApduException e) {
+                throw new IllegalStateException(e);
+            }
+        }
         Logger.debug(logger, "Security Domain session initialized");
     }
 
@@ -335,7 +346,7 @@ public class SecurityDomainSession extends ApplicationSession<SecurityDomainSess
             throw new IllegalStateException("No session DEK key available");
         }
 
-        ByteBuffer data = ByteBuffer.allocate(1 + 3 * (16 + 4)).put(keyRef.getKvn());
+        ByteBuffer data = ByteBuffer.allocate(1 + 3 * (18 + 4)).put(keyRef.getKvn());
         ByteBuffer expected = ByteBuffer.allocate(1 + 3 * 3).put(keyRef.getKvn());
         for (SecretKey key : Arrays.asList(keys.enc, keys.mac, keys.dek)) {
             byte[] kcv = Arrays.copyOf(ScpState.cbcEncrypt(key, DEFAULT_KCV_IV), 3);
