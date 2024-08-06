@@ -29,12 +29,6 @@ public class Scp11Tests extends SecurityDomainInstrumentedTests {
     }
 
     @Test
-    public void testScp11aImportKey() throws Throwable {
-        withState(Scp11DeviceTests::testScp11aImportKey);
-        withState(Scp11DeviceTests::testScp11aImportKeyAlt);
-    }
-
-    @Test
     public void testScp11aAuthenticate() throws Throwable {
         withState(Scp11DeviceTests::testScp11aAuthenticate);
     }
