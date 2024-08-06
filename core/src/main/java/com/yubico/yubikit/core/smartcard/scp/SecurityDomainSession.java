@@ -77,10 +77,10 @@ public class SecurityDomainSession extends ApplicationSession<SecurityDomainSess
     private static final short TAG_CA_KLCC_IDENTIFIERS = (short) 0xFF34;
     private static final short TAG_CERTIFICATE_STORE = (short) 0xBF21;
 
-    private static final byte KEY_TYPE_AES = (byte) 0x88;
-    private static final byte KEY_TYPE_ECC_PUBLIC_KEY = (byte) 0xB0;
-    private static final byte KEY_TYPE_ECC_PRIVATE_KEY = (byte) 0xB1;
-    private static final byte KEY_TYPE_ECC_KEY_PARAMS = (byte) 0xF0;
+    private static final int KEY_TYPE_AES = 0x88;
+    private static final int KEY_TYPE_ECC_PUBLIC_KEY = 0xB0;
+    private static final int KEY_TYPE_ECC_PRIVATE_KEY = 0xB1;
+    private static final int KEY_TYPE_ECC_KEY_PARAMS = 0xF0;
 
     private final SmartCardProtocol protocol;
     @Nullable

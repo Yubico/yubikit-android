@@ -36,6 +36,7 @@ import com.yubico.yubikit.management.ManagementSession;
 import com.yubico.yubikit.oath.OathSession;
 import com.yubico.yubikit.openpgp.OpenPgpSession;
 import com.yubico.yubikit.piv.PivSession;
+import com.yubico.yubikit.testing.sd.SecurityDomainTestState;
 
 import java.io.IOException;
 
@@ -245,6 +246,22 @@ public class TestState {
         reconnect();
     }
 
+    public <R> R withSecurityDomain(SessionCallbackT<SecurityDomainSession, R> callback) throws Throwable {
+        R result;
+        try (SmartCardConnection connection = openSmartCardConnection()) {
+            result = callback.invoke(getSecurityDomainSession(connection));
+        }
+        reconnect();
+        return result;
+    }
+
+    public void withSecurityDomain(ScpKeyParams scpKeyParams, SessionCallback<SecurityDomainSession> callback) throws Throwable {
+        try (SmartCardConnection connection = openSmartCardConnection()) {
+            callback.invoke(getSecurityDomainSession(scpKeyParams, connection));
+        }
+        reconnect();
+    }
+
     public <T extends TestState> void withSecurityDomain(StatefulSessionCallback<SecurityDomainSession, T> callback)
             throws Throwable {
         try (SmartCardConnection connection = openSmartCardConnection()) {
@@ -254,11 +271,31 @@ public class TestState {
         reconnect();
     }
 
+    public <R> R withSecurityDomain(ScpKeyParams scpKeyParams, SessionCallbackT<SecurityDomainSession, R> callback) throws Throwable {
+        R result;
+        try (SmartCardConnection connection = openSmartCardConnection()) {
+            result = callback.invoke(getSecurityDomainSession(scpKeyParams, connection));
+        }
+        reconnect();
+        return result;
+    }
+
     @Nullable
     protected SecurityDomainSession getSecurityDomainSession(SmartCardConnection connection)
             throws IOException {
         try {
             return new SecurityDomainSession(connection, scpParameters.getKeyParams());
+        } catch (ApplicationNotAvailableException ignored) {
+            // no OATH support
+        }
+        return null;
+    }
+
+    @Nullable
+    protected SecurityDomainSession getSecurityDomainSession(ScpKeyParams scpKeyParams, SmartCardConnection connection)
+            throws IOException {
+        try {
+            return new SecurityDomainSession(connection, scpKeyParams);
         } catch (ApplicationNotAvailableException ignored) {
             // no OATH support
         }

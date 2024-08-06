@@ -20,15 +20,13 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assume.assumeTrue;
 
 import com.yubico.yubikit.core.YubiKeyDevice;
-import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
-import com.yubico.yubikit.core.smartcard.scp.ScpKeyParams;
 import com.yubico.yubikit.core.smartcard.scp.SecurityDomainSession;
 import com.yubico.yubikit.testing.TestState;
 
-import java.io.IOException;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
-import javax.annotation.Nullable;
+import java.security.Security;
 
 public class SecurityDomainTestState extends TestState {
 
@@ -46,11 +44,19 @@ public class SecurityDomainTestState extends TestState {
     protected SecurityDomainTestState(Builder builder) throws Throwable {
         super(builder);
 
+        setupJca();
+
         try (SmartCardConnection connection = openSmartCardConnection()) {
+            assumeTrue("Key does not support smart card connection", connection != null);
             SecurityDomainSession sd = getSecurityDomainSession(connection);
             assumeTrue("Security domain not supported", sd != null);
             assertNull("These tests expect kid to be null", scpParameters.getKid());
         }
 
+    }
+
+    public static void setupJca() {
+        Security.removeProvider("BC");
+        Security.addProvider(new BouncyCastleProvider());
     }
 }
