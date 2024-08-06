@@ -77,10 +77,10 @@ public class SecurityDomainSession extends ApplicationSession<SecurityDomainSess
     private static final short TAG_CA_KLCC_IDENTIFIERS = (short) 0xFF34;
     private static final short TAG_CERTIFICATE_STORE = (short) 0xBF21;
 
-    private static final byte KEY_TYPE_AES = (byte) 0x88;
-    private static final byte KEY_TYPE_ECC_PUBLIC_KEY = (byte) 0xB0;
-    private static final byte KEY_TYPE_ECC_PRIVATE_KEY = (byte) 0xB1;
-    private static final byte KEY_TYPE_ECC_KEY_PARAMS = (byte) 0xF0;
+    private static final int KEY_TYPE_AES = 0x88;
+    private static final int KEY_TYPE_ECC_PUBLIC_KEY = 0xB0;
+    private static final int KEY_TYPE_ECC_PRIVATE_KEY = 0xB1;
+    private static final int KEY_TYPE_ECC_KEY_PARAMS = 0xF0;
 
     private final SmartCardProtocol protocol;
     @Nullable
@@ -89,10 +89,21 @@ public class SecurityDomainSession extends ApplicationSession<SecurityDomainSess
     private static final org.slf4j.Logger logger = LoggerFactory.getLogger(SecurityDomainSession.class);
 
     public SecurityDomainSession(SmartCardConnection connection) throws IOException, ApplicationNotAvailableException {
+        this(connection, null);
+    }
+
+    public SecurityDomainSession(SmartCardConnection connection, @Nullable ScpKeyParams scpKeyParams) throws IOException, ApplicationNotAvailableException {
         protocol = new SmartCardProtocol(connection);
         protocol.select(AppId.SECURITYDOMAIN);
         // We don't know the version, but we know it's at least 5.3.0
         protocol.configure(new Version(5, 3, 0));
+        if (scpKeyParams != null) {
+            try {
+                protocol.initScp(scpKeyParams);
+            } catch (BadResponseException | ApduException e) {
+                throw new IllegalStateException(e);
+            }
+        }
         Logger.debug(logger, "Security Domain session initialized");
     }
 
@@ -229,7 +240,7 @@ public class SecurityDomainSession extends ApplicationSession<SecurityDomainSess
         Logger.debug(logger, "Storing serial allowlist for {}", keyRef);
         ByteArrayOutputStream data = new ByteArrayOutputStream();
         for (BigInteger serial : serials) {
-            data.write(serial.toByteArray());
+            data.write(new Tlv(0x93, serial.toByteArray()).getBytes());
         }
         storeData(Tlvs.encodeList(Arrays.asList(
                 new Tlv(0xA6, new Tlv(0x83, keyRef.getBytes()).getBytes()),
@@ -309,7 +320,11 @@ public class SecurityDomainSession extends ApplicationSession<SecurityDomainSess
                 (replaceKvn == 0 ? "" : String.format(Locale.ROOT, ", replacing KVN=0x%02x", replaceKvn)), keyRef);
 
         byte[] params = new Tlv(KEY_TYPE_ECC_KEY_PARAMS, new byte[]{0}).getBytes();
-        byte[] data = ByteBuffer.allocate(params.length + 1).put(keyRef.getKvn()).put(params).array();
+        byte[] data = ByteBuffer
+                .allocate(params.length + 1)
+                .put(keyRef.getKvn())
+                .put(params)
+                .array();
         byte[] resp = protocol.sendAndReceive(new Apdu(0x80, INS_GENERATE_KEY, replaceKvn, keyRef.getKid(), data));
         byte[] encodedPoint = Tlvs.unpackValue(KEY_TYPE_ECC_PUBLIC_KEY, resp);
         return PublicKeyValues.Ec.fromEncodedPoint(EllipticCurveValues.SECP256R1, encodedPoint);
@@ -335,7 +350,7 @@ public class SecurityDomainSession extends ApplicationSession<SecurityDomainSess
             throw new IllegalStateException("No session DEK key available");
         }
 
-        ByteBuffer data = ByteBuffer.allocate(1 + 3 * (16 + 4)).put(keyRef.getKvn());
+        ByteBuffer data = ByteBuffer.allocate(1 + 3 * (18 + 4)).put(keyRef.getKvn());
         ByteBuffer expected = ByteBuffer.allocate(1 + 3 * 3).put(keyRef.getKvn());
         for (SecretKey key : Arrays.asList(keys.enc, keys.mac, keys.dek)) {
             byte[] kcv = Arrays.copyOf(ScpState.cbcEncrypt(key, DEFAULT_KCV_IV), 3);
@@ -367,7 +382,9 @@ public class SecurityDomainSession extends ApplicationSession<SecurityDomainSess
      */
     public void putKey(KeyRef keyRef, PrivateKeyValues secretKey, int replaceKvn) throws ApduException, IOException, BadResponseException {
         Logger.debug(logger, "Importing SCP11 private key into {}", keyRef);
-        if (!(secretKey instanceof PrivateKeyValues.Ec) || !((PrivateKeyValues.Ec) secretKey).getCurveParams().equals(EllipticCurveValues.SECP256R1)) {
+        if (!(secretKey instanceof PrivateKeyValues.Ec) ||
+                !((PrivateKeyValues.Ec) secretKey).getCurveParams()
+                        .equals(EllipticCurveValues.SECP256R1)) {
             throw new IllegalArgumentException("Private key must be of type SECP256R1");
         }
         if (dataEncryptor == null) {
@@ -404,7 +421,9 @@ public class SecurityDomainSession extends ApplicationSession<SecurityDomainSess
      */
     public void putKey(KeyRef keyRef, PublicKeyValues publicKey, int replaceKvn) throws ApduException, IOException, BadResponseException {
         Logger.debug(logger, "Importing SCP11 public key into {}", keyRef);
-        if (!(publicKey instanceof PublicKeyValues.Ec) || !((PublicKeyValues.Ec) publicKey).getCurveParams().equals(EllipticCurveValues.SECP256R1)) {
+        if (!(publicKey instanceof PublicKeyValues.Ec) ||
+                !((PublicKeyValues.Ec) publicKey).getCurveParams()
+                        .equals(EllipticCurveValues.SECP256R1)) {
             throw new IllegalArgumentException("Public key must be of type SECP256R1");
         }
 

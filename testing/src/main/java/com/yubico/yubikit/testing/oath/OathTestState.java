@@ -61,12 +61,7 @@ public class OathTestState extends TestState {
         }
 
         try (SmartCardConnection connection = openSmartCardConnection()) {
-            OathSession oath = null;
-            try {
-                oath = new OathSession(connection, scpParameters.getKeyParams());
-            } catch (ApplicationNotAvailableException ignored) {
-
-            }
+            OathSession oath = getOathSession(connection, scpParameters);
 
             assumeTrue("OATH not available", oath != null);
             oath.reset();
