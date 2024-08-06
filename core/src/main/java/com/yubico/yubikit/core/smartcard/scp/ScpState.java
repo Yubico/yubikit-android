@@ -86,7 +86,7 @@ public class ScpState {
 
     public byte[] encrypt(byte[] data) {
         // Pad the data
-        logger.trace("Plain data: {}", StringUtils.bytesToHex(data));
+        logger.trace("Plaintext data: {}", StringUtils.bytesToHex(data));
         int padLen = 16 - (data.length % 16);
         byte[] padded = Arrays.copyOf(data, data.length + padLen);
         padded[data.length] = (byte) 0x80;
