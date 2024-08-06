@@ -16,31 +16,16 @@
 
 package com.yubico.yubikit.testing.framework;
 
-import com.yubico.yubikit.core.smartcard.scp.ScpKid;
-import com.yubico.yubikit.core.smartcard.scp.SecurityDomainSession;
 import com.yubico.yubikit.testing.TestState;
 import com.yubico.yubikit.testing.sd.SecurityDomainTestState;
 
 public class SecurityDomainInstrumentedTests extends YKInstrumentedTests {
 
-    protected void withDevice(TestState.StatefulDeviceCallback<SecurityDomainTestState> callback) throws Throwable {
+    protected void withState(TestState.StatefulDeviceCallback<SecurityDomainTestState> callback) throws Throwable {
         final SecurityDomainTestState state = new SecurityDomainTestState.Builder(device)
                 .reconnectDeviceCallback(this::reconnectDevice)
                 .build();
 
         state.withDeviceCallback(callback);
     }
-
-    protected void withSecurityDomainSession(TestState.StatefulSessionCallback<SecurityDomainSession, SecurityDomainTestState> callback) throws Throwable {
-        final SecurityDomainTestState state = new SecurityDomainTestState.Builder(device).scpKid(getScpKid())
-                .build();
-        state.withSecurityDomain(callback);
-    }
-
-    protected void withScp11Session(TestState.StatefulSessionCallback<SecurityDomainSession, SecurityDomainTestState> callback) throws Throwable {
-        final SecurityDomainTestState state = new SecurityDomainTestState.Builder(device).scpKid(ScpKid.SCP11b)
-                .build();
-        state.withSecurityDomain(callback);
-    }
-
 }

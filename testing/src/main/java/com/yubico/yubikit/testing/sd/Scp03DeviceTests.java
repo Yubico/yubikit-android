@@ -16,21 +16,31 @@
 
 package com.yubico.yubikit.testing.sd;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assume.assumeFalse;
 
+import com.yubico.yubikit.core.application.BadResponseException;
+import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.core.smartcard.scp.KeyRef;
 import com.yubico.yubikit.core.smartcard.scp.Scp03KeyParams;
+import com.yubico.yubikit.core.smartcard.scp.ScpKeyParams;
+import com.yubico.yubikit.core.smartcard.scp.ScpKid;
 import com.yubico.yubikit.core.smartcard.scp.SecurityDomainSession;
 import com.yubico.yubikit.core.smartcard.scp.StaticKeys;
+import com.yubico.yubikit.core.util.RandomUtils;
 
-import java.util.Map;
+import java.io.IOException;
 
 public class Scp03DeviceTests {
 
     static final KeyRef DEFAULT_KEY = new KeyRef((byte) 0x01, (byte) 0xff);
+    static final ScpKeyParams defaultRef = new Scp03KeyParams(DEFAULT_KEY, StaticKeys.getDefaultKeys());
+
+    public static void before(SecurityDomainTestState state) throws Throwable {
+        assumeFalse("SCP03 not supported over NFC on FIPS capable devices",
+                state.getDeviceInfo().getFipsCapable() != 0 && !state.isUsbTransport());
+        state.withSecurityDomain(SecurityDomainSession::reset);
+    }
 
     public static void testImportKey(SecurityDomainTestState state) throws Throwable {
 
@@ -39,166 +49,137 @@ public class Scp03DeviceTests {
                 0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47,
         };
         final StaticKeys staticKeys = new StaticKeys(sk, sk, sk);
-        final KeyRef newKey = new KeyRef((byte) 0x01, (byte) 0x01);
+        final KeyRef ref = new KeyRef((byte) 0x01, (byte) 0x01);
+        final ScpKeyParams params = new Scp03KeyParams(ref, staticKeys);
 
         assumeFalse("SCP03 not supported over NFC on FIPS capable devices",
                 state.getDeviceInfo().getFipsCapable() != 0 && !state.isUsbTransport());
 
-        state.withSecurityDomain(SecurityDomainSession::reset);
         state.withSecurityDomain(sd -> {
-            sd.authenticate(new Scp03KeyParams(DEFAULT_KEY, StaticKeys.getDefaultKeys()));
-            sd.putKey(newKey, staticKeys, 0);
+            sd.authenticate(defaultRef);
+            sd.putKey(ref, staticKeys, 0);
         });
 
         state.withSecurityDomain(sd -> {
-            Map<KeyRef, Map<Byte, Byte>> keyInformation = sd.getKeyInformation();
-            // verify there are three SCP03 keys with kvn 0x01
-            assertNotNull(keyInformation.get(scp03EncOf(newKey)));
-            assertNotNull(keyInformation.get(scp03MacOf(newKey)));
-            assertNotNull(keyInformation.get(scp03DekOf(newKey)));
-
-            // the default keys are gone
-            assertNull(keyInformation.get(scp03EncOf(DEFAULT_KEY)));
-            assertNull(keyInformation.get(scp03MacOf(DEFAULT_KEY)));
-            assertNull(keyInformation.get(scp03DekOf(DEFAULT_KEY)));
+            sd.authenticate(params);
         });
+
+        state.withSecurityDomain(sd -> {
+            // cannot use default key to authenticate
+            assertThrows(ApduException.class, () -> sd.authenticate(defaultRef));
+        });
+
     }
 
     public static void testDeleteKey(SecurityDomainTestState state) throws Throwable {
-
-        final byte[] bytes1 = new byte[]{
-                0x10, 0x21, 0x32, 0x43, 0x54, 0x65, 0x76, 0x67,
-                0x10, 0x21, 0x32, 0x43, 0x54, 0x65, 0x76, 0x67,
-        };
-        final StaticKeys staticKeys1 = new StaticKeys(bytes1, bytes1, bytes1);
-
-        final byte[] bytes2 = new byte[]{
-                0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22,
-                0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22,
-        };
-        final StaticKeys staticKeys2 = new StaticKeys(bytes2, bytes2, bytes2);
-
+        final StaticKeys staticKeys1 = randomStaticKeys();
+        final StaticKeys staticKeys2 = randomStaticKeys();
         final KeyRef keyRef1 = new KeyRef((byte) 0x01, (byte) 0x10);
         final KeyRef keyRef2 = new KeyRef((byte) 0x01, (byte) 0x55);
+        final Scp03KeyParams ref1 = new Scp03KeyParams(keyRef1, staticKeys1);
+        final ScpKeyParams ref2 = new Scp03KeyParams(keyRef2, staticKeys2);
 
-        assumeFalse("SCP03 not supported over NFC on FIPS capable devices",
-                state.getDeviceInfo().getFipsCapable() != 0 && !state.isUsbTransport());
-
-        state.withSecurityDomain(SecurityDomainSession::reset);
         state.withSecurityDomain(sd -> {
-            sd.authenticate(new Scp03KeyParams(DEFAULT_KEY, StaticKeys.getDefaultKeys()));
+            sd.authenticate(defaultRef);
             sd.putKey(keyRef1, staticKeys1, 0);
         });
 
         // authenticate with the new key and put the second
         state.withSecurityDomain(sd -> {
-            sd.authenticate(new Scp03KeyParams(keyRef1, staticKeys1));
+            sd.authenticate(ref1);
             sd.putKey(keyRef2, staticKeys2, 0);
+        });
 
-            // there are 2 SCP03 keys
-            Map<KeyRef, Map<Byte, Byte>> keyInformation = sd.getKeyInformation();
-            // verify there are three SCP03 keys with kvn 0x01
-            assertNotNull(keyInformation.get(scp03EncOf(keyRef1)));
-            assertNotNull(keyInformation.get(scp03MacOf(keyRef1)));
-            assertNotNull(keyInformation.get(scp03DekOf(keyRef1)));
+        state.withSecurityDomain(sd -> {
+            sd.authenticate(ref1);
+        });
 
-            assertNotNull(keyInformation.get(scp03EncOf(keyRef2)));
-            assertNotNull(keyInformation.get(scp03MacOf(keyRef2)));
-            assertNotNull(keyInformation.get(scp03DekOf(keyRef2)));
+        state.withSecurityDomain(sd -> {
+            sd.authenticate(ref2);
         });
 
         // delete first key
         state.withSecurityDomain(sd -> {
-            // authenticate with the second key
-            sd.authenticate(new Scp03KeyParams(keyRef2, staticKeys2));
+            sd.authenticate(ref2);
             sd.deleteKey(keyRef1, false);
+        });
 
-            // verify there are three the first key is deleted
-            final Map<KeyRef, Map<Byte, Byte>> keyInformation = sd.getKeyInformation();
-            assertNull(keyInformation.get(scp03EncOf(keyRef1)));
-            assertNull(keyInformation.get(scp03MacOf(keyRef1)));
-            assertNull(keyInformation.get(scp03DekOf(keyRef1)));
+        state.withSecurityDomain(sd -> {
+            assertThrows(ApduException.class, () -> sd.authenticate(ref1));
+        });
 
-            assertNotNull(keyInformation.get(scp03EncOf(keyRef2)));
-            assertNotNull(keyInformation.get(scp03MacOf(keyRef2)));
-            assertNotNull(keyInformation.get(scp03DekOf(keyRef2)));
+        state.withSecurityDomain(sd -> {
+            sd.authenticate(ref2);
         });
 
         // delete the second key
         state.withSecurityDomain(sd -> {
-            // authenticate with the second key
-            sd.authenticate(new Scp03KeyParams(keyRef2, staticKeys2));
+            sd.authenticate(ref2);
             sd.deleteKey(keyRef2, true); // the last key
+        });
 
-            // verify that the second key is gone
-            final Map<KeyRef, Map<Byte, Byte>> keyInformation = sd.getKeyInformation();
-            assertNull(keyInformation.get(scp03EncOf(keyRef2)));
-            assertNull(keyInformation.get(scp03MacOf(keyRef2)));
-            assertNull(keyInformation.get(scp03DekOf(keyRef2)));
-
-            // there now should be a default SCP03 key
-            // it might be missing at all if the YubiKey supports other SCP versions
-            for (KeyRef keyRef : keyInformation.keySet()) {
-                final byte kid = keyRef.getKid();
-                if (kid == (byte) 0x01 || kid == (byte) 0x02 || kid == (byte) 0x03) {
-                    assertEquals(DEFAULT_KEY.getKvn(), keyRef.getKvn());
-                }
-            }
+        state.withSecurityDomain(sd -> {
+            assertThrows(ApduException.class, () -> sd.authenticate(ref2));
         });
     }
 
     public static void testReplaceKey(SecurityDomainTestState state) throws Throwable {
-
-        final byte[] bytes1 = new byte[]{
-                0x10, 0x21, 0x32, 0x43, 0x54, 0x65, 0x76, 0x67,
-                0x10, 0x21, 0x32, 0x43, 0x54, 0x65, 0x76, 0x67,
-        };
-        final StaticKeys staticKeys1 = new StaticKeys(bytes1, bytes1, bytes1);
-
-        final byte[] bytes2 = new byte[]{
-                0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22,
-                0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22,
-        };
-        final StaticKeys staticKeys2 = new StaticKeys(bytes2, bytes2, bytes2);
+        final StaticKeys staticKeys1 = randomStaticKeys();
+        final StaticKeys staticKeys2 = randomStaticKeys();
 
         final KeyRef keyRef1 = new KeyRef((byte) 0x01, (byte) 0x10);
         final KeyRef keyRef2 = new KeyRef((byte) 0x01, (byte) 0x55);
 
-        assumeFalse("SCP03 not supported over NFC on FIPS capable devices",
-                state.getDeviceInfo().getFipsCapable() != 0 && !state.isUsbTransport());
+        final ScpKeyParams ref1 = new Scp03KeyParams(keyRef1, staticKeys1);
+        final ScpKeyParams ref2 = new Scp03KeyParams(keyRef2, staticKeys2);
 
-        state.withSecurityDomain(SecurityDomainSession::reset);
         state.withSecurityDomain(sd -> {
-            sd.authenticate(new Scp03KeyParams(DEFAULT_KEY, StaticKeys.getDefaultKeys()));
+            sd.authenticate(defaultRef);
             sd.putKey(keyRef1, staticKeys1, 0);
         });
 
         // authenticate with the new key and replace it with the second
         state.withSecurityDomain(sd -> {
-            sd.authenticate(new Scp03KeyParams(keyRef1, staticKeys1));
+            sd.authenticate(ref1);
             sd.putKey(keyRef2, staticKeys2, keyRef1.getKvn());
+        });
 
-            // there is only one SCP03 key
-            Map<KeyRef, Map<Byte, Byte>> keyInformation = sd.getKeyInformation();
-            assertNull(keyInformation.get(scp03EncOf(keyRef1)));
-            assertNull(keyInformation.get(scp03MacOf(keyRef1)));
-            assertNull(keyInformation.get(scp03DekOf(keyRef1)));
+        state.withSecurityDomain(sd -> {
+            assertThrows(ApduException.class, () -> sd.authenticate(ref1));
+        });
 
-            assertNotNull(keyInformation.get(scp03EncOf(keyRef2)));
-            assertNotNull(keyInformation.get(scp03MacOf(keyRef2)));
-            assertNotNull(keyInformation.get(scp03DekOf(keyRef2)));
+        state.withSecurityDomain(sd -> {
+            sd.authenticate(ref2);
         });
     }
 
-    private static KeyRef scp03EncOf(KeyRef key) {
-        return new KeyRef((byte) 0x01, key.getKvn());
+    public static void testWrongKey(SecurityDomainTestState state) throws Throwable {
+        final StaticKeys staticKeys = randomStaticKeys();
+        final KeyRef ref = new KeyRef((byte) 0x01, (byte) 0x01);
+        final ScpKeyParams params = new Scp03KeyParams(ref, staticKeys);
+
+        state.withSecurityDomain(sd -> {
+            assertThrows(ApduException.class, () -> sd.authenticate(params));
+            assertThrows(ApduException.class, () -> verifyAuth(sd));
+        });
+
+        state.withSecurityDomain(sd -> {
+            sd.authenticate(defaultRef);
+        });
     }
 
-    private static KeyRef scp03MacOf(KeyRef key) {
-        return new KeyRef((byte) 0x02, key.getKvn());
+    private static StaticKeys randomStaticKeys() {
+        return new StaticKeys(
+                RandomUtils.getRandomBytes(16),
+                RandomUtils.getRandomBytes(16),
+                RandomUtils.getRandomBytes(16)
+        );
     }
 
-    private static KeyRef scp03DekOf(KeyRef key) {
-        return new KeyRef((byte) 0x03, key.getKvn());
+    private static void verifyAuth(SecurityDomainSession session)
+            throws BadResponseException, ApduException, IOException {
+        KeyRef ref = new KeyRef(ScpKid.SCP11b, (byte) 0x7f);
+        session.generateEcKey(ref, 0);
+        session.deleteKey(ref, false);
     }
 }

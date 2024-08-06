@@ -70,4 +70,13 @@ public class Scp11KeyParams implements ScpKeyParams {
     public KeyRef getKeyRef() {
         return keyRef;
     }
+
+    public List<X509Certificate> getCertificates() {
+        return certificates;
+    }
+
+    @Nullable
+    public KeyRef getOceKeyRef() {
+        return oceKeyRef;
+    }
 }

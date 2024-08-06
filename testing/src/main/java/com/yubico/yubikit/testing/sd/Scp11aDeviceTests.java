@@ -18,13 +18,17 @@ package com.yubico.yubikit.testing.sd;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
+import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.internal.codec.Base64;
+import com.yubico.yubikit.core.keys.PrivateKeyValues;
 import com.yubico.yubikit.core.keys.PublicKeyValues;
+import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.core.smartcard.scp.KeyRef;
 import com.yubico.yubikit.core.smartcard.scp.Scp03KeyParams;
 import com.yubico.yubikit.core.smartcard.scp.Scp11KeyParams;
@@ -32,13 +36,17 @@ import com.yubico.yubikit.core.smartcard.scp.ScpKeyParams;
 import com.yubico.yubikit.core.smartcard.scp.ScpKid;
 import com.yubico.yubikit.core.smartcard.scp.SecurityDomainSession;
 import com.yubico.yubikit.core.smartcard.scp.StaticKeys;
+import com.yubico.yubikit.core.util.RandomUtils;
 import com.yubico.yubikit.core.util.Tlv;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.PrivateKey;
@@ -47,7 +55,9 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.security.spec.ECGenParameterSpec;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
@@ -181,6 +191,10 @@ public class Scp11aDeviceTests {
             "QMEAgEFAAQggxlm83v4OwO2nvegRpOK2G4HvCi0iO31XksWx0Pf5DkECAqUVhzeEdSPAgIIAA==");
     public static char[] OCE_V2_PASSWORD = "password".toCharArray();
 
+    public static void before(SecurityDomainTestState state) throws Throwable {
+        state.withSecurityDomain(SecurityDomainSession::reset);
+    }
+
     public static void testImportKey(SecurityDomainTestState state) throws Throwable {
         testImportKey(state, OCE_CERTS_V1, OCE_V1, OCE_V1_PASSWORD);
     }
@@ -189,7 +203,7 @@ public class Scp11aDeviceTests {
         testImportKey(state, OCE_CERTS_V2, OCE_V2, OCE_V2_PASSWORD);
     }
 
-    public static void testImportKey(
+    private static void testImportKey(
             SecurityDomainTestState state,
             byte[] oceCerts,
             byte[] oce,
@@ -201,7 +215,7 @@ public class Scp11aDeviceTests {
         state.withSecurityDomain(SecurityDomainSession::reset);
 
         // replace default SCP03 keys so that we can authenticate later
-        ScpKeyParams scp03KeyParams = importNewScp03Key(state);
+        ScpKeyParams scp03KeyParams = replaceDefaultScp03Key(state);
 
         PublicKeyValues pk = state.withSecurityDomain(scp03KeyParams, sd -> {
             return setupScp11a(sd, oceCerts);
@@ -241,18 +255,163 @@ public class Scp11aDeviceTests {
                 });
     }
 
-    private static ScpKeyParams importNewScp03Key(SecurityDomainTestState state) throws Throwable {
-        final byte[] sk = new byte[]{
-                0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47,
-                0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47,
-        };
-        final StaticKeys staticKeys = new StaticKeys(sk, sk, sk);
+    private static final ScpKeyParams defaultScp03KeyParams =
+            new Scp03KeyParams(DEFAULT_SCP03_KEY, StaticKeys.getDefaultKeys());
+
+    public static void testAuthenticate(SecurityDomainTestState state) throws Throwable {
+        final byte kvn = 0x03;
+
+        ScpKeyParams keyParams = state.withSecurityDomain(defaultScp03KeyParams, sd -> {
+            return loadKeys(sd, ScpKid.SCP11a, kvn);
+        });
+
+        state.withSecurityDomain(keyParams, sd -> {
+            sd.deleteKey(new KeyRef(ScpKid.SCP11a, kvn), false);
+        });
+    }
+
+    public static void testAllowList(SecurityDomainTestState state) throws Throwable {
+        final byte kvn = 0x03;
+
+        ScpKeyParams keyParams = state.withSecurityDomain(defaultScp03KeyParams, sd -> {
+            Scp11KeyParams params = loadKeys(sd, ScpKid.SCP11a, kvn);
+            assertNotNull(params.getOceKeyRef());
+
+            List<BigInteger> serials = new ArrayList<>();
+            for (X509Certificate cert : params.getCertificates()) {
+                serials.add(cert.getSerialNumber());
+            }
+
+            sd.storeAllowlist(params.getOceKeyRef(), serials);
+            return params;
+        });
+
+        state.withSecurityDomain(keyParams, sd -> {
+            sd.deleteKey(new KeyRef(ScpKid.SCP11a, kvn), false);
+        });
+    }
+
+    public static void testAllowListBlocked(SecurityDomainTestState state) throws Throwable {
+        final byte kvn = 0x03;
+        final KeyRef ref = new KeyRef(ScpKid.SCP03, (byte) 2);
+
+        ScpKeyParams scp03KeyParams = replaceDefaultScp03Key(state);
+
+        Scp11KeyParams keyParams = state.withSecurityDomain(scp03KeyParams, sd -> {
+
+            sd.deleteKey(new KeyRef(ScpKid.SCP11b, (byte) 1), false);
+
+            Scp11KeyParams scp11KeyParams = loadKeys(sd, ScpKid.SCP11a, kvn);
+            assertNotNull(scp11KeyParams.getOceKeyRef());
+
+            final List<BigInteger> serials = Arrays.asList(
+                    BigInteger.valueOf(1), BigInteger.valueOf(2), BigInteger.valueOf(3),
+                    BigInteger.valueOf(4), BigInteger.valueOf(5));
+
+            sd.storeAllowlist(scp11KeyParams.getOceKeyRef(), serials);
+
+            return scp11KeyParams;
+        });
+
+        // authenticate with scp11a will throw
+        state.withSecurityDomain(sd -> {
+            assertThrows(ApduException.class, () -> sd.authenticate(keyParams));
+        });
+
+        // reset the allow list
+        state.withSecurityDomain(scp03KeyParams, sd -> {
+            assertNotNull(keyParams.getOceKeyRef());
+            sd.storeAllowlist(keyParams.getOceKeyRef(), new ArrayList<>());
+        });
+
+        // authenticate with scp11a will not throw
+        state.withSecurityDomain(sd -> {
+            sd.authenticate(keyParams);
+        });
+    }
+
+    public static void testScp11cAuthenticate(SecurityDomainTestState state) throws Throwable {
+        final byte kvn = 0x03;
+
+        ScpKeyParams keyParams = state.withSecurityDomain(defaultScp03KeyParams, sd -> {
+            return loadKeys(sd, ScpKid.SCP11c, kvn);
+        });
+
+        state.withSecurityDomain(keyParams, sd -> {
+            assertThrows(ApduException.class, () ->
+                    sd.deleteKey(new KeyRef(ScpKid.SCP11c, kvn), false));
+        });
+    }
+
+    public static void testScp11bAuthenticate(SecurityDomainTestState state) throws Throwable {
+        final KeyRef ref = new KeyRef(ScpKid.SCP11b, (byte) 0x1);
+
+        List<X509Certificate> chain = state.withSecurityDomain(defaultScp03KeyParams, sd -> {
+            return sd.getCertificateBundle(ref);
+        });
+
+        X509Certificate leaf = chain.get(chain.size() - 1);
+        Scp11KeyParams params = new Scp11KeyParams(ref, leaf.getPublicKey());
+
+        state.withSecurityDomain(params, sd -> {
+            assertThrows(ApduException.class, () -> verifyScp11bAuth(sd));
+        });
+    }
+
+    public static void testScp11bWrongPubKey(SecurityDomainTestState state) throws Throwable {
+        final KeyRef ref = new KeyRef(ScpKid.SCP11b, (byte) 0x1);
+
+        List<X509Certificate> chain = state.withSecurityDomain(defaultScp03KeyParams, sd -> {
+            return sd.getCertificateBundle(ref);
+        });
+
+        X509Certificate cert = chain.get(0);
+        Scp11KeyParams params = new Scp11KeyParams(ref, cert.getPublicKey());
+
+        state.withSecurityDomain(sd -> {
+            BadResponseException e =
+                    assertThrows(BadResponseException.class, () -> sd.authenticate(params));
+            assertEquals("Receipt does not match", e.getMessage());
+        });
+    }
+
+    public static void testScp11bImport(SecurityDomainTestState state) throws Throwable {
+        final KeyRef ref = new KeyRef(ScpKid.SCP11b, (byte) 0x2);
+
+        ScpKeyParams keyParams = state.withSecurityDomain(sd -> {
+            sd.authenticate(defaultScp03KeyParams);
+            KeyPairGenerator kpg = KeyPairGenerator.getInstance("EC");
+            ECGenParameterSpec ecParams = new ECGenParameterSpec("secp256r1");
+            kpg.initialize(ecParams);
+            KeyPair keyPair = kpg.generateKeyPair();
+            sd.putKey(ref, PrivateKeyValues.fromPrivateKey(keyPair.getPrivate()), 0);
+            return new Scp11KeyParams(ref, keyPair.getPublic());
+        });
+
+        state.withSecurityDomain(sd -> {
+            sd.authenticate(keyParams);
+        });
+    }
+
+    private static void verifyScp11bAuth(SecurityDomainSession session)
+            throws BadResponseException, ApduException, IOException {
+        KeyRef ref = new KeyRef(ScpKid.SCP11b, (byte) 0x7f);
+        session.generateEcKey(ref, 0);
+        session.deleteKey(ref, false);
+    }
+
+    private static ScpKeyParams replaceDefaultScp03Key(SecurityDomainTestState state) throws Throwable {
+        final StaticKeys staticKeys = new StaticKeys(
+                RandomUtils.getRandomBytes(16),
+                RandomUtils.getRandomBytes(16),
+                RandomUtils.getRandomBytes(16)
+        );
 
         assumeFalse("SCP03 not supported over NFC on FIPS capable devices",
                 state.getDeviceInfo().getFipsCapable() != 0 && !state.isUsbTransport());
 
         state.withSecurityDomain(sd -> {
-            sd.authenticate(new Scp03KeyParams(DEFAULT_SCP03_KEY, StaticKeys.getDefaultKeys()));
+            sd.authenticate(defaultScp03KeyParams);
             sd.putKey(AUTH_SCP03_KEY, staticKeys, 0);
         });
 
@@ -350,5 +509,50 @@ public class Scp11aDeviceTests {
         sd.deleteKey(AUTH_SCP03_KEY, false);
 
         return generatedPk;
+    }
+
+    private static Scp11KeyParams loadKeys(SecurityDomainSession sd, byte kid, byte kvn)
+            throws Throwable {
+        KeyRef sdRef = new KeyRef(kid, kvn);
+        KeyRef oceRef = new KeyRef((byte) 0x10, kvn);
+
+        PublicKeyValues publicKeyValues = sd.generateEcKey(sdRef, 0);
+
+        ScpCertificates oceCerts = getOceCertificates(OCE_CERTS_V1);
+        assertNotNull("Missing CA", oceCerts.ca);
+        sd.putKey(oceRef, PublicKeyValues.fromPublicKey(oceCerts.ca.getPublicKey()), 0);
+
+        byte[] ski = getSki(oceCerts.ca);
+        assertNotNull("CA certificate missing Subject Key Identifier", ski);
+        sd.storeCaIssuer(oceRef, ski);
+
+        KeyStore keyStore = KeyStore.getInstance("PKCS12");
+
+        try (InputStream is = new ByteArrayInputStream(OCE_V1)) {
+            keyStore.load(is, OCE_V1_PASSWORD);
+
+            final Enumeration<String> aliases = keyStore.aliases();
+            assertTrue(aliases.hasMoreElements());
+            String alias = keyStore.aliases().nextElement();
+            assertTrue(keyStore.isKeyEntry(alias));
+
+            Key sk = keyStore.getKey(keyStore.aliases().nextElement(), OCE_V1_PASSWORD);
+            assertTrue("No private key in pkcs12", sk instanceof PrivateKey);
+
+            ScpCertificates certs = ScpCertificates.from(getCertificateChain(keyStore, alias));
+
+            List<X509Certificate> certChain = new ArrayList<>(certs.bundle);
+            if (certs.leaf != null) {
+                certChain.add(certs.leaf);
+            }
+
+            return new Scp11KeyParams(
+                    sdRef,
+                    publicKeyValues.toPublicKey(),
+                    oceRef,
+                    (PrivateKey) sk,
+                    certChain
+            );
+        }
     }
 }

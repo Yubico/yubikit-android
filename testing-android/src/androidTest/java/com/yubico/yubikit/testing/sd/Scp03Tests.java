@@ -19,23 +19,34 @@ package com.yubico.yubikit.testing.sd;
 import com.yubico.yubikit.testing.SmokeTest;
 import com.yubico.yubikit.testing.framework.SecurityDomainInstrumentedTests;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 public class Scp03Tests extends SecurityDomainInstrumentedTests {
+
+    @Before
+    public void before() throws Throwable {
+        withState(Scp03DeviceTests::before);
+    }
     @Test
     public void testImportKey() throws Throwable {
-        withDevice(Scp03DeviceTests::testImportKey);
+        withState(Scp03DeviceTests::testImportKey);
     }
 
     @Test
     public void testDeleteKey() throws Throwable {
-        withDevice(Scp03DeviceTests::testDeleteKey);
+        withState(Scp03DeviceTests::testDeleteKey);
     }
 
     @Test
     @Category(SmokeTest.class)
     public void testReplaceKey() throws Throwable {
-        withDevice(Scp03DeviceTests::testReplaceKey);
+        withState(Scp03DeviceTests::testReplaceKey);
+    }
+
+    @Test
+    public void testWrongKey() throws Throwable {
+        withState(Scp03DeviceTests::testWrongKey);
     }
 }

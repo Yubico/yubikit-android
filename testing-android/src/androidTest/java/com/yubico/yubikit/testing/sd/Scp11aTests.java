@@ -18,12 +18,54 @@ package com.yubico.yubikit.testing.sd;
 
 import com.yubico.yubikit.testing.framework.SecurityDomainInstrumentedTests;
 
+import org.junit.Before;
 import org.junit.Test;
 
 public class Scp11aTests extends SecurityDomainInstrumentedTests {
+
+    @Before
+    public void before() throws Throwable {
+        withState(Scp11aDeviceTests::before);
+    }
+
     @Test
     public void testImportKey() throws Throwable {
-        withDevice(Scp11aDeviceTests::testImportKey);
-        withDevice(Scp11aDeviceTests::testImportKeyAlt);
+        withState(Scp11aDeviceTests::testImportKey);
+        withState(Scp11aDeviceTests::testImportKeyAlt);
+    }
+
+    @Test
+    public void testAuthenticate() throws Throwable {
+        withState(Scp11aDeviceTests::testAuthenticate);
+    }
+
+    @Test
+    public void testAllowlist() throws Throwable {
+        withState(Scp11aDeviceTests::testAllowList);
+    }
+
+    @Test
+    public void testAllowlistBlocked() throws Throwable {
+        withState(Scp11aDeviceTests::testAllowListBlocked);
+    }
+
+    @Test
+    public void testScp11cAuthenticate() throws Throwable {
+        withState(Scp11aDeviceTests::testScp11cAuthenticate);
+    }
+
+    @Test
+    public void testScp11bAuthenticate() throws Throwable {
+        withState(Scp11aDeviceTests::testScp11bAuthenticate);
+    }
+
+    @Test
+    public void testScp11bWrongPubKey() throws Throwable {
+        withState(Scp11aDeviceTests::testScp11bWrongPubKey);
+    }
+
+    @Test
+    public void testScp11bImport() throws Throwable {
+        withState(Scp11aDeviceTests::testScp11bImport);
     }
 }
