@@ -55,18 +55,18 @@ public class Scp03DeviceTests {
         assumeFalse("SCP03 not supported over NFC on FIPS capable devices",
                 state.getDeviceInfo().getFipsCapable() != 0 && !state.isUsbTransport());
 
-        state.withSecurityDomain(sd -> {
-            sd.authenticate(defaultRef);
-            sd.putKey(ref, staticKeys, 0);
+        state.withSecurityDomain(session -> {
+            session.authenticate(defaultRef);
+            session.putKey(ref, staticKeys, 0);
         });
 
-        state.withSecurityDomain(sd -> {
-            sd.authenticate(params);
+        state.withSecurityDomain(session -> {
+            session.authenticate(params);
         });
 
-        state.withSecurityDomain(sd -> {
+        state.withSecurityDomain(session -> {
             // cannot use default key to authenticate
-            assertThrows(ApduException.class, () -> sd.authenticate(defaultRef));
+            assertThrows(ApduException.class, () -> session.authenticate(defaultRef));
         });
 
     }
@@ -79,47 +79,47 @@ public class Scp03DeviceTests {
         final Scp03KeyParams ref1 = new Scp03KeyParams(keyRef1, staticKeys1);
         final ScpKeyParams ref2 = new Scp03KeyParams(keyRef2, staticKeys2);
 
-        state.withSecurityDomain(sd -> {
-            sd.authenticate(defaultRef);
-            sd.putKey(keyRef1, staticKeys1, 0);
+        state.withSecurityDomain(session -> {
+            session.authenticate(defaultRef);
+            session.putKey(keyRef1, staticKeys1, 0);
         });
 
         // authenticate with the new key and put the second
-        state.withSecurityDomain(sd -> {
-            sd.authenticate(ref1);
-            sd.putKey(keyRef2, staticKeys2, 0);
+        state.withSecurityDomain(session -> {
+            session.authenticate(ref1);
+            session.putKey(keyRef2, staticKeys2, 0);
         });
 
-        state.withSecurityDomain(sd -> {
-            sd.authenticate(ref1);
+        state.withSecurityDomain(session -> {
+            session.authenticate(ref1);
         });
 
-        state.withSecurityDomain(sd -> {
-            sd.authenticate(ref2);
+        state.withSecurityDomain(session -> {
+            session.authenticate(ref2);
         });
 
         // delete first key
-        state.withSecurityDomain(sd -> {
-            sd.authenticate(ref2);
-            sd.deleteKey(keyRef1, false);
+        state.withSecurityDomain(session -> {
+            session.authenticate(ref2);
+            session.deleteKey(keyRef1, false);
         });
 
-        state.withSecurityDomain(sd -> {
-            assertThrows(ApduException.class, () -> sd.authenticate(ref1));
+        state.withSecurityDomain(session -> {
+            assertThrows(ApduException.class, () -> session.authenticate(ref1));
         });
 
-        state.withSecurityDomain(sd -> {
-            sd.authenticate(ref2);
+        state.withSecurityDomain(session -> {
+            session.authenticate(ref2);
         });
 
         // delete the second key
-        state.withSecurityDomain(sd -> {
-            sd.authenticate(ref2);
-            sd.deleteKey(keyRef2, true); // the last key
+        state.withSecurityDomain(session -> {
+            session.authenticate(ref2);
+            session.deleteKey(keyRef2, true); // the last key
         });
 
-        state.withSecurityDomain(sd -> {
-            assertThrows(ApduException.class, () -> sd.authenticate(ref2));
+        state.withSecurityDomain(session -> {
+            assertThrows(ApduException.class, () -> session.authenticate(ref2));
         });
     }
 
@@ -133,23 +133,23 @@ public class Scp03DeviceTests {
         final ScpKeyParams ref1 = new Scp03KeyParams(keyRef1, staticKeys1);
         final ScpKeyParams ref2 = new Scp03KeyParams(keyRef2, staticKeys2);
 
-        state.withSecurityDomain(sd -> {
-            sd.authenticate(defaultRef);
-            sd.putKey(keyRef1, staticKeys1, 0);
+        state.withSecurityDomain(session -> {
+            session.authenticate(defaultRef);
+            session.putKey(keyRef1, staticKeys1, 0);
         });
 
         // authenticate with the new key and replace it with the second
-        state.withSecurityDomain(sd -> {
-            sd.authenticate(ref1);
-            sd.putKey(keyRef2, staticKeys2, keyRef1.getKvn());
+        state.withSecurityDomain(session -> {
+            session.authenticate(ref1);
+            session.putKey(keyRef2, staticKeys2, keyRef1.getKvn());
         });
 
-        state.withSecurityDomain(sd -> {
-            assertThrows(ApduException.class, () -> sd.authenticate(ref1));
+        state.withSecurityDomain(session -> {
+            assertThrows(ApduException.class, () -> session.authenticate(ref1));
         });
 
-        state.withSecurityDomain(sd -> {
-            sd.authenticate(ref2);
+        state.withSecurityDomain(session -> {
+            session.authenticate(ref2);
         });
     }
 
@@ -158,13 +158,13 @@ public class Scp03DeviceTests {
         final KeyRef ref = new KeyRef((byte) 0x01, (byte) 0x01);
         final ScpKeyParams params = new Scp03KeyParams(ref, staticKeys);
 
-        state.withSecurityDomain(sd -> {
-            assertThrows(ApduException.class, () -> sd.authenticate(params));
-            assertThrows(ApduException.class, () -> verifyAuth(sd));
+        state.withSecurityDomain(session -> {
+            assertThrows(ApduException.class, () -> session.authenticate(params));
+            assertThrows(ApduException.class, () -> verifyAuth(session));
         });
 
-        state.withSecurityDomain(sd -> {
-            sd.authenticate(defaultRef);
+        state.withSecurityDomain(session -> {
+            session.authenticate(defaultRef);
         });
     }
 

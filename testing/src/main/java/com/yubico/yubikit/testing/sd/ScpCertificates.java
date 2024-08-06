@@ -18,6 +18,7 @@ package com.yubico.yubikit.testing.sd;
 
 import static org.junit.Assert.fail;
 
+import java.math.BigInteger;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -42,6 +43,7 @@ public class ScpCertificates {
         }
 
         X509Certificate ca = null;
+        BigInteger seenSerial = null;
 
         // order certificates with the Root CA on top
         List<X509Certificate> ordered = new ArrayList<>();
@@ -70,7 +72,14 @@ public class ScpCertificates {
                 continue;
             }
 
-            fail("Cannot decide the order of " + cert + " in " + ordered);
+            if (seenSerial != null && cert.getSerialNumber().equals(seenSerial)) {
+                fail("Cannot decide the order of " + cert + " in " + ordered);
+            }
+
+            // this cert could not be ordered, try to process rest of certificates
+            // but if you see this cert again fail because the cert chain is not complete
+            certificates.add(cert);
+            seenSerial = cert.getSerialNumber();
         }
 
         // find ca and leaf
