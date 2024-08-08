@@ -16,7 +16,6 @@
 
 package com.yubico.yubikit.testing.mpe;
 
-import static com.yubico.yubikit.testing.MpeUtils.isMpe;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assume.assumeTrue;
 

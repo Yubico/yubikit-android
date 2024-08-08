@@ -27,8 +27,6 @@ import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.junit.Assert;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -59,16 +57,6 @@ import javax.crypto.KeyAgreement;
 
 @SuppressWarnings("SpellCheckingInspection")
 public class PivTestUtils {
-
-    private static final Logger logger = LoggerFactory.getLogger(PivTestUtils.class);
-
-    private static final char[] COMPLEX_PIN = "11234567".toCharArray();
-    private static final char[] COMPLEX_PUK = "11234567".toCharArray();
-    private static final byte[] COMPLEX_MANAGEMENT_KEY = new byte[]{
-            0x01, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
-            0x01, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
-            0x01, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
-    };
 
     private enum StaticKey {
         RSA1024(
@@ -443,14 +431,12 @@ public class PivTestUtils {
 
     public static void ecSignAndVerify(PrivateKey privateKey, PublicKey publicKey) throws Exception {
         for (String algorithm : EC_SIGNATURE_ALGORITHMS) {
-            logger.debug("Test {}", algorithm);
             verify(publicKey, Signature.getInstance(algorithm), sign(privateKey, Signature.getInstance(algorithm)));
         }
     }
 
     public static void ed25519SignAndVerify(PrivateKey privateKey, PublicKey publicKey) throws Exception {
         String algorithm = "ED25519";
-        logger.debug("Test {}", algorithm);
         verify(publicKey, Signature.getInstance(algorithm), sign(privateKey, Signature.getInstance(algorithm)));
     }
 

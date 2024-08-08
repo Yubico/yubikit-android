@@ -16,7 +16,6 @@
 
 package com.yubico.yubikit.testing.piv;
 
-import static com.yubico.yubikit.testing.MpeUtils.isMpe;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;

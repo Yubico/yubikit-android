@@ -25,7 +25,7 @@ public class Scp03KeyParams implements ScpKeyParams {
     final StaticKeys keys;
 
     /**
-     * @param keyRef the reference to the key set to authenticat with.
+     * @param keyRef the reference to the key set to authenticate with.
      * @param keys   the key material for authentication.
      */
     public Scp03KeyParams(KeyRef keyRef, StaticKeys keys) {

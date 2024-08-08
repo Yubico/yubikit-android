@@ -59,8 +59,6 @@ import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
-import javax.security.auth.DestroyFailedException;
-
 
 /**
  * Internal SCP state class for managing SCP state, handling encryption/decryption and MAC.
@@ -86,7 +84,7 @@ public class ScpState {
 
     public byte[] encrypt(byte[] data) {
         // Pad the data
-        logger.trace("Plaintext data: {}", StringUtils.bytesToHex(data));
+        Logger.trace(logger, "Plaintext data: {}", StringUtils.bytesToHex(data));
         int padLen = 16 - (data.length % 16);
         byte[] padded = Arrays.copyOf(data, data.length + padLen);
         padded[data.length] = (byte) 0x80;
@@ -115,9 +113,11 @@ public class ScpState {
         // Decrypt
         byte[] decrypted = null;
         try {
-            @SuppressWarnings("GetInstance") Cipher cipher = Cipher.getInstance("AES/ECB/NoPadding");
+            @SuppressWarnings("GetInstance")
+            Cipher cipher = Cipher.getInstance("AES/ECB/NoPadding");
             cipher.init(Cipher.ENCRYPT_MODE, keys.senc);
-            byte[] ivData = ByteBuffer.allocate(16).put((byte) 0x80).put(new byte[11]).putInt(encCounter - 1).array();
+            byte[] ivData = ByteBuffer.allocate(16).put((byte) 0x80).put(new byte[11])
+                    .putInt(encCounter - 1).array();
             byte[] iv = cipher.doFinal(ivData);
 
             cipher = Cipher.getInstance("AES/CBC/NoPadding");
@@ -125,7 +125,7 @@ public class ScpState {
             decrypted = cipher.doFinal(encrypted);
             for (int i = decrypted.length - 1; i > 0; i--) {
                 if (decrypted[i] == (byte) 0x80) {
-                    logger.trace("Plaintext resp: {}", StringUtils.bytesToHex(decrypted));
+                    Logger.trace(logger, "Plaintext resp: {}", StringUtils.bytesToHex(decrypted));
                     return Arrays.copyOf(decrypted, i);
                 } else if (decrypted[i] != 0x00) {
                     break;
@@ -157,7 +157,8 @@ public class ScpState {
     }
 
     public byte[] unmac(byte[] data, short sw) throws BadResponseException {
-        byte[] msg = ByteBuffer.allocate(data.length - 8 + 2).put(data, 0, data.length - 8).putShort(sw).array();
+        byte[] msg = ByteBuffer.allocate(data.length - 8 + 2).put(data, 0, data.length - 8)
+                .putShort(sw).array();
 
         try {
             Mac mac = Mac.getInstance("AESCMAC");
@@ -179,7 +180,8 @@ public class ScpState {
             hostChallenge = RandomUtils.getRandomBytes(8);
         }
 
-        ApduResponse resp = processor.sendApdu(new Apdu(0x80, SecurityDomainSession.INS_INITIALIZE_UPDATE, keyParams.getKeyRef().getKvn(), 0x00, hostChallenge));
+        ApduResponse resp = processor.sendApdu(new Apdu(0x80, SecurityDomainSession.INS_INITIALIZE_UPDATE, keyParams.getKeyRef()
+                .getKvn(), 0x00, hostChallenge));
         if (resp.getSw() != SW.OK) {
             throw new ApduException(resp.getSw());
         }
@@ -197,12 +199,14 @@ public class ScpState {
         byte[] context = ByteBuffer.allocate(16).put(hostChallenge).put(cardChallenge).array();
         SessionKeys sessionKeys = keyParams.keys.derive(context);
 
-        byte[] genCardCryptogram = StaticKeys.deriveKey(sessionKeys.smac, (byte) 0x00, context, (byte) 0x40).getEncoded();
+        byte[] genCardCryptogram = StaticKeys.deriveKey(sessionKeys.smac, (byte) 0x00, context, (byte) 0x40)
+                .getEncoded();
         if (!MessageDigest.isEqual(genCardCryptogram, cardCryptogram)) {
             throw new BadResponseException("Wrong SCP03 key set");
         }
 
-        byte[] hostCryptogram = StaticKeys.deriveKey(sessionKeys.smac, (byte) 0x01, context, (byte) 0x40).getEncoded();
+        byte[] hostCryptogram = StaticKeys.deriveKey(sessionKeys.smac, (byte) 0x01, context, (byte) 0x40)
+                .getEncoded();
         return new Pair<>(new ScpState(sessionKeys, new byte[16]), hostCryptogram);
     }
 
@@ -281,8 +285,10 @@ public class ScpState {
 
             // Static host key (SCP11a/c), or ephemeral key again (SCP11b)
             PrivateKey skOceEcka = keyParams.skOceEcka != null ? keyParams.skOceEcka : ephemeralOceEcka.getPrivate();
-            int ins = keyParams.getKeyRef().getKid() == ScpKid.SCP11b ? SecurityDomainSession.INS_INTERNAL_AUTHENTICATE : SecurityDomainSession.INS_EXTERNAL_AUTHENTICATE;
-            ApduResponse resp = processor.sendApdu(new Apdu(0x80, ins, keyParams.getKeyRef().getKvn(), keyParams.getKeyRef().getKid(), data));
+            int ins = keyParams.getKeyRef()
+                    .getKid() == ScpKid.SCP11b ? SecurityDomainSession.INS_INTERNAL_AUTHENTICATE : SecurityDomainSession.INS_EXTERNAL_AUTHENTICATE;
+            ApduResponse resp = processor.sendApdu(new Apdu(0x80, ins, keyParams.getKeyRef()
+                    .getKvn(), keyParams.getKeyRef().getKid(), data));
             if (resp.getSw() != SW.OK) {
                 throw new ApduException(resp.getSw());
             }
@@ -305,14 +311,16 @@ public class ScpState {
             KeyAgreement keyAgreement = KeyAgreement.getInstance("ECDH");
 
             keyAgreement.init(ephemeralOceEcka.getPrivate());
-            keyAgreement.doPhase(PublicKeyValues.Ec.fromEncodedPoint(epkOceEcka.getCurveParams(), epkSdEckaEncodedPoint).toPublicKey(), true);
+            keyAgreement.doPhase(PublicKeyValues.Ec.fromEncodedPoint(epkOceEcka.getCurveParams(), epkSdEckaEncodedPoint)
+                    .toPublicKey(), true);
             byte[] ka1 = keyAgreement.generateSecret();
 
             keyAgreement.init(skOceEcka);
             keyAgreement.doPhase(pk, true);
             byte[] ka2 = keyAgreement.generateSecret();
 
-            byte[] keyMaterial = ByteBuffer.allocate(ka1.length + ka2.length).put(ka1).put(ka2).array();
+            byte[] keyMaterial = ByteBuffer.allocate(ka1.length + ka2.length).put(ka1).put(ka2)
+                    .array();
 
             List<SecretKey> keys = new ArrayList<>();
             int counter = 1;

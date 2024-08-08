@@ -27,6 +27,7 @@ import com.yubico.yubikit.core.smartcard.scp.ScpKeyParams;
 import com.yubico.yubikit.management.Capability;
 import com.yubico.yubikit.management.DeviceInfo;
 import com.yubico.yubikit.management.ManagementSession;
+import com.yubico.yubikit.support.DeviceUtil;
 
 import java.io.IOException;
 
@@ -169,5 +170,11 @@ public class TestState {
         }
 
         return session;
+    }
+
+    protected boolean isMpe(DeviceInfo deviceInfo) {
+        final String name = DeviceUtil.getName(deviceInfo, null);
+        return name.equals("YubiKey Bio - Multi-protocol Edition") ||
+                name.equals("YubiKey C Bio - Multi-protocol Edition");
     }
 }

@@ -29,7 +29,6 @@ import com.yubico.yubikit.core.keys.PrivateKeyValues;
 import com.yubico.yubikit.core.keys.PublicKeyValues;
 import com.yubico.yubikit.core.smartcard.Apdu;
 import com.yubico.yubikit.core.smartcard.ApduException;
-import com.yubico.yubikit.core.smartcard.ApduFormat;
 import com.yubico.yubikit.core.smartcard.AppId;
 import com.yubico.yubikit.core.smartcard.SW;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
@@ -1458,7 +1457,7 @@ public class PivSession extends ApplicationSession<PivSession> {
         if (statusCode == SW.AUTH_METHOD_BLOCKED) {
             return 0;
         }
-        if (version.isAtLeast(1, 0, 0) && version.isLessThan(1, 0, 4)) {
+        if (version.isLessThan(1, 0, 4)) {
             if (statusCode >= 0x6300 && statusCode <= 0x63ff) {
                 return statusCode & 0xff;
             }

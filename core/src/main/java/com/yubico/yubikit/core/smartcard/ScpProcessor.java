@@ -23,8 +23,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
-import javax.security.auth.DestroyFailedException;
-
 public class ScpProcessor extends ChainedResponseProcessor {
     private final ScpState state;
 

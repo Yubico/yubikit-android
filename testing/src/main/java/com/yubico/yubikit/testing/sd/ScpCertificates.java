@@ -26,7 +26,7 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
-public class ScpCertificates {
+class ScpCertificates {
     @Nullable final X509Certificate ca;
     final List<X509Certificate> bundle;
     @Nullable final X509Certificate leaf;

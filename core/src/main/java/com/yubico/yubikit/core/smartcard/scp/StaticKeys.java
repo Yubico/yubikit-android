@@ -27,12 +27,14 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
 public class StaticKeys {
-    private static final byte[] DEFAULT_KEY = new byte[]{0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4a, 0x4b, 0x4c, 0x4d, 0x4e, 0x4f};
+    private static final byte[] DEFAULT_KEY = new byte[]{
+            0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47,
+            0x48, 0x49, 0x4a, 0x4b, 0x4c, 0x4d, 0x4e, 0x4f
+    };
 
     final SecretKey enc;
     final SecretKey mac;
-    @Nullable
-    final SecretKey dek;
+    @Nullable final SecretKey dek;
 
     public StaticKeys(byte[] enc, byte[] mac, @Nullable byte[] dek) {
         this.enc = new SecretKeySpec(enc, "AES");

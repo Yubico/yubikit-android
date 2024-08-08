@@ -16,9 +16,6 @@
 
 package com.yubico.yubikit.core.smartcard.scp;
 
-/**
- * Named
- */
 public final class ScpKid {
     public static final byte SCP03 = 0x1;
     public static final byte SCP11a = 0x11;

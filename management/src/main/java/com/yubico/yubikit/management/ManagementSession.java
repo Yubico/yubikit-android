@@ -168,7 +168,7 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
                 }
 
                 @Override
-                void deviceReset() throws IOException, CommandException {
+                void deviceReset() {
                     throw new UnsupportedOperationException("deviceReset not supported on YubiKey NEO");
                 }
             };
