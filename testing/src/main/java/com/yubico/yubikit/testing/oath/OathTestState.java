@@ -24,7 +24,12 @@ import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.management.Capability;
 import com.yubico.yubikit.oath.OathSession;
+import com.yubico.yubikit.testing.ScpParameters;
 import com.yubico.yubikit.testing.TestState;
+
+import java.io.IOException;
+
+import javax.annotation.Nullable;
 
 public class OathTestState extends TestState {
     public boolean isFipsApproved;
@@ -34,6 +39,11 @@ public class OathTestState extends TestState {
 
         public Builder(YubiKeyDevice device) {
             super(device);
+        }
+
+        @Override
+        public Builder getThis() {
+            return this;
         }
 
         public OathTestState build() throws Throwable {
@@ -77,5 +87,35 @@ public class OathTestState extends TestState {
         if (isOathFipsCapable) {
             assertTrue("Device not OATH FIPS approved as expected", isFipsApproved);
         }
+    }
+
+    public void withDeviceCallback(StatefulDeviceCallback<OathTestState> callback) throws Throwable {
+        callback.invoke(this);
+    }
+
+    public void withOath(StatefulSessionCallback<OathSession, OathTestState> callback)
+            throws Throwable {
+        try (SmartCardConnection connection = openSmartCardConnection()) {
+            callback.invoke(getOathSession(connection, scpParameters), this);
+        }
+        reconnect();
+    }
+
+    public void withOath(SessionCallback<OathSession> callback) throws Throwable {
+        try (SmartCardConnection connection = openSmartCardConnection()) {
+            callback.invoke(getOathSession(connection, scpParameters));
+        }
+        reconnect();
+    }
+
+    @Nullable
+    public static OathSession getOathSession(SmartCardConnection connection, ScpParameters scpParameters)
+            throws IOException {
+        try {
+            return new OathSession(connection, scpParameters.getKeyParams());
+        } catch (ApplicationNotAvailableException ignored) {
+            // no OATH support
+        }
+        return null;
     }
 }

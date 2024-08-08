@@ -20,13 +20,18 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assume.assumeTrue;
 
 import com.yubico.yubikit.core.YubiKeyDevice;
+import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
+import com.yubico.yubikit.core.smartcard.scp.ScpKeyParams;
 import com.yubico.yubikit.core.smartcard.scp.SecurityDomainSession;
 import com.yubico.yubikit.testing.TestState;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
+import java.io.IOException;
 import java.security.Security;
+
+import javax.annotation.Nullable;
 
 public class SecurityDomainTestState extends TestState {
 
@@ -34,6 +39,11 @@ public class SecurityDomainTestState extends TestState {
 
         public Builder(YubiKeyDevice device) {
             super(device);
+        }
+
+        @Override
+        public Builder getThis() {
+            return this;
         }
 
         public SecurityDomainTestState build() throws Throwable {
@@ -58,5 +68,63 @@ public class SecurityDomainTestState extends TestState {
     public static void setupJca() {
         Security.removeProvider("BC");
         Security.addProvider(new BouncyCastleProvider());
+    }
+
+    public void withDeviceCallback(StatefulDeviceCallback<SecurityDomainTestState> callback) throws Throwable {
+        callback.invoke(this);
+    }
+
+    public void withSecurityDomain(SessionCallback<SecurityDomainSession> callback) throws Throwable {
+        try (SmartCardConnection connection = openSmartCardConnection()) {
+            callback.invoke(getSecurityDomainSession(connection));
+        }
+        reconnect();
+    }
+
+    public <R> R withSecurityDomain(SessionCallbackT<SecurityDomainSession, R> callback) throws Throwable {
+        R result;
+        try (SmartCardConnection connection = openSmartCardConnection()) {
+            result = callback.invoke(getSecurityDomainSession(connection));
+        }
+        reconnect();
+        return result;
+    }
+
+    public void withSecurityDomain(ScpKeyParams scpKeyParams, SessionCallback<SecurityDomainSession> callback) throws Throwable {
+        try (SmartCardConnection connection = openSmartCardConnection()) {
+            callback.invoke(getSecurityDomainSession(scpKeyParams, connection));
+        }
+        reconnect();
+    }
+
+    public <R> R withSecurityDomain(ScpKeyParams scpKeyParams, SessionCallbackT<SecurityDomainSession, R> callback) throws Throwable {
+        R result;
+        try (SmartCardConnection connection = openSmartCardConnection()) {
+            result = callback.invoke(getSecurityDomainSession(scpKeyParams, connection));
+        }
+        reconnect();
+        return result;
+    }
+
+    @Nullable
+    protected SecurityDomainSession getSecurityDomainSession(SmartCardConnection connection)
+            throws IOException {
+        try {
+            return new SecurityDomainSession(connection, scpParameters.getKeyParams());
+        } catch (ApplicationNotAvailableException ignored) {
+            // no Security Domain support
+        }
+        return null;
+    }
+
+    @Nullable
+    public static SecurityDomainSession getSecurityDomainSession(ScpKeyParams scpKeyParams, SmartCardConnection connection)
+            throws IOException {
+        try {
+            return new SecurityDomainSession(connection, scpKeyParams);
+        } catch (ApplicationNotAvailableException ignored) {
+            // no Security Domain support
+        }
+        return null;
     }
 }

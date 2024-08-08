@@ -20,18 +20,28 @@ import static com.yubico.yubikit.testing.MpeUtils.isMpe;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assume.assumeTrue;
 
+import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
+import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.management.Capability;
 import com.yubico.yubikit.management.DeviceInfo;
 import com.yubico.yubikit.management.ManagementSession;
+import com.yubico.yubikit.piv.PivSession;
 import com.yubico.yubikit.testing.TestState;
+import com.yubico.yubikit.testing.fido.FidoTestState;
+import com.yubico.yubikit.testing.piv.PivTestState;
 
 public class MpeTestState extends TestState {
     public static class Builder extends TestState.Builder<MpeTestState.Builder> {
 
         public Builder(YubiKeyDevice device) {
             super(device);
+        }
+
+        @Override
+        public Builder getThis() {
+            return this;
         }
 
         public MpeTestState build() throws Throwable {
@@ -64,5 +74,25 @@ public class MpeTestState extends TestState {
     boolean isFidoResetBlocked() {
         final DeviceInfo deviceInfo = getDeviceInfo();
         return (deviceInfo.getResetBlocked() & Capability.FIDO2.bit) == Capability.FIDO2.bit;
+    }
+
+    public void withPiv(StatefulSessionCallback<PivSession, MpeTestState> callback)
+            throws Throwable {
+        try (SmartCardConnection connection = openSmartCardConnection()) {
+            final PivSession piv = PivTestState.getPivSession(connection, scpParameters);
+            assumeTrue("No PIV support", piv != null);
+            callback.invoke(piv, this);
+        }
+        reconnect();
+    }
+
+    public void withCtap2(TestState.StatefulSessionCallback<Ctap2Session, MpeTestState> callback)
+            throws Throwable {
+        try (YubiKeyConnection connection = openConnection()) {
+            final Ctap2Session ctap2 = FidoTestState.getCtap2Session(connection);
+            assumeTrue("No CTAP2 support", ctap2 != null);
+            callback.invoke(ctap2, this);
+        }
+        reconnect();
     }
 }

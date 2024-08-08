@@ -25,6 +25,8 @@ import static org.junit.Assume.assumeTrue;
 import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.application.CommandException;
+import com.yubico.yubikit.core.fido.FidoConnection;
+import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.fido.client.BasicWebAuthnClient;
 import com.yubico.yubikit.fido.client.ClientError;
 import com.yubico.yubikit.fido.client.CredentialManager;
@@ -61,6 +63,11 @@ public class FidoTestState extends TestState {
         public Builder(YubiKeyDevice device, PinUvAuthProtocol pinUvAuthProtocol) {
             super(device);
             this.pinUvAuthProtocol = pinUvAuthProtocol;
+        }
+
+        @Override
+        public Builder getThis() {
+            return this;
         }
 
         public Builder setPin(boolean setPin) {
@@ -201,5 +208,49 @@ public class FidoTestState extends TestState {
             fail("YubiKey cannot be used for test, failed to set/verify PIN. Please reset " +
                     "and try again.");
         }
+    }
+
+    public void withDeviceCallback(StatefulDeviceCallback<FidoTestState> callback) throws Throwable {
+        callback.invoke(this);
+    }
+
+    public void withCtap2(TestState.StatefulSessionCallback<Ctap2Session, FidoTestState> callback)
+            throws Throwable {
+        try (YubiKeyConnection connection = openConnection()) {
+            final Ctap2Session ctap2 = getCtap2Session(connection);
+            assumeTrue("No CTAP2 support", ctap2 != null);
+            callback.invoke(ctap2, this);
+        }
+        reconnect();
+    }
+
+    public <R> R withCtap2(SessionCallbackT<Ctap2Session, R> callback) throws Throwable {
+        R result;
+        try (YubiKeyConnection connection = openConnection()) {
+            final Ctap2Session ctap2 = getCtap2Session(connection);
+            assumeTrue("No CTAP2 support", ctap2 != null);
+            result = callback.invoke(ctap2);
+        }
+        reconnect();
+        return result;
+    }
+
+    public void withCtap2(SessionCallback<Ctap2Session> callback) throws Throwable {
+        try (YubiKeyConnection connection = openConnection()) {
+            final Ctap2Session ctap2 = getCtap2Session(connection);
+            assumeTrue("No CTAP2 support", ctap2 != null);
+            callback.invoke(ctap2);
+        }
+        reconnect();
+    }
+
+    @Nullable
+    public static Ctap2Session getCtap2Session(YubiKeyConnection connection)
+            throws IOException, CommandException {
+        return (connection instanceof FidoConnection)
+                ? new Ctap2Session((FidoConnection) connection)
+                : connection instanceof SmartCardConnection
+                ? new Ctap2Session((SmartCardConnection) connection)
+                : null;
     }
 }

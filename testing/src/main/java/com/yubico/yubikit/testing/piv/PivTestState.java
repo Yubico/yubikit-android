@@ -23,13 +23,20 @@ import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import com.yubico.yubikit.core.YubiKeyDevice;
+import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
+import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.management.Capability;
 import com.yubico.yubikit.management.DeviceInfo;
 import com.yubico.yubikit.piv.KeyType;
 import com.yubico.yubikit.piv.ManagementKeyType;
 import com.yubico.yubikit.piv.PivSession;
+import com.yubico.yubikit.testing.ScpParameters;
 import com.yubico.yubikit.testing.TestState;
+
+import java.io.IOException;
+
+import javax.annotation.Nullable;
 
 public class PivTestState extends TestState {
 
@@ -58,6 +65,11 @@ public class PivTestState extends TestState {
 
         public Builder(YubiKeyDevice device) {
             super(device);
+        }
+
+        @Override
+        public Builder getThis() {
+            return this;
         }
 
         public PivTestState build() throws Throwable {
@@ -130,5 +142,26 @@ public class PivTestState extends TestState {
 
     boolean isInvalidKeyType(KeyType keyType) {
         return isFipsApproved && (keyType == KeyType.RSA1024 || keyType == KeyType.X25519);
+    }
+
+    public void withPiv(StatefulSessionCallback<PivSession, PivTestState> callback)
+            throws Throwable {
+        try (SmartCardConnection connection = openSmartCardConnection()) {
+            final PivSession piv = getPivSession(connection, scpParameters);
+            assumeTrue("No PIV support", piv != null);
+            callback.invoke(piv, this);
+        }
+        reconnect();
+    }
+
+    @Nullable
+    public static PivSession getPivSession(SmartCardConnection connection, ScpParameters scpParameters)
+            throws IOException {
+        try {
+            return new PivSession(connection, scpParameters.getKeyParams());
+        } catch (ApplicationNotAvailableException | ApduException ignored) {
+            // no PIV support
+        }
+        return null;
     }
 }
