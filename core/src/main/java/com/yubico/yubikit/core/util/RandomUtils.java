@@ -22,6 +22,7 @@ import java.security.SecureRandom;
  * Utility class to generate random data.
  */
 public class RandomUtils {
+    private static final SecureRandom secureRandom = new SecureRandom();
     /**
      * Returns a byte array containing random values.
      */
@@ -32,7 +33,7 @@ public class RandomUtils {
             SecureRandom.getInstanceStrong().nextBytes(bytes);
         } catch (NoSuchMethodError | NoSuchAlgorithmException e) {
             // Fallback for older Android versions
-            new SecureRandom().nextBytes(bytes);
+            secureRandom.nextBytes(bytes);
         }
         return bytes;
     }

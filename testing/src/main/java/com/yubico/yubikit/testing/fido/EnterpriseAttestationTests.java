@@ -52,7 +52,7 @@ public class EnterpriseAttestationTests {
     static void enableEp(Ctap2Session session, FidoTestState state)
             throws CommandException, IOException {
         // enable ep if not enabled
-        if (session.getCachedInfo().getOptions().get("ep") == FALSE) {
+        if (FALSE.equals(session.getCachedInfo().getOptions().get("ep"))) {
 
             ClientPin clientPin = new ClientPin(session, state.getPinUvAuthProtocol());
             byte[] pinToken = clientPin.getPinToken(TestData.PIN, ClientPin.PIN_PERMISSION_ACFG, null);

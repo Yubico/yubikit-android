@@ -28,6 +28,8 @@ import java.security.SecureRandom;
 import java.security.spec.ECGenParameterSpec;
 
 public class KeyTypeTest {
+    private static final SecureRandom secureRandom = new SecureRandom();
+
     private static KeyPair secp256r1;
     private static KeyPair secp384r1;
     private static KeyPair secp521r1;
@@ -38,12 +40,13 @@ public class KeyTypeTest {
 
     @BeforeClass
     public static void setupKeys() throws NoSuchAlgorithmException, InvalidAlgorithmParameterException {
+
         KeyPairGenerator kpg = KeyPairGenerator.getInstance(KeyType.Algorithm.EC.name());
-        kpg.initialize(new ECGenParameterSpec("secp256r1"), new SecureRandom());
+        kpg.initialize(new ECGenParameterSpec("secp256r1"), secureRandom);
         secp256r1 = kpg.generateKeyPair();
-        kpg.initialize(new ECGenParameterSpec("secp384r1"), new SecureRandom());
+        kpg.initialize(new ECGenParameterSpec("secp384r1"), secureRandom);
         secp384r1 = kpg.generateKeyPair();
-        kpg.initialize(new ECGenParameterSpec("secp521r1"), new SecureRandom());
+        kpg.initialize(new ECGenParameterSpec("secp521r1"), secureRandom);
         secp521r1 = kpg.generateKeyPair();
 
         kpg = KeyPairGenerator.getInstance(KeyType.Algorithm.RSA.name());
