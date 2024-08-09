@@ -29,11 +29,11 @@ import com.yubico.yubikit.core.keys.PrivateKeyValues;
 import com.yubico.yubikit.core.keys.PublicKeyValues;
 import com.yubico.yubikit.core.smartcard.Apdu;
 import com.yubico.yubikit.core.smartcard.ApduException;
-import com.yubico.yubikit.core.smartcard.ApduFormat;
 import com.yubico.yubikit.core.smartcard.AppId;
 import com.yubico.yubikit.core.smartcard.SW;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.smartcard.SmartCardProtocol;
+import com.yubico.yubikit.core.smartcard.scp.ScpKeyParams;
 import com.yubico.yubikit.core.util.RandomUtils;
 import com.yubico.yubikit.core.util.StringUtils;
 import com.yubico.yubikit.core.util.Tlv;
@@ -220,15 +220,31 @@ public class PivSession extends ApplicationSession<PivSession> {
      * @throws ApplicationNotAvailableException if the application is missing or disabled
      */
     public PivSession(SmartCardConnection connection) throws IOException, ApduException, ApplicationNotAvailableException {
+        this(connection, null);
+    }
+
+    /**
+     * Create new instance of {@link PivSession}
+     * and selects the application for use
+     *
+     * @param connection connection with YubiKey
+     * @throws IOException                      in case of communication error
+     * @throws ApduException                    in case of an error response from the YubiKey
+     * @throws ApplicationNotAvailableException if the application is missing or disabled
+     */
+    public PivSession(SmartCardConnection connection, @Nullable ScpKeyParams scpKeyParams) throws IOException, ApduException, ApplicationNotAvailableException {
         protocol = new SmartCardProtocol(connection);
         protocol.select(AppId.PIV);
-        version = Version.fromBytes(protocol.sendAndReceive(new Apdu(0, INS_GET_VERSION, 0, 0, null)));
-        protocol.enableWorkarounds(version);
-
-        // use extended length APDUs on compatible connections and devices
-        if (connection.isExtendedLengthApduSupported() && version.isAtLeast(4, 0, 0)) {
-            protocol.setApduFormat(ApduFormat.EXTENDED);
+        if(scpKeyParams != null) {
+            try {
+                protocol.initScp(scpKeyParams);
+            } catch (BadResponseException e) {
+                throw new IllegalStateException(e);
+            }
         }
+
+        version = Version.fromBytes(protocol.sendAndReceive(new Apdu(0, INS_GET_VERSION, 0, 0, null)));
+        protocol.configure(version);
 
         try {
             managementKeyType = getManagementKeyMetadata().getKeyType();

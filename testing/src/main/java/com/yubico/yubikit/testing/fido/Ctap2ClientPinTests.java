@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Yubico.
+ * Copyright (C) 2020-2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,67 +16,33 @@
 
 package com.yubico.yubikit.testing.fido;
 
+import static com.yubico.yubikit.core.fido.CtapException.ERR_PIN_POLICY_VIOLATION;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
-import com.yubico.yubikit.core.application.CommandException;
 import com.yubico.yubikit.core.fido.CtapException;
+import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.fido.ctap.ClientPin;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
-import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV1;
+import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV2;
+import com.yubico.yubikit.management.DeviceInfo;
 
-import java.io.IOException;
 import java.util.Objects;
 
 public class Ctap2ClientPinTests {
-
-    static PinUvAuthProtocol getPinUvAuthProtocol(Object... args) {
-        assertThat("Missing required argument: PinUvAuthProtocol", args.length > 0);
-        return (PinUvAuthProtocol) args[0];
-    }
-
-    /**
-     * Attempts to set (or verify) the default PIN, or fails.
-     */
-    static void ensureDefaultPinSet(Ctap2Session session, PinUvAuthProtocol pinUvAuthProtocol)
-            throws IOException, CommandException {
-
-        Ctap2Session.InfoData info = session.getCachedInfo();
-
-        ClientPin pin = new ClientPin(session, pinUvAuthProtocol);
-        boolean pinSet = Objects.requireNonNull((Boolean) info.getOptions().get("clientPin"));
-
-        if (!pinSet) {
-            pin.setPin(TestData.PIN);
-        } else {
-            pin.getPinToken(
-                    TestData.PIN,
-                    ClientPin.PIN_PERMISSION_MC | ClientPin.PIN_PERMISSION_GA,
-                    "localhost");
-        }
-    }
-
-    public static void testSetPinProtocol(Ctap2Session session, Object... args) throws Throwable {
-
-        assertThat("Missing required argument: PinUvAuthProtocol", args.length > 0);
-
-        final PinUvAuthProtocol pinUvAuthProtocol = (PinUvAuthProtocol) args[0];
-
-        char[] otherPin = "123123".toCharArray();
-
+    public static void testClientPin(Ctap2Session session, FidoTestState state) throws Throwable {
         Integer permissions = ClientPin.PIN_PERMISSION_MC | ClientPin.PIN_PERMISSION_GA;
         String permissionRpId = "localhost";
 
-        ensureDefaultPinSet(session, pinUvAuthProtocol);
-
-        ClientPin pin = new ClientPin(session, new PinUvAuthProtocolV1());
-        assertThat(pin.getPinUvAuth().getVersion(), is(1));
+        ClientPin pin = new ClientPin(session, state.getPinUvAuthProtocol());
+        assertThat(pin.getPinUvAuth().getVersion(), is(state.getPinUvAuthProtocol().getVersion()));
         assertThat(pin.getPinRetries().getCount(), is(8));
 
-        pin.changePin(TestData.PIN, otherPin);
+        pin.changePin(TestData.PIN, TestData.OTHER_PIN);
         try {
             pin.getPinToken(TestData.PIN, permissions, permissionRpId);
             fail("Wrong PIN was accepted");
@@ -86,9 +52,54 @@ public class Ctap2ClientPinTests {
         }
         assertThat(pin.getPinRetries().getCount(), is(7));
 
-        assertThat(pin.getPinToken(otherPin, permissions, permissionRpId), notNullValue());
+        assertThat(pin.getPinToken(TestData.OTHER_PIN, permissions, permissionRpId), notNullValue());
         assertThat(pin.getPinRetries().getCount(), is(8));
-        pin.changePin(otherPin, TestData.PIN);
+        pin.changePin(TestData.OTHER_PIN, TestData.PIN);
     }
 
+    public static void testPinComplexity(FidoTestState state) throws Throwable {
+
+        final DeviceInfo deviceInfo = state.getDeviceInfo();
+        assumeTrue("Device does not support PIN complexity", deviceInfo != null);
+        assumeTrue("Device does not require PIN complexity", deviceInfo.getPinComplexity());
+
+        state.withCtap2(session -> {
+            PinUvAuthProtocol pinUvAuthProtocol = new PinUvAuthProtocolV2();
+            char[] defaultPin = "11234567".toCharArray();
+
+            Ctap2Session.InfoData info = session.getCachedInfo();
+            ClientPin pin = new ClientPin(session, pinUvAuthProtocol);
+            boolean pinSet = Objects.requireNonNull((Boolean) info.getOptions().get("clientPin"));
+
+            try {
+                if (!pinSet) {
+                    pin.setPin(defaultPin);
+                } else {
+                    pin.getPinToken(
+                            defaultPin,
+                            ClientPin.PIN_PERMISSION_MC | ClientPin.PIN_PERMISSION_GA,
+                            "localhost");
+                }
+            } catch (ApduException e) {
+                fail("Failed to set or use PIN. Reset the device and try again");
+            }
+
+            assertThat(pin.getPinUvAuth().getVersion(), is(pinUvAuthProtocol.getVersion()));
+            assertThat(pin.getPinRetries().getCount(), is(8));
+
+            char[] weakPin = "33333333".toCharArray();
+            try {
+                pin.changePin(defaultPin, weakPin);
+                fail("Weak PIN was accepted");
+            } catch (CtapException e) {
+                assertThat(e.getCtapError(), is(ERR_PIN_POLICY_VIOLATION));
+            }
+
+            char[] strongPin = "STRONG PIN".toCharArray();
+            pin.changePin(defaultPin, strongPin);
+            pin.changePin(strongPin, defaultPin);
+
+            assertThat(pin.getPinRetries().getCount(), is(8));
+        });
+    }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Yubico.
+ * Copyright (C) 2022,2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,18 +16,13 @@
 
 package com.yubico.yubikit.testing.framework;
 
-import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.openpgp.OpenPgpSession;
+import com.yubico.yubikit.testing.TestState;
+import com.yubico.yubikit.testing.openpgp.OpenPgpTestState;
 
 public class OpenPgpInstrumentedTests extends YKInstrumentedTests {
-
-    public interface Callback {
-        void invoke(OpenPgpSession value) throws Throwable;
-    }
-
-    protected void withOpenPgpSession(Callback callback) throws Throwable {
-        try(SmartCardConnection connection = device.openConnection(SmartCardConnection.class)) {
-            callback.invoke(new OpenPgpSession(connection));
-        }
+    protected void withOpenPgpSession(TestState.StatefulSessionCallback<OpenPgpSession, OpenPgpTestState> callback) throws Throwable {
+        final OpenPgpTestState state = new OpenPgpTestState.Builder(device).scpKid(getScpKid()).build();
+        state.withOpenPgp(callback);
     }
 }

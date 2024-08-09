@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Yubico.
+ * Copyright (C) 2023-2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,85 +16,49 @@
 
 package com.yubico.yubikit.testing.fido;
 
-import static com.yubico.yubikit.testing.fido.Ctap2ClientPinInstrumentedTests.supportsPinUvAuthProtocol;
-
-import androidx.test.filters.LargeTest;
-
-import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV1;
-import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV2;
+import com.yubico.yubikit.testing.PinUvAuthProtocolV1Test;
 import com.yubico.yubikit.testing.framework.FidoInstrumentedTests;
 
 import org.junit.Test;
-import org.junit.experimental.runners.Enclosed;
+import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.runners.Suite;
 
-import java.util.Arrays;
-import java.util.Collection;
-
-@RunWith(Enclosed.class)
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+        EnterpriseAttestationInstrumentedTests.PinUvAuthV2Test.class,
+        EnterpriseAttestationInstrumentedTests.PinUvAuthV1Test.class,
+})
 public class EnterpriseAttestationInstrumentedTests {
-    @LargeTest
-    @RunWith(Parameterized.class)
-    public static class EnterpriseAttestationParametrizedTests extends FidoInstrumentedTests {
-
-        @Parameterized.Parameter
-        public PinUvAuthProtocol pinUvAuthProtocol;
-
-        @Parameterized.Parameters
-        public static Collection<PinUvAuthProtocol> data() {
-            return Arrays.asList(
-                    new PinUvAuthProtocolV1(),
-                    new PinUvAuthProtocolV2());
-        }
-
-        static boolean isEnterpriseAttestationsSupported(Ctap2Session session) {
-            final Ctap2Session.InfoData info = session.getCachedInfo();
-            return info.getOptions().containsKey("ep");
-        }
-
-        static boolean isSupported(Ctap2Session session,
-                                   PinUvAuthProtocol pinUvAuthProtocol) {
-            return isEnterpriseAttestationsSupported(session) &&
-                    supportsPinUvAuthProtocol(session, pinUvAuthProtocol);
-        }
-
+    public static class PinUvAuthV2Test extends FidoInstrumentedTests {
         @Test
         public void testSupportedPlatformManagedEA() throws Throwable {
-            withCtap2Session(
-                    "Enterprise attestation is not supported/enabled",
-                    (device, session) -> isSupported(session, pinUvAuthProtocol),
-                    EnterpriseAttestationTests::testSupportedPlatformManagedEA,
-                    pinUvAuthProtocol);
+            withCtap2Session(EnterpriseAttestationTests::testSupportedPlatformManagedEA);
         }
 
         @Test
         public void testUnsupportedPlatformManagedEA() throws Throwable {
-            withCtap2Session(
-                    "Enterprise attestation is not supported/enabled",
-                    (device, session) -> isSupported(session, pinUvAuthProtocol),
-                    EnterpriseAttestationTests::testUnsupportedPlatformManagedEA,
-                    pinUvAuthProtocol);
+            withCtap2Session(EnterpriseAttestationTests::testUnsupportedPlatformManagedEA);
         }
 
         @Test
         public void testCreateOptionsAttestationPreference() throws Throwable {
-            withCtap2Session(
-                    "Enterprise attestation is not supported/enabled",
-                    (device, session) -> isSupported(session, pinUvAuthProtocol),
-                    EnterpriseAttestationTests::testCreateOptionsAttestationPreference,
-                    pinUvAuthProtocol);
+            withDevice(EnterpriseAttestationTests::testCreateOptionsAttestationPreference);
         }
 
         @Test
         public void testVendorFacilitatedEA() throws Throwable {
-            withCtap2Session(
-                    "Enterprise attestation is not supported/enabled",
-                    (device, session) -> isSupported(session, pinUvAuthProtocol),
-                    EnterpriseAttestationTests::testVendorFacilitatedEA,
-                    pinUvAuthProtocol);
+            withCtap2Session(EnterpriseAttestationTests::testVendorFacilitatedEA);
+        }
+    }
+
+    @Category(PinUvAuthProtocolV1Test.class)
+    public static class PinUvAuthV1Test extends PinUvAuthV2Test {
+        @Override
+        protected PinUvAuthProtocol getPinUvAuthProtocol() {
+            return new PinUvAuthProtocolV1();
         }
     }
 }

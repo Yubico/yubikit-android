@@ -27,8 +27,6 @@ import org.bouncycastle.operator.ContentSigner;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.junit.Assert;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -62,8 +60,6 @@ import javax.crypto.KeyAgreement;
 public class PivTestUtils {
 
     private static final SecureRandom secureRandom = new SecureRandom();
-
-    private static final Logger logger = LoggerFactory.getLogger(PivTestUtils.class);
 
     private enum StaticKey {
         RSA1024(
@@ -335,7 +331,8 @@ public class PivTestUtils {
                 new Date(),
                 new Date(),
                 name,
-                SubjectPublicKeyInfo.getInstance(ASN1Sequence.getInstance(keyPair.getPublic().getEncoded()))
+                SubjectPublicKeyInfo.getInstance(ASN1Sequence.getInstance(keyPair.getPublic()
+                        .getEncoded()))
         );
 
         String algorithm;
@@ -442,14 +439,12 @@ public class PivTestUtils {
 
     public static void ecSignAndVerify(PrivateKey privateKey, PublicKey publicKey) throws Exception {
         for (String algorithm : EC_SIGNATURE_ALGORITHMS) {
-            logger.debug("Sign and verify test for {}", algorithm);
             verify(publicKey, Signature.getInstance(algorithm), sign(privateKey, Signature.getInstance(algorithm)));
         }
     }
 
     public static void ed25519SignAndVerify(PrivateKey privateKey, PublicKey publicKey) throws Exception {
         String algorithm = "ED25519";
-        logger.debug("Sign and verify test for Ed25519");
         verify(publicKey, Signature.getInstance(algorithm), sign(privateKey, Signature.getInstance(algorithm)));
     }
 
@@ -472,6 +467,7 @@ public class PivTestUtils {
 
         Assert.assertArrayEquals("Secret mismatch", secret, peerSecret);
     }
+
     public static void x25519KeyAgreement(PrivateKey privateKey, PublicKey publicKey) throws Exception {
         KeyPairGenerator kpg = KeyPairGenerator.getInstance("X25519");
         kpg.initialize(255);

@@ -19,8 +19,6 @@ import static com.yubico.yubikit.piv.PivSession.FEATURE_CV25519;
 import static com.yubico.yubikit.piv.PivSession.FEATURE_RSA3072_RSA4096;
 import static com.yubico.yubikit.testing.piv.PivJcaUtils.setupJca;
 import static com.yubico.yubikit.testing.piv.PivJcaUtils.tearDownJca;
-import static com.yubico.yubikit.testing.piv.PivTestConstants.DEFAULT_MANAGEMENT_KEY;
-import static com.yubico.yubikit.testing.piv.PivTestConstants.DEFAULT_PIN;
 
 import com.yubico.yubikit.piv.KeyType;
 import com.yubico.yubikit.piv.PinPolicy;
@@ -48,14 +46,18 @@ import javax.security.auth.Destroyable;
 public class PivJcaDeviceTests {
 
     @SuppressWarnings("NewApi") // casting to Destroyable is supported from API 26
-    public static void testImportKeys(PivSession piv) throws Exception {
+    public static void testImportKeys(PivSession piv, PivTestState state) throws Exception {
         setupJca(piv);
-        piv.authenticate(DEFAULT_MANAGEMENT_KEY);
+        piv.authenticate(state.managementKey);
 
         KeyStore keyStore = KeyStore.getInstance("YKPiv");
         keyStore.load(null);
 
         for (KeyType keyType : Arrays.asList(KeyType.RSA1024, KeyType.RSA2048, KeyType.RSA3072, KeyType.RSA4096)) {
+
+            if (state.isInvalidKeyType(keyType)) {
+                continue;
+            }
 
             if (!piv.supports(FEATURE_RSA3072_RSA4096) && (keyType == KeyType.RSA3072 || keyType == KeyType.RSA4096)) {
                 continue;
@@ -66,7 +68,7 @@ public class PivJcaDeviceTests {
             KeyPair keyPair = PivTestUtils.loadKey(keyType);
             X509Certificate cert = PivTestUtils.createCertificate(keyPair);
             keyStore.setEntry(alias, new KeyStore.PrivateKeyEntry(keyPair.getPrivate(), new Certificate[]{cert}), new PivKeyStoreKeyParameters(PinPolicy.DEFAULT, TouchPolicy.DEFAULT));
-            PrivateKey privateKey = (PrivateKey) keyStore.getKey(alias, DEFAULT_PIN);
+            PrivateKey privateKey = (PrivateKey) keyStore.getKey(alias, state.pin);
 
             PivTestUtils.rsaEncryptAndDecrypt(privateKey, keyPair.getPublic());
             PivTestUtils.rsaSignAndVerify(privateKey, keyPair.getPublic());
@@ -82,7 +84,7 @@ public class PivJcaDeviceTests {
             X509Certificate cert = PivTestUtils.createCertificate(keyPair);
 
             keyStore.setEntry(alias, new KeyStore.PrivateKeyEntry(keyPair.getPrivate(), new Certificate[]{cert}), new PivKeyStoreKeyParameters(PinPolicy.DEFAULT, TouchPolicy.DEFAULT));
-            PrivateKey privateKey = (PrivateKey) keyStore.getKey(alias, DEFAULT_PIN);
+            PrivateKey privateKey = (PrivateKey) keyStore.getKey(alias, state.pin);
 
             PivTestUtils.ecKeyAgreement(privateKey, keyPair.getPublic());
             PivTestUtils.ecSignAndVerify(privateKey, keyPair.getPublic());
@@ -95,13 +97,18 @@ public class PivJcaDeviceTests {
 
         if (piv.supports(FEATURE_CV25519)) {
             for (KeyType keyType : Arrays.asList(KeyType.ED25519, KeyType.X25519)) {
+
+                if (state.isInvalidKeyType(keyType)) {
+                    continue;
+                }
+
                 String alias = Slot.SIGNATURE.getStringAlias();
 
                 KeyPair keyPair = PivTestUtils.loadKey(keyType);
                 X509Certificate cert = PivTestUtils.createCertificate(keyPair);
 
                 keyStore.setEntry(alias, new KeyStore.PrivateKeyEntry(keyPair.getPrivate(), new Certificate[]{cert}), new PivKeyStoreKeyParameters(PinPolicy.DEFAULT, TouchPolicy.DEFAULT));
-                PrivateKey privateKey = (PrivateKey) keyStore.getKey(alias, DEFAULT_PIN);
+                PrivateKey privateKey = (PrivateKey) keyStore.getKey(alias, state.pin);
 
                 if (keyType == KeyType.X25519) {
                     PivTestUtils.x25519KeyAgreement(privateKey, keyPair.getPublic());
@@ -121,13 +128,13 @@ public class PivJcaDeviceTests {
         tearDownJca();
     }
 
-    public static void testGenerateKeys(PivSession piv) throws Exception {
+    public static void testGenerateKeys(PivSession piv, PivTestState state) throws Exception {
         setupJca(piv);
-        generateKeys(piv);
+        generateKeys(piv, state);
         tearDownJca();
     }
 
-    public static void testGenerateKeysPreferBC(PivSession piv) throws Exception {
+    public static void testGenerateKeysPreferBC(PivSession piv, PivTestState state) throws Exception {
         // following is an alternate version of setupJca method
         // the Bouncy Castle provider is set on second position and will provide Ed25519 and X25519
         // cryptographic services on the host.
@@ -135,21 +142,25 @@ public class PivJcaDeviceTests {
         Security.insertProviderAt(new BouncyCastleProvider(), 1);
         Security.insertProviderAt(new PivProvider(piv), 1);
 
-        generateKeys(piv);
+        generateKeys(piv, state);
         tearDownJca();
     }
 
-    private static void generateKeys(PivSession piv) throws Exception {
-        piv.authenticate(DEFAULT_MANAGEMENT_KEY);
+    private static void generateKeys(PivSession piv, PivTestState state) throws Exception {
+        piv.authenticate(state.managementKey);
 
         KeyPairGenerator ecGen = KeyPairGenerator.getInstance("YKPivEC");
         for (KeyType keyType : Arrays.asList(KeyType.ECCP256, KeyType.ECCP384, KeyType.ED25519, KeyType.X25519)) {
+
+            if (state.isInvalidKeyType(keyType)) {
+                continue;
+            }
 
             if (!piv.supports(FEATURE_CV25519) && (keyType == KeyType.ED25519 || keyType == KeyType.X25519)) {
                 continue;
             }
 
-            ecGen.initialize(new PivAlgorithmParameterSpec(Slot.AUTHENTICATION, keyType, null, null, DEFAULT_PIN));
+            ecGen.initialize(new PivAlgorithmParameterSpec(Slot.AUTHENTICATION, keyType, null, null, state.pin));
             KeyPair keyPair = ecGen.generateKeyPair();
 
             if (keyType == KeyType.ED25519) {
@@ -172,11 +183,15 @@ public class PivJcaDeviceTests {
         KeyPairGenerator rsaGen = KeyPairGenerator.getInstance("YKPivRSA");
         for (KeyType keyType : Arrays.asList(KeyType.RSA1024, KeyType.RSA2048, KeyType.RSA3072, KeyType.RSA4096)) {
 
+            if (state.isInvalidKeyType(keyType)) {
+                continue;
+            }
+
             if (!piv.supports(FEATURE_RSA3072_RSA4096) && (keyType == KeyType.RSA3072 || keyType == KeyType.RSA4096)) {
                 continue;
             }
 
-            rsaGen.initialize(new PivAlgorithmParameterSpec(Slot.AUTHENTICATION, keyType, null, null, DEFAULT_PIN));
+            rsaGen.initialize(new PivAlgorithmParameterSpec(Slot.AUTHENTICATION, keyType, null, null, state.pin));
             KeyPair keyPair = rsaGen.generateKeyPair();
             PivTestUtils.rsaEncryptAndDecrypt(keyPair.getPrivate(), keyPair.getPublic());
             PivTestUtils.rsaSignAndVerify(keyPair.getPrivate(), keyPair.getPublic());

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Yubico.
+ * Copyright (C) 2020-2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,21 +16,21 @@
 
 package com.yubico.yubikit.testing.fido;
 
-import static com.yubico.yubikit.testing.fido.Ctap2ClientPinTests.ensureDefaultPinSet;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeFalse;
+import static org.junit.Assume.assumeTrue;
 
 import com.yubico.yubikit.core.application.CommandState;
 import com.yubico.yubikit.core.fido.CtapException;
 import com.yubico.yubikit.fido.ctap.ClientPin;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
-import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
-import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV1;
 import com.yubico.yubikit.fido.webauthn.SerializationType;
 
 import java.util.Collections;
@@ -41,7 +41,7 @@ import java.util.concurrent.TimeUnit;
 
 public class Ctap2SessionTests {
 
-    public static void testCtap2GetInfo(Ctap2Session session, Object... ignoredArgs) {
+    public static void testCtap2GetInfo(Ctap2Session session, FidoTestState state) {
         Ctap2Session.InfoData info = session.getCachedInfo();
 
         List<String> versions = info.getVersions();
@@ -65,42 +65,57 @@ public class Ctap2SessionTests {
         // Check PIN/UV Auth protocol
         List<Integer> pinUvAuthProtocols = info.getPinUvAuthProtocols();
         assertThat("Number of PIN protocols incorrect", pinUvAuthProtocols.size(), greaterThanOrEqualTo(1));
-        assertTrue("PIN protocol incorrect", pinUvAuthProtocols.contains(1));
+
+        if (state.isFipsApproved() && !state.isUsbTransport()) {
+            // FIPS only supports PIN/UV Auth protocol 2 over NFC
+            assertThat("Number of PIN protocols incorrect", pinUvAuthProtocols.size(), equalTo(1));
+            assertTrue("PIN protocol incorrect", pinUvAuthProtocols.contains(2));
+        } else {
+            // we expect at least protocol 1 to be present
+            assertThat("Number of PIN protocols incorrect", pinUvAuthProtocols.size(), greaterThanOrEqualTo(1));
+            assertTrue("PIN protocol incorrect", pinUvAuthProtocols.contains(1));
+        }
     }
 
-    public static void testCancelCborCommandImmediate(Ctap2Session session, Object... args) throws Throwable {
-        doTestCancelCborCommand(session, Ctap2ClientPinTests.getPinUvAuthProtocol(args), false);
+    public static void testCancelCborCommandImmediate(Ctap2Session session, FidoTestState state) throws Throwable {
+        doTestCancelCborCommand(session, state, false);
     }
 
-    public static void testCancelCborCommandAfterDelay(Ctap2Session session, Object... args) throws Throwable {
-
-        doTestCancelCborCommand(session, Ctap2ClientPinTests.getPinUvAuthProtocol(args), true);
+    public static void testCancelCborCommandAfterDelay(Ctap2Session session, FidoTestState state) throws Throwable {
+        doTestCancelCborCommand(session, state, true);
     }
 
-    public static void testReset(Ctap2Session session, Object... ignoredArgs) throws Throwable {
-        // assumeThat("Connected over NFC", device, instanceOf(NfcYubiKeyDevice.class));
-        session.reset(null);
+    public static void testReset(FidoTestState state) throws Throwable {
 
-        // Verify that the pin is no longer configured
-        Boolean clientPin = (Boolean) session.getInfo().getOptions().get("clientPin");
-        boolean pinConfigured = (clientPin != null) && clientPin;
-        assertFalse("PIN should not be configured after a reset", pinConfigured);
+        state.withCtap2(session -> {
+            assumeFalse("Skipping reset test - authenticator supports bio enrollment",
+                    session.getCachedInfo().getOptions().containsKey("bioEnroll"));
+
+            session.reset(null);
+
+            // Verify that the pin is no longer configured
+            Boolean clientPin = (Boolean) session.getInfo().getOptions().get("clientPin");
+            boolean pinConfigured = (clientPin != null) && clientPin;
+            assertFalse("PIN should not be configured after a reset", pinConfigured);
+        });
     }
 
     private static void doTestCancelCborCommand(
             Ctap2Session session,
-            PinUvAuthProtocol pinUvAuthProtocol,
+            FidoTestState testState,
             boolean delay
     ) throws Throwable {
-        ensureDefaultPinSet(session, pinUvAuthProtocol);
 
-        ClientPin pin = new ClientPin(session, new PinUvAuthProtocolV1());
+        assumeTrue("Not a USB connection", testState.isUsbTransport());
+
+        ClientPin pin = new ClientPin(session, testState.getPinUvAuthProtocol());
         byte[] pinToken = pin.getPinToken(TestData.PIN, ClientPin.PIN_PERMISSION_MC, TestData.RP.getId());
         byte[] pinAuth = pin.getPinUvAuth().authenticate(pinToken, TestData.CLIENT_DATA_HASH);
 
         CommandState state = new CommandState();
         if (delay) {
-            Executors.newSingleThreadScheduledExecutor().schedule(state::cancel, 500, TimeUnit.MILLISECONDS);
+            Executors.newSingleThreadScheduledExecutor()
+                    .schedule(state::cancel, 500, TimeUnit.MILLISECONDS);
         } else {
             state.cancel();
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Yubico.
+ * Copyright (C) 2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,14 @@
  * limitations under the License.
  */
 
-package com.yubico.yubikit.testing.piv;
+package com.yubico.yubikit.core.smartcard.scp;
 
-import org.bouncycastle.util.encoders.Hex;
-
-public class PivTestConstants {
-    static final byte[] DEFAULT_MANAGEMENT_KEY = Hex.decode("010203040506070801020304050607080102030405060708");
-    static final char[] DEFAULT_PIN = "123456".toCharArray();
-    static final char[] DEFAULT_PUK = "12345678".toCharArray();
+/**
+ * SCP key parameters for performing an SCP authentication with a YubiKey.
+ */
+public interface ScpKeyParams {
+    /**
+     * @return the identifier of the SCP key to target on the YubiKey.
+     */
+    KeyRef getKeyRef();
 }

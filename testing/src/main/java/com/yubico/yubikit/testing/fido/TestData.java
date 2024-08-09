@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Yubico.
+ * Copyright (C) 2020-2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,7 +42,8 @@ class TestData {
         }
     }
 
-    public static final char[] PIN = "123456".toCharArray();
+    public static final char[] PIN = "11234567".toCharArray();
+    public static final char[] OTHER_PIN = "11231234".toCharArray();
 
     public static final String RP_ID = "example.com";
     public static final String RP_NAME = "Example Company";

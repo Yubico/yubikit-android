@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Yubico.
+ * Copyright (C) 2023-2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,11 +30,11 @@ import com.yubico.yubikit.core.keys.PrivateKeyValues;
 import com.yubico.yubikit.core.keys.PublicKeyValues;
 import com.yubico.yubikit.core.smartcard.Apdu;
 import com.yubico.yubikit.core.smartcard.ApduException;
-import com.yubico.yubikit.core.smartcard.ApduFormat;
 import com.yubico.yubikit.core.smartcard.AppId;
 import com.yubico.yubikit.core.smartcard.SW;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.smartcard.SmartCardProtocol;
+import com.yubico.yubikit.core.smartcard.scp.ScpKeyParams;
 import com.yubico.yubikit.core.util.Tlv;
 import com.yubico.yubikit.core.util.Tlvs;
 
@@ -159,6 +159,20 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
      */
     public OpenPgpSession(SmartCardConnection connection) throws
             IOException, ApplicationNotAvailableException, ApduException {
+        this(connection, null);
+    }
+
+    /**
+     * Create new instance of {@link OpenPgpSession} and selects the application for use.
+     *
+     * @param connection a smart card connection to a YubiKey
+     * @param scpKeyParams SCP key parameters to establish a secure connection
+     * @throws IOException                      in case of communication error
+     * @throws ApduException                    in case of an error response from the YubiKey
+     * @throws ApplicationNotAvailableException if the application is missing or disabled
+     */
+    public OpenPgpSession(SmartCardConnection connection, @Nullable ScpKeyParams scpKeyParams) throws
+            IOException, ApplicationNotAvailableException, ApduException {
         protocol = new SmartCardProtocol(connection);
 
         try {
@@ -168,6 +182,14 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
             activate(e);
         }
 
+        if (scpKeyParams != null) {
+            try {
+                protocol.initScp(scpKeyParams);
+            } catch (BadResponseException e) {
+                throw new IOException("Failed setting up SCP session", e);
+            }
+        }
+
         Logger.debug(logger, "Getting version number");
         byte[] versionBcd = protocol.sendAndReceive(new Apdu(0, INS_GET_VERSION, 0, 0, null));
         byte[] versionBytes = new byte[3];
@@ -175,12 +197,7 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
             versionBytes[i] = decodeBcd(versionBcd[i]);
         }
         version = Version.fromBytes(versionBytes);
-        protocol.enableWorkarounds(version);
-
-        // use extended length APDUs on compatible connections and devices
-        if (connection.isExtendedLengthApduSupported() && version.isAtLeast(4, 0, 0)) {
-            protocol.setApduFormat(ApduFormat.EXTENDED);
-        }
+        protocol.configure(version);
 
         // Note: This value is cached!
         // Do not rely on contained information that can change!
@@ -806,7 +823,8 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
         if (!supported.containsKey(keyRef)) {
             throw new UnsupportedOperationException("Key slot not supported");
         }
-        if (!supported.get(keyRef).contains(attributes)) {
+        List<AlgorithmAttributes> supportedAttributes = supported.get(keyRef);
+        if (!supportedAttributes.contains(attributes)) {
             throw new UnsupportedOperationException("Algorithm attributes not supported: " + attributes);
         }
 

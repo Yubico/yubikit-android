@@ -14,17 +14,25 @@
  * limitations under the License.
  */
 
-package com.yubico.yubikit.testing.framework;
+package com.yubico.yubikit.core.smartcard.scp;
 
-import com.yubico.yubikit.core.YubiKeyDevice;
+import javax.annotation.Nullable;
+import javax.crypto.SecretKey;
 
-public class DeviceInstrumentedTests extends YKInstrumentedTests {
+/**
+ * Session keys for SCP. DEK only needs to be provided if you need to call {@link SecurityDomainSession#putKey}.
+ */
+public class SessionKeys {
+    final SecretKey senc;
+    final SecretKey smac;
+    final SecretKey srmac;
+    @Nullable
+    final SecretKey dek;
 
-    public interface Callback {
-        void invoke(YubiKeyDevice value) throws Throwable;
-    }
-
-    protected void withDevice(Callback callback) throws Throwable {
-        callback.invoke(device);
+    public SessionKeys(SecretKey senc, SecretKey smac, SecretKey srmac, @Nullable SecretKey dek) {
+        this.senc = senc;
+        this.smac = smac;
+        this.srmac = srmac;
+        this.dek = dek;
     }
 }

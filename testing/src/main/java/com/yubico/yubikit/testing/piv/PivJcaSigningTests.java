@@ -20,8 +20,6 @@ import static com.yubico.yubikit.piv.PivSession.FEATURE_RSA3072_RSA4096;
 import static com.yubico.yubikit.piv.PivSession.FEATURE_CV25519;
 import static com.yubico.yubikit.testing.piv.PivJcaUtils.setupJca;
 import static com.yubico.yubikit.testing.piv.PivJcaUtils.tearDownJca;
-import static com.yubico.yubikit.testing.piv.PivTestConstants.DEFAULT_MANAGEMENT_KEY;
-import static com.yubico.yubikit.testing.piv.PivTestConstants.DEFAULT_PIN;
 
 import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.smartcard.ApduException;
@@ -60,19 +58,23 @@ public class PivJcaSigningTests {
 
     private static Set<String> signatureAlgorithmsWithPss = new HashSet<>();
 
-    public static void testSign(PivSession piv) throws NoSuchAlgorithmException, IOException, ApduException, InvalidKeyException, BadResponseException, InvalidAlgorithmParameterException, SignatureException {
+    public static void testSign(PivSession piv, PivTestState state) throws NoSuchAlgorithmException, IOException, ApduException, InvalidKeyException, BadResponseException, InvalidAlgorithmParameterException, SignatureException {
         setupJca(piv);
         for (KeyType keyType : KeyType.values()) {
             if (((keyType == KeyType.RSA3072 || keyType == KeyType.RSA4096) && !piv.supports(FEATURE_RSA3072_RSA4096))) {
                 continue; // Run only on compatible keys
             }
-            testSign(piv, keyType);
+            testSign(piv, state, keyType);
         }
         tearDownJca();
     }
 
-    public static void testSign(PivSession piv, KeyType keyType) throws NoSuchAlgorithmException, IOException, ApduException, InvalidKeyException, BadResponseException, InvalidAlgorithmParameterException, SignatureException {
+    public static void testSign(PivSession piv, PivTestState state, KeyType keyType) throws NoSuchAlgorithmException, IOException, ApduException, InvalidKeyException, BadResponseException, InvalidAlgorithmParameterException, SignatureException {
         if (!piv.supports(FEATURE_CV25519) && (keyType == KeyType.ED25519 || keyType == KeyType.X25519)) {
+            return;
+        }
+
+        if (state.isInvalidKeyType(keyType)) {
             return;
         }
 
@@ -80,11 +82,11 @@ public class PivJcaSigningTests {
             logger.debug("Ignoring keyType: {}", keyType);
             return;
         }
-        piv.authenticate(DEFAULT_MANAGEMENT_KEY);
+        piv.authenticate(state.managementKey);
         logger.debug("Generate key: {}", keyType);
 
         KeyPairGenerator kpg = KeyPairGenerator.getInstance("YKPiv" + keyType.params.algorithm.name());
-        kpg.initialize(new PivAlgorithmParameterSpec(Slot.SIGNATURE, keyType, PinPolicy.DEFAULT, TouchPolicy.DEFAULT, DEFAULT_PIN));
+        kpg.initialize(new PivAlgorithmParameterSpec(Slot.SIGNATURE, keyType, PinPolicy.DEFAULT, TouchPolicy.DEFAULT, state.pin));
         KeyPair keyPair = kpg.generateKeyPair();
 
         signatureAlgorithmsWithPss = getAllSignatureAlgorithmsWithPSS();

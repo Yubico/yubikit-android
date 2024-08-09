@@ -16,40 +16,36 @@
 
 package com.yubico.yubikit.testing.fido;
 
-import androidx.test.filters.LargeTest;
-
 import com.yubico.yubikit.fido.client.PinRequiredClientError;
-import com.yubico.yubikit.fido.ctap.Ctap2Session;
+import com.yubico.yubikit.testing.AlwaysManualTest;
 import com.yubico.yubikit.testing.framework.FidoInstrumentedTests;
 
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
-@LargeTest
 public class UvDiscouragedInstrumentedTests extends FidoInstrumentedTests {
-
-    static boolean hasPin(Ctap2Session session) {
-        final Ctap2Session.InfoData info = session.getCachedInfo();
-        return Boolean.TRUE.equals(info.getOptions().get("clientPin"));
-    }
-
+    /**
+     * Reset the FIDO application before running this test.
+     * <p>
+     * The test will make credential/get assertion without using the PIN which is acceptable for
+     * {@code UserVerificationRequirement.DISCOURAGED}.
+     * <p>
+     * Skipped on FIPS approved devices.
+     */
     @Test
+    @Category(AlwaysManualTest.class)
     public void testMakeCredentialGetAssertion() throws Throwable {
-        withCtap2Session(
-                "This device has a PIN set",
-                (device, session) -> !hasPin(session),
-                BasicWebAuthnClientTests::testUvDiscouragedMakeCredentialGetAssertion);
+        withDevice(false, BasicWebAuthnClientTests::testUvDiscouragedMcGa_noPin);
     }
-
 
     /**
-     * Run this test only on devices with PIN set
+     * This test will make credential without passing PIN value on a device which is protected by
+     * PIN.
+     * <p>
      * Expected to fail with PinRequiredClientError
      */
     @Test(expected = PinRequiredClientError.class)
-    public void testMakeCredentialGetAssertionOnProtected() throws Throwable {
-        withCtap2Session(
-                "This device has no PIN set",
-                (device, session) -> hasPin(session),
-                BasicWebAuthnClientTests::testUvDiscouragedMakeCredentialGetAssertion);
+    public void testMakeCredentialGetAssertionWithPin() throws Throwable {
+        withDevice(BasicWebAuthnClientTests::testUvDiscouragedMcGa_withPin);
     }
 }

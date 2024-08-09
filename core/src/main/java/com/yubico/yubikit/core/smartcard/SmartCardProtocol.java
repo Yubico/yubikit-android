@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2022 Yubico.
+ * Copyright (C) 2019-2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,11 +19,18 @@ package com.yubico.yubikit.core.smartcard;
 import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.Version;
 import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
+import com.yubico.yubikit.core.application.BadResponseException;
+import com.yubico.yubikit.core.smartcard.scp.DataEncryptor;
+import com.yubico.yubikit.core.smartcard.scp.Scp03KeyParams;
+import com.yubico.yubikit.core.smartcard.scp.Scp11KeyParams;
+import com.yubico.yubikit.core.smartcard.scp.ScpKeyParams;
+import com.yubico.yubikit.core.smartcard.scp.ScpState;
+import com.yubico.yubikit.core.util.Pair;
 
-import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.IOException;
-import java.nio.ByteBuffer;
+
+import javax.annotation.Nullable;
 
 /**
  * Support class for communication over a SmartCardConnection.
@@ -36,18 +43,16 @@ public class SmartCardProtocol implements Closeable {
     private static final byte P2_SELECT = (byte) 0x00;
 
     private static final byte INS_SEND_REMAINING = (byte) 0xc0;
-    private static final byte SW1_HAS_MORE_DATA = 0x61;
-
-    private static final int SHORT_APDU_MAX_CHUNK = 0xff;
 
     private final byte insSendRemaining;
 
     private final SmartCardConnection connection;
 
-    private ApduFormat apduFormat = ApduFormat.SHORT;
+    private boolean extendedApdus = false;
 
-    private boolean useTouchWorkaround = false;
-    private long lastLongResponse = 0;
+    private int maxApduSize = MaxApduSize.NEO;
+
+    private ApduProcessor processor;
 
     /**
      * Create new instance of {@link SmartCardProtocol}
@@ -62,23 +67,54 @@ public class SmartCardProtocol implements Closeable {
     public SmartCardProtocol(SmartCardConnection connection, byte insSendRemaining) {
         this.connection = connection;
         this.insSendRemaining = insSendRemaining;
+        processor = new ChainedResponseProcessor(connection, false, maxApduSize, insSendRemaining);
+    }
+
+    private void resetProcessor(@Nullable ApduProcessor processor) throws IOException {
+        this.processor.close();
+        if (processor != null) {
+            this.processor = processor;
+        } else {
+            this.processor = new ChainedResponseProcessor(connection, extendedApdus, maxApduSize, insSendRemaining);
+        }
     }
 
     @Override
     public void close() throws IOException {
+        processor.close();
         connection.close();
+    }
+
+    /**
+     * Enable all relevant settings and workarounds given the firmware version of the YubiKey.
+     *
+     * @param firmwareVersion the firmware version to use to configure relevant settings
+     */
+    public void configure(Version firmwareVersion) throws IOException {
+        if (connection.getTransport() == Transport.USB
+                && firmwareVersion.isAtLeast(4, 2, 0)
+                && firmwareVersion.isLessThan(4, 2, 7)) {
+            //noinspection deprecation
+            setEnableTouchWorkaround(true);
+        } else if (firmwareVersion.isAtLeast(4, 0, 0) && !(processor instanceof ScpProcessor)) {
+            extendedApdus = connection.isExtendedLengthApduSupported();
+            maxApduSize = firmwareVersion.isAtLeast(4, 3, 0) ? MaxApduSize.YK4_3 : MaxApduSize.YK4;
+            resetProcessor(null);
+        }
     }
 
     /**
      * Enable all relevant workarounds given the firmware version of the YubiKey.
      *
      * @param firmwareVersion the firmware version to use for detection to enable the workarounds
+     * @deprecated use {@link #configure(Version)} instead.
      */
+    @Deprecated
     public void enableWorkarounds(Version firmwareVersion) {
-        if (connection.getTransport() == Transport.USB
-                && firmwareVersion.isAtLeast(4, 2, 0)
-                && firmwareVersion.isLessThan(4, 2, 7)) {
-            setEnableTouchWorkaround(true);
+        try {
+            configure(firmwareVersion);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -87,18 +123,48 @@ public class SmartCardProtocol implements Closeable {
      * on such devices to trigger sending a dummy command which mitigates the issue.
      *
      * @param enableTouchWorkaround true to enable the workaround, false to disable it
+     * @deprecated use {@link #configure(Version)} instead.
      */
+    @Deprecated
     public void setEnableTouchWorkaround(boolean enableTouchWorkaround) {
-        this.useTouchWorkaround = enableTouchWorkaround;
+        try {
+            if (enableTouchWorkaround) {
+                extendedApdus = true;
+                maxApduSize = MaxApduSize.YK4;
+                resetProcessor(new TouchWorkaroundProcessor(connection, insSendRemaining));
+            } else {
+                resetProcessor(null);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
      * YubiKey NEO doesn't support extended APDU's for most applications.
      *
      * @param apduFormat the APDU encoding to use when sending commands
+     * @deprecated use {@link #configure(Version)} instead.
      */
+    @Deprecated
     public void setApduFormat(ApduFormat apduFormat) {
-        this.apduFormat = apduFormat;
+        switch (apduFormat) {
+            case SHORT:
+                if (extendedApdus) {
+                    throw new UnsupportedOperationException("Cannot change from EXTENDED to SHORT APDU format");
+                }
+                break;
+            case EXTENDED:
+                if (!extendedApdus) {
+                    extendedApdus = true;
+                    try {
+                        resetProcessor(null);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+                break;
+        }
     }
 
     /**
@@ -117,6 +183,7 @@ public class SmartCardProtocol implements Closeable {
      * @throws ApplicationNotAvailableException in case the AID doesn't match an available application
      */
     public byte[] select(byte[] aid) throws IOException, ApplicationNotAvailableException {
+        resetProcessor(null);
         try {
             return sendAndReceive(new Apdu(0, INS_SELECT, P1_SELECT, P2_SELECT, aid));
         } catch (ApduException e) {
@@ -138,90 +205,58 @@ public class SmartCardProtocol implements Closeable {
      * @throws ApduException in case if received error in APDU response
      */
     public byte[] sendAndReceive(Apdu command) throws IOException, ApduException {
-        if (useTouchWorkaround && lastLongResponse > 0 && System.currentTimeMillis() - lastLongResponse < 2000) {
-            connection.sendAndReceive(new byte[5]);  // Dummy APDU; returns an error
-            lastLongResponse = 0;
+        try {
+            ApduResponse response = processor.sendApdu(command);
+            if (response.getSw() != SW.OK) {
+                throw new ApduException(response.getSw());
+            }
+            return response.getData();
+        } catch (BadResponseException e) {
+            throw new IOException(e);
         }
-        ApduResponse response;
-        byte[] getData;
-        byte[] data = command.getData();
-        switch (apduFormat) {
-            case SHORT:
-                int offset = 0;
-                while (data.length - offset > SHORT_APDU_MAX_CHUNK) {
-                    response = new ApduResponse(connection.sendAndReceive(encodeShortApdu((byte) (command.getCla() | 0x10), command.getIns(), command.getP1(), command.getP2(), data, offset, SHORT_APDU_MAX_CHUNK, command.getLe())));
-                    if (response.getSw() != SW.OK) {
-                        throw new ApduException(response.getSw());
-                    }
-                    offset += SHORT_APDU_MAX_CHUNK;
-                }
-                response = new ApduResponse(connection.sendAndReceive(encodeShortApdu(command.getCla(), command.getIns(), command.getP1(), command.getP2(), data, offset, data.length - offset, command.getLe())));
-                getData = new byte[]{0x00, insSendRemaining, 0x00, 0x00, 0x00};
-                break;
-            case EXTENDED:
-                response = new ApduResponse(connection.sendAndReceive(encodeExtendedApdu(command.getCla(), command.getIns(), command.getP1(), command.getP2(), data, command.getLe())));
-                getData = new byte[]{0x00, insSendRemaining, 0x00, 0x00, 0x00, 0x00, 0x00};
-                break;
-            default:
-                throw new IllegalStateException("Invalid APDU format");
-        }
-
-        // Read full response
-        ByteArrayOutputStream readBuffer = new ByteArrayOutputStream();
-        while (response.getSw() >> 8 == SW1_HAS_MORE_DATA) {
-            readBuffer.write(response.getData());
-            response = new ApduResponse(connection.sendAndReceive(getData));
-        }
-
-        if (response.getSw() != SW.OK) {
-            throw new ApduException(response.getSw());
-        }
-        readBuffer.write(response.getData());
-        byte[] responseData = readBuffer.toByteArray();
-
-        if (useTouchWorkaround && responseData.length > 54) {
-            lastLongResponse = System.currentTimeMillis();
-        } else {
-            lastLongResponse = 0;
-        }
-        return responseData;
     }
 
-    private static byte[] encodeShortApdu(byte cla, byte ins, byte p1, byte p2, byte[] data, int offset, int length, int le) {
-        if (length > SHORT_APDU_MAX_CHUNK) {
-            throw new IllegalArgumentException("Length must be no greater than " + SHORT_APDU_MAX_CHUNK);
+    public @Nullable DataEncryptor initScp(ScpKeyParams keyParams) throws IOException, ApduException, BadResponseException {
+        try {
+            ScpState state;
+            if (keyParams instanceof Scp03KeyParams) {
+                state = initScp03((Scp03KeyParams) keyParams);
+            } else if (keyParams instanceof Scp11KeyParams) {
+                state = initScp11((Scp11KeyParams) keyParams);
+            } else {
+                throw new IllegalArgumentException("Unsupported ScpKeyParams");
+            }
+            if (!connection.isExtendedLengthApduSupported()) {
+                throw new IllegalStateException("SCP requires extended APDU support");
+            }
+            extendedApdus = true;
+            maxApduSize = MaxApduSize.YK4_3;
+            return state.getDataEncryptor();
+        } catch (ApduException e) {
+            if (e.getSw() == SW.CLASS_NOT_SUPPORTED) {
+                throw new UnsupportedOperationException("This YubiKey does not support secure messaging");
+            }
+            throw e;
         }
-        if (le < 0 || le > SHORT_APDU_MAX_CHUNK) {
-            throw new IllegalArgumentException("Le must be between 0 and " + SHORT_APDU_MAX_CHUNK);
-        }
-
-        ByteBuffer buf = ByteBuffer.allocate(4 + (length > 0 ? 1 : 0) + length + (le > 0 ? 1 : 0))
-                .put(cla)
-                .put(ins)
-                .put(p1)
-                .put(p2);
-        if (length > 0) {
-            buf.put((byte) length).put(data, offset, length);
-        }
-        if (le > 0) {
-            buf.put((byte) le);
-        }
-        return buf.array();
     }
 
-    private static byte[] encodeExtendedApdu(byte cla, byte ins, byte p1, byte p2, byte[] data, int le) {
-        ByteBuffer buf = ByteBuffer.allocate(5 + (data.length > 0 ? 2 : 0) + data.length + (le > 0 ? 2 : 0))
-                .put(cla)
-                .put(ins)
-                .put(p1)
-                .put(p2)
-                .put((byte) 0x00);
-        if (data.length > 0) {
-            buf.putShort((short) data.length).put(data);
+    private ScpState initScp03(Scp03KeyParams keyParams) throws IOException, ApduException, BadResponseException {
+        Pair<ScpState, byte[]> pair = ScpState.scp03Init(processor, keyParams, null);
+        ScpProcessor processor = new ScpProcessor(connection, pair.first, MaxApduSize.YK4_3, insSendRemaining);
+
+        // Send EXTERNAL AUTHENTICATE
+        // P1 = C-DECRYPTION, R-ENCRYPTION, C-MAC, and R-MAC
+        ApduResponse resp = processor.sendApdu(new Apdu(0x84, 0x82, 0x33, 0, pair.second), false);
+        if (resp.getSw() != SW.OK) {
+            throw new ApduException(resp.getSw());
         }
-        if (le > 0) {
-            buf.putShort((short) le);
-        }
-        return buf.array();
+        resetProcessor(processor);
+        return pair.first;
+    }
+
+    private ScpState initScp11(Scp11KeyParams keyParams) throws IOException, ApduException, BadResponseException {
+        ScpState scp = ScpState.scp11Init(processor, keyParams);
+        resetProcessor(new ScpProcessor(connection, scp, MaxApduSize.YK4_3, insSendRemaining));
+        return scp;
     }
 }

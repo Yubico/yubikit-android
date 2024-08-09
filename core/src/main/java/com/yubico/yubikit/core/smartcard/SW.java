@@ -34,6 +34,7 @@ public final class SW {
     public static final short REFERENCED_DATA_NOT_FOUND = 0x6A88;
     public static final short WRONG_PARAMETERS_P1P2 = 0x6B00;
     public static final short INVALID_INSTRUCTION = 0x6D00;
+    public static final short CLASS_NOT_SUPPORTED = 0x6E00;
     public static final short COMMAND_ABORTED = 0x6F00;
     public static final short OK = (short) 0x9000;
 

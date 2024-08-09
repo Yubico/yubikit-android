@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Yubico.
+ * Copyright (C) 2023-2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,39 +16,45 @@
 
 package com.yubico.yubikit.testing.fido;
 
-import com.yubico.yubikit.fido.ctap.Ctap2Session;
+import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
+import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV1;
+import com.yubico.yubikit.testing.AlwaysManualTest;
+import com.yubico.yubikit.testing.PinUvAuthProtocolV1Test;
 import com.yubico.yubikit.testing.framework.FidoInstrumentedTests;
 
 import org.junit.Test;
-
-import java.util.Map;
+import org.junit.experimental.categories.Category;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 /**
  * Tests FIDO Reset.
  * <p>
- * Notes:
+ * This is a manual test which will reset the FIDO application.
  * <ul>
- *     <li>The tests for different protocols are meant to be ran separately.</li>
- *     <li>Before running any of the tests, disconnect the security Key from the device</li>
- *     <li>Bio devices are currently ignored.</li>
+ *     <li>Before running the test, disconnect the YubiKey from the Android device.</li>
+ *     <li>YubiKey Bio devices are currently ignored.</li>
  * </ul>
  */
-public class Ctap2SessionResetInstrumentedTests extends FidoInstrumentedTests {
-
-    /**
-     * @noinspection BooleanMethodIsAlwaysInverted
-     */
-    private static boolean supportsBioEnroll(Ctap2Session session) {
-        final Map<String, ?> options = session.getCachedInfo().getOptions();
-        return options.containsKey("bioEnroll");
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+        Ctap2SessionResetInstrumentedTests.PinUvAuthV2Test.class,
+        Ctap2SessionResetInstrumentedTests.PinUvAuthV1Test.class,
+})
+public class Ctap2SessionResetInstrumentedTests {
+    public static class PinUvAuthV2Test extends FidoInstrumentedTests {
+        @Test
+        @Category(AlwaysManualTest.class)
+        public void testReset() throws Throwable {
+            withDevice(false, Ctap2SessionTests::testReset);
+        }
     }
 
-    @Test
-    public void testReset() throws Throwable {
-        withCtap2Session(
-                "Skipping reset test - authenticator supports bio enrollment",
-                (device, session) -> !supportsBioEnroll(session),
-                Ctap2SessionTests::testReset
-        );
+    @Category(PinUvAuthProtocolV1Test.class)
+    public static class PinUvAuthV1Test extends PinUvAuthV2Test {
+        @Override
+        protected PinUvAuthProtocol getPinUvAuthProtocol() {
+            return new PinUvAuthProtocolV1();
+        }
     }
 }

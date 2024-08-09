@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Yubico.
+ * Copyright (C) 2022-2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,20 +16,13 @@
 
 package com.yubico.yubikit.testing.framework;
 
-import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.piv.PivSession;
-
+import com.yubico.yubikit.testing.TestState;
+import com.yubico.yubikit.testing.piv.PivTestState;
 
 public class PivInstrumentedTests extends YKInstrumentedTests {
-
-    public interface Callback {
-        void invoke(PivSession value) throws Throwable;
-    }
-
-    protected void withPivSession(Callback callback) throws Throwable {
-        try (SmartCardConnection c = device.openConnection(SmartCardConnection.class)) {
-            PivSession pivSession = new PivSession(c);
-            callback.invoke(pivSession);
-        }
+    protected void withPivSession(TestState.StatefulSessionCallback<PivSession, PivTestState> callback) throws Throwable {
+        final PivTestState state = new PivTestState.Builder(device).scpKid(getScpKid()).build();
+        state.withPiv(callback);
     }
 }

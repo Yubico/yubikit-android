@@ -37,7 +37,7 @@ public class PivBioMultiProtocolDeviceTests {
      * To run the test, create a PIN and enroll at least one fingerprint. The test will ask twice
      * for fingerprint authentication.
      */
-    public static void testAuthenticate(PivSession piv) throws IOException, ApduException, InvalidPinException {
+    public static void testAuthenticate(PivSession piv, PivTestState ignored) throws IOException, ApduException, InvalidPinException {
         try {
             BioMetadata bioMetadata = piv.getBioMetadata();
 

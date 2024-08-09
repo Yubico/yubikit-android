@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Yubico.
+ * Copyright (C) 2022-2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@ import android.view.WindowManager;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.yubico.yubikit.android.YubiKitManager;
@@ -39,6 +38,8 @@ import org.slf4j.LoggerFactory;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Semaphore;
+
+import javax.annotation.Nullable;
 
 public class TestActivity extends AppCompatActivity {
 
@@ -79,8 +80,22 @@ public class TestActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        startNfcDiscovery();
+    }
+
+    @Override
+    protected void onPause() {
+        stopNfcDiscovery();
+        super.onPause();
+    }
+
+    private void stopNfcDiscovery() {
+        yubiKitManager.stopNfcDiscovery(this);
+    }
+
+    private void startNfcDiscovery() {
         try {
-            yubiKitManager.startNfcDiscovery(new NfcConfiguration().timeout(15000), this, sessionQueue::add);
+            yubiKitManager.startNfcDiscovery(new NfcConfiguration().timeout(1000 * 60 * 5), this, sessionQueue::add);
         } catch (NfcNotAvailable e) {
             if (e.isDisabled()) {
                 logger.error("NFC is disabled", e);
@@ -88,12 +103,6 @@ public class TestActivity extends AppCompatActivity {
                 logger.error("NFC is not supported", e);
             }
         }
-    }
-
-    @Override
-    protected void onPause() {
-        yubiKitManager.stopNfcDiscovery(this);
-        super.onPause();
     }
 
     private void setBusy(boolean busy) {
@@ -139,7 +148,9 @@ public class TestActivity extends AppCompatActivity {
             setBusy(false);
         });
         if (device instanceof NfcYubiKeyDevice) {
-            ((NfcYubiKeyDevice) device).remove(lock::release);
+            lock.release();
+            stopNfcDiscovery();
+            startNfcDiscovery();
             lock.acquire();
         }
     }
