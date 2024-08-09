@@ -64,6 +64,8 @@ public class Scp11DeviceTests {
     private static final ScpKeyParams defaultKeyParams =
             new Scp03KeyParams(new KeyRef((byte) 0x01, (byte) 0xff), StaticKeys.getDefaultKeys());
 
+    private static final byte OCE_KID = 0x010;
+
     public static void before(SecurityDomainTestState state) throws Throwable {
         assumeTrue("Device does not support SCP11a",
                 state.getDeviceInfo().getVersion().isAtLeast(5, 7, 2));
@@ -86,18 +88,31 @@ public class Scp11DeviceTests {
 
     public static void testScp11aAllowList(SecurityDomainTestState state) throws Throwable {
         final byte kvn = 0x05;
+        final KeyRef oceKeyRef = new KeyRef(OCE_KID, kvn);
 
         ScpKeyParams keyParams = state.withSecurityDomain(defaultKeyParams, session -> {
-            Scp11KeyParams params = loadKeys(session, ScpKid.SCP11a, kvn);
-            assertNotNull(params.getOceKeyRef());
+            return loadKeys(session, ScpKid.SCP11a, kvn);
+        });
 
-            List<BigInteger> serials = new ArrayList<>();
-            for (X509Certificate cert : params.getCertificates()) {
-                serials.add(cert.getSerialNumber());
+        state.withSecurityDomain(keyParams, session -> {
+            KeyStore keyStore = KeyStore.getInstance("PKCS12");
+            try (InputStream is = new ByteArrayInputStream(OCE)) {
+                keyStore.load(is, OCE_PASSWORD);
+
+                ScpCertificates certs = getCertificates(keyStore);
+
+                List<X509Certificate> certChain = new ArrayList<>(certs.bundle);
+                if (certs.leaf != null) {
+                    certChain.add(certs.leaf);
+                }
+
+                List<BigInteger> serials = new ArrayList<>();
+                for (X509Certificate cert : certChain) {
+                    serials.add(cert.getSerialNumber());
+                }
+
+                session.storeAllowlist(oceKeyRef, serials);
             }
-
-            session.storeAllowlist(params.getOceKeyRef(), serials);
-            return params;
         });
 
         state.withSecurityDomain(keyParams, session -> {
@@ -107,6 +122,7 @@ public class Scp11DeviceTests {
 
     public static void testScp11aAllowListBlocked(SecurityDomainTestState state) throws Throwable {
         final byte kvn = 0x03;
+        final KeyRef oceKeyRef = new KeyRef(OCE_KID, kvn);
 
         ScpKeyParams scp03KeyParams = importScp03Key(state);
 
@@ -115,13 +131,12 @@ public class Scp11DeviceTests {
             session.deleteKey(new KeyRef(ScpKid.SCP11b, (byte) 1), false);
 
             Scp11KeyParams scp11KeyParams = loadKeys(session, ScpKid.SCP11a, kvn);
-            assertNotNull(scp11KeyParams.getOceKeyRef());
 
             final List<BigInteger> serials = Arrays.asList(
                     BigInteger.valueOf(1), BigInteger.valueOf(2), BigInteger.valueOf(3),
                     BigInteger.valueOf(4), BigInteger.valueOf(5));
 
-            session.storeAllowlist(scp11KeyParams.getOceKeyRef(), serials);
+            session.storeAllowlist(oceKeyRef, serials);
 
             return scp11KeyParams;
         });
@@ -133,8 +148,7 @@ public class Scp11DeviceTests {
 
         // reset the allow list
         state.withSecurityDomain(scp03KeyParams, session -> {
-            assertNotNull(keyParams.getOceKeyRef());
-            session.storeAllowlist(keyParams.getOceKeyRef(), new ArrayList<>());
+            session.storeAllowlist(oceKeyRef, new ArrayList<>());
         });
 
         // authenticate with scp11a will not throw
@@ -270,7 +284,7 @@ public class Scp11DeviceTests {
     private static Scp11KeyParams loadKeys(SecurityDomainSession session, byte kid, byte kvn)
             throws Throwable {
         KeyRef sessionRef = new KeyRef(kid, kvn);
-        KeyRef oceRef = new KeyRef((byte) 0x10, kvn);
+        KeyRef oceRef = new KeyRef(OCE_KID, kvn);
 
         PublicKeyValues publicKeyValues = session.generateEcKey(sessionRef, 0);
 
@@ -287,15 +301,8 @@ public class Scp11DeviceTests {
         try (InputStream is = new ByteArrayInputStream(OCE)) {
             keyStore.load(is, OCE_PASSWORD);
 
-            final Enumeration<String> aliases = keyStore.aliases();
-            assertTrue(aliases.hasMoreElements());
-            String alias = keyStore.aliases().nextElement();
-            assertTrue(keyStore.isKeyEntry(alias));
-
-            Key sk = keyStore.getKey(keyStore.aliases().nextElement(), OCE_PASSWORD);
-            assertTrue("No private key in pkcs12", sk instanceof PrivateKey);
-
-            ScpCertificates certs = ScpCertificates.from(getCertificateChain(keyStore, alias));
+            PrivateKey sk = getPrivateKey(keyStore);
+            ScpCertificates certs = getCertificates(keyStore);
 
             List<X509Certificate> certChain = new ArrayList<>(certs.bundle);
             if (certs.leaf != null) {
@@ -306,9 +313,33 @@ public class Scp11DeviceTests {
                     sessionRef,
                     publicKeyValues.toPublicKey(),
                     oceRef,
-                    (PrivateKey) sk,
+                    sk,
                     certChain
             );
         }
+    }
+
+    static PrivateKey getPrivateKey(KeyStore keyStore) throws Throwable {
+        final Enumeration<String> aliases = keyStore.aliases();
+        assertTrue(aliases.hasMoreElements());
+        String alias = keyStore.aliases().nextElement();
+        assertTrue(keyStore.isKeyEntry(alias));
+
+        Key sk = keyStore.getKey(keyStore.aliases().nextElement(), OCE_PASSWORD);
+        assertTrue("No private key in pkcs12", sk instanceof PrivateKey);
+
+        return (PrivateKey) sk;
+    }
+
+    static ScpCertificates getCertificates(KeyStore keyStore) throws Throwable {
+        final Enumeration<String> aliases = keyStore.aliases();
+        assertTrue(aliases.hasMoreElements());
+        String alias = keyStore.aliases().nextElement();
+        assertTrue(keyStore.isKeyEntry(alias));
+
+        Key sk = keyStore.getKey(keyStore.aliases().nextElement(), OCE_PASSWORD);
+        assertTrue("No private key in pkcs12", sk instanceof PrivateKey);
+
+        return ScpCertificates.from(getCertificateChain(keyStore, alias));
     }
 }
