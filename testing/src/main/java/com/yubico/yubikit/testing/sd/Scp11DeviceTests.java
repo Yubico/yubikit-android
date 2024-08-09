@@ -95,24 +95,12 @@ public class Scp11DeviceTests {
         });
 
         state.withSecurityDomain(keyParams, session -> {
-            KeyStore keyStore = KeyStore.getInstance("PKCS12");
-            try (InputStream is = new ByteArrayInputStream(OCE)) {
-                keyStore.load(is, OCE_PASSWORD);
-
-                ScpCertificates certs = getCertificates(keyStore);
-
-                List<X509Certificate> certChain = new ArrayList<>(certs.bundle);
-                if (certs.leaf != null) {
-                    certChain.add(certs.leaf);
-                }
-
-                List<BigInteger> serials = new ArrayList<>();
-                for (X509Certificate cert : certChain) {
-                    serials.add(cert.getSerialNumber());
-                }
-
-                session.storeAllowlist(oceKeyRef, serials);
-            }
+            final List<BigInteger> serials = Arrays.asList(
+                    // serial numbers from OCE
+                    new BigInteger("7f4971b0ad51f84c9da9928b2d5fef5e16b2920a", 16),
+                    new BigInteger("6b90028800909f9ffcd641346933242748fbe9ad", 16)
+            );
+            session.storeAllowlist(oceKeyRef, serials);
         });
 
         state.withSecurityDomain(keyParams, session -> {
