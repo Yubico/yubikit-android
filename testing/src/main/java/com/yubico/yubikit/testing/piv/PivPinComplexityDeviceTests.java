@@ -76,6 +76,6 @@ public class PivPinComplexityDeviceTests {
         piv.verifyPin(complexPin);
 
         // the value of default PIN in the state is correct for pin complexity settings
-        piv.changePin(complexPin, state.defaultPin);
+        piv.changePin(complexPin, state.pin);
     }
 }

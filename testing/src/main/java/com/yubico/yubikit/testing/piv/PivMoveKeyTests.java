@@ -59,7 +59,7 @@ public class PivMoveKeyTests {
         Slot srcSlot = Slot.RETIRED1;
         Slot dstSlot = Slot.RETIRED2;
 
-        piv.authenticate(state.defaultManagementKey);
+        piv.authenticate(state.managementKey);
 
         for (KeyType keyType : Arrays.asList(KeyType.ECCP256, KeyType.ECCP384, KeyType.RSA1024, KeyType.RSA2048, KeyType.ED25519, KeyType.X25519)) {
 
@@ -87,7 +87,7 @@ public class PivMoveKeyTests {
                 keyStore.load(null);
 
                 PublicKey publicKey = keyPair.getPublic();
-                PrivateKey privateKey = (PrivateKey) keyStore.getKey(dstSlot.getStringAlias(), state.defaultPin);
+                PrivateKey privateKey = (PrivateKey) keyStore.getKey(dstSlot.getStringAlias(), state.pin);
                 KeyPair signingKeyPair = new KeyPair(publicKey, privateKey);
 
                 if (keyType != KeyType.X25519) {

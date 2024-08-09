@@ -48,7 +48,7 @@ public class PivJcaDeviceTests {
     @SuppressWarnings("NewApi") // casting to Destroyable is supported from API 26
     public static void testImportKeys(PivSession piv, PivTestState state) throws Exception {
         setupJca(piv);
-        piv.authenticate(state.defaultManagementKey);
+        piv.authenticate(state.managementKey);
 
         KeyStore keyStore = KeyStore.getInstance("YKPiv");
         keyStore.load(null);
@@ -68,7 +68,7 @@ public class PivJcaDeviceTests {
             KeyPair keyPair = PivTestUtils.loadKey(keyType);
             X509Certificate cert = PivTestUtils.createCertificate(keyPair);
             keyStore.setEntry(alias, new KeyStore.PrivateKeyEntry(keyPair.getPrivate(), new Certificate[]{cert}), new PivKeyStoreKeyParameters(PinPolicy.DEFAULT, TouchPolicy.DEFAULT));
-            PrivateKey privateKey = (PrivateKey) keyStore.getKey(alias, state.defaultPin);
+            PrivateKey privateKey = (PrivateKey) keyStore.getKey(alias, state.pin);
 
             PivTestUtils.rsaEncryptAndDecrypt(privateKey, keyPair.getPublic());
             PivTestUtils.rsaSignAndVerify(privateKey, keyPair.getPublic());
@@ -84,7 +84,7 @@ public class PivJcaDeviceTests {
             X509Certificate cert = PivTestUtils.createCertificate(keyPair);
 
             keyStore.setEntry(alias, new KeyStore.PrivateKeyEntry(keyPair.getPrivate(), new Certificate[]{cert}), new PivKeyStoreKeyParameters(PinPolicy.DEFAULT, TouchPolicy.DEFAULT));
-            PrivateKey privateKey = (PrivateKey) keyStore.getKey(alias, state.defaultPin);
+            PrivateKey privateKey = (PrivateKey) keyStore.getKey(alias, state.pin);
 
             PivTestUtils.ecKeyAgreement(privateKey, keyPair.getPublic());
             PivTestUtils.ecSignAndVerify(privateKey, keyPair.getPublic());
@@ -108,7 +108,7 @@ public class PivJcaDeviceTests {
                 X509Certificate cert = PivTestUtils.createCertificate(keyPair);
 
                 keyStore.setEntry(alias, new KeyStore.PrivateKeyEntry(keyPair.getPrivate(), new Certificate[]{cert}), new PivKeyStoreKeyParameters(PinPolicy.DEFAULT, TouchPolicy.DEFAULT));
-                PrivateKey privateKey = (PrivateKey) keyStore.getKey(alias, state.defaultPin);
+                PrivateKey privateKey = (PrivateKey) keyStore.getKey(alias, state.pin);
 
                 if (keyType == KeyType.X25519) {
                     PivTestUtils.x25519KeyAgreement(privateKey, keyPair.getPublic());
@@ -147,7 +147,7 @@ public class PivJcaDeviceTests {
     }
 
     private static void generateKeys(PivSession piv, PivTestState state) throws Exception {
-        piv.authenticate(state.defaultManagementKey);
+        piv.authenticate(state.managementKey);
 
         KeyPairGenerator ecGen = KeyPairGenerator.getInstance("YKPivEC");
         for (KeyType keyType : Arrays.asList(KeyType.ECCP256, KeyType.ECCP384, KeyType.ED25519, KeyType.X25519)) {
@@ -160,7 +160,7 @@ public class PivJcaDeviceTests {
                 continue;
             }
 
-            ecGen.initialize(new PivAlgorithmParameterSpec(Slot.AUTHENTICATION, keyType, null, null, state.defaultPin));
+            ecGen.initialize(new PivAlgorithmParameterSpec(Slot.AUTHENTICATION, keyType, null, null, state.pin));
             KeyPair keyPair = ecGen.generateKeyPair();
 
             if (keyType == KeyType.ED25519) {
@@ -191,7 +191,7 @@ public class PivJcaDeviceTests {
                 continue;
             }
 
-            rsaGen.initialize(new PivAlgorithmParameterSpec(Slot.AUTHENTICATION, keyType, null, null, state.defaultPin));
+            rsaGen.initialize(new PivAlgorithmParameterSpec(Slot.AUTHENTICATION, keyType, null, null, state.pin));
             KeyPair keyPair = rsaGen.generateKeyPair();
             PivTestUtils.rsaEncryptAndDecrypt(keyPair.getPrivate(), keyPair.getPublic());
             PivTestUtils.rsaSignAndVerify(keyPair.getPrivate(), keyPair.getPublic());

@@ -46,7 +46,7 @@ public class PivCertificateTests {
     }
 
     private static void putCertificate(PivSession piv, PivTestState state, boolean compressed) throws IOException, ApduException, CertificateException, BadResponseException {
-        piv.authenticate(state.defaultManagementKey);
+        piv.authenticate(state.managementKey);
 
         for (KeyType keyType : Arrays.asList(KeyType.ECCP256, KeyType.ECCP384, KeyType.RSA1024, KeyType.RSA2048, KeyType.RSA3072, KeyType.RSA4096)) {
 

@@ -75,10 +75,10 @@ public class PivJcaDecryptTests {
             return;
         }
 
-        piv.authenticate(state.defaultManagementKey);
+        piv.authenticate(state.managementKey);
         logger.debug("Generate key: {}", keyType);
         KeyPairGenerator kpg = KeyPairGenerator.getInstance("YKPivRSA");
-        kpg.initialize(new PivAlgorithmParameterSpec(Slot.KEY_MANAGEMENT, keyType, PinPolicy.DEFAULT, TouchPolicy.DEFAULT, state.defaultPin));
+        kpg.initialize(new PivAlgorithmParameterSpec(Slot.KEY_MANAGEMENT, keyType, PinPolicy.DEFAULT, TouchPolicy.DEFAULT, state.pin));
         KeyPair pair = kpg.generateKeyPair();
 
         testDecrypt(pair, Cipher.getInstance("RSA/ECB/PKCS1Padding"));

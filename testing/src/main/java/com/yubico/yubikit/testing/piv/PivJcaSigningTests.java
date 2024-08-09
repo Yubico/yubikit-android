@@ -82,11 +82,11 @@ public class PivJcaSigningTests {
             logger.debug("Ignoring keyType: {}", keyType);
             return;
         }
-        piv.authenticate(state.defaultManagementKey);
+        piv.authenticate(state.managementKey);
         logger.debug("Generate key: {}", keyType);
 
         KeyPairGenerator kpg = KeyPairGenerator.getInstance("YKPiv" + keyType.params.algorithm.name());
-        kpg.initialize(new PivAlgorithmParameterSpec(Slot.SIGNATURE, keyType, PinPolicy.DEFAULT, TouchPolicy.DEFAULT, state.defaultPin));
+        kpg.initialize(new PivAlgorithmParameterSpec(Slot.SIGNATURE, keyType, PinPolicy.DEFAULT, TouchPolicy.DEFAULT, state.pin));
         KeyPair keyPair = kpg.generateKeyPair();
 
         signatureAlgorithmsWithPss = getAllSignatureAlgorithmsWithPSS();

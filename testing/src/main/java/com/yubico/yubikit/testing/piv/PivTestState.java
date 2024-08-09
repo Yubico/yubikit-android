@@ -56,9 +56,9 @@ public class PivTestState extends TestState {
     };
 
     public final boolean isFipsApproved;
-    public char[] defaultPin;
-    public char[] defaultPuk;
-    public byte[] defaultManagementKey;
+    public char[] pin;
+    public char[] puk;
+    public byte[] managementKey;
 
     public static class Builder extends TestState.Builder<PivTestState.Builder> {
 
@@ -79,9 +79,9 @@ public class PivTestState extends TestState {
     protected PivTestState(Builder builder) throws Throwable {
         super(builder);
 
-        defaultPin = DEFAULT_PIN;
-        defaultPuk = DEFAULT_PUK;
-        defaultManagementKey = DEFAULT_MANAGEMENT_KEY;
+        pin = DEFAULT_PIN;
+        puk = DEFAULT_PUK;
+        managementKey = DEFAULT_MANAGEMENT_KEY;
 
         assumeTrue("No SmartCard support", currentDevice.supportsConnection(SmartCardConnection.class));
 
@@ -116,15 +116,15 @@ public class PivTestState extends TestState {
 
             if (hasPinComplexity) {
                 // only use complex pins if pin complexity is required
-                pivSession.changePin(defaultPin, COMPLEX_PIN);
-                pivSession.changePuk(defaultPuk, COMPLEX_PUK);
-                pivSession.authenticate(defaultManagementKey);
+                pivSession.changePin(pin, COMPLEX_PIN);
+                pivSession.changePuk(puk, COMPLEX_PUK);
+                pivSession.authenticate(managementKey);
 
                 pivSession.setManagementKey(ManagementKeyType.AES192, COMPLEX_MANAGEMENT_KEY, false);
 
-                defaultPin = COMPLEX_PIN;
-                defaultPuk = COMPLEX_PUK;
-                defaultManagementKey = COMPLEX_MANAGEMENT_KEY;
+                pin = COMPLEX_PIN;
+                puk = COMPLEX_PUK;
+                managementKey = COMPLEX_MANAGEMENT_KEY;
             }
         }
 
