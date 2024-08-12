@@ -1,3 +1,12 @@
+* Version 2.7.0-alpha01 (released 2024-08-12)
+ ** new
+  - support for communication over SCP03 and SCP11 protocols
+  - support for managing SCP03 and SCP11 keys through Security Domain session
+ ** support module:
+  - fixed missing property values for DeviceInfo in DeviceUtil.readInfo()
+ ** general updates:
+  - updated build dependencies and libraries
+  - updated tests to support FIPS approved YubiKeys
 * Version 2.6.0 (released 2024-06-18)
  ** piv module:
   - support for RSA3072 and RSA4096 (keys with FW 5.7+)
