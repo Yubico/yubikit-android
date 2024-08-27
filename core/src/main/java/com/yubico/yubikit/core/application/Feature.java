@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Yubico.
+ * Copyright (C) 2022, 2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 
 package com.yubico.yubikit.core.application;
+
+import static com.yubico.yubikit.core.application.SessionVersionOverride.overrideOf;
 
 import com.yubico.yubikit.core.Version;
 
@@ -71,7 +73,7 @@ public abstract class Feature<T extends ApplicationSession<T>> {
 
         @Override
         public boolean isSupportedBy(Version version) {
-            return version.compareTo(requiredVersion) >= 0;
+            return overrideOf(version).compareTo(requiredVersion) >= 0;
         }
     }
 }

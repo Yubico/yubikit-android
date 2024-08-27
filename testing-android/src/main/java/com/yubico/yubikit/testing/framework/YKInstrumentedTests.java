@@ -21,13 +21,20 @@ import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import com.yubico.yubikit.android.transport.usb.UsbYubiKeyDevice;
 import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.UsbPid;
+import com.yubico.yubikit.core.Version;
 import com.yubico.yubikit.core.YubiKeyDevice;
+import com.yubico.yubikit.core.application.SessionVersionOverride;
+import com.yubico.yubikit.core.smartcard.SmartCardConnection;
+import com.yubico.yubikit.management.DeviceInfo;
+import com.yubico.yubikit.support.DeviceUtil;
 import com.yubico.yubikit.testing.TestActivity;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.TestName;
+
+import java.io.IOException;
 
 import javax.annotation.Nullable;
 
@@ -50,6 +57,17 @@ public class YKInstrumentedTests {
         usbPid = device instanceof UsbYubiKeyDevice
                 ? ((UsbYubiKeyDevice) device).getPid()
                 : null;
+
+        // use this version for devices which have major 0
+        SessionVersionOverride.set(new Version(5, 7, 2));
+        try (SmartCardConnection connection = device.openConnection(SmartCardConnection.class)) {
+            final DeviceInfo deviceInfo = DeviceUtil.readInfo(connection, usbPid);
+            if (deviceInfo.getVersion().major == 3) {
+                // for NEO remove the override
+                SessionVersionOverride.set(null);
+            }
+        } catch (IOException ignored) {
+        }
     }
 
     @After
