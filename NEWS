@@ -1,4 +1,4 @@
-* Version 2.7.0-alpha01 (released 2024-08-12)
+* Version 2.7.0 (released 2024-08-30)
  ** new
   - support for communication over SCP03 and SCP11 protocols
   - support for managing SCP03 and SCP11 keys through Security Domain session
