@@ -30,7 +30,6 @@ import com.yubico.yubikit.core.otp.OtpConnection;
 import com.yubico.yubikit.core.smartcard.AppId;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.smartcard.SmartCardProtocol;
-import com.yubico.yubikit.core.smartcard.scp.ScpKeyParams;
 import com.yubico.yubikit.management.Capability;
 import com.yubico.yubikit.management.DeviceConfig;
 import com.yubico.yubikit.management.DeviceInfo;
@@ -78,17 +77,14 @@ public class DeviceUtil {
         return new OtpData(otpSession.getVersion(), serialNumber);
     }
 
-    static DeviceInfo readInfoCcid(
-            SmartCardConnection connection,
-            int interfaces,
-            @Nullable ScpKeyParams scpKeyParams)
+    static DeviceInfo readInfoCcid(SmartCardConnection connection, int interfaces)
             throws IOException {
 
         boolean managementAvailable = true;
         Version version = null;
 
         try {
-            ManagementSession managementSession = new ManagementSession(connection, scpKeyParams);
+            ManagementSession managementSession = new ManagementSession(connection);
             version = managementSession.getVersion();
             try {
                 return managementSession.getDeviceInfo();
@@ -279,20 +275,16 @@ public class DeviceUtil {
      * The <code>pid</code> parameter must be provided whenever the YubiKey is connected via USB,
      * </p>
      *
-     * @param connection   {@link SmartCardConnection}, {@link OtpConnection} or
-     *                     {@link FidoConnection} connection to the YubiKey
-     * @param pid          USB product ID of the YubiKey, can be null if unknown
-     * @param scpKeyParams SCP key parameters to establish a secure smartcard connection
+     * @param connection {@link SmartCardConnection}, {@link OtpConnection} or
+     *                   {@link FidoConnection} connection to the YubiKey
+     * @param pid        USB product ID of the YubiKey, can be null if unknown
      * @throws IOException              in case of connection error
      * @throws IllegalArgumentException in case of <code>pid</code> is null for USB connection
      * @throws IllegalArgumentException in case of connection is not {@link SmartCardConnection},
      *                                  {@link OtpConnection} or {@link FidoConnection}
      * @throws IllegalArgumentException when the hardware key could not be identified
      */
-    public static DeviceInfo readInfo(
-            YubiKeyConnection connection,
-            @Nullable UsbPid pid,
-            @Nullable ScpKeyParams scpKeyParams)
+    public static DeviceInfo readInfo(YubiKeyConnection connection, @Nullable UsbPid pid)
             throws IOException, IllegalArgumentException {
 
         YubiKeyType keyType = null;
@@ -308,7 +300,7 @@ public class DeviceUtil {
 
         DeviceInfo info;
         if (connection instanceof SmartCardConnection) {
-            info = readInfoCcid((SmartCardConnection) connection, interfaces, scpKeyParams);
+            info = readInfoCcid((SmartCardConnection) connection, interfaces);
         } else if (connection instanceof OtpConnection) {
             info = readInfoOtp((OtpConnection) connection, keyType, interfaces);
         } else if (connection instanceof FidoConnection) {
@@ -319,33 +311,6 @@ public class DeviceUtil {
 
         Logger.debug(logger, "Read info {}", info);
         return adjustDeviceInfo(info, keyType, interfaces);
-    }
-
-    /**
-     * Reads out DeviceInfo from a YubiKey, or attempts to synthesize the data.
-     * <p>
-     * Reading DeviceInfo from a ManagementSession is only supported for newer YubiKeys.
-     * This function attempts to read that information, but will fall back to gathering the
-     * data using other mechanisms if needed. It will also make adjustments to the data if
-     * required, for example to "fix" known bad values.
-     * </p>
-     * <p>
-     * The <code>pid</code> parameter must be provided whenever the YubiKey is connected via USB,
-     * </p>
-     *
-     * @param connection {@link SmartCardConnection}, {@link OtpConnection} or
-     *                   {@link FidoConnection} connection to the YubiKey
-     * @param pid        USB product ID of the YubiKey, can be null if unknown
-     * @throws IOException              in case of connection error
-     * @throws IllegalArgumentException in case of <code>pid</code> is null for USB connection
-     * @throws IllegalArgumentException in case of connection is not {@link SmartCardConnection},
-     *                                  {@link OtpConnection} or {@link FidoConnection}
-     * @throws IllegalArgumentException when the hardware key could not be identified
-     */
-    public static DeviceInfo readInfo(
-            YubiKeyConnection connection,
-            @Nullable UsbPid pid) throws IOException {
-        return readInfo(connection, pid, null);
     }
 
     /**

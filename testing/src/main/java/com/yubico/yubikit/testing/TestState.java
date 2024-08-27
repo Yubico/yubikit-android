@@ -16,8 +16,6 @@
 
 package com.yubico.yubikit.testing;
 
-import static com.yubico.yubikit.support.DeviceUtil.readInfo;
-
 import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.UsbPid;
 import com.yubico.yubikit.core.YubiKeyConnection;
@@ -166,7 +164,7 @@ public class TestState {
     public DeviceInfo getDeviceInfo() {
         DeviceInfo deviceInfo = null;
         try (YubiKeyConnection connection = openConnection()) {
-            deviceInfo = DeviceUtil.readInfo(connection, usbPid, scpParameters.getKeyParams());
+            deviceInfo = DeviceUtil.readInfo(connection, usbPid);
         } catch (IOException | UnsupportedOperationException ignoredException) {
         }
 
