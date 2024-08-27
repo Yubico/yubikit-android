@@ -58,13 +58,10 @@ public class YKInstrumentedTests {
                 ? ((UsbYubiKeyDevice) device).getPid()
                 : null;
 
-        // use this version for devices which have major 0
-        SessionVersionOverride.set(new Version(5, 7, 2));
         try (SmartCardConnection connection = device.openConnection(SmartCardConnection.class)) {
             final DeviceInfo deviceInfo = DeviceUtil.readInfo(connection, usbPid);
-            if (deviceInfo.getVersion().major == 3) {
-                // for NEO remove the override
-                SessionVersionOverride.set(null);
+            if (deviceInfo.getVersion().major == 0) {
+                SessionVersionOverride.set(new Version(5, 7, 2));
             }
         } catch (IOException ignored) {
         }
