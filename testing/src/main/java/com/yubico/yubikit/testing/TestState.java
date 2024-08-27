@@ -92,7 +92,7 @@ public class TestState {
 
     private void setupJca() {
         Security.removeProvider("BC");
-        Security.addProvider(new BouncyCastleProvider());
+        Security.insertProviderAt(new BouncyCastleProvider(), 1);
     }
 
     public boolean isUsbTransport() {
