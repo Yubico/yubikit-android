@@ -204,8 +204,6 @@ public class OpenPgpDeviceTests {
     public static void testGenerateEcKeys(OpenPgpSession openpgp, OpenPgpTestState state) throws Exception {
         Assume.assumeTrue("EC support", openpgp.supports(OpenPgpSession.FEATURE_EC_KEYS));
 
-        Security.removeProvider("BC");
-        Security.insertProviderAt(new BouncyCastleProvider(), 1);
         openpgp.verifyAdminPin(state.defaultAdminPin);
 
         byte[] message = "hello".getBytes(StandardCharsets.UTF_8);
@@ -243,8 +241,6 @@ public class OpenPgpDeviceTests {
     public static void testGenerateEd25519(OpenPgpSession openpgp, OpenPgpTestState state) throws Exception {
         Assume.assumeTrue("EC support", openpgp.supports(OpenPgpSession.FEATURE_EC_KEYS));
 
-        Security.removeProvider("BC");
-        Security.insertProviderAt(new BouncyCastleProvider(), 1);
         openpgp.verifyAdminPin(state.defaultAdminPin);
 
         byte[] message = "hello".getBytes(StandardCharsets.UTF_8);
@@ -263,8 +259,6 @@ public class OpenPgpDeviceTests {
 
         Assume.assumeFalse("X25519 not supported in FIPS OpenPGP.", state.isFipsApproved);
 
-        Security.removeProvider("BC");
-        Security.insertProviderAt(new BouncyCastleProvider(), 1);
         openpgp.verifyAdminPin(state.defaultAdminPin);
 
         PublicKey publicKey = openpgp.generateEcKey(KeyRef.DEC, OpenPgpCurve.X25519).toPublicKey();
@@ -320,9 +314,6 @@ public class OpenPgpDeviceTests {
     public static void testImportEcDsaKeys(OpenPgpSession openpgp, OpenPgpTestState state) throws Exception {
         Assume.assumeTrue("EC support", openpgp.supports(OpenPgpSession.FEATURE_EC_KEYS));
 
-        Security.removeProvider("BC");
-        Security.insertProviderAt(new BouncyCastleProvider(), 1);
-
         openpgp.verifyAdminPin(state.defaultAdminPin);
 
         KeyPairGenerator kpg = KeyPairGenerator.getInstance("ECDSA");
@@ -368,9 +359,6 @@ public class OpenPgpDeviceTests {
     public static void testImportEd25519(OpenPgpSession openpgp, OpenPgpTestState state) throws Exception {
         Assume.assumeTrue("EC support", openpgp.supports(OpenPgpSession.FEATURE_EC_KEYS));
 
-        Security.removeProvider("BC");
-        Security.insertProviderAt(new BouncyCastleProvider(), 1);
-
         openpgp.verifyAdminPin(state.defaultAdminPin);
 
         KeyPairGenerator kpg = KeyPairGenerator.getInstance("Ed25519");
@@ -393,9 +381,6 @@ public class OpenPgpDeviceTests {
     public static void testImportX25519(OpenPgpSession openpgp, OpenPgpTestState state) throws Exception {
         Assume.assumeTrue("EC support", openpgp.supports(OpenPgpSession.FEATURE_EC_KEYS));
         Assume.assumeFalse("X25519 not supported in FIPS OpenPGP.", state.isFipsApproved);
-
-        Security.removeProvider("BC");
-        Security.insertProviderAt(new BouncyCastleProvider(), 1);
 
         openpgp.verifyAdminPin(state.defaultAdminPin);
 

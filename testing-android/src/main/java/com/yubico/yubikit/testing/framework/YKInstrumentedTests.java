@@ -18,7 +18,9 @@ package com.yubico.yubikit.testing.framework;
 
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
 
+import com.yubico.yubikit.android.transport.usb.UsbYubiKeyDevice;
 import com.yubico.yubikit.core.Transport;
+import com.yubico.yubikit.core.UsbPid;
 import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.testing.TestActivity;
 
@@ -33,6 +35,7 @@ public class YKInstrumentedTests {
 
     private TestActivity activity;
     protected YubiKeyDevice device = null;
+    protected UsbPid usbPid = null;
 
     @Rule
     public final TestName name = new TestName();
@@ -44,6 +47,9 @@ public class YKInstrumentedTests {
     public void getYubiKey() throws InterruptedException {
         scenarioRule.getScenario().onActivity((TestActivity activity) -> this.activity = activity);
         device = activity.awaitSession(getClass().getSimpleName(), name.getMethodName());
+        usbPid = device instanceof UsbYubiKeyDevice
+                ? ((UsbYubiKeyDevice) device).getPid()
+                : null;
     }
 
     @After
@@ -55,6 +61,7 @@ public class YKInstrumentedTests {
         activity.returnSession(device);
         device = null;
         activity = null;
+        usbPid = null;
     }
 
     protected YubiKeyDevice reconnectDevice() {

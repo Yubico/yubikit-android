@@ -50,6 +50,11 @@ public class OathTests {
         public void testAccountManagement() throws Throwable {
             withOathSession(OathDeviceTests::testAccountManagement);
         }
+
+        @Test
+        public void testRenameAccount() throws Throwable {
+            withOathSession(OathDeviceTests::testRenameAccount);
+        }
     }
 
     public static class Scp11bTests extends NoScpTests {

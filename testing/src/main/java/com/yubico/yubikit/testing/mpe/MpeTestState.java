@@ -19,6 +19,7 @@ package com.yubico.yubikit.testing.mpe;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assume.assumeTrue;
 
+import com.yubico.yubikit.core.UsbPid;
 import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
@@ -34,8 +35,8 @@ import com.yubico.yubikit.testing.piv.PivTestState;
 public class MpeTestState extends TestState {
     public static class Builder extends TestState.Builder<MpeTestState.Builder> {
 
-        public Builder(YubiKeyDevice device) {
-            super(device);
+        public Builder(YubiKeyDevice device, UsbPid usbPid) {
+            super(device, usbPid);
         }
 
         @Override

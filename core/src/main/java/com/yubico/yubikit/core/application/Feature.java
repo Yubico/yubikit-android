@@ -71,7 +71,7 @@ public abstract class Feature<T extends ApplicationSession<T>> {
 
         @Override
         public boolean isSupportedBy(Version version) {
-            return version.major == 0 || version.compareTo(requiredVersion) >= 0;
+            return version.compareTo(requiredVersion) >= 0;
         }
     }
 }

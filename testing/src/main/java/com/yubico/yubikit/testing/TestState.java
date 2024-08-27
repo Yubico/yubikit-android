@@ -16,7 +16,10 @@
 
 package com.yubico.yubikit.testing;
 
+import static com.yubico.yubikit.support.DeviceUtil.readInfo;
+
 import com.yubico.yubikit.core.Transport;
+import com.yubico.yubikit.core.UsbPid;
 import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.application.ApplicationSession;
@@ -29,7 +32,10 @@ import com.yubico.yubikit.management.DeviceInfo;
 import com.yubico.yubikit.management.ManagementSession;
 import com.yubico.yubikit.support.DeviceUtil;
 
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+
 import java.io.IOException;
+import java.security.Security;
 
 import javax.annotation.Nullable;
 
@@ -37,14 +43,17 @@ public class TestState {
     public abstract static class Builder<T extends Builder<T>> {
         final protected YubiKeyDevice device;
         @Nullable
+        final private UsbPid usbPid;
+        @Nullable
         private Byte scpKid = null;
         @Nullable
         private ReconnectDeviceCallback reconnectDeviceCallback = null;
 
         public abstract T getThis();
 
-        public Builder(YubiKeyDevice device) {
+        public Builder(YubiKeyDevice device, @Nullable UsbPid usbPid) {
             this.device = device;
+            this.usbPid = usbPid;
         }
 
         public T scpKid(@Nullable Byte scpKid) {
@@ -63,6 +72,8 @@ public class TestState {
     protected YubiKeyDevice currentDevice;
     protected ScpParameters scpParameters;
     @Nullable
+    public final UsbPid usbPid;
+    @Nullable
     public final Byte scpKid;
     @Nullable
     private final ReconnectDeviceCallback reconnectDeviceCallback;
@@ -70,10 +81,18 @@ public class TestState {
 
     protected TestState(Builder<?> builder) {
         this.currentDevice = builder.device;
+        this.usbPid = builder.usbPid;
         this.scpKid = builder.scpKid;
         this.scpParameters = new ScpParameters(builder.device, this.scpKid);
         this.reconnectDeviceCallback = builder.reconnectDeviceCallback;
         this.isUsbTransport = builder.device.getTransport() == Transport.USB;
+
+        setupJca();
+    }
+
+    private void setupJca() {
+        Security.removeProvider("BC");
+        Security.addProvider(new BouncyCastleProvider());
     }
 
     public boolean isUsbTransport() {
@@ -147,10 +166,8 @@ public class TestState {
     public DeviceInfo getDeviceInfo() {
         DeviceInfo deviceInfo = null;
         try (YubiKeyConnection connection = openConnection()) {
-            ManagementSession managementSession = getManagementSession(connection, scpParameters);
-            deviceInfo = managementSession.getDeviceInfo();
-        } catch (IOException | CommandException ignored) {
-
+            deviceInfo = DeviceUtil.readInfo(connection, usbPid, scpParameters.getKeyParams());
+        } catch (IOException | UnsupportedOperationException ignoredException) {
         }
 
         return deviceInfo;
@@ -173,6 +190,9 @@ public class TestState {
     }
 
     protected boolean isMpe(DeviceInfo deviceInfo) {
+        if (deviceInfo == null) {
+            return false;
+        }
         final String name = DeviceUtil.getName(deviceInfo, null);
         return name.equals("YubiKey Bio - Multi-protocol Edition") ||
                 name.equals("YubiKey C Bio - Multi-protocol Edition");
