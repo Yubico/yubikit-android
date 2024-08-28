@@ -1,5 +1,5 @@
 == Security domain
-yubikit-android 2.7.0 adds support for smart card communication over secure channel protocol (SCP) and management SCP key information. The supported SCP versions are SCP03, SCP11a, SCP11b and SCP11c.
+yubikit-android 2.7.0 adds support for smart card communication over secure channel protocol (SCP) and management of SCP key information. The supported SCP versions are SCP03, SCP11a, SCP11b and SCP11c.
 
 More information about the protocols can be found at the following URLs:
 
@@ -12,7 +12,7 @@ The support is provided directly through the SDK's smart card protocol, which ha
 - SCP can be used for USB and NFC connections
 - because of how SCP works, communication over NFC might be less performant
 - SCP03 is supported only by Yubikeys with firmware version at least 5.3.0
-- SCP11 is supported on firmware versions 5.7.2 and later.
+- SCP11 is supported on firmware versions 5.7.2 and later
 - can be used over NFC or USB smart-card connection
 - any YubiKey application can be used over SCP
 - only NFC hardware with extended APDUs support can be used for SCP over NFC
