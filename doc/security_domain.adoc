@@ -1,0 +1,39 @@
+== Security domain
+yubikit-android 2.7.0 adds support for smart card communication over secure channel protocol (SCP) and management of SCP key information. The supported SCP versions are SCP03, SCP11a, SCP11b and SCP11c.
+
+More information about the protocols can be found at the following URLs:
+
+SCP03: https://globalplatform.org/specs-library/secure-channel-protocol-03-amendment-d-v1-2/
+
+SCP11: https://globalplatform.org/specs-library/secure-channel-protocol-11-amendment-f/
+
+The support is provided directly through the SDK's smart card protocol, which handles necessary handshakes and data encryption/decryption. Secure channel key management is handled by Security Domain Session.
+
+- SCP can be used for USB and NFC connections
+- because of how SCP works, communication over NFC might be less performant
+- SCP03 is supported only by Yubikeys with firmware version at least 5.3.0
+- SCP11 is supported on firmware versions 5.7.2 and later
+- can be used over NFC or USB smart-card connection
+- any YubiKey application can be used over SCP
+- only NFC hardware with extended APDUs support can be used for SCP over NFC
+
+=== Using SCP
+To use SCP, an application first needs to acquire `ScpKeyParams` which contain information needed for establishing and communicating over the secured channel.
+
+The parameters are then used when constructing a specific session object. The following snippet shows how to create a SCP PIV session.
+
+[source,java]
+----
+ScpKeyParams scpKeyParams = ...;
+PivSession piv = new PivSession(smartCardConnection, scpKeyParams);
+
+// use the session
+// all communication in the session is now secured through SCP
+piv.verifyPin(...);
+
+----
+
+For working examples of SCP key management, see `SecurityDomainTests` tests suite.
+
+
+
