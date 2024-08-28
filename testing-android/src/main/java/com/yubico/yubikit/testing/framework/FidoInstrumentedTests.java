@@ -18,6 +18,7 @@ package com.yubico.yubikit.testing.framework;
 
 import androidx.annotation.Nullable;
 
+import com.yubico.yubikit.android.transport.usb.UsbYubiKeyDevice;
 import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.smartcard.scp.ScpKid;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
@@ -33,7 +34,7 @@ public class FidoInstrumentedTests extends YKInstrumentedTests {
     }
 
     protected void withDevice(boolean setPin, TestState.StatefulDeviceCallback<FidoTestState> callback) throws Throwable {
-        FidoTestState state = new FidoTestState.Builder(device, getPinUvAuthProtocol())
+        FidoTestState state = new FidoTestState.Builder(device, usbPid, getPinUvAuthProtocol())
                 .scpKid(getScpKid())
                 .reconnectDeviceCallback(this::reconnectDevice)
                 .setPin(setPin)
@@ -43,7 +44,7 @@ public class FidoInstrumentedTests extends YKInstrumentedTests {
     }
 
     protected void withCtap2Session(TestState.StatefulSessionCallback<Ctap2Session, FidoTestState> callback) throws Throwable {
-        FidoTestState state = new FidoTestState.Builder(device, getPinUvAuthProtocol())
+        FidoTestState state = new FidoTestState.Builder(device, usbPid, getPinUvAuthProtocol())
                 .scpKid(getScpKid())
                 .reconnectDeviceCallback(this::reconnectDevice)
                 .setPin(true)

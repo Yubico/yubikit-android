@@ -19,6 +19,7 @@ package com.yubico.yubikit.testing.oath;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
+import com.yubico.yubikit.core.UsbPid;
 import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
@@ -37,8 +38,8 @@ public class OathTestState extends TestState {
 
     public static class Builder extends TestState.Builder<OathTestState.Builder> {
 
-        public Builder(YubiKeyDevice device) {
-            super(device);
+        public Builder(YubiKeyDevice device, UsbPid usbPid) {
+            super(device, usbPid);
         }
 
         @Override
