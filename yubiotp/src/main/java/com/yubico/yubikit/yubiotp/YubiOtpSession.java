@@ -523,15 +523,44 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
     }
 
     private void logCtor(YubiKeyConnection connection) {
+        final Version version = getVersion();
         Logger.debug(logger, "YubiOTP session initialized for connection={}, version={}, ledInverted={}",
                 connection.getClass().getSimpleName(),
-                getVersion(),
+                version,
                 backend.configurationState.isLedInverted());
+
+        Boolean slotOneConfigured = null;
+        Boolean slotTwoConfigured = null;
+        if (FEATURE_CHECK_CONFIGURED.isSupportedBy(version)) {
+            slotOneConfigured = backend.configurationState.isConfigured(Slot.ONE);
+            slotTwoConfigured = backend.configurationState.isConfigured(Slot.TWO);
+        } else {
+            Logger.debug(logger, "This YubiKey does not support checking whether OTP slot " +
+                    "is configured");
+        }
+
+        Boolean slotOneTouchTriggered = null;
+        Boolean slotTwoTouchTriggered = null;
+        if (FEATURE_CHECK_TOUCH_TRIGGERED.isSupportedBy(version)) {
+            slotOneTouchTriggered = backend.configurationState.isTouchTriggered(Slot.ONE);
+            slotTwoTouchTriggered = backend.configurationState.isTouchTriggered(Slot.TWO);
+        } else {
+            Logger.debug(logger, "This YubiKey does not support checking whether OTP slot is " +
+                    "touch triggered");
+        }
         Logger.debug(logger, "Configuration slot 1: configured={}, touchTriggered={}",
-                backend.configurationState.isConfigured(Slot.ONE),
-                backend.configurationState.isTouchTriggered(Slot.ONE));
+                slotOneConfigured != null
+                        ? slotOneConfigured
+                        : "?",
+                slotOneTouchTriggered != null
+                        ? slotOneTouchTriggered
+                        : "?");
         Logger.debug(logger, "Configuration slot 2: configured={}, touchTriggered={}",
-                backend.configurationState.isConfigured(Slot.TWO),
-                backend.configurationState.isTouchTriggered(Slot.TWO));
+                slotTwoConfigured != null
+                        ? slotTwoConfigured
+                        : "?",
+                slotTwoTouchTriggered != null
+                        ? slotTwoTouchTriggered
+                        : "?");
     }
 }
