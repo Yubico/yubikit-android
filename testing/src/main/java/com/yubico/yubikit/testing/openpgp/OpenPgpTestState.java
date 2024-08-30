@@ -87,6 +87,8 @@ public class OpenPgpTestState extends TestState {
         }
 
         try (SmartCardConnection connection = openSmartCardConnection()) {
+            assumeTrue("Smart card not available", connection != null);
+
             OpenPgpSession openPgp = getOpenPgpSession(connection, scpParameters);
 
             assumeTrue("OpenPGP not available", openPgp != null);

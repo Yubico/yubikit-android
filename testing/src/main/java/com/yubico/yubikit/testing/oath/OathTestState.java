@@ -72,6 +72,8 @@ public class OathTestState extends TestState {
         }
 
         try (SmartCardConnection connection = openSmartCardConnection()) {
+            assumeTrue("Smart card not available", connection != null);
+
             OathSession oath = getOathSession(connection, scpParameters);
 
             assumeTrue("OATH not available", oath != null);
