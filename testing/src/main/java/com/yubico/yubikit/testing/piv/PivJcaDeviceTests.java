@@ -16,10 +16,12 @@
 package com.yubico.yubikit.testing.piv;
 
 import static com.yubico.yubikit.piv.PivSession.FEATURE_CV25519;
+import static com.yubico.yubikit.piv.PivSession.FEATURE_P384;
 import static com.yubico.yubikit.piv.PivSession.FEATURE_RSA3072_RSA4096;
 import static com.yubico.yubikit.testing.piv.PivJcaUtils.setupJca;
 import static com.yubico.yubikit.testing.piv.PivJcaUtils.tearDownJca;
 
+import com.yubico.yubikit.core.Version;
 import com.yubico.yubikit.piv.KeyType;
 import com.yubico.yubikit.piv.PinPolicy;
 import com.yubico.yubikit.piv.PivSession;
@@ -78,6 +80,11 @@ public class PivJcaDeviceTests {
         }
 
         for (KeyType keyType : Arrays.asList(KeyType.ECCP256, KeyType.ECCP384)) {
+
+            if (!piv.supports(FEATURE_P384) && keyType == KeyType.ECCP384) {
+                continue;
+            }
+
             String alias = Slot.SIGNATURE.getStringAlias();
 
             KeyPair keyPair = PivTestUtils.loadKey(keyType);
@@ -153,6 +160,10 @@ public class PivJcaDeviceTests {
         for (KeyType keyType : Arrays.asList(KeyType.ECCP256, KeyType.ECCP384, KeyType.ED25519, KeyType.X25519)) {
 
             if (state.isInvalidKeyType(keyType)) {
+                continue;
+            }
+
+            if (!piv.supports(FEATURE_P384) && keyType == KeyType.ECCP384) {
                 continue;
             }
 

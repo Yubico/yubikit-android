@@ -16,13 +16,14 @@
 
 package com.yubico.yubikit.testing.framework;
 
+import com.yubico.yubikit.android.transport.usb.UsbYubiKeyDevice;
 import com.yubico.yubikit.testing.TestState;
 import com.yubico.yubikit.testing.sd.SecurityDomainTestState;
 
 public class SecurityDomainInstrumentedTests extends YKInstrumentedTests {
 
     protected void withState(TestState.StatefulDeviceCallback<SecurityDomainTestState> callback) throws Throwable {
-        final SecurityDomainTestState state = new SecurityDomainTestState.Builder(device)
+        final SecurityDomainTestState state = new SecurityDomainTestState.Builder(device, usbPid)
                 .reconnectDeviceCallback(this::reconnectDevice)
                 .build();
 
