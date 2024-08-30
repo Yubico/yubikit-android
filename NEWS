@@ -5,8 +5,8 @@
  ** support module:
   - fixed missing property values for DeviceInfo in DeviceUtil.readInfo()
  ** general updates:
+  - improved integration tests with support to run over SCP
   - updated build dependencies and libraries
-  - updated tests to support FIPS approved YubiKeys
 * Version 2.6.0 (released 2024-06-18)
  ** piv module:
   - support for RSA3072 and RSA4096 (keys with FW 5.7+)
