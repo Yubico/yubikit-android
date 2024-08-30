@@ -22,6 +22,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
+import com.yubico.yubikit.core.UsbPid;
 import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.application.CommandException;
@@ -60,8 +61,8 @@ public class FidoTestState extends TestState {
         private final PinUvAuthProtocol pinUvAuthProtocol;
         private boolean setPin = false;
 
-        public Builder(YubiKeyDevice device, PinUvAuthProtocol pinUvAuthProtocol) {
-            super(device);
+        public Builder(YubiKeyDevice device, UsbPid usbPid, PinUvAuthProtocol pinUvAuthProtocol) {
+            super(device, usbPid);
             this.pinUvAuthProtocol = pinUvAuthProtocol;
         }
 
@@ -245,12 +246,16 @@ public class FidoTestState extends TestState {
     }
 
     @Nullable
-    public static Ctap2Session getCtap2Session(YubiKeyConnection connection)
-            throws IOException, CommandException {
-        return (connection instanceof FidoConnection)
-                ? new Ctap2Session((FidoConnection) connection)
-                : connection instanceof SmartCardConnection
-                ? new Ctap2Session((SmartCardConnection) connection)
-                : null;
+    public static Ctap2Session getCtap2Session(YubiKeyConnection connection) {
+        try {
+            return (connection instanceof FidoConnection)
+                    ? new Ctap2Session((FidoConnection) connection)
+                    : connection instanceof SmartCardConnection
+                    ? new Ctap2Session((SmartCardConnection) connection)
+                    : null;
+        } catch (IOException | CommandException ignored) {
+            // device does not provide CTAP2
+            return null;
+        }
     }
 }

@@ -16,6 +16,7 @@
 
 package com.yubico.yubikit.testing.oath;
 
+import static com.yubico.yubikit.oath.OathSession.FEATURE_RENAME;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
@@ -27,6 +28,8 @@ import com.yubico.yubikit.core.smartcard.SW;
 import com.yubico.yubikit.oath.Credential;
 import com.yubico.yubikit.oath.CredentialData;
 import com.yubico.yubikit.oath.OathSession;
+
+import org.junit.Assume;
 
 import java.net.URI;
 import java.util.List;
@@ -84,6 +87,24 @@ public class OathDeviceTests {
         assertEquals("bob@example.com", credential.getAccountName());
         assertEquals("foobar", credential.getIssuer());
 
+        oath.deleteCredential(credential.getId());
+        credentials = oath.getCredentials();
+        assertEquals(0, credentials.size());
+    }
+
+    public static void testRenameAccount(OathSession oath, OathTestState state) throws Exception {
+        Assume.assumeTrue(oath.supports(FEATURE_RENAME));
+        assertTrue(oath.unlock(state.password));
+        List<Credential> credentials = oath.getCredentials();
+        assertEquals(0, credentials.size());
+        final String uri = "otpauth://totp/foobar:bob@example.com?secret=abba";
+        CredentialData credentialData = CredentialData.parseUri(new URI(uri));
+        oath.putCredential(credentialData, false);
+
+        credentials = oath.getCredentials();
+        assertEquals(1,  credentials.size());
+
+        Credential credential = credentials.get(0);
         credential = oath.renameCredential(credential, "ann@example.com", null);
         assertEquals("ann@example.com", credential.getAccountName());
         assertNull(credential.getIssuer());

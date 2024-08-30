@@ -16,7 +16,6 @@
 
 package com.yubico.yubikit.support;
 
-import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.UsbInterface;
 import com.yubico.yubikit.core.UsbPid;
@@ -26,6 +25,7 @@ import com.yubico.yubikit.core.YubiKeyType;
 import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
 import com.yubico.yubikit.core.application.CommandException;
 import com.yubico.yubikit.core.fido.FidoConnection;
+import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.otp.OtpConnection;
 import com.yubico.yubikit.core.smartcard.AppId;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
@@ -271,6 +271,7 @@ public class DeviceUtil {
      * <p>
      * The <code>pid</code> parameter must be provided whenever the YubiKey is connected via USB,
      * </p>
+     *
      * @param connection {@link SmartCardConnection}, {@link OtpConnection} or
      *                   {@link FidoConnection} connection to the YubiKey
      * @param pid        USB product ID of the YubiKey, can be null if unknown
@@ -530,11 +531,10 @@ public class DeviceUtil {
             }
 
             StringBuilder builder = new StringBuilder();
-            for (int partCount = 0; partCount < namePartsList.size(); partCount++)
-            {
+            for (int partCount = 0; partCount < namePartsList.size(); partCount++) {
                 String s = namePartsList.get(partCount);
                 builder.append(s);
-                if (partCount<namePartsList.size() - 1) {
+                if (partCount < namePartsList.size() - 1) {
                     builder.append(" ");
                 }
             }
