@@ -26,6 +26,7 @@ import com.yubico.yubikit.core.application.CommandException;
 import com.yubico.yubikit.fido.ctap.ClientPin;
 import com.yubico.yubikit.fido.ctap.CredentialManagement;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
+import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialUserEntity;
 import com.yubico.yubikit.fido.webauthn.SerializationType;
 
 import java.io.IOException;
@@ -79,43 +80,20 @@ public class Ctap2CredentialManagementTests {
     public static void testManagement(Ctap2Session session, FidoTestState state) throws Throwable {
 
         CredentialManagement credentialManagement = setupCredentialManagement(session, state);
-
-        final SerializationType cborType = SerializationType.CBOR;
-
         assertThat(credentialManagement.enumerateRps(), empty());
 
-        Map<String, Object> options = new HashMap<>();
-        options.put("rk", true);
+        byte[] pinToken = new ClientPin(session, credentialManagement.getPinUvAuth()).getPinToken(
+                TestData.PIN,
+                ClientPin.PIN_PERMISSION_MC,
+                TestData.RP.getId());
 
-        byte[] pinToken = new ClientPin(session, credentialManagement.getPinUvAuth())
-                .getPinToken(TestData.PIN, ClientPin.PIN_PERMISSION_MC, TestData.RP.getId());
         byte[] pinAuth = credentialManagement.getPinUvAuth().authenticate(pinToken, TestData.CLIENT_DATA_HASH);
-        session.makeCredential(
-                TestData.CLIENT_DATA_HASH,
-                TestData.RP.toMap(cborType),
-                TestData.USER.toMap(cborType),
-                Collections.singletonList(TestData.PUB_KEY_CRED_PARAMS_ES256.toMap(cborType)),
-                null,
-                null,
-                options,
-                pinAuth,
-                state.getPinUvAuthProtocol().getVersion(),
-                null,
-                null
-        );
-
+        makeTestCredential(state, session, pinAuth);
 
         // this sets correct permission for handling credential management commands
         credentialManagement = setupCredentialManagement(session, state);
+        CredentialManagement.CredentialData credData = getFirstTestCredential(credentialManagement);
 
-        List<CredentialManagement.RpData> rps = credentialManagement.enumerateRps();
-        assertThat(rps.size(), equalTo(1));
-        CredentialManagement.RpData rpData = rps.get(0);
-        assertThat(rpData.getRp().get("id"), equalTo(TestData.RP_ID));
-
-        List<CredentialManagement.CredentialData> creds = credentialManagement.enumerateCredentials(rpData.getRpIdHash());
-        assertThat(creds.size(), equalTo(1));
-        CredentialManagement.CredentialData credData = creds.get(0);
         Map<String, ?> userData = credData.getUser();
         assertThat(userData.get("id"), equalTo(TestData.USER_ID));
         assertThat(userData.get("name"), equalTo(TestData.USER_NAME));
@@ -123,4 +101,74 @@ public class Ctap2CredentialManagementTests {
 
         deleteAllCredentials(credentialManagement);
     }
+
+    public static void testUpdateUserInformation(Ctap2Session session, FidoTestState state) throws Throwable {
+
+        CredentialManagement credentialManagement = setupCredentialManagement(session, state);
+
+        assumeTrue("Update user information is supported",
+                credentialManagement.isUpdateUserInformationSupported());
+
+        assertThat(credentialManagement.enumerateRps(), empty());
+
+        byte[] pinToken = new ClientPin(session, credentialManagement.getPinUvAuth()).getPinToken(
+                TestData.PIN,
+                ClientPin.PIN_PERMISSION_MC,
+                TestData.RP.getId());
+
+        byte[] pinAuth = credentialManagement.getPinUvAuth().authenticate(pinToken, TestData.CLIENT_DATA_HASH);
+        makeTestCredential(state, session, pinAuth);
+
+        // this sets correct permission for handling credential management commands
+        credentialManagement = setupCredentialManagement(session, state);
+        CredentialManagement.CredentialData credData = getFirstTestCredential(credentialManagement);
+
+        // change user name and display name
+        PublicKeyCredentialUserEntity updated = new PublicKeyCredentialUserEntity(
+                "UPDATED NAME",
+                (byte[]) credData.getUser().get("id"),
+                "UPDATED DISPLAY NAME");
+
+        // function under test
+        credentialManagement.updateUserInformation(credData.getCredentialId(), updated.toMap(SerializationType.CBOR));
+
+        // verify that information has been changed
+        CredentialManagement.CredentialData updatedCredData = getFirstTestCredential(credentialManagement);
+        Map<String, ?> updatedUserData = updatedCredData.getUser();
+
+        assertThat(updatedUserData.get("id"), equalTo(TestData.USER_ID));
+        assertThat(updatedUserData.get("name"), equalTo("UPDATED NAME"));
+        assertThat(updatedUserData.get("displayName"), equalTo("UPDATED DISPLAY NAME"));
+
+        deleteAllCredentials(credentialManagement);
+    }
+
+    // helper methods
+    private static void makeTestCredential(FidoTestState state, Ctap2Session session, byte[] pinAuth) throws IOException, CommandException {
+        final SerializationType cborType = SerializationType.CBOR;
+        session.makeCredential(
+                TestData.CLIENT_DATA_HASH,
+                TestData.RP.toMap(cborType),
+                TestData.USER.toMap(cborType),
+                Collections.singletonList(TestData.PUB_KEY_CRED_PARAMS_ES256.toMap(cborType)),
+                null,
+                null,
+                Collections.singletonMap("rk", true),
+                pinAuth,
+                state.getPinUvAuthProtocol().getVersion(),
+                null,
+                null
+        );
+    }
+
+    private static CredentialManagement.CredentialData getFirstTestCredential(CredentialManagement credentialManagement) throws IOException, CommandException {
+        List<CredentialManagement.RpData> rps = credentialManagement.enumerateRps();
+        assertThat(rps.size(), equalTo(1));
+        CredentialManagement.RpData rpData = rps.get(0);
+        assertThat(rpData.getRp().get("id"), equalTo(TestData.RP_ID));
+        List<CredentialManagement.CredentialData> creds = credentialManagement.enumerateCredentials(rpData.getRpIdHash());
+        assertThat(creds.size(), equalTo(1));
+        return creds.get(0);
+    }
+
 }

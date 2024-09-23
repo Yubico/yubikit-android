@@ -711,6 +711,25 @@ public class BasicWebAuthnClientTests {
             assertThat(Objects.requireNonNull(credentials.get(key))
                     .getId(), equalTo(TestData.USER_ID));
 
+            try {
+                PublicKeyCredentialUserEntity updatedUser = new PublicKeyCredentialUserEntity(
+                        "New name", credentials.get(key).getId(), "New display name"
+                );
+                credentialManager.updateUserInformation(key, updatedUser);
+
+                // verify new information
+                Map<PublicKeyCredentialDescriptor, PublicKeyCredentialUserEntity> updatedCreds =
+                        credentialManager.getCredentials(TestData.RP_ID);
+                assertThat(updatedCreds.size(), equalTo(1));
+                PublicKeyCredentialDescriptor updatedKey = updatedCreds.keySet().iterator().next();
+                PublicKeyCredentialUserEntity updatedUserEntity = Objects.requireNonNull(updatedCreds.get(updatedKey));
+                assertThat(updatedUserEntity.getId(), equalTo(TestData.USER_ID));
+                assertThat(updatedUserEntity.getName(), equalTo("New name"));
+                assertThat(updatedUserEntity.getDisplayName(), equalTo("New display name"));
+            } catch (UnsupportedOperationException unsupportedOperationException) {
+                // ignored
+            }
+
             credentialManager.deleteCredential(key);
             assertThat(credentialManager.getCredentialCount(), equalTo(0));
             assertTrue(credentialManager.getCredentials(TestData.RP_ID).isEmpty());
