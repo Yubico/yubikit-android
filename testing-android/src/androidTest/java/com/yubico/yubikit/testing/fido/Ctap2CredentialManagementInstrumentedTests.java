@@ -44,6 +44,12 @@ public class Ctap2CredentialManagementInstrumentedTests {
         public void testManagement() throws Throwable {
             withCtap2Session(Ctap2CredentialManagementTests::testManagement);
         }
+
+        @Test
+        @Category(SmokeTest.class)
+        public void testUpdateUserInformation() throws Throwable {
+            withCtap2Session(Ctap2CredentialManagementTests::testUpdateUserInformation);
+        }
     }
 
     @Category(PinUvAuthProtocolV1Test.class)

@@ -24,6 +24,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -84,11 +85,16 @@ public class CredentialManagement {
     }
 
     public static boolean isSupported(Ctap2Session.InfoData info) {
-        final Map<String, ?> options = info.getOptions();
-        if (Boolean.TRUE.equals(options.get("credMgmt"))) {
-            return true;
-        } else return info.getVersions().contains("FIDO_2_1_PRE") &&
-                Boolean.TRUE.equals(options.get("credentialMgmtPreview"));
+        return supportsCredMgmt(info) || supportsCredentialMgmtPreview(info);
+    }
+
+    private static boolean supportsCredMgmt(Ctap2Session.InfoData info) {
+        return Boolean.TRUE.equals(info.getOptions().get("credMgmt"));
+    }
+
+    private static boolean supportsCredentialMgmtPreview(Ctap2Session.InfoData info) {
+        return info.getVersions().contains("FIDO_2_1_PRE") &&
+                Boolean.TRUE.equals(info.getOptions().get("credentialMgmtPreview"));
     }
 
     private Map<Integer, ?> call(
@@ -200,6 +206,36 @@ public class CredentialManagement {
      */
     public void deleteCredential(Map<String, ?> credentialId) throws IOException, CommandException {
         call(CMD_DELETE_CREDENTIAL, Collections.singletonMap(PARAM_CREDENTIAL_ID, credentialId), true);
+    }
+
+    /**
+     * @return true if updating user information is supported
+     */
+    public boolean isUpdateUserInformationSupported() {
+        return supportsCredMgmt(ctap.getCachedInfo());
+    }
+
+    /**
+     * Update user information associated to a credential.
+     * Only supported on authenticators with version FIDO_2_1 and greater.
+     *
+     * @param credentialId A Map representing a PublicKeyCredentialDescriptor identifying a credential to delete.
+     * @param userEntity   A Map representing a PublicKeyCredentialUserEntity containing the updated information.
+     * @throws IOException      A communication error in the transport layer.
+     * @throws CommandException A communication in the protocol layer.
+     * @throws UnsupportedOperationException In case the functionality is not supported.
+     */
+    public void updateUserInformation(Map<String, ?> credentialId, Map<String, ?> userEntity)
+            throws IOException, CommandException {
+
+        if (!isUpdateUserInformationSupported()) {
+            throw new UnsupportedOperationException("Update user information not supported");
+        }
+
+        Map<Integer, Object> parameters = new HashMap<>();
+        parameters.put((int) PARAM_CREDENTIAL_ID, credentialId);
+        parameters.put((int) PARAM_USER, userEntity);
+        call(CMD_UPDATE_USER_INFORMATION, parameters, true);
     }
 
     /**

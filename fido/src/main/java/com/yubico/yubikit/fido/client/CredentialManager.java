@@ -128,4 +128,30 @@ public class CredentialManager {
             throw ClientError.wrapCtapException(e);
         }
     }
+
+    /**
+     * Update user information associated to a credential. Only name and displayName can be changed.
+     *
+     * @param credential A {@link PublicKeyCredentialDescriptor} which can be gotten from
+     *                   {@link #getCredentials(String)}.
+     * @param user       A {@link PublicKeyCredentialUserEntity} containing updated data.
+     * @throws IOException                   A communication error in the transport layer.
+     * @throws CommandException              A communication in the protocol layer.
+     * @throws ClientError                   A higher level error.
+     * @throws UnsupportedOperationException If the authenticator does not support updating user
+     *                                       information.
+     */
+    public void updateUserInformation(
+            PublicKeyCredentialDescriptor credential,
+            PublicKeyCredentialUserEntity user)
+            throws IOException, CommandException, ClientError, UnsupportedOperationException {
+        try {
+            credentialManagement.updateUserInformation(
+                    credential.toMap(SerializationType.CBOR),
+                    user.toMap(SerializationType.CBOR)
+            );
+        } catch (CtapException e) {
+            throw ClientError.wrapCtapException(e);
+        }
+    }
 }
