@@ -39,6 +39,8 @@ public class PublicKeyCredential extends Credential {
 
     private final byte[] rawId;
     private final AuthenticatorResponse response;
+    @Nullable
+    private final Map<String, Object> clientExtensionResults;
 
     /**
      * Constructs a new Webauthn PublicKeyCredential object
@@ -52,13 +54,34 @@ public class PublicKeyCredential extends Credential {
         super(id, PUBLIC_KEY_CREDENTIAL_TYPE);
         this.rawId = Base64.fromUrlSafeString(id);
         this.response = response;
+        this.clientExtensionResults = null;
     }
 
     /**
      * Constructs a new Webauthn PublicKeyCredential object
      *
-     * @param id       Credential id in binary form.
+     * @param id       Credential id in base64 url safe encoding.
      * @param response Operation response.
+     * @param clientExtensionResults results of requested extensions
+     * @see AuthenticatorAttestationResponse
+     * @see AuthenticatorAssertionResponse
+     */
+    public PublicKeyCredential(
+            String id,
+            AuthenticatorResponse response,
+            @Nullable Map<String, Object> clientExtensionResults)
+    {
+        super(id, PUBLIC_KEY_CREDENTIAL_TYPE);
+        this.rawId = Base64.fromUrlSafeString(id);
+        this.response = response;
+        this.clientExtensionResults = clientExtensionResults;
+    }
+
+    /**
+     * Constructs a new Webauthn PublicKeyCredential object
+     *
+     * @param id                     Credential id in binary form.
+     * @param response               Operation response.
      * @see AuthenticatorAttestationResponse
      * @see AuthenticatorAssertionResponse
      */
@@ -66,6 +89,27 @@ public class PublicKeyCredential extends Credential {
         super(Base64.toUrlSafeString(id), PUBLIC_KEY_CREDENTIAL_TYPE);
         this.rawId = id;
         this.response = response;
+        this.clientExtensionResults = null;
+    }
+
+    /**
+     * Constructs a new Webauthn PublicKeyCredential object
+     *
+     * @param id                     Credential id in binary form.
+     * @param response               Operation response.
+     * @param clientExtensionResults Results of requested extensions.
+     * @see AuthenticatorAttestationResponse
+     * @see AuthenticatorAssertionResponse
+     */
+    public PublicKeyCredential(
+            byte[] id,
+            AuthenticatorResponse response,
+            @Nullable Map<String, Object> clientExtensionResults
+    ) {
+        super(Base64.toUrlSafeString(id), PUBLIC_KEY_CREDENTIAL_TYPE);
+        this.rawId = id;
+        this.response = response;
+        this.clientExtensionResults = clientExtensionResults;
     }
 
     public byte[] getRawId() {
@@ -74,6 +118,11 @@ public class PublicKeyCredential extends Credential {
 
     public AuthenticatorResponse getResponse() {
         return response;
+    }
+
+    @Nullable
+    public Map<String, Object> getClientExtensionResults() {
+        return clientExtensionResults;
     }
 
     public Map<String, ?> toMap(SerializationType serializationType) {
@@ -144,8 +193,8 @@ public class PublicKeyCredential extends Credential {
                         assertion.getAuthenticatorData(),
                         assertion.getSignature(),
                         userId
-                )
-        );
+                ),
+                null);
     }
 
     @Override

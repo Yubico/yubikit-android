@@ -348,8 +348,8 @@ public class SerializationTest {
         // credentialId as byte[]
         PublicKeyCredential credential2 = new PublicKeyCredential(
                 credentialId,
-                response
-        );
+                response,
+                null);
 
         Assert.assertEquals(credentialIdB64UrlEncoded, credential2.getId());
         Assert.assertArrayEquals(credentialId, credential2.getRawId());

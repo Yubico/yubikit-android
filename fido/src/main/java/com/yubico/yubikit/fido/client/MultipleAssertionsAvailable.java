@@ -102,7 +102,7 @@ public class MultipleAssertionsAvailable extends Throwable {
                         assertion.getAuthenticatorData(),
                         assertion.getSignature(),
                         Objects.requireNonNull((byte[]) user.get(PublicKeyCredentialUserEntity.ID))
-                )
-        );
+                ),
+                null);
     }
 }

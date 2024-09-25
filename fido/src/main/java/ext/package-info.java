@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Yubico.
+ * Copyright (C) 2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,10 @@
  * limitations under the License.
  */
 
-package com.yubico.yubikit.fido.webauthn;
+/**
+ * Client and Authenticator extensions
+ */
+@PackageNonnullByDefault
+package ext;
 
-import java.util.Map;
-
-import javax.annotation.Nullable;
-
-public abstract class Extensions {
-    @Nullable
-    abstract public Map<String, Object> getInputs();
-}
+import com.yubico.yubikit.core.PackageNonnullByDefault;
