@@ -31,6 +31,7 @@ import com.yubico.yubikit.fido.webauthn.AttestationConveyancePreference;
 import com.yubico.yubikit.fido.webauthn.AttestationObject;
 import com.yubico.yubikit.fido.webauthn.AuthenticatorAttestationResponse;
 import com.yubico.yubikit.fido.webauthn.AuthenticatorSelectionCriteria;
+import com.yubico.yubikit.fido.webauthn.Extensions;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredential;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialCreationOptions;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialDescriptor;
@@ -114,17 +115,19 @@ public class BasicWebAuthnClient implements Closeable {
     private static class AuthParams {
         private final byte[] clientDataHash;
         @Nullable
-        private final byte[] pinUvAuthParam;
+        private final byte[] pinToken;
         @Nullable
-        private final Integer pinUvAuthProtocol;
+        private final PinUvAuthProtocol pinUvAuthProtocol;
+        @Nullable
+        private final byte[] pinUvAuthParam;
 
         AuthParams(
-                byte[] clientDataHash,
-                @Nullable byte[] pinUvAuthParam,
-                @Nullable Integer pinUvAuthProtocol) {
+                byte[] clientDataHash, @Nullable byte[] pinToken, @Nullable PinUvAuthProtocol pinUvAuthProtocol,
+                @Nullable byte[] pinUvAuthParam) {
             this.clientDataHash = clientDataHash;
-            this.pinUvAuthParam = pinUvAuthParam;
+            this.pinToken = pinToken;
             this.pinUvAuthProtocol = pinUvAuthProtocol;
+            this.pinUvAuthParam = pinUvAuthParam;
         }
     }
 
@@ -198,7 +201,7 @@ public class BasicWebAuthnClient implements Closeable {
         byte[] clientDataHash = hash(clientDataJson);
 
         try {
-            Ctap2Session.CredentialData credential = ctapMakeCredential(
+            CredentialDataWithExtensionResults credential = ctapMakeCredential(
                     clientDataHash,
                     options,
                     effectiveDomain,
@@ -207,7 +210,7 @@ public class BasicWebAuthnClient implements Closeable {
                     state
             );
 
-            final AttestationObject attestationObject = AttestationObject.fromCredential(credential);
+            final AttestationObject attestationObject = AttestationObject.fromCredential(credential.data);
 
             AuthenticatorAttestationResponse response = new AuthenticatorAttestationResponse(
                     clientDataJson,
@@ -218,7 +221,8 @@ public class BasicWebAuthnClient implements Closeable {
             return new PublicKeyCredential(
                     Objects.requireNonNull(attestationObject.getAuthenticatorData()
                             .getAttestedCredentialData()).getCredentialId(),
-                    response);
+                    response,
+                    credential.results);
         } catch (CtapException e) {
             if (e.getCtapError() == CtapException.ERR_PIN_INVALID) {
                 throw new PinInvalidClientError(e, clientPin.getPinRetries().getCount());
@@ -386,6 +390,17 @@ public class BasicWebAuthnClient implements Closeable {
         }
     }
 
+    static public class CredentialDataWithExtensionResults {
+        final Ctap2Session.CredentialData data;
+        final Map<String, Object> results;
+
+        CredentialDataWithExtensionResults(Ctap2Session.CredentialData data,
+                                           Map<String, Object> results) {
+            this.data = data;
+            this.results = results;
+        }
+    }
+
     /**
      * Create a new WebAuthn credential.
      * <p>
@@ -405,7 +420,7 @@ public class BasicWebAuthnClient implements Closeable {
      * @throws ClientError      A higher level error
      */
     @SuppressWarnings("unchecked")
-    protected Ctap2Session.CredentialData ctapMakeCredential(
+    protected CredentialDataWithExtensionResults ctapMakeCredential(
             byte[] clientDataHash,
             PublicKeyCredentialCreationOptions options,
             String effectiveDomain,
@@ -449,14 +464,15 @@ public class BasicWebAuthnClient implements Closeable {
 
 
         // prepare extensions
-        Map<String, Object> clientInputs = options.getExtensions().getInputs() != null
-                ? options.getExtensions().getInputs()
-                : new HashMap<>();
-
+        Extensions optionsExtensions = options.getExtensions();
         List<Extension> usedExtensions = new ArrayList<>();
-        int permissions = 0;
         Map<String, Object> extensionInputs = new HashMap<>();
-        for(String extensionName : extensions) {
+        int permissions = 0;
+
+        Map<String, ?> inputs = optionsExtensions != null ? optionsExtensions.getExtensions() : new HashMap<>();
+        Map<String, ?> clientInputs = inputs != null ? inputs : new HashMap<>();
+
+        for (String extensionName : extensions) {
             Extension extension = Extension.Builder.get(extensionName, ctap);
             if (extension == null) {
                 Logger.debug(logger, "Extension {} not supported", extensionName);
@@ -464,8 +480,7 @@ public class BasicWebAuthnClient implements Closeable {
             }
 
             Extension.InputWithPermission inputWithPermission =
-                    extension.processCreateInputWithPermissions(options.getExtensions()
-                            .getInputs());
+                    extension.processCreateInputWithPermissions(clientInputs);
 
             if (inputWithPermission.input != null) {
                 usedExtensions.add(extension);
@@ -473,7 +488,6 @@ public class BasicWebAuthnClient implements Closeable {
                 extensionInputs.put(extensionName, inputWithPermission.input);
             }
         }
-
 
         final AuthParams authParams = getAuthParams(
                 clientDataHash,
@@ -514,32 +528,32 @@ public class BasicWebAuthnClient implements Closeable {
                 extensionInputs,
                 ctapOptions.isEmpty() ? null : ctapOptions,
                 authParams.pinUvAuthParam,
-                authParams.pinUvAuthProtocol,
+                authParams.pinUvAuthProtocol != null ? authParams.pinUvAuthProtocol.getVersion() : null,
                 validatedEnterpriseAttestation,
                 state
         );
 
         // get extensions results
-
         boolean requiresResidentKey = authenticatorSelection != null &&
                 ResidentKeyRequirement.REQUIRED.equals(authenticatorSelection.getResidentKey());
 
         Map<String, Object> extensionOutputs = new HashMap<>();
         if (clientInputs.containsKey("credProps")) {
-            extensionOutputs.put("credProps",
-                    Collections.singletonMap(
-                            "rk", requiresResidentKey));
+            extensionOutputs.put("credProps", Collections.singletonMap("rk", requiresResidentKey));
         }
 
         for (Extension extension : usedExtensions) {
             Map<String, Object> output = extension.processCreateOutput(
                     AttestationObject.fromCredential(credentialData),
-                    authParams.pinUvAuthParam,
+                    authParams.pinToken,
                     authParams.pinUvAuthProtocol
-            )
+            );
+            if (output != null) {
+                extensionOutputs.put(extension.getName(), output);
+            }
         }
 
-        return credentialData;
+        return new CredentialDataWithExtensionResults(credentialData, extensionOutputs);
     }
 
 
@@ -604,7 +618,7 @@ public class BasicWebAuthnClient implements Closeable {
                     null,
                     ctapOptions.isEmpty() ? null : ctapOptions,
                     authParams.pinUvAuthParam,
-                    authParams.pinUvAuthProtocol,
+                    authParams.pinUvAuthProtocol != null ? authParams.pinUvAuthProtocol.getVersion() : null,
                     state
             );
         } catch (CtapException e) {
@@ -670,35 +684,26 @@ public class BasicWebAuthnClient implements Closeable {
         @Nullable byte[] authParam = null;
         @Nullable Integer authProtocolVersion = null;
 
-        try {
-            if (pin != null) {
-                authToken = clientPin.getPinToken(pin, permissions, rpId);
-                authParam = clientPin.getPinUvAuth().authenticate(authToken, clientDataHash);
-                authProtocolVersion = clientPin.getPinUvAuth().getVersion();
-            } else if (pinConfigured) {
-                if (shouldUv && uvConfigured) {
-                    if (ClientPin.isTokenSupported(ctap.getCachedInfo())) {
-                        authToken = clientPin.getUvToken(permissions, rpId, null);
-                        authParam = clientPin.getPinUvAuth().authenticate(authToken, clientDataHash);
-                        authProtocolVersion = clientPin.getPinUvAuth().getVersion();
-                    }
-                    // no authToken is created means that internal UV is used
-                } else {
-                    // the authenticator supports pin but no PIN was provided
-                    throw new PinRequiredClientError();
+        if (pin != null) {
+            authToken = clientPin.getPinToken(pin, permissions, rpId);
+            authParam = clientPin.getPinUvAuth().authenticate(authToken, clientDataHash);
+            authProtocolVersion = clientPin.getPinUvAuth().getVersion();
+        } else if (pinConfigured) {
+            if (shouldUv && uvConfigured) {
+                if (ClientPin.isTokenSupported(ctap.getCachedInfo())) {
+                    authToken = clientPin.getUvToken(permissions, rpId, null);
+                    authParam = clientPin.getPinUvAuth().authenticate(authToken, clientDataHash);
+                    authProtocolVersion = clientPin.getPinUvAuth().getVersion();
                 }
-            }
-            return new AuthParams(
-                    clientDataHash,
-                    authParam,
-                    authProtocolVersion
-            );
-
-        } finally {
-            if (authToken != null) {
-                Arrays.fill(authToken, (byte) 0);
+                // no authToken is created means that internal UV is used
+            } else {
+                // the authenticator supports pin but no PIN was provided
+                throw new PinRequiredClientError();
             }
         }
+        return new AuthParams(
+                clientDataHash, authToken, clientPin.getPinUvAuth(),
+                authParam);
     }
 
     /**

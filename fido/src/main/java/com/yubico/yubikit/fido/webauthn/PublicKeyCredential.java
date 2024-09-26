@@ -34,6 +34,7 @@ public class PublicKeyCredential extends Credential {
     public static final String RAW_ID = "rawId";
     public static final String RESPONSE = "response";
     public static final String AUTHENTICATOR_ATTACHMENT = "authenticatorAttachment";
+    public static final String CLIENT_EXTENSION_RESULTS = "clientExtensionResults";
 
     public static final String PUBLIC_KEY_CREDENTIAL_TYPE = "public-key";
 
@@ -132,6 +133,7 @@ public class PublicKeyCredential extends Credential {
         map.put(RAW_ID, serializeBytes(getRawId(), serializationType));
         map.put(AUTHENTICATOR_ATTACHMENT, AuthenticatorAttachment.CROSS_PLATFORM);
         map.put(RESPONSE, getResponse().toMap(serializationType));
+        map.put(CLIENT_EXTENSION_RESULTS, getClientExtensionResults());
         return map;
     }
 

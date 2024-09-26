@@ -19,8 +19,8 @@ package ext;
 import com.yubico.yubikit.fido.ctap.ClientPin;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
+import com.yubico.yubikit.fido.webauthn.AttestationObject;
 import com.yubico.yubikit.fido.webauthn.AuthenticatorAssertionResponse;
-import com.yubico.yubikit.fido.webauthn.AuthenticatorAttestationResponse;
 
 import java.util.Map;
 
@@ -61,11 +61,12 @@ public class Extension {
     }
 
 
-    @Nullable protected String name;
-    private final Ctap2Session session;
+    protected final String name;
+    protected final Ctap2Session session;
 
-    Extension(Ctap2Session session) {
+    Extension(Ctap2Session session, String name) {
         this.session = session;
+        this.name = name;
     }
 
     public boolean isSupported() {
@@ -73,18 +74,23 @@ public class Extension {
     }
 
     @Nullable
-    public Object processCreateInput(Map<String, Object> inputs) {
+    public String getName() {
+        return name;
+    }
+
+    @Nullable
+    public Object processCreateInput(Map<String, ?> inputs) {
         return null;
     }
 
-    public InputWithPermission processCreateInputWithPermissions(Map<String, Object> inputs) {
+    public InputWithPermission processCreateInputWithPermissions(Map<String, ?> inputs) {
         return new InputWithPermission(processCreateInput(inputs), ClientPin.PIN_PERMISSION_NONE);
     }
 
     @Nullable
     public Map<String, Object> processCreateOutput(
-            AuthenticatorAttestationResponse attestationResponse,
-            @Nullable String token,
+            AttestationObject attestationObject,
+            @Nullable byte[] token,
             @Nullable PinUvAuthProtocol pinUvAuthProtocol
     ) {
         return null;
@@ -111,33 +117,85 @@ public class Extension {
 
     static class HmacSecretExtension extends Extension {
         public HmacSecretExtension(Ctap2Session session) {
-            super(session);
+            super(session, "hmac-secret");
         }
     }
 
     static class LargeBlobExtension extends Extension {
         public LargeBlobExtension(Ctap2Session session) {
-            super(session);
+            super(session, "largeBlobKey");
         }
     }
 
     static class CredBlobExtension extends Extension {
         public CredBlobExtension(Ctap2Session session) {
-            super(session);
+            super(session, "credBlob");
         }
     }
 
     static class CredProtectExtension extends Extension {
+
+        static final String OPTIONAL = "userVerificationOptional";
+        static final String OPTIONAL_WITH_LIST = "userVerificationOptionalWithCredentialIDList";
+        static final String REQUIRED = "userVerificationRequired";
+
         public CredProtectExtension(Ctap2Session session) {
-            super(session);
+            super(session, "credProtect");
+        }
+
+        @Nullable
+        @Override
+        public Object processCreateInput(Map<String, ?> inputs) {
+            String credentialProtectionPolicy = (String) inputs.get("credentialProtectionPolicy");
+            if (credentialProtectionPolicy == null) {
+                return null;
+            }
+
+
+            @Nullable
+            Integer credProtect = null;
+            switch (credentialProtectionPolicy) {
+                case OPTIONAL:
+                    credProtect = 0x01;
+                    break;
+                case OPTIONAL_WITH_LIST:
+                    credProtect = 0x02;
+                    break;
+                case REQUIRED:
+                    credProtect = 0x03;
+                    break;
+            }
+            Boolean enforce = (Boolean) inputs.get("enforceCredentialProtectionPolicy");
+            if (Boolean.TRUE.equals(enforce) && !isSupported() && credProtect != null && credProtect > 0x01) {
+                throw new IllegalArgumentException("Authenticator does not support Credential Protection");
+            }
+
+            return credProtect;
         }
     }
 
     static class MinPinLengthExtension extends Extension {
         public MinPinLengthExtension(Ctap2Session session) {
-            super(session);
+            super(session, "minPinLength");
+        }
+
+        @Override
+        public boolean isSupported() {
+            return session.getCachedInfo().getOptions().containsKey("setMinPINLength");
+        }
+
+        @Nullable
+        @Override
+        public Object processCreateInput(Map<String, ?> inputs) {
+
+            if (!isSupported()) {
+                return null;
+            }
+            Boolean input = (Boolean) inputs.get(name);
+            if (input == null) {
+                return null;
+            }
+            return Boolean.TRUE.equals(input);
         }
     }
-
-
 }

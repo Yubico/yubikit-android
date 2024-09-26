@@ -20,7 +20,20 @@ import java.util.Map;
 
 import javax.annotation.Nullable;
 
-public abstract class Extensions {
+public class Extensions {
+    static Extensions fromMap(Map<String, ?> extensions) {
+        return new Extensions(extensions);
+    }
+
     @Nullable
-    abstract public Map<String, Object> getInputs();
+    private final Map<String, ?> extensions;
+
+    Extensions(@Nullable Map<String, ?> extensions) {
+        this.extensions = extensions;
+    }
+
+    @Nullable
+    public Map<String, ?> getExtensions() {
+        return extensions;
+    }
 }
