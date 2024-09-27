@@ -131,6 +131,26 @@ public class Extension {
         public CredBlobExtension(Ctap2Session session) {
             super(session, "credBlob");
         }
+
+        @Nullable
+        @Override
+        public Object processCreateInput(Map<String, ?> inputs) {
+            if (isSupported()) {
+                byte[] blob = (byte[]) inputs.get("credBlob");
+                if (blob != null &&
+                        blob.length <= session.getCachedInfo().getMaxCredBlobLength()) {
+                    return blob;
+                }
+            }
+
+            return null;
+        }
+
+        @Nullable
+        @Override
+        public Object processGetInput(Map<String, Object> inputs) {
+            return super.processGetInput(inputs);
+        }
     }
 
     static class CredProtectExtension extends Extension {
