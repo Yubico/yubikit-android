@@ -227,7 +227,7 @@ public class Extension {
                     };
                 }
             } catch (IOException | CommandException | GeneralSecurityException e) {
-                Logger.error(logger, "XXX Failure: ", e);
+                Logger.error(logger, "LargeBlob processing failed: ", e);
             }
 
             return null;
