@@ -18,6 +18,6 @@
  * Client and Authenticator extensions
  */
 @PackageNonnullByDefault
-package ext;
+package com.yubico.yubikit.fido.webauthn.ext;
 
 import com.yubico.yubikit.core.PackageNonnullByDefault;

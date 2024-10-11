@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Yubico.
+ * Copyright (C) 2020-2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,7 +41,7 @@ public class PublicKeyCredential extends Credential {
     private final byte[] rawId;
     private final AuthenticatorResponse response;
     @Nullable
-    private final Map<String, Object> clientExtensionResults;
+    private final Extension.ExtensionResults clientExtensionResults;
 
     /**
      * Constructs a new Webauthn PublicKeyCredential object
@@ -70,7 +70,7 @@ public class PublicKeyCredential extends Credential {
     public PublicKeyCredential(
             String id,
             AuthenticatorResponse response,
-            @Nullable Map<String, Object> clientExtensionResults)
+            @Nullable Extension.ExtensionResults clientExtensionResults)
     {
         super(id, PUBLIC_KEY_CREDENTIAL_TYPE);
         this.rawId = Base64.fromUrlSafeString(id);
@@ -105,7 +105,7 @@ public class PublicKeyCredential extends Credential {
     public PublicKeyCredential(
             byte[] id,
             AuthenticatorResponse response,
-            @Nullable Map<String, Object> clientExtensionResults
+            @Nullable Extension.ExtensionResults clientExtensionResults
     ) {
         super(Base64.toUrlSafeString(id), PUBLIC_KEY_CREDENTIAL_TYPE);
         this.rawId = id;
@@ -122,7 +122,7 @@ public class PublicKeyCredential extends Credential {
     }
 
     @Nullable
-    public Map<String, Object> getClientExtensionResults() {
+    public Extension.ExtensionResults getClientExtensionResults() {
         return clientExtensionResults;
     }
 
@@ -133,7 +133,9 @@ public class PublicKeyCredential extends Credential {
         map.put(RAW_ID, serializeBytes(getRawId(), serializationType));
         map.put(AUTHENTICATOR_ATTACHMENT, AuthenticatorAttachment.CROSS_PLATFORM);
         map.put(RESPONSE, getResponse().toMap(serializationType));
-        map.put(CLIENT_EXTENSION_RESULTS, getClientExtensionResults());
+        if (getClientExtensionResults() != null) {
+            map.put(CLIENT_EXTENSION_RESULTS, getClientExtensionResults().toMap(serializationType));
+        }
         return map;
     }
 
@@ -180,7 +182,8 @@ public class PublicKeyCredential extends Credential {
     public static PublicKeyCredential fromAssertion(
             Ctap2Session.AssertionData assertion,
             byte[] clientDataJson,
-            @Nullable List<PublicKeyCredentialDescriptor> allowCredentials) {
+            @Nullable List<PublicKeyCredentialDescriptor> allowCredentials,
+            @Nullable Extension.ExtensionResults clientExtensionResults) {
         byte[] userId = null;
         Map<String, ?> userMap = assertion.getUser();
         if (userMap != null) {
@@ -196,7 +199,7 @@ public class PublicKeyCredential extends Credential {
                         assertion.getSignature(),
                         userId
                 ),
-                null);
+                clientExtensionResults);
     }
 
     @Override

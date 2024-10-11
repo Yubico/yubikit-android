@@ -487,6 +487,40 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
     }
 
     /**
+     * This command allows a platform to store a larger amount of information associated with a credential.
+     *
+     * @param offset            the byte offset at which to read/write
+     * @param get               the number of bytes requested to read, must not be present if set is present
+     * @param set               a fragment to write, must not be present if get is present
+     * @param length            the total length of a write operation, present if, and only if, set is present
+     *                          and offset is zero
+     * @param pinUvAuthParam    first 16 bytes of HMAC-SHA-256 of contents using pinUvAuthToken
+     * @param pinUvAuthProtocol PIN/UV protocol version chosen by the platform
+     * @throws IOException      A communication error in the transport layer.
+     * @throws CommandException A communication in the protocol layer.
+     * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#authenticatorLargeBlobs">authenticatorLargeBlobs</a>
+     */
+    public Map<Integer, ?> largeBlobs(
+            int offset,
+            @Nullable Integer get,
+            @Nullable byte[] set,
+            @Nullable Integer length,
+            @Nullable byte[] pinUvAuthParam,
+            @Nullable Integer pinUvAuthProtocol
+    ) throws IOException, CommandException {
+        return sendCbor(
+                CMD_LARGE_BLOBS,
+                args(
+                        get,
+                        set,
+                        offset,
+                        length,
+                        pinUvAuthParam,
+                        pinUvAuthParam != null ? pinUvAuthProtocol : null),
+                null);
+    }
+
+    /**
      * This command is used to configure various authenticator features through the use of its
      * subcommands.
      * <p>
@@ -1050,6 +1084,8 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
 
     /**
      * Data class holding the result of getAssertion.
+     *
+     * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#authenticatorgetassertion-response-structure">authenticatorGetAssertion response structure</a>.
      */
     public static class AssertionData {
         private final static int RESULT_CREDENTIAL = 1;
@@ -1057,28 +1093,54 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
         private final static int RESULT_SIGNATURE = 3;
         private final static int RESULT_USER = 4;
         private final static int RESULT_N_CREDS = 5;
+        private final static int RESULT_USER_SELECTED = 6;
+        private final static int RESULT_LARGE_BLOB_KEY = 7;
 
         @Nullable
         private final Map<String, ?> credential;
+        private final byte[] authenticatorData;
+        private final byte[] signature;
         @Nullable
         private final Map<String, ?> user;
-        private final byte[] signature;
-        private final byte[] authenticatorData;
+        @Nullable
+        private final Integer numberOfCredentials;
+        @Nullable
+        private final Boolean userSelected;
+        @Nullable
+        private final byte[] largeBlobKey;
+        @Nullable
+        private final Map<String, ?> extensionOutput;
 
-        private AssertionData(@Nullable Map<String, ?> credential, @Nullable Map<String, ?> user, byte[] signature, byte[] authenticatorData) {
+        private AssertionData(
+                @Nullable Map<String, ?> credential,
+                byte[] authenticatorData,
+                byte[] signature,
+                @Nullable Map<String, ?> user,
+                @Nullable Integer numberOfCredentials,
+                @Nullable Boolean userSelected,
+                @Nullable byte[] largeBlobKey,
+                @Nullable Map<String, ?> extensionOutput) {
             this.credential = credential;
             this.user = user;
             this.signature = signature;
             this.authenticatorData = authenticatorData;
+            this.numberOfCredentials = numberOfCredentials;
+            this.userSelected = userSelected;
+            this.largeBlobKey = largeBlobKey;
+            this.extensionOutput = extensionOutput;
         }
 
         @SuppressWarnings("unchecked")
         private static AssertionData fromData(Map<Integer, ?> data) {
             return new AssertionData(
                     (Map<String, ?>) data.get(RESULT_CREDENTIAL),
-                    (Map<String, ?>) data.get(RESULT_USER),
+                    Objects.requireNonNull((byte[]) data.get(RESULT_AUTH_DATA)),
                     Objects.requireNonNull((byte[]) data.get(RESULT_SIGNATURE)),
-                    Objects.requireNonNull((byte[]) data.get(RESULT_AUTH_DATA))
+                    (Map<String, ?>) data.get(RESULT_USER),
+                    (Integer) data.get(RESULT_N_CREDS),
+                    (Boolean) data.get(RESULT_USER_SELECTED),
+                    (byte[]) data.get(RESULT_LARGE_BLOB_KEY),
+                    null
             );
         }
 
@@ -1119,6 +1181,53 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
          */
         public byte[] getAuthenticatorData() {
             return authenticatorData;
+        }
+
+        /**
+         * Total number of account credentials for the RP. Optional; defaults to one.
+         * This member is required when more than one credential is found for an RP, and
+         * the authenticator does not have a display or the UV/UP flags are false.
+         * <p>
+         * Omitted when returned for the authenticatorGetNextAssertion method.
+         *
+         * @return Total number of account credentials for the RP.
+         * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#authenticatorgetassertion-response-structure">authenticatorGetAssertion response structure</a>.
+         */
+        @Nullable
+        public Integer getNumberOfCredentials() {
+            return numberOfCredentials;
+        }
+
+        /**
+         * Indicates that a credential was selected by the user via interaction directly with
+         * the authenticator, and thus the platform does not need to confirm the credential.
+         * <p>
+         * Optional; defaults to false.
+         * <p>
+         * MUST NOT be present in response to a request where an allowList was given,
+         * where numberOfCredentials is greater than one, nor in response to
+         * an authenticatorGetNextAssertion request.
+         *
+         * @return True if the credential was selected by the user via interaction directly with
+         * the authenticator.
+         * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#authenticatorgetassertion-response-structure">authenticatorGetAssertion response structure</a>.
+         */
+        @Nullable
+        public Boolean getUserSelected() {
+            return userSelected;
+        }
+
+        /**
+         * The contents of the associated largeBlobKey if present for the asserted credential,
+         * and if largeBlobKey was true in the extensions input.
+         *
+         * @return The contents of the associated largeBlobKey.
+         * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#authenticatorgetassertion-response-structure">authenticatorGetAssertion response structure</a>.
+         * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#sctn-largeBlobKey-extension">Large Blob Key Extension</a>.
+         */
+        @Nullable
+        public byte[] getLargeBlobKey() {
+            return largeBlobKey;
         }
 
         /**

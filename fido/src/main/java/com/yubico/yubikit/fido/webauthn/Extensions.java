@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Yubico.
+ * Copyright (C) 2020-2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,23 +16,27 @@
 
 package com.yubico.yubikit.fido.webauthn;
 
+import java.util.Collections;
 import java.util.Map;
 
 import javax.annotation.Nullable;
 
 public class Extensions {
-    static Extensions fromMap(Map<String, ?> extensions) {
-        return new Extensions(extensions);
+
+    static Extensions empty() {
+        return new Extensions(Collections.emptyMap());
     }
 
-    @Nullable
+    static Extensions fromMap(Map<String, ?> input) {
+        return new Extensions(input);
+    }
+
     private final Map<String, ?> extensions;
 
-    Extensions(@Nullable Map<String, ?> extensions) {
-        this.extensions = extensions;
+    private Extensions(@Nullable Map<String, ?> extensions) {
+        this.extensions = extensions != null ? extensions : Collections.emptyMap();
     }
 
-    @Nullable
     public Map<String, ?> getExtensions() {
         return extensions;
     }

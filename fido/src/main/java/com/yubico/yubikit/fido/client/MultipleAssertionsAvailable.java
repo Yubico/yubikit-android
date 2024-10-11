@@ -34,9 +34,9 @@ import java.util.Objects;
  */
 public class MultipleAssertionsAvailable extends Throwable {
     private final byte[] clientDataJson;
-    private final List<Ctap2Session.AssertionData> assertions;
+    private final List<BasicWebAuthnClient.WithExtensionResults<Ctap2Session.AssertionData>> assertions;
 
-    MultipleAssertionsAvailable(byte[] clientDataJson, List<Ctap2Session.AssertionData> assertions) {
+    MultipleAssertionsAvailable(byte[] clientDataJson, List<BasicWebAuthnClient.WithExtensionResults<Ctap2Session.AssertionData>> assertions) {
         super("Request returned multiple assertions");
 
         this.clientDataJson = clientDataJson;
@@ -65,10 +65,10 @@ public class MultipleAssertionsAvailable extends Throwable {
      */
     public List<PublicKeyCredentialUserEntity> getUsers() throws UserInformationNotAvailableError {
         List<PublicKeyCredentialUserEntity> users = new ArrayList<>();
-        for (Ctap2Session.AssertionData assertion : assertions) {
+        for (BasicWebAuthnClient.WithExtensionResults<Ctap2Session.AssertionData> assertion : assertions) {
             try {
                 users.add(PublicKeyCredentialUserEntity.fromMap(
-                        Objects.requireNonNull(assertion.getUser()),
+                        Objects.requireNonNull(assertion.data.getUser()),
                         SerializationType.CBOR
                 ));
             } catch (NullPointerException e) {
@@ -89,20 +89,20 @@ public class MultipleAssertionsAvailable extends Throwable {
         if (assertions.isEmpty()) {
             throw new IllegalStateException("Assertion has already been selected");
         }
-        Ctap2Session.AssertionData assertion = assertions.get(index);
+        BasicWebAuthnClient.WithExtensionResults<Ctap2Session.AssertionData> assertion = assertions.get(index);
         assertions.clear();
 
-        final Map<String, ?> user = Objects.requireNonNull(assertion.getUser());
-        final Map<String, ?> credential = Objects.requireNonNull(assertion.getCredential());
+        final Map<String, ?> user = Objects.requireNonNull(assertion.data.getUser());
+        final Map<String, ?> credential = Objects.requireNonNull(assertion.data.getCredential());
         final byte[] credentialId = Objects.requireNonNull((byte[]) credential.get(PublicKeyCredentialDescriptor.ID));
         return new PublicKeyCredential(
                 credentialId,
                 new AuthenticatorAssertionResponse(
                         clientDataJson,
-                        assertion.getAuthenticatorData(),
-                        assertion.getSignature(),
+                        assertion.data.getAuthenticatorData(),
+                        assertion.data.getSignature(),
                         Objects.requireNonNull((byte[]) user.get(PublicKeyCredentialUserEntity.ID))
                 ),
-                null);
+                assertion.clientExtensionResults);
     }
 }

@@ -49,7 +49,6 @@ public class PublicKeyCredentialCreationOptions {
     @Nullable
     private final AuthenticatorSelectionCriteria authenticatorSelection;
     private final String attestation;
-    @Nullable
     private final Extensions extensions;
 
     public PublicKeyCredentialCreationOptions(
@@ -71,7 +70,7 @@ public class PublicKeyCredentialCreationOptions {
         this.excludeCredentials = excludeCredentials != null ? excludeCredentials : Collections.emptyList();
         this.authenticatorSelection = authenticatorSelection;
         this.attestation = attestation != null ? attestation : AttestationConveyancePreference.NONE;
-        this.extensions = extensions;
+        this.extensions = extensions != null ? extensions : Extensions.empty();
     }
 
     public PublicKeyCredentialRpEntity getRp() {
@@ -108,7 +107,6 @@ public class PublicKeyCredentialCreationOptions {
         return attestation;
     }
 
-    @Nullable
     public Extensions getExtensions() {
         return extensions;
     }
@@ -137,7 +135,7 @@ public class PublicKeyCredentialCreationOptions {
             map.put(AUTHENTICATOR_SELECTION, authenticatorSelection.toMap(serializationType));
         }
         map.put(ATTESTATION, attestation);
-        if (extensions != null) {
+        if (!extensions.getExtensions().isEmpty()) {
             map.put(EXTENSIONS, extensions);
         }
         return map;
