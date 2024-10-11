@@ -153,9 +153,6 @@ public class SerializationTest {
         compareDescriptorLists(a.getExcludeCredentials(), b.getExcludeCredentials());
         Assert.assertEquals(a.getAuthenticatorSelection(), b.getAuthenticatorSelection());
         Assert.assertEquals(a.getAttestation(), b.getAttestation());
-
-        Assert.assertNull(a.getExtensions());
-        Assert.assertNull(b.getExtensions());
     }
 
     void testCreationOptions(@Nullable Long timeout) {

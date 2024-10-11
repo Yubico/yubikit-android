@@ -18,6 +18,7 @@ package com.yubico.yubikit.fido.webauthn;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 
 import javax.annotation.Nullable;
 
@@ -39,5 +40,18 @@ public class Extensions {
 
     public Map<String, ?> getExtensions() {
         return extensions;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Extensions that = (Extensions) o;
+        return Objects.equals(extensions, that.extensions);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(extensions);
     }
 }
