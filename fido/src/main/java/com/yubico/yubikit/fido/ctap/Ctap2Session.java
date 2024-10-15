@@ -1108,8 +1108,6 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
         private final Boolean userSelected;
         @Nullable
         private final byte[] largeBlobKey;
-        @Nullable
-        private final Map<String, ?> extensionOutput;
 
         private AssertionData(
                 @Nullable Map<String, ?> credential,
@@ -1118,8 +1116,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
                 @Nullable Map<String, ?> user,
                 @Nullable Integer numberOfCredentials,
                 @Nullable Boolean userSelected,
-                @Nullable byte[] largeBlobKey,
-                @Nullable Map<String, ?> extensionOutput) {
+                @Nullable byte[] largeBlobKey) {
             this.credential = credential;
             this.user = user;
             this.signature = signature;
@@ -1127,7 +1124,6 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
             this.numberOfCredentials = numberOfCredentials;
             this.userSelected = userSelected;
             this.largeBlobKey = largeBlobKey;
-            this.extensionOutput = extensionOutput;
         }
 
         @SuppressWarnings("unchecked")
@@ -1139,8 +1135,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
                     (Map<String, ?>) data.get(RESULT_USER),
                     (Integer) data.get(RESULT_N_CREDS),
                     (Boolean) data.get(RESULT_USER_SELECTED),
-                    (byte[]) data.get(RESULT_LARGE_BLOB_KEY),
-                    null
+                    (byte[]) data.get(RESULT_LARGE_BLOB_KEY)
             );
         }
 

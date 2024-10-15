@@ -452,7 +452,7 @@ public class BasicWebAuthnClient implements Closeable {
         Map<String, ?> clientInputs = optionsExtensions.getExtensions();
 
         for (String extensionName : extensions) {
-            Extension extension = Extension.Builder.get(extensionName, ctap);
+            Extension extension = Extension.Builder.get(extensionName, ctap, this.clientPin.getPinUvAuth());
             if (extension == null) {
                 Logger.debug(logger, "Extension {} not supported", extensionName);
                 continue;
@@ -585,7 +585,7 @@ public class BasicWebAuthnClient implements Closeable {
         int permissions = ClientPin.PIN_PERMISSION_NONE;
 
         for (String extensionName : extensions) {
-            Extension extension = Extension.Builder.get(extensionName, ctap);
+            Extension extension = Extension.Builder.get(extensionName, ctap, clientPin.getPinUvAuth());
             if (extension == null) {
                 Logger.debug(logger, "Extension {} not supported", extensionName);
                 continue;

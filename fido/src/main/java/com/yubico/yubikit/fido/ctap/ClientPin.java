@@ -112,7 +112,7 @@ public class ClientPin {
         return Boolean.TRUE.equals(infoData.getOptions().get("pinUvAuthToken"));
     }
 
-    private Pair<Map<Integer, ?>, byte[]> getSharedSecret() throws IOException, CommandException {
+    public Pair<Map<Integer, ?>, byte[]> getSharedSecret() throws IOException, CommandException {
         Logger.debug(logger, "Getting shared secret");
         Map<Integer, ?> result = ctap.clientPin(
                 pinUvAuth.getVersion(),

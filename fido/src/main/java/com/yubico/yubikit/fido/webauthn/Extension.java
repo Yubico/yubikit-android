@@ -20,23 +20,28 @@ import static com.yubico.yubikit.fido.webauthn.SerializationUtils.serializeBytes
 
 import com.yubico.yubikit.core.application.CommandException;
 import com.yubico.yubikit.core.internal.Logger;
+import com.yubico.yubikit.core.util.Pair;
+import com.yubico.yubikit.core.util.StringUtils;
 import com.yubico.yubikit.fido.ctap.ClientPin;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
-import com.yubico.yubikit.fido.webauthn.AttestationObject;
-import com.yubico.yubikit.fido.webauthn.SerializationType;
-import com.yubico.yubikit.fido.webauthn.SerializationUtils;
 import com.yubico.yubikit.fido.webauthn.ext.LargeBlobs;
 
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import javax.annotation.Nullable;
 
@@ -63,18 +68,18 @@ public class Extension {
 
     static public class Builder {
         @Nullable
-        static public Extension get(String name, Ctap2Session session) {
+        static public Extension get(String name, Ctap2Session ctap, PinUvAuthProtocol pinUvAuthProtocol) {
             switch (name) {
                 case "hmac-secret":
-                    return new HmacSecretExtension(session);
+                    return new HmacSecretExtension(ctap, pinUvAuthProtocol);
                 case "largeBlobKey":
-                    return new LargeBlobExtension(session);
+                    return new LargeBlobExtension(ctap, pinUvAuthProtocol);
                 case "credBlob":
-                    return new CredBlobExtension(session);
+                    return new CredBlobExtension(ctap, pinUvAuthProtocol);
                 case "credProtect":
-                    return new CredProtectExtension(session);
+                    return new CredProtectExtension(ctap, pinUvAuthProtocol);
                 case "minPinLength":
-                    return new MinPinLengthExtension(session);
+                    return new MinPinLengthExtension(ctap, pinUvAuthProtocol);
             }
             return null;
         }
@@ -94,15 +99,17 @@ public class Extension {
 
 
     protected final String name;
-    protected final Ctap2Session session;
+    protected final Ctap2Session ctap;
+    protected final PinUvAuthProtocol pinUvAuthProtocol;
 
-    Extension(Ctap2Session session, String name) {
-        this.session = session;
+    Extension(Ctap2Session ctap, PinUvAuthProtocol pinUvAuthProtocol, String name) {
+        this.ctap = ctap;
+        this.pinUvAuthProtocol = pinUvAuthProtocol;
         this.name = name;
     }
 
     public boolean isSupported() {
-        return session.getCachedInfo().getExtensions().contains(name);
+        return ctap.getCachedInfo().getExtensions().contains(name);
     }
 
     @Nullable
@@ -145,24 +152,230 @@ public class Extension {
     }
 
     static class HmacSecretExtension extends Extension {
-        public HmacSecretExtension(Ctap2Session session) {
-            super(session, "hmac-secret");
+
+        private static final org.slf4j.Logger logger = LoggerFactory.getLogger(HmacSecretExtension.class);
+
+        private boolean prf = false;
+        private static final int SALT_LEN = 32;
+        private byte[] sharedSecret;
+
+        private static class Salts {
+            byte[] salt1;
+            byte[] salt2;
+
+            Salts(byte[] salt1, @Nullable byte[] salt2) {
+                this.salt1 = salt1;
+                this.salt2 = salt2 != null ? salt2 : new byte[0];
+            }
+        }
+
+        private byte[] prfSalt(byte[] secret) {
+            return hash(ByteBuffer
+                    .allocate(13 + secret.length)
+                    .put("WebAuthn PRF".getBytes(StandardCharsets.US_ASCII))
+                    .put((byte) 0x00)
+                    .put(secret)
+                    .array());
+        }
+
+        public HmacSecretExtension(Ctap2Session ctap, PinUvAuthProtocol pinUvAuthProtocol) {
+            super(ctap, pinUvAuthProtocol, "hmac-secret");
+        }
+
+        @Nullable
+        @Override
+        public Object processCreateInput(Map<String, ?> inputs) {
+            if (Boolean.TRUE.equals(inputs.get("hmacCreateSecret"))) {
+                prf = false;
+                return true;
+            } else if (inputs.get("prf") != null) {
+                prf = true;
+                return true;
+            }
+            return null;
+        }
+
+        @Nullable
+        @Override
+        public ExtensionResult processCreateOutput(
+                AttestationObject attestationObject,
+                @Nullable byte[] token,
+                @Nullable PinUvAuthProtocol pinUvAuthProtocol) {
+            Map<String, ?> extensions = attestationObject.getAuthenticatorData().getExtensions();
+
+            boolean enabled = extensions != null && Boolean.TRUE.equals(extensions.get(name));
+            return new ExtensionResult() {
+                @Override
+                public Map<String, Object> toMap(SerializationType serializationType) {
+                    if (prf) {
+                        return Collections.singletonMap(
+                                "prf",
+                                Collections.singletonMap(
+                                        "enabled", enabled));
+                    } else {
+                        return Collections.singletonMap(
+                                "hmacCreateSecret", enabled);
+                    }
+                }
+            };
+        }
+
+        @SuppressWarnings("unchecked")
+        @Nullable
+        @Override
+        public Object processGetInput(Map<String, ?> inputs) {
+            if (!isSupported()) {
+                return null;
+            }
+
+
+            Salts salts;
+            Map<String, Object> data = (Map<String, Object>) inputs.get("prf");
+            if (data != null) {
+                Map<String, Object> secrets = (Map<String, Object>) data.get("eval");
+
+                byte[] first = SerializationUtils.deserializeBytes(
+                        Objects.requireNonNull((String) secrets.get("first")),
+                        SerializationType.JSON);
+
+                byte[] second = secrets.containsKey("second")
+                        ? prfSalt(
+                        SerializationUtils.deserializeBytes(
+                                secrets.get("second"),
+                                SerializationType.JSON
+                        ))
+                        : null;
+
+                salts = new Salts(prfSalt(first), second);
+
+                Logger.debug(logger, "Inputs: {}, {}", secrets.get("first"), secrets.get("second"));
+                Logger.debug(logger, "Salts: {}, {}", StringUtils.bytesToHex(salts.salt1), StringUtils.bytesToHex(salts.salt2));
+
+                prf = true;
+            } else {
+                data = (Map<String, Object>) inputs.get("hmacGetSecret");
+                if (data == null) {
+                    return null;
+                }
+                salts = new Salts(prfSalt(Objects.requireNonNull((byte[]) data.get("salt1"))),
+                        data.containsKey("salt2")
+                                ? prfSalt(Objects.requireNonNull((byte[]) data.get("salt2")))
+                                : null);
+                prf = false;
+            }
+
+            if (!(salts.salt1.length == SALT_LEN &&
+                    (salts.salt2.length == 0 || salts.salt2.length == SALT_LEN))) {
+                throw new IllegalArgumentException("Invalid salt length");
+            }
+
+            final ClientPin clientPin = new ClientPin(ctap, pinUvAuthProtocol);
+            try {
+                Pair<Map<Integer, ?>, byte[]> keyAgreemenbt = clientPin.getSharedSecret();
+
+                this.sharedSecret = keyAgreemenbt.second;
+
+                byte[] saltEnc = pinUvAuthProtocol.encrypt(
+                        sharedSecret,
+                        ByteBuffer
+                                .allocate(salts.salt1.length + salts.salt2.length)
+                                .put(salts.salt1)
+                                .put(salts.salt2)
+                                .array());
+
+                byte[] saltAuth = pinUvAuthProtocol.authenticate(
+                        keyAgreemenbt.second,
+                        saltEnc);
+
+                final Map<Integer, Object> hmacGetSecretInput = new HashMap<>();
+                hmacGetSecretInput.put(1, keyAgreemenbt.first);
+                hmacGetSecretInput.put(2, saltEnc);
+                hmacGetSecretInput.put(3, saltAuth);
+                hmacGetSecretInput.put(4, clientPin.getPinUvAuth().getVersion());
+                return hmacGetSecretInput;
+            } catch (IOException | CommandException e) {
+                return null;
+            }
+        }
+
+        @Nullable
+        @Override
+        public ExtensionResult processGetOutput(
+                Ctap2Session.AssertionData assertionData,
+                @Nullable byte[] pinUvAuthToken,
+                @Nullable PinUvAuthProtocol pinUvAuthProtocol) {
+
+            AuthenticatorData authenticatorData = AuthenticatorData.parseFrom(ByteBuffer.wrap(
+                    assertionData.getAuthenticatorData()
+            ));
+
+            Map<String, ?> extensionOutputs = authenticatorData.getExtensions();
+            if (extensionOutputs == null) {
+                return null;
+            }
+
+            byte[] value = (byte[]) extensionOutputs.get(name);
+            if (value == null) {
+                return null;
+            }
+
+            byte[] decrypted = this.pinUvAuthProtocol.decrypt(sharedSecret, value);
+
+            byte[] output1 = Arrays.copyOf(decrypted, SALT_LEN);
+            byte[] output2 = Arrays.copyOfRange(decrypted, SALT_LEN, 2 * SALT_LEN);
+
+            Logger.debug(logger, "Decrypted:  {}, o1: {}, o2: {}",
+                    StringUtils.bytesToHex(decrypted),
+                    StringUtils.bytesToHex(output1),
+                    StringUtils.bytesToHex(output2));
+
+
+            if (prf) {
+                return new ExtensionResult() {
+                    @Override
+                    public Map<String, Object> toMap(SerializationType serializationType) {
+
+                        Map<String, Object> results = new HashMap<>();
+                        results.put("first", SerializationUtils.serializeBytes(output1, serializationType));
+                        if (output2.length > 0) {
+                            results.put("second", SerializationUtils.serializeBytes(output2, serializationType));
+                        }
+
+                        return Collections.singletonMap(
+                                "prf",
+                                Collections.singletonMap("results", results));
+                    }
+                };
+            } else {
+                return new ExtensionResult() {
+                    @Override
+                    public Map<String, Object> toMap(SerializationType serializationType) {
+                        Map<String, Object> results = new HashMap<>();
+                        results.put("output1", SerializationUtils.serializeBytes(output1, serializationType));
+                        if (output2.length > 0) {
+                            results.put("output2", SerializationUtils.serializeBytes(output2, serializationType));
+                        }
+
+                        return Collections.singletonMap("hmacGetSecret", results);
+                    }
+                };
+            }
         }
     }
 
     static class LargeBlobExtension extends Extension {
 
-        private static final org.slf4j.Logger logger = LoggerFactory.getLogger(Extension.class);
+        private static final org.slf4j.Logger logger = LoggerFactory.getLogger(LargeBlobExtension.class);
 
         @Nullable private Object action = null;
 
-        public LargeBlobExtension(Ctap2Session session) {
-            super(session, "largeBlobKey");
+        public LargeBlobExtension(Ctap2Session ctap, PinUvAuthProtocol pinUvAuthProtocol) {
+            super(ctap, pinUvAuthProtocol, "largeBlobKey");
         }
 
         @Override
         public boolean isSupported() {
-            return super.isSupported() && session.getCachedInfo().getOptions()
+            return super.isSupported() && ctap.getCachedInfo().getOptions()
                     .containsKey("largeBlobs");
         }
 
@@ -198,7 +411,7 @@ public class Extension {
 
             try {
                 if (Boolean.TRUE.equals(action)) {
-                    LargeBlobs largeBlobs = new LargeBlobs(session);
+                    LargeBlobs largeBlobs = new LargeBlobs(ctap);
                     byte[] blob = largeBlobs.getBlob(largeBlobKey);
                     return new ExtensionResult() {
                         @Override
@@ -212,7 +425,7 @@ public class Extension {
                     };
                 } else if (action != null && action instanceof byte[]) {
                     byte[] bytes = (byte[]) action;
-                    LargeBlobs largeBlobs = new LargeBlobs(session, pinUvAuthProtocol, pinUvAuthToken);
+                    LargeBlobs largeBlobs = new LargeBlobs(ctap, pinUvAuthProtocol, pinUvAuthToken);
                     largeBlobs.putBlob(largeBlobKey, bytes);
 
                     return new ExtensionResult() {
@@ -290,8 +503,8 @@ public class Extension {
     }
 
     static class CredBlobExtension extends Extension {
-        public CredBlobExtension(Ctap2Session session) {
-            super(session, "credBlob");
+        public CredBlobExtension(Ctap2Session ctap, PinUvAuthProtocol pinUvAuthProtocol) {
+            super(ctap, pinUvAuthProtocol, "credBlob");
         }
 
         @Nullable
@@ -299,7 +512,7 @@ public class Extension {
         public Object processCreateInput(Map<String, ?> inputs) {
             if (isSupported()) {
                 byte[] blob = (byte[]) inputs.get("credBlob");
-                if (blob != null && blob.length <= session.getCachedInfo().getMaxCredBlobLength()) {
+                if (blob != null && blob.length <= ctap.getCachedInfo().getMaxCredBlobLength()) {
                     return blob;
                 }
             }
@@ -320,8 +533,8 @@ public class Extension {
         static final String OPTIONAL_WITH_LIST = "userVerificationOptionalWithCredentialIDList";
         static final String REQUIRED = "userVerificationRequired";
 
-        public CredProtectExtension(Ctap2Session session) {
-            super(session, "credProtect");
+        public CredProtectExtension(Ctap2Session ctap, PinUvAuthProtocol pinUvAuthProtocol) {
+            super(ctap, pinUvAuthProtocol, "credProtect");
         }
 
         @Nullable
@@ -355,13 +568,13 @@ public class Extension {
     }
 
     static class MinPinLengthExtension extends Extension {
-        public MinPinLengthExtension(Ctap2Session session) {
-            super(session, "minPinLength");
+        public MinPinLengthExtension(Ctap2Session ctap, PinUvAuthProtocol pinUvAuthProtocol) {
+            super(ctap, pinUvAuthProtocol, "minPinLength");
         }
 
         @Override
         public boolean isSupported() {
-            return super.isSupported() && session.getCachedInfo().getOptions()
+            return super.isSupported() && ctap.getCachedInfo().getOptions()
                     .containsKey("setMinPINLength");
         }
 
@@ -377,6 +590,14 @@ public class Extension {
                 return null;
             }
             return Boolean.TRUE.equals(input);
+        }
+    }
+
+    static byte[] hash(byte[] message) {
+        try {
+            return MessageDigest.getInstance("SHA-256").digest(message);
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
         }
     }
 }
