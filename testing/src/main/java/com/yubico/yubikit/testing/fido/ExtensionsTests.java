@@ -36,10 +36,12 @@ import com.yubico.yubikit.fido.webauthn.ResidentKeyRequirement;
 import com.yubico.yubikit.fido.webauthn.SerializationType;
 
 import org.junit.Assert;
+import org.junit.Assume;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -89,9 +91,174 @@ public class ExtensionsTests {
         });
     }
 
+    @SuppressWarnings("unchecked")
+    public static void testPrfExtension(FidoTestState state) throws Throwable {
+        final String PRF_EXT = "prf";
+
+        // non-discoverable credential
+        {
+            // no output when no input
+            state.withCtap2(session -> {
+                Assume.assumeTrue(session.getCachedInfo().getExtensions().contains("hmac-secret"));
+                BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
+                PublicKeyCredential cred = new Builder(webauthn).create();
+                Map<String, ?> result = getResult(cred.getClientExtensionResults(), PRF_EXT);
+                Assert.assertNull(result);
+            });
+
+            // { prf: { enabled: true } }
+            PublicKeyCredentialDescriptor credDesc = state.withCtap2(session -> {
+                BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
+                PublicKeyCredential cred = new Builder(webauthn)
+                        .extensions(Collections.singletonMap(PRF_EXT, Collections.emptyMap()))
+                        .create();
+                Map<String, ?> result = getResult(cred.getClientExtensionResults(), PRF_EXT);
+                Assert.assertNotNull(result);
+                Assert.assertEquals(Boolean.TRUE, result.get("enabled"));
+                return new PublicKeyCredentialDescriptor("public-key", cred.getRawId());
+            });
+
+            // assertion with { eval: { first: "value" } }
+            // { prf: { results: { first: String } } }
+            state.withCtap2(session -> {
+                BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
+                PublicKeyCredential cred = new Builder(webauthn)
+                        // this is no discoverable key, we have to pass the id
+                        .allowedCredentials(Collections.singletonList(credDesc))
+                        .extensions(Collections.singletonMap(PRF_EXT,
+                                Collections.singletonMap("eval",
+                                        Collections.singletonMap("first", "abba"))))
+                        .getAssertions();
+                Map<String, ?> result = getResult(cred.getClientExtensionResults(), PRF_EXT);
+                Assert.assertNotNull(result);
+                Assert.assertFalse(result.containsKey("enabled"));
+                Assert.assertTrue(result.containsKey("results"));
+                Map<String, ?> results = (Map<String, ?>) result.get("results");
+                Assert.assertTrue(results.containsKey("first"));
+                Assert.assertTrue(results.get("first") instanceof String);
+                Assert.assertFalse(results.containsKey("second"));
+            });
+
+            // assertion with { eval: { first: "value", second: "value" } }
+            // { prf: { results: { first: String, second: String } } }
+            state.withCtap2(session -> {
+                BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
+
+                Map<String, Object> eval = new HashMap<>();
+                eval.put("first", "abba");
+                eval.put("second", "bebe");
+
+                PublicKeyCredential cred = new Builder(webauthn)
+                        // this is no discoverable key, we have to pass the id
+                        .allowedCredentials(Collections.singletonList(credDesc))
+                        .extensions(Collections.singletonMap(PRF_EXT,
+                                Collections.singletonMap("eval", eval)))
+                        .getAssertions();
+                Map<String, ?> result = getResult(cred.getClientExtensionResults(), PRF_EXT);
+                Assert.assertNotNull(result);
+                Assert.assertFalse(result.containsKey("enabled"));
+                Assert.assertTrue(result.containsKey("results"));
+                Map<String, ?> results = (Map<String, ?>) result.get("results");
+                Assert.assertTrue(results.containsKey("first"));
+                Assert.assertTrue(results.get("first") instanceof String);
+                Assert.assertTrue(results.containsKey("second"));
+                Assert.assertTrue(results.get("second") instanceof String);
+            });
+        }
+
+        // discoverable credential
+        {
+            // no output when no input
+            state.withCtap2(session -> {
+                Assume.assumeTrue(session.getCachedInfo().getExtensions().contains("hmac-secret"));
+                BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
+                PublicKeyCredential cred = new Builder(webauthn).residentKey(true).create();
+                Map<String, ?> result = getResult(cred.getClientExtensionResults(), PRF_EXT);
+                Assert.assertNull(result);
+                deleteCredentials(webauthn, Collections.singletonList(cred.getRawId()));
+            });
+
+            // { prf: { enabled: true } }
+            PublicKeyCredentialDescriptor credDesc = state.withCtap2(session -> {
+                BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
+                PublicKeyCredential cred = new Builder(webauthn)
+                        .residentKey(true)
+                        .extensions(Collections.singletonMap(PRF_EXT, Collections.emptyMap()))
+                        .create();
+                Map<String, ?> result = getResult(cred.getClientExtensionResults(), PRF_EXT);
+                Assert.assertNotNull(result);
+                Assert.assertEquals(Boolean.TRUE, result.get("enabled"));
+                return new PublicKeyCredentialDescriptor("public-key", cred.getRawId());
+            });
+
+            // assertion with { eval: { first: "value" } }
+            // { prf: { results: { first: String } } }
+            state.withCtap2(session -> {
+                BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
+                PublicKeyCredential cred = new Builder(webauthn)
+                        .extensions(Collections.singletonMap(PRF_EXT,
+                                Collections.singletonMap("eval",
+                                        Collections.singletonMap("first", "abba"))))
+                        .getAssertions();
+                Map<String, ?> result = getResult(cred.getClientExtensionResults(), PRF_EXT);
+                Assert.assertNotNull(result);
+                Assert.assertFalse(result.containsKey("enabled"));
+                Assert.assertTrue(result.containsKey("results"));
+                Map<String, ?> results = (Map<String, ?>) result.get("results");
+                Assert.assertTrue(results.containsKey("first"));
+                Assert.assertTrue(results.get("first") instanceof String);
+                Assert.assertFalse(results.containsKey("second"));
+            });
+
+            // assertion with { eval: { first: "value", second: "value" } }
+            // { prf: { results: { first: String, second: String } } }
+            state.withCtap2(session -> {
+                BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
+
+                Map<String, Object> eval = new HashMap<>();
+                eval.put("first", "abba");
+                eval.put("second", "bebe");
+
+                PublicKeyCredential cred = new Builder(webauthn)
+                        .extensions(Collections.singletonMap(PRF_EXT,
+                                Collections.singletonMap("eval", eval)))
+                        .getAssertions();
+                Map<String, ?> result = getResult(cred.getClientExtensionResults(), PRF_EXT);
+                Assert.assertNotNull(result);
+                Assert.assertFalse(result.containsKey("enabled"));
+                Assert.assertTrue(result.containsKey("results"));
+                Map<String, ?> results = (Map<String, ?>) result.get("results");
+                Assert.assertTrue(results.containsKey("first"));
+                Assert.assertTrue(results.get("first") instanceof String);
+                Assert.assertTrue(results.containsKey("second"));
+                Assert.assertTrue(results.get("second") instanceof String);
+
+                deleteCredentials(webauthn, Collections.singletonList(credDesc.getId()));
+            });
+        }
+    }
+
+    // this test is active only on devices without hmac-secret
+    public static void testPrfExtensionNoSupport(FidoTestState state) throws Throwable {
+        final String PRF_EXT = "prf";
+
+        // { prf: { enabled: false } }
+        state.withCtap2(session -> {
+            Assume.assumeFalse(session.getCachedInfo().getExtensions().contains("hmac-secret"));
+            BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
+            PublicKeyCredential cred = new Builder(webauthn)
+                    .extensions(Collections.singletonMap(PRF_EXT, Collections.emptyMap()))
+                    .create();
+            Map<String, ?> result = getResult(cred.getClientExtensionResults(), PRF_EXT);
+            Assert.assertNotNull(result);
+            Assert.assertEquals(Boolean.FALSE, result.get("enabled"));
+        });
+    }
 
     static class Builder {
         final BasicWebAuthnClient client;
+
+        List<PublicKeyCredentialDescriptor> allowedCredentials = null;
         boolean residentKey = false;
 
         @Nullable
@@ -110,6 +277,11 @@ public class ExtensionsTests {
             this.extensions = extensions == null
                     ? null
                     : Extensions.fromMap(extensions);
+            return this;
+        }
+
+        Builder allowedCredentials(@Nullable List<PublicKeyCredentialDescriptor> allowedCredentials) {
+            this.allowedCredentials = allowedCredentials;
             return this;
         }
 
@@ -139,7 +311,7 @@ public class ExtensionsTests {
                     TestData.CHALLENGE,
                     (long) 90000,
                     TestData.RP_ID,
-                    null,
+                    allowedCredentials,
                     null,
                     extensions
             );

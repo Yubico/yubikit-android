@@ -37,6 +37,16 @@ public class ExtensionsInstrumentedTests {
         public void testCredPropsExtension() throws Throwable {
             withDevice(ExtensionsTests::testCredPropsExtension);
         }
+
+        @Test
+        public void testPrfExtension() throws Throwable {
+            withDevice(ExtensionsTests::testPrfExtension);
+        }
+
+        @Test
+        public void testPrfExtensionNoSupport() throws Throwable {
+            withDevice(ExtensionsTests::testPrfExtensionNoSupport);
+        }
     }
 
     @Category(PinUvAuthProtocolV1Test.class)

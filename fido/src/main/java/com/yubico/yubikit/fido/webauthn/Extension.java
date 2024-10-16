@@ -228,14 +228,20 @@ public class Extension {
                 return null;
             }
 
-
             Salts salts;
             Map<String, Object> data = (Map<String, Object>) inputs.get("prf");
             if (data != null) {
                 Map<String, Object> secrets = (Map<String, Object>) data.get("eval");
+                if (secrets == null) {
+                    return null;
+                }
+                String firstInput = (String) secrets.get("first");
+                if (firstInput == null) {
+                    return null;
+                }
 
                 byte[] first = SerializationUtils.deserializeBytes(
-                        Objects.requireNonNull((String) secrets.get("first")),
+                        Objects.requireNonNull(firstInput),
                         SerializationType.JSON);
 
                 byte[] second = secrets.containsKey("second")
@@ -271,9 +277,9 @@ public class Extension {
 
             final ClientPin clientPin = new ClientPin(ctap, pinUvAuthProtocol);
             try {
-                Pair<Map<Integer, ?>, byte[]> keyAgreemenbt = clientPin.getSharedSecret();
+                Pair<Map<Integer, ?>, byte[]> keyAgreement = clientPin.getSharedSecret();
 
-                this.sharedSecret = keyAgreemenbt.second;
+                this.sharedSecret = keyAgreement.second;
 
                 byte[] saltEnc = pinUvAuthProtocol.encrypt(
                         sharedSecret,
@@ -284,11 +290,11 @@ public class Extension {
                                 .array());
 
                 byte[] saltAuth = pinUvAuthProtocol.authenticate(
-                        keyAgreemenbt.second,
+                        keyAgreement.second,
                         saltEnc);
 
                 final Map<Integer, Object> hmacGetSecretInput = new HashMap<>();
-                hmacGetSecretInput.put(1, keyAgreemenbt.first);
+                hmacGetSecretInput.put(1, keyAgreement.first);
                 hmacGetSecretInput.put(2, saltEnc);
                 hmacGetSecretInput.put(3, saltAuth);
                 hmacGetSecretInput.put(4, clientPin.getPinUvAuth().getVersion());
@@ -322,7 +328,9 @@ public class Extension {
             byte[] decrypted = this.pinUvAuthProtocol.decrypt(sharedSecret, value);
 
             byte[] output1 = Arrays.copyOf(decrypted, SALT_LEN);
-            byte[] output2 = Arrays.copyOfRange(decrypted, SALT_LEN, 2 * SALT_LEN);
+            byte[] output2 = decrypted.length > SALT_LEN
+                    ? Arrays.copyOfRange(decrypted, SALT_LEN, 2 * SALT_LEN)
+                    : new byte[0];
 
             Logger.debug(logger, "Decrypted:  {}, o1: {}, o2: {}",
                     StringUtils.bytesToHex(decrypted),
@@ -451,7 +459,7 @@ public class Extension {
             @SuppressWarnings("unchecked")
             Map<String, Object> data = inputs.containsKey("largeBlob")
                     ? (Map<String, Object>) processGetInput((Map<String, Object>) inputs.get("largeBlob"))
-                    : Collections.emptyMap();
+                    : null;
 
             int permissions = ClientPin.PIN_PERMISSION_NONE;
 
@@ -518,12 +526,6 @@ public class Extension {
             }
 
             return null;
-        }
-
-        @Nullable
-        @Override
-        public Object processGetInput(Map<String, ?> inputs) {
-            return super.processGetInput(inputs);
         }
     }
 
