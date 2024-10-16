@@ -24,11 +24,11 @@ import javax.annotation.Nullable;
 
 public class Extensions {
 
-    static Extensions empty() {
+    public static Extensions empty() {
         return new Extensions(Collections.emptyMap());
     }
 
-    static Extensions fromMap(Map<String, ?> input) {
+    public static Extensions fromMap(Map<String, ?> input) {
         return new Extensions(input);
     }
 

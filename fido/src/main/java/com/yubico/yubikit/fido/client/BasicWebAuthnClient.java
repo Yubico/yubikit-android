@@ -399,6 +399,14 @@ public class BasicWebAuthnClient implements Closeable {
             this.data = data;
             this.clientExtensionResults = clientExtensionResults;
         }
+
+        public T getData() {
+            return data;
+        }
+
+        public Extension.ExtensionResults getClientExtensionResults() {
+            return clientExtensionResults;
+        }
     }
 
     /**
