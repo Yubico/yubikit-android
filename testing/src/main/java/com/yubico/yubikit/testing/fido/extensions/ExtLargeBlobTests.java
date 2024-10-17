@@ -63,7 +63,7 @@ public class ExtLargeBlobTests {
         state.withCtap2(session -> {
             Assume.assumeTrue(session.getCachedInfo().getExtensions().contains(LARGE_BLOB_KEY));
             PublicKeyCredential cred = new ClientHelper(session).makeCredential();
-            Map<String, ?> result = getResult(cred.getClientExtensionResults());
+            Map<String, ?> result = getResult(cred);
             Assert.assertNull(result);
         });
 
@@ -118,7 +118,7 @@ public class ExtLargeBlobTests {
                                             Collections.singletonMap(KEY_READ, true)))
                                     .build());
 
-            Map<String, ?> result = getResult(cred.getClientExtensionResults());
+            Map<String, ?> result = getResult(cred);
             Assert.assertNotNull(result); // nothing has been written yet
             if (result.isEmpty()) {
                 return new byte[0];
@@ -174,14 +174,15 @@ public class ExtLargeBlobTests {
 
     @Nullable
     private Object getResultValue(PublicKeyCredential credential, String key) {
-        Map<String, ?> largeBlob = getResult(credential.getClientExtensionResults());
+        Map<String, ?> largeBlob = getResult(credential);
         Assert.assertNotNull(largeBlob);
         return largeBlob.get(key);
     }
 
     @SuppressWarnings("unchecked")
     @Nullable
-    private Map<String, ?> getResult(Extension.ExtensionResults results) {
+    private Map<String, ?> getResult(PublicKeyCredential cred) {
+        Extension.ExtensionResults results = cred.getClientExtensionResults();;
         Assert.assertNotNull(results);
         Map<String, Object> resultsMap = results.toMap(SerializationType.JSON);
         return (Map<String, ?>) resultsMap.get(LARGE_BLOB);

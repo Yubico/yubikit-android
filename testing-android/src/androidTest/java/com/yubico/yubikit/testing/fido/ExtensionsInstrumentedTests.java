@@ -19,7 +19,9 @@ package com.yubico.yubikit.testing.fido;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV1;
 import com.yubico.yubikit.testing.PinUvAuthProtocolV1Test;
+import com.yubico.yubikit.testing.fido.extensions.ExtCredPropsTests;
 import com.yubico.yubikit.testing.fido.extensions.ExtLargeBlobTests;
+import com.yubico.yubikit.testing.fido.extensions.ExtPrfTests;
 import com.yubico.yubikit.testing.framework.FidoInstrumentedTests;
 
 import org.junit.Test;
@@ -36,17 +38,17 @@ public class ExtensionsInstrumentedTests {
     public static class PinUvAuthV2Test extends FidoInstrumentedTests {
         @Test
         public void testCredPropsExtension() throws Throwable {
-            withDevice(ExtensionsTests::testCredPropsExtension);
+            withDevice(ExtCredPropsTests::test);
         }
 
         @Test
         public void testPrfExtension() throws Throwable {
-            withDevice(ExtensionsTests::testPrfExtension);
+            withDevice(ExtPrfTests::test);
         }
 
         @Test
         public void testPrfExtensionNoSupport() throws Throwable {
-            withDevice(ExtensionsTests::testPrfExtensionNoSupport);
+            withDevice(ExtPrfTests::testNoExtensionSupport);
         }
 
         @Test
