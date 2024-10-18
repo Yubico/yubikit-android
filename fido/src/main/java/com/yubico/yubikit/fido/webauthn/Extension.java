@@ -16,6 +16,7 @@
 
 package com.yubico.yubikit.fido.webauthn;
 
+import static com.yubico.yubikit.fido.webauthn.SerializationUtils.deserializeBytes;
 import static com.yubico.yubikit.fido.webauthn.SerializationUtils.serializeBytes;
 
 import com.yubico.yubikit.core.application.CommandException;
@@ -519,12 +520,23 @@ public class Extension {
         @Override
         public Object processCreateInput(Map<String, ?> inputs) {
             if (isSupported()) {
-                byte[] blob = (byte[]) inputs.get("credBlob");
-                if (blob != null && blob.length <= ctap.getCachedInfo().getMaxCredBlobLength()) {
-                    return blob;
+                String b64Blob = (String) inputs.get("credBlob");
+                if (b64Blob != null) {
+                    byte[] blob = deserializeBytes(b64Blob, SerializationType.JSON);
+                    if (blob.length <= ctap.getCachedInfo().getMaxCredBlobLength()) {
+                        return blob;
+                    }
                 }
             }
+            return null;
+        }
 
+        @Nullable
+        @Override
+        public Object processGetInput(Map<String, ?> inputs) {
+            if (isSupported() && Boolean.TRUE.equals(inputs.get("getCredBlob"))) {
+                return true;
+            }
             return null;
         }
     }
