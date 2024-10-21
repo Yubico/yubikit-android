@@ -47,6 +47,18 @@ import java.util.Objects;
 import javax.annotation.Nullable;
 
 public class Extension {
+
+    abstract public static class ExtensionDataProvider {
+
+        @Nullable
+        abstract protected Object getByString(String key);
+
+        @Nullable
+        final public Object get(String key) {
+            return getByString(key);
+        };
+    }
+
     static public class ExtensionResults {
         final private List<ExtensionResult> extensionResults = new ArrayList<>();
 
@@ -69,18 +81,18 @@ public class Extension {
 
     static public class Builder {
         @Nullable
-        static public Extension get(String name, Ctap2Session ctap, PinUvAuthProtocol pinUvAuthProtocol) {
+        static public Extension get(String name, final ExtensionDataProvider extensionDataProvider) {
             switch (name) {
                 case "hmac-secret":
-                    return new HmacSecretExtension(ctap, pinUvAuthProtocol);
+                    return new HmacSecretExtension(extensionDataProvider);
                 case "largeBlobKey":
-                    return new LargeBlobExtension(ctap, pinUvAuthProtocol);
+                    return new LargeBlobExtension(extensionDataProvider);
                 case "credBlob":
-                    return new CredBlobExtension(ctap, pinUvAuthProtocol);
+                    return new CredBlobExtension(extensionDataProvider);
                 case "credProtect":
-                    return new CredProtectExtension(ctap, pinUvAuthProtocol);
+                    return new CredProtectExtension(extensionDataProvider);
                 case "minPinLength":
-                    return new MinPinLengthExtension(ctap, pinUvAuthProtocol);
+                    return new MinPinLengthExtension(extensionDataProvider);
             }
             return null;
         }
@@ -100,17 +112,16 @@ public class Extension {
 
 
     protected final String name;
-    protected final Ctap2Session ctap;
-    protected final PinUvAuthProtocol pinUvAuthProtocol;
+    protected final ExtensionDataProvider dataProvider;
 
-    Extension(Ctap2Session ctap, PinUvAuthProtocol pinUvAuthProtocol, String name) {
-        this.ctap = ctap;
-        this.pinUvAuthProtocol = pinUvAuthProtocol;
+    Extension(String name, final ExtensionDataProvider dataProvider) {
+        this.dataProvider = dataProvider;
         this.name = name;
     }
 
     public boolean isSupported() {
-        return ctap.getCachedInfo().getExtensions().contains(name);
+        Ctap2Session.InfoData info = (Ctap2Session.InfoData) dataProvider.get("cachedInfo");
+        return info != null && info.getExtensions().contains(name);
     }
 
     @Nullable
@@ -179,8 +190,8 @@ public class Extension {
                     .array());
         }
 
-        public HmacSecretExtension(Ctap2Session ctap, PinUvAuthProtocol pinUvAuthProtocol) {
-            super(ctap, pinUvAuthProtocol, "hmac-secret");
+        public HmacSecretExtension(final ExtensionDataProvider dataProvider) {
+            super("hmac-secret", dataProvider);
         }
 
         @Nullable
@@ -276,13 +287,17 @@ public class Extension {
                 throw new IllegalArgumentException("Invalid salt length");
             }
 
-            final ClientPin clientPin = new ClientPin(ctap, pinUvAuthProtocol);
+            final ClientPin clientPin = (ClientPin) dataProvider.get("clientPin");
+            if (clientPin == null) {
+                throw new IllegalArgumentException("Extension data provider missing clientPin");
+            }
+
             try {
                 Pair<Map<Integer, ?>, byte[]> keyAgreement = clientPin.getSharedSecret();
 
                 this.sharedSecret = keyAgreement.second;
 
-                byte[] saltEnc = pinUvAuthProtocol.encrypt(
+                byte[] saltEnc = clientPin.getPinUvAuth().encrypt(
                         sharedSecret,
                         ByteBuffer
                                 .allocate(salts.salt1.length + salts.salt2.length)
@@ -290,7 +305,7 @@ public class Extension {
                                 .put(salts.salt2)
                                 .array());
 
-                byte[] saltAuth = pinUvAuthProtocol.authenticate(
+                byte[] saltAuth = clientPin.getPinUvAuth().authenticate(
                         keyAgreement.second,
                         saltEnc);
 
@@ -326,7 +341,12 @@ public class Extension {
                 return null;
             }
 
-            byte[] decrypted = this.pinUvAuthProtocol.decrypt(sharedSecret, value);
+            final ClientPin clientPin = (ClientPin) dataProvider.get("clientPin");
+            if (clientPin == null) {
+                throw new IllegalArgumentException("Extension data provider missing clientPin");
+            }
+
+            byte[] decrypted = clientPin.getPinUvAuth().decrypt(sharedSecret, value);
 
             byte[] output1 = Arrays.copyOf(decrypted, SALT_LEN);
             byte[] output2 = decrypted.length > SALT_LEN
@@ -378,14 +398,14 @@ public class Extension {
 
         @Nullable private Object action = null;
 
-        public LargeBlobExtension(Ctap2Session ctap, PinUvAuthProtocol pinUvAuthProtocol) {
-            super(ctap, pinUvAuthProtocol, "largeBlobKey");
+        public LargeBlobExtension(final ExtensionDataProvider dataProvider) {
+            super("largeBlobKey", dataProvider);
         }
 
         @Override
         public boolean isSupported() {
-            return super.isSupported() && ctap.getCachedInfo().getOptions()
-                    .containsKey("largeBlobs");
+            Ctap2Session.InfoData info = (Ctap2Session.InfoData) dataProvider.get("cachedInfo");
+            return super.isSupported() && info != null && info.getOptions().containsKey("largeBlobs");
         }
 
         @Nullable
@@ -412,8 +432,13 @@ public class Extension {
                 Ctap2Session.AssertionData assertionData,
                 @Nullable byte[] pinUvAuthToken,
                 @Nullable PinUvAuthProtocol pinUvAuthProtocol) {
-            byte[] largeBlobKey = assertionData.getLargeBlobKey();
 
+            Ctap2Session ctap = (Ctap2Session) dataProvider.get("ctap");
+            if (ctap == null) {
+                throw new IllegalArgumentException("Extension data provider missing ctap");
+            }
+
+            byte[] largeBlobKey = assertionData.getLargeBlobKey();
             if (largeBlobKey == null) {
                 return null;
             }
@@ -512,8 +537,8 @@ public class Extension {
     }
 
     static class CredBlobExtension extends Extension {
-        public CredBlobExtension(Ctap2Session ctap, PinUvAuthProtocol pinUvAuthProtocol) {
-            super(ctap, pinUvAuthProtocol, "credBlob");
+        public CredBlobExtension(final ExtensionDataProvider dataProvider) {
+            super("credBlob", dataProvider);
         }
 
         @Nullable
@@ -523,7 +548,8 @@ public class Extension {
                 String b64Blob = (String) inputs.get("credBlob");
                 if (b64Blob != null) {
                     byte[] blob = deserializeBytes(b64Blob, SerializationType.JSON);
-                    if (blob.length <= ctap.getCachedInfo().getMaxCredBlobLength()) {
+                    Ctap2Session.InfoData cachedInfo = (Ctap2Session.InfoData) dataProvider.get("cachedInfo");
+                    if (blob.length <= (cachedInfo == null ? 0 : cachedInfo.getMaxCredBlobLength())) {
                         return blob;
                     }
                 }
@@ -547,8 +573,8 @@ public class Extension {
         static final String OPTIONAL_WITH_LIST = "userVerificationOptionalWithCredentialIDList";
         static final String REQUIRED = "userVerificationRequired";
 
-        public CredProtectExtension(Ctap2Session ctap, PinUvAuthProtocol pinUvAuthProtocol) {
-            super(ctap, pinUvAuthProtocol, "credProtect");
+        public CredProtectExtension(final ExtensionDataProvider dataProvider) {
+            super("credProtect", dataProvider);
         }
 
         @Nullable
@@ -582,13 +608,14 @@ public class Extension {
     }
 
     static class MinPinLengthExtension extends Extension {
-        public MinPinLengthExtension(Ctap2Session ctap, PinUvAuthProtocol pinUvAuthProtocol) {
-            super(ctap, pinUvAuthProtocol, "minPinLength");
+        public MinPinLengthExtension(final ExtensionDataProvider dataProvider) {
+            super("minPinLength", dataProvider);
         }
 
         @Override
         public boolean isSupported() {
-            return super.isSupported() && ctap.getCachedInfo().getOptions()
+            Ctap2Session.InfoData cachedInfo = (Ctap2Session.InfoData) dataProvider.get("cachedInfo");
+            return super.isSupported() && cachedInfo != null && cachedInfo.getOptions()
                     .containsKey("setMinPINLength");
         }
 
