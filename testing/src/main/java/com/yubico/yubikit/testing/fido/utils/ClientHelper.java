@@ -66,7 +66,7 @@ public class ClientHelper {
         );
     }
 
-    public void deleteCredentials(List<byte[]> credIds) throws IOException, CommandException, ClientError {
+    public void deleteCredentialsByIds(List<byte[]> credIds) throws IOException, CommandException, ClientError {
         try {
             CredentialManager credentialManager = client.getCredentialManager(TestData.PIN);
             for (byte[] credId : credIds) {
@@ -81,9 +81,17 @@ public class ClientHelper {
         }
     }
 
+    public void deleteCredentials(List<PublicKeyCredential> credentials)
+            throws IOException, CommandException, ClientError {
+        deleteCredentialsByIds(credentials
+                .stream()
+                .map(PublicKeyCredential::getRawId)
+                .collect(Collectors.toList()));
+    }
+
     public void deleteCredentials(PublicKeyCredential... credentials)
             throws IOException, CommandException, ClientError {
-        deleteCredentials(Arrays
+        deleteCredentialsByIds(Arrays
                 .stream(credentials)
                 .map(PublicKeyCredential::getRawId)
                 .collect(Collectors.toList()));

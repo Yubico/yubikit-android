@@ -16,15 +16,23 @@
 
 package com.yubico.yubikit.testing.fido.utils;
 
+import static com.yubico.yubikit.fido.webauthn.PublicKeyCredentialType.PUBLIC_KEY;
+
 import com.yubico.yubikit.fido.webauthn.AuthenticatorSelectionCriteria;
 import com.yubico.yubikit.fido.webauthn.Extensions;
+import com.yubico.yubikit.fido.webauthn.PublicKeyCredential;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialCreationOptions;
+import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialDescriptor;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialRpEntity;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialUserEntity;
 import com.yubico.yubikit.fido.webauthn.ResidentKeyRequirement;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
@@ -34,6 +42,8 @@ public class CreationOptionsBuilder {
     Extensions extensions = null;
     @Nullable
     PublicKeyCredentialUserEntity userEntity = null;
+    @Nullable
+    List<PublicKeyCredentialDescriptor> excludeCredentials = null;
 
     public CreationOptionsBuilder residentKey(boolean residentKey) {
         this.residentKey = residentKey;
@@ -47,6 +57,14 @@ public class CreationOptionsBuilder {
         return this;
     }
 
+    public CreationOptionsBuilder userEntity(String name) {
+        this.userEntity = new PublicKeyCredentialUserEntity(
+                name,
+                name.getBytes(StandardCharsets.UTF_8),
+                name);
+        return this;
+    }
+
     public CreationOptionsBuilder userEntity(String name, byte[] id) {
         this.userEntity = new PublicKeyCredentialUserEntity(name, id, name);
         return this;
@@ -54,6 +72,30 @@ public class CreationOptionsBuilder {
 
     public CreationOptionsBuilder userEntity(PublicKeyCredentialUserEntity userEntity) {
         this.userEntity = userEntity;
+        return this;
+    }
+
+    public CreationOptionsBuilder excludeCredentialDescriptors(List<PublicKeyCredentialDescriptor> excludeCredentials) {
+        this.excludeCredentials = excludeCredentials;
+        return this;
+    }
+
+    public CreationOptionsBuilder excludeCredentials(List<PublicKeyCredential> excludeCredentials) {
+        this.excludeCredentials = excludeCredentials.stream().map(
+                c -> new PublicKeyCredentialDescriptor(PUBLIC_KEY, c.getRawId())
+        ).collect(Collectors.toList());
+        return this;
+    }
+
+    public CreationOptionsBuilder excludeCredentials(PublicKeyCredentialDescriptor... excludeCredentials) {
+        this.excludeCredentials = Arrays.asList(excludeCredentials);
+        return this;
+    }
+
+    public CreationOptionsBuilder excludeCredentials(PublicKeyCredential... excludeCredentials) {
+        this.excludeCredentials = Arrays.stream(excludeCredentials).map(
+                c -> new PublicKeyCredentialDescriptor(PUBLIC_KEY, c.getRawId())
+        ).collect(Collectors.toList());
         return this;
     }
 
@@ -70,7 +112,7 @@ public class CreationOptionsBuilder {
                 TestData.CHALLENGE,
                 Collections.singletonList(TestData.PUB_KEY_CRED_PARAMS_ES256),
                 (long) 90000,
-                null,
+                excludeCredentials,
                 criteria,
                 null,
                 extensions

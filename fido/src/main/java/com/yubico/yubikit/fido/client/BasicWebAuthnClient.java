@@ -16,6 +16,8 @@
 
 package com.yubico.yubikit.fido.client;
 
+import static com.yubico.yubikit.fido.webauthn.PublicKeyCredentialType.PUBLIC_KEY;
+
 import com.yubico.yubikit.core.application.CommandException;
 import com.yubico.yubikit.core.application.CommandState;
 import com.yubico.yubikit.core.fido.CtapException;
@@ -56,6 +58,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
@@ -215,7 +218,7 @@ public class BasicWebAuthnClient implements Closeable {
             @Nullable Integer enterpriseAttestation,
             @Nullable CommandState state
     ) throws IOException, CommandException, ClientError {
-        byte[] clientDataHash = hash(clientDataJson);
+        byte[] clientDataHash = Utils.hash(clientDataJson);
 
         try {
             WithExtensionResults<Ctap2Session.CredentialData> result = ctapMakeCredential(
@@ -272,7 +275,7 @@ public class BasicWebAuthnClient implements Closeable {
             @Nullable char[] pin,
             @Nullable CommandState state
     ) throws MultipleAssertionsAvailable, IOException, CommandException, ClientError {
-        byte[] clientDataHash = hash(clientDataJson);
+        byte[] clientDataHash = Utils.hash(clientDataJson);
         try {
             final List<WithExtensionResults<Ctap2Session.AssertionData>> assertions = ctapGetAssertions(
                     clientDataHash,
@@ -499,13 +502,23 @@ public class BasicWebAuthnClient implements Closeable {
                 clientDataHash,
                 ctapOptions.containsKey(OPTION_USER_VERIFICATION),
                 pin,
-                ClientPin.PIN_PERMISSION_MC | permissions,
+                ClientPin.PIN_PERMISSION_MC | ClientPin.PIN_PERMISSION_GA | permissions,
                 rpId);
 
         final List<PublicKeyCredentialDescriptor> excludeCredentials =
                 removeUnsupportedCredentials(
                         options.getExcludeCredentials()
                 );
+
+        PublicKeyCredentialDescriptor credToExclude = excludeCredentials != null
+                ? Utils.filterCreds(
+                ctap,
+                rpId,
+                excludeCredentials,
+                effectiveDomain,
+                authParams.pinUvAuthProtocol,
+                authParams.pinToken)
+                : null;
 
         final Map<String, ?> user = options.getUser().toMap(serializationType);
 
@@ -530,7 +543,9 @@ public class BasicWebAuthnClient implements Closeable {
                 rp,
                 user,
                 pubKeyCredParams,
-                getCredentialList(excludeCredentials),
+                credToExclude != null
+                        ? Utils.getCredentialList(Collections.singletonList(credToExclude))
+                        : null,
                 extensionInputs,
                 ctapOptions.isEmpty() ? null : ctapOptions,
                 authParams.pinUvAuthParam,
@@ -644,7 +659,7 @@ public class BasicWebAuthnClient implements Closeable {
             List<Ctap2Session.AssertionData> assertions = ctap.getAssertions(
                     rpId,
                     clientDataHash,
-                    getCredentialList(allowCredentials),
+                    Utils.getCredentialList(allowCredentials),
                     extensionInputs,
                     ctapOptions.isEmpty() ? null : ctapOptions,
                     authParams.pinUvAuthParam,
@@ -814,7 +829,7 @@ public class BasicWebAuthnClient implements Closeable {
     }
 
     private static boolean isPublicKeyCredentialTypeSupported(String type) {
-        return PublicKeyCredentialType.PUBLIC_KEY.equals(type);
+        return PUBLIC_KEY.equals(type);
     }
 
     /**
@@ -837,33 +852,124 @@ public class BasicWebAuthnClient implements Closeable {
         return list;
     }
 
-    /**
-     * @return new list of Credential descriptors for CBOR serialization.
-     */
-    @Nullable
-    private static List<Map<String, ?>> getCredentialList(@Nullable List<PublicKeyCredentialDescriptor> descriptors) {
-        if (descriptors == null || descriptors.isEmpty()) {
+    static class Utils {
+
+        /**
+         * @return first acceptable credential from the list available on the authenticator
+         */
+        @Nullable
+        static PublicKeyCredentialDescriptor filterCreds(
+                Ctap2Session ctap,
+                @Nullable String rpId,
+                List<PublicKeyCredentialDescriptor> descriptors,
+                String effectiveDomain,
+                @Nullable PinUvAuthProtocol pinUvAuthProtocol,
+                @Nullable byte[] pinUvAuthToken
+        ) throws IOException, CommandException, ClientError {
+
+            if (rpId == null) {
+                rpId = effectiveDomain;
+            } else if (!(effectiveDomain.equals(rpId) || effectiveDomain.endsWith("." + rpId))) {
+                throw new ClientError(ClientError.Code.BAD_REQUEST, "RP ID is not valid for effective domain");
+            }
+
+            List<PublicKeyCredentialDescriptor> creds = new ArrayList<>();
+
+            // filter out credential IDs which are too long
+            Ctap2Session.InfoData info = ctap.getCachedInfo();
+            Integer maxCredIdLength = info.getMaxCredentialIdLength();
+            if (maxCredIdLength != null) {
+                creds = descriptors
+                        .stream()
+                        .filter(desc -> desc.getId().length <= maxCredIdLength)
+                        .collect(Collectors.toList());
+            } else {
+                creds = descriptors;
+            }
+
+            int maxCreds = info.getMaxCredentialCountInList() != null
+                    ? info.getMaxCredentialCountInList()
+                    : 1;
+
+            List<List<PublicKeyCredentialDescriptor>> chunks = new ArrayList<>();
+            for (int i = 0; i < creds.size(); i += maxCreds) {
+                int last = Math.min(i + maxCreds, creds.size());
+                chunks.add(creds.subList(i, last));
+            }
+
+            byte[] clientDataHash = new byte[32];
+            Arrays.fill(clientDataHash, (byte) 0x00);
+
+            byte[] pinAuth = null;
+            Integer pinUvAuthVersion = null;
+            if (pinUvAuthToken != null && pinUvAuthProtocol != null) {
+                pinAuth = pinUvAuthProtocol.authenticate(pinUvAuthToken, clientDataHash);
+                pinUvAuthVersion = pinUvAuthProtocol.getVersion();
+            }
+
+            for (List<PublicKeyCredentialDescriptor> chunk : chunks) {
+                try {
+                    List<Ctap2Session.AssertionData> assertions = ctap.getAssertions(
+                            rpId,
+                            clientDataHash,
+                            getCredentialList(chunk),
+                            null,
+                            Collections.singletonMap("up", false),
+                            pinAuth,
+                            pinUvAuthVersion,
+                            null
+                    );
+
+                    if (chunk.size() == 1) {
+                        return chunk.get(0);
+                    }
+
+                    final Ctap2Session.AssertionData assertion = assertions.get(0);
+                    final byte[] id = assertion.getCredentialId(null);
+
+                    return new PublicKeyCredentialDescriptor(PUBLIC_KEY, id);
+
+                } catch (CtapException ctapException) {
+                    if (ctapException.getCtapError() == CtapException.ERR_NO_CREDENTIALS) {
+                        continue;
+                    }
+
+                    throw ctapException;
+                }
+            }
+
             return null;
         }
-        List<Map<String, ?>> list = new ArrayList<>();
-        for (PublicKeyCredentialDescriptor credential : descriptors) {
-            list.add(credential.toMap(SerializationType.CBOR));
-        }
-        return list;
-    }
 
-    /**
-     * Return SHA-256 hash of the provided input
-     *
-     * @param message The hash input
-     * @return SHA-256 of the input
-     */
-    static byte[] hash(byte[] message) {
-        try {
-            return MessageDigest.getInstance("SHA-256").digest(message);
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
+        /**
+         * @return new list of Credential descriptors for CBOR serialization.
+         */
+        @Nullable
+        static List<Map<String, ?>> getCredentialList(@Nullable List<PublicKeyCredentialDescriptor> descriptors) {
+            if (descriptors == null || descriptors.isEmpty()) {
+                return null;
+            }
+            List<Map<String, ?>> list = new ArrayList<>();
+            for (PublicKeyCredentialDescriptor credential : descriptors) {
+                list.add(credential.toMap(SerializationType.CBOR));
+            }
+            return list;
         }
+
+        /**
+         * Return SHA-256 hash of the provided input
+         *
+         * @param message The hash input
+         * @return SHA-256 of the input
+         */
+        static byte[] hash(byte[] message) {
+            try {
+                return MessageDigest.getInstance("SHA-256").digest(message);
+            } catch (NoSuchAlgorithmException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
     }
 
 }

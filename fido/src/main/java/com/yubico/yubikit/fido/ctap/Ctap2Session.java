@@ -799,7 +799,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
          * @return maximum number of credentials
          */
         @Nullable
-        Integer getMaxCredentialCountInList() {
+        public Integer getMaxCredentialCountInList() {
             return maxCredentialCountInList;
         }
 
@@ -809,7 +809,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
          * @return maximum Credential ID length
          */
         @Nullable
-        Integer getMaxCredentialIdLength() {
+        public Integer getMaxCredentialIdLength() {
             return maxCredentialIdLength;
         }
 
