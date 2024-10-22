@@ -21,6 +21,7 @@ import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV1;
 import com.yubico.yubikit.testing.PinUvAuthProtocolV1Test;
 import com.yubico.yubikit.testing.fido.extensions.ExtCredBlobTests;
 import com.yubico.yubikit.testing.fido.extensions.ExtCredPropsTests;
+import com.yubico.yubikit.testing.fido.extensions.ExtHmacSecretTests;
 import com.yubico.yubikit.testing.fido.extensions.ExtLargeBlobTests;
 import com.yubico.yubikit.testing.fido.extensions.ExtPrfTests;
 import com.yubico.yubikit.testing.framework.FidoInstrumentedTests;
@@ -50,6 +51,16 @@ public class ExtensionsInstrumentedTests {
         @Test
         public void testPrfExtensionNoSupport() throws Throwable {
             withDevice(ExtPrfTests::testNoExtensionSupport);
+        }
+
+        @Test
+        public void testHmacSecretExtension() throws Throwable {
+            withDevice(ExtHmacSecretTests::test);
+        }
+
+        @Test
+        public void testHmacSecretExtensionNoSupport() throws Throwable {
+            withDevice(ExtHmacSecretTests::testNoExtensionSupport);
         }
 
         @Test

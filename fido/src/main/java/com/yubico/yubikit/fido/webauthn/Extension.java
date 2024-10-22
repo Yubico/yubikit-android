@@ -56,7 +56,7 @@ public class Extension {
         @Nullable
         final public Object get(String key) {
             return getByString(key);
-        };
+        }
     }
 
     static public class ExtensionResults {
@@ -181,8 +181,11 @@ public class Extension {
             }
         }
 
-        private byte[] prfSalt(byte[] secret) {
-            return hash(ByteBuffer
+        @Nullable
+        private byte[] prfSalt(@Nullable byte[] secret) {
+            return secret == null
+                    ? null
+                    : hash(ByteBuffer
                     .allocate(13 + secret.length)
                     .put("WebAuthn PRF".getBytes(StandardCharsets.US_ASCII))
                     .put((byte) 0x00)
@@ -247,6 +250,9 @@ public class Extension {
                 if (secrets == null) {
                     return null;
                 }
+
+                Logger.debug(logger, "PRF inputs: {}, {}", secrets.get("first"), secrets.get("second"));
+
                 String firstInput = (String) secrets.get("first");
                 if (firstInput == null) {
                     return null;
@@ -265,23 +271,30 @@ public class Extension {
                         : null;
 
                 salts = new Salts(prfSalt(first), second);
-
-                Logger.debug(logger, "Inputs: {}, {}", secrets.get("first"), secrets.get("second"));
-                Logger.debug(logger, "Salts: {}, {}", StringUtils.bytesToHex(salts.salt1), StringUtils.bytesToHex(salts.salt2));
-
                 prf = true;
             } else {
                 data = (Map<String, Object>) inputs.get("hmacGetSecret");
                 if (data == null) {
                     return null;
                 }
-                salts = new Salts(prfSalt(Objects.requireNonNull((byte[]) data.get("salt1"))),
-                        data.containsKey("salt2")
-                                ? prfSalt(Objects.requireNonNull((byte[]) data.get("salt2")))
-                                : null);
+
+                Logger.debug(logger, "hmacGetSecret inputs: {}, {}", data.get("salt1"), data.get("salt2"));
+
+                byte[] salt1 = SerializationUtils.deserializeBytes(
+                        Objects.requireNonNull(data.get("salt1")),
+                        SerializationType.JSON);
+
+                byte[] salt2 = data.containsKey("salt2")
+                        ? prfSalt(SerializationUtils.deserializeBytes(
+                        data.get("salt2"),
+                        SerializationType.JSON))
+                        : null;
+
+                salts = new Salts(prfSalt(salt1), prfSalt(salt2));
                 prf = false;
             }
 
+            Logger.debug(logger, "Salts: {}, {}", StringUtils.bytesToHex(salts.salt1), StringUtils.bytesToHex(salts.salt2));
             if (!(salts.salt1.length == SALT_LEN &&
                     (salts.salt2.length == 0 || salts.salt2.length == SALT_LEN))) {
                 throw new IllegalArgumentException("Invalid salt length");

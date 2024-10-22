@@ -70,7 +70,8 @@ public class ExtPrfTests {
                 Assert.assertNull(result);
             });
 
-            // { prf: { enabled: true } }
+            // input:  { prf: {} }
+            // output: { prf: { enabled: true } }
             PublicKeyCredential publicKeyCredential = state.withCtap2(session -> {
                 PublicKeyCredential cred = new ClientHelper(session)
                         .makeCredential(
@@ -83,8 +84,8 @@ public class ExtPrfTests {
                 return cred;
             });
 
-            // assertion with { eval: { first: "value" } }
-            // { prf: { results: { first: String } } }
+            // input:  { prf: { eval: { first: String } } }
+            // output: { prf: { results: { first: String } } }
             state.withCtap2(session -> {
                 PublicKeyCredential cred = new ClientHelper(session)
                         .getAssertions(
@@ -102,8 +103,8 @@ public class ExtPrfTests {
                 Assert.assertNull(getResultsValue(cred, KEY_SECOND));
             });
 
-            // assertion with { eval: { first: "value", second: "value" } }
-            // { prf: { results: { first: String, second: String } } }
+            // input:  { prf: { eval: { first: String, second: String } } }
+            // output: { prf: { results: { first: String, second: String } } }
             state.withCtap2(session -> {
 
                 Map<String, Object> eval = new HashMap<>();
@@ -143,21 +144,23 @@ public class ExtPrfTests {
                 client.deleteCredentials(cred);
             });
 
-            // { prf: { enabled: true } }
+            // input:  { prf: {} }
+            // output: { prf: { enabled: true } }
             PublicKeyCredential publicKeyCredential = state.withCtap2(session -> {
                 PublicKeyCredential cred = new ClientHelper(session)
                         .makeCredential(
                                 new CreationOptionsBuilder()
                                         .residentKey(true)
-                                        .extensions(Collections.singletonMap(PRF_EXT, Collections.emptyMap()))
+                                        .extensions(Collections.singletonMap(PRF_EXT,
+                                                Collections.emptyMap()))
                                         .build()
                         );
                 Assert.assertEquals(Boolean.TRUE, getResultValue(cred, KEY_ENABLED));
                 return cred;
             });
 
-            // assertion with { eval: { first: "value" } }
-            // { prf: { results: { first: String } } }
+            // input:  { prf: { eval: { first: String } } }
+            // output: { prf: { results: { first: String } } }
             state.withCtap2(session -> {
                 PublicKeyCredential cred = new ClientHelper(session)
                         .getAssertions(
@@ -172,8 +175,8 @@ public class ExtPrfTests {
                 Assert.assertNull(getResultsValue(cred, KEY_SECOND));
             });
 
-            // assertion with { eval: { first: "value", second: "value" } }
-            // { prf: { results: { first: String, second: String } } }
+            // input:  { prf: { eval: { first: String, second: String } } }
+            // output: { prf: { results: { first: String, second: String } } }
             state.withCtap2(session -> {
 
                 Map<String, Object> eval = new HashMap<>();
@@ -197,13 +200,15 @@ public class ExtPrfTests {
     }
 
     private void runNoSupportTest(FidoTestState state) throws Throwable {
-        // { prf: { enabled: false } }
+        // input:  { prf: {} }
+        // output: { prf: { enabled: false } }
         state.withCtap2(session -> {
             Assume.assumeFalse(session.getCachedInfo().getExtensions().contains(KEY_HMAC_SECRET));
             PublicKeyCredential cred = new ClientHelper(session)
                     .makeCredential(
                             new CreationOptionsBuilder()
-                                    .extensions(Collections.singletonMap(PRF_EXT, Collections.emptyMap()))
+                                    .extensions(Collections.singletonMap(PRF_EXT,
+                                            Collections.emptyMap()))
                                     .build()
                     );
             Map<String, ?> result = getResult(cred);
