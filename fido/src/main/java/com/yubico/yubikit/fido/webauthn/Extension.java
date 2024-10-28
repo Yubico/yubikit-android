@@ -99,18 +99,6 @@ public class Extension {
 
     }
 
-    // helper types
-    static public class InputWithPermission {
-        @Nullable public final Object input;
-        public final int permissions;
-
-        InputWithPermission(@Nullable Object input, int permissions) {
-            this.input = input;
-            this.permissions = permissions;
-        }
-    }
-
-
     protected final String name;
     protected final ExtensionDataProvider dataProvider;
 
@@ -129,13 +117,13 @@ public class Extension {
         return name;
     }
 
+    public int getCreatePermissions() {
+        return ClientPin.PIN_PERMISSION_NONE;
+    }
+
     @Nullable
     public Object processCreateInput(Map<String, ?> inputs) {
         return null;
-    }
-
-    public InputWithPermission processCreateInputWithPermissions(Map<String, ?> inputs) {
-        return new InputWithPermission(processCreateInput(inputs), ClientPin.PIN_PERMISSION_NONE);
     }
 
     @Nullable
@@ -151,8 +139,8 @@ public class Extension {
         return null;
     }
 
-    public InputWithPermission processGetInputWithPermissions(Map<String, ?> inputs) {
-        return new InputWithPermission(processGetInput(inputs), ClientPin.PIN_PERMISSION_NONE);
+    public int getGetPermissions() {
+        return ClientPin.PIN_PERMISSION_NONE;
     }
 
     @Nullable
@@ -410,6 +398,7 @@ public class Extension {
         private static final org.slf4j.Logger logger = LoggerFactory.getLogger(LargeBlobExtension.class);
 
         @Nullable private Object action = null;
+        private int getPermission = ClientPin.PIN_PERMISSION_NONE;
 
         public LargeBlobExtension(final ExtensionDataProvider dataProvider) {
             super("largeBlobKey", dataProvider);
@@ -494,45 +483,26 @@ public class Extension {
         }
 
         @Override
-        public InputWithPermission processGetInputWithPermissions(Map<String, ?> inputs) {
-            @SuppressWarnings("unchecked")
-            Map<String, Object> data = inputs.containsKey("largeBlob")
-                    ? (Map<String, Object>) processGetInput((Map<String, Object>) inputs.get("largeBlob"))
-                    : null;
-
-            int permissions = ClientPin.PIN_PERMISSION_NONE;
-
-            if (data == null) {
-                return new InputWithPermission(null, permissions);
-            }
-
-            if (data.containsKey("support") || (data.containsKey("read") && data.containsKey("write"))) {
-                throw new IllegalArgumentException("Invalid set of parameters");
-            }
-
-            if (!isSupported()) {
-                throw new IllegalArgumentException("Authenticator does not support large blob storage");
-            }
-
-            if (data.containsKey("read")) {
-                action = Boolean.TRUE;
-            } else {
-                action = data.get("write");
-                permissions = ClientPin.PIN_PERMISSION_LBW; // Large Blob Write permission
-            }
-
-            return new InputWithPermission(data.isEmpty() ? null : Boolean.TRUE, permissions);
+        public int getGetPermissions() {
+            return getPermission;
         }
 
+        @SuppressWarnings("unchecked")
         @Nullable
         @Override
         public Object processGetInput(Map<String, ?> inputs) {
-            Map<String, Object> result = new HashMap<>();
-            if (inputs.containsKey("read")) {
-                result.put("read", inputs.get("read"));
-            }
-            if (inputs.containsKey("write")) {
-                result.put("write", SerializationUtils.deserializeBytes(inputs.get("write"), SerializationType.JSON));
+            Map<String, Object> data = (Map<String, Object>) inputs.get("largeBlob");
+            Boolean result = null;
+            if (data != null && data.containsKey("read")) {
+                action = data.get("read");
+                getPermission = ClientPin.PIN_PERMISSION_NONE;
+                result = Boolean.TRUE;
+            } else if (data != null && data.containsKey("write")) {
+                action = SerializationUtils.deserializeBytes(
+                        data.get("write"),
+                        SerializationType.JSON);
+                getPermission = ClientPin.PIN_PERMISSION_LBW;
+                result = Boolean.TRUE;
             }
             return result;
         }

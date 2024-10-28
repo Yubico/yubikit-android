@@ -28,7 +28,7 @@ public class Extensions {
         return new Extensions(Collections.emptyMap());
     }
 
-    public static Extensions fromMap(Map<String, ?> input) {
+    public static Extensions fromMap(@Nullable Map<String, ?> input) {
         return new Extensions(input);
     }
 

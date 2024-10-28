@@ -93,7 +93,7 @@ public class BasicWebAuthnClient implements Closeable {
 
     private final ClientPin clientPin;
 
-    private final Extension.ExtensionDataProvider extensionDataProvider;
+    private final ClientExtensionDataProvider extensionDataProvider;
 
     private boolean pinConfigured;
     private final boolean uvConfigured;
@@ -113,6 +113,37 @@ public class BasicWebAuthnClient implements Closeable {
 
         boolean supportsEpForRpId(@Nullable String rpId) {
             return epSupportedRpIds.contains(rpId);
+        }
+    }
+
+    static class ClientExtensionDataProvider extends Extension.ExtensionDataProvider {
+
+        final Map<String, Object> defaultData;
+        final Map<String, Object> data = new HashMap<>();
+
+        void replace(Map<String, Object> additional) {
+            data.clear();
+            data.putAll(additional);
+        }
+
+        void add(String key, Object additional) {
+            data.put(key, additional);
+        }
+
+        ClientExtensionDataProvider(Map<String, Object> defaultData) {
+            this.defaultData = defaultData;
+        }
+
+        @Nullable
+        @Override
+        protected Object getByString(String key) {
+            if (defaultData.containsKey(key)) {
+                return defaultData.get(key);
+            }
+            if (data.containsKey(key)) {
+                return data.get(key);
+            }
+            return null;
         }
     }
 
@@ -160,22 +191,11 @@ public class BasicWebAuthnClient implements Closeable {
         this.clientPin =
                 new ClientPin(ctap, getPreferredPinUvAuthProtocol(info.getPinUvAuthProtocols()));
 
-        this.extensionDataProvider = new Extension.ExtensionDataProvider() {
-            @Override
-            @Nullable
-            protected Object getByString(String key) {
-                switch (key) {
-                    case "ctap":
-                        return ctap;
-                    case "clientPin":
-                        return clientPin;
-                    case "cachedInfo":
-                        return ctap.getCachedInfo();
-                }
-
-                return null;
-            }
-        };
+        this.extensionDataProvider = new ClientExtensionDataProvider(new HashMap<String, Object>() {{
+            put("ctap", ctap);
+            put("clientPin", clientPin);
+            put("cachedInfo", ctap.getCachedInfo());
+        }});
 
         pinConfigured = pinSupported && Boolean.TRUE.equals(optionClientPin);
 
@@ -477,9 +497,11 @@ public class BasicWebAuthnClient implements Closeable {
         Extensions optionsExtensions = options.getExtensions();
         List<Extension> usedExtensions = new ArrayList<>();
         Map<String, Object> extensionInputs = new HashMap<>();
-        int permissions = 0;
+        int permissions = ClientPin.PIN_PERMISSION_MC | ClientPin.PIN_PERMISSION_GA;
 
         Map<String, ?> clientInputs = optionsExtensions.getExtensions();
+
+        extensionDataProvider.add("creation_options", options);
 
         for (String extensionName : extensions) {
             Extension extension = Extension.Builder.get(extensionName, extensionDataProvider);
@@ -488,13 +510,12 @@ public class BasicWebAuthnClient implements Closeable {
                 continue;
             }
 
-            Extension.InputWithPermission inputWithPermission =
-                    extension.processCreateInputWithPermissions(clientInputs);
+            Object input = extension.processCreateInput(clientInputs);
 
-            if (inputWithPermission.input != null) {
+            if (input != null) {
                 usedExtensions.add(extension);
-                permissions |= inputWithPermission.permissions;
-                extensionInputs.put(extensionName, inputWithPermission.input);
+                permissions |= extension.getCreatePermissions();
+                extensionInputs.put(extensionName, input);
             }
         }
 
@@ -502,7 +523,7 @@ public class BasicWebAuthnClient implements Closeable {
                 clientDataHash,
                 ctapOptions.containsKey(OPTION_USER_VERIFICATION),
                 pin,
-                ClientPin.PIN_PERMISSION_MC | ClientPin.PIN_PERMISSION_GA | permissions,
+                permissions,
                 rpId);
 
         final List<PublicKeyCredentialDescriptor> excludeCredentials =
@@ -620,12 +641,38 @@ public class BasicWebAuthnClient implements Closeable {
         }
         Map<String, Boolean> ctapOptions = getRequestCtapOptions(options, pin);
 
-        // process extensions
         Map<String, ?> clientInputs = options.getExtensions().getExtensions();
         Map<String, Object> extensionInputs = new HashMap<>();
         List<Extension> usedExtensions = new ArrayList<>();
-        int permissions = ClientPin.PIN_PERMISSION_NONE;
 
+        extensionDataProvider.add("request_options", options);
+
+        final List<PublicKeyCredentialDescriptor> allowCredentials = removeUnsupportedCredentials(
+                options.getAllowCredentials()
+        );
+
+        final AuthParams filterCredAuthParams = getAuthParams(
+                clientDataHash,
+                ctapOptions.containsKey(OPTION_USER_VERIFICATION),
+                pin,
+                ClientPin.PIN_PERMISSION_GA,
+                rpId);
+
+        PublicKeyCredentialDescriptor selectedCred = allowCredentials != null && !allowCredentials.isEmpty()
+                ? Utils.filterCreds(
+                ctap,
+                rpId,
+                allowCredentials,
+                effectiveDomain,
+                filterCredAuthParams.pinUvAuthProtocol,
+                filterCredAuthParams.pinToken)
+                : null;
+
+        if (selectedCred != null) {
+            extensionDataProvider.add("selected", selectedCred.getId());
+        }
+
+        int permissions = ClientPin.PIN_PERMISSION_GA;
         for (String extensionName : extensions) {
             Extension extension = Extension.Builder.get(extensionName, extensionDataProvider);
 
@@ -634,13 +681,12 @@ public class BasicWebAuthnClient implements Closeable {
                 continue;
             }
 
-            Extension.InputWithPermission inputWithPermission =
-                    extension.processGetInputWithPermissions(clientInputs);
+            Object input = extension.processGetInput(clientInputs);
 
-            if (inputWithPermission.input != null) {
+            if (input != null) {
                 usedExtensions.add(extension);
-                permissions |= inputWithPermission.permissions;
-                extensionInputs.put(extensionName, inputWithPermission.input);
+                permissions |= extension.getGetPermissions();
+                extensionInputs.put(extensionName, input);
             }
         }
 
@@ -648,18 +694,16 @@ public class BasicWebAuthnClient implements Closeable {
                 clientDataHash,
                 ctapOptions.containsKey(OPTION_USER_VERIFICATION),
                 pin,
-                ClientPin.PIN_PERMISSION_GA | permissions,
+                permissions,
                 rpId);
 
         try {
-            final List<PublicKeyCredentialDescriptor> allowCredentials = removeUnsupportedCredentials(
-                    options.getAllowCredentials()
-            );
-
             List<Ctap2Session.AssertionData> assertions = ctap.getAssertions(
                     rpId,
                     clientDataHash,
-                    Utils.getCredentialList(allowCredentials),
+                    selectedCred != null
+                            ? Utils.getCredentialList(Collections.singletonList(selectedCred))
+                            : null,
                     extensionInputs,
                     ctapOptions.isEmpty() ? null : ctapOptions,
                     authParams.pinUvAuthParam,
@@ -873,7 +917,7 @@ public class BasicWebAuthnClient implements Closeable {
                 throw new ClientError(ClientError.Code.BAD_REQUEST, "RP ID is not valid for effective domain");
             }
 
-            List<PublicKeyCredentialDescriptor> creds = new ArrayList<>();
+            List<PublicKeyCredentialDescriptor> creds;
 
             // filter out credential IDs which are too long
             Ctap2Session.InfoData info = ctap.getCachedInfo();
