@@ -16,9 +16,9 @@
 
 package com.yubico.yubikit.testing.fido.extensions;
 
+import com.yubico.yubikit.core.internal.codec.Base64;
 import com.yubico.yubikit.fido.webauthn.Extension;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredential;
-import com.yubico.yubikit.fido.webauthn.SerializationType;
 import com.yubico.yubikit.testing.fido.FidoTestState;
 import com.yubico.yubikit.testing.fido.utils.ClientHelper;
 import com.yubico.yubikit.testing.fido.utils.CreationOptionsBuilder;
@@ -39,6 +39,7 @@ public class ExtPrfTests {
     private final String PRF_EXT = "prf";
     private final String KEY_ENABLED = "enabled";
     private final String KEY_EVAL = "eval";
+    private final String KEY_EVAL_BY_CREDENTIAL = "evalByCredential";
     private final String KEY_FIRST = "first";
     private final String KEY_SECOND = "second";
 
@@ -126,6 +127,68 @@ public class ExtPrfTests {
                 Assert.assertTrue(getResultsValue(cred, KEY_SECOND) instanceof String);
 
             });
+
+
+            // create 2 more credentials
+            PublicKeyCredential publicKeyCredential2 = state.withCtap2(session -> {
+                PublicKeyCredential cred = new ClientHelper(session)
+                        .makeCredential(
+                                new CreationOptionsBuilder()
+                                        .extensions(Collections.singletonMap(PRF_EXT, Collections.emptyMap()))
+                                        .build()
+                        );
+
+                Assert.assertEquals(Boolean.TRUE, getResultValue(cred, KEY_ENABLED));
+                return cred;
+            });
+
+            PublicKeyCredential publicKeyCredential3 = state.withCtap2(session -> {
+                PublicKeyCredential cred = new ClientHelper(session)
+                        .makeCredential(
+                                new CreationOptionsBuilder()
+                                        .extensions(Collections.singletonMap(PRF_EXT, Collections.emptyMap()))
+                                        .build()
+                        );
+
+                Assert.assertEquals(Boolean.TRUE, getResultValue(cred, KEY_ENABLED));
+                return cred;
+            });
+
+            // evalByCredential
+            state.withCtap2(session -> {
+                Map<String, Object> evalByCredential = new HashMap<>();
+                evalByCredential.put(
+                        Base64.toUrlSafeString(publicKeyCredential3.getRawId()),
+                        Collections.singletonMap(KEY_FIRST, "abba"));
+                evalByCredential.put(
+                        Base64.toUrlSafeString(publicKeyCredential2.getRawId()),
+                        Collections.singletonMap(KEY_FIRST, "bebe"));
+                evalByCredential.put(
+                        Base64.toUrlSafeString(publicKeyCredential.getRawId()),
+                        Collections.singletonMap(KEY_FIRST, "cece"));
+
+
+                PublicKeyCredential cred = new ClientHelper(session)
+                        .getAssertions(
+                                new RequestOptionsBuilder()
+                                        // evalByCredential requires allow list
+                                        .allowedCredentials(
+                                                publicKeyCredential,
+                                                publicKeyCredential2,
+                                                publicKeyCredential3)
+                                        .extensions(Collections.singletonMap(PRF_EXT,
+                                                Collections.singletonMap(KEY_EVAL_BY_CREDENTIAL,
+                                                        evalByCredential
+                                                )))
+                                        .build()
+                        );
+
+                Assert.assertNull(getResultValue(cred, KEY_ENABLED));
+                Assert.assertTrue(getResultsValue(cred, KEY_FIRST) instanceof String);
+                Assert.assertNull(getResultsValue(cred, KEY_SECOND));
+            });
+
+
         }
 
         // discoverable credential

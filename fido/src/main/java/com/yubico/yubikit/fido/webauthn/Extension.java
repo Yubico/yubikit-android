@@ -43,6 +43,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
@@ -197,6 +199,37 @@ public class Extension {
             Map<String, Object> data = (Map<String, Object>) inputs.get("prf");
             if (data != null) {
                 Map<String, Object> secrets = (Map<String, Object>) data.get("eval");
+                Map<String, Object> evalByCredential =
+                        (Map<String, Object>) data.get("evalByCredential");
+
+                if (evalByCredential != null) {
+                    List<PublicKeyCredentialDescriptor> allowCredentials =
+                            parameters.publicKeyCredentialRequestOptions.getAllowCredentials();
+
+                    if (allowCredentials.isEmpty()) {
+                        throw new IllegalArgumentException("evalByCredential needs allow list");
+                    }
+
+                    Set<String> ids = allowCredentials
+                            .stream()
+                            .map( desc ->
+                                    (String) SerializationUtils.serializeBytes(
+                                            desc.getId(), SerializationType.JSON))
+                            .collect(Collectors.toSet());
+
+                    if (!ids.containsAll(evalByCredential.keySet())) {
+                        throw new IllegalArgumentException("evalByCredentials contains invalid key");
+                    }
+
+                    if (parameters.selectedCredential != null) {
+                        String key = (String) SerializationUtils.serializeBytes(
+                                parameters.selectedCredential.getId(), SerializationType.JSON);
+                        if (evalByCredential.containsKey(key)) {
+                            secrets = (Map<String, Object>) evalByCredential.get(key);
+                        }
+                    }
+                }
+
                 if (secrets == null) {
                     return null;
                 }
