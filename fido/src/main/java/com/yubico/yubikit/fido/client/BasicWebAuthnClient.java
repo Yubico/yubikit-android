@@ -40,7 +40,6 @@ import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialCreationOptions;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialDescriptor;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialParameters;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialRequestOptions;
-import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialType;
 import com.yubico.yubikit.fido.webauthn.ResidentKeyRequirement;
 import com.yubico.yubikit.fido.webauthn.SerializationType;
 import com.yubico.yubikit.fido.webauthn.UserVerificationRequirement;
@@ -93,8 +92,6 @@ public class BasicWebAuthnClient implements Closeable {
 
     private final ClientPin clientPin;
 
-    private final ClientExtensionDataProvider extensionDataProvider;
-
     private boolean pinConfigured;
     private final boolean uvConfigured;
 
@@ -113,37 +110,6 @@ public class BasicWebAuthnClient implements Closeable {
 
         boolean supportsEpForRpId(@Nullable String rpId) {
             return epSupportedRpIds.contains(rpId);
-        }
-    }
-
-    static class ClientExtensionDataProvider extends Extension.ExtensionDataProvider {
-
-        final Map<String, Object> defaultData;
-        final Map<String, Object> data = new HashMap<>();
-
-        void replace(Map<String, Object> additional) {
-            data.clear();
-            data.putAll(additional);
-        }
-
-        void add(String key, Object additional) {
-            data.put(key, additional);
-        }
-
-        ClientExtensionDataProvider(Map<String, Object> defaultData) {
-            this.defaultData = defaultData;
-        }
-
-        @Nullable
-        @Override
-        protected Object getByString(String key) {
-            if (defaultData.containsKey(key)) {
-                return defaultData.get(key);
-            }
-            if (data.containsKey(key)) {
-                return data.get(key);
-            }
-            return null;
         }
     }
 
@@ -190,12 +156,6 @@ public class BasicWebAuthnClient implements Closeable {
 
         this.clientPin =
                 new ClientPin(ctap, getPreferredPinUvAuthProtocol(info.getPinUvAuthProtocols()));
-
-        this.extensionDataProvider = new ClientExtensionDataProvider(new HashMap<String, Object>() {{
-            put("ctap", ctap);
-            put("clientPin", clientPin);
-            put("cachedInfo", ctap.getCachedInfo());
-        }});
 
         pinConfigured = pinSupported && Boolean.TRUE.equals(optionClientPin);
 
@@ -501,21 +461,23 @@ public class BasicWebAuthnClient implements Closeable {
 
         Map<String, ?> clientInputs = optionsExtensions.getExtensions();
 
-        extensionDataProvider.add("creation_options", options);
-
         for (String extensionName : extensions) {
-            Extension extension = Extension.Builder.get(extensionName, extensionDataProvider);
+            Extension extension = Extension.Builder.get(extensionName, ctap);
             if (extension == null) {
                 Logger.debug(logger, "Extension {} not supported", extensionName);
                 continue;
             }
 
-            Object input = extension.processCreateInput(clientInputs);
+            Extension.CreateInputParameters parameters = new Extension.CreateInputParameters(
+                    options
+            );
+
+            Extension.CreateInputResult input = extension.processCreateInput(clientInputs, parameters);
 
             if (input != null) {
                 usedExtensions.add(extension);
-                permissions |= extension.getCreatePermissions();
-                extensionInputs.put(extensionName, input);
+                permissions |= input.getPermissions();
+                extensionInputs.putAll(input.getResult());
             }
         }
 
@@ -582,21 +544,24 @@ public class BasicWebAuthnClient implements Closeable {
 
         Extension.ExtensionResults extensionExtensionResults = new Extension.ExtensionResults();
         if (clientInputs.containsKey("credProps")) {
-            extensionExtensionResults.add(new Extension.ExtensionResult() {
-                @Override
-                public Map<String, Object> toMap(SerializationType serializationType) {
-                    return Collections.singletonMap(
+            extensionExtensionResults.add(new Extension.ExtensionResult(
+                    Collections.singletonMap(
                             "credProps", Collections.singletonMap(
-                                    "rk", requiresResidentKey));
-                }
-            });
+                                    "rk", requiresResidentKey))
+            ));
         }
 
         for (Extension extension : usedExtensions) {
+
+            Extension.CreateOutputParameters createOutputParameters =
+                    new Extension.CreateOutputParameters(
+                            authParams.pinToken,
+                            authParams.pinUvAuthProtocol
+                    );
+
             Extension.ExtensionResult extensionResult = extension.processCreateOutput(
                     AttestationObject.fromCredential(credentialData),
-                    authParams.pinToken,
-                    authParams.pinUvAuthProtocol
+                    createOutputParameters
             );
             if (extensionResult != null) {
                 extensionExtensionResults.add(extensionResult);
@@ -645,8 +610,6 @@ public class BasicWebAuthnClient implements Closeable {
         Map<String, Object> extensionInputs = new HashMap<>();
         List<Extension> usedExtensions = new ArrayList<>();
 
-        extensionDataProvider.add("request_options", options);
-
         final List<PublicKeyCredentialDescriptor> allowCredentials = removeUnsupportedCredentials(
                 options.getAllowCredentials()
         );
@@ -668,25 +631,27 @@ public class BasicWebAuthnClient implements Closeable {
                 filterCredAuthParams.pinToken)
                 : null;
 
-        if (selectedCred != null) {
-            extensionDataProvider.add("selected", selectedCred.getId());
-        }
+        Extension.GetInputParameters getInputParameters = new Extension.GetInputParameters(
+                options,
+                clientPin,
+                selectedCred
+        );
 
         int permissions = ClientPin.PIN_PERMISSION_GA;
         for (String extensionName : extensions) {
-            Extension extension = Extension.Builder.get(extensionName, extensionDataProvider);
+            Extension extension = Extension.Builder.get(extensionName, ctap);
 
             if (extension == null) {
                 Logger.debug(logger, "Extension {} not supported", extensionName);
                 continue;
             }
 
-            Object input = extension.processGetInput(clientInputs);
+            Extension.GetInputResult input = extension.processGetInput(clientInputs, getInputParameters);
 
             if (input != null) {
                 usedExtensions.add(extension);
-                permissions |= extension.getGetPermissions();
-                extensionInputs.put(extensionName, input);
+                permissions |= input.getPermissions();
+                extensionInputs.putAll(input.getResult());
             }
         }
 
@@ -717,10 +682,16 @@ public class BasicWebAuthnClient implements Closeable {
                 Extension.ExtensionResults extensionExtensionResults = new Extension.ExtensionResults();
 
                 for (Extension extension : usedExtensions) {
-                    Extension.ExtensionResult extensionResult = extension.processGetOutput(
-                            assertionData,
+
+                    Extension.GetOutputParameters getOutputParameters = new Extension.GetOutputParameters(
+                            clientPin,
                             authParams.pinToken,
                             authParams.pinUvAuthProtocol
+                    );
+
+                    Extension.ExtensionResult extensionResult = extension.processGetOutput(
+                            assertionData, getOutputParameters
+
                     );
                     if (extensionResult != null) {
                         extensionExtensionResults.add(extensionResult);

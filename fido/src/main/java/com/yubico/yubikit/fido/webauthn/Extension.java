@@ -47,108 +47,84 @@ import java.util.Objects;
 import javax.annotation.Nullable;
 
 public class Extension {
-
-    abstract public static class ExtensionDataProvider {
-
-        @Nullable
-        abstract protected Object getByString(String key);
-
-        @Nullable
-        final public Object get(String key) {
-            return getByString(key);
-        }
-    }
-
-    static public class ExtensionResults {
-        final private List<ExtensionResult> extensionResults = new ArrayList<>();
-
-        public void add(ExtensionResult extensionResult) {
-            extensionResults.add(extensionResult);
-        }
-
-        public Map<String, Object> toMap(SerializationType serializationType) {
-            Map<String, Object> map = new HashMap<>();
-            for (ExtensionResult extensionResult : extensionResults) {
-                map.putAll(extensionResult.toMap(serializationType));
-            }
-            return map;
-        }
-    }
-
-    abstract static public class ExtensionResult {
-        public abstract Map<String, Object> toMap(SerializationType serializationType);
-    }
-
-    static public class Builder {
-        @Nullable
-        static public Extension get(String name, final ExtensionDataProvider extensionDataProvider) {
-            switch (name) {
-                case "hmac-secret":
-                    return new HmacSecretExtension(extensionDataProvider);
-                case "largeBlobKey":
-                    return new LargeBlobExtension(extensionDataProvider);
-                case "credBlob":
-                    return new CredBlobExtension(extensionDataProvider);
-                case "credProtect":
-                    return new CredProtectExtension(extensionDataProvider);
-                case "minPinLength":
-                    return new MinPinLengthExtension(extensionDataProvider);
-            }
-            return null;
-        }
-
-    }
-
     protected final String name;
-    protected final ExtensionDataProvider dataProvider;
+    protected final Ctap2Session ctap;
 
-    Extension(String name, final ExtensionDataProvider dataProvider) {
-        this.dataProvider = dataProvider;
+    protected Extension(String name, final Ctap2Session ctap) {
         this.name = name;
+        this.ctap = ctap;
     }
 
     public boolean isSupported() {
-        Ctap2Session.InfoData info = (Ctap2Session.InfoData) dataProvider.get("cachedInfo");
-        return info != null && info.getExtensions().contains(name);
+        return ctap.getCachedInfo().getExtensions().contains(name);
     }
 
-    @Nullable
     public String getName() {
         return name;
     }
 
-    public int getCreatePermissions() {
-        return ClientPin.PIN_PERMISSION_NONE;
+    @Nullable
+    protected CreateInputResult buildCreateInputResult(Object data) {
+        return new CreateInputResult(getName(), data);
     }
 
     @Nullable
-    public Object processCreateInput(Map<String, ?> inputs) {
+    protected CreateInputResult buildCreateInputResult(Object data, int permissions) {
+        return new CreateInputResult(getName(), data, permissions);
+    }
+
+    @Nullable
+    protected GetInputResult buildGetInputResult(Object data) {
+        return new GetInputResult(getName(), data);
+    }
+
+    @Nullable
+    protected GetInputResult buildGetInputResult(Object data, int permissions) {
+        return new GetInputResult(getName(), data, permissions);
+    }
+
+    @Nullable
+    public CreateInputResult processCreateInput(Map<String, ?> inputs) {
+        return null;
+    }
+
+    @Nullable
+    public CreateInputResult processCreateInput(Map<String, ?> inputs, CreateInputParameters createInputParameters) {
+        return processCreateInput(inputs);
+    }
+
+    @Nullable
+    public ExtensionResult processCreateOutput(AttestationObject ignoredAttestationObject) {
         return null;
     }
 
     @Nullable
     public ExtensionResult processCreateOutput(
             AttestationObject attestationObject,
-            @Nullable byte[] token,
-            @Nullable PinUvAuthProtocol pinUvAuthProtocol) {
+            CreateOutputParameters ignoredParameters) {
+        return processCreateOutput(attestationObject);
+    }
+
+    @Nullable
+    public GetInputResult processGetInput(Map<String, ?> inputs) {
         return null;
     }
 
     @Nullable
-    public Object processGetInput(Map<String, ?> inputs) {
-        return null;
+    public GetInputResult processGetInput(Map<String, ?> inputs, GetInputParameters ignoredParameters) {
+        return processGetInput(inputs);
     }
 
-    public int getGetPermissions() {
-        return ClientPin.PIN_PERMISSION_NONE;
+    @Nullable
+    public ExtensionResult processGetOutput(Ctap2Session.AssertionData assertionData) {
+        return null;
     }
 
     @Nullable
     public ExtensionResult processGetOutput(
             Ctap2Session.AssertionData assertionData,
-            @Nullable byte[] pinUvAuthToken,
-            @Nullable PinUvAuthProtocol pinUvAuthProtocol) {
-        return null;
+            GetOutputParameters ignoredParameters) {
+        return processGetOutput(assertionData);
     }
 
     static class HmacSecretExtension extends Extension {
@@ -181,52 +157,38 @@ public class Extension {
                     .array());
         }
 
-        public HmacSecretExtension(final ExtensionDataProvider dataProvider) {
-            super("hmac-secret", dataProvider);
+        public HmacSecretExtension(final Ctap2Session ctap) {
+            super("hmac-secret", ctap);
         }
 
         @Nullable
         @Override
-        public Object processCreateInput(Map<String, ?> inputs) {
+        public CreateInputResult processCreateInput(Map<String, ?> inputs) {
             if (Boolean.TRUE.equals(inputs.get("hmacCreateSecret"))) {
                 prf = false;
-                return true;
+                return buildCreateInputResult(true);
             } else if (inputs.get("prf") != null) {
                 prf = true;
-                return true;
+                return buildCreateInputResult(true);
             }
             return null;
         }
 
         @Nullable
         @Override
-        public ExtensionResult processCreateOutput(
-                AttestationObject attestationObject,
-                @Nullable byte[] token,
-                @Nullable PinUvAuthProtocol pinUvAuthProtocol) {
+        public ExtensionResult processCreateOutput(AttestationObject attestationObject) {
             Map<String, ?> extensions = attestationObject.getAuthenticatorData().getExtensions();
 
             boolean enabled = extensions != null && Boolean.TRUE.equals(extensions.get(name));
-            return new ExtensionResult() {
-                @Override
-                public Map<String, Object> toMap(SerializationType serializationType) {
-                    if (prf) {
-                        return Collections.singletonMap(
-                                "prf",
-                                Collections.singletonMap(
-                                        "enabled", enabled));
-                    } else {
-                        return Collections.singletonMap(
-                                "hmacCreateSecret", enabled);
-                    }
-                }
-            };
+            return new ExtensionResult(prf
+                    ? Collections.singletonMap("prf", Collections.singletonMap("enabled", enabled))
+                    : Collections.singletonMap("hmacCreateSecret", enabled));
         }
 
         @SuppressWarnings("unchecked")
         @Nullable
         @Override
-        public Object processGetInput(Map<String, ?> inputs) {
+        public GetInputResult processGetInput(Map<String, ?> inputs, GetInputParameters parameters) {
             if (!isSupported()) {
                 return null;
             }
@@ -288,10 +250,7 @@ public class Extension {
                 throw new IllegalArgumentException("Invalid salt length");
             }
 
-            final ClientPin clientPin = (ClientPin) dataProvider.get("clientPin");
-            if (clientPin == null) {
-                throw new IllegalArgumentException("Extension data provider missing clientPin");
-            }
+            final ClientPin clientPin = parameters.getClientPin();
 
             try {
                 Pair<Map<Integer, ?>, byte[]> keyAgreement = clientPin.getSharedSecret();
@@ -315,7 +274,7 @@ public class Extension {
                 hmacGetSecretInput.put(2, saltEnc);
                 hmacGetSecretInput.put(3, saltAuth);
                 hmacGetSecretInput.put(4, clientPin.getPinUvAuth().getVersion());
-                return hmacGetSecretInput;
+                return buildGetInputResult(hmacGetSecretInput);
             } catch (IOException | CommandException e) {
                 return null;
             }
@@ -325,8 +284,7 @@ public class Extension {
         @Override
         public ExtensionResult processGetOutput(
                 Ctap2Session.AssertionData assertionData,
-                @Nullable byte[] pinUvAuthToken,
-                @Nullable PinUvAuthProtocol pinUvAuthProtocol) {
+                GetOutputParameters parameters) {
 
             AuthenticatorData authenticatorData = AuthenticatorData.parseFrom(ByteBuffer.wrap(
                     assertionData.getAuthenticatorData()
@@ -342,11 +300,7 @@ public class Extension {
                 return null;
             }
 
-            final ClientPin clientPin = (ClientPin) dataProvider.get("clientPin");
-            if (clientPin == null) {
-                throw new IllegalArgumentException("Extension data provider missing clientPin");
-            }
-
+            final ClientPin clientPin = parameters.getClientPin();
             byte[] decrypted = clientPin.getPinUvAuth().decrypt(sharedSecret, value);
 
             byte[] output1 = Arrays.copyOf(decrypted, SALT_LEN);
@@ -359,36 +313,21 @@ public class Extension {
                     StringUtils.bytesToHex(output1),
                     StringUtils.bytesToHex(output2));
 
-
+            Map<String, Object> results = new HashMap<>();
             if (prf) {
-                return new ExtensionResult() {
-                    @Override
-                    public Map<String, Object> toMap(SerializationType serializationType) {
-
-                        Map<String, Object> results = new HashMap<>();
-                        results.put("first", SerializationUtils.serializeBytes(output1, serializationType));
-                        if (output2.length > 0) {
-                            results.put("second", SerializationUtils.serializeBytes(output2, serializationType));
-                        }
-
-                        return Collections.singletonMap(
-                                "prf",
-                                Collections.singletonMap("results", results));
-                    }
-                };
+                results.put("first", SerializationUtils.serializeBytes(output1, SerializationType.JSON));
+                if (output2.length > 0) {
+                    results.put("second", SerializationUtils.serializeBytes(output2, SerializationType.JSON));
+                }
+                return new ExtensionResult(
+                        Collections.singletonMap("prf",
+                                Collections.singletonMap("results", results)));
             } else {
-                return new ExtensionResult() {
-                    @Override
-                    public Map<String, Object> toMap(SerializationType serializationType) {
-                        Map<String, Object> results = new HashMap<>();
-                        results.put("output1", SerializationUtils.serializeBytes(output1, serializationType));
-                        if (output2.length > 0) {
-                            results.put("output2", SerializationUtils.serializeBytes(output2, serializationType));
-                        }
-
-                        return Collections.singletonMap("hmacGetSecret", results);
-                    }
-                };
+                results.put("output1", SerializationUtils.serializeBytes(output1, SerializationType.JSON));
+                if (output2.length > 0) {
+                    results.put("output2", SerializationUtils.serializeBytes(output2, SerializationType.JSON));
+                }
+                return new ExtensionResult(Collections.singletonMap("hmacGetSecret", results));
             }
         }
     }
@@ -398,21 +337,18 @@ public class Extension {
         private static final org.slf4j.Logger logger = LoggerFactory.getLogger(LargeBlobExtension.class);
 
         @Nullable private Object action = null;
-        private int getPermission = ClientPin.PIN_PERMISSION_NONE;
-
-        public LargeBlobExtension(final ExtensionDataProvider dataProvider) {
-            super("largeBlobKey", dataProvider);
+        public LargeBlobExtension(final Ctap2Session ctap) {
+            super("largeBlobKey", ctap);
         }
 
         @Override
         public boolean isSupported() {
-            Ctap2Session.InfoData info = (Ctap2Session.InfoData) dataProvider.get("cachedInfo");
-            return super.isSupported() && info != null && info.getOptions().containsKey("largeBlobs");
+            return super.isSupported() && ctap.getCachedInfo().getOptions().containsKey("largeBlobs");
         }
 
         @Nullable
         @Override
-        public Object processCreateInput(Map<String, ?> inputs) {
+        public CreateInputResult processCreateInput(Map<String, ?> inputs) {
             @SuppressWarnings("unchecked")
             Map<String, Object> data = (Map<String, Object>) inputs.get("largeBlob");
             if (data != null) {
@@ -423,7 +359,7 @@ public class Extension {
                     throw new IllegalArgumentException("Authenticator does not support large" +
                             " blob storage");
                 }
-                return Boolean.TRUE;
+                return buildCreateInputResult(true);
             }
             return null;
         }
@@ -432,13 +368,7 @@ public class Extension {
         @Override
         public ExtensionResult processGetOutput(
                 Ctap2Session.AssertionData assertionData,
-                @Nullable byte[] pinUvAuthToken,
-                @Nullable PinUvAuthProtocol pinUvAuthProtocol) {
-
-            Ctap2Session ctap = (Ctap2Session) dataProvider.get("ctap");
-            if (ctap == null) {
-                throw new IllegalArgumentException("Extension data provider missing ctap");
-            }
+                GetOutputParameters parameters) {
 
             byte[] largeBlobKey = assertionData.getLargeBlobKey();
             if (largeBlobKey == null) {
@@ -449,31 +379,22 @@ public class Extension {
                 if (Boolean.TRUE.equals(action)) {
                     LargeBlobs largeBlobs = new LargeBlobs(ctap);
                     byte[] blob = largeBlobs.getBlob(largeBlobKey);
-                    return new ExtensionResult() {
-                        @Override
-                        public Map<String, Object> toMap(SerializationType serializationType) {
-                            return Collections.singletonMap("largeBlob",
-                                    blob != null
-                                            ? Collections.singletonMap("blob",
-                                            serializeBytes(blob, serializationType))
-                                            : Collections.emptyMap());
-                        }
-                    };
+                    return new ExtensionResult(Collections.singletonMap("largeBlob",
+                            blob != null
+                                    ? Collections.singletonMap("blob",
+                                    serializeBytes(blob, SerializationType.JSON))
+                                    : Collections.emptyMap()));
                 } else if (action != null && action instanceof byte[]) {
                     byte[] bytes = (byte[]) action;
-                    LargeBlobs largeBlobs = new LargeBlobs(ctap, pinUvAuthProtocol, pinUvAuthToken);
+                    LargeBlobs largeBlobs = new LargeBlobs(
+                            ctap,
+                            parameters.getPinUvAuthProtocol(),
+                            parameters.getAuthToken());
                     largeBlobs.putBlob(largeBlobKey, bytes);
 
-                    return new ExtensionResult() {
-                        @Override
-                        public Map<String, Object> toMap(SerializationType serializationType) {
-                            return Collections.singletonMap(
-                                    "largeBlob",
-                                    Collections.singletonMap(
-                                            "written",
-                                            true));
-                        }
-                    };
+                    return new ExtensionResult(
+                            Collections.singletonMap("largeBlob",
+                                    Collections.singletonMap("written", true)));
                 }
             } catch (IOException | CommandException | GeneralSecurityException e) {
                 Logger.error(logger, "LargeBlob processing failed: ", e);
@@ -482,58 +403,48 @@ public class Extension {
             return null;
         }
 
-        @Override
-        public int getGetPermissions() {
-            return getPermission;
-        }
-
         @SuppressWarnings("unchecked")
         @Nullable
         @Override
-        public Object processGetInput(Map<String, ?> inputs) {
+        public GetInputResult processGetInput(Map<String, ?> inputs) {
             Map<String, Object> data = (Map<String, Object>) inputs.get("largeBlob");
-            Boolean result = null;
+            GetInputResult result = null;
             if (data != null && data.containsKey("read")) {
                 action = data.get("read");
-                getPermission = ClientPin.PIN_PERMISSION_NONE;
-                result = Boolean.TRUE;
+                result = buildGetInputResult(Boolean.TRUE, ClientPin.PIN_PERMISSION_NONE);
             } else if (data != null && data.containsKey("write")) {
                 action = SerializationUtils.deserializeBytes(
                         data.get("write"),
                         SerializationType.JSON);
-                getPermission = ClientPin.PIN_PERMISSION_LBW;
-                result = Boolean.TRUE;
+                result = buildGetInputResult(Boolean.TRUE, ClientPin.PIN_PERMISSION_LBW);
             }
             return result;
         }
 
         @Nullable
         @Override
-        public ExtensionResult processCreateOutput(AttestationObject attestationObject, @Nullable byte[] token, @Nullable PinUvAuthProtocol pinUvAuthProtocol) {
-            return new ExtensionResult() {
-                @Override
-                public Map<String, Object> toMap(SerializationType serializationType) {
-                    return Collections.singletonMap("largeBlob", Collections.singletonMap("supported", attestationObject.getLargeBlobKey() != null));
-                }
-            };
+        public ExtensionResult processCreateOutput(AttestationObject attestationObject) {
+            return new ExtensionResult(
+                    Collections.singletonMap("largeBlob",
+                            Collections.singletonMap("supported",
+                                    attestationObject.getLargeBlobKey() != null)));
         }
     }
 
     static class CredBlobExtension extends Extension {
-        public CredBlobExtension(final ExtensionDataProvider dataProvider) {
-            super("credBlob", dataProvider);
+        public CredBlobExtension(final Ctap2Session ctap) {
+            super("credBlob", ctap);
         }
 
         @Nullable
         @Override
-        public Object processCreateInput(Map<String, ?> inputs) {
+        public CreateInputResult processCreateInput(Map<String, ?> inputs) {
             if (isSupported()) {
                 String b64Blob = (String) inputs.get("credBlob");
                 if (b64Blob != null) {
                     byte[] blob = deserializeBytes(b64Blob, SerializationType.JSON);
-                    Ctap2Session.InfoData cachedInfo = (Ctap2Session.InfoData) dataProvider.get("cachedInfo");
-                    if (blob.length <= (cachedInfo == null ? 0 : cachedInfo.getMaxCredBlobLength())) {
-                        return blob;
+                    if (blob.length <= ctap.getCachedInfo().getMaxCredBlobLength()) {
+                        return buildCreateInputResult(blob);
                     }
                 }
             }
@@ -542,9 +453,9 @@ public class Extension {
 
         @Nullable
         @Override
-        public Object processGetInput(Map<String, ?> inputs) {
+        public GetInputResult processGetInput(Map<String, ?> inputs) {
             if (isSupported() && Boolean.TRUE.equals(inputs.get("getCredBlob"))) {
-                return true;
+                return buildGetInputResult(true);
             }
             return null;
         }
@@ -556,18 +467,17 @@ public class Extension {
         static final String OPTIONAL_WITH_LIST = "userVerificationOptionalWithCredentialIDList";
         static final String REQUIRED = "userVerificationRequired";
 
-        public CredProtectExtension(final ExtensionDataProvider dataProvider) {
-            super("credProtect", dataProvider);
+        public CredProtectExtension(final Ctap2Session ctap) {
+            super("credProtect", ctap);
         }
 
         @Nullable
         @Override
-        public Object processCreateInput(Map<String, ?> inputs) {
+        public CreateInputResult processCreateInput(Map<String, ?> inputs) {
             String credentialProtectionPolicy = (String) inputs.get("credentialProtectionPolicy");
             if (credentialProtectionPolicy == null) {
                 return null;
             }
-
 
             @Nullable Integer credProtect = null;
             switch (credentialProtectionPolicy) {
@@ -586,26 +496,25 @@ public class Extension {
                 throw new IllegalArgumentException("Authenticator does not support Credential Protection");
             }
 
-            return credProtect;
+            return credProtect != null
+                    ? buildCreateInputResult(credProtect)
+                    : null;
         }
     }
 
     static class MinPinLengthExtension extends Extension {
-        public MinPinLengthExtension(final ExtensionDataProvider dataProvider) {
-            super("minPinLength", dataProvider);
+        public MinPinLengthExtension(final Ctap2Session ctap) {
+            super("minPinLength", ctap);
         }
 
         @Override
         public boolean isSupported() {
-            Ctap2Session.InfoData cachedInfo = (Ctap2Session.InfoData) dataProvider.get("cachedInfo");
-            return super.isSupported() && cachedInfo != null && cachedInfo.getOptions()
-                    .containsKey("setMinPINLength");
+            return super.isSupported() && ctap.getCachedInfo().getOptions().containsKey("setMinPINLength");
         }
 
         @Nullable
         @Override
-        public Object processCreateInput(Map<String, ?> inputs) {
-
+        public CreateInputResult processCreateInput(Map<String, ?> inputs) {
             if (!isSupported()) {
                 return null;
             }
@@ -613,7 +522,7 @@ public class Extension {
             if (input == null) {
                 return null;
             }
-            return Boolean.TRUE.equals(input);
+            return buildCreateInputResult(Boolean.TRUE.equals(input));
         }
     }
 
@@ -622,6 +531,187 @@ public class Extension {
             return MessageDigest.getInstance("SHA-256").digest(message);
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    static public class ExtensionResults {
+        final private List<ExtensionResult> extensionResults = new ArrayList<>();
+
+        public void add(ExtensionResult extensionResult) {
+            extensionResults.add(extensionResult);
+        }
+
+        public Map<String, Object> toMap() {
+            Map<String, Object> map = new HashMap<>();
+            for (ExtensionResult extensionResult : extensionResults) {
+                map.putAll(extensionResult.getResult());
+            }
+            return map;
+        }
+    }
+
+    static public class ExtensionResult {
+        private final Map<String, Object> result;
+
+        public ExtensionResult(Map<String, Object> result) {
+            this.result = result;
+        }
+
+        public Map<String, Object> getResult() {
+            return result;
+        }
+    }
+
+    static public class Builder {
+        @Nullable
+        static public Extension get(String name, final Ctap2Session ctap) {
+            switch (name) {
+                case "hmac-secret":
+                    return new HmacSecretExtension(ctap);
+                case "largeBlobKey":
+                    return new LargeBlobExtension(ctap);
+                case "credBlob":
+                    return new CredBlobExtension(ctap);
+                case "credProtect":
+                    return new CredProtectExtension(ctap);
+                case "minPinLength":
+                    return new MinPinLengthExtension(ctap);
+            }
+            return null;
+        }
+
+    }
+
+    static public class CreateInputParameters {
+        final PublicKeyCredentialCreationOptions publicKeyCredentialCreationOptions;
+
+        public CreateInputParameters(PublicKeyCredentialCreationOptions publicKeyCredentialCreationOptions) {
+            this.publicKeyCredentialCreationOptions = publicKeyCredentialCreationOptions;
+        }
+
+        public PublicKeyCredentialCreationOptions getPublicKeyCredentialCreationOptions() {
+            return publicKeyCredentialCreationOptions;
+        }
+    }
+
+    static public class CreateOutputParameters {
+        @Nullable
+        final byte[] authToken;
+        @Nullable
+        final PinUvAuthProtocol pinUvAuthProtocol;
+
+        public CreateOutputParameters(
+                @Nullable byte[] authToken,
+                @Nullable PinUvAuthProtocol pinUvAuthProtocol) {
+            this.authToken = authToken;
+            this.pinUvAuthProtocol = pinUvAuthProtocol;
+        }
+    }
+
+    static public class GetInputParameters {
+        final PublicKeyCredentialRequestOptions publicKeyCredentialRequestOptions;
+
+        final ClientPin clientPin;
+
+        @Nullable
+        final PublicKeyCredentialDescriptor selectedCredential;
+
+        public GetInputParameters(
+                PublicKeyCredentialRequestOptions publicKeyCredentialRequestOptions,
+                ClientPin clientPin,
+                @Nullable
+                PublicKeyCredentialDescriptor selectedCredential) {
+            this.publicKeyCredentialRequestOptions = publicKeyCredentialRequestOptions;
+            this.clientPin = clientPin;
+            this.selectedCredential = selectedCredential;
+        }
+
+        public PublicKeyCredentialRequestOptions getPublicKeyCredentialRequestOptions() {
+            return publicKeyCredentialRequestOptions;
+        }
+
+        public ClientPin getClientPin() {
+            return clientPin;
+        }
+
+        @Nullable
+        public PublicKeyCredentialDescriptor getSelectedCredential() {
+            return selectedCredential;
+        }
+    }
+
+    static public class GetOutputParameters {
+        private final ClientPin clientPin;
+        @Nullable
+        private final byte[] authToken;
+        @Nullable
+        private final PinUvAuthProtocol pinUvAuthProtocol;
+        public GetOutputParameters(
+                ClientPin clientPin, @Nullable byte[] authToken,
+                @Nullable PinUvAuthProtocol pinUvAuthProtocol) {
+            this.clientPin = clientPin;
+            this.authToken = authToken;
+            this.pinUvAuthProtocol = pinUvAuthProtocol;
+        }
+
+        public ClientPin getClientPin() {
+            return clientPin;
+        }
+
+        @Nullable
+        public byte[] getAuthToken() {
+            return authToken;
+        }
+
+        @Nullable
+        public PinUvAuthProtocol getPinUvAuthProtocol() {
+            return pinUvAuthProtocol;
+        }
+    }
+
+    static public class CreateInputResult {
+        private final Map<String, Object> result;
+        private final int permissions;
+
+        CreateInputResult(String name, Object data) {
+            this(name, data, ClientPin.PIN_PERMISSION_NONE);
+        }
+
+        CreateInputResult(String name, Object data, int permissions) {
+            this.result = Collections.singletonMap(name, data);
+
+            this.permissions = permissions;
+        }
+
+        public Map<String, Object> getResult() {
+            return result;
+        }
+
+        public int getPermissions() {
+            return permissions;
+        }
+    }
+
+    static public class GetInputResult {
+        private final Map<String, Object> result;
+        private final int permissions;
+
+        private GetInputResult(String name, Object data) {
+            this(name, data, ClientPin.PIN_PERMISSION_NONE);
+        }
+
+        private GetInputResult(String name, Object data, int permissions) {
+            this.result = Collections.singletonMap(name, data);
+
+            this.permissions = permissions;
+        }
+
+        public Map<String, Object> getResult() {
+            return result;
+        }
+
+        public int getPermissions() {
+            return permissions;
         }
     }
 }

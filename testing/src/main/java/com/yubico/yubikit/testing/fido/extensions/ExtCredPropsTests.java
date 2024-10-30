@@ -83,7 +83,7 @@ public class ExtCredPropsTests {
     private Map<String, ?> getResult(PublicKeyCredential credential) {
         Extension.ExtensionResults results = credential.getClientExtensionResults();
         Assert.assertNotNull(results);
-        Map<String, Object> resultsMap = results.toMap(SerializationType.JSON);
+        Map<String, Object> resultsMap = results.toMap();
         return (Map<String, ?>) resultsMap.get(CRED_PROPS);
     }
 

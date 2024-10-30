@@ -225,7 +225,7 @@ public class ExtHmacSecretTests {
     private Boolean getCreateResult(PublicKeyCredential credential) {
         Extension.ExtensionResults results = credential.getClientExtensionResults();
         Assert.assertNotNull(results);
-        Map<String, Object> resultsMap = results.toMap(SerializationType.JSON);
+        Map<String, Object> resultsMap = results.toMap();
         return (Boolean) resultsMap.get(KEY_HMAC_CREATE_SECRET);
     }
 
@@ -234,7 +234,7 @@ public class ExtHmacSecretTests {
     private String getGetResultsValue(PublicKeyCredential credential, String key) {
         Extension.ExtensionResults extensionResults = credential.getClientExtensionResults();
         Assert.assertNotNull(extensionResults);
-        Map<String, Object> resultsMap = extensionResults.toMap(SerializationType.JSON);
+        Map<String, Object> resultsMap = extensionResults.toMap();
         Map<String, Object> getSecretMap = (Map<String, Object>) resultsMap.get(KEY_HMAC_GET_SECRET);
         Assert.assertNotNull(getSecretMap);
         return (String) getSecretMap.get(key);

@@ -184,7 +184,7 @@ public class ExtLargeBlobTests {
     private Map<String, ?> getResult(PublicKeyCredential cred) {
         Extension.ExtensionResults results = cred.getClientExtensionResults();;
         Assert.assertNotNull(results);
-        Map<String, Object> resultsMap = results.toMap(SerializationType.JSON);
+        Map<String, Object> resultsMap = results.toMap();
         return (Map<String, ?>) resultsMap.get(LARGE_BLOB);
     }
 }

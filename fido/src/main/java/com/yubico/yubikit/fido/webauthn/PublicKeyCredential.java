@@ -134,7 +134,7 @@ public class PublicKeyCredential extends Credential {
         map.put(AUTHENTICATOR_ATTACHMENT, AuthenticatorAttachment.CROSS_PLATFORM);
         map.put(RESPONSE, getResponse().toMap(serializationType));
         if (getClientExtensionResults() != null) {
-            map.put(CLIENT_EXTENSION_RESULTS, getClientExtensionResults().toMap(serializationType));
+            map.put(CLIENT_EXTENSION_RESULTS, getClientExtensionResults().toMap());
         }
         return map;
     }
