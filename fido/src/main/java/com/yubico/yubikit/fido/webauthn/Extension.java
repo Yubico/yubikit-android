@@ -27,6 +27,7 @@ import com.yubico.yubikit.fido.ctap.ClientPin;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
 import com.yubico.yubikit.fido.webauthn.ext.LargeBlobs;
+import com.yubico.yubikit.fido.webauthn.ext.SignExtension;
 
 import org.slf4j.LoggerFactory;
 
@@ -609,6 +610,8 @@ public class Extension {
                     return new CredProtectExtension(ctap);
                 case "minPinLength":
                     return new MinPinLengthExtension(ctap);
+                case "sign":
+                    return new SignExtension(ctap);
             }
             return null;
         }

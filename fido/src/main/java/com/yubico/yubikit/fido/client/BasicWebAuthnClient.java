@@ -137,7 +137,8 @@ public class BasicWebAuthnClient implements Closeable {
                 "largeBlobKey",
                 "credBlob",
                 "credProtect",
-                "minPinLength"
+                "minPinLength",
+                "sign"
         ));
     }
 
