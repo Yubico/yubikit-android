@@ -37,7 +37,8 @@ public class UsbFidoConnection extends UsbYubiKeyConnection implements FidoConne
 
     @Override
     public void receive(byte[] packet) throws IOException {
-        int read = connection.bulkTransfer(bulkIn, packet, packet.length, TIMEOUT);
+        // TODO Use TIMEOUT. The timeout value is only for testing the sign_ext with a developer board
+        int read = connection.bulkTransfer(bulkIn, packet, packet.length, 3000);
         if (read != FidoConnection.PACKET_SIZE) {
             throw new IOException("Failed to read full packed");
         }
