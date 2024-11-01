@@ -18,7 +18,6 @@ package com.yubico.yubikit.testing.fido.extensions;
 
 import com.yubico.yubikit.fido.webauthn.Extension;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredential;
-import com.yubico.yubikit.fido.webauthn.SerializationType;
 import com.yubico.yubikit.testing.fido.FidoTestState;
 import com.yubico.yubikit.testing.fido.utils.ClientHelper;
 import com.yubico.yubikit.testing.fido.utils.CreationOptionsBuilder;
