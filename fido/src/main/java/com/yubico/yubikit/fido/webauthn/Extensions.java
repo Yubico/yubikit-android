@@ -38,8 +38,17 @@ public class Extensions {
         this.extensions = extensions != null ? extensions : Collections.emptyMap();
     }
 
-    public Map<String, ?> getExtensions() {
-        return extensions;
+    @Nullable
+    public Object get(String extension) {
+        return extensions.get(extension);
+    }
+
+    public boolean has(String extension) {
+        return extensions.containsKey(extension);
+    }
+
+    public boolean isEmpty() {
+        return extensions.isEmpty();
     }
 
     @Override

@@ -14,12 +14,11 @@
  * limitations under the License.
  */
 
-package com.yubico.yubikit.fido.client;
+package com.yubico.yubikit.fido.client.extensions;
 
 import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.fido.webauthn.AttestationObject;
-import com.yubico.yubikit.fido.webauthn.Extension;
 
 import org.slf4j.LoggerFactory;
 
@@ -29,8 +28,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.annotation.Nullable;
+
 // Client Extension processing
-class Extensions {
+public class ExtensionProcessor {
 
     final List<Extension> usedExtensions = new ArrayList<>();
     final List<String> supportedExtensions = Arrays.asList(
@@ -46,18 +47,17 @@ class Extensions {
 
     int permissions = 0;
 
-    private static final org.slf4j.Logger logger = LoggerFactory.getLogger(Extensions.class);
+    private static final org.slf4j.Logger logger = LoggerFactory.getLogger(ExtensionProcessor.class);
 
-    Extensions(Ctap2Session ctap,
-               Extension.CreateInputParameters parameters) {
+    public ExtensionProcessor(Ctap2Session ctap, ExtensionCreateInput parameters) {
         for (String extensionName : supportedExtensions) {
-            Extension extension = Extension.Builder.get(extensionName, ctap);
+            Extension extension = getByName(extensionName, ctap);
             if (extension == null) {
                 Logger.debug(logger, "Extension {} not supported", extensionName);
                 continue;
             }
 
-            Extension.ExtensionInput result = extension.processInput(parameters);
+            ExtensionInput result = extension.processInput(parameters);
 
             if (result.isUsed()) {
                 usedExtensions.add(extension);
@@ -69,15 +69,15 @@ class Extensions {
         }
     }
 
-    Extensions(Ctap2Session ctap, Extension.GetInputParameters parameters) {
+    public ExtensionProcessor(Ctap2Session ctap, ExtensionGetInput parameters) {
         for (String extensionName : supportedExtensions) {
-            Extension extension = Extension.Builder.get(extensionName, ctap);
+            Extension extension = getByName(extensionName, ctap);
             if (extension == null) {
                 Logger.debug(logger, "Extension {} not supported", extensionName);
                 continue;
             }
 
-            Extension.ExtensionInput input = extension.processInput(parameters);
+            ExtensionInput input = extension.processInput(parameters);
             if (input.isUsed()) {
                 usedExtensions.add(extension);
                 if (input.getAuthenticatorInput() != null) {
@@ -88,19 +88,21 @@ class Extensions {
         }
     }
 
-    Map<String, Object> getAuthenticatorInput() {
+    public Map<String, Object> getAuthenticatorInput() {
         return authenticatorInput;
     }
 
-    int getRequiredPermissions() {
+    public int getRequiredPermissions() {
         return permissions;
     }
 
-    Extension.ExtensionResults getClientExtensionResults(AttestationObject attestationObject, Extension.CreateOutputParameters parameters) {
-        Extension.ExtensionResults extensionExtensionResults = new Extension.ExtensionResults();
+    public ClientExtensionResults getClientExtensionResults(
+            AttestationObject attestationObject,
+            ExtensionCreateOutput parameters) {
+        ClientExtensionResults extensionExtensionResults = new ClientExtensionResults();
 
         for (Extension extension : usedExtensions) {
-            Extension.ExtensionResult extensionResult = extension.processCreateOutput(
+            ClientExtensionResult extensionResult = extension.processCreateOutput(
                     attestationObject,
                     parameters
             );
@@ -112,11 +114,13 @@ class Extensions {
         return extensionExtensionResults;
     }
 
-    Extension.ExtensionResults getClientExtensionResults(Ctap2Session.AssertionData assertionData, Extension.GetOutputParameters parameters) {
-        Extension.ExtensionResults extensionExtensionResults = new Extension.ExtensionResults();
+    public ClientExtensionResults getClientExtensionResults(
+            Ctap2Session.AssertionData assertionData,
+            ExtensionGetOutput parameters) {
+        ClientExtensionResults extensionExtensionResults = new ClientExtensionResults();
 
         for (Extension extension : usedExtensions) {
-            Extension.ExtensionResult extensionResult = extension.processGetOutput(
+            ClientExtensionResult extensionResult = extension.processGetOutput(
                     assertionData, parameters
 
             );
@@ -126,5 +130,24 @@ class Extensions {
         }
 
         return extensionExtensionResults;
+    }
+
+    @Nullable
+    static private Extension getByName(String name, final Ctap2Session ctap) {
+        switch (name) {
+            case "hmac-secret":
+                return new HmacSecretExtension(ctap);
+            case "largeBlobKey":
+                return new LargeBlobExtension(ctap);
+            case "credBlob":
+                return new CredBlobExtension(ctap);
+            case "credProps":
+                return new CredPropsExtension(ctap);
+            case "credProtect":
+                return new CredProtectExtension(ctap);
+            case "minPinLength":
+                return new MinPinLengthExtension(ctap);
+        }
+        return null;
     }
 }

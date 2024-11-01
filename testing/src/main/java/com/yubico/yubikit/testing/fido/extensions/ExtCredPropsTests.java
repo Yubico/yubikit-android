@@ -16,7 +16,7 @@
 
 package com.yubico.yubikit.testing.fido.extensions;
 
-import com.yubico.yubikit.fido.webauthn.Extension;
+import com.yubico.yubikit.fido.client.extensions.ClientExtensionResults;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredential;
 import com.yubico.yubikit.testing.fido.FidoTestState;
 import com.yubico.yubikit.testing.fido.utils.ClientHelper;
@@ -80,7 +80,7 @@ public class ExtCredPropsTests {
     @SuppressWarnings("unchecked")
     @Nullable
     private Map<String, ?> getResult(PublicKeyCredential credential) {
-        Extension.ExtensionResults results = credential.getClientExtensionResults();
+        ClientExtensionResults results = credential.getClientExtensionResults();
         Assert.assertNotNull(results);
         Map<String, Object> resultsMap = results.toMap();
         return (Map<String, ?>) resultsMap.get(CRED_PROPS);

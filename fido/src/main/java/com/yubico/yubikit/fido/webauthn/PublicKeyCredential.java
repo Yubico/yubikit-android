@@ -20,6 +20,7 @@ import static com.yubico.yubikit.fido.webauthn.SerializationUtils.serializeBytes
 
 import com.yubico.yubikit.core.internal.codec.Base64;
 
+import com.yubico.yubikit.fido.client.extensions.ClientExtensionResults;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
 
 import java.util.Arrays;
@@ -41,7 +42,7 @@ public class PublicKeyCredential extends Credential {
     private final byte[] rawId;
     private final AuthenticatorResponse response;
     @Nullable
-    private final Extension.ExtensionResults clientExtensionResults;
+    private final ClientExtensionResults clientExtensionResults;
 
     /**
      * Constructs a new Webauthn PublicKeyCredential object
@@ -70,7 +71,7 @@ public class PublicKeyCredential extends Credential {
     public PublicKeyCredential(
             String id,
             AuthenticatorResponse response,
-            @Nullable Extension.ExtensionResults clientExtensionResults)
+            @Nullable ClientExtensionResults clientExtensionResults)
     {
         super(id, PUBLIC_KEY_CREDENTIAL_TYPE);
         this.rawId = Base64.fromUrlSafeString(id);
@@ -105,7 +106,7 @@ public class PublicKeyCredential extends Credential {
     public PublicKeyCredential(
             byte[] id,
             AuthenticatorResponse response,
-            @Nullable Extension.ExtensionResults clientExtensionResults
+            @Nullable ClientExtensionResults clientExtensionResults
     ) {
         super(Base64.toUrlSafeString(id), PUBLIC_KEY_CREDENTIAL_TYPE);
         this.rawId = id;
@@ -122,7 +123,7 @@ public class PublicKeyCredential extends Credential {
     }
 
     @Nullable
-    public Extension.ExtensionResults getClientExtensionResults() {
+    public ClientExtensionResults getClientExtensionResults() {
         return clientExtensionResults;
     }
 
@@ -183,7 +184,7 @@ public class PublicKeyCredential extends Credential {
             Ctap2Session.AssertionData assertion,
             byte[] clientDataJson,
             @Nullable List<PublicKeyCredentialDescriptor> allowCredentials,
-            @Nullable Extension.ExtensionResults clientExtensionResults) {
+            @Nullable ClientExtensionResults clientExtensionResults) {
         byte[] userId = null;
         Map<String, ?> userMap = assertion.getUser();
         if (userMap != null) {
