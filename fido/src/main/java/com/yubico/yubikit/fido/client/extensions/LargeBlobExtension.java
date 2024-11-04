@@ -36,43 +36,48 @@ import java.util.Map;
 import javax.annotation.Nullable;
 
 class LargeBlobExtension extends Extension {
-
+    private static final String LARGE_BLOB_KEY = "largeBlobKey";
+    private static final String LARGE_BLOB = "largeBlob";
+    private static final String LARGE_BLOBS = "largeBlobs";
+    private static final String ACTION_READ = "read";
+    private static final String ACTION_WRITE = "write";
+    private static final String WRITTEN = "written";
     private static final org.slf4j.Logger logger = LoggerFactory.getLogger(com.yubico.yubikit.fido.client.extensions.LargeBlobExtension.class);
 
     @Nullable private Object action = null;
 
     public LargeBlobExtension(final Ctap2Session ctap) {
-        super("largeBlobKey", ctap);
+        super(LARGE_BLOB_KEY, ctap);
     }
 
     @Override
     boolean isSupported() {
         return super.isSupported() && ctap.getCachedInfo().getOptions()
-                .containsKey("largeBlobs");
+                .containsKey(LARGE_BLOBS);
     }
 
     @Override
-    boolean processInput(CreateInputArguments arguments) {
+    ProcessingResult processInput(CreateInputArguments arguments) {
 
         Extensions extensions = arguments.creationOptions.getExtensions();
         @SuppressWarnings("unchecked")
-        Map<String, Object> data = (Map<String, Object>) extensions.get("largeBlob");
+        Map<String, Object> data = (Map<String, Object>) extensions.get(LARGE_BLOB);
         if (data != null) {
-            if (data.containsKey("read") || data.containsKey("write")) {
+            if (data.containsKey(ACTION_READ) || data.containsKey(ACTION_WRITE)) {
                 throw new IllegalArgumentException("Invalid set of parameters");
             }
             if ("required".equals(data.get("support")) && !isSupported()) {
                 throw new IllegalArgumentException("Authenticator does not support large" +
                         " blob storage");
             }
-            return withAuthenticatorInput(true);
+            return resultWithData(LARGE_BLOB, true);
         }
-        return unused();
+        return null;
     }
 
     @Nullable
     @Override
-    Map<String, Object> processOutput(
+    ProcessingResult processOutput(
             Ctap2Session.AssertionData assertionData,
             GetOutputArguments arguments) {
 
@@ -85,10 +90,9 @@ class LargeBlobExtension extends Extension {
             if (Boolean.TRUE.equals(action)) {
                 LargeBlobs largeBlobs = new LargeBlobs(ctap);
                 byte[] blob = largeBlobs.getBlob(largeBlobKey);
-                return Collections.singletonMap("largeBlob",
-                        blob != null
-                                ? Collections.singletonMap("blob", toUrlSafeString(blob))
-                                : Collections.emptyMap());
+                return resultWithData(LARGE_BLOB, blob != null
+                        ? Collections.singletonMap("blob", toUrlSafeString(blob))
+                        : Collections.emptyMap());
             } else if (action != null && action instanceof byte[]) {
                 byte[] bytes = (byte[]) action;
                 LargeBlobs largeBlobs = new LargeBlobs(
@@ -97,8 +101,7 @@ class LargeBlobExtension extends Extension {
                         arguments.getAuthToken());
                 largeBlobs.putBlob(largeBlobKey, bytes);
 
-                return Collections.singletonMap("largeBlob",
-                        Collections.singletonMap("written", true));
+                return resultWithData(LARGE_BLOB, Collections.singletonMap(WRITTEN, true));
             }
         } catch (IOException | CommandException | GeneralSecurityException e) {
             Logger.error(logger, "LargeBlob processing failed: ", e);
@@ -109,25 +112,25 @@ class LargeBlobExtension extends Extension {
 
     @SuppressWarnings("unchecked")
     @Override
-    boolean processInput(GetInputArguments arguments) {
+    ProcessingResult processInput(GetInputArguments arguments) {
 
         Extensions extensions = arguments.publicKeyCredentialRequestOptions.getExtensions();
 
-        Map<String, Object> data = (Map<String, Object>) extensions.get("largeBlob");
-        if (data != null && data.containsKey("read")) {
-            action = data.get("read");
-            return withAuthenticatorInput(true);
-        } else if (data != null && data.containsKey("write")) {
-            action = fromUrlSafeString((String) data.get("write"));
-            return withAuthenticatorInputAndPermissions(true, ClientPin.PIN_PERMISSION_LBW);
+        Map<String, Object> data = (Map<String, Object>) extensions.get(LARGE_BLOB);
+        if (data != null && data.containsKey(ACTION_READ)) {
+            action = data.get(ACTION_READ);
+            return resultWithData(LARGE_BLOB, true);
+        } else if (data != null && data.containsKey(ACTION_WRITE)) {
+            action = fromUrlSafeString((String) data.get(ACTION_WRITE));
+            return resultWithDataAndPermission(LARGE_BLOB, true, ClientPin.PIN_PERMISSION_LBW);
         }
-        return unused();
+        return null;
     }
 
     @Nullable
     @Override
-    Map<String, Object> processOutput(AttestationObject attestationObject) {
-        return Collections.singletonMap("largeBlob",
+    ProcessingResult processOutput(AttestationObject attestationObject) {
+        return resultWithData(LARGE_BLOB,
                 Collections.singletonMap("supported",
                         attestationObject.getLargeBlobKey() != null));
     }

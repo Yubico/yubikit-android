@@ -25,6 +25,7 @@ import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialDescriptor;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialRequestOptions;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
 import javax.annotation.Nullable;
@@ -32,10 +33,6 @@ import javax.annotation.Nullable;
 public class Extension {
     protected final String name;
     protected final Ctap2Session ctap;
-
-    @Nullable
-    private Map<String, Object> authenticatorInput = null;
-    private int permissions = ClientPin.PIN_PERMISSION_NONE;
 
     protected Extension(String name, final Ctap2Session ctap) {
         this.name = name;
@@ -46,64 +43,38 @@ public class Extension {
         return ctap.getCachedInfo().getExtensions().contains(name);
     }
 
-    boolean processInput(CreateInputArguments ignoredArguments) {
-        return false;
-    }
-
     @Nullable
-    Map<String, Object> processOutput(AttestationObject ignoredAttestationObject) {
+    ProcessingResult processInput(CreateInputArguments ignoredArguments) {
         return null;
     }
 
     @Nullable
-    Map<String, Object> processOutput(
+    ProcessingResult processOutput(AttestationObject ignoredAttestationObject) {
+        return null;
+    }
+
+    @Nullable
+    ProcessingResult processOutput(
             AttestationObject attestationObject,
             CreateOutputArguments ignoredArguments) {
         return processOutput(attestationObject);
     }
 
-    boolean processInput(GetInputArguments ignoredArguments) {
-        return false;
-    }
-
     @Nullable
-    Map<String, Object> processOutput(Ctap2Session.AssertionData ignoredAssertionData) {
+    ProcessingResult processInput(GetInputArguments ignoredArguments) {
         return null;
     }
 
     @Nullable
-    Map<String, Object> processOutput(
-            Ctap2Session.AssertionData assertionData,
-            GetOutputArguments ignoredArguments) {
-        return processOutput(assertionData);
+    ProcessingResult processOutput(Ctap2Session.AssertionData ignoredAssertionData) {
+        return null;
     }
 
     @Nullable
-    Map<String, Object> getAuthenticatorInput() {
-        return authenticatorInput;
-    }
-
-    public int getPermissions() {
-        return permissions;
-    }
-
-    boolean withAuthenticatorInput(@Nullable Object authenticatorInput) {
-        return withAuthenticatorInputAndPermissions(authenticatorInput, ClientPin.PIN_PERMISSION_NONE);
-    }
-
-    boolean withAuthenticatorInputAndPermissions(@Nullable Object authenticatorInput,
-                                                 @Nullable Integer permissions) {
-        if (permissions != null) {
-            this.permissions = permissions;
-        }
-
-        this.authenticatorInput = Collections.singletonMap(name, authenticatorInput);
-
-        return true;
-    }
-
-    boolean unused() {
-        return false;
+    ProcessingResult processOutput(
+            Ctap2Session.AssertionData assertionData,
+            GetOutputArguments ignoredArguments) {
+        return processOutput(assertionData);
     }
 
     public static class CreateInputArguments {
@@ -188,6 +159,68 @@ public class Extension {
         @Nullable
         public PinUvAuthProtocol getPinUvAuthProtocol() {
             return pinUvAuthProtocol;
+        }
+    }
+
+    /**
+     * Builds an extension processing result without any data
+     * @return empty ProcessingResult
+     */
+    ProcessingResult resultWithoutData() {
+        return new ProcessingResult(null);
+    }
+
+    /**
+     * Builds an extension processing result with data
+     * @param name identifies the target extension
+     * @param data data for target extension
+     * @return initialized ProcessingResult object
+     */
+    ProcessingResult resultWithData(String name, Object data) {
+        return resultWithDataAndPermission(name, data, ClientPin.PIN_PERMISSION_NONE);
+    }
+
+    /**
+     * Builds an extension processing result with data and permissions
+     * @param name identifies the target extension
+     * @param data data for target extension
+     * @param permissions result permissions
+     * @return initialized ProcessingResult object
+     */
+    ProcessingResult resultWithDataAndPermission(String name, Object data, int permissions) {
+        return new ProcessingResult(Collections.singletonMap(name, data), permissions);
+    }
+
+    /**
+     * Result of extension input or output processing
+     */
+    static class ProcessingResult {
+        private final Map<String, Object> data;
+        private final boolean hasData;
+        private final int permissions;
+
+        private ProcessingResult(@Nullable Map<String, Object> data, int permissions) {
+            this.data = data != null
+                ? data
+                : new HashMap<>();
+            this.hasData = data != null;
+            this.permissions = permissions;
+        }
+
+        private ProcessingResult(@Nullable Map<String, Object> data) {
+            this(data, ClientPin.PIN_PERMISSION_NONE);
+        }
+
+        public Map<String, Object> getData() {
+            return data;
+        }
+
+        public boolean hasData() {
+            return hasData;
+        }
+
+        public int getPermissions() {
+            return permissions;
         }
     }
 }

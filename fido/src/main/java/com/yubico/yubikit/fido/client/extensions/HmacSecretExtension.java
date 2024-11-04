@@ -42,7 +42,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -66,12 +65,9 @@ class HmacSecretExtension extends Extension {
         }
     }
 
-    @Nullable
-    private byte[] prfSalt(@Nullable byte[] secret) {
+    private byte[] prfSalt(byte[] secret) {
         try {
-            return secret == null
-                    ? null
-                    : MessageDigest.getInstance("SHA-256").digest(
+            return MessageDigest.getInstance("SHA-256").digest(
                     ByteBuffer
                             .allocate(13 + secret.length)
                             .put("WebAuthn PRF".getBytes(StandardCharsets.US_ASCII))
@@ -88,34 +84,34 @@ class HmacSecretExtension extends Extension {
     }
 
     @Override
-    boolean processInput(CreateInputArguments arguments) {
+    ProcessingResult processInput(CreateInputArguments arguments) {
         Extensions extensions = arguments.creationOptions.getExtensions();
         if (Boolean.TRUE.equals(extensions.get("hmacCreateSecret"))) {
             prf = false;
-            return withAuthenticatorInput(true);
+            return resultWithData(name, true);
         } else if (extensions.has("prf")) {
             prf = true;
-            return withAuthenticatorInput(true);
+            return resultWithData(name, true);
         }
-        return unused();
+        return null;
     }
 
     @Nullable
     @Override
-    Map<String, Object> processOutput(AttestationObject attestationObject) {
+    ProcessingResult processOutput(AttestationObject attestationObject) {
         Map<String, ?> extensions = attestationObject.getAuthenticatorData().getExtensions();
 
         boolean enabled = extensions != null && Boolean.TRUE.equals(extensions.get(name));
         return prf
-                ? Collections.singletonMap("prf", Collections.singletonMap("enabled", enabled))
-                : Collections.singletonMap("hmacCreateSecret", enabled);
+                ? resultWithData("prf", Collections.singletonMap("enabled", enabled))
+                : resultWithData("hmacCreateSecret", enabled);
     }
 
     @SuppressWarnings("unchecked")
     @Override
-    boolean processInput(GetInputArguments arguments) {
+    ProcessingResult processInput(GetInputArguments arguments) {
         if (!isSupported()) {
-            return false;
+            return null;
         }
 
         Extensions extensions = arguments.publicKeyCredentialRequestOptions.getExtensions();
@@ -152,39 +148,42 @@ class HmacSecretExtension extends Extension {
             }
 
             if (secrets == null) {
-                return false;
+                return null;
             }
 
             Logger.debug(logger, "PRF inputs: {}, {}", secrets.get("first"), secrets.get("second"));
 
             String firstInput = (String) secrets.get("first");
             if (firstInput == null) {
-                return false;
+                return null;
             }
 
-            byte[] first = fromUrlSafeString(firstInput);
-
+            byte[] first = prfSalt(fromUrlSafeString(firstInput));
             byte[] second = secrets.containsKey("second")
                     ? prfSalt(fromUrlSafeString((String) secrets.get("second")))
                     : null;
 
-            salts = new Salts(prfSalt(first), second);
+            salts = new Salts(first, second);
             prf = true;
         } else {
             data = (Map<String, Object>) extensions.get("hmacGetSecret");
             if (data == null) {
-                return false;
+                return null;
             }
 
             Logger.debug(logger, "hmacGetSecret inputs: {}, {}", data.get("salt1"), data.get("salt2"));
 
-            byte[] salt1 = fromUrlSafeString((String) Objects.requireNonNull(data.get("salt1")));
+            String salt1B64 = (String) data.get("salt1");
+            if (salt1B64 == null) {
+                return null;
+            }
 
+            byte[] salt1 = prfSalt(fromUrlSafeString(salt1B64));
             byte[] salt2 = data.containsKey("salt2")
                     ? prfSalt(fromUrlSafeString((String) data.get("salt2")))
                     : null;
 
-            salts = new Salts(prfSalt(salt1), prfSalt(salt2));
+            salts = new Salts(salt1, salt2);
             prf = false;
         }
 
@@ -218,15 +217,15 @@ class HmacSecretExtension extends Extension {
             hmacGetSecretInput.put(2, saltEnc);
             hmacGetSecretInput.put(3, saltAuth);
             hmacGetSecretInput.put(4, clientPin.getPinUvAuth().getVersion());
-            return withAuthenticatorInput(hmacGetSecretInput);
+            return resultWithData(name, hmacGetSecretInput);
         } catch (IOException | CommandException e) {
-            return unused();
+            return null;
         }
     }
 
     @Nullable
     @Override
-    Map<String, Object> processOutput(
+    ProcessingResult processOutput(
             Ctap2Session.AssertionData assertionData,
             GetOutputArguments arguments) {
 
@@ -263,14 +262,14 @@ class HmacSecretExtension extends Extension {
             if (output2.length > 0) {
                 results.put("second", toUrlSafeString(output2));
             }
-            return Collections.singletonMap("prf",
+            return resultWithData("prf",
                     Collections.singletonMap("results", results));
         } else {
             results.put("output1", toUrlSafeString(output1));
             if (output2.length > 0) {
                 results.put("output2", toUrlSafeString(output2));
             }
-            return Collections.singletonMap("hmacGetSecret", results);
+            return resultWithData("hmacGetSecret", results);
         }
     }
 }

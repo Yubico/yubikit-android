@@ -65,11 +65,13 @@ public class Extensions {
                 continue;
             }
 
-            if (processor.process(extension)) {
+            Extension.ProcessingResult result = processor.process(extension);
+
+            if (result != null) {
                 usedExtensions.add(extension);
-                if (extension.getAuthenticatorInput() != null) {
-                    permissions |= extension.getPermissions();
-                    authenticatorInput.putAll(extension.getAuthenticatorInput());
+                if (result.hasData()) {
+                    permissions |= result.getPermissions();
+                    authenticatorInput.putAll(result.getData());
                 }
             }
         }
@@ -99,9 +101,11 @@ public class Extensions {
         ClientExtensionResults extensionExtensionResults = new ClientExtensionResults();
 
         for (Extension extension : usedExtensions) {
-            Map<String, Object> extensionResult = processor.process(extension);
-            if (extensionResult != null) {
-                extensionExtensionResults.add(extensionResult);
+            Extension.ProcessingResult result = processor.process(extension);
+            if (result != null) {
+                if (result.hasData()) {
+                    extensionExtensionResults.add(result.getData());
+                }
             }
         }
 
@@ -109,12 +113,13 @@ public class Extensions {
     }
 
     interface InputArgumentsProcessor {
-        boolean process(Extension extension);
+        @Nullable
+        Extension.ProcessingResult process(Extension extension);
     }
 
     interface OutputArgumentsProcessor {
         @Nullable
-        Map<String, Object> process(Extension extension);
+        Extension.ProcessingResult process(Extension extension);
     }
 
     @Nullable

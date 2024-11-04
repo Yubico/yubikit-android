@@ -27,7 +27,7 @@ class CredBlobExtension extends Extension {
     }
 
     @Override
-    boolean processInput(CreateInputArguments arguments) {
+    ProcessingResult processInput(CreateInputArguments arguments) {
 
         Extensions extensions = arguments.creationOptions.getExtensions();
         if (isSupported()) {
@@ -35,19 +35,19 @@ class CredBlobExtension extends Extension {
             if (b64Blob != null) {
                 byte[] blob = fromUrlSafeString(b64Blob);
                 if (blob.length <= ctap.getCachedInfo().getMaxCredBlobLength()) {
-                    return withAuthenticatorInput(blob);
+                    return resultWithData(name, blob);
                 }
             }
         }
-        return unused();
+        return null;
     }
 
     @Override
-    boolean processInput(GetInputArguments arguments) {
+    ProcessingResult processInput(GetInputArguments arguments) {
         Extensions extensions = arguments.publicKeyCredentialRequestOptions.getExtensions();
         if (isSupported() && Boolean.TRUE.equals(extensions.get("getCredBlob"))) {
-            return withAuthenticatorInput(true);
+            return resultWithData(name, true);
         }
-        return unused();
+        return null;
     }
 }
