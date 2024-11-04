@@ -30,16 +30,14 @@ import java.util.Map;
 
 import javax.annotation.Nullable;
 
-public class Extension {
+public abstract class Extension {
     protected final String name;
-    protected final Ctap2Session ctap;
 
-    protected Extension(String name, final Ctap2Session ctap) {
+    protected Extension(String name) {
         this.name = name;
-        this.ctap = ctap;
     }
 
-    boolean isSupported() {
+    boolean isSupported(Ctap2Session ctap) {
         return ctap.getCachedInfo().getExtensions().contains(name);
     }
 
@@ -78,9 +76,13 @@ public class Extension {
     }
 
     public static class CreateInputArguments {
+        final Ctap2Session ctap;
         final PublicKeyCredentialCreationOptions creationOptions;
 
-        public CreateInputArguments(PublicKeyCredentialCreationOptions creationOptions) {
+        public CreateInputArguments(
+                Ctap2Session ctap,
+                PublicKeyCredentialCreationOptions creationOptions) {
+            this.ctap = ctap;
             this.creationOptions = creationOptions;
         }
 
@@ -102,6 +104,7 @@ public class Extension {
     }
 
     public static class GetInputArguments {
+        final Ctap2Session ctap;
         final PublicKeyCredentialRequestOptions publicKeyCredentialRequestOptions;
 
         final ClientPin clientPin;
@@ -109,10 +112,12 @@ public class Extension {
         @Nullable final PublicKeyCredentialDescriptor selectedCredential;
 
         public GetInputArguments(
+                Ctap2Session ctap,
                 PublicKeyCredentialRequestOptions publicKeyCredentialRequestOptions,
                 ClientPin clientPin,
                 @Nullable
                 PublicKeyCredentialDescriptor selectedCredential) {
+            this.ctap = ctap;
             this.publicKeyCredentialRequestOptions = publicKeyCredentialRequestOptions;
             this.clientPin = clientPin;
             this.selectedCredential = selectedCredential;
@@ -133,6 +138,7 @@ public class Extension {
     }
 
     public static class GetOutputArguments {
+        final Ctap2Session ctap;
         private final ClientPin clientPin;
         @Nullable
         private final byte[] authToken;
@@ -140,8 +146,10 @@ public class Extension {
         private final PinUvAuthProtocol pinUvAuthProtocol;
 
         public GetOutputArguments(
+                Ctap2Session ctap,
                 ClientPin clientPin, @Nullable byte[] authToken,
                 @Nullable PinUvAuthProtocol pinUvAuthProtocol) {
+            this.ctap = ctap;
             this.clientPin = clientPin;
             this.authToken = authToken;
             this.pinUvAuthProtocol = pinUvAuthProtocol;

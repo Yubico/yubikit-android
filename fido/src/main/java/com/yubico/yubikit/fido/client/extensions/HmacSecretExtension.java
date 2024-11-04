@@ -47,7 +47,7 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
-class HmacSecretExtension extends Extension {
+public class HmacSecretExtension extends Extension {
 
     private static final org.slf4j.Logger logger = LoggerFactory.getLogger(HmacSecretExtension.class);
 
@@ -79,8 +79,8 @@ class HmacSecretExtension extends Extension {
         }
     }
 
-    HmacSecretExtension(final Ctap2Session ctap) {
-        super("hmac-secret", ctap);
+    public HmacSecretExtension() {
+        super("hmac-secret");
     }
 
     @Override
@@ -110,7 +110,7 @@ class HmacSecretExtension extends Extension {
     @SuppressWarnings("unchecked")
     @Override
     ProcessingResult processInput(GetInputArguments arguments) {
-        if (!isSupported()) {
+        if (!isSupported(arguments.ctap)) {
             return null;
         }
 

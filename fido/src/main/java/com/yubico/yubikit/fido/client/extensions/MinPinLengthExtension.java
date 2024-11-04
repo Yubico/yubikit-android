@@ -19,14 +19,15 @@ package com.yubico.yubikit.fido.client.extensions;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.fido.webauthn.Extensions;
 
-class MinPinLengthExtension extends Extension {
-    MinPinLengthExtension(final Ctap2Session ctap) {
-        super("minPinLength", ctap);
+public class MinPinLengthExtension extends Extension {
+
+    public MinPinLengthExtension() {
+        super("minPinLength");
     }
 
     @Override
-    boolean isSupported() {
-        return super.isSupported() && ctap.getCachedInfo().getOptions()
+    boolean isSupported(Ctap2Session ctap) {
+        return super.isSupported(ctap) && ctap.getCachedInfo().getOptions()
                 .containsKey("setMinPINLength");
     }
 
@@ -34,7 +35,7 @@ class MinPinLengthExtension extends Extension {
     ProcessingResult processInput(CreateInputArguments arguments) {
 
         Extensions extensions = arguments.creationOptions.getExtensions();
-        if (!isSupported()) {
+        if (!isSupported(arguments.ctap)) {
             return null;
         }
         Boolean input = (Boolean) extensions.get(name);

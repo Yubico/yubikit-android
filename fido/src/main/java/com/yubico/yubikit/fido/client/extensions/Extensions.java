@@ -16,7 +16,6 @@
 
 package com.yubico.yubikit.fido.client.extensions;
 
-import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.fido.ctap.ClientPin;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.fido.webauthn.AttestationObject;
@@ -25,46 +24,32 @@ import com.yubico.yubikit.fido.webauthn.ClientExtensionResults;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.ServiceLoader;
 
 import javax.annotation.Nullable;
 
 // Client Extension processing
 public class Extensions {
-
     final List<Extension> usedExtensions = new ArrayList<>();
-    final List<String> supportedExtensions = Arrays.asList(
-            "hmac-secret",
-            "largeBlobKey",
-            "credBlob",
-            "credProps",
-            "credProtect",
-            "minPinLength"
-    );
     private static final org.slf4j.Logger logger = LoggerFactory.getLogger(Extensions.class);
 
     final Map<String, Object> authenticatorInput = new HashMap<>();
     int permissions = ClientPin.PIN_PERMISSION_NONE;
 
     public static Extensions processExtensions(Ctap2Session ctap, Extension.CreateInputArguments arguments) {
-        return new Extensions(ctap, e -> e.processInput(arguments));
+        return new Extensions(e -> e.processInput(arguments));
     }
 
     public static Extensions processExtensions(Ctap2Session ctap, Extension.GetInputArguments arguments) {
-        return new Extensions(ctap, e -> e.processInput(arguments));
+        return new Extensions(e -> e.processInput(arguments));
     }
 
-    private Extensions(Ctap2Session ctap, InputArgumentsProcessor processor) {
-        for (String extensionName : supportedExtensions) {
-            Extension extension = getByName(extensionName, ctap);
-            if (extension == null) {
-                Logger.debug(logger, "Extension {} not supported", extensionName);
-                continue;
-            }
-
+    private Extensions(InputArgumentsProcessor processor) {
+        ServiceLoader<Extension> extensionLoader = ServiceLoader.load(Extension.class);
+        for (Extension extension : extensionLoader) {
             Extension.ProcessingResult result = processor.process(extension);
 
             if (result != null) {
@@ -120,24 +105,5 @@ public class Extensions {
     interface OutputArgumentsProcessor {
         @Nullable
         Extension.ProcessingResult process(Extension extension);
-    }
-
-    @Nullable
-    static private Extension getByName(String name, final Ctap2Session ctap) {
-        switch (name) {
-            case "hmac-secret":
-                return new HmacSecretExtension(ctap);
-            case "largeBlobKey":
-                return new LargeBlobExtension(ctap);
-            case "credBlob":
-                return new CredBlobExtension(ctap);
-            case "credProps":
-                return new CredPropsExtension(ctap);
-            case "credProtect":
-                return new CredProtectExtension(ctap);
-            case "minPinLength":
-                return new MinPinLengthExtension(ctap);
-        }
-        return null;
     }
 }

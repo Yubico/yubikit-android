@@ -16,7 +16,6 @@
 
 package com.yubico.yubikit.fido.client.extensions;
 
-import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.fido.webauthn.AttestationObject;
 import com.yubico.yubikit.fido.webauthn.AuthenticatorSelectionCriteria;
 import com.yubico.yubikit.fido.webauthn.Extensions;
@@ -27,9 +26,10 @@ import java.util.Collections;
 
 import javax.annotation.Nullable;
 
-class CredPropsExtension extends Extension {
-    CredPropsExtension(final Ctap2Session ctap) {
-        super("credProps", ctap);
+public class CredPropsExtension extends Extension {
+
+    public CredPropsExtension() {
+        super("credProps");
     }
 
     @Nullable

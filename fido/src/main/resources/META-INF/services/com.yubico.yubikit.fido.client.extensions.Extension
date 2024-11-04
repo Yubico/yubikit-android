@@ -1,0 +1,6 @@
+com.yubico.yubikit.fido.client.extensions.CredBlobExtension
+com.yubico.yubikit.fido.client.extensions.CredPropsExtension
+com.yubico.yubikit.fido.client.extensions.CredProtectExtension
+com.yubico.yubikit.fido.client.extensions.HmacSecretExtension
+com.yubico.yubikit.fido.client.extensions.LargeBlobExtension
+com.yubico.yubikit.fido.client.extensions.MinPinLengthExtension

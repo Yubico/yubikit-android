@@ -35,7 +35,7 @@ import java.util.Map;
 
 import javax.annotation.Nullable;
 
-class LargeBlobExtension extends Extension {
+public class LargeBlobExtension extends Extension {
     private static final String LARGE_BLOB_KEY = "largeBlobKey";
     private static final String LARGE_BLOB = "largeBlob";
     private static final String LARGE_BLOBS = "largeBlobs";
@@ -46,13 +46,13 @@ class LargeBlobExtension extends Extension {
 
     @Nullable private Object action = null;
 
-    public LargeBlobExtension(final Ctap2Session ctap) {
-        super(LARGE_BLOB_KEY, ctap);
+    public LargeBlobExtension() {
+        super(LARGE_BLOB_KEY);
     }
 
     @Override
-    boolean isSupported() {
-        return super.isSupported() && ctap.getCachedInfo().getOptions()
+    boolean isSupported(Ctap2Session ctap) {
+        return super.isSupported(ctap) && ctap.getCachedInfo().getOptions()
                 .containsKey(LARGE_BLOBS);
     }
 
@@ -66,7 +66,7 @@ class LargeBlobExtension extends Extension {
             if (data.containsKey(ACTION_READ) || data.containsKey(ACTION_WRITE)) {
                 throw new IllegalArgumentException("Invalid set of parameters");
             }
-            if ("required".equals(data.get("support")) && !isSupported()) {
+            if ("required".equals(data.get("support")) && !isSupported(arguments.ctap)) {
                 throw new IllegalArgumentException("Authenticator does not support large" +
                         " blob storage");
             }
@@ -88,7 +88,7 @@ class LargeBlobExtension extends Extension {
 
         try {
             if (Boolean.TRUE.equals(action)) {
-                LargeBlobs largeBlobs = new LargeBlobs(ctap);
+                LargeBlobs largeBlobs = new LargeBlobs(arguments.ctap);
                 byte[] blob = largeBlobs.getBlob(largeBlobKey);
                 return resultWithData(LARGE_BLOB, blob != null
                         ? Collections.singletonMap("blob", toUrlSafeString(blob))
@@ -96,7 +96,7 @@ class LargeBlobExtension extends Extension {
             } else if (action != null && action instanceof byte[]) {
                 byte[] bytes = (byte[]) action;
                 LargeBlobs largeBlobs = new LargeBlobs(
-                        ctap,
+                        arguments.ctap,
                         arguments.getPinUvAuthProtocol(),
                         arguments.getAuthToken());
                 largeBlobs.putBlob(largeBlobKey, bytes);

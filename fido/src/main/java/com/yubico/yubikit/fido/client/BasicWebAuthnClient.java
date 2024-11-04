@@ -437,7 +437,7 @@ public class BasicWebAuthnClient implements Closeable {
         }
 
         Map<String, Boolean> ctapOptions = getCreateCtapOptions(options, pin);
-        Extension.CreateInputArguments inputArguments = new Extension.CreateInputArguments(options);
+        Extension.CreateInputArguments inputArguments = new Extension.CreateInputArguments(ctap, options);
         Extensions extensions = Extensions.processExtensions(ctap, inputArguments);
 
         final AuthParams authParams = getAuthParams(
@@ -566,6 +566,7 @@ public class BasicWebAuthnClient implements Closeable {
                 : null;
 
         Extension.GetInputArguments inputArguments = new Extension.GetInputArguments(
+                ctap,
                 options,
                 clientPin,
                 selectedCred
@@ -595,6 +596,7 @@ public class BasicWebAuthnClient implements Closeable {
 
             List<WithExtensionResults<Ctap2Session.AssertionData>> result = new ArrayList<>();
             Extension.GetOutputArguments getOutputArguments = new Extension.GetOutputArguments(
+                    ctap,
                     clientPin,
                     authParams.pinToken,
                     authParams.pinUvAuthProtocol

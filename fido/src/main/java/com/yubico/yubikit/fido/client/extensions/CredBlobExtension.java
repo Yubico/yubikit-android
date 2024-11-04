@@ -18,23 +18,23 @@ package com.yubico.yubikit.fido.client.extensions;
 
 import static com.yubico.yubikit.core.internal.codec.Base64.fromUrlSafeString;
 
-import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.fido.webauthn.Extensions;
 
-class CredBlobExtension extends Extension {
-    CredBlobExtension(final Ctap2Session ctap) {
-        super("credBlob", ctap);
+public class CredBlobExtension extends Extension {
+
+    public CredBlobExtension() {
+        super("credBlob");
     }
 
     @Override
     ProcessingResult processInput(CreateInputArguments arguments) {
 
         Extensions extensions = arguments.creationOptions.getExtensions();
-        if (isSupported()) {
+        if (isSupported(arguments.ctap)) {
             String b64Blob = (String) extensions.get("credBlob");
             if (b64Blob != null) {
                 byte[] blob = fromUrlSafeString(b64Blob);
-                if (blob.length <= ctap.getCachedInfo().getMaxCredBlobLength()) {
+                if (blob.length <= arguments.ctap.getCachedInfo().getMaxCredBlobLength()) {
                     return resultWithData(name, blob);
                 }
             }
@@ -45,7 +45,7 @@ class CredBlobExtension extends Extension {
     @Override
     ProcessingResult processInput(GetInputArguments arguments) {
         Extensions extensions = arguments.publicKeyCredentialRequestOptions.getExtensions();
-        if (isSupported() && Boolean.TRUE.equals(extensions.get("getCredBlob"))) {
+        if (isSupported(arguments.ctap) && Boolean.TRUE.equals(extensions.get("getCredBlob"))) {
             return resultWithData(name, true);
         }
         return null;

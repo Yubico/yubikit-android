@@ -16,19 +16,18 @@
 
 package com.yubico.yubikit.fido.client.extensions;
 
-import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.fido.webauthn.Extensions;
 
 import javax.annotation.Nullable;
 
-class CredProtectExtension extends Extension {
+public class CredProtectExtension extends Extension {
 
     static final String OPTIONAL = "userVerificationOptional";
     static final String OPTIONAL_WITH_LIST = "userVerificationOptionalWithCredentialIDList";
     static final String REQUIRED = "userVerificationRequired";
 
-    CredProtectExtension(final Ctap2Session ctap) {
-        super("credProtect", ctap);
+    public CredProtectExtension() {
+        super("credProtect");
     }
 
     @Override
@@ -54,7 +53,10 @@ class CredProtectExtension extends Extension {
                 break;
         }
         Boolean enforce = (Boolean) extensions.get("enforceCredentialProtectionPolicy");
-        if (Boolean.TRUE.equals(enforce) && !isSupported() && credProtect != null && credProtect > 0x01) {
+        if (Boolean.TRUE.equals(enforce) &&
+                !isSupported(arguments.ctap) &&
+                credProtect != null &&
+                credProtect > 0x01) {
             throw new IllegalArgumentException("Authenticator does not support Credential Protection");
         }
 
