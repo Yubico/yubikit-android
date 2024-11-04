@@ -16,17 +16,15 @@
 
 package com.yubico.yubikit.fido.client;
 
+import static com.yubico.yubikit.fido.client.extensions.Extensions.processExtensions;
 import static com.yubico.yubikit.fido.webauthn.PublicKeyCredentialType.PUBLIC_KEY;
 
 import com.yubico.yubikit.core.application.CommandException;
 import com.yubico.yubikit.core.application.CommandState;
 import com.yubico.yubikit.core.fido.CtapException;
-import com.yubico.yubikit.fido.client.extensions.ClientExtensionResults;
-import com.yubico.yubikit.fido.client.extensions.ExtensionCreateInput;
-import com.yubico.yubikit.fido.client.extensions.ExtensionCreateOutput;
-import com.yubico.yubikit.fido.client.extensions.ExtensionGetInput;
-import com.yubico.yubikit.fido.client.extensions.ExtensionGetOutput;
-import com.yubico.yubikit.fido.client.extensions.ExtensionProcessor;
+import com.yubico.yubikit.fido.client.extensions.Extensions;
+import com.yubico.yubikit.fido.webauthn.ClientExtensionResults;
+import com.yubico.yubikit.fido.client.extensions.Extension;
 import com.yubico.yubikit.fido.ctap.ClientPin;
 import com.yubico.yubikit.fido.ctap.CredentialManagement;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
@@ -440,14 +438,14 @@ public class BasicWebAuthnClient implements Closeable {
         }
 
         Map<String, Boolean> ctapOptions = getCreateCtapOptions(options, pin);
-        ExtensionCreateInput extensionCreateInput = new ExtensionCreateInput(options);
-        ExtensionProcessor extensionProcessor = new ExtensionProcessor(ctap, extensionCreateInput);
+        Extension.CreateInputArguments inputArguments = new Extension.CreateInputArguments(options);
+        Extensions extensions = processExtensions(ctap, inputArguments);
 
         final AuthParams authParams = getAuthParams(
                 clientDataHash,
                 ctapOptions.containsKey(OPTION_USER_VERIFICATION),
                 pin,
-                extensionProcessor.getRequiredPermissions() |
+                extensions.getRequiredPermissions() |
                         ClientPin.PIN_PERMISSION_MC | ClientPin.PIN_PERMISSION_GA,
                 rpId);
 
@@ -492,7 +490,7 @@ public class BasicWebAuthnClient implements Closeable {
                 credToExclude != null
                         ? Utils.getCredentialList(Collections.singletonList(credToExclude))
                         : null,
-                extensionProcessor.getAuthenticatorInput(),
+                extensions.getAuthenticatorInput(),
                 ctapOptions.isEmpty() ? null : ctapOptions,
                 authParams.pinUvAuthParam,
                 authParams.pinUvAuthProtocol != null ? authParams.pinUvAuthProtocol.getVersion() : null,
@@ -500,17 +498,17 @@ public class BasicWebAuthnClient implements Closeable {
                 state
         );
 
-        // get extensionProcessor results
-        ExtensionCreateOutput extensionCreateOutput =
-                    new ExtensionCreateOutput(
+        // get extensions results
+        Extension.CreateOutputArguments createOutputArguments =
+                    new Extension.CreateOutputArguments(
                             authParams.pinToken,
                             authParams.pinUvAuthProtocol
                     );
 
         return new WithExtensionResults<>(credentialData,
-                extensionProcessor.getClientExtensionResults(
+                extensions.getClientExtensionResults(
                         AttestationObject.fromCredential(credentialData),
-                        extensionCreateOutput));
+                        createOutputArguments));
     }
 
     /**
@@ -568,18 +566,18 @@ public class BasicWebAuthnClient implements Closeable {
                 filterCredAuthParams.pinToken)
                 : null;
 
-        ExtensionGetInput extensionGetInput = new ExtensionGetInput(
+        Extension.GetInputArguments inputArguments = new Extension.GetInputArguments(
                 options,
                 clientPin,
                 selectedCred
         );
 
-        ExtensionProcessor extensionProcessor = new ExtensionProcessor(ctap, extensionGetInput);
+        Extensions extensions = processExtensions(ctap, inputArguments);
         final AuthParams authParams = getAuthParams(
                 clientDataHash,
                 ctapOptions.containsKey(OPTION_USER_VERIFICATION),
                 pin,
-                ClientPin.PIN_PERMISSION_GA | extensionProcessor.getRequiredPermissions(),
+                ClientPin.PIN_PERMISSION_GA | extensions.getRequiredPermissions(),
                 rpId);
 
         try {
@@ -589,7 +587,7 @@ public class BasicWebAuthnClient implements Closeable {
                     selectedCred != null
                             ? Utils.getCredentialList(Collections.singletonList(selectedCred))
                             : null,
-                    extensionProcessor.getAuthenticatorInput(),
+                    extensions.getAuthenticatorInput(),
                     ctapOptions.isEmpty() ? null : ctapOptions,
                     authParams.pinUvAuthParam,
                     authParams.pinUvAuthProtocol != null ? authParams.pinUvAuthProtocol.getVersion() : null,
@@ -597,19 +595,19 @@ public class BasicWebAuthnClient implements Closeable {
             );
 
             List<WithExtensionResults<Ctap2Session.AssertionData>> result = new ArrayList<>();
-            ExtensionGetOutput extensionGetOutput = new ExtensionGetOutput(
+            Extension.GetOutputArguments getOutputArguments = new Extension.GetOutputArguments(
                     clientPin,
                     authParams.pinToken,
                     authParams.pinUvAuthProtocol
             );
             for(final Ctap2Session.AssertionData assertionData : assertions) {
-                // process extensionProcessor for each assertion
+                // process extensions for each assertion
                 result.add(
                         new WithExtensionResults<>(
                                 assertionData,
-                                extensionProcessor.getClientExtensionResults(
+                                extensions.getClientExtensionResults(
                                         assertionData,
-                                        extensionGetOutput)));
+                                        getOutputArguments)));
             }
 
             return result;

@@ -52,7 +52,7 @@ class LargeBlobExtension extends Extension {
     }
 
     @Override
-    ExtensionInput processInput(ExtensionCreateInput parameters) {
+    boolean processInput(CreateInputArguments parameters) {
 
         Extensions extensions = parameters.creationOptions.getExtensions();
         @SuppressWarnings("unchecked")
@@ -65,16 +65,16 @@ class LargeBlobExtension extends Extension {
                 throw new IllegalArgumentException("Authenticator does not support large" +
                         " blob storage");
             }
-            return extensionInput(true);
+            return withAuthenticatorInput(true);
         }
-        return ExtensionInput.unused();
+        return unused();
     }
 
     @Nullable
     @Override
-    ClientExtensionResult processGetOutput(
+    Map<String, Object> processOutput(
             Ctap2Session.AssertionData assertionData,
-            ExtensionGetOutput parameters) {
+            GetOutputArguments parameters) {
 
         byte[] largeBlobKey = assertionData.getLargeBlobKey();
         if (largeBlobKey == null) {
@@ -85,10 +85,10 @@ class LargeBlobExtension extends Extension {
             if (Boolean.TRUE.equals(action)) {
                 LargeBlobs largeBlobs = new LargeBlobs(ctap);
                 byte[] blob = largeBlobs.getBlob(largeBlobKey);
-                return new ClientExtensionResult(Collections.singletonMap("largeBlob",
+                return Collections.singletonMap("largeBlob",
                         blob != null
                                 ? Collections.singletonMap("blob", toUrlSafeString(blob))
-                                : Collections.emptyMap()));
+                                : Collections.emptyMap());
             } else if (action != null && action instanceof byte[]) {
                 byte[] bytes = (byte[]) action;
                 LargeBlobs largeBlobs = new LargeBlobs(
@@ -97,9 +97,8 @@ class LargeBlobExtension extends Extension {
                         parameters.getAuthToken());
                 largeBlobs.putBlob(largeBlobKey, bytes);
 
-                return new ClientExtensionResult(
-                        Collections.singletonMap("largeBlob",
-                                Collections.singletonMap("written", true)));
+                return Collections.singletonMap("largeBlob",
+                        Collections.singletonMap("written", true));
             }
         } catch (IOException | CommandException | GeneralSecurityException e) {
             Logger.error(logger, "LargeBlob processing failed: ", e);
@@ -110,27 +109,26 @@ class LargeBlobExtension extends Extension {
 
     @SuppressWarnings("unchecked")
     @Override
-    ExtensionInput processInput(ExtensionGetInput parameters) {
+    boolean processInput(GetInputArguments parameters) {
 
         Extensions extensions = parameters.publicKeyCredentialRequestOptions.getExtensions();
 
         Map<String, Object> data = (Map<String, Object>) extensions.get("largeBlob");
         if (data != null && data.containsKey("read")) {
             action = data.get("read");
-            return extensionInput(Boolean.TRUE, ClientPin.PIN_PERMISSION_NONE);
+            return withAuthenticatorInput(true);
         } else if (data != null && data.containsKey("write")) {
             action = fromUrlSafeString((String) data.get("write"));
-            return extensionInput(Boolean.TRUE, ClientPin.PIN_PERMISSION_LBW);
+            return withAuthenticatorInputAndPermissions(true, ClientPin.PIN_PERMISSION_LBW);
         }
-        return ExtensionInput.withoutInput();
+        return unused();
     }
 
     @Nullable
     @Override
-    ClientExtensionResult processCreateOutput(AttestationObject attestationObject) {
-        return new ClientExtensionResult(
-                Collections.singletonMap("largeBlob",
-                        Collections.singletonMap("supported",
-                                attestationObject.getLargeBlobKey() != null)));
+    Map<String, Object> processOutput(AttestationObject attestationObject) {
+        return Collections.singletonMap("largeBlob",
+                Collections.singletonMap("supported",
+                        attestationObject.getLargeBlobKey() != null));
     }
 }

@@ -31,16 +31,16 @@ class MinPinLengthExtension extends Extension {
     }
 
     @Override
-    ExtensionInput processInput(ExtensionCreateInput parameters) {
+    boolean processInput(CreateInputArguments parameters) {
 
         Extensions extensions = parameters.creationOptions.getExtensions();
         if (!isSupported()) {
-            return ExtensionInput.unused();
+            return unused();
         }
         Boolean input = (Boolean) extensions.get(name);
         if (input == null) {
-            return ExtensionInput.unused();
+            return unused();
         }
-        return extensionInput(Boolean.TRUE.equals(input));
+        return withAuthenticatorInput(Boolean.TRUE.equals(input));
     }
 }

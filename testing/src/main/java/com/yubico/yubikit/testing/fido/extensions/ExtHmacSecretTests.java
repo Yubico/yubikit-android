@@ -17,7 +17,7 @@
 package com.yubico.yubikit.testing.fido.extensions;
 
 import com.yubico.yubikit.core.internal.codec.Base64;
-import com.yubico.yubikit.fido.client.extensions.ClientExtensionResults;
+import com.yubico.yubikit.fido.webauthn.ClientExtensionResults;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredential;
 import com.yubico.yubikit.testing.fido.FidoTestState;
 import com.yubico.yubikit.testing.fido.utils.ClientHelper;

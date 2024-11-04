@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.yubico.yubikit.fido.client.extensions;
+package com.yubico.yubikit.fido.webauthn;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -22,16 +22,16 @@ import java.util.List;
 import java.util.Map;
 
 public class ClientExtensionResults {
-    final private List<ClientExtensionResult> extensionResults = new ArrayList<>();
+    final private List<Map<String, Object>> extensionResults = new ArrayList<>();
 
-    void add(ClientExtensionResult extensionResult) {
+    public void add(Map<String, Object> extensionResult) {
         extensionResults.add(extensionResult);
     }
 
     public Map<String, Object> toMap() {
         Map<String, Object> map = new HashMap<>();
-        for (ClientExtensionResult extensionResult : extensionResults) {
-            map.putAll(extensionResult.getResult());
+        for (Map<String, Object> extensionResult : extensionResults) {
+            map.putAll(extensionResult);
         }
         return map;
     }

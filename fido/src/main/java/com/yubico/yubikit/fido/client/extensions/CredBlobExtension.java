@@ -27,27 +27,27 @@ class CredBlobExtension extends Extension {
     }
 
     @Override
-    ExtensionInput processInput(ExtensionCreateInput parameters) {
+    boolean processInput(CreateInputArguments arguments) {
 
-        Extensions extensions = parameters.creationOptions.getExtensions();
+        Extensions extensions = arguments.creationOptions.getExtensions();
         if (isSupported()) {
             String b64Blob = (String) extensions.get("credBlob");
             if (b64Blob != null) {
                 byte[] blob = fromUrlSafeString(b64Blob);
                 if (blob.length <= ctap.getCachedInfo().getMaxCredBlobLength()) {
-                    return extensionInput(blob);
+                    return withAuthenticatorInput(blob);
                 }
             }
         }
-        return ExtensionInput.unused();
+        return unused();
     }
 
     @Override
-    ExtensionInput processInput(ExtensionGetInput parameters) {
-        Extensions extensions = parameters.publicKeyCredentialRequestOptions.getExtensions();
+    boolean processInput(GetInputArguments arguments) {
+        Extensions extensions = arguments.publicKeyCredentialRequestOptions.getExtensions();
         if (isSupported() && Boolean.TRUE.equals(extensions.get("getCredBlob"))) {
-            return extensionInput(true);
+            return withAuthenticatorInput(true);
         }
-        return ExtensionInput.unused();
+        return unused();
     }
 }

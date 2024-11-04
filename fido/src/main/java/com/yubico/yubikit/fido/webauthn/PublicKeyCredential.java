@@ -20,7 +20,6 @@ import static com.yubico.yubikit.fido.webauthn.SerializationUtils.serializeBytes
 
 import com.yubico.yubikit.core.internal.codec.Base64;
 
-import com.yubico.yubikit.fido.client.extensions.ClientExtensionResults;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
 
 import java.util.Arrays;

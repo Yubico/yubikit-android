@@ -32,13 +32,13 @@ class CredProtectExtension extends Extension {
     }
 
     @Override
-    ExtensionInput processInput(ExtensionCreateInput parameters) {
+    boolean processInput(CreateInputArguments parameters) {
 
         Extensions extensions = parameters.creationOptions.getExtensions();
 
         String credentialProtectionPolicy = (String) extensions.get("credentialProtectionPolicy");
         if (credentialProtectionPolicy == null) {
-            return ExtensionInput.unused();
+            return false;
         }
 
         @Nullable Integer credProtect = null;
@@ -59,7 +59,7 @@ class CredProtectExtension extends Extension {
         }
 
         return credProtect != null
-                ? extensionInput(credProtect)
-                : ExtensionInput.unused();
+                ? withAuthenticatorInput(credProtect)
+                : unused();
     }
 }

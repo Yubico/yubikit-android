@@ -18,13 +18,24 @@ package com.yubico.yubikit.fido.client.extensions;
 
 import com.yubico.yubikit.fido.ctap.ClientPin;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
+import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
 import com.yubico.yubikit.fido.webauthn.AttestationObject;
+import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialCreationOptions;
+import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialDescriptor;
+import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialRequestOptions;
+
+import java.util.Collections;
+import java.util.Map;
 
 import javax.annotation.Nullable;
 
 public class Extension {
     protected final String name;
     protected final Ctap2Session ctap;
+
+    @Nullable
+    private Map<String, Object> authenticatorInput = null;
+    private int permissions = ClientPin.PIN_PERMISSION_NONE;
 
     protected Extension(String name, final Ctap2Session ctap) {
         this.name = name;
@@ -35,44 +46,151 @@ public class Extension {
         return ctap.getCachedInfo().getExtensions().contains(name);
     }
 
-    ExtensionInput extensionInput(Object data) {
-        return extensionInput(data, ClientPin.PIN_PERMISSION_NONE);
-    }
-
-    ExtensionInput extensionInput(Object data, int permissions) {
-        return ExtensionInput.withAuthenticatorInput(name, data, permissions);
-    }
-
-    ExtensionInput processInput(
-            ExtensionCreateInput ignoredCreateInputParameters) {
-        return ExtensionInput.unused();
+    boolean processInput(
+            CreateInputArguments ignoredCreateInputParameters) {
+        return false;
     }
 
     @Nullable
-    ClientExtensionResult processCreateOutput(AttestationObject ignoredAttestationObject) {
+    Map<String, Object> processOutput(AttestationObject ignoredAttestationObject) {
         return null;
     }
 
     @Nullable
-    ClientExtensionResult processCreateOutput(
+    Map<String, Object> processOutput(
             AttestationObject attestationObject,
-            ExtensionCreateOutput ignoredParameters) {
-        return processCreateOutput(attestationObject);
+            CreateOutputArguments ignoredParameters) {
+        return processOutput(attestationObject);
     }
 
-    ExtensionInput processInput(ExtensionGetInput ignoredParameters) {
-        return ExtensionInput.unused();
+    boolean processInput(GetInputArguments ignoredParameters) {
+        return false;
     }
 
     @Nullable
-    ClientExtensionResult processGetOutput(Ctap2Session.AssertionData ignoredAssertionData) {
+    Map<String, Object> processOutput(Ctap2Session.AssertionData ignoredAssertionData) {
         return null;
     }
 
     @Nullable
-    ClientExtensionResult processGetOutput(
+    Map<String, Object> processOutput(
             Ctap2Session.AssertionData assertionData,
-            ExtensionGetOutput ignoredParameters) {
-        return processGetOutput(assertionData);
+            GetOutputArguments ignoredParameters) {
+        return processOutput(assertionData);
+    }
+
+    @Nullable
+    Map<String, Object> getAuthenticatorInput() {
+        return authenticatorInput;
+    }
+
+    public int getPermissions() {
+        return permissions;
+    }
+
+    boolean withAuthenticatorInput(@Nullable Object authenticatorInput) {
+        return withAuthenticatorInputAndPermissions(authenticatorInput, ClientPin.PIN_PERMISSION_NONE);
+    }
+
+    boolean withAuthenticatorInputAndPermissions(@Nullable Object authenticatorInput,
+                                                 @Nullable Integer permissions) {
+        if (permissions != null) {
+            this.permissions = permissions;
+        }
+
+        this.authenticatorInput = Collections.singletonMap(name, authenticatorInput);
+
+        return true;
+    }
+
+    boolean unused() {
+        return false;
+    }
+
+    public interface InputArguments {}
+
+    public static class CreateInputArguments implements InputArguments {
+        final PublicKeyCredentialCreationOptions creationOptions;
+
+        public CreateInputArguments(PublicKeyCredentialCreationOptions creationOptions) {
+            this.creationOptions = creationOptions;
+        }
+
+        PublicKeyCredentialCreationOptions getCreationOptions() {
+            return creationOptions;
+        }
+    }
+
+    public static class CreateOutputArguments {
+        @Nullable final byte[] authToken;
+        @Nullable final PinUvAuthProtocol pinUvAuthProtocol;
+
+        public CreateOutputArguments(
+                @Nullable byte[] authToken,
+                @Nullable PinUvAuthProtocol pinUvAuthProtocol) {
+            this.authToken = authToken;
+            this.pinUvAuthProtocol = pinUvAuthProtocol;
+        }
+    }
+
+    public static class GetInputArguments implements InputArguments {
+        final PublicKeyCredentialRequestOptions publicKeyCredentialRequestOptions;
+
+        final ClientPin clientPin;
+
+        @Nullable final PublicKeyCredentialDescriptor selectedCredential;
+
+        public GetInputArguments(
+                PublicKeyCredentialRequestOptions publicKeyCredentialRequestOptions,
+                ClientPin clientPin,
+                @Nullable
+                PublicKeyCredentialDescriptor selectedCredential) {
+            this.publicKeyCredentialRequestOptions = publicKeyCredentialRequestOptions;
+            this.clientPin = clientPin;
+            this.selectedCredential = selectedCredential;
+        }
+
+        PublicKeyCredentialRequestOptions getPublicKeyCredentialRequestOptions() {
+            return publicKeyCredentialRequestOptions;
+        }
+
+        public ClientPin getClientPin() {
+            return clientPin;
+        }
+
+        @Nullable
+        public PublicKeyCredentialDescriptor getSelectedCredential() {
+            return selectedCredential;
+        }
+    }
+
+    public static class GetOutputArguments {
+        private final ClientPin clientPin;
+        @Nullable
+        private final byte[] authToken;
+        @Nullable
+        private final PinUvAuthProtocol pinUvAuthProtocol;
+
+        public GetOutputArguments(
+                ClientPin clientPin, @Nullable byte[] authToken,
+                @Nullable PinUvAuthProtocol pinUvAuthProtocol) {
+            this.clientPin = clientPin;
+            this.authToken = authToken;
+            this.pinUvAuthProtocol = pinUvAuthProtocol;
+        }
+
+        public ClientPin getClientPin() {
+            return clientPin;
+        }
+
+        @Nullable
+        public byte[] getAuthToken() {
+            return authToken;
+        }
+
+        @Nullable
+        public PinUvAuthProtocol getPinUvAuthProtocol() {
+            return pinUvAuthProtocol;
+        }
     }
 }

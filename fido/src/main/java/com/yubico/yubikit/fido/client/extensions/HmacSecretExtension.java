@@ -88,34 +88,34 @@ class HmacSecretExtension extends Extension {
     }
 
     @Override
-    ExtensionInput processInput(ExtensionCreateInput parameters) {
+    boolean processInput(CreateInputArguments parameters) {
         Extensions extensions = parameters.creationOptions.getExtensions();
         if (Boolean.TRUE.equals(extensions.get("hmacCreateSecret"))) {
             prf = false;
-            return extensionInput(true);
+            return withAuthenticatorInput(true);
         } else if (extensions.has("prf")) {
             prf = true;
-            return extensionInput(true);
+            return withAuthenticatorInput(true);
         }
-        return ExtensionInput.unused();
+        return unused();
     }
 
     @Nullable
     @Override
-    ClientExtensionResult processCreateOutput(AttestationObject attestationObject) {
+    Map<String, Object> processOutput(AttestationObject attestationObject) {
         Map<String, ?> extensions = attestationObject.getAuthenticatorData().getExtensions();
 
         boolean enabled = extensions != null && Boolean.TRUE.equals(extensions.get(name));
-        return new ClientExtensionResult(prf
+        return prf
                 ? Collections.singletonMap("prf", Collections.singletonMap("enabled", enabled))
-                : Collections.singletonMap("hmacCreateSecret", enabled));
+                : Collections.singletonMap("hmacCreateSecret", enabled);
     }
 
     @SuppressWarnings("unchecked")
     @Override
-    ExtensionInput processInput(ExtensionGetInput parameters) {
+    boolean processInput(GetInputArguments parameters) {
         if (!isSupported()) {
-            return ExtensionInput.unused();
+            return false;
         }
 
         Extensions extensions = parameters.publicKeyCredentialRequestOptions.getExtensions();
@@ -152,17 +152,17 @@ class HmacSecretExtension extends Extension {
             }
 
             if (secrets == null) {
-                return ExtensionInput.unused();
+                return false;
             }
 
             Logger.debug(logger, "PRF inputs: {}, {}", secrets.get("first"), secrets.get("second"));
 
             String firstInput = (String) secrets.get("first");
             if (firstInput == null) {
-                return ExtensionInput.unused();
+                return false;
             }
 
-            byte[] first = fromUrlSafeString(Objects.requireNonNull(firstInput));
+            byte[] first = fromUrlSafeString(firstInput);
 
             byte[] second = secrets.containsKey("second")
                     ? prfSalt(fromUrlSafeString((String) secrets.get("second")))
@@ -173,7 +173,7 @@ class HmacSecretExtension extends Extension {
         } else {
             data = (Map<String, Object>) extensions.get("hmacGetSecret");
             if (data == null) {
-                return ExtensionInput.unused();
+                return false;
             }
 
             Logger.debug(logger, "hmacGetSecret inputs: {}, {}", data.get("salt1"), data.get("salt2"));
@@ -218,17 +218,17 @@ class HmacSecretExtension extends Extension {
             hmacGetSecretInput.put(2, saltEnc);
             hmacGetSecretInput.put(3, saltAuth);
             hmacGetSecretInput.put(4, clientPin.getPinUvAuth().getVersion());
-            return extensionInput(hmacGetSecretInput);
+            return withAuthenticatorInput(hmacGetSecretInput);
         } catch (IOException | CommandException e) {
-            return ExtensionInput.withoutInput();
+            return unused();
         }
     }
 
     @Nullable
     @Override
-    ClientExtensionResult processGetOutput(
+    Map<String, Object> processOutput(
             Ctap2Session.AssertionData assertionData,
-            ExtensionGetOutput parameters) {
+            GetOutputArguments parameters) {
 
         AuthenticatorData authenticatorData = AuthenticatorData.parseFrom(ByteBuffer.wrap(
                 assertionData.getAuthenticatorData()
@@ -263,15 +263,14 @@ class HmacSecretExtension extends Extension {
             if (output2.length > 0) {
                 results.put("second", toUrlSafeString(output2));
             }
-            return new ClientExtensionResult(
-                    Collections.singletonMap("prf",
-                            Collections.singletonMap("results", results)));
+            return Collections.singletonMap("prf",
+                    Collections.singletonMap("results", results));
         } else {
             results.put("output1", toUrlSafeString(output1));
             if (output2.length > 0) {
                 results.put("output2", toUrlSafeString(output2));
             }
-            return new ClientExtensionResult(Collections.singletonMap("hmacGetSecret", results));
+            return Collections.singletonMap("hmacGetSecret", results);
         }
     }
 }

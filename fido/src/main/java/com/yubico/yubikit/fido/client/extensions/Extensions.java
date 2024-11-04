@@ -17,8 +17,10 @@
 package com.yubico.yubikit.fido.client.extensions;
 
 import com.yubico.yubikit.core.internal.Logger;
+import com.yubico.yubikit.fido.ctap.ClientPin;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.fido.webauthn.AttestationObject;
+import com.yubico.yubikit.fido.webauthn.ClientExtensionResults;
 
 import org.slf4j.LoggerFactory;
 
@@ -31,7 +33,7 @@ import java.util.Map;
 import javax.annotation.Nullable;
 
 // Client Extension processing
-public class ExtensionProcessor {
+public class Extensions {
 
     final List<Extension> usedExtensions = new ArrayList<>();
     final List<String> supportedExtensions = Arrays.asList(
@@ -45,31 +47,15 @@ public class ExtensionProcessor {
 
     final Map<String, Object> authenticatorInput = new HashMap<>();
 
-    int permissions = 0;
+    int permissions = ClientPin.PIN_PERMISSION_NONE;
 
-    private static final org.slf4j.Logger logger = LoggerFactory.getLogger(ExtensionProcessor.class);
+    private static final org.slf4j.Logger logger = LoggerFactory.getLogger(Extensions.class);
 
-    public ExtensionProcessor(Ctap2Session ctap, ExtensionCreateInput parameters) {
-        for (String extensionName : supportedExtensions) {
-            Extension extension = getByName(extensionName, ctap);
-            if (extension == null) {
-                Logger.debug(logger, "Extension {} not supported", extensionName);
-                continue;
-            }
-
-            ExtensionInput result = extension.processInput(parameters);
-
-            if (result.isUsed()) {
-                usedExtensions.add(extension);
-                if (result.getAuthenticatorInput() != null) {
-                    permissions |= result.getRequiredPermissions();
-                    authenticatorInput.putAll(result.getAuthenticatorInput());
-                }
-            }
-        }
+    public static Extensions processExtensions(Ctap2Session ctap, Extension.InputArguments arguments) {
+        return new Extensions(ctap, arguments);
     }
 
-    public ExtensionProcessor(Ctap2Session ctap, ExtensionGetInput parameters) {
+    private Extensions(Ctap2Session ctap, Extension.InputArguments arguments) {
         for (String extensionName : supportedExtensions) {
             Extension extension = getByName(extensionName, ctap);
             if (extension == null) {
@@ -77,12 +63,17 @@ public class ExtensionProcessor {
                 continue;
             }
 
-            ExtensionInput input = extension.processInput(parameters);
-            if (input.isUsed()) {
+            boolean isActive =
+                    arguments instanceof Extension.CreateInputArguments
+                            ? extension.processInput((Extension.CreateInputArguments) arguments)
+                    : arguments instanceof Extension.GetInputArguments &&
+                            extension.processInput((Extension.GetInputArguments) arguments);
+
+            if (isActive) {
                 usedExtensions.add(extension);
-                if (input.getAuthenticatorInput() != null) {
-                    permissions |= input.getRequiredPermissions();
-                    authenticatorInput.putAll(input.getAuthenticatorInput());
+                if (extension.getAuthenticatorInput() != null) {
+                    permissions |= extension.getPermissions();
+                    authenticatorInput.putAll(extension.getAuthenticatorInput());
                 }
             }
         }
@@ -98,11 +89,11 @@ public class ExtensionProcessor {
 
     public ClientExtensionResults getClientExtensionResults(
             AttestationObject attestationObject,
-            ExtensionCreateOutput parameters) {
+            Extension.CreateOutputArguments parameters) {
         ClientExtensionResults extensionExtensionResults = new ClientExtensionResults();
 
         for (Extension extension : usedExtensions) {
-            ClientExtensionResult extensionResult = extension.processCreateOutput(
+            Map<String, Object> extensionResult = extension.processOutput(
                     attestationObject,
                     parameters
             );
@@ -116,11 +107,11 @@ public class ExtensionProcessor {
 
     public ClientExtensionResults getClientExtensionResults(
             Ctap2Session.AssertionData assertionData,
-            ExtensionGetOutput parameters) {
+            Extension.GetOutputArguments parameters) {
         ClientExtensionResults extensionExtensionResults = new ClientExtensionResults();
 
         for (Extension extension : usedExtensions) {
-            ClientExtensionResult extensionResult = extension.processGetOutput(
+            Map<String, Object> extensionResult = extension.processOutput(
                     assertionData, parameters
 
             );
