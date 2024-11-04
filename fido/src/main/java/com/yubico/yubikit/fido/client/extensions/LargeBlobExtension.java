@@ -25,7 +25,6 @@ import com.yubico.yubikit.fido.ctap.ClientPin;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.fido.webauthn.AttestationObject;
 import com.yubico.yubikit.fido.webauthn.Extensions;
-import com.yubico.yubikit.fido.webauthn.ext.LargeBlobs;
 
 import org.slf4j.LoggerFactory;
 
