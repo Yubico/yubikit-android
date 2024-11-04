@@ -88,8 +88,8 @@ class HmacSecretExtension extends Extension {
     }
 
     @Override
-    boolean processInput(CreateInputArguments parameters) {
-        Extensions extensions = parameters.creationOptions.getExtensions();
+    boolean processInput(CreateInputArguments arguments) {
+        Extensions extensions = arguments.creationOptions.getExtensions();
         if (Boolean.TRUE.equals(extensions.get("hmacCreateSecret"))) {
             prf = false;
             return withAuthenticatorInput(true);
@@ -113,12 +113,12 @@ class HmacSecretExtension extends Extension {
 
     @SuppressWarnings("unchecked")
     @Override
-    boolean processInput(GetInputArguments parameters) {
+    boolean processInput(GetInputArguments arguments) {
         if (!isSupported()) {
             return false;
         }
 
-        Extensions extensions = parameters.publicKeyCredentialRequestOptions.getExtensions();
+        Extensions extensions = arguments.publicKeyCredentialRequestOptions.getExtensions();
         Salts salts;
         Map<String, Object> data = (Map<String, Object>) extensions.get("prf");
         if (data != null) {
@@ -128,7 +128,7 @@ class HmacSecretExtension extends Extension {
 
             if (evalByCredential != null) {
                 List<PublicKeyCredentialDescriptor> allowCredentials =
-                        parameters.publicKeyCredentialRequestOptions.getAllowCredentials();
+                        arguments.publicKeyCredentialRequestOptions.getAllowCredentials();
 
                 if (allowCredentials.isEmpty()) {
                     throw new IllegalArgumentException("evalByCredential needs allow list");
@@ -143,8 +143,8 @@ class HmacSecretExtension extends Extension {
                     throw new IllegalArgumentException("evalByCredentials contains invalid key");
                 }
 
-                if (parameters.selectedCredential != null) {
-                    String key = toUrlSafeString(parameters.selectedCredential.getId());
+                if (arguments.selectedCredential != null) {
+                    String key = toUrlSafeString(arguments.selectedCredential.getId());
                     if (evalByCredential.containsKey(key)) {
                         secrets = (Map<String, Object>) evalByCredential.get(key);
                     }
@@ -194,7 +194,7 @@ class HmacSecretExtension extends Extension {
             throw new IllegalArgumentException("Invalid salt length");
         }
 
-        final ClientPin clientPin = parameters.getClientPin();
+        final ClientPin clientPin = arguments.getClientPin();
 
         try {
             Pair<Map<Integer, ?>, byte[]> keyAgreement = clientPin.getSharedSecret();
@@ -228,7 +228,7 @@ class HmacSecretExtension extends Extension {
     @Override
     Map<String, Object> processOutput(
             Ctap2Session.AssertionData assertionData,
-            GetOutputArguments parameters) {
+            GetOutputArguments arguments) {
 
         AuthenticatorData authenticatorData = AuthenticatorData.parseFrom(ByteBuffer.wrap(
                 assertionData.getAuthenticatorData()
@@ -244,7 +244,7 @@ class HmacSecretExtension extends Extension {
             return null;
         }
 
-        final ClientPin clientPin = parameters.getClientPin();
+        final ClientPin clientPin = arguments.getClientPin();
         byte[] decrypted = clientPin.getPinUvAuth().decrypt(sharedSecret, value);
 
         byte[] output1 = Arrays.copyOf(decrypted, SALT_LEN);

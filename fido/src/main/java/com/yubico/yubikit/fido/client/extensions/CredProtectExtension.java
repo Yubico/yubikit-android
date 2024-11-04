@@ -32,9 +32,9 @@ class CredProtectExtension extends Extension {
     }
 
     @Override
-    boolean processInput(CreateInputArguments parameters) {
+    boolean processInput(CreateInputArguments arguments) {
 
-        Extensions extensions = parameters.creationOptions.getExtensions();
+        Extensions extensions = arguments.creationOptions.getExtensions();
 
         String credentialProtectionPolicy = (String) extensions.get("credentialProtectionPolicy");
         if (credentialProtectionPolicy == null) {

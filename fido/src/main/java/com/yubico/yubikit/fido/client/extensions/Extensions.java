@@ -44,18 +44,20 @@ public class Extensions {
             "credProtect",
             "minPinLength"
     );
-
-    final Map<String, Object> authenticatorInput = new HashMap<>();
-
-    int permissions = ClientPin.PIN_PERMISSION_NONE;
-
     private static final org.slf4j.Logger logger = LoggerFactory.getLogger(Extensions.class);
 
-    public static Extensions processExtensions(Ctap2Session ctap, Extension.InputArguments arguments) {
-        return new Extensions(ctap, arguments);
+    final Map<String, Object> authenticatorInput = new HashMap<>();
+    int permissions = ClientPin.PIN_PERMISSION_NONE;
+
+    public static Extensions processExtensions(Ctap2Session ctap, Extension.CreateInputArguments arguments) {
+        return new Extensions(ctap, e -> e.processInput(arguments));
     }
 
-    private Extensions(Ctap2Session ctap, Extension.InputArguments arguments) {
+    public static Extensions processExtensions(Ctap2Session ctap, Extension.GetInputArguments arguments) {
+        return new Extensions(ctap, e -> e.processInput(arguments));
+    }
+
+    private Extensions(Ctap2Session ctap, InputArgumentsProcessor processor) {
         for (String extensionName : supportedExtensions) {
             Extension extension = getByName(extensionName, ctap);
             if (extension == null) {
@@ -63,13 +65,7 @@ public class Extensions {
                 continue;
             }
 
-            boolean isActive =
-                    arguments instanceof Extension.CreateInputArguments
-                            ? extension.processInput((Extension.CreateInputArguments) arguments)
-                    : arguments instanceof Extension.GetInputArguments &&
-                            extension.processInput((Extension.GetInputArguments) arguments);
-
-            if (isActive) {
+            if (processor.process(extension)) {
                 usedExtensions.add(extension);
                 if (extension.getAuthenticatorInput() != null) {
                     permissions |= extension.getPermissions();
@@ -88,15 +84,22 @@ public class Extensions {
     }
 
     public ClientExtensionResults getClientExtensionResults(
+            Ctap2Session.AssertionData assertionData,
+            Extension.GetOutputArguments arguments) {
+        return getClientExtensionResults(e -> e.processOutput(assertionData, arguments));
+    }
+
+    public ClientExtensionResults getClientExtensionResults(
             AttestationObject attestationObject,
-            Extension.CreateOutputArguments parameters) {
+            Extension.CreateOutputArguments arguments) {
+        return getClientExtensionResults(e -> e.processOutput(attestationObject, arguments));
+    }
+
+    private ClientExtensionResults getClientExtensionResults(OutputArgumentsProcessor processor) {
         ClientExtensionResults extensionExtensionResults = new ClientExtensionResults();
 
         for (Extension extension : usedExtensions) {
-            Map<String, Object> extensionResult = extension.processOutput(
-                    attestationObject,
-                    parameters
-            );
+            Map<String, Object> extensionResult = processor.process(extension);
             if (extensionResult != null) {
                 extensionExtensionResults.add(extensionResult);
             }
@@ -105,22 +108,13 @@ public class Extensions {
         return extensionExtensionResults;
     }
 
-    public ClientExtensionResults getClientExtensionResults(
-            Ctap2Session.AssertionData assertionData,
-            Extension.GetOutputArguments parameters) {
-        ClientExtensionResults extensionExtensionResults = new ClientExtensionResults();
+    interface InputArgumentsProcessor {
+        boolean process(Extension extension);
+    }
 
-        for (Extension extension : usedExtensions) {
-            Map<String, Object> extensionResult = extension.processOutput(
-                    assertionData, parameters
-
-            );
-            if (extensionResult != null) {
-                extensionExtensionResults.add(extensionResult);
-            }
-        }
-
-        return extensionExtensionResults;
+    interface OutputArgumentsProcessor {
+        @Nullable
+        Map<String, Object> process(Extension extension);
     }
 
     @Nullable

@@ -16,7 +16,6 @@
 
 package com.yubico.yubikit.fido.client;
 
-import static com.yubico.yubikit.fido.client.extensions.Extensions.processExtensions;
 import static com.yubico.yubikit.fido.webauthn.PublicKeyCredentialType.PUBLIC_KEY;
 
 import com.yubico.yubikit.core.application.CommandException;
@@ -439,7 +438,7 @@ public class BasicWebAuthnClient implements Closeable {
 
         Map<String, Boolean> ctapOptions = getCreateCtapOptions(options, pin);
         Extension.CreateInputArguments inputArguments = new Extension.CreateInputArguments(options);
-        Extensions extensions = processExtensions(ctap, inputArguments);
+        Extensions extensions = Extensions.processExtensions(ctap, inputArguments);
 
         final AuthParams authParams = getAuthParams(
                 clientDataHash,
@@ -572,7 +571,7 @@ public class BasicWebAuthnClient implements Closeable {
                 selectedCred
         );
 
-        Extensions extensions = processExtensions(ctap, inputArguments);
+        Extensions extensions = Extensions.processExtensions(ctap, inputArguments);
         final AuthParams authParams = getAuthParams(
                 clientDataHash,
                 ctapOptions.containsKey(OPTION_USER_VERIFICATION),

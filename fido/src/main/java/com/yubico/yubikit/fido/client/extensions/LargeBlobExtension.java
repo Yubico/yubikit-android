@@ -52,9 +52,9 @@ class LargeBlobExtension extends Extension {
     }
 
     @Override
-    boolean processInput(CreateInputArguments parameters) {
+    boolean processInput(CreateInputArguments arguments) {
 
-        Extensions extensions = parameters.creationOptions.getExtensions();
+        Extensions extensions = arguments.creationOptions.getExtensions();
         @SuppressWarnings("unchecked")
         Map<String, Object> data = (Map<String, Object>) extensions.get("largeBlob");
         if (data != null) {
@@ -74,7 +74,7 @@ class LargeBlobExtension extends Extension {
     @Override
     Map<String, Object> processOutput(
             Ctap2Session.AssertionData assertionData,
-            GetOutputArguments parameters) {
+            GetOutputArguments arguments) {
 
         byte[] largeBlobKey = assertionData.getLargeBlobKey();
         if (largeBlobKey == null) {
@@ -93,8 +93,8 @@ class LargeBlobExtension extends Extension {
                 byte[] bytes = (byte[]) action;
                 LargeBlobs largeBlobs = new LargeBlobs(
                         ctap,
-                        parameters.getPinUvAuthProtocol(),
-                        parameters.getAuthToken());
+                        arguments.getPinUvAuthProtocol(),
+                        arguments.getAuthToken());
                 largeBlobs.putBlob(largeBlobKey, bytes);
 
                 return Collections.singletonMap("largeBlob",
@@ -109,9 +109,9 @@ class LargeBlobExtension extends Extension {
 
     @SuppressWarnings("unchecked")
     @Override
-    boolean processInput(GetInputArguments parameters) {
+    boolean processInput(GetInputArguments arguments) {
 
-        Extensions extensions = parameters.publicKeyCredentialRequestOptions.getExtensions();
+        Extensions extensions = arguments.publicKeyCredentialRequestOptions.getExtensions();
 
         Map<String, Object> data = (Map<String, Object>) extensions.get("largeBlob");
         if (data != null && data.containsKey("read")) {

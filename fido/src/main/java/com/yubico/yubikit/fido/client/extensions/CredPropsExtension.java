@@ -37,10 +37,9 @@ class CredPropsExtension extends Extension {
     Boolean rk = null;
 
     @Override
-    boolean processInput(
-            CreateInputArguments parameters) {
+    boolean processInput(CreateInputArguments arguments) {
 
-        PublicKeyCredentialCreationOptions options = parameters.creationOptions;
+        PublicKeyCredentialCreationOptions options = arguments.creationOptions;
         Extensions extensions = options.getExtensions();
 
         if (extensions.has(name)) {

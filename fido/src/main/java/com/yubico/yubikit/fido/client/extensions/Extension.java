@@ -46,8 +46,7 @@ public class Extension {
         return ctap.getCachedInfo().getExtensions().contains(name);
     }
 
-    boolean processInput(
-            CreateInputArguments ignoredCreateInputParameters) {
+    boolean processInput(CreateInputArguments ignoredArguments) {
         return false;
     }
 
@@ -59,11 +58,11 @@ public class Extension {
     @Nullable
     Map<String, Object> processOutput(
             AttestationObject attestationObject,
-            CreateOutputArguments ignoredParameters) {
+            CreateOutputArguments ignoredArguments) {
         return processOutput(attestationObject);
     }
 
-    boolean processInput(GetInputArguments ignoredParameters) {
+    boolean processInput(GetInputArguments ignoredArguments) {
         return false;
     }
 
@@ -75,7 +74,7 @@ public class Extension {
     @Nullable
     Map<String, Object> processOutput(
             Ctap2Session.AssertionData assertionData,
-            GetOutputArguments ignoredParameters) {
+            GetOutputArguments ignoredArguments) {
         return processOutput(assertionData);
     }
 
@@ -107,9 +106,7 @@ public class Extension {
         return false;
     }
 
-    public interface InputArguments {}
-
-    public static class CreateInputArguments implements InputArguments {
+    public static class CreateInputArguments {
         final PublicKeyCredentialCreationOptions creationOptions;
 
         public CreateInputArguments(PublicKeyCredentialCreationOptions creationOptions) {
@@ -133,7 +130,7 @@ public class Extension {
         }
     }
 
-    public static class GetInputArguments implements InputArguments {
+    public static class GetInputArguments {
         final PublicKeyCredentialRequestOptions publicKeyCredentialRequestOptions;
 
         final ClientPin clientPin;

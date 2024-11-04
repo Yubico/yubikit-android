@@ -31,9 +31,9 @@ class MinPinLengthExtension extends Extension {
     }
 
     @Override
-    boolean processInput(CreateInputArguments parameters) {
+    boolean processInput(CreateInputArguments arguments) {
 
-        Extensions extensions = parameters.creationOptions.getExtensions();
+        Extensions extensions = arguments.creationOptions.getExtensions();
         if (!isSupported()) {
             return unused();
         }
