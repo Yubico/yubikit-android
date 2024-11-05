@@ -33,7 +33,7 @@ public class CredProtectExtension extends Extension {
     @Override
     ProcessingResult processInput(CreateInputArguments arguments) {
 
-        Extensions extensions = arguments.creationOptions.getExtensions();
+        Extensions extensions = arguments.getCreationOptions().getExtensions();
 
         String credentialProtectionPolicy = (String) extensions.get("credentialProtectionPolicy");
         if (credentialProtectionPolicy == null) {
@@ -54,7 +54,7 @@ public class CredProtectExtension extends Extension {
         }
         Boolean enforce = (Boolean) extensions.get("enforceCredentialProtectionPolicy");
         if (Boolean.TRUE.equals(enforce) &&
-                !isSupported(arguments.ctap) &&
+                !isSupported(arguments.getCtap()) &&
                 credProtect != null &&
                 credProtect > 0x01) {
             throw new IllegalArgumentException("Authenticator does not support Credential Protection");

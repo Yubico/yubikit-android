@@ -76,8 +76,8 @@ public abstract class Extension {
     }
 
     public static class CreateInputArguments {
-        final Ctap2Session ctap;
-        final PublicKeyCredentialCreationOptions creationOptions;
+        private final Ctap2Session ctap;
+        private final PublicKeyCredentialCreationOptions creationOptions;
 
         public CreateInputArguments(
                 Ctap2Session ctap,
@@ -89,11 +89,17 @@ public abstract class Extension {
         PublicKeyCredentialCreationOptions getCreationOptions() {
             return creationOptions;
         }
+
+        public Ctap2Session getCtap() {
+            return ctap;
+        }
     }
 
     public static class CreateOutputArguments {
-        @Nullable final byte[] authToken;
-        @Nullable final PinUvAuthProtocol pinUvAuthProtocol;
+        @Nullable
+        private final byte[] authToken;
+        @Nullable
+        private final PinUvAuthProtocol pinUvAuthProtocol;
 
         public CreateOutputArguments(
                 @Nullable byte[] authToken,
@@ -101,11 +107,21 @@ public abstract class Extension {
             this.authToken = authToken;
             this.pinUvAuthProtocol = pinUvAuthProtocol;
         }
+
+        @Nullable
+        public byte[] getAuthToken() {
+            return authToken;
+        }
+
+        @Nullable
+        public PinUvAuthProtocol getPinUvAuthProtocol() {
+            return pinUvAuthProtocol;
+        }
     }
 
     public static class GetInputArguments {
-        final Ctap2Session ctap;
-        final PublicKeyCredentialRequestOptions publicKeyCredentialRequestOptions;
+        private final Ctap2Session ctap;
+        private final PublicKeyCredentialRequestOptions requestOptions;
 
         final ClientPin clientPin;
 
@@ -113,18 +129,18 @@ public abstract class Extension {
 
         public GetInputArguments(
                 Ctap2Session ctap,
-                PublicKeyCredentialRequestOptions publicKeyCredentialRequestOptions,
+                PublicKeyCredentialRequestOptions requestOptions,
                 ClientPin clientPin,
                 @Nullable
                 PublicKeyCredentialDescriptor selectedCredential) {
             this.ctap = ctap;
-            this.publicKeyCredentialRequestOptions = publicKeyCredentialRequestOptions;
+            this.requestOptions = requestOptions;
             this.clientPin = clientPin;
             this.selectedCredential = selectedCredential;
         }
 
-        PublicKeyCredentialRequestOptions getPublicKeyCredentialRequestOptions() {
-            return publicKeyCredentialRequestOptions;
+        PublicKeyCredentialRequestOptions getRequestOptions() {
+            return requestOptions;
         }
 
         public ClientPin getClientPin() {
@@ -135,10 +151,14 @@ public abstract class Extension {
         public PublicKeyCredentialDescriptor getSelectedCredential() {
             return selectedCredential;
         }
+
+        public Ctap2Session getCtap() {
+            return ctap;
+        }
     }
 
     public static class GetOutputArguments {
-        final Ctap2Session ctap;
+        private final Ctap2Session ctap;
         private final ClientPin clientPin;
         @Nullable
         private final byte[] authToken;
@@ -167,6 +187,10 @@ public abstract class Extension {
         @Nullable
         public PinUvAuthProtocol getPinUvAuthProtocol() {
             return pinUvAuthProtocol;
+        }
+
+        public Ctap2Session getCtap() {
+            return ctap;
         }
     }
 

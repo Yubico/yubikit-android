@@ -85,7 +85,7 @@ public class HmacSecretExtension extends Extension {
 
     @Override
     ProcessingResult processInput(CreateInputArguments arguments) {
-        Extensions extensions = arguments.creationOptions.getExtensions();
+        Extensions extensions = arguments.getCreationOptions().getExtensions();
         if (Boolean.TRUE.equals(extensions.get("hmacCreateSecret"))) {
             prf = false;
             return resultWithData(name, true);
@@ -110,11 +110,11 @@ public class HmacSecretExtension extends Extension {
     @SuppressWarnings("unchecked")
     @Override
     ProcessingResult processInput(GetInputArguments arguments) {
-        if (!isSupported(arguments.ctap)) {
+        if (!isSupported(arguments.getCtap())) {
             return null;
         }
 
-        Extensions extensions = arguments.publicKeyCredentialRequestOptions.getExtensions();
+        Extensions extensions = arguments.getRequestOptions().getExtensions();
         Salts salts;
         Map<String, Object> data = (Map<String, Object>) extensions.get("prf");
         if (data != null) {
@@ -124,7 +124,7 @@ public class HmacSecretExtension extends Extension {
 
             if (evalByCredential != null) {
                 List<PublicKeyCredentialDescriptor> allowCredentials =
-                        arguments.publicKeyCredentialRequestOptions.getAllowCredentials();
+                        arguments.getRequestOptions().getAllowCredentials();
 
                 if (allowCredentials.isEmpty()) {
                     throw new IllegalArgumentException("evalByCredential needs allow list");

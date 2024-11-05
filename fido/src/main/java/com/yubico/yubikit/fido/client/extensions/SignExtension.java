@@ -275,7 +275,7 @@ class SignExtension extends Extension {
         SignExtension.AuthenticationExtensionsSignInputs signInputs =
                 SignExtension.AuthenticationExtensionsSignInputs.fromMap(inputs);
 
-        if (signInputs == null || !isSupported(arguments.ctap)) {
+        if (signInputs == null || !isSupported(arguments.getCtap())) {
             return null;
         }
 
@@ -346,24 +346,22 @@ class SignExtension extends Extension {
     @Override
     public ProcessingResult processInput(GetInputArguments arguments) {
 
-        Map<String, Object> inputs = (Map<String, Object>) arguments
-                .getPublicKeyCredentialRequestOptions().getExtensions().get(SIGN);
+        PublicKeyCredentialRequestOptions requestOptions = arguments.getRequestOptions();
+        Map<String, Object> inputs = (Map<String, Object>) requestOptions.getExtensions().get(SIGN);
 
         SignExtension.AuthenticationExtensionsSignInputs signInputs =
                 SignExtension.AuthenticationExtensionsSignInputs.fromMap(inputs);
 
-        if (signInputs == null || !isSupported(arguments.ctap)) {
+        if (signInputs == null || !isSupported(arguments.getCtap())) {
             return null;
         }
 
         SignExtension.AuthenticationExtensionsSignSignInputs signSignInputs = signInputs.signInputs;
-
         if (signSignInputs == null || signInputs.generateKeyInputs != null) {
             throw new IllegalArgumentException("Invalid inputs");
         }
 
         Map<String, byte[]> byCreds = signSignInputs.keyHandleByCredential;
-        PublicKeyCredentialRequestOptions requestOptions = arguments.getPublicKeyCredentialRequestOptions();
         List<PublicKeyCredentialDescriptor> allowList = requestOptions.getAllowCredentials();
         if (allowList.isEmpty()) {
             throw new IllegalArgumentException("sign requires allow_list");

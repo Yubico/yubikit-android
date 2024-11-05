@@ -59,14 +59,14 @@ public class LargeBlobExtension extends Extension {
     @Override
     ProcessingResult processInput(CreateInputArguments arguments) {
 
-        Extensions extensions = arguments.creationOptions.getExtensions();
+        Extensions extensions = arguments.getCreationOptions().getExtensions();
         @SuppressWarnings("unchecked")
         Map<String, Object> data = (Map<String, Object>) extensions.get(LARGE_BLOB);
         if (data != null) {
             if (data.containsKey(ACTION_READ) || data.containsKey(ACTION_WRITE)) {
                 throw new IllegalArgumentException("Invalid set of parameters");
             }
-            if ("required".equals(data.get("support")) && !isSupported(arguments.ctap)) {
+            if ("required".equals(data.get("support")) && !isSupported(arguments.getCtap())) {
                 throw new IllegalArgumentException("Authenticator does not support large" +
                         " blob storage");
             }
@@ -88,7 +88,7 @@ public class LargeBlobExtension extends Extension {
 
         try {
             if (Boolean.TRUE.equals(action)) {
-                LargeBlobs largeBlobs = new LargeBlobs(arguments.ctap);
+                LargeBlobs largeBlobs = new LargeBlobs(arguments.getCtap());
                 byte[] blob = largeBlobs.getBlob(largeBlobKey);
                 return resultWithData(LARGE_BLOB, blob != null
                         ? Collections.singletonMap("blob", toUrlSafeString(blob))
@@ -96,7 +96,7 @@ public class LargeBlobExtension extends Extension {
             } else if (action != null && action instanceof byte[]) {
                 byte[] bytes = (byte[]) action;
                 LargeBlobs largeBlobs = new LargeBlobs(
-                        arguments.ctap,
+                        arguments.getCtap(),
                         arguments.getPinUvAuthProtocol(),
                         arguments.getAuthToken());
                 largeBlobs.putBlob(largeBlobKey, bytes);
@@ -114,7 +114,7 @@ public class LargeBlobExtension extends Extension {
     @Override
     ProcessingResult processInput(GetInputArguments arguments) {
 
-        Extensions extensions = arguments.publicKeyCredentialRequestOptions.getExtensions();
+        Extensions extensions = arguments.getRequestOptions().getExtensions();
 
         Map<String, Object> data = (Map<String, Object>) extensions.get(LARGE_BLOB);
         if (data != null && data.containsKey(ACTION_READ)) {
