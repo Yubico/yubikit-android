@@ -20,6 +20,7 @@ import com.squareup.moshi.JsonReader;
 import com.yubico.yubikit.core.internal.codec.Base64;
 import com.yubico.yubikit.fido.Cbor;
 import com.yubico.yubikit.fido.Cose;
+import com.yubico.yubikit.fido.webauthn.ClientExtensionResults;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredential;
 import com.yubico.yubikit.testing.fido.FidoTestState;
 import com.yubico.yubikit.testing.fido.utils.ClientHelper;
@@ -219,7 +220,7 @@ public class ExtSignTests {
     @SuppressWarnings("unchecked")
     @Nullable
     private Map<String, Object> getSignResult(PublicKeyCredential credential) {
-        Extension.ExtensionResults results = credential.getClientExtensionResults();
+        ClientExtensionResults results = credential.getClientExtensionResults();
         Assert.assertNotNull(results);
         Map<String, Object> resultsMap = results.toMap();
         return (Map<String, Object>) resultsMap.get(SIGN_EXT);
