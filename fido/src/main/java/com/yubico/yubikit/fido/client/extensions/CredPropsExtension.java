@@ -38,7 +38,7 @@ public class CredPropsExtension extends Extension {
     @Override
     ProcessingResult processInput(CreateInputArguments arguments) {
 
-        PublicKeyCredentialCreationOptions options = arguments.creationOptions;
+        PublicKeyCredentialCreationOptions options = arguments.getCreationOptions();
         Extensions extensions = options.getExtensions();
 
         if (extensions.has(name)) {
