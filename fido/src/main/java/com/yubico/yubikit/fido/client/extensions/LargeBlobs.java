@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.yubico.yubikit.fido.webauthn.ext;
+package com.yubico.yubikit.fido.client.extensions;
 
 import com.yubico.yubikit.core.application.CommandException;
 import com.yubico.yubikit.core.util.RandomUtils;
@@ -56,11 +56,11 @@ public class LargeBlobs {
     @Nullable final PinUvAuthProtocol pinUvAuthProtocol;
     @Nullable final byte[] pinUvAuthToken;
 
-    public LargeBlobs(Ctap2Session session) {
+    LargeBlobs(Ctap2Session session) {
         this(session, null, null);
     }
 
-    public LargeBlobs(
+        LargeBlobs(
             Ctap2Session session,
             @Nullable
             PinUvAuthProtocol pinUvAuthProtocol,
@@ -85,11 +85,11 @@ public class LargeBlobs {
         }
     }
 
-    public static boolean isSupported(Ctap2Session.InfoData info) {
+    static boolean isSupported(Ctap2Session.InfoData info) {
         return Boolean.TRUE.equals(info.getOptions().get("largeBlobs"));
     }
 
-    public LargeBlobArray readBlobArray() throws IOException, CommandException {
+    LargeBlobArray readBlobArray() throws IOException, CommandException {
         int offset = 0;
         ByteArrayOutputStream os = new ByteArrayOutputStream();
         while (true) {
@@ -118,7 +118,7 @@ public class LargeBlobs {
         return LargeBlobArray.fromBytes(data);
     }
 
-    public void writeBlobArray(LargeBlobArray largeBlobArray) throws IOException, CommandException {
+    void writeBlobArray(LargeBlobArray largeBlobArray) throws IOException, CommandException {
         final byte[] data = largeBlobArray.toBytes();
 
         byte[] dataWithHash = ByteBuffer
@@ -172,7 +172,7 @@ public class LargeBlobs {
     }
 
     @Nullable
-    public byte[] getBlob(byte[] largeBlobKey) throws IOException, CommandException {
+    byte[] getBlob(byte[] largeBlobKey) throws IOException, CommandException {
         for (LargeBlobMap entry : readBlobArray()) {
             try {
                 byte[] blob = CompressionUtils.decompress(unpack(largeBlobKey, entry));
@@ -186,7 +186,7 @@ public class LargeBlobs {
         return null;
     }
 
-    public void putBlob(byte[] largeBlobKey, @Nullable byte[] data) throws IOException, CommandException, GeneralSecurityException {
+    void putBlob(byte[] largeBlobKey, @Nullable byte[] data) throws IOException, CommandException, GeneralSecurityException {
         boolean modified = data != null;
         LargeBlobArray blobArray = readBlobArray();
         List<LargeBlobMap> entries = new ArrayList<>();
@@ -235,7 +235,7 @@ public class LargeBlobs {
                 .array();
     }
 
-    public static class LargeBlobArray implements Iterable<LargeBlobMap> {
+    static class LargeBlobArray implements Iterable<LargeBlobMap> {
 
         @Nullable final List<LargeBlobMap> entries;
 
@@ -303,7 +303,7 @@ public class LargeBlobs {
         }
     }
 
-    public static class LargeBlobMap {
+    static class LargeBlobMap {
         private static final int CIPHERTEXT = 1;
         private static final int NONCE = 2;
         private static final int ORIG_SIZE = 3;
@@ -317,7 +317,7 @@ public class LargeBlobs {
             data.put(ORIG_SIZE, origSize);
         }
 
-        public Map<Integer, Object> toMap() {
+        Map<Integer, Object> toMap() {
             return data;
         }
 
@@ -335,15 +335,15 @@ public class LargeBlobs {
             return new LargeBlobMap(ciphertext, nonce, origSize);
         }
 
-        public byte[] getCiphertext() {
+        byte[] getCiphertext() {
             return (byte[]) data.get(CIPHERTEXT);
         }
 
-        public byte[] getNonce() {
+        byte[] getNonce() {
             return (byte[]) data.get(NONCE);
         }
 
-        public int getOrigSize() {
+        int getOrigSize() {
             return (int) data.get(ORIG_SIZE);
         }
     }

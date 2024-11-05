@@ -102,7 +102,7 @@ public class PublicKeyCredentialRequestOptions {
         }
         map.put(ALLOW_CREDENTIALS, allowCredentialsList);
         map.put(USER_VERIFICATION, userVerification);
-        if (!extensions.getExtensions().isEmpty()) {
+        if (!extensions.isEmpty()) {
             map.put(EXTENSIONS, extensions);
         }
         return map;
