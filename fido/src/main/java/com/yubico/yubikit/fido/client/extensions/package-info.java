@@ -15,9 +15,9 @@
  */
 
 /**
- * Client and Authenticator extensions
+ * WebAuthn Extensions implementation.
  */
 @PackageNonnullByDefault
-package com.yubico.yubikit.fido.webauthn.ext;
+package com.yubico.yubikit.fido.client.extensions;
 
 import com.yubico.yubikit.core.PackageNonnullByDefault;

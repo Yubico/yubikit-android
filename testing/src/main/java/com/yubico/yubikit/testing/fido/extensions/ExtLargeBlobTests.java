@@ -17,9 +17,8 @@
 package com.yubico.yubikit.testing.fido.extensions;
 
 import com.yubico.yubikit.core.internal.codec.Base64;
-import com.yubico.yubikit.fido.webauthn.Extension;
+import com.yubico.yubikit.fido.webauthn.ClientExtensionResults;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredential;
-import com.yubico.yubikit.fido.webauthn.SerializationType;
 import com.yubico.yubikit.testing.Codec;
 import com.yubico.yubikit.testing.fido.FidoTestState;
 import com.yubico.yubikit.testing.fido.utils.ClientHelper;
@@ -182,7 +181,7 @@ public class ExtLargeBlobTests {
     @SuppressWarnings("unchecked")
     @Nullable
     private Map<String, ?> getResult(PublicKeyCredential cred) {
-        Extension.ExtensionResults results = cred.getClientExtensionResults();;
+        ClientExtensionResults results = cred.getClientExtensionResults();;
         Assert.assertNotNull(results);
         Map<String, Object> resultsMap = results.toMap();
         return (Map<String, ?>) resultsMap.get(LARGE_BLOB);

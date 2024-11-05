@@ -14,18 +14,18 @@
  * limitations under the License.
  */
 
-package com.yubico.yubikit.fido.webauthn.ext;
+package com.yubico.yubikit.fido.client.extensions;
 
 import static com.yubico.yubikit.core.internal.codec.Base64.fromUrlSafeString;
 import static com.yubico.yubikit.core.internal.codec.Base64.toUrlSafeString;
 
 import com.yubico.yubikit.fido.Cbor;
+import com.yubico.yubikit.fido.client.extensions.Extension;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.fido.webauthn.AttestationObject;
 import com.yubico.yubikit.fido.webauthn.AttestedCredentialData;
 import com.yubico.yubikit.fido.webauthn.AuthenticatorData;
 import com.yubico.yubikit.fido.webauthn.AuthenticatorSelectionCriteria;
-import com.yubico.yubikit.fido.webauthn.Extension;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialCreationOptions;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialDescriptor;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialRequestOptions;
@@ -43,7 +43,7 @@ import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
-public class SignExtension extends Extension {
+class SignExtension extends Extension {
 
     static final String SIGN = "sign";
     static final String ALGORITHMS = "algorithms";
@@ -57,8 +57,8 @@ public class SignExtension extends Extension {
 
     private static final org.slf4j.Logger logger = LoggerFactory.getLogger(SignExtension.class);
 
-    public SignExtension(final Ctap2Session ctap) {
-        super(SIGN, ctap);
+    public SignExtension() {
+        super(SIGN);
     }
 
     private static class AuthenticationExtensionsSignInputs {
@@ -80,17 +80,12 @@ public class SignExtension extends Extension {
                 return null;
             }
 
-            Map<String, Object> signInputs = (Map<String, Object>) inputs.get(SIGN);
-            if (signInputs == null) {
-                return null;
-            }
-
             SignExtension.AuthenticationExtensionsSignGenerateKeyInputs signGenerateKeyInputs =
                     SignExtension.AuthenticationExtensionsSignGenerateKeyInputs.fromMap(
-                            (Map<String, Object>) signInputs.get(GENERATE_KEY));
+                            (Map<String, Object>) inputs.get(GENERATE_KEY));
             SignExtension.AuthenticationExtensionsSignSignInputs signSignInputs =
                     SignExtension.AuthenticationExtensionsSignSignInputs.fromMap(
-                            (Map<String, Object>) signInputs.get(SIGN));
+                            (Map<String, Object>) inputs.get(SIGN));
 
             return new SignExtension.AuthenticationExtensionsSignInputs(signGenerateKeyInputs, signSignInputs);
         }
@@ -268,13 +263,19 @@ public class SignExtension extends Extension {
         }
     }
 
+    @SuppressWarnings("unchecked")
     @Nullable
     @Override
-    public CreateInputResult processCreateInput(Map<String, ?> inputs, CreateInputParameters createInputParameters) {
+    public ProcessingResult processInput(CreateInputArguments arguments) {
+        Map<String, Object> inputs = (Map<String, Object>) arguments
+                .getCreationOptions().getExtensions().get(SIGN);
+        if (inputs == null) {
+            return null;
+        }
         SignExtension.AuthenticationExtensionsSignInputs signInputs =
                 SignExtension.AuthenticationExtensionsSignInputs.fromMap(inputs);
 
-        if (signInputs == null || !isSupported()) {
+        if (signInputs == null || !isSupported(arguments.ctap)) {
             return null;
         }
 
@@ -287,16 +288,16 @@ public class SignExtension extends Extension {
 
         Map<Integer, Object> map = new HashMap<>();
         map.put(3, generateKeyInputs.algorithms);
-        map.put(4, getCreateFlags(createInputParameters));
+        map.put(4, getCreateFlags(arguments));
         if (generateKeyInputs.phData != null) {
             map.put(0, generateKeyInputs.phData);
         }
 
-        return buildCreateInputResult(map);
+        return resultWithData(name, map);
     }
 
-    private int getCreateFlags(CreateInputParameters createInputParameters) {
-        PublicKeyCredentialCreationOptions options = createInputParameters.getPublicKeyCredentialCreationOptions();
+    private int getCreateFlags(CreateInputArguments arguments) {
+        PublicKeyCredentialCreationOptions options = arguments.getCreationOptions();
         AuthenticatorSelectionCriteria selection = options.getAuthenticatorSelection() != null
                 ? options.getAuthenticatorSelection()
                 : new AuthenticatorSelectionCriteria(null, null, null);
@@ -309,7 +310,7 @@ public class SignExtension extends Extension {
     @SuppressWarnings("unchecked")
     @Nullable
     @Override
-    public ExtensionResult processCreateOutput(AttestationObject attestationObject) {
+    public ProcessingResult processOutput(AttestationObject attestationObject) {
 
         Map<String, ?> extensions = attestationObject.getAuthenticatorData().getExtensions();
         if (extensions == null) {
@@ -333,20 +334,25 @@ public class SignExtension extends Extension {
             throw new IllegalArgumentException("Missing CredentialData");
         }
 
-        return new ExtensionResult(Collections.singletonMap(SIGN,
+        return resultWithData(SIGN,
                 new SignExtension.AuthenticationExtensionsSignOutputs(
                         (Map<Integer, Object>) credentialData.getCosePublicKey(),
                         (byte[]) signAuthenticatorOutput.get(6)
-                ).toMap()));
+                ).toMap());
     }
 
+    @SuppressWarnings("unchecked")
     @Nullable
     @Override
-    public GetInputResult processGetInput(Map<String, ?> inputs, GetInputParameters parameters) {
+    public ProcessingResult processInput(GetInputArguments arguments) {
+
+        Map<String, Object> inputs = (Map<String, Object>) arguments
+                .getPublicKeyCredentialRequestOptions().getExtensions().get(SIGN);
+
         SignExtension.AuthenticationExtensionsSignInputs signInputs =
                 SignExtension.AuthenticationExtensionsSignInputs.fromMap(inputs);
 
-        if (signInputs == null || !isSupported()) {
+        if (signInputs == null || !isSupported(arguments.ctap)) {
             return null;
         }
 
@@ -357,7 +363,7 @@ public class SignExtension extends Extension {
         }
 
         Map<String, byte[]> byCreds = signSignInputs.keyHandleByCredential;
-        PublicKeyCredentialRequestOptions requestOptions = parameters.getPublicKeyCredentialRequestOptions();
+        PublicKeyCredentialRequestOptions requestOptions = arguments.getPublicKeyCredentialRequestOptions();
         List<PublicKeyCredentialDescriptor> allowList = requestOptions.getAllowCredentials();
         if (allowList.isEmpty()) {
             throw new IllegalArgumentException("sign requires allow_list");
@@ -373,7 +379,7 @@ public class SignExtension extends Extension {
             throw new IllegalArgumentException("keyHandleByCredential not valid");
         }
 
-        PublicKeyCredentialDescriptor selected = parameters.getSelectedCredential();
+        PublicKeyCredentialDescriptor selected = arguments.getSelectedCredential();
         if (selected == null) {
             throw new IllegalArgumentException("Invalid allowList data");
         }
@@ -383,13 +389,13 @@ public class SignExtension extends Extension {
         byte[] kh = byCreds.get(toUrlSafeString(selected.getId()));
         output.put(0, phData);
         output.put(5, Collections.singletonList(kh));
-        return buildGetInputResult(output);
+        return resultWithData(name, output);
     }
 
     @SuppressWarnings("unchecked")
     @Nullable
     @Override
-    public ExtensionResult processGetOutput(Ctap2Session.AssertionData assertionData) {
+    public ProcessingResult processOutput(Ctap2Session.AssertionData assertionData) {
         AuthenticatorData authenticatorData = AuthenticatorData.parseFrom(
                 ByteBuffer.wrap(assertionData.getAuthenticatorData())
         );
@@ -400,10 +406,10 @@ public class SignExtension extends Extension {
         }
 
         Map<Integer, Object> signResults = (Map<Integer, Object>) extensionResults.get(name);
-        return new ExtensionResult(Collections.singletonMap(SIGN,
+        return resultWithData(SIGN,
                 new SignExtension.AuthenticationExtensionsSignOutputs(
                         null,
                         (byte[]) signResults.get(6)
-                ).toMap()));
+                ).toMap());
     }
 }

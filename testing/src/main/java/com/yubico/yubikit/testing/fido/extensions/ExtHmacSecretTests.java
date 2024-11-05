@@ -17,9 +17,8 @@
 package com.yubico.yubikit.testing.fido.extensions;
 
 import com.yubico.yubikit.core.internal.codec.Base64;
-import com.yubico.yubikit.fido.webauthn.Extension;
+import com.yubico.yubikit.fido.webauthn.ClientExtensionResults;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredential;
-import com.yubico.yubikit.fido.webauthn.SerializationType;
 import com.yubico.yubikit.testing.fido.FidoTestState;
 import com.yubico.yubikit.testing.fido.utils.ClientHelper;
 import com.yubico.yubikit.testing.fido.utils.CreationOptionsBuilder;
@@ -223,7 +222,7 @@ public class ExtHmacSecretTests {
 
     @Nullable
     private Boolean getCreateResult(PublicKeyCredential credential) {
-        Extension.ExtensionResults results = credential.getClientExtensionResults();
+        ClientExtensionResults results = credential.getClientExtensionResults();
         Assert.assertNotNull(results);
         Map<String, Object> resultsMap = results.toMap();
         return (Boolean) resultsMap.get(KEY_HMAC_CREATE_SECRET);
@@ -232,7 +231,7 @@ public class ExtHmacSecretTests {
     @SuppressWarnings("unchecked")
     @Nullable
     private String getGetResultsValue(PublicKeyCredential credential, String key) {
-        Extension.ExtensionResults extensionResults = credential.getClientExtensionResults();
+        ClientExtensionResults extensionResults = credential.getClientExtensionResults();
         Assert.assertNotNull(extensionResults);
         Map<String, Object> resultsMap = extensionResults.toMap();
         Map<String, Object> getSecretMap = (Map<String, Object>) resultsMap.get(KEY_HMAC_GET_SECRET);

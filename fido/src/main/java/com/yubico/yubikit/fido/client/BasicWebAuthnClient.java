@@ -21,7 +21,9 @@ import static com.yubico.yubikit.fido.webauthn.PublicKeyCredentialType.PUBLIC_KE
 import com.yubico.yubikit.core.application.CommandException;
 import com.yubico.yubikit.core.application.CommandState;
 import com.yubico.yubikit.core.fido.CtapException;
-import com.yubico.yubikit.core.internal.Logger;
+import com.yubico.yubikit.fido.client.extensions.Extensions;
+import com.yubico.yubikit.fido.webauthn.ClientExtensionResults;
+import com.yubico.yubikit.fido.client.extensions.Extension;
 import com.yubico.yubikit.fido.ctap.ClientPin;
 import com.yubico.yubikit.fido.ctap.CredentialManagement;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
@@ -33,8 +35,6 @@ import com.yubico.yubikit.fido.webauthn.AttestationConveyancePreference;
 import com.yubico.yubikit.fido.webauthn.AttestationObject;
 import com.yubico.yubikit.fido.webauthn.AuthenticatorAttestationResponse;
 import com.yubico.yubikit.fido.webauthn.AuthenticatorSelectionCriteria;
-import com.yubico.yubikit.fido.webauthn.Extension;
-import com.yubico.yubikit.fido.webauthn.Extensions;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredential;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialCreationOptions;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialDescriptor;
@@ -97,8 +97,6 @@ public class BasicWebAuthnClient implements Closeable {
 
     final private boolean enterpriseAttestationSupported;
 
-    final private List<String> extensions;
-
     private static final org.slf4j.Logger logger = LoggerFactory.getLogger(BasicWebAuthnClient.class);
 
     public static class UserAgentConfiguration {
@@ -132,21 +130,7 @@ public class BasicWebAuthnClient implements Closeable {
     }
 
     public BasicWebAuthnClient(Ctap2Session session) throws IOException, CommandException {
-        this(session, Arrays.asList(
-                "hmac-secret",
-                "largeBlobKey",
-                "credBlob",
-                "credProtect",
-                "minPinLength",
-                "sign"
-        ));
-    }
-
-    public BasicWebAuthnClient(
-            Ctap2Session session,
-            List<String> extensions) throws IOException, CommandException {
         this.ctap = session;
-        this.extensions = extensions;
 
         Ctap2Session.InfoData info = ctap.getInfo();
 
@@ -273,7 +257,7 @@ public class BasicWebAuthnClient implements Closeable {
             if (assertions.size() == 1) {
                 final WithExtensionResults<Ctap2Session.AssertionData> first = assertions.get(0);
                 final Ctap2Session.AssertionData assertionData = first.data;
-                final Extension.ExtensionResults clientExtensionResults = first.clientExtensionResults;
+                final ClientExtensionResults clientExtensionResults = first.clientExtensionResults;
 
                 return PublicKeyCredential.fromAssertion(
                         assertionData,
@@ -396,9 +380,9 @@ public class BasicWebAuthnClient implements Closeable {
 
     static public class WithExtensionResults<T> {
         final T data;
-        final Extension.ExtensionResults clientExtensionResults;
+        final ClientExtensionResults clientExtensionResults;
 
-        WithExtensionResults(T data, Extension.ExtensionResults clientExtensionResults) {
+        WithExtensionResults(T data, ClientExtensionResults clientExtensionResults) {
             this.data = data;
             this.clientExtensionResults = clientExtensionResults;
         }
@@ -407,7 +391,7 @@ public class BasicWebAuthnClient implements Closeable {
             return data;
         }
 
-        public Extension.ExtensionResults getClientExtensionResults() {
+        public ClientExtensionResults getClientExtensionResults() {
             return clientExtensionResults;
         }
     }
@@ -453,40 +437,15 @@ public class BasicWebAuthnClient implements Closeable {
         }
 
         Map<String, Boolean> ctapOptions = getCreateCtapOptions(options, pin);
-
-        // prepare extensions
-        Extensions optionsExtensions = options.getExtensions();
-        List<Extension> usedExtensions = new ArrayList<>();
-        Map<String, Object> extensionInputs = new HashMap<>();
-        int permissions = ClientPin.PIN_PERMISSION_MC | ClientPin.PIN_PERMISSION_GA;
-
-        Map<String, ?> clientInputs = optionsExtensions.getExtensions();
-
-        for (String extensionName : extensions) {
-            Extension extension = Extension.Builder.get(extensionName, ctap);
-            if (extension == null) {
-                Logger.debug(logger, "Extension {} not supported", extensionName);
-                continue;
-            }
-
-            Extension.CreateInputParameters parameters = new Extension.CreateInputParameters(
-                    options
-            );
-
-            Extension.CreateInputResult input = extension.processCreateInput(clientInputs, parameters);
-
-            if (input != null) {
-                usedExtensions.add(extension);
-                permissions |= input.getPermissions();
-                extensionInputs.putAll(input.getResult());
-            }
-        }
+        Extension.CreateInputArguments inputArguments = new Extension.CreateInputArguments(ctap, options);
+        Extensions extensions = Extensions.processExtensions(ctap, inputArguments);
 
         final AuthParams authParams = getAuthParams(
                 clientDataHash,
                 ctapOptions.containsKey(OPTION_USER_VERIFICATION),
                 pin,
-                permissions,
+                extensions.getRequiredPermissions() |
+                        ClientPin.PIN_PERMISSION_MC | ClientPin.PIN_PERMISSION_GA,
                 rpId);
 
         final List<PublicKeyCredentialDescriptor> excludeCredentials =
@@ -530,7 +489,7 @@ public class BasicWebAuthnClient implements Closeable {
                 credToExclude != null
                         ? Utils.getCredentialList(Collections.singletonList(credToExclude))
                         : null,
-                extensionInputs,
+                extensions.getAuthenticatorInput(),
                 ctapOptions.isEmpty() ? null : ctapOptions,
                 authParams.pinUvAuthParam,
                 authParams.pinUvAuthProtocol != null ? authParams.pinUvAuthProtocol.getVersion() : null,
@@ -539,37 +498,16 @@ public class BasicWebAuthnClient implements Closeable {
         );
 
         // get extensions results
-        AuthenticatorSelectionCriteria authenticatorSelection = options.getAuthenticatorSelection();
-        boolean requiresResidentKey = authenticatorSelection != null &&
-                ResidentKeyRequirement.REQUIRED.equals(authenticatorSelection.getResidentKey());
-
-        Extension.ExtensionResults extensionExtensionResults = new Extension.ExtensionResults();
-        if (clientInputs.containsKey("credProps")) {
-            extensionExtensionResults.add(new Extension.ExtensionResult(
-                    Collections.singletonMap(
-                            "credProps", Collections.singletonMap(
-                                    "rk", requiresResidentKey))
-            ));
-        }
-
-        for (Extension extension : usedExtensions) {
-
-            Extension.CreateOutputParameters createOutputParameters =
-                    new Extension.CreateOutputParameters(
+        Extension.CreateOutputArguments createOutputArguments =
+                    new Extension.CreateOutputArguments(
                             authParams.pinToken,
                             authParams.pinUvAuthProtocol
                     );
 
-            Extension.ExtensionResult extensionResult = extension.processCreateOutput(
-                    AttestationObject.fromCredential(credentialData),
-                    createOutputParameters
-            );
-            if (extensionResult != null) {
-                extensionExtensionResults.add(extensionResult);
-            }
-        }
-
-        return new WithExtensionResults<>(credentialData, extensionExtensionResults);
+        return new WithExtensionResults<>(credentialData,
+                extensions.getClientExtensionResults(
+                        AttestationObject.fromCredential(credentialData),
+                        createOutputArguments));
     }
 
     /**
@@ -606,11 +544,6 @@ public class BasicWebAuthnClient implements Closeable {
             throw new ClientError(ClientError.Code.BAD_REQUEST, "RP ID is not valid for effective domain");
         }
         Map<String, Boolean> ctapOptions = getRequestCtapOptions(options, pin);
-
-        Map<String, ?> clientInputs = options.getExtensions().getExtensions();
-        Map<String, Object> extensionInputs = new HashMap<>();
-        List<Extension> usedExtensions = new ArrayList<>();
-
         final List<PublicKeyCredentialDescriptor> allowCredentials = removeUnsupportedCredentials(
                 options.getAllowCredentials()
         );
@@ -632,35 +565,19 @@ public class BasicWebAuthnClient implements Closeable {
                 filterCredAuthParams.pinToken)
                 : null;
 
-        Extension.GetInputParameters getInputParameters = new Extension.GetInputParameters(
+        Extension.GetInputArguments inputArguments = new Extension.GetInputArguments(
+                ctap,
                 options,
                 clientPin,
                 selectedCred
         );
 
-        int permissions = ClientPin.PIN_PERMISSION_GA;
-        for (String extensionName : extensions) {
-            Extension extension = Extension.Builder.get(extensionName, ctap);
-
-            if (extension == null) {
-                Logger.debug(logger, "Extension {} not supported", extensionName);
-                continue;
-            }
-
-            Extension.GetInputResult input = extension.processGetInput(clientInputs, getInputParameters);
-
-            if (input != null) {
-                usedExtensions.add(extension);
-                permissions |= input.getPermissions();
-                extensionInputs.putAll(input.getResult());
-            }
-        }
-
+        Extensions extensions = Extensions.processExtensions(ctap, inputArguments);
         final AuthParams authParams = getAuthParams(
                 clientDataHash,
                 ctapOptions.containsKey(OPTION_USER_VERIFICATION),
                 pin,
-                permissions,
+                ClientPin.PIN_PERMISSION_GA | extensions.getRequiredPermissions(),
                 rpId);
 
         try {
@@ -670,7 +587,7 @@ public class BasicWebAuthnClient implements Closeable {
                     selectedCred != null
                             ? Utils.getCredentialList(Collections.singletonList(selectedCred))
                             : null,
-                    extensionInputs,
+                    extensions.getAuthenticatorInput(),
                     ctapOptions.isEmpty() ? null : ctapOptions,
                     authParams.pinUvAuthParam,
                     authParams.pinUvAuthProtocol != null ? authParams.pinUvAuthProtocol.getVersion() : null,
@@ -678,37 +595,29 @@ public class BasicWebAuthnClient implements Closeable {
             );
 
             List<WithExtensionResults<Ctap2Session.AssertionData>> result = new ArrayList<>();
+            Extension.GetOutputArguments getOutputArguments = new Extension.GetOutputArguments(
+                    ctap,
+                    clientPin,
+                    authParams.pinToken,
+                    authParams.pinUvAuthProtocol
+            );
             for(final Ctap2Session.AssertionData assertionData : assertions) {
                 // process extensions for each assertion
-                Extension.ExtensionResults extensionExtensionResults = new Extension.ExtensionResults();
-
-                for (Extension extension : usedExtensions) {
-
-                    Extension.GetOutputParameters getOutputParameters = new Extension.GetOutputParameters(
-                            clientPin,
-                            authParams.pinToken,
-                            authParams.pinUvAuthProtocol
-                    );
-
-                    Extension.ExtensionResult extensionResult = extension.processGetOutput(
-                            assertionData, getOutputParameters
-
-                    );
-                    if (extensionResult != null) {
-                        extensionExtensionResults.add(extensionResult);
-                    }
-                }
-
-                result.add(new WithExtensionResults<>(assertionData, extensionExtensionResults));
+                result.add(
+                        new WithExtensionResults<>(
+                                assertionData,
+                                extensions.getClientExtensionResults(
+                                        assertionData,
+                                        getOutputArguments)));
             }
 
             return result;
 
-        } catch (CtapException e) {
-            if (e.getCtapError() == CtapException.ERR_PIN_INVALID) {
-                throw new PinInvalidClientError(e, clientPin.getPinRetries().getCount());
+        } catch (CtapException exc) {
+            if (exc.getCtapError() == CtapException.ERR_PIN_INVALID) {
+                throw new PinInvalidClientError(exc, clientPin.getPinRetries().getCount());
             }
-            throw ClientError.wrapCtapException(e);
+            throw ClientError.wrapCtapException(exc);
         }
     }
 
