@@ -492,7 +492,9 @@ public class BasicWebAuthnClient implements Closeable {
                 extensions.getAuthenticatorInput(),
                 ctapOptions.isEmpty() ? null : ctapOptions,
                 authParams.pinUvAuthParam,
-                authParams.pinUvAuthProtocol != null ? authParams.pinUvAuthProtocol.getVersion() : null,
+                authParams.pinUvAuthParam != null && authParams.pinUvAuthProtocol != null
+                        ? authParams.pinUvAuthProtocol.getVersion()
+                        : null,
                 validatedEnterpriseAttestation,
                 state
         );
@@ -590,7 +592,9 @@ public class BasicWebAuthnClient implements Closeable {
                     extensions.getAuthenticatorInput(),
                     ctapOptions.isEmpty() ? null : ctapOptions,
                     authParams.pinUvAuthParam,
-                    authParams.pinUvAuthProtocol != null ? authParams.pinUvAuthProtocol.getVersion() : null,
+                    authParams.pinUvAuthParam != null && authParams.pinUvAuthProtocol != null
+                            ? authParams.pinUvAuthProtocol.getVersion()
+                            : null,
                     state
             );
 
