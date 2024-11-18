@@ -21,6 +21,8 @@ import static com.yubico.yubikit.fido.webauthn.PublicKeyCredentialType.PUBLIC_KE
 import com.yubico.yubikit.core.application.CommandException;
 import com.yubico.yubikit.core.application.CommandState;
 import com.yubico.yubikit.core.fido.CtapException;
+import com.yubico.yubikit.core.internal.Logger;
+import com.yubico.yubikit.core.util.Pair;
 import com.yubico.yubikit.fido.client.extensions.Extensions;
 import com.yubico.yubikit.fido.webauthn.ClientExtensionResults;
 import com.yubico.yubikit.fido.client.extensions.Extension;
@@ -438,7 +440,7 @@ public class BasicWebAuthnClient implements Closeable {
 
         Map<String, Boolean> ctapOptions = getCreateCtapOptions(options, pin);
         Extension.CreateInputArguments inputArguments = new Extension.CreateInputArguments(ctap, options);
-        Extensions extensions = Extensions.processExtensions(ctap, inputArguments);
+        Extensions extensions = Extensions.processExtensions(inputArguments);
 
         final AuthParams authParams = getAuthParams(
                 clientDataHash,
@@ -499,17 +501,8 @@ public class BasicWebAuthnClient implements Closeable {
                 state
         );
 
-        // get extensions results
-        Extension.CreateOutputArguments createOutputArguments =
-                    new Extension.CreateOutputArguments(
-                            authParams.pinToken,
-                            authParams.pinUvAuthProtocol
-                    );
-
         return new WithExtensionResults<>(credentialData,
-                extensions.getClientExtensionResults(
-                        AttestationObject.fromCredential(credentialData),
-                        createOutputArguments));
+                extensions.getResults(AttestationObject.fromCredential(credentialData)));
     }
 
     /**
@@ -567,14 +560,34 @@ public class BasicWebAuthnClient implements Closeable {
                 filterCredAuthParams.pinToken)
                 : null;
 
+        final String fRpId = rpId;
         Extension.GetInputArguments inputArguments = new Extension.GetInputArguments(
                 ctap,
                 options,
+                permissions -> {
+                    try {
+                        AuthParams authParams = getAuthParams(
+                                clientDataHash,
+                                ctapOptions.containsKey(OPTION_USER_VERIFICATION),
+                                pin,
+                                permissions,
+                                fRpId);
+
+                        if (authParams.pinToken == null || authParams.pinUvAuthProtocol == null) {
+                            return null;
+                        }
+
+                        return new Pair<>(authParams.pinUvAuthProtocol, authParams.pinToken);
+                    } catch (CommandException | ClientError | IOException e) {
+                        Logger.debug(logger, "Failed to get auth params");
+                        return null;
+                    }
+                },
                 clientPin,
                 selectedCred
         );
 
-        Extensions extensions = Extensions.processExtensions(ctap, inputArguments);
+        Extensions extensions = Extensions.processExtensions(inputArguments);
         final AuthParams authParams = getAuthParams(
                 clientDataHash,
                 ctapOptions.containsKey(OPTION_USER_VERIFICATION),
@@ -599,20 +612,12 @@ public class BasicWebAuthnClient implements Closeable {
             );
 
             List<WithExtensionResults<Ctap2Session.AssertionData>> result = new ArrayList<>();
-            Extension.GetOutputArguments getOutputArguments = new Extension.GetOutputArguments(
-                    ctap,
-                    clientPin,
-                    authParams.pinToken,
-                    authParams.pinUvAuthProtocol
-            );
             for(final Ctap2Session.AssertionData assertionData : assertions) {
                 // process extensions for each assertion
                 result.add(
                         new WithExtensionResults<>(
                                 assertionData,
-                                extensions.getClientExtensionResults(
-                                        assertionData,
-                                        getOutputArguments)));
+                                extensions.getResults(assertionData)));
             }
 
             return result;

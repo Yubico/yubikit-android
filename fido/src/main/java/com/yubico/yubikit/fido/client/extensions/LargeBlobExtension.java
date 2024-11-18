@@ -21,8 +21,10 @@ import static com.yubico.yubikit.core.internal.codec.Base64.toUrlSafeString;
 
 import com.yubico.yubikit.core.application.CommandException;
 import com.yubico.yubikit.core.internal.Logger;
+import com.yubico.yubikit.core.util.Pair;
 import com.yubico.yubikit.fido.ctap.ClientPin;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
+import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
 import com.yubico.yubikit.fido.webauthn.AttestationObject;
 import com.yubico.yubikit.fido.webauthn.Extensions;
 
@@ -44,8 +46,6 @@ public class LargeBlobExtension extends Extension {
     private static final String WRITTEN = "written";
     private static final org.slf4j.Logger logger = LoggerFactory.getLogger(com.yubico.yubikit.fido.client.extensions.LargeBlobExtension.class);
 
-    @Nullable private Object action = null;
-
     public LargeBlobExtension() {
         super(LARGE_BLOB_KEY);
     }
@@ -57,7 +57,7 @@ public class LargeBlobExtension extends Extension {
     }
 
     @Override
-    ProcessingResult processInput(CreateInputArguments arguments) {
+    MakeCredentialProcessingResult makeCredential(CreateInputArguments arguments) {
 
         Extensions extensions = arguments.getCreationOptions().getExtensions();
         @SuppressWarnings("unchecked")
@@ -70,16 +70,41 @@ public class LargeBlobExtension extends Extension {
                 throw new IllegalArgumentException("Authenticator does not support large" +
                         " blob storage");
             }
-            return resultWithData(LARGE_BLOB, true);
+            return new MakeCredentialProcessingResult(
+                    () -> Collections.singletonMap(LARGE_BLOB, true),
+                    this::makeCredentialOutput
+            );
+        }
+        return null;
+    }
+
+
+    @SuppressWarnings("unchecked")
+    @Override
+    GetAssertionProcessingResult getAssertion(GetInputArguments arguments) {
+
+        Extensions extensions = arguments.getRequestOptions().getExtensions();
+
+        Map<String, Object> data = (Map<String, Object>) extensions.get(LARGE_BLOB);
+        if (data != null && data.containsKey(ACTION_READ)) {
+            return new GetAssertionProcessingResult(
+                    () -> Collections.singletonMap(LARGE_BLOB, true),
+                    assertionData -> read(assertionData, arguments)
+            );
+        } else if (data != null && data.containsKey(ACTION_WRITE)) {
+            return new GetAssertionProcessingResult(
+                    () -> Collections.singletonMap(LARGE_BLOB, true),
+                    ClientPin.PIN_PERMISSION_LBW,
+                    assertionData -> write(assertionData, arguments,
+                            fromUrlSafeString((String) data.get(ACTION_WRITE))));
         }
         return null;
     }
 
     @Nullable
-    @Override
-    ProcessingResult processOutput(
+    ExtensionResult read(
             Ctap2Session.AssertionData assertionData,
-            GetOutputArguments arguments) {
+            GetInputArguments arguments) {
 
         byte[] largeBlobKey = assertionData.getLargeBlobKey();
         if (largeBlobKey == null) {
@@ -87,22 +112,44 @@ public class LargeBlobExtension extends Extension {
         }
 
         try {
-            if (Boolean.TRUE.equals(action)) {
-                LargeBlobs largeBlobs = new LargeBlobs(arguments.getCtap());
-                byte[] blob = largeBlobs.getBlob(largeBlobKey);
-                return resultWithData(LARGE_BLOB, blob != null
-                        ? Collections.singletonMap("blob", toUrlSafeString(blob))
-                        : Collections.emptyMap());
-            } else if (action != null && action instanceof byte[]) {
-                byte[] bytes = (byte[]) action;
-                LargeBlobs largeBlobs = new LargeBlobs(
-                        arguments.getCtap(),
-                        arguments.getPinUvAuthProtocol(),
-                        arguments.getAuthToken());
-                largeBlobs.putBlob(largeBlobKey, bytes);
+            LargeBlobs largeBlobs = new LargeBlobs(arguments.getCtap());
+            byte[] blob = largeBlobs.getBlob(largeBlobKey);
+            return () -> Collections.singletonMap(LARGE_BLOB, blob != null
+                    ? Collections.singletonMap("blob", toUrlSafeString(blob))
+                    : Collections.emptyMap());
+        } catch (IOException | CommandException e) {
+            Logger.error(logger, "LargeBlob processing failed: ", e);
+        }
 
-                return resultWithData(LARGE_BLOB, Collections.singletonMap(WRITTEN, true));
+        return null;
+    }
+
+    @Nullable
+    ExtensionResult write(
+            Ctap2Session.AssertionData assertionData,
+            GetInputArguments arguments,
+            byte[] bytes) {
+
+        byte[] largeBlobKey = assertionData.getLargeBlobKey();
+        if (largeBlobKey == null) {
+            return null;
+        }
+
+        try {
+            Pair<PinUvAuthProtocol, byte[]> authParams = arguments
+                    .getAuthParamsProvider()
+                    .getProtocolAndToken(ClientPin.PIN_PERMISSION_LBW | ClientPin.PIN_PERMISSION_GA);
+            if (authParams == null) {
+                return null;
             }
+            LargeBlobs largeBlobs = new LargeBlobs(
+                    arguments.getCtap(),
+                    authParams.first,
+                    authParams.second);
+            largeBlobs.putBlob(largeBlobKey, bytes);
+
+            return () -> Collections.singletonMap(LARGE_BLOB, Collections.singletonMap(WRITTEN, true));
+
         } catch (IOException | CommandException | GeneralSecurityException e) {
             Logger.error(logger, "LargeBlob processing failed: ", e);
         }
@@ -110,27 +157,9 @@ public class LargeBlobExtension extends Extension {
         return null;
     }
 
-    @SuppressWarnings("unchecked")
-    @Override
-    ProcessingResult processInput(GetInputArguments arguments) {
-
-        Extensions extensions = arguments.getRequestOptions().getExtensions();
-
-        Map<String, Object> data = (Map<String, Object>) extensions.get(LARGE_BLOB);
-        if (data != null && data.containsKey(ACTION_READ)) {
-            action = data.get(ACTION_READ);
-            return resultWithData(LARGE_BLOB, true);
-        } else if (data != null && data.containsKey(ACTION_WRITE)) {
-            action = fromUrlSafeString((String) data.get(ACTION_WRITE));
-            return resultWithDataAndPermission(LARGE_BLOB, true, ClientPin.PIN_PERMISSION_LBW);
-        }
-        return null;
-    }
-
     @Nullable
-    @Override
-    ProcessingResult processOutput(AttestationObject attestationObject) {
-        return resultWithData(LARGE_BLOB,
+    ExtensionResult makeCredentialOutput(AttestationObject attestationObject) {
+        return () -> Collections.singletonMap(LARGE_BLOB,
                 Collections.singletonMap("supported",
                         attestationObject.getLargeBlobKey() != null));
     }

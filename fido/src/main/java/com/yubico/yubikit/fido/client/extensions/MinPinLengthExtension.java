@@ -19,6 +19,8 @@ package com.yubico.yubikit.fido.client.extensions;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.fido.webauthn.Extensions;
 
+import java.util.Collections;
+
 public class MinPinLengthExtension extends Extension {
 
     public MinPinLengthExtension() {
@@ -32,8 +34,7 @@ public class MinPinLengthExtension extends Extension {
     }
 
     @Override
-    ProcessingResult processInput(CreateInputArguments arguments) {
-
+    MakeCredentialProcessingResult makeCredential(CreateInputArguments arguments) {
         Extensions extensions = arguments.getCreationOptions().getExtensions();
         if (!isSupported(arguments.getCtap())) {
             return null;
@@ -42,6 +43,7 @@ public class MinPinLengthExtension extends Extension {
         if (input == null) {
             return null;
         }
-        return resultWithData(name, Boolean.TRUE.equals(input));
+        return new MakeCredentialProcessingResult(
+                () -> Collections.singletonMap(name, Boolean.TRUE.equals(input)));
     }
 }

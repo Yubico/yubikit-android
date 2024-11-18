@@ -16,7 +16,6 @@
 
 package com.yubico.yubikit.fido.client.extensions;
 
-import com.yubico.yubikit.fido.webauthn.AttestationObject;
 import com.yubico.yubikit.fido.webauthn.AuthenticatorSelectionCriteria;
 import com.yubico.yubikit.fido.webauthn.Extensions;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialCreationOptions;
@@ -24,37 +23,26 @@ import com.yubico.yubikit.fido.webauthn.ResidentKeyRequirement;
 
 import java.util.Collections;
 
-import javax.annotation.Nullable;
-
 public class CredPropsExtension extends Extension {
 
     public CredPropsExtension() {
         super("credProps");
     }
 
-    @Nullable
-    Boolean rk = null;
-
-    @Override
-    ProcessingResult processInput(CreateInputArguments arguments) {
+    MakeCredentialProcessingResult makeCredential(CreateInputArguments arguments) {
 
         PublicKeyCredentialCreationOptions options = arguments.getCreationOptions();
         Extensions extensions = options.getExtensions();
 
         if (extensions.has(name)) {
             AuthenticatorSelectionCriteria authenticatorSelection = options.getAuthenticatorSelection();
-            rk = authenticatorSelection != null &&
+            boolean rk = authenticatorSelection != null &&
                     ResidentKeyRequirement.REQUIRED.equals(authenticatorSelection.getResidentKey());
 
-            return resultWithoutData();
-        }
-        return null;
-    }
-
-    @Override
-    ProcessingResult processOutput(AttestationObject ignoredAttestationObject) {
-        if (rk != null) {
-            return resultWithData(name, Collections.singletonMap("rk", rk));
+            return new MakeCredentialProcessingResult(
+                    attestationObject -> () ->
+                            Collections.singletonMap(name,
+                                    Collections.singletonMap("rk", rk)));
         }
         return null;
     }

@@ -20,6 +20,8 @@ import static com.yubico.yubikit.core.internal.codec.Base64.fromUrlSafeString;
 
 import com.yubico.yubikit.fido.webauthn.Extensions;
 
+import java.util.Collections;
+
 public class CredBlobExtension extends Extension {
 
     public CredBlobExtension() {
@@ -27,15 +29,15 @@ public class CredBlobExtension extends Extension {
     }
 
     @Override
-    ProcessingResult processInput(CreateInputArguments arguments) {
-
+    MakeCredentialProcessingResult makeCredential(CreateInputArguments arguments) {
         Extensions extensions = arguments.getCreationOptions().getExtensions();
         if (isSupported(arguments.getCtap())) {
             String b64Blob = (String) extensions.get("credBlob");
             if (b64Blob != null) {
                 byte[] blob = fromUrlSafeString(b64Blob);
                 if (blob.length <= arguments.getCtap().getCachedInfo().getMaxCredBlobLength()) {
-                    return resultWithData(name, blob);
+                    return new MakeCredentialProcessingResult(
+                            () -> Collections.singletonMap(name, blob));
                 }
             }
         }
@@ -43,11 +45,12 @@ public class CredBlobExtension extends Extension {
     }
 
     @Override
-    ProcessingResult processInput(GetInputArguments arguments) {
+    GetAssertionProcessingResult getAssertion(GetInputArguments arguments) {
         Extensions extensions = arguments.getRequestOptions().getExtensions();
         if (isSupported(arguments.getCtap()) &&
                 Boolean.TRUE.equals(extensions.get("getCredBlob"))) {
-            return resultWithData(name, true);
+            return new GetAssertionProcessingResult(
+                    () -> Collections.singletonMap(name, true));
         }
         return null;
     }

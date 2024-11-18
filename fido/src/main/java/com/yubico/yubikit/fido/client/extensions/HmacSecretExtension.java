@@ -50,10 +50,7 @@ import javax.annotation.Nullable;
 public class HmacSecretExtension extends Extension {
 
     private static final org.slf4j.Logger logger = LoggerFactory.getLogger(HmacSecretExtension.class);
-
-    private boolean prf = false;
     private static final int SALT_LEN = 32;
-    private byte[] sharedSecret;
 
     private static class Salts {
         byte[] salt1;
@@ -84,32 +81,35 @@ public class HmacSecretExtension extends Extension {
     }
 
     @Override
-    ProcessingResult processInput(CreateInputArguments arguments) {
+    MakeCredentialProcessingResult makeCredential(CreateInputArguments arguments) {
         Extensions extensions = arguments.getCreationOptions().getExtensions();
         if (Boolean.TRUE.equals(extensions.get("hmacCreateSecret"))) {
-            prf = false;
-            return resultWithData(name, true);
+            return new MakeCredentialProcessingResult(
+                    () -> Collections.singletonMap(name, true),
+                    attestationObject -> makeCredentialOutput(attestationObject, false)
+            );
         } else if (extensions.has("prf")) {
-            prf = true;
-            return resultWithData(name, true);
+            return new MakeCredentialProcessingResult(
+                    () -> Collections.singletonMap(name, true),
+                    attestationObject -> makeCredentialOutput(attestationObject, true)
+            );
         }
         return null;
     }
 
     @Nullable
-    @Override
-    ProcessingResult processOutput(AttestationObject attestationObject) {
+    ExtensionResult makeCredentialOutput(AttestationObject attestationObject, boolean isPrf) {
         Map<String, ?> extensions = attestationObject.getAuthenticatorData().getExtensions();
 
         boolean enabled = extensions != null && Boolean.TRUE.equals(extensions.get(name));
-        return prf
-                ? resultWithData("prf", Collections.singletonMap("enabled", enabled))
-                : resultWithData("hmacCreateSecret", enabled);
+        return isPrf
+                ? () -> Collections.singletonMap("prf", Collections.singletonMap("enabled", enabled))
+                : () -> Collections.singletonMap("hmacCreateSecret", enabled);
     }
 
     @SuppressWarnings("unchecked")
     @Override
-    ProcessingResult processInput(GetInputArguments arguments) {
+    GetAssertionProcessingResult getAssertion(GetInputArguments arguments) {
         if (!isSupported(arguments.getCtap())) {
             return null;
         }
@@ -117,6 +117,7 @@ public class HmacSecretExtension extends Extension {
         Extensions extensions = arguments.getRequestOptions().getExtensions();
         Salts salts;
         Map<String, Object> data = (Map<String, Object>) extensions.get("prf");
+        boolean isPrf;
         if (data != null) {
             Map<String, Object> secrets = (Map<String, Object>) data.get("eval");
             Map<String, Object> evalByCredential =
@@ -164,7 +165,7 @@ public class HmacSecretExtension extends Extension {
                     : null;
 
             salts = new Salts(first, second);
-            prf = true;
+            isPrf = true;
         } else {
             data = (Map<String, Object>) extensions.get("hmacGetSecret");
             if (data == null) {
@@ -184,7 +185,7 @@ public class HmacSecretExtension extends Extension {
                     : null;
 
             salts = new Salts(salt1, salt2);
-            prf = false;
+            isPrf = false;
         }
 
         Logger.debug(logger, "Salts: {}, {}", StringUtils.bytesToHex(salts.salt1), StringUtils.bytesToHex(salts.salt2));
@@ -198,10 +199,8 @@ public class HmacSecretExtension extends Extension {
         try {
             Pair<Map<Integer, ?>, byte[]> keyAgreement = clientPin.getSharedSecret();
 
-            this.sharedSecret = keyAgreement.second;
-
             byte[] saltEnc = clientPin.getPinUvAuth().encrypt(
-                    sharedSecret,
+                    keyAgreement.second,
                     ByteBuffer
                             .allocate(salts.salt1.length + salts.salt2.length)
                             .put(salts.salt1)
@@ -217,17 +216,21 @@ public class HmacSecretExtension extends Extension {
             hmacGetSecretInput.put(2, saltEnc);
             hmacGetSecretInput.put(3, saltAuth);
             hmacGetSecretInput.put(4, clientPin.getPinUvAuth().getVersion());
-            return resultWithData(name, hmacGetSecretInput);
+            return new GetAssertionProcessingResult(
+                    () -> Collections.singletonMap(name, hmacGetSecretInput),
+                    assertionData -> getAssertion(assertionData, arguments, isPrf, keyAgreement.second)
+            );
         } catch (IOException | CommandException e) {
             return null;
         }
     }
 
     @Nullable
-    @Override
-    ProcessingResult processOutput(
+    ExtensionResult getAssertion(
             Ctap2Session.AssertionData assertionData,
-            GetOutputArguments arguments) {
+            GetInputArguments arguments,
+            boolean isPrf,
+            byte[] sharedSecret) {
 
         AuthenticatorData authenticatorData = AuthenticatorData.parseFrom(ByteBuffer.wrap(
                 assertionData.getAuthenticatorData()
@@ -257,19 +260,19 @@ public class HmacSecretExtension extends Extension {
                 StringUtils.bytesToHex(output2));
 
         Map<String, Object> results = new HashMap<>();
-        if (prf) {
+        if (isPrf) {
             results.put("first", toUrlSafeString(output1));
             if (output2.length > 0) {
                 results.put("second", toUrlSafeString(output2));
             }
-            return resultWithData("prf",
+            return () -> Collections.singletonMap("prf",
                     Collections.singletonMap("results", results));
         } else {
             results.put("output1", toUrlSafeString(output1));
             if (output2.length > 0) {
                 results.put("output2", toUrlSafeString(output2));
             }
-            return resultWithData("hmacGetSecret", results);
+            return () -> Collections.singletonMap("hmacGetSecret", results);
         }
     }
 }
