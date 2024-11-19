@@ -25,7 +25,6 @@ import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialDescriptor;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialRequestOptions;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 
 import javax.annotation.Nullable;
@@ -37,218 +36,176 @@ public abstract class Extension {
         this.name = name;
     }
 
-    boolean isSupported(Ctap2Session ctap) {
+    protected boolean isSupported(Ctap2Session ctap) {
         return ctap.getCachedInfo().getExtensions().contains(name);
     }
 
     @Nullable
-    ProcessingResult processInput(CreateInputArguments ignoredArguments) {
+    public RegistrationProcessor makeCredential(
+            Ctap2Session ctap,
+            PublicKeyCredentialCreationOptions options,
+            PinUvAuthProtocol pinUvAuthProtocol) {
         return null;
     }
 
     @Nullable
-    ProcessingResult processOutput(AttestationObject ignoredAttestationObject) {
+    public AuthenticationProcessor getAssertion(
+            Ctap2Session ctap,
+            PublicKeyCredentialRequestOptions options,
+            PinUvAuthProtocol pinUvAuthProtocol) {
         return null;
     }
 
-    @Nullable
-    ProcessingResult processOutput(
-            AttestationObject attestationObject,
-            CreateOutputArguments ignoredArguments) {
-        return processOutput(attestationObject);
+    public interface RegistrationInput {
+        @Nullable Map<String, Object> prepareInput(
+                @Nullable byte[] pinToken);
     }
 
-    @Nullable
-    ProcessingResult processInput(GetInputArguments ignoredArguments) {
-        return null;
+    public interface RegistrationOutput {
+        @Nullable Map<String, Object> prepareOutput(
+                AttestationObject attestationObject,
+                @Nullable byte[] pinToken);
     }
 
-    @Nullable
-    ProcessingResult processOutput(Ctap2Session.AssertionData ignoredAssertionData) {
-        return null;
+    public interface AuthenticationInput {
+        @Nullable Map<String, Object> prepareInput(
+                @Nullable PublicKeyCredentialDescriptor selected,
+                @Nullable byte[] pinToken);
     }
 
-    @Nullable
-    ProcessingResult processOutput(
-            Ctap2Session.AssertionData assertionData,
-            GetOutputArguments ignoredArguments) {
-        return processOutput(assertionData);
+    public interface AuthenticationOutput {
+        @Nullable Map<String, Object> prepareOutput(
+                Ctap2Session.AssertionData assertionData,
+                @Nullable byte[] pinToken);
     }
 
-    public static class CreateInputArguments {
-        private final Ctap2Session ctap;
-        private final PublicKeyCredentialCreationOptions creationOptions;
-
-        public CreateInputArguments(
-                Ctap2Session ctap,
-                PublicKeyCredentialCreationOptions creationOptions) {
-            this.ctap = ctap;
-            this.creationOptions = creationOptions;
-        }
-
-        PublicKeyCredentialCreationOptions getCreationOptions() {
-            return creationOptions;
-        }
-
-        public Ctap2Session getCtap() {
-            return ctap;
-        }
-    }
-
-    public static class CreateOutputArguments {
-        @Nullable
-        private final byte[] authToken;
-        @Nullable
-        private final PinUvAuthProtocol pinUvAuthProtocol;
-
-        public CreateOutputArguments(
-                @Nullable byte[] authToken,
-                @Nullable PinUvAuthProtocol pinUvAuthProtocol) {
-            this.authToken = authToken;
-            this.pinUvAuthProtocol = pinUvAuthProtocol;
-        }
-
-        @Nullable
-        public byte[] getAuthToken() {
-            return authToken;
-        }
-
-        @Nullable
-        public PinUvAuthProtocol getPinUvAuthProtocol() {
-            return pinUvAuthProtocol;
-        }
-    }
-
-    public static class GetInputArguments {
-        private final Ctap2Session ctap;
-        private final PublicKeyCredentialRequestOptions requestOptions;
-
-        final ClientPin clientPin;
-
-        @Nullable final PublicKeyCredentialDescriptor selectedCredential;
-
-        public GetInputArguments(
-                Ctap2Session ctap,
-                PublicKeyCredentialRequestOptions requestOptions,
-                ClientPin clientPin,
-                @Nullable
-                PublicKeyCredentialDescriptor selectedCredential) {
-            this.ctap = ctap;
-            this.requestOptions = requestOptions;
-            this.clientPin = clientPin;
-            this.selectedCredential = selectedCredential;
-        }
-
-        PublicKeyCredentialRequestOptions getRequestOptions() {
-            return requestOptions;
-        }
-
-        public ClientPin getClientPin() {
-            return clientPin;
-        }
-
-        @Nullable
-        public PublicKeyCredentialDescriptor getSelectedCredential() {
-            return selectedCredential;
-        }
-
-        public Ctap2Session getCtap() {
-            return ctap;
-        }
-    }
-
-    public static class GetOutputArguments {
-        private final Ctap2Session ctap;
-        private final ClientPin clientPin;
-        @Nullable
-        private final byte[] authToken;
-        @Nullable
-        private final PinUvAuthProtocol pinUvAuthProtocol;
-
-        public GetOutputArguments(
-                Ctap2Session ctap,
-                ClientPin clientPin, @Nullable byte[] authToken,
-                @Nullable PinUvAuthProtocol pinUvAuthProtocol) {
-            this.ctap = ctap;
-            this.clientPin = clientPin;
-            this.authToken = authToken;
-            this.pinUvAuthProtocol = pinUvAuthProtocol;
-        }
-
-        public ClientPin getClientPin() {
-            return clientPin;
-        }
-
-        @Nullable
-        public byte[] getAuthToken() {
-            return authToken;
-        }
-
-        @Nullable
-        public PinUvAuthProtocol getPinUvAuthProtocol() {
-            return pinUvAuthProtocol;
-        }
-
-        public Ctap2Session getCtap() {
-            return ctap;
-        }
-    }
-
-    /**
-     * Builds an extension processing result without any data
-     * @return empty ProcessingResult
-     */
-    ProcessingResult resultWithoutData() {
-        return new ProcessingResult(null);
-    }
-
-    /**
-     * Builds an extension processing result with data
-     * @param name identifies the target extension
-     * @param data data for target extension
-     * @return initialized ProcessingResult object
-     */
-    ProcessingResult resultWithData(String name, Object data) {
-        return resultWithDataAndPermission(name, data, ClientPin.PIN_PERMISSION_NONE);
-    }
-
-    /**
-     * Builds an extension processing result with data and permissions
-     * @param name identifies the target extension
-     * @param data data for target extension
-     * @param permissions result permissions
-     * @return initialized ProcessingResult object
-     */
-    ProcessingResult resultWithDataAndPermission(String name, Object data, int permissions) {
-        return new ProcessingResult(Collections.singletonMap(name, data), permissions);
-    }
-
-    /**
-     * Result of extension input or output processing
-     */
-    static class ProcessingResult {
-        private final Map<String, Object> data;
-        private final boolean hasData;
+    public static class RegistrationProcessor {
+        @Nullable private final RegistrationInput input;
+        @Nullable private final RegistrationOutput output;
         private final int permissions;
 
-        private ProcessingResult(@Nullable Map<String, Object> data, int permissions) {
-            this.data = data != null
-                ? data
-                : new HashMap<>();
-            this.hasData = data != null;
+        public RegistrationProcessor(
+                @Nullable RegistrationInput input,
+                @Nullable RegistrationOutput output,
+                int permissions) {
+            this.input = input;
+            this.output = output;
             this.permissions = permissions;
         }
 
-        private ProcessingResult(@Nullable Map<String, Object> data) {
-            this(data, ClientPin.PIN_PERMISSION_NONE);
+        public RegistrationProcessor(
+                @Nullable RegistrationInput input,
+                @Nullable RegistrationOutput output) {
+            this(input, output, ClientPin.PIN_PERMISSION_NONE);
         }
 
-        public Map<String, Object> getData() {
-            return data;
+        public RegistrationProcessor(
+                @Nullable RegistrationInput input, int permissions) {
+            this(input, null, permissions);
         }
 
-        public boolean hasData() {
-            return hasData;
+        public RegistrationProcessor(
+                @Nullable RegistrationInput input) {
+            this(input, null);
+        }
+
+        public RegistrationProcessor(
+                @Nullable RegistrationOutput output,
+                int permissions) {
+            this(null, output, permissions);
+        }
+
+        public RegistrationProcessor(
+                @Nullable RegistrationOutput output) {
+            this(null, output);
+        }
+
+        public Map<String, Object> getInput(@Nullable byte[] pinToken) {
+            Map<String, Object> registrationInput = input != null
+                    ? input.prepareInput(pinToken)
+                    : null;
+            return registrationInput != null
+                    ? registrationInput
+                    : Collections.emptyMap();
+        }
+
+        public Map<String, Object> getOutput(
+                AttestationObject attestationObject,
+                @Nullable byte[] pinToken) {
+            Map<String, Object> extensionResult = output != null
+                    ? output.prepareOutput(attestationObject, pinToken)
+                    : null;
+            return extensionResult != null
+                    ? extensionResult
+                    : Collections.emptyMap();
+        }
+
+        public int getPermissions() {
+            return permissions;
+        }
+    }
+
+    public static class AuthenticationProcessor {
+        @Nullable private final AuthenticationInput input;
+        @Nullable private final AuthenticationOutput output;
+        private final int permissions;
+
+        public AuthenticationProcessor(
+                @Nullable AuthenticationInput input,
+                @Nullable AuthenticationOutput output,
+                int permissions) {
+            this.input = input;
+            this.output = output;
+            this.permissions = permissions;
+        }
+
+        public AuthenticationProcessor(
+                @Nullable AuthenticationInput input,
+                @Nullable AuthenticationOutput output) {
+            this(input, output, ClientPin.PIN_PERMISSION_NONE);
+        }
+
+        public AuthenticationProcessor(
+                @Nullable AuthenticationInput input, int permissions) {
+            this(input, null, permissions);
+        }
+
+        public AuthenticationProcessor(
+                @Nullable AuthenticationInput input) {
+            this(input, null);
+        }
+
+        public AuthenticationProcessor(
+                @Nullable AuthenticationOutput output,
+                int permissions) {
+            this(null, output, permissions);
+        }
+
+        public AuthenticationProcessor(
+                @Nullable AuthenticationOutput output) {
+            this(null, output);
+        }
+
+        public Map<String, Object> getInput(
+                @Nullable PublicKeyCredentialDescriptor selected,
+                @Nullable byte[] pinToken) {
+            Map<String, Object> authenticatorInput = input != null
+                    ? input.prepareInput(selected, pinToken)
+                    : null;
+            return authenticatorInput != null
+                    ? authenticatorInput
+                    : Collections.emptyMap();
+        }
+
+        public Map<String, Object> getOutput(
+                Ctap2Session.AssertionData assertionData,
+                @Nullable byte[] pinToken) {
+            Map<String, Object> extensionResult = output != null
+                    ? output.prepareOutput(assertionData, pinToken)
+                    : null;
+            return extensionResult != null
+                    ? extensionResult
+                    : Collections.emptyMap();
         }
 
         public int getPermissions() {

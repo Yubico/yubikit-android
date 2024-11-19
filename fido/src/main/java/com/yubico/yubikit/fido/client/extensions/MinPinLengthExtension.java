@@ -17,7 +17,12 @@
 package com.yubico.yubikit.fido.client.extensions;
 
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
-import com.yubico.yubikit.fido.webauthn.Extensions;
+import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
+import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialCreationOptions;
+
+import java.util.Collections;
+
+import javax.annotation.Nullable;
 
 public class MinPinLengthExtension extends Extension {
 
@@ -26,22 +31,26 @@ public class MinPinLengthExtension extends Extension {
     }
 
     @Override
-    boolean isSupported(Ctap2Session ctap) {
+    protected boolean isSupported(Ctap2Session ctap) {
         return super.isSupported(ctap) && ctap.getCachedInfo().getOptions()
                 .containsKey("setMinPINLength");
     }
 
+    @Nullable
     @Override
-    ProcessingResult processInput(CreateInputArguments arguments) {
+    public RegistrationProcessor makeCredential(
+            Ctap2Session ctap,
+            PublicKeyCredentialCreationOptions options,
+            PinUvAuthProtocol pinUvAuthProtocol) {
 
-        Extensions extensions = arguments.getCreationOptions().getExtensions();
-        if (!isSupported(arguments.getCtap())) {
+        if (!isSupported(ctap)) {
             return null;
         }
-        Boolean input = (Boolean) extensions.get(name);
+        Boolean input = (Boolean) options.getExtensions().get(name);
         if (input == null) {
             return null;
         }
-        return resultWithData(name, Boolean.TRUE.equals(input));
+        return new RegistrationProcessor(
+                pinToken -> Collections.singletonMap(name, Boolean.TRUE.equals(input)));
     }
 }
