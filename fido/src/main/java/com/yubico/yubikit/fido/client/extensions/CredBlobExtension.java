@@ -18,9 +18,14 @@ package com.yubico.yubikit.fido.client.extensions;
 
 import static com.yubico.yubikit.core.internal.codec.Base64.fromUrlSafeString;
 
-import com.yubico.yubikit.fido.webauthn.Extensions;
+import com.yubico.yubikit.fido.ctap.Ctap2Session;
+import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
+import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialCreationOptions;
+import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialRequestOptions;
 
 import java.util.Collections;
+
+import javax.annotation.Nullable;
 
 public class CredBlobExtension extends Extension {
 
@@ -28,29 +33,38 @@ public class CredBlobExtension extends Extension {
         super("credBlob");
     }
 
+    @Nullable
     @Override
-    MakeCredentialProcessingResult makeCredential(CreateInputArguments arguments) {
-        Extensions extensions = arguments.getCreationOptions().getExtensions();
-        if (isSupported(arguments.getCtap())) {
-            String b64Blob = (String) extensions.get("credBlob");
+    public RegistrationProcessor makeCredential(
+            Ctap2Session ctap,
+            PublicKeyCredentialCreationOptions options,
+            PinUvAuthProtocol pinUvAuthProtocol) {
+
+        if (isSupported(ctap)) {
+            String b64Blob = (String) options.getExtensions().get("credBlob");
             if (b64Blob != null) {
                 byte[] blob = fromUrlSafeString(b64Blob);
-                if (blob.length <= arguments.getCtap().getCachedInfo().getMaxCredBlobLength()) {
-                    return new MakeCredentialProcessingResult(
-                            () -> Collections.singletonMap(name, blob));
+                if (blob.length <= ctap.getCachedInfo().getMaxCredBlobLength()) {
+                    return new RegistrationProcessor(
+                            pinToken -> Collections.singletonMap(name, blob)
+                    );
                 }
             }
         }
         return null;
     }
 
+    @Nullable
     @Override
-    GetAssertionProcessingResult getAssertion(GetInputArguments arguments) {
-        Extensions extensions = arguments.getRequestOptions().getExtensions();
-        if (isSupported(arguments.getCtap()) &&
-                Boolean.TRUE.equals(extensions.get("getCredBlob"))) {
-            return new GetAssertionProcessingResult(
-                    () -> Collections.singletonMap(name, true));
+    public AuthenticationProcessor getAssertion(
+            Ctap2Session ctap,
+            PublicKeyCredentialRequestOptions options,
+            PinUvAuthProtocol pinUvAuthProtocol) {
+        if (isSupported(ctap) &&
+                Boolean.TRUE.equals(options.getExtensions().get("getCredBlob"))) {
+            return new AuthenticationProcessor(
+                    (AuthenticationInput) (selected, pinToken) -> Collections.singletonMap(name, true)
+            );
         }
         return null;
     }

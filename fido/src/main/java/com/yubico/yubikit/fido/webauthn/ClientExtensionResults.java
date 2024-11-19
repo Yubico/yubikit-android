@@ -28,6 +28,10 @@ public class ClientExtensionResults {
         extensionResults.add(extensionResult);
     }
 
+    public void addAll(ClientExtensionResults other) {
+        extensionResults.addAll(other.extensionResults);
+    }
+
     public Map<String, Object> toMap() {
         Map<String, Object> map = new HashMap<>();
         for (Map<String, Object> extensionResult : extensionResults) {

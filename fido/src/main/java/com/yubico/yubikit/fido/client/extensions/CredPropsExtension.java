@@ -16,12 +16,15 @@
 
 package com.yubico.yubikit.fido.client.extensions;
 
+import com.yubico.yubikit.fido.ctap.Ctap2Session;
+import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
 import com.yubico.yubikit.fido.webauthn.AuthenticatorSelectionCriteria;
-import com.yubico.yubikit.fido.webauthn.Extensions;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialCreationOptions;
 import com.yubico.yubikit.fido.webauthn.ResidentKeyRequirement;
 
 import java.util.Collections;
+
+import javax.annotation.Nullable;
 
 public class CredPropsExtension extends Extension {
 
@@ -29,18 +32,20 @@ public class CredPropsExtension extends Extension {
         super("credProps");
     }
 
-    MakeCredentialProcessingResult makeCredential(CreateInputArguments arguments) {
+    @Nullable
+    @Override
+    public RegistrationProcessor makeCredential(
+            Ctap2Session ctap,
+            PublicKeyCredentialCreationOptions options,
+            PinUvAuthProtocol pinUvAuthProtocol) {
 
-        PublicKeyCredentialCreationOptions options = arguments.getCreationOptions();
-        Extensions extensions = options.getExtensions();
-
-        if (extensions.has(name)) {
+        if (options.getExtensions().has(name)) {
             AuthenticatorSelectionCriteria authenticatorSelection = options.getAuthenticatorSelection();
             boolean rk = authenticatorSelection != null &&
                     ResidentKeyRequirement.REQUIRED.equals(authenticatorSelection.getResidentKey());
 
-            return new MakeCredentialProcessingResult(
-                    attestationObject -> () ->
+            return new RegistrationProcessor(
+                    (attestationObject, pinToken) ->
                             Collections.singletonMap(name,
                                     Collections.singletonMap("rk", rk)));
         }

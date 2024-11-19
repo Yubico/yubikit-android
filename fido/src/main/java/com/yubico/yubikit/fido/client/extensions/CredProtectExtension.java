@@ -16,7 +16,10 @@
 
 package com.yubico.yubikit.fido.client.extensions;
 
+import com.yubico.yubikit.fido.ctap.Ctap2Session;
+import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
 import com.yubico.yubikit.fido.webauthn.Extensions;
+import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialCreationOptions;
 
 import java.util.Collections;
 
@@ -32,11 +35,14 @@ public class CredProtectExtension extends Extension {
         super("credProtect");
     }
 
+    @Nullable
     @Override
-    MakeCredentialProcessingResult makeCredential(CreateInputArguments arguments) {
+    public RegistrationProcessor makeCredential(
+            Ctap2Session ctap,
+            PublicKeyCredentialCreationOptions options,
+            PinUvAuthProtocol pinUvAuthProtocol) {
 
-        Extensions extensions = arguments.getCreationOptions().getExtensions();
-
+        Extensions extensions = options.getExtensions();
         String credentialProtectionPolicy = (String) extensions.get("credentialProtectionPolicy");
         if (credentialProtectionPolicy == null) {
             return null;
@@ -45,14 +51,14 @@ public class CredProtectExtension extends Extension {
         Integer credProtect = credProtectValue(credentialProtectionPolicy);
         Boolean enforce = (Boolean) extensions.get("enforceCredentialProtectionPolicy");
         if (Boolean.TRUE.equals(enforce) &&
-                !isSupported(arguments.getCtap()) &&
+                !isSupported(ctap) &&
                 credProtect != null &&
                 credProtect > 0x01) {
             throw new IllegalArgumentException("Authenticator does not support Credential Protection");
         }
         return credProtect != null
-                ? new MakeCredentialProcessingResult(() ->
-                Collections.singletonMap(name, credProtect))
+                ? new RegistrationProcessor(
+                pinToken -> Collections.singletonMap(name, credProtect))
                 : null;
     }
 

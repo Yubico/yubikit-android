@@ -25,10 +25,13 @@ import com.yubico.yubikit.core.util.Pair;
 import com.yubico.yubikit.core.util.StringUtils;
 import com.yubico.yubikit.fido.ctap.ClientPin;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
+import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
 import com.yubico.yubikit.fido.webauthn.AttestationObject;
 import com.yubico.yubikit.fido.webauthn.AuthenticatorData;
 import com.yubico.yubikit.fido.webauthn.Extensions;
+import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialCreationOptions;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialDescriptor;
+import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialRequestOptions;
 
 import org.slf4j.LoggerFactory;
 
@@ -81,123 +84,120 @@ public class HmacSecretExtension extends Extension {
     }
 
     @Override
-    MakeCredentialProcessingResult makeCredential(CreateInputArguments arguments) {
-        Extensions extensions = arguments.getCreationOptions().getExtensions();
+    public RegistrationProcessor makeCredential(
+            Ctap2Session ctap2,
+            PublicKeyCredentialCreationOptions options,
+            PinUvAuthProtocol pinUvAuthProtocol) {
+        Extensions extensions = options.getExtensions();
         if (Boolean.TRUE.equals(extensions.get("hmacCreateSecret"))) {
-            return new MakeCredentialProcessingResult(
-                    () -> Collections.singletonMap(name, true),
-                    attestationObject -> makeCredentialOutput(attestationObject, false)
+            return new RegistrationProcessor(
+                    pinToken -> Collections.singletonMap(name, true),
+                    (attestationObject, pinToken) -> registrationOutput(attestationObject, false)
             );
         } else if (extensions.has("prf")) {
-            return new MakeCredentialProcessingResult(
-                    () -> Collections.singletonMap(name, true),
-                    attestationObject -> makeCredentialOutput(attestationObject, true)
+            return new RegistrationProcessor(
+                    pinToken -> Collections.singletonMap(name, true),
+                    (attestationObject, pinToken) -> registrationOutput(attestationObject, true)
             );
         }
         return null;
     }
 
-    @Nullable
-    ExtensionResult makeCredentialOutput(AttestationObject attestationObject, boolean isPrf) {
-        Map<String, ?> extensions = attestationObject.getAuthenticatorData().getExtensions();
-
-        boolean enabled = extensions != null && Boolean.TRUE.equals(extensions.get(name));
-        return isPrf
-                ? () -> Collections.singletonMap("prf", Collections.singletonMap("enabled", enabled))
-                : () -> Collections.singletonMap("hmacCreateSecret", enabled);
-    }
-
-    @SuppressWarnings("unchecked")
     @Override
-    GetAssertionProcessingResult getAssertion(GetInputArguments arguments) {
-        if (!isSupported(arguments.getCtap())) {
+    public AuthenticationProcessor getAssertion(
+            Ctap2Session ctap,
+            PublicKeyCredentialRequestOptions options,
+            PinUvAuthProtocol pinUvAuthProtocol) {
+        if (!isSupported(ctap)) {
             return null;
         }
 
-        Extensions extensions = arguments.getRequestOptions().getExtensions();
-        Salts salts;
-        Map<String, Object> data = (Map<String, Object>) extensions.get("prf");
-        boolean isPrf;
-        if (data != null) {
-            Map<String, Object> secrets = (Map<String, Object>) data.get("eval");
-            Map<String, Object> evalByCredential =
-                    (Map<String, Object>) data.get("evalByCredential");
+        final ClientPin clientPin = new ClientPin(ctap, pinUvAuthProtocol);
+        Pair<Map<Integer, ?>, byte[]> keyAgreement;
+        try {
+            keyAgreement = clientPin.getSharedSecret();
+        } catch (IOException | CommandException e) {
+            Logger.error(logger, "Failed to get shared secret: ", e);
+            return null;
+        }
 
-            if (evalByCredential != null) {
-                List<PublicKeyCredentialDescriptor> allowCredentials =
-                        arguments.getRequestOptions().getAllowCredentials();
+        final Inputs inputs = Inputs.fromExtensions(options.getExtensions());
+        final AuthenticationInput prepareInput = (selected, pinToken) -> {
+            Salts salts;
+            if (inputs.prf != null) {
+                Map<String, Object> secrets = inputs.prf.eval;
+                Map<String, Object> evalByCredential = inputs.prf.evalByCredential;
 
-                if (allowCredentials.isEmpty()) {
-                    throw new IllegalArgumentException("evalByCredential needs allow list");
-                }
+                if (evalByCredential != null) {
+                    List<PublicKeyCredentialDescriptor> allowCredentials =
+                            options.getAllowCredentials();
 
-                Set<String> ids = allowCredentials
-                        .stream()
-                        .map(desc -> toUrlSafeString(desc.getId()))
-                        .collect(Collectors.toSet());
+                    if (allowCredentials.isEmpty()) {
+                        throw new IllegalArgumentException("evalByCredential needs allow list");
+                    }
 
-                if (!ids.containsAll(evalByCredential.keySet())) {
-                    throw new IllegalArgumentException("evalByCredentials contains invalid key");
-                }
+                    Set<String> ids = allowCredentials
+                            .stream()
+                            .map(desc -> toUrlSafeString(desc.getId()))
+                            .collect(Collectors.toSet());
 
-                if (arguments.selectedCredential != null) {
-                    String key = toUrlSafeString(arguments.selectedCredential.getId());
-                    if (evalByCredential.containsKey(key)) {
-                        secrets = (Map<String, Object>) evalByCredential.get(key);
+                    if (!ids.containsAll(evalByCredential.keySet())) {
+                        throw new IllegalArgumentException("evalByCredentials contains invalid key");
+                    }
+
+                    if (selected != null) {
+                        String key = toUrlSafeString(selected.getId());
+                        if (evalByCredential.containsKey(key)) {
+                            secrets = inputs.evalByCredential(key);
+                        }
                     }
                 }
+
+                if (secrets == null) {
+                    return null;
+                }
+
+                Logger.debug(logger, "PRF inputs: {}, {}", secrets.get("first"), secrets.get("second"));
+
+                String firstInput = (String) secrets.get("first");
+                if (firstInput == null) {
+                    return null;
+                }
+
+                byte[] first = prfSalt(fromUrlSafeString(firstInput));
+                byte[] second = secrets.containsKey("second")
+                        ? prfSalt(fromUrlSafeString((String) secrets.get("second")))
+                        : null;
+
+                salts = new Salts(first, second);
+            } else {
+                if (inputs.hmac == null) {
+                    return null;
+                }
+
+                Logger.debug(logger, "hmacGetSecret inputs: {}, {}",
+                        inputs.hmac.salt1 != null ? inputs.hmac.salt1 : "none",
+                        inputs.hmac.salt2 != null ? inputs.hmac.salt2 : "none");
+
+                if (inputs.hmac.salt1 == null) {
+                    return null;
+                }
+
+                byte[] salt1 = prfSalt(fromUrlSafeString(inputs.hmac.salt1));
+                byte[] salt2 = inputs.hmac.salt2 != null
+                        ? prfSalt(fromUrlSafeString(inputs.hmac.salt2))
+                        : null;
+
+                salts = new Salts(salt1, salt2);
             }
 
-            if (secrets == null) {
-                return null;
+            Logger.debug(logger, "Salts: {}, {}",
+                    StringUtils.bytesToHex(salts.salt1),
+                    StringUtils.bytesToHex(salts.salt2));
+            if (!(salts.salt1.length == SALT_LEN &&
+                    (salts.salt2.length == 0 || salts.salt2.length == SALT_LEN))) {
+                throw new IllegalArgumentException("Invalid salt length");
             }
-
-            Logger.debug(logger, "PRF inputs: {}, {}", secrets.get("first"), secrets.get("second"));
-
-            String firstInput = (String) secrets.get("first");
-            if (firstInput == null) {
-                return null;
-            }
-
-            byte[] first = prfSalt(fromUrlSafeString(firstInput));
-            byte[] second = secrets.containsKey("second")
-                    ? prfSalt(fromUrlSafeString((String) secrets.get("second")))
-                    : null;
-
-            salts = new Salts(first, second);
-            isPrf = true;
-        } else {
-            data = (Map<String, Object>) extensions.get("hmacGetSecret");
-            if (data == null) {
-                return null;
-            }
-
-            Logger.debug(logger, "hmacGetSecret inputs: {}, {}", data.get("salt1"), data.get("salt2"));
-
-            String salt1B64 = (String) data.get("salt1");
-            if (salt1B64 == null) {
-                return null;
-            }
-
-            byte[] salt1 = prfSalt(fromUrlSafeString(salt1B64));
-            byte[] salt2 = data.containsKey("salt2")
-                    ? prfSalt(fromUrlSafeString((String) data.get("salt2")))
-                    : null;
-
-            salts = new Salts(salt1, salt2);
-            isPrf = false;
-        }
-
-        Logger.debug(logger, "Salts: {}, {}", StringUtils.bytesToHex(salts.salt1), StringUtils.bytesToHex(salts.salt2));
-        if (!(salts.salt1.length == SALT_LEN &&
-                (salts.salt2.length == 0 || salts.salt2.length == SALT_LEN))) {
-            throw new IllegalArgumentException("Invalid salt length");
-        }
-
-        final ClientPin clientPin = arguments.getClientPin();
-
-        try {
-            Pair<Map<Integer, ?>, byte[]> keyAgreement = clientPin.getSharedSecret();
 
             byte[] saltEnc = clientPin.getPinUvAuth().encrypt(
                     keyAgreement.second,
@@ -216,63 +216,138 @@ public class HmacSecretExtension extends Extension {
             hmacGetSecretInput.put(2, saltEnc);
             hmacGetSecretInput.put(3, saltAuth);
             hmacGetSecretInput.put(4, clientPin.getPinUvAuth().getVersion());
-            return new GetAssertionProcessingResult(
-                    () -> Collections.singletonMap(name, hmacGetSecretInput),
-                    assertionData -> getAssertion(assertionData, arguments, isPrf, keyAgreement.second)
+            return Collections.singletonMap(name, hmacGetSecretInput);
+        };
+
+        final AuthenticationOutput prepareOutput = (assertionData, pinToken) -> {
+            AuthenticatorData authenticatorData = AuthenticatorData.parseFrom(ByteBuffer.wrap(
+                    assertionData.getAuthenticatorData()
+            ));
+
+            Map<String, ?> extensionOutputs = authenticatorData.getExtensions();
+            if (extensionOutputs == null) {
+                return null;
+            }
+
+            byte[] value = (byte[]) extensionOutputs.get(name);
+            if (value == null) {
+                return null;
+            }
+
+            byte[] decrypted = clientPin.getPinUvAuth().decrypt(keyAgreement.second, value);
+
+            byte[] output1 = Arrays.copyOf(decrypted, SALT_LEN);
+            byte[] output2 = decrypted.length > SALT_LEN
+                    ? Arrays.copyOfRange(decrypted, SALT_LEN, 2 * SALT_LEN)
+                    : new byte[0];
+
+            Logger.debug(logger, "Decrypted:  {}, o1: {}, o2: {}",
+                    StringUtils.bytesToHex(decrypted),
+                    StringUtils.bytesToHex(output1),
+                    StringUtils.bytesToHex(output2));
+
+            Map<String, Object> results = new HashMap<>();
+            if (inputs.prf != null) {
+                results.put("first", toUrlSafeString(output1));
+                if (output2.length > 0) {
+                    results.put("second", toUrlSafeString(output2));
+                }
+                return Collections.singletonMap("prf",
+                        Collections.singletonMap("results", results));
+            } else {
+                results.put("output1", toUrlSafeString(output1));
+                if (output2.length > 0) {
+                    results.put("output2", toUrlSafeString(output2));
+                }
+                return Collections.singletonMap("hmacGetSecret", results);
+            }
+        };
+
+        return new AuthenticationProcessor(prepareInput, prepareOutput);
+    }
+
+    Map<String, Object> registrationOutput(AttestationObject attestationObject, boolean isPrf) {
+        Map<String, ?> extensions = attestationObject.getAuthenticatorData().getExtensions();
+
+        boolean enabled = extensions != null && Boolean.TRUE.equals(extensions.get(name));
+        return isPrf
+                ? Collections.singletonMap("prf", Collections.singletonMap("enabled", enabled))
+                : Collections.singletonMap("hmacCreateSecret", enabled);
+    }
+
+    private static class PrfInputs {
+        @Nullable final Map<String, Object> eval;
+        @Nullable final Map<String, Object> evalByCredential;
+
+        PrfInputs(@Nullable Map<String, Object> eval, @Nullable Map<String, Object> evalByCredential) {
+            this.eval = eval;
+            this.evalByCredential = evalByCredential;
+        }
+
+        @SuppressWarnings("unchecked")
+        @Nullable
+        static PrfInputs fromMap(@Nullable Map<String, Object> map) {
+            if (map == null) {
+                return null;
+            }
+
+            return new PrfInputs(
+                    (Map<String, Object>) map.get("eval"),
+                    (Map<String, Object>) map.get("evalByCredential")
             );
-        } catch (IOException | CommandException e) {
-            return null;
         }
     }
 
-    @Nullable
-    ExtensionResult getAssertion(
-            Ctap2Session.AssertionData assertionData,
-            GetInputArguments arguments,
-            boolean isPrf,
-            byte[] sharedSecret) {
+    private static class HmacInputs {
+        @Nullable final String salt1;
+        @Nullable final String salt2;
 
-        AuthenticatorData authenticatorData = AuthenticatorData.parseFrom(ByteBuffer.wrap(
-                assertionData.getAuthenticatorData()
-        ));
-
-        Map<String, ?> extensionOutputs = authenticatorData.getExtensions();
-        if (extensionOutputs == null) {
-            return null;
+        HmacInputs(@Nullable String salt1, @Nullable String salt2) {
+            this.salt1 = salt1;
+            this.salt2 = salt2;
         }
 
-        byte[] value = (byte[]) extensionOutputs.get(name);
-        if (value == null) {
-            return null;
+        @Nullable
+        static HmacInputs fromMap(@Nullable Map<String, Object> map) {
+            if (map == null) {
+                return null;
+            }
+
+            return new HmacInputs(
+                    (String) map.get("salt1"),
+                    (String) map.get("salt2")
+            );
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static class Inputs {
+        @Nullable final PrfInputs prf;
+        @Nullable final HmacInputs hmac;
+
+        Inputs(@Nullable Map<String, Object> prf, @Nullable Map<String, Object> hmac) {
+            this.prf = PrfInputs.fromMap(prf);
+            this.hmac = HmacInputs.fromMap(hmac);
         }
 
-        final ClientPin clientPin = arguments.getClientPin();
-        byte[] decrypted = clientPin.getPinUvAuth().decrypt(sharedSecret, value);
-
-        byte[] output1 = Arrays.copyOf(decrypted, SALT_LEN);
-        byte[] output2 = decrypted.length > SALT_LEN
-                ? Arrays.copyOfRange(decrypted, SALT_LEN, 2 * SALT_LEN)
-                : new byte[0];
-
-        Logger.debug(logger, "Decrypted:  {}, o1: {}, o2: {}",
-                StringUtils.bytesToHex(decrypted),
-                StringUtils.bytesToHex(output1),
-                StringUtils.bytesToHex(output2));
-
-        Map<String, Object> results = new HashMap<>();
-        if (isPrf) {
-            results.put("first", toUrlSafeString(output1));
-            if (output2.length > 0) {
-                results.put("second", toUrlSafeString(output2));
+        @Nullable
+        Map<String, Object> evalByCredential(String key) {
+            if (prf == null || prf.evalByCredential == null) {
+                return null;
             }
-            return () -> Collections.singletonMap("prf",
-                    Collections.singletonMap("results", results));
-        } else {
-            results.put("output1", toUrlSafeString(output1));
-            if (output2.length > 0) {
-                results.put("output2", toUrlSafeString(output2));
+
+            return (Map<String, Object>) prf.evalByCredential.get(key);
+        }
+
+        @Nullable
+        public static Inputs fromExtensions(@Nullable Extensions extensions) {
+            if (extensions == null) {
+                return null;
             }
-            return () -> Collections.singletonMap("hmacGetSecret", results);
+
+            return new Inputs(
+                    (Map<String, Object>) extensions.get("prf"),
+                    (Map<String, Object>) extensions.get("hmacGetSecret"));
         }
     }
 }

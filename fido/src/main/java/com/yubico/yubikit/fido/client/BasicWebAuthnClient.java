@@ -21,11 +21,14 @@ import static com.yubico.yubikit.fido.webauthn.PublicKeyCredentialType.PUBLIC_KE
 import com.yubico.yubikit.core.application.CommandException;
 import com.yubico.yubikit.core.application.CommandState;
 import com.yubico.yubikit.core.fido.CtapException;
-import com.yubico.yubikit.core.internal.Logger;
-import com.yubico.yubikit.core.util.Pair;
-import com.yubico.yubikit.fido.client.extensions.Extensions;
-import com.yubico.yubikit.fido.webauthn.ClientExtensionResults;
+import com.yubico.yubikit.fido.client.extensions.CredBlobExtension;
+import com.yubico.yubikit.fido.client.extensions.CredPropsExtension;
+import com.yubico.yubikit.fido.client.extensions.CredProtectExtension;
 import com.yubico.yubikit.fido.client.extensions.Extension;
+import com.yubico.yubikit.fido.client.extensions.HmacSecretExtension;
+import com.yubico.yubikit.fido.client.extensions.LargeBlobExtension;
+import com.yubico.yubikit.fido.client.extensions.MinPinLengthExtension;
+import com.yubico.yubikit.fido.webauthn.ClientExtensionResults;
 import com.yubico.yubikit.fido.ctap.ClientPin;
 import com.yubico.yubikit.fido.ctap.CredentialManagement;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
@@ -75,8 +78,6 @@ import javax.annotation.Nullable;
  * </ul>
  * The timeout parameter in the request options is ignored. To cancel a request pass a {@link CommandState}
  * instance to the call and use its cancel method.
- * <p>
- * No support for Extensions. Any Extensions provided will be ignored.
  */
 @SuppressWarnings("unused")
 public class BasicWebAuthnClient implements Closeable {
@@ -98,6 +99,8 @@ public class BasicWebAuthnClient implements Closeable {
     private final boolean uvConfigured;
 
     final private boolean enterpriseAttestationSupported;
+
+    private final List<Extension> extensions;
 
     private static final org.slf4j.Logger logger = LoggerFactory.getLogger(BasicWebAuthnClient.class);
 
@@ -132,7 +135,12 @@ public class BasicWebAuthnClient implements Closeable {
     }
 
     public BasicWebAuthnClient(Ctap2Session session) throws IOException, CommandException {
+        this(session, getDefaultExtensions(session));
+    }
+
+    public BasicWebAuthnClient(Ctap2Session session, List<Extension> extensions) throws IOException, CommandException {
         this.ctap = session;
+        this.extensions = extensions;
 
         Ctap2Session.InfoData info = ctap.getInfo();
 
@@ -439,16 +447,33 @@ public class BasicWebAuthnClient implements Closeable {
         }
 
         Map<String, Boolean> ctapOptions = getCreateCtapOptions(options, pin);
-        Extension.CreateInputArguments inputArguments = new Extension.CreateInputArguments(ctap, options);
-        Extensions extensions = Extensions.processExtensions(inputArguments);
+
+        List<Extension.RegistrationProcessor> registrationProcessors =
+                extensions.stream()
+                        .map(e -> e.makeCredential(ctap, options, clientPin.getPinUvAuth()))
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toList());
+
+        int permissions =
+                registrationProcessors.stream()
+                        .map(Extension.RegistrationProcessor::getPermissions)
+                        .reduce(ClientPin.PIN_PERMISSION_MC |
+                                (options.getExcludeCredentials().isEmpty()
+                                        ? ClientPin.PIN_PERMISSION_NONE
+                                        : ClientPin.PIN_PERMISSION_GA),
+                                (perms, perm) -> perms | perm);
 
         final AuthParams authParams = getAuthParams(
                 clientDataHash,
                 ctapOptions.containsKey(OPTION_USER_VERIFICATION),
                 pin,
-                extensions.getRequiredPermissions() |
-                        ClientPin.PIN_PERMISSION_MC | ClientPin.PIN_PERMISSION_GA,
+                permissions,
                 rpId);
+
+        Map<String, Object> authenticatorInputs =
+                registrationProcessors.stream()
+                        .map(p -> p.getInput(authParams.pinToken))
+                        .collect(HashMap::new, HashMap::putAll, HashMap::putAll);
 
         final List<PublicKeyCredentialDescriptor> excludeCredentials =
                 removeUnsupportedCredentials(
@@ -491,7 +516,7 @@ public class BasicWebAuthnClient implements Closeable {
                 credToExclude != null
                         ? Utils.getCredentialList(Collections.singletonList(credToExclude))
                         : null,
-                extensions.getAuthenticatorInput(),
+                authenticatorInputs,
                 ctapOptions.isEmpty() ? null : ctapOptions,
                 authParams.pinUvAuthParam,
                 authParams.pinUvAuthParam != null && authParams.pinUvAuthProtocol != null
@@ -501,8 +526,15 @@ public class BasicWebAuthnClient implements Closeable {
                 state
         );
 
-        return new WithExtensionResults<>(credentialData,
-                extensions.getResults(AttestationObject.fromCredential(credentialData)));
+        ClientExtensionResults results =
+                registrationProcessors.stream()
+                        .map(p -> p.getOutput(
+                                AttestationObject.fromCredential(credentialData),
+                                authParams.pinToken))
+                        .collect(ClientExtensionResults::new,
+                                ClientExtensionResults::add,
+                                ClientExtensionResults::addAll);
+        return new WithExtensionResults<>(credentialData, results);
     }
 
     /**
@@ -543,11 +575,23 @@ public class BasicWebAuthnClient implements Closeable {
                 options.getAllowCredentials()
         );
 
-        final AuthParams filterCredAuthParams = getAuthParams(
+        List<Extension.AuthenticationProcessor> authenticationProcessors =
+                extensions.stream()
+                        .map(e -> e.getAssertion(ctap, options, clientPin.getPinUvAuth()))
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toList());
+
+        int permissions =
+                authenticationProcessors.stream()
+                        .map(Extension.AuthenticationProcessor::getPermissions)
+                        .reduce(ClientPin.PIN_PERMISSION_GA,
+                                (perms, perm) -> perms | perm);
+
+        final AuthParams authParams = getAuthParams(
                 clientDataHash,
                 ctapOptions.containsKey(OPTION_USER_VERIFICATION),
                 pin,
-                ClientPin.PIN_PERMISSION_GA,
+                permissions,
                 rpId);
 
         PublicKeyCredentialDescriptor selectedCred = allowCredentials != null && !allowCredentials.isEmpty()
@@ -556,45 +600,16 @@ public class BasicWebAuthnClient implements Closeable {
                 rpId,
                 allowCredentials,
                 effectiveDomain,
-                filterCredAuthParams.pinUvAuthProtocol,
-                filterCredAuthParams.pinToken)
+                authParams.pinUvAuthProtocol,
+                authParams.pinToken)
                 : null;
 
-        final String fRpId = rpId;
-        Extension.GetInputArguments inputArguments = new Extension.GetInputArguments(
-                ctap,
-                options,
-                permissions -> {
-                    try {
-                        AuthParams authParams = getAuthParams(
-                                clientDataHash,
-                                ctapOptions.containsKey(OPTION_USER_VERIFICATION),
-                                pin,
-                                permissions,
-                                fRpId);
-
-                        if (authParams.pinToken == null || authParams.pinUvAuthProtocol == null) {
-                            return null;
-                        }
-
-                        return new Pair<>(authParams.pinUvAuthProtocol, authParams.pinToken);
-                    } catch (CommandException | ClientError | IOException e) {
-                        Logger.debug(logger, "Failed to get auth params");
-                        return null;
-                    }
-                },
-                clientPin,
-                selectedCred
-        );
-
-        Extensions extensions = Extensions.processExtensions(inputArguments);
-        final AuthParams authParams = getAuthParams(
-                clientDataHash,
-                ctapOptions.containsKey(OPTION_USER_VERIFICATION),
-                pin,
-                ClientPin.PIN_PERMISSION_GA | extensions.getRequiredPermissions(),
-                rpId);
-
+        final Map<String, Object> authenticatorInputs =
+                authenticationProcessors.stream()
+                        .map(p -> p.getInput(selectedCred, authParams.pinToken))
+                        .collect(HashMap::new,
+                                HashMap::putAll,
+                                HashMap::putAll);
         try {
             List<Ctap2Session.AssertionData> assertions = ctap.getAssertions(
                     rpId,
@@ -602,7 +617,7 @@ public class BasicWebAuthnClient implements Closeable {
                     selectedCred != null
                             ? Utils.getCredentialList(Collections.singletonList(selectedCred))
                             : null,
-                    extensions.getAuthenticatorInput(),
+                    authenticatorInputs,
                     ctapOptions.isEmpty() ? null : ctapOptions,
                     authParams.pinUvAuthParam,
                     authParams.pinUvAuthParam != null && authParams.pinUvAuthProtocol != null
@@ -613,11 +628,13 @@ public class BasicWebAuthnClient implements Closeable {
 
             List<WithExtensionResults<Ctap2Session.AssertionData>> result = new ArrayList<>();
             for(final Ctap2Session.AssertionData assertionData : assertions) {
-                // process extensions for each assertion
-                result.add(
-                        new WithExtensionResults<>(
-                                assertionData,
-                                extensions.getResults(assertionData)));
+                ClientExtensionResults results =
+                        authenticationProcessors.stream()
+                                .map(p -> p.getOutput(assertionData, authParams.pinToken))
+                                .collect(ClientExtensionResults::new,
+                                        ClientExtensionResults::add,
+                                        ClientExtensionResults::addAll);
+                result.add(new WithExtensionResults<>(assertionData, results));
             }
 
             return result;
@@ -784,6 +801,17 @@ public class BasicWebAuthnClient implements Closeable {
             }
         }
         return list;
+    }
+
+    private static List<Extension> getDefaultExtensions(Ctap2Session session) {
+        return Arrays.asList(
+                new CredPropsExtension(),
+                new CredBlobExtension(),
+                new CredProtectExtension(),
+                new HmacSecretExtension(),
+                new MinPinLengthExtension(),
+                new LargeBlobExtension()
+        );
     }
 
     static class Utils {
