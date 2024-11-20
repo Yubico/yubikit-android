@@ -24,12 +24,9 @@ import javax.annotation.Nullable;
 
 public class Extensions {
 
-    public static Extensions empty() {
-        return new Extensions(Collections.emptyMap());
-    }
-
+    @Nullable
     public static Extensions fromMap(@Nullable Map<String, ?> input) {
-        return new Extensions(input);
+        return input != null ? new Extensions(input) : null;
     }
 
     @Nullable

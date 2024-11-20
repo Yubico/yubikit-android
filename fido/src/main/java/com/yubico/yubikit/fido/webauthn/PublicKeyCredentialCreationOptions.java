@@ -71,7 +71,7 @@ public class PublicKeyCredentialCreationOptions {
         this.excludeCredentials = excludeCredentials != null ? excludeCredentials : Collections.emptyList();
         this.authenticatorSelection = authenticatorSelection;
         this.attestation = attestation != null ? attestation : AttestationConveyancePreference.NONE;
-        this.extensions = extensions != null ? extensions : Extensions.empty();
+        this.extensions = extensions;
     }
 
     public PublicKeyCredentialRpEntity getRp() {
