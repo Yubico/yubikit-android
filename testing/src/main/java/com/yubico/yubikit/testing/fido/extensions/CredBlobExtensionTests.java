@@ -38,9 +38,9 @@ import javax.annotation.Nullable;
 
 public class CredBlobExtensionTests {
 
-    private final String CRED_BLOB = "credBlob";
-    private final String GET_CRED_BLOB = "getCredBlob";
-    private final byte[] CRED_BLOB_DATA = {
+    private static final String CRED_BLOB = "credBlob";
+    private static final String GET_CRED_BLOB = "getCredBlob";
+    private static final byte[] CRED_BLOB_DATA = {
             (byte) 0x01, (byte) 0x01, (byte) 0x01, (byte) 0x01,
             (byte) 0x02, (byte) 0x02, (byte) 0x02, (byte) 0x02,
             (byte) 0x03, (byte) 0x03, (byte) 0x03, (byte) 0x03,

@@ -35,13 +35,13 @@ import javax.annotation.Nullable;
 
 public class PrfExtensionTests {
 
-    private final String KEY_HMAC_SECRET = "hmac-secret";
-    private final String PRF_EXT = "prf";
-    private final String KEY_ENABLED = "enabled";
-    private final String KEY_EVAL = "eval";
-    private final String KEY_EVAL_BY_CREDENTIAL = "evalByCredential";
-    private final String KEY_FIRST = "first";
-    private final String KEY_SECOND = "second";
+    private static final String KEY_HMAC_SECRET = "hmac-secret";
+    private static final String PRF_EXT = "prf";
+    private static final String KEY_ENABLED = "enabled";
+    private static final String KEY_EVAL = "eval";
+    private static final String KEY_EVAL_BY_CREDENTIAL = "evalByCredential";
+    private static final String KEY_FIRST = "first";
+    private static final String KEY_SECOND = "second";
 
     public static void test(FidoTestState state) throws Throwable {
         PrfExtensionTests extTests = new PrfExtensionTests();

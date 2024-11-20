@@ -35,15 +35,15 @@ import javax.annotation.Nullable;
 
 public class HmacSecretExtensionTests {
 
-    private final String KEY_HMAC_SECRET = "hmac-secret";
-    private final String KEY_HMAC_CREATE_SECRET = "hmacCreateSecret";
-    private final String KEY_HMAC_GET_SECRET = "hmacGetSecret";
-    private final String KEY_SALT1 = "salt1";
-    private final String KEY_SALT2 = "salt2";
-    private final String KEY_OUTPUT1 = "output1";
-    private final String KEY_OUTPUT2 = "output2";
+    private static final String KEY_HMAC_SECRET = "hmac-secret";
+    private static final String KEY_HMAC_CREATE_SECRET = "hmacCreateSecret";
+    private static final String KEY_HMAC_GET_SECRET = "hmacGetSecret";
+    private static final String KEY_SALT1 = "salt1";
+    private static final String KEY_SALT2 = "salt2";
+    private static final String KEY_OUTPUT1 = "output1";
+    private static final String KEY_OUTPUT2 = "output2";
 
-    private final String VALUE_SALT1 = Base64.toUrlSafeString(new byte[]{
+    private static final String VALUE_SALT1 = Base64.toUrlSafeString(new byte[]{
             0x09, 0x08, 0x07, 0x06, 0x05, 0x04, 0x03, 0x02,
             0x09, 0x08, 0x07, 0x06, 0x05, 0x04, 0x03, 0x02,
             0x09, 0x08, 0x07, 0x06, 0x05, 0x04, 0x03, 0x02,

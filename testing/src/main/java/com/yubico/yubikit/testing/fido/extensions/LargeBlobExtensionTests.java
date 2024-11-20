@@ -35,16 +35,16 @@ import javax.annotation.Nullable;
 
 public class LargeBlobExtensionTests {
 
-    static final String LARGE_BLOB = "largeBlob";
-    static final String LARGE_BLOB_KEY = "largeBlobKey";
-    static final String KEY_SUPPORT = "support";
-    static final String KEY_SUPPORTED = "supported";
-    static final String KEY_READ = "read";
-    static final String KEY_WRITE = "write";
-    static final String KEY_BLOB = "blob";
-    static final String KEY_WRITTEN = "written";
-    static final String ATTR_PREFERRED = "preferred";
-    static final String ATTR_REQUIRED = "required";
+    private static final String LARGE_BLOB = "largeBlob";
+    private static final String LARGE_BLOB_KEY = "largeBlobKey";
+    private static final String KEY_SUPPORT = "support";
+    private static final String KEY_SUPPORTED = "supported";
+    private static final String KEY_READ = "read";
+    private static final String KEY_WRITE = "write";
+    private static final String KEY_BLOB = "blob";
+    private static final String KEY_WRITTEN = "written";
+    private static final String ATTR_PREFERRED = "preferred";
+    private static final String ATTR_REQUIRED = "required";
 
     public static void test(FidoTestState state) throws Throwable {
         LargeBlobExtensionTests largeBlobExtensionTests = new LargeBlobExtensionTests();

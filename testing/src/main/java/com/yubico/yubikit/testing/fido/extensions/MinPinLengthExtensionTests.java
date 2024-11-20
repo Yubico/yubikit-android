@@ -33,7 +33,7 @@ import java.util.Map;
 import javax.annotation.Nullable;
 
 public class MinPinLengthExtensionTests {
-    private final String MIN_PIN_LENGTH = "minPinLength";
+    private static final String MIN_PIN_LENGTH = "minPinLength";
 
     public static void test(FidoTestState state) throws Throwable {
         MinPinLengthExtensionTests extTest = new MinPinLengthExtensionTests();

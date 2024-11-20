@@ -32,11 +32,11 @@ import javax.annotation.Nullable;
 
 public class CredProtectExtensionTests {
 
-    private final String CRED_PROTECT = "credProtect";
-    private final String POLICY = "credentialProtectionPolicy";
-    private final String POLICY_OPTIONAL = "userVerificationOptional";
-    private final String POLICY_WITH_LIST = "userVerificationOptionalWithCredentialIDList";
-    private final String POLICY_REQUIRED = "userVerificationRequired";
+    private static final String CRED_PROTECT = "credProtect";
+    private static final String POLICY = "credentialProtectionPolicy";
+    private static final String POLICY_OPTIONAL = "userVerificationOptional";
+    private static final String POLICY_WITH_LIST = "userVerificationOptionalWithCredentialIDList";
+    private static final String POLICY_REQUIRED = "userVerificationRequired";
 
     public static void test(FidoTestState state) throws Throwable {
         CredProtectExtensionTests extTest = new CredProtectExtensionTests();

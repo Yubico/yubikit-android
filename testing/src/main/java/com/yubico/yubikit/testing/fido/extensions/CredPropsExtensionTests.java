@@ -31,7 +31,7 @@ import javax.annotation.Nullable;
 
 public class CredPropsExtensionTests {
 
-    private final String CRED_PROPS = "credProps";
+    private static final String CRED_PROPS = "credProps";
 
     public static void test(FidoTestState state) throws Throwable {
         CredPropsExtensionTests extTest = new CredPropsExtensionTests();

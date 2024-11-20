@@ -714,7 +714,7 @@ public class BasicWebAuthnClientTests {
 
             Map<PublicKeyCredentialDescriptor, PublicKeyCredentialUserEntity> credentials = credentialManager.getCredentials(TestData.RP_ID);
             assertThat(credentials.size(), equalTo(1));
-            PublicKeyCredentialDescriptor key = credentials.keySet().iterator().next();
+            PublicKeyCredentialDescriptor key = credentials.entrySet().iterator().next().getKey();
             assertThat(Objects.requireNonNull(credentials.get(key))
                     .getId(), equalTo(TestData.USER_ID));
 

@@ -66,14 +66,12 @@ public class MultipleAssertionsAvailable extends Throwable {
     public List<PublicKeyCredentialUserEntity> getUsers() throws UserInformationNotAvailableError {
         List<PublicKeyCredentialUserEntity> users = new ArrayList<>();
         for (BasicWebAuthnClient.WithExtensionResults<Ctap2Session.AssertionData> assertion : assertions) {
-            try {
-                users.add(PublicKeyCredentialUserEntity.fromMap(
-                        Objects.requireNonNull(assertion.data.getUser()),
-                        SerializationType.CBOR
-                ));
-            } catch (NullPointerException e) {
+            Map<String, ?> user = assertion.data.getUser();
+            if (user == null) {
                 throw new UserInformationNotAvailableError();
             }
+
+            users.add(PublicKeyCredentialUserEntity.fromMap(user, SerializationType.CBOR));
         }
         return users;
     }
