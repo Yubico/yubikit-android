@@ -16,6 +16,7 @@
 
 package com.yubico.yubikit.testing.fido;
 
+import static com.yubico.yubikit.testing.fido.utils.ConfigHelper.getConfig;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
@@ -35,12 +36,6 @@ import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import java.io.IOException;
 
 public class Ctap2ConfigTests {
-
-    static Config getConfig(Ctap2Session session, FidoTestState state) throws IOException, CommandException {
-        ClientPin clientPin = new ClientPin(session, state.getPinUvAuthProtocol());
-        byte[] pinToken = clientPin.getPinToken(TestData.PIN, ClientPin.PIN_PERMISSION_ACFG, null);
-        return new Config(session, state.getPinUvAuthProtocol(), pinToken);
-    }
 
     public static void testReadWriteEnterpriseAttestation(Ctap2Session session, FidoTestState state) throws Throwable {
         assumeTrue("Enterprise attestation not supported",

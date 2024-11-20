@@ -181,6 +181,7 @@ public class Config {
         call(CMD_SET_MIN_PIN_LENGTH, parameters.isEmpty() ? null : parameters);
 
         if (minPinLength != null) Logger.info(logger, "Minimum PIN length set");
+        if (rpIds != null) Logger.info(logger, "Minimum PIN length RP ID list set");
         if (forceChangePin != null) Logger.info(logger, "ForcePINChange set");
     }
 

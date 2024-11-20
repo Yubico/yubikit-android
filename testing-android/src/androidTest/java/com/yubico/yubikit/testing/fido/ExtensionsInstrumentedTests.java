@@ -24,6 +24,7 @@ import com.yubico.yubikit.testing.fido.extensions.CredPropsExtensionTests;
 import com.yubico.yubikit.testing.fido.extensions.CredProtectExtensionTests;
 import com.yubico.yubikit.testing.fido.extensions.HmacSecretExtensionTests;
 import com.yubico.yubikit.testing.fido.extensions.LargeBlobExtensionTests;
+import com.yubico.yubikit.testing.fido.extensions.MinPinLengthExtensionTests;
 import com.yubico.yubikit.testing.fido.extensions.PrfExtensionTests;
 import com.yubico.yubikit.testing.framework.FidoInstrumentedTests;
 
@@ -77,6 +78,11 @@ public class ExtensionsInstrumentedTests {
         @Test
         public void testCredProtectExtension() throws Throwable {
             withDevice(CredProtectExtensionTests::test);
+        }
+
+        @Test
+        public void testMinPinLengthExtension() throws Throwable {
+            withDevice(MinPinLengthExtensionTests::test);
         }
     }
 
