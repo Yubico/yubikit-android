@@ -60,7 +60,7 @@ public class PublicKeyCredential extends Credential {
      *
      * @param id       Credential id in base64 url safe encoding.
      * @param response Operation response.
-     * @param clientExtensionResults results of requested extensions
+     * @param clientExtensionResults Extension results.
      * @see AuthenticatorAttestationResponse
      * @see AuthenticatorAssertionResponse
      */
@@ -78,8 +78,8 @@ public class PublicKeyCredential extends Credential {
     /**
      * Constructs a new Webauthn PublicKeyCredential object
      *
-     * @param id                     Credential id in binary form.
-     * @param response               Operation response.
+     * @param id       Credential id in binary form.
+     * @param response Operation response.
      * @see AuthenticatorAttestationResponse
      * @see AuthenticatorAssertionResponse
      */
@@ -92,7 +92,7 @@ public class PublicKeyCredential extends Credential {
      *
      * @param id                     Credential id in binary form.
      * @param response               Operation response.
-     * @param clientExtensionResults Results of requested extensions.
+     * @param clientExtensionResults Extension results.
      * @see AuthenticatorAttestationResponse
      * @see AuthenticatorAssertionResponse
      */
