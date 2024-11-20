@@ -19,7 +19,6 @@ package com.yubico.yubikit.fido.webauthn;
 import static com.yubico.yubikit.fido.webauthn.SerializationUtils.serializeBytes;
 
 import com.yubico.yubikit.core.internal.codec.Base64;
-
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
 
 import java.util.Arrays;
@@ -58,8 +57,8 @@ public class PublicKeyCredential extends Credential {
     /**
      * Constructs a new Webauthn PublicKeyCredential object
      *
-     * @param id       Credential id in base64 url safe encoding.
-     * @param response Operation response.
+     * @param id                     Credential id in base64 url safe encoding.
+     * @param response               Operation response.
      * @param clientExtensionResults Extension results.
      * @see AuthenticatorAttestationResponse
      * @see AuthenticatorAssertionResponse
@@ -67,8 +66,7 @@ public class PublicKeyCredential extends Credential {
     public PublicKeyCredential(
             String id,
             AuthenticatorResponse response,
-            @Nullable ClientExtensionResults clientExtensionResults)
-    {
+            @Nullable ClientExtensionResults clientExtensionResults) {
         super(id, PUBLIC_KEY_CREDENTIAL_TYPE);
         this.rawId = Base64.fromUrlSafeString(id);
         this.response = response;
@@ -168,10 +166,10 @@ public class PublicKeyCredential extends Credential {
     /**
      * Constructs new PublicKeyCredential from AssertionData
      *
-     * @param assertion data base for the new credential
-     * @param clientDataJson response client data
-     * @param allowCredentials used for querying credential id for incomplete assertion objects
-     * @return new PublicKeyCredential object
+     * @param assertion        Data base for the new credential.
+     * @param clientDataJson   Response client data.
+     * @param allowCredentials Used for querying credential id for incomplete assertion objects
+     * @return new PublicKeyCredential object.
      */
     public static PublicKeyCredential fromAssertion(
             Ctap2Session.AssertionData assertion,
@@ -183,10 +181,10 @@ public class PublicKeyCredential extends Credential {
     /**
      * Constructs new PublicKeyCredential from AssertionData
      *
-     * @param assertion data base for the new credential
-     * @param clientDataJson response client data
-     * @param allowCredentials used for querying credential id for incomplete assertion objects
-     * @param clientExtensionResults extension results
+     * @param assertion              Data base for the new credential.
+     * @param clientDataJson         Response client data.
+     * @param allowCredentials       Used for querying credential id for incomplete assertion objects.
+     * @param clientExtensionResults Extension results.
      * @return new PublicKeyCredential object
      */
     public static PublicKeyCredential fromAssertion(
