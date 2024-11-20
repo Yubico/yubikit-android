@@ -33,7 +33,7 @@ import java.util.Map;
 
 import javax.annotation.Nullable;
 
-public class ExtLargeBlobTests {
+public class LargeBlobExtensionTests {
 
     static final String LARGE_BLOB = "largeBlob";
     static final String LARGE_BLOB_KEY = "largeBlobKey";
@@ -47,11 +47,11 @@ public class ExtLargeBlobTests {
     static final String ATTR_REQUIRED = "required";
 
     public static void test(FidoTestState state) throws Throwable {
-        ExtLargeBlobTests extLargeBlobTests = new ExtLargeBlobTests();
-        extLargeBlobTests.runTest(state);
+        LargeBlobExtensionTests largeBlobExtensionTests = new LargeBlobExtensionTests();
+        largeBlobExtensionTests.runTest(state);
     }
 
-    private ExtLargeBlobTests() {
+    private LargeBlobExtensionTests() {
     }
 
     private void runTest(FidoTestState state) throws Throwable {

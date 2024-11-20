@@ -36,7 +36,7 @@ import java.util.Map;
 
 import javax.annotation.Nullable;
 
-public class ExtCredBlobTests {
+public class CredBlobExtensionTests {
 
     private final String CRED_BLOB = "credBlob";
     private final String GET_CRED_BLOB = "getCredBlob";
@@ -52,11 +52,11 @@ public class ExtCredBlobTests {
     };
 
     public static void test(FidoTestState state) throws Throwable {
-        ExtCredBlobTests extTest = new ExtCredBlobTests();
+        CredBlobExtensionTests extTest = new CredBlobExtensionTests();
         extTest.runTest(state);
     }
 
-    private ExtCredBlobTests() {
+    private CredBlobExtensionTests() {
 
     }
 

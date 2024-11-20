@@ -33,7 +33,7 @@ import java.util.Map;
 
 import javax.annotation.Nullable;
 
-public class ExtHmacSecretTests {
+public class HmacSecretExtensionTests {
 
     private final String KEY_HMAC_SECRET = "hmac-secret";
     private final String KEY_HMAC_CREATE_SECRET = "hmacCreateSecret";
@@ -59,17 +59,17 @@ public class ExtHmacSecretTests {
     });
 
     public static void test(FidoTestState state) throws Throwable {
-        ExtHmacSecretTests extTests = new ExtHmacSecretTests();
+        HmacSecretExtensionTests extTests = new HmacSecretExtensionTests();
         extTests.runTest(state);
     }
 
     // this test is active only on devices without hmac-secret
     public static void testNoExtensionSupport(FidoTestState state) throws Throwable {
-        ExtHmacSecretTests extTests = new ExtHmacSecretTests();
+        HmacSecretExtensionTests extTests = new HmacSecretExtensionTests();
         extTests.runNoSupportTest(state);
     }
 
-    private ExtHmacSecretTests() {
+    private HmacSecretExtensionTests() {
 
     }
 

@@ -29,16 +29,16 @@ import java.util.Map;
 
 import javax.annotation.Nullable;
 
-public class ExtCredPropsTests {
+public class CredPropsExtensionTests {
 
     private final String CRED_PROPS = "credProps";
 
     public static void test(FidoTestState state) throws Throwable {
-        ExtCredPropsTests extTest = new ExtCredPropsTests();
+        CredPropsExtensionTests extTest = new CredPropsExtensionTests();
         extTest.runTest(state);
     }
 
-    private ExtCredPropsTests() {
+    private CredPropsExtensionTests() {
 
     }
 

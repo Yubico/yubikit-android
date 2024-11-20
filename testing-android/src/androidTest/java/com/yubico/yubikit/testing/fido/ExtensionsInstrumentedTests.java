@@ -19,11 +19,11 @@ package com.yubico.yubikit.testing.fido;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV1;
 import com.yubico.yubikit.testing.PinUvAuthProtocolV1Test;
-import com.yubico.yubikit.testing.fido.extensions.ExtCredBlobTests;
-import com.yubico.yubikit.testing.fido.extensions.ExtCredPropsTests;
-import com.yubico.yubikit.testing.fido.extensions.ExtHmacSecretTests;
-import com.yubico.yubikit.testing.fido.extensions.ExtLargeBlobTests;
-import com.yubico.yubikit.testing.fido.extensions.ExtPrfTests;
+import com.yubico.yubikit.testing.fido.extensions.CredBlobExtensionTests;
+import com.yubico.yubikit.testing.fido.extensions.CredPropsExtensionTests;
+import com.yubico.yubikit.testing.fido.extensions.HmacSecretExtensionTests;
+import com.yubico.yubikit.testing.fido.extensions.LargeBlobExtensionTests;
+import com.yubico.yubikit.testing.fido.extensions.PrfExtensionTests;
 import com.yubico.yubikit.testing.framework.FidoInstrumentedTests;
 
 import org.junit.Test;
@@ -40,37 +40,37 @@ public class ExtensionsInstrumentedTests {
     public static class PinUvAuthV2Test extends FidoInstrumentedTests {
         @Test
         public void testCredPropsExtension() throws Throwable {
-            withDevice(ExtCredPropsTests::test);
+            withDevice(CredPropsExtensionTests::test);
         }
 
         @Test
         public void testPrfExtension() throws Throwable {
-            withDevice(ExtPrfTests::test);
+            withDevice(PrfExtensionTests::test);
         }
 
         @Test
         public void testPrfExtensionNoSupport() throws Throwable {
-            withDevice(ExtPrfTests::testNoExtensionSupport);
+            withDevice(PrfExtensionTests::testNoExtensionSupport);
         }
 
         @Test
         public void testHmacSecretExtension() throws Throwable {
-            withDevice(ExtHmacSecretTests::test);
+            withDevice(HmacSecretExtensionTests::test);
         }
 
         @Test
         public void testHmacSecretExtensionNoSupport() throws Throwable {
-            withDevice(ExtHmacSecretTests::testNoExtensionSupport);
+            withDevice(HmacSecretExtensionTests::testNoExtensionSupport);
         }
 
         @Test
         public void testLargeBlobExtension() throws Throwable {
-            withDevice(ExtLargeBlobTests::test);
+            withDevice(LargeBlobExtensionTests::test);
         }
 
         @Test
         public void testCredBlobExtension() throws Throwable {
-            withDevice(ExtCredBlobTests::test);
+            withDevice(CredBlobExtensionTests::test);
         }
     }
 

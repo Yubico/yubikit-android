@@ -33,7 +33,7 @@ import java.util.Map;
 
 import javax.annotation.Nullable;
 
-public class ExtPrfTests {
+public class PrfExtensionTests {
 
     private final String KEY_HMAC_SECRET = "hmac-secret";
     private final String PRF_EXT = "prf";
@@ -44,17 +44,17 @@ public class ExtPrfTests {
     private final String KEY_SECOND = "second";
 
     public static void test(FidoTestState state) throws Throwable {
-        ExtPrfTests extTests = new ExtPrfTests();
+        PrfExtensionTests extTests = new PrfExtensionTests();
         extTests.runTest(state);
     }
 
     // this test is active only on devices without hmac-secret
     public static void testNoExtensionSupport(FidoTestState state) throws Throwable {
-        ExtPrfTests extTests = new ExtPrfTests();
+        PrfExtensionTests extTests = new PrfExtensionTests();
         extTests.runNoSupportTest(state);
     }
 
-    private ExtPrfTests() {
+    private PrfExtensionTests() {
 
     }
 
