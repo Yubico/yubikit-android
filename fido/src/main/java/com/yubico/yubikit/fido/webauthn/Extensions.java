@@ -32,23 +32,22 @@ public class Extensions {
         return new Extensions(input);
     }
 
+    @Nullable
     private final Map<String, ?> extensions;
 
     private Extensions(@Nullable Map<String, ?> extensions) {
-        this.extensions = extensions != null ? extensions : Collections.emptyMap();
+        this.extensions = extensions;
     }
 
     @Nullable
     public Object get(String extension) {
-        return extensions.get(extension);
+        return extensions != null
+                ? extensions.get(extension)
+                : null;
     }
 
     public boolean has(String extension) {
-        return extensions.containsKey(extension);
-    }
-
-    public boolean isEmpty() {
-        return extensions.isEmpty();
+        return extensions != null && extensions.containsKey(extension);
     }
 
     @Override

@@ -52,19 +52,22 @@ public class RequestOptionsBuilder {
 
     public RequestOptionsBuilder allowedCredentials(PublicKeyCredential... allowedCredentials) {
         this.allowedCredentials = allowedCredentials.length > 0 ? Arrays.stream(allowedCredentials)
-                .map(publicKeyCredential -> new PublicKeyCredentialDescriptor(PUBLIC_KEY, publicKeyCredential.getRawId()))
+                .map(publicKeyCredential -> new PublicKeyCredentialDescriptor(
+                        PUBLIC_KEY, publicKeyCredential.getRawId()))
                 .collect(Collectors.toList()) : null;
         return this;
     }
 
-    public RequestOptionsBuilder allowedCredentials(PublicKeyCredentialDescriptor... allowedCredentials) {
+    public RequestOptionsBuilder allowedCredentials(
+            PublicKeyCredentialDescriptor... allowedCredentials) {
         this.allowedCredentials = allowedCredentials.length > 0
                 ? Arrays.asList(allowedCredentials)
                 : null;
         return this;
     }
 
-    public RequestOptionsBuilder allowedCredentials(List<PublicKeyCredentialDescriptor> allowedCredentials) {
+    public RequestOptionsBuilder allowedCredentials(
+            List<PublicKeyCredentialDescriptor> allowedCredentials) {
         this.allowedCredentials = allowedCredentials;
         return this;
     }

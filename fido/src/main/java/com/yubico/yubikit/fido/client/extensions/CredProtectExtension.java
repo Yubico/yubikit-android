@@ -27,9 +27,11 @@ import javax.annotation.Nullable;
 
 public class CredProtectExtension extends Extension {
 
-    static final String OPTIONAL = "userVerificationOptional";
-    static final String OPTIONAL_WITH_LIST = "userVerificationOptionalWithCredentialIDList";
-    static final String REQUIRED = "userVerificationRequired";
+    private static final String POLICY = "credentialProtectionPolicy";
+    private static final String OPTIONAL = "userVerificationOptional";
+    private static final String OPTIONAL_WITH_LIST = "userVerificationOptionalWithCredentialIDList";
+    private static final String REQUIRED = "userVerificationRequired";
+    private static final String ENFORCE = "enforceCredentialProtectionPolicy";
 
     public CredProtectExtension() {
         super("credProtect");
@@ -43,22 +45,25 @@ public class CredProtectExtension extends Extension {
             PinUvAuthProtocol pinUvAuthProtocol) {
 
         Extensions extensions = options.getExtensions();
-        String credentialProtectionPolicy = (String) extensions.get("credentialProtectionPolicy");
+        if (extensions == null) {
+            return null;
+        }
+
+        String credentialProtectionPolicy = (String) extensions.get(POLICY);
         if (credentialProtectionPolicy == null) {
             return null;
         }
 
         Integer credProtect = credProtectValue(credentialProtectionPolicy);
-        Boolean enforce = (Boolean) extensions.get("enforceCredentialProtectionPolicy");
+        Boolean enforce = (Boolean) extensions.get(ENFORCE);
         if (Boolean.TRUE.equals(enforce) &&
                 !isSupported(ctap) &&
                 credProtect != null &&
                 credProtect > 0x01) {
-            throw new IllegalArgumentException("Authenticator does not support Credential Protection");
+            throw new IllegalArgumentException("No Credential Protection support");
         }
         return credProtect != null
-                ? new RegistrationProcessor(
-                pinToken -> Collections.singletonMap(name, credProtect))
+                ? new RegistrationProcessor(pinToken -> Collections.singletonMap(name, credProtect))
                 : null;
     }
 

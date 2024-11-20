@@ -18,6 +18,7 @@ package com.yubico.yubikit.fido.client.extensions;
 
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
+import com.yubico.yubikit.fido.webauthn.Extensions;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialCreationOptions;
 
 import java.util.Collections;
@@ -32,8 +33,8 @@ public class MinPinLengthExtension extends Extension {
 
     @Override
     protected boolean isSupported(Ctap2Session ctap) {
-        return super.isSupported(ctap) && ctap.getCachedInfo().getOptions()
-                .containsKey("setMinPINLength");
+        return super.isSupported(ctap) &&
+                ctap.getCachedInfo().getOptions().containsKey("setMinPINLength");
     }
 
     @Nullable
@@ -46,7 +47,13 @@ public class MinPinLengthExtension extends Extension {
         if (!isSupported(ctap)) {
             return null;
         }
-        Boolean input = (Boolean) options.getExtensions().get(name);
+
+        Extensions extensions = options.getExtensions();
+        if (extensions == null) {
+            return null;
+        }
+
+        Boolean input = (Boolean) extensions.get(name);
         if (input == null) {
             return null;
         }

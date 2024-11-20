@@ -44,6 +44,7 @@ public class PublicKeyCredentialRequestOptions {
     private final String rpId;
     private final List<PublicKeyCredentialDescriptor> allowCredentials;
     private final String userVerification;
+    @Nullable
     private final Extensions extensions;
 
     public PublicKeyCredentialRequestOptions(
@@ -59,7 +60,7 @@ public class PublicKeyCredentialRequestOptions {
         this.rpId = rpId;
         this.allowCredentials = allowCredentials != null ? allowCredentials : Collections.emptyList();
         this.userVerification = userVerification != null ? userVerification : UserVerificationRequirement.PREFERRED;
-        this.extensions = extensions != null ? extensions : Extensions.empty();
+        this.extensions = extensions;
     }
 
     public byte[] getChallenge() {
@@ -83,6 +84,7 @@ public class PublicKeyCredentialRequestOptions {
         return userVerification;
     }
 
+    @Nullable
     public Extensions getExtensions() {
         return extensions;
     }
@@ -102,7 +104,7 @@ public class PublicKeyCredentialRequestOptions {
         }
         map.put(ALLOW_CREDENTIALS, allowCredentialsList);
         map.put(USER_VERIFICATION, userVerification);
-        if (!extensions.isEmpty()) {
+        if (extensions != null) {
             map.put(EXTENSIONS, extensions);
         }
         return map;

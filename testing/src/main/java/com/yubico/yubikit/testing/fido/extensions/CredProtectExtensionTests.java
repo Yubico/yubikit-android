@@ -73,8 +73,7 @@ public class CredProtectExtensionTests {
             PublicKeyCredential cred = new ClientHelper(session)
                     .makeCredential(
                             new CreationOptionsBuilder()
-                                    .extensions(Collections.singletonMap(POLICY,
-                                            POLICY_WITH_LIST))
+                                    .extensions(Collections.singletonMap(POLICY, POLICY_WITH_LIST))
                                     .build()
                     );
 
@@ -89,8 +88,7 @@ public class CredProtectExtensionTests {
                     .makeCredential(
                             new CreationOptionsBuilder()
                                     .residentKey(true)
-                                    .extensions(Collections.singletonMap(POLICY,
-                                            POLICY_REQUIRED))
+                                    .extensions(Collections.singletonMap(POLICY, POLICY_REQUIRED))
                                     .build()
                     );
 

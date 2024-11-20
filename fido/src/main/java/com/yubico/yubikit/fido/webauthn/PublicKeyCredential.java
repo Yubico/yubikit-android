@@ -52,10 +52,7 @@ public class PublicKeyCredential extends Credential {
      * @see AuthenticatorAssertionResponse
      */
     public PublicKeyCredential(String id, AuthenticatorResponse response) {
-        super(id, PUBLIC_KEY_CREDENTIAL_TYPE);
-        this.rawId = Base64.fromUrlSafeString(id);
-        this.response = response;
-        this.clientExtensionResults = null;
+        this(id, response, null);
     }
 
     /**
@@ -87,10 +84,7 @@ public class PublicKeyCredential extends Credential {
      * @see AuthenticatorAssertionResponse
      */
     public PublicKeyCredential(byte[] id, AuthenticatorResponse response) {
-        super(Base64.toUrlSafeString(id), PUBLIC_KEY_CREDENTIAL_TYPE);
-        this.rawId = id;
-        this.response = response;
-        this.clientExtensionResults = null;
+        this(id, response, null);
     }
 
     /**
@@ -177,6 +171,22 @@ public class PublicKeyCredential extends Credential {
      * @param assertion data base for the new credential
      * @param clientDataJson response client data
      * @param allowCredentials used for querying credential id for incomplete assertion objects
+     * @return new PublicKeyCredential object
+     */
+    public static PublicKeyCredential fromAssertion(
+            Ctap2Session.AssertionData assertion,
+            byte[] clientDataJson,
+            @Nullable List<PublicKeyCredentialDescriptor> allowCredentials) {
+        return fromAssertion(assertion, clientDataJson, allowCredentials, null);
+    }
+
+    /**
+     * Constructs new PublicKeyCredential from AssertionData
+     *
+     * @param assertion data base for the new credential
+     * @param clientDataJson response client data
+     * @param allowCredentials used for querying credential id for incomplete assertion objects
+     * @param clientExtensionResults extension results
      * @return new PublicKeyCredential object
      */
     public static PublicKeyCredential fromAssertion(

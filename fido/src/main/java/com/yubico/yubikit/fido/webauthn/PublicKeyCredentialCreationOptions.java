@@ -49,6 +49,7 @@ public class PublicKeyCredentialCreationOptions {
     @Nullable
     private final AuthenticatorSelectionCriteria authenticatorSelection;
     private final String attestation;
+    @Nullable
     private final Extensions extensions;
 
     public PublicKeyCredentialCreationOptions(
@@ -107,6 +108,7 @@ public class PublicKeyCredentialCreationOptions {
         return attestation;
     }
 
+    @Nullable
     public Extensions getExtensions() {
         return extensions;
     }
@@ -135,7 +137,7 @@ public class PublicKeyCredentialCreationOptions {
             map.put(AUTHENTICATOR_SELECTION, authenticatorSelection.toMap(serializationType));
         }
         map.put(ATTESTATION, attestation);
-        if (!extensions.isEmpty()) {
+        if (extensions != null) {
             map.put(EXTENSIONS, extensions);
         }
         return map;

@@ -77,7 +77,9 @@ public class PrfExtensionTests {
                 PublicKeyCredential cred = new ClientHelper(session)
                         .makeCredential(
                                 new CreationOptionsBuilder()
-                                        .extensions(Collections.singletonMap(PRF_EXT, Collections.emptyMap()))
+                                        .extensions(
+                                                Collections.singletonMap(PRF_EXT,
+                                                        Collections.emptyMap()))
                                         .build()
                         );
 
@@ -93,9 +95,11 @@ public class PrfExtensionTests {
                                 new RequestOptionsBuilder()
                                         // this is no discoverable key, we have to pass the id
                                         .allowedCredentials(publicKeyCredential)
-                                        .extensions(Collections.singletonMap(PRF_EXT,
-                                                Collections.singletonMap(KEY_EVAL,
-                                                        Collections.singletonMap(KEY_FIRST, "abba"))))
+                                        .extensions(
+                                                Collections.singletonMap(PRF_EXT,
+                                                        Collections.singletonMap(KEY_EVAL,
+                                                                Collections.singletonMap(KEY_FIRST,
+                                                                        "abba"))))
                                         .build()
                         );
 
@@ -134,7 +138,9 @@ public class PrfExtensionTests {
                 PublicKeyCredential cred = new ClientHelper(session)
                         .makeCredential(
                                 new CreationOptionsBuilder()
-                                        .extensions(Collections.singletonMap(PRF_EXT, Collections.emptyMap()))
+                                        .extensions(
+                                                Collections.singletonMap(PRF_EXT,
+                                                        Collections.emptyMap()))
                                         .build()
                         );
 
@@ -146,7 +152,9 @@ public class PrfExtensionTests {
                 PublicKeyCredential cred = new ClientHelper(session)
                         .makeCredential(
                                 new CreationOptionsBuilder()
-                                        .extensions(Collections.singletonMap(PRF_EXT, Collections.emptyMap()))
+                                        .extensions(
+                                                Collections.singletonMap(PRF_EXT,
+                                                        Collections.emptyMap()))
                                         .build()
                         );
 
@@ -230,7 +238,8 @@ public class PrfExtensionTests {
                                 new RequestOptionsBuilder()
                                         .extensions(Collections.singletonMap(PRF_EXT,
                                                 Collections.singletonMap(KEY_EVAL,
-                                                        Collections.singletonMap(KEY_FIRST, "abba"))))
+                                                        Collections.singletonMap(KEY_FIRST,
+                                                                "abba"))))
                                         .build()
                         );
                 Assert.assertNull(getResultValue(cred, KEY_ENABLED));

@@ -139,9 +139,9 @@ public class BasicWebAuthnClient implements Closeable {
         this(session, getDefaultExtensions(session));
     }
 
-    public BasicWebAuthnClient(Ctap2Session session, List<Extension> extensions) throws IOException, CommandException {
+    public BasicWebAuthnClient(Ctap2Session session, @Nullable List<Extension> extensions) throws IOException, CommandException {
         this.ctap = session;
-        this.extensions = extensions;
+        this.extensions = extensions != null ? extensions : Collections.emptyList();
 
         Ctap2Session.InfoData info = ctap.getInfo();
 
@@ -390,7 +390,7 @@ public class BasicWebAuthnClient implements Closeable {
         }
     }
 
-    static public class WithExtensionResults<T> {
+    protected static class WithExtensionResults<T> {
         final T data;
         final ClientExtensionResults clientExtensionResults;
 
@@ -399,11 +399,11 @@ public class BasicWebAuthnClient implements Closeable {
             this.clientExtensionResults = clientExtensionResults;
         }
 
-        public T getData() {
+        T getData() {
             return data;
         }
 
-        public ClientExtensionResults getClientExtensionResults() {
+        ClientExtensionResults getClientExtensionResults() {
             return clientExtensionResults;
         }
     }
@@ -907,15 +907,14 @@ public class BasicWebAuthnClient implements Closeable {
          * @return new list of Credential descriptors for CBOR serialization.
          */
         @Nullable
-        static List<Map<String, ?>> getCredentialList(@Nullable List<PublicKeyCredentialDescriptor> descriptors) {
+        static List<Map<String, ?>> getCredentialList(
+                @Nullable List<PublicKeyCredentialDescriptor> descriptors) {
             if (descriptors == null || descriptors.isEmpty()) {
                 return null;
             }
-            List<Map<String, ?>> list = new ArrayList<>();
-            for (PublicKeyCredentialDescriptor credential : descriptors) {
-                list.add(credential.toMap(SerializationType.CBOR));
-            }
-            return list;
+            return descriptors.stream()
+                    .map(d -> d.toMap(SerializationType.CBOR))
+                    .collect(Collectors.toList());
         }
 
         /**

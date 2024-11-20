@@ -60,12 +60,11 @@ public class LargeBlobs {
         this(session, null, null);
     }
 
-        LargeBlobs(
-            Ctap2Session session,
-            @Nullable
-            PinUvAuthProtocol pinUvAuthProtocol,
-            @Nullable
-            byte[] pinUvAuthToken) {
+    LargeBlobs(Ctap2Session session,
+               @Nullable
+               PinUvAuthProtocol pinUvAuthProtocol,
+               @Nullable
+               byte[] pinUvAuthToken) {
 
         final Ctap2Session.InfoData info = session.getCachedInfo();
 

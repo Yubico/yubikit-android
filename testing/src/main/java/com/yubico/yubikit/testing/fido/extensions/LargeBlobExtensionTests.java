@@ -103,11 +103,9 @@ public class LargeBlobExtensionTests {
         deleteCreds(state, cred1, cred2);
     }
 
-    private byte[] readBlob(FidoTestState state) throws Throwable {
-        return readBlob(state, null);
-    }
-
-    private byte[] readBlob(FidoTestState state, @Nullable PublicKeyCredential allowedCredential) throws Throwable {
+    private byte[] readBlob(
+            FidoTestState state,
+            @Nullable PublicKeyCredential allowedCredential) throws Throwable {
         return state.withCtap2(session -> {
             PublicKeyCredential cred = new ClientHelper(session)
                     .getAssertions(
@@ -130,11 +128,9 @@ public class LargeBlobExtensionTests {
         });
     }
 
-    private boolean writeBlob(FidoTestState state, byte[] data) throws Throwable {
-        return writeBlob(state, data, null);
-    }
-
-    private boolean writeBlob(FidoTestState state, byte[] data, @Nullable PublicKeyCredential allowedCredential) throws Throwable {
+    private boolean writeBlob(
+            FidoTestState state, byte[] data,
+            @Nullable PublicKeyCredential allowedCredential) throws Throwable {
         return state.withCtap2(session -> {
             PublicKeyCredential cred = new ClientHelper(session)
                     .getAssertions(new RequestOptionsBuilder()
@@ -150,7 +146,10 @@ public class LargeBlobExtensionTests {
         });
     }
 
-    private PublicKeyCredential makeCred(FidoTestState state, String name, byte[] id) throws Throwable {
+    private PublicKeyCredential makeCred(
+            FidoTestState state,
+            String name,
+            byte[] id) throws Throwable {
         return state.withCtap2(session -> {
             PublicKeyCredential cred = new ClientHelper(session)
                     .makeCredential(new CreationOptionsBuilder()

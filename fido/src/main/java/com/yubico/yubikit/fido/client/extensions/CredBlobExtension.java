@@ -20,6 +20,7 @@ import static com.yubico.yubikit.core.internal.codec.Base64.fromUrlSafeString;
 
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
+import com.yubico.yubikit.fido.webauthn.Extensions;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialCreationOptions;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialRequestOptions;
 
@@ -40,17 +41,25 @@ public class CredBlobExtension extends Extension {
             PublicKeyCredentialCreationOptions options,
             PinUvAuthProtocol pinUvAuthProtocol) {
 
-        if (isSupported(ctap)) {
-            String b64Blob = (String) options.getExtensions().get("credBlob");
-            if (b64Blob != null) {
-                byte[] blob = fromUrlSafeString(b64Blob);
-                if (blob.length <= ctap.getCachedInfo().getMaxCredBlobLength()) {
-                    return new RegistrationProcessor(
-                            pinToken -> Collections.singletonMap(name, blob)
-                    );
-                }
+        if (!isSupported(ctap)) {
+            return null;
+        }
+
+        Extensions extensions = options.getExtensions();
+        if (extensions == null) {
+            return null;
+        }
+
+        String b64Blob = (String) extensions.get("credBlob");
+        if (b64Blob != null) {
+            byte[] blob = fromUrlSafeString(b64Blob);
+            if (blob.length <= ctap.getCachedInfo().getMaxCredBlobLength()) {
+                return new RegistrationProcessor(
+                        pinToken -> Collections.singletonMap(name, blob)
+                );
             }
         }
+
         return null;
     }
 
@@ -60,8 +69,13 @@ public class CredBlobExtension extends Extension {
             Ctap2Session ctap,
             PublicKeyCredentialRequestOptions options,
             PinUvAuthProtocol pinUvAuthProtocol) {
+
+        Extensions extensions = options.getExtensions();
+        if (extensions == null) {
+            return null;
+        }
         if (isSupported(ctap) &&
-                Boolean.TRUE.equals(options.getExtensions().get("getCredBlob"))) {
+                Boolean.TRUE.equals(extensions.get("getCredBlob"))) {
             return new AuthenticationProcessor(
                     (AuthenticationInput) (selected, pinToken) -> Collections.singletonMap(name, true)
             );

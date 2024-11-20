@@ -45,6 +45,9 @@ public class LargeBlobExtension extends Extension {
     private static final String ACTION_WRITE = "write";
     private static final String WRITTEN = "written";
     private static final String SUPPORT = "support";
+    private static final String SUPPORTED = "supported";
+    private static final String REQUIRED = "required";
+    private static final String BLOB = "blob";
     private static final org.slf4j.Logger logger = LoggerFactory.getLogger(LargeBlobExtension.class);
 
     public LargeBlobExtension() {
@@ -53,8 +56,8 @@ public class LargeBlobExtension extends Extension {
 
     @Override
     protected boolean isSupported(Ctap2Session ctap) {
-        return super.isSupported(ctap) && ctap.getCachedInfo().getOptions()
-                .containsKey(LARGE_BLOBS);
+        return super.isSupported(ctap) &&
+                ctap.getCachedInfo().getOptions().containsKey(LARGE_BLOBS);
     }
 
     @Nullable
@@ -68,15 +71,14 @@ public class LargeBlobExtension extends Extension {
             if (inputs.read != null || inputs.write != null) {
                 throw new IllegalArgumentException("Invalid set of parameters");
             }
-            if ("required".equals(inputs.support) && !isSupported(ctap)) {
-                throw new IllegalArgumentException("Authenticator does not support large" +
-                        " blob storage");
+            if (REQUIRED.equals(inputs.support) && !isSupported(ctap)) {
+                throw new IllegalArgumentException("Authenticator does not support large blob storage");
             }
             return new RegistrationProcessor(
                     pinToken -> Collections.singletonMap(LARGE_BLOB, true),
                     (attestationObject, pinToken) ->
                             Collections.singletonMap(LARGE_BLOB,
-                                    Collections.singletonMap("supported",
+                                    Collections.singletonMap(SUPPORTED,
                                             attestationObject.getLargeBlobKey() != null))
             );
         }
@@ -124,7 +126,7 @@ public class LargeBlobExtension extends Extension {
             LargeBlobs largeBlobs = new LargeBlobs(ctap);
             byte[] blob = largeBlobs.getBlob(largeBlobKey);
             return Collections.singletonMap(LARGE_BLOB, blob != null
-                    ? Collections.singletonMap("blob", toUrlSafeString(blob))
+                    ? Collections.singletonMap(BLOB, toUrlSafeString(blob))
                     : Collections.emptyMap());
         } catch (IOException | CommandException e) {
             Logger.error(logger, "LargeBlob processing failed: ", e);

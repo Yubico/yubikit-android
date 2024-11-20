@@ -55,30 +55,6 @@ public class HmacSecretExtension extends Extension {
     private static final org.slf4j.Logger logger = LoggerFactory.getLogger(HmacSecretExtension.class);
     private static final int SALT_LEN = 32;
 
-    private static class Salts {
-        byte[] salt1;
-        byte[] salt2;
-
-        Salts(byte[] salt1, @Nullable byte[] salt2) {
-            this.salt1 = salt1;
-            this.salt2 = salt2 != null ? salt2 : new byte[0];
-        }
-    }
-
-    private byte[] prfSalt(byte[] secret) {
-        try {
-            return MessageDigest.getInstance("SHA-256").digest(
-                    ByteBuffer
-                            .allocate(13 + secret.length)
-                            .put("WebAuthn PRF".getBytes(StandardCharsets.US_ASCII))
-                            .put((byte) 0x00)
-                            .put(secret)
-                            .array());
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("SHA-256 missing", e);
-        }
-    }
-
     public HmacSecretExtension() {
         super("hmac-secret");
     }
@@ -89,6 +65,9 @@ public class HmacSecretExtension extends Extension {
             PublicKeyCredentialCreationOptions options,
             PinUvAuthProtocol pinUvAuthProtocol) {
         Extensions extensions = options.getExtensions();
+        if (extensions == null) {
+            return null;
+        }
         if (Boolean.TRUE.equals(extensions.get("hmacCreateSecret"))) {
             return new RegistrationProcessor(
                     pinToken -> Collections.singletonMap(name, true),
@@ -122,6 +101,9 @@ public class HmacSecretExtension extends Extension {
         }
 
         final Inputs inputs = Inputs.fromExtensions(options.getExtensions());
+        if (inputs == null) {
+            return null;
+        }
         final AuthenticationInput prepareInput = (selected, pinToken) -> {
             Salts salts;
             if (inputs.prf != null) {
@@ -129,8 +111,7 @@ public class HmacSecretExtension extends Extension {
                 Map<String, Object> evalByCredential = inputs.prf.evalByCredential;
 
                 if (evalByCredential != null) {
-                    List<PublicKeyCredentialDescriptor> allowCredentials =
-                            options.getAllowCredentials();
+                    List<PublicKeyCredentialDescriptor> allowCredentials = options.getAllowCredentials();
 
                     if (allowCredentials.isEmpty()) {
                         throw new IllegalArgumentException("evalByCredential needs allow list");
@@ -273,6 +254,31 @@ public class HmacSecretExtension extends Extension {
         return isPrf
                 ? Collections.singletonMap("prf", Collections.singletonMap("enabled", enabled))
                 : Collections.singletonMap("hmacCreateSecret", enabled);
+    }
+
+
+    private static class Salts {
+        byte[] salt1;
+        byte[] salt2;
+
+        Salts(byte[] salt1, @Nullable byte[] salt2) {
+            this.salt1 = salt1;
+            this.salt2 = salt2 != null ? salt2 : new byte[0];
+        }
+    }
+
+    private byte[] prfSalt(byte[] secret) {
+        try {
+            return MessageDigest.getInstance("SHA-256").digest(
+                    ByteBuffer
+                            .allocate(13 + secret.length)
+                            .put("WebAuthn PRF".getBytes(StandardCharsets.US_ASCII))
+                            .put((byte) 0x00)
+                            .put(secret)
+                            .array());
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("SHA-256 missing", e);
+        }
     }
 
     private static class PrfInputs {

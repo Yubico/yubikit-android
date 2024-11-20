@@ -75,7 +75,8 @@ public class CreationOptionsBuilder {
         return this;
     }
 
-    public CreationOptionsBuilder excludeCredentialDescriptors(List<PublicKeyCredentialDescriptor> excludeCredentials) {
+    public CreationOptionsBuilder excludeCredentialDescriptors(
+            List<PublicKeyCredentialDescriptor> excludeCredentials) {
         this.excludeCredentials = excludeCredentials;
         return this;
     }
@@ -87,7 +88,8 @@ public class CreationOptionsBuilder {
         return this;
     }
 
-    public CreationOptionsBuilder excludeCredentials(PublicKeyCredentialDescriptor... excludeCredentials) {
+    public CreationOptionsBuilder excludeCredentials(
+            PublicKeyCredentialDescriptor... excludeCredentials) {
         this.excludeCredentials = Arrays.asList(excludeCredentials);
         return this;
     }

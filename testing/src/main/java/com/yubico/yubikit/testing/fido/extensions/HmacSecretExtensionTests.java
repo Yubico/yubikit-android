@@ -212,7 +212,9 @@ public class HmacSecretExtensionTests {
             PublicKeyCredential cred = new ClientHelper(session)
                     .makeCredential(
                             new CreationOptionsBuilder()
-                                    .extensions(Collections.singletonMap(KEY_HMAC_CREATE_SECRET, Collections.emptyMap()))
+                                    .extensions(
+                                            Collections.singletonMap(KEY_HMAC_CREATE_SECRET,
+                                                    Collections.emptyMap()))
                                     .build()
                     );
 

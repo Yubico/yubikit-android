@@ -19,6 +19,7 @@ package com.yubico.yubikit.fido.client.extensions;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
 import com.yubico.yubikit.fido.webauthn.AuthenticatorSelectionCriteria;
+import com.yubico.yubikit.fido.webauthn.Extensions;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialCreationOptions;
 import com.yubico.yubikit.fido.webauthn.ResidentKeyRequirement;
 
@@ -39,7 +40,12 @@ public class CredPropsExtension extends Extension {
             PublicKeyCredentialCreationOptions options,
             PinUvAuthProtocol pinUvAuthProtocol) {
 
-        if (options.getExtensions().has(name)) {
+        Extensions extensions = options.getExtensions();
+        if (extensions == null) {
+            return null;
+        }
+
+        if (extensions.has(name)) {
             AuthenticatorSelectionCriteria authenticatorSelection = options.getAuthenticatorSelection();
             String optionsRk = authenticatorSelection != null
                     ? authenticatorSelection.getResidentKey()

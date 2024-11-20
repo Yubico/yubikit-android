@@ -25,7 +25,10 @@ import com.yubico.yubikit.testing.fido.FidoTestState;
 import java.io.IOException;
 
 public class ConfigHelper {
-    public static Config getConfig(Ctap2Session session, FidoTestState state) throws IOException, CommandException {
+    public static Config getConfig(
+            Ctap2Session session,
+            FidoTestState state
+    ) throws IOException, CommandException {
         ClientPin clientPin = new ClientPin(session, state.getPinUvAuthProtocol());
         byte[] pinToken = clientPin.getPinToken(TestData.PIN, ClientPin.PIN_PERMISSION_ACFG, null);
         return new Config(session, state.getPinUvAuthProtocol(), pinToken);

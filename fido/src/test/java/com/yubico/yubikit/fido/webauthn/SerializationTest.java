@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Yubico.
+ * Copyright (C) 2020-2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -153,6 +153,7 @@ public class SerializationTest {
         compareDescriptorLists(a.getExcludeCredentials(), b.getExcludeCredentials());
         Assert.assertEquals(a.getAuthenticatorSelection(), b.getAuthenticatorSelection());
         Assert.assertEquals(a.getAttestation(), b.getAttestation());
+        Assert.assertEquals(a.getExtensions(), b.getExtensions());
     }
 
     void testCreationOptions(@Nullable Long timeout) {
@@ -345,8 +346,7 @@ public class SerializationTest {
         // credentialId as byte[]
         PublicKeyCredential credential2 = new PublicKeyCredential(
                 credentialId,
-                response,
-                null);
+                response);
 
         Assert.assertEquals(credentialIdB64UrlEncoded, credential2.getId());
         Assert.assertArrayEquals(credentialId, credential2.getRawId());

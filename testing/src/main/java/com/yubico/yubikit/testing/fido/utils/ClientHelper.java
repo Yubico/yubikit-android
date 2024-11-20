@@ -44,7 +44,9 @@ public class ClientHelper {
         return makeCredential(new CreationOptionsBuilder().build());
     }
 
-    public PublicKeyCredential makeCredential(PublicKeyCredentialCreationOptions options) throws IOException, CommandException, ClientError {
+    public PublicKeyCredential makeCredential(
+            PublicKeyCredentialCreationOptions options
+    ) throws IOException, CommandException, ClientError {
         return client.makeCredential(
                 TestData.CLIENT_DATA_JSON_CREATE,
                 options,
@@ -66,7 +68,9 @@ public class ClientHelper {
         );
     }
 
-    public void deleteCredentialsByIds(List<byte[]> credIds) throws IOException, CommandException, ClientError {
+    public void deleteCredentialsByIds(
+            List<byte[]> credIds
+    ) throws IOException, CommandException, ClientError {
         try {
             CredentialManager credentialManager = client.getCredentialManager(TestData.PIN);
             for (byte[] credId : credIds) {
@@ -96,5 +100,4 @@ public class ClientHelper {
                 .map(PublicKeyCredential::getRawId)
                 .collect(Collectors.toList()));
     }
-
 }
