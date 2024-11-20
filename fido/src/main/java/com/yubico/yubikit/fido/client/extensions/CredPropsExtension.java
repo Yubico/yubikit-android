@@ -41,8 +41,13 @@ public class CredPropsExtension extends Extension {
 
         if (options.getExtensions().has(name)) {
             AuthenticatorSelectionCriteria authenticatorSelection = options.getAuthenticatorSelection();
-            boolean rk = authenticatorSelection != null &&
-                    ResidentKeyRequirement.REQUIRED.equals(authenticatorSelection.getResidentKey());
+            String optionsRk = authenticatorSelection != null
+                    ? authenticatorSelection.getResidentKey()
+                    : null;
+            Boolean authenticatorRk = (Boolean) ctap.getCachedInfo().getOptions().get("rk");
+            boolean rk = (ResidentKeyRequirement.REQUIRED.equals(optionsRk) ||
+                    (ResidentKeyRequirement.PREFERRED.equals(optionsRk) &&
+                            Boolean.TRUE.equals(authenticatorRk)));
 
             return new RegistrationProcessor(
                     (attestationObject, pinToken) ->

@@ -92,6 +92,7 @@ public class BasicWebAuthnClient implements Closeable {
 
     private final boolean pinSupported;
     private final boolean uvSupported;
+    private final boolean rkSupported;
 
     private final ClientPin clientPin;
 
@@ -157,6 +158,7 @@ public class BasicWebAuthnClient implements Closeable {
         Boolean uv = (Boolean) options.get(OPTION_USER_VERIFICATION);
         uvSupported = uv != null;
         uvConfigured = uvSupported && uv;
+        rkSupported = Boolean.TRUE.equals(options.get(OPTION_RESIDENT_KEY));
 
         enterpriseAttestationSupported = Boolean.TRUE.equals(options.get(OPTION_EP));
     }
@@ -700,9 +702,7 @@ public class BasicWebAuthnClient implements Closeable {
         if (authenticatorSelection != null) {
             String residentKeyRequirement = authenticatorSelection.getResidentKey();
             if (ResidentKeyRequirement.REQUIRED.equals(residentKeyRequirement) ||
-                    (ResidentKeyRequirement.PREFERRED.equals(residentKeyRequirement) &&
-                            (pinSupported || uvSupported)
-                    )
+                    (ResidentKeyRequirement.PREFERRED.equals(residentKeyRequirement) && rkSupported)
             ) {
                 ctapOptions.put(OPTION_RESIDENT_KEY, true);
             }
