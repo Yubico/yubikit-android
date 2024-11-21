@@ -29,9 +29,8 @@ import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialRequestOptions;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialType;
 
 import java.io.IOException;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class ClientHelper {
     final BasicWebAuthnClient client;
@@ -87,17 +86,19 @@ public class ClientHelper {
 
     public void deleteCredentials(List<PublicKeyCredential> credentials)
             throws IOException, CommandException, ClientError {
-        deleteCredentialsByIds(credentials
-                .stream()
-                .map(PublicKeyCredential::getRawId)
-                .collect(Collectors.toList()));
+        List<byte[]> credIds = new ArrayList<>();
+        for (PublicKeyCredential credential : credentials) {
+            credIds.add(credential.getRawId());
+        }
+        deleteCredentialsByIds(credIds);
     }
 
     public void deleteCredentials(PublicKeyCredential... credentials)
             throws IOException, CommandException, ClientError {
-        deleteCredentialsByIds(Arrays
-                .stream(credentials)
-                .map(PublicKeyCredential::getRawId)
-                .collect(Collectors.toList()));
+        List<byte[]> credIds = new ArrayList<>();
+        for (PublicKeyCredential credential : credentials) {
+            credIds.add(credential.getRawId());
+        }
+        deleteCredentialsByIds(credIds);
     }
 }

@@ -28,11 +28,11 @@ import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialUserEntity;
 import com.yubico.yubikit.fido.webauthn.ResidentKeyRequirement;
 
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
@@ -81,10 +81,12 @@ public class CreationOptionsBuilder {
         return this;
     }
 
-    public CreationOptionsBuilder excludeCredentials(List<PublicKeyCredential> excludeCredentials) {
-        this.excludeCredentials = excludeCredentials.stream().map(
-                c -> new PublicKeyCredentialDescriptor(PUBLIC_KEY, c.getRawId())
-        ).collect(Collectors.toList());
+    public CreationOptionsBuilder excludeCredentials(List<PublicKeyCredential> credentials) {
+        List<PublicKeyCredentialDescriptor> list = new ArrayList<>();
+        for (PublicKeyCredential credential : credentials) {
+            list.add(new PublicKeyCredentialDescriptor(PUBLIC_KEY, credential.getRawId()));
+        }
+        excludeCredentials = list;
         return this;
     }
 
@@ -94,10 +96,11 @@ public class CreationOptionsBuilder {
         return this;
     }
 
-    public CreationOptionsBuilder excludeCredentials(PublicKeyCredential... excludeCredentials) {
-        this.excludeCredentials = Arrays.stream(excludeCredentials).map(
-                c -> new PublicKeyCredentialDescriptor(PUBLIC_KEY, c.getRawId())
-        ).collect(Collectors.toList());
+    public CreationOptionsBuilder excludeCredentials(PublicKeyCredential... credentials) {
+        excludeCredentials = new ArrayList<>();
+        for (PublicKeyCredential cred : credentials) {
+            excludeCredentials.add(new PublicKeyCredentialDescriptor(PUBLIC_KEY, cred.getRawId()));
+        }
         return this;
     }
 

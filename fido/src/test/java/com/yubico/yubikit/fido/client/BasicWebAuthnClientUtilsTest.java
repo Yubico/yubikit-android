@@ -43,12 +43,12 @@ import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialDescriptor;
 import org.junit.Test;
 
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
@@ -432,26 +432,33 @@ public class BasicWebAuthnClientUtilsTest {
 
                 List<Map<String, Object>> allowList = invocation.getArgument(2);
 
-                List<byte[]> ids = idsForRp != null
-                        ? idsForRp.stream().filter(id ->
-                        allowList
-                                .stream()
-                                .anyMatch(desc -> Arrays.equals(
-                                        id,
-                                        (byte[]) desc.get(PublicKeyCredentialDescriptor.ID
-                                        )))
-                ).collect(Collectors.toList())
-                        : Collections.emptyList();
+                List<byte[]> ids;
+                if (idsForRp != null) {
+                    ids = new ArrayList<>();
+                    for (byte[] id : idsForRp) {
+                        for (Map<String, Object> desc : allowList) {
+                            byte[] descId = (byte[]) desc.get(PublicKeyCredentialDescriptor.ID);
+                            if (Arrays.equals(id, descId)) {
+                                ids.add(id);
+                                break;
+                            }
+                        }
+                    }
+                } else {
+                    ids = Collections.emptyList();
+                }
 
                 if (ids.isEmpty()) {
                     throw new CtapException(CtapException.ERR_NO_CREDENTIALS);
                 }
-                return ids.stream().map(id -> {
+                List<Ctap2Session.AssertionData> list = new ArrayList<>();
+                for (byte[] bytes : ids) {
                     Ctap2Session.AssertionData assertionData =
                             mock(Ctap2Session.AssertionData.class);
-                    when(assertionData.getCredentialId(isNull())).thenReturn(id);
-                    return assertionData;
-                }).collect(Collectors.toList());
+                    when(assertionData.getCredentialId(isNull())).thenReturn(bytes);
+                    list.add(assertionData);
+                }
+                return list;
             });
 
             return ctapMock;

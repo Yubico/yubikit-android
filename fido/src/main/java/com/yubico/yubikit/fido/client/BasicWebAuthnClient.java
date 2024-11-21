@@ -62,7 +62,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 import javax.annotation.Nullable;
 
@@ -450,20 +449,19 @@ public class BasicWebAuthnClient implements Closeable {
 
         Map<String, Boolean> ctapOptions = getCreateCtapOptions(options, pin);
 
-        List<Extension.RegistrationProcessor> registrationProcessors =
-                extensions.stream()
-                        .map(e -> e.makeCredential(ctap, options, clientPin.getPinUvAuth()))
-                        .filter(Objects::nonNull)
-                        .collect(Collectors.toList());
-
-        int permissions =
-                registrationProcessors.stream()
-                        .map(Extension.RegistrationProcessor::getPermissions)
-                        .reduce(ClientPin.PIN_PERMISSION_MC |
-                                (options.getExcludeCredentials().isEmpty()
-                                        ? ClientPin.PIN_PERMISSION_NONE
-                                        : ClientPin.PIN_PERMISSION_GA),
-                                (perms, perm) -> perms | perm);
+        int permissions = ClientPin.PIN_PERMISSION_MC;
+        if (!options.getExcludeCredentials().isEmpty()) {
+            permissions |= ClientPin.PIN_PERMISSION_GA;
+        }
+        List<Extension.RegistrationProcessor> registrationProcessors = new ArrayList<>();
+        for (Extension extension : extensions) {
+            Extension.RegistrationProcessor processor =
+                    extension.makeCredential(ctap, options, clientPin.getPinUvAuth());
+            if (processor != null) {
+                registrationProcessors.add(processor);
+                permissions |= processor.getPermissions();
+            }
+        }
 
         final AuthParams authParams = getAuthParams(
                 clientDataHash,
@@ -472,10 +470,10 @@ public class BasicWebAuthnClient implements Closeable {
                 permissions,
                 rpId);
 
-        Map<String, Object> authenticatorInputs =
-                registrationProcessors.stream()
-                        .map(p -> p.getInput(authParams.pinToken))
-                        .collect(HashMap::new, HashMap::putAll, HashMap::putAll);
+        HashMap<String, Object> authenticatorInputs = new HashMap<>();
+        for (Extension.RegistrationProcessor processor : registrationProcessors) {
+            authenticatorInputs.putAll(processor.getInput(authParams.pinToken));
+        }
 
         final List<PublicKeyCredentialDescriptor> excludeCredentials =
                 removeUnsupportedCredentials(
@@ -528,14 +526,11 @@ public class BasicWebAuthnClient implements Closeable {
                 state
         );
 
-        ClientExtensionResults results =
-                registrationProcessors.stream()
-                        .map(p -> p.getOutput(
-                                AttestationObject.fromCredential(credentialData),
-                                authParams.pinToken))
-                        .collect(ClientExtensionResults::new,
-                                ClientExtensionResults::add,
-                                ClientExtensionResults::addAll);
+        ClientExtensionResults results = new ClientExtensionResults();
+        for (Extension.RegistrationProcessor processor : registrationProcessors) {
+            AttestationObject attestationObject = AttestationObject.fromCredential(credentialData);
+            results.add(processor.getOutput(attestationObject, authParams.pinToken));
+        }
         return new WithExtensionResults<>(credentialData, results);
     }
 
@@ -577,17 +572,16 @@ public class BasicWebAuthnClient implements Closeable {
                 options.getAllowCredentials()
         );
 
-        List<Extension.AuthenticationProcessor> authenticationProcessors =
-                extensions.stream()
-                        .map(e -> e.getAssertion(ctap, options, clientPin.getPinUvAuth()))
-                        .filter(Objects::nonNull)
-                        .collect(Collectors.toList());
-
-        int permissions =
-                authenticationProcessors.stream()
-                        .map(Extension.AuthenticationProcessor::getPermissions)
-                        .reduce(ClientPin.PIN_PERMISSION_GA,
-                                (perms, perm) -> perms | perm);
+        int permissions = ClientPin.PIN_PERMISSION_GA;
+        List<Extension.AuthenticationProcessor> authenticationProcessors = new ArrayList<>();
+        for (Extension extension : extensions) {
+            Extension.AuthenticationProcessor processor =
+                    extension.getAssertion(ctap, options, clientPin.getPinUvAuth());
+            if (processor != null) {
+                authenticationProcessors.add(processor);
+                permissions |= processor.getPermissions();
+            }
+        }
 
         final AuthParams authParams = getAuthParams(
                 clientDataHash,
@@ -606,12 +600,11 @@ public class BasicWebAuthnClient implements Closeable {
                 authParams.pinToken)
                 : null;
 
-        final Map<String, Object> authenticatorInputs =
-                authenticationProcessors.stream()
-                        .map(p -> p.getInput(selectedCred, authParams.pinToken))
-                        .collect(HashMap::new,
-                                HashMap::putAll,
-                                HashMap::putAll);
+        HashMap<String, Object> authenticatorInputs = new HashMap<>();
+        for (Extension.AuthenticationProcessor processor : authenticationProcessors) {
+            authenticatorInputs.putAll(processor.getInput(selectedCred, authParams.pinToken));
+        }
+
         try {
             List<Ctap2Session.AssertionData> assertions = ctap.getAssertions(
                     rpId,
@@ -630,15 +623,12 @@ public class BasicWebAuthnClient implements Closeable {
 
             List<WithExtensionResults<Ctap2Session.AssertionData>> result = new ArrayList<>();
             for(final Ctap2Session.AssertionData assertionData : assertions) {
-                ClientExtensionResults results =
-                        authenticationProcessors.stream()
-                                .map(p -> p.getOutput(assertionData, authParams.pinToken))
-                                .collect(ClientExtensionResults::new,
-                                        ClientExtensionResults::add,
-                                        ClientExtensionResults::addAll);
+                ClientExtensionResults results = new ClientExtensionResults();
+                for (Extension.AuthenticationProcessor processor : authenticationProcessors) {
+                    results.add(processor.getOutput(assertionData, authParams.pinToken));
+                }
                 result.add(new WithExtensionResults<>(assertionData, results));
             }
-
             return result;
 
         } catch (CtapException exc) {
@@ -841,10 +831,12 @@ public class BasicWebAuthnClient implements Closeable {
             Ctap2Session.InfoData info = ctap.getCachedInfo();
             Integer maxCredIdLength = info.getMaxCredentialIdLength();
             if (maxCredIdLength != null) {
-                creds = descriptors
-                        .stream()
-                        .filter(desc -> desc.getId().length <= maxCredIdLength)
-                        .collect(Collectors.toList());
+                creds = new ArrayList<>();
+                for (PublicKeyCredentialDescriptor desc : descriptors) {
+                    if (desc.getId().length <= maxCredIdLength) {
+                        creds.add(desc);
+                    }
+                }
             } else {
                 creds = descriptors;
             }
@@ -912,9 +904,11 @@ public class BasicWebAuthnClient implements Closeable {
             if (descriptors == null || descriptors.isEmpty()) {
                 return null;
             }
-            return descriptors.stream()
-                    .map(d -> d.toMap(SerializationType.CBOR))
-                    .collect(Collectors.toList());
+            List<Map<String, ?>> creds = new ArrayList<>();
+            for (PublicKeyCredentialDescriptor descriptor : descriptors) {
+                creds.add(descriptor.toMap(SerializationType.CBOR));
+            }
+            return creds;
         }
 
         /**

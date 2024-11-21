@@ -43,6 +43,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -117,10 +118,10 @@ public class HmacSecretExtension extends Extension {
                         throw new IllegalArgumentException("evalByCredential needs allow list");
                     }
 
-                    Set<String> ids = allowCredentials
-                            .stream()
-                            .map(desc -> toUrlSafeString(desc.getId()))
-                            .collect(Collectors.toSet());
+                    Set<String> ids = new HashSet<>();
+                    for (PublicKeyCredentialDescriptor descriptor : allowCredentials) {
+                        ids.add(toUrlSafeString(descriptor.getId()));
+                    }
 
                     if (!ids.containsAll(evalByCredential.keySet())) {
                         throw new IllegalArgumentException("evalByCredentials contains invalid key");
