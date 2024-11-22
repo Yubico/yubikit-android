@@ -134,13 +134,42 @@ public class BasicWebAuthnClient implements Closeable {
         }
     }
 
+    /**
+     * Create a new Webauthn client.
+     * <p>
+     * This client will process all extensions.
+     *
+     * @param session CTAP session
+     * @throws IOException A communication error in the transport layer
+     * @throws CommandException A communication in the protocol layer
+     *
+     * @see <a href="https://www.w3.org/TR/webauthn-2/#webauthn-client">Webauthn client</a>
+     * @see <a href="https://www.w3.org/TR/webauthn-2/#sctn-extensions">Webauthn extensions</a>
+     * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#sctn-defined-extensions">CTAP extensions</a>
+     */
     public BasicWebAuthnClient(Ctap2Session session) throws IOException, CommandException {
-        this(session, getDefaultExtensions(session));
+        this(session, defaultExtensions);
     }
 
-    public BasicWebAuthnClient(Ctap2Session session, @Nullable List<Extension> extensions) throws IOException, CommandException {
+    /**
+     * Create a new Webauthn client.
+     * <p>
+     * This client will only process provided extensions.
+     *
+     * @param session CTAP2 session
+     * @param extensions List of extensions
+     * @throws IOException A communication error in the transport layer
+     * @throws CommandException A communication in the protocol layer
+     *
+     * @see <a href="https://www.w3.org/TR/webauthn-2/#webauthn-client">Webauthn client</a>
+     * @see <a href="https://www.w3.org/TR/webauthn-2/#sctn-extensions">Webauthn extensions</a>
+     * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#sctn-defined-extensions">CTAP extensions</a>
+     */
+    public BasicWebAuthnClient(
+            Ctap2Session session,
+            List<Extension> extensions) throws IOException, CommandException {
         this.ctap = session;
-        this.extensions = extensions != null ? extensions : Collections.emptyList();
+        this.extensions = extensions;
 
         Ctap2Session.InfoData info = ctap.getInfo();
 
@@ -793,16 +822,14 @@ public class BasicWebAuthnClient implements Closeable {
         return list;
     }
 
-    private static List<Extension> getDefaultExtensions(Ctap2Session session) {
-        return Arrays.asList(
-                new CredPropsExtension(),
-                new CredBlobExtension(),
-                new CredProtectExtension(),
-                new HmacSecretExtension(),
-                new MinPinLengthExtension(),
-                new LargeBlobExtension()
-        );
-    }
+    private static final List<Extension> defaultExtensions = Arrays.asList(
+            new CredPropsExtension(),
+            new CredBlobExtension(),
+            new CredProtectExtension(),
+            new HmacSecretExtension(),
+            new MinPinLengthExtension(),
+            new LargeBlobExtension()
+    );
 
     static class Utils {
 
