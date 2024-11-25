@@ -37,7 +37,7 @@ import java.util.Map;
 
 public class Ctap2BioEnrollmentTests {
 
-    private static final Logger logger = LoggerFactory.getLogger(PivCertificateTests.class);
+    private static final Logger logger = LoggerFactory.getLogger(Ctap2BioEnrollmentTests.class);
 
     public static void testFingerprintEnrollment(Ctap2Session session, FidoTestState state)
             throws Throwable {
@@ -145,9 +145,9 @@ public class Ctap2BioEnrollmentTests {
     }
 
     public static String getName(byte[] templateId, Map<byte[], String> enrollments) {
-        for (byte[] enrolledTemplateId : enrollments.keySet()) {
-            if (Arrays.equals(templateId, enrolledTemplateId)) {
-                return enrollments.get(enrolledTemplateId);
+        for (Map.Entry<byte[], String> enrollment : enrollments.entrySet()) {
+            if (Arrays.equals(templateId, enrollment.getKey())) {
+                return enrollments.get(enrollment.getKey());
             }
         }
         return null;

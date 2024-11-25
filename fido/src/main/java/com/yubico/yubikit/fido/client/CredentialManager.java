@@ -96,7 +96,7 @@ public class CredentialManager {
             Map<PublicKeyCredentialDescriptor, PublicKeyCredentialUserEntity> credentials = new HashMap<>();
             byte[] rpIdHash = rpIdHashes.get(rpId);
             if (rpIdHash == null) {
-                rpIdHash = BasicWebAuthnClient.hash(rpId.getBytes(StandardCharsets.UTF_8));
+                rpIdHash = BasicWebAuthnClient.Utils.hash(rpId.getBytes(StandardCharsets.UTF_8));
             }
 
             for (CredentialManagement.CredentialData credData : credentialManagement.enumerateCredentials(rpIdHash)) {

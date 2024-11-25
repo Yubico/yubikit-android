@@ -40,6 +40,7 @@ import org.junit.runners.Suite;
         Ctap2ConfigInstrumentedTests.class,
         Ctap2BioEnrollmentInstrumentedTests.class,
         Ctap2SessionResetInstrumentedTests.class,
+        ExtensionsInstrumentedTests.class,
 })
 @Categories.ExcludeCategory(AlwaysManualTest.class)
 public class FidoTests {

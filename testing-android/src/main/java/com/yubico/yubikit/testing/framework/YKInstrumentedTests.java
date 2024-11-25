@@ -63,7 +63,7 @@ public class YKInstrumentedTests {
             if (deviceInfo.getVersion().major == 0) {
                 SessionVersionOverride.set(new Version(5, 7, 2));
             }
-        } catch (IOException | IllegalStateException ignored) {
+        } catch (IOException | IllegalStateException | IllegalArgumentException ignored) {
         }
     }
 
