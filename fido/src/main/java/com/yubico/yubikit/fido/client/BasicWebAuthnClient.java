@@ -21,6 +21,7 @@ import static com.yubico.yubikit.fido.webauthn.PublicKeyCredentialType.PUBLIC_KE
 import com.yubico.yubikit.core.application.CommandException;
 import com.yubico.yubikit.core.application.CommandState;
 import com.yubico.yubikit.core.fido.CtapException;
+import com.yubico.yubikit.core.util.Pair;
 import com.yubico.yubikit.fido.client.extensions.CredBlobExtension;
 import com.yubico.yubikit.fido.client.extensions.CredPropsExtension;
 import com.yubico.yubikit.fido.client.extensions.CredProtectExtension;
@@ -226,7 +227,7 @@ public class BasicWebAuthnClient implements Closeable {
         byte[] clientDataHash = Utils.hash(clientDataJson);
 
         try {
-            WithExtensionResults<Ctap2Session.CredentialData> result = ctapMakeCredential(
+            Pair<Ctap2Session.CredentialData, ClientExtensionResults> result = ctapMakeCredential(
                     clientDataHash,
                     options,
                     effectiveDomain,
@@ -234,8 +235,10 @@ public class BasicWebAuthnClient implements Closeable {
                     enterpriseAttestation,
                     state
             );
+            final Ctap2Session.CredentialData credential = result.first;
+            final ClientExtensionResults clientExtensionResults = result.second;
 
-            final AttestationObject attestationObject = AttestationObject.fromCredential(result.data);
+            final AttestationObject attestationObject = AttestationObject.fromCredential(credential);
 
             AuthenticatorAttestationResponse response = new AuthenticatorAttestationResponse(
                     clientDataJson,
@@ -247,7 +250,7 @@ public class BasicWebAuthnClient implements Closeable {
                     Objects.requireNonNull(attestationObject.getAuthenticatorData()
                             .getAttestedCredentialData()).getCredentialId(),
                     response,
-                    result.clientExtensionResults);
+                    clientExtensionResults);
         } catch (CtapException e) {
             if (e.getCtapError() == CtapException.ERR_PIN_INVALID) {
                 throw new PinInvalidClientError(e, clientPin.getPinRetries().getCount());
@@ -282,7 +285,7 @@ public class BasicWebAuthnClient implements Closeable {
     ) throws MultipleAssertionsAvailable, IOException, CommandException, ClientError {
         byte[] clientDataHash = Utils.hash(clientDataJson);
         try {
-            final List<WithExtensionResults<Ctap2Session.AssertionData>> assertions = ctapGetAssertions(
+            final List<Pair<Ctap2Session.AssertionData, ClientExtensionResults>> results = ctapGetAssertions(
                     clientDataHash,
                     options,
                     effectiveDomain,
@@ -294,18 +297,17 @@ public class BasicWebAuthnClient implements Closeable {
                     options.getAllowCredentials()
             );
 
-            if (assertions.size() == 1) {
-                final WithExtensionResults<Ctap2Session.AssertionData> first = assertions.get(0);
-                final Ctap2Session.AssertionData assertionData = first.data;
-                final ClientExtensionResults clientExtensionResults = first.clientExtensionResults;
+            if (results.size() == 1) {
+                final Ctap2Session.AssertionData assertion = results.get(0).first;
+                final ClientExtensionResults clientExtensionResults = results.get(0).second;
 
                 return PublicKeyCredential.fromAssertion(
-                        assertionData,
+                        assertion,
                         clientDataJson,
                         allowCredentials,
                         clientExtensionResults);
             } else {
-                throw new MultipleAssertionsAvailable(clientDataJson, assertions);
+                throw new MultipleAssertionsAvailable(clientDataJson, results);
             }
 
         } catch (CtapException e) {
@@ -418,24 +420,6 @@ public class BasicWebAuthnClient implements Closeable {
         }
     }
 
-    protected static class WithExtensionResults<T> {
-        final T data;
-        final ClientExtensionResults clientExtensionResults;
-
-        WithExtensionResults(T data, ClientExtensionResults clientExtensionResults) {
-            this.data = data;
-            this.clientExtensionResults = clientExtensionResults;
-        }
-
-        T getData() {
-            return data;
-        }
-
-        ClientExtensionResults getClientExtensionResults() {
-            return clientExtensionResults;
-        }
-    }
-
     /**
      * Create a new WebAuthn credential.
      * <p>
@@ -449,13 +433,13 @@ public class BasicWebAuthnClient implements Closeable {
      * @param effectiveDomain The effective domain for the request, which is used to validate the RP ID against.
      * @param pin             If needed, the PIN to authorize the credential creation.
      * @param state           If needed, the state to provide control over the ongoing operation
-     * @return A WebAuthn public key credential.
+     * @return A pair of credential data and client extension results.
      * @throws IOException      A communication error in the transport layer
      * @throws CommandException A communication in the protocol layer
      * @throws ClientError      A higher level error
      */
     @SuppressWarnings("unchecked")
-    protected WithExtensionResults<Ctap2Session.CredentialData> ctapMakeCredential(
+    protected Pair<Ctap2Session.CredentialData, ClientExtensionResults> ctapMakeCredential(
             byte[] clientDataHash,
             PublicKeyCredentialCreationOptions options,
             String effectiveDomain,
@@ -555,12 +539,12 @@ public class BasicWebAuthnClient implements Closeable {
                 state
         );
 
-        ClientExtensionResults results = new ClientExtensionResults();
+        ClientExtensionResults clientExtensionResults = new ClientExtensionResults();
         for (Extension.RegistrationProcessor processor : registrationProcessors) {
             AttestationObject attestationObject = AttestationObject.fromCredential(credentialData);
-            results.add(processor.getOutput(attestationObject, authParams.pinToken));
+            clientExtensionResults.add(processor.getOutput(attestationObject, authParams.pinToken));
         }
-        return new WithExtensionResults<>(credentialData, results);
+        return new Pair<>(credentialData, clientExtensionResults);
     }
 
     /**
@@ -578,12 +562,12 @@ public class BasicWebAuthnClient implements Closeable {
      * @param effectiveDomain The effective domain for the request, which is used to validate the RP ID against.
      * @param pin             If needed, the PIN to authorize the credential creation.
      * @param state           If needed, the state to provide control over the ongoing operation
-     * @return Webauthn public key credential with assertion response data.
+     * @return List of pairs containing assertion response data and client extension results.
      * @throws IOException      A communication error in the transport layer
      * @throws CommandException A communication in the protocol layer
      * @throws ClientError      A higher level error
      */
-    protected List<WithExtensionResults<Ctap2Session.AssertionData>> ctapGetAssertions(
+    protected List<Pair<Ctap2Session.AssertionData, ClientExtensionResults>> ctapGetAssertions(
             byte[] clientDataHash,
             PublicKeyCredentialRequestOptions options,
             String effectiveDomain,
@@ -650,13 +634,13 @@ public class BasicWebAuthnClient implements Closeable {
                     state
             );
 
-            List<WithExtensionResults<Ctap2Session.AssertionData>> result = new ArrayList<>();
+            List<Pair<Ctap2Session.AssertionData, ClientExtensionResults>> result = new ArrayList<>();
             for(final Ctap2Session.AssertionData assertionData : assertions) {
-                ClientExtensionResults results = new ClientExtensionResults();
+                ClientExtensionResults clientExtensionResults = new ClientExtensionResults();
                 for (Extension.AuthenticationProcessor processor : authenticationProcessors) {
-                    results.add(processor.getOutput(assertionData, authParams.pinToken));
+                    clientExtensionResults.add(processor.getOutput(assertionData, authParams.pinToken));
                 }
-                result.add(new WithExtensionResults<>(assertionData, results));
+                result.add(new Pair<>(assertionData, clientExtensionResults));
             }
             return result;
 

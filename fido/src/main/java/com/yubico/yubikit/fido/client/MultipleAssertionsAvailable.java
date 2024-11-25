@@ -16,8 +16,10 @@
 
 package com.yubico.yubikit.fido.client;
 
+import com.yubico.yubikit.core.util.Pair;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.fido.webauthn.AuthenticatorAssertionResponse;
+import com.yubico.yubikit.fido.webauthn.ClientExtensionResults;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredential;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialDescriptor;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialUserEntity;
@@ -34,9 +36,9 @@ import java.util.Objects;
  */
 public class MultipleAssertionsAvailable extends Throwable {
     private final byte[] clientDataJson;
-    private final List<BasicWebAuthnClient.WithExtensionResults<Ctap2Session.AssertionData>> assertions;
+    private final List<Pair<Ctap2Session.AssertionData, ClientExtensionResults>> assertions;
 
-    MultipleAssertionsAvailable(byte[] clientDataJson, List<BasicWebAuthnClient.WithExtensionResults<Ctap2Session.AssertionData>> assertions) {
+    MultipleAssertionsAvailable(byte[] clientDataJson, List<Pair<Ctap2Session.AssertionData, ClientExtensionResults>> assertions) {
         super("Request returned multiple assertions");
 
         this.clientDataJson = clientDataJson;
@@ -65,8 +67,8 @@ public class MultipleAssertionsAvailable extends Throwable {
      */
     public List<PublicKeyCredentialUserEntity> getUsers() throws UserInformationNotAvailableError {
         List<PublicKeyCredentialUserEntity> users = new ArrayList<>();
-        for (BasicWebAuthnClient.WithExtensionResults<Ctap2Session.AssertionData> assertion : assertions) {
-            Map<String, ?> user = assertion.data.getUser();
+        for (Pair<Ctap2Session.AssertionData, ClientExtensionResults> assertion : assertions) {
+            Map<String, ?> user = assertion.first.getUser();
             if (user == null) {
                 throw new UserInformationNotAvailableError();
             }
@@ -87,20 +89,23 @@ public class MultipleAssertionsAvailable extends Throwable {
         if (assertions.isEmpty()) {
             throw new IllegalStateException("Assertion has already been selected");
         }
-        BasicWebAuthnClient.WithExtensionResults<Ctap2Session.AssertionData> assertion = assertions.get(index);
+        Pair<Ctap2Session.AssertionData, ClientExtensionResults> assertionPair = assertions.get(index);
         assertions.clear();
 
-        final Map<String, ?> user = Objects.requireNonNull(assertion.data.getUser());
-        final Map<String, ?> credential = Objects.requireNonNull(assertion.data.getCredential());
+        final Ctap2Session.AssertionData assertion = assertionPair.first;
+        final ClientExtensionResults clientExtensionResults = assertionPair.second;
+
+        final Map<String, ?> user = Objects.requireNonNull(assertion.getUser());
+        final Map<String, ?> credential = Objects.requireNonNull(assertion.getCredential());
         final byte[] credentialId = Objects.requireNonNull((byte[]) credential.get(PublicKeyCredentialDescriptor.ID));
         return new PublicKeyCredential(
                 credentialId,
                 new AuthenticatorAssertionResponse(
                         clientDataJson,
-                        assertion.data.getAuthenticatorData(),
-                        assertion.data.getSignature(),
+                        assertion.getAuthenticatorData(),
+                        assertion.getSignature(),
                         Objects.requireNonNull((byte[]) user.get(PublicKeyCredentialUserEntity.ID))
                 ),
-                assertion.clientExtensionResults);
+                clientExtensionResults);
     }
 }
