@@ -22,7 +22,10 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.hardware.usb.UsbConfiguration;
+import android.hardware.usb.UsbConstants;
 import android.hardware.usb.UsbDevice;
+import android.hardware.usb.UsbInterface;
 import android.hardware.usb.UsbManager;
 import android.os.Build;
 
@@ -47,6 +50,35 @@ final class UsbDeviceManager {
     private static UsbDeviceManager instance;
 
     private static final org.slf4j.Logger logger = LoggerFactory.getLogger(UsbDeviceManager.class);
+
+    public static boolean isSupportedYubicoDevice(@Nullable UsbDevice device) {
+        return device != null && device.getVendorId() == YUBICO_VENDOR_ID;
+    }
+
+    public static boolean isSupportedDevice(@Nullable UsbDevice device) {
+        return isSupportedYubicoDevice(device) || isFidoUsbDevice(device);
+    }
+
+    private static boolean isFidoUsbDevice(@Nullable UsbDevice device) {
+        if (device == null) {
+            return false;
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            for (int configIndex = 0; configIndex < device.getConfigurationCount(); configIndex++) {
+                UsbConfiguration configuration = device.getConfiguration(configIndex);
+                for (int i = 0; i < configuration.getInterfaceCount(); i++) {
+                    UsbInterface usbInterface = configuration.getInterface(i);
+                    if (usbInterface.getInterfaceClass() == UsbConstants.USB_CLASS_HID &&
+                            usbInterface.getInterfaceSubclass() == 0) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
 
     private static synchronized UsbDeviceManager getInstance() {
         if (instance == null) {
@@ -81,7 +113,7 @@ final class UsbDeviceManager {
             intentFilter.addAction(UsbManager.ACTION_USB_DEVICE_DETACHED);
             context.registerReceiver(broadcastReceiver, intentFilter);
             for (UsbDevice usbDevice : usbDevices) {
-                if (usbDevice.getVendorId() == YUBICO_VENDOR_ID) {
+                if (isSupportedDevice(usbDevice)) {
                     onDeviceAttach(usbDevice);
                 }
             }
@@ -181,7 +213,7 @@ final class UsbDeviceManager {
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
             UsbDevice usbDevice = getUsbManagerExtraDevice(intent);
-            if (usbDevice == null || usbDevice.getVendorId() != YUBICO_VENDOR_ID) {
+            if (!isSupportedDevice(usbDevice)) {
                 return;
             }
 

@@ -33,7 +33,8 @@ public enum UsbPid {
     YK4_OTP_CCID(0x0405, YubiKeyType.YK4, UsbInterface.OTP | UsbInterface.CCID),
     YK4_FIDO_CCID(0x0406, YubiKeyType.YK4, UsbInterface.FIDO | UsbInterface.CCID),
     YK4_OTP_FIDO_CCID(0x0407, YubiKeyType.YK4, UsbInterface.OTP | UsbInterface.FIDO | UsbInterface.CCID),
-    YKP_OTP_FIDO(0x0410, YubiKeyType.YKP, UsbInterface.OTP | UsbInterface.FIDO);
+    YKP_OTP_FIDO(0x0410, YubiKeyType.YKP, UsbInterface.OTP | UsbInterface.FIDO),
+    FIDO_SECURITY_KEY(-1, YubiKeyType.FIDO_SECURITY_KEY, UsbInterface.FIDO);
 
     public final int value;
     public final YubiKeyType type;

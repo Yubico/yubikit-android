@@ -58,6 +58,11 @@ public class YKInstrumentedTests {
                 ? ((UsbYubiKeyDevice) device).getPid()
                 : null;
 
+
+        if (usbPid == UsbPid.FIDO_SECURITY_KEY) {
+            return;
+        }
+
         try (SmartCardConnection connection = device.openConnection(SmartCardConnection.class)) {
             final DeviceInfo deviceInfo = DeviceUtil.readInfo(connection, usbPid);
             if (deviceInfo.getVersion().major == 0) {
