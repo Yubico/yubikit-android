@@ -16,24 +16,8 @@
 
 package com.yubico.yubikit.fido.webauthn;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
-public class ClientExtensionResults {
-
-    final private List<ClientExtensionResultProvider> resultProviders = new ArrayList<>();
-
-    public void add(ClientExtensionResultProvider resultProvider) {
-        resultProviders.add(resultProvider);
-    }
-
-    public Map<String, Object> toMap(SerializationType serializationType) {
-        Map<String, Object> map = new HashMap<>();
-        for (ClientExtensionResultProvider resultProvider : resultProviders) {
-            map.putAll(resultProvider.getClientExtensionResult(serializationType));
-        }
-        return map;
-    }
+public interface ClientExtensionResultProvider {
+    Map<String, Object> getClientExtensionResult(SerializationType serializationType);
 }

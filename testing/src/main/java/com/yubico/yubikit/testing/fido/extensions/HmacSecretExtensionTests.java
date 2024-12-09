@@ -19,6 +19,7 @@ package com.yubico.yubikit.testing.fido.extensions;
 import com.yubico.yubikit.core.internal.codec.Base64;
 import com.yubico.yubikit.fido.webauthn.ClientExtensionResults;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredential;
+import com.yubico.yubikit.fido.webauthn.SerializationType;
 import com.yubico.yubikit.testing.fido.FidoTestState;
 import com.yubico.yubikit.testing.fido.utils.ClientHelper;
 import com.yubico.yubikit.testing.fido.utils.CreationOptionsBuilder;
@@ -226,18 +227,18 @@ public class HmacSecretExtensionTests {
     private Boolean getCreateResult(PublicKeyCredential credential) {
         ClientExtensionResults results = credential.getClientExtensionResults();
         Assert.assertNotNull(results);
-        Map<String, Object> resultsMap = results.toMap();
+        Map<String, Object> resultsMap = results.toMap(SerializationType.JSON);
         return (Boolean) resultsMap.get(KEY_HMAC_CREATE_SECRET);
     }
 
     @SuppressWarnings("unchecked")
     @Nullable
-    private String getGetResultsValue(PublicKeyCredential credential, String key) {
+    private byte[] getGetResultsValue(PublicKeyCredential credential, String key) {
         ClientExtensionResults extensionResults = credential.getClientExtensionResults();
         Assert.assertNotNull(extensionResults);
-        Map<String, Object> resultsMap = extensionResults.toMap();
+        Map<String, Object> resultsMap = extensionResults.toMap(SerializationType.CBOR);
         Map<String, Object> getSecretMap = (Map<String, Object>) resultsMap.get(KEY_HMAC_GET_SECRET);
         Assert.assertNotNull(getSecretMap);
-        return (String) getSecretMap.get(key);
+        return (byte[]) getSecretMap.get(key);
     }
 }

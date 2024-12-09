@@ -19,6 +19,7 @@ package com.yubico.yubikit.testing.fido.extensions;
 import com.yubico.yubikit.core.internal.codec.Base64;
 import com.yubico.yubikit.fido.webauthn.ClientExtensionResults;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredential;
+import com.yubico.yubikit.fido.webauthn.SerializationType;
 import com.yubico.yubikit.testing.Codec;
 import com.yubico.yubikit.testing.fido.FidoTestState;
 import com.yubico.yubikit.testing.fido.utils.ClientHelper;
@@ -121,9 +122,9 @@ public class LargeBlobExtensionTests {
                 return new byte[0];
             } else {
                 Assert.assertNull(getResultValue(cred, KEY_WRITTEN));
-                String data = (String) getResultValue(cred, KEY_BLOB);
+                byte[] data = getBlob(cred);
                 Assert.assertNotNull(data);
-                return Base64.fromUrlSafeString(data);
+                return data;
             }
         });
     }
@@ -177,12 +178,28 @@ public class LargeBlobExtensionTests {
         return largeBlob.get(key);
     }
 
+    @Nullable
+    private byte[] getBlob(PublicKeyCredential credential) {
+        Map<String, ?> largeBlob = getResult(credential, SerializationType.CBOR);
+        Assert.assertNotNull(largeBlob);
+        return (byte[]) largeBlob.get(KEY_BLOB);
+    }
+
+    @SuppressWarnings("unchecked")
+    @Nullable
+    private Map<String, ?> getResult(PublicKeyCredential cred, SerializationType serializationType) {
+        ClientExtensionResults results = cred.getClientExtensionResults();;
+        Assert.assertNotNull(results);
+        Map<String, Object> resultsMap = results.toMap(serializationType);
+        return (Map<String, ?>) resultsMap.get(LARGE_BLOB);
+    }
+
     @SuppressWarnings("unchecked")
     @Nullable
     private Map<String, ?> getResult(PublicKeyCredential cred) {
         ClientExtensionResults results = cred.getClientExtensionResults();;
         Assert.assertNotNull(results);
-        Map<String, Object> resultsMap = results.toMap();
+        Map<String, Object> resultsMap = results.toMap(SerializationType.JSON);
         return (Map<String, ?>) resultsMap.get(LARGE_BLOB);
     }
 }

@@ -20,6 +20,7 @@ import com.yubico.yubikit.fido.ctap.ClientPin;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
 import com.yubico.yubikit.fido.webauthn.AttestationObject;
+import com.yubico.yubikit.fido.webauthn.ClientExtensionResultProvider;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialCreationOptions;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialDescriptor;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialRequestOptions;
@@ -62,7 +63,8 @@ public abstract class Extension {
     }
 
     public interface RegistrationOutput {
-        @Nullable Map<String, Object> prepareOutput(
+        @Nullable
+        ClientExtensionResultProvider prepareOutput(
                 AttestationObject attestationObject,
                 @Nullable byte[] pinToken);
     }
@@ -74,7 +76,8 @@ public abstract class Extension {
     }
 
     public interface AuthenticationOutput {
-        @Nullable Map<String, Object> prepareOutput(
+        @Nullable
+        ClientExtensionResultProvider prepareOutput(
                 Ctap2Session.AssertionData assertionData,
                 @Nullable byte[] pinToken);
     }
@@ -129,15 +132,15 @@ public abstract class Extension {
                     : Collections.emptyMap();
         }
 
-        public Map<String, Object> getOutput(
+        public ClientExtensionResultProvider getOutput(
                 AttestationObject attestationObject,
                 @Nullable byte[] pinToken) {
-            Map<String, Object> extensionResult = output != null
+            ClientExtensionResultProvider resultProvider = output != null
                     ? output.prepareOutput(attestationObject, pinToken)
                     : null;
-            return extensionResult != null
-                    ? extensionResult
-                    : Collections.emptyMap();
+            return resultProvider != null
+                    ? resultProvider
+                    : serializationType -> Collections.emptyMap();
         }
 
         public int getPermissions() {
@@ -197,15 +200,15 @@ public abstract class Extension {
                     : Collections.emptyMap();
         }
 
-        public Map<String, Object> getOutput(
+        public ClientExtensionResultProvider getOutput(
                 Ctap2Session.AssertionData assertionData,
                 @Nullable byte[] pinToken) {
-            Map<String, Object> extensionResult = output != null
+            ClientExtensionResultProvider resultProvider = output != null
                     ? output.prepareOutput(assertionData, pinToken)
                     : null;
-            return extensionResult != null
-                    ? extensionResult
-                    : Collections.emptyMap();
+            return resultProvider != null
+                    ? resultProvider
+                    : serializationType -> Collections.emptyMap();
         }
 
         public int getPermissions() {

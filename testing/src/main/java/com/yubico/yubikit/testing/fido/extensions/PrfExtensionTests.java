@@ -19,6 +19,7 @@ package com.yubico.yubikit.testing.fido.extensions;
 import com.yubico.yubikit.core.internal.codec.Base64;
 import com.yubico.yubikit.fido.webauthn.ClientExtensionResults;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredential;
+import com.yubico.yubikit.fido.webauthn.SerializationType;
 import com.yubico.yubikit.testing.fido.FidoTestState;
 import com.yubico.yubikit.testing.fido.utils.ClientHelper;
 import com.yubico.yubikit.testing.fido.utils.CreationOptionsBuilder;
@@ -310,7 +311,7 @@ public class PrfExtensionTests {
     private Map<String, ?> getResult(PublicKeyCredential credential) {
         ClientExtensionResults results = credential.getClientExtensionResults();
         Assert.assertNotNull(results);
-        Map<String, Object> resultsMap = results.toMap();
+        Map<String, Object> resultsMap = results.toMap(SerializationType.JSON);
         return (Map<String, ?>) resultsMap.get(PRF_EXT);
     }
 }

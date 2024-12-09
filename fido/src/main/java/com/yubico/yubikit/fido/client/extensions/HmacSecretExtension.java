@@ -32,6 +32,7 @@ import com.yubico.yubikit.fido.webauthn.Extensions;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialCreationOptions;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialDescriptor;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialRequestOptions;
+import com.yubico.yubikit.fido.webauthn.SerializationType;
 
 import org.slf4j.LoggerFactory;
 
@@ -71,12 +72,14 @@ public class HmacSecretExtension extends Extension {
         if (Boolean.TRUE.equals(extensions.get("hmacCreateSecret"))) {
             return new RegistrationProcessor(
                     pinToken -> Collections.singletonMap(name, true),
-                    (attestationObject, pinToken) -> registrationOutput(attestationObject, false)
+                    (attestationObject, pinToken) ->
+                            serializationType -> registrationOutput(attestationObject, false)
             );
         } else if (extensions.has("prf")) {
             return new RegistrationProcessor(
                     pinToken -> Collections.singletonMap(name, true),
-                    (attestationObject, pinToken) -> registrationOutput(attestationObject, true)
+                    (attestationObject, pinToken) ->
+                            serializationType -> registrationOutput(attestationObject, true)
             );
         }
         return null;
@@ -229,18 +232,30 @@ public class HmacSecretExtension extends Extension {
 
             Map<String, Object> results = new HashMap<>();
             if (inputs.prf != null) {
-                results.put("first", toUrlSafeString(output1));
-                if (output2.length > 0) {
-                    results.put("second", toUrlSafeString(output2));
-                }
-                return Collections.singletonMap("prf",
-                        Collections.singletonMap("results", results));
+                return serializationType -> {
+                    results.put("first", serializationType == SerializationType.JSON
+                            ? toUrlSafeString(output1)
+                            : output1);
+                    if (output2.length > 0) {
+                        results.put("second", serializationType == SerializationType.JSON
+                                ? toUrlSafeString(output2)
+                                : output2);
+                    }
+                    return Collections.singletonMap("prf",
+                            Collections.singletonMap("results", results));
+                };
             } else {
-                results.put("output1", toUrlSafeString(output1));
-                if (output2.length > 0) {
-                    results.put("output2", toUrlSafeString(output2));
-                }
-                return Collections.singletonMap("hmacGetSecret", results);
+                return serializationType -> {
+                    results.put("output1", serializationType == SerializationType.JSON
+                            ? toUrlSafeString(output1)
+                            : output1);
+                    if (output2.length > 0) {
+                        results.put("output2", serializationType == SerializationType.JSON
+                                ? toUrlSafeString(output2)
+                                : output2);
+                    }
+                    return Collections.singletonMap("hmacGetSecret", results);
+                };
             }
         };
 

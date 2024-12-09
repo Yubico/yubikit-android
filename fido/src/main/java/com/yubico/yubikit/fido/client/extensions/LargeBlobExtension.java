@@ -24,9 +24,11 @@ import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.fido.ctap.ClientPin;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
+import com.yubico.yubikit.fido.webauthn.ClientExtensionResultProvider;
 import com.yubico.yubikit.fido.webauthn.Extensions;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialCreationOptions;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialRequestOptions;
+import com.yubico.yubikit.fido.webauthn.SerializationType;
 
 import org.slf4j.LoggerFactory;
 
@@ -77,7 +79,7 @@ public class LargeBlobExtension extends Extension {
             return new RegistrationProcessor(
                     pinToken -> Collections.singletonMap(LARGE_BLOB, true),
                     (attestationObject, pinToken) ->
-                            Collections.singletonMap(LARGE_BLOB,
+                            serializationType -> Collections.singletonMap(LARGE_BLOB,
                                     Collections.singletonMap(SUPPORTED,
                                             attestationObject.getLargeBlobKey() != null))
             );
@@ -113,7 +115,7 @@ public class LargeBlobExtension extends Extension {
     }
 
     @Nullable
-    Map<String, Object> read(
+    ClientExtensionResultProvider read(
             Ctap2Session.AssertionData assertionData,
             Ctap2Session ctap) {
 
@@ -125,8 +127,10 @@ public class LargeBlobExtension extends Extension {
         try {
             LargeBlobs largeBlobs = new LargeBlobs(ctap);
             byte[] blob = largeBlobs.getBlob(largeBlobKey);
-            return Collections.singletonMap(LARGE_BLOB, blob != null
-                    ? Collections.singletonMap(BLOB, toUrlSafeString(blob))
+            return serializationType -> Collections.singletonMap(LARGE_BLOB, blob != null
+                    ? Collections.singletonMap(BLOB, serializationType == SerializationType.JSON
+                    ? toUrlSafeString(blob)
+                    : blob)
                     : Collections.emptyMap());
         } catch (IOException | CommandException e) {
             Logger.error(logger, "LargeBlob processing failed: ", e);
@@ -136,7 +140,7 @@ public class LargeBlobExtension extends Extension {
     }
 
     @Nullable
-    Map<String, Object> write(
+    ClientExtensionResultProvider write(
             Ctap2Session.AssertionData assertionData,
             Ctap2Session ctap,
             byte[] bytes,
@@ -155,7 +159,8 @@ public class LargeBlobExtension extends Extension {
                     pinToken);
             largeBlobs.putBlob(largeBlobKey, bytes);
 
-            return Collections.singletonMap(LARGE_BLOB, Collections.singletonMap(WRITTEN, true));
+            return serializationType ->
+                    Collections.singletonMap(LARGE_BLOB, Collections.singletonMap(WRITTEN, true));
 
         } catch (IOException | CommandException | GeneralSecurityException e) {
             Logger.error(logger, "LargeBlob processing failed: ", e);
