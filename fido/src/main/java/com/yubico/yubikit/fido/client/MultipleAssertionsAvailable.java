@@ -16,8 +16,10 @@
 
 package com.yubico.yubikit.fido.client;
 
+import com.yubico.yubikit.core.util.Pair;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.fido.webauthn.AuthenticatorAssertionResponse;
+import com.yubico.yubikit.fido.webauthn.ClientExtensionResults;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredential;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialDescriptor;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialUserEntity;
@@ -34,9 +36,9 @@ import java.util.Objects;
  */
 public class MultipleAssertionsAvailable extends Throwable {
     private final byte[] clientDataJson;
-    private final List<Ctap2Session.AssertionData> assertions;
+    private final List<Pair<Ctap2Session.AssertionData, ClientExtensionResults>> assertions;
 
-    MultipleAssertionsAvailable(byte[] clientDataJson, List<Ctap2Session.AssertionData> assertions) {
+    MultipleAssertionsAvailable(byte[] clientDataJson, List<Pair<Ctap2Session.AssertionData, ClientExtensionResults>> assertions) {
         super("Request returned multiple assertions");
 
         this.clientDataJson = clientDataJson;
@@ -65,15 +67,13 @@ public class MultipleAssertionsAvailable extends Throwable {
      */
     public List<PublicKeyCredentialUserEntity> getUsers() throws UserInformationNotAvailableError {
         List<PublicKeyCredentialUserEntity> users = new ArrayList<>();
-        for (Ctap2Session.AssertionData assertion : assertions) {
-            try {
-                users.add(PublicKeyCredentialUserEntity.fromMap(
-                        Objects.requireNonNull(assertion.getUser()),
-                        SerializationType.CBOR
-                ));
-            } catch (NullPointerException e) {
+        for (Pair<Ctap2Session.AssertionData, ClientExtensionResults> assertion : assertions) {
+            Map<String, ?> user = assertion.first.getUser();
+            if (user == null) {
                 throw new UserInformationNotAvailableError();
             }
+
+            users.add(PublicKeyCredentialUserEntity.fromMap(user, SerializationType.CBOR));
         }
         return users;
     }
@@ -89,8 +89,11 @@ public class MultipleAssertionsAvailable extends Throwable {
         if (assertions.isEmpty()) {
             throw new IllegalStateException("Assertion has already been selected");
         }
-        Ctap2Session.AssertionData assertion = assertions.get(index);
+        Pair<Ctap2Session.AssertionData, ClientExtensionResults> assertionPair = assertions.get(index);
         assertions.clear();
+
+        final Ctap2Session.AssertionData assertion = assertionPair.first;
+        final ClientExtensionResults clientExtensionResults = assertionPair.second;
 
         final Map<String, ?> user = Objects.requireNonNull(assertion.getUser());
         final Map<String, ?> credential = Objects.requireNonNull(assertion.getCredential());
@@ -102,7 +105,7 @@ public class MultipleAssertionsAvailable extends Throwable {
                         assertion.getAuthenticatorData(),
                         assertion.getSignature(),
                         Objects.requireNonNull((byte[]) user.get(PublicKeyCredentialUserEntity.ID))
-                )
-        );
+                ),
+                clientExtensionResults);
     }
 }

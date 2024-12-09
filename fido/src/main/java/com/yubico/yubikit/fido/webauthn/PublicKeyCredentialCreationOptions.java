@@ -179,7 +179,7 @@ public class PublicKeyCredentialCreationOptions {
                         authenticatorSelection,
                         serializationType),
                 (String) map.get(ATTESTATION),
-                null  // Extensions currently ignored
+                Extensions.fromMap((Map<String, ?>) map.get(EXTENSIONS))
         );
     }
 

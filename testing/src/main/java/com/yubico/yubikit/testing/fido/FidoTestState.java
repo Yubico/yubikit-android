@@ -16,6 +16,7 @@
 
 package com.yubico.yubikit.testing.fido;
 
+import static com.yubico.yubikit.testing.fido.utils.ConfigHelper.getConfig;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -120,7 +121,7 @@ public class FidoTestState extends TestState {
             Boolean alwaysUv = (Boolean) session.getInfo().getOptions().get("alwaysUv");
             if (isFidoFipsCapable && Boolean.FALSE.equals(alwaysUv)) {
                 // set always UV on
-                Config config = Ctap2ConfigTests.getConfig(session, this);
+                Config config = getConfig(session, this);
                 config.toggleAlwaysUv();
                 alwaysUv = true;
             }
