@@ -51,13 +51,30 @@ import java.util.Set;
 
 import javax.annotation.Nullable;
 
+/**
+ * Implements the Pseudo-random function (prf) and the hmac-secret CTAP2 extensions.
+ * <p>
+ * The hmac-secret extension is not directly available to clients by default, instead
+ * the prf extension is used.
+ *
+ * @see <a href="https://www.w3.org/TR/webauthn-3/#prf-extension">PRF extension</a>
+ * @see <a href="https://fidoalliance.org/specs/fido-v2.1-rd-20201208/fido-client-to-authenticator-protocol-v2.1-rd-20201208.html#sctn-hmac-secret-extension">HMAC secret extension</a>
+ */
 public class HmacSecretExtension extends Extension {
-
+    private final boolean allowHmacSecret;
     private static final org.slf4j.Logger logger = LoggerFactory.getLogger(HmacSecretExtension.class);
     private static final int SALT_LEN = 32;
 
     public HmacSecretExtension() {
+        this(false);
+    }
+
+    /**
+     * @param allowHmacSecret Set to True to allow hmac-secret, in addition to prf
+     */
+    public HmacSecretExtension(boolean allowHmacSecret) {
         super("hmac-secret");
+        this.allowHmacSecret = allowHmacSecret;
     }
 
     @Override
@@ -69,7 +86,7 @@ public class HmacSecretExtension extends Extension {
         if (extensions == null) {
             return null;
         }
-        if (Boolean.TRUE.equals(extensions.get("hmacCreateSecret"))) {
+        if (allowHmacSecret && Boolean.TRUE.equals(extensions.get("hmacCreateSecret"))) {
             return new RegistrationProcessor(
                     pinToken -> Collections.singletonMap(name, true),
                     (attestationObject, pinToken) ->

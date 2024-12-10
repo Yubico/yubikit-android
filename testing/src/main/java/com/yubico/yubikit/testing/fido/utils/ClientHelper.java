@@ -21,6 +21,7 @@ import com.yubico.yubikit.fido.client.BasicWebAuthnClient;
 import com.yubico.yubikit.fido.client.ClientError;
 import com.yubico.yubikit.fido.client.CredentialManager;
 import com.yubico.yubikit.fido.client.MultipleAssertionsAvailable;
+import com.yubico.yubikit.fido.client.extensions.Extension;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredential;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialCreationOptions;
@@ -37,6 +38,11 @@ public class ClientHelper {
 
     public ClientHelper(Ctap2Session ctap) throws IOException, CommandException {
         this.client = new BasicWebAuthnClient(ctap);
+    }
+
+    public ClientHelper(Ctap2Session ctap, List<Extension> extensions)
+            throws IOException, CommandException {
+        this.client = new BasicWebAuthnClient(ctap, extensions);
     }
 
     public PublicKeyCredential makeCredential() throws IOException, CommandException, ClientError {
