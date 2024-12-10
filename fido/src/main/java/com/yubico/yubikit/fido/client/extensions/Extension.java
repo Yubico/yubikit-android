@@ -30,6 +30,10 @@ import java.util.Map;
 
 import javax.annotation.Nullable;
 
+/**
+ * Base class for FIDO2 extensions.
+ * @see <a href="https://www.w3.org/TR/webauthn-3/#sctn-extensions">Webauthn Extensions</a>
+ */
 public abstract class Extension {
     protected final String name;
 

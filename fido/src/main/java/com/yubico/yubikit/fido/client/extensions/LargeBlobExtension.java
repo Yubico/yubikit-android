@@ -39,6 +39,11 @@ import java.util.Map;
 
 import javax.annotation.Nullable;
 
+/**
+ * Implements the Large Blob storage (largeBlob) WebAuthn extension.
+ * @see <a href="https://www.w3.org/TR/webauthn-3/#sctn-large-blob-extension">Large blob extension</a>
+ * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#sctn-largeBlobKey-extension">Large Blob Key (largeBlobKey)</a>
+ */
 public class LargeBlobExtension extends Extension {
     private static final String LARGE_BLOB_KEY = "largeBlobKey";
     private static final String LARGE_BLOB = "largeBlob";

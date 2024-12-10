@@ -27,6 +27,10 @@ import java.util.Collections;
 
 import javax.annotation.Nullable;
 
+/**
+ * Implements the Credential Properties (credProps) WebAuthn extension.
+ * @see <a href="https://www.w3.org/TR/webauthn-3/#sctn-authenticator-credential-properties-extension">Credential Properties Extension (credProps)</a>
+ */
 public class CredPropsExtension extends Extension {
 
     public CredPropsExtension() {

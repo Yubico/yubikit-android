@@ -28,6 +28,10 @@ import java.util.Collections;
 
 import javax.annotation.Nullable;
 
+/**
+ * Implements the Credential Blob (credBlob) CTAP2 extension.
+ * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#sctn-credBlob-extension">Credential Blob (credBlob)</a>
+ */
 public class CredBlobExtension extends Extension {
 
     public CredBlobExtension() {
