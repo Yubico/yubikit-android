@@ -91,7 +91,7 @@ public class ClientError extends Exception {
             case CtapException.ERR_INVALID_CBOR:
             case CtapException.ERR_MISSING_PARAMETER:
             case CtapException.ERR_INVALID_OPTION:
-            case CtapException.ERR_PIN_REQUIRED:
+            case CtapException.ERR_PUAT_REQUIRED:
             case CtapException.ERR_PIN_INVALID:
             case CtapException.ERR_PIN_BLOCKED:
             case CtapException.ERR_PIN_NOT_SET:

@@ -129,7 +129,7 @@ public class PublicKeyCredentialRequestOptions {
                 (String) map.get(RP_ID),
                 allowCredentials,
                 (String) map.get(USER_VERIFICATION),
-                null  // Extensions currently ignored
+                Extensions.fromMap((Map<String, ?>) map.get(EXTENSIONS))
         );
     }
 
