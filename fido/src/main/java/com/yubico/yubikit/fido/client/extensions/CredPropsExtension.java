@@ -57,7 +57,7 @@ public class CredPropsExtension extends Extension {
 
             return new RegistrationProcessor(
                     (attestationObject, pinToken) ->
-                            serializtionType -> Collections.singletonMap(name,
+                            serializationType -> Collections.singletonMap(name,
                                     Collections.singletonMap("rk", rk)));
         }
         return null;
