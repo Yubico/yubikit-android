@@ -62,8 +62,7 @@ public class PcscSmartCardConnection implements SmartCardConnection {
 
     @Override
     public byte[] getAtr() {
-        // TODO
-        return new byte[0];
+        return card.getATR().getBytes();
     }
 
     @Override
