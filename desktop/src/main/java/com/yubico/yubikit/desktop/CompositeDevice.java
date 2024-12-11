@@ -47,4 +47,10 @@ public class CompositeDevice implements YubiKeyDevice {
     public <T extends YubiKeyConnection> void requestConnection(Class<T> connectionType, Callback<Result<T, IOException>> callback) {
         pidGroup.requestConnection(key, connectionType, callback);
     }
+
+    @Override
+    public <T extends YubiKeyConnection> T openConnection(Class<T> connectionType) throws IOException {
+        // TODO
+        return null;
+    }
 }

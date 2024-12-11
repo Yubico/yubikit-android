@@ -56,6 +56,12 @@ public class PcscSmartCardConnection implements SmartCardConnection {
     }
 
     @Override
+    public byte[] getAtr() {
+        // TODO
+        return new byte[0];
+    }
+
+    @Override
     public void close() throws IOException {
         Logger.d("Closing CCID connection");
         try {

@@ -16,21 +16,23 @@
 
 package com.yubico.yubikit.testing.framework;
 
+import com.yubico.yubikit.core.UsbPid;
 import com.yubico.yubikit.core.YubiKeyDevice;
 
-import org.junit.After;
-import org.junit.Before;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Rule;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.TestName;
-import org.junit.rules.TestRule;
 
 import com.yubico.yubikit.testing.DesktopTestDriver;
 
 public class YKInstrumentedTests {
 
-    protected YubiKeyDevice device = null;
     private final DesktopTestDriver testDriver = new DesktopTestDriver();
+
+    protected YubiKeyDevice device = null;
+    protected UsbPid usbPid = null;
+
 
     @Rule
     public final TestName name = new TestName();
@@ -52,4 +54,8 @@ public class YKInstrumentedTests {
         }
     };
 
+    @Nullable
+    protected Byte getScpKid() {
+        return null;
+    }
 }
