@@ -52,7 +52,7 @@ import java.util.Arrays;
 
 public class PivMoveKeyTests {
 
-    static void moveKey(PivSession piv, PivTestState state)
+    static public void moveKey(PivSession piv, PivTestState state)
             throws IOException, ApduException, BadResponseException, NoSuchAlgorithmException {
         Assume.assumeTrue("Key does not support move instruction", piv.supports(FEATURE_MOVE_KEY));
         setupJca(piv);

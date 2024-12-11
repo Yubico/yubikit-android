@@ -50,7 +50,10 @@ public class CompositeDevice implements YubiKeyDevice {
 
     @Override
     public <T extends YubiKeyConnection> T openConnection(Class<T> connectionType) throws IOException {
-        // TODO
-        return null;
+        return pidGroup.openConnection(key, connectionType);
+    }
+
+    public UsbPidGroup getPidGroup() {
+        return pidGroup;
     }
 }

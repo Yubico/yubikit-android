@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Yubico.
+ * Copyright (C) 2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,25 +16,24 @@
 
 package com.yubico.yubikit.testing;
 
-import com.yubico.yubikit.testing.framework.PivInstrumentedTests;
-import com.yubico.yubikit.testing.piv.PivDeviceTests;
+import org.junit.experimental.categories.Categories;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
-import org.junit.Test;
-
-public class PivTests extends PivInstrumentedTests {
-
-    @Test
-    public void testPin() throws Throwable {
-        withPivSession(PivDeviceTests::testPin);
-    }
-
-    @Test
-    public void testPuk() throws Throwable {
-        withPivSession(PivDeviceTests::testPuk);
-    }
-
-    @Test
-    public void testManagementKey() throws Throwable {
-        withPivSession(PivDeviceTests::testManagementKey);
-    }
+/**
+ * These tests are here to make testing a bit faster and exclude following:
+ * <ul>
+ *     <li>{@link SlowTest}</li>
+ *     <li>{@link PinUvAuthProtocolV1Test}</li>
+ *     <li>{@link AlwaysManualTest}</li>
+ * </ul>
+ */
+@RunWith(Categories.class)
+@Suite.SuiteClasses(DeviceTests.class)
+@Categories.ExcludeCategory({
+        SlowTest.class,
+        PinUvAuthProtocolV1Test.class,
+        AlwaysManualTest.class
+})
+public class FastDeviceTests {
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Yubico.
+ * Copyright (C) 2022,2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,12 @@
 
 package com.yubico.yubikit.desktop.hid;
 
-import com.yubico.yubikit.core.Logger;
+import com.yubico.yubikit.core.internal.Logger;
 
 import org.hid4java.HidServices;
 import org.hid4java.HidServicesListener;
 import org.hid4java.event.HidServicesEvent;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,6 +29,8 @@ import java.util.List;
 public class HidManager {
 
     private final HidServices services;
+
+    private final org.slf4j.Logger logger = LoggerFactory.getLogger(HidManager.class);
 
     public HidManager() {
         services = org.hid4java.HidManager.getHidServices();
@@ -67,18 +70,23 @@ public class HidManager {
         services.addHidServicesListener(new HidServicesListener() {
             @Override
             public void hidDeviceAttached(HidServicesEvent event) {
-                Logger.d("HID attached: " + event);
+                Logger.debug(logger, "HID attached: {}", event);
                 listener.onSessionReceived(new HidDevice(event.getHidDevice()));
             }
 
             @Override
             public void hidDeviceDetached(HidServicesEvent event) {
-                Logger.d("HID removed: " + event);
+                Logger.debug(logger, "HID removed: {}", event);
             }
 
             @Override
             public void hidFailure(HidServicesEvent event) {
-                Logger.d("HID failure: " + event);
+                Logger.debug(logger, "HID failure: {}", event);
+            }
+
+            @Override
+            public void hidDataReceived(HidServicesEvent event) {
+                Logger.debug(logger, "HID Data received: {}", event);
             }
         });
     }

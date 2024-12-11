@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022,2024 Yubico.
+ * Copyright (C) 2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,16 @@
 
 package com.yubico.yubikit.testing.framework;
 
-import com.yubico.yubikit.piv.PivSession;
 import com.yubico.yubikit.testing.TestState;
-import com.yubico.yubikit.testing.piv.PivTestState;
+import com.yubico.yubikit.testing.sd.SecurityDomainTestState;
 
-public class PivInstrumentedTests extends YKInstrumentedTests {
+public class SecurityDomainInstrumentedTests extends YKInstrumentedTests {
 
-    protected void withPivSession(TestState.StatefulSessionCallback<PivSession, PivTestState> callback) throws Throwable {
-        final PivTestState state = new PivTestState.Builder(device, usbPid)
-                .scpKid(getScpKid())
+    protected void withState(TestState.StatefulDeviceCallback<SecurityDomainTestState> callback) throws Throwable {
+        final SecurityDomainTestState state = new SecurityDomainTestState.Builder(device, usbPid)
+                //.reconnectDeviceCallback(this::reconnectDevice)
                 .build();
-        state.withPiv(callback);
+
+        state.withDeviceCallback(callback);
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Yubico.
+ * Copyright (C) 2022,2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,13 +18,13 @@ package com.yubico.yubikit.testing.framework;
 
 import com.yubico.yubikit.core.UsbPid;
 import com.yubico.yubikit.core.YubiKeyDevice;
+import com.yubico.yubikit.desktop.CompositeDevice;
+import com.yubico.yubikit.testing.DesktopTestDriver;
 
 import org.jetbrains.annotations.Nullable;
 import org.junit.Rule;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.TestName;
-
-import com.yubico.yubikit.testing.DesktopTestDriver;
 
 public class YKInstrumentedTests {
 
@@ -32,7 +32,6 @@ public class YKInstrumentedTests {
 
     protected YubiKeyDevice device = null;
     protected UsbPid usbPid = null;
-
 
     @Rule
     public final TestName name = new TestName();
@@ -43,12 +42,14 @@ public class YKInstrumentedTests {
         @Override
         protected void before() throws Throwable {
             device = testDriver.awaitSession();
-            System.out.println("Got session");
+            if (device instanceof CompositeDevice) {
+                CompositeDevice compositeDevice = (CompositeDevice) device;
+                usbPid = compositeDevice.getPidGroup().getPid();
+            }
         }
 
         @Override
         protected void after() {
-            System.out.println("Returning session");
             testDriver.returnSession(device);
             device = null;
         }

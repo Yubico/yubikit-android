@@ -17,22 +17,14 @@
 package com.yubico.yubikit.desktop.pcsc;
 
 import com.yubico.yubikit.core.Transport;
-import com.yubico.yubikit.core.YubiKeyConnection;
-import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
 import com.yubico.yubikit.core.smartcard.Apdu;
 import com.yubico.yubikit.core.smartcard.ApduException;
-import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.smartcard.SmartCardProtocol;
-import com.yubico.yubikit.core.util.Callback;
-import com.yubico.yubikit.core.util.Result;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
-import javax.smartcardio.CardException;
 import javax.smartcardio.CardTerminal;
 
 public class NfcPcscDevice extends PcscDevice {

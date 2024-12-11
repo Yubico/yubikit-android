@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Yubico.
+ * Copyright (C) 2022-2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,11 +17,17 @@
 package com.yubico.yubikit.testing;
 
 import com.yubico.yubikit.core.YubiKeyDevice;
-import com.yubico.yubikit.desktop.*;
+import com.yubico.yubikit.core.internal.Logger;
+import com.yubico.yubikit.desktop.OperatingSystem;
+import com.yubico.yubikit.desktop.YubiKitManager;
+
+import org.slf4j.LoggerFactory;
 
 public class DesktopTestDriver {
 
     private final YubiKitManager yubikit;
+
+    private final static org.slf4j.Logger logger = LoggerFactory.getLogger(DesktopTestDriver.class);
 
     public DesktopTestDriver() {
         if (OperatingSystem.isMac()) {
@@ -36,6 +42,6 @@ public class DesktopTestDriver {
     }
 
     public void returnSession(YubiKeyDevice device) {
-        System.out.println("Device returned");
+        Logger.debug(logger, "Device returned");
     }
 }

@@ -16,22 +16,26 @@
 
 package com.yubico.yubikit.desktop;
 
-import com.yubico.yubikit.core.Logger;
 import com.yubico.yubikit.core.UsbPid;
 import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.fido.FidoConnection;
+import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.otp.OtpConnection;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.desktop.hid.HidManager;
 import com.yubico.yubikit.desktop.pcsc.PcscManager;
 import com.yubico.yubikit.management.DeviceInfo;
 
+import org.slf4j.LoggerFactory;
+
 import java.util.*;
 
 public class YubiKitManager {
     private final PcscManager pcscManager;
     private final HidManager hidManager;
+
+    private final org.slf4j.Logger logger = LoggerFactory.getLogger(YubiKitManager.class);
 
     public YubiKitManager(PcscManager pcscManager, HidManager hidManager) {
         this.pcscManager = pcscManager;
@@ -56,10 +60,10 @@ public class YubiKitManager {
     public Map<YubiKeyDevice, DeviceInfo> listAllDevices(Set<Class<? extends YubiKeyConnection>> connectionTypes) {
         Map<UsbPid, UsbPidGroup> groups = new HashMap<>();
         for (Class<? extends YubiKeyConnection> connectionType : connectionTypes) {
-            Logger.d("Enumerate devices for " + connectionType);
+            Logger.trace(logger, "Enumerate devices for {}", connectionType);
             for (UsbYubiKeyDevice device : listDevices(connectionType)) {
                 UsbPid pid = device.getPid();
-                Logger.d("Found device with PID " + pid);
+                Logger.trace(logger, "Found device with PID {}", pid);
                 if (!groups.containsKey(pid)) {
                     groups.put(pid, new UsbPidGroup(pid));
                 }
@@ -75,6 +79,6 @@ public class YubiKitManager {
     }
 
     public Map<YubiKeyDevice, DeviceInfo> listAllDevices() {
-        return listAllDevices(new HashSet<>(Arrays.asList(SmartCardConnection.class, OtpConnection.class, FidoConnection.class)));
+        return listAllDevices(new HashSet<>(Arrays.asList(SmartCardConnection.class, FidoConnection.class, OtpConnection.class)));
     }
 }

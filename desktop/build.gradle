@@ -3,7 +3,7 @@ apply plugin: 'yubikit-java-library'
 dependencies {
     api project(':support')
 
-    implementation 'org.hid4java:hid4java:0.6.0'
+    implementation 'org.hid4java:hid4java:0.8.0'
 }
 
 ext.pomName = "Yubico YubiKit Desktop"

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022,2024 Yubico.
+ * Copyright (C) 2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,24 @@
 
 package com.yubico.yubikit.testing.framework;
 
+import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.piv.PivSession;
 import com.yubico.yubikit.testing.TestState;
-import com.yubico.yubikit.testing.piv.PivTestState;
+import com.yubico.yubikit.testing.mpe.MpeTestState;
 
-public class PivInstrumentedTests extends YKInstrumentedTests {
+public class MpeInstrumentedTests extends YKInstrumentedTests {
 
-    protected void withPivSession(TestState.StatefulSessionCallback<PivSession, PivTestState> callback) throws Throwable {
-        final PivTestState state = new PivTestState.Builder(device, usbPid)
+    protected void withPivSession(TestState.StatefulSessionCallback<PivSession, MpeTestState> callback) throws Throwable {
+        final MpeTestState state = new MpeTestState.Builder(device, usbPid)
                 .scpKid(getScpKid())
                 .build();
         state.withPiv(callback);
+    }
+
+    protected void withCtap2Session(TestState.StatefulSessionCallback<Ctap2Session, MpeTestState> callback) throws Throwable {
+        final MpeTestState state = new MpeTestState.Builder(device, usbPid)
+                .scpKid(getScpKid())
+                .build();
+        state.withCtap2(callback);
     }
 }

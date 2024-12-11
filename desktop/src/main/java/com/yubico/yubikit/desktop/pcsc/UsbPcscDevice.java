@@ -16,17 +16,13 @@
 
 package com.yubico.yubikit.desktop.pcsc;
 
-import com.yubico.yubikit.core.*;
-import com.yubico.yubikit.core.smartcard.SmartCardConnection;
-import com.yubico.yubikit.core.util.Callback;
-import com.yubico.yubikit.core.util.Result;
+import com.yubico.yubikit.core.Transport;
+import com.yubico.yubikit.core.UsbInterface;
+import com.yubico.yubikit.core.UsbPid;
+import com.yubico.yubikit.core.YubiKeyType;
 import com.yubico.yubikit.desktop.UsbYubiKeyDevice;
 
-import javax.smartcardio.CardException;
 import javax.smartcardio.CardTerminal;
-import java.io.IOException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 public class UsbPcscDevice extends PcscDevice implements UsbYubiKeyDevice {
     private final UsbPid pid;

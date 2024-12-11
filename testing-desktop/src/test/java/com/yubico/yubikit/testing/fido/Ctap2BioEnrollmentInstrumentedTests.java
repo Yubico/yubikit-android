@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022,2024 Yubico.
+ * Copyright (C) 2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,20 +14,16 @@
  * limitations under the License.
  */
 
-package com.yubico.yubikit.desktop;
+package com.yubico.yubikit.testing.fido;
 
-public class OperatingSystem {
-    public static final String Name = System.getProperty("os.name");
 
-    public static boolean isWindows() {
-        return Name.toLowerCase().contains("win");
-    }
+import com.yubico.yubikit.testing.framework.FidoInstrumentedTests;
 
-    public static boolean isMac() {
-        return Name.toLowerCase().contains("mac");
-    }
+import org.junit.Test;
 
-    public static boolean isLinux() {
-        return Name.toLowerCase().contains("linux");
+public class Ctap2BioEnrollmentInstrumentedTests extends FidoInstrumentedTests {
+    @Test
+    public void testFingerprintEnrollment() throws Throwable {
+        withCtap2Session(Ctap2BioEnrollmentTests::testFingerprintEnrollment);
     }
 }

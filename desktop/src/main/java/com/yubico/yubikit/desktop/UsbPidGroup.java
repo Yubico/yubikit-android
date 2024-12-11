@@ -16,14 +16,21 @@
 
 package com.yubico.yubikit.desktop;
 
-import com.yubico.yubikit.core.*;
+import com.yubico.yubikit.core.UsbInterface;
+import com.yubico.yubikit.core.UsbPid;
+import com.yubico.yubikit.core.YubiKeyConnection;
+import com.yubico.yubikit.core.YubiKeyDevice;
+import com.yubico.yubikit.core.YubiKeyType;
 import com.yubico.yubikit.core.fido.FidoConnection;
+import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.otp.OtpConnection;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.util.Callback;
 import com.yubico.yubikit.core.util.Result;
 import com.yubico.yubikit.management.DeviceInfo;
 import com.yubico.yubikit.support.DeviceUtil;
+
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
@@ -36,6 +43,8 @@ public class UsbPidGroup {
     private final Map<Integer, Integer> devCount = new HashMap<>();
     private final Set<String> fingerprints = new HashSet<>();
     private final long ctime = System.currentTimeMillis();
+
+    private final org.slf4j.Logger logger = LoggerFactory.getLogger(UsbPidGroup.class);
 
     UsbPidGroup(UsbPid pid) {
         this.pid = pid;
@@ -72,7 +81,7 @@ public class UsbPidGroup {
     }
 
     void add(Class<? extends YubiKeyConnection> connectionType, UsbYubiKeyDevice device, boolean forceResolve) {
-        Logger.d("Add device node " + device + connectionType);
+        Logger.trace(logger, "Add device node {}{}", device, connectionType);
         int usbInterface = getUsbInterface(connectionType);
         fingerprints.add(device.getFingerprint());
         devCount.put(usbInterface, devCount.getOrDefault(usbInterface, 0) + 1);
@@ -85,10 +94,13 @@ public class UsbPidGroup {
                     resolved.put(key, new HashMap<>());
                 }
                 resolved.get(key).put(usbInterface, device);
-                Logger.d("Resolved device " + info.getSerialNumber());
+                Integer serialNumber = info.getSerialNumber();
+                Logger.trace(logger, "Resolved device {}", serialNumber != null
+                        ? serialNumber
+                        : "without serial number");
                 return;
             } catch (IOException e) {
-                Logger.e("Failed opening device", e);
+                Logger.error(logger, "Failed opening device. ", e);
             }
         }
         if (!unresolved.containsKey(usbInterface)) {
@@ -101,20 +113,64 @@ public class UsbPidGroup {
         return (getUsbInterface(connectionType) & pid.usbInterfaces) != 0;
     }
 
+    <T extends YubiKeyConnection> T openConnection(String key, Class<T> connectionType) throws IOException {
+        int usbInterface = getUsbInterface(connectionType);
+        UsbYubiKeyDevice device = resolved.get(key).get(usbInterface);
+        if (device != null) {
+            return device.openConnection(connectionType);
+        }
+
+        Logger.debug(logger, "Resolve device for {}, {}", connectionType, key);
+        List<UsbYubiKeyDevice> devices = unresolved.getOrDefault(usbInterface, new ArrayList<>());
+        Logger.debug(logger, "Unresolved: {}", devices);
+        List<UsbYubiKeyDevice> failed = new ArrayList<>();
+        try {
+            while (!devices.isEmpty()) {
+                device = devices.remove(0);
+                Logger.debug(logger, "Candidate: {}", device);
+                try (T connection = device.openConnection(connectionType)) {
+                    DeviceInfo info = DeviceUtil.readInfo(connection, pid);
+                    String deviceKey = buildKey(info);
+                    if (infos.containsKey(deviceKey)) {
+                        if (!resolved.containsKey(deviceKey)) {
+                            resolved.put(deviceKey, new HashMap<>());
+                        }
+                        resolved.get(deviceKey).put(usbInterface, device);
+                        if (deviceKey.equals(key)) {
+                            return device.openConnection(connectionType);
+                        } else if (pid.type == YubiKeyType.NEO && devices.isEmpty()) {
+                            Logger.debug(logger, "Resolved last NEO device without serial");
+                            return device.openConnection(connectionType);
+                        }
+                    }
+
+                    return connection;
+                } catch (IOException e) {
+                    Logger.error(logger, "Failed opening candidate device: ", e);
+                    failed.add(device);
+                }
+            }
+        } finally {
+            devices.addAll(failed);
+        }
+
+        throw new IOException("Failed to open connection");
+    }
+
     <T extends YubiKeyConnection> void requestConnection(String key, Class<T> connectionType, Callback<Result<T, IOException>> callback) {
         int usbInterface = getUsbInterface(connectionType);
         UsbYubiKeyDevice device = resolved.get(key).get(usbInterface);
         if (device != null) {
             device.requestConnection(connectionType, callback);
         } else {
-            Logger.d("Resolve device for " + connectionType + ", " + key);
+            Logger.debug(logger, "Resolve device for {}, {}", connectionType, key);
             List<UsbYubiKeyDevice> devices = unresolved.getOrDefault(usbInterface, new ArrayList<>());
-            Logger.d("Unresolved: " + devices);
+            Logger.debug(logger, "Unresolved: {}", devices);
             List<UsbYubiKeyDevice> failed = new ArrayList<>();
             try {
                 while (!devices.isEmpty()) {
                     device = devices.remove(0);
-                    Logger.d("Candidate: " + device);
+                    Logger.debug(logger, "Candidate: {}", device);
                     try (T connection = device.openConnection(connectionType)) {
                         DeviceInfo info = DeviceUtil.readInfo(connection, pid);
                         String deviceKey = buildKey(info);
@@ -127,13 +183,13 @@ public class UsbPidGroup {
                                 device.requestConnection(connectionType, callback);
                                 return;
                             } else if (pid.type == YubiKeyType.NEO && devices.isEmpty()) {
-                                Logger.d("Resolved last NEO device without serial");
+                                Logger.debug(logger, "Resolved last NEO device without serial");
                                 device.requestConnection(connectionType, callback);
                                 return;
                             }
                         }
                     } catch (IOException e) {
-                        Logger.e("Failed opening candidate device", e);
+                        Logger.error(logger, "Failed opening candidate device: ", e);
                         failed.add(device);
                     }
                 }
@@ -171,5 +227,9 @@ public class UsbPidGroup {
             devices.put(new CompositeDevice(this, entry.getKey()), entry.getValue());
         }
         return devices;
+    }
+
+    public UsbPid getPid() {
+        return pid;
     }
 }

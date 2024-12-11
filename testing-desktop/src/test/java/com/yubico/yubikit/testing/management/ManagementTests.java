@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022,2024 Yubico.
+ * Copyright (C) 2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,20 +14,15 @@
  * limitations under the License.
  */
 
-package com.yubico.yubikit.desktop;
+package com.yubico.yubikit.testing.management;
 
-public class OperatingSystem {
-    public static final String Name = System.getProperty("os.name");
+import com.yubico.yubikit.testing.framework.ManagementInstrumentedTests;
 
-    public static boolean isWindows() {
-        return Name.toLowerCase().contains("win");
-    }
+import org.junit.Test;
 
-    public static boolean isMac() {
-        return Name.toLowerCase().contains("mac");
-    }
-
-    public static boolean isLinux() {
-        return Name.toLowerCase().contains("linux");
+public class ManagementTests extends ManagementInstrumentedTests {
+    @Test
+    public void testNfcRestricted() throws Throwable {
+        withManagementSession(ManagementDeviceTests::testNfcRestricted);
     }
 }

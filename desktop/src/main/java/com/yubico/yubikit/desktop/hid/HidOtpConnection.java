@@ -16,11 +16,12 @@
 
 package com.yubico.yubikit.desktop.hid;
 
-import com.yubico.yubikit.core.Logger;
+import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.otp.OtpConnection;
 
 import com.yubico.yubikit.desktop.OperatingSystem;
 import org.hid4java.HidDevice;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
@@ -29,13 +30,14 @@ public class HidOtpConnection implements OtpConnection {
     private final byte interfaceId;
 
     HidOtpConnection(HidDevice hidDevice, byte interfaceId) throws IOException {
+        org.slf4j.Logger logger = LoggerFactory.getLogger(HidOtpConnection.class);
         if (hidDevice.isOpen()) {
             throw new IOException("Device already open");
         }
         hidDevice.open();
         this.interfaceId = interfaceId;
         this.hidDevice = hidDevice;
-        Logger.d("usb connection opened");
+        Logger.debug(logger, "usb connection opened");
     }
 
     @Override

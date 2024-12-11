@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022,2024 Yubico.
+ * Copyright (C) 2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,20 +14,19 @@
  * limitations under the License.
  */
 
-package com.yubico.yubikit.desktop;
+package com.yubico.yubikit.testing;
 
-public class OperatingSystem {
-    public static final String Name = System.getProperty("os.name");
+import org.junit.experimental.categories.Categories;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
-    public static boolean isWindows() {
-        return Name.toLowerCase().contains("win");
-    }
-
-    public static boolean isMac() {
-        return Name.toLowerCase().contains("mac");
-    }
-
-    public static boolean isLinux() {
-        return Name.toLowerCase().contains("linux");
-    }
+/**
+ * Quick, randomly selected tests for different applications.
+ */
+@RunWith(Categories.class)
+@Categories.IncludeCategory({
+        SmokeTest.class,
+})
+@Suite.SuiteClasses(DeviceTests.class)
+public class SmokeDeviceTests {
 }
