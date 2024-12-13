@@ -57,7 +57,7 @@ public class PcscSmartCardConnection implements SmartCardConnection {
 
     @Override
     public boolean isExtendedLengthApduSupported() {
-        return false; //TODO
+        return true;
     }
 
     @Override
