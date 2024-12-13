@@ -25,7 +25,7 @@
     </appender>
 
     <!-- Write TRACE (and higher-level) messages to logcat -->
-    <root level="TRACE">
+    <root level="DEBUG">
         <appender-ref ref="STDOUT" />
     </root>
 </configuration>

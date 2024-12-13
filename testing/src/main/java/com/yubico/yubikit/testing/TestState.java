@@ -162,10 +162,11 @@ public class TestState {
 
     // common utils
     public DeviceInfo getDeviceInfo() {
-        DeviceInfo deviceInfo = null;
+        DeviceInfo deviceInfo;
         try (YubiKeyConnection connection = openConnection()) {
             deviceInfo = DeviceUtil.readInfo(connection, usbPid);
-        } catch (IOException | UnsupportedOperationException ignoredException) {
+        } catch (IOException | UnsupportedOperationException exception) {
+            throw new RuntimeException("Failed to read info", exception);
         }
 
         return deviceInfo;

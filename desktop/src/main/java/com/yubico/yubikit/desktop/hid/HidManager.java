@@ -26,7 +26,14 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.annotation.Nullable;
+
 public class HidManager {
+
+    private static final int YUBICO_VENDOR_ID = 0x1050;
+    private static final int HID_USAGE_PAGE_OTP = 0x0001;
+    private static final int HID_USAGE_PAGE_FIDO = 0xf1d0;
+
 
     private final HidServices services;
 
@@ -36,10 +43,11 @@ public class HidManager {
         services = org.hid4java.HidManager.getHidServices();
     }
 
-    public List<HidDevice> getDevices() {
+    public List<HidDevice> getHidDevices(int vendorId, @Nullable Integer usagePage) {
         List<HidDevice> yubikeys = new ArrayList<>();
         for (org.hid4java.HidDevice device: services.getAttachedHidDevices()) {
-            if(device.getProductId() == 0x1050) {
+            if(device.getProductId() == vendorId &&
+                    (usagePage != null && (device.getUsagePage() & 0xffff) == usagePage)) {
                 yubikeys.add(new HidDevice(device));
             }
         }
@@ -47,23 +55,11 @@ public class HidManager {
     }
 
     public List<HidDevice> getOtpDevices() {
-        List<HidDevice> yubikeys = new ArrayList<>();
-        for (org.hid4java.HidDevice device: services.getAttachedHidDevices()) {
-            if(device.getVendorId() == 0x1050 && (device.getUsagePage() & 0xffff) == 1) {
-                yubikeys.add(new HidDevice(device));
-            }
-        }
-        return yubikeys;
+        return getHidDevices(YUBICO_VENDOR_ID, HID_USAGE_PAGE_OTP);
     }
 
     public List<HidDevice> getFidoDevices() {
-        List<HidDevice> yubikeys = new ArrayList<>();
-        for (org.hid4java.HidDevice device: services.getAttachedHidDevices()) {
-            if(device.getVendorId() == 0x1050 && (device.getUsagePage() & 0xffff) == 0xf1d0) {
-                yubikeys.add(new HidDevice(device));
-            }
-        }
-        return yubikeys;
+        return getHidDevices(YUBICO_VENDOR_ID, HID_USAGE_PAGE_FIDO);
     }
 
     public void setListener(HidSessionListener listener) {

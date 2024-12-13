@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Yubico.
+ * Copyright (C) 2022,2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,16 +28,21 @@ import java.io.IOException;
 public class HidOtpConnection implements OtpConnection {
     private final HidDevice hidDevice;
     private final byte interfaceId;
+    private final static org.slf4j.Logger logger = LoggerFactory.getLogger(HidOtpConnection.class);
 
     HidOtpConnection(HidDevice hidDevice, byte interfaceId) throws IOException {
-        org.slf4j.Logger logger = LoggerFactory.getLogger(HidOtpConnection.class);
-        if (hidDevice.isOpen()) {
+        Logger.debug(logger, "Opening HID OTP connection");
+
+        if (!hidDevice.isClosed()) {
             throw new IOException("Device already open");
         }
-        hidDevice.open();
+
+        if (!hidDevice.open()) {
+            throw new IOException("Failure opening device");
+        }
+
         this.interfaceId = interfaceId;
         this.hidDevice = hidDevice;
-        Logger.debug(logger, "usb connection opened");
     }
 
     @Override
@@ -66,6 +71,7 @@ public class HidOtpConnection implements OtpConnection {
 
     @Override
     public void close() {
+        Logger.debug(logger, "Closing HID OTP connection");
         hidDevice.close();
     }
 }

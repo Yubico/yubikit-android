@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Yubico.
+ * Copyright (C) 2020-2022,2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,10 @@
 package com.yubico.yubikit.desktop.hid;
 
 import com.yubico.yubikit.core.fido.FidoConnection;
+import com.yubico.yubikit.core.internal.Logger;
 
 import org.hid4java.HidDevice;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
@@ -26,16 +28,24 @@ public class HidFidoConnection implements FidoConnection {
 
     private final HidDevice hidDevice;
 
+    private final org.slf4j.Logger logger = LoggerFactory.getLogger(HidFidoConnection.class);
+
     public HidFidoConnection(HidDevice hidDevice) throws IOException {
-        if (hidDevice.isOpen()) {
+        Logger.debug(logger, "Opening HID FIDO connection");
+
+        if (!hidDevice.isClosed()) {
             throw new IOException("Device already open");
         }
-        hidDevice.open();
+
+        if (!hidDevice.open()) {
+            throw new IOException("Failure opening device");
+        }
         this.hidDevice = hidDevice;
     }
 
     @Override
     public void close() {
+        Logger.debug(logger, "Closing HID FIDO connection");
         hidDevice.close();
     }
 
@@ -44,7 +54,7 @@ public class HidFidoConnection implements FidoConnection {
         int sent = hidDevice.write(packet, packet.length, (byte) 0);
         if (sent < 0) {
             throw new IOException(hidDevice.getLastErrorMessage());
-        } else if (sent != PACKET_SIZE) {
+        } else if (sent != PACKET_SIZE + 1) {
             throw new IOException("Unexpected amount of data sent: " + sent);
         }
     }

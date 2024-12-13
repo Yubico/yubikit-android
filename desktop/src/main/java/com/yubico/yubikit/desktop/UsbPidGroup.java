@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Yubico.
+ * Copyright (C) 2022,2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package com.yubico.yubikit.desktop;
 
+import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.UsbInterface;
 import com.yubico.yubikit.core.UsbPid;
 import com.yubico.yubikit.core.YubiKeyConnection;
@@ -37,6 +38,7 @@ import java.util.*;
 
 public class UsbPidGroup {
     final UsbPid pid;
+
     private final Map<String, DeviceInfo> infos = new HashMap<>();
     private final Map<String, Map<Integer, UsbYubiKeyDevice>> resolved = new HashMap<>();
     private final Map<Integer, List<UsbYubiKeyDevice>> unresolved = new HashMap<>();
@@ -51,20 +53,15 @@ public class UsbPidGroup {
     }
 
     private String buildKey(DeviceInfo info) {
-        // TODO
-        /*
-        return (
-            info.serial,
-            info.version,
-            info.form_factor,
-            str(info.supported_capabilities),
-            info.config.get_bytes(False),
-            info.is_locked,
-            info.is_fips,
-            info.is_sky,
-        )
-         */
-        return "" + info.getSerialNumber() + info.getVersion() + info.getFormFactor();
+        return "" +
+                info.getSerialNumber() +
+                info.getVersion() +
+                info.getFormFactor() +
+                info.getSupportedCapabilities(Transport.USB) +
+                info.getConfig() +
+                info.isLocked() +
+                info.isFips() +
+                info.isSky();
     }
 
     int getUsbInterface(Class<? extends YubiKeyConnection> connectionType) {
@@ -128,7 +125,8 @@ public class UsbPidGroup {
             while (!devices.isEmpty()) {
                 device = devices.remove(0);
                 Logger.debug(logger, "Candidate: {}", device);
-                try (T connection = device.openConnection(connectionType)) {
+                try {
+                    T connection = device.openConnection(connectionType);
                     DeviceInfo info = DeviceUtil.readInfo(connection, pid);
                     String deviceKey = buildKey(info);
                     if (infos.containsKey(deviceKey)) {
@@ -137,14 +135,12 @@ public class UsbPidGroup {
                         }
                         resolved.get(deviceKey).put(usbInterface, device);
                         if (deviceKey.equals(key)) {
-                            return device.openConnection(connectionType);
+                            return connection;
                         } else if (pid.type == YubiKeyType.NEO && devices.isEmpty()) {
                             Logger.debug(logger, "Resolved last NEO device without serial");
-                            return device.openConnection(connectionType);
+                            return connection;
                         }
                     }
-
-                    return connection;
                 } catch (IOException e) {
                     Logger.error(logger, "Failed opening candidate device: ", e);
                     failed.add(device);
