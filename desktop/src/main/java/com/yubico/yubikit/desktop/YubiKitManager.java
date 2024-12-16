@@ -60,10 +60,10 @@ public class YubiKitManager {
     public Map<YubiKeyDevice, DeviceInfo> listAllDevices(Set<Class<? extends YubiKeyConnection>> connectionTypes) {
         Map<UsbPid, UsbPidGroup> groups = new HashMap<>();
         for (Class<? extends YubiKeyConnection> connectionType : connectionTypes) {
-            Logger.trace(logger, "Enumerate devices for {}", connectionType);
+            Logger.debug(logger, "Enumerate devices for {}", connectionType);
             for (UsbYubiKeyDevice device : listDevices(connectionType)) {
                 UsbPid pid = device.getPid();
-                Logger.trace(logger, "Found device with PID {}", pid);
+                Logger.debug(logger, "Found device with PID {}", pid);
                 if (!groups.containsKey(pid)) {
                     groups.put(pid, new UsbPidGroup(pid));
                 }

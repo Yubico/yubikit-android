@@ -25,7 +25,7 @@ public class OathInstrumentedTests extends YKInstrumentedTests {
     protected void withDevice(TestState.StatefulDeviceCallback<OathTestState> callback) throws Throwable {
         final OathTestState state = new OathTestState.Builder(device, usbPid)
                 .scpKid(getScpKid())
-                //.reconnectDeviceCallback(this::reconnectDevice)
+                .reconnectDeviceCallback(this::reconnectDevice)
                 .build();
 
         state.withDeviceCallback(callback);

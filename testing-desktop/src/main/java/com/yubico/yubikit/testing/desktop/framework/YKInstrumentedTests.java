@@ -41,22 +41,41 @@ public class YKInstrumentedTests {
 
         @Override
         protected void before() throws Throwable {
-            device = testDriver.awaitSession();
-            if (device instanceof CompositeDevice) {
-                CompositeDevice compositeDevice = (CompositeDevice) device;
-                usbPid = compositeDevice.getPidGroup().getPid();
-            }
+            getDevice();
         }
 
         @Override
         protected void after() {
-            testDriver.returnSession(device);
-            device = null;
+            releaseDevice();
         }
     };
+
+    protected YubiKeyDevice reconnectDevice() {
+        releaseDevice();
+        getDevice();
+        return device;
+    }
 
     @Nullable
     protected Byte getScpKid() {
         return null;
     }
+
+    private void getDevice() {
+        try {
+            device = testDriver.awaitSession();
+            if (device instanceof CompositeDevice) {
+                CompositeDevice compositeDevice = (CompositeDevice) device;
+                usbPid = compositeDevice.getPidGroup().getPid();
+            }
+        } catch (InterruptedException interruptedException) {
+            throw new RuntimeException("awaitSession failed", interruptedException);
+        }
+    }
+
+    private void releaseDevice() {
+        testDriver.returnSession(device);
+        device = null;
+    }
+
 }

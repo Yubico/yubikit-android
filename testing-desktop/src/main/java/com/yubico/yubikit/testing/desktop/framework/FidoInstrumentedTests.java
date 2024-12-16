@@ -35,7 +35,7 @@ public class FidoInstrumentedTests extends YKInstrumentedTests {
     protected void withDevice(boolean setPin, TestState.StatefulDeviceCallback<FidoTestState> callback) throws Throwable {
         FidoTestState state = new FidoTestState.Builder(device, usbPid, getPinUvAuthProtocol())
                 .scpKid(getScpKid())
-                //.reconnectDeviceCallback(this::reconnectDevice)
+                .reconnectDeviceCallback(this::reconnectDevice)
                 .setPin(setPin)
                 .build();
 
@@ -45,7 +45,7 @@ public class FidoInstrumentedTests extends YKInstrumentedTests {
     protected void withCtap2Session(TestState.StatefulSessionCallback<Ctap2Session, FidoTestState> callback) throws Throwable {
         FidoTestState state = new FidoTestState.Builder(device, usbPid, getPinUvAuthProtocol())
                 .scpKid(getScpKid())
-                //.reconnectDeviceCallback(this::reconnectDevice)
+                .reconnectDeviceCallback(this::reconnectDevice)
                 .setPin(true)
                 .build();
 

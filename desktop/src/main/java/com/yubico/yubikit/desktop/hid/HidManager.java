@@ -46,7 +46,7 @@ public class HidManager {
     public List<HidDevice> getHidDevices(int vendorId, @Nullable Integer usagePage) {
         List<HidDevice> yubikeys = new ArrayList<>();
         for (org.hid4java.HidDevice device: services.getAttachedHidDevices()) {
-            if(device.getProductId() == vendorId &&
+            if(device.getVendorId() == vendorId &&
                     (usagePage != null && (device.getUsagePage() & 0xffff) == usagePage)) {
                 yubikeys.add(new HidDevice(device));
             }

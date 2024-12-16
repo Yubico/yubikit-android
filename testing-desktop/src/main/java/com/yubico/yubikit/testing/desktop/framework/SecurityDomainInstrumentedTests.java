@@ -23,7 +23,7 @@ public class SecurityDomainInstrumentedTests extends YKInstrumentedTests {
 
     protected void withState(TestState.StatefulDeviceCallback<SecurityDomainTestState> callback) throws Throwable {
         final SecurityDomainTestState state = new SecurityDomainTestState.Builder(device, usbPid)
-                //.reconnectDeviceCallback(this::reconnectDevice)
+                .reconnectDeviceCallback(this::reconnectDevice)
                 .build();
 
         state.withDeviceCallback(callback);
