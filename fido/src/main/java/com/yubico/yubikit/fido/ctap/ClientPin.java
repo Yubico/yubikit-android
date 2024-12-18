@@ -59,6 +59,7 @@ public class ClientPin {
     private static final int MAX_PIN_LEN = PIN_BUFFER_LEN - 1;
     private static final int PIN_HASH_LEN = 16;
 
+    public static final int PIN_PERMISSION_NONE = 0x00;
     public static final int PIN_PERMISSION_MC = 0x01;
     public static final int PIN_PERMISSION_GA = 0x02;
     public static final int PIN_PERMISSION_CM = 0x04;
@@ -111,7 +112,7 @@ public class ClientPin {
         return Boolean.TRUE.equals(infoData.getOptions().get("pinUvAuthToken"));
     }
 
-    private Pair<Map<Integer, ?>, byte[]> getSharedSecret() throws IOException, CommandException {
+    public Pair<Map<Integer, ?>, byte[]> getSharedSecret() throws IOException, CommandException {
         Logger.debug(logger, "Getting shared secret");
         Map<Integer, ?> result = ctap.clientPin(
                 pinUvAuth.getVersion(),

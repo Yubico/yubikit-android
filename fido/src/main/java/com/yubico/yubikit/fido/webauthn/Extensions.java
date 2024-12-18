@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Yubico.
+ * Copyright (C) 2020-2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,5 +16,47 @@
 
 package com.yubico.yubikit.fido.webauthn;
 
-public abstract class Extensions {
+import java.util.Collections;
+import java.util.Map;
+import java.util.Objects;
+
+import javax.annotation.Nullable;
+
+public class Extensions {
+
+    @Nullable
+    public static Extensions fromMap(@Nullable Map<String, ?> input) {
+        return input != null ? new Extensions(input) : null;
+    }
+
+    @Nullable
+    private final Map<String, ?> extensions;
+
+    private Extensions(@Nullable Map<String, ?> extensions) {
+        this.extensions = extensions;
+    }
+
+    @Nullable
+    public Object get(String extension) {
+        return extensions != null
+                ? extensions.get(extension)
+                : null;
+    }
+
+    public boolean has(String extension) {
+        return extensions != null && extensions.containsKey(extension);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Extensions that = (Extensions) o;
+        return Objects.equals(extensions, that.extensions);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(extensions);
+    }
 }

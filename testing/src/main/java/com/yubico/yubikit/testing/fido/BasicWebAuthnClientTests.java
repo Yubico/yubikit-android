@@ -51,6 +51,8 @@ import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialType;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialUserEntity;
 import com.yubico.yubikit.fido.webauthn.ResidentKeyRequirement;
 import com.yubico.yubikit.fido.webauthn.UserVerificationRequirement;
+import com.yubico.yubikit.testing.fido.utils.ClientHelper;
+import com.yubico.yubikit.testing.fido.utils.CreationOptionsBuilder;
 
 import org.junit.Assert;
 
@@ -400,7 +402,7 @@ public class BasicWebAuthnClientTests {
             BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
 
             // Make 2 new credentials
-            PublicKeyCredentialCreationOptions creationOptions1 = getCreateOptions(
+            PublicKeyCredentialCreationOptions options = getCreateOptions(
                     new PublicKeyCredentialUserEntity(
                             "user1",
                             "user1".getBytes(StandardCharsets.UTF_8),
@@ -414,7 +416,7 @@ public class BasicWebAuthnClientTests {
 
             return webauthn.makeCredential(
                     TestData.CLIENT_DATA_JSON_CREATE,
-                    creationOptions1,
+                    options,
                     Objects.requireNonNull(TestData.RP.getId()),
                     TestData.PIN,
                     null,
@@ -425,7 +427,7 @@ public class BasicWebAuthnClientTests {
         PublicKeyCredential cred2 = state.withCtap2(session -> {
             BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
 
-            PublicKeyCredentialCreationOptions creationOptions2 = getCreateOptions(
+            PublicKeyCredentialCreationOptions options = getCreateOptions(
                     new PublicKeyCredentialUserEntity(
                             "user2",
                             "user2".getBytes(StandardCharsets.UTF_8),
@@ -438,7 +440,7 @@ public class BasicWebAuthnClientTests {
 
             return webauthn.makeCredential(
                     TestData.CLIENT_DATA_JSON_CREATE,
-                    creationOptions2,
+                    options,
                     Objects.requireNonNull(TestData.RP.getId()),
                     TestData.PIN,
                     null,
@@ -497,81 +499,86 @@ public class BasicWebAuthnClientTests {
     }
 
     public static void testMakeCredentialWithExcludeList(FidoTestState state) throws Throwable {
-        List<PublicKeyCredentialDescriptor> excludeList = new ArrayList<>();
 
-        state.withCtap2(session -> {
-            BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
-
-            // Make a non RK credential
-            PublicKeyCredentialCreationOptions creationOptions = getCreateOptions(
-                    null,
-                    false,
-                    Collections.singletonList(TestData.PUB_KEY_CRED_PARAMS_ES256),
-                    null
-            );
-
-            PublicKeyCredential credential = webauthn.makeCredential(
-                    TestData.CLIENT_DATA_JSON_CREATE,
-                    creationOptions,
-                    Objects.requireNonNull(creationOptions.getRp().getId()),
-                    TestData.PIN,
-                    null,
-                    null
-            );
-            excludeList.add(
-                    new PublicKeyCredentialDescriptor(
-                            PublicKeyCredentialType.PUBLIC_KEY,
-                            credential.getRawId(),
-                            null
-                    )
-            );
-        });
-
-        // Make another non RK credential with exclude list including credId. Should fail
-        state.withCtap2(session -> {
-            BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
-
-            PublicKeyCredentialCreationOptions creationOptions = getCreateOptions(
-                    null,
-                    false,
-                    Collections.singletonList(TestData.PUB_KEY_CRED_PARAMS_ES256),
-                    excludeList
-            );
-            try {
-                webauthn.makeCredential(
-                        TestData.CLIENT_DATA_JSON_CREATE,
-                        creationOptions,
-                        Objects.requireNonNull(creationOptions.getRp().getId()),
-                        TestData.PIN,
-                        null,
-                        null
+        // non-discoverable
+        {
+            PublicKeyCredential cred = state.withCtap2(session -> {
+                return new ClientHelper(session).makeCredential(
+                        new CreationOptionsBuilder().build()
                 );
-                fail("Succeeded in making credential even though the credential was excluded");
-            } catch (ClientError clientError) {
-                assertEquals(ClientError.Code.DEVICE_INELIGIBLE, clientError.getErrorCode());
+            });
+
+            // Make another non RK credential with exclude list including credId. Should fail
+            state.withCtap2(session -> {
+                try {
+                    new ClientHelper(session).makeCredential(
+                            new CreationOptionsBuilder()
+                                    .excludeCredentials(cred)
+                                    .build()
+                    );
+                    fail("Succeeded in making credential even though the credential was excluded");
+                } catch (ClientError clientError) {
+                    assertEquals(ClientError.Code.DEVICE_INELIGIBLE, clientError.getErrorCode());
+                }
+            });
+
+
+            // Make another non RK credential with exclude list null. Should succeed
+            state.withCtap2(session -> {
+                return new ClientHelper(session).makeCredential(
+                        new CreationOptionsBuilder().build()
+                );
+            });
+        }
+
+        // discoverable
+        {
+            List<PublicKeyCredential> creds = new ArrayList<>();
+            for (int index = 0; index < 17; index++) {
+                final int i = index;
+                state.withCtap2(session -> {
+                    creds.add(new ClientHelper(session).makeCredential(
+                            new CreationOptionsBuilder()
+                                    .userEntity("User " + i)
+                                    .residentKey(true)
+                                    .build()
+                    ));
+                });
             }
-        });
+
+            // Make another non RK credential with exclude list including credId. Should fail
+            state.withCtap2(session -> {
+                try {
+                    new ClientHelper(session).makeCredential(
+                            new CreationOptionsBuilder()
+                                    .userEntity("Not allowed user")
+                                    .residentKey(true)
+                                    .excludeCredentials(creds)
+                                    .build()
+                    );
+                    fail("Succeeded in making credential even though the credential was excluded");
+                } catch (ClientError clientError) {
+                    assertEquals(ClientError.Code.DEVICE_INELIGIBLE, clientError.getErrorCode());
+                }
+            });
 
 
-        // Make another non RK credential with exclude list null. Should succeed
-        state.withCtap2(session -> {
-            BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
+            // Make another non RK credential with exclude list null. Should succeed
+            state.withCtap2(session -> {
+                creds.add(new ClientHelper(session).makeCredential(
+                        new CreationOptionsBuilder()
+                                .userEntity("User3")
+                                .residentKey(true)
+                                .build()
+                ));
+            });
 
-            PublicKeyCredentialCreationOptions creationOptions = getCreateOptions(
-                    null,
-                    false,
-                    Collections.singletonList(TestData.PUB_KEY_CRED_PARAMS_ES256),
-                    null
-            );
-            webauthn.makeCredential(
-                    TestData.CLIENT_DATA_JSON_CREATE,
-                    creationOptions,
-                    Objects.requireNonNull(creationOptions.getRp().getId()),
-                    TestData.PIN,
-                    null,
-                    null
-            );
-        });
+            // remove credentials
+            state.withCtap2(session -> {
+                ClientHelper clientHelper = new ClientHelper(session);
+                clientHelper.deleteCredentials(creds);
+            });
+        }
 
     }
 
@@ -707,7 +714,7 @@ public class BasicWebAuthnClientTests {
 
             Map<PublicKeyCredentialDescriptor, PublicKeyCredentialUserEntity> credentials = credentialManager.getCredentials(TestData.RP_ID);
             assertThat(credentials.size(), equalTo(1));
-            PublicKeyCredentialDescriptor key = credentials.keySet().iterator().next();
+            PublicKeyCredentialDescriptor key = credentials.entrySet().iterator().next().getKey();
             assertThat(Objects.requireNonNull(credentials.get(key))
                     .getId(), equalTo(TestData.USER_ID));
 
