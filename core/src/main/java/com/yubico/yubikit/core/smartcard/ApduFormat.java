@@ -16,9 +16,8 @@
 
 package com.yubico.yubikit.core.smartcard;
 
-/**
- * APDU encoding format.
- */
+/** APDU encoding format. */
 public enum ApduFormat {
-    SHORT, EXTENDED
+  SHORT,
+  EXTENDED
 }

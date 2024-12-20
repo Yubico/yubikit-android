@@ -17,12 +17,12 @@
 package com.yubico.yubikit.core.smartcard.scp;
 
 public final class ScpKid {
-    public static final byte SCP03 = 0x1;
-    public static final byte SCP11a = 0x11;
-    public static final byte SCP11b = 0x13;
-    public static final byte SCP11c = 0x15;
+  public static final byte SCP03 = 0x1;
+  public static final byte SCP11a = 0x11;
+  public static final byte SCP11b = 0x13;
+  public static final byte SCP11c = 0x15;
 
-    private ScpKid() {
-        throw new IllegalStateException();
-    }
+  private ScpKid() {
+    throw new IllegalStateException();
+  }
 }

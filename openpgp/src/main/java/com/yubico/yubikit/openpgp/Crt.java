@@ -19,8 +19,9 @@ package com.yubico.yubikit.openpgp;
 import com.yubico.yubikit.core.util.Tlv;
 
 class Crt {
-    static final byte[] SIG = new Tlv(0xb6, null).getBytes();
-    static final byte[] DEC = new Tlv(0xb8, null).getBytes();
-    static final byte[] AUT = new Tlv(0xa4, null).getBytes();
-    static final byte[] ATT = new Tlv(0xb6, new Tlv(0x84, new byte[]{(byte) 0x81}).getBytes()).getBytes();
+  static final byte[] SIG = new Tlv(0xb6, null).getBytes();
+  static final byte[] DEC = new Tlv(0xb8, null).getBytes();
+  static final byte[] AUT = new Tlv(0xa4, null).getBytes();
+  static final byte[] ATT =
+      new Tlv(0xb6, new Tlv(0x84, new byte[] {(byte) 0x81}).getBytes()).getBytes();
 }

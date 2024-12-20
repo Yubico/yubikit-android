@@ -20,23 +20,23 @@ import com.yubico.yubikit.management.DeviceConfig;
 import com.yubico.yubikit.management.DeviceInfo;
 
 class TestUtil {
-    interface DeviceConfigBuilder {
-        void createWith(DeviceConfig.Builder builder);
-    }
+  interface DeviceConfigBuilder {
+    void createWith(DeviceConfig.Builder builder);
+  }
 
-    static DeviceConfig config(DeviceConfigBuilder configBuilder) {
-        DeviceConfig.Builder builder = new DeviceConfig.Builder();
-        configBuilder.createWith(builder);
-        return builder.build();
-    }
+  static DeviceConfig config(DeviceConfigBuilder configBuilder) {
+    DeviceConfig.Builder builder = new DeviceConfig.Builder();
+    configBuilder.createWith(builder);
+    return builder.build();
+  }
 
-    interface DeviceInfoBuilder {
-        void createWith(DeviceInfo.Builder builder);
-    }
+  interface DeviceInfoBuilder {
+    void createWith(DeviceInfo.Builder builder);
+  }
 
-    static DeviceInfo info(DeviceInfoBuilder infoBuilder) {
-        DeviceInfo.Builder builder = new DeviceInfo.Builder();
-        infoBuilder.createWith(builder);
-        return builder.build();
-    }
+  static DeviceInfo info(DeviceInfoBuilder infoBuilder) {
+    DeviceInfo.Builder builder = new DeviceInfo.Builder();
+    infoBuilder.createWith(builder);
+    return builder.build();
+  }
 }

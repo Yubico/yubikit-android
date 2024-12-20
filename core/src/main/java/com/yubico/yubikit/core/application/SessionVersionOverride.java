@@ -17,40 +17,36 @@
 package com.yubico.yubikit.core.application;
 
 import com.yubico.yubikit.core.Version;
-
 import javax.annotation.Nullable;
 
 /**
  * Adds support for overriding YubiKey session version number.
- * <p>
- * Internal use only.
+ *
+ * <p>Internal use only.
  */
 public class SessionVersionOverride {
 
-    @Nullable
-    private static Version versionOverride = null;
+  @Nullable private static Version versionOverride = null;
 
-    /**
-     * Internal use only.
-     * <p>
-     * Override version of connected YubiKey with the specified version.
-     *
-     * @param version version to use instead of YubiKey version. Only applies if the major version
-     *                of the YubiKey is 0.
-     */
-    public static void set(@Nullable Version version) {
-        versionOverride = version;
-    }
+  /**
+   * Internal use only.
+   *
+   * <p>Override version of connected YubiKey with the specified version.
+   *
+   * @param version version to use instead of YubiKey version. Only applies if the major version of
+   *     the YubiKey is 0.
+   */
+  public static void set(@Nullable Version version) {
+    versionOverride = version;
+  }
 
-    /**
-     * Returns an applicable override of version.
-     *
-     * @param version The version which might be overridden.
-     * @return Version to use.
-     */
-    static Version overrideOf(Version version) {
-        return (versionOverride != null && version.major == 0)
-                ? versionOverride
-                : version;
-    }
+  /**
+   * Returns an applicable override of version.
+   *
+   * @param version The version which might be overridden.
+   * @return Version to use.
+   */
+  static Version overrideOf(Version version) {
+    return (versionOverride != null && version.major == 0) ? versionOverride : version;
+  }
 }

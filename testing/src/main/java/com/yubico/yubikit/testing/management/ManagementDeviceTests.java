@@ -18,17 +18,16 @@ package com.yubico.yubikit.testing.management;
 
 import com.yubico.yubikit.management.DeviceConfig;
 import com.yubico.yubikit.management.ManagementSession;
-
 import org.junit.Assert;
 import org.junit.Assume;
 
 public class ManagementDeviceTests {
-    public static void testNfcRestricted(ManagementSession managementSession) throws Exception {
-        Assume.assumeTrue(managementSession.getVersion().isAtLeast(5,7,0));
-        managementSession.updateDeviceConfig(
-                new DeviceConfig.Builder().nfcRestricted(true).build(),
-                false, null, null);
+  public static void testNfcRestricted(ManagementSession managementSession) throws Exception {
+    Assume.assumeTrue(managementSession.getVersion().isAtLeast(5, 7, 0));
+    managementSession.updateDeviceConfig(
+        new DeviceConfig.Builder().nfcRestricted(true).build(), false, null, null);
 
-        Assert.assertEquals(Boolean.TRUE, managementSession.getDeviceInfo().getConfig().getNfcRestricted());
-    }
+    Assert.assertEquals(
+        Boolean.TRUE, managementSession.getDeviceInfo().getConfig().getNfcRestricted());
+  }
 }

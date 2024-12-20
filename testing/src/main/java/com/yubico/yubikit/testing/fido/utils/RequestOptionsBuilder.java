@@ -22,65 +22,60 @@ import com.yubico.yubikit.fido.webauthn.Extensions;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredential;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialDescriptor;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialRequestOptions;
-
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
 import javax.annotation.Nullable;
 
 public class RequestOptionsBuilder {
-    @Nullable
-    Extensions extensions = null;
-    @Nullable
-    List<PublicKeyCredentialDescriptor> allowedCredentials = null;
+  @Nullable Extensions extensions = null;
+  @Nullable List<PublicKeyCredentialDescriptor> allowedCredentials = null;
 
-    public RequestOptionsBuilder extensions(@Nullable Map<String, ?> extensions) {
-        this.extensions = extensions == null
-                ? null
-                : Extensions.fromMap(extensions);
-        return this;
-    }
+  public RequestOptionsBuilder extensions(@Nullable Map<String, ?> extensions) {
+    this.extensions = extensions == null ? null : Extensions.fromMap(extensions);
+    return this;
+  }
 
-    public RequestOptionsBuilder allowedCredentials(byte[]... allowedCredentials) {
-        this.allowedCredentials = allowedCredentials.length > 0 ? Arrays.stream(allowedCredentials)
+  public RequestOptionsBuilder allowedCredentials(byte[]... allowedCredentials) {
+    this.allowedCredentials =
+        allowedCredentials.length > 0
+            ? Arrays.stream(allowedCredentials)
                 .map(id -> new PublicKeyCredentialDescriptor(PUBLIC_KEY, id))
-                .collect(Collectors.toList()) : null;
-        return this;
-    }
+                .collect(Collectors.toList())
+            : null;
+    return this;
+  }
 
-    public RequestOptionsBuilder allowedCredentials(PublicKeyCredential... allowedCredentials) {
-        this.allowedCredentials = allowedCredentials.length > 0 ? Arrays.stream(allowedCredentials)
-                .map(publicKeyCredential -> new PublicKeyCredentialDescriptor(
-                        PUBLIC_KEY, publicKeyCredential.getRawId()))
-                .collect(Collectors.toList()) : null;
-        return this;
-    }
+  public RequestOptionsBuilder allowedCredentials(PublicKeyCredential... allowedCredentials) {
+    this.allowedCredentials =
+        allowedCredentials.length > 0
+            ? Arrays.stream(allowedCredentials)
+                .map(
+                    publicKeyCredential ->
+                        new PublicKeyCredentialDescriptor(
+                            PUBLIC_KEY, publicKeyCredential.getRawId()))
+                .collect(Collectors.toList())
+            : null;
+    return this;
+  }
 
-    public RequestOptionsBuilder allowedCredentials(
-            PublicKeyCredentialDescriptor... allowedCredentials) {
-        this.allowedCredentials = allowedCredentials.length > 0
-                ? Arrays.asList(allowedCredentials)
-                : null;
-        return this;
-    }
+  public RequestOptionsBuilder allowedCredentials(
+      PublicKeyCredentialDescriptor... allowedCredentials) {
+    this.allowedCredentials =
+        allowedCredentials.length > 0 ? Arrays.asList(allowedCredentials) : null;
+    return this;
+  }
 
-    public RequestOptionsBuilder allowedCredentials(
-            List<PublicKeyCredentialDescriptor> allowedCredentials) {
-        this.allowedCredentials = allowedCredentials;
-        return this;
-    }
+  public RequestOptionsBuilder allowedCredentials(
+      List<PublicKeyCredentialDescriptor> allowedCredentials) {
+    this.allowedCredentials = allowedCredentials;
+    return this;
+  }
 
-    public PublicKeyCredentialRequestOptions build() {
+  public PublicKeyCredentialRequestOptions build() {
 
-        return new PublicKeyCredentialRequestOptions(
-                TestData.CHALLENGE,
-                (long) 90000,
-                TestData.RP_ID,
-                allowedCredentials,
-                null,
-                extensions
-        );
-    }
+    return new PublicKeyCredentialRequestOptions(
+        TestData.CHALLENGE, (long) 90000, TestData.RP_ID, allowedCredentials, null, extensions);
+  }
 }

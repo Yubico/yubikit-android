@@ -16,48 +16,46 @@
 
 package com.yubico.yubikit.management;
 
-import static org.junit.Assert.assertEquals;
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
+import static org.junit.Assert.assertEquals;
 
 import com.yubico.yubikit.core.Version;
-
 import java.util.HashMap;
 import java.util.Map;
-
 import javax.annotation.Nullable;
 
 class TestUtil {
 
-    static final Version defaultVersion = new Version(2, 2, 2);
+  static final Version defaultVersion = new Version(2, 2, 2);
 
-    static Map<Integer, byte[]> tlvs(Integer tag, @Nullable byte[] data) {
-        Map<Integer, byte[]> tlvs = new HashMap<>();
-        tlvs.put(tag, data);
-        return tlvs;
-    }
+  static Map<Integer, byte[]> tlvs(Integer tag, @Nullable byte[] data) {
+    Map<Integer, byte[]> tlvs = new HashMap<>();
+    tlvs.put(tag, data);
+    return tlvs;
+  }
 
-    static Map<Integer, byte[]> emptyTlvs() {
-        return new HashMap<>();
-    }
+  static Map<Integer, byte[]> emptyTlvs() {
+    return new HashMap<>();
+  }
 
-    static void assertShortEquals(int expected, @Nullable Short value) {
-        assertEquals(Short.valueOf((short) expected), value);
-    }
+  static void assertShortEquals(int expected, @Nullable Short value) {
+    assertEquals(Short.valueOf((short) expected), value);
+  }
 
-    static void assertByteEquals(int expected, @Nullable Byte value) {
-        assertEquals(Byte.valueOf((byte) expected), value);
-    }
+  static void assertByteEquals(int expected, @Nullable Byte value) {
+    assertEquals(Byte.valueOf((byte) expected), value);
+  }
 
-    static void assertIntegerEquals(int expected, @Nullable Integer value) {
-        assertEquals(Integer.valueOf(expected), value);
-    }
+  static void assertIntegerEquals(int expected, @Nullable Integer value) {
+    assertEquals(Integer.valueOf(expected), value);
+  }
 
-    static void assertIsFalse(@Nullable Boolean value) {
-        assertEquals(FALSE, value);
-    }
+  static void assertIsFalse(@Nullable Boolean value) {
+    assertEquals(FALSE, value);
+  }
 
-    static void assertIsTrue(@Nullable Boolean value) {
-        assertEquals(TRUE, value);
-    }
+  static void assertIsTrue(@Nullable Boolean value) {
+    assertEquals(TRUE, value);
+  }
 }

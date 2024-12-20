@@ -18,16 +18,16 @@ package com.yubico.yubikit.oath;
 
 /**
  * Allows the implementation of custom backends to unlock an OathSession.
- * <p>
- * The AccessKey gives the OathSession the ability to unlock a session without providing the actual
- * key material, which allows it to be stored in the Android KeyStore or similar.
+ *
+ * <p>The AccessKey gives the OathSession the ability to unlock a session without providing the
+ * actual key material, which allows it to be stored in the Android KeyStore or similar.
  */
 public interface AccessKey {
-    /**
-     * Create a HMAC-SHA1 signature over the given challenge, using an OATH Access Key.
-     *
-     * @param challenge a challenge to sign
-     * @return a signature over the given challenge
-     */
-    byte[] calculateResponse(byte[] challenge);
+  /**
+   * Create a HMAC-SHA1 signature over the given challenge, using an OATH Access Key.
+   *
+   * @param challenge a challenge to sign
+   * @return a signature over the given challenge
+   */
+  byte[] calculateResponse(byte[] challenge);
 }

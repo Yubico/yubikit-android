@@ -30,76 +30,75 @@ import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV2;
 import com.yubico.yubikit.management.DeviceInfo;
-
 import java.util.Objects;
 
 public class Ctap2ClientPinTests {
-    public static void testClientPin(Ctap2Session session, FidoTestState state) throws Throwable {
-        Integer permissions = ClientPin.PIN_PERMISSION_MC | ClientPin.PIN_PERMISSION_GA;
-        String permissionRpId = "localhost";
+  public static void testClientPin(Ctap2Session session, FidoTestState state) throws Throwable {
+    Integer permissions = ClientPin.PIN_PERMISSION_MC | ClientPin.PIN_PERMISSION_GA;
+    String permissionRpId = "localhost";
 
-        ClientPin pin = new ClientPin(session, state.getPinUvAuthProtocol());
-        assertThat(pin.getPinUvAuth().getVersion(), is(state.getPinUvAuthProtocol().getVersion()));
-        assertThat(pin.getPinRetries().getCount(), is(8));
+    ClientPin pin = new ClientPin(session, state.getPinUvAuthProtocol());
+    assertThat(pin.getPinUvAuth().getVersion(), is(state.getPinUvAuthProtocol().getVersion()));
+    assertThat(pin.getPinRetries().getCount(), is(8));
 
-        pin.changePin(TestData.PIN, TestData.OTHER_PIN);
-        try {
-            pin.getPinToken(TestData.PIN, permissions, permissionRpId);
-            fail("Wrong PIN was accepted");
-        } catch (CtapException e) {
-            assertThat(e.getCtapError(), is(CtapException.ERR_PIN_INVALID));
-
-        }
-        assertThat(pin.getPinRetries().getCount(), is(7));
-
-        assertThat(pin.getPinToken(TestData.OTHER_PIN, permissions, permissionRpId), notNullValue());
-        assertThat(pin.getPinRetries().getCount(), is(8));
-        pin.changePin(TestData.OTHER_PIN, TestData.PIN);
+    pin.changePin(TestData.PIN, TestData.OTHER_PIN);
+    try {
+      pin.getPinToken(TestData.PIN, permissions, permissionRpId);
+      fail("Wrong PIN was accepted");
+    } catch (CtapException e) {
+      assertThat(e.getCtapError(), is(CtapException.ERR_PIN_INVALID));
     }
+    assertThat(pin.getPinRetries().getCount(), is(7));
 
-    public static void testPinComplexity(FidoTestState state) throws Throwable {
+    assertThat(pin.getPinToken(TestData.OTHER_PIN, permissions, permissionRpId), notNullValue());
+    assertThat(pin.getPinRetries().getCount(), is(8));
+    pin.changePin(TestData.OTHER_PIN, TestData.PIN);
+  }
 
-        final DeviceInfo deviceInfo = state.getDeviceInfo();
-        assumeTrue("Device does not support PIN complexity", deviceInfo != null);
-        assumeTrue("Device does not require PIN complexity", deviceInfo.getPinComplexity());
+  public static void testPinComplexity(FidoTestState state) throws Throwable {
 
-        state.withCtap2(session -> {
-            PinUvAuthProtocol pinUvAuthProtocol = new PinUvAuthProtocolV2();
-            char[] defaultPin = "11234567".toCharArray();
+    final DeviceInfo deviceInfo = state.getDeviceInfo();
+    assumeTrue("Device does not support PIN complexity", deviceInfo != null);
+    assumeTrue("Device does not require PIN complexity", deviceInfo.getPinComplexity());
 
-            Ctap2Session.InfoData info = session.getCachedInfo();
-            ClientPin pin = new ClientPin(session, pinUvAuthProtocol);
-            boolean pinSet = Objects.requireNonNull((Boolean) info.getOptions().get("clientPin"));
+    state.withCtap2(
+        session -> {
+          PinUvAuthProtocol pinUvAuthProtocol = new PinUvAuthProtocolV2();
+          char[] defaultPin = "11234567".toCharArray();
 
-            try {
-                if (!pinSet) {
-                    pin.setPin(defaultPin);
-                } else {
-                    pin.getPinToken(
-                            defaultPin,
-                            ClientPin.PIN_PERMISSION_MC | ClientPin.PIN_PERMISSION_GA,
-                            "localhost");
-                }
-            } catch (ApduException e) {
-                fail("Failed to set or use PIN. Reset the device and try again");
+          Ctap2Session.InfoData info = session.getCachedInfo();
+          ClientPin pin = new ClientPin(session, pinUvAuthProtocol);
+          boolean pinSet = Objects.requireNonNull((Boolean) info.getOptions().get("clientPin"));
+
+          try {
+            if (!pinSet) {
+              pin.setPin(defaultPin);
+            } else {
+              pin.getPinToken(
+                  defaultPin,
+                  ClientPin.PIN_PERMISSION_MC | ClientPin.PIN_PERMISSION_GA,
+                  "localhost");
             }
+          } catch (ApduException e) {
+            fail("Failed to set or use PIN. Reset the device and try again");
+          }
 
-            assertThat(pin.getPinUvAuth().getVersion(), is(pinUvAuthProtocol.getVersion()));
-            assertThat(pin.getPinRetries().getCount(), is(8));
+          assertThat(pin.getPinUvAuth().getVersion(), is(pinUvAuthProtocol.getVersion()));
+          assertThat(pin.getPinRetries().getCount(), is(8));
 
-            char[] weakPin = "33333333".toCharArray();
-            try {
-                pin.changePin(defaultPin, weakPin);
-                fail("Weak PIN was accepted");
-            } catch (CtapException e) {
-                assertThat(e.getCtapError(), is(ERR_PIN_POLICY_VIOLATION));
-            }
+          char[] weakPin = "33333333".toCharArray();
+          try {
+            pin.changePin(defaultPin, weakPin);
+            fail("Weak PIN was accepted");
+          } catch (CtapException e) {
+            assertThat(e.getCtapError(), is(ERR_PIN_POLICY_VIOLATION));
+          }
 
-            char[] strongPin = "STRONG PIN".toCharArray();
-            pin.changePin(defaultPin, strongPin);
-            pin.changePin(strongPin, defaultPin);
+          char[] strongPin = "STRONG PIN".toCharArray();
+          pin.changePin(defaultPin, strongPin);
+          pin.changePin(strongPin, defaultPin);
 
-            assertThat(pin.getPinRetries().getCount(), is(8));
+          assertThat(pin.getPinRetries().getCount(), is(8));
         });
-    }
+  }
 }

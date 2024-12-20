@@ -21,47 +21,49 @@ import java.util.ServiceLoader;
 
 /**
  * Loads and provides Base64 implementation
- * <p>
- * Only for internal use.
+ *
+ * <p>Only for internal use.
  */
 public class Base64 {
 
-    private static final Base64Codec base64Codec;
+  private static final Base64Codec base64Codec;
 
-    static {
-        ServiceLoader<Base64Codec> codecLoader = ServiceLoader.load(Base64Codec.class);
-        final Iterator<Base64Codec> iterator = codecLoader.iterator();
-        base64Codec = iterator.hasNext() ? iterator.next() : new DefaultBase64Codec();
-    }
+  static {
+    ServiceLoader<Base64Codec> codecLoader = ServiceLoader.load(Base64Codec.class);
+    final Iterator<Base64Codec> iterator = codecLoader.iterator();
+    base64Codec = iterator.hasNext() ? iterator.next() : new DefaultBase64Codec();
+  }
 
-    /**
-     * Encodes binary data to Base64 URL safe format.
-     * <p>
-     * Internal use only.
-     * @param data date to encode
-     * @return Encoded data in Base64 URL safe format
-     */
-    public static String toUrlSafeString(byte[] data) {
-        return base64Codec.toUrlSafeString(data);
-    }
+  /**
+   * Encodes binary data to Base64 URL safe format.
+   *
+   * <p>Internal use only.
+   *
+   * @param data date to encode
+   * @return Encoded data in Base64 URL safe format
+   */
+  public static String toUrlSafeString(byte[] data) {
+    return base64Codec.toUrlSafeString(data);
+  }
 
-    /**
-     * Decodes Base64 URL safe formatted string to binary data.
-     * <p>
-     * Internal use only.
-     * @param data data to decode in Base64 URL safe format
-     * @return decoded data
-     */
-    public static byte[] fromUrlSafeString(String data) {
-        return base64Codec.fromUrlSafeString(data);
-    }
+  /**
+   * Decodes Base64 URL safe formatted string to binary data.
+   *
+   * <p>Internal use only.
+   *
+   * @param data data to decode in Base64 URL safe format
+   * @return decoded data
+   */
+  public static byte[] fromUrlSafeString(String data) {
+    return base64Codec.fromUrlSafeString(data);
+  }
 
-    /**
-     * Returns Base64Codec
-     * <p>
-     * Internal use only.
-     */
-    public static Base64Codec getBase64Codec() {
-        return base64Codec;
-    }
+  /**
+   * Returns Base64Codec
+   *
+   * <p>Internal use only.
+   */
+  public static Base64Codec getBase64Codec() {
+    return base64Codec;
+  }
 }

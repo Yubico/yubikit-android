@@ -19,17 +19,17 @@ package com.yubico.yubikit.fido.webauthn;
 import java.util.Map;
 
 public abstract class AuthenticatorResponse {
-    static final String CLIENT_DATA_JSON = "clientDataJSON";
+  static final String CLIENT_DATA_JSON = "clientDataJSON";
 
-    private final byte[] clientDataJson;
+  private final byte[] clientDataJson;
 
-    AuthenticatorResponse(byte[] clientDataJson) {
-        this.clientDataJson = clientDataJson;
-    }
+  AuthenticatorResponse(byte[] clientDataJson) {
+    this.clientDataJson = clientDataJson;
+  }
 
-    public byte[] getClientDataJson() {
-        return clientDataJson;
-    }
+  public byte[] getClientDataJson() {
+    return clientDataJson;
+  }
 
-    public abstract Map<String, ?> toMap(SerializationType serializationType);
+  public abstract Map<String, ?> toMap(SerializationType serializationType);
 }

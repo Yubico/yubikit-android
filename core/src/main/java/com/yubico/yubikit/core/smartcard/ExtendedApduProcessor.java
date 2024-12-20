@@ -20,34 +20,35 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 class ExtendedApduProcessor extends ApduFormatProcessor {
-    private final int maxApduSize;
+  private final int maxApduSize;
 
-    ExtendedApduProcessor(SmartCardConnection connection, int maxApduSize) {
-        super(connection);
-        this.maxApduSize = maxApduSize;
-    }
+  ExtendedApduProcessor(SmartCardConnection connection, int maxApduSize) {
+    super(connection);
+    this.maxApduSize = maxApduSize;
+  }
 
-    @Override
-    byte[] formatApdu(byte cla, byte ins, byte p1, byte p2, byte[] data, int offset, int length, int le) {
-        ByteBuffer buf = ByteBuffer.allocate(5 + (data.length > 0 ? 2 : 0) + data.length + (le > 0 ? 2 : 0))
-                .put(cla)
-                .put(ins)
-                .put(p1)
-                .put(p2)
-                .put((byte) 0x00);
-        if (data.length > 0) {
-            buf.putShort((short) data.length).put(data);
-        }
-        if (le > 0) {
-            buf.putShort((short) le);
-        }
-        if (buf.limit() > maxApduSize) {
-            throw new UnsupportedOperationException("APDU length exceeds YubiKey capability");
-        }
-        return buf.array();
+  @Override
+  byte[] formatApdu(
+      byte cla, byte ins, byte p1, byte p2, byte[] data, int offset, int length, int le) {
+    ByteBuffer buf =
+        ByteBuffer.allocate(5 + (data.length > 0 ? 2 : 0) + data.length + (le > 0 ? 2 : 0))
+            .put(cla)
+            .put(ins)
+            .put(p1)
+            .put(p2)
+            .put((byte) 0x00);
+    if (data.length > 0) {
+      buf.putShort((short) data.length).put(data);
     }
+    if (le > 0) {
+      buf.putShort((short) le);
+    }
+    if (buf.limit() > maxApduSize) {
+      throw new UnsupportedOperationException("APDU length exceeds YubiKey capability");
+    }
+    return buf.array();
+  }
 
-    @Override
-    public void close() throws IOException {
-    }
+  @Override
+  public void close() throws IOException {}
 }

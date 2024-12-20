@@ -22,25 +22,24 @@ import static org.junit.Assert.assertNull;
 
 import com.yubico.yubikit.core.Version;
 import com.yubico.yubikit.core.smartcard.AppId;
-
 import org.junit.Test;
 
 public class DeviceUtilTest {
-    @Test
-    public void ccidAppletTest() {
-        assertArrayEquals(AppId.OPENPGP, DeviceUtil.CcidApplet.OPENPGP.aid);
-        assertArrayEquals(AppId.OATH, DeviceUtil.CcidApplet.OATH.aid);
-        assertArrayEquals(AppId.PIV, DeviceUtil.CcidApplet.PIV.aid);
-        assertArrayEquals(AppId.FIDO, DeviceUtil.CcidApplet.FIDO.aid);
-        assertArrayEquals(
-                new byte[]{(byte) 0xa0, 0x00, 0x00, 0x05, 0x27, 0x10, 0x02},
-                DeviceUtil.CcidApplet.AID_U2F_YUBICO.aid);
-    }
+  @Test
+  public void ccidAppletTest() {
+    assertArrayEquals(AppId.OPENPGP, DeviceUtil.CcidApplet.OPENPGP.aid);
+    assertArrayEquals(AppId.OATH, DeviceUtil.CcidApplet.OATH.aid);
+    assertArrayEquals(AppId.PIV, DeviceUtil.CcidApplet.PIV.aid);
+    assertArrayEquals(AppId.FIDO, DeviceUtil.CcidApplet.FIDO.aid);
+    assertArrayEquals(
+        new byte[] {(byte) 0xa0, 0x00, 0x00, 0x05, 0x27, 0x10, 0x02},
+        DeviceUtil.CcidApplet.AID_U2F_YUBICO.aid);
+  }
 
-    @Test
-    public void otpDataTest() {
-        assertEquals(new Version(1, 2, 3), new DeviceUtil.OtpData(new Version(1, 2, 3), null).version);
-        assertNull(new DeviceUtil.OtpData(new Version(1, 2, 3), null).serial);
-        assertEquals(Integer.valueOf(123), new DeviceUtil.OtpData(new Version(1, 2, 3), 123).serial);
-    }
+  @Test
+  public void otpDataTest() {
+    assertEquals(new Version(1, 2, 3), new DeviceUtil.OtpData(new Version(1, 2, 3), null).version);
+    assertNull(new DeviceUtil.OtpData(new Version(1, 2, 3), null).serial);
+    assertEquals(Integer.valueOf(123), new DeviceUtil.OtpData(new Version(1, 2, 3), 123).serial);
+  }
 }

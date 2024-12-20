@@ -20,86 +20,81 @@ import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import javax.annotation.Nullable;
 
-/**
- * Internal utility class for dealing with parameters stored in YKOATH credential names.
- */
+/** Internal utility class for dealing with parameters stored in YKOATH credential names. */
 class CredentialIdUtils {
-    private static final Pattern TOTP_ID_PATTERN = Pattern.compile("^((\\d+)/)?(([^:]+):)?(.+)$");
-    private static final int DEFAULT_PERIOD = CredentialData.DEFAULT_TOTP_PERIOD;
+  private static final Pattern TOTP_ID_PATTERN = Pattern.compile("^((\\d+)/)?(([^:]+):)?(.+)$");
+  private static final int DEFAULT_PERIOD = CredentialData.DEFAULT_TOTP_PERIOD;
 
-    /**
-     * Format the YKOATH Credential ID to use for a credential given its parameters.
-     *
-     * @param issuer   an optional issuer name for the credential
-     * @param name     the name of the credential
-     * @param oathType the type of the credential
-     * @param period   the time period of a TOTP credential (ignored for HOTP)
-     * @return A byte string to use with YKOATH.
-     */
-    static byte[] formatId(@Nullable String issuer, String name, OathType oathType, int period) {
-        String longName = "";
-        if (oathType == OathType.TOTP && period != DEFAULT_PERIOD) {
-            //TODO: Add period even if default if TOTP and remainder of ID starts with \d+/
-            longName += String.format(Locale.ROOT, "%d/", period);
-        }
-
-        if (issuer != null) {
-            longName += String.format(Locale.ROOT, "%s:", issuer);
-        }
-        longName += name;
-        return longName.getBytes(StandardCharsets.UTF_8);
+  /**
+   * Format the YKOATH Credential ID to use for a credential given its parameters.
+   *
+   * @param issuer an optional issuer name for the credential
+   * @param name the name of the credential
+   * @param oathType the type of the credential
+   * @param period the time period of a TOTP credential (ignored for HOTP)
+   * @return A byte string to use with YKOATH.
+   */
+  static byte[] formatId(@Nullable String issuer, String name, OathType oathType, int period) {
+    String longName = "";
+    if (oathType == OathType.TOTP && period != DEFAULT_PERIOD) {
+      // TODO: Add period even if default if TOTP and remainder of ID starts with \d+/
+      longName += String.format(Locale.ROOT, "%d/", period);
     }
 
-    /**
-     * Parse credential parameters from a YKOATH credential name.
-     *
-     * @param credentialId as retrieved from a YubiKey.
-     * @param oathType     the type of the credential
-     * @return parsed data stored in the credential ID.
-     */
-    static CredentialIdData parseId(byte[] credentialId, OathType oathType) {
-        String data = new String(credentialId, StandardCharsets.UTF_8);
-
-        if (oathType == OathType.TOTP) {
-            Matcher m = TOTP_ID_PATTERN.matcher(data);
-            if (m.matches()) {
-                String periodString = m.group(2);
-                return new CredentialIdData(
-                        m.group(4),
-                        m.group(5),
-                        periodString == null ? DEFAULT_PERIOD : Integer.parseInt(periodString)
-                );
-            } else {  //Invalid id, use it directly as name.
-                return new CredentialIdData(null, data, DEFAULT_PERIOD);
-            }
-        } else {
-            String issuer;
-            String name;
-            if (data.contains(":")) {
-                String[] parts = data.split(":", 2);
-                issuer = parts[0];
-                name = parts[1];
-            } else {
-                issuer = null;
-                name = data;
-            }
-            return new CredentialIdData(issuer, name, 0);
-        }
+    if (issuer != null) {
+      longName += String.format(Locale.ROOT, "%s:", issuer);
     }
+    longName += name;
+    return longName.getBytes(StandardCharsets.UTF_8);
+  }
 
-    static class CredentialIdData {
-        @Nullable
-        final String issuer;
-        final String accountName;
-        final int period;
+  /**
+   * Parse credential parameters from a YKOATH credential name.
+   *
+   * @param credentialId as retrieved from a YubiKey.
+   * @param oathType the type of the credential
+   * @return parsed data stored in the credential ID.
+   */
+  static CredentialIdData parseId(byte[] credentialId, OathType oathType) {
+    String data = new String(credentialId, StandardCharsets.UTF_8);
 
-        CredentialIdData(@Nullable String issuer, String accountName, int period) {
-            this.issuer = issuer;
-            this.accountName = accountName;
-            this.period = period;
-        }
+    if (oathType == OathType.TOTP) {
+      Matcher m = TOTP_ID_PATTERN.matcher(data);
+      if (m.matches()) {
+        String periodString = m.group(2);
+        return new CredentialIdData(
+            m.group(4),
+            m.group(5),
+            periodString == null ? DEFAULT_PERIOD : Integer.parseInt(periodString));
+      } else { // Invalid id, use it directly as name.
+        return new CredentialIdData(null, data, DEFAULT_PERIOD);
+      }
+    } else {
+      String issuer;
+      String name;
+      if (data.contains(":")) {
+        String[] parts = data.split(":", 2);
+        issuer = parts[0];
+        name = parts[1];
+      } else {
+        issuer = null;
+        name = data;
+      }
+      return new CredentialIdData(issuer, name, 0);
     }
+  }
+
+  static class CredentialIdData {
+    @Nullable final String issuer;
+    final String accountName;
+    final int period;
+
+    CredentialIdData(@Nullable String issuer, String accountName, int period) {
+      this.issuer = issuer;
+      this.accountName = accountName;
+      this.period = period;
+    }
+  }
 }

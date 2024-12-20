@@ -22,74 +22,76 @@ import android.view.InputDevice;
 import android.view.KeyEvent;
 
 /**
- * A helper class that is used to intercept keyboard event from a YubiKey to capture an OTP.
- * Use it directly in an Activity in {@link android.app.Activity#onKeyUp}, or in a
- * {@link android.view.View.OnKeyListener}.
+ * A helper class that is used to intercept keyboard event from a YubiKey to capture an OTP. Use it
+ * directly in an Activity in {@link android.app.Activity#onKeyUp}, or in a {@link
+ * android.view.View.OnKeyListener}.
  */
 public class OtpKeyListener {
-    private static final int OTP_DELAY_MS = 1000;
-    private static final int YUBICO_VID = 0x1050;
+  private static final int OTP_DELAY_MS = 1000;
+  private static final int YUBICO_VID = 0x1050;
 
-    private final SparseArray<StringBuilder> inputBuffers = new SparseArray<>();
-    private final Handler handler = new Handler(Looper.getMainLooper());
-    private final OtpListener listener;
+  private final SparseArray<StringBuilder> inputBuffers = new SparseArray<>();
+  private final Handler handler = new Handler(Looper.getMainLooper());
+  private final OtpListener listener;
 
-    public OtpKeyListener(OtpListener listener) {
-        this.listener = listener;
+  public OtpKeyListener(OtpListener listener) {
+    this.listener = listener;
+  }
+
+  public boolean onKeyEvent(KeyEvent event) {
+    InputDevice device = event.getDevice();
+    if (device == null || device.getVendorId() != YUBICO_VID) {
+      // Don't handle non-Yubico devices
+      return false;
     }
 
-    public boolean onKeyEvent(KeyEvent event) {
-        InputDevice device = event.getDevice();
-        if (device == null || device.getVendorId() != YUBICO_VID) {
-            // Don't handle non-Yubico devices
-            return false;
-        }
-
-        if (event.getAction() == KeyEvent.ACTION_UP) {
-            // use id of keyboard device to distinguish current input device
-            // in case of multiple keys inserted
-            int deviceId = event.getDeviceId();
-            StringBuilder otpBuffer = inputBuffers.get(deviceId, new StringBuilder());
-            if (event.getKeyCode() == KeyEvent.KEYCODE_ENTER || event.getKeyCode() == KeyEvent.KEYCODE_NUMPAD_ENTER) {
-                // Carriage return seen. Assume this is the end of the OTP credential and notify immediately.
-                listener.onCaptureComplete(otpBuffer.toString());
-                inputBuffers.delete(deviceId);
-            } else {
-                if (otpBuffer.length() == 0) {
-                    // in case if we never get keycode enter (which is pretty generic scenario) we set timer for 1 sec
-                    // upon expiration we assume that we have no more input from key
-                    handler.postDelayed(() -> {
-                        StringBuilder otpBuffer1 = inputBuffers.get(deviceId, new StringBuilder());
-                        // if buffer is empty it means that we sent it to user already, avoid double invocation
-                        if (otpBuffer1.length() > 0) {
-                            listener.onCaptureComplete(otpBuffer1.toString());
-                            inputBuffers.delete(deviceId);
-                        }
-                    }, OTP_DELAY_MS);
-                    listener.onCaptureStarted();
+    if (event.getAction() == KeyEvent.ACTION_UP) {
+      // use id of keyboard device to distinguish current input device
+      // in case of multiple keys inserted
+      int deviceId = event.getDeviceId();
+      StringBuilder otpBuffer = inputBuffers.get(deviceId, new StringBuilder());
+      if (event.getKeyCode() == KeyEvent.KEYCODE_ENTER
+          || event.getKeyCode() == KeyEvent.KEYCODE_NUMPAD_ENTER) {
+        // Carriage return seen. Assume this is the end of the OTP credential and notify
+        // immediately.
+        listener.onCaptureComplete(otpBuffer.toString());
+        inputBuffers.delete(deviceId);
+      } else {
+        if (otpBuffer.length() == 0) {
+          // in case if we never get keycode enter (which is pretty generic scenario) we set timer
+          // for 1 sec
+          // upon expiration we assume that we have no more input from key
+          handler.postDelayed(
+              () -> {
+                StringBuilder otpBuffer1 = inputBuffers.get(deviceId, new StringBuilder());
+                // if buffer is empty it means that we sent it to user already, avoid double
+                // invocation
+                if (otpBuffer1.length() > 0) {
+                  listener.onCaptureComplete(otpBuffer1.toString());
+                  inputBuffers.delete(deviceId);
                 }
-                otpBuffer.append((char) event.getUnicodeChar());
-                inputBuffers.put(deviceId, otpBuffer);
-            }
+              },
+              OTP_DELAY_MS);
+          listener.onCaptureStarted();
         }
-
-        return true;
+        otpBuffer.append((char) event.getUnicodeChar());
+        inputBuffers.put(deviceId, otpBuffer);
+      }
     }
+
+    return true;
+  }
+
+  /** Listener interface to react to events. */
+  public interface OtpListener {
+    /** Called when the user has triggered OTP output and capture has started. */
+    void onCaptureStarted();
 
     /**
-     * Listener interface to react to events.
+     * Called when OTP capture has completed.
+     *
+     * @param capture the captured OTP
      */
-    public interface OtpListener {
-        /**
-         * Called when the user has triggered OTP output and capture has started.
-         */
-        void onCaptureStarted();
-
-        /**
-         * Called when OTP capture has completed.
-         *
-         * @param capture the captured OTP
-         */
-        void onCaptureComplete(String capture);
-    }
+    void onCaptureComplete(String capture);
+  }
 }

@@ -22,5 +22,5 @@ package com.yubico.yubikit.core.util;
  * @param <T> the type of the value expected as input to the callback.
  */
 public interface Callback<T> {
-    void invoke(T value);
+  void invoke(T value);
 }

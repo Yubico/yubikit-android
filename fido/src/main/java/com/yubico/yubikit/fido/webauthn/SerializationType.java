@@ -17,8 +17,8 @@
 package com.yubico.yubikit.fido.webauthn;
 
 public enum SerializationType {
-    CBOR,
-    JSON;
+  CBOR,
+  JSON;
 
-    public static final SerializationType DEFAULT = SerializationType.JSON;
+  public static final SerializationType DEFAULT = SerializationType.JSON;
 }

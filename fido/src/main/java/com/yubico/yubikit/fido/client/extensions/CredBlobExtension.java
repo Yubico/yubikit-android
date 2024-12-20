@@ -23,67 +23,64 @@ import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
 import com.yubico.yubikit.fido.webauthn.Extensions;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialCreationOptions;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialRequestOptions;
-
 import java.util.Collections;
-
 import javax.annotation.Nullable;
 
 /**
  * Implements the Credential Blob (credBlob) CTAP2 extension.
- * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#sctn-credBlob-extension">Credential Blob (credBlob)</a>
+ *
+ * @see <a
+ *     href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#sctn-credBlob-extension">Credential
+ *     Blob (credBlob)</a>
  */
 public class CredBlobExtension extends Extension {
 
-    public CredBlobExtension() {
-        super("credBlob");
+  public CredBlobExtension() {
+    super("credBlob");
+  }
+
+  @Nullable
+  @Override
+  public RegistrationProcessor makeCredential(
+      Ctap2Session ctap,
+      PublicKeyCredentialCreationOptions options,
+      PinUvAuthProtocol pinUvAuthProtocol) {
+
+    if (!isSupported(ctap)) {
+      return null;
     }
 
-    @Nullable
-    @Override
-    public RegistrationProcessor makeCredential(
-            Ctap2Session ctap,
-            PublicKeyCredentialCreationOptions options,
-            PinUvAuthProtocol pinUvAuthProtocol) {
-
-        if (!isSupported(ctap)) {
-            return null;
-        }
-
-        Extensions extensions = options.getExtensions();
-        if (extensions == null) {
-            return null;
-        }
-
-        String b64Blob = (String) extensions.get("credBlob");
-        if (b64Blob != null) {
-            byte[] blob = fromUrlSafeString(b64Blob);
-            if (blob.length <= ctap.getCachedInfo().getMaxCredBlobLength()) {
-                return new RegistrationProcessor(
-                        pinToken -> Collections.singletonMap(name, blob)
-                );
-            }
-        }
-
-        return null;
+    Extensions extensions = options.getExtensions();
+    if (extensions == null) {
+      return null;
     }
 
-    @Nullable
-    @Override
-    public AuthenticationProcessor getAssertion(
-            Ctap2Session ctap,
-            PublicKeyCredentialRequestOptions options,
-            PinUvAuthProtocol pinUvAuthProtocol) {
-
-        Extensions extensions = options.getExtensions();
-        if (extensions == null) {
-            return null;
-        }
-        if (isSupported(ctap) &&
-                Boolean.TRUE.equals(extensions.get("getCredBlob"))) {
-            return new AuthenticationProcessor(
-                    (AuthenticationInput) (selected, pinToken) -> Collections.singletonMap(name, true)
-            );
-        }
-        return null;
+    String b64Blob = (String) extensions.get("credBlob");
+    if (b64Blob != null) {
+      byte[] blob = fromUrlSafeString(b64Blob);
+      if (blob.length <= ctap.getCachedInfo().getMaxCredBlobLength()) {
+        return new RegistrationProcessor(pinToken -> Collections.singletonMap(name, blob));
+      }
     }
+
+    return null;
+  }
+
+  @Nullable
+  @Override
+  public AuthenticationProcessor getAssertion(
+      Ctap2Session ctap,
+      PublicKeyCredentialRequestOptions options,
+      PinUvAuthProtocol pinUvAuthProtocol) {
+
+    Extensions extensions = options.getExtensions();
+    if (extensions == null) {
+      return null;
+    }
+    if (isSupported(ctap) && Boolean.TRUE.equals(extensions.get("getCredBlob"))) {
+      return new AuthenticationProcessor(
+          (AuthenticationInput) (selected, pinToken) -> Collections.singletonMap(name, true));
+    }
+    return null;
+  }
 }

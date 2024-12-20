@@ -18,8 +18,8 @@ package com.yubico.yubikit.fido.webauthn;
 
 @SuppressWarnings("unused")
 public class AttestationConveyancePreference {
-    public static final String NONE = "none";
-    public static final String INDIRECT = "indirect";
-    public static final String DIRECT = "direct";
-    public static final String ENTERPRISE = "enterprise";
+  public static final String NONE = "none";
+  public static final String INDIRECT = "indirect";
+  public static final String DIRECT = "direct";
+  public static final String ENTERPRISE = "enterprise";
 }

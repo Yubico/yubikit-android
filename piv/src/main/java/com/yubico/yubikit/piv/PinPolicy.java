@@ -18,53 +18,39 @@ package com.yubico.yubikit.piv;
 
 /**
  * The PIN policy of a private key defines whether or not a PIN is required to use the key.
- * <p>
- * Setting a PIN policy other than DEFAULT requires YubiKey 4 or later.
+ *
+ * <p>Setting a PIN policy other than DEFAULT requires YubiKey 4 or later.
  */
 public enum PinPolicy {
-    /**
-     * The default behavior for the particular key slot is used.
-     */
-    DEFAULT(0x0),
+  /** The default behavior for the particular key slot is used. */
+  DEFAULT(0x0),
 
-    /**
-     * The PIN is never required for using the key.
-     */
-    NEVER(0x1),
+  /** The PIN is never required for using the key. */
+  NEVER(0x1),
 
-    /**
-     * The PIN must be verified for the session, prior to using the key.
-     */
-    ONCE(0x2),
+  /** The PIN must be verified for the session, prior to using the key. */
+  ONCE(0x2),
 
-    /**
-     * The PIN must be verified each time the key is to be used, just prior to using it.
-     */
-    ALWAYS(0x3),
+  /** The PIN must be verified each time the key is to be used, just prior to using it. */
+  ALWAYS(0x3),
 
-    /**
-     * PIN or biometrics must be verified for the session, prior to using the key.
-     */
-    MATCH_ONCE(0x4),
+  /** PIN or biometrics must be verified for the session, prior to using the key. */
+  MATCH_ONCE(0x4),
 
-    /**
-     * PIN or biometrics must be verified each time the key is to be used, just prior to using it.
-     */
-    MATCH_ALWAYS(0x5);
+  /** PIN or biometrics must be verified each time the key is to be used, just prior to using it. */
+  MATCH_ALWAYS(0x5);
 
-    public final int value;
+  public final int value;
 
-    PinPolicy(int value) {
-        this.value = value;
+  PinPolicy(int value) {
+    this.value = value;
+  }
+
+  /** Returns the PIN policy corresponding to the given PIV application constant. */
+  public static PinPolicy fromValue(int value) {
+    if (value >= 0 && value < PinPolicy.values().length) {
+      return PinPolicy.values()[value];
     }
-
-    /**
-     * Returns the PIN policy corresponding to the given PIV application constant.
-     */
-    public static PinPolicy fromValue(int value) {
-        if (value >= 0 && value < PinPolicy.values().length) {
-            return PinPolicy.values()[value];
-        }
-        throw new IllegalArgumentException("Not a valid PinPolicy :" + value);
-    }
+    throw new IllegalArgumentException("Not a valid PinPolicy :" + value);
+  }
 }

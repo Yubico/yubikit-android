@@ -16,33 +16,27 @@
 
 package com.yubico.yubikit.yubiotp;
 
-/**
- * Slots on YubiKey (Yubico OTP/YubiKey/Configuration interface).
- */
+/** Slots on YubiKey (Yubico OTP/YubiKey/Configuration interface). */
 public enum Slot {
-    /**
-     * Slot one (short touch of YubiKey sensor)
-     */
-    ONE,
-    /**
-     * Slot two (long touch of YubiKey sensor)
-     */
-    TWO;
+  /** Slot one (short touch of YubiKey sensor) */
+  ONE,
+  /** Slot two (long touch of YubiKey sensor) */
+  TWO;
 
-    /**
-     * Maps a Slot value to one of two byte values.
-     *
-     * @param one the value to use for slot 1
-     * @param two the value to use for slot 2
-     * @return either one or two, depending on the slot.
-     */
-    byte map(byte one, byte two) {
-        switch (this) {
-            case ONE:
-                return one;
-            case TWO:
-                return two;
-        }
-        throw new IllegalStateException("Invalid enum value");
+  /**
+   * Maps a Slot value to one of two byte values.
+   *
+   * @param one the value to use for slot 1
+   * @param two the value to use for slot 2
+   * @return either one or two, depending on the slot.
+   */
+  byte map(byte one, byte two) {
+    switch (this) {
+      case ONE:
+        return one;
+      case TWO:
+        return two;
     }
+    throw new IllegalStateException("Invalid enum value");
+  }
 }
