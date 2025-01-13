@@ -16,5 +16,4 @@
 
 package com.yubico.yubikit.testing;
 
-public interface SmokeTest {
-}
+public interface SmokeTest {}

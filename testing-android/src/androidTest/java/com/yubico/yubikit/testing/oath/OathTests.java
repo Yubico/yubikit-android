@@ -16,12 +16,10 @@
 
 package com.yubico.yubikit.testing.oath;
 
-import javax.annotation.Nullable;
-
 import com.yubico.yubikit.core.smartcard.scp.ScpKid;
 import com.yubico.yubikit.testing.SmokeTest;
 import com.yubico.yubikit.testing.framework.OathInstrumentedTests;
-
+import javax.annotation.Nullable;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -29,39 +27,39 @@ import org.junit.runners.Suite;
 
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        OathTests.NoScpTests.class,
-        OathTests.Scp11bTests.class,
+  OathTests.NoScpTests.class,
+  OathTests.Scp11bTests.class,
 })
 public class OathTests {
-    public static class NoScpTests extends OathInstrumentedTests {
-        @Test
-        @Category(SmokeTest.class)
-        public void testChangePassword() throws Throwable {
-            withDevice(OathDeviceTests::testChangePassword);
-        }
-
-        @Test
-        public void testResetPassword() throws Throwable {
-            withOathSession(OathDeviceTests::testRemovePassword);
-        }
-
-        @Test
-        @Category(SmokeTest.class)
-        public void testAccountManagement() throws Throwable {
-            withOathSession(OathDeviceTests::testAccountManagement);
-        }
-
-        @Test
-        public void testRenameAccount() throws Throwable {
-            withOathSession(OathDeviceTests::testRenameAccount);
-        }
+  public static class NoScpTests extends OathInstrumentedTests {
+    @Test
+    @Category(SmokeTest.class)
+    public void testChangePassword() throws Throwable {
+      withDevice(OathDeviceTests::testChangePassword);
     }
 
-    public static class Scp11bTests extends NoScpTests {
-        @Nullable
-        @Override
-        protected Byte getScpKid() {
-            return ScpKid.SCP11b;
-        }
+    @Test
+    public void testResetPassword() throws Throwable {
+      withOathSession(OathDeviceTests::testRemovePassword);
     }
+
+    @Test
+    @Category(SmokeTest.class)
+    public void testAccountManagement() throws Throwable {
+      withOathSession(OathDeviceTests::testAccountManagement);
+    }
+
+    @Test
+    public void testRenameAccount() throws Throwable {
+      withOathSession(OathDeviceTests::testRenameAccount);
+    }
+  }
+
+  public static class Scp11bTests extends NoScpTests {
+    @Nullable
+    @Override
+    protected Byte getScpKid() {
+      return ScpKid.SCP11b;
+    }
+  }
 }

@@ -18,41 +18,39 @@ package com.yubico.yubikit.testing.mpe;
 
 import com.yubico.yubikit.core.smartcard.scp.ScpKid;
 import com.yubico.yubikit.testing.framework.MpeInstrumentedTests;
-
+import javax.annotation.Nullable;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
-import javax.annotation.Nullable;
-
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        MultiProtocolResetTests.NoScpTests.class,
-        MultiProtocolResetTests.Scp11bTests.class,
+  MultiProtocolResetTests.NoScpTests.class,
+  MultiProtocolResetTests.Scp11bTests.class,
 })
 public class MultiProtocolResetTests {
-    public static class NoScpTests extends MpeInstrumentedTests {
-        @Test
-        public void testSettingPivPinBlocksFidoReset() throws Throwable {
-            withPivSession(MultiProtocolResetDeviceTests::testSettingPivPinBlocksFidoReset);
-        }
-
-        @Test
-        public void testPivOperationBlocksFidoReset() throws Throwable {
-            withPivSession(MultiProtocolResetDeviceTests::testPivOperationBlocksFidoReset);
-        }
-
-        @Test
-        public void testSettingFidoPinBlocksPivReset() throws Throwable {
-            withCtap2Session(MultiProtocolResetDeviceTests::testSettingFidoPinBlocksPivReset);
-        }
+  public static class NoScpTests extends MpeInstrumentedTests {
+    @Test
+    public void testSettingPivPinBlocksFidoReset() throws Throwable {
+      withPivSession(MultiProtocolResetDeviceTests::testSettingPivPinBlocksFidoReset);
     }
 
-    public static class Scp11bTests extends NoScpTests {
-        @Nullable
-        @Override
-        protected Byte getScpKid() {
-            return ScpKid.SCP11b;
-        }
+    @Test
+    public void testPivOperationBlocksFidoReset() throws Throwable {
+      withPivSession(MultiProtocolResetDeviceTests::testPivOperationBlocksFidoReset);
     }
+
+    @Test
+    public void testSettingFidoPinBlocksPivReset() throws Throwable {
+      withCtap2Session(MultiProtocolResetDeviceTests::testSettingFidoPinBlocksPivReset);
+    }
+  }
+
+  public static class Scp11bTests extends NoScpTests {
+    @Nullable
+    @Override
+    protected Byte getScpKid() {
+      return ScpKid.SCP11b;
+    }
+  }
 }

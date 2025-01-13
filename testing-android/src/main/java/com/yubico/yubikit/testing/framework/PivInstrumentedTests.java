@@ -21,10 +21,9 @@ import com.yubico.yubikit.testing.TestState;
 import com.yubico.yubikit.testing.piv.PivTestState;
 
 public class PivInstrumentedTests extends YKInstrumentedTests {
-    protected void withPivSession(TestState.StatefulSessionCallback<PivSession, PivTestState> callback) throws Throwable {
-        final PivTestState state = new PivTestState.Builder(device, usbPid)
-                .scpKid(getScpKid())
-                .build();
-        state.withPiv(callback);
-    }
+  protected void withPivSession(
+      TestState.StatefulSessionCallback<PivSession, PivTestState> callback) throws Throwable {
+    final PivTestState state = new PivTestState.Builder(device, usbPid).scpKid(getScpKid()).build();
+    state.withPiv(callback);
+  }
 }
