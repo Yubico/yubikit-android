@@ -16,39 +16,38 @@
 package com.yubico.yubikit.core.util;
 
 import com.yubico.yubikit.core.application.BadResponseException;
-
 import org.junit.Assert;
 import org.junit.Test;
 
 public class TlvsTest {
-    @Test
-    public void testDoubleByteTags() {
-        Tlv tlv = Tlv.parse(new byte[]{0x7F, 0x49, 0});
-        Assert.assertEquals(0x7F49, tlv.getTag());
-        Assert.assertEquals(0, tlv.getLength());
+  @Test
+  public void testDoubleByteTags() {
+    Tlv tlv = Tlv.parse(new byte[] {0x7F, 0x49, 0});
+    Assert.assertEquals(0x7F49, tlv.getTag());
+    Assert.assertEquals(0, tlv.getLength());
 
-        tlv = Tlv.parse(new byte[]{(byte) 0x80, 0});
-        Assert.assertEquals(0x80, tlv.getTag());
-        Assert.assertEquals(0, tlv.getLength());
+    tlv = Tlv.parse(new byte[] {(byte) 0x80, 0});
+    Assert.assertEquals(0x80, tlv.getTag());
+    Assert.assertEquals(0, tlv.getLength());
 
-        tlv = new Tlv(0x7F49, null);
-        Assert.assertEquals(0x7F49, tlv.getTag());
-        Assert.assertEquals(0, tlv.getLength());
-        Assert.assertArrayEquals(new byte[]{0x7F, 0x49, 0}, tlv.getBytes());
+    tlv = new Tlv(0x7F49, null);
+    Assert.assertEquals(0x7F49, tlv.getTag());
+    Assert.assertEquals(0, tlv.getLength());
+    Assert.assertArrayEquals(new byte[] {0x7F, 0x49, 0}, tlv.getBytes());
 
-        tlv = new Tlv(0x80, null);
-        Assert.assertEquals(0x80, tlv.getTag());
-        Assert.assertEquals(0, tlv.getLength());
-        Assert.assertArrayEquals(new byte[]{(byte) 0x80, 0}, tlv.getBytes());
-    }
+    tlv = new Tlv(0x80, null);
+    Assert.assertEquals(0x80, tlv.getTag());
+    Assert.assertEquals(0, tlv.getLength());
+    Assert.assertArrayEquals(new byte[] {(byte) 0x80, 0}, tlv.getBytes());
+  }
 
-    @Test
-    public void testUnwrap() throws BadResponseException {
-        Tlvs.unpackValue(0x80, new byte[]{(byte) 0x80, 0});
+  @Test
+  public void testUnwrap() throws BadResponseException {
+    Tlvs.unpackValue(0x80, new byte[] {(byte) 0x80, 0});
 
-        Tlvs.unpackValue(0x7F49, new byte[]{0x7F, 0x49, 0});
+    Tlvs.unpackValue(0x7F49, new byte[] {0x7F, 0x49, 0});
 
-        byte[] value = Tlvs.unpackValue(0x7F49, new byte[]{0x7F, 0x49, 3, 1, 2, 3});
-        Assert.assertArrayEquals(new byte[]{1, 2, 3}, value);
-    }
+    byte[] value = Tlvs.unpackValue(0x7F49, new byte[] {0x7F, 0x49, 3, 1, 2, 3});
+    Assert.assertArrayEquals(new byte[] {1, 2, 3}, value);
+  }
 }

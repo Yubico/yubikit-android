@@ -19,36 +19,34 @@ package com.yubico.yubikit.openpgp;
 import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.util.Tlv;
 import com.yubico.yubikit.core.util.Tlvs;
-
 import java.nio.ByteBuffer;
 import java.util.List;
 
 public class ExtendedLengthInfo {
-    private final int requestMaxBytes;
-    private final int responseMaxBytes;
+  private final int requestMaxBytes;
+  private final int responseMaxBytes;
 
-    ExtendedLengthInfo(int requestMaxBytes, int responseMaxBytes) {
-        this.requestMaxBytes = requestMaxBytes;
-        this.responseMaxBytes = responseMaxBytes;
-    }
+  ExtendedLengthInfo(int requestMaxBytes, int responseMaxBytes) {
+    this.requestMaxBytes = requestMaxBytes;
+    this.responseMaxBytes = responseMaxBytes;
+  }
 
-    public int getRequestMaxBytes() {
-        return requestMaxBytes;
-    }
+  public int getRequestMaxBytes() {
+    return requestMaxBytes;
+  }
 
-    public int getResponseMaxBytes() {
-        return responseMaxBytes;
-    }
+  public int getResponseMaxBytes() {
+    return responseMaxBytes;
+  }
 
-    static ExtendedLengthInfo parse(byte[] encoded) {
-        List<Tlv> tlvs = Tlvs.decodeList(encoded);
-        try {
-            return new ExtendedLengthInfo(
-                    0xffff & ByteBuffer.wrap(Tlvs.unpackValue(0x02, tlvs.get(0).getBytes())).getShort(),
-                    0xffff & ByteBuffer.wrap(Tlvs.unpackValue(0x02, tlvs.get(1).getBytes())).getShort()
-            );
-        } catch (BadResponseException e) {
-            throw new IllegalArgumentException(e);
-        }
+  static ExtendedLengthInfo parse(byte[] encoded) {
+    List<Tlv> tlvs = Tlvs.decodeList(encoded);
+    try {
+      return new ExtendedLengthInfo(
+          0xffff & ByteBuffer.wrap(Tlvs.unpackValue(0x02, tlvs.get(0).getBytes())).getShort(),
+          0xffff & ByteBuffer.wrap(Tlvs.unpackValue(0x02, tlvs.get(1).getBytes())).getShort());
+    } catch (BadResponseException e) {
+      throw new IllegalArgumentException(e);
     }
+  }
 }

@@ -21,61 +21,60 @@ import static org.junit.Assume.assumeTrue;
 import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.management.DeviceInfo;
 import com.yubico.yubikit.piv.PivSession;
-
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
 import org.junit.Assert;
 
 public class PivPinComplexityDeviceTests {
 
-    /**
-     * For this test, one needs a key with PIN complexity set on. The test will change PINs.
-     * <p>
-     * The test will verify that trying to set a weak PIN for PIV produces expected exceptions.
-     *
-     * @see DeviceInfo#getPinComplexity()
-     */
-    static public void testPinComplexity(PivSession piv, PivTestState state) throws Throwable {
+  /**
+   * For this test, one needs a key with PIN complexity set on. The test will change PINs.
+   *
+   * <p>The test will verify that trying to set a weak PIN for PIV produces expected exceptions.
+   *
+   * @see DeviceInfo#getPinComplexity()
+   */
+  public static void testPinComplexity(PivSession piv, PivTestState state) throws Throwable {
 
-        final DeviceInfo deviceInfo = state.getDeviceInfo();
-        assumeTrue("Device does not support PIN complexity", deviceInfo != null);
-        assumeTrue("Device does not require PIN complexity", deviceInfo.getPinComplexity());
+    final DeviceInfo deviceInfo = state.getDeviceInfo();
+    assumeTrue("Device does not support PIN complexity", deviceInfo != null);
+    assumeTrue("Device does not require PIN complexity", deviceInfo.getPinComplexity());
 
-        piv.reset();
+    piv.reset();
 
-        // the values in state are not valid after reset and we need to use
-        // the default values
-        piv.authenticate(PivTestState.DEFAULT_MANAGEMENT_KEY);
-        piv.verifyPin(PivTestState.DEFAULT_PIN);
+    // the values in state are not valid after reset and we need to use
+    // the default values
+    piv.authenticate(PivTestState.DEFAULT_MANAGEMENT_KEY);
+    piv.verifyPin(PivTestState.DEFAULT_PIN);
 
-        MatcherAssert.assertThat(piv.getPinAttempts(), CoreMatchers.equalTo(3));
+    MatcherAssert.assertThat(piv.getPinAttempts(), CoreMatchers.equalTo(3));
 
-        // try to change to pin which breaks PIN complexity
-        char[] weakPin = "33333333".toCharArray();
-        try {
-            piv.changePin(PivTestState.DEFAULT_PIN, weakPin);
-            Assert.fail("Set weak PIN");
-        } catch (ApduException apduException) {
-            if (apduException.getSw() != CONDITIONS_NOT_SATISFIED) {
-                Assert.fail("Unexpected exception:" + apduException.getMessage());
-            }
-        } catch (Exception e) {
-            Assert.fail("Unexpected exception:" + e.getMessage());
-        }
-
-        piv.verifyPin(PivTestState.DEFAULT_PIN);
-
-        // change to complex pin
-        char[] complexPin = "CMPLXPIN".toCharArray();
-        try {
-            piv.changePin(PivTestState.DEFAULT_PIN, complexPin);
-        } catch (Exception e) {
-            Assert.fail("Unexpected exception:" + e.getMessage());
-        }
-
-        piv.verifyPin(complexPin);
-
-        // the value of default PIN in the state is correct for pin complexity settings
-        piv.changePin(complexPin, state.pin);
+    // try to change to pin which breaks PIN complexity
+    char[] weakPin = "33333333".toCharArray();
+    try {
+      piv.changePin(PivTestState.DEFAULT_PIN, weakPin);
+      Assert.fail("Set weak PIN");
+    } catch (ApduException apduException) {
+      if (apduException.getSw() != CONDITIONS_NOT_SATISFIED) {
+        Assert.fail("Unexpected exception:" + apduException.getMessage());
+      }
+    } catch (Exception e) {
+      Assert.fail("Unexpected exception:" + e.getMessage());
     }
+
+    piv.verifyPin(PivTestState.DEFAULT_PIN);
+
+    // change to complex pin
+    char[] complexPin = "CMPLXPIN".toCharArray();
+    try {
+      piv.changePin(PivTestState.DEFAULT_PIN, complexPin);
+    } catch (Exception e) {
+      Assert.fail("Unexpected exception:" + e.getMessage());
+    }
+
+    piv.verifyPin(complexPin);
+
+    // the value of default PIN in the state is correct for pin complexity settings
+    piv.changePin(complexPin, state.pin);
+  }
 }

@@ -17,7 +17,6 @@
 package com.yubico.yubikit.testing.framework;
 
 import androidx.test.ext.junit.rules.ActivityScenarioRule;
-
 import com.yubico.yubikit.android.transport.usb.UsbYubiKeyDevice;
 import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.UsbPid;
@@ -28,72 +27,66 @@ import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.management.DeviceInfo;
 import com.yubico.yubikit.support.DeviceUtil;
 import com.yubico.yubikit.testing.TestActivity;
-
+import java.io.IOException;
+import javax.annotation.Nullable;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.TestName;
 
-import java.io.IOException;
-
-import javax.annotation.Nullable;
-
 public class YKInstrumentedTests {
 
-    private TestActivity activity;
-    protected YubiKeyDevice device = null;
-    protected UsbPid usbPid = null;
+  private TestActivity activity;
+  protected YubiKeyDevice device = null;
+  protected UsbPid usbPid = null;
 
-    @Rule
-    public final TestName name = new TestName();
+  @Rule public final TestName name = new TestName();
 
-    @Rule
-    public final ActivityScenarioRule<TestActivity> scenarioRule = new ActivityScenarioRule<>(TestActivity.class);
+  @Rule
+  public final ActivityScenarioRule<TestActivity> scenarioRule =
+      new ActivityScenarioRule<>(TestActivity.class);
 
-    @Before
-    public void getYubiKey() throws InterruptedException {
-        scenarioRule.getScenario().onActivity((TestActivity activity) -> this.activity = activity);
-        device = activity.awaitSession(getClass().getSimpleName(), name.getMethodName());
-        usbPid = device instanceof UsbYubiKeyDevice
-                ? ((UsbYubiKeyDevice) device).getPid()
-                : null;
+  @Before
+  public void getYubiKey() throws InterruptedException {
+    scenarioRule.getScenario().onActivity((TestActivity activity) -> this.activity = activity);
+    device = activity.awaitSession(getClass().getSimpleName(), name.getMethodName());
+    usbPid = device instanceof UsbYubiKeyDevice ? ((UsbYubiKeyDevice) device).getPid() : null;
 
-        try (SmartCardConnection connection = device.openConnection(SmartCardConnection.class)) {
-            final DeviceInfo deviceInfo = DeviceUtil.readInfo(connection, usbPid);
-            if (deviceInfo.getVersion().major == 0) {
-                SessionVersionOverride.set(new Version(5, 7, 2));
-            }
-        } catch (IOException | IllegalStateException ignored) {
-        }
+    try (SmartCardConnection connection = device.openConnection(SmartCardConnection.class)) {
+      final DeviceInfo deviceInfo = DeviceUtil.readInfo(connection, usbPid);
+      if (deviceInfo.getVersion().major == 0) {
+        SessionVersionOverride.set(new Version(5, 7, 2));
+      }
+    } catch (IOException | IllegalStateException | IllegalArgumentException ignored) {
     }
+  }
 
-    @After
-    public void after() throws InterruptedException {
+  @After
+  public void after() throws InterruptedException {
+    releaseYubiKey();
+  }
+
+  public void releaseYubiKey() throws InterruptedException {
+    activity.returnSession(device);
+    device = null;
+    activity = null;
+    usbPid = null;
+  }
+
+  protected YubiKeyDevice reconnectDevice() {
+    try {
+      if (device.getTransport() == Transport.NFC) {
         releaseYubiKey();
+        getYubiKey();
+      }
+      return device;
+    } catch (InterruptedException e) {
+      throw new RuntimeException("Failure during reconnect", e);
     }
+  }
 
-    public void releaseYubiKey() throws InterruptedException {
-        activity.returnSession(device);
-        device = null;
-        activity = null;
-        usbPid = null;
-    }
-
-    protected YubiKeyDevice reconnectDevice() {
-        try {
-            if (device.getTransport() == Transport.NFC) {
-                releaseYubiKey();
-                getYubiKey();
-            }
-            return device;
-        } catch (InterruptedException e) {
-            throw new RuntimeException("Failure during reconnect", e);
-        }
-    }
-
-    @Nullable
-    protected Byte getScpKid() {
-        return null;
-    }
+  @Nullable
+  protected Byte getScpKid() {
+    return null;
+  }
 }
-

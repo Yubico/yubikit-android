@@ -17,10 +17,9 @@
 package com.yubico.yubikit.core.smartcard;
 
 import com.yubico.yubikit.core.application.BadResponseException;
-
 import java.io.Closeable;
 import java.io.IOException;
 
 public interface ApduProcessor extends Closeable {
-    ApduResponse sendApdu(Apdu apdu) throws IOException, BadResponseException;
+  ApduResponse sendApdu(Apdu apdu) throws IOException, BadResponseException;
 }

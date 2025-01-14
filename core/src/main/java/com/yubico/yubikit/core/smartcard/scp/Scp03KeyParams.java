@@ -17,27 +17,27 @@
 package com.yubico.yubikit.core.smartcard.scp;
 
 /**
- * SCP key parameters for performing an SCP03 authentication.
- * SCP03 uses a set of three keys, each with their own KID, but a shared KVN.
+ * SCP key parameters for performing an SCP03 authentication. SCP03 uses a set of three keys, each
+ * with their own KID, but a shared KVN.
  */
 public class Scp03KeyParams implements ScpKeyParams {
-    private final KeyRef keyRef;
-    final StaticKeys keys;
+  private final KeyRef keyRef;
+  final StaticKeys keys;
 
-    /**
-     * @param keyRef the reference to the key set to authenticate with.
-     * @param keys   the key material for authentication.
-     */
-    public Scp03KeyParams(KeyRef keyRef, StaticKeys keys) {
-        if ((0xff & keyRef.getKid()) > 3) {
-            throw new IllegalArgumentException("Invalid KID for SCP03");
-        }
-        this.keyRef = keyRef;
-        this.keys = keys;
+  /**
+   * @param keyRef the reference to the key set to authenticate with.
+   * @param keys the key material for authentication.
+   */
+  public Scp03KeyParams(KeyRef keyRef, StaticKeys keys) {
+    if ((0xff & keyRef.getKid()) > 3) {
+      throw new IllegalArgumentException("Invalid KID for SCP03");
     }
+    this.keyRef = keyRef;
+    this.keys = keys;
+  }
 
-    @Override
-    public KeyRef getKeyRef() {
-        return keyRef;
-    }
+  @Override
+  public KeyRef getKeyRef() {
+    return keyRef;
+  }
 }

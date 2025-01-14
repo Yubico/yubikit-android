@@ -17,41 +17,43 @@
 package com.yubico.yubikit.fido.ctap;
 
 import com.yubico.yubikit.core.util.Pair;
-
 import java.util.Map;
 
 /**
  * Implements a dummy PIN/UV Auth Protocol
- * @see <a href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#authnrClientPin-puaprot-abstract-dfn">PIN/UV Auth Protocol Abstract Definition</a>.
+ *
+ * @see <a
+ *     href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#authnrClientPin-puaprot-abstract-dfn">PIN/UV
+ *     Auth Protocol Abstract Definition</a>.
  */
 public class PinUvAuthDummyProtocol implements PinUvAuthProtocol {
-    @Override
-    public int getVersion() {
-        throw new UnsupportedPinUvAuthProtocolError();
-    }
+  @Override
+  public int getVersion() {
+    throw new UnsupportedPinUvAuthProtocolError();
+  }
 
-    @Override
-    public Pair<Map<Integer, ?>, byte[]> encapsulate(Map<Integer, ?> peerCoseKey) {
-        throw new UnsupportedPinUvAuthProtocolError();
-    }
+  @Override
+  public Pair<Map<Integer, ?>, byte[]> encapsulate(Map<Integer, ?> peerCoseKey) {
+    throw new UnsupportedPinUvAuthProtocolError();
+  }
 
-    @Override
-    public byte[] encrypt(byte[] key, byte[] demPlaintext) {
-        throw new UnsupportedPinUvAuthProtocolError();
-    }
+  @Override
+  public byte[] encrypt(byte[] key, byte[] demPlaintext) {
+    throw new UnsupportedPinUvAuthProtocolError();
+  }
 
-    @Override
-    public byte[] decrypt(byte[] key, byte[] demCiphertext) {
-        throw new UnsupportedPinUvAuthProtocolError();
-    }
+  @Override
+  public byte[] decrypt(byte[] key, byte[] demCiphertext) {
+    throw new UnsupportedPinUvAuthProtocolError();
+  }
 
-    @Override
-    public byte[] authenticate(byte[] key, byte[] message) {
-        throw new UnsupportedPinUvAuthProtocolError();
-    }
+  @Override
+  public byte[] authenticate(byte[] key, byte[] message) {
+    throw new UnsupportedPinUvAuthProtocolError();
+  }
 
-    @Override
-    public byte[] kdf(byte[] z) {
-        throw new UnsupportedPinUvAuthProtocolError();
-    }
+  @Override
+  public byte[] kdf(byte[] z) {
+    throw new UnsupportedPinUvAuthProtocolError();
+  }
 }

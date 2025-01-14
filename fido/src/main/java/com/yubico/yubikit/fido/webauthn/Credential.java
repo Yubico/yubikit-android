@@ -17,29 +17,29 @@
 package com.yubico.yubikit.fido.webauthn;
 
 public class Credential {
-    public static final String ID = "id";
-    public static final String TYPE = "type";
+  public static final String ID = "id";
+  public static final String TYPE = "type";
 
-    private final String id;
-    private final String type;
+  private final String id;
+  private final String type;
 
-    /**
-     * Webauthn Credential interface
-     *
-     * @param id   The credential’s identifier. The requirements for the identifier are distinct
-     *             for each type of credential.
-     * @param type Specifies the credential type represented by this object
-     */
-    public Credential(String id, String type) {
-        this.id = id;
-        this.type = type;
-    }
+  /**
+   * Webauthn Credential interface
+   *
+   * @param id The credential’s identifier. The requirements for the identifier are distinct for
+   *     each type of credential.
+   * @param type Specifies the credential type represented by this object
+   */
+  public Credential(String id, String type) {
+    this.id = id;
+    this.type = type;
+  }
 
-    public String getId() {
-        return id;
-    }
+  public String getId() {
+    return id;
+  }
 
-    public String getType() {
-        return type;
-    }
+  public String getType() {
+    return type;
+  }
 }

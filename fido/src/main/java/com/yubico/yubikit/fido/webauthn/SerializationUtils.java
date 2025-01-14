@@ -19,31 +19,35 @@ package com.yubico.yubikit.fido.webauthn;
 import com.yubico.yubikit.core.internal.codec.Base64;
 
 class SerializationUtils {
-    static Object serializeBytes(byte[] value, SerializationType serializationType) {
-        switch (serializationType) {
-            case JSON: {
-                return Base64.toUrlSafeString(value);
-            }
-
-            case CBOR: {
-                return value;
-            }
+  static Object serializeBytes(byte[] value, SerializationType serializationType) {
+    switch (serializationType) {
+      case JSON:
+        {
+          return Base64.toUrlSafeString(value);
         }
 
-        throw new IllegalArgumentException("Invalid serialization type");
+      case CBOR:
+        {
+          return value;
+        }
     }
 
-    static byte[] deserializeBytes(Object value, SerializationType serializationType) {
-        switch (serializationType) {
-            case JSON: {
-                return Base64.fromUrlSafeString((String) value);
-            }
+    throw new IllegalArgumentException("Invalid serialization type");
+  }
 
-            case CBOR: {
-                return (byte[]) value;
-            }
+  static byte[] deserializeBytes(Object value, SerializationType serializationType) {
+    switch (serializationType) {
+      case JSON:
+        {
+          return Base64.fromUrlSafeString((String) value);
         }
 
-        throw new IllegalArgumentException("Invalid serialization type");
+      case CBOR:
+        {
+          return (byte[]) value;
+        }
     }
+
+    throw new IllegalArgumentException("Invalid serialization type");
+  }
 }

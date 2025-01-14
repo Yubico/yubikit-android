@@ -25,57 +25,57 @@ import java.util.Map;
 import java.util.Objects;
 
 public class PublicKeyCredentialUserEntity extends PublicKeyCredentialEntity {
-    public static final String ID = "id";
-    public static final String DISPLAY_NAME = "displayName";
+  public static final String ID = "id";
+  public static final String DISPLAY_NAME = "displayName";
 
-    private final byte[] id;
-    private final String displayName;
+  private final byte[] id;
+  private final String displayName;
 
-    public PublicKeyCredentialUserEntity(String name, byte[] id, String displayName) {
-        super(name);
-        this.id = id;
-        this.displayName = displayName;
-    }
+  public PublicKeyCredentialUserEntity(String name, byte[] id, String displayName) {
+    super(name);
+    this.id = id;
+    this.displayName = displayName;
+  }
 
-    public byte[] getId() {
-        return id;
-    }
+  public byte[] getId() {
+    return id;
+  }
 
-    public String getDisplayName() {
-        return displayName;
-    }
+  public String getDisplayName() {
+    return displayName;
+  }
 
-    public Map<String, ?> toMap(SerializationType serializationType) {
-        Map<String, Object> map = new HashMap<>();
-        map.put(NAME, getName());
-        map.put(ID, serializeBytes(id, serializationType));
-        map.put(DISPLAY_NAME, displayName);
-        return map;
-    }
+  public Map<String, ?> toMap(SerializationType serializationType) {
+    Map<String, Object> map = new HashMap<>();
+    map.put(NAME, getName());
+    map.put(ID, serializeBytes(id, serializationType));
+    map.put(DISPLAY_NAME, displayName);
+    return map;
+  }
 
-    public static PublicKeyCredentialUserEntity fromMap(Map<String, ?> map, SerializationType serializationType) {
-        return new PublicKeyCredentialUserEntity(
-                Objects.requireNonNull((String) map.get(NAME)),
-                deserializeBytes(Objects.requireNonNull(map.get(ID)), serializationType),
-                Objects.requireNonNull((String) map.get(DISPLAY_NAME))
-        );
-    }
+  public static PublicKeyCredentialUserEntity fromMap(
+      Map<String, ?> map, SerializationType serializationType) {
+    return new PublicKeyCredentialUserEntity(
+        Objects.requireNonNull((String) map.get(NAME)),
+        deserializeBytes(Objects.requireNonNull(map.get(ID)), serializationType),
+        Objects.requireNonNull((String) map.get(DISPLAY_NAME)));
+  }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
 
-        PublicKeyCredentialUserEntity that = (PublicKeyCredentialUserEntity) o;
+    PublicKeyCredentialUserEntity that = (PublicKeyCredentialUserEntity) o;
 
-        if (!Arrays.equals(id, that.id)) return false;
-        return displayName.equals(that.displayName);
-    }
+    if (!Arrays.equals(id, that.id)) return false;
+    return displayName.equals(that.displayName);
+  }
 
-    @Override
-    public int hashCode() {
-        int result = Arrays.hashCode(id);
-        result = 31 * result + displayName.hashCode();
-        return result;
-    }
+  @Override
+  public int hashCode() {
+    int result = Arrays.hashCode(id);
+    result = 31 * result + displayName.hashCode();
+    return result;
+  }
 }

@@ -14,16 +14,15 @@
  * limitations under the License.
  */
 
-
 package com.yubico.yubikit.support;
 
 import static com.yubico.yubikit.support.TestUtil.config;
+import static java.lang.Boolean.FALSE;
+import static java.lang.Boolean.TRUE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static java.lang.Boolean.FALSE;
-import static java.lang.Boolean.TRUE;
 
 import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.UsbInterface;
@@ -31,525 +30,396 @@ import com.yubico.yubikit.core.Version;
 import com.yubico.yubikit.core.YubiKeyType;
 import com.yubico.yubikit.management.DeviceInfo;
 import com.yubico.yubikit.management.FormFactor;
-
-import org.junit.Test;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import javax.annotation.Nullable;
+import org.junit.Test;
 
 public class AdjustDeviceInfoTest {
 
-    @Test
-    public void testConfigDeviceFlags() {
-        assertNull(
-                adjustedInfo(i -> {
-                }).getConfig().getDeviceFlags());
+  @Test
+  public void testConfigDeviceFlags() {
+    assertNull(adjustedInfo(i -> {}).getConfig().getDeviceFlags());
 
-        assertEquals(
-                Integer.valueOf(123456),
-                adjustedInfo(i -> i.config(config(c -> c.deviceFlags(123456))))
-                        .getConfig().getDeviceFlags());
+    assertEquals(
+        Integer.valueOf(123456),
+        adjustedInfo(i -> i.config(config(c -> c.deviceFlags(123456))))
+            .getConfig()
+            .getDeviceFlags());
+  }
+
+  @Test
+  public void testConfigAutoEjectTimeout() {
+    assertNull(adjustedInfo(i -> {}).getConfig().getAutoEjectTimeout());
+
+    assertEquals(
+        Short.valueOf((short) 13288),
+        adjustedInfo(i -> i.config(config(c -> c.autoEjectTimeout((short) 13288))))
+            .getConfig()
+            .getAutoEjectTimeout());
+  }
+
+  @Test
+  public void testConfigChallengeResponseTimeout() {
+    assertNull(adjustedInfo(i -> {}).getConfig().getChallengeResponseTimeout());
+
+    assertEquals(
+        Byte.valueOf((byte) 84),
+        adjustedInfo(i -> i.config(config(c -> c.challengeResponseTimeout((byte) 84))))
+            .getConfig()
+            .getChallengeResponseTimeout());
+  }
+
+  @Test
+  public void testConfigEnabledCapabilitiesUsb() {
+    assertNull(adjustedInfo(i -> {}).getConfig().getEnabledCapabilities(Transport.USB));
+
+    DeviceInfo info =
+        adjustedInfo(i -> i.config(config(c -> c.enabledCapabilities(Transport.USB, 124))));
+    assertEquals(Integer.valueOf(124), info.getConfig().getEnabledCapabilities(Transport.USB));
+    assertNull(info.getConfig().getEnabledCapabilities(Transport.NFC));
+  }
+
+  @Test
+  public void testConfigEnabledCapabilitiesNfc() {
+    assertNull(adjustedInfo(i -> {}).getConfig().getEnabledCapabilities(Transport.NFC));
+
+    DeviceInfo info =
+        adjustedInfo(i -> i.config(config(c -> c.enabledCapabilities(Transport.NFC, 552))));
+    assertEquals(Integer.valueOf(552), info.getConfig().getEnabledCapabilities(Transport.NFC));
+    assertNull(info.getConfig().getEnabledCapabilities(Transport.USB));
+  }
+
+  @Test
+  public void testConfigNfcRestricted() {
+    assertNull(adjustedInfo(i -> {}).getConfig().getNfcRestricted());
+
+    assertEquals(
+        TRUE,
+        adjustedInfo(i -> i.config(config(c -> c.nfcRestricted(true))))
+            .getConfig()
+            .getNfcRestricted());
+
+    assertEquals(
+        FALSE,
+        adjustedInfo(i -> i.config(config(c -> c.nfcRestricted(false))))
+            .getConfig()
+            .getNfcRestricted());
+  }
+
+  @Test
+  public void testVersion() {
+    assertEquals(new Version(0, 0, 0), adjustedInfo(i -> {}).getVersion());
+
+    assertEquals(
+        new Version(5, 7, 1), adjustedInfo(i -> i.version(new Version(5, 7, 1))).getVersion());
+  }
+
+  @Test
+  public void testFormFactor() {
+    assertEquals(FormFactor.UNKNOWN, adjustedInfo(i -> {}).getFormFactor());
+
+    for (FormFactor formFactor : FormFactor.values()) {
+      assertEquals(formFactor, adjustedInfo(i -> i.formFactor(formFactor)).getFormFactor());
     }
+  }
 
-    @Test
-    public void testConfigAutoEjectTimeout() {
-        assertNull(
-                adjustedInfo(i -> {
-                }).getConfig().getAutoEjectTimeout());
+  @Test
+  public void testSerialNumber() {
+    assertNull(adjustedInfo(i -> {}).getSerialNumber());
 
-        assertEquals(
-                Short.valueOf((short) 13288),
-                adjustedInfo(i -> i.config(config(c -> c.autoEjectTimeout((short) 13288))))
-                        .getConfig().getAutoEjectTimeout());
-    }
+    assertEquals(
+        Integer.valueOf(232325454), adjustedInfo(i -> i.serialNumber(232325454)).getSerialNumber());
+  }
 
-    @Test
-    public void testConfigChallengeResponseTimeout() {
-        assertNull(
-                adjustedInfo(i -> {
-                }).getConfig().getChallengeResponseTimeout());
+  @Test
+  public void testIsLocked() {
+    assertFalse(adjustedInfo(i -> {}).isLocked());
 
-        assertEquals(
-                Byte.valueOf((byte) 84),
-                adjustedInfo(i -> i.config(config(c -> c.challengeResponseTimeout((byte) 84))))
-                        .getConfig().getChallengeResponseTimeout());
-    }
+    assertTrue(adjustedInfo(i -> i.isLocked(true)).isLocked());
 
-    @Test
-    public void testConfigEnabledCapabilitiesUsb() {
-        assertNull(
-                adjustedInfo(i -> {
-                }).getConfig().getEnabledCapabilities(Transport.USB));
+    assertFalse(adjustedInfo(i -> i.isLocked(false)).isLocked());
+  }
 
-        DeviceInfo info = adjustedInfo(i -> i.config(config(c -> c.enabledCapabilities(Transport.USB, 124))));
-        assertEquals(
-                Integer.valueOf(124),
-                info.getConfig().getEnabledCapabilities(Transport.USB));
-        assertNull(
-                info.getConfig().getEnabledCapabilities(Transport.NFC));
-    }
+  @Test
+  public void testIsFips() {
+    assertFalse(adjustedInfo(i -> {}).isFips());
 
-    @Test
-    public void testConfigEnabledCapabilitiesNfc() {
-        assertNull(
-                adjustedInfo(i -> {
-                }).getConfig().getEnabledCapabilities(Transport.NFC));
+    assertTrue(adjustedInfo(i -> i.isFips(true)).isFips());
 
-        DeviceInfo info = adjustedInfo(i -> i.config(config(c -> c.enabledCapabilities(Transport.NFC, 552))));
-        assertEquals(
-                Integer.valueOf(552),
-                info.getConfig().getEnabledCapabilities(Transport.NFC));
-        assertNull(
-                info.getConfig().getEnabledCapabilities(Transport.USB));
-    }
+    assertFalse(adjustedInfo(i -> i.isFips(false)).isFips());
+  }
 
-    @Test
-    public void testConfigNfcRestricted() {
-        assertNull(
-                adjustedInfo(i -> {
-                }).getConfig().getNfcRestricted());
+  @Test
+  public void testIsSky() {
+    assertFalse(adjustedInfo(i -> {}).isSky());
 
-        assertEquals(
-                TRUE,
-                adjustedInfo(i -> i.config(config(c -> c.nfcRestricted(true))))
-                        .getConfig().getNfcRestricted());
+    assertTrue(adjustedInfo(i -> i.isSky(true)).isSky());
 
-        assertEquals(
-                FALSE,
-                adjustedInfo(i -> i.config(config(c -> c.nfcRestricted(false))))
-                        .getConfig().getNfcRestricted());
-    }
+    assertTrue(adjustedInfo(i -> i.isSky(false), YubiKeyType.SKY, 0).isSky());
 
-    @Test
-    public void testVersion() {
-        assertEquals(
-                new Version(0, 0, 0),
-                adjustedInfo(i -> {
-                }).getVersion());
+    assertFalse(adjustedInfo(i -> i.isSky(false)).isSky());
+  }
 
-        assertEquals(
-                new Version(5, 7, 1),
-                adjustedInfo(i -> i.version(new Version(5, 7, 1)))
-                        .getVersion());
-    }
+  @Test
+  public void testFipsCapable() {
+    assertEquals(0, adjustedInfo(i -> {}).getFipsCapable());
 
-    @Test
-    public void testFormFactor() {
-        assertEquals(
-                FormFactor.UNKNOWN,
-                adjustedInfo(i -> {
-                }).getFormFactor());
+    assertEquals(16384, adjustedInfo(i -> i.fipsCapable(16384)).getFipsCapable());
+  }
 
-        for (FormFactor formFactor : FormFactor.values()) {
-            assertEquals(
-                    formFactor,
-                    adjustedInfo(i -> i.formFactor(formFactor))
-                            .getFormFactor());
-        }
-    }
+  @Test
+  public void testFipsApproved() {
+    assertEquals(0, adjustedInfo(i -> {}).getFipsApproved());
 
-    @Test
-    public void testSerialNumber() {
-        assertNull(
-                adjustedInfo(i -> {
-                }).getSerialNumber());
+    assertEquals(65535, adjustedInfo(i -> i.fipsApproved(65535)).getFipsApproved());
+  }
 
-        assertEquals(
-                Integer.valueOf(232325454),
-                adjustedInfo(i -> i.serialNumber(232325454))
-                        .getSerialNumber());
-    }
+  @Test
+  public void testPartNumber() {
+    assertEquals("", adjustedInfo(i -> {}).getPartNumber());
 
-    @Test
-    public void testIsLocked() {
-        assertFalse(
-                adjustedInfo(i -> {
-                }).isLocked());
+    assertEquals(
+        "0102030405060708", adjustedInfo(i -> i.partNumber("0102030405060708")).getPartNumber());
+  }
 
-        assertTrue(
-                adjustedInfo(i -> i.isLocked(true))
-                        .isLocked());
+  @Test
+  public void testPinComplexity() {
+    assertFalse(adjustedInfo(i -> {}).getPinComplexity());
 
-        assertFalse(
-                adjustedInfo(i -> i.isLocked(false))
-                        .isLocked());
-    }
+    assertTrue(adjustedInfo(i -> i.pinComplexity(true)).getPinComplexity());
 
-    @Test
-    public void testIsFips() {
-        assertFalse(
-                adjustedInfo(i -> {
-                }).isFips());
+    assertFalse(adjustedInfo(i -> i.pinComplexity(false)).getPinComplexity());
+  }
 
-        assertTrue(
-                adjustedInfo(i -> i.isFips(true))
-                        .isFips());
+  @Test
+  public void testResetBlocked() {
+    assertEquals(0, adjustedInfo(i -> {}).getResetBlocked());
 
-        assertFalse(
-                adjustedInfo(i -> i.isFips(false))
-                        .isFips());
-    }
+    assertEquals(22647, adjustedInfo(i -> i.resetBlocked(22647)).getResetBlocked());
+  }
 
-    @Test
-    public void testIsSky() {
-        assertFalse(
-                adjustedInfo(i -> {
-                }).isSky());
+  @Test
+  public void testFpsVersion() {
+    assertNull(adjustedInfo(i -> {}).getFpsVersion());
 
-        assertTrue(
-                adjustedInfo(i -> i.isSky(true))
-                        .isSky());
+    assertEquals(
+        new Version(1, 4, 2),
+        adjustedInfo(i -> i.fpsVersion(new Version(1, 4, 2))).getFpsVersion());
+  }
 
-        assertTrue(
-                adjustedInfo(i -> i.isSky(false), YubiKeyType.SKY, 0)
-                        .isSky());
+  @Test
+  public void testStmVersion() {
+    assertNull(adjustedInfo(i -> {}).getStmVersion());
 
-        assertFalse(
-                adjustedInfo(i -> i.isSky(false))
-                        .isSky());
-    }
+    assertEquals(
+        new Version(2, 4, 2),
+        adjustedInfo(i -> i.stmVersion(new Version(2, 4, 2))).getStmVersion());
+  }
 
-    @Test
-    public void testFipsCapable() {
-        assertEquals(
-                0,
-                adjustedInfo(i -> {
-                }).getFipsCapable());
+  @Test
+  public void testSupportedCapabilities() {
+    // USB
+    assertEquals(0, adjustedInfo(i -> {}).getSupportedCapabilities(Transport.USB));
 
-        assertEquals(
-                16384,
-                adjustedInfo(i -> i.fipsCapable(16384))
-                        .getFipsCapable());
-    }
+    Map<Transport, Integer> supportedUsbCapabilities = new HashMap<>();
+    supportedUsbCapabilities.put(Transport.USB, 4096);
+    assertEquals(
+        4096,
+        adjustedInfo(i -> i.supportedCapabilities(supportedUsbCapabilities))
+            .getSupportedCapabilities(Transport.USB));
 
-    @Test
-    public void testFipsApproved() {
-        assertEquals(
-                0,
-                adjustedInfo(i -> {
-                }).getFipsApproved());
+    Map<Transport, Integer> supportedNfcCapabilities = new HashMap<>();
+    supportedNfcCapabilities.put(Transport.NFC, 4096);
+    assertEquals(
+        0,
+        adjustedInfo(i -> i.supportedCapabilities(supportedNfcCapabilities))
+            .getSupportedCapabilities(Transport.USB));
+    assertEquals(
+        4096,
+        adjustedInfo(i -> i.supportedCapabilities(supportedNfcCapabilities))
+            .getSupportedCapabilities(Transport.NFC));
 
-        assertEquals(
-                65535,
-                adjustedInfo(i -> i.fipsApproved(65535))
-                        .getFipsApproved());
-    }
+    Map<Transport, Integer> supportedCapabilities = new HashMap<>();
+    supportedCapabilities.put(Transport.NFC, 8192);
+    supportedCapabilities.put(Transport.USB, 16384);
+    assertEquals(
+        16384,
+        adjustedInfo(i -> i.supportedCapabilities(supportedCapabilities))
+            .getSupportedCapabilities(Transport.USB));
+    assertEquals(
+        8192,
+        adjustedInfo(i -> i.supportedCapabilities(supportedCapabilities))
+            .getSupportedCapabilities(Transport.NFC));
+  }
 
-    @Test
-    public void testPartNumber() {
-        assertEquals(
-                "",
-                adjustedInfo(i -> {
-                }).getPartNumber());
+  @Test
+  public void testEnabledNfcCapabilities() {
+    Map<Transport, Integer> supportedCapabilities = new HashMap<>();
+    supportedCapabilities.put(Transport.NFC, 8192);
+    assertEquals(
+        Integer.valueOf(4096),
+        adjustedInfo(
+                i -> {
+                  i.supportedCapabilities(supportedCapabilities);
+                  i.config(config(c -> c.enabledCapabilities(Transport.NFC, 4096)));
+                })
+            .getConfig()
+            .getEnabledCapabilities(Transport.NFC));
 
-        assertEquals(
-                "0102030405060708",
-                adjustedInfo(i -> i.partNumber("0102030405060708"))
-                        .getPartNumber());
-    }
+    // null enabled capabilities
+    assertEquals(
+        Integer.valueOf(8192),
+        adjustedInfo(i -> i.supportedCapabilities(supportedCapabilities))
+            .getConfig()
+            .getEnabledCapabilities(Transport.NFC));
 
-    @Test
-    public void testPinComplexity() {
-        assertFalse(
-                adjustedInfo(i -> {
-                }).getPinComplexity());
+    List<FormFactor> usbOnlyFactors = new ArrayList<>();
+    usbOnlyFactors.add(FormFactor.USB_A_NANO);
+    usbOnlyFactors.add(FormFactor.USB_C_NANO);
+    usbOnlyFactors.add(FormFactor.USB_C_LIGHTNING);
+    usbOnlyFactors.add(FormFactor.USB_C_KEYCHAIN);
 
-        assertTrue(
-                adjustedInfo(i -> i.pinComplexity(true))
-                        .getPinComplexity());
+    for (FormFactor formFactor : usbOnlyFactors) {
 
-        assertFalse(
-                adjustedInfo(i -> i.pinComplexity(false))
-                        .getPinComplexity());
-    }
-
-    @Test
-    public void testResetBlocked() {
-        assertEquals(
-                0,
-                adjustedInfo(i -> {
-                }).getResetBlocked());
-
-        assertEquals(
-                22647,
-                adjustedInfo(i -> i.resetBlocked(22647))
-                        .getResetBlocked());
-    }
-
-    @Test
-    public void testFpsVersion() {
-        assertNull(
-                adjustedInfo(i -> {
-                }).getFpsVersion());
-
-        assertEquals(
-                new Version(1, 4, 2),
-                adjustedInfo(i -> i.fpsVersion(new Version(1, 4, 2)))
-                        .getFpsVersion());
-    }
-
-    @Test
-    public void testStmVersion() {
-        assertNull(
-                adjustedInfo(i -> {
-                }).getStmVersion());
-
-        assertEquals(
-                new Version(2, 4, 2),
-                adjustedInfo(i -> i.stmVersion(new Version(2, 4, 2)))
-                        .getStmVersion());
-    }
-
-    @Test
-    public void testSupportedCapabilities() {
-        // USB
-        assertEquals(
-                0,
-                adjustedInfo(i -> {
-                }).getSupportedCapabilities(Transport.USB));
-
-        Map<Transport, Integer> supportedUsbCapabilities = new HashMap<>();
-        supportedUsbCapabilities.put(Transport.USB, 4096);
-        assertEquals(
-                4096,
-                adjustedInfo(i -> i.supportedCapabilities(supportedUsbCapabilities))
-                        .getSupportedCapabilities(Transport.USB));
-
-        Map<Transport, Integer> supportedNfcCapabilities = new HashMap<>();
-        supportedNfcCapabilities.put(Transport.NFC, 4096);
-        assertEquals(
-                0,
-                adjustedInfo(i -> i.supportedCapabilities(supportedNfcCapabilities))
-                        .getSupportedCapabilities(Transport.USB));
-        assertEquals(
-                4096,
-                adjustedInfo(i -> i.supportedCapabilities(supportedNfcCapabilities))
-                        .getSupportedCapabilities(Transport.NFC));
-
-        Map<Transport, Integer> supportedCapabilities = new HashMap<>();
-        supportedCapabilities.put(Transport.NFC, 8192);
-        supportedCapabilities.put(Transport.USB, 16384);
-        assertEquals(
-                16384,
-                adjustedInfo(i -> i.supportedCapabilities(supportedCapabilities))
-                        .getSupportedCapabilities(Transport.USB));
-        assertEquals(
-                8192,
-                adjustedInfo(i -> i.supportedCapabilities(supportedCapabilities))
-                        .getSupportedCapabilities(Transport.NFC));
-    }
-
-    @Test
-    public void testEnabledNfcCapabilities() {
-        Map<Transport, Integer> supportedCapabilities = new HashMap<>();
-        supportedCapabilities.put(Transport.NFC, 8192);
-        assertEquals(
-                Integer.valueOf(4096),
-                adjustedInfo(i -> {
-                    i.supportedCapabilities(supportedCapabilities);
-                    i.config(config(c -> c.enabledCapabilities(Transport.NFC, 4096)));
-                }).getConfig().getEnabledCapabilities(Transport.NFC));
-
-        // null enabled capabilities
-        assertEquals(
-                Integer.valueOf(8192),
-                adjustedInfo(i -> i.supportedCapabilities(supportedCapabilities))
-                        .getConfig().getEnabledCapabilities(Transport.NFC));
-
-        List<FormFactor> usbOnlyFactors = new ArrayList<>();
-        usbOnlyFactors.add(FormFactor.USB_A_NANO);
-        usbOnlyFactors.add(FormFactor.USB_C_NANO);
-        usbOnlyFactors.add(FormFactor.USB_C_LIGHTNING);
-        usbOnlyFactors.add(FormFactor.USB_C_KEYCHAIN);
-
-        for (FormFactor formFactor : usbOnlyFactors) {
-
-            DeviceInfo info = adjustedInfo(i -> {
+      DeviceInfo info =
+          adjustedInfo(
+              i -> {
                 i.formFactor(formFactor);
                 i.supportedCapabilities(supportedCapabilities);
                 i.version(new Version(5, 2, 3));
                 i.config(config(c -> c.enabledCapabilities(Transport.NFC, 4096)));
-            });
+              });
 
-            assertNull(
-                    info.getConfig().getEnabledCapabilities(Transport.NFC));
+      assertNull(info.getConfig().getEnabledCapabilities(Transport.NFC));
 
-            assertEquals(
-                    0,
-                    info.getSupportedCapabilities(Transport.NFC)
-            );
+      assertEquals(0, info.getSupportedCapabilities(Transport.NFC));
 
-            if (formFactor == FormFactor.USB_C_KEYCHAIN) {
-                info = adjustedInfo(i -> {
-                    i.formFactor(formFactor);
-                    i.supportedCapabilities(supportedCapabilities);
-                    i.version(new Version(5, 2, 4));
-                    i.config(config(c -> c.enabledCapabilities(Transport.NFC, 4096)));
+      if (formFactor == FormFactor.USB_C_KEYCHAIN) {
+        info =
+            adjustedInfo(
+                i -> {
+                  i.formFactor(formFactor);
+                  i.supportedCapabilities(supportedCapabilities);
+                  i.version(new Version(5, 2, 4));
+                  i.config(config(c -> c.enabledCapabilities(Transport.NFC, 4096)));
                 });
 
-                assertEquals(
-                        Integer.valueOf(4096),
-                        info.getConfig().getEnabledCapabilities(Transport.NFC));
+        assertEquals(Integer.valueOf(4096), info.getConfig().getEnabledCapabilities(Transport.NFC));
 
-                assertEquals(
-                        8192,
-                        info.getSupportedCapabilities(Transport.NFC)
-                );
-
-                // null enabled capabilities
-                info = adjustedInfo(i -> {
-                    i.formFactor(formFactor);
-                    i.supportedCapabilities(supportedCapabilities);
-                    i.version(new Version(5, 2, 4));
-                });
-
-                assertEquals(
-                        Integer.valueOf(8192),
-                        info.getConfig().getEnabledCapabilities(Transport.NFC));
-
-                assertEquals(
-                        8192,
-                        info.getSupportedCapabilities(Transport.NFC)
-                );
-            }
-        }
-
-    }
-
-    @Test
-    public void testEnabledUsbCapabilities() {
-        Map<Transport, Integer> supportedCapabilities = new HashMap<>();
-        supportedCapabilities.put(Transport.USB, 0b0111);
-
-        // enabled usb capabilities are not null
-        DeviceInfo info = adjustedInfo(i -> {
-            i.supportedCapabilities(supportedCapabilities);
-            i.config(config(c -> c.enabledCapabilities(Transport.USB, 0b1011)));
-        });
-
-        assertEquals(
-                Integer.valueOf(0b1011),
-                info.getConfig().getEnabledCapabilities(Transport.USB));
-
-        assertEquals(
-                0b0111,
-                info.getSupportedCapabilities(Transport.USB));
-
-        // no usb transport support
-        // enabled usb capabilities are not null
-        info = adjustedInfo(i -> i.config(config(c -> c.enabledCapabilities(Transport.USB, 0b1011))));
-
-        assertEquals(
-                Integer.valueOf(0b1011),
-                info.getConfig().getEnabledCapabilities(Transport.USB));
-
-        assertEquals(
-                0,
-                info.getSupportedCapabilities(Transport.USB));
+        assertEquals(8192, info.getSupportedCapabilities(Transport.NFC));
 
         // null enabled capabilities
-        info = adjustedInfo(i -> i.supportedCapabilities(supportedCapabilities));
+        info =
+            adjustedInfo(
+                i -> {
+                  i.formFactor(formFactor);
+                  i.supportedCapabilities(supportedCapabilities);
+                  i.version(new Version(5, 2, 4));
+                });
 
-        assertEquals(
-                Integer.valueOf(0b0111),
-                info.getConfig().getEnabledCapabilities(Transport.USB));
+        assertEquals(Integer.valueOf(8192), info.getConfig().getEnabledCapabilities(Transport.NFC));
 
-        assertEquals(
-                0b0011,
-                info.getSupportedCapabilities(Transport.USB));
-
-        // with OTP interface
-        info = adjustedInfo(i -> i.supportedCapabilities(supportedCapabilities), null, 0b0111);
-
-        assertEquals(
-                Integer.valueOf(0b0111),
-                info.getConfig().getEnabledCapabilities(Transport.USB));
-
-        assertEquals(
-                0b0011,
-                info.getSupportedCapabilities(Transport.USB));
-
-        // without OTP interface
-        info = adjustedInfo(i -> i.supportedCapabilities(supportedCapabilities), null, 0b0110);
-
-        assertEquals(
-                Integer.valueOf(0b0110),
-                info.getConfig().getEnabledCapabilities(Transport.USB));
-
-        assertEquals(
-                0b0011,
-                info.getSupportedCapabilities(Transport.USB));
-
-        // add FIDO2 capability
-        supportedCapabilities.put(Transport.USB, 0x207);
-        // with FIDO interface
-        info = adjustedInfo(i -> i.supportedCapabilities(supportedCapabilities), null, 0b0111);
-
-        assertEquals(
-                Integer.valueOf(0x207),
-                info.getConfig().getEnabledCapabilities(Transport.USB));
-
-        assertEquals(
-                0x207,
-                info.getSupportedCapabilities(Transport.USB));
-
-        // without FIDO interface
-        supportedCapabilities.put(Transport.USB, 0x207);
-        info = adjustedInfo(i -> i.supportedCapabilities(supportedCapabilities), null, 0b0101);
-
-        assertEquals(
-                Integer.valueOf(0x5),
-                info.getConfig().getEnabledCapabilities(Transport.USB));
-
-        assertEquals(
-                0x207,
-                info.getSupportedCapabilities(Transport.USB));
-
-        // all CCID capabilities (and FIDO2+U2F)
-        supportedCapabilities.put(Transport.USB, 0x23A);
-        // with CCID interface
-        info = adjustedInfo(i -> i.supportedCapabilities(supportedCapabilities), null, 0b0111);
-
-        assertEquals(
-                Integer.valueOf(0x23A),
-                info.getConfig().getEnabledCapabilities(Transport.USB));
-
-        assertEquals(
-                0x23A,
-                info.getSupportedCapabilities(Transport.USB));
-
-        // without FIDO interface
-        supportedCapabilities.put(Transport.USB, 0x23A);
-        info = adjustedInfo(i -> i.supportedCapabilities(supportedCapabilities), null, 0b0011);
-
-        assertEquals(
-                Integer.valueOf(0x202),
-                info.getConfig().getEnabledCapabilities(Transport.USB));
-
-        assertEquals(
-                0x23A,
-                info.getSupportedCapabilities(Transport.USB));
-
+        assertEquals(8192, info.getSupportedCapabilities(Transport.NFC));
+      }
     }
+  }
 
-    DeviceInfo adjustedInfo(TestUtil.DeviceInfoBuilder infoBuilder) {
-        YubiKeyType yubiKeyType = YubiKeyType.YK4;
-        int interfaces = UsbInterface.CCID | UsbInterface.OTP | UsbInterface.FIDO;
+  @Test
+  public void testEnabledUsbCapabilities() {
+    Map<Transport, Integer> supportedCapabilities = new HashMap<>();
+    supportedCapabilities.put(Transport.USB, 0b0111);
 
-        return adjustedInfo(infoBuilder, yubiKeyType, interfaces);
-    }
+    // enabled usb capabilities are not null
+    DeviceInfo info =
+        adjustedInfo(
+            i -> {
+              i.supportedCapabilities(supportedCapabilities);
+              i.config(config(c -> c.enabledCapabilities(Transport.USB, 0b1011)));
+            });
 
-    // call the function under test DeviceUtil.adjustDeviceInfo
-    DeviceInfo adjustedInfo(
-            TestUtil.DeviceInfoBuilder infoBuilder,
-            @Nullable YubiKeyType keyType,
-            int interfaces) {
-        DeviceInfo.Builder builder = new DeviceInfo.Builder();
-        infoBuilder.createWith(builder);
-        return DeviceUtil.adjustDeviceInfo(builder.build(), keyType, interfaces);
-    }
+    assertEquals(Integer.valueOf(0b1011), info.getConfig().getEnabledCapabilities(Transport.USB));
+
+    assertEquals(0b0111, info.getSupportedCapabilities(Transport.USB));
+
+    // no usb transport support
+    // enabled usb capabilities are not null
+    info = adjustedInfo(i -> i.config(config(c -> c.enabledCapabilities(Transport.USB, 0b1011))));
+
+    assertEquals(Integer.valueOf(0b1011), info.getConfig().getEnabledCapabilities(Transport.USB));
+
+    assertEquals(0, info.getSupportedCapabilities(Transport.USB));
+
+    // null enabled capabilities
+    info = adjustedInfo(i -> i.supportedCapabilities(supportedCapabilities));
+
+    assertEquals(Integer.valueOf(0b0111), info.getConfig().getEnabledCapabilities(Transport.USB));
+
+    assertEquals(0b0011, info.getSupportedCapabilities(Transport.USB));
+
+    // with OTP interface
+    info = adjustedInfo(i -> i.supportedCapabilities(supportedCapabilities), null, 0b0111);
+
+    assertEquals(Integer.valueOf(0b0111), info.getConfig().getEnabledCapabilities(Transport.USB));
+
+    assertEquals(0b0011, info.getSupportedCapabilities(Transport.USB));
+
+    // without OTP interface
+    info = adjustedInfo(i -> i.supportedCapabilities(supportedCapabilities), null, 0b0110);
+
+    assertEquals(Integer.valueOf(0b0110), info.getConfig().getEnabledCapabilities(Transport.USB));
+
+    assertEquals(0b0011, info.getSupportedCapabilities(Transport.USB));
+
+    // add FIDO2 capability
+    supportedCapabilities.put(Transport.USB, 0x207);
+    // with FIDO interface
+    info = adjustedInfo(i -> i.supportedCapabilities(supportedCapabilities), null, 0b0111);
+
+    assertEquals(Integer.valueOf(0x207), info.getConfig().getEnabledCapabilities(Transport.USB));
+
+    assertEquals(0x207, info.getSupportedCapabilities(Transport.USB));
+
+    // without FIDO interface
+    supportedCapabilities.put(Transport.USB, 0x207);
+    info = adjustedInfo(i -> i.supportedCapabilities(supportedCapabilities), null, 0b0101);
+
+    assertEquals(Integer.valueOf(0x5), info.getConfig().getEnabledCapabilities(Transport.USB));
+
+    assertEquals(0x207, info.getSupportedCapabilities(Transport.USB));
+
+    // all CCID capabilities (and FIDO2+U2F)
+    supportedCapabilities.put(Transport.USB, 0x23A);
+    // with CCID interface
+    info = adjustedInfo(i -> i.supportedCapabilities(supportedCapabilities), null, 0b0111);
+
+    assertEquals(Integer.valueOf(0x23A), info.getConfig().getEnabledCapabilities(Transport.USB));
+
+    assertEquals(0x23A, info.getSupportedCapabilities(Transport.USB));
+
+    // without FIDO interface
+    supportedCapabilities.put(Transport.USB, 0x23A);
+    info = adjustedInfo(i -> i.supportedCapabilities(supportedCapabilities), null, 0b0011);
+
+    assertEquals(Integer.valueOf(0x202), info.getConfig().getEnabledCapabilities(Transport.USB));
+
+    assertEquals(0x23A, info.getSupportedCapabilities(Transport.USB));
+  }
+
+  DeviceInfo adjustedInfo(TestUtil.DeviceInfoBuilder infoBuilder) {
+    YubiKeyType yubiKeyType = YubiKeyType.YK4;
+    int interfaces = UsbInterface.CCID | UsbInterface.OTP | UsbInterface.FIDO;
+
+    return adjustedInfo(infoBuilder, yubiKeyType, interfaces);
+  }
+
+  // call the function under test DeviceUtil.adjustDeviceInfo
+  DeviceInfo adjustedInfo(
+      TestUtil.DeviceInfoBuilder infoBuilder, @Nullable YubiKeyType keyType, int interfaces) {
+    DeviceInfo.Builder builder = new DeviceInfo.Builder();
+    infoBuilder.createWith(builder);
+    return DeviceUtil.adjustDeviceInfo(builder.build(), keyType, interfaces);
+  }
 }

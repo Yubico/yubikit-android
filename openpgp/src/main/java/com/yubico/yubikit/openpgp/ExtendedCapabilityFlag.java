@@ -17,18 +17,18 @@
 package com.yubico.yubikit.openpgp;
 
 public enum ExtendedCapabilityFlag {
-    KDF((byte) 1),
-    PSO_DEC_ENC_AES((byte) (1 << 1)),
-    ALGORITHM_ATTRIBUTES_CHANGEABLE((byte) (1 << 2)),
-    PRIVATE_USE((byte) (1 << 3)),
-    PW_STATUS_CHANGEABLE((byte) (1 << 4)),
-    KEY_IMPORT((byte) (1 << 5)),
-    GET_CHALLENGE((byte) (1 << 6)),
-    SECURE_MESSAGING((byte) (1 << 7));
+  KDF((byte) 1),
+  PSO_DEC_ENC_AES((byte) (1 << 1)),
+  ALGORITHM_ATTRIBUTES_CHANGEABLE((byte) (1 << 2)),
+  PRIVATE_USE((byte) (1 << 3)),
+  PW_STATUS_CHANGEABLE((byte) (1 << 4)),
+  KEY_IMPORT((byte) (1 << 5)),
+  GET_CHALLENGE((byte) (1 << 6)),
+  SECURE_MESSAGING((byte) (1 << 7));
 
-    public final byte value;
+  public final byte value;
 
-    ExtendedCapabilityFlag(byte value) {
-        this.value = value;
-    }
+  ExtendedCapabilityFlag(byte value) {
+    this.value = value;
+  }
 }

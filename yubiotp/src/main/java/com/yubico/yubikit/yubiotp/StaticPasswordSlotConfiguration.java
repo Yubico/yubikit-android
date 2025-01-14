@@ -17,32 +17,34 @@ package com.yubico.yubikit.yubiotp;
 
 import java.nio.ByteBuffer;
 
-/**
- * Configures YubiKey to return static password on touch.
- */
-public class StaticPasswordSlotConfiguration extends KeyboardSlotConfiguration<StaticPasswordSlotConfiguration> {
-    private static final int SCAN_CODES_SIZE = FIXED_SIZE + UID_SIZE + KEY_SIZE;
+/** Configures YubiKey to return static password on touch. */
+public class StaticPasswordSlotConfiguration
+    extends KeyboardSlotConfiguration<StaticPasswordSlotConfiguration> {
+  private static final int SCAN_CODES_SIZE = FIXED_SIZE + UID_SIZE + KEY_SIZE;
 
-    /**
-     * Creates a Static Password configuration with default settings.
-     *
-     * @param scanCodes the password to store on YubiKey as an array of keyboard scan codes.
-     */
-    public StaticPasswordSlotConfiguration(byte[] scanCodes) {
-        if (scanCodes.length > SCAN_CODES_SIZE) {
-            throw new UnsupportedOperationException("Password is too long");
-        }
-
-        // Scan codes are packed into fixed, uid, and key, and zero padded.
-        fixed = new byte[FIXED_SIZE];
-        // NB: rewind() doesn't return a ByteBuffer before Java 9.
-        ByteBuffer.wrap(ByteBuffer.allocate(SCAN_CODES_SIZE).put(scanCodes).array()).get(fixed).get(uid).get(key);
-
-        updateFlags(CFGFLAG_SHORT_TICKET, true);
+  /**
+   * Creates a Static Password configuration with default settings.
+   *
+   * @param scanCodes the password to store on YubiKey as an array of keyboard scan codes.
+   */
+  public StaticPasswordSlotConfiguration(byte[] scanCodes) {
+    if (scanCodes.length > SCAN_CODES_SIZE) {
+      throw new UnsupportedOperationException("Password is too long");
     }
 
-    @Override
-    protected StaticPasswordSlotConfiguration getThis() {
-        return this;
-    }
+    // Scan codes are packed into fixed, uid, and key, and zero padded.
+    fixed = new byte[FIXED_SIZE];
+    // NB: rewind() doesn't return a ByteBuffer before Java 9.
+    ByteBuffer.wrap(ByteBuffer.allocate(SCAN_CODES_SIZE).put(scanCodes).array())
+        .get(fixed)
+        .get(uid)
+        .get(key);
+
+    updateFlags(CFGFLAG_SHORT_TICKET, true);
+  }
+
+  @Override
+  protected StaticPasswordSlotConfiguration getThis() {
+    return this;
+  }
 }

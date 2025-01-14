@@ -17,15 +17,13 @@
 package com.yubico.yubikit.testing.fido;
 
 import androidx.test.filters.LargeTest;
-
 import com.yubico.yubikit.testing.framework.FidoInstrumentedTests;
-
 import org.junit.Test;
 
 @LargeTest
 public class Ctap2BioEnrollmentInstrumentedTests extends FidoInstrumentedTests {
-    @Test
-    public void testFingerprintEnrollment() throws Throwable {
-        withCtap2Session(Ctap2BioEnrollmentTests::testFingerprintEnrollment);
-    }
+  @Test
+  public void testFingerprintEnrollment() throws Throwable {
+    withCtap2Session(Ctap2BioEnrollmentTests::testFingerprintEnrollment);
+  }
 }

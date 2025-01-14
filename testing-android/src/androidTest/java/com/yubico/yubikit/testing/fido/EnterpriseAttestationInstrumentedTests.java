@@ -20,7 +20,6 @@ import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV1;
 import com.yubico.yubikit.testing.PinUvAuthProtocolV1Test;
 import com.yubico.yubikit.testing.framework.FidoInstrumentedTests;
-
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -28,37 +27,37 @@ import org.junit.runners.Suite;
 
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        EnterpriseAttestationInstrumentedTests.PinUvAuthV2Test.class,
-        EnterpriseAttestationInstrumentedTests.PinUvAuthV1Test.class,
+  EnterpriseAttestationInstrumentedTests.PinUvAuthV2Test.class,
+  EnterpriseAttestationInstrumentedTests.PinUvAuthV1Test.class,
 })
 public class EnterpriseAttestationInstrumentedTests {
-    public static class PinUvAuthV2Test extends FidoInstrumentedTests {
-        @Test
-        public void testSupportedPlatformManagedEA() throws Throwable {
-            withCtap2Session(EnterpriseAttestationTests::testSupportedPlatformManagedEA);
-        }
-
-        @Test
-        public void testUnsupportedPlatformManagedEA() throws Throwable {
-            withCtap2Session(EnterpriseAttestationTests::testUnsupportedPlatformManagedEA);
-        }
-
-        @Test
-        public void testCreateOptionsAttestationPreference() throws Throwable {
-            withDevice(EnterpriseAttestationTests::testCreateOptionsAttestationPreference);
-        }
-
-        @Test
-        public void testVendorFacilitatedEA() throws Throwable {
-            withCtap2Session(EnterpriseAttestationTests::testVendorFacilitatedEA);
-        }
+  public static class PinUvAuthV2Test extends FidoInstrumentedTests {
+    @Test
+    public void testSupportedPlatformManagedEA() throws Throwable {
+      withCtap2Session(EnterpriseAttestationTests::testSupportedPlatformManagedEA);
     }
 
-    @Category(PinUvAuthProtocolV1Test.class)
-    public static class PinUvAuthV1Test extends PinUvAuthV2Test {
-        @Override
-        protected PinUvAuthProtocol getPinUvAuthProtocol() {
-            return new PinUvAuthProtocolV1();
-        }
+    @Test
+    public void testUnsupportedPlatformManagedEA() throws Throwable {
+      withCtap2Session(EnterpriseAttestationTests::testUnsupportedPlatformManagedEA);
     }
+
+    @Test
+    public void testCreateOptionsAttestationPreference() throws Throwable {
+      withDevice(EnterpriseAttestationTests::testCreateOptionsAttestationPreference);
+    }
+
+    @Test
+    public void testVendorFacilitatedEA() throws Throwable {
+      withCtap2Session(EnterpriseAttestationTests::testVendorFacilitatedEA);
+    }
+  }
+
+  @Category(PinUvAuthProtocolV1Test.class)
+  public static class PinUvAuthV1Test extends PinUvAuthV2Test {
+    @Override
+    protected PinUvAuthProtocol getPinUvAuthProtocol() {
+      return new PinUvAuthProtocolV1();
+    }
+  }
 }

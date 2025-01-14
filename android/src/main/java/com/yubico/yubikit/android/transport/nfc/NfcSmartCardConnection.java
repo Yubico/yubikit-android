@@ -18,65 +18,59 @@ package com.yubico.yubikit.android.transport.nfc;
 
 import android.nfc.Tag;
 import android.nfc.tech.IsoDep;
-
-import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.Transport;
+import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.util.StringUtils;
-
+import java.io.IOException;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-
-/**
- * NFC service for interacting with the YubiKey
- */
+/** NFC service for interacting with the YubiKey */
 public class NfcSmartCardConnection implements SmartCardConnection {
 
-    /**
-     * Provides access to ISO-DEP (ISO 14443-4) properties and I/O operations on a {@link Tag}.
-     */
-    private final IsoDep card;
+  /** Provides access to ISO-DEP (ISO 14443-4) properties and I/O operations on a {@link Tag}. */
+  private final IsoDep card;
 
-    private static final org.slf4j.Logger logger = LoggerFactory.getLogger(NfcSmartCardConnection.class);
+  private static final org.slf4j.Logger logger =
+      LoggerFactory.getLogger(NfcSmartCardConnection.class);
 
-    /**
-     * Instantiates session for nfc tag interaction
-     *
-     * @param card the tag that has been discovered
-     */
-    NfcSmartCardConnection(IsoDep card) {
-        this.card = card;
-        Logger.debug(logger, "nfc connection opened");
-    }
+  /**
+   * Instantiates session for nfc tag interaction
+   *
+   * @param card the tag that has been discovered
+   */
+  NfcSmartCardConnection(IsoDep card) {
+    this.card = card;
+    Logger.debug(logger, "nfc connection opened");
+  }
 
-    @Override
-    public Transport getTransport() {
-        return Transport.NFC;
-    }
+  @Override
+  public Transport getTransport() {
+    return Transport.NFC;
+  }
 
-    @Override
-    public boolean isExtendedLengthApduSupported() {
-        return card.isExtendedLengthApduSupported();
-    }
+  @Override
+  public boolean isExtendedLengthApduSupported() {
+    return card.isExtendedLengthApduSupported();
+  }
 
-    @Override
-    public byte[] sendAndReceive(byte[] apdu) throws IOException {
-        Logger.trace(logger, "sent: {}", StringUtils.bytesToHex(apdu));
-        byte[] received = card.transceive(apdu);
-        Logger.trace(logger, "received: {}", StringUtils.bytesToHex(received));
-        return received;
-    }
+  @Override
+  public byte[] sendAndReceive(byte[] apdu) throws IOException {
+    Logger.trace(logger, "sent: {}", StringUtils.bytesToHex(apdu));
+    byte[] received = card.transceive(apdu);
+    Logger.trace(logger, "received: {}", StringUtils.bytesToHex(received));
+    return received;
+  }
 
-    @Override
-    public void close() throws IOException {
-        card.close();
-        Logger.debug(logger, "nfc connection closed");
-    }
+  @Override
+  public void close() throws IOException {
+    card.close();
+    Logger.debug(logger, "nfc connection closed");
+  }
 
-    @Override
-    public byte[] getAtr() {
-        byte[] historicalBytes = card.getHistoricalBytes();
-        return historicalBytes != null ? historicalBytes.clone() : new byte[]{};
-    }
+  @Override
+  public byte[] getAtr() {
+    byte[] historicalBytes = card.getHistoricalBytes();
+    return historicalBytes != null ? historicalBytes.clone() : new byte[] {};
+  }
 }

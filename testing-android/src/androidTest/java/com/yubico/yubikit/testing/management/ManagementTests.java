@@ -17,12 +17,11 @@
 package com.yubico.yubikit.testing.management;
 
 import com.yubico.yubikit.testing.framework.ManagementInstrumentedTests;
-
 import org.junit.Test;
 
 public class ManagementTests extends ManagementInstrumentedTests {
-    @Test
-    public void testNfcRestricted() throws Throwable {
-        withManagementSession(ManagementDeviceTests::testNfcRestricted);
-    }
+  @Test
+  public void testNfcRestricted() throws Throwable {
+    withManagementSession(ManagementDeviceTests::testNfcRestricted);
+  }
 }

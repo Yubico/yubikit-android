@@ -16,37 +16,35 @@
 
 package com.yubico.yubikit.core.util;
 
-/**
- * Utility methods for Strings.
- */
+/** Utility methods for Strings. */
 public class StringUtils {
-    /**
-     * Helper method that convert byte array into string for logging
-     *
-     * @param byteArray array of bytes
-     * @return string representation of byte array
-     */
-    public static String bytesToHex(byte[] byteArray) {
-        return bytesToHex(byteArray, 0, byteArray.length);
-    }
+  /**
+   * Helper method that convert byte array into string for logging
+   *
+   * @param byteArray array of bytes
+   * @return string representation of byte array
+   */
+  public static String bytesToHex(byte[] byteArray) {
+    return bytesToHex(byteArray, 0, byteArray.length);
+  }
 
-    /**
-     * Helper method that convert byte array into string for logging
-     *
-     * @param byteArray array of bytes
-     * @param offset    the offset within byteArray
-     * @param size      the size of array
-     * @return string representation of byte array
-     */
-    public static String bytesToHex(byte[] byteArray, int offset, int size) {
-        StringBuilder sb = new StringBuilder();
-        for (int i = offset; i < size; i++) {
-            sb.append(String.format("%02x ", byteArray[i]));
-        }
-        return sb.toString();
+  /**
+   * Helper method that convert byte array into string for logging
+   *
+   * @param byteArray array of bytes
+   * @param offset the offset within byteArray
+   * @param size the size of array
+   * @return string representation of byte array
+   */
+  public static String bytesToHex(byte[] byteArray, int offset, int size) {
+    StringBuilder sb = new StringBuilder();
+    for (int i = offset; i < size; i++) {
+      sb.append(String.format("%02x ", byteArray[i]));
     }
+    return sb.toString();
+  }
 
-    private StringUtils() {
-        throw new IllegalStateException();
-    }
+  private StringUtils() {
+    throw new IllegalStateException();
+  }
 }

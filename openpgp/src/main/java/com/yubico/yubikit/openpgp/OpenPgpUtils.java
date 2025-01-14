@@ -17,12 +17,12 @@
 package com.yubico.yubikit.openpgp;
 
 public class OpenPgpUtils {
-    static byte decodeBcd(byte bcd) {
-        int high = (bcd & 0xf0) >> 4;
-        int low = bcd & 0x0f;
-        if(high > 9 || low > 9) {
-            throw new IllegalArgumentException("Invalid BCD value: " + bcd);
-        }
-        return (byte) (high * 10 + low);
+  static byte decodeBcd(byte bcd) {
+    int high = (bcd & 0xf0) >> 4;
+    int low = bcd & 0x0f;
+    if (high > 9 || low > 9) {
+      throw new IllegalArgumentException("Invalid BCD value: " + bcd);
     }
+    return (byte) (high * 10 + low);
+  }
 }

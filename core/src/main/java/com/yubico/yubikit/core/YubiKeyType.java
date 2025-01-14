@@ -17,15 +17,15 @@
 package com.yubico.yubikit.core;
 
 public enum YubiKeyType {
-    YKS("YubiKey Standard"),
-    NEO("YubiKey NEO"),
-    SKY("Security Key by Yubico"),
-    YKP("YubiKey Plus"),
-    YK4("YubiKey");
+  YKS("YubiKey Standard"),
+  NEO("YubiKey NEO"),
+  SKY("Security Key by Yubico"),
+  YKP("YubiKey Plus"),
+  YK4("YubiKey");
 
-    public final String name;
+  public final String name;
 
-    YubiKeyType(String name) {
-        this.name = name;
-    }
+  YubiKeyType(String name) {
+    this.name = name;
+  }
 }

@@ -17,30 +17,30 @@
 package com.yubico.yubikit.testing.fido;
 
 import com.yubico.yubikit.testing.AlwaysManualTest;
-
 import org.junit.experimental.categories.Categories;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 /**
  * Setup YubiKey before running the integration tests:
+ *
  * <ul>
- *     <li>reset the FIDO application</li>
- *     <li>optionally set PIN to `11234567`</li>
+ *   <li>reset the FIDO application
+ *   <li>optionally set PIN to `11234567`
  * </ul>
  */
 @RunWith(Categories.class)
 @Suite.SuiteClasses({
-        BasicWebAuthnClientInstrumentedTests.class,
-        Ctap2ClientPinInstrumentedTests.class,
-        Ctap2CredentialManagementInstrumentedTests.class,
-        Ctap2SessionInstrumentedTests.class,
-        EnterpriseAttestationInstrumentedTests.class,
-        UvDiscouragedInstrumentedTests.class,
-        Ctap2ConfigInstrumentedTests.class,
-        Ctap2BioEnrollmentInstrumentedTests.class,
-        Ctap2SessionResetInstrumentedTests.class,
+  BasicWebAuthnClientInstrumentedTests.class,
+  Ctap2ClientPinInstrumentedTests.class,
+  Ctap2CredentialManagementInstrumentedTests.class,
+  Ctap2SessionInstrumentedTests.class,
+  EnterpriseAttestationInstrumentedTests.class,
+  UvDiscouragedInstrumentedTests.class,
+  Ctap2ConfigInstrumentedTests.class,
+  Ctap2BioEnrollmentInstrumentedTests.class,
+  Ctap2SessionResetInstrumentedTests.class,
+  ExtensionsInstrumentedTests.class,
 })
 @Categories.ExcludeCategory(AlwaysManualTest.class)
-public class FidoTests {
-}
+public class FidoTests {}

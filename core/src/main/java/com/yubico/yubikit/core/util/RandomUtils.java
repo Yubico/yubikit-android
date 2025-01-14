@@ -18,27 +18,24 @@ package com.yubico.yubikit.core.util;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 
-/**
- * Utility class to generate random data.
- */
+/** Utility class to generate random data. */
 public class RandomUtils {
-    private static final SecureRandom secureRandom = new SecureRandom();
-    /**
-     * Returns a byte array containing random values.
-     */
-    @SuppressWarnings("NewApi")
-    public static byte[] getRandomBytes(int length) {
-        byte[] bytes = new byte[length];
-        try {
-            SecureRandom.getInstanceStrong().nextBytes(bytes);
-        } catch (NoSuchMethodError | NoSuchAlgorithmException e) {
-            // Fallback for older Android versions
-            secureRandom.nextBytes(bytes);
-        }
-        return bytes;
-    }
+  private static final SecureRandom secureRandom = new SecureRandom();
 
-    private RandomUtils() {
-        throw new IllegalStateException();
+  /** Returns a byte array containing random values. */
+  @SuppressWarnings("NewApi")
+  public static byte[] getRandomBytes(int length) {
+    byte[] bytes = new byte[length];
+    try {
+      SecureRandom.getInstanceStrong().nextBytes(bytes);
+    } catch (NoSuchMethodError | NoSuchAlgorithmException e) {
+      // Fallback for older Android versions
+      secureRandom.nextBytes(bytes);
     }
+    return bytes;
+  }
+
+  private RandomUtils() {
+    throw new IllegalStateException();
+  }
 }

@@ -1,6 +1,7 @@
 plugins {
     id 'com.android.library'
     id 'project-convention-logging'
+    id 'project-convention-spotless'
 }
 
 android {

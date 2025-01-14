@@ -19,46 +19,46 @@ package com.yubico.yubikit.android.transport.usb.connection;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbInterface;
-
 import com.yubico.yubikit.core.YubiKeyConnection;
-
 import java.io.IOException;
-
 import javax.annotation.Nullable;
 
-abstract class InterfaceConnectionHandler<T extends YubiKeyConnection> implements ConnectionHandler<T> {
-    private final int interfaceClass;
-    private final int interfaceSubclass;
+abstract class InterfaceConnectionHandler<T extends YubiKeyConnection>
+    implements ConnectionHandler<T> {
+  private final int interfaceClass;
+  private final int interfaceSubclass;
 
-    protected InterfaceConnectionHandler(int interfaceClass, int interfaceSubclass) {
-        this.interfaceClass = interfaceClass;
-        this.interfaceSubclass = interfaceSubclass;
-    }
+  protected InterfaceConnectionHandler(int interfaceClass, int interfaceSubclass) {
+    this.interfaceClass = interfaceClass;
+    this.interfaceSubclass = interfaceSubclass;
+  }
 
-    @Override
-    public boolean isAvailable(UsbDevice usbDevice) {
-        return getInterface(usbDevice) != null;
-    }
+  @Override
+  public boolean isAvailable(UsbDevice usbDevice) {
+    return getInterface(usbDevice) != null;
+  }
 
-    protected UsbInterface getClaimedInterface(UsbDevice usbDevice, UsbDeviceConnection usbDeviceConnection) throws IOException {
-        UsbInterface usbInterface = getInterface(usbDevice);
-        if (usbInterface != null) {
-            if (!usbDeviceConnection.claimInterface(usbInterface, true)) {
-                throw new IOException("Unable to claim interface");
-            }
-            return usbInterface;
-        }
-        throw new IllegalStateException("The connection type is not available via this transport");
+  protected UsbInterface getClaimedInterface(
+      UsbDevice usbDevice, UsbDeviceConnection usbDeviceConnection) throws IOException {
+    UsbInterface usbInterface = getInterface(usbDevice);
+    if (usbInterface != null) {
+      if (!usbDeviceConnection.claimInterface(usbInterface, true)) {
+        throw new IOException("Unable to claim interface");
+      }
+      return usbInterface;
     }
+    throw new IllegalStateException("The connection type is not available via this transport");
+  }
 
-    @Nullable
-    private UsbInterface getInterface(UsbDevice usbDevice) {
-        for (int i = 0; i < usbDevice.getInterfaceCount(); i++) {
-            UsbInterface usbInterface = usbDevice.getInterface(i);
-            if (usbInterface.getInterfaceClass() == interfaceClass && usbInterface.getInterfaceSubclass() == interfaceSubclass) {
-                return usbInterface;
-            }
-        }
-        return null;
+  @Nullable
+  private UsbInterface getInterface(UsbDevice usbDevice) {
+    for (int i = 0; i < usbDevice.getInterfaceCount(); i++) {
+      UsbInterface usbInterface = usbDevice.getInterface(i);
+      if (usbInterface.getInterfaceClass() == interfaceClass
+          && usbInterface.getInterfaceSubclass() == interfaceSubclass) {
+        return usbInterface;
+      }
     }
+    return null;
+  }
 }

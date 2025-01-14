@@ -20,11 +20,11 @@ import android.app.Activity;
 import android.nfc.Tag;
 
 public interface NfcDispatcher {
-    void enable(Activity activity, NfcConfiguration nfcConfiguration, OnTagHandler handler);
+  void enable(Activity activity, NfcConfiguration nfcConfiguration, OnTagHandler handler);
 
-    void disable(Activity activity);
+  void disable(Activity activity);
 
-    interface OnTagHandler {
-        void onTag(Tag tag);
-    }
+  interface OnTagHandler {
+    void onTag(Tag tag);
+  }
 }

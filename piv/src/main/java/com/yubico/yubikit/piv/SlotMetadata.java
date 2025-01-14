@@ -16,78 +16,73 @@
 package com.yubico.yubikit.piv;
 
 import com.yubico.yubikit.core.keys.PublicKeyValues;
-
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Arrays;
 
-/**
- * Metadata about a key in a slot.
- */
+/** Metadata about a key in a slot. */
 public class SlotMetadata {
-    private final KeyType keyType;
-    private final PinPolicy pinPolicy;
-    private final TouchPolicy touchPolicy;
-    private final boolean generated;
-    private final byte[] publicKeyEncoded;
+  private final KeyType keyType;
+  private final PinPolicy pinPolicy;
+  private final TouchPolicy touchPolicy;
+  private final boolean generated;
+  private final byte[] publicKeyEncoded;
 
-    public SlotMetadata(KeyType keyType, PinPolicy pinPolicy, TouchPolicy touchPolicy, boolean generated, byte[] publicKeyEncoded) {
-        this.keyType = keyType;
-        this.pinPolicy = pinPolicy;
-        this.touchPolicy = touchPolicy;
-        this.generated = generated;
-        this.publicKeyEncoded = Arrays.copyOf(publicKeyEncoded, publicKeyEncoded.length);
-    }
+  public SlotMetadata(
+      KeyType keyType,
+      PinPolicy pinPolicy,
+      TouchPolicy touchPolicy,
+      boolean generated,
+      byte[] publicKeyEncoded) {
+    this.keyType = keyType;
+    this.pinPolicy = pinPolicy;
+    this.touchPolicy = touchPolicy;
+    this.generated = generated;
+    this.publicKeyEncoded = Arrays.copyOf(publicKeyEncoded, publicKeyEncoded.length);
+  }
 
-    /**
-     * Returns the type of the key stored in a slot.
-     */
-    public KeyType getKeyType() {
-        return keyType;
-    }
+  /** Returns the type of the key stored in a slot. */
+  public KeyType getKeyType() {
+    return keyType;
+  }
 
-    /**
-     * Returns the PIN policy for using the key.
-     */
-    public PinPolicy getPinPolicy() {
-        return pinPolicy;
-    }
+  /** Returns the PIN policy for using the key. */
+  public PinPolicy getPinPolicy() {
+    return pinPolicy;
+  }
 
-    /**
-     * Returns the touch policy for using the key.
-     */
-    public TouchPolicy getTouchPolicy() {
-        return touchPolicy;
-    }
+  /** Returns the touch policy for using the key. */
+  public TouchPolicy getTouchPolicy() {
+    return touchPolicy;
+  }
 
-    /**
-     * Whether the key was generated on the YubiKey or imported. A generated key can be attested,
-     * and exists only in a single YubiKey.
-     *
-     * @return true if the key was generated on the YubiKey
-     */
-    public boolean isGenerated() {
-        return generated;
-    }
+  /**
+   * Whether the key was generated on the YubiKey or imported. A generated key can be attested, and
+   * exists only in a single YubiKey.
+   *
+   * @return true if the key was generated on the YubiKey
+   */
+  public boolean isGenerated() {
+    return generated;
+  }
 
-    /**
-     * Returns the public key corresponding to the key in the slot.
-     */
-    public PublicKeyValues getPublicKeyValues() {
-        return PivSession.parsePublicKeyFromDevice(keyType, publicKeyEncoded);
-    }
+  /** Returns the public key corresponding to the key in the slot. */
+  public PublicKeyValues getPublicKeyValues() {
+    return PivSession.parsePublicKeyFromDevice(keyType, publicKeyEncoded);
+  }
 
-    /**
-     * Returns the public key corresponding to the key in the slot.
-     * @deprecated Use {@link #getPublicKeyValues()}.toPublicKey() instead.
-     */
-    @Deprecated
-    public PublicKey getPublicKey() {
-        try {
-            return getPublicKeyValues().toPublicKey();
-        } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
-            throw new RuntimeException(e);
-        }
+  /**
+   * Returns the public key corresponding to the key in the slot.
+   *
+   * @deprecated Use {@link #getPublicKeyValues()}.toPublicKey() instead.
+   */
+  @Deprecated
+  public PublicKey getPublicKey() {
+    try {
+      return getPublicKeyValues().toPublicKey();
+    } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
+      throw new RuntimeException(e);
     }
+  }
 }

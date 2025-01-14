@@ -16,22 +16,20 @@
 
 package com.yubico.yubikit.core.application;
 
-/**
- * Thrown when the wrong PIN or PUK is used (or when the PIN or PUK is in a blocked state).
- */
+/** Thrown when the wrong PIN or PUK is used (or when the PIN or PUK is in a blocked state). */
 public class InvalidPinException extends CommandException {
-    private final int attemptsRemaining;
+  private final int attemptsRemaining;
 
-    public InvalidPinException(int attemptsRemaining, String message) {
-        super(message);
-        this.attemptsRemaining = attemptsRemaining;
-    }
+  public InvalidPinException(int attemptsRemaining, String message) {
+    super(message);
+    this.attemptsRemaining = attemptsRemaining;
+  }
 
-    public InvalidPinException(int attemptsRemaining) {
-        this(attemptsRemaining, "Invalid PIN/PUK. Remaining attempts: " + attemptsRemaining);
-    }
+  public InvalidPinException(int attemptsRemaining) {
+    this(attemptsRemaining, "Invalid PIN/PUK. Remaining attempts: " + attemptsRemaining);
+  }
 
-    public int getAttemptsRemaining() {
-        return attemptsRemaining;
-    }
+  public int getAttemptsRemaining() {
+    return attemptsRemaining;
+  }
 }
