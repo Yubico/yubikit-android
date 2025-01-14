@@ -18,7 +18,7 @@ package com.yubico.yubikit.fido.webauthn;
 
 @SuppressWarnings("unused")
 public class ResidentKeyRequirement {
-    public static final String REQUIRED = "required";
-    public static final String PREFERRED = "preferred";
-    public static final String DISCOURAGED = "discouraged";
+  public static final String REQUIRED = "required";
+  public static final String PREFERRED = "preferred";
+  public static final String DISCOURAGED = "discouraged";
 }

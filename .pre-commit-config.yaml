@@ -1,0 +1,8 @@
+repos:
+  - repo: local
+    hooks:
+      - id: spotless
+        name: reformat Java
+        language: script
+        entry: scripts/spotless.py
+        always_run: true

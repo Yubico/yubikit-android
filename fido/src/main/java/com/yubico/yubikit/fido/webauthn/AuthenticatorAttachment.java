@@ -18,6 +18,6 @@ package com.yubico.yubikit.fido.webauthn;
 
 @SuppressWarnings("unused")
 public class AuthenticatorAttachment {
-    public static final String PLATFORM = "platform";
-    public static final String CROSS_PLATFORM = "cross-platform";
+  public static final String PLATFORM = "platform";
+  public static final String CROSS_PLATFORM = "cross-platform";
 }

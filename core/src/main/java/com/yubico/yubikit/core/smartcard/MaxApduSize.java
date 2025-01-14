@@ -17,11 +17,11 @@
 package com.yubico.yubikit.core.smartcard;
 
 final class MaxApduSize {
-    static final int NEO = 1390;
-    static final int YK4 = 2038;
-    static final int YK4_3 = 3062;
+  static final int NEO = 1390;
+  static final int YK4 = 2038;
+  static final int YK4_3 = 3062;
 
-    private MaxApduSize() {
-        throw new IllegalStateException();
-    }
+  private MaxApduSize() {
+    throw new IllegalStateException();
+  }
 }

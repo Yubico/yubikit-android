@@ -20,7 +20,6 @@ import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV1;
 import com.yubico.yubikit.testing.PinUvAuthProtocolV1Test;
 import com.yubico.yubikit.testing.framework.FidoInstrumentedTests;
-
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -28,27 +27,27 @@ import org.junit.runners.Suite;
 
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        Ctap2ClientPinInstrumentedTests.PinUvAuthV2Test.class,
-        Ctap2ClientPinInstrumentedTests.PinUvAuthV1Test.class,
+  Ctap2ClientPinInstrumentedTests.PinUvAuthV2Test.class,
+  Ctap2ClientPinInstrumentedTests.PinUvAuthV1Test.class,
 })
 public class Ctap2ClientPinInstrumentedTests {
-    public static class PinUvAuthV2Test extends FidoInstrumentedTests {
-        @Test
-        public void testClientPin() throws Throwable {
-            withCtap2Session(Ctap2ClientPinTests::testClientPin);
-        }
-
-        @Test
-        public void testPinComplexity() throws Throwable {
-            withDevice(Ctap2ClientPinTests::testPinComplexity);
-        }
+  public static class PinUvAuthV2Test extends FidoInstrumentedTests {
+    @Test
+    public void testClientPin() throws Throwable {
+      withCtap2Session(Ctap2ClientPinTests::testClientPin);
     }
 
-    @Category(PinUvAuthProtocolV1Test.class)
-    public static class PinUvAuthV1Test extends PinUvAuthV2Test {
-        @Override
-        protected PinUvAuthProtocol getPinUvAuthProtocol() {
-            return new PinUvAuthProtocolV1();
-        }
+    @Test
+    public void testPinComplexity() throws Throwable {
+      withDevice(Ctap2ClientPinTests::testPinComplexity);
     }
+  }
+
+  @Category(PinUvAuthProtocolV1Test.class)
+  public static class PinUvAuthV1Test extends PinUvAuthV2Test {
+    @Override
+    protected PinUvAuthProtocol getPinUvAuthProtocol() {
+      return new PinUvAuthProtocolV1();
+    }
+  }
 }

@@ -18,42 +18,39 @@ package com.yubico.yubikit.core.smartcard;
 
 import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.YubiKeyConnection;
-
 import java.io.IOException;
 
-/**
- * A connection capable of sending APDUs and receiving their responses.
- */
+/** A connection capable of sending APDUs and receiving their responses. */
 public interface SmartCardConnection extends YubiKeyConnection {
-    /**
-     * Sends a command APDU to the YubiKey, and reads a response.
-     *
-     * @param apdu The binary APDU data to be sent.
-     * @return The response back from the YubiKey.
-     * @throws IOException in case of communication error
-     */
-    byte[] sendAndReceive(byte[] apdu) throws IOException;
+  /**
+   * Sends a command APDU to the YubiKey, and reads a response.
+   *
+   * @param apdu The binary APDU data to be sent.
+   * @return The response back from the YubiKey.
+   * @throws IOException in case of communication error
+   */
+  byte[] sendAndReceive(byte[] apdu) throws IOException;
 
-    /**
-     * Checks what transport the connection is using (USB or NFC).
-     *
-     * @return the physical transport used for the connection.
-     */
-    Transport getTransport();
+  /**
+   * Checks what transport the connection is using (USB or NFC).
+   *
+   * @return the physical transport used for the connection.
+   */
+  Transport getTransport();
 
-    /**
-     * Standard APDUs have a 1-byte length field, allowing a maximum of 255 payload bytes,
-     * which results in a maximum APDU length of 261 bytes. Extended length APDUs have a 3-byte length field,
-     * allowing 65535 payload bytes.
-     *
-     * @return true if this connection object supports Extended length APDUs.
-     */
-    boolean isExtendedLengthApduSupported();
+  /**
+   * Standard APDUs have a 1-byte length field, allowing a maximum of 255 payload bytes, which
+   * results in a maximum APDU length of 261 bytes. Extended length APDUs have a 3-byte length
+   * field, allowing 65535 payload bytes.
+   *
+   * @return true if this connection object supports Extended length APDUs.
+   */
+  boolean isExtendedLengthApduSupported();
 
-    /**
-     * Retrieve Answer to reset (or answer to select for NFC)
-     *
-     * @return data block returned for reset command
-     */
-    byte[] getAtr();
+  /**
+   * Retrieve Answer to reset (or answer to select for NFC)
+   *
+   * @return data block returned for reset command
+   */
+  byte[] getAtr();
 }

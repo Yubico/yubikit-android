@@ -17,18 +17,18 @@
 package com.yubico.yubikit.openpgp;
 
 public enum PinPolicy {
-    ALWAYS((byte) 0x00),
-    ONCE((byte) 0x01);
+  ALWAYS((byte) 0x00),
+  ONCE((byte) 0x01);
 
-    public final byte value;
+  public final byte value;
 
-    PinPolicy(byte value) {
-        this.value = value;
-    }
+  PinPolicy(byte value) {
+    this.value = value;
+  }
 
-    @Override
-    public String toString() {
-        String name = name();
-        return name.charAt(0) + name.substring(1).toLowerCase();
-    }
+  @Override
+  public String toString() {
+    String name = name();
+    return name.charAt(0) + name.substring(1).toLowerCase();
+  }
 }

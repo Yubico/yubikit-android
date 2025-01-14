@@ -22,48 +22,49 @@ import com.yubico.yubikit.fido.webauthn.AuthenticatorSelectionCriteria;
 import com.yubico.yubikit.fido.webauthn.Extensions;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialCreationOptions;
 import com.yubico.yubikit.fido.webauthn.ResidentKeyRequirement;
-
 import java.util.Collections;
-
 import javax.annotation.Nullable;
 
 /**
  * Implements the Credential Properties (credProps) WebAuthn extension.
- * @see <a href="https://www.w3.org/TR/webauthn-3/#sctn-authenticator-credential-properties-extension">Credential Properties Extension (credProps)</a>
+ *
+ * @see <a
+ *     href="https://www.w3.org/TR/webauthn-3/#sctn-authenticator-credential-properties-extension">Credential
+ *     Properties Extension (credProps)</a>
  */
 public class CredPropsExtension extends Extension {
 
-    public CredPropsExtension() {
-        super("credProps");
+  public CredPropsExtension() {
+    super("credProps");
+  }
+
+  @Nullable
+  @Override
+  public RegistrationProcessor makeCredential(
+      Ctap2Session ctap,
+      PublicKeyCredentialCreationOptions options,
+      PinUvAuthProtocol pinUvAuthProtocol) {
+
+    Extensions extensions = options.getExtensions();
+    if (extensions == null) {
+      return null;
     }
 
-    @Nullable
-    @Override
-    public RegistrationProcessor makeCredential(
-            Ctap2Session ctap,
-            PublicKeyCredentialCreationOptions options,
-            PinUvAuthProtocol pinUvAuthProtocol) {
+    if (extensions.has(name)) {
+      AuthenticatorSelectionCriteria authenticatorSelection = options.getAuthenticatorSelection();
+      String optionsRk =
+          authenticatorSelection != null ? authenticatorSelection.getResidentKey() : null;
+      Boolean authenticatorRk = (Boolean) ctap.getCachedInfo().getOptions().get("rk");
+      boolean rk =
+          (ResidentKeyRequirement.REQUIRED.equals(optionsRk)
+              || (ResidentKeyRequirement.PREFERRED.equals(optionsRk)
+                  && Boolean.TRUE.equals(authenticatorRk)));
 
-        Extensions extensions = options.getExtensions();
-        if (extensions == null) {
-            return null;
-        }
-
-        if (extensions.has(name)) {
-            AuthenticatorSelectionCriteria authenticatorSelection = options.getAuthenticatorSelection();
-            String optionsRk = authenticatorSelection != null
-                    ? authenticatorSelection.getResidentKey()
-                    : null;
-            Boolean authenticatorRk = (Boolean) ctap.getCachedInfo().getOptions().get("rk");
-            boolean rk = (ResidentKeyRequirement.REQUIRED.equals(optionsRk) ||
-                    (ResidentKeyRequirement.PREFERRED.equals(optionsRk) &&
-                            Boolean.TRUE.equals(authenticatorRk)));
-
-            return new RegistrationProcessor(
-                    (attestationObject, pinToken) ->
-                            serializationType -> Collections.singletonMap(name,
-                                    Collections.singletonMap("rk", rk)));
-        }
-        return null;
+      return new RegistrationProcessor(
+          (attestationObject, pinToken) ->
+              serializationType ->
+                  Collections.singletonMap(name, Collections.singletonMap("rk", rk)));
     }
+    return null;
+  }
 }

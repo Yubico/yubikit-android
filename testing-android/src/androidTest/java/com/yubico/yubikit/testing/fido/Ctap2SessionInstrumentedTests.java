@@ -21,7 +21,6 @@ import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV1;
 import com.yubico.yubikit.testing.PinUvAuthProtocolV1Test;
 import com.yubico.yubikit.testing.SmokeTest;
 import com.yubico.yubikit.testing.framework.FidoInstrumentedTests;
-
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -29,33 +28,33 @@ import org.junit.runners.Suite;
 
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        Ctap2SessionInstrumentedTests.PinUvAuthV2Test.class,
-        Ctap2SessionInstrumentedTests.PinUvAuthV1Test.class,
+  Ctap2SessionInstrumentedTests.PinUvAuthV2Test.class,
+  Ctap2SessionInstrumentedTests.PinUvAuthV1Test.class,
 })
 public class Ctap2SessionInstrumentedTests {
-    public static class PinUvAuthV2Test extends FidoInstrumentedTests {
-        @Test
-        @Category(SmokeTest.class)
-        public void testCtap2GetInfo() throws Throwable {
-            withCtap2Session(Ctap2SessionTests::testCtap2GetInfo);
-        }
-
-        @Test
-        public void testCancelCborCommandImmediate() throws Throwable {
-            withCtap2Session(Ctap2SessionTests::testCancelCborCommandImmediate);
-        }
-
-        @Test
-        public void testCancelCborCommandAfterDelay() throws Throwable {
-            withCtap2Session(Ctap2SessionTests::testCancelCborCommandAfterDelay);
-        }
+  public static class PinUvAuthV2Test extends FidoInstrumentedTests {
+    @Test
+    @Category(SmokeTest.class)
+    public void testCtap2GetInfo() throws Throwable {
+      withCtap2Session(Ctap2SessionTests::testCtap2GetInfo);
     }
 
-    @Category(PinUvAuthProtocolV1Test.class)
-    public static class PinUvAuthV1Test extends PinUvAuthV2Test {
-        @Override
-        protected PinUvAuthProtocol getPinUvAuthProtocol() {
-            return new PinUvAuthProtocolV1();
-        }
+    @Test
+    public void testCancelCborCommandImmediate() throws Throwable {
+      withCtap2Session(Ctap2SessionTests::testCancelCborCommandImmediate);
     }
+
+    @Test
+    public void testCancelCborCommandAfterDelay() throws Throwable {
+      withCtap2Session(Ctap2SessionTests::testCancelCborCommandAfterDelay);
+    }
+  }
+
+  @Category(PinUvAuthProtocolV1Test.class)
+  public static class PinUvAuthV1Test extends PinUvAuthV2Test {
+    @Override
+    protected PinUvAuthProtocol getPinUvAuthProtocol() {
+      return new PinUvAuthProtocolV1();
+    }
+  }
 }

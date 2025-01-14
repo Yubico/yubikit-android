@@ -28,95 +28,95 @@ import com.yubico.yubikit.core.smartcard.SW;
 import com.yubico.yubikit.oath.Credential;
 import com.yubico.yubikit.oath.CredentialData;
 import com.yubico.yubikit.oath.OathSession;
-
-import org.junit.Assume;
-
 import java.net.URI;
 import java.util.List;
+import org.junit.Assume;
 
 public class OathDeviceTests {
 
-    private static final char[] CHANGED_PASSWORD = "12341234".toCharArray();
+  private static final char[] CHANGED_PASSWORD = "12341234".toCharArray();
 
-    public static void testChangePassword(OathTestState state) throws Throwable {
+  public static void testChangePassword(OathTestState state) throws Throwable {
 
-        state.withOath(oath -> {
-            assertTrue(oath.isAccessKeySet());
-            assertTrue(oath.isLocked());
-            assertFalse(oath.unlock(CHANGED_PASSWORD));
-            assertTrue(oath.unlock(state.password));
-            oath.setPassword(CHANGED_PASSWORD);
+    state.withOath(
+        oath -> {
+          assertTrue(oath.isAccessKeySet());
+          assertTrue(oath.isLocked());
+          assertFalse(oath.unlock(CHANGED_PASSWORD));
+          assertTrue(oath.unlock(state.password));
+          oath.setPassword(CHANGED_PASSWORD);
         });
 
-        state.withOath(oath -> {
-            assertTrue(oath.isAccessKeySet());
-            assertTrue(oath.isLocked());
-            assertTrue(oath.unlock(CHANGED_PASSWORD));
+    state.withOath(
+        oath -> {
+          assertTrue(oath.isAccessKeySet());
+          assertTrue(oath.isLocked());
+          assertTrue(oath.unlock(CHANGED_PASSWORD));
         });
+  }
+
+  public static void testRemovePassword(OathSession oath, OathTestState state) throws Exception {
+    assertTrue(oath.isAccessKeySet());
+    assertTrue(oath.isLocked());
+    assertTrue(oath.unlock(state.password));
+
+    if (state.isFipsApproved) {
+      // trying remove password from a FIPS approved key throws specific ApduException
+      ApduException apduException = assertThrows(ApduException.class, oath::deleteAccessKey);
+      assertEquals(SW.CONDITIONS_NOT_SATISFIED, apduException.getSw());
+      // the key is still password protected
+      assertTrue(oath.isAccessKeySet());
+    } else {
+      oath.deleteAccessKey();
+      assertFalse(oath.isAccessKeySet());
+      assertFalse(oath.isLocked());
     }
+  }
 
-    public static void testRemovePassword(OathSession oath, OathTestState state) throws Exception {
-        assertTrue(oath.isAccessKeySet());
-        assertTrue(oath.isLocked());
-        assertTrue(oath.unlock(state.password));
+  public static void testAccountManagement(OathSession oath, OathTestState state) throws Exception {
+    assertTrue(oath.unlock(state.password));
+    List<Credential> credentials = oath.getCredentials();
+    assertEquals(0, credentials.size());
+    final String uri = "otpauth://totp/foobar:bob@example.com?secret=abba";
+    CredentialData credentialData = CredentialData.parseUri(new URI(uri));
+    oath.putCredential(credentialData, false);
 
-        if (state.isFipsApproved) {
-            // trying remove password from a FIPS approved key throws specific ApduException
-            ApduException apduException = assertThrows(ApduException.class, oath::deleteAccessKey);
-            assertEquals(SW.CONDITIONS_NOT_SATISFIED, apduException.getSw());
-            // the key is still password protected
-            assertTrue(oath.isAccessKeySet());
-        } else {
-            oath.deleteAccessKey();
-            assertFalse(oath.isAccessKeySet());
-            assertFalse(oath.isLocked());
-        }
-    }
+    credentials = oath.getCredentials();
+    assertEquals(1, credentials.size());
+    Credential credential = credentials.get(0);
+    assertEquals("bob@example.com", credential.getAccountName());
+    assertEquals("foobar", credential.getIssuer());
 
-    public static void testAccountManagement(OathSession oath, OathTestState state) throws Exception {
-        assertTrue(oath.unlock(state.password));
-        List<Credential> credentials = oath.getCredentials();
-        assertEquals(0, credentials.size());
-        final String uri = "otpauth://totp/foobar:bob@example.com?secret=abba";
-        CredentialData credentialData = CredentialData.parseUri(new URI(uri));
-        oath.putCredential(credentialData, false);
+    oath.deleteCredential(credential.getId());
+    credentials = oath.getCredentials();
+    assertEquals(0, credentials.size());
+  }
 
-        credentials = oath.getCredentials();
-        assertEquals(1, credentials.size());
-        Credential credential = credentials.get(0);
-        assertEquals("bob@example.com", credential.getAccountName());
-        assertEquals("foobar", credential.getIssuer());
+  public static void testRenameAccount(OathSession oath, OathTestState state) throws Exception {
+    Assume.assumeTrue(oath.supports(FEATURE_RENAME));
+    assertTrue(oath.unlock(state.password));
+    List<Credential> credentials = oath.getCredentials();
+    assertEquals(0, credentials.size());
+    final String uri = "otpauth://totp/foobar:bob@example.com?secret=abba";
+    CredentialData credentialData = CredentialData.parseUri(new URI(uri));
+    oath.putCredential(credentialData, false);
 
-        oath.deleteCredential(credential.getId());
-        credentials = oath.getCredentials();
-        assertEquals(0, credentials.size());
-    }
+    credentials = oath.getCredentials();
+    assertEquals(1, credentials.size());
 
-    public static void testRenameAccount(OathSession oath, OathTestState state) throws Exception {
-        Assume.assumeTrue(oath.supports(FEATURE_RENAME));
-        assertTrue(oath.unlock(state.password));
-        List<Credential> credentials = oath.getCredentials();
-        assertEquals(0, credentials.size());
-        final String uri = "otpauth://totp/foobar:bob@example.com?secret=abba";
-        CredentialData credentialData = CredentialData.parseUri(new URI(uri));
-        oath.putCredential(credentialData, false);
+    Credential credential = credentials.get(0);
+    credential = oath.renameCredential(credential, "ann@example.com", null);
+    assertEquals("ann@example.com", credential.getAccountName());
+    assertNull(credential.getIssuer());
 
-        credentials = oath.getCredentials();
-        assertEquals(1,  credentials.size());
+    credentials = oath.getCredentials();
+    assertEquals(1, credentials.size());
+    credential = credentials.get(0);
+    assertEquals("ann@example.com", credential.getAccountName());
+    assertNull(credential.getIssuer());
 
-        Credential credential = credentials.get(0);
-        credential = oath.renameCredential(credential, "ann@example.com", null);
-        assertEquals("ann@example.com", credential.getAccountName());
-        assertNull(credential.getIssuer());
-
-        credentials = oath.getCredentials();
-        assertEquals(1, credentials.size());
-        credential = credentials.get(0);
-        assertEquals("ann@example.com", credential.getAccountName());
-        assertNull(credential.getIssuer());
-
-        oath.deleteCredential(credential.getId());
-        credentials = oath.getCredentials();
-        assertEquals(0, credentials.size());
-    }
+    oath.deleteCredential(credential.getId());
+    credentials = oath.getCredentials();
+    assertEquals(0, credentials.size());
+  }
 }

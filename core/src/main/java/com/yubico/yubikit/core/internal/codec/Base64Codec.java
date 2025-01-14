@@ -18,33 +18,33 @@ package com.yubico.yubikit.core.internal.codec;
 
 /**
  * Helper for performing Base64 data conversions.
- * <p>
- * Only for internal use.
+ *
+ * <p>Only for internal use.
  */
 public interface Base64Codec {
-    /**
-     * @param data binary data
-     * @return String with no wrapped base64 data without padding
-     */
-    String toString(byte[] data);
+  /**
+   * @param data binary data
+   * @return String with no wrapped base64 data without padding
+   */
+  String toString(byte[] data);
 
-    /**
-     * @param data String with no wrapped base64 content
-     * @return decoded binary data
-     */
-    byte[] fromString(String data);
+  /**
+   * @param data String with no wrapped base64 content
+   * @return decoded binary data
+   */
+  byte[] fromString(String data);
 
-    /**
-     * @param data binary data
-     * @return String with no wrapped base64 data without padding, with only safe characters as defined
-     * in RFC 4648
-     */
-    String toUrlSafeString(byte[] data);
+  /**
+   * @param data binary data
+   * @return String with no wrapped base64 data without padding, with only safe characters as
+   *     defined in RFC 4648
+   */
+  String toUrlSafeString(byte[] data);
 
-    /**
-     * @param data String with no wrapped base64 data without padding, with only safe characters as defined
-     * in RFC 4648
-     * @return decoded binary data
-     */
-    byte[] fromUrlSafeString(String data);
+  /**
+   * @param data String with no wrapped base64 data without padding, with only safe characters as
+   *     defined in RFC 4648
+   * @return decoded binary data
+   */
+  byte[] fromUrlSafeString(String data);
 }

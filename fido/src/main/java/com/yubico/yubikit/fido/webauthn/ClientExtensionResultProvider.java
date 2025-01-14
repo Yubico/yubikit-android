@@ -19,5 +19,5 @@ package com.yubico.yubikit.fido.webauthn;
 import java.util.Map;
 
 public interface ClientExtensionResultProvider {
-    Map<String, Object> getClientExtensionResult(SerializationType serializationType);
+  Map<String, Object> getClientExtensionResult(SerializationType serializationType);
 }

@@ -16,12 +16,10 @@
 
 package com.yubico.yubikit.core.smartcard.scp;
 
-/**
- * SCP key parameters for performing an SCP authentication with a YubiKey.
- */
+/** SCP key parameters for performing an SCP authentication with a YubiKey. */
 public interface ScpKeyParams {
-    /**
-     * @return the identifier of the SCP key to target on the YubiKey.
-     */
-    KeyRef getKeyRef();
+  /**
+   * @return the identifier of the SCP key to target on the YubiKey.
+   */
+  KeyRef getKeyRef();
 }

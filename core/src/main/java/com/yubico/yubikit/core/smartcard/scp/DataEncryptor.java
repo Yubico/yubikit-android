@@ -16,9 +16,7 @@
 
 package com.yubico.yubikit.core.smartcard.scp;
 
-/**
- * Encrypts data using the DEK (data encryption key) of a current SCP session.
- */
+/** Encrypts data using the DEK (data encryption key) of a current SCP session. */
 public interface DataEncryptor {
-    byte[] encrypt(byte[] data);
+  byte[] encrypt(byte[] data);
 }

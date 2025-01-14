@@ -27,7 +27,6 @@ import com.yubico.yubikit.testing.fido.extensions.LargeBlobExtensionTests;
 import com.yubico.yubikit.testing.fido.extensions.MinPinLengthExtensionTests;
 import com.yubico.yubikit.testing.fido.extensions.PrfExtensionTests;
 import com.yubico.yubikit.testing.framework.FidoInstrumentedTests;
-
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -35,62 +34,62 @@ import org.junit.runners.Suite;
 
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        ExtensionsInstrumentedTests.PinUvAuthV2Test.class,
-        ExtensionsInstrumentedTests.PinUvAuthV1Test.class,
+  ExtensionsInstrumentedTests.PinUvAuthV2Test.class,
+  ExtensionsInstrumentedTests.PinUvAuthV1Test.class,
 })
 public class ExtensionsInstrumentedTests {
-    public static class PinUvAuthV2Test extends FidoInstrumentedTests {
-        @Test
-        public void testCredPropsExtension() throws Throwable {
-            withDevice(CredPropsExtensionTests::test);
-        }
-
-        @Test
-        public void testPrfExtension() throws Throwable {
-            withDevice(PrfExtensionTests::test);
-        }
-
-        @Test
-        public void testPrfExtensionNoSupport() throws Throwable {
-            withDevice(PrfExtensionTests::testNoExtensionSupport);
-        }
-
-        @Test
-        public void testHmacSecretExtension() throws Throwable {
-            withDevice(HmacSecretExtensionTests::test);
-        }
-
-        @Test
-        public void testHmacSecretExtensionNoSupport() throws Throwable {
-            withDevice(HmacSecretExtensionTests::testNoExtensionSupport);
-        }
-
-        @Test
-        public void testLargeBlobExtension() throws Throwable {
-            withDevice(LargeBlobExtensionTests::test);
-        }
-
-        @Test
-        public void testCredBlobExtension() throws Throwable {
-            withDevice(CredBlobExtensionTests::test);
-        }
-
-        @Test
-        public void testCredProtectExtension() throws Throwable {
-            withDevice(CredProtectExtensionTests::test);
-        }
-
-        @Test
-        public void testMinPinLengthExtension() throws Throwable {
-            withDevice(MinPinLengthExtensionTests::test);
-        }
+  public static class PinUvAuthV2Test extends FidoInstrumentedTests {
+    @Test
+    public void testCredPropsExtension() throws Throwable {
+      withDevice(CredPropsExtensionTests::test);
     }
 
-    @Category(PinUvAuthProtocolV1Test.class)
-    public static class PinUvAuthV1Test extends PinUvAuthV2Test {
-        @Override
-        protected PinUvAuthProtocol getPinUvAuthProtocol() {
-            return new PinUvAuthProtocolV1();
-        }
+    @Test
+    public void testPrfExtension() throws Throwable {
+      withDevice(PrfExtensionTests::test);
     }
+
+    @Test
+    public void testPrfExtensionNoSupport() throws Throwable {
+      withDevice(PrfExtensionTests::testNoExtensionSupport);
+    }
+
+    @Test
+    public void testHmacSecretExtension() throws Throwable {
+      withDevice(HmacSecretExtensionTests::test);
+    }
+
+    @Test
+    public void testHmacSecretExtensionNoSupport() throws Throwable {
+      withDevice(HmacSecretExtensionTests::testNoExtensionSupport);
+    }
+
+    @Test
+    public void testLargeBlobExtension() throws Throwable {
+      withDevice(LargeBlobExtensionTests::test);
+    }
+
+    @Test
+    public void testCredBlobExtension() throws Throwable {
+      withDevice(CredBlobExtensionTests::test);
+    }
+
+    @Test
+    public void testCredProtectExtension() throws Throwable {
+      withDevice(CredProtectExtensionTests::test);
+    }
+
+    @Test
+    public void testMinPinLengthExtension() throws Throwable {
+      withDevice(MinPinLengthExtensionTests::test);
+    }
+  }
+
+  @Category(PinUvAuthProtocolV1Test.class)
+  public static class PinUvAuthV1Test extends PinUvAuthV2Test {
+    @Override
+    protected PinUvAuthProtocol getPinUvAuthProtocol() {
+      return new PinUvAuthProtocolV1();
+    }
+  }
 }

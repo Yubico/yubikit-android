@@ -20,26 +20,26 @@ import java.util.Base64;
 
 /**
  * Default implementation of Base64Codec
- * <p>
- * Only for internal use.
+ *
+ * <p>Only for internal use.
  */
 public class DefaultBase64Codec implements Base64Codec {
 
-    @Override
-    public String toUrlSafeString(byte[] data) {
-        return new String(Base64.getUrlEncoder().withoutPadding().encode(data));
-    }
+  @Override
+  public String toUrlSafeString(byte[] data) {
+    return new String(Base64.getUrlEncoder().withoutPadding().encode(data));
+  }
 
-    public String toString(byte[] data) {
-        return new String(Base64.getEncoder().withoutPadding().encode(data));
-    }
+  public String toString(byte[] data) {
+    return new String(Base64.getEncoder().withoutPadding().encode(data));
+  }
 
-    @Override
-    public byte[] fromUrlSafeString(String data) {
-        return Base64.getUrlDecoder().decode(data);
-    }
+  @Override
+  public byte[] fromUrlSafeString(String data) {
+    return Base64.getUrlDecoder().decode(data);
+  }
 
-    public byte[] fromString(String data) {
-        return Base64.getDecoder().decode(data);
-    }
+  public byte[] fromString(String data) {
+    return Base64.getDecoder().decode(data);
+  }
 }

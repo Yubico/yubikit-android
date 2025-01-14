@@ -23,17 +23,17 @@ import java.util.Map;
 
 public class ClientExtensionResults {
 
-    final private List<ClientExtensionResultProvider> resultProviders = new ArrayList<>();
+  private final List<ClientExtensionResultProvider> resultProviders = new ArrayList<>();
 
-    public void add(ClientExtensionResultProvider resultProvider) {
-        resultProviders.add(resultProvider);
-    }
+  public void add(ClientExtensionResultProvider resultProvider) {
+    resultProviders.add(resultProvider);
+  }
 
-    public Map<String, Object> toMap(SerializationType serializationType) {
-        Map<String, Object> map = new HashMap<>();
-        for (ClientExtensionResultProvider resultProvider : resultProviders) {
-            map.putAll(resultProvider.getClientExtensionResult(serializationType));
-        }
-        return map;
+  public Map<String, Object> toMap(SerializationType serializationType) {
+    Map<String, Object> map = new HashMap<>();
+    for (ClientExtensionResultProvider resultProvider : resultProviders) {
+      map.putAll(resultProvider.getClientExtensionResult(serializationType));
     }
+    return map;
+  }
 }

@@ -33,66 +33,65 @@ import com.yubico.yubikit.testing.fido.FidoTestState;
 import com.yubico.yubikit.testing.piv.PivTestState;
 
 public class MpeTestState extends TestState {
-    public static class Builder extends TestState.Builder<MpeTestState.Builder> {
+  public static class Builder extends TestState.Builder<MpeTestState.Builder> {
 
-        public Builder(YubiKeyDevice device, UsbPid usbPid) {
-            super(device, usbPid);
-        }
-
-        @Override
-        public Builder getThis() {
-            return this;
-        }
-
-        public MpeTestState build() throws Throwable {
-            return new MpeTestState(this);
-        }
+    public Builder(YubiKeyDevice device, UsbPid usbPid) {
+      super(device, usbPid);
     }
 
-    protected MpeTestState(MpeTestState.Builder builder) throws Throwable {
-        super(builder);
-
-        DeviceInfo deviceInfo = getDeviceInfo();
-        assumeTrue("Cannot get device information", deviceInfo != null);
-        assumeTrue("Not a MPE device", isMpe(deviceInfo));
-
-        try (SmartCardConnection connection = openSmartCardConnection()) {
-            final ManagementSession managementSession = getManagementSession(connection, scpParameters);
-            managementSession.deviceReset();
-        }
-
-        // PIV and FIDO2 should not be reset blocked
-        assertFalse(isPivResetBlocked());
-        assertFalse(isFidoResetBlocked());
+    @Override
+    public Builder getThis() {
+      return this;
     }
 
-    boolean isPivResetBlocked() {
-        final DeviceInfo deviceInfo = getDeviceInfo();
-        return (deviceInfo.getResetBlocked() & Capability.PIV.bit) == Capability.PIV.bit;
+    public MpeTestState build() throws Throwable {
+      return new MpeTestState(this);
+    }
+  }
+
+  protected MpeTestState(MpeTestState.Builder builder) throws Throwable {
+    super(builder);
+
+    DeviceInfo deviceInfo = getDeviceInfo();
+    assumeTrue("Cannot get device information", deviceInfo != null);
+    assumeTrue("Not a MPE device", isMpe(deviceInfo));
+
+    try (SmartCardConnection connection = openSmartCardConnection()) {
+      final ManagementSession managementSession = getManagementSession(connection, scpParameters);
+      managementSession.deviceReset();
     }
 
-    boolean isFidoResetBlocked() {
-        final DeviceInfo deviceInfo = getDeviceInfo();
-        return (deviceInfo.getResetBlocked() & Capability.FIDO2.bit) == Capability.FIDO2.bit;
-    }
+    // PIV and FIDO2 should not be reset blocked
+    assertFalse(isPivResetBlocked());
+    assertFalse(isFidoResetBlocked());
+  }
 
-    public void withPiv(StatefulSessionCallback<PivSession, MpeTestState> callback)
-            throws Throwable {
-        try (SmartCardConnection connection = openSmartCardConnection()) {
-            final PivSession piv = PivTestState.getPivSession(connection, scpParameters);
-            assumeTrue("No PIV support", piv != null);
-            callback.invoke(piv, this);
-        }
-        reconnect();
-    }
+  boolean isPivResetBlocked() {
+    final DeviceInfo deviceInfo = getDeviceInfo();
+    return (deviceInfo.getResetBlocked() & Capability.PIV.bit) == Capability.PIV.bit;
+  }
 
-    public void withCtap2(TestState.StatefulSessionCallback<Ctap2Session, MpeTestState> callback)
-            throws Throwable {
-        try (YubiKeyConnection connection = openConnection()) {
-            final Ctap2Session ctap2 = FidoTestState.getCtap2Session(connection);
-            assumeTrue("No CTAP2 support", ctap2 != null);
-            callback.invoke(ctap2, this);
-        }
-        reconnect();
+  boolean isFidoResetBlocked() {
+    final DeviceInfo deviceInfo = getDeviceInfo();
+    return (deviceInfo.getResetBlocked() & Capability.FIDO2.bit) == Capability.FIDO2.bit;
+  }
+
+  public void withPiv(StatefulSessionCallback<PivSession, MpeTestState> callback) throws Throwable {
+    try (SmartCardConnection connection = openSmartCardConnection()) {
+      final PivSession piv = PivTestState.getPivSession(connection, scpParameters);
+      assumeTrue("No PIV support", piv != null);
+      callback.invoke(piv, this);
     }
+    reconnect();
+  }
+
+  public void withCtap2(TestState.StatefulSessionCallback<Ctap2Session, MpeTestState> callback)
+      throws Throwable {
+    try (YubiKeyConnection connection = openConnection()) {
+      final Ctap2Session ctap2 = FidoTestState.getCtap2Session(connection);
+      assumeTrue("No CTAP2 support", ctap2 != null);
+      callback.invoke(ctap2, this);
+    }
+    reconnect();
+  }
 }

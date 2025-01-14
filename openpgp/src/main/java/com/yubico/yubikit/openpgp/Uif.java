@@ -17,49 +17,49 @@
 package com.yubico.yubikit.openpgp;
 
 public enum Uif {
-    OFF((byte) 0x00),
-    ON((byte) 0x01),
-    FIXED((byte) 0x02),
-    CACHED((byte) 0x03),
-    CACHED_FIXED((byte) 0x04);
+  OFF((byte) 0x00),
+  ON((byte) 0x01),
+  FIXED((byte) 0x02),
+  CACHED((byte) 0x03),
+  CACHED_FIXED((byte) 0x04);
 
-    public final byte value;
+  public final byte value;
 
-    Uif(byte value) {
-        this.value = value;
+  Uif(byte value) {
+    this.value = value;
+  }
+
+  public boolean isFixed() {
+    return this == Uif.FIXED || this == Uif.CACHED_FIXED;
+  }
+
+  public boolean isCached() {
+    return this == Uif.CACHED || this == Uif.CACHED_FIXED;
+  }
+
+  @Override
+  public String toString() {
+    if (this == Uif.FIXED) {
+      return "On (fixed)";
+    }
+    if (this == Uif.CACHED_FIXED) {
+      return "Cached (fixed)";
     }
 
-    public boolean isFixed() {
-        return this == Uif.FIXED || this == Uif.CACHED_FIXED;
-    }
+    String name = name();
+    return name.charAt(0) + name.substring(1).toLowerCase();
+  }
 
-    public boolean isCached() {
-        return this == Uif.CACHED || this == Uif.CACHED_FIXED;
+  public static Uif fromValue(byte value) {
+    for (Uif type : Uif.values()) {
+      if (type.value == value) {
+        return type;
+      }
     }
+    throw new IllegalArgumentException("Not a valid UIF:" + value);
+  }
 
-    @Override
-    public String toString() {
-        if (this == Uif.FIXED) {
-            return "On (fixed)";
-        }
-        if (this == Uif.CACHED_FIXED) {
-            return "Cached (fixed)";
-        }
-
-        String name = name();
-        return name.charAt(0) + name.substring(1).toLowerCase();
-    }
-
-    public static Uif fromValue(byte value) {
-        for (Uif type : Uif.values()) {
-            if (type.value == value) {
-                return type;
-            }
-        }
-        throw new IllegalArgumentException("Not a valid UIF:" + value);
-    }
-
-    public byte[] getBytes() {
-        return new byte[]{value, GeneralFeatureManagement.BUTTON.value};
-    }
+  public byte[] getBytes() {
+    return new byte[] {value, GeneralFeatureManagement.BUTTON.value};
+  }
 }

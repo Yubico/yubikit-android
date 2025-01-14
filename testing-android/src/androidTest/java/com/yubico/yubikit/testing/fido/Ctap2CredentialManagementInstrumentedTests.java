@@ -21,7 +21,6 @@ import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV1;
 import com.yubico.yubikit.testing.PinUvAuthProtocolV1Test;
 import com.yubico.yubikit.testing.SmokeTest;
 import com.yubico.yubikit.testing.framework.FidoInstrumentedTests;
-
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -29,34 +28,34 @@ import org.junit.runners.Suite;
 
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        Ctap2CredentialManagementInstrumentedTests.PinUvAuthV2Test.class,
-        Ctap2CredentialManagementInstrumentedTests.PinUvAuthV1Test.class,
+  Ctap2CredentialManagementInstrumentedTests.PinUvAuthV2Test.class,
+  Ctap2CredentialManagementInstrumentedTests.PinUvAuthV1Test.class,
 })
 public class Ctap2CredentialManagementInstrumentedTests {
-    public static class PinUvAuthV2Test extends FidoInstrumentedTests {
-        @Test
-        public void testReadMetadata() throws Throwable {
-            withCtap2Session(Ctap2CredentialManagementTests::testReadMetadata);
-        }
-
-        @Test
-        @Category(SmokeTest.class)
-        public void testManagement() throws Throwable {
-            withCtap2Session(Ctap2CredentialManagementTests::testManagement);
-        }
-
-        @Test
-        @Category(SmokeTest.class)
-        public void testUpdateUserInformation() throws Throwable {
-            withCtap2Session(Ctap2CredentialManagementTests::testUpdateUserInformation);
-        }
+  public static class PinUvAuthV2Test extends FidoInstrumentedTests {
+    @Test
+    public void testReadMetadata() throws Throwable {
+      withCtap2Session(Ctap2CredentialManagementTests::testReadMetadata);
     }
 
-    @Category(PinUvAuthProtocolV1Test.class)
-    public static class PinUvAuthV1Test extends PinUvAuthV2Test {
-        @Override
-        protected PinUvAuthProtocol getPinUvAuthProtocol() {
-            return new PinUvAuthProtocolV1();
-        }
+    @Test
+    @Category(SmokeTest.class)
+    public void testManagement() throws Throwable {
+      withCtap2Session(Ctap2CredentialManagementTests::testManagement);
     }
+
+    @Test
+    @Category(SmokeTest.class)
+    public void testUpdateUserInformation() throws Throwable {
+      withCtap2Session(Ctap2CredentialManagementTests::testUpdateUserInformation);
+    }
+  }
+
+  @Category(PinUvAuthProtocolV1Test.class)
+  public static class PinUvAuthV1Test extends PinUvAuthV2Test {
+    @Override
+    protected PinUvAuthProtocol getPinUvAuthProtocol() {
+      return new PinUvAuthProtocolV1();
+    }
+  }
 }

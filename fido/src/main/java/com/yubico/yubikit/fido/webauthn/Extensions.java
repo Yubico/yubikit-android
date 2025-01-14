@@ -16,47 +16,42 @@
 
 package com.yubico.yubikit.fido.webauthn;
 
-import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
-
 import javax.annotation.Nullable;
 
 public class Extensions {
 
-    @Nullable
-    public static Extensions fromMap(@Nullable Map<String, ?> input) {
-        return input != null ? new Extensions(input) : null;
-    }
+  @Nullable
+  public static Extensions fromMap(@Nullable Map<String, ?> input) {
+    return input != null ? new Extensions(input) : null;
+  }
 
-    @Nullable
-    private final Map<String, ?> extensions;
+  @Nullable private final Map<String, ?> extensions;
 
-    private Extensions(@Nullable Map<String, ?> extensions) {
-        this.extensions = extensions;
-    }
+  private Extensions(@Nullable Map<String, ?> extensions) {
+    this.extensions = extensions;
+  }
 
-    @Nullable
-    public Object get(String extension) {
-        return extensions != null
-                ? extensions.get(extension)
-                : null;
-    }
+  @Nullable
+  public Object get(String extension) {
+    return extensions != null ? extensions.get(extension) : null;
+  }
 
-    public boolean has(String extension) {
-        return extensions != null && extensions.containsKey(extension);
-    }
+  public boolean has(String extension) {
+    return extensions != null && extensions.containsKey(extension);
+  }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Extensions that = (Extensions) o;
-        return Objects.equals(extensions, that.extensions);
-    }
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    Extensions that = (Extensions) o;
+    return Objects.equals(extensions, that.extensions);
+  }
 
-    @Override
-    public int hashCode() {
-        return Objects.hashCode(extensions);
-    }
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(extensions);
+  }
 }

@@ -17,8 +17,6 @@
 package com.yubico.yubikit.testing.framework;
 
 import androidx.annotation.Nullable;
-
-import com.yubico.yubikit.android.transport.usb.UsbYubiKeyDevice;
 import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.smartcard.scp.ScpKid;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
@@ -29,41 +27,46 @@ import com.yubico.yubikit.testing.fido.FidoTestState;
 
 public class FidoInstrumentedTests extends YKInstrumentedTests {
 
-    protected void withDevice(TestState.StatefulDeviceCallback<FidoTestState> callback) throws Throwable {
-        withDevice(true, callback);
+  protected void withDevice(TestState.StatefulDeviceCallback<FidoTestState> callback)
+      throws Throwable {
+    withDevice(true, callback);
+  }
+
+  protected void withDevice(
+      boolean setPin, TestState.StatefulDeviceCallback<FidoTestState> callback) throws Throwable {
+    FidoTestState state =
+        new FidoTestState.Builder(device, usbPid, getPinUvAuthProtocol())
+            .scpKid(getScpKid())
+            .reconnectDeviceCallback(this::reconnectDevice)
+            .setPin(setPin)
+            .build();
+
+    state.withDeviceCallback(callback);
+  }
+
+  protected void withCtap2Session(
+      TestState.StatefulSessionCallback<Ctap2Session, FidoTestState> callback) throws Throwable {
+    FidoTestState state =
+        new FidoTestState.Builder(device, usbPid, getPinUvAuthProtocol())
+            .scpKid(getScpKid())
+            .reconnectDeviceCallback(this::reconnectDevice)
+            .setPin(true)
+            .build();
+
+    state.withCtap2(callback);
+  }
+
+  @Nullable
+  @Override
+  protected Byte getScpKid() {
+    if (device.getTransport() == Transport.NFC) {
+      return ScpKid.SCP11b;
     }
+    return null;
+  }
 
-    protected void withDevice(boolean setPin, TestState.StatefulDeviceCallback<FidoTestState> callback) throws Throwable {
-        FidoTestState state = new FidoTestState.Builder(device, usbPid, getPinUvAuthProtocol())
-                .scpKid(getScpKid())
-                .reconnectDeviceCallback(this::reconnectDevice)
-                .setPin(setPin)
-                .build();
-
-        state.withDeviceCallback(callback);
-    }
-
-    protected void withCtap2Session(TestState.StatefulSessionCallback<Ctap2Session, FidoTestState> callback) throws Throwable {
-        FidoTestState state = new FidoTestState.Builder(device, usbPid, getPinUvAuthProtocol())
-                .scpKid(getScpKid())
-                .reconnectDeviceCallback(this::reconnectDevice)
-                .setPin(true)
-                .build();
-
-        state.withCtap2(callback);
-    }
-
-    @Nullable
-    @Override
-    protected Byte getScpKid() {
-        if (device.getTransport() == Transport.NFC) {
-            return ScpKid.SCP11b;
-        }
-        return null;
-    }
-
-    protected PinUvAuthProtocol getPinUvAuthProtocol() {
-        // default is protocol V2
-        return new PinUvAuthProtocolV2();
-    }
+  protected PinUvAuthProtocol getPinUvAuthProtocol() {
+    // default is protocol V2
+    return new PinUvAuthProtocolV2();
+  }
 }

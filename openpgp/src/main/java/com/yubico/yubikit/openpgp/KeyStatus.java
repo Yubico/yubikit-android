@@ -17,21 +17,21 @@
 package com.yubico.yubikit.openpgp;
 
 public enum KeyStatus {
-    NONE((byte) 0),
-    GENERATED((byte) 1),
-    IMPORTED((byte) 2);
-    public final byte value;
+  NONE((byte) 0),
+  GENERATED((byte) 1),
+  IMPORTED((byte) 2);
+  public final byte value;
 
-    KeyStatus(byte value) {
-        this.value = value;
-    }
+  KeyStatus(byte value) {
+    this.value = value;
+  }
 
-    static KeyStatus fromValue(byte value) {
-        for (KeyStatus status : KeyStatus.values()) {
-            if (status.value == value) {
-                return status;
-            }
-        }
-        throw new IllegalArgumentException("Not a valid KeyStatus:" + value);
+  static KeyStatus fromValue(byte value) {
+    for (KeyStatus status : KeyStatus.values()) {
+      if (status.value == value) {
+        return status;
+      }
     }
+    throw new IllegalArgumentException("Not a valid KeyStatus:" + value);
+  }
 }

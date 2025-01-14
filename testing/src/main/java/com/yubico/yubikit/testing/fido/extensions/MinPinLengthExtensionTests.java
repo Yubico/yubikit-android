@@ -23,77 +23,76 @@ import com.yubico.yubikit.testing.fido.FidoTestState;
 import com.yubico.yubikit.testing.fido.utils.ClientHelper;
 import com.yubico.yubikit.testing.fido.utils.ConfigHelper;
 import com.yubico.yubikit.testing.fido.utils.CreationOptionsBuilder;
-
+import java.util.Collections;
+import java.util.Map;
+import javax.annotation.Nullable;
 import org.junit.Assert;
 import org.junit.Assume;
 
-import java.util.Collections;
-import java.util.Map;
-
-import javax.annotation.Nullable;
-
 public class MinPinLengthExtensionTests {
-    private static final String MIN_PIN_LENGTH = "minPinLength";
+  private static final String MIN_PIN_LENGTH = "minPinLength";
 
-    public static void test(FidoTestState state) throws Throwable {
-        MinPinLengthExtensionTests extTest = new MinPinLengthExtensionTests();
-        extTest.runTest(state);
-    }
+  public static void test(FidoTestState state) throws Throwable {
+    MinPinLengthExtensionTests extTest = new MinPinLengthExtensionTests();
+    extTest.runTest(state);
+  }
 
-    private MinPinLengthExtensionTests() {
+  private MinPinLengthExtensionTests() {}
 
-    }
+  private void runTest(FidoTestState state) throws Throwable {
 
-    private void runTest(FidoTestState state) throws Throwable {
-
-        state.withCtap2(session -> {
-            Assume.assumeTrue("minPinLength not supported",
-                    session.getCachedInfo().getExtensions().contains(MIN_PIN_LENGTH));
-            PublicKeyCredential cred = new ClientHelper(session).makeCredential();
-            Assert.assertNull(getMinPinLength(cred));
+    state.withCtap2(
+        session -> {
+          Assume.assumeTrue(
+              "minPinLength not supported",
+              session.getCachedInfo().getExtensions().contains(MIN_PIN_LENGTH));
+          PublicKeyCredential cred = new ClientHelper(session).makeCredential();
+          Assert.assertNull(getMinPinLength(cred));
         });
 
-        state.withCtap2(session -> {
-            // setup the authenticator to contain incorrect minPinLengthRPIDs
-            Config config = ConfigHelper.getConfig(session, state);
-            config.setMinPinLength(null, Collections.singletonList("wrongrpid.com"), null);
+    state.withCtap2(
+        session -> {
+          // setup the authenticator to contain incorrect minPinLengthRPIDs
+          Config config = ConfigHelper.getConfig(session, state);
+          config.setMinPinLength(null, Collections.singletonList("wrongrpid.com"), null);
 
-            PublicKeyCredential cred = new ClientHelper(session)
-                    .makeCredential(
-                            new CreationOptionsBuilder()
-                                    .extensions(Collections.singletonMap(MIN_PIN_LENGTH, true))
-                                    .build()
-                    );
+          PublicKeyCredential cred =
+              new ClientHelper(session)
+                  .makeCredential(
+                      new CreationOptionsBuilder()
+                          .extensions(Collections.singletonMap(MIN_PIN_LENGTH, true))
+                          .build());
 
-            Integer minPinLength = getMinPinLength(cred);
-            Assert.assertNull(minPinLength);
+          Integer minPinLength = getMinPinLength(cred);
+          Assert.assertNull(minPinLength);
         });
 
-        state.withCtap2(session -> {
-            // setup the authenticator to contain correct minPinLengthRPIDs
-            Config config = ConfigHelper.getConfig(session, state);
-            config.setMinPinLength(null, Collections.singletonList("example.com"), null);
+    state.withCtap2(
+        session -> {
+          // setup the authenticator to contain correct minPinLengthRPIDs
+          Config config = ConfigHelper.getConfig(session, state);
+          config.setMinPinLength(null, Collections.singletonList("example.com"), null);
 
-            PublicKeyCredential cred = new ClientHelper(session)
-                    .makeCredential(
-                            new CreationOptionsBuilder()
-                                    .extensions(Collections.singletonMap(MIN_PIN_LENGTH, true))
-                                    .build()
-                    );
+          PublicKeyCredential cred =
+              new ClientHelper(session)
+                  .makeCredential(
+                      new CreationOptionsBuilder()
+                          .extensions(Collections.singletonMap(MIN_PIN_LENGTH, true))
+                          .build());
 
-            Integer optionsMinPinLength = session.getCachedInfo().getMinPinLength();
-            Assert.assertNotNull(optionsMinPinLength);
-            Integer minPinLength = getMinPinLength(cred);
-            Assert.assertNotNull(minPinLength);
-            Assert.assertEquals(optionsMinPinLength, minPinLength);
+          Integer optionsMinPinLength = session.getCachedInfo().getMinPinLength();
+          Assert.assertNotNull(optionsMinPinLength);
+          Integer minPinLength = getMinPinLength(cred);
+          Assert.assertNotNull(minPinLength);
+          Assert.assertEquals(optionsMinPinLength, minPinLength);
         });
-    }
+  }
 
-    @Nullable
-    private Integer getMinPinLength(PublicKeyCredential cred) {
-        AuthenticatorAttestationResponse response =
-                (AuthenticatorAttestationResponse) cred.getResponse();
-        Map<String, ?> extensions = response.getAuthenticatorData().getExtensions();
-        return extensions != null ? (Integer) extensions.get(MIN_PIN_LENGTH) : null;
-    }
+  @Nullable
+  private Integer getMinPinLength(PublicKeyCredential cred) {
+    AuthenticatorAttestationResponse response =
+        (AuthenticatorAttestationResponse) cred.getResponse();
+    Map<String, ?> extensions = response.getAuthenticatorData().getExtensions();
+    return extensions != null ? (Integer) extensions.get(MIN_PIN_LENGTH) : null;
+  }
 }

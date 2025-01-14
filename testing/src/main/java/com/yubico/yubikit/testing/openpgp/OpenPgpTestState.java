@@ -31,105 +31,101 @@ import com.yubico.yubikit.openpgp.OpenPgpSession;
 import com.yubico.yubikit.openpgp.Pw;
 import com.yubico.yubikit.testing.ScpParameters;
 import com.yubico.yubikit.testing.TestState;
-
-import org.junit.Assume;
-
 import java.io.IOException;
-
 import javax.annotation.Nullable;
+import org.junit.Assume;
 
 public class OpenPgpTestState extends TestState {
 
-    private static final char[] COMPLEX_USER_PIN = "112345678".toCharArray();
-    private static final char[] COMPLEX_ADMIN_PIN = "112345678".toCharArray();
+  private static final char[] COMPLEX_USER_PIN = "112345678".toCharArray();
+  private static final char[] COMPLEX_ADMIN_PIN = "112345678".toCharArray();
 
-    public final boolean isFipsApproved;
-    public char[] defaultUserPin;
-    public char[] defaultAdminPin;
+  public final boolean isFipsApproved;
+  public char[] defaultUserPin;
+  public char[] defaultAdminPin;
 
-    public static class Builder extends TestState.Builder<OpenPgpTestState.Builder> {
+  public static class Builder extends TestState.Builder<OpenPgpTestState.Builder> {
 
-        public Builder(YubiKeyDevice device, UsbPid usbPid) {
-            super(device, usbPid);
-        }
-
-        @Override
-        public Builder getThis() {
-            return this;
-        }
-
-        public OpenPgpTestState build() throws Throwable {
-            return new OpenPgpTestState(this);
-        }
+    public Builder(YubiKeyDevice device, UsbPid usbPid) {
+      super(device, usbPid);
     }
 
-    protected OpenPgpTestState(OpenPgpTestState.Builder builder) throws Throwable {
-        super(builder);
-
-        defaultUserPin = Pw.DEFAULT_USER_PIN;
-        defaultAdminPin = Pw.DEFAULT_ADMIN_PIN;
-
-        DeviceInfo deviceInfo = getDeviceInfo();
-        boolean isOpenPgpFipsCapable = isFipsCapable(deviceInfo, Capability.OPENPGP);
-        boolean hasPinComplexity = deviceInfo != null && deviceInfo.getPinComplexity();
-
-        if (scpParameters.getKid() == null && isOpenPgpFipsCapable) {
-            Assume.assumeTrue("Trying to use OpenPgp FIPS capable device over NFC without SCP",
-                    isUsbTransport());
-        }
-
-        if (scpParameters.getKid() != null) {
-            // skip the test if the connected key does not provide matching SCP keys
-            Assume.assumeTrue(
-                    "No matching key params found for required kid",
-                    scpParameters.getKeyParams() != null
-            );
-        }
-
-        try (SmartCardConnection connection = openSmartCardConnection()) {
-            assumeTrue("Smart card not available", connection != null);
-
-            OpenPgpSession openPgp = getOpenPgpSession(connection, scpParameters);
-
-            assumeTrue("OpenPGP not available", openPgp != null);
-            openPgp.reset();
-
-            if (hasPinComplexity) {
-                // only use complex pins if pin complexity is required
-                openPgp.changeUserPin(defaultUserPin, COMPLEX_USER_PIN);
-                openPgp.changeAdminPin(defaultAdminPin, COMPLEX_ADMIN_PIN);
-                defaultUserPin = COMPLEX_USER_PIN;
-                defaultAdminPin = COMPLEX_ADMIN_PIN;
-            }
-        }
-
-        deviceInfo = getDeviceInfo();
-        isFipsApproved = isFipsApproved(deviceInfo, Capability.OPENPGP);
-
-        // after changing the user and admin PINs, we expect a FIPS capable device
-        // to be FIPS approved
-        if (isOpenPgpFipsCapable) {
-            assertNotNull(deviceInfo);
-            assertTrue("Device not OpenPgp FIPS approved as expected", isFipsApproved);
-        }
+    @Override
+    public Builder getThis() {
+      return this;
     }
 
-    public void withOpenPgp(StatefulSessionCallback<OpenPgpSession, OpenPgpTestState> callback)
-            throws Throwable {
-        try (SmartCardConnection connection = openSmartCardConnection()) {
-            callback.invoke(getOpenPgpSession(connection, scpParameters), this);
-        }
-        reconnect();
+    public OpenPgpTestState build() throws Throwable {
+      return new OpenPgpTestState(this);
+    }
+  }
+
+  protected OpenPgpTestState(OpenPgpTestState.Builder builder) throws Throwable {
+    super(builder);
+
+    defaultUserPin = Pw.DEFAULT_USER_PIN;
+    defaultAdminPin = Pw.DEFAULT_ADMIN_PIN;
+
+    DeviceInfo deviceInfo = getDeviceInfo();
+    boolean isOpenPgpFipsCapable = isFipsCapable(deviceInfo, Capability.OPENPGP);
+    boolean hasPinComplexity = deviceInfo != null && deviceInfo.getPinComplexity();
+
+    if (scpParameters.getKid() == null && isOpenPgpFipsCapable) {
+      Assume.assumeTrue(
+          "Trying to use OpenPgp FIPS capable device over NFC without SCP", isUsbTransport());
     }
 
-    @Nullable
-    public static OpenPgpSession getOpenPgpSession(SmartCardConnection connection, ScpParameters scpParameters)
-            throws IOException, CommandException {
-        try {
-            return new OpenPgpSession(connection, scpParameters.getKeyParams());
-        } catch (ApplicationNotAvailableException ignored) {
-            // no OpenPgp support
-        }
-        return null;
+    if (scpParameters.getKid() != null) {
+      // skip the test if the connected key does not provide matching SCP keys
+      Assume.assumeTrue(
+          "No matching key params found for required kid", scpParameters.getKeyParams() != null);
     }
+
+    try (SmartCardConnection connection = openSmartCardConnection()) {
+      assumeTrue("Smart card not available", connection != null);
+
+      OpenPgpSession openPgp = getOpenPgpSession(connection, scpParameters);
+
+      assumeTrue("OpenPGP not available", openPgp != null);
+      openPgp.reset();
+
+      if (hasPinComplexity) {
+        // only use complex pins if pin complexity is required
+        openPgp.changeUserPin(defaultUserPin, COMPLEX_USER_PIN);
+        openPgp.changeAdminPin(defaultAdminPin, COMPLEX_ADMIN_PIN);
+        defaultUserPin = COMPLEX_USER_PIN;
+        defaultAdminPin = COMPLEX_ADMIN_PIN;
+      }
+    }
+
+    deviceInfo = getDeviceInfo();
+    isFipsApproved = isFipsApproved(deviceInfo, Capability.OPENPGP);
+
+    // after changing the user and admin PINs, we expect a FIPS capable device
+    // to be FIPS approved
+    if (isOpenPgpFipsCapable) {
+      assertNotNull(deviceInfo);
+      assertTrue("Device not OpenPgp FIPS approved as expected", isFipsApproved);
+    }
+  }
+
+  public void withOpenPgp(StatefulSessionCallback<OpenPgpSession, OpenPgpTestState> callback)
+      throws Throwable {
+    try (SmartCardConnection connection = openSmartCardConnection()) {
+      callback.invoke(getOpenPgpSession(connection, scpParameters), this);
+    }
+    reconnect();
+  }
+
+  @Nullable
+  public static OpenPgpSession getOpenPgpSession(
+      SmartCardConnection connection, ScpParameters scpParameters)
+      throws IOException, CommandException {
+    try {
+      return new OpenPgpSession(connection, scpParameters.getKeyParams());
+    } catch (ApplicationNotAvailableException ignored) {
+      // no OpenPgp support
+    }
+    return null;
+  }
 }

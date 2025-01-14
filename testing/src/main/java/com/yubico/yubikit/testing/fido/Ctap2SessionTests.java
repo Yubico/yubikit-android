@@ -32,7 +32,6 @@ import com.yubico.yubikit.core.fido.CtapException;
 import com.yubico.yubikit.fido.ctap.ClientPin;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.fido.webauthn.SerializationType;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -41,105 +40,110 @@ import java.util.concurrent.TimeUnit;
 
 public class Ctap2SessionTests {
 
-    public static void testCtap2GetInfo(Ctap2Session session, FidoTestState state) {
-        Ctap2Session.InfoData info = session.getCachedInfo();
+  public static void testCtap2GetInfo(Ctap2Session session, FidoTestState state) {
+    Ctap2Session.InfoData info = session.getCachedInfo();
 
-        List<String> versions = info.getVersions();
-        assertTrue("Returned version does not contain any recognized version",
-                versions.contains("U2F_V2") ||
-                        versions.contains("FIDO_2_0") ||
-                        versions.contains("FIDO_2_1_PRE") ||
-                        versions.contains("FIDO_2_1"));
+    List<String> versions = info.getVersions();
+    assertTrue(
+        "Returned version does not contain any recognized version",
+        versions.contains("U2F_V2")
+            || versions.contains("FIDO_2_0")
+            || versions.contains("FIDO_2_1_PRE")
+            || versions.contains("FIDO_2_1"));
 
-        // Check AAGUID
-        byte[] aaguid = info.getAaguid();
-        assertEquals("AAGUID incorrect length", 16, aaguid.length);
+    // Check AAGUID
+    byte[] aaguid = info.getAaguid();
+    assertEquals("AAGUID incorrect length", 16, aaguid.length);
 
-        // Check options
-        Map<String, ?> options = info.getOptions();
-        assertEquals("Option 'plat' incorrect", false, options.get("plat"));
-        assertEquals("Option 'rk' incorrect", true, options.get("rk"));
-        assertEquals("Option 'up' incorrect", true, options.get("up"));
-        assertTrue("Options do not contain 'clientPIN'", options.containsKey("clientPin"));
+    // Check options
+    Map<String, ?> options = info.getOptions();
+    assertEquals("Option 'plat' incorrect", false, options.get("plat"));
+    assertEquals("Option 'rk' incorrect", true, options.get("rk"));
+    assertEquals("Option 'up' incorrect", true, options.get("up"));
+    assertTrue("Options do not contain 'clientPIN'", options.containsKey("clientPin"));
 
-        // Check PIN/UV Auth protocol
-        List<Integer> pinUvAuthProtocols = info.getPinUvAuthProtocols();
-        assertThat("Number of PIN protocols incorrect", pinUvAuthProtocols.size(), greaterThanOrEqualTo(1));
+    // Check PIN/UV Auth protocol
+    List<Integer> pinUvAuthProtocols = info.getPinUvAuthProtocols();
+    assertThat(
+        "Number of PIN protocols incorrect", pinUvAuthProtocols.size(), greaterThanOrEqualTo(1));
 
-        if (state.isFipsApproved() && !state.isUsbTransport()) {
-            // FIPS only supports PIN/UV Auth protocol 2 over NFC
-            assertThat("Number of PIN protocols incorrect", pinUvAuthProtocols.size(), equalTo(1));
-            assertTrue("PIN protocol incorrect", pinUvAuthProtocols.contains(2));
-        } else {
-            // we expect at least protocol 1 to be present
-            assertThat("Number of PIN protocols incorrect", pinUvAuthProtocols.size(), greaterThanOrEqualTo(1));
-            assertTrue("PIN protocol incorrect", pinUvAuthProtocols.contains(1));
-        }
+    if (state.isFipsApproved() && !state.isUsbTransport()) {
+      // FIPS only supports PIN/UV Auth protocol 2 over NFC
+      assertThat("Number of PIN protocols incorrect", pinUvAuthProtocols.size(), equalTo(1));
+      assertTrue("PIN protocol incorrect", pinUvAuthProtocols.contains(2));
+    } else {
+      // we expect at least protocol 1 to be present
+      assertThat(
+          "Number of PIN protocols incorrect", pinUvAuthProtocols.size(), greaterThanOrEqualTo(1));
+      assertTrue("PIN protocol incorrect", pinUvAuthProtocols.contains(1));
     }
+  }
 
-    public static void testCancelCborCommandImmediate(Ctap2Session session, FidoTestState state) throws Throwable {
-        doTestCancelCborCommand(session, state, false);
-    }
+  public static void testCancelCborCommandImmediate(Ctap2Session session, FidoTestState state)
+      throws Throwable {
+    doTestCancelCborCommand(session, state, false);
+  }
 
-    public static void testCancelCborCommandAfterDelay(Ctap2Session session, FidoTestState state) throws Throwable {
-        doTestCancelCborCommand(session, state, true);
-    }
+  public static void testCancelCborCommandAfterDelay(Ctap2Session session, FidoTestState state)
+      throws Throwable {
+    doTestCancelCborCommand(session, state, true);
+  }
 
-    public static void testReset(FidoTestState state) throws Throwable {
+  public static void testReset(FidoTestState state) throws Throwable {
 
-        state.withCtap2(session -> {
-            assumeFalse("Skipping reset test - authenticator supports bio enrollment",
-                    session.getCachedInfo().getOptions().containsKey("bioEnroll"));
+    state.withCtap2(
+        session -> {
+          assumeFalse(
+              "Skipping reset test - authenticator supports bio enrollment",
+              session.getCachedInfo().getOptions().containsKey("bioEnroll"));
 
-            session.reset(null);
+          session.reset(null);
 
-            // Verify that the pin is no longer configured
-            Boolean clientPin = (Boolean) session.getInfo().getOptions().get("clientPin");
-            boolean pinConfigured = (clientPin != null) && clientPin;
-            assertFalse("PIN should not be configured after a reset", pinConfigured);
+          // Verify that the pin is no longer configured
+          Boolean clientPin = (Boolean) session.getInfo().getOptions().get("clientPin");
+          boolean pinConfigured = (clientPin != null) && clientPin;
+          assertFalse("PIN should not be configured after a reset", pinConfigured);
         });
+  }
+
+  private static void doTestCancelCborCommand(
+      Ctap2Session session, FidoTestState testState, boolean delay) throws Throwable {
+
+    assumeTrue("Not a USB connection", testState.isUsbTransport());
+
+    ClientPin pin = new ClientPin(session, testState.getPinUvAuthProtocol());
+    byte[] pinToken =
+        pin.getPinToken(TestData.PIN, ClientPin.PIN_PERMISSION_MC, TestData.RP.getId());
+    byte[] pinAuth = pin.getPinUvAuth().authenticate(pinToken, TestData.CLIENT_DATA_HASH);
+
+    CommandState state = new CommandState();
+    if (delay) {
+      Executors.newSingleThreadScheduledExecutor()
+          .schedule(state::cancel, 500, TimeUnit.MILLISECONDS);
+    } else {
+      state.cancel();
     }
 
-    private static void doTestCancelCborCommand(
-            Ctap2Session session,
-            FidoTestState testState,
-            boolean delay
-    ) throws Throwable {
+    final SerializationType cborType = SerializationType.CBOR;
 
-        assumeTrue("Not a USB connection", testState.isUsbTransport());
-
-        ClientPin pin = new ClientPin(session, testState.getPinUvAuthProtocol());
-        byte[] pinToken = pin.getPinToken(TestData.PIN, ClientPin.PIN_PERMISSION_MC, TestData.RP.getId());
-        byte[] pinAuth = pin.getPinUvAuth().authenticate(pinToken, TestData.CLIENT_DATA_HASH);
-
-        CommandState state = new CommandState();
-        if (delay) {
-            Executors.newSingleThreadScheduledExecutor()
-                    .schedule(state::cancel, 500, TimeUnit.MILLISECONDS);
-        } else {
-            state.cancel();
-        }
-
-        final SerializationType cborType = SerializationType.CBOR;
-
-        try {
-            session.makeCredential(
-                    TestData.CLIENT_DATA_HASH,
-                    TestData.RP.toMap(cborType),
-                    TestData.USER.toMap(cborType),
-                    Collections.singletonList(TestData.PUB_KEY_CRED_PARAMS_ES256.toMap(cborType)),
-                    null,
-                    null,
-                    null,
-                    pinAuth,
-                    pin.getPinUvAuth().getVersion(),
-                    null,
-                    state);
-            fail("Make credential completed without being cancelled.");
-        } catch (CtapException e) {
-            assertThat(e.getCtapError(), is(CtapException.ERR_KEEPALIVE_CANCEL));
-        }
-
-        session.getInfo();  //Make sure connection still works.
+    try {
+      session.makeCredential(
+          TestData.CLIENT_DATA_HASH,
+          TestData.RP.toMap(cborType),
+          TestData.USER.toMap(cborType),
+          Collections.singletonList(TestData.PUB_KEY_CRED_PARAMS_ES256.toMap(cborType)),
+          null,
+          null,
+          null,
+          pinAuth,
+          pin.getPinUvAuth().getVersion(),
+          null,
+          state);
+      fail("Make credential completed without being cancelled.");
+    } catch (CtapException e) {
+      assertThat(e.getCtapError(), is(CtapException.ERR_KEEPALIVE_CANCEL));
     }
+
+    session.getInfo(); // Make sure connection still works.
+  }
 }

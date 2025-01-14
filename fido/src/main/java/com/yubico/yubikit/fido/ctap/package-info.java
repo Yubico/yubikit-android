@@ -16,10 +16,10 @@
 
 /**
  * CTAP2 client implementation.
- * <p>
- * Contains classes implementing low level CTAP2 communication. Client implementations should prefer
- * to use classes contained in the com.yubico.yubikit.fido.client package, which offer a higher
- * level of abstraction.
+ *
+ * <p>Contains classes implementing low level CTAP2 communication. Client implementations should
+ * prefer to use classes contained in the com.yubico.yubikit.fido.client package, which offer a
+ * higher level of abstraction.
  */
 @PackageNonnullByDefault
 package com.yubico.yubikit.fido.ctap;

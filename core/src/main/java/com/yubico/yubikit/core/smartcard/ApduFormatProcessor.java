@@ -19,18 +19,28 @@ package com.yubico.yubikit.core.smartcard;
 import java.io.IOException;
 
 abstract class ApduFormatProcessor implements ApduProcessor {
-    protected final SmartCardConnection connection;
+  protected final SmartCardConnection connection;
 
-    ApduFormatProcessor(SmartCardConnection connection) {
-        this.connection = connection;
-    }
+  ApduFormatProcessor(SmartCardConnection connection) {
+    this.connection = connection;
+  }
 
-    abstract byte[] formatApdu(byte cla, byte ins, byte p1, byte p2, byte[] data, int offset, int length, int le);
+  abstract byte[] formatApdu(
+      byte cla, byte ins, byte p1, byte p2, byte[] data, int offset, int length, int le);
 
-    @Override
-    public ApduResponse sendApdu(Apdu apdu) throws IOException {
-        byte[] data = apdu.getData();
-        byte[] payload = formatApdu(apdu.getCla(), apdu.getIns(), apdu.getP1(), apdu.getP2(), data, 0, data.length, apdu.getLe());
-        return new ApduResponse(connection.sendAndReceive(payload));
-    }
+  @Override
+  public ApduResponse sendApdu(Apdu apdu) throws IOException {
+    byte[] data = apdu.getData();
+    byte[] payload =
+        formatApdu(
+            apdu.getCla(),
+            apdu.getIns(),
+            apdu.getP1(),
+            apdu.getP2(),
+            data,
+            0,
+            data.length,
+            apdu.getLe());
+    return new ApduResponse(connection.sendAndReceive(payload));
+  }
 }

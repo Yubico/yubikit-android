@@ -21,10 +21,11 @@ import com.yubico.yubikit.testing.TestState;
 import com.yubico.yubikit.testing.openpgp.OpenPgpTestState;
 
 public class OpenPgpInstrumentedTests extends YKInstrumentedTests {
-    protected void withOpenPgpSession(TestState.StatefulSessionCallback<OpenPgpSession, OpenPgpTestState> callback) throws Throwable {
-        final OpenPgpTestState state = new OpenPgpTestState.Builder(device, usbPid)
-                .scpKid(getScpKid())
-                .build();
-        state.withOpenPgp(callback);
-    }
+  protected void withOpenPgpSession(
+      TestState.StatefulSessionCallback<OpenPgpSession, OpenPgpTestState> callback)
+      throws Throwable {
+    final OpenPgpTestState state =
+        new OpenPgpTestState.Builder(device, usbPid).scpKid(getScpKid()).build();
+    state.withOpenPgp(callback);
+  }
 }

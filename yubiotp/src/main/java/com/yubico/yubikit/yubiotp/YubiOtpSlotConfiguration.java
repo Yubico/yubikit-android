@@ -17,65 +17,63 @@ package com.yubico.yubikit.yubiotp;
 
 import java.util.Arrays;
 
-/**
- * Configures the YubiKey to return YubiOTP (one-time password) on touch.
- */
+/** Configures the YubiKey to return YubiOTP (one-time password) on touch. */
 public class YubiOtpSlotConfiguration extends KeyboardSlotConfiguration<YubiOtpSlotConfiguration> {
-    /**
-     * Creates a Yubico OTP configuration with default settings.
-     *
-     * @param fixed "public ID" static portion of each OTP (0-16 bytes)
-     * @param uid   "private id" internal to the credential (6 bytes)
-     * @param key   the AES key to encrypt the OTP payload (20 bytes)
-     */
-    public YubiOtpSlotConfiguration(byte[] fixed, byte[] uid, byte[] key) {
-        if (fixed.length > FIXED_SIZE) {
-            throw new IllegalArgumentException("Public ID must be <= 16 bytes");
-        }
-
-        this.fixed = Arrays.copyOf(fixed, fixed.length);
-        System.arraycopy(uid, 0, this.uid, 0, uid.length);
-        System.arraycopy(key, 0, this.key, 0, key.length);
+  /**
+   * Creates a Yubico OTP configuration with default settings.
+   *
+   * @param fixed "public ID" static portion of each OTP (0-16 bytes)
+   * @param uid "private id" internal to the credential (6 bytes)
+   * @param key the AES key to encrypt the OTP payload (20 bytes)
+   */
+  public YubiOtpSlotConfiguration(byte[] fixed, byte[] uid, byte[] key) {
+    if (fixed.length > FIXED_SIZE) {
+      throw new IllegalArgumentException("Public ID must be <= 16 bytes");
     }
 
-    @Override
-    protected YubiOtpSlotConfiguration getThis() {
-        return this;
-    }
+    this.fixed = Arrays.copyOf(fixed, fixed.length);
+    System.arraycopy(uid, 0, this.uid, 0, uid.length);
+    System.arraycopy(key, 0, this.key, 0, key.length);
+  }
 
-    /**
-     * Inserts tabs in-between different parts of the OTP.
-     *
-     * @param before      inserts a tab before any other output (default: false)
-     * @param afterFirst  inserts a tab after the static part of the OTP (default: false)
-     * @param afterSecond inserts a tab after the end of the OTP (default: false)
-     * @return the configuration for chaining
-     */
-    public YubiOtpSlotConfiguration tabs(boolean before, boolean afterFirst, boolean afterSecond) {
-        updateFlags(TKTFLAG_TAB_FIRST, before);
-        updateFlags(TKTFLAG_APPEND_TAB1, afterFirst);
-        return updateFlags(TKTFLAG_APPEND_TAB2, afterSecond);
-    }
+  @Override
+  protected YubiOtpSlotConfiguration getThis() {
+    return this;
+  }
 
-    /**
-     * Inserts delays in-between different parts of the OTP.
-     *
-     * @param afterFirst  inserts a delay after the static part of the OTP (default: false)
-     * @param afterSecond inserts a delay after the end of the OTP (default: false)
-     * @return the configuration for chaining
-     */
-    public YubiOtpSlotConfiguration delay(boolean afterFirst, boolean afterSecond) {
-        updateFlags(TKTFLAG_APPEND_DELAY1, afterFirst);
-        return updateFlags(TKTFLAG_APPEND_DELAY2, afterSecond);
-    }
+  /**
+   * Inserts tabs in-between different parts of the OTP.
+   *
+   * @param before inserts a tab before any other output (default: false)
+   * @param afterFirst inserts a tab after the static part of the OTP (default: false)
+   * @param afterSecond inserts a tab after the end of the OTP (default: false)
+   * @return the configuration for chaining
+   */
+  public YubiOtpSlotConfiguration tabs(boolean before, boolean afterFirst, boolean afterSecond) {
+    updateFlags(TKTFLAG_TAB_FIRST, before);
+    updateFlags(TKTFLAG_APPEND_TAB1, afterFirst);
+    return updateFlags(TKTFLAG_APPEND_TAB2, afterSecond);
+  }
 
-    /**
-     * Send a reference string of all 16 modhex characters before the OTP.
-     *
-     * @param sendReference if true, sends the reference string (default: false)
-     * @return the configuration for chaining
-     */
-    public YubiOtpSlotConfiguration sendReference(boolean sendReference) {
-        return updateFlags(CFGFLAG_SEND_REF, sendReference);
-    }
+  /**
+   * Inserts delays in-between different parts of the OTP.
+   *
+   * @param afterFirst inserts a delay after the static part of the OTP (default: false)
+   * @param afterSecond inserts a delay after the end of the OTP (default: false)
+   * @return the configuration for chaining
+   */
+  public YubiOtpSlotConfiguration delay(boolean afterFirst, boolean afterSecond) {
+    updateFlags(TKTFLAG_APPEND_DELAY1, afterFirst);
+    return updateFlags(TKTFLAG_APPEND_DELAY2, afterSecond);
+  }
+
+  /**
+   * Send a reference string of all 16 modhex characters before the OTP.
+   *
+   * @param sendReference if true, sends the reference string (default: false)
+   * @return the configuration for chaining
+   */
+  public YubiOtpSlotConfiguration sendReference(boolean sendReference) {
+    return updateFlags(CFGFLAG_SEND_REF, sendReference);
+  }
 }

@@ -22,60 +22,57 @@ import java.util.Map;
 
 /**
  * Methods for encoding and decoding Modhex encoded Strings.
- * <p>
- * See: <a href="https://developers.yubico.com/yubico-c/Manuals/modhex.1.htm">Modhex specification</a>.
+ *
+ * <p>See: <a href="https://developers.yubico.com/yubico-c/Manuals/modhex.1.htm">Modhex
+ * specification</a>.
  */
 public class Modhex {
-    @SuppressWarnings("SpellCheckingInspection")
-    private final static char[] ALPHABET = "cbdefghijklnrtuv".toCharArray();
+  @SuppressWarnings("SpellCheckingInspection")
+  private static final char[] ALPHABET = "cbdefghijklnrtuv".toCharArray();
 
-    private static final Map<Character, Integer> table = new HashMap<>();
+  private static final Map<Character, Integer> table = new HashMap<>();
 
-    static {
-        for (int i = 0; i < ALPHABET.length; i++) {
-            table.put(ALPHABET[i], i);
-        }
+  static {
+    for (int i = 0; i < ALPHABET.length; i++) {
+      table.put(ALPHABET[i], i);
+    }
+  }
+
+  /** Decodes Modhex encoded string. */
+  public static byte[] decode(String modhex) {
+    if (modhex.length() % 2 != 0) {
+      throw new IllegalArgumentException("Input string length is not a multiple of 2");
     }
 
-    /**
-     * Decodes Modhex encoded string.
-     */
-    public static byte[] decode(String modhex) {
-        if (modhex.length() % 2 != 0) {
-            throw new IllegalArgumentException("Input string length is not a multiple of 2");
-        }
+    byte byteValue = 0;
+    char[] chars = modhex.toLowerCase().toCharArray();
+    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
-        byte byteValue = 0;
-        char[] chars = modhex.toLowerCase().toCharArray();
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+    for (int i = 0; i < chars.length; i++) {
+      // find hex code for each symbol
+      Integer code = table.get(chars[i]);
+      if (code == null) {
+        throw new IllegalArgumentException("Input string contains non-modhex character(s).");
+      }
 
-        for (int i = 0; i < chars.length; i++) {
-            // find hex code for each symbol
-            Integer code = table.get(chars[i]);
-            if (code == null) {
-                throw new IllegalArgumentException("Input string contains non-modhex character(s).");
-            }
-
-            // 2 symbols merged into 1 byte
-            boolean shift = i % 2 == 0;
-            if (shift) {
-                byteValue = (byte) (code << 4);
-            } else {
-                byteValue |= code;
-                outputStream.write(byteValue);
-            }
-        }
-        return outputStream.toByteArray();
+      // 2 symbols merged into 1 byte
+      boolean shift = i % 2 == 0;
+      if (shift) {
+        byteValue = (byte) (code << 4);
+      } else {
+        byteValue |= code;
+        outputStream.write(byteValue);
+      }
     }
+    return outputStream.toByteArray();
+  }
 
-    /**
-     * Encodes data to Modhex.
-     */
-    public static String encode(byte[] bytes) {
-        StringBuilder output = new StringBuilder();
-        for (byte b : bytes) {
-            output.append(ALPHABET[(b >> 4) & 0xF]).append(ALPHABET[b & 0xF]);
-        }
-        return output.toString();
+  /** Encodes data to Modhex. */
+  public static String encode(byte[] bytes) {
+    StringBuilder output = new StringBuilder();
+    for (byte b : bytes) {
+      output.append(ALPHABET[(b >> 4) & 0xF]).append(ALPHABET[b & 0xF]);
     }
+    return output.toString();
+  }
 }

@@ -15,45 +15,44 @@
  */
 package com.yubico.yubikit.piv;
 
-/**
- * Metadata about the card management key.
- */
+/** Metadata about the card management key. */
 public class ManagementKeyMetadata {
-    private final ManagementKeyType keyType;
-    private final boolean defaultValue;
-    private final TouchPolicy touchPolicy;
+  private final ManagementKeyType keyType;
+  private final boolean defaultValue;
+  private final TouchPolicy touchPolicy;
 
-    public ManagementKeyMetadata(ManagementKeyType keyType, boolean defaultValue, TouchPolicy touchPolicy) {
-        this.keyType = keyType;
-        this.defaultValue = defaultValue;
-        this.touchPolicy = touchPolicy;
-    }
+  public ManagementKeyMetadata(
+      ManagementKeyType keyType, boolean defaultValue, TouchPolicy touchPolicy) {
+    this.keyType = keyType;
+    this.defaultValue = defaultValue;
+    this.touchPolicy = touchPolicy;
+  }
 
-    /**
-     * Get the algorithm of key used for the Management Key.
-     *
-     * @return a ManagementKeyType value
-     */
-    public ManagementKeyType getKeyType() {
-        return keyType;
-    }
+  /**
+   * Get the algorithm of key used for the Management Key.
+   *
+   * @return a ManagementKeyType value
+   */
+  public ManagementKeyType getKeyType() {
+    return keyType;
+  }
 
-    /**
-     * Whether or not the default card management key is set. The key should be changed from the
-     * default to prevent unwanted modification to the application.
-     *
-     * @return true if the default key is set.
-     */
-    public boolean isDefaultValue() {
-        return defaultValue;
-    }
+  /**
+   * Whether or not the default card management key is set. The key should be changed from the
+   * default to prevent unwanted modification to the application.
+   *
+   * @return true if the default key is set.
+   */
+  public boolean isDefaultValue() {
+    return defaultValue;
+  }
 
-    /**
-     * Whether or not the YubiKey sensor needs to be touched when performing authentication.
-     *
-     * @return the touch policy of the card management key
-     */
-    public TouchPolicy getTouchPolicy() {
-        return touchPolicy;
-    }
+  /**
+   * Whether or not the YubiKey sensor needs to be touched when performing authentication.
+   *
+   * @return the touch policy of the card management key
+   */
+  public TouchPolicy getTouchPolicy() {
+    return touchPolicy;
+  }
 }

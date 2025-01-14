@@ -22,38 +22,39 @@ import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbEndpoint;
 import android.hardware.usb.UsbInterface;
 import android.util.Pair;
-
 import java.io.IOException;
 
 public class SmartCardConnectionHandler extends InterfaceConnectionHandler<UsbSmartCardConnection> {
-    public SmartCardConnectionHandler() {
-        super(UsbConstants.USB_CLASS_CSCID, 0);
-    }
+  public SmartCardConnectionHandler() {
+    super(UsbConstants.USB_CLASS_CSCID, 0);
+  }
 
-    @Override
-    public UsbSmartCardConnection createConnection(UsbDevice usbDevice, UsbDeviceConnection usbDeviceConnection) throws IOException {
-        UsbInterface usbInterface = getClaimedInterface(usbDevice, usbDeviceConnection);
-        Pair<UsbEndpoint, UsbEndpoint> endpoints = findEndpoints(usbInterface);
-        return new UsbSmartCardConnection(usbDeviceConnection, usbInterface, endpoints.first, endpoints.second);
-    }
+  @Override
+  public UsbSmartCardConnection createConnection(
+      UsbDevice usbDevice, UsbDeviceConnection usbDeviceConnection) throws IOException {
+    UsbInterface usbInterface = getClaimedInterface(usbDevice, usbDeviceConnection);
+    Pair<UsbEndpoint, UsbEndpoint> endpoints = findEndpoints(usbInterface);
+    return new UsbSmartCardConnection(
+        usbDeviceConnection, usbInterface, endpoints.first, endpoints.second);
+  }
 
-    private Pair<UsbEndpoint, UsbEndpoint> findEndpoints(UsbInterface usbInterface) {
-        UsbEndpoint endpointIn = null;
-        UsbEndpoint endpointOut = null;
+  private Pair<UsbEndpoint, UsbEndpoint> findEndpoints(UsbInterface usbInterface) {
+    UsbEndpoint endpointIn = null;
+    UsbEndpoint endpointOut = null;
 
-        for (int i = 0; i < usbInterface.getEndpointCount(); i++) {
-            UsbEndpoint endpoint = usbInterface.getEndpoint(i);
-            if (endpoint.getType() == UsbConstants.USB_ENDPOINT_XFER_BULK) {
-                if (endpoint.getDirection() == UsbConstants.USB_DIR_IN) {
-                    endpointIn = endpoint;
-                } else {
-                    endpointOut = endpoint;
-                }
-            }
+    for (int i = 0; i < usbInterface.getEndpointCount(); i++) {
+      UsbEndpoint endpoint = usbInterface.getEndpoint(i);
+      if (endpoint.getType() == UsbConstants.USB_ENDPOINT_XFER_BULK) {
+        if (endpoint.getDirection() == UsbConstants.USB_DIR_IN) {
+          endpointIn = endpoint;
+        } else {
+          endpointOut = endpoint;
         }
-        if (endpointIn != null && endpointOut != null) {
-            return new Pair<>(endpointIn, endpointOut);
-        }
-        throw new IllegalStateException("Missing CCID bulk endpoints");
+      }
     }
+    if (endpointIn != null && endpointOut != null) {
+      return new Pair<>(endpointIn, endpointOut);
+    }
+    throw new IllegalStateException("Missing CCID bulk endpoints");
+  }
 }

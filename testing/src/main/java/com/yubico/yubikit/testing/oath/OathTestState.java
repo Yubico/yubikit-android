@@ -27,98 +27,94 @@ import com.yubico.yubikit.management.Capability;
 import com.yubico.yubikit.oath.OathSession;
 import com.yubico.yubikit.testing.ScpParameters;
 import com.yubico.yubikit.testing.TestState;
-
 import java.io.IOException;
-
 import javax.annotation.Nullable;
 
 public class OathTestState extends TestState {
-    public boolean isFipsApproved;
-    public char[] password;
+  public boolean isFipsApproved;
+  public char[] password;
 
-    public static class Builder extends TestState.Builder<OathTestState.Builder> {
+  public static class Builder extends TestState.Builder<OathTestState.Builder> {
 
-        public Builder(YubiKeyDevice device, UsbPid usbPid) {
-            super(device, usbPid);
-        }
-
-        @Override
-        public Builder getThis() {
-            return this;
-        }
-
-        public OathTestState build() throws Throwable {
-            return new OathTestState(this);
-        }
+    public Builder(YubiKeyDevice device, UsbPid usbPid) {
+      super(device, usbPid);
     }
 
-    protected OathTestState(OathTestState.Builder builder) throws Throwable {
-        super(builder);
-
-        password = "".toCharArray();
-
-        boolean isOathFipsCapable = isFipsCapable(Capability.OATH);
-
-        if (scpParameters.getKid() == null && isOathFipsCapable) {
-            assumeTrue("Trying to use OATH FIPS capable device over NFC without SCP", isUsbTransport());
-        }
-
-        if (scpParameters.getKid() != null) {
-            // skip the test if the connected key does not provide matching SCP keys
-            assumeTrue(
-                    "No matching key params found for required kid",
-                    scpParameters.getKeyParams() != null
-            );
-        }
-
-        try (SmartCardConnection connection = openSmartCardConnection()) {
-            assumeTrue("Smart card not available", connection != null);
-
-            OathSession oath = getOathSession(connection, scpParameters);
-
-            assumeTrue("OATH not available", oath != null);
-            oath.reset();
-
-            final char[] complexPassword = "11234567".toCharArray();
-            oath.setPassword(complexPassword);
-            password = complexPassword;
-        }
-
-        isFipsApproved = isFipsApproved(Capability.OATH);
-
-        // after changing the OATH password, we expect a FIPS capable device to be FIPS approved
-        if (isOathFipsCapable) {
-            assertTrue("Device not OATH FIPS approved as expected", isFipsApproved);
-        }
+    @Override
+    public Builder getThis() {
+      return this;
     }
 
-    public void withDeviceCallback(StatefulDeviceCallback<OathTestState> callback) throws Throwable {
-        callback.invoke(this);
+    public OathTestState build() throws Throwable {
+      return new OathTestState(this);
+    }
+  }
+
+  protected OathTestState(OathTestState.Builder builder) throws Throwable {
+    super(builder);
+
+    password = "".toCharArray();
+
+    boolean isOathFipsCapable = isFipsCapable(Capability.OATH);
+
+    if (scpParameters.getKid() == null && isOathFipsCapable) {
+      assumeTrue("Trying to use OATH FIPS capable device over NFC without SCP", isUsbTransport());
     }
 
-    public void withOath(StatefulSessionCallback<OathSession, OathTestState> callback)
-            throws Throwable {
-        try (SmartCardConnection connection = openSmartCardConnection()) {
-            callback.invoke(getOathSession(connection, scpParameters), this);
-        }
-        reconnect();
+    if (scpParameters.getKid() != null) {
+      // skip the test if the connected key does not provide matching SCP keys
+      assumeTrue(
+          "No matching key params found for required kid", scpParameters.getKeyParams() != null);
     }
 
-    public void withOath(SessionCallback<OathSession> callback) throws Throwable {
-        try (SmartCardConnection connection = openSmartCardConnection()) {
-            callback.invoke(getOathSession(connection, scpParameters));
-        }
-        reconnect();
+    try (SmartCardConnection connection = openSmartCardConnection()) {
+      assumeTrue("Smart card not available", connection != null);
+
+      OathSession oath = getOathSession(connection, scpParameters);
+
+      assumeTrue("OATH not available", oath != null);
+      oath.reset();
+
+      final char[] complexPassword = "11234567".toCharArray();
+      oath.setPassword(complexPassword);
+      password = complexPassword;
     }
 
-    @Nullable
-    public static OathSession getOathSession(SmartCardConnection connection, ScpParameters scpParameters)
-            throws IOException {
-        try {
-            return new OathSession(connection, scpParameters.getKeyParams());
-        } catch (ApplicationNotAvailableException ignored) {
-            // no OATH support
-        }
-        return null;
+    isFipsApproved = isFipsApproved(Capability.OATH);
+
+    // after changing the OATH password, we expect a FIPS capable device to be FIPS approved
+    if (isOathFipsCapable) {
+      assertTrue("Device not OATH FIPS approved as expected", isFipsApproved);
     }
+  }
+
+  public void withDeviceCallback(StatefulDeviceCallback<OathTestState> callback) throws Throwable {
+    callback.invoke(this);
+  }
+
+  public void withOath(StatefulSessionCallback<OathSession, OathTestState> callback)
+      throws Throwable {
+    try (SmartCardConnection connection = openSmartCardConnection()) {
+      callback.invoke(getOathSession(connection, scpParameters), this);
+    }
+    reconnect();
+  }
+
+  public void withOath(SessionCallback<OathSession> callback) throws Throwable {
+    try (SmartCardConnection connection = openSmartCardConnection()) {
+      callback.invoke(getOathSession(connection, scpParameters));
+    }
+    reconnect();
+  }
+
+  @Nullable
+  public static OathSession getOathSession(
+      SmartCardConnection connection, ScpParameters scpParameters) throws IOException {
+    try {
+      return new OathSession(connection, scpParameters.getKeyParams());
+    } catch (ApplicationNotAvailableException ignored) {
+      // no OATH support
+    }
+    return null;
+  }
 }

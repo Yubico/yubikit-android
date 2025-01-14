@@ -20,60 +20,54 @@ import java.nio.ByteBuffer;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
-/**
- * Supported hash algorithms for use with the OATH YubiKey application.
- */
+/** Supported hash algorithms for use with the OATH YubiKey application. */
 public enum HashAlgorithm {
-    SHA1((byte) 1, 64),
-    SHA256((byte) 2, 64),
-    SHA512((byte) 3, 128);
+  SHA1((byte) 1, 64),
+  SHA256((byte) 2, 64),
+  SHA512((byte) 3, 128);
 
-    // Pad the key to at least 14 bytes, as required by the YubiKey.
-    private static final int MIN_KEY_SIZE = 14;
+  // Pad the key to at least 14 bytes, as required by the YubiKey.
+  private static final int MIN_KEY_SIZE = 14;
 
-    public final byte value;
-    public final int blockSize;
+  public final byte value;
+  public final int blockSize;
 
-    HashAlgorithm(byte value, int blockSize) {
-        this.value = value;
-        this.blockSize = blockSize;
+  HashAlgorithm(byte value, int blockSize) {
+    this.value = value;
+    this.blockSize = blockSize;
+  }
+
+  byte[] prepareKey(byte[] key) {
+    if (key.length < MIN_KEY_SIZE) {
+      return ByteBuffer.allocate(MIN_KEY_SIZE).put(key).array();
+    } else if (key.length > blockSize) {
+      try {
+        return MessageDigest.getInstance(name()).digest(key);
+      } catch (NoSuchAlgorithmException e) {
+        throw new RuntimeException(e);
+      }
+    } else {
+      return key;
     }
+  }
 
-    byte[] prepareKey(byte[] key) {
-        if (key.length < MIN_KEY_SIZE) {
-            return ByteBuffer.allocate(MIN_KEY_SIZE).put(key).array();
-        } else if (key.length > blockSize) {
-            try {
-                return MessageDigest.getInstance(name()).digest(key);
-            } catch (NoSuchAlgorithmException e) {
-                throw new RuntimeException(e);
-            }
-        } else {
-            return key;
-        }
+  /** Returns the algorithm corresponding to the given YKOATH ALGORITHM constant. */
+  public static HashAlgorithm fromValue(byte value) {
+    for (HashAlgorithm type : HashAlgorithm.values()) {
+      if (type.value == value) {
+        return type;
+      }
     }
+    throw new IllegalArgumentException("Not a valid HashAlgorithm");
+  }
 
-    /**
-     * Returns the algorithm corresponding to the given YKOATH ALGORITHM constant.
-     */
-    public static HashAlgorithm fromValue(byte value) {
-        for (HashAlgorithm type : HashAlgorithm.values()) {
-            if (type.value == value) {
-                return type;
-            }
-        }
-        throw new IllegalArgumentException("Not a valid HashAlgorithm");
+  /** Returns the algorithm corresponding to the given name, as used in otpauth:// URIs. */
+  public static HashAlgorithm fromString(String value) {
+    for (HashAlgorithm type : HashAlgorithm.values()) {
+      if (type.name().equalsIgnoreCase(value)) {
+        return type;
+      }
     }
-
-    /**
-     * Returns the algorithm corresponding to the given name, as used in otpauth:// URIs.
-     */
-    public static HashAlgorithm fromString(String value) {
-        for (HashAlgorithm type : HashAlgorithm.values()) {
-            if (type.name().equalsIgnoreCase(value)) {
-                return type;
-            }
-        }
-        throw new IllegalArgumentException("Not a valid HashAlgorithm");
-    }
+    throw new IllegalArgumentException("Not a valid HashAlgorithm");
+  }
 }

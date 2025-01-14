@@ -17,7 +17,7 @@
 package com.yubico.yubikit.fido.webauthn;
 
 public class UserVerificationRequirement {
-    public static final String REQUIRED = "required";
-    public static final String PREFERRED = "preferred";
-    public static final String DISCOURAGED = "discouraged";
+  public static final String REQUIRED = "required";
+  public static final String PREFERRED = "preferred";
+  public static final String DISCOURAGED = "discouraged";
 }

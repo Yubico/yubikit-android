@@ -17,15 +17,15 @@
 package com.yubico.yubikit.fido.webauthn;
 
 public class PublicKeyCredentialEntity {
-    public static final String NAME = "name";
+  public static final String NAME = "name";
 
-    private final String name;
+  private final String name;
 
-    public PublicKeyCredentialEntity(String name) {
-        this.name = name;
-    }
+  public PublicKeyCredentialEntity(String name) {
+    this.name = name;
+  }
 
-    public String getName() {
-        return name;
-    }
+  public String getName() {
+    return name;
+  }
 }
