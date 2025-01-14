@@ -20,7 +20,7 @@ jobs:
           java-version: '17'
 
       - name: Verify code format
-        run: ./gradlew spotlessCheck || echo "::error title=Code format check failed::Use ./gradlew applySpotless to fix" && exit 1
+        run: ./gradlew spotlessCheck
 
       - name: Build with Gradle
         run: NO_GPG_SIGN=true ./gradlew --stacktrace check test build javadocJar publishToMavenLocal
