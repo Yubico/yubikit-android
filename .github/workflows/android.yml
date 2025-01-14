@@ -1,24 +1,26 @@
 name: Android CI
 
-on:
-  workflow_dispatch:
-  workflow_run:
-    workflows: [ 'Code format check' ]
-    types: [ completed ]
+on: [ push ]
 
 jobs:
   build:
 
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_branch }}
+
       - name: set up JDK
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
+
+      - name: Verify code format
+        run: ./gradlew spotlessCheck || echo "::error title=Code format check failed::Use ./gradlew applySpotless to fix" && exit 1
 
       - name: Build with Gradle
         run: NO_GPG_SIGN=true ./gradlew --stacktrace check test build javadocJar publishToMavenLocal
