@@ -1,11 +1,16 @@
 name: Android CI
 
-on: [ push ]
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: [ 'Code format check' ]
+    types: [ completed ]
 
 jobs:
   build:
 
     runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
 
     steps:
       - uses: actions/checkout@v4

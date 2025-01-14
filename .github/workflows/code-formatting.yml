@@ -1,9 +1,9 @@
-name: Code formatting
+name: Code format check
 
-on: [ push ]
+on: [ workflow_dispatch, push ]
 
 jobs:
-  build:
+  check-format:
 
     runs-on: ubuntu-latest
 
