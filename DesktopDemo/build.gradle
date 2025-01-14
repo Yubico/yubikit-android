@@ -6,13 +6,13 @@ plugins {
 dependencies {
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
 
-    implementation 'ch.qos.logback:logback-classic:1.5.12'
+    implementation 'ch.qos.logback:logback-classic:1.5.16'
 
     implementation project(':desktop')
 }
 
 application {
-    mainClassName = "com.yubico.yubikit.desktop.app.DesktopApp"
+    mainClass = "com.yubico.yubikit.desktop.app.DesktopApp"
     applicationName = 'DesktopApp'
 }
 

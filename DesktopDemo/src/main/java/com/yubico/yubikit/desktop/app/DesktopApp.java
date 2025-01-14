@@ -38,23 +38,23 @@ public class DesktopApp {
           "/System/Library/Frameworks/PCSC.framework/Versions/Current/PCSC");
     }
 
-    System.out.println("Insert YubiKey now...");
+    logger.info("Insert YubiKey now...");
 
     YubiKitManager manager = new YubiKitManager();
     Map<YubiKeyDevice, DeviceInfo> devices = manager.listAllDevices();
-    logger.debug("Devices: {}", devices);
+    logger.info("Devices: {}", devices);
     for (Map.Entry<YubiKeyDevice, DeviceInfo> entry : devices.entrySet()) {
       YubiKeyDevice device = entry.getKey();
       DeviceInfo info = entry.getValue();
-      logger.debug("Found key: {} {}", device, info);
+      logger.info("Found key: {} {}", device, info);
       if (device.supportsConnection(SmartCardConnection.class)) {
         logger.debug("Request CCID connection");
         device.requestConnection(
             SmartCardConnection.class,
             value -> {
               try {
-                logger.debug("Got CCID connection {}", value.getValue());
-              } catch (IOException e) {
+                logger.info("Got CCID connection {}", value.getValue());
+              } catch (Exception e) {
                 logger.error("Failed to get CCID: ", e);
               }
             });
@@ -85,9 +85,9 @@ public class DesktopApp {
       }
     }
 
-    logger.debug("Sleeping...");
+    logger.info("Sleeping...");
     try {
-      Thread.sleep(5000);
+      Thread.sleep(500);
     } catch (InterruptedException e) {
       throw new RuntimeException(e);
     }
