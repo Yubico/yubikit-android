@@ -19,12 +19,12 @@ package com.yubico.yubikit.desktop;
 import com.yubico.yubikit.core.UsbPid;
 import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.YubiKeyDevice;
-
 import java.io.IOException;
 
 public interface UsbYubiKeyDevice extends YubiKeyDevice {
-    <T extends YubiKeyConnection> T openConnection(Class<T> connectionType) throws IOException;
+  <T extends YubiKeyConnection> T openConnection(Class<T> connectionType) throws IOException;
 
-    String getFingerprint();
-    UsbPid getPid();
+  String getFingerprint();
+
+  UsbPid getPid();
 }

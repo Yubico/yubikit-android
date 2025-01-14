@@ -16,32 +16,33 @@
 
 package com.yubico.yubikit.desktop.pcsc;
 
+import java.util.*;
 import javax.smartcardio.CardException;
 import javax.smartcardio.CardTerminal;
 import javax.smartcardio.CardTerminals;
 import javax.smartcardio.TerminalFactory;
-import java.util.*;
 
 public class PcscManager {
-    private final TerminalFactory terminalFactory;
+  private final TerminalFactory terminalFactory;
 
-    public PcscManager(TerminalFactory terminalFactory) {
-        this.terminalFactory = terminalFactory;
-    }
+  public PcscManager(TerminalFactory terminalFactory) {
+    this.terminalFactory = terminalFactory;
+  }
 
-    public PcscManager() {
-        this(TerminalFactory.getDefault());
-    }
+  public PcscManager() {
+    this(TerminalFactory.getDefault());
+  }
 
-    public List<UsbPcscDevice> getDevices() {
-        List<UsbPcscDevice> yubikeys = new ArrayList<>();
-        try {
-            for (CardTerminal device: terminalFactory.terminals().list(CardTerminals.State.CARD_PRESENT)) {
-                yubikeys.add(new UsbPcscDevice(device));
-            }
-        } catch (CardException e) {
-            throw new RuntimeException(e);
-        }
-        return yubikeys;
+  public List<UsbPcscDevice> getDevices() {
+    List<UsbPcscDevice> yubikeys = new ArrayList<>();
+    try {
+      for (CardTerminal device :
+          terminalFactory.terminals().list(CardTerminals.State.CARD_PRESENT)) {
+        yubikeys.add(new UsbPcscDevice(device));
+      }
+    } catch (CardException e) {
+      throw new RuntimeException(e);
     }
+    return yubikeys;
+  }
 }

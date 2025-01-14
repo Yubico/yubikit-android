@@ -17,17 +17,17 @@
 package com.yubico.yubikit.desktop.hid;
 
 public interface HidSessionListener {
-    /**
-     * Invoked when detected inserted device after usb discovery started
-     *
-     * @param session usb session that associated with plugged in device
-     */
-    void onSessionReceived(HidDevice session);
+  /**
+   * Invoked when detected inserted device after usb discovery started
+   *
+   * @param session usb session that associated with plugged in device
+   */
+  void onSessionReceived(HidDevice session);
 
-    /**
-     * Invoked when detected removal/ejection of usb device after usb discovery started
-     *
-     * @param session usb session that will become inactive
-     */
-    void onSessionRemoved(HidDevice session);
+  /**
+   * Invoked when detected removal/ejection of usb device after usb discovery started
+   *
+   * @param session usb session that will become inactive
+   */
+  void onSessionRemoved(HidDevice session);
 }

@@ -19,7 +19,6 @@ package com.yubico.yubikit.testing.desktop.mpe;
 import com.yubico.yubikit.core.smartcard.scp.ScpKid;
 import com.yubico.yubikit.testing.desktop.framework.MpeInstrumentedTests;
 import com.yubico.yubikit.testing.mpe.MultiProtocolResetDeviceTests;
-
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -27,32 +26,32 @@ import org.junit.runners.Suite;
 
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        MultiProtocolResetTests.NoScpTests.class,
-        MultiProtocolResetTests.Scp11bTests.class,
+  MultiProtocolResetTests.NoScpTests.class,
+  MultiProtocolResetTests.Scp11bTests.class,
 })
 public class MultiProtocolResetTests {
-    public static class NoScpTests extends MpeInstrumentedTests {
-        @Test
-        public void testSettingPivPinBlocksFidoReset() throws Throwable {
-            withPivSession(MultiProtocolResetDeviceTests::testSettingPivPinBlocksFidoReset);
-        }
-
-        @Test
-        public void testPivOperationBlocksFidoReset() throws Throwable {
-            withPivSession(MultiProtocolResetDeviceTests::testPivOperationBlocksFidoReset);
-        }
-
-        @Test
-        public void testSettingFidoPinBlocksPivReset() throws Throwable {
-            withCtap2Session(MultiProtocolResetDeviceTests::testSettingFidoPinBlocksPivReset);
-        }
+  public static class NoScpTests extends MpeInstrumentedTests {
+    @Test
+    public void testSettingPivPinBlocksFidoReset() throws Throwable {
+      withPivSession(MultiProtocolResetDeviceTests::testSettingPivPinBlocksFidoReset);
     }
 
-    public static class Scp11bTests extends NoScpTests {
-        @Nullable
-        @Override
-        protected Byte getScpKid() {
-            return ScpKid.SCP11b;
-        }
+    @Test
+    public void testPivOperationBlocksFidoReset() throws Throwable {
+      withPivSession(MultiProtocolResetDeviceTests::testPivOperationBlocksFidoReset);
     }
+
+    @Test
+    public void testSettingFidoPinBlocksPivReset() throws Throwable {
+      withCtap2Session(MultiProtocolResetDeviceTests::testSettingFidoPinBlocksPivReset);
+    }
+  }
+
+  public static class Scp11bTests extends NoScpTests {
+    @Nullable
+    @Override
+    protected Byte getScpKid() {
+      return ScpKid.SCP11b;
+    }
+  }
 }

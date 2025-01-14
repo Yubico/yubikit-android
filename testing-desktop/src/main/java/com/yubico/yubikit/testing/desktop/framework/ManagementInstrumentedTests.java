@@ -21,13 +21,13 @@ import com.yubico.yubikit.management.ManagementSession;
 
 public class ManagementInstrumentedTests extends YKInstrumentedTests {
 
-    public interface Callback {
-        void invoke(ManagementSession value) throws Throwable;
-    }
+  public interface Callback {
+    void invoke(ManagementSession value) throws Throwable;
+  }
 
-    protected void withManagementSession(Callback callback) throws Throwable {
-        try (SmartCardConnection connection = device.openConnection(SmartCardConnection.class)) {
-            callback.invoke(new ManagementSession(connection));
-        }
+  protected void withManagementSession(Callback callback) throws Throwable {
+    try (SmartCardConnection connection = device.openConnection(SmartCardConnection.class)) {
+      callback.invoke(new ManagementSession(connection));
     }
+  }
 }

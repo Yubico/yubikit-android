@@ -23,17 +23,15 @@ import com.yubico.yubikit.testing.mpe.MpeTestState;
 
 public class MpeInstrumentedTests extends YKInstrumentedTests {
 
-    protected void withPivSession(TestState.StatefulSessionCallback<PivSession, MpeTestState> callback) throws Throwable {
-        final MpeTestState state = new MpeTestState.Builder(device, usbPid)
-                .scpKid(getScpKid())
-                .build();
-        state.withPiv(callback);
-    }
+  protected void withPivSession(
+      TestState.StatefulSessionCallback<PivSession, MpeTestState> callback) throws Throwable {
+    final MpeTestState state = new MpeTestState.Builder(device, usbPid).scpKid(getScpKid()).build();
+    state.withPiv(callback);
+  }
 
-    protected void withCtap2Session(TestState.StatefulSessionCallback<Ctap2Session, MpeTestState> callback) throws Throwable {
-        final MpeTestState state = new MpeTestState.Builder(device, usbPid)
-                .scpKid(getScpKid())
-                .build();
-        state.withCtap2(callback);
-    }
+  protected void withCtap2Session(
+      TestState.StatefulSessionCallback<Ctap2Session, MpeTestState> callback) throws Throwable {
+    final MpeTestState state = new MpeTestState.Builder(device, usbPid).scpKid(getScpKid()).build();
+    state.withCtap2(callback);
+  }
 }

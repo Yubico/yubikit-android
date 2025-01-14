@@ -16,5 +16,4 @@
 
 package com.yubico.yubikit.testing.desktop;
 
-public interface SlowTest {
-}
+public interface SlowTest {}

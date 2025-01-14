@@ -17,55 +17,53 @@ package com.yubico.yubikit.desktop.hid;
 
 import com.yubico.yubikit.core.fido.FidoConnection;
 import com.yubico.yubikit.core.internal.Logger;
-
+import java.io.IOException;
 import org.hid4java.HidDevice;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-
 public class HidFidoConnection implements FidoConnection {
-    private static final int TIMEOUT = 1000;
+  private static final int TIMEOUT = 1000;
 
-    private final HidDevice hidDevice;
+  private final HidDevice hidDevice;
 
-    private final org.slf4j.Logger logger = LoggerFactory.getLogger(HidFidoConnection.class);
+  private final org.slf4j.Logger logger = LoggerFactory.getLogger(HidFidoConnection.class);
 
-    public HidFidoConnection(HidDevice hidDevice) throws IOException {
-        Logger.debug(logger, "Opening HID FIDO connection");
+  public HidFidoConnection(HidDevice hidDevice) throws IOException {
+    Logger.debug(logger, "Opening HID FIDO connection");
 
-        if (!hidDevice.isClosed()) {
-            throw new IOException("Device already open");
-        }
-
-        if (!hidDevice.open()) {
-            throw new IOException("Failure opening device");
-        }
-        this.hidDevice = hidDevice;
+    if (!hidDevice.isClosed()) {
+      throw new IOException("Device already open");
     }
 
-    @Override
-    public void close() {
-        Logger.debug(logger, "Closing HID FIDO connection");
-        hidDevice.close();
+    if (!hidDevice.open()) {
+      throw new IOException("Failure opening device");
     }
+    this.hidDevice = hidDevice;
+  }
 
-    @Override
-    public void send(byte[] packet) throws IOException {
-        int sent = hidDevice.write(packet, packet.length, (byte) 0);
-        if (sent < 0) {
-            throw new IOException(hidDevice.getLastErrorMessage());
-        } else if (sent != PACKET_SIZE + 1) {
-            throw new IOException("Unexpected amount of data sent: " + sent);
-        }
-    }
+  @Override
+  public void close() {
+    Logger.debug(logger, "Closing HID FIDO connection");
+    hidDevice.close();
+  }
 
-    @Override
-    public void receive(byte[] packet) throws IOException {
-        int received = hidDevice.read(packet, TIMEOUT);
-        if (received < 0) {
-            throw new IOException(hidDevice.getLastErrorMessage());
-        } else if (received != PACKET_SIZE) {
-            throw new IOException("Unexpected amount of data read: " + received);
-        }
+  @Override
+  public void send(byte[] packet) throws IOException {
+    int sent = hidDevice.write(packet, packet.length, (byte) 0);
+    if (sent < 0) {
+      throw new IOException(hidDevice.getLastErrorMessage());
+    } else if (sent != PACKET_SIZE + 1) {
+      throw new IOException("Unexpected amount of data sent: " + sent);
     }
+  }
+
+  @Override
+  public void receive(byte[] packet) throws IOException {
+    int received = hidDevice.read(packet, TIMEOUT);
+    if (received < 0) {
+      throw new IOException(hidDevice.getLastErrorMessage());
+    } else if (received != PACKET_SIZE) {
+      throw new IOException("Unexpected amount of data read: " + received);
+    }
+  }
 }

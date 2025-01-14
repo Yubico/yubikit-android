@@ -22,7 +22,6 @@ import com.yubico.yubikit.testing.desktop.PinUvAuthProtocolV1Test;
 import com.yubico.yubikit.testing.desktop.SmokeTest;
 import com.yubico.yubikit.testing.desktop.framework.FidoInstrumentedTests;
 import com.yubico.yubikit.testing.fido.BasicWebAuthnClientTests;
-
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -30,59 +29,59 @@ import org.junit.runners.Suite;
 
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        BasicWebAuthnClientInstrumentedTests.PinUvAuthV2Test.class,
-        BasicWebAuthnClientInstrumentedTests.PinUvAuthV1Test.class,
+  BasicWebAuthnClientInstrumentedTests.PinUvAuthV2Test.class,
+  BasicWebAuthnClientInstrumentedTests.PinUvAuthV1Test.class,
 })
 public class BasicWebAuthnClientInstrumentedTests {
-    public static class PinUvAuthV2Test extends FidoInstrumentedTests {
+  public static class PinUvAuthV2Test extends FidoInstrumentedTests {
 
-        @Test
-        @Category(SmokeTest.class)
-        public void testMakeCredentialGetAssertion() throws Throwable {
-           withDevice(BasicWebAuthnClientTests::testMakeCredentialGetAssertion);
-        }
-
-        @Test
-        public void testMakeCredentialGetAssertionTokenUvOnly() throws Throwable {
-            withDevice(BasicWebAuthnClientTests::testMakeCredentialGetAssertionTokenUvOnly);
-        }
-
-        @Test
-        public void testGetAssertionMultipleUsersRk() throws Throwable {
-            withDevice(BasicWebAuthnClientTests::testGetAssertionMultipleUsersRk);
-        }
-
-        @Test
-        public void testGetAssertionWithAllowList() throws Throwable {
-            withDevice(BasicWebAuthnClientTests::testGetAssertionWithAllowList);
-        }
-
-        @Test
-        public void testMakeCredentialWithExcludeList() throws Throwable {
-            withDevice(BasicWebAuthnClientTests::testMakeCredentialWithExcludeList);
-        }
-
-        @Test
-        public void testMakeCredentialKeyAlgorithms() throws Throwable {
-            withDevice(BasicWebAuthnClientTests::testMakeCredentialKeyAlgorithms);
-        }
-
-        @Test
-        public void testClientPinManagement() throws Throwable {
-            withDevice(BasicWebAuthnClientTests::testClientPinManagement);
-        }
-
-        @Test
-        public void testClientCredentialManagement() throws Throwable {
-            withDevice(BasicWebAuthnClientTests::testClientCredentialManagement);
-        }
+    @Test
+    @Category(SmokeTest.class)
+    public void testMakeCredentialGetAssertion() throws Throwable {
+      withDevice(BasicWebAuthnClientTests::testMakeCredentialGetAssertion);
     }
 
-    @Category(PinUvAuthProtocolV1Test.class)
-    public static class PinUvAuthV1Test extends PinUvAuthV2Test {
-        @Override
-        protected PinUvAuthProtocol getPinUvAuthProtocol() {
-            return new PinUvAuthProtocolV1();
-        }
+    @Test
+    public void testMakeCredentialGetAssertionTokenUvOnly() throws Throwable {
+      withDevice(BasicWebAuthnClientTests::testMakeCredentialGetAssertionTokenUvOnly);
     }
+
+    @Test
+    public void testGetAssertionMultipleUsersRk() throws Throwable {
+      withDevice(BasicWebAuthnClientTests::testGetAssertionMultipleUsersRk);
+    }
+
+    @Test
+    public void testGetAssertionWithAllowList() throws Throwable {
+      withDevice(BasicWebAuthnClientTests::testGetAssertionWithAllowList);
+    }
+
+    @Test
+    public void testMakeCredentialWithExcludeList() throws Throwable {
+      withDevice(BasicWebAuthnClientTests::testMakeCredentialWithExcludeList);
+    }
+
+    @Test
+    public void testMakeCredentialKeyAlgorithms() throws Throwable {
+      withDevice(BasicWebAuthnClientTests::testMakeCredentialKeyAlgorithms);
+    }
+
+    @Test
+    public void testClientPinManagement() throws Throwable {
+      withDevice(BasicWebAuthnClientTests::testClientPinManagement);
+    }
+
+    @Test
+    public void testClientCredentialManagement() throws Throwable {
+      withDevice(BasicWebAuthnClientTests::testClientCredentialManagement);
+    }
+  }
+
+  @Category(PinUvAuthProtocolV1Test.class)
+  public static class PinUvAuthV1Test extends PinUvAuthV2Test {
+    @Override
+    protected PinUvAuthProtocol getPinUvAuthProtocol() {
+      return new PinUvAuthProtocolV1();
+    }
+  }
 }

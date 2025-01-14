@@ -20,28 +20,28 @@ import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.desktop.OperatingSystem;
 import com.yubico.yubikit.desktop.YubiKitManager;
-
 import org.slf4j.LoggerFactory;
 
 public class DesktopTestDriver {
 
-    private final YubiKitManager yubikit;
+  private final YubiKitManager yubikit;
 
-    private final static org.slf4j.Logger logger = LoggerFactory.getLogger(DesktopTestDriver.class);
+  private static final org.slf4j.Logger logger = LoggerFactory.getLogger(DesktopTestDriver.class);
 
-    public DesktopTestDriver() {
-        if (OperatingSystem.isMac()) {
-            System.setProperty("sun.security.smartcardio.library", "/System/Library/Frameworks/PCSC.framework/Versions/Current/PCSC");
-        }
-        yubikit = new YubiKitManager();
+  public DesktopTestDriver() {
+    if (OperatingSystem.isMac()) {
+      System.setProperty(
+          "sun.security.smartcardio.library",
+          "/System/Library/Frameworks/PCSC.framework/Versions/Current/PCSC");
     }
+    yubikit = new YubiKitManager();
+  }
 
+  public YubiKeyDevice awaitSession() throws InterruptedException {
+    return yubikit.listAllDevices().keySet().iterator().next();
+  }
 
-    public YubiKeyDevice awaitSession() throws InterruptedException {
-        return yubikit.listAllDevices().keySet().iterator().next();
-    }
-
-    public void returnSession(YubiKeyDevice device) {
-        Logger.debug(logger, "Device returned");
-    }
+  public void returnSession(YubiKeyDevice device) {
+    Logger.debug(logger, "Device returned");
+  }
 }

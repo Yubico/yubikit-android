@@ -22,7 +22,6 @@ import com.yubico.yubikit.testing.desktop.framework.PivInstrumentedTests;
 import com.yubico.yubikit.testing.piv.PivCertificateTests;
 import com.yubico.yubikit.testing.piv.PivDeviceTests;
 import com.yubico.yubikit.testing.piv.PivPinComplexityDeviceTests;
-
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -31,56 +30,56 @@ import org.junit.runners.Suite;
 
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        PivTests.NoScpTests.class,
-        PivTests.Scp11bTests.class,
-        PivJcaProviderTests.NoScpTests.class,
-        PivJcaProviderTests.Scp11bTests.class
+  PivTests.NoScpTests.class,
+  PivTests.Scp11bTests.class,
+  PivJcaProviderTests.NoScpTests.class,
+  PivJcaProviderTests.Scp11bTests.class
 })
 public class PivTests {
-    public static class NoScpTests extends PivInstrumentedTests {
-        @Test
-        @Category(SmokeTest.class)
-        public void testPin() throws Throwable {
-            withPivSession(PivDeviceTests::testPin);
-        }
-
-        @Test
-        public void testPuk() throws Throwable {
-            withPivSession(PivDeviceTests::testPuk);
-        }
-
-        @Test
-        public void testManagementKey() throws Throwable {
-            withPivSession(PivDeviceTests::testManagementKey);
-        }
-
-        @Test
-        public void testManagementKeyType() throws Throwable {
-            withPivSession(PivDeviceTests::testManagementKeyType);
-        }
-
-        @Test
-        public void testPutUncompressedCertificate() throws Throwable {
-            withPivSession(PivCertificateTests::putUncompressedCertificate);
-        }
-
-        @Test
-        @Category(SmokeTest.class)
-        public void testPutCompressedCertificate() throws Throwable {
-            withPivSession(PivCertificateTests::putCompressedCertificate);
-        }
-
-        @Test
-        public void testPinComplexity() throws Throwable {
-            withPivSession(PivPinComplexityDeviceTests::testPinComplexity);
-        }
+  public static class NoScpTests extends PivInstrumentedTests {
+    @Test
+    @Category(SmokeTest.class)
+    public void testPin() throws Throwable {
+      withPivSession(PivDeviceTests::testPin);
     }
 
-    public static class Scp11bTests extends NoScpTests {
-        @Override
-        @Nullable
-        protected Byte getScpKid() {
-            return ScpKid.SCP11b;
-        }
+    @Test
+    public void testPuk() throws Throwable {
+      withPivSession(PivDeviceTests::testPuk);
     }
+
+    @Test
+    public void testManagementKey() throws Throwable {
+      withPivSession(PivDeviceTests::testManagementKey);
+    }
+
+    @Test
+    public void testManagementKeyType() throws Throwable {
+      withPivSession(PivDeviceTests::testManagementKeyType);
+    }
+
+    @Test
+    public void testPutUncompressedCertificate() throws Throwable {
+      withPivSession(PivCertificateTests::putUncompressedCertificate);
+    }
+
+    @Test
+    @Category(SmokeTest.class)
+    public void testPutCompressedCertificate() throws Throwable {
+      withPivSession(PivCertificateTests::putCompressedCertificate);
+    }
+
+    @Test
+    public void testPinComplexity() throws Throwable {
+      withPivSession(PivPinComplexityDeviceTests::testPinComplexity);
+    }
+  }
+
+  public static class Scp11bTests extends NoScpTests {
+    @Override
+    @Nullable
+    protected Byte getScpKid() {
+      return ScpKid.SCP11b;
+    }
+  }
 }

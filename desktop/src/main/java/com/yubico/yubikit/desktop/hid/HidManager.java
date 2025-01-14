@@ -17,73 +17,70 @@
 package com.yubico.yubikit.desktop.hid;
 
 import com.yubico.yubikit.core.internal.Logger;
-
+import java.util.ArrayList;
+import java.util.List;
+import javax.annotation.Nullable;
 import org.hid4java.HidServices;
 import org.hid4java.HidServicesListener;
 import org.hid4java.event.HidServicesEvent;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import javax.annotation.Nullable;
-
 public class HidManager {
 
-    private static final int YUBICO_VENDOR_ID = 0x1050;
-    private static final int HID_USAGE_PAGE_OTP = 0x0001;
-    private static final int HID_USAGE_PAGE_FIDO = 0xf1d0;
+  private static final int YUBICO_VENDOR_ID = 0x1050;
+  private static final int HID_USAGE_PAGE_OTP = 0x0001;
+  private static final int HID_USAGE_PAGE_FIDO = 0xf1d0;
 
+  private final HidServices services;
 
-    private final HidServices services;
+  private final org.slf4j.Logger logger = LoggerFactory.getLogger(HidManager.class);
 
-    private final org.slf4j.Logger logger = LoggerFactory.getLogger(HidManager.class);
+  public HidManager() {
+    services = org.hid4java.HidManager.getHidServices();
+  }
 
-    public HidManager() {
-        services = org.hid4java.HidManager.getHidServices();
+  public List<HidDevice> getHidDevices(int vendorId, @Nullable Integer usagePage) {
+    List<HidDevice> yubikeys = new ArrayList<>();
+    for (org.hid4java.HidDevice device : services.getAttachedHidDevices()) {
+      if (device.getVendorId() == vendorId
+          && (usagePage != null && (device.getUsagePage() & 0xffff) == usagePage)) {
+        yubikeys.add(new HidDevice(device));
+      }
     }
+    return yubikeys;
+  }
 
-    public List<HidDevice> getHidDevices(int vendorId, @Nullable Integer usagePage) {
-        List<HidDevice> yubikeys = new ArrayList<>();
-        for (org.hid4java.HidDevice device: services.getAttachedHidDevices()) {
-            if(device.getVendorId() == vendorId &&
-                    (usagePage != null && (device.getUsagePage() & 0xffff) == usagePage)) {
-                yubikeys.add(new HidDevice(device));
-            }
-        }
-        return yubikeys;
-    }
+  public List<HidDevice> getOtpDevices() {
+    return getHidDevices(YUBICO_VENDOR_ID, HID_USAGE_PAGE_OTP);
+  }
 
-    public List<HidDevice> getOtpDevices() {
-        return getHidDevices(YUBICO_VENDOR_ID, HID_USAGE_PAGE_OTP);
-    }
+  public List<HidDevice> getFidoDevices() {
+    return getHidDevices(YUBICO_VENDOR_ID, HID_USAGE_PAGE_FIDO);
+  }
 
-    public List<HidDevice> getFidoDevices() {
-        return getHidDevices(YUBICO_VENDOR_ID, HID_USAGE_PAGE_FIDO);
-    }
+  public void setListener(HidSessionListener listener) {
+    services.addHidServicesListener(
+        new HidServicesListener() {
+          @Override
+          public void hidDeviceAttached(HidServicesEvent event) {
+            Logger.debug(logger, "HID attached: {}", event);
+            listener.onSessionReceived(new HidDevice(event.getHidDevice()));
+          }
 
-    public void setListener(HidSessionListener listener) {
-        services.addHidServicesListener(new HidServicesListener() {
-            @Override
-            public void hidDeviceAttached(HidServicesEvent event) {
-                Logger.debug(logger, "HID attached: {}", event);
-                listener.onSessionReceived(new HidDevice(event.getHidDevice()));
-            }
+          @Override
+          public void hidDeviceDetached(HidServicesEvent event) {
+            Logger.debug(logger, "HID removed: {}", event);
+          }
 
-            @Override
-            public void hidDeviceDetached(HidServicesEvent event) {
-                Logger.debug(logger, "HID removed: {}", event);
-            }
+          @Override
+          public void hidFailure(HidServicesEvent event) {
+            Logger.debug(logger, "HID failure: {}", event);
+          }
 
-            @Override
-            public void hidFailure(HidServicesEvent event) {
-                Logger.debug(logger, "HID failure: {}", event);
-            }
-
-            @Override
-            public void hidDataReceived(HidServicesEvent event) {
-                Logger.debug(logger, "HID Data received: {}", event);
-            }
+          @Override
+          public void hidDataReceived(HidServicesEvent event) {
+            Logger.debug(logger, "HID Data received: {}", event);
+          }
         });
-    }
+  }
 }

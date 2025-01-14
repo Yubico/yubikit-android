@@ -20,9 +20,5 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 @RunWith(Suite.class)
-@Suite.SuiteClasses({
-        Scp03Tests.class,
-        Scp11Tests.class
-})
-public class SecurityDomainTests {
-}
+@Suite.SuiteClasses({Scp03Tests.class, Scp11Tests.class})
+public class SecurityDomainTests {}

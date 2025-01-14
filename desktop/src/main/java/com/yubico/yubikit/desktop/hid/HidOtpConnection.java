@@ -18,60 +18,58 @@ package com.yubico.yubikit.desktop.hid;
 
 import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.otp.OtpConnection;
-
 import com.yubico.yubikit.desktop.OperatingSystem;
+import java.io.IOException;
 import org.hid4java.HidDevice;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-
 public class HidOtpConnection implements OtpConnection {
-    private final HidDevice hidDevice;
-    private final byte interfaceId;
-    private final static org.slf4j.Logger logger = LoggerFactory.getLogger(HidOtpConnection.class);
+  private final HidDevice hidDevice;
+  private final byte interfaceId;
+  private static final org.slf4j.Logger logger = LoggerFactory.getLogger(HidOtpConnection.class);
 
-    HidOtpConnection(HidDevice hidDevice, byte interfaceId) throws IOException {
-        Logger.debug(logger, "Opening HID OTP connection");
+  HidOtpConnection(HidDevice hidDevice, byte interfaceId) throws IOException {
+    Logger.debug(logger, "Opening HID OTP connection");
 
-        if (!hidDevice.isClosed()) {
-            throw new IOException("Device already open");
-        }
-
-        if (!hidDevice.open()) {
-            throw new IOException("Failure opening device");
-        }
-
-        this.interfaceId = interfaceId;
-        this.hidDevice = hidDevice;
+    if (!hidDevice.isClosed()) {
+      throw new IOException("Device already open");
     }
 
-    @Override
-    public void receive(byte[] report) throws IOException {
-        int offset = OperatingSystem.isWindows() ? 1 : 0;
-        int reportSize = FEATURE_REPORT_SIZE + offset;
-
-        int received = hidDevice.getFeatureReport(report, interfaceId);
-
-        if (received != reportSize) {
-            throw new IOException("Unexpected amount of data read: " + received);
-        }
+    if (!hidDevice.open()) {
+      throw new IOException("Failure opening device");
     }
 
-    @Override
-    public void send(byte[] report) throws IOException {
-        int offset = OperatingSystem.isWindows() ? 1 : 0;
-        int reportSize = FEATURE_REPORT_SIZE + offset;
+    this.interfaceId = interfaceId;
+    this.hidDevice = hidDevice;
+  }
 
-        int sent = hidDevice.sendFeatureReport(report, interfaceId);
-        
-        if (sent != reportSize) {
-            throw new IOException("Unexpected amount of data sent: " + sent);
-        }
-    }
+  @Override
+  public void receive(byte[] report) throws IOException {
+    int offset = OperatingSystem.isWindows() ? 1 : 0;
+    int reportSize = FEATURE_REPORT_SIZE + offset;
 
-    @Override
-    public void close() {
-        Logger.debug(logger, "Closing HID OTP connection");
-        hidDevice.close();
+    int received = hidDevice.getFeatureReport(report, interfaceId);
+
+    if (received != reportSize) {
+      throw new IOException("Unexpected amount of data read: " + received);
     }
+  }
+
+  @Override
+  public void send(byte[] report) throws IOException {
+    int offset = OperatingSystem.isWindows() ? 1 : 0;
+    int reportSize = FEATURE_REPORT_SIZE + offset;
+
+    int sent = hidDevice.sendFeatureReport(report, interfaceId);
+
+    if (sent != reportSize) {
+      throw new IOException("Unexpected amount of data sent: " + sent);
+    }
+  }
+
+  @Override
+  public void close() {
+    Logger.debug(logger, "Closing HID OTP connection");
+    hidDevice.close();
+  }
 }

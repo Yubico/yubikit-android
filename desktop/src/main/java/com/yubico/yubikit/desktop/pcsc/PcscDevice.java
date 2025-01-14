@@ -21,56 +21,58 @@ import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.util.Callback;
 import com.yubico.yubikit.core.util.Result;
-
-import javax.smartcardio.CardException;
-import javax.smartcardio.CardTerminal;
 import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import javax.smartcardio.CardException;
+import javax.smartcardio.CardTerminal;
 
 abstract class PcscDevice implements YubiKeyDevice {
-    private final ExecutorService executorService = Executors.newSingleThreadExecutor();
-    private final CardTerminal terminal;
+  private final ExecutorService executorService = Executors.newSingleThreadExecutor();
+  private final CardTerminal terminal;
 
-    public PcscDevice(CardTerminal terminal) {
-        this.terminal = terminal;
+  public PcscDevice(CardTerminal terminal) {
+    this.terminal = terminal;
+  }
+
+  public String getName() {
+    return terminal.getName();
+  }
+
+  public SmartCardConnection openIso7816Connection() throws IOException {
+    try {
+      return new PcscSmartCardConnection(terminal.connect("T=1"));
+    } catch (CardException e) {
+      throw new IOException(e);
     }
+  }
 
-    public String getName() {
-        return terminal.getName();
+  @Override
+  public boolean supportsConnection(Class<? extends YubiKeyConnection> connectionType) {
+    return connectionType.isAssignableFrom(PcscSmartCardConnection.class);
+  }
+
+  public <T extends YubiKeyConnection> T openConnection(Class<T> connectionType)
+      throws IOException {
+    if (!supportsConnection(connectionType)) {
+      throw new IllegalStateException("Unsupported connection type");
     }
+    return connectionType.cast(openIso7816Connection());
+  }
 
-    public SmartCardConnection openIso7816Connection() throws IOException {
-        try {
-            return new PcscSmartCardConnection(terminal.connect("T=1"));
-        } catch (CardException e) {
-            throw new IOException(e);
-        }
+  @Override
+  public <T extends YubiKeyConnection> void requestConnection(
+      Class<T> connectionType, Callback<Result<T, IOException>> callback) {
+    if (!supportsConnection(connectionType)) {
+      throw new IllegalStateException("Unsupported connection type");
     }
-
-    @Override
-    public boolean supportsConnection(Class<? extends YubiKeyConnection> connectionType) {
-        return connectionType.isAssignableFrom(PcscSmartCardConnection.class);
-    }
-
-    public <T extends YubiKeyConnection> T openConnection(Class<T> connectionType) throws IOException {
-        if (!supportsConnection(connectionType)) {
-            throw new IllegalStateException("Unsupported connection type");
-        }
-        return connectionType.cast(openIso7816Connection());
-    }
-
-    @Override
-    public <T extends YubiKeyConnection> void requestConnection(Class<T> connectionType, Callback<Result<T, IOException>> callback) {
-        if (!supportsConnection(connectionType)) {
-            throw new IllegalStateException("Unsupported connection type");
-        }
-        executorService.submit(() -> {
-            try(T connection = openConnection(connectionType)) {
-                callback.invoke(Result.success(connection));
-            } catch (IOException e) {
-                callback.invoke(Result.failure(e));
-            }
+    executorService.submit(
+        () -> {
+          try (T connection = openConnection(connectionType)) {
+            callback.invoke(Result.success(connection));
+          } catch (IOException e) {
+            callback.invoke(Result.failure(e));
+          }
         });
-    }
+  }
 }

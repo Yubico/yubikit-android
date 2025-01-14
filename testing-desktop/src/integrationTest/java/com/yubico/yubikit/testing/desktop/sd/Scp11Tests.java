@@ -18,49 +18,48 @@ package com.yubico.yubikit.testing.desktop.sd;
 
 import com.yubico.yubikit.testing.desktop.framework.SecurityDomainInstrumentedTests;
 import com.yubico.yubikit.testing.sd.Scp11DeviceTests;
-
 import org.junit.Before;
 import org.junit.Test;
 
 public class Scp11Tests extends SecurityDomainInstrumentedTests {
 
-    @Before
-    public void before() throws Throwable {
-        withState(Scp11DeviceTests::before);
-    }
+  @Before
+  public void before() throws Throwable {
+    withState(Scp11DeviceTests::before);
+  }
 
-    @Test
-    public void testScp11aAuthenticate() throws Throwable {
-        withState(Scp11DeviceTests::testScp11aAuthenticate);
-    }
+  @Test
+  public void testScp11aAuthenticate() throws Throwable {
+    withState(Scp11DeviceTests::testScp11aAuthenticate);
+  }
 
-    @Test
-    public void testScp11aAllowlist() throws Throwable {
-        withState(Scp11DeviceTests::testScp11aAllowList);
-    }
+  @Test
+  public void testScp11aAllowlist() throws Throwable {
+    withState(Scp11DeviceTests::testScp11aAllowList);
+  }
 
-    @Test
-    public void testScp11aAllowlistBlocked() throws Throwable {
-        withState(Scp11DeviceTests::testScp11aAllowListBlocked);
-    }
+  @Test
+  public void testScp11aAllowlistBlocked() throws Throwable {
+    withState(Scp11DeviceTests::testScp11aAllowListBlocked);
+  }
 
-    @Test
-    public void testScp11bAuthenticate() throws Throwable {
-        withState(Scp11DeviceTests::testScp11bAuthenticate);
-    }
+  @Test
+  public void testScp11bAuthenticate() throws Throwable {
+    withState(Scp11DeviceTests::testScp11bAuthenticate);
+  }
 
-    @Test
-    public void testScp11bWrongPubKey() throws Throwable {
-        withState(Scp11DeviceTests::testScp11bWrongPubKey);
-    }
+  @Test
+  public void testScp11bWrongPubKey() throws Throwable {
+    withState(Scp11DeviceTests::testScp11bWrongPubKey);
+  }
 
-    @Test
-    public void testScp11bImport() throws Throwable {
-        withState(Scp11DeviceTests::testScp11bImport);
-    }
+  @Test
+  public void testScp11bImport() throws Throwable {
+    withState(Scp11DeviceTests::testScp11bImport);
+  }
 
-    @Test
-    public void testScp11cAuthenticate() throws Throwable {
-        withState(Scp11DeviceTests::testScp11cAuthenticate);
-    }
+  @Test
+  public void testScp11cAuthenticate() throws Throwable {
+    withState(Scp11DeviceTests::testScp11cAuthenticate);
+  }
 }

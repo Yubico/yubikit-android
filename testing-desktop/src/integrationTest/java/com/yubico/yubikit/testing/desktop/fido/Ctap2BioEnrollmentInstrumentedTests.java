@@ -16,15 +16,13 @@
 
 package com.yubico.yubikit.testing.desktop.fido;
 
-
 import com.yubico.yubikit.testing.desktop.framework.FidoInstrumentedTests;
 import com.yubico.yubikit.testing.fido.Ctap2BioEnrollmentTests;
-
 import org.junit.Test;
 
 public class Ctap2BioEnrollmentInstrumentedTests extends FidoInstrumentedTests {
-    @Test
-    public void testFingerprintEnrollment() throws Throwable {
-        withCtap2Session(Ctap2BioEnrollmentTests::testFingerprintEnrollment);
-    }
+  @Test
+  public void testFingerprintEnrollment() throws Throwable {
+    withCtap2Session(Ctap2BioEnrollmentTests::testFingerprintEnrollment);
+  }
 }

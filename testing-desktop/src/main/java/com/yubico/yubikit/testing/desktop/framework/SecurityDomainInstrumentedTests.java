@@ -21,11 +21,13 @@ import com.yubico.yubikit.testing.sd.SecurityDomainTestState;
 
 public class SecurityDomainInstrumentedTests extends YKInstrumentedTests {
 
-    protected void withState(TestState.StatefulDeviceCallback<SecurityDomainTestState> callback) throws Throwable {
-        final SecurityDomainTestState state = new SecurityDomainTestState.Builder(device, usbPid)
-                .reconnectDeviceCallback(this::reconnectDevice)
-                .build();
+  protected void withState(TestState.StatefulDeviceCallback<SecurityDomainTestState> callback)
+      throws Throwable {
+    final SecurityDomainTestState state =
+        new SecurityDomainTestState.Builder(device, usbPid)
+            .reconnectDeviceCallback(this::reconnectDevice)
+            .build();
 
-        state.withDeviceCallback(callback);
-    }
+    state.withDeviceCallback(callback);
+  }
 }

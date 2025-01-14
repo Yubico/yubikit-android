@@ -17,17 +17,17 @@
 package com.yubico.yubikit.desktop;
 
 public class OperatingSystem {
-    public static final String Name = System.getProperty("os.name");
+  public static final String Name = System.getProperty("os.name");
 
-    public static boolean isWindows() {
-        return Name.toLowerCase().contains("win");
-    }
+  public static boolean isWindows() {
+    return Name.toLowerCase().contains("win");
+  }
 
-    public static boolean isMac() {
-        return Name.toLowerCase().contains("mac");
-    }
+  public static boolean isMac() {
+    return Name.toLowerCase().contains("mac");
+  }
 
-    public static boolean isLinux() {
-        return Name.toLowerCase().contains("linux");
-    }
+  public static boolean isLinux() {
+    return Name.toLowerCase().contains("linux");
+  }
 }

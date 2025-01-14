@@ -20,13 +20,10 @@ import org.junit.experimental.categories.Categories;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
-/**
- * Quick, randomly selected tests for different applications.
- */
+/** Quick, randomly selected tests for different applications. */
 @RunWith(Categories.class)
 @Categories.IncludeCategory({
-        SmokeTest.class,
+  SmokeTest.class,
 })
 @Suite.SuiteClasses(DeviceTests.class)
-public class SmokeDeviceTests {
-}
+public class SmokeDeviceTests {}

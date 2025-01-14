@@ -21,55 +21,54 @@ import com.yubico.yubikit.core.UsbInterface;
 import com.yubico.yubikit.core.UsbPid;
 import com.yubico.yubikit.core.YubiKeyType;
 import com.yubico.yubikit.desktop.UsbYubiKeyDevice;
-
 import javax.smartcardio.CardTerminal;
 
 public class UsbPcscDevice extends PcscDevice implements UsbYubiKeyDevice {
-    private final UsbPid pid;
+  private final UsbPid pid;
 
-    public UsbPcscDevice(CardTerminal terminal) {
-        super(terminal);
-        this.pid = getPidFromName(terminal.getName());
+  public UsbPcscDevice(CardTerminal terminal) {
+    super(terminal);
+    this.pid = getPidFromName(terminal.getName());
+  }
+
+  private static UsbPid getPidFromName(String name) {
+    if (!name.toLowerCase().contains("yubikey")) {
+      throw new IllegalArgumentException("Given argument is not a USB YubiKey");
     }
 
-    private static UsbPid getPidFromName(String name) {
-        if (!name.toLowerCase().contains("yubikey")) {
-            throw new IllegalArgumentException("Given argument is not a USB YubiKey");
-        }
-
-        int usbInterfaces = 0;
-        if (name.contains("CCID")) {
-            usbInterfaces |= UsbInterface.CCID;
-        }
-        if (name.contains("OTP")) {
-            usbInterfaces |= UsbInterface.OTP;
-        }
-        if (name.contains("FIDO") || name.contains("U2F")) {
-            usbInterfaces |= UsbInterface.FIDO;
-        }
-        YubiKeyType keyType = name.contains("NEO") ? YubiKeyType.NEO : YubiKeyType.YK4;
-
-        for (UsbPid pid : UsbPid.values()) {
-            if (pid.type == keyType && pid.usbInterfaces == usbInterfaces) {
-                return pid;
-            }
-        }
-
-        throw new IllegalArgumentException("No known PID for device name");
+    int usbInterfaces = 0;
+    if (name.contains("CCID")) {
+      usbInterfaces |= UsbInterface.CCID;
     }
-
-    @Override
-    public Transport getTransport() {
-        return Transport.USB;
+    if (name.contains("OTP")) {
+      usbInterfaces |= UsbInterface.OTP;
     }
-
-    @Override
-    public String getFingerprint() {
-        return getName();
+    if (name.contains("FIDO") || name.contains("U2F")) {
+      usbInterfaces |= UsbInterface.FIDO;
     }
+    YubiKeyType keyType = name.contains("NEO") ? YubiKeyType.NEO : YubiKeyType.YK4;
 
-    @Override
-    public UsbPid getPid() {
+    for (UsbPid pid : UsbPid.values()) {
+      if (pid.type == keyType && pid.usbInterfaces == usbInterfaces) {
         return pid;
+      }
     }
+
+    throw new IllegalArgumentException("No known PID for device name");
+  }
+
+  @Override
+  public Transport getTransport() {
+    return Transport.USB;
+  }
+
+  @Override
+  public String getFingerprint() {
+    return getName();
+  }
+
+  @Override
+  public UsbPid getPid() {
+    return pid;
+  }
 }

@@ -17,17 +17,17 @@
 package com.yubico.yubikit.desktop.pcsc;
 
 public interface PcscSessionListener {
-    /**
-     * Invoked when detected inserted device after usb discovery started
-     *
-     * @param session usb session that associated with plugged in device
-     */
-    void onSessionReceived(NfcPcscDevice session);
+  /**
+   * Invoked when detected inserted device after usb discovery started
+   *
+   * @param session usb session that associated with plugged in device
+   */
+  void onSessionReceived(NfcPcscDevice session);
 
-    /**
-     * Invoked when detected removal/ejection of usb device after usb discovery started
-     *
-     * @param session usb session that will become inactive
-     */
-    void onSessionRemoved(NfcPcscDevice session);
+  /**
+   * Invoked when detected removal/ejection of usb device after usb discovery started
+   *
+   * @param session usb session that will become inactive
+   */
+  void onSessionRemoved(NfcPcscDevice session);
 }

@@ -22,78 +22,80 @@ import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.util.Callback;
 import com.yubico.yubikit.core.util.Result;
 import com.yubico.yubikit.desktop.UsbYubiKeyDevice;
-
 import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class HidDevice implements UsbYubiKeyDevice {
-    private final ExecutorService executorService = Executors.newSingleThreadExecutor();
-    private final org.hid4java.HidDevice hidDevice;
-    private final int usagePage;
+  private final ExecutorService executorService = Executors.newSingleThreadExecutor();
+  private final org.hid4java.HidDevice hidDevice;
+  private final int usagePage;
 
-    HidDevice(org.hid4java.HidDevice hidDevice) {
-        this.hidDevice = hidDevice;
-        usagePage = hidDevice.getUsagePage() & 0xffff;
+  HidDevice(org.hid4java.HidDevice hidDevice) {
+    this.hidDevice = hidDevice;
+    usagePage = hidDevice.getUsagePage() & 0xffff;
+  }
+
+  public HidOtpConnection openOtpConnection() throws IOException {
+    return new HidOtpConnection(hidDevice, (byte) 0);
+  }
+
+  public HidFidoConnection openFidoConnection() throws IOException {
+    if (usagePage == 0xf1d0) {
+      return new HidFidoConnection(hidDevice);
     }
+    throw new IOException("fido connection not supported");
+  }
 
-    public HidOtpConnection openOtpConnection() throws IOException {
-        return new HidOtpConnection(hidDevice, (byte) 0);
+  @Override
+  public Transport getTransport() {
+    return Transport.USB;
+  }
+
+  @Override
+  public boolean supportsConnection(Class<? extends YubiKeyConnection> connectionType) {
+    if (connectionType.isAssignableFrom(HidOtpConnection.class)) {
+      return usagePage == 1;
+    } else if (connectionType.isAssignableFrom(HidFidoConnection.class)) {
+      return usagePage == 0xf1d0;
     }
+    return false;
+  }
 
-    public HidFidoConnection openFidoConnection() throws IOException {
-        if (usagePage == 0xf1d0) {
-            return new HidFidoConnection(hidDevice);
-        }
-        throw new IOException("fido connection not supported");
+  @Override
+  public <T extends YubiKeyConnection> void requestConnection(
+      Class<T> connectionType, Callback<Result<T, IOException>> callback) {
+    if (!supportsConnection(connectionType)) {
+      throw new IllegalStateException("Unsupported connection type");
     }
-
-    @Override
-    public Transport getTransport() {
-        return Transport.USB;
-    }
-
-    @Override
-    public boolean supportsConnection(Class<? extends YubiKeyConnection> connectionType) {
-        if (connectionType.isAssignableFrom(HidOtpConnection.class)) {
-            return usagePage == 1;
-        } else if (connectionType.isAssignableFrom(HidFidoConnection.class)) {
-            return usagePage == 0xf1d0;
-        }
-        return false;
-    }
-
-    @Override
-    public <T extends YubiKeyConnection> void requestConnection(Class<T> connectionType, Callback<Result<T, IOException>> callback) {
-        if (!supportsConnection(connectionType)) {
-            throw new IllegalStateException("Unsupported connection type");
-        }
-        executorService.submit(() -> {
-            try(T connection = openConnection(connectionType)) {
-                callback.invoke(Result.success(connection));
-            } catch (IOException e) {
-                callback.invoke(Result.failure(e));
-            }
+    executorService.submit(
+        () -> {
+          try (T connection = openConnection(connectionType)) {
+            callback.invoke(Result.success(connection));
+          } catch (IOException e) {
+            callback.invoke(Result.failure(e));
+          }
         });
-    }
+  }
 
-    @Override
-    public <T extends YubiKeyConnection> T openConnection(Class<T> connectionType) throws IOException {
-        if (connectionType.isAssignableFrom(HidOtpConnection.class)) {
-            return connectionType.cast(openOtpConnection());
-        } else if (connectionType.isAssignableFrom(HidFidoConnection.class)) {
-            return connectionType.cast(openFidoConnection());
-        }
-        throw new IllegalStateException("Unsupported connection type");
+  @Override
+  public <T extends YubiKeyConnection> T openConnection(Class<T> connectionType)
+      throws IOException {
+    if (connectionType.isAssignableFrom(HidOtpConnection.class)) {
+      return connectionType.cast(openOtpConnection());
+    } else if (connectionType.isAssignableFrom(HidFidoConnection.class)) {
+      return connectionType.cast(openFidoConnection());
     }
+    throw new IllegalStateException("Unsupported connection type");
+  }
 
-    @Override
-    public String getFingerprint() {
-        return hidDevice.getPath();
-    }
+  @Override
+  public String getFingerprint() {
+    return hidDevice.getPath();
+  }
 
-    @Override
-    public UsbPid getPid() {
-        return UsbPid.fromValue(hidDevice.getProductId());
-    }
+  @Override
+  public UsbPid getPid() {
+    return UsbPid.fromValue(hidDevice.getProductId());
+  }
 }

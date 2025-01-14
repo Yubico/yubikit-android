@@ -1,4 +1,6 @@
-apply plugin: 'yubikit-java-library'
+plugins {
+    id 'yubikit-java-library'
+}
 
 dependencies {
     api project(':support')

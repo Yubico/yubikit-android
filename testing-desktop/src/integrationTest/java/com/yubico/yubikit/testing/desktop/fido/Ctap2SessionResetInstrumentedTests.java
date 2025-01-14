@@ -22,7 +22,6 @@ import com.yubico.yubikit.testing.desktop.AlwaysManualTest;
 import com.yubico.yubikit.testing.desktop.PinUvAuthProtocolV1Test;
 import com.yubico.yubikit.testing.desktop.framework.FidoInstrumentedTests;
 import com.yubico.yubikit.testing.fido.Ctap2SessionTests;
-
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -30,32 +29,33 @@ import org.junit.runners.Suite;
 
 /**
  * Tests FIDO Reset.
- * <p>
- * This is a manual test which will reset the FIDO application.
+ *
+ * <p>This is a manual test which will reset the FIDO application.
+ *
  * <ul>
- *     <li>Before running the test, disconnect the YubiKey from the Android device.</li>
- *     <li>YubiKey Bio devices are currently ignored.</li>
+ *   <li>Before running the test, disconnect the YubiKey from the Android device.
+ *   <li>YubiKey Bio devices are currently ignored.
  * </ul>
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        Ctap2SessionResetInstrumentedTests.PinUvAuthV2Test.class,
-        Ctap2SessionResetInstrumentedTests.PinUvAuthV1Test.class,
+  Ctap2SessionResetInstrumentedTests.PinUvAuthV2Test.class,
+  Ctap2SessionResetInstrumentedTests.PinUvAuthV1Test.class,
 })
 public class Ctap2SessionResetInstrumentedTests {
-    public static class PinUvAuthV2Test extends FidoInstrumentedTests {
-        @Test
-        @Category(AlwaysManualTest.class)
-        public void testReset() throws Throwable {
-            withDevice(false, Ctap2SessionTests::testReset);
-        }
+  public static class PinUvAuthV2Test extends FidoInstrumentedTests {
+    @Test
+    @Category(AlwaysManualTest.class)
+    public void testReset() throws Throwable {
+      withDevice(false, Ctap2SessionTests::testReset);
     }
+  }
 
-    @Category(PinUvAuthProtocolV1Test.class)
-    public static class PinUvAuthV1Test extends PinUvAuthV2Test {
-        @Override
-        protected PinUvAuthProtocol getPinUvAuthProtocol() {
-            return new PinUvAuthProtocolV1();
-        }
+  @Category(PinUvAuthProtocolV1Test.class)
+  public static class PinUvAuthV1Test extends PinUvAuthV2Test {
+    @Override
+    protected PinUvAuthProtocol getPinUvAuthProtocol() {
+      return new PinUvAuthProtocolV1();
     }
+  }
 }

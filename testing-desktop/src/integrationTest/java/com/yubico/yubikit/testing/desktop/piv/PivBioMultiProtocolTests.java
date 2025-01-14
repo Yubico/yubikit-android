@@ -18,13 +18,12 @@ package com.yubico.yubikit.testing.desktop.piv;
 
 import com.yubico.yubikit.testing.desktop.framework.PivInstrumentedTests;
 import com.yubico.yubikit.testing.piv.PivBioMultiProtocolDeviceTests;
-
 import org.junit.Test;
 
 public class PivBioMultiProtocolTests extends PivInstrumentedTests {
 
-    @Test
-    public void testAuthenticate() throws Throwable {
-        withPivSession(PivBioMultiProtocolDeviceTests::testAuthenticate);
-    }
+  @Test
+  public void testAuthenticate() throws Throwable {
+    withPivSession(PivBioMultiProtocolDeviceTests::testAuthenticate);
+  }
 }

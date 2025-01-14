@@ -19,21 +19,18 @@ package com.yubico.yubikit.testing.desktop.framework;
 import com.yubico.yubikit.piv.PivSession;
 import com.yubico.yubikit.testing.TestState;
 import com.yubico.yubikit.testing.piv.PivTestState;
-
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
-
 import java.security.Security;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 public class PivInstrumentedTests extends YKInstrumentedTests {
 
-    protected void withPivSession(TestState.StatefulSessionCallback<PivSession, PivTestState> callback) throws Throwable {
+  protected void withPivSession(
+      TestState.StatefulSessionCallback<PivSession, PivTestState> callback) throws Throwable {
 
-        Security.removeProvider("BC");
-        Security.insertProviderAt(new BouncyCastleProvider(), 1);
+    Security.removeProvider("BC");
+    Security.insertProviderAt(new BouncyCastleProvider(), 1);
 
-        final PivTestState state = new PivTestState.Builder(device, usbPid)
-                .scpKid(getScpKid())
-                .build();
-        state.withPiv(callback);
-    }
+    final PivTestState state = new PivTestState.Builder(device, usbPid).scpKid(getScpKid()).build();
+    state.withPiv(callback);
+  }
 }

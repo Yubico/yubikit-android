@@ -20,7 +20,6 @@ import com.yubico.yubikit.core.UsbPid;
 import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.desktop.CompositeDevice;
 import com.yubico.yubikit.testing.desktop.DesktopTestDriver;
-
 import org.jetbrains.annotations.Nullable;
 import org.junit.Rule;
 import org.junit.rules.ExternalResource;
@@ -28,54 +27,53 @@ import org.junit.rules.TestName;
 
 public class YKInstrumentedTests {
 
-    private final DesktopTestDriver testDriver = new DesktopTestDriver();
+  private final DesktopTestDriver testDriver = new DesktopTestDriver();
 
-    protected YubiKeyDevice device = null;
-    protected UsbPid usbPid = null;
+  protected YubiKeyDevice device = null;
+  protected UsbPid usbPid = null;
 
-    @Rule
-    public final TestName name = new TestName();
+  @Rule public final TestName name = new TestName();
 
-    @Rule
-    public final ExternalResource externalResource = new ExternalResource() {
+  @Rule
+  public final ExternalResource externalResource =
+      new ExternalResource() {
 
         @Override
         protected void before() throws Throwable {
-            getDevice();
+          getDevice();
         }
 
         @Override
         protected void after() {
-            releaseDevice();
+          releaseDevice();
         }
-    };
+      };
 
-    protected YubiKeyDevice reconnectDevice() {
-        releaseDevice();
-        getDevice();
-        return device;
+  protected YubiKeyDevice reconnectDevice() {
+    releaseDevice();
+    getDevice();
+    return device;
+  }
+
+  @Nullable
+  protected Byte getScpKid() {
+    return null;
+  }
+
+  private void getDevice() {
+    try {
+      device = testDriver.awaitSession();
+      if (device instanceof CompositeDevice) {
+        CompositeDevice compositeDevice = (CompositeDevice) device;
+        usbPid = compositeDevice.getPidGroup().getPid();
+      }
+    } catch (InterruptedException interruptedException) {
+      throw new RuntimeException("awaitSession failed", interruptedException);
     }
+  }
 
-    @Nullable
-    protected Byte getScpKid() {
-        return null;
-    }
-
-    private void getDevice() {
-        try {
-            device = testDriver.awaitSession();
-            if (device instanceof CompositeDevice) {
-                CompositeDevice compositeDevice = (CompositeDevice) device;
-                usbPid = compositeDevice.getPidGroup().getPid();
-            }
-        } catch (InterruptedException interruptedException) {
-            throw new RuntimeException("awaitSession failed", interruptedException);
-        }
-    }
-
-    private void releaseDevice() {
-        testDriver.returnSession(device);
-        device = null;
-    }
-
+  private void releaseDevice() {
+    testDriver.returnSession(device);
+    device = null;
+  }
 }
