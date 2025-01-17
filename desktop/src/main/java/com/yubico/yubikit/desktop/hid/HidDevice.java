@@ -22,11 +22,12 @@ import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.util.Callback;
 import com.yubico.yubikit.core.util.Result;
 import com.yubico.yubikit.desktop.UsbYubiKeyDevice;
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class HidDevice implements UsbYubiKeyDevice {
+public class HidDevice implements UsbYubiKeyDevice, Closeable {
   private final ExecutorService executorService = Executors.newSingleThreadExecutor();
   private final org.hid4java.HidDevice hidDevice;
   private final int usagePage;
@@ -81,15 +82,12 @@ public class HidDevice implements UsbYubiKeyDevice {
   @Override
   public <T extends YubiKeyConnection> T openConnection(Class<T> connectionType)
       throws IOException {
-    return UsbYubiKeyDevice.tryOpen(
-        () -> {
-          if (connectionType.isAssignableFrom(HidOtpConnection.class)) {
-            return connectionType.cast(openOtpConnection());
-          } else if (connectionType.isAssignableFrom(HidFidoConnection.class)) {
-            return connectionType.cast(openFidoConnection());
-          }
-          throw new IllegalStateException("Unsupported connection type");
-        });
+    if (connectionType.isAssignableFrom(HidOtpConnection.class)) {
+      return connectionType.cast(openOtpConnection());
+    } else if (connectionType.isAssignableFrom(HidFidoConnection.class)) {
+      return connectionType.cast(openFidoConnection());
+    }
+    throw new IllegalStateException("Unsupported connection type");
   }
 
   @Override
@@ -100,5 +98,10 @@ public class HidDevice implements UsbYubiKeyDevice {
   @Override
   public UsbPid getPid() {
     return UsbPid.fromValue(hidDevice.getProductId());
+  }
+
+  @Override
+  public void close() throws IOException {
+    executorService.shutdown();
   }
 }

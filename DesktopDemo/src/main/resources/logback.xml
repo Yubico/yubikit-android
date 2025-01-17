@@ -5,8 +5,6 @@
             <pattern>%d{HH:mm:ss.SSS} [%-20thread][%-5level] %msg%n</pattern>
         </encoder>
     </appender>
-
-    <!-- Write DEBUG (and higher-level) messages to console -->
     <root level="INFO">
         <appender-ref ref="STDOUT" />
     </root>

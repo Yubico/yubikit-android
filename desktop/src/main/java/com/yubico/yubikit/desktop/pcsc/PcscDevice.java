@@ -21,14 +21,14 @@ import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.util.Callback;
 import com.yubico.yubikit.core.util.Result;
-import com.yubico.yubikit.desktop.UsbYubiKeyDevice;
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import javax.smartcardio.CardException;
 import javax.smartcardio.CardTerminal;
 
-abstract class PcscDevice implements YubiKeyDevice {
+abstract class PcscDevice implements YubiKeyDevice, Closeable {
   private final ExecutorService executorService = Executors.newSingleThreadExecutor();
   private final CardTerminal terminal;
 
@@ -60,7 +60,7 @@ abstract class PcscDevice implements YubiKeyDevice {
       throw new IllegalStateException("Unsupported connection type");
     }
 
-    return UsbYubiKeyDevice.tryOpen(() -> connectionType.cast(openIso7816Connection()));
+    return connectionType.cast(openIso7816Connection());
   }
 
   @Override
@@ -77,5 +77,10 @@ abstract class PcscDevice implements YubiKeyDevice {
             callback.invoke(Result.failure(e));
           }
         });
+  }
+
+  @Override
+  public void close() throws IOException {
+    executorService.shutdown();
   }
 }

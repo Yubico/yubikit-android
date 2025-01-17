@@ -19,38 +19,13 @@ package com.yubico.yubikit.desktop;
 import com.yubico.yubikit.core.UsbPid;
 import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.YubiKeyDevice;
+import java.io.Closeable;
 import java.io.IOException;
 
-public interface UsbYubiKeyDevice extends YubiKeyDevice {
+public interface UsbYubiKeyDevice extends YubiKeyDevice, Closeable {
   <T extends YubiKeyConnection> T openConnection(Class<T> connectionType) throws IOException;
 
   String getFingerprint();
 
   UsbPid getPid();
-
-  interface TryOpenUsbCallback<T extends YubiKeyConnection> {
-    T open() throws IOException;
-  }
-
-  static <T extends YubiKeyConnection> T tryOpen(TryOpenUsbCallback<T> callback)
-      throws IOException {
-    Exception lastException = null;
-    long USB_RECLAIM_TIMEOUT = 3000;
-    long startTime = System.currentTimeMillis();
-    while (System.currentTimeMillis() - startTime < USB_RECLAIM_TIMEOUT) {
-      try {
-        return callback.open();
-      } catch (Exception exception) {
-        lastException = exception;
-        try {
-          //noinspection BusyWait
-          Thread.sleep(100);
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-          throw new IOException("Interrupted while trying to open connection");
-        }
-      }
-    }
-    throw new IOException("Failed to open connection", lastException);
-  }
 }

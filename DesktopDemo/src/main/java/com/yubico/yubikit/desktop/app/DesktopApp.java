@@ -137,12 +137,19 @@ public class DesktopApp {
         logger.info("    Device does not support OtpConnection");
       }
     }
+
+    for (YubiKeyDevice yubiKeyDevice : devices.keySet()) {
+      if (yubiKeyDevice instanceof CompositeDevice) {
+        CompositeDevice usbYubiKeyDevice = (CompositeDevice) yubiKeyDevice;
+        usbYubiKeyDevice.close();
+      }
+    }
     logger.info("Application exited");
   }
 
   private static void sleep() {
     try {
-      Thread.sleep(500);
+      Thread.sleep(200);
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       throw new RuntimeException(e);

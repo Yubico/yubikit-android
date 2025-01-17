@@ -30,11 +30,12 @@ import com.yubico.yubikit.core.util.Callback;
 import com.yubico.yubikit.core.util.Result;
 import com.yubico.yubikit.management.DeviceInfo;
 import com.yubico.yubikit.support.DeviceUtil;
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.*;
 import org.slf4j.LoggerFactory;
 
-public class UsbPidGroup {
+public class UsbPidGroup implements Closeable {
   final UsbPid pid;
 
   private final Map<String, DeviceInfo> infos = new HashMap<>();
@@ -225,5 +226,24 @@ public class UsbPidGroup {
 
   public UsbPid getPid() {
     return pid;
+  }
+
+  @Override
+  public void close() throws IOException {
+    for (String resolvedEntry : resolved.keySet()) {
+      Map<Integer, UsbYubiKeyDevice> ifaceDevice = resolved.get(resolvedEntry);
+      for (UsbYubiKeyDevice device : ifaceDevice.values()) {
+        Logger.debug(logger, "Closing resolved device {}", device.getFingerprint());
+        device.close();
+      }
+    }
+
+    for (Integer unresolvedIface : unresolved.keySet()) {
+      List<UsbYubiKeyDevice> unresolvedDevices = unresolved.get(unresolvedIface);
+      for (UsbYubiKeyDevice device : unresolvedDevices) {
+        Logger.debug(logger, "Closing unresolved device {}", device.getFingerprint());
+        device.close();
+      }
+    }
   }
 }

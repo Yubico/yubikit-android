@@ -21,9 +21,10 @@ import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.util.Callback;
 import com.yubico.yubikit.core.util.Result;
+import java.io.Closeable;
 import java.io.IOException;
 
-public class CompositeDevice implements YubiKeyDevice {
+public class CompositeDevice implements YubiKeyDevice, Closeable {
   private final UsbPidGroup pidGroup;
   private final String key;
 
@@ -56,5 +57,10 @@ public class CompositeDevice implements YubiKeyDevice {
 
   public UsbPidGroup getPidGroup() {
     return pidGroup;
+  }
+
+  @Override
+  public void close() throws IOException {
+    pidGroup.close();
   }
 }
