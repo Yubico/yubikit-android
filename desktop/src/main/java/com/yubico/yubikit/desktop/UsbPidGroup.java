@@ -42,8 +42,6 @@ public class UsbPidGroup implements Closeable {
   private final Map<String, Map<Integer, UsbYubiKeyDevice>> resolved = new HashMap<>();
   private final Map<Integer, List<UsbYubiKeyDevice>> unresolved = new HashMap<>();
   private final Map<Integer, Integer> devCount = new HashMap<>();
-  private final Set<String> fingerprints = new HashSet<>();
-  private final long ctime = System.currentTimeMillis();
 
   private final org.slf4j.Logger logger = LoggerFactory.getLogger(UsbPidGroup.class);
 
@@ -82,7 +80,6 @@ public class UsbPidGroup implements Closeable {
       boolean forceResolve) {
     Logger.trace(logger, "Add device node {}{}", device, connectionType);
     int usbInterface = getUsbInterface(connectionType);
-    fingerprints.add(device.getFingerprint());
     devCount.put(usbInterface, devCount.getOrDefault(usbInterface, 0) + 1);
     if (forceResolve || resolved.size() < devCount.values().stream().reduce(0, Math::max)) {
       try (YubiKeyConnection connection = device.openConnection(connectionType)) {

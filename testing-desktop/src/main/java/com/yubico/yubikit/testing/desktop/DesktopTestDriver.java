@@ -41,7 +41,7 @@ public class DesktopTestDriver {
     return yubikit.listAllDevices().keySet().iterator().next();
   }
 
-  public void returnSession(YubiKeyDevice device) {
+  public void returnSession(YubiKeyDevice ignoredDevice) {
     Logger.debug(logger, "Device returned");
   }
 }

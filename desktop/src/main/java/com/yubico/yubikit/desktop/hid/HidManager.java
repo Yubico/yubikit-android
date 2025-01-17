@@ -16,14 +16,10 @@
 
 package com.yubico.yubikit.desktop.hid;
 
-import com.yubico.yubikit.core.internal.Logger;
 import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.Nullable;
 import org.hid4java.HidServices;
-import org.hid4java.HidServicesListener;
-import org.hid4java.event.HidServicesEvent;
-import org.slf4j.LoggerFactory;
 
 public class HidManager {
 
@@ -32,8 +28,6 @@ public class HidManager {
   private static final int HID_USAGE_PAGE_FIDO = 0xf1d0;
 
   private final HidServices services;
-
-  private final org.slf4j.Logger logger = LoggerFactory.getLogger(HidManager.class);
 
   public HidManager() {
     services = org.hid4java.HidManager.getHidServices();
@@ -56,31 +50,5 @@ public class HidManager {
 
   public List<HidDevice> getFidoDevices() {
     return getHidDevices(YUBICO_VENDOR_ID, HID_USAGE_PAGE_FIDO);
-  }
-
-  public void setListener(HidSessionListener listener) {
-    services.addHidServicesListener(
-        new HidServicesListener() {
-          @Override
-          public void hidDeviceAttached(HidServicesEvent event) {
-            Logger.debug(logger, "HID attached: {}", event);
-            listener.onSessionReceived(new HidDevice(event.getHidDevice()));
-          }
-
-          @Override
-          public void hidDeviceDetached(HidServicesEvent event) {
-            Logger.debug(logger, "HID removed: {}", event);
-          }
-
-          @Override
-          public void hidFailure(HidServicesEvent event) {
-            Logger.debug(logger, "HID failure: {}", event);
-          }
-
-          @Override
-          public void hidDataReceived(HidServicesEvent event) {
-            Logger.debug(logger, "HID Data received: {}", event);
-          }
-        });
   }
 }
