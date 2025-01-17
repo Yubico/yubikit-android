@@ -9,6 +9,9 @@ dependencies {
     implementation 'ch.qos.logback:logback-classic:1.5.16'
 
     implementation project(':desktop')
+    implementation project(':oath')
+    implementation project(':fido')
+    implementation project(':yubiotp')
 }
 
 application {

@@ -81,12 +81,15 @@ public class HidDevice implements UsbYubiKeyDevice {
   @Override
   public <T extends YubiKeyConnection> T openConnection(Class<T> connectionType)
       throws IOException {
-    if (connectionType.isAssignableFrom(HidOtpConnection.class)) {
-      return connectionType.cast(openOtpConnection());
-    } else if (connectionType.isAssignableFrom(HidFidoConnection.class)) {
-      return connectionType.cast(openFidoConnection());
-    }
-    throw new IllegalStateException("Unsupported connection type");
+    return UsbYubiKeyDevice.tryOpen(
+        () -> {
+          if (connectionType.isAssignableFrom(HidOtpConnection.class)) {
+            return connectionType.cast(openOtpConnection());
+          } else if (connectionType.isAssignableFrom(HidFidoConnection.class)) {
+            return connectionType.cast(openFidoConnection());
+          }
+          throw new IllegalStateException("Unsupported connection type");
+        });
   }
 
   @Override

@@ -7,7 +7,7 @@
     </appender>
 
     <!-- Write DEBUG (and higher-level) messages to console -->
-    <root level="DEBUG">
+    <root level="INFO">
         <appender-ref ref="STDOUT" />
     </root>
 </configuration>

@@ -98,8 +98,8 @@ public class UsbPidGroup {
             "Resolved device {}",
             serialNumber != null ? serialNumber : "without serial number");
         return;
-      } catch (IOException e) {
-        Logger.error(logger, "Failed opening device. ", e);
+      } catch (UnsupportedOperationException | IOException e) {
+        Logger.error(logger, "Failed opening device: {}", e.getMessage());
       }
     }
     if (!unresolved.containsKey(usbInterface)) {
@@ -128,8 +128,9 @@ public class UsbPidGroup {
       while (!devices.isEmpty()) {
         device = devices.remove(0);
         Logger.debug(logger, "Candidate: {}", device);
+        T connection = null;
         try {
-          T connection = device.openConnection(connectionType);
+          connection = device.openConnection(connectionType);
           DeviceInfo info = DeviceUtil.readInfo(connection, pid);
           String deviceKey = buildKey(info);
           if (infos.containsKey(deviceKey)) {
@@ -144,24 +145,35 @@ public class UsbPidGroup {
               return connection;
             }
           }
+          connection.close();
         } catch (IOException e) {
+          if (connection != null) {
+            connection.close();
+          }
           Logger.error(logger, "Failed opening candidate device: ", e);
           failed.add(device);
+        } catch (Exception e) {
+          if (connection != null) {
+            connection.close();
+          }
+          throw e;
         }
       }
     } finally {
       devices.addAll(failed);
     }
 
-    throw new IOException("Failed to open connection");
+    throw new IOException("Could not open " + connectionType.getSimpleName());
   }
 
   <T extends YubiKeyConnection> void requestConnection(
       String key, Class<T> connectionType, Callback<Result<T, IOException>> callback) {
     int usbInterface = getUsbInterface(connectionType);
     UsbYubiKeyDevice device = resolved.get(key).get(usbInterface);
+    Exception lastException = null;
     if (device != null) {
       device.requestConnection(connectionType, callback);
+      return;
     } else {
       Logger.debug(logger, "Resolve device for {}, {}", connectionType, key);
       List<UsbYubiKeyDevice> devices = unresolved.getOrDefault(usbInterface, new ArrayList<>());
@@ -188,37 +200,19 @@ public class UsbPidGroup {
                 return;
               }
             }
-          } catch (IOException e) {
-            Logger.error(logger, "Failed opening candidate device: ", e);
+          } catch (UnsupportedOperationException | IOException e) {
+            Logger.error(logger, "Failed opening candidate device: {}", e.getMessage());
+            lastException = e;
             failed.add(device);
           }
         }
       } finally {
         devices.addAll(failed);
       }
-
-      // TODO
-      /*
-          if self._devcount[iface] < len(self._infos):
-          logger.debug(f"Checking for more devices over {iface!s}")
-          for dev in _CONNECTION_LIST_MAPPING[conn_type]():
-              if self._pid == dev.pid and dev.fingerprint not in self._fingerprints:
-                  self.add(conn_type, dev, True)
-
-          resolved = self._resolved[key].get(iface)
-          if resolved:
-              return resolved.open_connection(conn_type)
-
-      # Retry if we are within a 5 second period after creation,
-      # as not all USB interface become usable at the exact same time.
-      if time() < self._ctime + 5:
-          logger.debug("Device not found, retry in 1s")
-          sleep(1.0)
-          return self.connect(key, conn_type)
-
-      raise ValueError("Failed to connect to the device")
-           */
     }
+
+    // was not able to request connection from any the devices
+    callback.invoke(Result.failure(new IOException("Request connection failed", lastException)));
   }
 
   Map<YubiKeyDevice, DeviceInfo> getDevices() {

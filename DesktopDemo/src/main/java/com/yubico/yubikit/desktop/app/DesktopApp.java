@@ -20,10 +20,16 @@ import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.fido.FidoConnection;
 import com.yubico.yubikit.core.otp.OtpConnection;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
+import com.yubico.yubikit.desktop.CompositeDevice;
 import com.yubico.yubikit.desktop.OperatingSystem;
 import com.yubico.yubikit.desktop.YubiKitManager;
+import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.management.DeviceInfo;
-import java.io.IOException;
+import com.yubico.yubikit.oath.OathSession;
+import com.yubico.yubikit.yubiotp.ConfigurationState;
+import com.yubico.yubikit.yubiotp.Slot;
+import com.yubico.yubikit.yubiotp.YubiOtpSession;
+import java.util.List;
 import java.util.Map;
 import org.slf4j.LoggerFactory;
 
@@ -31,67 +37,115 @@ public class DesktopApp {
 
   private static final org.slf4j.Logger logger = LoggerFactory.getLogger(DesktopApp.class);
 
-  public static void main(String[] argv) {
+  public static void main(String[] argv) throws Exception {
     if (OperatingSystem.isMac()) {
+
       System.setProperty(
           "sun.security.smartcardio.library",
           "/System/Library/Frameworks/PCSC.framework/Versions/Current/PCSC");
     }
 
-    logger.info("Insert YubiKey now...");
-
     YubiKitManager manager = new YubiKitManager();
     Map<YubiKeyDevice, DeviceInfo> devices = manager.listAllDevices();
-    logger.info("Devices: {}", devices);
+    if (devices.isEmpty()) {
+      logger.info("No devices are connected.");
+    } else {
+      logger.info("Found {} devices", devices.size());
+    }
+
     for (Map.Entry<YubiKeyDevice, DeviceInfo> entry : devices.entrySet()) {
       YubiKeyDevice device = entry.getKey();
       DeviceInfo info = entry.getValue();
-      logger.info("Found key: {} {}", device, info);
+
+      String deviceType = device.getClass().getSimpleName();
+
+      if (device instanceof CompositeDevice) {
+        CompositeDevice compositeDevice = (CompositeDevice) device;
+        deviceType += " (" + compositeDevice.getPidGroup().getPid() + ")";
+      }
+
+      logger.info(
+          "- {}:{}/{}/{}",
+          deviceType,
+          info.getFormFactor(),
+          info.getVersion(),
+          info.getSerialNumber());
+
       if (device.supportsConnection(SmartCardConnection.class)) {
-        logger.debug("Request CCID connection");
         device.requestConnection(
             SmartCardConnection.class,
             value -> {
               try {
-                logger.info("Got CCID connection {}", value.getValue());
+                SmartCardConnection connection = value.getValue();
+                OathSession oath = new OathSession(connection);
+                logger.info(
+                    "    Device supports SmartCardConnection. OATH applet version is: {}",
+                    oath.getVersion());
               } catch (Exception e) {
-                logger.error("Failed to get CCID: ", e);
+                logger.error("      SmartCard connection failed with error: {}", e.getMessage());
               }
             });
+
+        sleep();
+      } else {
+        logger.info("    Device does not support SmartCardConnection");
       }
-      if (device.supportsConnection(OtpConnection.class)) {
-        logger.debug("Request OTP connection");
-        device.requestConnection(
-            OtpConnection.class,
-            value -> {
-              try {
-                logger.debug("Got OTP connection {}", value.getValue());
-              } catch (IOException e) {
-                logger.error("Failed to get OTP: ", e);
-              }
-            });
-      }
+
       if (device.supportsConnection(FidoConnection.class)) {
-        logger.debug("Request FIDO connection");
         device.requestConnection(
             FidoConnection.class,
             value -> {
               try {
-                logger.debug("Got FIDO connection {}", value.getValue());
-              } catch (IOException e) {
-                logger.error("Failed to get FIDO: ", e);
+                FidoConnection fidoConnection = value.getValue();
+                Ctap2Session ctap2Session = new Ctap2Session(fidoConnection);
+                final List<String> versions = ctap2Session.getCachedInfo().getVersions();
+                logger.info(
+                    "    Device supports FidoConnection. Supported versions: {}",
+                    String.join(", ", versions));
+              } catch (Exception e) {
+                logger.error("      FIDO connection failed with error: {}", e.getMessage());
               }
             });
+        sleep();
+      } else {
+        logger.info("    Device does not support FidoConnection");
+      }
+
+      if (device.supportsConnection(OtpConnection.class)) {
+        device.requestConnection(
+            OtpConnection.class,
+            value -> {
+              try {
+                OtpConnection otpConnection = value.getValue();
+                YubiOtpSession yubiOtpSession = new YubiOtpSession(otpConnection);
+                ConfigurationState state = yubiOtpSession.getConfigurationState();
+                String configuredSlots = " ";
+                if (state.isConfigured(Slot.ONE)) {
+                  configuredSlots += "SLOT1 ";
+                }
+                if (state.isConfigured(Slot.TWO)) {
+                  configuredSlots += "SLOT2";
+                }
+                logger.info(
+                    "    Device supports OtpConnection. Configured slots:{}", configuredSlots);
+              } catch (Exception e) {
+                logger.error("      OTP connection failed with error: {}", e.getMessage());
+              }
+            });
+        sleep();
+      } else {
+        logger.info("    Device does not support OtpConnection");
       }
     }
+    logger.info("Application exited");
+  }
 
-    logger.info("Sleeping...");
+  private static void sleep() {
     try {
       Thread.sleep(500);
     } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
       throw new RuntimeException(e);
     }
-
-    logger.debug("Application exited");
   }
 }

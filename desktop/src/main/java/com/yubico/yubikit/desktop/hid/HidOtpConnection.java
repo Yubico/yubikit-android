@@ -18,7 +18,6 @@ package com.yubico.yubikit.desktop.hid;
 
 import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.otp.OtpConnection;
-import com.yubico.yubikit.desktop.OperatingSystem;
 import java.io.IOException;
 import org.hid4java.HidDevice;
 import org.slf4j.LoggerFactory;
@@ -45,8 +44,7 @@ public class HidOtpConnection implements OtpConnection {
 
   @Override
   public void receive(byte[] report) throws IOException {
-    int offset = OperatingSystem.isWindows() ? 1 : 0;
-    int reportSize = FEATURE_REPORT_SIZE + offset;
+    int reportSize = FEATURE_REPORT_SIZE + 1;
 
     int received = hidDevice.getFeatureReport(report, interfaceId);
 
@@ -57,8 +55,7 @@ public class HidOtpConnection implements OtpConnection {
 
   @Override
   public void send(byte[] report) throws IOException {
-    int offset = OperatingSystem.isWindows() ? 1 : 0;
-    int reportSize = FEATURE_REPORT_SIZE + offset;
+    int reportSize = FEATURE_REPORT_SIZE + 1;
 
     int sent = hidDevice.sendFeatureReport(report, interfaceId);
 

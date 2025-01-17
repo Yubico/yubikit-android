@@ -21,6 +21,7 @@ import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.util.Callback;
 import com.yubico.yubikit.core.util.Result;
+import com.yubico.yubikit.desktop.UsbYubiKeyDevice;
 import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -54,10 +55,12 @@ abstract class PcscDevice implements YubiKeyDevice {
 
   public <T extends YubiKeyConnection> T openConnection(Class<T> connectionType)
       throws IOException {
+
     if (!supportsConnection(connectionType)) {
       throw new IllegalStateException("Unsupported connection type");
     }
-    return connectionType.cast(openIso7816Connection());
+
+    return UsbYubiKeyDevice.tryOpen(() -> connectionType.cast(openIso7816Connection()));
   }
 
   @Override
