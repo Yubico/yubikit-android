@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Yubico.
+ * Copyright (C) $YEAR Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,18 +13,3 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-plugins {
-    id 'com.diffplug.spotless'
-}
-
-spotless {
-    java {
-        target "src/*/java/**/*.java"
-        googleJavaFormat('1.25.2')
-        trimTrailingWhitespace()
-        endWithNewline()
-        licenseHeaderFile rootProject.file('.license-template')
-        ratchetFrom 'origin/main'
-    }
-}
