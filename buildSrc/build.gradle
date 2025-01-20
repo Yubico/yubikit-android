@@ -9,6 +9,6 @@ repositories {
 }
 
 dependencies {
-    implementation 'com.github.spotbugs.snom:spotbugs-gradle-plugin:6.0.18'
-    implementation 'com.android.tools.build:gradle:8.5.2'
+    implementation 'com.github.spotbugs.snom:spotbugs-gradle-plugin:6.1.1'
+    implementation 'com.android.tools.build:gradle:8.8.0'
 }
