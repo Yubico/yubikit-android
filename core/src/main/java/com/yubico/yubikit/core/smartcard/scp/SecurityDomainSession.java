@@ -366,9 +366,12 @@ public class SecurityDomainSession extends ApplicationSession<SecurityDomainSess
    *
    * @param keyRef the KID-KVN pair to assign the new key set, KID must be 1
    * @param keys the key material to import
-   * @param replaceKvn 0 to generate a new keypair, non-zero to replace an existing KVN
+   * @param kvn defines a Key Version Number and whether more PUT KEY commands will follow this one.
+   *     The kvn identifies a key or group of keys that is already present on the card. A value of
+   *     00 indicates that a new key or group of keys is being added. The kvn is coded from 0x01 to
+   *     0x7F.
    */
-  public void putKey(KeyRef keyRef, StaticKeys keys, int replaceKvn)
+  public void putKey(KeyRef keyRef, StaticKeys keys, int kvn)
       throws ApduException, IOException, BadResponseException {
     Logger.debug(logger, "Importing SCP03 key set into {}", keyRef);
     if (keyRef.getKid() != ScpKid.SCP03) {
@@ -398,7 +401,7 @@ public class SecurityDomainSession extends ApplicationSession<SecurityDomainSess
 
     byte[] resp =
         protocol.sendAndReceive(
-            new Apdu(0x80, INS_PUT_KEY, replaceKvn, 0x80 | keyRef.getKid(), data.array()));
+            new Apdu(0x80, INS_PUT_KEY, kvn, 0x80 | keyRef.getKid(), data.array()));
     if (!MessageDigest.isEqual(resp, expected.array())) {
       throw new BadResponseException("Incorrect key check value");
     }
@@ -412,9 +415,12 @@ public class SecurityDomainSession extends ApplicationSession<SecurityDomainSess
    *
    * @param keyRef the KID-KVN pair to assign the new secret key, KID must be 0x11, 0x13, or 0x15
    * @param secretKey a private EC key used to authenticate the SD
-   * @param replaceKvn 0 to generate a new keypair, non-zero to replace an existing KVN
+   * @param kvn defines a Key Version Number and whether more PUT KEY commands will follow this one.
+   *     The kvn identifies a key or group of keys that is already present on the card. A value of
+   *     00 indicates that a new key or group of keys is being added. The kvn is coded from 0x01 to
+   *     0x7F.
    */
-  public void putKey(KeyRef keyRef, PrivateKeyValues secretKey, int replaceKvn)
+  public void putKey(KeyRef keyRef, PrivateKeyValues secretKey, int kvn)
       throws ApduException, IOException, BadResponseException {
     Logger.debug(logger, "Importing SCP11 private key into {}", keyRef);
     if (!(secretKey instanceof PrivateKeyValues.Ec)
@@ -442,7 +448,7 @@ public class SecurityDomainSession extends ApplicationSession<SecurityDomainSess
 
     byte[] resp =
         protocol.sendAndReceive(
-            new Apdu(0x80, INS_PUT_KEY, replaceKvn, keyRef.getKid(), data.toByteArray()));
+            new Apdu(0x80, INS_PUT_KEY, kvn, keyRef.getKid(), data.toByteArray()));
     if (!MessageDigest.isEqual(resp, expected)) {
       throw new BadResponseException("Incorrect key check value");
     }
@@ -456,9 +462,12 @@ public class SecurityDomainSession extends ApplicationSession<SecurityDomainSess
    *
    * @param keyRef the KID-KVN pair to assign the new public key
    * @param publicKey a public EC key used as CA to authenticate the off-card entity
-   * @param replaceKvn 0 to generate a new keypair, non-zero to replace an existing KVN
+   * @param kvn defines a Key Version Number and whether more PUT KEY commands will follow this one.
+   *     The kvn identifies a key or group of keys that is already present on the card. A value of
+   *     00 indicates that a new key or group of keys is being added. The kvn is coded from 0x01 to
+   *     0x7F.
    */
-  public void putKey(KeyRef keyRef, PublicKeyValues publicKey, int replaceKvn)
+  public void putKey(KeyRef keyRef, PublicKeyValues publicKey, int kvn)
       throws ApduException, IOException, BadResponseException {
     Logger.debug(logger, "Importing SCP11 public key into {}", keyRef);
     if (!(publicKey instanceof PublicKeyValues.Ec)
@@ -480,7 +489,7 @@ public class SecurityDomainSession extends ApplicationSession<SecurityDomainSess
 
     byte[] resp =
         protocol.sendAndReceive(
-            new Apdu(0x80, INS_PUT_KEY, replaceKvn, keyRef.getKid(), data.toByteArray()));
+            new Apdu(0x80, INS_PUT_KEY, kvn, keyRef.getKid(), data.toByteArray()));
     if (!MessageDigest.isEqual(resp, expected)) {
       throw new BadResponseException("Incorrect key check value");
     }
