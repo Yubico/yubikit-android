@@ -133,6 +133,14 @@ public class UsbYubiKeyDevice implements YubiKeyDevice, Closeable {
               callback.invoke(Result.success(connection));
             } catch (IOException e) {
               callback.invoke(Result.failure(e));
+            } catch (Exception exception) {
+              callback.invoke(
+                  Result.failure(
+                      new IOException(
+                          "openConnection("
+                              + connectionType.getSimpleName()
+                              + ") exception: "
+                              + exception.getMessage())));
             }
           });
     }
@@ -197,6 +205,11 @@ public class UsbYubiKeyDevice implements YubiKeyDevice, Closeable {
               }
             } catch (IOException e) {
               callback.invoke(Result.failure(e));
+            } catch (Exception exception) {
+              callback.invoke(
+                  Result.failure(
+                      new IOException(
+                          "openConnection(OtpConnection) exception: " + exception.getMessage())));
             }
           });
     }
