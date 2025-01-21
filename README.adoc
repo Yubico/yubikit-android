@@ -77,7 +77,6 @@ developer https://support.yubico.com/support/tickets/new[support ticket] and
 our team will be happy to assist you.
 
 === Support for desktop apps
-:icons: font
 
 WARNING: This is an experimental version and is not intended for production use.
 

@@ -1,5 +1,4 @@
 = Desktop Module
-:icons: font
 
 WARNING: This module is experimental. The API is not stable and may change in future versions without notice.
 

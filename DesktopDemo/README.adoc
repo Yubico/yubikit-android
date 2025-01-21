@@ -1,5 +1,4 @@
 = Desktop Demo Application
-:icons: font
 
 WARNING: This demo uses experimental APIs from the desktop module. The underlying APIs are not stable and may change in future versions without notice.
 
