@@ -336,8 +336,12 @@ public class SecurityDomainSession extends ApplicationSession<SecurityDomainSess
    *
    * <p>Requires off-card entity verification.
    *
+   * <p>If the new key is replacing an existing key with different KVN, the key being replaced can
+   * be specified via the replaceKvn parameter. When this value is non-zero, the existing key with
+   * that KVN will be deleted.
+   *
    * @param keyRef the KID-KVN pair to assign the new key
-   * @param replaceKvn 0 to generate a new keypair, non-zero to replace an existing KVN
+   * @param replaceKvn if non-zero replace existing key
    * @return the public key from the generated key pair
    */
   public PublicKeyValues.Ec generateEcKey(KeyRef keyRef, int replaceKvn)
@@ -364,9 +368,13 @@ public class SecurityDomainSession extends ApplicationSession<SecurityDomainSess
    *
    * <p>Requires off-card entity verification.
    *
+   * <p>If the new key is replacing an existing key with different KVN, the key being replaced can
+   * be specified via the replaceKvn parameter. When this value is non-zero, the existing key with
+   * that KVN will be deleted.
+   *
    * @param keyRef the KID-KVN pair to assign the new key set, KID must be 1
    * @param keys the key material to import
-   * @param replaceKvn 0 to generate a new keypair, non-zero to replace an existing KVN
+   * @param replaceKvn if non-zero replace existing key
    */
   public void putKey(KeyRef keyRef, StaticKeys keys, int replaceKvn)
       throws ApduException, IOException, BadResponseException {
@@ -410,9 +418,13 @@ public class SecurityDomainSession extends ApplicationSession<SecurityDomainSess
    *
    * <p>Requires off-card entity verification.
    *
+   * <p>If the new key is replacing an existing key with different KVN, the key being replaced can
+   * be specified via the replaceKvn parameter. When this value is non-zero, the existing key with
+   * that KVN will be deleted.
+   *
    * @param keyRef the KID-KVN pair to assign the new secret key, KID must be 0x11, 0x13, or 0x15
    * @param secretKey a private EC key used to authenticate the SD
-   * @param replaceKvn 0 to generate a new keypair, non-zero to replace an existing KVN
+   * @param replaceKvn if non-zero replace existing key
    */
   public void putKey(KeyRef keyRef, PrivateKeyValues secretKey, int replaceKvn)
       throws ApduException, IOException, BadResponseException {
@@ -454,9 +466,13 @@ public class SecurityDomainSession extends ApplicationSession<SecurityDomainSess
    *
    * <p>Requires off-card entity verification.
    *
+   * <p>If the new key is replacing an existing key with different KVN, the key being replaced can
+   * be specified via the replaceKvn parameter. When this value is non-zero, the existing key with
+   * that KVN will be deleted.
+   *
    * @param keyRef the KID-KVN pair to assign the new public key
    * @param publicKey a public EC key used as CA to authenticate the off-card entity
-   * @param replaceKvn 0 to generate a new keypair, non-zero to replace an existing KVN
+   * @param replaceKvn if non-zero replace existing key
    */
   public void putKey(KeyRef keyRef, PublicKeyValues publicKey, int replaceKvn)
       throws ApduException, IOException, BadResponseException {

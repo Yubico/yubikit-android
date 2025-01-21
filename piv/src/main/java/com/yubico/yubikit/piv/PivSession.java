@@ -1418,8 +1418,7 @@ public class PivSession extends ApplicationSession<PivSession> {
    * Delete key from slot. This method requires authentication with management key {@link
    * #authenticate}.
    *
-   * @param slot Slot to delete key from. It is not possible to delete key from {@link
-   *     Slot#ATTESTATION}
+   * @param slot Slot to delete key from.
    * @throws IOException in case of connection error
    * @throws ApduException in case of an error response from the YubiKey
    * @see Slot
