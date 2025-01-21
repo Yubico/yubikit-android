@@ -7,10 +7,10 @@ plugins {
 
 
 android {
-    compileSdk 34
+    compileSdk 35
 
     defaultConfig {
-        minSdkVersion 19
+        minSdkVersion 21
         targetSdk 34
         versionName version
         versionCode 1
@@ -58,15 +58,11 @@ dependencies {
 
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'
 
-    //noinspection GradleDependency - requires greater minSdkVersion
-    implementation 'androidx.core:core-ktx:1.13.1'
-    //noinspection GradleDependency - requires greater minSdkVersion
-    implementation 'androidx.fragment:fragment-ktx:1.7.1'
-    //noinspection GradleDependency - requires greater minSdkVersion
-    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'androidx.core:core-ktx:1.15.0'
+    implementation 'androidx.fragment:fragment-ktx:1.8.5'
+    implementation 'androidx.appcompat:appcompat:1.7.0'
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
-    //noinspection GradleDependency - requires greater minSdkVersion
-    implementation 'androidx.recyclerview:recyclerview:1.3.2'
+    implementation 'androidx.recyclerview:recyclerview:1.4.0'
     implementation 'androidx.multidex:multidex:2.0.1'
     implementation 'com.google.android.material:material:1.12.0'
 
@@ -75,8 +71,7 @@ dependencies {
     implementation "androidx.lifecycle:lifecycle-extensions:2.2.0"
 
     // Navigation
-    //noinspection GradleDependency - requires greater minSdkVersion
-    def nav_version = '2.7.7'
+    def nav_version = '2.8.5'
     implementation "androidx.navigation:navigation-fragment-ktx:$nav_version"
     implementation "androidx.navigation:navigation-ui-ktx:$nav_version"
     implementation "androidx.navigation:navigation-dynamic-features-fragment:$nav_version"
