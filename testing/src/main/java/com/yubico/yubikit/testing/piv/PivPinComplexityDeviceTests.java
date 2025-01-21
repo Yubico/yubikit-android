@@ -34,7 +34,7 @@ public class PivPinComplexityDeviceTests {
    *
    * @see DeviceInfo#getPinComplexity()
    */
-  static void testPinComplexity(PivSession piv, PivTestState state) throws Throwable {
+  public static void testPinComplexity(PivSession piv, PivTestState state) throws Throwable {
 
     final DeviceInfo deviceInfo = state.getDeviceInfo();
     assumeTrue("Device does not support PIN complexity", deviceInfo != null);

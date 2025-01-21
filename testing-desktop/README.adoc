@@ -1,0 +1,16 @@
+== Instrumented tests for YubiKit Desktop
+
+This module contains tests for execution on a physical device and with YubiKey connected via USB. The test runs need a presence of someone who can tap the key when needed and therefore are these tests suitable only for local execution.
+
+NOTE: Don't run any of the tests on a production YubiKey. The tests execute various YubiKit methods on the YubiKey, data will be changed and removed.
+
+=== Running the tests
+1. Make sure that the YubiKey you are using is meant for testing. Don't proceed with the tests if unsure.
+ Running the instrumented tests will: change PIN, PUK, management key and overwrite stored certificates in the PIV application
+2. Connect your device through wireless debugging and select it
+3. Right-click the `testing-desktop` project and select _Run 'All tests'_
+
+==== Running from commandline
+It is also possible to run the tests from commandline by executing following command after the device is connected through adb:
+
+  ./gradlew testing-desktop:test

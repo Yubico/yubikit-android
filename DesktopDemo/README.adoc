@@ -1,0 +1,26 @@
+= Desktop Demo Application
+
+WARNING: This demo uses experimental APIs from the desktop module. The underlying APIs are not stable and may change in future versions without notice.
+
+This is a demonstration application showing how to use the desktop module of our SDK.
+It provides examples of basic usage and common implementation patterns.
+
+== Overview
+
+The DesktopDemo is a simple application that demonstrates:
+
+* Basic setup of a desktop application
+* Implementation of core functionality
+* Common usage patterns
+
+== Running the Demo
+
+[source,bash]
+----
+./gradlew :DesktopDemo:run
+----
+
+== Note
+
+This demo is built using the experimental desktop module. As the underlying APIs may change,
+please ensure you're using compatible versions of all modules.

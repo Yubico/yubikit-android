@@ -1,0 +1,15 @@
+= Desktop Module
+
+WARNING: This module is experimental. The API is not stable and may change in future versions without notice.
+
+This module provides concrete implementations of the core interfaces for desktop Java applications.
+It enables building desktop applications using our SDK.
+
+== Overview
+
+The desktop module is part of our SDK's desktop support, introduced in version 2.8.0.
+It implements the core interfaces necessary for desktop application development.
+
+== Usage
+
+See the DesktopDemo module for examples of how to use this implementation.
