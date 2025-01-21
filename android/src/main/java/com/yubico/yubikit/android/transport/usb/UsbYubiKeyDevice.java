@@ -140,7 +140,8 @@ public class UsbYubiKeyDevice implements YubiKeyDevice, Closeable {
                           "openConnection("
                               + connectionType.getSimpleName()
                               + ") exception: "
-                              + exception.getMessage())));
+                              + exception.getMessage(),
+                          exception)));
             }
           });
     }
@@ -209,7 +210,8 @@ public class UsbYubiKeyDevice implements YubiKeyDevice, Closeable {
               callback.invoke(
                   Result.failure(
                       new IOException(
-                          "openConnection(OtpConnection) exception: " + exception.getMessage())));
+                          "openConnection(OtpConnection) exception: " + exception.getMessage(),
+                          exception)));
             }
           });
     }

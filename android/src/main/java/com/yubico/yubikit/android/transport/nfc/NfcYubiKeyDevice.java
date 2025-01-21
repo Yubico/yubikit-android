@@ -150,7 +150,8 @@ public class NfcYubiKeyDevice implements YubiKeyDevice {
                           "openConnection("
                               + connectionType.getSimpleName()
                               + ") exception: "
-                              + exception.getMessage())));
+                              + exception.getMessage(),
+                          exception)));
             }
           });
   }
