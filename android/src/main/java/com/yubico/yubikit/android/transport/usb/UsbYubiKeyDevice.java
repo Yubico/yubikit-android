@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 Yubico.
+ * Copyright (C) 2019-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -133,6 +133,15 @@ public class UsbYubiKeyDevice implements YubiKeyDevice, Closeable {
               callback.invoke(Result.success(connection));
             } catch (IOException e) {
               callback.invoke(Result.failure(e));
+            } catch (Exception exception) {
+              callback.invoke(
+                  Result.failure(
+                      new IOException(
+                          "openConnection("
+                              + connectionType.getSimpleName()
+                              + ") exception: "
+                              + exception.getMessage(),
+                          exception)));
             }
           });
     }
@@ -197,6 +206,12 @@ public class UsbYubiKeyDevice implements YubiKeyDevice, Closeable {
               }
             } catch (IOException e) {
               callback.invoke(Result.failure(e));
+            } catch (Exception exception) {
+              callback.invoke(
+                  Result.failure(
+                      new IOException(
+                          "openConnection(OtpConnection) exception: " + exception.getMessage(),
+                          exception)));
             }
           });
     }
