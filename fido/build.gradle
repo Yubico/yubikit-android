@@ -3,7 +3,7 @@ apply plugin: 'yubikit-java-library'
 dependencies {
     api project(':core')
 
-    testImplementation 'org.mockito:mockito-core:5.13.0'
+    testImplementation 'org.mockito:mockito-core:5.15.2'
 }
 
 ext.pomName = "Yubico YubiKit ${project.name.capitalize()}"
