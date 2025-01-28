@@ -72,16 +72,15 @@ public class TestState {
     this.currentDevice = builder.device;
     this.usbPid = builder.usbPid;
     this.scpKid = builder.scpKid;
+
+    if (this.scpKid != null) {
+      Security.removeProvider("BC");
+      Security.insertProviderAt(new BouncyCastleProvider(), 1);
+    }
+
     this.scpParameters = new ScpParameters(builder.device, this.scpKid);
     this.reconnectDeviceCallback = builder.reconnectDeviceCallback;
     this.isUsbTransport = builder.device.getTransport() == Transport.USB;
-
-    setupJca();
-  }
-
-  private void setupJca() {
-    Security.removeProvider("BC");
-    Security.insertProviderAt(new BouncyCastleProvider(), 1);
   }
 
   public boolean isUsbTransport() {
