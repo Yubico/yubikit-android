@@ -15,13 +15,16 @@
  */
 package com.yubico.yubikit.testing.desktop.piv;
 
+import com.yubico.yubikit.testing.desktop.AlwaysManualTest;
 import com.yubico.yubikit.testing.desktop.framework.PivInstrumentedTests;
 import com.yubico.yubikit.testing.piv.PivBioMultiProtocolDeviceTests;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 public class PivBioMultiProtocolTests extends PivInstrumentedTests {
 
   @Test
+  @Category(AlwaysManualTest.class)
   public void testAuthenticate() throws Throwable {
     withPivSession(PivBioMultiProtocolDeviceTests::testAuthenticate);
   }

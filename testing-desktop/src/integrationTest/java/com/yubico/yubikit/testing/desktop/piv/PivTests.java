@@ -32,7 +32,8 @@ import org.junit.runners.Suite;
   PivTests.NoScpTests.class,
   PivTests.Scp11bTests.class,
   PivJcaProviderTests.NoScpTests.class,
-  PivJcaProviderTests.Scp11bTests.class
+  PivJcaProviderTests.Scp11bTests.class,
+  PivBioMultiProtocolTests.class
 })
 public class PivTests {
   public static class NoScpTests extends PivInstrumentedTests {

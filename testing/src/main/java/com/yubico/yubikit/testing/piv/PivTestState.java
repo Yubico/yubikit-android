@@ -88,9 +88,6 @@ public class PivTestState extends TestState {
 
     DeviceInfo deviceInfo = getDeviceInfo();
 
-    // skip MPE devices
-    assumeFalse("Ignoring MPE device", isMpe(deviceInfo));
-
     boolean isPivFipsCapable = isFipsCapable(deviceInfo, Capability.PIV);
     boolean hasPinComplexity = deviceInfo != null && deviceInfo.getPinComplexity();
 
