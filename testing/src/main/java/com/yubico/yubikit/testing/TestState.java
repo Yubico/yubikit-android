@@ -73,10 +73,8 @@ public class TestState {
     this.usbPid = builder.usbPid;
     this.scpKid = builder.scpKid;
 
-    if (this.scpKid != null) {
-      Security.removeProvider("BC");
-      Security.insertProviderAt(new BouncyCastleProvider(), 1);
-    }
+    Security.removeProvider("BC");
+    Security.insertProviderAt(new BouncyCastleProvider(), 1);
 
     this.scpParameters = new ScpParameters(builder.device, this.scpKid);
     this.reconnectDeviceCallback = builder.reconnectDeviceCallback;

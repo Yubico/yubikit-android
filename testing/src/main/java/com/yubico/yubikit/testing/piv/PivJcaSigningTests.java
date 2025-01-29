@@ -17,6 +17,7 @@
 package com.yubico.yubikit.testing.piv;
 
 import static com.yubico.yubikit.piv.PivSession.FEATURE_CV25519;
+import static com.yubico.yubikit.piv.PivSession.FEATURE_P384;
 import static com.yubico.yubikit.piv.PivSession.FEATURE_RSA3072_RSA4096;
 import static com.yubico.yubikit.testing.piv.PivJcaUtils.setupJca;
 import static com.yubico.yubikit.testing.piv.PivJcaUtils.tearDownJca;
@@ -84,6 +85,10 @@ public class PivJcaSigningTests {
           SignatureException {
     if (!piv.supports(FEATURE_CV25519)
         && (keyType == KeyType.ED25519 || keyType == KeyType.X25519)) {
+      return;
+    }
+
+    if (!piv.supports(FEATURE_P384) && keyType == KeyType.ECCP384) {
       return;
     }
 
