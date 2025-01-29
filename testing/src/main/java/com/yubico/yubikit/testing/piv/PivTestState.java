@@ -18,7 +18,6 @@ package com.yubico.yubikit.testing.piv;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import com.yubico.yubikit.core.UsbPid;
