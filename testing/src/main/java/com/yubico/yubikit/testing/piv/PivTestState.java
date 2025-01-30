@@ -18,7 +18,6 @@ package com.yubico.yubikit.testing.piv;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import com.yubico.yubikit.core.UsbPid;
@@ -87,9 +86,6 @@ public class PivTestState extends TestState {
     assumeTrue("No SmartCard support", currentDevice.supportsConnection(SmartCardConnection.class));
 
     DeviceInfo deviceInfo = getDeviceInfo();
-
-    // skip MPE devices
-    assumeFalse("Ignoring MPE device", isMpe(deviceInfo));
 
     boolean isPivFipsCapable = isFipsCapable(deviceInfo, Capability.PIV);
     boolean hasPinComplexity = deviceInfo != null && deviceInfo.getPinComplexity();
