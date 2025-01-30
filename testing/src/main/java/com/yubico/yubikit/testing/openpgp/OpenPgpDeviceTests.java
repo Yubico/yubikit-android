@@ -83,6 +83,7 @@ public class OpenPgpDeviceTests {
 
   public static void testGenerateRequiresAdmin(OpenPgpSession openpgp, OpenPgpTestState state)
       throws Exception {
+    Assume.assumeTrue("Device FW not at least 5.2.0.", openpgp.getVersion().isAtLeast(5, 2, 0));
 
     try {
       openpgp.generateEcKey(KeyRef.DEC, OpenPgpCurve.BrainpoolP256R1);
@@ -537,6 +538,7 @@ public class OpenPgpDeviceTests {
 
   public static void testDeleteKey(OpenPgpSession openpgp, OpenPgpTestState state)
       throws Exception {
+    Assume.assumeTrue("Device FW not at least 4.0.0.", openpgp.getVersion().isAtLeast(4, 0, 0));
     KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA");
     kpg.initialize(2048);
     KeyPair pair = kpg.generateKeyPair();
@@ -559,6 +561,7 @@ public class OpenPgpDeviceTests {
 
   public static void testCertificateManagement(OpenPgpSession openpgp, OpenPgpTestState state)
       throws Exception {
+    Assume.assumeTrue("Device FW not at least 5.2.0.", openpgp.getVersion().isAtLeast(5, 2, 0));
     KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA");
     kpg.initialize(2048);
     KeyPair pair = kpg.generateKeyPair();
