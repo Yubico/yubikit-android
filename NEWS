@@ -1,3 +1,22 @@
+* Version 2.8.0 (released 2025-01-30)
+ ** new
+  - updated targetSdk to 35
+  - added experimental desktop platforms support
+ ** fido module:
+  - added updateUserInformation subcommand in credential management
+  - added extensible support for FIDO extensions
+  - added processing of defined FIDO extensions:
+    - credBlob
+    - credProps
+    - credProtect
+    - hmac-secret / prf
+    - largeBlob
+    - minPinLength
+ ** general:
+  - integrated spotless plugin for java source code formatting
+  - improved integration tests to run on older YubiKeys
+  - improved javadoc
+  - updated build dependencies and libraries
 * Version 2.7.0 (released 2024-08-30)
  ** new
   - support for communication over SCP03 and SCP11 protocols
