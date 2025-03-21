@@ -233,7 +233,7 @@ public class DeviceUtil {
     try {
       ManagementSession session = new ManagementSession(connection);
       return session.getDeviceInfo();
-    } catch (CommandException exception) {
+    } catch (CommandException | UnsupportedOperationException exception) {
       Logger.debug(logger, "Unable to get info via Management application, using fallback");
 
       final Version version =
@@ -288,6 +288,18 @@ public class DeviceUtil {
     if (pid != null) {
       keyType = pid.type;
       interfaces = pid.usbInterfaces;
+    } else if (connection instanceof SmartCardConnection
+        && ((SmartCardConnection) connection).getTransport() == Transport.NFC) {
+      // For NEO we need to figure out the mode, newer keys get it from Management
+      SmartCardProtocol protocol = new SmartCardProtocol(((SmartCardConnection) connection));
+      try {
+        byte[] response = protocol.select(AppId.OTP);
+        if (response[0] == 3 && response.length > 6) {
+          interfaces = UsbInterface.Mode.fromCode(response[6]).interfaces;
+        }
+      } catch (ApplicationNotAvailableException ignored) {
+        // OTP turned off, this must be YK5
+      }
     } else if (!(connection instanceof SmartCardConnection)
         || ((SmartCardConnection) connection).getTransport() == Transport.USB) {
       throw new IllegalArgumentException("pid missing for usb connection");
