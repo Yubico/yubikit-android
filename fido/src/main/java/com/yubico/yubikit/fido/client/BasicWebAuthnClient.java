@@ -598,8 +598,9 @@ public class BasicWebAuthnClient implements Closeable {
             permissions,
             rpId);
 
+    final boolean hasValidAllowList = allowCredentials != null && !allowCredentials.isEmpty();
     PublicKeyCredentialDescriptor selectedCred =
-        allowCredentials != null && !allowCredentials.isEmpty()
+        hasValidAllowList
             ? Utils.filterCreds(
                 ctap,
                 rpId,
@@ -608,6 +609,13 @@ public class BasicWebAuthnClient implements Closeable {
                 authParams.pinUvAuthProtocol,
                 authParams.pinToken)
             : null;
+
+    if (hasValidAllowList && selectedCred == null) {
+      // We still need to send a dummy value if there was an allowCredentials list but no matches
+      // were found.
+      selectedCred =
+          new PublicKeyCredentialDescriptor(allowCredentials.get(0).getType(), new byte[] {0x00});
+    }
 
     HashMap<String, Object> authenticatorInputs = new HashMap<>();
     for (Extension.AuthenticationProcessor processor : authenticationProcessors) {

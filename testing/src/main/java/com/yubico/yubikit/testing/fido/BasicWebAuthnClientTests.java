@@ -24,6 +24,7 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeFalse;
@@ -399,6 +400,35 @@ public class BasicWebAuthnClientTests {
             }
           });
     }
+
+    state.withCtap2(
+        session -> {
+          // GetAssertions with allowCreds containing non-existing credential
+          List<PublicKeyCredentialDescriptor> allowCreds =
+              Collections.singletonList(
+                  new PublicKeyCredentialDescriptor(
+                      PublicKeyCredentialType.PUBLIC_KEY, new byte[] {0}, null));
+          PublicKeyCredentialRequestOptions options =
+              new PublicKeyCredentialRequestOptions(
+                  TestData.CHALLENGE, (long) 90000, TestData.RP_ID, allowCreds, null, null);
+
+          BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
+          ClientError clientError =
+              assertThrows(
+                  ClientError.class,
+                  () ->
+                      webauthn.getAssertion(
+                          TestData.CLIENT_DATA_JSON_GET,
+                          options,
+                          TestData.RP_ID,
+                          TestData.PIN,
+                          null));
+
+          Throwable cause = clientError.getCause();
+          assertThat(cause, instanceOf(CtapException.class));
+          CtapException ctapException = (CtapException) cause;
+          assertEquals(CtapException.ERR_NO_CREDENTIALS, ctapException.getCtapError());
+        });
 
     state.withCtap2(
         session -> {
