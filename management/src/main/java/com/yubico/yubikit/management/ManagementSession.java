@@ -260,7 +260,14 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
    */
   public ManagementSession(FidoConnection connection) throws IOException {
     FidoProtocol protocol = new FidoProtocol(connection);
-    version = protocol.getVersion();
+    Version protocolVersion = protocol.getVersion();
+    if (protocolVersion.major < 4) {
+      // Prior to YK4 this was not firmware version
+      if (!(protocolVersion.major == 0 && protocol.supports(FidoProtocol.Capability.CBOR))) {
+        protocolVersion = new Version(3, 0, 0);
+      }
+    }
+    version = protocolVersion;
     backend =
         new Backend<FidoProtocol>(protocol) {
           @Override

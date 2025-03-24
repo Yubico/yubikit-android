@@ -57,5 +57,15 @@ public final class UsbInterface {
       }
       throw new IllegalArgumentException("Invalid interfaces for Mode");
     }
+
+    public static Mode fromCode(int code) {
+      for (Mode mode : Mode.values()) {
+        // Mode is determined from the lowest 3 bits
+        if (mode.value == (code & 0b00000111)) {
+          return mode;
+        }
+      }
+      throw new IllegalArgumentException("Invalid mode code");
+    }
   }
 }

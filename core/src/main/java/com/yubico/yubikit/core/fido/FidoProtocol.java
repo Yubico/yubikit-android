@@ -43,11 +43,24 @@ public class FidoProtocol implements Closeable {
   private static final byte CTAPHID_ERROR = TYPE_INIT | 0x3f;
   private static final byte CTAPHID_KEEPALIVE = TYPE_INIT | 0x3b;
 
+  /**
+   * Protocol capabilities
+   *
+   * @see <a
+   *     href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#usb-hid-init">CTAPHID_INIT</a>
+   */
+  public static class Capability {
+    public static final byte WINK = 0x01;
+    public static final byte CBOR = 0x04;
+    public static final byte NMSG = 0x08;
+  }
+
   private final CommandState defaultState = new CommandState();
 
   private final FidoConnection connection;
 
   private final Version version;
+  private final int capabilities;
   private int channelId;
 
   private static final org.slf4j.Logger logger = LoggerFactory.getLogger(FidoProtocol.class);
@@ -71,7 +84,7 @@ public class FidoProtocol implements Closeable {
     byte[] versionBytes = new byte[3];
     buffer.get(versionBytes);
     version = Version.fromBytes(versionBytes);
-    buffer.get(); // Capabilities
+    capabilities = buffer.get();
     Logger.debug(
         logger, "FIDO connection set up with channel ID: {}", String.format("0x%08x", channelId));
   }
@@ -146,6 +159,10 @@ public class FidoProtocol implements Closeable {
 
   public Version getVersion() {
     return version;
+  }
+
+  public boolean supports(int capability) {
+    return (capabilities & capability) == capability;
   }
 
   @Override
