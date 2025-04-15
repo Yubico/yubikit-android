@@ -47,7 +47,7 @@ android {
 
 dependencies {
 
-    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
 
     implementation project(':android')
     implementation project(':management')
@@ -55,11 +55,12 @@ dependencies {
     implementation project(':oath')
     implementation project(':piv')
     implementation project(':support')
+    implementation project(':fido-android')
 
-    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.0'
 
-    implementation 'androidx.core:core-ktx:1.15.0'
-    implementation 'androidx.fragment:fragment-ktx:1.8.5'
+    implementation 'androidx.core:core-ktx:1.16.0'
+    implementation 'androidx.fragment:fragment-ktx:1.8.6'
     implementation 'androidx.appcompat:appcompat:1.7.0'
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
     implementation 'androidx.recyclerview:recyclerview:1.4.0'
@@ -71,7 +72,7 @@ dependencies {
     implementation "androidx.lifecycle:lifecycle-extensions:2.2.0"
 
     // Navigation
-    def nav_version = '2.8.5'
+    def nav_version = '2.8.9'
     implementation "androidx.navigation:navigation-fragment-ktx:$nav_version"
     implementation "androidx.navigation:navigation-ui-ktx:$nav_version"
     implementation "androidx.navigation:navigation-dynamic-features-fragment:$nav_version"

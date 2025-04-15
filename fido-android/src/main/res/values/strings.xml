@@ -1,0 +1,20 @@
+<resources>
+    <string name="app_name">Fido Android</string>
+    <string name="create_passkey_for">Create passkey for %1$s</string>
+    <string name="login_with_passkey">Login with passkey to %1$s</string>
+    <string name="tap_or_insert_key">Tap or insert your security key</string>
+    <string name="passkey_icon">Passkey Icon</string>
+    <string name="continue_operation">Continue</string>
+    <string name="provide_pin">PIN</string>
+    <string name="icon_content_description_password">Password</string>
+    <string name="passkey_created">Passkey successfully created</string>
+    <string name="incorrect_pin_with_attempts">Incorrect PIN. %1$d attempts remaining.</string>
+    <string name="incorrect_pin">Incorrect PIN.</string>
+    <string name="pin_blocked">PIN is blocked. You have to reset the key.</string>
+    <string name="pin_auth_blocked">PIN authentication is blocked. Reconnect the key.</string>
+    <string name="unknown_error">Unknown error</string>
+    <string name="retry">Retry</string>
+    <string name="error">Error</string>
+    <string name="remove_the_key">Remove the key</string>
+    <string name="login_successful">Login with passkey was successful</string>
+</resources>
