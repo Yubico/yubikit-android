@@ -141,6 +141,7 @@ public class PivBioMultiProtocolDeviceTests {
     // get key pair
     KeyStore keyStore = KeyStore.getInstance("YKPiv");
     keyStore.load(null);
+    // if the pin parameter is not null, PivPrivateKey will internally call verifyPin with it
     PrivateKey privateKey = (PivPrivateKey) keyStore.getKey(slot.getStringAlias(), pin);
     Certificate certificate = keyStore.getCertificate(slot.getStringAlias());
 
@@ -173,8 +174,6 @@ public class PivBioMultiProtocolDeviceTests {
     // verify
     if (temporaryPin != null) {
       piv.verifyTemporaryPin(temporaryPin);
-    } else {
-      piv.verifyPin(pin);
     }
 
     // message to sign
