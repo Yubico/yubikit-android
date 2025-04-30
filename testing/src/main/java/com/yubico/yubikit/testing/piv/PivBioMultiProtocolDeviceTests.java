@@ -15,6 +15,7 @@
  */
 package com.yubico.yubikit.testing.piv;
 
+import static com.yubico.yubikit.testing.piv.PivJcaUtils.setupJca;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -25,8 +26,18 @@ import static org.junit.Assume.assumeTrue;
 import com.yubico.yubikit.core.application.InvalidPinException;
 import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.piv.BioMetadata;
+import com.yubico.yubikit.piv.KeyType;
+import com.yubico.yubikit.piv.PinPolicy;
 import com.yubico.yubikit.piv.PivSession;
+import com.yubico.yubikit.piv.Slot;
+import com.yubico.yubikit.piv.TouchPolicy;
+import com.yubico.yubikit.piv.jca.PivAlgorithmParameterSpec;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.Signature;
+import org.junit.Assert;
 
 public class PivBioMultiProtocolDeviceTests {
 
@@ -62,6 +73,98 @@ public class PivBioMultiProtocolDeviceTests {
 
     } catch (UnsupportedOperationException e) {
       assumeNoException("Key has no bio multi-protocol functionality", e);
+    }
+  }
+
+  /**
+   * Verify signing with YubiKey Bio Multi-protocol with PIN and with Fingerprint match
+   *
+   * <p>To run the test, create a PIN "11234567" and enroll at least one fingerprint. The test will
+   *
+   * <ul>
+   *   <li>use PIN to sign a message
+   *   <li>use Fingerprint match to sign a message (this will ask for fingerprint)
+   * </ul>
+   */
+  public static void testSign(PivSession piv, PivTestState state) throws Exception {
+    try {
+
+      setupJca(piv);
+      piv.authenticate(state.managementKey);
+
+      BioMetadata bioMetadata = piv.getBioMetadata();
+
+      // we have correct key, is it configured?
+      assumeTrue("Key has no bio multi-protocol functionality", bioMetadata.isConfigured());
+      assumeTrue("Key has no matches left", bioMetadata.getAttemptsRemaining() > 0);
+
+      // 1. sign with PIN verification
+      {
+        // generate a new key pair in the signature slot
+        final KeyType keyType = KeyType.ED25519;
+        KeyPairGenerator kpg =
+            KeyPairGenerator.getInstance("YKPiv" + keyType.params.algorithm.name());
+        kpg.initialize(
+            // see that pin is not null - the private key will call pivSession.verifyPin()
+            new PivAlgorithmParameterSpec(
+                Slot.SIGNATURE, keyType, PinPolicy.MATCH_ALWAYS, TouchPolicy.DEFAULT, state.pin));
+        KeyPair keyPair = kpg.generateKeyPair();
+
+        // message to sign
+        byte[] message = "Hello there".getBytes(StandardCharsets.UTF_8);
+
+        // use JCA for the signature
+        Signature signer = Signature.getInstance(KeyType.ED25519.name());
+        signer.initSign(keyPair.getPrivate());
+        signer.update(message);
+        byte[] signature = signer.sign();
+
+        // verify the signature with JCA
+        Signature verifier = Signature.getInstance(KeyType.ED25519.name());
+        verifier.initVerify(keyPair.getPublic());
+        verifier.update(message);
+        Assert.assertTrue("Verify signature", verifier.verify(signature));
+      }
+
+      // 2. sign with Fingerprint match verification
+      {
+        // we obtain the temporary pin
+        byte[] temporaryPin = piv.verifyUv(true, false);
+        assertNotNull(temporaryPin);
+        assertTrue(piv.getBioMetadata().hasTemporaryPin());
+
+        // generate a new key pair in the signature slot
+        final KeyType keyType = KeyType.ED25519;
+        KeyPairGenerator kpg =
+            KeyPairGenerator.getInstance("YKPiv" + keyType.params.algorithm.name());
+        kpg.initialize(
+            // see that pin is null - the private key will not call pivSession.verifyPin()
+            new PivAlgorithmParameterSpec(
+                Slot.SIGNATURE, keyType, PinPolicy.MATCH_ALWAYS, TouchPolicy.DEFAULT, null));
+        KeyPair keyPair = kpg.generateKeyPair();
+
+        // use temporary pin obtained from UV
+        // this is needed the private key operation
+        // replaces pivSession.verifyPin()
+        piv.verifyTemporaryPin(temporaryPin);
+
+        // message to sign
+        byte[] message = "Hello there".getBytes(StandardCharsets.UTF_8);
+
+        // sign data with the key pair in the signature slot
+        // this will not work for RSA or EC unless the message is properly formatted but works for
+        // ED25519
+        byte[] signature = piv.rawSignOrDecrypt(Slot.SIGNATURE, keyType, message);
+
+        // verify the signature with JCA
+        Signature verifier = Signature.getInstance(KeyType.ED25519.name());
+        verifier.initVerify(keyPair.getPublic());
+        verifier.update(message);
+        Assert.assertTrue("Verify signature", verifier.verify(signature));
+      }
+
+    } catch (Exception e) {
+      assumeNoException("Exception: ", e);
     }
   }
 }

@@ -28,4 +28,10 @@ public class PivBioMultiProtocolTests extends PivInstrumentedTests {
   public void testAuthenticate() throws Throwable {
     withPivSession(PivBioMultiProtocolDeviceTests::testAuthenticate);
   }
+
+  @Test
+  @Category(AlwaysManualTest.class)
+  public void testSign() throws Throwable {
+    withPivSession(PivBioMultiProtocolDeviceTests::testSign);
+  }
 }

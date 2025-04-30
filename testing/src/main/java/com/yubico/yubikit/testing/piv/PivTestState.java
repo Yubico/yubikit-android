@@ -27,6 +27,7 @@ import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.management.Capability;
 import com.yubico.yubikit.management.DeviceInfo;
+import com.yubico.yubikit.management.FormFactor;
 import com.yubico.yubikit.piv.KeyType;
 import com.yubico.yubikit.piv.ManagementKeyType;
 import com.yubico.yubikit.piv.PivSession;
@@ -104,9 +105,13 @@ public class PivTestState extends TestState {
       PivSession pivSession = getPivSession(connection, scpParameters);
       assumeTrue("PIV not available", pivSession != null);
 
-      try {
-        pivSession.reset();
-      } catch (Exception ignored) {
+      if (isBioMultiProtocolDevice(deviceInfo)) {
+        pin = COMPLEX_PIN;
+      } else {
+        try {
+          pivSession.reset();
+        } catch (Exception ignored) {
+        }
       }
 
       if (hasPinComplexity) {
@@ -132,6 +137,12 @@ public class PivTestState extends TestState {
       assertNotNull(deviceInfo);
       assertTrue("Device not PIV FIPS approved as expected", isFipsApproved);
     }
+  }
+
+  boolean isBioMultiProtocolDevice(DeviceInfo deviceInfo) {
+    return deviceInfo != null
+        && (deviceInfo.getFormFactor() == FormFactor.USB_A_BIO
+            || deviceInfo.getFormFactor() == FormFactor.USB_C_BIO);
   }
 
   boolean isInvalidKeyType(KeyType keyType) {
