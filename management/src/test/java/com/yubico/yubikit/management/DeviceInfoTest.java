@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Yubico.
+ * Copyright (C) 2024-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,9 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import com.yubico.yubikit.core.Version;
+import java.util.HashMap;
+import java.util.Map;
+import javax.annotation.Nullable;
 import org.junit.Test;
 
 public class DeviceInfoTest {
@@ -179,11 +182,79 @@ public class DeviceInfoTest {
     assertEquals(new Version(7, 0, 5), infoOf(0x21, fromHex("070005")).getStmVersion());
   }
 
+  @Test
+  public void testParseVersionQualifier() {
+    // default version and qualifier
+    DeviceInfo info = infoOfVersion(null, null);
+    assertEquals(defaultVersion, info.getVersion());
+    assertEquals(
+        new VersionQualifier(defaultVersion, VersionQualifier.Type.FINAL, 0),
+        info.getVersionQualifier());
+    assertEquals("2.2.2", info.getVersionName());
+
+    // no qualifier provided
+    info = infoOfVersion(fromHex("030403"), null);
+    assertEquals(new Version(3, 4, 3), info.getVersion());
+    // default qualifier with provided version
+    assertEquals(
+        new VersionQualifier(new Version(3, 4, 3), VersionQualifier.Type.FINAL, 0),
+        info.getVersionQualifier());
+    assertEquals("3.4.3", info.getVersionName());
+
+    // ALPHA version qualifier
+    info = infoOfVersion(fromHex("000001"), fromHex("0103050403020100030400000000"));
+    assertEquals(new Version(5, 4, 3), info.getVersion());
+    assertEquals("5.4.3.alpha.0", info.getVersionQualifier().toString());
+    assertEquals("5.4.3.alpha.0", info.getVersionName());
+
+    // BETA version qualifier
+    info = infoOfVersion(fromHex("000001"), fromHex("01030507080201010304000000e9"));
+    assertEquals(new Version(5, 7, 8), info.getVersion());
+    assertEquals("5.7.8.beta.233", info.getVersionQualifier().toString());
+    assertEquals("5.7.8.beta.233", info.getVersionName());
+
+    // FINAL version qualifier
+    info = infoOfVersion(fromHex("050404"), fromHex("0103050404020102030400000005"));
+    assertEquals(new Version(5, 4, 4), info.getVersion());
+    assertEquals("5.4.4.final.5", info.getVersionQualifier().toString());
+    assertEquals("5.4.4", info.getVersionName());
+
+    info = infoOfVersion(fromHex("050709"), fromHex("01030507090201020304FFFFFFFF"));
+    assertEquals(new Version(5, 7, 9), info.getVersion());
+    assertEquals("5.7.9.final.4294967295", info.getVersionQualifier().toString());
+    assertEquals("5.7.9", info.getVersionName());
+
+    info = infoOfVersion(fromHex("05070A"), fromHex("010305070A020102030480000000"));
+    assertEquals(new Version(5, 7, 10), info.getVersion());
+    assertEquals("5.7.10.final.2147483648", info.getVersionQualifier().toString());
+    assertEquals("5.7.10", info.getVersionName());
+
+    info = infoOfVersion(fromHex("05070B"), fromHex("010305070B02010203047FFFFFFF"));
+    assertEquals(new Version(5, 7, 11), info.getVersion());
+    assertEquals("5.7.11.final.2147483647", info.getVersionQualifier().toString());
+    assertEquals("5.7.11", info.getVersionName());
+  }
+
   private DeviceInfo defaultInfo() {
     return DeviceInfo.parseTlvs(emptyTlvs(), defaultVersion);
   }
 
   private DeviceInfo infoOf(int tag, byte[] data) {
     return DeviceInfo.parseTlvs(tlvs(tag, data), defaultVersion);
+  }
+
+  // builds a DeviceInfo object from the given version and version qualifier bytes
+  private DeviceInfo infoOfVersion(
+      @Nullable byte[] versionBytes, @Nullable byte[] versionQualifierBytes) {
+
+    Map<Integer, byte[]> tlvs = new HashMap<>();
+    if (versionBytes != null) {
+      tlvs.put(0x05, versionBytes);
+    }
+    if (versionQualifierBytes != null) {
+      tlvs.put(0x19, versionQualifierBytes);
+    }
+
+    return DeviceInfo.parseTlvs(tlvs, defaultVersion);
   }
 }

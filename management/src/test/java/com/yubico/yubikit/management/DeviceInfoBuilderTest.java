@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Yubico.
+ * Copyright (C) 2024-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -118,6 +118,29 @@ public class DeviceInfoBuilderTest {
     assertNull(defaultInfo().getStmVersion());
     DeviceInfo deviceInfo = new DeviceInfo.Builder().stmVersion(new Version(5, 6, 2)).build();
     assertEquals(new Version(5, 6, 2), deviceInfo.getStmVersion());
+  }
+
+  @Test
+  public void testVersionQualifier() {
+    VersionQualifier defaultQualifier = defaultInfo().getVersionQualifier();
+    assertEquals(
+        new VersionQualifier(new Version(0, 0, 0), VersionQualifier.Type.FINAL, 0),
+        defaultQualifier);
+
+    DeviceInfo deviceInfo =
+        new DeviceInfo.Builder()
+            .version(new Version(3, 0, 0))
+            .versionQualifier(
+                new VersionQualifier(new Version(5, 6, 2), VersionQualifier.Type.ALPHA, 15))
+            .build();
+
+    assertEquals(
+        new VersionQualifier(new Version(5, 6, 2), VersionQualifier.Type.ALPHA, 15),
+        deviceInfo.getVersionQualifier());
+
+    assertEquals(new Version(3, 0, 0), deviceInfo.getVersion());
+
+    assertEquals("5.6.2.alpha.15", deviceInfo.getVersionQualifier().toString());
   }
 
   private DeviceInfo defaultInfo() {
