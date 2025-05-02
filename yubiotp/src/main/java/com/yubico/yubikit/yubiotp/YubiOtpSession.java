@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Yubico.
+ * Copyright (C) 2019-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 
 package com.yubico.yubikit.yubiotp;
+
+import static com.yubico.yubikit.core.application.SessionVersionOverride.overrideOf;
 
 import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.Version;
@@ -190,6 +192,8 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
       // We didn't get a version above, get it from the status struct.
       version = Version.fromBytes(statusBytes);
     }
+
+    version = overrideOf(version);
 
     if (scpKeyParams != null) {
       try {

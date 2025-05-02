@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Yubico.
+ * Copyright (C) 2024-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,7 +46,7 @@ public class SessionVersionOverride {
    * @param version The version which might be overridden.
    * @return Version to use.
    */
-  static Version overrideOf(Version version) {
-    return (versionOverride != null && version.major == 0) ? versionOverride : version;
+  public static Version overrideOf(Version version) {
+    return versionOverride != null && version.isDevelopmentVersion() ? versionOverride : version;
   }
 }

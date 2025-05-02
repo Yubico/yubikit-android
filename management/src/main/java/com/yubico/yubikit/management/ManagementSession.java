@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Yubico.
+ * Copyright (C) 2019-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import com.yubico.yubikit.core.application.ApplicationSession;
 import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.application.CommandException;
 import com.yubico.yubikit.core.application.Feature;
+import com.yubico.yubikit.core.application.SessionVersionOverride;
 import com.yubico.yubikit.core.fido.FidoConnection;
 import com.yubico.yubikit.core.fido.FidoProtocol;
 import com.yubico.yubikit.core.internal.Logger;
@@ -131,6 +132,7 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
       throws IOException, ApplicationNotAvailableException {
     SmartCardProtocol protocol = new SmartCardProtocol(connection);
     Version version;
+    Backend<?> backend;
     try {
       version =
           Version.parse(new String(protocol.select(AppId.MANAGEMENT), StandardCharsets.UTF_8));
@@ -141,42 +143,6 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
         connection.sendAndReceive(new byte[] {(byte) 0xa4, 0x04, 0x00, 0x08});
         protocol.select(AppId.OTP);
       }
-    } catch (ApplicationNotAvailableException e) {
-      if (connection.getTransport() == Transport.NFC) {
-        // NEO doesn't support the Management Application over NFC, but can use the OTP application.
-        version = Version.fromBytes(protocol.select(AppId.OTP));
-      } else {
-        throw e;
-      }
-    } catch (BadResponseException | ApduException e) {
-      throw new IOException("Failed setting up SCP session", e);
-    }
-    this.version = version;
-
-    if (version.major == 3) { // NEO, using the OTP application
-      backend =
-          new Backend<SmartCardProtocol>(protocol) {
-            @Override
-            byte[] readConfig(int page) {
-              throw new UnsupportedOperationException("readConfig not supported on YubiKey NEO");
-            }
-
-            @Override
-            void writeConfig(byte[] config) {
-              throw new UnsupportedOperationException("writeConfig not supported on YubiKey NEO");
-            }
-
-            @Override
-            void setMode(byte[] data) throws IOException, CommandException {
-              delegate.sendAndReceive(new Apdu(0, OTP_INS_CONFIG, CMD_DEVICE_CONFIG, 0, data));
-            }
-
-            @Override
-            void deviceReset() {
-              throw new UnsupportedOperationException("deviceReset not supported on YubiKey NEO");
-            }
-          };
-    } else {
       backend =
           new Backend<SmartCardProtocol>(protocol) {
             @Override
@@ -200,7 +166,52 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
               delegate.sendAndReceive(new Apdu(0, INS_DEVICE_RESET, 0, 0, null));
             }
           };
+    } catch (ApplicationNotAvailableException e) {
+      if (connection.getTransport() == Transport.NFC) {
+        // NEO doesn't support the Management Application over NFC, but can use the OTP application.
+        version = Version.fromBytes(protocol.select(AppId.OTP));
+      } else {
+        throw e;
+      }
+      backend =
+          new Backend<SmartCardProtocol>(protocol) {
+            @Override
+            byte[] readConfig(int page) {
+              throw new UnsupportedOperationException("readConfig not supported on YubiKey NEO");
+            }
+
+            @Override
+            void writeConfig(byte[] config) {
+              throw new UnsupportedOperationException("writeConfig not supported on YubiKey NEO");
+            }
+
+            @Override
+            void setMode(byte[] data) throws IOException, CommandException {
+              delegate.sendAndReceive(new Apdu(0, OTP_INS_CONFIG, CMD_DEVICE_CONFIG, 0, data));
+            }
+
+            @Override
+            void deviceReset() {
+              throw new UnsupportedOperationException("deviceReset not supported on YubiKey NEO");
+            }
+          };
+    } catch (BadResponseException | ApduException e) {
+      throw new IOException("Failed setting up SCP session", e);
     }
+
+    this.backend = backend;
+
+    if (version.isDevelopmentVersion()) {
+      try {
+        logger.debug("Overriding development version...");
+        version = readDeviceInfo().getVersionQualifier().getVersion();
+        SessionVersionOverride.set(version);
+      } catch (CommandException e) {
+        // failed to read device info where it was expected
+        throw new IOException("Failed reading device info.", e);
+      }
+    }
+    this.version = version;
     logCtor(connection);
   }
 
@@ -346,7 +357,17 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
    */
   public DeviceInfo getDeviceInfo() throws IOException, CommandException {
     require(FEATURE_DEVICE_INFO);
+    return readDeviceInfo();
+  }
 
+  /**
+   * Get device information from the YubiKey.
+   *
+   * @return a DeviceInfo object
+   * @throws IOException in case of connection error
+   * @throws CommandException in case of error response
+   */
+  private DeviceInfo readDeviceInfo() throws IOException, CommandException {
     final Map<Integer, byte[]> tlvs = new HashMap<>();
     boolean hasMoreData = true;
     int page = 0;

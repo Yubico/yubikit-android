@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Yubico.
+ * Copyright (C) 2022-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,14 +20,8 @@ import androidx.test.ext.junit.rules.ActivityScenarioRule;
 import com.yubico.yubikit.android.transport.usb.UsbYubiKeyDevice;
 import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.UsbPid;
-import com.yubico.yubikit.core.Version;
 import com.yubico.yubikit.core.YubiKeyDevice;
-import com.yubico.yubikit.core.application.SessionVersionOverride;
-import com.yubico.yubikit.core.smartcard.SmartCardConnection;
-import com.yubico.yubikit.management.DeviceInfo;
-import com.yubico.yubikit.support.DeviceUtil;
 import com.yubico.yubikit.testing.TestActivity;
-import java.io.IOException;
 import javax.annotation.Nullable;
 import org.junit.After;
 import org.junit.Before;
@@ -51,14 +45,6 @@ public class YKInstrumentedTests {
     scenarioRule.getScenario().onActivity((TestActivity activity) -> this.activity = activity);
     device = activity.awaitSession(getClass().getSimpleName(), name.getMethodName());
     usbPid = device instanceof UsbYubiKeyDevice ? ((UsbYubiKeyDevice) device).getPid() : null;
-
-    try (SmartCardConnection connection = device.openConnection(SmartCardConnection.class)) {
-      final DeviceInfo deviceInfo = DeviceUtil.readInfo(connection, usbPid);
-      if (deviceInfo.getVersion().major == 0) {
-        SessionVersionOverride.set(new Version(5, 7, 2));
-      }
-    } catch (IOException | IllegalStateException | IllegalArgumentException ignored) {
-    }
   }
 
   @After
