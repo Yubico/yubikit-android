@@ -47,6 +47,24 @@ public class SessionVersionOverride {
    * @return Version to use.
    */
   public static Version overrideOf(Version version) {
-    return versionOverride != null && version.isDevelopmentVersion() ? versionOverride : version;
+    if (versionOverride == null) {
+      return version;
+    }
+
+    if (version.isDevelopmentVersion()) {
+      // this version override was provided by the management session after checking version
+      // qualifier
+      return versionOverride;
+    }
+
+    if (version.major == 0) {
+      // this check is for handling devices which don't support version qualifier
+
+      // applications can also override version by calling SessionVersionOverride.set()
+      // we will use such overrides only for devices with version major 0
+      return versionOverride;
+    }
+
+    return version;
   }
 }
