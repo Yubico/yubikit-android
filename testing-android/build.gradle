@@ -38,7 +38,7 @@ android {
 
 dependencies {
 
-    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
 
     implementation 'androidx.test:core:1.6.1'
     implementation 'androidx.test:rules:1.6.1'
