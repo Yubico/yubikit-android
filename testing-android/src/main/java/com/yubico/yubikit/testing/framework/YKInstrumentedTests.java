@@ -52,12 +52,14 @@ public class YKInstrumentedTests {
     device = activity.awaitSession(getClass().getSimpleName(), name.getMethodName());
     usbPid = device instanceof UsbYubiKeyDevice ? ((UsbYubiKeyDevice) device).getPid() : null;
 
-    try (SmartCardConnection connection = device.openConnection(SmartCardConnection.class)) {
-      final DeviceInfo deviceInfo = DeviceUtil.readInfo(connection, usbPid);
-      if (deviceInfo.getVersion().major == 0) {
-        SessionVersionOverride.set(new Version(5, 7, 2));
+    if (shouldOverrideVersion()) {
+      try (SmartCardConnection connection = device.openConnection(SmartCardConnection.class)) {
+        final DeviceInfo deviceInfo = DeviceUtil.readInfo(connection, usbPid);
+        if (deviceInfo.getVersion().major == 0) {
+          SessionVersionOverride.set(new Version(5, 7, 2));
+        }
+      } catch (IOException | IllegalStateException | IllegalArgumentException ignored) {
       }
-    } catch (IOException | IllegalStateException | IllegalArgumentException ignored) {
     }
   }
 
@@ -88,5 +90,9 @@ public class YKInstrumentedTests {
   @Nullable
   protected Byte getScpKid() {
     return null;
+  }
+
+  protected boolean shouldOverrideVersion() {
+    return true;
   }
 }
