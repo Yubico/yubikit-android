@@ -27,6 +27,7 @@ public final class SW {
   public static final short CONDITIONS_NOT_SATISFIED = 0x6985;
   public static final short COMMAND_NOT_ALLOWED = 0x6986;
   public static final short INCORRECT_PARAMETERS = 0x6A80;
+  public static final short FUNCTION_NOT_SUPPORTED = 0x6A81;
   public static final short FILE_NOT_FOUND = 0x6A82;
   public static final short NO_SPACE = 0x6A84;
   public static final short REFERENCED_DATA_NOT_FOUND = 0x6A88;
