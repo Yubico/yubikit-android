@@ -24,6 +24,7 @@ import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.YubiKeyType;
 import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
 import com.yubico.yubikit.core.application.CommandException;
+import com.yubico.yubikit.core.application.SessionVersionOverride;
 import com.yubico.yubikit.core.fido.FidoConnection;
 import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.otp.OtpConnection;
@@ -327,7 +328,7 @@ public class DeviceUtil {
       DeviceInfo info, @Nullable YubiKeyType keyType, int interfaces) {
     final DeviceConfig config = info.getConfig();
     final Version version =
-        info.getVersion().isDevelopmentVersion()
+        SessionVersionOverride.isDevelopmentVersion(info.getVersion())
             ? info.getVersionQualifier().getVersion()
             : info.getVersion();
     final FormFactor formFactor = info.getFormFactor();

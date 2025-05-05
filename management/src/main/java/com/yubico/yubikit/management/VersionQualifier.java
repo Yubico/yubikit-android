@@ -64,7 +64,7 @@ public class VersionQualifier {
     return type;
   }
 
-  public long getIteration() {
+  public int getIteration() {
     return iteration;
   }
 

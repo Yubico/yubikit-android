@@ -25,7 +25,6 @@ import java.util.regex.Pattern;
 public final class Version implements Comparable<Version> {
   private static final Pattern VERSION_STRING_PATTERN =
       Pattern.compile("\\b(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\b");
-  private static final Version developmentVersion = new Version(0, 0, 1);
 
   public final byte major;
   public final byte minor;
@@ -85,11 +84,6 @@ public final class Version implements Comparable<Version> {
     if (o == null || getClass() != o.getClass()) return false;
     Version version = (Version) o;
     return major == version.major && minor == version.minor && micro == version.micro;
-  }
-
-  /** return true if this is ALPHA or BETA version */
-  public boolean isDevelopmentVersion() {
-    return this.equals(developmentVersion);
   }
 
   @Override

@@ -27,6 +27,7 @@ import javax.annotation.Nullable;
 public class SessionVersionOverride {
 
   @Nullable private static Version versionOverride = null;
+  private static final Version developmentVersion = new Version(0, 0, 1);
 
   /**
    * Internal use only.
@@ -51,7 +52,7 @@ public class SessionVersionOverride {
       return version;
     }
 
-    if (version.isDevelopmentVersion()) {
+    if (isDevelopmentVersion(version)) {
       // this version override was provided by the management session after checking version
       // qualifier
       return versionOverride;
@@ -66,5 +67,10 @@ public class SessionVersionOverride {
     }
 
     return version;
+  }
+
+  /** return true if this is ALPHA or BETA version */
+  public static boolean isDevelopmentVersion(Version version) {
+    return version.equals(developmentVersion);
   }
 }

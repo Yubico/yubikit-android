@@ -202,7 +202,7 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
           };
     }
 
-    if (version.isDevelopmentVersion()) {
+    if (SessionVersionOverride.isDevelopmentVersion(version)) {
       try {
         logger.debug("Overriding development version...");
         version = readDeviceInfo().getVersionQualifier().getVersion();
