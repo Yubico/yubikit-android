@@ -34,11 +34,10 @@ public class SessionVersionOverride {
    *
    * <p>Override version of connected YubiKey with the specified version.
    *
-   * @param version version to use instead of YubiKey version. Only applies if the major to
-   *     development versions..
+   * @param overrideVersion version which will be used instead of development versions.
    */
-  public static void set(@Nullable Version version) {
-    versionOverride = version;
+  public static void set(@Nullable Version overrideVersion) {
+    versionOverride = overrideVersion;
   }
 
   /**
