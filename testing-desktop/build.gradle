@@ -29,9 +29,9 @@ dependencies {
     integrationTestImplementation 'junit:junit:4.13.2'
     integrationTestImplementation 'ch.qos.logback:logback-classic:1.5.16'
 
-    implementation 'org.bouncycastle:bcpkix-jdk15to18:1.78.1'
+    implementation 'org.bouncycastle:bcpkix-jdk15to18:1.80'
 
-    integrationTestRuntimeOnly('org.junit.vintage:junit-vintage-engine:5.9.0')
+    integrationTestRuntimeOnly('org.junit.vintage:junit-vintage-engine:5.12.2')
 }
 
 java {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Yubico.
+ * Copyright (C) 2019-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -187,8 +187,12 @@ public class SmartCardProtocol implements Closeable {
     try {
       return sendAndReceive(new Apdu(0, INS_SELECT, P1_SELECT, P2_SELECT, aid));
     } catch (ApduException e) {
-      // NEO sometimes returns INVALID_INSTRUCTION instead of FILE_NOT_FOUND
-      if (e.getSw() == SW.FILE_NOT_FOUND || e.getSw() == SW.INVALID_INSTRUCTION) {
+      // FUNCTION_NOT_SUPPORTED or FILE_NOT_FOUND mean that it was not possible
+      // to select the AID.
+      // NEO sometimes returns INVALID_INSTRUCTION instead of these
+      if (e.getSw() == SW.FUNCTION_NOT_SUPPORTED
+          || e.getSw() == SW.FILE_NOT_FOUND
+          || e.getSw() == SW.INVALID_INSTRUCTION) {
         throw new ApplicationNotAvailableException("The application couldn't be selected", e);
       }
       throw new IOException("Unexpected SW", e);
