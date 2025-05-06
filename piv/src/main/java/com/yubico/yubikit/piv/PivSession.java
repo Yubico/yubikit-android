@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Yubico.
+ * Copyright (C) 2019-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package com.yubico.yubikit.piv;
 
+import static com.yubico.yubikit.core.application.SessionVersionOverride.overrideOf;
 import static com.yubico.yubikit.core.util.ByteUtils.intToLength;
 
 import com.yubico.yubikit.core.Version;
@@ -235,7 +236,9 @@ public class PivSession extends ApplicationSession<PivSession> {
       }
     }
 
-    version = Version.fromBytes(protocol.sendAndReceive(new Apdu(0, INS_GET_VERSION, 0, 0, null)));
+    version =
+        overrideOf(
+            Version.fromBytes(protocol.sendAndReceive(new Apdu(0, INS_GET_VERSION, 0, 0, null))));
     protocol.configure(version);
 
     try {

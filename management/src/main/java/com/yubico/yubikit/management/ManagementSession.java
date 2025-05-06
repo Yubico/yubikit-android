@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Yubico.
+ * Copyright (C) 2019-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import com.yubico.yubikit.core.application.ApplicationSession;
 import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.application.CommandException;
 import com.yubico.yubikit.core.application.Feature;
+import com.yubico.yubikit.core.application.SessionVersionOverride;
 import com.yubico.yubikit.core.fido.FidoConnection;
 import com.yubico.yubikit.core.fido.FidoProtocol;
 import com.yubico.yubikit.core.internal.Logger;
@@ -151,7 +152,6 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
     } catch (BadResponseException | ApduException e) {
       throw new IOException("Failed setting up SCP session", e);
     }
-    this.version = version;
 
     if (version.major == 3) { // NEO, using the OTP application
       backend =
@@ -201,6 +201,19 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
             }
           };
     }
+
+    if (SessionVersionOverride.isDevelopmentVersion(version)) {
+      try {
+        logger.debug("Overriding development version...");
+        version = readDeviceInfo().getVersionQualifier().getVersion();
+        SessionVersionOverride.set(version);
+      } catch (CommandException e) {
+        // failed to read device info where it was expected
+        throw new IOException("Failed reading device info.", e);
+      }
+    }
+
+    this.version = version;
     logCtor(connection);
   }
 
@@ -346,7 +359,17 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
    */
   public DeviceInfo getDeviceInfo() throws IOException, CommandException {
     require(FEATURE_DEVICE_INFO);
+    return readDeviceInfo();
+  }
 
+  /**
+   * Get device information from the YubiKey.
+   *
+   * @return a DeviceInfo object
+   * @throws IOException in case of connection error
+   * @throws CommandException in case of error response
+   */
+  private DeviceInfo readDeviceInfo() throws IOException, CommandException {
     final Map<Integer, byte[]> tlvs = new HashMap<>();
     boolean hasMoreData = true;
     int page = 0;

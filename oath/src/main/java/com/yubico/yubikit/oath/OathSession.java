@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 Yubico.
+ * Copyright (C) 2019-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
 import com.yubico.yubikit.core.application.ApplicationSession;
 import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.application.Feature;
+import com.yubico.yubikit.core.application.SessionVersionOverride;
 import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.internal.codec.Base64;
 import com.yubico.yubikit.core.smartcard.Apdu;
@@ -143,7 +144,7 @@ public class OathSession extends ApplicationSession<OathSession> {
     protocol = new SmartCardProtocol(connection, INS_SEND_REMAINING);
     SelectResponse selectResponse = new SelectResponse(protocol.select(AppId.OATH));
     this.scpKeyParams = scpKeyParams;
-    version = selectResponse.version;
+    version = SessionVersionOverride.overrideOf(selectResponse.version);
     deviceId = selectResponse.getDeviceId();
     salt = selectResponse.salt;
     challenge = selectResponse.challenge;

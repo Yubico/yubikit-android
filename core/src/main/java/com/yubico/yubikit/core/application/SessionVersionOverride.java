@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Yubico.
+ * Copyright (C) 2024-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,17 +27,17 @@ import javax.annotation.Nullable;
 public class SessionVersionOverride {
 
   @Nullable private static Version versionOverride = null;
+  private static final Version developmentVersion = new Version(0, 0, 1);
 
   /**
    * Internal use only.
    *
    * <p>Override version of connected YubiKey with the specified version.
    *
-   * @param version version to use instead of YubiKey version. Only applies if the major version of
-   *     the YubiKey is 0.
+   * @param overrideVersion version which will be used instead of development versions.
    */
-  public static void set(@Nullable Version version) {
-    versionOverride = version;
+  public static void set(@Nullable Version overrideVersion) {
+    versionOverride = overrideVersion;
   }
 
   /**
@@ -46,7 +46,12 @@ public class SessionVersionOverride {
    * @param version The version which might be overridden.
    * @return Version to use.
    */
-  static Version overrideOf(Version version) {
-    return (versionOverride != null && version.major == 0) ? versionOverride : version;
+  public static Version overrideOf(Version version) {
+    return (versionOverride != null && isDevelopmentVersion(version)) ? versionOverride : version;
+  }
+
+  /** return true if this is ALPHA or BETA version */
+  public static boolean isDevelopmentVersion(Version version) {
+    return version.equals(developmentVersion);
   }
 }

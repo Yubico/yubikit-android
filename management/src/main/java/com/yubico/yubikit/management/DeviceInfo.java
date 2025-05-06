@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022,2024 Yubico.
+ * Copyright (C) 2020-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@ package com.yubico.yubikit.management;
 
 import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.Version;
+import com.yubico.yubikit.core.internal.Logger;
+import com.yubico.yubikit.core.util.Tlvs;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.StandardCharsets;
@@ -24,6 +26,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import javax.annotation.Nullable;
+import org.slf4j.LoggerFactory;
 
 /** Contains metadata, including Device Configuration, of a YubiKey. */
 public class DeviceInfo {
@@ -44,12 +47,15 @@ public class DeviceInfo {
   private static final int TAG_PIN_COMPLEXITY = 0x16;
   private static final int TAG_NFC_RESTRICTED = 0x17;
   private static final int TAG_RESET_BLOCKED = 0x18;
+  private static final int TAG_VERSION_QUALIFIER = 0x19;
   private static final int TAG_FPS_VERSION = 0x20;
   private static final int TAG_STM_VERSION = 0x21;
+  private static final org.slf4j.Logger logger = LoggerFactory.getLogger(DeviceInfo.class);
 
   private final DeviceConfig config;
   @Nullable private final Integer serialNumber;
   private final Version version;
+  private final VersionQualifier versionQualifier;
   private final FormFactor formFactor;
   private final Map<Transport, Integer> supportedCapabilities;
   private final boolean isLocked;
@@ -67,6 +73,7 @@ public class DeviceInfo {
     this.config = builder.config;
     this.serialNumber = builder.serialNumber;
     this.version = builder.version;
+    this.versionQualifier = builder.versionQualifier;
     this.formFactor = builder.formFactor;
     this.supportedCapabilities = builder.supportedCapabilities;
     this.isLocked = builder.isLocked;
@@ -149,6 +156,13 @@ public class DeviceInfo {
     return version;
   }
 
+  /** Returns the version of the YubiKey firmware. */
+  public String getVersionName() {
+    return versionQualifier.getType() == VersionQualifier.Type.FINAL
+        ? version.toString()
+        : versionQualifier.toString();
+  }
+
   /** Returns the form factor of the YubiKey. */
   public FormFactor getFormFactor() {
     return formFactor;
@@ -221,6 +235,11 @@ public class DeviceInfo {
     return stmVersion;
   }
 
+  /** Returns version qualifier */
+  public VersionQualifier getVersionQualifier() {
+    return versionQualifier;
+  }
+
   static DeviceInfo parseTlvs(Map<Integer, byte[]> data, Version defaultVersion) {
     boolean isLocked = readInt(data.get(TAG_CONFIG_LOCKED)) == 1;
     int serialNumber = readInt(data.get(TAG_SERIAL_NUMBER));
@@ -234,10 +253,20 @@ public class DeviceInfo {
     int resetBlocked = readInt(data.get(TAG_RESET_BLOCKED));
     FormFactor formFactor = FormFactor.valueOf(formFactorTagData);
 
-    Version version =
+    final Version firmwareVersion =
         data.containsKey(TAG_FIRMWARE_VERSION)
             ? Version.fromBytes(data.get(TAG_FIRMWARE_VERSION))
             : defaultVersion;
+
+    final VersionQualifier versionQualifier =
+        readVersionQualifier(firmwareVersion, data.get(TAG_VERSION_QUALIFIER));
+
+    boolean isFinalVersion = versionQualifier.getType() == VersionQualifier.Type.FINAL;
+    if (!isFinalVersion) {
+      Logger.debug(logger, "Overriding behavioral version with {}", versionQualifier.getVersion());
+    }
+
+    final Version version = isFinalVersion ? firmwareVersion : versionQualifier.getVersion();
 
     final Version versionZero = new Version(0, 0, 0);
 
@@ -322,6 +351,7 @@ public class DeviceInfo {
         .resetBlocked(resetBlocked)
         .fpsVersion(fpsVersion)
         .stmVersion(stmVersion)
+        .versionQualifier(versionQualifier)
         .build();
   }
 
@@ -341,6 +371,8 @@ public class DeviceInfo {
     private int resetBlocked = 0;
     @Nullable private Version fpsVersion = null;
     @Nullable private Version stmVersion = null;
+    private VersionQualifier versionQualifier =
+        new VersionQualifier(version, VersionQualifier.Type.FINAL, 0);
 
     public DeviceInfo build() {
       return new DeviceInfo(this);
@@ -420,6 +452,11 @@ public class DeviceInfo {
       this.stmVersion = stmVersion;
       return this;
     }
+
+    public Builder versionQualifier(VersionQualifier versionQualifier) {
+      this.versionQualifier = versionQualifier;
+      return this;
+    }
   }
 
   /** Convert value to use bits of the {@link Capability} enum */
@@ -457,6 +494,29 @@ public class DeviceInfo {
     return value;
   }
 
+  private static VersionQualifier readVersionQualifier(Version version, @Nullable byte[] bytes) {
+    if (bytes == null) {
+      return new VersionQualifier(version, VersionQualifier.Type.FINAL, 0);
+    }
+
+    if (bytes.length != 0x0E) {
+      throw new IllegalArgumentException("Invalid data length.");
+    }
+
+    final int TAG_VERSION = 0x01;
+    final int TAG_TYPE = 0x02;
+    final int TAG_ITERATION = 0x03;
+
+    Map<Integer, byte[]> data = Tlvs.decodeMap(bytes);
+
+    Version qualifierVersion = Version.fromBytes(data.get(TAG_VERSION));
+    int versionType = readInt(data.get(TAG_TYPE));
+    int iteration = readInt(data.get(TAG_ITERATION));
+
+    return new VersionQualifier(
+        qualifierVersion, VersionQualifier.Type.fromValue(versionType), iteration);
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
@@ -476,7 +536,8 @@ public class DeviceInfo {
         && Objects.equals(supportedCapabilities, that.supportedCapabilities)
         && Objects.equals(partNumber, that.partNumber)
         && Objects.equals(fpsVersion, that.fpsVersion)
-        && Objects.equals(stmVersion, that.stmVersion);
+        && Objects.equals(stmVersion, that.stmVersion)
+        && Objects.equals(versionQualifier, that.versionQualifier);
   }
 
   @Override
@@ -496,7 +557,8 @@ public class DeviceInfo {
         pinComplexity,
         resetBlocked,
         fpsVersion,
-        stmVersion);
+        stmVersion,
+        versionQualifier);
   }
 
   @Override
@@ -532,6 +594,8 @@ public class DeviceInfo {
         + fpsVersion
         + ", stmVersion="
         + stmVersion
+        + ", versionQualifier="
+        + versionQualifier
         + '}';
   }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Yubico.
+ * Copyright (C) 2023-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package com.yubico.yubikit.openpgp;
 
+import static com.yubico.yubikit.core.application.SessionVersionOverride.overrideOf;
 import static com.yubico.yubikit.core.util.ByteUtils.intToLength;
 import static com.yubico.yubikit.openpgp.OpenPgpUtils.decodeBcd;
 
@@ -189,7 +190,7 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
     for (int i = 0; i < 3; i++) {
       versionBytes[i] = decodeBcd(versionBcd[i]);
     }
-    version = Version.fromBytes(versionBytes);
+    version = overrideOf(Version.fromBytes(versionBytes));
     protocol.configure(version);
 
     // Note: This value is cached!

@@ -29,9 +29,4 @@ public class NeoInstrumentedTests extends YKInstrumentedTests {
       callback.invoke(connection);
     }
   }
-
-  @Override
-  protected boolean shouldOverrideVersion() {
-    return false;
-  }
 }

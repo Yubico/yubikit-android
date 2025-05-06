@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Yubico.
+ * Copyright (C) 2022-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.YubiKeyType;
 import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
 import com.yubico.yubikit.core.application.CommandException;
+import com.yubico.yubikit.core.application.SessionVersionOverride;
 import com.yubico.yubikit.core.fido.FidoConnection;
 import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.otp.OtpConnection;
@@ -326,7 +327,10 @@ public class DeviceUtil {
   static DeviceInfo adjustDeviceInfo(
       DeviceInfo info, @Nullable YubiKeyType keyType, int interfaces) {
     final DeviceConfig config = info.getConfig();
-    final Version version = info.getVersion();
+    final Version version =
+        SessionVersionOverride.isDevelopmentVersion(info.getVersion())
+            ? info.getVersionQualifier().getVersion()
+            : info.getVersion();
     final FormFactor formFactor = info.getFormFactor();
 
     int supportedUsbCapabilities = info.getSupportedCapabilities(Transport.USB);
@@ -424,6 +428,7 @@ public class DeviceUtil {
     return new DeviceInfo.Builder()
         .config(configBuilder.build())
         .version(version)
+        .versionQualifier(info.getVersionQualifier())
         .formFactor(formFactor)
         .serialNumber(info.getSerialNumber())
         .supportedCapabilities(capabilities)
