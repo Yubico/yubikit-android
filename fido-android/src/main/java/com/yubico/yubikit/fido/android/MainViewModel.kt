@@ -22,6 +22,7 @@ import com.yubico.yubikit.android.transport.nfc.NfcYubiKeyDevice
 import com.yubico.yubikit.android.transport.usb.UsbYubiKeyDevice
 import com.yubico.yubikit.core.YubiKeyDevice
 import com.yubico.yubikit.core.util.Result
+import com.yubico.yubikit.fido.android.YubiKitFidoClient.Companion.extensions
 import com.yubico.yubikit.fido.client.BasicWebAuthnClient
 import com.yubico.yubikit.fido.ctap.Ctap2Session
 import kotlin.coroutines.resume
@@ -76,7 +77,15 @@ class MainViewModel : ViewModel() {
                 Ctap2Session.create(it) {
                     inner.resume(
                         kotlin.runCatching {
-                            action.invoke(BasicWebAuthnClient(it.value))
+                            if (extensions == null)
+                                action.invoke(BasicWebAuthnClient(it.value))
+                            else
+                                action.invoke(
+                                    BasicWebAuthnClient(
+                                        it.value,
+                                        extensions!!
+                                    )
+                                )
                         }
                     )
                 }
@@ -90,7 +99,15 @@ class MainViewModel : ViewModel() {
                         Ctap2Session.create(result.value) {
                             inner.resume(
                                 kotlin.runCatching {
-                                    action.invoke(BasicWebAuthnClient(it.value))
+                                    if (extensions == null)
+                                        action.invoke(BasicWebAuthnClient(it.value))
+                                    else
+                                        action.invoke(
+                                            BasicWebAuthnClient(
+                                                it.value,
+                                                extensions!!
+                                            )
+                                        )
                                 })
                         }
                     }

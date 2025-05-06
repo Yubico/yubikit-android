@@ -22,9 +22,9 @@ import android.content.Intent
 import androidx.activity.ComponentActivity
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContract
-import androidx.compose.runtime.Composable
 import androidx.fragment.app.Fragment
 import com.yubico.yubikit.fido.android.YubiKitFidoActivity.Companion.toMap
+import com.yubico.yubikit.fido.client.extensions.Extension
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredential
 import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.CancellationException
@@ -42,11 +42,16 @@ class YubiKitFidoClient {
     private var currentContinuation: CancellableContinuation<Result<PublicKeyCredential>>? = null
     private val launcher: ActivityResultLauncher<FidoRequest>
 
+    companion object {
+        var extensions: List<Extension>? = null
+    }
+
     constructor(
         fragment: Fragment,
-        theme: (@Composable (content: @Composable () -> Unit) -> Unit)? = null
+        extensions: List<Extension>
+        //theme: (@Composable (content: @Composable () -> Unit) -> Unit)? = null
     ) {
-        YubiKitFidoActivity.ThemeManager.setTheme(theme)
+        //YubiKitFidoActivity.ThemeManager.setTheme(theme)
         launcher = fragment.registerForActivityResult(
             FidoActivityResultContract()
         ) { result ->
@@ -56,13 +61,15 @@ class YubiKitFidoClient {
                 currentContinuation = null
             }
         }
+        Companion.extensions = extensions
     }
 
     constructor(
         activity: ComponentActivity,
-        theme: (@Composable (content: @Composable () -> Unit) -> Unit)? = null
+        extensions: List<Extension>,
+        //theme: (@Composable (content: @Composable () -> Unit) -> Unit)? = null
     ) {
-        YubiKitFidoActivity.ThemeManager.setTheme(theme)
+        //YubiKitFidoActivity.ThemeManager.setTheme(theme)
         launcher = activity.registerForActivityResult(
             FidoActivityResultContract()
         ) { result ->
@@ -72,6 +79,7 @@ class YubiKitFidoClient {
                 currentContinuation = null
             }
         }
+        Companion.extensions = extensions
     }
 
     private suspend fun execute(
