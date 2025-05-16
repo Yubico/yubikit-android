@@ -40,13 +40,19 @@ import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialParameters;
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import javax.annotation.Nullable;
+import javax.crypto.Cipher;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -1156,6 +1162,27 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
     @Nullable
     public Integer getMaxPINLength() {
       return maxPINLength;
+    }
+
+    @Nullable
+    public byte[] getIdentifier(byte[] persistentPinUvAuthToken) throws GeneralSecurityException {
+      if (encIdentifier == null) {
+        return null;
+      }
+
+      byte[] iv = Arrays.copyOfRange(encIdentifier, 0, 16);
+      byte[] ct = Arrays.copyOfRange(encIdentifier, 16, encIdentifier.length);
+      Hkdf hkdf = new Hkdf("HmacSHA256");
+      byte[] secret =
+          hkdf.digest(
+              persistentPinUvAuthToken,
+              new byte[32],
+              "encIdentifier".getBytes(StandardCharsets.UTF_8),
+              16);
+
+      Cipher cipher = Cipher.getInstance("AES/CBC/NoPadding");
+      cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(secret, "AES"), new IvParameterSpec(iv));
+      return cipher.doFinal(ct);
     }
 
     @Override
