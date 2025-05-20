@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Yubico.
+ * Copyright (C) 2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package com.yubico.yubikit.testing.fido;
+package com.yubico.yubikit.testing.desktop.fido;
 
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV1;
-import com.yubico.yubikit.testing.PinUvAuthProtocolV1Test;
+import com.yubico.yubikit.testing.desktop.PinUvAuthProtocolV1Test;
+import com.yubico.yubikit.testing.desktop.framework.FidoInstrumentedTests;
 import com.yubico.yubikit.testing.fido.extensions.CredBlobExtensionTests;
 import com.yubico.yubikit.testing.fido.extensions.CredPropsExtensionTests;
 import com.yubico.yubikit.testing.fido.extensions.CredProtectExtensionTests;
@@ -26,7 +27,6 @@ import com.yubico.yubikit.testing.fido.extensions.HmacSecretExtensionTests;
 import com.yubico.yubikit.testing.fido.extensions.LargeBlobExtensionTests;
 import com.yubico.yubikit.testing.fido.extensions.MinPinLengthExtensionTests;
 import com.yubico.yubikit.testing.fido.extensions.PrfExtensionTests;
-import com.yubico.yubikit.testing.framework.FidoInstrumentedTests;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
