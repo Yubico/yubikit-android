@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Yubico.
+ * Copyright (C) 2024-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import com.yubico.yubikit.testing.fido.extensions.HmacSecretExtensionTests;
 import com.yubico.yubikit.testing.fido.extensions.LargeBlobExtensionTests;
 import com.yubico.yubikit.testing.fido.extensions.MinPinLengthExtensionTests;
 import com.yubico.yubikit.testing.fido.extensions.PrfExtensionTests;
+import com.yubico.yubikit.testing.fido.extensions.ThirdPartyPaymentExtensionTests;
 import com.yubico.yubikit.testing.framework.FidoInstrumentedTests;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -92,6 +93,11 @@ public class ExtensionsInstrumentedTests {
     @Test
     public void testMinPinLengthExtension() throws Throwable {
       withDevice(MinPinLengthExtensionTests::test);
+    }
+
+    @Test
+    public void testThirdPartyPaymentExtension() throws Throwable {
+      withDevice(ThirdPartyPaymentExtensionTests::test);
     }
   }
 

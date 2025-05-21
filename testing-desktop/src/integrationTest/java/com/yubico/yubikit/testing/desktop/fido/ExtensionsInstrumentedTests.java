@@ -27,6 +27,7 @@ import com.yubico.yubikit.testing.fido.extensions.HmacSecretExtensionTests;
 import com.yubico.yubikit.testing.fido.extensions.LargeBlobExtensionTests;
 import com.yubico.yubikit.testing.fido.extensions.MinPinLengthExtensionTests;
 import com.yubico.yubikit.testing.fido.extensions.PrfExtensionTests;
+import com.yubico.yubikit.testing.fido.extensions.ThirdPartyPaymentExtensionTests;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -92,6 +93,11 @@ public class ExtensionsInstrumentedTests {
     @Test
     public void testMinPinLengthExtension() throws Throwable {
       withDevice(MinPinLengthExtensionTests::test);
+    }
+
+    @Test
+    public void testThirdPartyPaymentExtension() throws Throwable {
+      withDevice(ThirdPartyPaymentExtensionTests::test);
     }
   }
 
