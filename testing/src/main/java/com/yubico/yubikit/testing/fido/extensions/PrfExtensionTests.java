@@ -16,7 +16,6 @@
 
 package com.yubico.yubikit.testing.fido.extensions;
 
-import com.yubico.yubikit.core.internal.codec.Base64;
 import com.yubico.yubikit.fido.webauthn.ClientExtensionResults;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredential;
 import com.yubico.yubikit.fido.webauthn.SerializationType;
@@ -24,8 +23,10 @@ import com.yubico.yubikit.testing.fido.FidoTestState;
 import com.yubico.yubikit.testing.fido.utils.ClientHelper;
 import com.yubico.yubikit.testing.fido.utils.CreationOptionsBuilder;
 import com.yubico.yubikit.testing.fido.utils.RequestOptionsBuilder;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
 import org.junit.Assert;
@@ -34,6 +35,7 @@ import org.junit.Assume;
 public class PrfExtensionTests {
 
   private static final String KEY_HMAC_SECRET = "hmac-secret";
+  private static final String KEY_HMAC_SECRET_MC = "hmac-secret-mc";
   private static final String PRF_EXT = "prf";
   private static final String KEY_ENABLED = "enabled";
   private static final String KEY_EVAL = "eval";
@@ -41,9 +43,16 @@ public class PrfExtensionTests {
   private static final String KEY_FIRST = "first";
   private static final String KEY_SECOND = "second";
 
-  public static void test(FidoTestState state) throws Throwable {
+  public static void testPrf(FidoTestState state) throws Throwable {
     PrfExtensionTests extTests = new PrfExtensionTests();
-    extTests.runTest(state);
+    extTests.testPrf(state, false);
+    extTests.testPrf(state, true);
+  }
+
+  public static void testPrfHmacSecretMc(FidoTestState state) throws Throwable {
+    PrfExtensionTests extTests = new PrfExtensionTests();
+    extTests.testPrfHmacSecretMc(state, false);
+    extTests.testPrfHmacSecretMc(state, true);
   }
 
   // this test is active only on devices without hmac-secret
@@ -54,17 +63,19 @@ public class PrfExtensionTests {
 
   private PrfExtensionTests() {}
 
-  private void runTest(FidoTestState state) throws Throwable {
-
-    // non-discoverable credential
+  private void testPrf(FidoTestState state, boolean rk) throws Throwable {
     {
       // no output when no input
       state.withCtap2(
           session -> {
             Assume.assumeTrue(session.getCachedInfo().getExtensions().contains(KEY_HMAC_SECRET));
-            PublicKeyCredential cred = new ClientHelper(session).makeCredential();
-            Map<String, ?> result = getResult(cred);
-            Assert.assertNull(result);
+            ClientHelper client = new ClientHelper(session);
+            PublicKeyCredential cred =
+                client.makeCredential(new CreationOptionsBuilder().residentKey(rk).build());
+            Assert.assertNull(getResult(cred));
+            if (rk) {
+              client.deleteCredentials(cred);
+            }
           });
 
       // input:  { prf: {} }
@@ -76,10 +87,10 @@ public class PrfExtensionTests {
                     new ClientHelper(session)
                         .makeCredential(
                             new CreationOptionsBuilder()
+                                .residentKey(rk)
                                 .extensions(
                                     Collections.singletonMap(PRF_EXT, Collections.emptyMap()))
                                 .build());
-
                 Assert.assertEquals(Boolean.TRUE, getResultValue(cred, KEY_ENABLED));
                 return cred;
               });
@@ -88,19 +99,20 @@ public class PrfExtensionTests {
       // output: { prf: { results: { first: String } } }
       state.withCtap2(
           session -> {
-            PublicKeyCredential cred =
-                new ClientHelper(session)
-                    .getAssertions(
-                        new RequestOptionsBuilder()
-                            // this is no discoverable key, we have to pass the id
-                            .allowedCredentials(publicKeyCredential)
-                            .extensions(
-                                Collections.singletonMap(
-                                    PRF_EXT,
-                                    Collections.singletonMap(
-                                        KEY_EVAL, Collections.singletonMap(KEY_FIRST, "abba"))))
-                            .build());
+            RequestOptionsBuilder requestOptionsBuilder =
+                new RequestOptionsBuilder()
+                    .extensions(
+                        Collections.singletonMap(
+                            PRF_EXT,
+                            Collections.singletonMap(
+                                KEY_EVAL, Collections.singletonMap(KEY_FIRST, "abba"))));
 
+            if (!rk) {
+              requestOptionsBuilder.allowedCredentials(publicKeyCredential);
+            }
+
+            PublicKeyCredential cred =
+                new ClientHelper(session).getAssertions(requestOptionsBuilder.build());
             Assert.assertNull(getResultValue(cred, KEY_ENABLED));
             Assert.assertTrue(getResultsValue(cred, KEY_FIRST) instanceof String);
             Assert.assertNull(getResultsValue(cred, KEY_SECOND));
@@ -114,135 +126,122 @@ public class PrfExtensionTests {
             eval.put(KEY_FIRST, "abba");
             eval.put(KEY_SECOND, "bebe");
 
-            PublicKeyCredential cred =
-                new ClientHelper(session)
-                    .getAssertions(
-                        new RequestOptionsBuilder()
-                            // this is no discoverable key, we have to pass the id
-                            .allowedCredentials(publicKeyCredential)
-                            .extensions(
-                                Collections.singletonMap(
-                                    PRF_EXT, Collections.singletonMap(KEY_EVAL, eval)))
-                            .build());
+            RequestOptionsBuilder requestOptionsBuilder =
+                new RequestOptionsBuilder()
+                    .extensions(
+                        Collections.singletonMap(
+                            PRF_EXT, Collections.singletonMap(KEY_EVAL, eval)));
 
+            if (!rk) {
+              requestOptionsBuilder.allowedCredentials(publicKeyCredential);
+            }
+
+            ClientHelper client = new ClientHelper(session);
+            PublicKeyCredential cred = client.getAssertions(requestOptionsBuilder.build());
             Assert.assertNull(getResultValue(cred, KEY_ENABLED));
             Assert.assertTrue(getResultsValue(cred, KEY_FIRST) instanceof String);
             Assert.assertTrue(getResultsValue(cred, KEY_SECOND) instanceof String);
-          });
 
-      // create 2 more credentials
-      PublicKeyCredential publicKeyCredential2 =
-          state.withCtap2(
-              session -> {
-                PublicKeyCredential cred =
-                    new ClientHelper(session)
-                        .makeCredential(
-                            new CreationOptionsBuilder()
-                                .extensions(
-                                    Collections.singletonMap(PRF_EXT, Collections.emptyMap()))
-                                .build());
-
-                Assert.assertEquals(Boolean.TRUE, getResultValue(cred, KEY_ENABLED));
-                return cred;
-              });
-
-      PublicKeyCredential publicKeyCredential3 =
-          state.withCtap2(
-              session -> {
-                PublicKeyCredential cred =
-                    new ClientHelper(session)
-                        .makeCredential(
-                            new CreationOptionsBuilder()
-                                .extensions(
-                                    Collections.singletonMap(PRF_EXT, Collections.emptyMap()))
-                                .build());
-
-                Assert.assertEquals(Boolean.TRUE, getResultValue(cred, KEY_ENABLED));
-                return cred;
-              });
-
-      // evalByCredential
-      state.withCtap2(
-          session -> {
-            Map<String, Object> evalByCredential = new HashMap<>();
-            evalByCredential.put(
-                Base64.toUrlSafeString(publicKeyCredential3.getRawId()),
-                Collections.singletonMap(KEY_FIRST, "abba"));
-            evalByCredential.put(
-                Base64.toUrlSafeString(publicKeyCredential2.getRawId()),
-                Collections.singletonMap(KEY_FIRST, "bebe"));
-            evalByCredential.put(
-                Base64.toUrlSafeString(publicKeyCredential.getRawId()),
-                Collections.singletonMap(KEY_FIRST, "cece"));
-
-            PublicKeyCredential cred =
-                new ClientHelper(session)
-                    .getAssertions(
-                        new RequestOptionsBuilder()
-                            // evalByCredential requires allow list
-                            .allowedCredentials(
-                                publicKeyCredential, publicKeyCredential2, publicKeyCredential3)
-                            .extensions(
-                                Collections.singletonMap(
-                                    PRF_EXT,
-                                    Collections.singletonMap(
-                                        KEY_EVAL_BY_CREDENTIAL, evalByCredential)))
-                            .build());
-
-            Assert.assertNull(getResultValue(cred, KEY_ENABLED));
-            Assert.assertTrue(getResultsValue(cred, KEY_FIRST) instanceof String);
-            Assert.assertNull(getResultsValue(cred, KEY_SECOND));
+            if (rk) {
+              client.deleteCredentials(publicKeyCredential);
+            }
           });
     }
+  }
 
-    // discoverable credential
+  private void testPrfHmacSecretMc(FidoTestState state, boolean rk) throws Throwable {
     {
-      // no output when no input
-      state.withCtap2(
-          session -> {
-            Assume.assumeTrue(session.getCachedInfo().getExtensions().contains(KEY_HMAC_SECRET));
-            ClientHelper client = new ClientHelper(session);
-            PublicKeyCredential cred =
-                client.makeCredential(new CreationOptionsBuilder().residentKey(true).build());
-            Assert.assertNull(getResult(cred));
-            client.deleteCredentials(cred);
-          });
-
-      // input:  { prf: {} }
-      // output: { prf: { enabled: true } }
-      PublicKeyCredential publicKeyCredential =
+      // input:  { prf: { eval: { first: String } } }
+      // output: { prf: { enabled: true, results: { first: String } }
+      List<Object> results1 =
           state.withCtap2(
               session -> {
+                Assume.assumeTrue(
+                    session.getCachedInfo().getExtensions().contains(KEY_HMAC_SECRET_MC));
                 PublicKeyCredential cred =
                     new ClientHelper(session)
                         .makeCredential(
                             new CreationOptionsBuilder()
-                                .residentKey(true)
+                                .residentKey(rk)
                                 .extensions(
-                                    Collections.singletonMap(PRF_EXT, Collections.emptyMap()))
+                                    Collections.singletonMap(
+                                        PRF_EXT,
+                                        Collections.singletonMap(
+                                            KEY_EVAL, Collections.singletonMap(KEY_FIRST, "abba"))))
                                 .build());
                 Assert.assertEquals(Boolean.TRUE, getResultValue(cred, KEY_ENABLED));
-                return cred;
+                Object firstValue = getResultsValue(cred, KEY_FIRST);
+                Assert.assertTrue(firstValue instanceof String);
+
+                List<Object> results = new ArrayList<>();
+                results.add(cred);
+                results.add(firstValue);
+                return results;
               });
 
       // input:  { prf: { eval: { first: String } } }
       // output: { prf: { results: { first: String } } }
       state.withCtap2(
           session -> {
-            PublicKeyCredential cred =
-                new ClientHelper(session)
-                    .getAssertions(
-                        new RequestOptionsBuilder()
-                            .extensions(
-                                Collections.singletonMap(
-                                    PRF_EXT,
-                                    Collections.singletonMap(
-                                        KEY_EVAL, Collections.singletonMap(KEY_FIRST, "abba"))))
-                            .build());
+            RequestOptionsBuilder requestOptionsBuilder =
+                new RequestOptionsBuilder()
+                    .extensions(
+                        Collections.singletonMap(
+                            PRF_EXT,
+                            Collections.singletonMap(
+                                KEY_EVAL, Collections.singletonMap(KEY_FIRST, "abba"))));
+
+            if (!rk) {
+              requestOptionsBuilder.allowedCredentials((PublicKeyCredential) results1.get(0));
+            }
+
+            final ClientHelper client = new ClientHelper(session);
+            PublicKeyCredential cred = client.getAssertions(requestOptionsBuilder.build());
+
             Assert.assertNull(getResultValue(cred, KEY_ENABLED));
-            Assert.assertTrue(getResultsValue(cred, KEY_FIRST) instanceof String);
+            Object firstValue = getResultsValue(cred, KEY_FIRST);
+            Assert.assertTrue(firstValue instanceof String);
             Assert.assertNull(getResultsValue(cred, KEY_SECOND));
+
+            // Output is stable per input
+            Assert.assertEquals(results1.get(1), firstValue);
+
+            if (rk) {
+              client.deleteCredentials((PublicKeyCredential) results1.get(0));
+            }
           });
+
+      // input:  { prf: { eval: { first: String, second: String } } }
+      // output: { prf: { enabled: true, results: { first: String, second: String } }
+      List<Object> results2 =
+          state.withCtap2(
+              session -> {
+                Map<String, Object> eval = new HashMap<>();
+                eval.put(KEY_FIRST, "abba");
+                eval.put(KEY_SECOND, "bebe");
+
+                CreationOptionsBuilder creationOptionsBuilder =
+                    new CreationOptionsBuilder()
+                        .residentKey(rk)
+                        .extensions(
+                            Collections.singletonMap(
+                                PRF_EXT, Collections.singletonMap(KEY_EVAL, eval)));
+
+                PublicKeyCredential cred =
+                    new ClientHelper(session).makeCredential(creationOptionsBuilder.build());
+
+                Assert.assertEquals(Boolean.TRUE, getResultValue(cred, KEY_ENABLED));
+                Object firstValue = getResultsValue(cred, KEY_FIRST);
+                Object secondValue = getResultsValue(cred, KEY_SECOND);
+                Assert.assertTrue(firstValue instanceof String);
+                Assert.assertTrue(secondValue instanceof String);
+
+                List<Object> results = new ArrayList<>();
+                results.add(cred);
+                results.add(firstValue);
+                results.add(secondValue);
+                return results;
+              });
 
       // input:  { prf: { eval: { first: String, second: String } } }
       // output: { prf: { results: { first: String, second: String } } }
@@ -252,19 +251,31 @@ public class PrfExtensionTests {
             eval.put(KEY_FIRST, "abba");
             eval.put(KEY_SECOND, "bebe");
 
-            ClientHelper client = new ClientHelper(session);
-            PublicKeyCredential cred =
-                client.getAssertions(
-                    new RequestOptionsBuilder()
-                        .extensions(
-                            Collections.singletonMap(
-                                PRF_EXT, Collections.singletonMap(KEY_EVAL, eval)))
-                        .build());
-            Assert.assertNull(getResultValue(cred, KEY_ENABLED));
-            Assert.assertTrue(getResultsValue(cred, KEY_FIRST) instanceof String);
-            Assert.assertTrue(getResultsValue(cred, KEY_SECOND) instanceof String);
+            RequestOptionsBuilder requestOptionsBuilder =
+                new RequestOptionsBuilder()
+                    .extensions(
+                        Collections.singletonMap(
+                            PRF_EXT, Collections.singletonMap(KEY_EVAL, eval)));
 
-            client.deleteCredentials(publicKeyCredential);
+            if (!rk) {
+              requestOptionsBuilder.allowedCredentials((PublicKeyCredential) results2.get(0));
+            }
+
+            ClientHelper client = new ClientHelper(session);
+            PublicKeyCredential cred = client.getAssertions(requestOptionsBuilder.build());
+            Assert.assertNull(getResultValue(cred, KEY_ENABLED));
+            Object firstValue = getResultsValue(cred, KEY_FIRST);
+            Object secondValue = getResultsValue(cred, KEY_SECOND);
+            Assert.assertTrue(firstValue instanceof String);
+            Assert.assertTrue(secondValue instanceof String);
+
+            // Output is stable per input
+            Assert.assertEquals(results2.get(1), firstValue);
+            Assert.assertEquals(results2.get(2), secondValue);
+
+            if (rk) {
+              client.deleteCredentials((PublicKeyCredential) results2.get(0));
+            }
           });
     }
   }

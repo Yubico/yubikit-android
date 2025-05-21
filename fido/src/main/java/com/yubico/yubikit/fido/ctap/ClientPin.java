@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Yubico.
+ * Copyright (C) 2020-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,6 +61,7 @@ public class ClientPin {
   public static final int PIN_PERMISSION_BE = 0x08;
   public static final int PIN_PERMISSION_LBW = 0x10;
   public static final int PIN_PERMISSION_ACFG = 0x20;
+  public static final int PIN_PERMISSION_PCMR = 0x40;
 
   private final Ctap2Session ctap;
   private final PinUvAuthProtocol pinUvAuth;
