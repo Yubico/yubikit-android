@@ -28,6 +28,11 @@ public class Scp11Tests extends SecurityDomainInstrumentedTests {
   }
 
   @Test
+  public void testApduSizes() throws Throwable {
+    withState(Scp11DeviceTests::testApduSizes);
+  }
+
+  @Test
   public void testScp11aAuthenticate() throws Throwable {
     withState(Scp11DeviceTests::testScp11aAuthenticate);
   }

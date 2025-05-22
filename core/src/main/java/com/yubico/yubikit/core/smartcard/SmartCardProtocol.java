@@ -224,6 +224,11 @@ public class SmartCardProtocol implements Closeable {
   }
 
   public @Nullable DataEncryptor initScp(ScpKeyParams keyParams)
+      throws BadResponseException, ApduException, IOException {
+    return initScp(keyParams, false);
+  }
+
+  public @Nullable DataEncryptor initScp(ScpKeyParams keyParams, boolean shortApdus)
       throws IOException, ApduException, BadResponseException {
     try {
       ScpState state;
@@ -234,11 +239,8 @@ public class SmartCardProtocol implements Closeable {
       } else {
         throw new IllegalArgumentException("Unsupported ScpKeyParams");
       }
-      if (!connection.isExtendedLengthApduSupported()) {
-        throw new IllegalStateException("SCP requires extended APDU support");
-      }
-      extendedApdus = true;
-      maxApduSize = MaxApduSize.YK4_3;
+      extendedApdus = !shortApdus && connection.isExtendedLengthApduSupported();
+      maxApduSize = Math.max(MaxApduSize.YK4_3, this.maxApduSize);
       return state.getDataEncryptor();
     } catch (ApduException e) {
       if (e.getSw() == SW.CLASS_NOT_SUPPORTED) {
@@ -252,7 +254,8 @@ public class SmartCardProtocol implements Closeable {
       throws IOException, ApduException, BadResponseException {
     Pair<ScpState, byte[]> pair = ScpState.scp03Init(processor, keyParams, null);
     ScpProcessor processor =
-        new ScpProcessor(connection, pair.first, MaxApduSize.YK4_3, insSendRemaining);
+        new ScpProcessor(
+            connection, extendedApdus, pair.first, MaxApduSize.YK4_3, insSendRemaining);
 
     // Send EXTERNAL AUTHENTICATE
     // P1 = C-DECRYPTION, R-ENCRYPTION, C-MAC, and R-MAC
@@ -267,7 +270,8 @@ public class SmartCardProtocol implements Closeable {
   private ScpState initScp11(Scp11KeyParams keyParams)
       throws IOException, ApduException, BadResponseException {
     ScpState scp = ScpState.scp11Init(processor, keyParams);
-    resetProcessor(new ScpProcessor(connection, scp, MaxApduSize.YK4_3, insSendRemaining));
+    resetProcessor(
+        new ScpProcessor(connection, extendedApdus, scp, MaxApduSize.YK4_3, insSendRemaining));
     return scp;
   }
 }

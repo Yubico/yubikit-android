@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Yubico.
+ * Copyright (C) 2024-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,11 @@ public class Scp11Tests extends SecurityDomainInstrumentedTests {
   @Before
   public void before() throws Throwable {
     withState(Scp11DeviceTests::before);
+  }
+
+  @Test
+  public void testApduSizes() throws Throwable {
+    withState(Scp11DeviceTests::testApduSizes);
   }
 
   @Test
