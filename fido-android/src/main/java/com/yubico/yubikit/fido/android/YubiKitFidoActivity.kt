@@ -6,9 +6,20 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -23,14 +34,18 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.Flare
 import androidx.compose.material.icons.filled.Password
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LoadingIndicator
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
@@ -46,7 +61,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -76,7 +94,9 @@ import org.json.JSONObject
 
 sealed class UiState {
     data object WaitingForKey : UiState()
+    data object WaitingForKeyAgain : UiState()
     data object Processing : UiState()
+    data object TouchKey : UiState()
     data object Success : UiState()
     data class Error(val error: com.yubico.yubikit.fido.android.Error) : UiState()
     data class WaitingForPinEntry(val error: com.yubico.yubikit.fido.android.Error?) : UiState()
@@ -293,6 +313,7 @@ class YubiKitFidoActivity : ComponentActivity() {
                         ) {
                             FidoClientUi(
                                 operation,
+                                isUsb = viewModel.isUsb,
                                 rpId,
                                 request,
                                 fidoClientService = fidoClientService,
@@ -399,6 +420,29 @@ fun TapOrInsertSecurityKey(
 }
 
 @Composable
+fun TapAgainSecurityKey(
+    operation: FidoClientService.Operation,
+    origin: String,
+    onCloseButtonClick: () -> Unit
+) {
+    ContentWrapper(
+        operation = operation,
+        origin = origin,
+        onCloseButtonClick = onCloseButtonClick,
+    ) {
+        PulsingIcon(
+            painter = painterResource(R.drawable.ic_baseline_passkey_24),
+            contentDescription = stringResource(R.string.passkey_icon),
+            modifier = Modifier.size(64.dp),
+            tint = MaterialTheme.colorScheme.primary
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(text = stringResource(R.string.tap_key_again))
+    }
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
 fun Processing(
     operation: FidoClientService.Operation,
     origin: String,
@@ -409,12 +453,34 @@ fun Processing(
         origin = origin,
         onCloseButtonClick = onCloseButtonClick,
     ) {
-        CircularProgressIndicator(modifier = Modifier.size(64.dp, 64.dp))
+        LoadingIndicator(modifier = Modifier.size(64.dp, 64.dp))
         Spacer(modifier = Modifier.height(16.dp))
-        Text(text = "Don't remove the key")
+        Text(text = stringResource(R.string.dont_remove_the_key))
     }
 }
 
+@Composable
+fun TouchTheSecurityKey(
+    operation: FidoClientService.Operation,
+    origin: String,
+    onCloseButtonClick: () -> Unit,
+) {
+    ContentWrapper(
+        operation = operation,
+        origin = origin,
+        onCloseButtonClick = onCloseButtonClick,
+    ) {
+        Icon(
+            modifier = Modifier.size(64.dp, 64.dp),
+            imageVector = Icons.Default.Flare,
+            contentDescription = "Touch the key",
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(text = stringResource(R.string.touch_the_key))
+    }
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun EnterPin(
     operation: FidoClientService.Operation,
@@ -497,9 +563,12 @@ fun EnterPin(
                 .fillMaxWidth(),
             horizontalArrangement = Arrangement.End
         ) {
-            Button(onClick = {
-                onPinEntered.invoke(text.text)
-            }) {
+            Button(
+                modifier = Modifier.width(IntrinsicSize.Min),
+                onClick = {
+                    onPinEntered.invoke(text.text)
+                }, shapes = ButtonDefaults.shapes()
+            ) {
                 Text(text = stringResource(R.string.continue_operation), maxLines = 1)
             }
         }
@@ -566,6 +635,7 @@ fun ErrorView(
 @Composable
 fun FidoClientUi(
     operation: FidoClientService.Operation,
+    isUsb: Boolean,
     rpId: String,
     request: String,
     fidoClientService: FidoClientService = remember { FidoClientService() },
@@ -575,6 +645,7 @@ fun FidoClientUi(
     var result: PublicKeyCredential? by remember { mutableStateOf(null) }
     var pinValue: String? by remember { mutableStateOf(null) }
     var retryOperation by remember { mutableStateOf(false) }
+    var tapAgain by remember { mutableStateOf(false) }
 
     val uiState = produceState<UiState>(
         initialValue = UiState.WaitingForKey,
@@ -587,10 +658,15 @@ fun FidoClientUi(
                 return@produceState // End the flow after completion
             }
 
-            value = UiState.WaitingForKey
+            if (tapAgain) {
+                value = UiState.WaitingForKeyAgain
+                tapAgain = false
+            } else {
+                value = UiState.WaitingForKey
+            }
 
             fidoClientService.performOperation(pinValue, operation, rpId, request) {
-                value = UiState.Processing
+                value = if (isUsb) UiState.TouchKey else UiState.Processing
             }
                 .fold(onSuccess = {
                     result = it
@@ -657,51 +733,121 @@ fun FidoClientUi(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        when (val state = uiState.value) {
 
-            is UiState.WaitingForKey -> {
-                TapOrInsertSecurityKey(
-                    operation = operation,
-                    origin = rpId,
-                    onCloseButtonClick = onCloseButtonClick
-                )
+        AnimatedContent(
+            targetState = uiState.value,
+            label = "FidoClientUi",
+            transitionSpec = {
+                fadeIn() togetherWith fadeOut()
             }
+        ) { state ->
+            when (state) {
 
-            is UiState.WaitingForPinEntry -> {
-                EnterPin(
-                    operation = operation,
-                    origin = rpId,
-                    error = state.error,
-                    pin = pinValue ?: "",
-                    onCloseButtonClick = onCloseButtonClick
-                ) {
-                    pinValue = it.ifEmpty {
-                        null
-                    }
-                    retryOperation = !retryOperation
+                is UiState.WaitingForKey -> {
+                    TapOrInsertSecurityKey(
+                        operation = operation,
+                        origin = rpId,
+                        onCloseButtonClick = onCloseButtonClick
+                    )
                 }
-            }
 
-            is UiState.Processing -> {
-                Processing(operation = operation, origin = rpId) {}
-            }
+                is UiState.WaitingForKeyAgain -> {
+                    TapAgainSecurityKey(
+                        operation = operation,
+                        origin = rpId,
+                        onCloseButtonClick = onCloseButtonClick
+                    )
+                }
 
-            is UiState.Success -> {
-                SuccessView(operation = operation, origin = rpId)
-            }
+                is UiState.WaitingForPinEntry -> {
+                    EnterPin(
+                        operation = operation,
+                        origin = rpId,
+                        error = state.error,
+                        pin = pinValue ?: "",
+                        onCloseButtonClick = onCloseButtonClick
+                    ) {
+                        pinValue = it.ifEmpty {
+                            null
+                        }
+                        retryOperation = !retryOperation
+                        tapAgain = true
+                    }
+                }
 
-            is UiState.Error -> {
-                ErrorView(
-                    operation = operation,
-                    origin = rpId,
-                    error = state.error
-                ) {
-                    pinValue = null
-                    retryOperation = !retryOperation
+                is UiState.Processing -> {
+                    Processing(operation = operation, origin = rpId) {}
+                }
+
+                is UiState.TouchKey -> {
+                    TouchTheSecurityKey(operation = operation, origin = rpId) {}
+                }
+
+                is UiState.Success -> {
+                    SuccessView(operation = operation, origin = rpId)
+                }
+
+                is UiState.Error -> {
+                    ErrorView(
+                        operation = operation,
+                        origin = rpId,
+                        error = state.error
+                    ) {
+                        pinValue = null
+                        retryOperation = !retryOperation
+                    }
                 }
             }
         }
+
     }
+}
+
+// helpers
+
+@Composable
+fun PulsingIcon(
+    painter: Painter,
+    contentDescription: String?,
+    modifier: Modifier = Modifier,
+    tint: Color = LocalContentColor.current
+) {
+    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
+
+    val scale by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(
+                durationMillis = 1000,
+                easing = FastOutSlowInEasing
+            ),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "scale"
+    )
+
+    val alpha by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 0.7f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(
+                durationMillis = 1000,
+                easing = FastOutSlowInEasing
+            ),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "alpha"
+    )
+
+    Icon(
+        painter = painter,
+        contentDescription = contentDescription,
+        modifier = modifier
+            .scale(scale)
+            .alpha(alpha),
+        tint = tint
+    )
 }
 
 @Preview(
@@ -720,18 +866,12 @@ fun EnterPinPreview() {
 
 @DefaultPreview
 @Composable
-fun EnterPiWithErrorPreview() {
+fun EnterPinWithErrorPreview() {
     EnterPin(
         operation = FidoClientService.Operation.GET_ASSERTION,
         origin = "example.com",
         error = Error.IncorrectPinError(3),
         onCloseButtonClick = {}) {}
-}
-
-@DefaultPreview
-@Composable
-fun CreatePin() {
-    // TODO
 }
 
 @DefaultPreview
@@ -747,6 +887,15 @@ fun TapOrInsertSecurityKeyForMakeCredentialPreview() {
 @Composable
 fun TapOrInsertSecurityKeyForGetAssertionPreview() {
     TapOrInsertSecurityKey(
+        operation = FidoClientService.Operation.GET_ASSERTION,
+        origin = "www.example.com"
+    ) {}
+}
+
+@DefaultPreview
+@Composable
+fun TapSecurityKeyAgainForGetAssertionPreview() {
+    TapAgainSecurityKey(
         operation = FidoClientService.Operation.GET_ASSERTION,
         origin = "www.example.com"
     ) {}

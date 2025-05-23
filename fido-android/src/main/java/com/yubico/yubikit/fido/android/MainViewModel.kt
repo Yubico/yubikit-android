@@ -32,9 +32,11 @@ typealias YubiKeyAction = suspend (Result<YubiKeyDevice, Exception>) -> Unit
 
 class MainViewModel : ViewModel() {
 
-    // TODO review use of LiveData
     private var _device = MutableLiveData<YubiKeyDevice?>()
     private var _pendingYubiKeyAction = MutableLiveData<YubiKeyAction?>()
+
+    val isUsb: Boolean
+        get() = _device.value is UsbYubiKeyDevice
 
     suspend fun provideYubiKey(device: YubiKeyDevice) =
         _pendingYubiKeyAction.value?.let {
@@ -99,15 +101,16 @@ class MainViewModel : ViewModel() {
                         Ctap2Session.create(result.value) {
                             inner.resume(
                                 kotlin.runCatching {
-                                    if (extensions == null)
-                                        action.invoke(BasicWebAuthnClient(it.value))
-                                    else
+                                    extensions?.let { extensions ->
                                         action.invoke(
                                             BasicWebAuthnClient(
                                                 it.value,
-                                                extensions!!
+                                                extensions
                                             )
                                         )
+                                    } ?: run {
+                                        action.invoke(BasicWebAuthnClient(it.value))
+                                    }
                                 })
                         }
                     }

@@ -22,6 +22,7 @@ import android.content.Intent
 import androidx.activity.ComponentActivity
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContract
+import androidx.compose.runtime.Composable
 import androidx.fragment.app.Fragment
 import com.yubico.yubikit.fido.android.YubiKitFidoActivity.Companion.toMap
 import com.yubico.yubikit.fido.client.extensions.Extension
@@ -48,10 +49,19 @@ class YubiKitFidoClient {
 
     constructor(
         fragment: Fragment,
-        extensions: List<Extension>
-        //theme: (@Composable (content: @Composable () -> Unit) -> Unit)? = null
+        extensions: List<Extension>? = null
+    ) : this(
+        fragment,
+        extensions,
+        null
+    )
+
+    constructor(
+        fragment: Fragment,
+        extensions: List<Extension>? = null,
+        theme: (@Composable (content: @Composable () -> Unit) -> Unit)? = null
     ) {
-        //YubiKitFidoActivity.ThemeManager.setTheme(theme)
+        YubiKitFidoActivity.ThemeManager.setTheme(theme)
         launcher = fragment.registerForActivityResult(
             FidoActivityResultContract()
         ) { result ->
@@ -66,10 +76,10 @@ class YubiKitFidoClient {
 
     constructor(
         activity: ComponentActivity,
-        extensions: List<Extension>,
-        //theme: (@Composable (content: @Composable () -> Unit) -> Unit)? = null
+        extensions: List<Extension>? = null,
+        theme: (@Composable (content: @Composable () -> Unit) -> Unit)? = null
     ) {
-        //YubiKitFidoActivity.ThemeManager.setTheme(theme)
+        YubiKitFidoActivity.ThemeManager.setTheme(theme)
         launcher = activity.registerForActivityResult(
             FidoActivityResultContract()
         ) { result ->
