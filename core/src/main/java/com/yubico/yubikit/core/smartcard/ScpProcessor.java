@@ -59,12 +59,7 @@ public class ScpProcessor extends ChainedResponseProcessor {
     // Calculate and add MAC to data
     byte[] macedData = new byte[data.length + 8];
     System.arraycopy(data, 0, macedData, 0, data.length);
-    byte[] apduData =
-        usingShortApdus && data.length + 8 > SHORT_APDU_MAX_CHUNK
-            ? extendedProcessor.formatApdu(
-                cla, apdu.getIns(), apdu.getP1(), apdu.getP2(), macedData, 0, macedData.length, 0)
-            : processor.formatApdu(
-                cla, apdu.getIns(), apdu.getP1(), apdu.getP2(), macedData, 0, macedData.length, 0);
+    byte[] apduData = formatApduData(cla, apdu, macedData);
     byte[] mac = state.mac(Arrays.copyOf(apduData, apduData.length - 8));
     System.arraycopy(mac, 0, macedData, macedData.length - 8, 8);
 
@@ -83,5 +78,15 @@ public class ScpProcessor extends ChainedResponseProcessor {
 
     return new ApduResponse(
         ByteBuffer.allocate(respData.length + 2).put(respData).putShort(resp.getSw()).array());
+  }
+
+  private byte[] formatApduData(byte cla, Apdu apdu, byte[] macedData) {
+    if (usingShortApdus && macedData.length > SHORT_APDU_MAX_CHUNK) {
+      return extendedProcessor.formatApdu(
+          cla, apdu.getIns(), apdu.getP1(), apdu.getP2(), macedData, 0, macedData.length, 0);
+    } else {
+      return processor.formatApdu(
+          cla, apdu.getIns(), apdu.getP1(), apdu.getP2(), macedData, 0, macedData.length, 0);
+    }
   }
 }

@@ -101,7 +101,7 @@ public class TestState {
     R invoke(T session) throws Throwable;
   }
 
-  public interface DeviceCallback {
+  public interface YubiKeyDeviceCallback {
     void invoke(YubiKeyDevice device) throws Throwable;
   }
 

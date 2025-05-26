@@ -70,9 +70,12 @@ public class SecurityDomainTestState extends TestState {
     reconnect();
   }
 
-  public void withDevice(DeviceCallback callback) throws Throwable {
-    callback.invoke(currentDevice);
-    reconnect();
+  public void withDevice(YubiKeyDeviceCallback callback) throws Throwable {
+    try {
+      callback.invoke(currentDevice);
+    } finally {
+      reconnect();
+    }
   }
 
   public <R> R withSecurityDomain(SessionCallbackT<SecurityDomainSession, R> callback)
