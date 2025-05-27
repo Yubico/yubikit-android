@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Yubico.
+ * Copyright (C) 2024-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -99,6 +99,10 @@ public class TestState {
 
   public interface SessionCallbackT<T extends ApplicationSession<T>, R> {
     R invoke(T session) throws Throwable;
+  }
+
+  public interface YubiKeyDeviceCallback {
+    void invoke(YubiKeyDevice device) throws Throwable;
   }
 
   public interface ReconnectDeviceCallback {

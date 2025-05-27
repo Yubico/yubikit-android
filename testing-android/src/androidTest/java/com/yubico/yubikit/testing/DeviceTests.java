@@ -16,6 +16,7 @@
 
 package com.yubico.yubikit.testing;
 
+import com.yubico.yubikit.testing.core.SmartCardProtocolInstrumentedTests;
 import com.yubico.yubikit.testing.fido.FidoTests;
 import com.yubico.yubikit.testing.mpe.MultiProtocolResetTests;
 import com.yubico.yubikit.testing.oath.OathTests;
@@ -29,8 +30,6 @@ import org.junit.runners.Suite;
  * All integration tests for Security domain, PIV, OpenPGP, OATH, FIDO2 and MPE.
  *
  * <p>The YubiKey applications will be reset several times.
- *
- * <p>
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
@@ -39,6 +38,7 @@ import org.junit.runners.Suite;
   OpenPgpTests.class,
   OathTests.class,
   MultiProtocolResetTests.class,
-  FidoTests.class
+  FidoTests.class,
+  SmartCardProtocolInstrumentedTests.class
 })
 public class DeviceTests {}
