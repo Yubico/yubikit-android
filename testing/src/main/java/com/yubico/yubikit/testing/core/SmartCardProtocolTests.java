@@ -29,6 +29,7 @@ import com.yubico.yubikit.core.smartcard.scp.Scp03KeyParams;
 import com.yubico.yubikit.core.smartcard.scp.Scp11KeyParams;
 import com.yubico.yubikit.core.smartcard.scp.ScpKeyParams;
 import com.yubico.yubikit.core.smartcard.scp.ScpKid;
+import com.yubico.yubikit.core.smartcard.scp.SecurityDomainSession;
 import com.yubico.yubikit.core.smartcard.scp.StaticKeys;
 import com.yubico.yubikit.core.util.RandomUtils;
 import com.yubico.yubikit.management.DeviceInfo;
@@ -62,6 +63,10 @@ public class SmartCardProtocolTests {
     }
 
     final KeyRef keyRef = new KeyRef(ScpKid.SCP11b, (byte) 0x01);
+
+    if (useScp) {
+      state.withSecurityDomain(null, SecurityDomainSession::reset);
+    }
 
     ScpKeyParams keyParams =
         useScp

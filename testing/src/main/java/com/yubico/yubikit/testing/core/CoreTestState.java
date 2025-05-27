@@ -60,12 +60,21 @@ public class CoreTestState extends TestState {
     }
   }
 
+  public void withSecurityDomain(
+      @Nullable ScpKeyParams scpKeyParams, SessionCallback<SecurityDomainSession> callback)
+      throws Throwable {
+    try (SmartCardConnection connection = openSmartCardConnection()) {
+      callback.invoke(getSecurityDomainSession(connection, scpKeyParams));
+    }
+    reconnect();
+  }
+
   public <R> R withSecurityDomain(
-      ScpKeyParams scpKeyParams, SessionCallbackT<SecurityDomainSession, R> callback)
+      @Nullable ScpKeyParams scpKeyParams, SessionCallbackT<SecurityDomainSession, R> callback)
       throws Throwable {
     R result;
     try (SmartCardConnection connection = openSmartCardConnection()) {
-      result = callback.invoke(getSecurityDomainSession(scpKeyParams, connection));
+      result = callback.invoke(getSecurityDomainSession(connection, scpKeyParams));
     }
     reconnect();
     return result;
@@ -73,7 +82,7 @@ public class CoreTestState extends TestState {
 
   @Nullable
   public static SecurityDomainSession getSecurityDomainSession(
-      ScpKeyParams scpKeyParams, SmartCardConnection connection) throws IOException {
+      SmartCardConnection connection, @Nullable ScpKeyParams scpKeyParams) throws IOException {
     try {
       return new SecurityDomainSession(connection, scpKeyParams);
     } catch (ApplicationNotAvailableException ignored) {
