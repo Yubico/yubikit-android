@@ -6,10 +6,10 @@ plugins {
 }
 
 dependencies {
-    spotbugs 'com.github.spotbugs:spotbugs:4.9.3'
+    spotbugs 'com.github.spotbugs:spotbugs:4.8.6'
     spotbugsPlugins 'com.h3xstream.findsecbugs:findsecbugs-plugin:1.14.0'
 
-    implementation 'com.github.spotbugs:spotbugs-annotations:4.9.3'
+    implementation 'com.github.spotbugs:spotbugs-annotations:4.8.6'
 }
 
 spotbugs {
