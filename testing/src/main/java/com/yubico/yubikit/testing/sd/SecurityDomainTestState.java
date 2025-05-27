@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2025 Yubico.
+ * Copyright (C) 2024 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,14 +68,6 @@ public class SecurityDomainTestState extends TestState {
       callback.invoke(getSecurityDomainSession(connection));
     }
     reconnect();
-  }
-
-  public void withDevice(YubiKeyDeviceCallback callback) throws Throwable {
-    try {
-      callback.invoke(currentDevice);
-    } finally {
-      reconnect();
-    }
   }
 
   public <R> R withSecurityDomain(SessionCallbackT<SecurityDomainSession, R> callback)
