@@ -52,6 +52,30 @@ public class SmartCardProtocol implements Closeable {
 
   private ApduProcessor processor;
 
+  public static class Configuration {
+
+    public static final Configuration DEFAULT = new Builder().setForceShortApdus(false).build();
+
+    final boolean forceShortApdus;
+
+    private Configuration(Builder builder) {
+      this.forceShortApdus = builder.forceShortApdus;
+    }
+
+    public static class Builder {
+      private boolean forceShortApdus = false;
+
+      public Builder setForceShortApdus(boolean forceShortApdus) {
+        this.forceShortApdus = forceShortApdus;
+        return this;
+      }
+
+      public Configuration build() {
+        return new Configuration(this);
+      }
+    }
+  }
+
   /**
    * Create new instance of {@link SmartCardProtocol} and selects the application for use
    *
@@ -84,18 +108,28 @@ public class SmartCardProtocol implements Closeable {
   }
 
   /**
-   * Enable all relevant settings and workarounds given the firmware version of the YubiKey.
+   * Enable all relevant settings and workarounds given the firmware version of the YubiKey. Uses a
+   * default configuration.
    *
    * @param firmwareVersion the firmware version to use to configure relevant settings
    */
   public void configure(Version firmwareVersion) throws IOException {
+    configure(firmwareVersion, Configuration.DEFAULT);
+  }
+
+  /**
+   * Enable all relevant settings and workarounds given the firmware version of the YubiKey.
+   *
+   * @param firmwareVersion the firmware version to use to configure relevant settings
+   */
+  public void configure(Version firmwareVersion, Configuration configuration) throws IOException {
     if (connection.getTransport() == Transport.USB
         && firmwareVersion.isAtLeast(4, 2, 0)
         && firmwareVersion.isLessThan(4, 2, 7)) {
       //noinspection deprecation
       setEnableTouchWorkaround(true);
-    } else if (firmwareVersion.isAtLeast(4, 0, 0) && !(processor instanceof ScpProcessor)) {
-      extendedApdus = connection.isExtendedLengthApduSupported();
+    } else if (firmwareVersion.isAtLeast(4, 0, 0)) {
+      extendedApdus = !configuration.forceShortApdus && connection.isExtendedLengthApduSupported();
       maxApduSize = firmwareVersion.isAtLeast(4, 3, 0) ? MaxApduSize.YK4_3 : MaxApduSize.YK4;
       resetProcessor(null);
     }
@@ -224,11 +258,6 @@ public class SmartCardProtocol implements Closeable {
   }
 
   public @Nullable DataEncryptor initScp(ScpKeyParams keyParams)
-      throws BadResponseException, ApduException, IOException {
-    return initScp(keyParams, false);
-  }
-
-  public @Nullable DataEncryptor initScp(ScpKeyParams keyParams, boolean shortApdus)
       throws IOException, ApduException, BadResponseException {
     try {
       ScpState state;
@@ -239,8 +268,6 @@ public class SmartCardProtocol implements Closeable {
       } else {
         throw new IllegalArgumentException("Unsupported ScpKeyParams");
       }
-      extendedApdus = !shortApdus && connection.isExtendedLengthApduSupported();
-      maxApduSize = Math.max(MaxApduSize.YK4_3, this.maxApduSize);
       return state.getDataEncryptor();
     } catch (ApduException e) {
       if (e.getSw() == SW.CLASS_NOT_SUPPORTED) {
@@ -253,6 +280,7 @@ public class SmartCardProtocol implements Closeable {
   private ScpState initScp03(Scp03KeyParams keyParams)
       throws IOException, ApduException, BadResponseException {
     Pair<ScpState, byte[]> pair = ScpState.scp03Init(processor, keyParams, null);
+    // SCP was introduced in FW 5.3, so we can use max APDU size for from YubiKey FW 4.3
     ScpProcessor processor =
         new ScpProcessor(
             connection, extendedApdus, pair.first, MaxApduSize.YK4_3, insSendRemaining);
@@ -270,6 +298,7 @@ public class SmartCardProtocol implements Closeable {
   private ScpState initScp11(Scp11KeyParams keyParams)
       throws IOException, ApduException, BadResponseException {
     ScpState scp = ScpState.scp11Init(processor, keyParams);
+    // SCP was introduced in FW 5.3, so we can use max APDU size for from YubiKey FW 4.3
     resetProcessor(
         new ScpProcessor(connection, extendedApdus, scp, MaxApduSize.YK4_3, insSendRemaining));
     return scp;

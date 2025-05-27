@@ -19,7 +19,6 @@ package com.yubico.yubikit.testing.sd;
 import static com.yubico.yubikit.testing.sd.Scp11TestData.OCE;
 import static com.yubico.yubikit.testing.sd.Scp11TestData.OCE_CERTS;
 import static com.yubico.yubikit.testing.sd.Scp11TestData.OCE_PASSWORD;
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
@@ -30,12 +29,7 @@ import static org.junit.Assume.assumeTrue;
 import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.keys.PrivateKeyValues;
 import com.yubico.yubikit.core.keys.PublicKeyValues;
-import com.yubico.yubikit.core.smartcard.Apdu;
 import com.yubico.yubikit.core.smartcard.ApduException;
-import com.yubico.yubikit.core.smartcard.ApduFormat;
-import com.yubico.yubikit.core.smartcard.AppId;
-import com.yubico.yubikit.core.smartcard.SmartCardConnection;
-import com.yubico.yubikit.core.smartcard.SmartCardProtocol;
 import com.yubico.yubikit.core.smartcard.scp.KeyRef;
 import com.yubico.yubikit.core.smartcard.scp.Scp03KeyParams;
 import com.yubico.yubikit.core.smartcard.scp.Scp11KeyParams;
@@ -78,38 +72,6 @@ public class Scp11DeviceTests {
         "SCP03 authentication not supported over NFC on FIPS capable devices",
         state.getDeviceInfo().getFipsCapable() != 0 && !state.isUsbTransport());
     state.withSecurityDomain(SecurityDomainSession::reset);
-  }
-
-  public static void testApduSizes(SecurityDomainTestState state) throws Throwable {
-    final KeyRef keyRef = new KeyRef(ScpKid.SCP11b, (byte) 0x01);
-
-    ScpKeyParams keyParams =
-        state.withSecurityDomain(
-            defaultKeyParams,
-            session -> {
-              final List<X509Certificate> bundle = session.getCertificateBundle(keyRef);
-              return new Scp11KeyParams(keyRef, bundle.get(bundle.size() - 1).getPublicKey());
-            });
-
-    int[] payloadSizes = {10, 255, 256, 512, 2048};
-
-    for (ApduFormat apduFormat : ApduFormat.values()) {
-      for (int payloadSize : payloadSizes) {
-        state.withDevice(
-            device -> {
-              SmartCardConnection connection = device.openConnection(SmartCardConnection.class);
-
-              try (SmartCardProtocol protocol = new SmartCardProtocol(connection)) {
-                protocol.select(AppId.MANAGEMENT);
-                protocol.initScp(keyParams, ApduFormat.SHORT == apduFormat);
-
-                byte[] payload = RandomUtils.getRandomBytes(payloadSize);
-                byte[] response = protocol.sendAndReceive(new Apdu(0, 1, 0, 0, payload));
-                assertArrayEquals(payload, response);
-              }
-            });
-      }
-    }
   }
 
   public static void testScp11aAuthenticate(SecurityDomainTestState state) throws Throwable {

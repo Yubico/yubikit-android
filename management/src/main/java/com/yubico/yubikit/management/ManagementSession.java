@@ -214,6 +214,7 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
     }
 
     this.version = version;
+    protocol.configure(version);
     logCtor(connection);
   }
 
