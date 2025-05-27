@@ -201,19 +201,8 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
             }
           };
     }
-
-    if (SessionVersionOverride.isDevelopmentVersion(version)) {
-      try {
-        logger.debug("Overriding development version...");
-        version = readDeviceInfo().getVersionQualifier().getVersion();
-        SessionVersionOverride.set(version);
-      } catch (CommandException e) {
-        // failed to read device info where it was expected
-        throw new IOException("Failed reading device info.", e);
-      }
-    }
-
-    this.version = version;
+    this.version = getQualifiedVersion(version);
+    protocol.configure(version);
     logCtor(connection);
   }
 
@@ -228,7 +217,7 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
   public ManagementSession(OtpConnection connection)
       throws IOException, ApplicationNotAvailableException {
     OtpProtocol protocol = new OtpProtocol(connection);
-    version = Version.fromBytes(protocol.readStatus());
+    Version version = Version.fromBytes(protocol.readStatus());
     if (version.isLessThan(3, 0, 0) && version.major != 0) {
       throw new ApplicationNotAvailableException(
           "Management Application requires YubiKey 3 or later");
@@ -261,6 +250,7 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
             throw new UnsupportedOperationException("deviceReset is only available over CCID");
           }
         };
+    this.version = getQualifiedVersion(version);
     logCtor(connection);
   }
 
@@ -273,14 +263,14 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
    */
   public ManagementSession(FidoConnection connection) throws IOException {
     FidoProtocol protocol = new FidoProtocol(connection);
-    Version protocolVersion = protocol.getVersion();
-    if (protocolVersion.major < 4) {
+    Version version = protocol.getVersion();
+    if (version.major < 4) {
       // Prior to YK4 this was not firmware version
-      if (!(protocolVersion.major == 0 && protocol.supports(FidoProtocol.Capability.CBOR))) {
-        protocolVersion = new Version(3, 0, 0);
+      if (!(version.major == 0 && protocol.supports(FidoProtocol.Capability.CBOR))) {
+        version = new Version(3, 0, 0);
       }
     }
-    version = protocolVersion;
+
     backend =
         new Backend<FidoProtocol>(protocol) {
           @Override
@@ -304,6 +294,7 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
             throw new UnsupportedOperationException("deviceReset is only available over CCID");
           }
         };
+    this.version = getQualifiedVersion(version);
     logCtor(connection);
   }
 
@@ -528,5 +519,30 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
       throw new IllegalArgumentException("Invalid page value " + page);
     }
     return new byte[] {(byte) page};
+  }
+
+  /**
+   * Retrieves the versionQualifier version of the YubiKey device.
+   *
+   * <p>If the provided version is identified as a development version, this method overrides it by
+   * with version from the versionQualifier.
+   *
+   * @param version the initial version of the YubiKey device.
+   * @return the version override.
+   * @throws IOException if reading the device information fails.
+   */
+  private Version getQualifiedVersion(Version version) throws IOException {
+    if (!SessionVersionOverride.isDevelopmentVersion(version)) {
+      return version;
+    }
+    try {
+      logger.debug("Overriding development version...");
+      Version result = readDeviceInfo().getVersionQualifier().getVersion();
+      SessionVersionOverride.set(result);
+      return result;
+    } catch (CommandException e) {
+      // failed to read device info where it was expected
+      throw new IOException("Failed reading device info.", e);
+    }
   }
 }
