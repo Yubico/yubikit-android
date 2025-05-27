@@ -521,18 +521,28 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
     return new byte[] {(byte) page};
   }
 
+  /**
+   * Retrieves the versionQualifier version of the YubiKey device.
+   *
+   * <p>If the provided version is identified as a development version, this method overrides it by
+   * with version from the versionQualifier.
+   *
+   * @param version the initial version of the YubiKey device.
+   * @return the version override.
+   * @throws IOException if reading the device information fails.
+   */
   private Version getQualifiedVersion(Version version) throws IOException {
-    Version result = version;
-    if (SessionVersionOverride.isDevelopmentVersion(version)) {
-      try {
-        logger.debug("Overriding development version...");
-        result = readDeviceInfo().getVersionQualifier().getVersion();
-        SessionVersionOverride.set(result);
-      } catch (CommandException e) {
-        // failed to read device info where it was expected
-        throw new IOException("Failed reading device info.", e);
-      }
+    if (!SessionVersionOverride.isDevelopmentVersion(version)) {
+      return version;
     }
-    return result;
+    try {
+      logger.debug("Overriding development version...");
+      Version result = readDeviceInfo().getVersionQualifier().getVersion();
+      SessionVersionOverride.set(result);
+      return result;
+    } catch (CommandException e) {
+      // failed to read device info where it was expected
+      throw new IOException("Failed reading device info.", e);
+    }
   }
 }
