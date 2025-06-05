@@ -20,50 +20,72 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 class ShortApduProcessor extends ApduFormatProcessor {
-    private static final int SHORT_APDU_MAX_CHUNK = 0xff;
+  private static final int SHORT_APDU_MAX_CHUNK = 0xff;
 
-    ShortApduProcessor(SmartCardConnection connection) {
-        super(connection);
+  ShortApduProcessor(SmartCardConnection connection) {
+    super(connection);
+  }
+
+  @Override
+  byte[] formatApdu(
+      byte cla, byte ins, byte p1, byte p2, byte[] data, int offset, int length, int le) {
+    if (length > SHORT_APDU_MAX_CHUNK) {
+      throw new IllegalArgumentException("Length must be no greater than " + SHORT_APDU_MAX_CHUNK);
+    }
+    if (le < 0 || le > SHORT_APDU_MAX_CHUNK) {
+      throw new IllegalArgumentException("Le must be between 0 and " + SHORT_APDU_MAX_CHUNK);
     }
 
-    @Override
-    byte[] formatApdu(byte cla, byte ins, byte p1, byte p2, byte[] data, int offset, int length, int le) {
-        if (length > SHORT_APDU_MAX_CHUNK) {
-            throw new IllegalArgumentException("Length must be no greater than " + SHORT_APDU_MAX_CHUNK);
-        }
-        if (le < 0 || le > SHORT_APDU_MAX_CHUNK) {
-            throw new IllegalArgumentException("Le must be between 0 and " + SHORT_APDU_MAX_CHUNK);
-        }
-
-        ByteBuffer buf = ByteBuffer.allocate(4 + (length > 0 ? 1 : 0) + length + (le > 0 ? 1 : 0))
-                .put(cla)
-                .put(ins)
-                .put(p1)
-                .put(p2);
-        if (length > 0) {
-            buf.put((byte) length).put(data, offset, length);
-        }
-        if (le > 0) {
-            buf.put((byte) le);
-        }
-        return buf.array();
+    ByteBuffer buf =
+        ByteBuffer.allocate(4 + (length > 0 ? 1 : 0) + length + (le > 0 ? 1 : 0))
+            .put(cla)
+            .put(ins)
+            .put(p1)
+            .put(p2);
+    if (length > 0) {
+      buf.put((byte) length).put(data, offset, length);
     }
-
-    @Override
-    public ApduResponse sendApdu(Apdu apdu) throws IOException {
-        byte[] data = apdu.getData();
-        int offset = 0;
-        while (data.length - offset > SHORT_APDU_MAX_CHUNK) {
-            ApduResponse response = new ApduResponse(connection.sendAndReceive(formatApdu((byte) (apdu.getCla() | 0x10), apdu.getIns(), apdu.getP1(), apdu.getP2(), data, offset, SHORT_APDU_MAX_CHUNK, apdu.getLe())));
-            if (response.getSw() != SW.OK) {
-                return response;
-            }
-            offset += SHORT_APDU_MAX_CHUNK;
-        }
-        return new ApduResponse(connection.sendAndReceive(formatApdu(apdu.getCla(), apdu.getIns(), apdu.getP1(), apdu.getP2(), data, offset, data.length - offset, apdu.getLe())));
+    if (le > 0) {
+      buf.put((byte) le);
     }
+    return buf.array();
+  }
 
-    @Override
-    public void close() throws IOException {
+  @Override
+  public ApduResponse sendApdu(Apdu apdu) throws IOException {
+    byte[] data = apdu.getData();
+    int offset = 0;
+    while (data.length - offset > SHORT_APDU_MAX_CHUNK) {
+      ApduResponse response =
+          new ApduResponse(
+              connection.sendAndReceive(
+                  formatApdu(
+                      (byte) (apdu.getCla() | 0x10),
+                      apdu.getIns(),
+                      apdu.getP1(),
+                      apdu.getP2(),
+                      data,
+                      offset,
+                      SHORT_APDU_MAX_CHUNK,
+                      apdu.getLe())));
+      if (response.getSw() != SW.OK) {
+        return response;
+      }
+      offset += SHORT_APDU_MAX_CHUNK;
     }
+    return new ApduResponse(
+        connection.sendAndReceive(
+            formatApdu(
+                apdu.getCla(),
+                apdu.getIns(),
+                apdu.getP1(),
+                apdu.getP2(),
+                data,
+                offset,
+                data.length - offset,
+                apdu.getLe())));
+  }
+
+  @Override
+  public void close() throws IOException {}
 }

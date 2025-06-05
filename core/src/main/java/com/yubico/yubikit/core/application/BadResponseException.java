@@ -16,15 +16,13 @@
 
 package com.yubico.yubikit.core.application;
 
-/**
- * The data contained in a YubiKey response was invalid.
- */
+/** The data contained in a YubiKey response was invalid. */
 public class BadResponseException extends CommandException {
-    public BadResponseException(String message) {
-        super(message);
-    }
+  public BadResponseException(String message) {
+    super(message);
+  }
 
-    public BadResponseException(String message, Throwable cause) {
-        super(message, cause);
-    }
+  public BadResponseException(String message, Throwable cause) {
+    super(message, cause);
+  }
 }

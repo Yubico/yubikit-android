@@ -1,13 +1,10 @@
 plugins {
     id 'java-library'
     id 'project-convention-spotbugs'
+    id 'project-convention-spotless'
 }
 
 java {
     targetCompatibility = JavaVersion.VERSION_1_8
     sourceCompatibility = JavaVersion.VERSION_1_8
-}
-
-compileJava {
-    options.compilerArgs.addAll(['--release', '8'])
 }

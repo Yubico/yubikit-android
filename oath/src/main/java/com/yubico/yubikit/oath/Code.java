@@ -16,39 +16,30 @@
 
 package com.yubico.yubikit.oath;
 
-
-/**
- * A one-time OATH code, calculated from a Credential stored in a YubiKey.
- */
+/** A one-time OATH code, calculated from a Credential stored in a YubiKey. */
 public class Code {
-    private final String value;
-    private final long validFrom;
-    private final long validUntil;
+  private final String value;
+  private final long validFrom;
+  private final long validUntil;
 
-    public Code(String value, long validFrom, long validUntil) {
-        this.value = value;
-        this.validFrom = validFrom;
-        this.validUntil = validUntil;
-    }
+  public Code(String value, long validFrom, long validUntil) {
+    this.value = value;
+    this.validFrom = validFrom;
+    this.validUntil = validUntil;
+  }
 
-    /**
-     * Returns the String value, typically a 6-8 digit code.
-     */
-    public final String getValue() {
-        return this.value;
-    }
+  /** Returns the String value, typically a 6-8 digit code. */
+  public final String getValue() {
+    return this.value;
+  }
 
-    /**
-     * Returns a UNIX timestamp in ms for when the validity period starts.
-     */
-    public final long getValidFrom() {
-        return this.validFrom;
-    }
+  /** Returns a UNIX timestamp in ms for when the validity period starts. */
+  public final long getValidFrom() {
+    return this.validFrom;
+  }
 
-    /**
-     * Returns a UNIX timestamp in ms for when the validity period ends.
-     */
-    public final long getValidUntil() {
-        return this.validUntil;
-    }
+  /** Returns a UNIX timestamp in ms for when the validity period ends. */
+  public final long getValidUntil() {
+    return this.validUntil;
+  }
 }

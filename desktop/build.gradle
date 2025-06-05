@@ -1,0 +1,16 @@
+plugins {
+    id 'yubikit-java-library'
+}
+
+dependencies {
+    api project(':support')
+
+    implementation 'org.hid4java:hid4java:0.8.0'
+}
+
+ext.pomName = "Yubico YubiKit Desktop"
+description = "This module is the core library desktop implementation and provides " +
+        "functionality to detect a YubiKey plugged in or tapped over NFC and to open " +
+        "an ISO/IEC 7816 connection, using the javax.smartcardio API."
+
+apply from: rootProject.file('publish.gradle')

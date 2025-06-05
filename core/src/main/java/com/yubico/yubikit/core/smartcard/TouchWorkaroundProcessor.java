@@ -17,30 +17,29 @@
 package com.yubico.yubikit.core.smartcard;
 
 import com.yubico.yubikit.core.application.BadResponseException;
-
 import java.io.IOException;
 
 class TouchWorkaroundProcessor extends ChainedResponseProcessor {
-    private long lastLongResponse = 0;
+  private long lastLongResponse = 0;
 
-    TouchWorkaroundProcessor(SmartCardConnection connection, byte insSendRemaining) {
-        super(connection, true, MaxApduSize.YK4, insSendRemaining);
+  TouchWorkaroundProcessor(SmartCardConnection connection, byte insSendRemaining) {
+    super(connection, true, MaxApduSize.YK4, insSendRemaining);
+  }
+
+  @Override
+  public ApduResponse sendApdu(Apdu apdu) throws IOException, BadResponseException {
+    if (lastLongResponse > 0 && System.currentTimeMillis() - lastLongResponse < 2000) {
+      super.sendApdu(new Apdu(0, 0, 0, 0, null)); // Dummy APDU; returns an error
+      lastLongResponse = 0;
+    }
+    ApduResponse response = super.sendApdu(apdu);
+
+    if (response.getBytes().length > 54) {
+      lastLongResponse = System.currentTimeMillis();
+    } else {
+      lastLongResponse = 0;
     }
 
-    @Override
-    public ApduResponse sendApdu(Apdu apdu) throws IOException, BadResponseException {
-        if (lastLongResponse > 0 && System.currentTimeMillis() - lastLongResponse < 2000) {
-            super.sendApdu(new Apdu(0, 0, 0, 0, null)); // Dummy APDU; returns an error
-            lastLongResponse = 0;
-        }
-        ApduResponse response = super.sendApdu(apdu);
-
-        if (response.getBytes().length > 54) {
-            lastLongResponse = System.currentTimeMillis();
-        } else {
-            lastLongResponse = 0;
-        }
-
-        return response;
-    }
+    return response;
+  }
 }

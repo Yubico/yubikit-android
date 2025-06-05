@@ -2,14 +2,15 @@ plugins {
     id 'com.android.library'
     id 'project-convention-spotbugs'
     id 'project-convention-logging'
+    id 'project-convention-spotless'
 }
 
 android {
-    compileSdk 34
+    compileSdk 35
 
     defaultConfig {
         minSdkVersion 19
-        targetSdk 34
+        targetSdk 35
 
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         consumerProguardFiles "consumer-rules.pro"
@@ -36,15 +37,15 @@ android {
 dependencies {
     api project(':core')
 
-    compileOnly 'androidx.annotation:annotation:1.8.2'
+    compileOnly 'androidx.annotation:annotation:1.9.1'
 
     testImplementation project(':testing')
     testImplementation 'androidx.test.ext:junit:1.2.1'
-    testImplementation 'org.robolectric:robolectric:4.11.1'
-    testImplementation 'org.mockito:mockito-core:5.13.0'
+    testImplementation 'org.robolectric:robolectric:4.12.1'
+    testImplementation 'org.mockito:mockito-core:5.17.0'
 
     androidTestImplementation 'androidx.test.ext:junit:1.2.1'
-    androidTestImplementation 'androidx.test:runner:1.6.1'
+    androidTestImplementation 'androidx.test:runner:1.6.2'
 }
 
 description = "This module is the core library implementation and provides functionality to detect a YubiKey plugged in or tapped over NFC and to open an ISO/IEC 7816 connection that allows sending raw APDU commands to the key."

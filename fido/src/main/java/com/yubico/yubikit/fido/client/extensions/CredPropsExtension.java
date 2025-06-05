@@ -16,46 +16,55 @@
 
 package com.yubico.yubikit.fido.client.extensions;
 
-import com.yubico.yubikit.fido.webauthn.AttestationObject;
+import com.yubico.yubikit.fido.ctap.Ctap2Session;
+import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
 import com.yubico.yubikit.fido.webauthn.AuthenticatorSelectionCriteria;
 import com.yubico.yubikit.fido.webauthn.Extensions;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialCreationOptions;
 import com.yubico.yubikit.fido.webauthn.ResidentKeyRequirement;
-
 import java.util.Collections;
-
 import javax.annotation.Nullable;
 
+/**
+ * Implements the Credential Properties (credProps) WebAuthn extension.
+ *
+ * @see <a
+ *     href="https://www.w3.org/TR/webauthn-3/#sctn-authenticator-credential-properties-extension">Credential
+ *     Properties Extension (credProps)</a>
+ */
 public class CredPropsExtension extends Extension {
 
-    public CredPropsExtension() {
-        super("credProps");
+  public CredPropsExtension() {
+    super("credProps");
+  }
+
+  @Nullable
+  @Override
+  public RegistrationProcessor makeCredential(
+      Ctap2Session ctap,
+      PublicKeyCredentialCreationOptions options,
+      PinUvAuthProtocol pinUvAuthProtocol) {
+
+    Extensions extensions = options.getExtensions();
+    if (extensions == null) {
+      return null;
     }
 
-    @Nullable
-    Boolean rk = null;
+    if (extensions.has(name)) {
+      AuthenticatorSelectionCriteria authenticatorSelection = options.getAuthenticatorSelection();
+      String optionsRk =
+          authenticatorSelection != null ? authenticatorSelection.getResidentKey() : null;
+      Boolean authenticatorRk = (Boolean) ctap.getCachedInfo().getOptions().get("rk");
+      boolean rk =
+          (ResidentKeyRequirement.REQUIRED.equals(optionsRk)
+              || (ResidentKeyRequirement.PREFERRED.equals(optionsRk)
+                  && Boolean.TRUE.equals(authenticatorRk)));
 
-    @Override
-    ProcessingResult processInput(CreateInputArguments arguments) {
-
-        PublicKeyCredentialCreationOptions options = arguments.getCreationOptions();
-        Extensions extensions = options.getExtensions();
-
-        if (extensions.has(name)) {
-            AuthenticatorSelectionCriteria authenticatorSelection = options.getAuthenticatorSelection();
-            rk = authenticatorSelection != null &&
-                    ResidentKeyRequirement.REQUIRED.equals(authenticatorSelection.getResidentKey());
-
-            return resultWithoutData();
-        }
-        return null;
+      return new RegistrationProcessor(
+          (attestationObject, pinToken) ->
+              serializationType ->
+                  Collections.singletonMap(name, Collections.singletonMap("rk", rk)));
     }
-
-    @Override
-    ProcessingResult processOutput(AttestationObject ignoredAttestationObject) {
-        if (rk != null) {
-            return resultWithData(name, Collections.singletonMap("rk", rk));
-        }
-        return null;
-    }
+    return null;
+  }
 }

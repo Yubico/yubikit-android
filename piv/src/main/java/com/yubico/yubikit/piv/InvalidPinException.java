@@ -23,7 +23,7 @@ package com.yubico.yubikit.piv;
  */
 @Deprecated
 public class InvalidPinException extends com.yubico.yubikit.core.application.InvalidPinException {
-    public InvalidPinException(int attemptsRemaining) {
-        super(attemptsRemaining);
-    }
+  public InvalidPinException(int attemptsRemaining) {
+    super(attemptsRemaining);
+  }
 }

@@ -76,6 +76,17 @@ If you run into any issues during the development process, please fill out a
 developer https://support.yubico.com/support/tickets/new[support ticket] and
 our team will be happy to assist you.
 
+=== Support for desktop apps
+
+WARNING: This is an experimental version and is not intended for production use.
+
+Since version 2.8.0, the SDK contains the desktop module, which provides concrete implementations
+of the core interfaces (USB and NFC connectivity) for building desktop Java applications.
+
+There are two related modules:
+
+* testing-desktop: SDK device test suite for desktop platforms
+* DesktopDemo: A sample application demonstrating basic usage
 
 === FAQ
 

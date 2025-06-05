@@ -20,24 +20,23 @@ import android.util.Base64;
 
 public class Base64CodecImpl implements com.yubico.yubikit.core.internal.codec.Base64Codec {
 
-    @Override
-    public String toUrlSafeString(byte[] data) {
-        return Base64.encodeToString(data, Base64.NO_WRAP | Base64.NO_PADDING | Base64.URL_SAFE);
-    }
+  @Override
+  public String toUrlSafeString(byte[] data) {
+    return Base64.encodeToString(data, Base64.NO_WRAP | Base64.NO_PADDING | Base64.URL_SAFE);
+  }
 
-    @Override
-    public String toString(byte[] data) {
-        return Base64.encodeToString(data, Base64.NO_WRAP | Base64.NO_PADDING);
-    }
+  @Override
+  public String toString(byte[] data) {
+    return Base64.encodeToString(data, Base64.NO_WRAP | Base64.NO_PADDING);
+  }
 
-    @Override
-    public byte[] fromUrlSafeString(String data) {
-        return Base64.decode(data, Base64.NO_WRAP | Base64.NO_PADDING | Base64.URL_SAFE);
-    }
+  @Override
+  public byte[] fromUrlSafeString(String data) {
+    return Base64.decode(data, Base64.NO_WRAP | Base64.NO_PADDING | Base64.URL_SAFE);
+  }
 
-    @Override
-    public byte[] fromString(String data) {
-        return Base64.decode(data, Base64.NO_WRAP | Base64.NO_PADDING);
-    }
+  @Override
+  public byte[] fromString(String data) {
+    return Base64.decode(data, Base64.NO_WRAP | Base64.NO_PADDING);
+  }
 }
-

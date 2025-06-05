@@ -20,7 +20,6 @@ import java.nio.ByteBuffer;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
-
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
@@ -31,58 +30,47 @@ import javax.crypto.spec.SecretKeySpec;
  */
 class Hkdf {
 
-    private final Mac mac;
+  private final Mac mac;
 
-    Hkdf(String algo) throws NoSuchAlgorithmException {
-        this.mac = Mac.getInstance(algo);
+  Hkdf(String algo) throws NoSuchAlgorithmException {
+    this.mac = Mac.getInstance(algo);
+  }
+
+  byte[] hmacDigest(byte[] key, byte[] data) throws InvalidKeyException {
+    mac.init(new SecretKeySpec(key, mac.getAlgorithm()));
+    return mac.doFinal(data);
+  }
+
+  byte[] extract(byte[] salt, byte[] ikm) throws InvalidKeyException {
+    return hmacDigest(salt.length != 0 ? salt : new byte[mac.getMacLength()], ikm);
+  }
+
+  byte[] expand(byte[] prk, byte[] info, int length) throws InvalidKeyException {
+    byte[] t = new byte[0];
+    byte[] okm = new byte[0];
+    byte i = 0;
+    while (okm.length < length) {
+      i++;
+      byte[] data = ByteBuffer.allocate(t.length + info.length + 1).put(t).put(info).put(i).array();
+      Arrays.fill(t, (byte) 0);
+      byte[] digest = hmacDigest(prk, data);
+
+      byte[] result = ByteBuffer.allocate(okm.length + digest.length).put(okm).put(digest).array();
+      Arrays.fill(okm, (byte) 0);
+      Arrays.fill(data, (byte) 0);
+      okm = result;
+      t = digest;
     }
 
-    byte[] hmacDigest(byte[] key, byte[] data) throws InvalidKeyException {
-        mac.init(new SecretKeySpec(key, mac.getAlgorithm()));
-        return mac.doFinal(data);
-    }
+    byte[] result = Arrays.copyOf(okm, length);
+    Arrays.fill(okm, (byte) 0);
+    return result;
+  }
 
-    byte[] extract(byte[] salt, byte[] ikm) throws InvalidKeyException {
-        return hmacDigest(
-                salt.length != 0
-                        ? salt
-                        : new byte[mac.getMacLength()],
-                ikm);
-    }
-
-    byte[] expand(byte[] prk, byte[] info, int length) throws InvalidKeyException {
-        byte[] t = new byte[0];
-        byte[] okm = new byte[0];
-        byte i = 0;
-        while (okm.length < length) {
-            i++;
-            byte[] data = ByteBuffer.allocate(t.length + info.length + 1)
-                    .put(t)
-                    .put(info)
-                    .put(i)
-                    .array();
-            Arrays.fill(t, (byte) 0);
-            byte[] digest = hmacDigest(prk, data);
-
-            byte[] result = ByteBuffer.allocate(okm.length + digest.length)
-                    .put(okm)
-                    .put(digest)
-                    .array();
-            Arrays.fill(okm, (byte) 0);
-            Arrays.fill(data, (byte) 0);
-            okm = result;
-            t = digest;
-        }
-
-        byte[] result = Arrays.copyOf(okm, length);
-        Arrays.fill(okm, (byte) 0);
-        return result;
-    }
-
-    byte[] digest(byte[] ikm, byte[] salt, byte[] info, int length) throws InvalidKeyException {
-        byte[] prk = extract(salt, ikm);
-        byte[] result = expand(prk, info, length);
-        Arrays.fill(prk, (byte) 0);
-        return result;
-    }
+  byte[] digest(byte[] ikm, byte[] salt, byte[] info, int length) throws InvalidKeyException {
+    byte[] prk = extract(salt, ikm);
+    byte[] result = expand(prk, info, length);
+    Arrays.fill(prk, (byte) 0);
+    return result;
+  }
 }

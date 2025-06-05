@@ -24,37 +24,37 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
 import com.yubico.yubikit.core.Transport;
-
 import org.junit.Test;
 
 public class DeviceConfigBuilderTest {
-    @Test
-    public void testDefaults() {
-        DeviceConfig defaultConfig = new DeviceConfig.Builder().build();
-        assertNull(defaultConfig.getEnabledCapabilities(Transport.USB));
-        assertNull(defaultConfig.getEnabledCapabilities(Transport.NFC));
-        assertNull(defaultConfig.getAutoEjectTimeout());
-        assertNull(defaultConfig.getChallengeResponseTimeout());
-        assertNull(defaultConfig.getDeviceFlags());
-        assertNull(defaultConfig.getNfcRestricted());
-    }
+  @Test
+  public void testDefaults() {
+    DeviceConfig defaultConfig = new DeviceConfig.Builder().build();
+    assertNull(defaultConfig.getEnabledCapabilities(Transport.USB));
+    assertNull(defaultConfig.getEnabledCapabilities(Transport.NFC));
+    assertNull(defaultConfig.getAutoEjectTimeout());
+    assertNull(defaultConfig.getChallengeResponseTimeout());
+    assertNull(defaultConfig.getDeviceFlags());
+    assertNull(defaultConfig.getNfcRestricted());
+  }
 
-    @Test
-    public void testBuild() {
-        DeviceConfig config = new DeviceConfig.Builder()
-                .enabledCapabilities(Transport.USB, 12345)
-                .enabledCapabilities(Transport.NFC, 67890)
-                .autoEjectTimeout((short) 128)
-                .challengeResponseTimeout((byte) 55)
-                .deviceFlags(98765)
-                .nfcRestricted(true)
-                .build();
-        assertIntegerEquals(12345, config.getEnabledCapabilities(Transport.USB));
-        assertIntegerEquals(67890, config.getEnabledCapabilities(Transport.NFC));
-        assertShortEquals(128, config.getAutoEjectTimeout());
-        assertByteEquals(55, config.getChallengeResponseTimeout());
-        assertIntegerEquals(98765, config.getDeviceFlags());
-        assertNotNull(config.getNfcRestricted());
-        assertIsTrue(config.getNfcRestricted());
-    }
+  @Test
+  public void testBuild() {
+    DeviceConfig config =
+        new DeviceConfig.Builder()
+            .enabledCapabilities(Transport.USB, 12345)
+            .enabledCapabilities(Transport.NFC, 67890)
+            .autoEjectTimeout((short) 128)
+            .challengeResponseTimeout((byte) 55)
+            .deviceFlags(98765)
+            .nfcRestricted(true)
+            .build();
+    assertIntegerEquals(12345, config.getEnabledCapabilities(Transport.USB));
+    assertIntegerEquals(67890, config.getEnabledCapabilities(Transport.NFC));
+    assertShortEquals(128, config.getAutoEjectTimeout());
+    assertByteEquals(55, config.getChallengeResponseTimeout());
+    assertIntegerEquals(98765, config.getDeviceFlags());
+    assertNotNull(config.getNfcRestricted());
+    assertIsTrue(config.getNfcRestricted());
+  }
 }

@@ -16,52 +16,73 @@
 
 package com.yubico.yubikit.fido.client.extensions;
 
+import com.yubico.yubikit.fido.ctap.Ctap2Session;
+import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
 import com.yubico.yubikit.fido.webauthn.Extensions;
-
+import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialCreationOptions;
+import java.util.Collections;
 import javax.annotation.Nullable;
 
+/**
+ * Implements the Credential Protection CTAP2 extension.
+ *
+ * @see <a
+ *     href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#sctn-credProtect-extension">Credential
+ *     Protection (credProtect)</a>
+ */
 public class CredProtectExtension extends Extension {
 
-    static final String OPTIONAL = "userVerificationOptional";
-    static final String OPTIONAL_WITH_LIST = "userVerificationOptionalWithCredentialIDList";
-    static final String REQUIRED = "userVerificationRequired";
+  private static final String POLICY = "credentialProtectionPolicy";
+  private static final String OPTIONAL = "userVerificationOptional";
+  private static final String OPTIONAL_WITH_LIST = "userVerificationOptionalWithCredentialIDList";
+  private static final String REQUIRED = "userVerificationRequired";
+  private static final String ENFORCE = "enforceCredentialProtectionPolicy";
 
-    public CredProtectExtension() {
-        super("credProtect");
+  public CredProtectExtension() {
+    super("credProtect");
+  }
+
+  @Nullable
+  @Override
+  public RegistrationProcessor makeCredential(
+      Ctap2Session ctap,
+      PublicKeyCredentialCreationOptions options,
+      PinUvAuthProtocol pinUvAuthProtocol) {
+
+    Extensions extensions = options.getExtensions();
+    if (extensions == null) {
+      return null;
     }
 
-    @Override
-    ProcessingResult processInput(CreateInputArguments arguments) {
-
-        Extensions extensions = arguments.getCreationOptions().getExtensions();
-
-        String credentialProtectionPolicy = (String) extensions.get("credentialProtectionPolicy");
-        if (credentialProtectionPolicy == null) {
-            return null;
-        }
-
-        @Nullable Integer credProtect = null;
-        switch (credentialProtectionPolicy) {
-            case OPTIONAL:
-                credProtect = 0x01;
-                break;
-            case OPTIONAL_WITH_LIST:
-                credProtect = 0x02;
-                break;
-            case REQUIRED:
-                credProtect = 0x03;
-                break;
-        }
-        Boolean enforce = (Boolean) extensions.get("enforceCredentialProtectionPolicy");
-        if (Boolean.TRUE.equals(enforce) &&
-                !isSupported(arguments.getCtap()) &&
-                credProtect != null &&
-                credProtect > 0x01) {
-            throw new IllegalArgumentException("Authenticator does not support Credential Protection");
-        }
-
-        return credProtect != null
-                ? resultWithData(name, credProtect)
-                : null;
+    String credentialProtectionPolicy = (String) extensions.get(POLICY);
+    if (credentialProtectionPolicy == null) {
+      return null;
     }
+
+    Integer credProtect = credProtectValue(credentialProtectionPolicy);
+    Boolean enforce = (Boolean) extensions.get(ENFORCE);
+    if (Boolean.TRUE.equals(enforce)
+        && !isSupported(ctap)
+        && credProtect != null
+        && credProtect > 0x01) {
+      throw new IllegalArgumentException("No Credential Protection support");
+    }
+    return credProtect != null
+        ? new RegistrationProcessor(pinToken -> Collections.singletonMap(name, credProtect))
+        : null;
+  }
+
+  @Nullable
+  private Integer credProtectValue(String optionsValue) {
+    switch (optionsValue) {
+      case OPTIONAL:
+        return 0x01;
+      case OPTIONAL_WITH_LIST:
+        return 0x02;
+      case REQUIRED:
+        return 0x03;
+      default:
+        return null;
+    }
+  }
 }

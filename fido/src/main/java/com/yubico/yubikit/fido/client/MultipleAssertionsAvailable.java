@@ -16,93 +16,96 @@
 
 package com.yubico.yubikit.fido.client;
 
+import com.yubico.yubikit.core.util.Pair;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.fido.webauthn.AuthenticatorAssertionResponse;
+import com.yubico.yubikit.fido.webauthn.ClientExtensionResults;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredential;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialDescriptor;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialUserEntity;
 import com.yubico.yubikit.fido.webauthn.SerializationType;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
 /**
- * The request generated multiple assertions, and a choice must be made by the user.
- * Once selected, call {@link #select(int)} to get an assertion.
+ * The request generated multiple assertions, and a choice must be made by the user. Once selected,
+ * call {@link #select(int)} to get an assertion.
  */
 public class MultipleAssertionsAvailable extends Throwable {
-    private final byte[] clientDataJson;
-    private final List<BasicWebAuthnClient.WithExtensionResults<Ctap2Session.AssertionData>> assertions;
+  private final byte[] clientDataJson;
+  private final List<Pair<Ctap2Session.AssertionData, ClientExtensionResults>> assertions;
 
-    MultipleAssertionsAvailable(byte[] clientDataJson, List<BasicWebAuthnClient.WithExtensionResults<Ctap2Session.AssertionData>> assertions) {
-        super("Request returned multiple assertions");
+  MultipleAssertionsAvailable(
+      byte[] clientDataJson,
+      List<Pair<Ctap2Session.AssertionData, ClientExtensionResults>> assertions) {
+    super("Request returned multiple assertions");
 
-        this.clientDataJson = clientDataJson;
-        this.assertions = assertions;
+    this.clientDataJson = clientDataJson;
+    this.assertions = assertions;
+  }
+
+  /**
+   * Get the number of assertions returned by the Authenticators.
+   *
+   * @return the number of assertions available
+   */
+  public int getAssertionCount() {
+    return assertions.size();
+  }
+
+  /**
+   * The list of users for which credentials are stored by the Authenticator. The indexes of the
+   * user objects correspond to the value which should be passed to select() to select a response.
+   *
+   * <p>NOTE: If PIV/UV wasn't provided to the call to {@link BasicWebAuthnClient#getAssertion} then
+   * user information may not be available, in which case this method will throw an exception.
+   *
+   * @return a list of available users.
+   * @throws UserInformationNotAvailableError in case PIN/UV wasn't provided
+   */
+  public List<PublicKeyCredentialUserEntity> getUsers() throws UserInformationNotAvailableError {
+    List<PublicKeyCredentialUserEntity> users = new ArrayList<>();
+    for (Pair<Ctap2Session.AssertionData, ClientExtensionResults> assertion : assertions) {
+      Map<String, ?> user = assertion.first.getUser();
+      if (user == null) {
+        throw new UserInformationNotAvailableError();
+      }
+
+      users.add(PublicKeyCredentialUserEntity.fromMap(user, SerializationType.CBOR));
     }
+    return users;
+  }
 
-    /**
-     * Get the number of assertions returned by the Authenticators.
-     *
-     * @return the number of assertions available
-     */
-    public int getAssertionCount() {
-        return assertions.size();
+  /**
+   * Selects which assertion to use by index. These indices correspond to those of the List returned
+   * by {@link #getUsers()}. This method can only be called once to get a single response.
+   *
+   * @param index The index of the assertion to return.
+   * @return A WebAuthn public key credential.
+   */
+  public PublicKeyCredential select(int index) {
+    if (assertions.isEmpty()) {
+      throw new IllegalStateException("Assertion has already been selected");
     }
+    Pair<Ctap2Session.AssertionData, ClientExtensionResults> assertionPair = assertions.get(index);
+    assertions.clear();
 
-    /**
-     * The list of users for which credentials are stored by the Authenticator.
-     * The indexes of the user objects correspond to the value which should be passed to select()
-     * to select a response.
-     * <p>
-     * NOTE: If PIV/UV wasn't provided to the call to {@link BasicWebAuthnClient#getAssertion}
-     * then user information may not be available, in which case this method will throw an exception.
-     *
-     * @return a list of available users.
-     * @throws UserInformationNotAvailableError in case PIN/UV wasn't provided
-     */
-    public List<PublicKeyCredentialUserEntity> getUsers() throws UserInformationNotAvailableError {
-        List<PublicKeyCredentialUserEntity> users = new ArrayList<>();
-        for (BasicWebAuthnClient.WithExtensionResults<Ctap2Session.AssertionData> assertion : assertions) {
-            try {
-                users.add(PublicKeyCredentialUserEntity.fromMap(
-                        Objects.requireNonNull(assertion.data.getUser()),
-                        SerializationType.CBOR
-                ));
-            } catch (NullPointerException e) {
-                throw new UserInformationNotAvailableError();
-            }
-        }
-        return users;
-    }
+    final Ctap2Session.AssertionData assertion = assertionPair.first;
+    final ClientExtensionResults clientExtensionResults = assertionPair.second;
 
-    /**
-     * Selects which assertion to use by index. These indices correspond to those of the List
-     * returned by {@link #getUsers()}. This method can only be called once to get a single response.
-     *
-     * @param index The index of the assertion to return.
-     * @return A WebAuthn public key credential.
-     */
-    public PublicKeyCredential select(int index) {
-        if (assertions.isEmpty()) {
-            throw new IllegalStateException("Assertion has already been selected");
-        }
-        BasicWebAuthnClient.WithExtensionResults<Ctap2Session.AssertionData> assertion = assertions.get(index);
-        assertions.clear();
-
-        final Map<String, ?> user = Objects.requireNonNull(assertion.data.getUser());
-        final Map<String, ?> credential = Objects.requireNonNull(assertion.data.getCredential());
-        final byte[] credentialId = Objects.requireNonNull((byte[]) credential.get(PublicKeyCredentialDescriptor.ID));
-        return new PublicKeyCredential(
-                credentialId,
-                new AuthenticatorAssertionResponse(
-                        clientDataJson,
-                        assertion.data.getAuthenticatorData(),
-                        assertion.data.getSignature(),
-                        Objects.requireNonNull((byte[]) user.get(PublicKeyCredentialUserEntity.ID))
-                ),
-                assertion.clientExtensionResults);
-    }
+    final Map<String, ?> user = Objects.requireNonNull(assertion.getUser());
+    final Map<String, ?> credential = Objects.requireNonNull(assertion.getCredential());
+    final byte[] credentialId =
+        Objects.requireNonNull((byte[]) credential.get(PublicKeyCredentialDescriptor.ID));
+    return new PublicKeyCredential(
+        credentialId,
+        new AuthenticatorAssertionResponse(
+            clientDataJson,
+            assertion.getAuthenticatorData(),
+            assertion.getSignature(),
+            Objects.requireNonNull((byte[]) user.get(PublicKeyCredentialUserEntity.ID))),
+        clientExtensionResults);
+  }
 }

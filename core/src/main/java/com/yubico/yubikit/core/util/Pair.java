@@ -15,15 +15,13 @@
  */
 package com.yubico.yubikit.core.util;
 
-/**
- * Utility class to hold two values.
- */
+/** Utility class to hold two values. */
 public class Pair<A, B> {
-    public final A first;
-    public final B second;
+  public final A first;
+  public final B second;
 
-    public Pair(A first, B second) {
-        this.first = first;
-        this.second = second;
-    }
+  public Pair(A first, B second) {
+    this.first = first;
+    this.second = second;
+  }
 }

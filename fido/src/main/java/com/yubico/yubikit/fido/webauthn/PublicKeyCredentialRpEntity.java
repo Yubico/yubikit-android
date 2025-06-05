@@ -19,55 +19,49 @@ package com.yubico.yubikit.fido.webauthn;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-
 import javax.annotation.Nullable;
 
 public class PublicKeyCredentialRpEntity extends PublicKeyCredentialEntity {
-    private static final String ID = "id";
-    @Nullable
-    private final String id;
+  private static final String ID = "id";
+  @Nullable private final String id;
 
-    public PublicKeyCredentialRpEntity(String name, @Nullable String id) {
-        super(name);
-        this.id = id;
+  public PublicKeyCredentialRpEntity(String name, @Nullable String id) {
+    super(name);
+    this.id = id;
+  }
+
+  @Nullable
+  public String getId() {
+    return id;
+  }
+
+  public Map<String, ?> toMap(@SuppressWarnings("unused") SerializationType serializationType) {
+    Map<String, Object> map = new HashMap<>();
+    map.put(NAME, getName());
+    if (id != null) {
+      map.put(ID, id);
     }
+    return map;
+  }
 
-    @Nullable
-    public String getId() {
-        return id;
-    }
+  public static PublicKeyCredentialRpEntity fromMap(
+      Map<String, ?> map, @SuppressWarnings("unused") SerializationType serializationType) {
+    return new PublicKeyCredentialRpEntity(
+        Objects.requireNonNull((String) map.get(NAME)), (String) map.get(ID));
+  }
 
-    public Map<String, ?> toMap(@SuppressWarnings("unused") SerializationType serializationType) {
-        Map<String, Object> map = new HashMap<>();
-        map.put(NAME, getName());
-        if (id != null) {
-            map.put(ID, id);
-        }
-        return map;
-    }
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
 
-    public static PublicKeyCredentialRpEntity fromMap(
-            Map<String, ?> map,
-            @SuppressWarnings("unused") SerializationType serializationType
-    ) {
-        return new PublicKeyCredentialRpEntity(
-                Objects.requireNonNull((String) map.get(NAME)),
-                (String) map.get(ID)
-        );
-    }
+    PublicKeyCredentialRpEntity that = (PublicKeyCredentialRpEntity) o;
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+    return Objects.equals(id, that.id);
+  }
 
-        PublicKeyCredentialRpEntity that = (PublicKeyCredentialRpEntity) o;
-
-        return Objects.equals(id, that.id);
-    }
-
-    @Override
-    public int hashCode() {
-        return id != null ? id.hashCode() : 0;
-    }
+  @Override
+  public int hashCode() {
+    return id != null ? id.hashCode() : 0;
+  }
 }

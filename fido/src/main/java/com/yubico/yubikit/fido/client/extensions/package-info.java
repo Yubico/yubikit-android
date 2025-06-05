@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 
-/**
- * WebAuthn Extensions implementation.
- */
+/** WebAuthn Extensions implementation. */
 @PackageNonnullByDefault
 package com.yubico.yubikit.fido.client.extensions;
 

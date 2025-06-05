@@ -26,97 +26,91 @@ import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialDescriptor;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialRpEntity;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialUserEntity;
 import com.yubico.yubikit.fido.webauthn.ResidentKeyRequirement;
-
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
-
 import javax.annotation.Nullable;
 
 public class CreationOptionsBuilder {
-    boolean residentKey = false;
-    @Nullable
-    Extensions extensions = null;
-    @Nullable
-    PublicKeyCredentialUserEntity userEntity = null;
-    @Nullable
-    List<PublicKeyCredentialDescriptor> excludeCredentials = null;
+  boolean residentKey = false;
+  @Nullable Extensions extensions = null;
+  @Nullable PublicKeyCredentialUserEntity userEntity = null;
+  @Nullable List<PublicKeyCredentialDescriptor> excludeCredentials = null;
 
-    public CreationOptionsBuilder residentKey(boolean residentKey) {
-        this.residentKey = residentKey;
-        return this;
+  public CreationOptionsBuilder residentKey(boolean residentKey) {
+    this.residentKey = residentKey;
+    return this;
+  }
+
+  public CreationOptionsBuilder extensions(@Nullable Map<String, ?> extensions) {
+    this.extensions = extensions == null ? null : Extensions.fromMap(extensions);
+    return this;
+  }
+
+  public CreationOptionsBuilder userEntity(String name) {
+    this.userEntity =
+        new PublicKeyCredentialUserEntity(name, name.getBytes(StandardCharsets.UTF_8), name);
+    return this;
+  }
+
+  public CreationOptionsBuilder userEntity(String name, byte[] id) {
+    this.userEntity = new PublicKeyCredentialUserEntity(name, id, name);
+    return this;
+  }
+
+  public CreationOptionsBuilder userEntity(PublicKeyCredentialUserEntity userEntity) {
+    this.userEntity = userEntity;
+    return this;
+  }
+
+  public CreationOptionsBuilder excludeCredentialDescriptors(
+      List<PublicKeyCredentialDescriptor> excludeCredentials) {
+    this.excludeCredentials = excludeCredentials;
+    return this;
+  }
+
+  public CreationOptionsBuilder excludeCredentials(List<PublicKeyCredential> credentials) {
+    List<PublicKeyCredentialDescriptor> list = new ArrayList<>();
+    for (PublicKeyCredential credential : credentials) {
+      list.add(new PublicKeyCredentialDescriptor(PUBLIC_KEY, credential.getRawId()));
     }
+    excludeCredentials = list;
+    return this;
+  }
 
-    public CreationOptionsBuilder extensions(@Nullable Map<String, ?> extensions) {
-        this.extensions = extensions == null
-                ? null
-                : Extensions.fromMap(extensions);
-        return this;
+  public CreationOptionsBuilder excludeCredentials(
+      PublicKeyCredentialDescriptor... excludeCredentials) {
+    this.excludeCredentials = Arrays.asList(excludeCredentials);
+    return this;
+  }
+
+  public CreationOptionsBuilder excludeCredentials(PublicKeyCredential... credentials) {
+    excludeCredentials = new ArrayList<>();
+    for (PublicKeyCredential cred : credentials) {
+      excludeCredentials.add(new PublicKeyCredentialDescriptor(PUBLIC_KEY, cred.getRawId()));
     }
+    return this;
+  }
 
-    public CreationOptionsBuilder userEntity(String name) {
-        this.userEntity = new PublicKeyCredentialUserEntity(
-                name,
-                name.getBytes(StandardCharsets.UTF_8),
-                name);
-        return this;
-    }
-
-    public CreationOptionsBuilder userEntity(String name, byte[] id) {
-        this.userEntity = new PublicKeyCredentialUserEntity(name, id, name);
-        return this;
-    }
-
-    public CreationOptionsBuilder userEntity(PublicKeyCredentialUserEntity userEntity) {
-        this.userEntity = userEntity;
-        return this;
-    }
-
-    public CreationOptionsBuilder excludeCredentialDescriptors(List<PublicKeyCredentialDescriptor> excludeCredentials) {
-        this.excludeCredentials = excludeCredentials;
-        return this;
-    }
-
-    public CreationOptionsBuilder excludeCredentials(List<PublicKeyCredential> excludeCredentials) {
-        this.excludeCredentials = excludeCredentials.stream().map(
-                c -> new PublicKeyCredentialDescriptor(PUBLIC_KEY, c.getRawId())
-        ).collect(Collectors.toList());
-        return this;
-    }
-
-    public CreationOptionsBuilder excludeCredentials(PublicKeyCredentialDescriptor... excludeCredentials) {
-        this.excludeCredentials = Arrays.asList(excludeCredentials);
-        return this;
-    }
-
-    public CreationOptionsBuilder excludeCredentials(PublicKeyCredential... excludeCredentials) {
-        this.excludeCredentials = Arrays.stream(excludeCredentials).map(
-                c -> new PublicKeyCredentialDescriptor(PUBLIC_KEY, c.getRawId())
-        ).collect(Collectors.toList());
-        return this;
-    }
-
-    public PublicKeyCredentialCreationOptions build() {
-        PublicKeyCredentialRpEntity rp = TestData.RP;
-        AuthenticatorSelectionCriteria criteria = new AuthenticatorSelectionCriteria(
-                null,
-                residentKey ? ResidentKeyRequirement.REQUIRED : ResidentKeyRequirement.DISCOURAGED,
-                null
-        );
-        return new PublicKeyCredentialCreationOptions(
-                rp,
-                userEntity != null ? userEntity : TestData.USER,
-                TestData.CHALLENGE,
-                Collections.singletonList(TestData.PUB_KEY_CRED_PARAMS_ES256),
-                (long) 90000,
-                excludeCredentials,
-                criteria,
-                null,
-                extensions
-        );
-    }
-
+  public PublicKeyCredentialCreationOptions build() {
+    PublicKeyCredentialRpEntity rp = TestData.RP;
+    AuthenticatorSelectionCriteria criteria =
+        new AuthenticatorSelectionCriteria(
+            null,
+            residentKey ? ResidentKeyRequirement.REQUIRED : ResidentKeyRequirement.DISCOURAGED,
+            null);
+    return new PublicKeyCredentialCreationOptions(
+        rp,
+        userEntity != null ? userEntity : TestData.USER,
+        TestData.CHALLENGE,
+        Collections.singletonList(TestData.PUB_KEY_CRED_PARAMS_ES256),
+        (long) 90000,
+        excludeCredentials,
+        criteria,
+        null,
+        extensions);
+  }
 }

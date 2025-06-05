@@ -17,17 +17,18 @@
 package com.yubico.yubikit.android.transport.usb;
 
 import android.hardware.usb.UsbDevice;
-
 import java.io.IOException;
 
-/**
- * Exception that thrown when user didn't provide permissions to connect to USB device
- */
+/** Exception that thrown when user didn't provide permissions to connect to USB device */
 public class NoPermissionsException extends IOException {
-    static final long serialVersionUID = 1L;
+  static final long serialVersionUID = 1L;
 
-    public NoPermissionsException(UsbDevice usbDevice) {
-        // with L+ devices we can get more verbal device name
-        super("No permission granted to communicate with device " + (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP ? usbDevice.getProductName() : usbDevice.getDeviceName()));
-    }
+  public NoPermissionsException(UsbDevice usbDevice) {
+    // with L+ devices we can get more verbal device name
+    super(
+        "No permission granted to communicate with device "
+            + (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP
+                ? usbDevice.getProductName()
+                : usbDevice.getDeviceName()));
+  }
 }

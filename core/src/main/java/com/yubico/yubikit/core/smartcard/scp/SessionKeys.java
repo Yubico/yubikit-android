@@ -20,19 +20,19 @@ import javax.annotation.Nullable;
 import javax.crypto.SecretKey;
 
 /**
- * Session keys for SCP. DEK only needs to be provided if you need to call {@link SecurityDomainSession#putKey}.
+ * Session keys for SCP. DEK only needs to be provided if you need to call {@link
+ * SecurityDomainSession#putKey}.
  */
 public class SessionKeys {
-    final SecretKey senc;
-    final SecretKey smac;
-    final SecretKey srmac;
-    @Nullable
-    final SecretKey dek;
+  final SecretKey senc;
+  final SecretKey smac;
+  final SecretKey srmac;
+  @Nullable final SecretKey dek;
 
-    public SessionKeys(SecretKey senc, SecretKey smac, SecretKey srmac, @Nullable SecretKey dek) {
-        this.senc = senc;
-        this.smac = smac;
-        this.srmac = srmac;
-        this.dek = dek;
-    }
+  public SessionKeys(SecretKey senc, SecretKey smac, SecretKey srmac, @Nullable SecretKey dek) {
+    this.senc = senc;
+    this.smac = smac;
+    this.srmac = srmac;
+    this.dek = dek;
+  }
 }

@@ -17,18 +17,18 @@
 package com.yubico.yubikit.openpgp;
 
 public enum GeneralFeatureManagement {
-    TOUCHSCREEN((byte)1),
-    MICROPHONE((byte)(1 << 1)),
-    LOUDSPEAKER((byte)(1 << 2)),
-    LED((byte)(1 << 3)),
-    KEYPAD((byte)(1 << 4)),
-    BUTTON((byte)(1 << 5)),
-    BIOMETRIC((byte)(1 << 6)),
-    DISPLAY((byte)(1 << 7));
+  TOUCHSCREEN((byte) 1),
+  MICROPHONE((byte) (1 << 1)),
+  LOUDSPEAKER((byte) (1 << 2)),
+  LED((byte) (1 << 3)),
+  KEYPAD((byte) (1 << 4)),
+  BUTTON((byte) (1 << 5)),
+  BIOMETRIC((byte) (1 << 6)),
+  DISPLAY((byte) (1 << 7));
 
-    public final byte value;
+  public final byte value;
 
-    GeneralFeatureManagement(byte value) {
-        this.value = value;
-    }
+  GeneralFeatureManagement(byte value) {
+    this.value = value;
+  }
 }

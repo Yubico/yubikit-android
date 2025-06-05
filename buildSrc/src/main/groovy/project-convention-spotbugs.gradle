@@ -7,12 +7,9 @@ plugins {
 
 dependencies {
     spotbugs 'com.github.spotbugs:spotbugs:4.8.6'
-    spotbugsPlugins 'com.h3xstream.findsecbugs:findsecbugs-plugin:1.13.0'
+    spotbugsPlugins 'com.h3xstream.findsecbugs:findsecbugs-plugin:1.14.0'
 
-    compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
-    compileOnly 'com.github.spotbugs:spotbugs-annotations:4.8.6'
-
-    testImplementation 'com.google.code.findbugs:jsr305:3.0.2'
+    implementation 'com.github.spotbugs:spotbugs-annotations:4.8.6'
 }
 
 spotbugs {

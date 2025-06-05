@@ -16,51 +16,42 @@
 
 package com.yubico.yubikit.fido.webauthn;
 
-import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
-
 import javax.annotation.Nullable;
 
 public class Extensions {
 
-    public static Extensions empty() {
-        return new Extensions(Collections.emptyMap());
-    }
+  @Nullable
+  public static Extensions fromMap(@Nullable Map<String, ?> input) {
+    return input != null ? new Extensions(input) : null;
+  }
 
-    public static Extensions fromMap(@Nullable Map<String, ?> input) {
-        return new Extensions(input);
-    }
+  @Nullable private final Map<String, ?> extensions;
 
-    private final Map<String, ?> extensions;
+  private Extensions(@Nullable Map<String, ?> extensions) {
+    this.extensions = extensions;
+  }
 
-    private Extensions(@Nullable Map<String, ?> extensions) {
-        this.extensions = extensions != null ? extensions : Collections.emptyMap();
-    }
+  @Nullable
+  public Object get(String extension) {
+    return extensions != null ? extensions.get(extension) : null;
+  }
 
-    @Nullable
-    public Object get(String extension) {
-        return extensions.get(extension);
-    }
+  public boolean has(String extension) {
+    return extensions != null && extensions.containsKey(extension);
+  }
 
-    public boolean has(String extension) {
-        return extensions.containsKey(extension);
-    }
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    Extensions that = (Extensions) o;
+    return Objects.equals(extensions, that.extensions);
+  }
 
-    public boolean isEmpty() {
-        return extensions.isEmpty();
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Extensions that = (Extensions) o;
-        return Objects.equals(extensions, that.extensions);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hashCode(extensions);
-    }
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(extensions);
+  }
 }

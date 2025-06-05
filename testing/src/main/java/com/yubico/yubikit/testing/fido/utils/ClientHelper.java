@@ -21,80 +21,73 @@ import com.yubico.yubikit.fido.client.BasicWebAuthnClient;
 import com.yubico.yubikit.fido.client.ClientError;
 import com.yubico.yubikit.fido.client.CredentialManager;
 import com.yubico.yubikit.fido.client.MultipleAssertionsAvailable;
+import com.yubico.yubikit.fido.client.extensions.Extension;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredential;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialCreationOptions;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialDescriptor;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialRequestOptions;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialType;
-
 import java.io.IOException;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class ClientHelper {
-    final BasicWebAuthnClient client;
+  final BasicWebAuthnClient client;
 
-    public ClientHelper(Ctap2Session ctap) throws IOException, CommandException {
-        this.client = new BasicWebAuthnClient(ctap);
+  public ClientHelper(Ctap2Session ctap) throws IOException, CommandException {
+    this.client = new BasicWebAuthnClient(ctap);
+  }
+
+  public ClientHelper(Ctap2Session ctap, List<Extension> extensions)
+      throws IOException, CommandException {
+    this.client = new BasicWebAuthnClient(ctap, extensions);
+  }
+
+  public PublicKeyCredential makeCredential() throws IOException, CommandException, ClientError {
+    return makeCredential(new CreationOptionsBuilder().build());
+  }
+
+  public PublicKeyCredential makeCredential(PublicKeyCredentialCreationOptions options)
+      throws IOException, CommandException, ClientError {
+    return client.makeCredential(
+        TestData.CLIENT_DATA_JSON_CREATE, options, TestData.RP_ID, TestData.PIN, null, null);
+  }
+
+  public PublicKeyCredential getAssertions(PublicKeyCredentialRequestOptions options)
+      throws IOException, CommandException, ClientError, MultipleAssertionsAvailable {
+    return client.getAssertion(
+        TestData.CLIENT_DATA_JSON_GET, options, TestData.RP_ID, TestData.PIN, null);
+  }
+
+  public void deleteCredentialsByIds(List<byte[]> credIds)
+      throws IOException, CommandException, ClientError {
+    try {
+      CredentialManager credentialManager = client.getCredentialManager(TestData.PIN);
+      for (byte[] credId : credIds) {
+        credentialManager.deleteCredential(
+            new PublicKeyCredentialDescriptor(PublicKeyCredentialType.PUBLIC_KEY, credId, null));
+      }
+    } catch (IllegalStateException ignored) {
+      // credential manager might not be supported
     }
+  }
 
-    public PublicKeyCredential makeCredential() throws IOException, CommandException, ClientError {
-        return makeCredential(new CreationOptionsBuilder().build());
+  public void deleteCredentials(List<PublicKeyCredential> credentials)
+      throws IOException, CommandException, ClientError {
+    List<byte[]> credIds = new ArrayList<>();
+    for (PublicKeyCredential credential : credentials) {
+      credIds.add(credential.getRawId());
     }
+    deleteCredentialsByIds(credIds);
+  }
 
-    public PublicKeyCredential makeCredential(PublicKeyCredentialCreationOptions options) throws IOException, CommandException, ClientError {
-        return client.makeCredential(
-                TestData.CLIENT_DATA_JSON_CREATE,
-                options,
-                TestData.RP_ID,
-                TestData.PIN,
-                null,
-                null
-        );
+  public void deleteCredentials(PublicKeyCredential... credentials)
+      throws IOException, CommandException, ClientError {
+    List<byte[]> credIds = new ArrayList<>();
+    for (PublicKeyCredential credential : credentials) {
+      credIds.add(credential.getRawId());
     }
-
-    public PublicKeyCredential getAssertions(PublicKeyCredentialRequestOptions options)
-            throws IOException, CommandException, ClientError, MultipleAssertionsAvailable {
-        return client.getAssertion(
-                TestData.CLIENT_DATA_JSON_GET,
-                options,
-                TestData.RP_ID,
-                TestData.PIN,
-                null
-        );
-    }
-
-    public void deleteCredentialsByIds(List<byte[]> credIds) throws IOException, CommandException, ClientError {
-        try {
-            CredentialManager credentialManager = client.getCredentialManager(TestData.PIN);
-            for (byte[] credId : credIds) {
-                credentialManager.deleteCredential(
-                        new PublicKeyCredentialDescriptor(
-                                PublicKeyCredentialType.PUBLIC_KEY,
-                                credId,
-                                null));
-            }
-        } catch (IllegalStateException ignored) {
-            // credential manager might not be supported
-        }
-    }
-
-    public void deleteCredentials(List<PublicKeyCredential> credentials)
-            throws IOException, CommandException, ClientError {
-        deleteCredentialsByIds(credentials
-                .stream()
-                .map(PublicKeyCredential::getRawId)
-                .collect(Collectors.toList()));
-    }
-
-    public void deleteCredentials(PublicKeyCredential... credentials)
-            throws IOException, CommandException, ClientError {
-        deleteCredentialsByIds(Arrays
-                .stream(credentials)
-                .map(PublicKeyCredential::getRawId)
-                .collect(Collectors.toList()));
-    }
-
+    deleteCredentialsByIds(credIds);
+  }
 }

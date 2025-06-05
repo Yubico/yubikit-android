@@ -16,16 +16,10 @@
 
 package com.yubico.yubikit.core;
 
-/**
- * Physical transports which can be used to connect to a YubiKey.
- */
+/** Physical transports which can be used to connect to a YubiKey. */
 public enum Transport {
-    /**
-     * A USB-A or USB-C connector.
-     */
-    USB,
-    /**
-     * Near-field communication, using a built-in antenna.
-     */
-    NFC
+  /** A USB-A or USB-C connector. */
+  USB,
+  /** Near-field communication, using a built-in antenna. */
+  NFC
 }

@@ -16,8 +16,8 @@
 
 /**
  * WebAuthn client implementation.
- * <p>
- * Contains classes for implementing a WebAuthn client which uses a YubiKeySession.
+ *
+ * <p>Contains classes for implementing a WebAuthn client which uses a YubiKeySession.
  */
 @PackageNonnullByDefault
 package com.yubico.yubikit.fido.client;

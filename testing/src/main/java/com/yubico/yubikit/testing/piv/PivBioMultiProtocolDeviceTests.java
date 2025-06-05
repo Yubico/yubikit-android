@@ -26,42 +26,42 @@ import com.yubico.yubikit.core.application.InvalidPinException;
 import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.piv.BioMetadata;
 import com.yubico.yubikit.piv.PivSession;
-
 import java.io.IOException;
 
 public class PivBioMultiProtocolDeviceTests {
 
-    /**
-     * Verify authentication with YubiKey Bio Multi-protocol.
-     * <p>
-     * To run the test, create a PIN and enroll at least one fingerprint. The test will ask twice
-     * for fingerprint authentication.
-     */
-    public static void testAuthenticate(PivSession piv, PivTestState ignored) throws IOException, ApduException, InvalidPinException {
-        try {
-            BioMetadata bioMetadata = piv.getBioMetadata();
+  /**
+   * Verify authentication with YubiKey Bio Multi-protocol.
+   *
+   * <p>To run the test, create a PIN and enroll at least one fingerprint. The test will ask twice
+   * for fingerprint authentication.
+   */
+  public static void testAuthenticate(PivSession piv, PivTestState ignored)
+      throws IOException, ApduException, InvalidPinException {
+    try {
+      BioMetadata bioMetadata = piv.getBioMetadata();
 
-            // we have correct key, is it configured?
-            assumeTrue("Key has no bio multi-protocol functionality", bioMetadata.isConfigured());
-            assumeTrue("Key has no matches left", bioMetadata.getAttemptsRemaining() > 0);
+      // we have correct key, is it configured?
+      assumeTrue("Key has no bio multi-protocol functionality", bioMetadata.isConfigured());
+      assumeTrue("Key has no matches left", bioMetadata.getAttemptsRemaining() > 0);
 
-            assertNull(piv.verifyUv(false, false));
-            assertFalse(piv.getBioMetadata().hasTemporaryPin());
+      assertNull(piv.verifyUv(false, false));
+      assertFalse(piv.getBioMetadata().hasTemporaryPin());
 
-            // check verified state
-            assertNull(piv.verifyUv(false, true));
+      // check verified state
+      assertNull(piv.verifyUv(false, true));
 
-            byte[] pin = piv.verifyUv(true, false);
-            assertNotNull(pin);
-            assertTrue(piv.getBioMetadata().hasTemporaryPin());
+      byte[] pin = piv.verifyUv(true, false);
+      assertNotNull(pin);
+      assertTrue(piv.getBioMetadata().hasTemporaryPin());
 
-            // check verified state
-            assertNull(piv.verifyUv(false, true));
+      // check verified state
+      assertNull(piv.verifyUv(false, true));
 
-            piv.verifyTemporaryPin(pin);
+      piv.verifyTemporaryPin(pin);
 
-        } catch (UnsupportedOperationException e) {
-            assumeNoException("Key has no bio multi-protocol functionality", e);
-        }
+    } catch (UnsupportedOperationException e) {
+      assumeNoException("Key has no bio multi-protocol functionality", e);
     }
+  }
 }

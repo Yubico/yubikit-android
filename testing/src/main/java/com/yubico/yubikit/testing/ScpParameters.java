@@ -25,69 +25,65 @@ import com.yubico.yubikit.core.smartcard.scp.Scp11KeyParams;
 import com.yubico.yubikit.core.smartcard.scp.ScpKeyParams;
 import com.yubico.yubikit.core.smartcard.scp.ScpKid;
 import com.yubico.yubikit.core.smartcard.scp.SecurityDomainSession;
-
 import java.io.IOException;
 import java.security.cert.X509Certificate;
 import java.util.List;
 import java.util.Map;
-
 import javax.annotation.Nullable;
 
 public class ScpParameters {
-    @Nullable
-    private final Byte kid;
-    @Nullable
-    private ScpKeyParams keyParams = null;
+  @Nullable private final Byte kid;
+  @Nullable private ScpKeyParams keyParams = null;
 
-    public ScpParameters(YubiKeyDevice device, @Nullable Byte kid) {
-        this.kid = kid;
-        try {
-            keyParams = readScpKeyParams(device);
-        } catch (Throwable e) {
-            keyParams = null;
-        }
+  public ScpParameters(YubiKeyDevice device, @Nullable Byte kid) {
+    this.kid = kid;
+    try {
+      keyParams = readScpKeyParams(device);
+    } catch (Throwable e) {
+      keyParams = null;
     }
+  }
 
-    @Nullable
-    public Byte getKid() {
-        return kid;
+  @Nullable
+  public Byte getKid() {
+    return kid;
+  }
+
+  @Nullable
+  public ScpKeyParams getKeyParams() {
+    return keyParams;
+  }
+
+  private ScpKeyParams readScpKeyParams(YubiKeyDevice device) throws Throwable {
+    if (kid == null) {
+      return null;
     }
+    try (SmartCardConnection connection = device.openConnection(SmartCardConnection.class)) {
+      SecurityDomainSession scp = new SecurityDomainSession(connection);
+      KeyRef keyRef = getKeyRef(scp, kid);
+      if (keyRef == null) {
+        return null;
+      }
+      List<X509Certificate> certs = scp.getCertificateBundle(keyRef);
 
-    @Nullable
-    public ScpKeyParams getKeyParams() {
-        return keyParams;
+      return certs.isEmpty()
+          ? null
+          : kid == ScpKid.SCP03
+              ? null // TODO implement SCP03 support
+              : new Scp11KeyParams(keyRef, certs.get(certs.size() - 1).getPublicKey());
     }
+  }
 
-    private ScpKeyParams readScpKeyParams(YubiKeyDevice device) throws Throwable {
-        if (kid == null) {
-            return null;
-        }
-        try (SmartCardConnection connection = device.openConnection(SmartCardConnection.class)) {
-            SecurityDomainSession scp = new SecurityDomainSession(connection);
-            KeyRef keyRef = getKeyRef(scp, kid);
-            if (keyRef == null) {
-                return null;
-            }
-            List<X509Certificate> certs = scp.getCertificateBundle(keyRef);
-
-            return certs.isEmpty()
-                    ? null
-                    : kid == ScpKid.SCP03
-                    ? null // TODO implement SCP03 support
-                    : new Scp11KeyParams(keyRef, certs.get(certs.size() - 1).getPublicKey());
-        }
+  private KeyRef getKeyRef(SecurityDomainSession scp, byte kid)
+      throws ApduException, IOException, BadResponseException {
+    Map<KeyRef, Map<Byte, Byte>> keyInformation = scp.getKeyInformation();
+    KeyRef keyRef = null;
+    for (KeyRef info : keyInformation.keySet()) {
+      if (info.getKid() == kid) {
+        keyRef = info;
+        break;
+      }
     }
-
-    private KeyRef getKeyRef(SecurityDomainSession scp, byte kid)
-            throws ApduException, IOException, BadResponseException {
-        Map<KeyRef, Map<Byte, Byte>> keyInformation = scp.getKeyInformation();
-        KeyRef keyRef = null;
-        for (KeyRef info : keyInformation.keySet()) {
-            if (info.getKid() == kid) {
-                keyRef = info;
-                break;
-            }
-        }
-        return keyRef;
-    }
+    return keyRef;
+  }
 }

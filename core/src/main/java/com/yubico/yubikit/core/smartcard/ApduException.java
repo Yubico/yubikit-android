@@ -17,33 +17,31 @@
 package com.yubico.yubikit.core.smartcard;
 
 import com.yubico.yubikit.core.application.CommandException;
-
 import java.util.Locale;
 
 /**
- * Thrown when an APDU command fails with an error code.
- * See {@link SW} for a list of status codes.
+ * Thrown when an APDU command fails with an error code. See {@link SW} for a list of status codes.
  */
 public class ApduException extends CommandException {
-    private static final long serialVersionUID = 1L;
+  private static final long serialVersionUID = 1L;
 
-    private final short sw;
+  private final short sw;
 
-    public ApduException(short sw) {
-        this(sw, String.format(Locale.ROOT, "APDU error: 0x%04x", sw));
-    }
+  public ApduException(short sw) {
+    this(sw, String.format(Locale.ROOT, "APDU error: 0x%04x", sw));
+  }
 
-    public ApduException(short sw, String message) {
-        super(message);
-        this.sw = sw;
-    }
+  public ApduException(short sw, String message) {
+    super(message);
+    this.sw = sw;
+  }
 
-    /**
-     * Gets error code that received via APDU response
-     *
-     * @return error code
-     */
-    public short getSw() {
-        return sw;
-    }
+  /**
+   * Gets error code that received via APDU response
+   *
+   * @return error code
+   */
+  public short getSw() {
+    return sw;
+  }
 }

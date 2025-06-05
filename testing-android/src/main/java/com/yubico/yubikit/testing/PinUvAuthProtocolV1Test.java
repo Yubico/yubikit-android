@@ -16,5 +16,4 @@
 
 package com.yubico.yubikit.testing;
 
-public interface PinUvAuthProtocolV1Test {
-}
+public interface PinUvAuthProtocolV1Test {}

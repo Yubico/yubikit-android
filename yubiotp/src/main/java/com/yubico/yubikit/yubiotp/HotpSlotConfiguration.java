@@ -15,76 +15,81 @@
  */
 package com.yubico.yubikit.yubiotp;
 
+import static com.yubico.yubikit.yubiotp.HmacSha1SlotConfiguration.shortenHmacSha1Key;
+
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
-import static com.yubico.yubikit.yubiotp.HmacSha1SlotConfiguration.shortenHmacSha1Key;
-
-/**
- * Configures the YubiKey to return an OATH-HOTP code on touch
- */
+/** Configures the YubiKey to return an OATH-HOTP code on touch */
 public class HotpSlotConfiguration extends KeyboardSlotConfiguration<HotpSlotConfiguration> {
-    /**
-     * Creates an OATH-HOTP configuration with default settings.
-     *
-     * @param secret the shared secret for the OATH-TOTP credential
-     */
-    public HotpSlotConfiguration(byte[] secret) {
-        // Secret is packed into key and uid
-        ByteBuffer.wrap(ByteBuffer.allocate(KEY_SIZE + UID_SIZE).put(shortenHmacSha1Key(secret)).array()).get(key).get(uid);
+  /**
+   * Creates an OATH-HOTP configuration with default settings.
+   *
+   * @param secret the shared secret for the OATH-TOTP credential
+   */
+  public HotpSlotConfiguration(byte[] secret) {
+    // Secret is packed into key and uid
+    ByteBuffer.wrap(
+            ByteBuffer.allocate(KEY_SIZE + UID_SIZE).put(shortenHmacSha1Key(secret)).array())
+        .get(key)
+        .get(uid);
 
-        updateFlags(TKTFLAG_OATH_HOTP, true);
-    }
+    updateFlags(TKTFLAG_OATH_HOTP, true);
+  }
 
-    @Override
-    protected HotpSlotConfiguration getThis() {
-        return this;
-    }
+  @Override
+  protected HotpSlotConfiguration getThis() {
+    return this;
+  }
 
-    /**
-     * If set, output an 8 digit OATH-HOTP code instead of a 6 digit code.
-     *
-     * @param digits8 true to use 8 digits of code output.
-     * @return the configuration for chaining
-     */
-    public HotpSlotConfiguration digits8(boolean digits8) {
-        return updateFlags(CFGFLAG_OATH_HOTP8, digits8);
-    }
+  /**
+   * If set, output an 8 digit OATH-HOTP code instead of a 6 digit code.
+   *
+   * @param digits8 true to use 8 digits of code output.
+   * @return the configuration for chaining
+   */
+  public HotpSlotConfiguration digits8(boolean digits8) {
+    return updateFlags(CFGFLAG_OATH_HOTP8, digits8);
+  }
 
-    /**
-     * Configure OATH token id with a provided value.
-     * The standard OATH token id for a Yubico YubiKey is (MODHEX) OO=ub, TT=he, (BCD) UUUUUUUU=serial number.
-     * <p>
-     * The reason for the decimal serial number is to make it easy for humans to correlate the serial number on the back of the YubiKey to an entry in a list of associated tokens for example.
-     * <p>
-     * NOTE: If fixedModhex1 and fixedModhex2 are BOTH set, the entire token id will be output in MODHEX.
-     *
-     * @param tokenId      the raw token ID value
-     * @param fixedModhex1 output the first byte of the token ID as MODHEX
-     * @param fixedModhex2 output the first two bytes of the token ID as MODHEX
-     * @return the configuration for chaining
-     */
-    public HotpSlotConfiguration tokenId(byte[] tokenId, boolean fixedModhex1, boolean fixedModhex2) {
-        if (tokenId.length > FIXED_SIZE) {
-            throw new IllegalArgumentException("Token ID must be <= 16 bytes");
-        }
-        fixed = Arrays.copyOf(tokenId, tokenId.length);
-        updateFlags(CFGFLAG_OATH_FIXED_MODHEX1, fixedModhex1);
-        return updateFlags(CFGFLAG_OATH_FIXED_MODHEX2, fixedModhex2);
+  /**
+   * Configure OATH token id with a provided value. The standard OATH token id for a Yubico YubiKey
+   * is (MODHEX) OO=ub, TT=he, (BCD) UUUUUUUU=serial number.
+   *
+   * <p>The reason for the decimal serial number is to make it easy for humans to correlate the
+   * serial number on the back of the YubiKey to an entry in a list of associated tokens for
+   * example.
+   *
+   * <p>NOTE: If fixedModhex1 and fixedModhex2 are BOTH set, the entire token id will be output in
+   * MODHEX.
+   *
+   * @param tokenId the raw token ID value
+   * @param fixedModhex1 output the first byte of the token ID as MODHEX
+   * @param fixedModhex2 output the first two bytes of the token ID as MODHEX
+   * @return the configuration for chaining
+   */
+  public HotpSlotConfiguration tokenId(byte[] tokenId, boolean fixedModhex1, boolean fixedModhex2) {
+    if (tokenId.length > FIXED_SIZE) {
+      throw new IllegalArgumentException("Token ID must be <= 16 bytes");
     }
+    fixed = Arrays.copyOf(tokenId, tokenId.length);
+    updateFlags(CFGFLAG_OATH_FIXED_MODHEX1, fixedModhex1);
+    return updateFlags(CFGFLAG_OATH_FIXED_MODHEX2, fixedModhex2);
+  }
 
-    /**
-     * Set OATH Initial Moving Factor.
-     * This is the initial counter value for the YubiKey. This should be a value between 0 and 1048560, evenly dividable by 16.
-     *
-     * @param imf the initial counter value for the credential
-     * @return the configuration for chaining
-     */
-    public HotpSlotConfiguration imf(int imf) {
-        if (imf % 16 != 0 || imf > 0xffff0 || imf < 0) {
-            throw new IllegalArgumentException("imf should be between 0 and 1048560, evenly dividable by 16");
-        }
-        ByteBuffer.wrap(uid, 4, 2).putShort((short) (imf >> 4));
-        return getThis();
+  /**
+   * Set OATH Initial Moving Factor. This is the initial counter value for the YubiKey. This should
+   * be a value between 0 and 1048560, evenly dividable by 16.
+   *
+   * @param imf the initial counter value for the credential
+   * @return the configuration for chaining
+   */
+  public HotpSlotConfiguration imf(int imf) {
+    if (imf % 16 != 0 || imf > 0xffff0 || imf < 0) {
+      throw new IllegalArgumentException(
+          "imf should be between 0 and 1048560, evenly dividable by 16");
     }
+    ByteBuffer.wrap(uid, 4, 2).putShort((short) (imf >> 4));
+    return getThis();
+  }
 }

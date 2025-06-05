@@ -16,6 +16,7 @@
 
 package com.yubico.yubikit.testing.fido;
 
+import static com.yubico.yubikit.testing.fido.utils.ConfigHelper.getConfig;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -42,220 +43,213 @@ import com.yubico.yubikit.management.Capability;
 import com.yubico.yubikit.management.DeviceInfo;
 import com.yubico.yubikit.support.DeviceUtil;
 import com.yubico.yubikit.testing.TestState;
-
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
 import javax.annotation.Nullable;
 
 public class FidoTestState extends TestState {
 
+  private final PinUvAuthProtocol pinUvAuthProtocol;
+  private final boolean isFipsApproved;
+  public final boolean alwaysUv;
+
+  public static class Builder extends TestState.Builder<Builder> {
+
     private final PinUvAuthProtocol pinUvAuthProtocol;
-    private final boolean isFipsApproved;
-    public final boolean alwaysUv;
+    private boolean setPin = false;
 
-    public static class Builder extends TestState.Builder<Builder> {
-
-        private final PinUvAuthProtocol pinUvAuthProtocol;
-        private boolean setPin = false;
-
-        public Builder(YubiKeyDevice device, UsbPid usbPid, PinUvAuthProtocol pinUvAuthProtocol) {
-            super(device, usbPid);
-            this.pinUvAuthProtocol = pinUvAuthProtocol;
-        }
-
-        @Override
-        public Builder getThis() {
-            return this;
-        }
-
-        public Builder setPin(boolean setPin) {
-            this.setPin = setPin;
-            return this;
-        }
-
-        public FidoTestState build() throws Throwable {
-            return new FidoTestState(this);
-        }
+    public Builder(YubiKeyDevice device, UsbPid usbPid, PinUvAuthProtocol pinUvAuthProtocol) {
+      super(device, usbPid);
+      this.pinUvAuthProtocol = pinUvAuthProtocol;
     }
 
-    private FidoTestState(Builder builder) throws Throwable {
-        super(builder);
-
-        this.pinUvAuthProtocol = builder.pinUvAuthProtocol;
-
-        boolean isFidoFipsCapable = false;
-        DeviceInfo deviceInfo = null;
-
-        try (YubiKeyConnection connection = openConnection()) {
-            try {
-                deviceInfo = DeviceUtil.readInfo(connection, null);
-                assertNotNull(deviceInfo);
-                isFidoFipsCapable =
-                        (deviceInfo.getFipsCapable() & Capability.FIDO2.bit) == Capability.FIDO2.bit;
-
-                assumeTrue("This YubiKey does not support FIDO2",
-                        deviceInfo.getVersion().isAtLeast(5, 0, 0));
-            } catch (IllegalArgumentException ignored) {
-                // failed to get device info, this is not a YubiKey
-            }
-
-            Ctap2Session session = getCtap2Session(connection);
-            assumeTrue("CTAP2 not supported", session != null);
-            assumeTrue("PIN UV Protocol not supported",
-                    supportsPinUvAuthProtocol(session, pinUvAuthProtocol));
-
-            if (isFidoFipsCapable) {
-                assumeTrue("Ignoring FIPS tests which don't use PinUvAuthProtocolV2",
-                        pinUvAuthProtocol.getVersion() == 2);
-            }
-
-            if (builder.setPin) {
-                verifyOrSetPin(session);
-            }
-
-            @Nullable
-            Boolean alwaysUv = (Boolean) session.getInfo().getOptions().get("alwaysUv");
-            if (isFidoFipsCapable && Boolean.FALSE.equals(alwaysUv)) {
-                // set always UV on
-                Config config = Ctap2ConfigTests.getConfig(session, this);
-                config.toggleAlwaysUv();
-                alwaysUv = true;
-            }
-            this.alwaysUv = Boolean.TRUE.equals(alwaysUv);
-
-            boolean fipsApproved = false;
-            try {
-                deviceInfo = DeviceUtil.readInfo(connection, null);
-                fipsApproved =
-                        (deviceInfo.getFipsApproved() & Capability.FIDO2.bit) == Capability.FIDO2.bit;
-            } catch (IllegalArgumentException ignored) {
-                // not a YubiKey
-            }
-
-            this.isFipsApproved = fipsApproved;
-
-            // after changing the PIN and setting alwaysUv, we expect a FIPS capable device
-            // to be FIPS approved
-            if (builder.setPin && isFidoFipsCapable) {
-                assertNotNull(deviceInfo);
-                assertTrue("Device not FIDO FIPS approved as expected", this.isFipsApproved);
-            }
-
-            // remove existing credentials
-            if (builder.setPin) {
-                // cannot use CredentialManager if there is no PIN set
-                session = getCtap2Session(connection);
-                deleteExistingCredentials(session);
-            }
-        }
+    @Override
+    public Builder getThis() {
+      return this;
     }
 
-    public boolean isFipsApproved() {
-        return isFipsApproved;
+    public Builder setPin(boolean setPin) {
+      this.setPin = setPin;
+      return this;
     }
 
-    public PinUvAuthProtocol getPinUvAuthProtocol() {
-        return pinUvAuthProtocol;
+    public FidoTestState build() throws Throwable {
+      return new FidoTestState(this);
     }
+  }
 
-    boolean supportsPinUvAuthProtocol(
-            Ctap2Session session,
-            PinUvAuthProtocol pinUvAuthProtocol) {
-        final List<Integer> pinUvAuthProtocols = session.getCachedInfo().getPinUvAuthProtocols();
-        return pinUvAuthProtocols.contains(pinUvAuthProtocol.getVersion());
+  private FidoTestState(Builder builder) throws Throwable {
+    super(builder);
+
+    this.pinUvAuthProtocol = builder.pinUvAuthProtocol;
+
+    boolean isFidoFipsCapable = false;
+    DeviceInfo deviceInfo = null;
+
+    try (YubiKeyConnection connection = openConnection()) {
+      try {
+        deviceInfo = DeviceUtil.readInfo(connection, null);
+        assertNotNull(deviceInfo);
+        isFidoFipsCapable =
+            (deviceInfo.getFipsCapable() & Capability.FIDO2.bit) == Capability.FIDO2.bit;
+
+        assumeTrue(
+            "This YubiKey does not support FIDO2", deviceInfo.getVersion().isAtLeast(5, 0, 0));
+      } catch (IllegalArgumentException ignored) {
+        // failed to get device info, this is not a YubiKey
+      }
+
+      Ctap2Session session = getCtap2Session(connection);
+      assumeTrue("CTAP2 not supported", session != null);
+      assumeTrue(
+          "PIN UV Protocol not supported", supportsPinUvAuthProtocol(session, pinUvAuthProtocol));
+
+      if (isFidoFipsCapable) {
+        assumeTrue(
+            "Ignoring FIPS tests which don't use PinUvAuthProtocolV2",
+            pinUvAuthProtocol.getVersion() == 2);
+      }
+
+      if (builder.setPin) {
+        verifyOrSetPin(session);
+      }
+
+      @Nullable Boolean alwaysUv = (Boolean) session.getInfo().getOptions().get("alwaysUv");
+      if (isFidoFipsCapable && Boolean.FALSE.equals(alwaysUv)) {
+        // set always UV on
+        Config config = getConfig(session, this);
+        config.toggleAlwaysUv();
+        alwaysUv = true;
+      }
+      this.alwaysUv = Boolean.TRUE.equals(alwaysUv);
+
+      boolean fipsApproved = false;
+      try {
+        deviceInfo = DeviceUtil.readInfo(connection, null);
+        fipsApproved =
+            (deviceInfo.getFipsApproved() & Capability.FIDO2.bit) == Capability.FIDO2.bit;
+      } catch (IllegalArgumentException ignored) {
+        // not a YubiKey
+      }
+
+      this.isFipsApproved = fipsApproved;
+
+      // after changing the PIN and setting alwaysUv, we expect a FIPS capable device
+      // to be FIPS approved
+      if (builder.setPin && isFidoFipsCapable) {
+        assertNotNull(deviceInfo);
+        assertTrue("Device not FIDO FIPS approved as expected", this.isFipsApproved);
+      }
+
+      // remove existing credentials
+      if (builder.setPin) {
+        // cannot use CredentialManager if there is no PIN set
+        session = getCtap2Session(connection);
+        deleteExistingCredentials(session);
+      }
     }
+  }
 
-    void deleteExistingCredentials(Ctap2Session session)
-            throws IOException, CommandException, ClientError {
-        final BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
-        if (!CredentialManagement.isSupported(session.getCachedInfo())) {
-            return;
-        }
-        CredentialManager credentialManager = webauthn.getCredentialManager(TestData.PIN);
-        final List<String> rpIds = credentialManager.getRpIdList();
-        for (String rpId : rpIds) {
-            Map<PublicKeyCredentialDescriptor, PublicKeyCredentialUserEntity> credentials
-                    = credentialManager.getCredentials(rpId);
-            for (PublicKeyCredentialDescriptor credential : credentials.keySet()) {
-                credentialManager.deleteCredential(credential);
-            }
-        }
-        assertEquals("Failed to remove all credentials", 0, credentialManager.getCredentialCount());
+  public boolean isFipsApproved() {
+    return isFipsApproved;
+  }
+
+  public PinUvAuthProtocol getPinUvAuthProtocol() {
+    return pinUvAuthProtocol;
+  }
+
+  boolean supportsPinUvAuthProtocol(Ctap2Session session, PinUvAuthProtocol pinUvAuthProtocol) {
+    final List<Integer> pinUvAuthProtocols = session.getCachedInfo().getPinUvAuthProtocols();
+    return pinUvAuthProtocols.contains(pinUvAuthProtocol.getVersion());
+  }
+
+  void deleteExistingCredentials(Ctap2Session session)
+      throws IOException, CommandException, ClientError {
+    final BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
+    if (!CredentialManagement.isSupported(session.getCachedInfo())) {
+      return;
     }
-
-    /**
-     * Attempts to set (or verify) the default PIN, or fails.
-     */
-    void verifyOrSetPin(Ctap2Session session) throws IOException, CommandException {
-
-        Ctap2Session.InfoData info = session.getInfo();
-
-        ClientPin pin = new ClientPin(session, pinUvAuthProtocol);
-        boolean pinSet = Objects.requireNonNull((Boolean) info.getOptions().get("clientPin"));
-
-        try {
-            if (!pinSet) {
-                pin.setPin(TestData.PIN);
-            } else {
-                pin.getPinToken(
-                        TestData.PIN,
-                        ClientPin.PIN_PERMISSION_MC | ClientPin.PIN_PERMISSION_GA,
-                        "localhost");
-            }
-        } catch (CommandException e) {
-            fail("YubiKey cannot be used for test, failed to set/verify PIN. Please reset " +
-                    "and try again.");
-        }
+    CredentialManager credentialManager = webauthn.getCredentialManager(TestData.PIN);
+    final List<String> rpIds = credentialManager.getRpIdList();
+    for (String rpId : rpIds) {
+      Map<PublicKeyCredentialDescriptor, PublicKeyCredentialUserEntity> credentials =
+          credentialManager.getCredentials(rpId);
+      for (PublicKeyCredentialDescriptor credential : credentials.keySet()) {
+        credentialManager.deleteCredential(credential);
+      }
     }
+    assertEquals("Failed to remove all credentials", 0, credentialManager.getCredentialCount());
+  }
 
-    public void withDeviceCallback(StatefulDeviceCallback<FidoTestState> callback) throws Throwable {
-        callback.invoke(this);
-    }
+  /** Attempts to set (or verify) the default PIN, or fails. */
+  void verifyOrSetPin(Ctap2Session session) throws IOException, CommandException {
 
-    public void withCtap2(TestState.StatefulSessionCallback<Ctap2Session, FidoTestState> callback)
-            throws Throwable {
-        try (YubiKeyConnection connection = openConnection()) {
-            final Ctap2Session ctap2 = getCtap2Session(connection);
-            assumeTrue("No CTAP2 support", ctap2 != null);
-            callback.invoke(ctap2, this);
-        }
-        reconnect();
-    }
+    Ctap2Session.InfoData info = session.getInfo();
 
-    public <R> R withCtap2(SessionCallbackT<Ctap2Session, R> callback) throws Throwable {
-        R result;
-        try (YubiKeyConnection connection = openConnection()) {
-            final Ctap2Session ctap2 = getCtap2Session(connection);
-            assumeTrue("No CTAP2 support", ctap2 != null);
-            result = callback.invoke(ctap2);
-        }
-        reconnect();
-        return result;
-    }
+    ClientPin pin = new ClientPin(session, pinUvAuthProtocol);
+    boolean pinSet = Objects.requireNonNull((Boolean) info.getOptions().get("clientPin"));
 
-    public void withCtap2(SessionCallback<Ctap2Session> callback) throws Throwable {
-        try (YubiKeyConnection connection = openConnection()) {
-            final Ctap2Session ctap2 = getCtap2Session(connection);
-            assumeTrue("No CTAP2 support", ctap2 != null);
-            callback.invoke(ctap2);
-        }
-        reconnect();
+    try {
+      if (!pinSet) {
+        pin.setPin(TestData.PIN);
+      } else {
+        pin.getPinToken(
+            TestData.PIN, ClientPin.PIN_PERMISSION_MC | ClientPin.PIN_PERMISSION_GA, "localhost");
+      }
+    } catch (CommandException e) {
+      fail(
+          "YubiKey cannot be used for test, failed to set/verify PIN. Please reset "
+              + "and try again.");
     }
+  }
 
-    @Nullable
-    public static Ctap2Session getCtap2Session(YubiKeyConnection connection) {
-        try {
-            return (connection instanceof FidoConnection)
-                    ? new Ctap2Session((FidoConnection) connection)
-                    : connection instanceof SmartCardConnection
-                    ? new Ctap2Session((SmartCardConnection) connection)
-                    : null;
-        } catch (IOException | CommandException ignored) {
-            // device does not provide CTAP2
-            return null;
-        }
+  public void withDeviceCallback(StatefulDeviceCallback<FidoTestState> callback) throws Throwable {
+    callback.invoke(this);
+  }
+
+  public void withCtap2(TestState.StatefulSessionCallback<Ctap2Session, FidoTestState> callback)
+      throws Throwable {
+    try (YubiKeyConnection connection = openConnection()) {
+      final Ctap2Session ctap2 = getCtap2Session(connection);
+      assumeTrue("No CTAP2 support", ctap2 != null);
+      callback.invoke(ctap2, this);
     }
+    reconnect();
+  }
+
+  public <R> R withCtap2(SessionCallbackT<Ctap2Session, R> callback) throws Throwable {
+    R result;
+    try (YubiKeyConnection connection = openConnection()) {
+      final Ctap2Session ctap2 = getCtap2Session(connection);
+      assumeTrue("No CTAP2 support", ctap2 != null);
+      result = callback.invoke(ctap2);
+    }
+    reconnect();
+    return result;
+  }
+
+  public void withCtap2(SessionCallback<Ctap2Session> callback) throws Throwable {
+    try (YubiKeyConnection connection = openConnection()) {
+      final Ctap2Session ctap2 = getCtap2Session(connection);
+      assumeTrue("No CTAP2 support", ctap2 != null);
+      callback.invoke(ctap2);
+    }
+    reconnect();
+  }
+
+  @Nullable
+  public static Ctap2Session getCtap2Session(YubiKeyConnection connection) {
+    try {
+      return (connection instanceof FidoConnection)
+          ? new Ctap2Session((FidoConnection) connection)
+          : connection instanceof SmartCardConnection
+              ? new Ctap2Session((SmartCardConnection) connection)
+              : null;
+    } catch (IOException | CommandException ignored) {
+      // device does not provide CTAP2
+      return null;
+    }
+  }
 }

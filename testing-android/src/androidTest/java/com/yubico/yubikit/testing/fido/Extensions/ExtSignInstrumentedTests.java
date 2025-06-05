@@ -21,7 +21,6 @@ import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV1;
 import com.yubico.yubikit.testing.PinUvAuthProtocolV1Test;
 import com.yubico.yubikit.testing.fido.extensions.ExtSignTests;
 import com.yubico.yubikit.testing.framework.FidoInstrumentedTests;
-
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -29,32 +28,32 @@ import org.junit.runners.Suite;
 
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        ExtSignInstrumentedTests.PinUvAuthV2Test.class,
-        ExtSignInstrumentedTests.PinUvAuthV1Test.class,
+  ExtSignInstrumentedTests.PinUvAuthV2Test.class,
+  ExtSignInstrumentedTests.PinUvAuthV1Test.class,
 })
 public class ExtSignInstrumentedTests {
-    public static class PinUvAuthV2Test extends FidoInstrumentedTests {
-        @Test
-        public void testWithDiscoverableCredential() throws Throwable {
-            withDevice(ExtSignTests::testWithDiscoverableCredential);
-        }
-
-        @Test
-        public void testWithNonDiscoverableCredential() throws Throwable {
-            withDevice(ExtSignTests::testWithNonDiscoverableCredential);
-        }
-
-        @Test
-        public void testNoSupport() throws Throwable {
-            withDevice(ExtSignTests::testNoExtensionSupport);
-        }
+  public static class PinUvAuthV2Test extends FidoInstrumentedTests {
+    @Test
+    public void testWithDiscoverableCredential() throws Throwable {
+      withDevice(ExtSignTests::testWithDiscoverableCredential);
     }
 
-    @Category(PinUvAuthProtocolV1Test.class)
-    public static class PinUvAuthV1Test extends PinUvAuthV2Test {
-        @Override
-        protected PinUvAuthProtocol getPinUvAuthProtocol() {
-            return new PinUvAuthProtocolV1();
-        }
+    @Test
+    public void testWithNonDiscoverableCredential() throws Throwable {
+      withDevice(ExtSignTests::testWithNonDiscoverableCredential);
     }
+
+    @Test
+    public void testNoSupport() throws Throwable {
+      withDevice(ExtSignTests::testNoExtensionSupport);
+    }
+  }
+
+  @Category(PinUvAuthProtocolV1Test.class)
+  public static class PinUvAuthV1Test extends PinUvAuthV2Test {
+    @Override
+    protected PinUvAuthProtocol getPinUvAuthProtocol() {
+      return new PinUvAuthProtocolV1();
+    }
+  }
 }
