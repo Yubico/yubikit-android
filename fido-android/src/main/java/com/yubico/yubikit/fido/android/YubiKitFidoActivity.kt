@@ -1,12 +1,18 @@
 package com.yubico.yubikit.fido.android
 
 import android.annotation.SuppressLint
+import android.content.Context
+import android.nfc.NfcAntennaInfo
+import android.nfc.NfcManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -16,8 +22,11 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
@@ -28,6 +37,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -35,9 +45,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Flare
+import androidx.compose.material.icons.filled.Nfc
 import androidx.compose.material.icons.filled.Password
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.rounded.SettingsInputAntenna
+import androidx.compose.material.icons.rounded.StarBorder
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -65,12 +78,15 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
@@ -284,6 +300,7 @@ class YubiKitFidoActivity : ComponentActivity() {
                     val sheetState = rememberModalBottomSheetState()
                     val scope = rememberCoroutineScope()
                     var bottomSheetVisible by remember { mutableStateOf(true) }
+                    var nfcGuideVisible by remember { mutableStateOf(false) }
 
                     val finishActivity: () -> Unit = {
                         scope.launch {
@@ -305,21 +322,47 @@ class YubiKitFidoActivity : ComponentActivity() {
                         finishActivity()
                     }
 
-                    if (bottomSheetVisible) {
-                        ModalBottomSheet(
-                            dragHandle = {},
-                            sheetState = sheetState,
-                            onDismissRequest = finishActivity,
-                        ) {
-                            FidoClientUi(
-                                operation,
-                                isUsb = viewModel.isUsb,
-                                rpId,
-                                request,
-                                fidoClientService = fidoClientService,
-                                onResult = { finishActivityWithResult(it) },
-                                onCloseButtonClick = finishActivity
-                            )
+                    BackHandler(enabled = nfcGuideVisible) {
+                        nfcGuideVisible = !nfcGuideVisible
+                        bottomSheetVisible = true
+                    }
+
+                    AnimatedVisibility(
+                        visible = nfcGuideVisible,
+                        enter = fadeIn(),
+                        exit = fadeOut()
+                    ) {
+                        NfcUsageGuide {
+                            nfcGuideVisible = !nfcGuideVisible
+                            bottomSheetVisible = true
+                        }
+                    }
+                    AnimatedVisibility(
+                        visible = !nfcGuideVisible,
+                        enter = fadeIn(),
+                        exit = fadeOut()
+                    ) {
+                        if (bottomSheetVisible) {
+                            ModalBottomSheet(
+                                dragHandle = {},
+                                sheetState = sheetState,
+                                onDismissRequest = finishActivity,
+                            ) {
+                                FidoClientUi(
+                                    operation,
+                                    isUsb = viewModel.isUsb,
+                                    rpId,
+                                    request,
+                                    fidoClientService = fidoClientService,
+                                    onResult = { finishActivityWithResult(it) },
+                                    onShowNfcGuideClick = {
+                                        nfcGuideVisible = true
+                                        bottomSheetVisible = false
+                                    },
+                                    onCloseButtonClick = finishActivity
+                                )
+
+                            }
                         }
                     }
                 }
@@ -345,6 +388,85 @@ class YubiKitFidoActivity : ComponentActivity() {
         super.onStop()
         yubikit.stopUsbDiscovery()
     }
+}
+
+@Composable
+fun NfcUsageGuide(
+    onClose: () -> Unit,
+) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+
+        val nfcManager = LocalContext.current.getSystemService(Context.NFC_SERVICE) as? NfcManager
+        val nfcAdapter = nfcManager?.defaultAdapter ?: return
+
+        if (!nfcAdapter.isEnabled) {
+            return
+        }
+
+        val nfcAntennaInfo: NfcAntennaInfo? = nfcAdapter.nfcAntennaInfo
+
+        if (nfcAntennaInfo != null) {
+            val deviceWidthInMm = nfcAntennaInfo.deviceWidth
+            val deviceHeightInMm = nfcAntennaInfo.deviceHeight
+            val availableAntennas = nfcAntennaInfo.availableNfcAntennas
+
+            BoxWithConstraints(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.9f))
+            ) {
+                val containerWidthInDp = maxWidth.value
+                val containerHeightInDp = maxHeight.value
+
+                val dpPerMmX = containerWidthInDp / deviceWidthInMm
+                val dpPerMmY = containerHeightInDp / deviceHeightInMm
+
+                IconButton(modifier = Modifier.padding(8.dp), onClick = onClose) {
+                    Icon(Icons.Filled.Close, contentDescription = "close")
+                }
+
+                Text(
+                    text = "This screen shows the NFC antenna locations on your phone.",
+                    style = MaterialTheme.typography.titleLarge,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .padding(16.dp)
+                        .offset(y = 48.dp)
+                )
+
+                Text(
+                    text = "To use NFC with your YubiKey, place it on the back of the phone at the antenna area.",
+                    style = MaterialTheme.typography.titleLarge,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 48.dp, start = 16.dp, end = 16.dp)
+                )
+
+                println("Device dimensions: ${deviceWidthInMm}mm x ${deviceHeightInMm}mm")
+                availableAntennas.forEachIndexed { index, antenna ->
+                    println("Antenna #$index: x=${antenna.locationX}, y=${antenna.locationY}")
+
+                    val offsetX = (antenna.locationX * dpPerMmX).dp
+                    val offsetY = (antenna.locationY * dpPerMmY).dp
+                    val contentSize = 128.dp
+
+                    val centeredOffsetX = offsetX - (contentSize / 2)
+                    val centeredOffsetY = offsetY - (contentSize / 2)
+
+                    Icon(
+                        imageVector = Icons.Rounded.StarBorder,
+                        modifier = Modifier
+                            .offset(centeredOffsetX, centeredOffsetY)
+                            .size(contentSize),
+                        contentDescription = "NFC Antenna $index"
+                    )
+                }
+            }
+        }
+    }
+
+
 }
 
 @Composable
@@ -401,6 +523,7 @@ fun ContentWrapper(
 fun TapOrInsertSecurityKey(
     operation: FidoClientService.Operation,
     origin: String,
+    onShowNfcGuideClick: (() -> Unit)? = null,
     onCloseButtonClick: () -> Unit
 ) {
     ContentWrapper(
@@ -416,6 +539,13 @@ fun TapOrInsertSecurityKey(
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(text = stringResource(R.string.tap_or_insert_key))
+        Text(
+            text = "How to use NFC",
+            modifier = Modifier.clickable(onClick = onShowNfcGuideClick ?: {}),
+            color = MaterialTheme.colorScheme.onSecondaryFixedVariant,
+            fontSize = MaterialTheme.typography.bodySmall.fontSize,
+            textDecoration = TextDecoration.Underline
+        )
     }
 }
 
@@ -640,6 +770,7 @@ fun FidoClientUi(
     request: String,
     fidoClientService: FidoClientService = remember { FidoClientService() },
     onResult: (PublicKeyCredential) -> Unit = {},
+    onShowNfcGuideClick: () -> Unit,
     onCloseButtonClick: () -> Unit
 ) {
     var result: PublicKeyCredential? by remember { mutableStateOf(null) }
@@ -733,7 +864,6 @@ fun FidoClientUi(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-
         AnimatedContent(
             targetState = uiState.value,
             label = "FidoClientUi",
@@ -747,7 +877,8 @@ fun FidoClientUi(
                     TapOrInsertSecurityKey(
                         operation = operation,
                         origin = rpId,
-                        onCloseButtonClick = onCloseButtonClick
+                        onCloseButtonClick = onCloseButtonClick,
+                        onShowNfcGuideClick = onShowNfcGuideClick
                     )
                 }
 
