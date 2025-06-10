@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Yubico.
+ * Copyright (C) 2024-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,11 @@ import com.squareup.moshi.JsonReader;
 import com.yubico.yubikit.core.internal.codec.Base64;
 import com.yubico.yubikit.fido.Cbor;
 import com.yubico.yubikit.fido.Cose;
+import com.yubico.yubikit.fido.client.extensions.Extension;
+import com.yubico.yubikit.fido.client.extensions.SignExtension;
 import com.yubico.yubikit.fido.webauthn.ClientExtensionResults;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredential;
+import com.yubico.yubikit.fido.webauthn.SerializationType;
 import com.yubico.yubikit.testing.fido.FidoTestState;
 import com.yubico.yubikit.testing.fido.utils.ClientHelper;
 import com.yubico.yubikit.testing.fido.utils.CreationOptionsBuilder;
@@ -45,27 +48,29 @@ import okio.Buffer;
 import org.junit.Assert;
 import org.junit.Assume;
 
-public class ExtSignTests {
+public class SignExtensionTests {
 
   private final String SIGN_EXT = "sign";
 
+  private static final List<Extension> extensions = Collections.singletonList(new SignExtension());
+
   public static void testWithDiscoverableCredential(FidoTestState state) throws Throwable {
-    ExtSignTests extTests = new ExtSignTests();
+    SignExtensionTests extTests = new SignExtensionTests();
     extTests.runTest(state, true);
   }
 
   public static void testWithNonDiscoverableCredential(FidoTestState state) throws Throwable {
-    ExtSignTests extTests = new ExtSignTests();
+    SignExtensionTests extTests = new SignExtensionTests();
     extTests.runTest(state, false);
   }
 
   // this test is active only on devices without sign extension
   public static void testNoExtensionSupport(FidoTestState state) throws Throwable {
-    ExtSignTests extTests = new ExtSignTests();
+    SignExtensionTests extTests = new SignExtensionTests();
     extTests.runNoSupportTest(state);
   }
 
-  private ExtSignTests() {}
+  private SignExtensionTests() {}
 
   @SuppressWarnings("unchecked")
   private void runTest(FidoTestState state, boolean residentKey) throws Throwable {
@@ -77,7 +82,7 @@ public class ExtSignTests {
           session -> {
             Assume.assumeTrue(session.getCachedInfo().getExtensions().contains(SIGN_EXT));
             PublicKeyCredential cred =
-                new ClientHelper(session)
+                new ClientHelper(session, extensions)
                     .makeCredential(new CreationOptionsBuilder().residentKey(residentKey).build());
             Assert.assertNull(getSignResult(cred));
             credsToDelete.add(cred);
@@ -87,7 +92,7 @@ public class ExtSignTests {
       state.withCtap2(
           session -> {
             PublicKeyCredential cred =
-                new ClientHelper(session)
+                new ClientHelper(session, extensions)
                     .makeCredential(
                         new CreationOptionsBuilder()
                             .residentKey(residentKey)
@@ -123,7 +128,7 @@ public class ExtSignTests {
                         MessageDigest.getInstance("SHA-256")
                             .digest(testMessage.getBytes(StandardCharsets.UTF_8)));
                 PublicKeyCredential cred =
-                    new ClientHelper(session)
+                    new ClientHelper(session, extensions)
                         .makeCredential(
                             new CreationOptionsBuilder()
                                 .residentKey(residentKey)
@@ -177,7 +182,7 @@ public class ExtSignTests {
             String keyHandle = testData.signKeyHandle;
 
             PublicKeyCredential cred =
-                new ClientHelper(session)
+                new ClientHelper(session, extensions)
                     .getAssertions(
                         new RequestOptionsBuilder()
                             .allowedCredentials(testData.publicKeyCredential)
@@ -215,8 +220,7 @@ public class ExtSignTests {
       if (residentKey) {
         state.withCtap2(
             session -> {
-              // TODO verify with a test device
-              //  new ClientHelper(session).deleteCredentials(credsToDelete);
+              new ClientHelper(session, extensions).deleteCredentials(credsToDelete);
             });
       }
     }
@@ -227,7 +231,7 @@ public class ExtSignTests {
         session -> {
           Assume.assumeFalse(session.getCachedInfo().getExtensions().contains(SIGN_EXT));
           PublicKeyCredential cred =
-              new ClientHelper(session)
+              new ClientHelper(session, extensions)
                   .makeCredential(
                       new CreationOptionsBuilder()
                           .extensions(Collections.singletonMap(SIGN_EXT, Collections.emptyMap()))
@@ -242,7 +246,7 @@ public class ExtSignTests {
   private Map<String, Object> getSignResult(PublicKeyCredential credential) {
     ClientExtensionResults results = credential.getClientExtensionResults();
     Assert.assertNotNull(results);
-    Map<String, Object> resultsMap = results.toMap();
+    Map<String, Object> resultsMap = results.toMap(SerializationType.JSON);
     return (Map<String, Object>) resultsMap.get(SIGN_EXT);
   }
 

@@ -19,7 +19,7 @@ package com.yubico.yubikit.testing.fido.Extensions;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV1;
 import com.yubico.yubikit.testing.PinUvAuthProtocolV1Test;
-import com.yubico.yubikit.testing.fido.extensions.ExtSignTests;
+import com.yubico.yubikit.testing.fido.extensions.SignExtensionTests;
 import com.yubico.yubikit.testing.framework.FidoInstrumentedTests;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -28,24 +28,24 @@ import org.junit.runners.Suite;
 
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-  ExtSignInstrumentedTests.PinUvAuthV2Test.class,
-  ExtSignInstrumentedTests.PinUvAuthV1Test.class,
+  SignExtensionInstrumentedTests.PinUvAuthV2Test.class,
+  SignExtensionInstrumentedTests.PinUvAuthV1Test.class,
 })
-public class ExtSignInstrumentedTests {
+public class SignExtensionInstrumentedTests {
   public static class PinUvAuthV2Test extends FidoInstrumentedTests {
     @Test
     public void testWithDiscoverableCredential() throws Throwable {
-      withDevice(ExtSignTests::testWithDiscoverableCredential);
+      withDevice(SignExtensionTests::testWithDiscoverableCredential);
     }
 
     @Test
     public void testWithNonDiscoverableCredential() throws Throwable {
-      withDevice(ExtSignTests::testWithNonDiscoverableCredential);
+      withDevice(SignExtensionTests::testWithNonDiscoverableCredential);
     }
 
     @Test
     public void testNoSupport() throws Throwable {
-      withDevice(ExtSignTests::testNoExtensionSupport);
+      withDevice(SignExtensionTests::testNoExtensionSupport);
     }
   }
 
