@@ -1,9 +1,14 @@
 package com.yubico.yubikit.fido.android
 
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.content.Context
+import android.nfc.NfcAdapter
 import android.nfc.NfcAntennaInfo
 import android.nfc.NfcManager
+import android.nfc.Tag
+import android.nfc.tech.IsoDep
+import android.nfc.tech.TagTechnology
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -45,12 +50,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Flare
-import androidx.compose.material.icons.filled.Nfc
 import androidx.compose.material.icons.filled.Password
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material.icons.rounded.SettingsInputAntenna
-import androidx.compose.material.icons.rounded.StarBorder
+import androidx.compose.material.icons.rounded.StarOutline
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -66,7 +69,10 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
@@ -77,6 +83,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -90,6 +97,9 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.coroutineScope
 import com.yubico.yubikit.android.YubiKitManager
 import com.yubico.yubikit.android.transport.nfc.NfcConfiguration
@@ -104,9 +114,11 @@ import com.yubico.yubikit.fido.webauthn.PublicKeyCredential
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialCreationOptions
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialRequestOptions
 import com.yubico.yubikit.fido.webauthn.SerializationType
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
+import java.io.IOException
 
 sealed class UiState {
     data object WaitingForKey : UiState()
@@ -396,6 +408,8 @@ fun NfcUsageGuide(
 ) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
 
+        var tagConnected by remember { mutableStateOf(false) }
+
         val nfcManager = LocalContext.current.getSystemService(Context.NFC_SERVICE) as? NfcManager
         val nfcAdapter = nfcManager?.defaultAdapter ?: return
 
@@ -421,6 +435,15 @@ fun NfcUsageGuide(
                 val dpPerMmX = containerWidthInDp / deviceWidthInMm
                 val dpPerMmY = containerHeightInDp / deviceHeightInMm
 
+                NfcReader(
+                    onTagDiscovered = { _ ->
+                        tagConnected = true
+                    },
+                    onTagLost = {
+                        tagConnected = false
+                    }
+                )
+
                 IconButton(modifier = Modifier.padding(8.dp), onClick = onClose) {
                     Icon(Icons.Filled.Close, contentDescription = "close")
                 }
@@ -440,33 +463,121 @@ fun NfcUsageGuide(
                     textAlign = TextAlign.Center,
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
-                        .padding(bottom = 48.dp, start = 16.dp, end = 16.dp)
+                        .padding(bottom = 72.dp, start = 16.dp, end = 16.dp)
                 )
 
-                println("Device dimensions: ${deviceWidthInMm}mm x ${deviceHeightInMm}mm")
-                availableAntennas.forEachIndexed { index, antenna ->
-                    println("Antenna #$index: x=${antenna.locationX}, y=${antenna.locationY}")
+                Text(
+                    text = "Try that!",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 32.dp, start = 16.dp, end = 16.dp)
+                )
 
+                availableAntennas.forEachIndexed { index, antenna ->
                     val offsetX = (antenna.locationX * dpPerMmX).dp
                     val offsetY = (antenna.locationY * dpPerMmY).dp
                     val contentSize = 128.dp
 
-                    val centeredOffsetX = offsetX - (contentSize / 2)
-                    val centeredOffsetY = offsetY - (contentSize / 2)
+                    val centeredOffsetX = offsetX - (contentSize / 2f)
+                    val centeredOffsetY = offsetY - (contentSize / 2f)
 
-                    Icon(
-                        imageVector = Icons.Rounded.StarBorder,
+                    LiveIcon(
+                        tagPresent = tagConnected,
                         modifier = Modifier
                             .offset(centeredOffsetX, centeredOffsetY)
                             .size(contentSize),
-                        contentDescription = "NFC Antenna $index"
                     )
                 }
             }
         }
     }
+}
 
+@Composable
+fun NfcReader(
+    onTagDiscovered: (Tag) -> Unit,
+    onTagLost: () -> Unit
+) {
+    val context = LocalContext.current
+    val activity = context as? Activity
 
+    val activeTagConnection = remember { mutableStateOf<TagTechnology?>(null) }
+    val nfcAdapter = remember { NfcAdapter.getDefaultAdapter(context) }
+
+    val readerCallback = remember {
+        NfcAdapter.ReaderCallback { tag ->
+            val isoDep = IsoDep.get(tag)
+            if (isoDep != null) {
+                try {
+                    activeTagConnection.value?.close()
+                    isoDep.connect()
+                    activeTagConnection.value = isoDep
+                    onTagDiscovered(tag)
+                } catch (e: IOException) {
+                    activeTagConnection.value = null
+                    onTagLost()
+                }
+            }
+        }
+    }
+
+    LaunchedEffect(activeTagConnection.value) {
+        val connection = activeTagConnection.value ?: return@LaunchedEffect
+        try {
+            while (connection.isConnected) {
+                delay(500)
+            }
+        } catch (e: SecurityException) {
+            activeTagConnection.value = null
+            onTagLost()
+            return@LaunchedEffect
+        }
+
+        activeTagConnection.value = null
+        onTagLost()
+    }
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (activity == null) return@LifecycleEventObserver
+
+            when (event) {
+                Lifecycle.Event.ON_RESUME -> {
+                    nfcAdapter?.enableReaderMode(
+                        activity,
+                        readerCallback,
+                        NfcAdapter.FLAG_READER_NFC_A or NfcAdapter.FLAG_READER_SKIP_NDEF_CHECK,
+                        null
+                    )
+                }
+
+                Lifecycle.Event.ON_PAUSE -> {
+                    nfcAdapter?.disableReaderMode(activity)
+                    activeTagConnection.value?.close()
+                    activeTagConnection.value = null
+                    onTagLost()
+                }
+
+                else -> {
+                }
+            }
+        }
+
+        lifecycleOwner.lifecycle.addObserver(observer)
+
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            activeTagConnection.value?.close()
+            activeTagConnection.value = null
+            if (activity != null) {
+                nfcAdapter?.disableReaderMode(activity)
+            }
+        }
+    }
 }
 
 @Composable
@@ -786,7 +897,7 @@ fun FidoClientUi(
             if (result != null) {
                 fidoClientService.waitForKeyRemoval()
                 onResult(result!!)
-                return@produceState // End the flow after completion
+                return@produceState
             }
 
             if (tapAgain) {
@@ -803,7 +914,7 @@ fun FidoClientUi(
                     result = it
                     value = UiState.Success
                     retryOperation = !retryOperation
-                    return@produceState // End the flow after completion
+                    return@produceState
                 }, onFailure = { error ->
                     val errorState = when (error) {
                         is PinRequiredClientError -> Error.PinRequiredError
@@ -978,6 +1089,57 @@ fun PulsingIcon(
             .scale(scale)
             .alpha(alpha),
         tint = tint
+    )
+}
+
+@Composable
+fun LiveIcon(
+    tagPresent: Boolean,
+    modifier: Modifier = Modifier
+) {
+    var rotationAngle by remember { mutableFloatStateOf(0f) }
+    var velocity by remember { mutableFloatStateOf(0f) }
+    var hue by remember { mutableFloatStateOf(0f) }
+
+    val iconColor = if (tagPresent) {
+        Color.hsv(hue, 1f, 1f)
+    } else {
+        MaterialTheme.colorScheme.onSurface
+    }
+
+
+    LaunchedEffect(tagPresent) {
+        if (tagPresent) {
+            while (true) {
+                velocity += 1.6f
+                hue = (hue + 4f) % 360f
+                delay(16)
+            }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        while (true) {
+            if (velocity > 0f) {
+                rotationAngle += velocity
+                velocity *= 0.91f
+
+                if (velocity < 0.1f) {
+                    velocity = 0f
+                }
+            }
+            delay(16)
+        }
+    }
+
+    Icon(
+        imageVector = Icons.Rounded.StarOutline,
+        contentDescription = "Spinning Icon",
+        tint = iconColor,
+        modifier = modifier
+            .graphicsLayer {
+                rotationZ = rotationAngle
+            }
     )
 }
 
