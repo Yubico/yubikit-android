@@ -307,13 +307,10 @@ public class SignExtension extends Extension {
       throw new IllegalArgumentException("Sign extension output missing");
     }
 
-    // TODO review this. should use "fmt", "authData" and "attStmt"
-    Map<Integer, Object> newAttObj = new HashMap<>();
-    newAttObj.put(1, origAttObj.get(1));
-    newAttObj.put(2, origAttObj.get(2));
-    newAttObj.put(3, origAttObj.get(3));
-
-    byte[] newAttObjBytes = Cbor.encode(newAttObj);
+    Map<String, Object> newAttObj = new HashMap<>();
+    newAttObj.put("fmt", origAttObj.get(1));
+    newAttObj.put("authData", origAttObj.get(2));
+    newAttObj.put("attStmt", origAttObj.get(3));
 
     AuthenticationExtensionsSignGeneratedKey generatedKey =
         new AuthenticationExtensionsSignGeneratedKey(
