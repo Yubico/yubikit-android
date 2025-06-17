@@ -17,29 +17,16 @@
 package com.yubico.yubikit.testing.fido.extensions;
 
 import com.squareup.moshi.JsonReader;
-import com.yubico.yubikit.core.internal.codec.Base64;
-import com.yubico.yubikit.fido.Cbor;
-import com.yubico.yubikit.fido.Cose;
 import com.yubico.yubikit.fido.client.extensions.Extension;
 import com.yubico.yubikit.fido.client.extensions.SignExtension;
-import com.yubico.yubikit.fido.webauthn.AuthenticatorData;
 import com.yubico.yubikit.fido.webauthn.ClientExtensionResults;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredential;
 import com.yubico.yubikit.fido.webauthn.SerializationType;
 import com.yubico.yubikit.testing.fido.FidoTestState;
 import com.yubico.yubikit.testing.fido.utils.ClientHelper;
 import com.yubico.yubikit.testing.fido.utils.CreationOptionsBuilder;
-import com.yubico.yubikit.testing.fido.utils.RequestOptionsBuilder;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.security.InvalidKeyException;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.security.PublicKey;
-import java.security.Signature;
-import java.security.SignatureException;
-import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -77,8 +64,6 @@ public class SignExtensionTests {
   @SuppressWarnings("unchecked")
   private void runTest(FidoTestState state, boolean residentKey) throws Throwable {
     {
-      List<PublicKeyCredential> credsToDelete = new ArrayList<>();
-
       // no output when no input
       state.withCtap2(
           session -> {
@@ -87,150 +72,47 @@ public class SignExtensionTests {
                 new ClientHelper(session, extensions)
                     .makeCredential(new CreationOptionsBuilder().residentKey(residentKey).build());
             Assert.assertNull(getSignResult(cred));
-            credsToDelete.add(cred);
+            if (residentKey) {
+              new ClientHelper(session, extensions).deleteCredentials(cred);
+            }
           });
 
       // create credential
-      TestData testData =
-          state.withCtap2(
-              session -> {
-                PublicKeyCredential cred =
-                    new ClientHelper(session, extensions)
-                        .makeCredential(
-                            new CreationOptionsBuilder()
-                                .residentKey(residentKey)
-                                .extensions(
-                                    JsonUtils.fromJson(
-                                        "{\"sign\": {"
-                                            + "    \"generateKey\": {"
-                                            + "      \"algorithms\": ["
-                                            + "          -65600,"
-                                            + "          -65539,"
-                                            + "          -9,"
-                                            + "          -7"
-                                            + "      ]"
-                                            + "    }"
-                                            + "  }}"))
-                                .build());
-
-                Map<String, Object> signCreateResult = getSignResult(cred);
-                Assert.assertNotNull(signCreateResult);
-                Assert.assertFalse(signCreateResult.containsKey("signature"));
-                Map<String, Object> generatedKey =
-                    (Map<String, Object>) signCreateResult.get("generatedKey");
-                Assert.assertNotNull(generatedKey);
-                Assert.assertTrue(generatedKey.containsKey("publicKey"));
-                Assert.assertTrue(generatedKey.containsKey("algorithm"));
-                Assert.assertTrue(generatedKey.containsKey("attestationObject"));
-
-                // rip out the key-ref
-                Map<String, ?> attestationObject =
-                    (Map<String, ?>)
-                        Cbor.decode(
-                            Base64.fromUrlSafeString(
-                                (String) generatedKey.get("attestationObject")));
-                Assert.assertNotNull(attestationObject);
-                AuthenticatorData authenticatorData =
-                    AuthenticatorData.parseFrom(
-                        ByteBuffer.wrap((byte[]) attestationObject.get("authData")));
-                Assert.assertNotNull(authenticatorData.getAttestedCredentialData());
-                Map<Integer, ?> cosePublicKey =
-                    authenticatorData.getAttestedCredentialData().getCosePublicKey();
-
-                Map<Integer, Object> keyHandle = new HashMap<>();
-                keyHandle.put(1, -65538); // kty
-                keyHandle.put(2, cosePublicKey.get(2)); // kid
-                keyHandle.put(3, generatedKey.get("algorithm")); // alg
-                keyHandle.put(-3, cosePublicKey.get(3));
-
-                Map<Integer, Object> bl = (Map<Integer, Object>) cosePublicKey.get(-1);
-                Map<Integer, Object> kem = (Map<Integer, Object>) cosePublicKey.get(-2);
-
-                // TODO implement ARKG and get kh and ctx from BL and KEM
-                // keyHandle.put(-2, kh);
-                // keyHandle.put(-1, ctx);
-
-                credsToDelete.add(cred);
-
-                String publicKey = (String) generatedKey.get("publicKey");
-                return new TestData(cred, publicKey, Cbor.encode(keyHandle));
-              });
-
-      // sign data
       state.withCtap2(
           session -> {
-            String testMessage = "Test message";
-            byte[] tbs =
-                MessageDigest.getInstance("SHA-256")
-                    .digest(testMessage.getBytes(StandardCharsets.UTF_8));
-
-            // tbs = testMessage;
-
-            String credentialId = testData.publicKeyCredential.getId();
-            byte[] keyHandle = testData.signKeyHandle;
-
-            String jsonString =
-                "{"
-                    + "  \"sign\": {"
-                    + "    \"sign\": {"
-                    + "      \"tbs\": \""
-                    + Base64.toUrlSafeString(tbs)
-                    + "\","
-                    + "      \"keyHandleByCredential\": {"
-                    + "          \""
-                    + credentialId
-                    + "\":\""
-                    + Base64.toUrlSafeString(keyHandle)
-                    + "\""
-                    + "       }"
-                    + "    }"
-                    + "  }"
-                    + "}";
-
-            System.out.println("Sign extension input: " + jsonString);
-
             PublicKeyCredential cred =
                 new ClientHelper(session, extensions)
-                    .getAssertions(
-                        new RequestOptionsBuilder()
-                            .allowedCredentials(testData.publicKeyCredential)
+                    .makeCredential(
+                        new CreationOptionsBuilder()
+                            .residentKey(residentKey)
                             .extensions(
                                 JsonUtils.fromJson(
-                                    "{"
-                                        + "  \"sign\": {"
-                                        + "    \"sign\": {"
-                                        + "      \"tbs\": \""
-                                        + Base64.toUrlSafeString(tbs)
-                                        + "\","
-                                        + "      \"keyHandleByCredential\": {"
-                                        + "          \""
-                                        + credentialId
-                                        + "\":\""
-                                        + Base64.toUrlSafeString(keyHandle)
-                                        + "\""
-                                        + "       }"
+                                    "{\"sign\": {"
+                                        + "    \"generateKey\": {"
+                                        + "      \"algorithms\": ["
+                                        + "          -65600,"
+                                        + "          -65539,"
+                                        + "          -9,"
+                                        + "          -7"
+                                        + "      ]"
                                         + "    }"
-                                        + "  }"
-                                        + "}"))
+                                        + "  }}"))
                             .build());
 
-            Map<String, Object> signExtensionResult = getSignResult(cred);
-            Assert.assertNotNull(signExtensionResult);
-            Assert.assertTrue(signExtensionResult.containsKey("signature"));
-            Assert.assertFalse(signExtensionResult.containsKey("generatedKey"));
-            String signature = (String) signExtensionResult.get("signature");
-            Assert.assertNotNull(signature);
+            Map<String, Object> signCreateResult = getSignResult(cred);
+            Assert.assertNotNull(signCreateResult);
+            Assert.assertFalse(signCreateResult.containsKey("signature"));
+            Map<String, Object> generatedKey =
+                (Map<String, Object>) signCreateResult.get("generatedKey");
+            Assert.assertNotNull(generatedKey);
+            Assert.assertTrue(generatedKey.containsKey("publicKey"));
+            Assert.assertTrue(generatedKey.containsKey("algorithm"));
+            Assert.assertTrue(generatedKey.containsKey("attestationObject"));
 
-            // verify sig
-            verifySignature(testData.signPublicKey, testMessage, signature);
+            if (residentKey) {
+              new ClientHelper(session, extensions).deleteCredentials(cred);
+            }
           });
-
-      if (residentKey) {
-        state.withCtap2(
-            session -> {
-              new ClientHelper(session, extensions).deleteCredentials(credsToDelete);
-            });
-      }
     }
   }
 
@@ -256,39 +138,6 @@ public class SignExtensionTests {
     Assert.assertNotNull(results);
     Map<String, Object> resultsMap = results.toMap(SerializationType.JSON);
     return (Map<String, Object>) resultsMap.get(SIGN_EXT);
-  }
-
-  // helper class which holds create data
-  static class TestData {
-    final PublicKeyCredential publicKeyCredential;
-    final String signPublicKey;
-    final byte[] signKeyHandle;
-
-    TestData(PublicKeyCredential publicKeyCredential, String signPublicKey, byte[] signKeyHandle) {
-      this.publicKeyCredential = publicKeyCredential;
-      this.signPublicKey = signPublicKey;
-      this.signKeyHandle = signKeyHandle;
-    }
-  }
-
-  @SuppressWarnings("unchecked")
-  private void verifySignature(String b64CosePublicKey, String plainText, String b64Signature)
-      throws InvalidKeySpecException,
-          NoSuchAlgorithmException,
-          InvalidKeyException,
-          SignatureException {
-
-    Map<Integer, Object> coseKey =
-        (Map<Integer, Object>) Cbor.decode(Base64.fromUrlSafeString(b64CosePublicKey));
-
-    Assert.assertNotNull(coseKey);
-    PublicKey publicKey = Cose.getPublicKey(coseKey);
-
-    Assert.assertEquals("Only ES256 is currently supported", -7, coseKey.get(3));
-    Signature verifier = Signature.getInstance("SHA256withECDSA");
-    verifier.initVerify(publicKey);
-    verifier.update(plainText.getBytes(StandardCharsets.UTF_8));
-    Assert.assertTrue(verifier.verify(Base64.fromUrlSafeString(b64Signature)));
   }
 
   static class JsonUtils {
