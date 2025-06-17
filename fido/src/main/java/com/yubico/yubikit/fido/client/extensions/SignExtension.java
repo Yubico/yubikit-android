@@ -22,7 +22,6 @@ import static com.yubico.yubikit.core.internal.codec.Base64.toUrlSafeString;
 import com.yubico.yubikit.fido.Cbor;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
-import com.yubico.yubikit.fido.webauthn.AttestationObject;
 import com.yubico.yubikit.fido.webauthn.AttestedCredentialData;
 import com.yubico.yubikit.fido.webauthn.AuthenticatorData;
 import com.yubico.yubikit.fido.webauthn.AuthenticatorSelectionCriteria;
@@ -39,7 +38,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
-import org.slf4j.LoggerFactory;
 
 public class SignExtension extends Extension {
 
@@ -53,8 +51,6 @@ public class SignExtension extends Extension {
   static final String PUBLIC_KEY = "publicKey";
   static final String ALGORITHM = "algorithm";
   static final String ATTESTATION_OBJECT = "attestationObject";
-
-  private static final org.slf4j.Logger logger = LoggerFactory.getLogger(SignExtension.class);
 
   public SignExtension() {
     super(SIGN);
@@ -86,18 +82,6 @@ public class SignExtension extends Extension {
 
       return new AuthenticationExtensionsSign(signGenerateKey, signSign);
     }
-
-    Map<String, Object> toMap() {
-      Map<String, Object> map = new HashMap<>();
-      if (generateKey != null) {
-        map.put(GENERATE_KEY, generateKey.toMap());
-      }
-
-      if (sign != null) {
-        map.put(SIGN, sign.toMap());
-      }
-      return map;
-    }
   }
 
   private static class AuthenticationExtensionsSignSign {
@@ -126,17 +110,6 @@ public class SignExtension extends Extension {
           keyHandleByCredential.keySet().stream()
               .collect(
                   Collectors.toMap(k -> k, k -> fromUrlSafeString(keyHandleByCredential.get(k)))));
-    }
-
-    Map<String, Object> toMap() {
-      Map<String, Object> map = new HashMap<>();
-      map.put(TBS, toUrlSafeString(tbs));
-      map.put(
-          KEY_HANDLE_BY_CREDENTIAL,
-          keyHandleByCredential.keySet().stream()
-              .collect(
-                  Collectors.toMap(k -> k, k -> toUrlSafeString(keyHandleByCredential.get(k)))));
-      return map;
     }
   }
 
@@ -240,7 +213,7 @@ public class SignExtension extends Extension {
       throw new IllegalArgumentException("Invalid inputs");
     }
 
-    return new RegistrationProcessor(
+    final RegistrationInput prepareInput =
         pinToken -> {
           Map<Integer, Object> map = new HashMap<>();
           if (extSign.generateKey.tbs != null) {
@@ -250,11 +223,67 @@ public class SignExtension extends Extension {
           map.put(4, getCreateFlags(options)); // flags
 
           return Collections.singletonMap(name, map);
-        },
+        };
+
+    final RegistrationOutput prepareOutput =
         (attestationObject, pinToken) ->
             serializationType -> {
-              return registrationOutput(attestationObject);
-            });
+              AuthenticatorData authData = attestationObject.getAuthenticatorData();
+              Map<String, ?> unsignedExtOutputs = attestationObject.getUnsignedExtensionOutputs();
+              if (unsignedExtOutputs == null) {
+                throw new IllegalArgumentException("Missing unsigned extension outputs");
+              }
+
+              Map<Integer, ?> unsignedSignExtData = (Map<Integer, ?>) unsignedExtOutputs.get(name);
+              if (unsignedSignExtData == null) {
+                throw new IllegalArgumentException("Sign unsigned extension outputs missing");
+              }
+
+              Map<Integer, ?> origAttObj =
+                  (Map<Integer, ?>) Cbor.decode((byte[]) unsignedSignExtData.get(7)); // att-obj
+              if (origAttObj == null) {
+                throw new IllegalArgumentException("Sign unsigned extension outputs missing");
+              }
+
+              AuthenticatorData innerAuthData =
+                  AuthenticatorData.parseFrom(ByteBuffer.wrap((byte[]) origAttObj.get(2)));
+              AttestedCredentialData attestedCredentialData =
+                  innerAuthData.getAttestedCredentialData();
+              if (attestedCredentialData == null) {
+                throw new IllegalArgumentException("Missing CredentialData");
+              }
+
+              byte[] pkBytes = Cbor.encode(attestedCredentialData.getCosePublicKey()).clone();
+
+              Map<String, ?> authDataExtensions = authData.getExtensions();
+              if (authDataExtensions == null) {
+                throw new IllegalArgumentException("Missing extensions output");
+              }
+
+              Map<Integer, ?> authDataSign = (Map<Integer, ?>) authDataExtensions.get(name);
+              if (authDataSign == null) {
+                throw new IllegalArgumentException("Sign extension output missing");
+              }
+
+              Map<String, Object> newAttObj = new HashMap<>();
+              newAttObj.put("fmt", origAttObj.get(1));
+              newAttObj.put("authData", origAttObj.get(2));
+              newAttObj.put("attStmt", origAttObj.get(3));
+
+              AuthenticationExtensionsSignGeneratedKey generatedKey =
+                  new AuthenticationExtensionsSignGeneratedKey(
+                      pkBytes,
+                      (int) authDataSign.get(3), // alg
+                      Cbor.encode(newAttObj));
+
+              return Collections.singletonMap(
+                  SIGN,
+                  new SignExtension.AuthenticationExtensionsSignOutputs(
+                          generatedKey, (byte[]) authDataSign.get(6)) // sig
+                      .toMap());
+            };
+
+    return new RegistrationProcessor(prepareInput, prepareOutput);
   }
 
   private int getCreateFlags(PublicKeyCredentialCreationOptions options) {
@@ -266,63 +295,6 @@ public class SignExtension extends Extension {
     return UserVerificationRequirement.REQUIRED.equals(selection.getUserVerification())
         ? 0b101
         : 0b001;
-  }
-
-  @SuppressWarnings("unchecked")
-  Map<String, Object> registrationOutput(AttestationObject attestationObject) {
-
-    AuthenticatorData authData = attestationObject.getAuthenticatorData();
-    Map<String, ?> unsignedExtOutputs = attestationObject.getUnsignedExtensionOutputs();
-    if (unsignedExtOutputs == null) {
-      throw new IllegalArgumentException("Missing unsigned extension outputs");
-    }
-
-    Map<Integer, ?> unsignedSignExtData = (Map<Integer, ?>) unsignedExtOutputs.get(name);
-    if (unsignedSignExtData == null) {
-      throw new IllegalArgumentException("Sign unsigned extension outputs missing");
-    }
-
-    Map<Integer, ?> origAttObj =
-        (Map<Integer, ?>) Cbor.decode((byte[]) unsignedSignExtData.get(7)); // att-obj
-    if (origAttObj == null) {
-      throw new IllegalArgumentException("Sign unsigned extension outputs missing");
-    }
-
-    AuthenticatorData innerAuthData =
-        AuthenticatorData.parseFrom(ByteBuffer.wrap((byte[]) origAttObj.get(2)));
-    AttestedCredentialData attestedCredentialData = innerAuthData.getAttestedCredentialData();
-    if (attestedCredentialData == null) {
-      throw new IllegalArgumentException("Missing CredentialData");
-    }
-
-    byte[] pkBytes = Cbor.encode(attestedCredentialData.getCosePublicKey()).clone();
-
-    Map<String, ?> extensions = authData.getExtensions();
-    if (extensions == null) {
-      throw new IllegalArgumentException("Missing extensions output");
-    }
-
-    Map<Integer, ?> authDataSign = (Map<Integer, ?>) extensions.get(name);
-    if (authDataSign == null) {
-      throw new IllegalArgumentException("Sign extension output missing");
-    }
-
-    Map<String, Object> newAttObj = new HashMap<>();
-    newAttObj.put("fmt", origAttObj.get(1));
-    newAttObj.put("authData", origAttObj.get(2));
-    newAttObj.put("attStmt", origAttObj.get(3));
-
-    AuthenticationExtensionsSignGeneratedKey generatedKey =
-        new AuthenticationExtensionsSignGeneratedKey(
-            pkBytes,
-            (int) authDataSign.get(3), // alg
-            Cbor.encode(newAttObj));
-
-    return Collections.singletonMap(
-        SIGN,
-        new SignExtension.AuthenticationExtensionsSignOutputs(
-                generatedKey, (byte[]) authDataSign.get(6)) // sig
-            .toMap());
   }
 
   @SuppressWarnings("unchecked")
@@ -369,8 +341,6 @@ public class SignExtension extends Extension {
           }
 
           byte[] keyRefBytes = byCreds.get(toUrlSafeString(selected.getId()));
-          Map<Integer, Object> keyRef = (Map<Integer, Object>) Cbor.decode(keyRefBytes);
-
           Map<Integer, Object> output = new HashMap<>();
           output.put(6, extSign.sign.tbs); // tbs
           output.put(5, keyRefBytes);
