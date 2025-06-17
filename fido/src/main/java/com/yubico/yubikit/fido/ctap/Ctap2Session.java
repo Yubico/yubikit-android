@@ -207,8 +207,6 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
       return Collections.emptyMap(); // Empty response
     }
 
-    Logger.trace(logger, "sendCbor response: {}", StringUtils.bytesToHex(response));
-
     try {
       @SuppressWarnings("unchecked")
       Map<Integer, ?> value = (Map<Integer, ?>) Cbor.decode(response, 1, response.length - 1);
