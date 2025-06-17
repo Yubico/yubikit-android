@@ -51,6 +51,9 @@ public class SignExtension extends Extension {
   static final String PUBLIC_KEY = "publicKey";
   static final String ALGORITHM = "algorithm";
   static final String ATTESTATION_OBJECT = "attestationObject";
+  static final String FMT = "fmt";
+  static final String AUTH_DATA = "authData";
+  static final String ATT_STMT = "attStmt";
 
   public SignExtension() {
     super(SIGN);
@@ -236,13 +239,14 @@ public class SignExtension extends Extension {
 
               Map<Integer, ?> unsignedSignExtData = (Map<Integer, ?>) unsignedExtOutputs.get(name);
               if (unsignedSignExtData == null) {
-                throw new IllegalArgumentException("Sign unsigned extension outputs missing");
+                throw new IllegalArgumentException("Missing sign unsigned extension outputs");
               }
 
               Map<Integer, ?> origAttObj =
                   (Map<Integer, ?>) Cbor.decode((byte[]) unsignedSignExtData.get(7)); // att-obj
               if (origAttObj == null) {
-                throw new IllegalArgumentException("Sign unsigned extension outputs missing");
+                throw new IllegalArgumentException(
+                    "Missing sign unsigned extension attestation object");
               }
 
               AuthenticatorData innerAuthData =
@@ -262,13 +266,13 @@ public class SignExtension extends Extension {
 
               Map<Integer, ?> authDataSign = (Map<Integer, ?>) authDataExtensions.get(name);
               if (authDataSign == null) {
-                throw new IllegalArgumentException("Sign extension output missing");
+                throw new IllegalArgumentException("Missing sign extension output");
               }
 
               Map<String, Object> newAttObj = new HashMap<>();
-              newAttObj.put("fmt", origAttObj.get(1));
-              newAttObj.put("authData", origAttObj.get(2));
-              newAttObj.put("attStmt", origAttObj.get(3));
+              newAttObj.put(FMT, origAttObj.get(1));
+              newAttObj.put(AUTH_DATA, origAttObj.get(2));
+              newAttObj.put(ATT_STMT, origAttObj.get(3));
 
               AuthenticationExtensionsSignGeneratedKey generatedKey =
                   new AuthenticationExtensionsSignGeneratedKey(
