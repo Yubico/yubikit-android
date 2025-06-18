@@ -64,7 +64,8 @@ public class LargeBlobExtension extends Extension {
 
   @Override
   protected boolean isSupported(Ctap2Session ctap) {
-    return super.isSupported(ctap) && ctap.getCachedInfo().getOptions().containsKey(LARGE_BLOBS);
+    return super.isSupported(ctap)
+        && Boolean.TRUE.equals(ctap.getCachedInfo().getOptions().get(LARGE_BLOBS));
   }
 
   @Nullable
@@ -82,7 +83,7 @@ public class LargeBlobExtension extends Extension {
         throw new IllegalArgumentException("Authenticator does not support large blob storage");
       }
       return new RegistrationProcessor(
-          pinToken -> Collections.singletonMap(LARGE_BLOB, true),
+          pinToken -> Collections.singletonMap(LARGE_BLOB_KEY, true),
           (attestationObject, pinToken) ->
               serializationType ->
                   Collections.singletonMap(
@@ -106,11 +107,11 @@ public class LargeBlobExtension extends Extension {
     }
     if (Boolean.TRUE.equals(inputs.read)) {
       return new AuthenticationProcessor(
-          (selected, pinToken) -> Collections.singletonMap(LARGE_BLOB, true),
+          (selected, pinToken) -> Collections.singletonMap(LARGE_BLOB_KEY, true),
           (assertionData, pinToken) -> read(assertionData, ctap));
     } else if (inputs.write != null) {
       return new AuthenticationProcessor(
-          (selected, pinToken) -> Collections.singletonMap(LARGE_BLOB, true),
+          (selected, pinToken) -> Collections.singletonMap(LARGE_BLOB_KEY, true),
           (assertionData, pinToken) ->
               write(
                   assertionData,
