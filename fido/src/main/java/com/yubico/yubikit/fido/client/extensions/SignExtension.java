@@ -212,8 +212,12 @@ public class SignExtension extends Extension {
       return null;
     }
 
-    if (extSign.sign != null || extSign.generateKey == null) {
-      throw new IllegalArgumentException("Invalid inputs");
+    if (extSign.sign != null) {
+      throw new IllegalArgumentException("sign input not allowed");
+    }
+
+    if (extSign.generateKey == null) {
+      throw new IllegalArgumentException("generateKey input required");
     }
 
     final RegistrationInput prepareInput =
@@ -347,7 +351,7 @@ public class SignExtension extends Extension {
           byte[] keyRefBytes = byCreds.get(toUrlSafeString(selected.getId()));
           Map<Integer, Object> output = new HashMap<>();
           output.put(6, extSign.sign.tbs); // tbs
-          output.put(5, keyRefBytes);
+          output.put(5, keyRefBytes); // key-ref
           return Collections.singletonMap(name, output);
         };
 

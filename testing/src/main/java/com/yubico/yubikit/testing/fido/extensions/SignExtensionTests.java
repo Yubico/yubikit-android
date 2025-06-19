@@ -39,7 +39,7 @@ import org.junit.Assume;
 
 public class SignExtensionTests {
 
-  private final String SIGN_EXT = "sign";
+  private static final String SIGN_EXT = "sign";
 
   private static final List<Extension> extensions = Collections.singletonList(new SignExtension());
 
