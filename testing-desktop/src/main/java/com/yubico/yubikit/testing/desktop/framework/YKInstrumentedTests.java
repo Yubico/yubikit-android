@@ -18,6 +18,8 @@ package com.yubico.yubikit.testing.desktop.framework;
 import com.yubico.yubikit.core.UsbPid;
 import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.desktop.CompositeDevice;
+import com.yubico.yubikit.testing.AllowList;
+import com.yubico.yubikit.testing.desktop.DesktopAllowListProvider;
 import com.yubico.yubikit.testing.desktop.DesktopTestDriver;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Rule;
@@ -32,6 +34,8 @@ public class YKInstrumentedTests {
   protected UsbPid usbPid = null;
 
   @Rule public final TestName name = new TestName();
+
+  private static final AllowList allowList = new AllowList(new DesktopAllowListProvider());
 
   @Rule
   public final ExternalResource externalResource =
@@ -66,6 +70,7 @@ public class YKInstrumentedTests {
         CompositeDevice compositeDevice = (CompositeDevice) device;
         usbPid = compositeDevice.getPidGroup().getPid();
       }
+      allowList.verify(device, usbPid);
     } catch (InterruptedException interruptedException) {
       throw new RuntimeException("awaitSession failed", interruptedException);
     }
