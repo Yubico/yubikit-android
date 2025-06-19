@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Yubico.
+ * Copyright (C) 2022-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import com.yubico.yubikit.android.transport.nfc.NfcNotAvailable;
 import com.yubico.yubikit.android.transport.nfc.NfcYubiKeyDevice;
 import com.yubico.yubikit.android.transport.usb.UsbConfiguration;
 import com.yubico.yubikit.android.transport.usb.UsbYubiKeyDevice;
+import com.yubico.yubikit.core.UsbPid;
 import com.yubico.yubikit.core.YubiKeyDevice;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -50,6 +51,8 @@ public class TestActivity extends AppCompatActivity {
   private final Semaphore lock = new Semaphore(0);
 
   private static final Logger logger = LoggerFactory.getLogger(TestActivity.class);
+
+  private static final AllowList allowList = new AllowList(new AndroidAllowListProvider());
 
   @Override
   protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -128,6 +131,14 @@ public class TestActivity extends AppCompatActivity {
         });
 
     YubiKeyDevice connectedDevice = sessionQueue.take();
+
+    UsbPid pid =
+        connectedDevice instanceof UsbYubiKeyDevice
+            ? ((UsbYubiKeyDevice) connectedDevice).getPid()
+            : null;
+
+    allowList.verify(connectedDevice, pid);
+
     runOnUiThread(
         () -> {
           if (connectedDevice instanceof UsbYubiKeyDevice) {
