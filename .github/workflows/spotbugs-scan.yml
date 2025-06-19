@@ -61,6 +61,8 @@ jobs:
             "android",
             "AndroidDemo",
             "core",
+            "desktop",
+            "DesktopDemo",
             "fido",
             "management",
             "oath",
