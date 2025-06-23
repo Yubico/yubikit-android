@@ -686,14 +686,14 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
     private final Map<String, Object> certifications;
     @Nullable private final Integer remainingDiscoverableCredentials;
     @Nullable private final List<Integer> vendorPrototypeConfigCommands;
-    @Nullable private final List<String> attestationFormats;
+    private final List<String> attestationFormats;
     @Nullable private final Integer uvCountSinceLastPinEntry;
     @Nullable private final Boolean longTouchForReset;
     @Nullable private final byte[] encIdentifier;
-    @Nullable private final List<String> transportsForReset;
+    private final List<String> transportsForReset;
     @Nullable private final Boolean pinComplexityPolicy;
     @Nullable private final byte[] pinComplexityPolicyURL;
-    @Nullable private final Integer maxPINLength;
+    private final Integer maxPinLength;
 
     private InfoData(
         List<String> versions,
@@ -717,14 +717,14 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
         Map<String, Object> certifications,
         @Nullable Integer remainingDiscoverableCredentials,
         @Nullable List<Integer> vendorPrototypeConfigCommands,
-        @Nullable List<String> attestationFormats,
+        List<String> attestationFormats,
         @Nullable Integer uvCountSinceLastPinEntry,
         @Nullable Boolean longTouchForReset,
         @Nullable byte[] encIdentifier,
-        @Nullable List<String> transportsForReset,
+        List<String> transportsForReset,
         @Nullable Boolean pinComplexityPolicy,
         @Nullable byte[] pinComplexityPolicyURL,
-        @Nullable Integer maxPINLength) {
+        Integer maxPinLength) {
       this.versions = versions;
       this.extensions = extensions;
       this.aaguid = aaguid;
@@ -753,7 +753,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
       this.transportsForReset = transportsForReset;
       this.pinComplexityPolicy = pinComplexityPolicy;
       this.pinComplexityPolicyURL = pinComplexityPolicyURL;
-      this.maxPINLength = maxPINLength;
+      this.maxPinLength = maxPinLength;
     }
 
     @SuppressWarnings("unchecked")
@@ -802,14 +802,18 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
               : Collections.emptyMap(),
           (Integer) data.get(RESULT_REMAINING_DISCOVERABLE_CREDENTIALS),
           (List<Integer>) data.get(RESULT_VENDOR_PROTOTYPE_CONFIG_COMMANDS),
-          (List<String>) data.get(RESULT_ATTESTATION_FORMATS),
+          data.containsKey(RESULT_ATTESTATION_FORMATS)
+              ? (List<String>) data.get(RESULT_ATTESTATION_FORMATS)
+              : Collections.emptyList(),
           (Integer) data.get(RESULT_UV_COUNT_SINCE_LAST_PIN_ENTRY),
           (Boolean) data.get(RESULT_LONG_TOUCH_FOR_RESET),
           (byte[]) data.get(RESULT_ENC_IDENTIFIER),
-          (List<String>) data.get(RESULT_TRANSPORTS_FOR_RESET),
+          data.containsKey(RESULT_TRANSPORTS_FOR_RESET)
+              ? (List<String>) data.get(RESULT_TRANSPORTS_FOR_RESET)
+              : Collections.emptyList(),
           (Boolean) data.get(RESULT_PIN_COMPLEXITY_POLICY),
           (byte[]) data.get(RESULT_PIN_COMPLEXITY_POLICY_URL),
-          (Integer) data.get(RESULT_MAX_PIN_LENGTH));
+          data.containsKey(RESULT_MAX_PIN_LENGTH) ? (Integer) data.get(RESULT_MAX_PIN_LENGTH) : 63);
     }
 
     /**
@@ -1070,7 +1074,6 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
      *     href="https://www.iana.org/assignments/webauthn/webauthn.xhtml#webauthn-attestation-statement-format-ids">WebAuthn
      *     attestation statement format IDs</a>
      */
-    @Nullable
     public List<String> getAttestationFormats() {
       return attestationFormats;
     }
@@ -1119,7 +1122,6 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
      * @see <a href="https://www.w3.org/TR/webauthn/#enumdef-authenticatortransport">WebAuthn
      *     Authenticator Transport Enumeration</a>
      */
-    @Nullable
     public List<String> getTransportsForReset() {
       return transportsForReset;
     }
@@ -1160,8 +1162,8 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
      *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250228/fido-client-to-authenticator-protocol-v2.2-ps-20250228.html#getinfo-maxpinlength">maxPinLength</a>
      */
     @Nullable
-    public Integer getMaxPINLength() {
-      return maxPINLength;
+    public Integer getMaxPinLength() {
+      return maxPinLength;
     }
 
     @Nullable
@@ -1245,7 +1247,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
           + ", pinComplexityPolicyURL="
           + (pinComplexityPolicyURL != null ? StringUtils.bytesToHex(pinComplexityPolicyURL) : null)
           + ", maxPINLength="
-          + maxPINLength
+          + maxPinLength
           + '}';
     }
   }
