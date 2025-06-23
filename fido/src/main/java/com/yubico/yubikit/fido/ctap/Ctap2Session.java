@@ -693,7 +693,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
     private final List<String> transportsForReset;
     @Nullable private final Boolean pinComplexityPolicy;
     @Nullable private final byte[] pinComplexityPolicyURL;
-    private final Integer maxPinLength;
+    private final int maxPinLength;
 
     private InfoData(
         List<String> versions,
@@ -724,7 +724,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
         List<String> transportsForReset,
         @Nullable Boolean pinComplexityPolicy,
         @Nullable byte[] pinComplexityPolicyURL,
-        Integer maxPinLength) {
+        int maxPinLength) {
       this.versions = versions;
       this.extensions = extensions;
       this.aaguid = aaguid;
@@ -1161,8 +1161,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
      * @see <a
      *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250228/fido-client-to-authenticator-protocol-v2.2-ps-20250228.html#getinfo-maxpinlength">maxPinLength</a>
      */
-    @Nullable
-    public Integer getMaxPinLength() {
+    public int getMaxPinLength() {
       return maxPinLength;
     }
 
