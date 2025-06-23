@@ -1257,24 +1257,44 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
     private static final int RESULT_ATT_STMT = 0x03;
     private static final int RESULT_EP_ATT = 0x04;
     private static final int RESULT_LARGE_BLOB_KEY = 0x05;
+    private static final int RESULT_UNSIGNED_EXTENSION_OUTPUTS = 0x06;
 
     private final String format;
     private final byte[] authenticatorData;
     private final Map<String, ?> attestationStatement;
     @Nullable private final Boolean enterpriseAttestation;
     @Nullable private final byte[] largeBlobKey;
+    @Nullable private final Map<String, ?> unsignedExtensionOutputs;
 
+    @Deprecated
     private CredentialData(
         String format,
         byte[] authenticatorData,
         Map<String, ?> attestationStatement,
         @Nullable Boolean enterpriseAttestation,
         @Nullable byte[] largeBlobKey) {
+      this(
+          format,
+          authenticatorData,
+          attestationStatement,
+          enterpriseAttestation,
+          largeBlobKey,
+          null);
+    }
+
+    private CredentialData(
+        String format,
+        byte[] authenticatorData,
+        Map<String, ?> attestationStatement,
+        @Nullable Boolean enterpriseAttestation,
+        @Nullable byte[] largeBlobKey,
+        @Nullable Map<String, ?> unsignedExtensionOutputs) {
       this.format = format;
       this.authenticatorData = authenticatorData;
       this.attestationStatement = attestationStatement;
       this.enterpriseAttestation = enterpriseAttestation;
       this.largeBlobKey = largeBlobKey;
+      this.unsignedExtensionOutputs = unsignedExtensionOutputs;
     }
 
     @SuppressWarnings("unchecked")
@@ -1284,7 +1304,8 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
           Objects.requireNonNull((byte[]) data.get(RESULT_AUTH_DATA)),
           Objects.requireNonNull((Map<String, ?>) data.get(RESULT_ATT_STMT)),
           (Boolean) data.get(RESULT_EP_ATT),
-          (byte[]) data.get(RESULT_LARGE_BLOB_KEY));
+          (byte[]) data.get(RESULT_LARGE_BLOB_KEY),
+          (Map<String, ?>) data.get(RESULT_UNSIGNED_EXTENSION_OUTPUTS));
     }
 
     /**
@@ -1333,6 +1354,19 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
     @Nullable
     public byte[] getLargeBlobKey() {
       return largeBlobKey;
+    }
+
+    /**
+     * The unsigned extension outputs, if any.
+     *
+     * <p>Unsigned extension outputs are returned by the authenticator if any extension makes use of
+     * unsigned data.
+     *
+     * @return a map of unsigned extension outputs, or null if no unsigned extensions were requested
+     */
+    @Nullable
+    public Map<String, ?> getUnsignedExtensionOutputs() {
+      return unsignedExtensionOutputs;
     }
   }
 

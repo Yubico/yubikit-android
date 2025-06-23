@@ -99,6 +99,7 @@ public class HmacSecretExtension extends Extension {
 
   @Nullable
   @Override
+  @Nullable
   public RegistrationProcessor makeCredential(
       Ctap2Session ctap2,
       PublicKeyCredentialCreationOptions options,
@@ -158,6 +159,7 @@ public class HmacSecretExtension extends Extension {
 
   @Nullable
   @Override
+  @Nullable
   public AuthenticationProcessor getAssertion(
       Ctap2Session ctap,
       PublicKeyCredentialRequestOptions options,
