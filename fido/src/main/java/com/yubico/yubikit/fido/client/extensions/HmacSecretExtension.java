@@ -97,7 +97,6 @@ public class HmacSecretExtension extends Extension {
     this.allowHmacSecret = allowHmacSecret;
   }
 
-  @Nullable
   @Override
   @Nullable
   public RegistrationProcessor makeCredential(
@@ -157,7 +156,6 @@ public class HmacSecretExtension extends Extension {
             });
   }
 
-  @Nullable
   @Override
   @Nullable
   public AuthenticationProcessor getAssertion(
