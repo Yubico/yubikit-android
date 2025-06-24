@@ -18,7 +18,9 @@ package com.yubico.yubikit.oath;
 
 import com.yubico.yubikit.core.util.Pair;
 import java.io.Serializable;
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
+import java.net.URLDecoder;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -69,9 +71,27 @@ public class CredentialData implements Serializable {
     }
 
     Map<String, String> params = new HashMap<>();
-    for (String line : uri.getQuery().split("&")) {
+    String rawQuery = uri.getRawQuery();
+    if (rawQuery == null || rawQuery.isEmpty()) {
+      throw new ParseUriException("Query must contain parameters");
+    }
+
+    for (String line : uri.getRawQuery().split("&")) {
       String[] parts = line.split("=", 2);
-      params.put(parts[0], parts[1]);
+      if (parts.length != 2) {
+        throw new ParseUriException("Invalid query parameter: " + line);
+      }
+      String decodedValue = parts[1];
+      try {
+        decodedValue = URLDecoder.decode(decodedValue, "UTF-8");
+      } catch (IllegalArgumentException e) {
+        throw new ParseUriException("Invalid URL encoding in parameter value: " + decodedValue);
+      } catch (UnsupportedEncodingException e) {
+        throw new ParseUriException(
+            "UTF-8 encoding not supported while parsing value: " + decodedValue);
+      }
+
+      params.put(parts[0], decodedValue);
     }
 
     Pair<String, String> nameAndIssuer = parseNameAndIssuer(path, params.get("issuer"));
@@ -95,7 +115,11 @@ public class CredentialData implements Serializable {
       }
     }
 
-    byte[] secret = decodeSecret(params.get("secret"));
+    String secretParam = params.get("secret");
+    if (secretParam == null || secretParam.isEmpty()) {
+      throw new ParseUriException("secret must be provided and not empty");
+    }
+    byte[] secret = decodeSecret(secretParam);
 
     int digits = getIntParam(params, "digits", DEFAULT_DIGITS);
     if (digits < 6 || digits > 8) {

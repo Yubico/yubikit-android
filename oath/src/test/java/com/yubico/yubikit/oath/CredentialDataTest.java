@@ -45,20 +45,27 @@ public class CredentialDataTest {
   }
 
   @Test
-  public void testParseIssuer() throws ParseUriException, URISyntaxException {
+  public void testParse() throws ParseUriException, URISyntaxException {
     CredentialData noIssuer =
         CredentialData.parseUri(new URI("otpauth://totp/account?secret=abba"));
     Assert.assertNull(noIssuer.getIssuer());
+    Assert.assertEquals("account", noIssuer.getAccountName());
+
     CredentialData usingParam =
-        CredentialData.parseUri(new URI("otpauth://totp/account?secret=abba&issuer=Issuer"));
-    Assert.assertEquals(usingParam.getIssuer(), "Issuer");
+        CredentialData.parseUri(new URI("otpauth://totp/account?secret=abba&issuer=Issuer%26Amp"));
+    Assert.assertEquals("Issuer&Amp", usingParam.getIssuer());
+    Assert.assertEquals("account", usingParam.getAccountName());
+
     CredentialData usingSeparator =
-        CredentialData.parseUri(new URI("otpauth://totp/Issuer:account?secret=abba"));
-    Assert.assertEquals(usingSeparator.getIssuer(), "Issuer");
+        CredentialData.parseUri(new URI("otpauth://totp/Issuer%26Amp:account?secret=abba"));
+    Assert.assertEquals("Issuer&Amp", usingSeparator.getIssuer());
+    Assert.assertEquals("account", noIssuer.getAccountName());
+
     CredentialData usingBoth =
         CredentialData.parseUri(
-            new URI("otpauth://totp/IssuerA:account?secret=abba&issuer=IssuerB"));
-    Assert.assertEquals(usingBoth.getIssuer(), "IssuerA");
+            new URI("otpauth://totp/Issuer%26Amp:account?secret=abba&issuer=IssuerB"));
+    Assert.assertEquals("Issuer&Amp", usingBoth.getIssuer());
+    Assert.assertEquals("account", noIssuer.getAccountName());
   }
 
   @Test(expected = ParseUriException.class)
@@ -85,5 +92,10 @@ public class CredentialDataTest {
   @Test(expected = ParseUriException.class)
   public void testParseMissingAlgorithm() throws ParseUriException, URISyntaxException {
     CredentialData.parseUri(new URI("otpauth:///foo:mallory@example.com?secret=kaka"));
+  }
+
+  @Test(expected = ParseUriException.class)
+  public void testParseInvalidIssuerQuery() throws ParseUriException, URISyntaxException {
+    CredentialData.parseUri(new URI("otpauth:///foo:mallory@example.com?secret=kaka&issuer"));
   }
 }
