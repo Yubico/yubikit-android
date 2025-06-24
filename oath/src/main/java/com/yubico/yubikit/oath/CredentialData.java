@@ -76,7 +76,7 @@ public class CredentialData implements Serializable {
       throw new ParseUriException("Query must contain parameters");
     }
 
-    for (String line : uri.getRawQuery().split("&")) {
+    for (String line : rawQuery.split("&")) {
       String[] parts = line.split("=", 2);
       if (parts.length != 2) {
         throw new ParseUriException("Invalid query parameter: " + line);

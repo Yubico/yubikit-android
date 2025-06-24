@@ -59,13 +59,13 @@ public class CredentialDataTest {
     CredentialData usingSeparator =
         CredentialData.parseUri(new URI("otpauth://totp/Issuer%26Amp:account?secret=abba"));
     Assert.assertEquals("Issuer&Amp", usingSeparator.getIssuer());
-    Assert.assertEquals("account", noIssuer.getAccountName());
+    Assert.assertEquals("account", usingSeparator.getAccountName());
 
     CredentialData usingBoth =
         CredentialData.parseUri(
             new URI("otpauth://totp/Issuer%26Amp:account?secret=abba&issuer=IssuerB"));
     Assert.assertEquals("Issuer&Amp", usingBoth.getIssuer());
-    Assert.assertEquals("account", noIssuer.getAccountName());
+    Assert.assertEquals("account", usingBoth.getAccountName());
   }
 
   @Test(expected = ParseUriException.class)
