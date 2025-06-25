@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Yubico.
+ * Copyright (C) 2023-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,24 +37,39 @@ public class AttestationObject {
   public static final String KEY_ATTESTATION_STATEMENT = "attStmt";
   public static final String KEY_EP_ATT = "epAtt";
   public static final String KEY_LARGE_BLOB_KEY = "largeBlobKey";
+  public static final String KEY_UNSIGNED_EXTENSION_OUTPUTS = "unsignedExtensionOutputs";
 
   private final String format;
   private final AuthenticatorData authenticatorData;
   private final Map<String, ?> attestationStatement;
   @Nullable private final Boolean enterpriseAttestation;
   @Nullable private final byte[] largeBlobKey;
+  @Nullable private final Map<String, ?> unsignedExtensionOutputs;
 
+  @Deprecated
   public AttestationObject(
       String format,
       AuthenticatorData authenticatorData,
       Map<String, ?> attestationStatement,
       @Nullable Boolean enterpriseAttestation,
       @Nullable byte[] largeBlobKey) {
+    this(
+        format, authenticatorData, attestationStatement, enterpriseAttestation, largeBlobKey, null);
+  }
+
+  public AttestationObject(
+      String format,
+      AuthenticatorData authenticatorData,
+      Map<String, ?> attestationStatement,
+      @Nullable Boolean enterpriseAttestation,
+      @Nullable byte[] largeBlobKey,
+      @Nullable Map<String, ?> unsignedExtensionOutputs) {
     this.format = format;
     this.authenticatorData = authenticatorData;
     this.attestationStatement = attestationStatement;
     this.enterpriseAttestation = enterpriseAttestation;
     this.largeBlobKey = largeBlobKey;
+    this.unsignedExtensionOutputs = unsignedExtensionOutputs;
   }
 
   public static AttestationObject fromCredential(Ctap2Session.CredentialData credential) {
@@ -63,7 +78,8 @@ public class AttestationObject {
         AuthenticatorData.parseFrom(ByteBuffer.wrap(credential.getAuthenticatorData())),
         credential.getAttestationStatement(),
         credential.getEnterpriseAttestation(),
-        credential.getLargeBlobKey());
+        credential.getLargeBlobKey(),
+        credential.getUnsignedExtensionOutputs());
   }
 
   @SuppressWarnings("unused")
@@ -92,6 +108,11 @@ public class AttestationObject {
     return largeBlobKey;
   }
 
+  @Nullable
+  public Map<String, ?> getUnsignedExtensionOutputs() {
+    return unsignedExtensionOutputs;
+  }
+
   public byte[] toBytes() {
     Map<String, Object> attestationObject = new HashMap<>();
     attestationObject.put(AttestationObject.KEY_FORMAT, format);
@@ -102,6 +123,10 @@ public class AttestationObject {
     }
     if (largeBlobKey != null) {
       attestationObject.put(AttestationObject.KEY_LARGE_BLOB_KEY, largeBlobKey);
+    }
+    if (unsignedExtensionOutputs != null) {
+      attestationObject.put(
+          AttestationObject.KEY_UNSIGNED_EXTENSION_OUTPUTS, unsignedExtensionOutputs);
     }
     return Cbor.encode(attestationObject);
   }
@@ -117,7 +142,13 @@ public class AttestationObject {
     if (!authenticatorData.equals(that.authenticatorData)) return false;
     if (!Objects.equals(enterpriseAttestation, that.enterpriseAttestation)) return false;
     if (!Arrays.equals(largeBlobKey, that.largeBlobKey)) return false;
-    return Arrays.equals(Cbor.encode(attestationStatement), Cbor.encode(that.attestationStatement));
+    if (!Arrays.equals(Cbor.encode(attestationStatement), Cbor.encode(that.attestationStatement)))
+      return false;
+    if (unsignedExtensionOutputs != null && that.unsignedExtensionOutputs == null) return false;
+    if (unsignedExtensionOutputs == null && that.unsignedExtensionOutputs != null) return false;
+    return unsignedExtensionOutputs == null
+        || (Arrays.equals(
+            Cbor.encode(unsignedExtensionOutputs), Cbor.encode(that.unsignedExtensionOutputs)));
   }
 
   @Override
@@ -127,6 +158,11 @@ public class AttestationObject {
     result = 31 * result + Arrays.hashCode(Cbor.encode(attestationStatement));
     result = 31 * result + (enterpriseAttestation != null ? enterpriseAttestation.hashCode() : 0);
     result = 31 * result + Arrays.hashCode(largeBlobKey);
+    result =
+        31 * result
+            + (unsignedExtensionOutputs != null
+                ? Arrays.hashCode(Cbor.encode(unsignedExtensionOutputs))
+                : 0);
     return result;
   }
 }

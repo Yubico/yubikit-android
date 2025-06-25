@@ -1,5 +1,6 @@
 plugins {
     id 'application'
+    id 'project-convention-spotbugs'
     id 'project-convention-spotless'
 }
 
