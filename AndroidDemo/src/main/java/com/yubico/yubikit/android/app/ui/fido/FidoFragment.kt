@@ -21,18 +21,18 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
+import androidx.webkit.WebViewFeature
 import com.yubico.yubikit.android.app.databinding.FragmentFidoBinding
-import com.yubico.yubikit.core.internal.codec.Base64
 import com.yubico.yubikit.fido.android.YubiKitFidoClient
-import kotlinx.coroutines.launch
-import org.slf4j.LoggerFactory
-import kotlin.random.Random
+import com.yubico.yubikit.fido.android.YubiKitWebViewSupport
 
 class FidoFragment : Fragment() {
-    private val logger = LoggerFactory.getLogger(FidoFragment::class.java)
     private lateinit var binding: FragmentFidoBinding
-    private lateinit var yubiKitFidoClient : YubiKitFidoClient
+    private lateinit var yubiKitFidoClient: YubiKitFidoClient
+
+    val viewModel: FidoViewModel by activityViewModels()
 
 
     override fun onCreateView(
@@ -46,102 +46,48 @@ class FidoFragment : Fragment() {
         return binding.root
     }
 
-    private fun buildMcRequest(
-        rpId: String,
-        userName: String,
-        rpName: String? = null,
-        userDisplayName: String? = null
-    ): String {
-        val challenge = ByteArray(16).also { Random.Default.nextBytes(it) }
-        val userId = ByteArray(32).also { Random.Default.nextBytes(it) }
-        return """
-                {
-                    "challenge": "{CHALLENGE}",
-                    "rp": {
-                      "id": "{RP_ID}",
-                      "name": "{RP_NAME}"
-                    },
-                    "user": {
-                      "id": "{USER_RP_ID}",
-                      "name": "{USER_NAME}",
-                      "displayName": "{USER_DISPLAY_NAME}"
-                    },
-                    "attestation": "direct",
-                    "authenticatorSelection": {
-                      "userVerification": "required",
-                      "residentKey": "required",
-                      "requireResidentKey": true,
-                      "authenticatorAttachment": "cross-platform"
-                    },
-                    "excludeCredentials": [],
-                    "timeout": 90000,
-                    "extensions": {
-                      "credProps": true
-                    },
-                    "pubKeyCredParams": [
-                      {
-                        "alg": -8,
-                        "type": "public-key"
-                      },
-                      {
-                        "alg": -7,
-                        "type": "public-key"
-                      },
-                      {
-                        "alg": -257,
-                        "type": "public-key"
-                      }
-                    ]
-                  }                
-            """
-            .replace("{CHALLENGE}", Base64.toUrlSafeString(challenge))
-            .replace("{RP_ID}", rpId)
-            .replace("{RP_NAME}", rpName ?: rpId)
-            .replace("{USER_ID}", Base64.toUrlSafeString(userId))
-            .replace("{USER_NAME}", userName)
-            .replace("{USER_DISPLAY_NAME}", userDisplayName ?: userName)
-            .trimIndent()
-    }
-
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        binding.btnMc.setOnClickListener {
-            lifecycleScope.launch {
-                val rpId = "demo.yubico.app"
-                val mcRequest = buildMcRequest(
-                    rpId,
-                    "App test user"
-                )
+        binding.btnWeb1.setOnClickListener {
+            viewModel.setUrl("https://passkey.org")
+        }
 
-                yubiKitFidoClient.makeCredential(rpId, mcRequest).fold(
-                    onSuccess = { result ->
-                        logger.debug("Successful MC: {}", result.toMap())
-                    },
-                    onFailure = { error ->
-                        logger.error("Error during MC: ${error.message}")
-                    }
+        binding.btnWeb2.setOnClickListener {
+            viewModel.setUrl("https://webauthn.io")
+        }
+
+        binding.btnWeb3.setOnClickListener {
+            viewModel.setUrl("https://demo.yubico.com/webauthn-developers")
+        }
+
+        binding.webView.apply {
+            settings.apply {
+                javaScriptEnabled = true
+                userAgentString =
+                    "Mozilla/5.0 (iPhone; CPU iPhone OS 16_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1"
+                domStorageEnabled = true
+            }
+
+            if (WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)) {
+                YubiKitWebViewSupport.addWebAuthnSupport(
+                    this,
+                    requireActivity(),
+                    lifecycleScope,
+                    yubiKitFidoClient
                 )
+            } else {
+                // not supported
+            }
+
+            viewModel.setUrl("https://passkey.org")
+        }
+
+        viewModel.url.observe(viewLifecycleOwner) { url ->
+            if (url != null) {
+                binding.webView.loadUrl(url)
             }
         }
 
-        binding.btnGa.setOnClickListener {
-            lifecycleScope.launch {
-                val rpId = "demo.yubico.app"
-                val mcRequest = buildMcRequest(
-                    rpId,
-                    "App test user"
-                )
-
-                yubiKitFidoClient.getAssertion(rpId, mcRequest).fold(
-                    onSuccess = { result ->
-                        logger.debug("Successful GA: {}", result.toMap())
-                    },
-                    onFailure = { error ->
-                        logger.error("Error during GA: ${error.message}")
-                    }
-                )
-            }
-        }
     }
 }

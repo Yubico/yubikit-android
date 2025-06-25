@@ -11,6 +11,7 @@
     <string name="menu_web">WebView</string>
     <string name="menu_oath">OATH</string>
     <string name="menu_fido">FIDO</string>
+    <string name="menu_fido_app_local">FIDO (App)</string>
 
     <string name="need_yubikey">Plug in you YubiKey or tap over NFC reader</string>
     <string name="hold_key">Hold your key flat until operation is completed</string>
@@ -81,8 +82,8 @@
     <string name="oath_issuer">Credential issuer</string>
     <string name="oath_add">Add new credential</string>
 
-    <string name="fido_mc">Make credential</string>
-    <string name="fido_ga">Get assertion</string>
+    <string name="fido_mc">MC</string>
+    <string name="fido_ga">GA</string>
 
     <string name="about">About</string>
     <string name="about_app">YubiKit is a library provided by Yubico for interacting with YubiKeys.

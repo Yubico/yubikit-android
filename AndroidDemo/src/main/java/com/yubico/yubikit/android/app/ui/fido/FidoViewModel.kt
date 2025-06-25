@@ -16,6 +16,16 @@
 
 package com.yubico.yubikit.android.app.ui.fido
 
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 
-class FidoViewModel : ViewModel()
+class FidoViewModel : ViewModel() {
+    private val _url = MutableLiveData<String?>()
+    val url: LiveData<String?> = _url
+
+    fun setUrl(newUrl: String?) {
+        _url.postValue(newUrl)
+    }
+
+}

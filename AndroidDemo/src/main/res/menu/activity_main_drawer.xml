@@ -24,5 +24,9 @@
             android:id="@+id/nav_fido"
             android:icon="@drawable/ic_baseline_passkey_24"
             android:title="@string/menu_fido" />
+        <item
+            android:id="@+id/nav_fido_app_local"
+            android:icon="@drawable/ic_baseline_passkey_24"
+            android:title="@string/menu_fido_app_local" />
     </group>
 </menu>

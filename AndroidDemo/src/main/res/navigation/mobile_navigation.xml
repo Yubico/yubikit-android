@@ -33,4 +33,10 @@
         android:name="com.yubico.yubikit.android.app.ui.fido.FidoFragment"
         android:label="@string/menu_fido"
         tools:layout="@layout/fragment_fido" />
+
+    <fragment
+        android:id="@+id/nav_fido_app_local"
+        android:name="com.yubico.yubikit.android.app.ui.fido.FidoAppLocalFragment"
+        android:label="@string/menu_fido_app_local"
+        tools:layout="@layout/fragment_fido_app_local" />
 </navigation>
