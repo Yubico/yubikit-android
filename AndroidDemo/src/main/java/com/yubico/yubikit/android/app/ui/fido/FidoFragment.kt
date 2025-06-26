@@ -26,7 +26,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.webkit.WebViewFeature
 import com.yubico.yubikit.android.app.databinding.FragmentFidoBinding
 import com.yubico.yubikit.fido.android.YubiKitFidoClient
-import com.yubico.yubikit.fido.android.YubiKitWebViewSupport
+import com.yubico.yubikit.fido.android.YubiKitWebViewSupport.Companion.withYubiKitWebauthn
 
 class FidoFragment : Fragment() {
     private lateinit var binding: FragmentFidoBinding
@@ -70,9 +70,7 @@ class FidoFragment : Fragment() {
             }
 
             if (WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)) {
-                YubiKitWebViewSupport.addWebAuthnSupport(
-                    this,
-                    requireActivity(),
+                withYubiKitWebauthn(
                     lifecycleScope,
                     yubiKitFidoClient
                 )

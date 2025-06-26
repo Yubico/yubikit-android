@@ -16,7 +16,8 @@
 
 package com.yubico.yubikit.fido.android
 
-import android.app.Activity
+import android.annotation.SuppressLint
+import android.content.Context
 import android.graphics.Bitmap
 import android.net.Uri
 import android.webkit.WebView
@@ -38,33 +39,35 @@ class YubiKitWebViewSupport {
     companion object {
         private val logger: Logger = LoggerFactory.getLogger(YubiKitWebViewSupport::class.java)
 
-        fun addWebAuthnSupport(
-            webView: WebView,
-            activity: Activity,
+        @SuppressLint("SetJavaScriptEnabled")
+        fun WebView.withYubiKitWebauthn(
             coroutineScope: CoroutineScope,
             yubiKitFidoClient: YubiKitFidoClient
         ) {
+            this.apply {
+                settings.javaScriptEnabled = true
+            }
             val webauthnListener =
-                WebauthnListener(activity, coroutineScope, yubiKitFidoClient)
+                WebauthnListener(context, coroutineScope, yubiKitFidoClient)
             val webViewClient = object : WebViewClient() {
                 override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
                     super.onPageStarted(view, url, favicon)
                     logger.trace("onPageStarted: {}", url)
                     logger.trace("userAgent: {}", view?.settings?.userAgentString)
                     webauthnListener.onPageStarted();
-                    webView.evaluateJavascript(JS, null)
+                    evaluateJavascript(JS, null)
                 }
             }
 
             val rules = setOf("*")
             if (WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)) {
                 WebViewCompat.addWebMessageListener(
-                    webView, INTERFACE_NAME,
+                    this, INTERFACE_NAME,
                     rules, webauthnListener
                 )
             }
 
-            webView.webViewClient = webViewClient
+            this.webViewClient = webViewClient
         }
 
         private const val INTERFACE_NAME = "__webauthn_interface__"
@@ -74,7 +77,7 @@ class YubiKitWebViewSupport {
     }
 
     private class WebauthnListener(
-        private val activity: Activity,
+        private val activity: Context,
         private val coroutineScope: CoroutineScope,
         private val yubiKitFidoClient: YubiKitFidoClient
     ) : WebViewCompat.WebMessageListener {
