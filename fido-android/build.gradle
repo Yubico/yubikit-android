@@ -37,16 +37,16 @@ android {
 }
 
 dependencies {
-    implementation 'androidx.fragment:fragment-ktx:1.8.7'
+    implementation 'androidx.fragment:fragment-ktx:1.8.8'
     implementation 'androidx.webkit:webkit:1.14.0'
-    def composeBom = platform('androidx.compose:compose-bom:2025.05.01')
+    def composeBom = platform('androidx.compose:compose-bom:2025.06.01')
     implementation composeBom
     androidTestImplementation composeBom
 
     implementation project(':android')
     api project(':fido')
 
-    implementation 'androidx.compose.material3:material3:1.4.0-alpha15'
+    implementation 'androidx.compose.material3:material3:1.4.0-alpha16'
 
     // Android Studio Preview support
     implementation 'androidx.compose.ui:ui-tooling-preview'
@@ -57,14 +57,14 @@ dependencies {
     debugImplementation 'androidx.compose.ui:ui-test-manifest'
 
     implementation 'androidx.compose.material:material-icons-core'
-    implementation "androidx.compose.runtime:runtime-livedata:1.8.2"
+    implementation "androidx.compose.runtime:runtime-livedata:1.8.3"
     implementation 'androidx.compose.material:material-icons-extended'
     implementation 'androidx.compose.material3.adaptive:adaptive'
 
     implementation 'androidx.activity:activity-compose:1.10.1'
     implementation 'androidx.activity:activity-ktx:1.10.1'
-    implementation 'androidx.lifecycle:lifecycle-viewmodel-compose:2.9.0'
-    implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.9.0'
+    implementation 'androidx.lifecycle:lifecycle-viewmodel-compose:2.9.1'
+    implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.9.1'
     implementation 'androidx.compose.runtime:runtime-livedata'
 
 }
