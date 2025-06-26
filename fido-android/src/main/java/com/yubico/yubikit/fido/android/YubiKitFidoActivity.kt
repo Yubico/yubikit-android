@@ -1,21 +1,34 @@
+/*
+ * Copyright (C) 2025 Yubico.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.yubico.yubikit.fido.android
 
 import android.annotation.SuppressLint
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -45,7 +58,6 @@ import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LoadingIndicator
-import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
@@ -61,16 +73,14 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
@@ -284,6 +294,7 @@ class YubiKitFidoActivity : ComponentActivity() {
                     val sheetState = rememberModalBottomSheetState()
                     val scope = rememberCoroutineScope()
                     var bottomSheetVisible by remember { mutableStateOf(true) }
+                    var nfcGuideVisible by remember { mutableStateOf(false) }
 
                     val finishActivity: () -> Unit = {
                         scope.launch {
@@ -305,21 +316,50 @@ class YubiKitFidoActivity : ComponentActivity() {
                         finishActivity()
                     }
 
-                    if (bottomSheetVisible) {
-                        ModalBottomSheet(
-                            dragHandle = {},
-                            sheetState = sheetState,
-                            onDismissRequest = finishActivity,
+                    BackHandler(enabled = nfcGuideVisible) {
+                        nfcGuideVisible = !nfcGuideVisible
+                        bottomSheetVisible = true
+                    }
+
+                    AnimatedVisibility(
+                        visible = nfcGuideVisible,
+                        enter = fadeIn(),
+                        exit = fadeOut()
+                    ) {
+                        NfcUsageGuide(
+                            onDisposed = { startDiscovery() }
                         ) {
-                            FidoClientUi(
-                                operation,
-                                isUsb = viewModel.isUsb,
-                                rpId,
-                                request,
-                                fidoClientService = fidoClientService,
-                                onResult = { finishActivityWithResult(it) },
-                                onCloseButtonClick = finishActivity
-                            )
+                            nfcGuideVisible = !nfcGuideVisible
+                            bottomSheetVisible = true
+
+                        }
+                    }
+                    AnimatedVisibility(
+                        visible = !nfcGuideVisible,
+                        enter = fadeIn(),
+                        exit = fadeOut()
+                    ) {
+                        if (bottomSheetVisible) {
+                            ModalBottomSheet(
+                                dragHandle = {},
+                                sheetState = sheetState,
+                                onDismissRequest = finishActivity,
+                            ) {
+                                FidoClientUi(
+                                    operation,
+                                    isUsb = viewModel.isUsb,
+                                    rpId,
+                                    request,
+                                    fidoClientService = fidoClientService,
+                                    onResult = { finishActivityWithResult(it) },
+                                    onShowNfcGuideClick = {
+                                        nfcGuideVisible = true
+                                        bottomSheetVisible = false
+                                    },
+                                    onCloseButtonClick = finishActivity
+                                )
+
+                            }
                         }
                     }
                 }
@@ -327,8 +367,7 @@ class YubiKitFidoActivity : ComponentActivity() {
         }
     }
 
-    override fun onStart() {
-        super.onStart()
+    private fun startDiscovery() {
         yubikit.startUsbDiscovery(UsbConfiguration()) {
             lifecycle.coroutineScope.launch {
                 viewModel.provideYubiKey(it)
@@ -341,9 +380,19 @@ class YubiKitFidoActivity : ComponentActivity() {
         }
     }
 
+    private fun stopDiscovery() {
+        yubikit.stopNfcDiscovery(this)
+        yubikit.stopUsbDiscovery()
+    }
+
+    override fun onStart() {
+        super.onStart()
+        startDiscovery()
+    }
+
     override fun onStop() {
         super.onStop()
-        yubikit.stopUsbDiscovery()
+        stopDiscovery()
     }
 }
 
@@ -401,6 +450,7 @@ fun ContentWrapper(
 fun TapOrInsertSecurityKey(
     operation: FidoClientService.Operation,
     origin: String,
+    onShowNfcGuideClick: (() -> Unit)? = null,
     onCloseButtonClick: () -> Unit
 ) {
     ContentWrapper(
@@ -416,6 +466,13 @@ fun TapOrInsertSecurityKey(
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(text = stringResource(R.string.tap_or_insert_key))
+        Text(
+            text = "How to use NFC",
+            modifier = Modifier.clickable(onClick = onShowNfcGuideClick ?: {}),
+            color = MaterialTheme.colorScheme.onSecondaryFixedVariant,
+            fontSize = MaterialTheme.typography.bodySmall.fontSize,
+            textDecoration = TextDecoration.Underline
+        )
     }
 }
 
@@ -640,6 +697,7 @@ fun FidoClientUi(
     request: String,
     fidoClientService: FidoClientService = remember { FidoClientService() },
     onResult: (PublicKeyCredential) -> Unit = {},
+    onShowNfcGuideClick: () -> Unit,
     onCloseButtonClick: () -> Unit
 ) {
     var result: PublicKeyCredential? by remember { mutableStateOf(null) }
@@ -655,7 +713,7 @@ fun FidoClientUi(
             if (result != null) {
                 fidoClientService.waitForKeyRemoval()
                 onResult(result!!)
-                return@produceState // End the flow after completion
+                return@produceState
             }
 
             if (tapAgain) {
@@ -672,7 +730,7 @@ fun FidoClientUi(
                     result = it
                     value = UiState.Success
                     retryOperation = !retryOperation
-                    return@produceState // End the flow after completion
+                    return@produceState
                 }, onFailure = { error ->
                     val errorState = when (error) {
                         is PinRequiredClientError -> Error.PinRequiredError
@@ -733,7 +791,6 @@ fun FidoClientUi(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-
         AnimatedContent(
             targetState = uiState.value,
             label = "FidoClientUi",
@@ -747,7 +804,8 @@ fun FidoClientUi(
                     TapOrInsertSecurityKey(
                         operation = operation,
                         origin = rpId,
-                        onCloseButtonClick = onCloseButtonClick
+                        onCloseButtonClick = onCloseButtonClick,
+                        onShowNfcGuideClick = onShowNfcGuideClick
                     )
                 }
 
@@ -804,52 +862,6 @@ fun FidoClientUi(
 }
 
 // helpers
-
-@Composable
-fun PulsingIcon(
-    painter: Painter,
-    contentDescription: String?,
-    modifier: Modifier = Modifier,
-    tint: Color = LocalContentColor.current
-) {
-    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
-
-    val scale by infiniteTransition.animateFloat(
-        initialValue = 1f,
-        targetValue = 1.1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(
-                durationMillis = 1000,
-                easing = FastOutSlowInEasing
-            ),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "scale"
-    )
-
-    val alpha by infiniteTransition.animateFloat(
-        initialValue = 1f,
-        targetValue = 0.7f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(
-                durationMillis = 1000,
-                easing = FastOutSlowInEasing
-            ),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "alpha"
-    )
-
-    Icon(
-        painter = painter,
-        contentDescription = contentDescription,
-        modifier = modifier
-            .scale(scale)
-            .alpha(alpha),
-        tint = tint
-    )
-}
-
 @Preview(
     name = "default preview", showBackground = true
 )
