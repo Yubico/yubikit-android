@@ -19,7 +19,6 @@ package com.yubico.yubikit.fido.android
 import android.app.Activity
 import android.graphics.Bitmap
 import android.net.Uri
-import android.webkit.HttpAuthHandler
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Toast
@@ -172,7 +171,7 @@ class YubiKitWebViewSupport {
                     message
                 ).fold(
                     onSuccess = {
-                        it.toMap()
+                        it
                     },
                     onFailure = {
                         throw it
@@ -201,7 +200,7 @@ class YubiKitWebViewSupport {
                 val result =
                     yubiKitFidoClient.makeCredential(sourceOrigin.toString(), message).fold(
                         onSuccess = {
-                            it.toMap()
+                            it
                         },
                         onFailure = {
                             throw it

@@ -24,13 +24,10 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.compose.runtime.Composable
 import androidx.fragment.app.Fragment
-import com.yubico.yubikit.fido.android.YubiKitFidoActivity.Companion.toMap
 import com.yubico.yubikit.fido.client.extensions.Extension
-import com.yubico.yubikit.fido.webauthn.PublicKeyCredential
 import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.suspendCancellableCoroutine
-import org.json.JSONObject
 import kotlin.coroutines.resume
 
 class YubiKitFidoClient {
@@ -40,7 +37,7 @@ class YubiKitFidoClient {
         val request: String
     )
 
-    private var currentContinuation: CancellableContinuation<Result<PublicKeyCredential>>? = null
+    private var currentContinuation: CancellableContinuation<Result<String>>? = null
     private val launcher: ActivityResultLauncher<FidoRequest>
 
     companion object {
@@ -96,7 +93,7 @@ class YubiKitFidoClient {
         type: FidoClientService.Operation,
         rpId: String,
         request: String
-    ): Result<PublicKeyCredential> {
+    ): Result<String> {
         return suspendCancellableCoroutine { continuation ->
             currentContinuation = continuation
             launcher.launch(FidoRequest(type, rpId, request))
@@ -106,16 +103,16 @@ class YubiKitFidoClient {
         }
     }
 
-    suspend fun makeCredential(rpId: String, request: String): Result<PublicKeyCredential> {
+    suspend fun makeCredential(rpId: String, request: String): Result<String> {
         return execute(FidoClientService.Operation.MAKE_CREDENTIAL, rpId, request)
     }
 
-    suspend fun getAssertion(rpId: String, request: String): Result<PublicKeyCredential> {
+    suspend fun getAssertion(rpId: String, request: String): Result<String> {
         return execute(FidoClientService.Operation.GET_ASSERTION, rpId, request)
     }
 
     private class FidoActivityResultContract :
-        ActivityResultContract<FidoRequest, Result<PublicKeyCredential>>() {
+        ActivityResultContract<FidoRequest, Result<String>>() {
 
         override fun createIntent(context: Context, input: FidoRequest): Intent {
             return Intent(context, YubiKitFidoActivity::class.java).apply {
@@ -125,11 +122,11 @@ class YubiKitFidoClient {
             }
         }
 
-        override fun parseResult(resultCode: Int, intent: Intent?): Result<PublicKeyCredential> {
+        override fun parseResult(resultCode: Int, intent: Intent?): Result<String> {
             return if (resultCode == Activity.RESULT_OK && intent != null) {
+
                 intent.getStringExtra("credential")?.let { credentialJson ->
-                    val credential = PublicKeyCredential.fromMap(JSONObject(credentialJson).toMap())
-                    Result.success(credential)
+                    Result.success(credentialJson)
                 } ?: run {
                     Result.failure(IllegalStateException())
                 }

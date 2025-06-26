@@ -133,7 +133,7 @@ class FidoAppLocalFragment : Fragment() {
 
                 yubiKitFidoClient.makeCredential(rpId, mcRequest).fold(
                     onSuccess = { result ->
-                        logger.debug("Successful MC: {}", result.toMap())
+                        logger.debug("Successful MC: {}", result)
                     },
                     onFailure = { error ->
                         logger.error("Error during MC: ${error.message}")
@@ -151,7 +151,7 @@ class FidoAppLocalFragment : Fragment() {
 
                 yubiKitFidoClient.getAssertion(rpId, gaRequest).fold(
                     onSuccess = { result ->
-                        logger.debug("Successful GA: {}", result.toMap())
+                        logger.debug("Successful GA: {}", result)
                     },
                     onFailure = { error ->
                         logger.error("Error during GA: ${error.message}")

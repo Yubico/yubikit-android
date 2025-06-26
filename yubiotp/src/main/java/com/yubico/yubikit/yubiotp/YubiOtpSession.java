@@ -195,6 +195,8 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
 
     version = overrideOf(version);
 
+    protocol.configure(version);
+
     if (scpKeyParams != null) {
       try {
         protocol.initScp(scpKeyParams);
