@@ -20,6 +20,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.webkit.CookieManager
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
@@ -27,10 +28,27 @@ import androidx.webkit.WebViewFeature
 import com.yubico.yubikit.android.app.databinding.FragmentFidoBinding
 import com.yubico.yubikit.fido.android.YubiKitFidoClient
 import com.yubico.yubikit.fido.android.YubiKitWebViewSupport.Companion.withYubiKitWebauthn
+import com.yubico.yubikit.fido.client.extensions.CredBlobExtension
+import com.yubico.yubikit.fido.client.extensions.CredPropsExtension
+import com.yubico.yubikit.fido.client.extensions.CredProtectExtension
+import com.yubico.yubikit.fido.client.extensions.HmacSecretExtension
+import com.yubico.yubikit.fido.client.extensions.LargeBlobExtension
+import com.yubico.yubikit.fido.client.extensions.MinPinLengthExtension
+import com.yubico.yubikit.fido.client.extensions.SignExtension
 
 class FidoFragment : Fragment() {
     private lateinit var binding: FragmentFidoBinding
     private lateinit var yubiKitFidoClient: YubiKitFidoClient
+
+    private val extensions = listOf(
+        CredPropsExtension(),
+        CredBlobExtension(),
+        CredProtectExtension(),
+        HmacSecretExtension(),
+        MinPinLengthExtension(),
+        LargeBlobExtension(),
+        SignExtension()
+    )
 
     val viewModel: FidoViewModel by activityViewModels()
 
@@ -41,7 +59,7 @@ class FidoFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View {
 
-        yubiKitFidoClient = YubiKitFidoClient(this)
+        yubiKitFidoClient = YubiKitFidoClient(this, extensions)
         binding = FragmentFidoBinding.inflate(inflater, container, false)
         return binding.root
     }
@@ -61,11 +79,14 @@ class FidoFragment : Fragment() {
             viewModel.setUrl("https://demo.yubico.com/webauthn-developers")
         }
 
+        binding.btnClearCookies.setOnClickListener {
+            CookieManager.getInstance().removeAllCookies {
+                viewModel.setUrl(viewModel.url.value)
+            }
+        }
+
         binding.webView.apply {
             settings.apply {
-                javaScriptEnabled = true
-                userAgentString =
-                    "Mozilla/5.0 (iPhone; CPU iPhone OS 16_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1"
                 domStorageEnabled = true
             }
 

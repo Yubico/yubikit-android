@@ -82,8 +82,8 @@
     <string name="oath_issuer">Credential issuer</string>
     <string name="oath_add">Add new credential</string>
 
-    <string name="fido_mc">MC</string>
-    <string name="fido_ga">GA</string>
+    <string name="fido_mc">Make credential</string>
+    <string name="fido_ga">Get assertions</string>
 
     <string name="about">About</string>
     <string name="about_app">YubiKit is a library provided by Yubico for interacting with YubiKeys.

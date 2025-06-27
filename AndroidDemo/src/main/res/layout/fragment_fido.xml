@@ -23,7 +23,8 @@
             android:layout_height="wrap_content"
             android:layout_marginEnd="8dp"
             android:layout_weight="1"
-            android:text="Passkey.org" />
+            android:text="passkey.org"
+            android:textSize="10dp" />
 
         <Button
             android:id="@+id/btn_web2"
@@ -31,7 +32,8 @@
             android:layout_height="wrap_content"
             android:layout_marginEnd="8dp"
             android:layout_weight="1"
-            android:text="Webauthn.io" />
+            android:text="Webauthn.io"
+            android:textSize="10dp" />
 
         <Button
             android:id="@+id/btn_web3"
@@ -39,7 +41,16 @@
             android:layout_height="wrap_content"
             android:layout_marginEnd="8dp"
             android:layout_weight="1"
+            android:textSize="10dp"
             android:text="webauthn-dev" />
+
+        <Button
+            android:id="@+id/btn_clear_cookies"
+            android:layout_width="30sp"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:textSize="10dp"
+            android:text="C" />
 
     </LinearLayout>
 
