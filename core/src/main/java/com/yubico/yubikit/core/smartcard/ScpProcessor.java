@@ -16,31 +16,24 @@
 
 package com.yubico.yubikit.core.smartcard;
 
+import static com.yubico.yubikit.core.smartcard.ShortApduFormatter.SHORT_APDU_MAX_CHUNK;
+
 import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.smartcard.scp.ScpState;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
-public class ScpProcessor extends ChainedResponseProcessor {
+public class ScpProcessor implements ApduProcessor {
+  private final ApduProcessor delegate;
+  private final ApduFormatter formatter;
+  final ScpState state;
+  private final ApduFormatter extendedFormatter = new ExtendedApduFormatter(MaxApduSize.YK4_3);
 
-  private static final int SHORT_APDU_MAX_CHUNK = 255;
-
-  private final ScpState state;
-  private final boolean usingShortApdus;
-  private final ApduFormatProcessor extendedProcessor;
-
-  ScpProcessor(
-      SmartCardConnection connection,
-      boolean extendedApdus,
-      ScpState state,
-      int maxApduSize,
-      byte insSendRemaining) {
-    super(connection, extendedApdus, maxApduSize, insSendRemaining);
+  ScpProcessor(ApduProcessor delegate, ApduFormatter formatter, ScpState state) {
+    this.delegate = delegate;
+    this.formatter = formatter;
     this.state = state;
-    this.usingShortApdus = !extendedApdus;
-    this.extendedProcessor =
-        usingShortApdus ? new ExtendedApduProcessor(connection, maxApduSize) : super.processor;
   }
 
   @Override
@@ -64,7 +57,7 @@ public class ScpProcessor extends ChainedResponseProcessor {
     System.arraycopy(mac, 0, macedData, macedData.length - 8, 8);
 
     ApduResponse resp =
-        super.sendApdu(
+        delegate.sendApdu(
             new Apdu(cla, apdu.getIns(), apdu.getP1(), apdu.getP2(), macedData, apdu.getLe()));
     byte[] respData = resp.getData();
 
@@ -81,11 +74,11 @@ public class ScpProcessor extends ChainedResponseProcessor {
   }
 
   private byte[] formatApduData(byte cla, Apdu apdu, byte[] macedData) {
-    if (usingShortApdus && macedData.length > SHORT_APDU_MAX_CHUNK) {
-      return extendedProcessor.formatApdu(
+    if (macedData.length > SHORT_APDU_MAX_CHUNK) {
+      return extendedFormatter.formatApdu(
           cla, apdu.getIns(), apdu.getP1(), apdu.getP2(), macedData, 0, macedData.length, 0);
     } else {
-      return processor.formatApdu(
+      return formatter.formatApdu(
           cla, apdu.getIns(), apdu.getP1(), apdu.getP2(), macedData, 0, macedData.length, 0);
     }
   }
