@@ -16,8 +16,6 @@
 
 package com.yubico.yubikit.core.smartcard;
 
-import static com.yubico.yubikit.core.smartcard.ShortApduFormatter.SHORT_APDU_MAX_CHUNK;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
@@ -29,8 +27,8 @@ class CommandChainingProcessor extends ApduFormatProcessor {
   @Override
   public ApduResponse sendApdu(Apdu apdu) throws IOException {
     ByteBuffer data = ByteBuffer.wrap(apdu.getData());
-    byte[] chunk = new byte[SHORT_APDU_MAX_CHUNK];
-    while (data.remaining() > SHORT_APDU_MAX_CHUNK) {
+    byte[] chunk = new byte[ShortApduFormatter.SHORT_APDU_MAX_CHUNK];
+    while (data.remaining() > ShortApduFormatter.SHORT_APDU_MAX_CHUNK) {
       data.get(chunk);
       ApduResponse response =
           super.sendApdu(

@@ -16,7 +16,7 @@
 
 package com.yubico.yubikit.core.smartcard;
 
-public interface ApduFormatter {
+interface ApduFormatter {
   byte[] formatApdu(
       byte cla, byte ins, byte p1, byte p2, byte[] data, int offset, int length, int le);
 }

@@ -16,8 +16,6 @@
 
 package com.yubico.yubikit.core.smartcard;
 
-import static com.yubico.yubikit.core.smartcard.ShortApduFormatter.SHORT_APDU_MAX_CHUNK;
-
 import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.smartcard.scp.ScpState;
 import java.io.IOException;
@@ -74,7 +72,7 @@ public class ScpProcessor implements ApduProcessor {
   }
 
   private byte[] formatApduData(byte cla, Apdu apdu, byte[] macedData) {
-    if (macedData.length > SHORT_APDU_MAX_CHUNK) {
+    if (macedData.length > ShortApduFormatter.SHORT_APDU_MAX_CHUNK) {
       return extendedFormatter.formatApdu(
           cla, apdu.getIns(), apdu.getP1(), apdu.getP2(), macedData, 0, macedData.length, 0);
     } else {

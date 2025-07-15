@@ -92,21 +92,21 @@ public class SmartCardProtocol implements Closeable {
   }
 
   private Pair<ApduProcessor, ApduFormatter> buildBaseProcessor() {
-    ApduProcessor processor;
+    ApduProcessor result;
     ApduFormatter formatter;
     if (extendedApdus) {
       formatter = new ExtendedApduFormatter(maxApduSize);
-      processor = new ApduFormatProcessor(connection, formatter);
+      result = new ApduFormatProcessor(connection, formatter);
     } else {
       formatter = new ShortApduFormatter();
       // Short APDUs need command chaining
-      processor = new CommandChainingProcessor(connection, formatter);
+      result = new CommandChainingProcessor(connection, formatter);
     }
 
-    // Add response chaining
-    processor = new ChainedResponseProcessor(processor, insSendRemaining);
+    // Always wrap with response chaining
+    result = new ChainedResponseProcessor(result, insSendRemaining);
 
-    return new Pair<>(processor, formatter);
+    return new Pair<>(result, formatter);
   }
 
   private void reconfigureProcessor() {
