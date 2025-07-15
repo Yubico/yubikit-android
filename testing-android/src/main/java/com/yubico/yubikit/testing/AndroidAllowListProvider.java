@@ -55,15 +55,17 @@ class AndroidAllowListProvider implements AllowList.AllowListProvider {
                 });
       }
     } catch (IOException ignored) {
+      // returning empty list
     }
 
     return allowedSerials;
   }
 
   @Override
-  public String onEmptyListErrorMessage() {
-    return "For running the integrations tests, add serial numbers of test devices to "
-        + ALLOW_LIST_FILENAME;
+  public String onInvalidInputErrorMessage() {
+    return "For running the integrations tests, create testing-android/src/main/assets/"
+        + ALLOW_LIST_FILENAME
+        + " and populate it with comma separated list of serial numbers of test devices";
   }
 
   @Override
@@ -71,7 +73,7 @@ class AndroidAllowListProvider implements AllowList.AllowListProvider {
     return "Device with serial number "
         + serialNumber
         + " is not allowed for integration tests. "
-        + "Add the serial number to assets/"
+        + "Add the serial number to testing-android/src/main/assets/"
         + ALLOW_LIST_FILENAME;
   }
 }

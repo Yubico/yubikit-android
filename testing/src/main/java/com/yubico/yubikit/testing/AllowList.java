@@ -39,11 +39,11 @@ public class AllowList {
     /**
      * Retrieves a list of allowed serial numbers.
      *
-     * @return a list of allowed serial numbers as integers
+     * @return a list of allowed serial numbers as integers.
      */
     List<Integer> getList();
 
-    String onEmptyListErrorMessage();
+    String onInvalidInputErrorMessage();
 
     String onNotAllowedErrorMessage(Integer serialNumber);
   }
@@ -52,7 +52,7 @@ public class AllowList {
     this.allowListProvider = allowListProvider;
     this.allowedSerials = allowListProvider.getList();
     if (allowedSerials.isEmpty()) {
-      logger.error("{}", allowListProvider.onEmptyListErrorMessage());
+      logger.error("{}", allowListProvider.onInvalidInputErrorMessage());
       System.exit(-1);
     }
   }
