@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Yubico.
+ * Copyright (C) 2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,19 +16,17 @@
 
 package com.yubico.yubikit.core.smartcard;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 
-class ExtendedApduProcessor extends ApduFormatProcessor {
+class ExtendedApduFormatter implements ApduFormatter {
   private final int maxApduSize;
 
-  ExtendedApduProcessor(SmartCardConnection connection, int maxApduSize) {
-    super(connection);
+  ExtendedApduFormatter(int maxApduSize) {
     this.maxApduSize = maxApduSize;
   }
 
   @Override
-  byte[] formatApdu(
+  public byte[] formatApdu(
       byte cla, byte ins, byte p1, byte p2, byte[] data, int offset, int length, int le) {
     ByteBuffer buf =
         ByteBuffer.allocate(5 + (data.length > 0 ? 2 : 0) + data.length + (le > 0 ? 2 : 0))
@@ -48,7 +46,4 @@ class ExtendedApduProcessor extends ApduFormatProcessor {
     }
     return buf.array();
   }
-
-  @Override
-  public void close() throws IOException {}
 }

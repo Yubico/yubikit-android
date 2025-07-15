@@ -28,9 +28,11 @@ import com.yubico.yubikit.core.fido.FidoConnection;
 import com.yubico.yubikit.core.fido.FidoProtocol;
 import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.smartcard.Apdu;
+import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.core.smartcard.AppId;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.smartcard.SmartCardProtocol;
+import com.yubico.yubikit.core.smartcard.scp.ScpKeyParams;
 import com.yubico.yubikit.core.util.Callback;
 import com.yubico.yubikit.core.util.Result;
 import com.yubico.yubikit.core.util.StringUtils;
@@ -110,9 +112,23 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
     this(connection, new Version(0, 0, 0));
   }
 
+  public Ctap2Session(SmartCardConnection connection, @Nullable ScpKeyParams scpKeyParams)
+      throws IOException, CommandException {
+    this(
+        connection,
+        scpKeyParams == null ? new Version(0, 0, 0) : new Version(5, 3, 0),
+        scpKeyParams);
+  }
+
   public Ctap2Session(SmartCardConnection connection, Version version)
       throws IOException, CommandException {
-    this(version, getSmartCardBackend(connection));
+    this(connection, version, null);
+  }
+
+  public Ctap2Session(
+      SmartCardConnection connection, Version version, @Nullable ScpKeyParams scpKeyParams)
+      throws IOException, CommandException {
+    this(version, getSmartCardBackend(connection, scpKeyParams));
     Logger.debug(
         logger,
         "Ctap2Session session initialized for connection={}, version={}",
@@ -154,10 +170,18 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
     }
   }
 
-  private static Backend<SmartCardProtocol> getSmartCardBackend(SmartCardConnection connection)
+  private static Backend<SmartCardProtocol> getSmartCardBackend(
+      SmartCardConnection connection, @Nullable ScpKeyParams scpKeyParams)
       throws IOException, ApplicationNotAvailableException {
     final SmartCardProtocol protocol = new SmartCardProtocol(connection);
     protocol.select(AppId.FIDO);
+    if (scpKeyParams != null) {
+      try {
+        protocol.initScp(scpKeyParams);
+      } catch (BadResponseException | ApduException e) {
+        throw new IllegalStateException(e);
+      }
+    }
     return new Backend<SmartCardProtocol>(protocol) {
       byte[] sendCbor(byte[] data, @Nullable CommandState state)
           throws IOException, CommandException {

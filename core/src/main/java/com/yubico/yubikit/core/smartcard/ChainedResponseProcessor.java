@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Yubico.
+ * Copyright (C) 2024-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,42 +23,26 @@ import java.io.IOException;
 class ChainedResponseProcessor implements ApduProcessor {
   private static final byte SW1_HAS_MORE_DATA = 0x61;
 
-  private final SmartCardConnection connection;
-  protected final ApduFormatProcessor processor;
-  private final byte[] getData;
+  protected final ApduProcessor delegate;
+  private final Apdu getData;
 
-  ChainedResponseProcessor(
-      SmartCardConnection connection,
-      boolean extendedApdus,
-      int maxApduSize,
-      byte insSendRemaining) {
-    this.connection = connection;
-    if (extendedApdus) {
-      processor = new ExtendedApduProcessor(connection, maxApduSize);
-    } else {
-      processor = new ShortApduProcessor(connection);
-    }
-    getData =
-        processor.formatApdu((byte) 0, insSendRemaining, (byte) 0, (byte) 0, new byte[0], 0, 0, 0);
+  ChainedResponseProcessor(ApduProcessor delegate, byte insSendRemaining) {
+    this.delegate = delegate;
+    getData = new Apdu((byte) 0, insSendRemaining, (byte) 0, (byte) 0, new byte[0], 0);
   }
 
   @Override
   public ApduResponse sendApdu(Apdu apdu) throws IOException, BadResponseException {
-    ApduResponse response = processor.sendApdu(apdu);
+    ApduResponse response = delegate.sendApdu(apdu);
     // Read full response
     ByteArrayOutputStream readBuffer = new ByteArrayOutputStream();
     while (response.getSw() >> 8 == SW1_HAS_MORE_DATA) {
       readBuffer.write(response.getData());
-      response = new ApduResponse(connection.sendAndReceive(getData));
+      response = delegate.sendApdu(getData);
     }
     readBuffer.write(response.getData());
     readBuffer.write(response.getSw() >> 8);
     readBuffer.write(response.getSw() & 0xff);
     return new ApduResponse(readBuffer.toByteArray());
-  }
-
-  @Override
-  public void close() throws IOException {
-    processor.close();
   }
 }
