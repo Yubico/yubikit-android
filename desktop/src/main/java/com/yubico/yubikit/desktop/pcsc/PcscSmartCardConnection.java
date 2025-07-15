@@ -66,6 +66,7 @@ public class PcscSmartCardConnection implements SmartCardConnection {
     Logger.debug(logger, "Closing CCID connection");
     try {
       card.endExclusive();
+      card.disconnect(true);
     } catch (CardException e) {
       throw new IOException(e);
     }
