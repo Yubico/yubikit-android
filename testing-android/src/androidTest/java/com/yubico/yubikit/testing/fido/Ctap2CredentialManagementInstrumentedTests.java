@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Yubico.
+ * Copyright (C) 2022-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,6 +48,11 @@ public class Ctap2CredentialManagementInstrumentedTests {
     @Category(SmokeTest.class)
     public void testUpdateUserInformation() throws Throwable {
       withCtap2Session(Ctap2CredentialManagementTests::testUpdateUserInformation);
+    }
+
+    @Test
+    public void testReadOnlyManagement() throws Throwable {
+      withDevice(Ctap2CredentialManagementTests::testReadOnlyManagement);
     }
   }
 
