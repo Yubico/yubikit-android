@@ -39,7 +39,8 @@ Publishing can also be done for a single module:
   ./gradlew modulename:publish finalizeCentralPublication
 
 Publish the deployment through https://central.sonatype.com/publishing.
-For any OSSHR Staging API service issues visit https://ossrh-staging-api.central.sonatype.com/swagger-ui/#/ to review the repository.
+
+For any OSSRH Staging API service issues visit https://ossrh-staging-api.central.sonatype.com/swagger-ui/#/ to review the repository.
 
 When building release, gradle will by default execute signing tasks. When this is not desired, for
 example during CI builds, it is possible to disable signing with `NO_GPG_SIGN` env variable set to `true`.
