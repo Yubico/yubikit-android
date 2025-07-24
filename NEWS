@@ -1,3 +1,26 @@
+* Version 2.8.2 (released 2025-07-24)
+ ** core module:
+  - fixed SCP processing
+ ** oath module:
+  - fixed parsing OATH URI where issuer contains ampersand character
+ ** yubiotp module:
+  - fixed programming sequence update evaluation
+ ** fido modules:
+  - added support for using SCP over CCID
+  - fixed largeBlob extension authenticator inputs naming
+ ** test modules:
+  - added support for test device serial number allow list
+ ** build system:
+  - migrated publishing to ossrh-staging-api service
+* Version 2.8.1 (released 2025-05-28)
+ ** core module:
+   - added support for Version Qualifier
+   - added support for using SmartCardConnection only with short APDUs
+ ** fido module:
+  - fixed handling of allowList without existing credentials
+ ** general:
+  - improved support of legacy Yubico devices
+  - the FUNCTION_NOT_SUPPORTED is now treated as ApplicationNotAvailableException
 * Version 2.8.0 (released 2025-01-30)
  ** new
   - updated targetSdk to 35

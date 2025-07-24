@@ -20,18 +20,18 @@ configurations {
 }
 
 dependencies {
-    implementation 'org.jetbrains:annotations:23.0.0'
+    implementation 'org.jetbrains:annotations:26.0.2'
 
     implementation project(':desktop')
     implementation project(':piv')
     implementation project(':testing')
 
     integrationTestImplementation 'junit:junit:4.13.2'
-    integrationTestImplementation 'ch.qos.logback:logback-classic:1.5.16'
+    integrationTestImplementation 'ch.qos.logback:logback-classic:1.5.18'
 
-    implementation 'org.bouncycastle:bcpkix-jdk15to18:1.80'
+    implementation 'org.bouncycastle:bcpkix-jdk15to18:1.81'
 
-    integrationTestRuntimeOnly('org.junit.vintage:junit-vintage-engine:5.12.2')
+    integrationTestRuntimeOnly('org.junit.vintage:junit-vintage-engine:5.13.3')
 }
 
 java {
