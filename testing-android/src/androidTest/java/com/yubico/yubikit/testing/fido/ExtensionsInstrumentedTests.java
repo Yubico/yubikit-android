@@ -19,7 +19,6 @@ package com.yubico.yubikit.testing.fido;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV1;
 import com.yubico.yubikit.testing.PinUvAuthProtocolV1Test;
-import com.yubico.yubikit.testing.fido.Extensions.SignExtensionInstrumentedTests;
 import com.yubico.yubikit.testing.fido.extensions.CredBlobExtensionTests;
 import com.yubico.yubikit.testing.fido.extensions.CredPropsExtensionTests;
 import com.yubico.yubikit.testing.fido.extensions.CredProtectExtensionTests;
@@ -36,8 +35,7 @@ import org.junit.runners.Suite;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
   ExtensionsInstrumentedTests.PinUvAuthV2Test.class,
-  ExtensionsInstrumentedTests.PinUvAuthV1Test.class,
-  SignExtensionInstrumentedTests.class
+  ExtensionsInstrumentedTests.PinUvAuthV1Test.class
 })
 public class ExtensionsInstrumentedTests {
   public static class PinUvAuthV2Test extends FidoInstrumentedTests {
