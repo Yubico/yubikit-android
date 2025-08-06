@@ -9,13 +9,14 @@
     tools:context=".ui.fido.FidoFragment">
 
     <LinearLayout
-        android:id="@+id/linearLayout2"
+        android:id="@+id/linearLayout1"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:background="@color/ic_launcher_background"
         android:orientation="horizontal"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        app:layout_constraintTop_toBottomOf="@+id/linearLayout2">
 
         <Button
             android:id="@+id/btn_web1"
@@ -23,8 +24,10 @@
             android:layout_height="wrap_content"
             android:layout_marginEnd="8dp"
             android:layout_weight="1"
+            android:minHeight="36dip"
             android:text="passkey.org"
-            android:textSize="10dp" />
+            android:textSize="10sp" />
+
 
         <Button
             android:id="@+id/btn_web2"
@@ -32,8 +35,32 @@
             android:layout_height="wrap_content"
             android:layout_marginEnd="8dp"
             android:layout_weight="1"
+            android:minHeight="36dip"
             android:text="Webauthn.io"
-            android:textSize="10dp" />
+            android:textSize="10sp" />
+
+        <Button
+            android:id="@+id/btn_dummy"
+            android:layout_width="30sp"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:minHeight="36dip"
+            android:textSize="8sp"
+            android:visibility="invisible"
+            tools:visibility="invisible" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/linearLayout2"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:background="@color/ic_launcher_background"
+        android:orientation="horizontal"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
 
         <Button
             android:id="@+id/btn_web3"
@@ -41,16 +68,30 @@
             android:layout_height="wrap_content"
             android:layout_marginEnd="8dp"
             android:layout_weight="1"
-            android:textSize="10dp"
-            android:text="webauthn-dev" />
+            android:ellipsize="middle"
+            android:minHeight="36dip"
+            android:text="WebAuthn-Developers"
+            android:textSize="10sp" />
+
+        <Button
+            android:id="@+id/btn_web4"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:layout_weight="1"
+            android:minHeight="36dip"
+            android:text="SIGN"
+            android:textSize="10sp" />
+
 
         <Button
             android:id="@+id/btn_clear_cookies"
             android:layout_width="30sp"
             android:layout_height="wrap_content"
             android:layout_marginEnd="8dp"
-            android:textSize="10dp"
-            android:text="C" />
+            android:minHeight="36dip"
+            android:text="C"
+            android:textSize="10sp" />
 
     </LinearLayout>
 
@@ -61,19 +102,5 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/linearLayout2" />
-
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/linearLayout"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:gravity="center"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.0"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.0">
-
-    </androidx.constraintlayout.widget.ConstraintLayout>
+        app:layout_constraintTop_toBottomOf="@+id/linearLayout1" />
 </androidx.constraintlayout.widget.ConstraintLayout>

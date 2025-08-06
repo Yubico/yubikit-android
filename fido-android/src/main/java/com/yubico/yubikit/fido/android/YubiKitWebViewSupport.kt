@@ -17,11 +17,16 @@
 package com.yubico.yubikit.fido.android
 
 import android.annotation.SuppressLint
+import android.app.AlertDialog
 import android.content.Context
 import android.graphics.Bitmap
 import android.net.Uri
+import android.text.InputType
+import android.webkit.HttpAuthHandler
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.widget.EditText
+import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.annotation.UiThread
 import androidx.webkit.JavaScriptReplyProxy
@@ -29,7 +34,9 @@ import androidx.webkit.WebMessageCompat
 import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import org.json.JSONArray
 import org.json.JSONObject
 import org.slf4j.Logger
@@ -57,6 +64,25 @@ class YubiKitWebViewSupport {
                     webauthnListener.onPageStarted();
                     evaluateJavascript(JS, null)
                 }
+
+                override fun onReceivedHttpAuthRequest(
+                    view: WebView?,
+                    handler: HttpAuthHandler?,
+                    host: String?,
+                    realm: String?
+                ) {
+
+                    if (handler == null || view == null) return
+                    val context = view.context
+                    coroutineScope.launch {
+                        val (username, password) = getUserCredentialsDialog(context)
+                        if (username != null && password != null) {
+                            handler.proceed(username, password)
+                        } else {
+                            handler.cancel()
+                        }
+                    }
+                }
             }
 
             val rules = setOf("*")
@@ -69,6 +95,45 @@ class YubiKitWebViewSupport {
 
             this.webViewClient = webViewClient
         }
+
+        @OptIn(ExperimentalCoroutinesApi::class)
+        private suspend fun getUserCredentialsDialog(context: Context): Pair<String?, String?> =
+            suspendCancellableCoroutine { cont ->
+                val builder = AlertDialog.Builder(context)
+                builder.setTitle("HTTP Authentication Required")
+                val layout = LinearLayout(context)
+                layout.orientation = LinearLayout.VERTICAL
+                val paddingPx = (8 * context.resources.displayMetrics.density).toInt()
+                layout.setPadding(paddingPx, paddingPx, paddingPx, paddingPx)
+
+                val usernameInput = EditText(context)
+                usernameInput.hint = "Username"
+                layout.addView(usernameInput)
+
+                val passwordInput = EditText(context)
+                passwordInput.hint = "Password"
+                passwordInput.inputType =
+                    InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+                layout.addView(passwordInput)
+
+                builder.setView(layout)
+                builder.setPositiveButton("OK") { _, _ ->
+                    cont.resume(
+                        Pair(
+                            usernameInput.text.toString(),
+                            passwordInput.text.toString()
+                        ),
+                        null
+                    )
+                }
+                builder.setNegativeButton("Cancel") { _, _ ->
+                    cont.resume(Pair(null, null), null)
+                }
+                builder.setOnCancelListener {
+                    cont.resume(Pair(null, null), null)
+                }
+                builder.show()
+            }
 
         private const val INTERFACE_NAME = "__webauthn_interface__"
         private const val JS = """

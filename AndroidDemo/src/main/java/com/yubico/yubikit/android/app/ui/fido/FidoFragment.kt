@@ -79,6 +79,10 @@ class FidoFragment : Fragment() {
             viewModel.setUrl("https://demo.yubico.com/webauthn-developers")
         }
 
+        binding.btnWeb4.setOnClickListener {
+            viewModel.setUrl("https://demo-ngotxvzeyaxb.tla.appl3-default-us1.k8s.dev.yubico.org/webauthn-developers")
+        }
+
         binding.btnClearCookies.setOnClickListener {
             CookieManager.getInstance().removeAllCookies {
                 viewModel.setUrl(viewModel.url.value)
