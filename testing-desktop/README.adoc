@@ -2,7 +2,31 @@
 
 This module contains tests for execution on a physical device and with YubiKey connected via USB. The test runs need a presence of someone who can tap the key when needed and therefore are these tests suitable only for local execution.
 
-NOTE: Don't run any of the tests on a production YubiKey. The tests execute various YubiKit methods on the YubiKey, data will be changed and removed.
+=== Managing YubiKeys for Testing
+To protect your YubiKeys from accidental data changes during testing, you must specify which devices the test suite is allowed to use. This is done by creating a local allow list file containing the serial numbers of your designated test YubiKeys.
+
+==== Instructions
+1. Find the Serial Number: +
+   Connect your YubiKey and use the YubiKey Manager tool to find its serial number.
+
+2. Create the Allow List File: +
+   Create a new file at the following specific path in the project: +
+   `testing-desktop/src/integrationTest/resources/allowed_serials.csv`
+
+3. Add Serial Numbers: +
+   Open `allowed_serials.csv` and add the serial numbers of your test YubiKeys. +
+   Separate each serial number with a comma or end of line. Do not add spaces or other text.
++
+Example `allowed_serials.csv` content:
++
+[literal]
+----
+1234567,9876543,1357911
+1212121
+2211545
+----
+
+The test framework will now only run on the YubiKeys specified in this file.
 
 === Running the tests
 1. Make sure that the YubiKey you are using is meant for testing. Don't proceed with the tests if unsure.

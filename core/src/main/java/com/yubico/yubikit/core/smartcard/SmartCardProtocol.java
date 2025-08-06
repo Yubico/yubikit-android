@@ -88,22 +88,41 @@ public class SmartCardProtocol implements Closeable {
   public SmartCardProtocol(SmartCardConnection connection, byte insSendRemaining) {
     this.connection = connection;
     this.insSendRemaining = insSendRemaining;
-    processor = new ChainedResponseProcessor(connection, false, maxApduSize, insSendRemaining);
+    processor = buildBaseProcessor().first;
   }
 
-  private void resetProcessor(@Nullable ApduProcessor processor) throws IOException {
-    this.processor.close();
-    if (processor != null) {
-      this.processor = processor;
+  private Pair<ApduProcessor, ApduFormatter> buildBaseProcessor() {
+    ApduProcessor result;
+    ApduFormatter formatter;
+    if (extendedApdus) {
+      formatter = new ExtendedApduFormatter(maxApduSize);
+      result = new ApduFormatProcessor(connection, formatter);
     } else {
-      this.processor =
-          new ChainedResponseProcessor(connection, extendedApdus, maxApduSize, insSendRemaining);
+      formatter = new ShortApduFormatter();
+      // Short APDUs need command chaining
+      result = new CommandChainingProcessor(connection, formatter);
     }
+
+    // Always wrap with response chaining
+    result = new ChainedResponseProcessor(result, insSendRemaining);
+
+    return new Pair<>(result, formatter);
+  }
+
+  private void reconfigureProcessor() {
+    Pair<ApduProcessor, ApduFormatter> pair = buildBaseProcessor();
+    ApduProcessor newProcessor = pair.first;
+
+    if (processor instanceof ScpProcessor) {
+      // Keep existing SCP state
+      newProcessor = new ScpProcessor(newProcessor, pair.second, ((ScpProcessor) processor).state);
+    }
+
+    processor = newProcessor;
   }
 
   @Override
   public void close() throws IOException {
-    processor.close();
     connection.close();
   }
 
@@ -131,7 +150,7 @@ public class SmartCardProtocol implements Closeable {
     } else if (firmwareVersion.isAtLeast(4, 0, 0)) {
       extendedApdus = !configuration.forceShortApdus && connection.isExtendedLengthApduSupported();
       maxApduSize = firmwareVersion.isAtLeast(4, 3, 0) ? MaxApduSize.YK4_3 : MaxApduSize.YK4;
-      resetProcessor(null);
+      reconfigureProcessor();
     }
   }
 
@@ -160,16 +179,12 @@ public class SmartCardProtocol implements Closeable {
    */
   @Deprecated
   public void setEnableTouchWorkaround(boolean enableTouchWorkaround) {
-    try {
-      if (enableTouchWorkaround) {
-        extendedApdus = true;
-        maxApduSize = MaxApduSize.YK4;
-        resetProcessor(new TouchWorkaroundProcessor(connection, insSendRemaining));
-      } else {
-        resetProcessor(null);
-      }
-    } catch (IOException e) {
-      throw new RuntimeException(e);
+    if (enableTouchWorkaround) {
+      extendedApdus = true;
+      maxApduSize = MaxApduSize.YK4;
+      processor = new TouchWorkaroundProcessor(buildBaseProcessor().first);
+    } else {
+      reconfigureProcessor();
     }
   }
 
@@ -184,18 +199,14 @@ public class SmartCardProtocol implements Closeable {
     switch (apduFormat) {
       case SHORT:
         if (extendedApdus) {
-          throw new UnsupportedOperationException(
-              "Cannot change from EXTENDED to SHORT APDU format");
+          extendedApdus = false;
+          reconfigureProcessor();
         }
         break;
       case EXTENDED:
         if (!extendedApdus) {
           extendedApdus = true;
-          try {
-            resetProcessor(null);
-          } catch (IOException e) {
-            throw new RuntimeException(e);
-          }
+          reconfigureProcessor();
         }
         break;
     }
@@ -217,7 +228,7 @@ public class SmartCardProtocol implements Closeable {
    * @throws ApplicationNotAvailableException in case the AID doesn't match an available application
    */
   public byte[] select(byte[] aid) throws IOException, ApplicationNotAvailableException {
-    resetProcessor(null);
+    processor = buildBaseProcessor().first;
     try {
       return sendAndReceive(new Apdu(0, INS_SELECT, P1_SELECT, P2_SELECT, aid));
     } catch (ApduException e) {
@@ -279,28 +290,34 @@ public class SmartCardProtocol implements Closeable {
 
   private ScpState initScp03(Scp03KeyParams keyParams)
       throws IOException, ApduException, BadResponseException {
-    Pair<ScpState, byte[]> pair = ScpState.scp03Init(processor, keyParams, null);
-    // SCP was introduced in FW 5.3, so we can use max APDU size for from YubiKey FW 4.3
-    ScpProcessor processor =
-        new ScpProcessor(
-            connection, extendedApdus, pair.first, MaxApduSize.YK4_3, insSendRemaining);
+    // Start with the base processor
+    Pair<ApduProcessor, ApduFormatter> processorPair = buildBaseProcessor();
+
+    // Initialize the SCP state and processor
+    Pair<ScpState, byte[]> pair = ScpState.scp03Init(processorPair.first, keyParams, null);
+    ScpProcessor scpProcessor =
+        new ScpProcessor(processorPair.first, processorPair.second, pair.first);
 
     // Send EXTERNAL AUTHENTICATE
     // P1 = C-DECRYPTION, R-ENCRYPTION, C-MAC, and R-MAC
-    ApduResponse resp = processor.sendApdu(new Apdu(0x84, 0x82, 0x33, 0, pair.second), false);
+    ApduResponse resp = scpProcessor.sendApdu(new Apdu(0x84, 0x82, 0x33, 0, pair.second), false);
     if (resp.getSw() != SW.OK) {
       throw new ApduException(resp.getSw());
     }
-    resetProcessor(processor);
+
+    processor = scpProcessor;
     return pair.first;
   }
 
   private ScpState initScp11(Scp11KeyParams keyParams)
       throws IOException, ApduException, BadResponseException {
-    ScpState scp = ScpState.scp11Init(processor, keyParams);
-    // SCP was introduced in FW 5.3, so we can use max APDU size for from YubiKey FW 4.3
-    resetProcessor(
-        new ScpProcessor(connection, extendedApdus, scp, MaxApduSize.YK4_3, insSendRemaining));
+    // Start with the base processor
+    Pair<ApduProcessor, ApduFormatter> pair = buildBaseProcessor();
+
+    // Initialize the SCP state and processor
+    ScpState scp = ScpState.scp11Init(pair.first, keyParams);
+
+    processor = new ScpProcessor(pair.first, pair.second, scp);
     return scp;
   }
 }

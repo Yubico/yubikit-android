@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2025 Yubico.
+ * Copyright (C) 2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,7 @@
 
 package com.yubico.yubikit.core.smartcard;
 
-import com.yubico.yubikit.core.application.BadResponseException;
-import java.io.IOException;
-
-public interface ApduProcessor {
-  ApduResponse sendApdu(Apdu apdu) throws IOException, BadResponseException;
+interface ApduFormatter {
+  byte[] formatApdu(
+      byte cla, byte ins, byte p1, byte p2, byte[] data, int offset, int length, int le);
 }

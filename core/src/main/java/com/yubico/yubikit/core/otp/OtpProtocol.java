@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Yubico.
+ * Copyright (C) 2020-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,7 +46,10 @@ public class OtpProtocol implements Closeable {
       0x8f; /* Write a dummy report to force update or abort */
 
   private static final int SEQUENCE_MASK = 0x1f;
-  private static final int SEQUENCE_OFFSET = 0x4;
+  private static final int STATUS_OFFSET_PROG_SEQ = 0x4;
+  private static final int STATUS_OFFSET_TOUCH_LOW = 0x5;
+
+  private static final int CONFIG_SLOTS_PROGRAMMED_MASK = 0b00000011; // Slot 1 or 2 programmed
 
   private final CommandState defaultState = new CommandState();
 
@@ -182,7 +185,7 @@ public class OtpProtocol implements Closeable {
     buf.flip();
 
     // Send frame
-    int programmingSequence = readFeatureReport()[SEQUENCE_OFFSET];
+    int programmingSequence = readFeatureReport()[STATUS_OFFSET_PROG_SEQ];
     byte seq = 0;
     byte[] report = new byte[FEATURE_RPT_SIZE];
     while (buf.hasRemaining()) {
@@ -224,11 +227,13 @@ public class OtpProtocol implements Closeable {
           return response;
         }
       } else if (statusByte == 0) { // Status response
-        int prgSeq = report[SEQUENCE_OFFSET];
+        int nextSeq = report[STATUS_OFFSET_PROG_SEQ];
         if (stream.size() > 0) {
           throw new IOException("Incomplete transfer");
-        } else if ((prgSeq == programmingSequence + 1)
-            || (programmingSequence > 0 && prgSeq == 0 && report[SEQUENCE_OFFSET + 1] == 0)) {
+        } else if (nextSeq == programmingSequence + 1
+            || (nextSeq == 0
+                && programmingSequence > 0
+                && (report[STATUS_OFFSET_TOUCH_LOW] & CONFIG_SLOTS_PROGRAMMED_MASK) == 0)) {
           // Sequence updated, return status.
           // Note that when deleting the "last" slot so no slots are valid, the programming sequence
           // is set to 0.
