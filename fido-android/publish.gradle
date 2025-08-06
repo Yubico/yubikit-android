@@ -20,6 +20,12 @@ apply plugin: 'org.jetbrains.dokka'
 
 ext.isReleaseVersion = !version.endsWith("SNAPSHOT")
 android {
+
+    publishing {
+        singleVariant("release") {
+        }
+    }
+
     libraryVariants.configureEach { variant ->
         if (variant.name == 'release') {
 
