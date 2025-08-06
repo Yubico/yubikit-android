@@ -171,7 +171,8 @@ class YubiKitWebViewSupport {
 
                 val response = yubiKitFidoClient.getAssertion(
                     sourceOrigin.toString(),
-                    message
+                    message,
+                    null
                 ).fold(
                     onSuccess = {
                         it
@@ -201,7 +202,7 @@ class YubiKitWebViewSupport {
                 havePendingRequest = false
                 pendingRequestIsDoomed = false
                 val result =
-                    yubiKitFidoClient.makeCredential(sourceOrigin.toString(), message).fold(
+                    yubiKitFidoClient.makeCredential(sourceOrigin.toString(), message, null).fold(
                         onSuccess = {
                             it
                         },

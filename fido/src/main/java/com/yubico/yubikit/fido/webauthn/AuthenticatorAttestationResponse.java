@@ -123,7 +123,9 @@ public class AuthenticatorAttestationResponse extends AuthenticatorResponse {
   @Override
   public Map<String, ?> toMap(SerializationType serializationType) {
     Map<String, Object> map = new HashMap<>();
-    map.put(CLIENT_DATA_JSON, serializeBytes(getClientDataJson(), serializationType));
+    if (getClientDataJson().length > 0) {
+      map.put(CLIENT_DATA_JSON, serializeBytes(getClientDataJson(), serializationType));
+    }
     map.put(AUTHENTICATOR_DATA, serializeBytes(authenticatorData.getBytes(), serializationType));
     map.put(TRANSPORTS, transports);
     if (publicKey != null) {

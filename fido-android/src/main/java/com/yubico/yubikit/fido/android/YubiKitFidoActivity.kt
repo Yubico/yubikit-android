@@ -129,11 +129,29 @@ class FidoClientService(private val viewModel: MainViewModel = MainViewModel()) 
     }
 
     suspend fun performOperation(
-        pin: String?, operation: Operation, rpId: String, request: String, onConnection: () -> Unit
+        pin: String?,
+        operation: Operation,
+        rpId: String,
+        clientDataHash: ByteArray?,
+        request: String,
+        onConnection: () -> Unit
     ): Result<PublicKeyCredential> {
         return when (operation) {
-            Operation.MAKE_CREDENTIAL -> makeCredential(pin, rpId, request, onConnection)
-            Operation.GET_ASSERTION -> getAssertion(pin, rpId, request, onConnection)
+            Operation.MAKE_CREDENTIAL -> makeCredential(
+                pin,
+                rpId,
+                clientDataHash,
+                request,
+                onConnection
+            )
+
+            Operation.GET_ASSERTION -> getAssertion(
+                pin,
+                rpId,
+                clientDataHash,
+                request,
+                onConnection
+            )
         }
     }
 
@@ -154,7 +172,11 @@ class FidoClientService(private val viewModel: MainViewModel = MainViewModel()) 
     }
 
     private suspend fun makeCredential(
-        pin: String?, rpId: String, request: String, onConnection: () -> Unit
+        pin: String?,
+        rpId: String,
+        clientDataHash: ByteArray?,
+        request: String,
+        onConnection: () -> Unit
     ): Result<PublicKeyCredential> =
         viewModel.useWebAuthn { client ->
             onConnection()
@@ -167,27 +189,41 @@ class FidoClientService(private val viewModel: MainViewModel = MainViewModel()) 
 
             val requestJson = JSONObject(request).toMap()
 
-            val clientData = buildClientData(
-                "webauthn.create",
-                rpId,
-                requestJson["challenge"] as String
-            )
-
             val publicKeyCredentialCreationOptions = PublicKeyCredentialCreationOptions.fromMap(
                 JSONObject(request).toMap()
             )
-            client.makeCredential(
-                clientData,
-                publicKeyCredentialCreationOptions,
-                rpId.removePrefix("https://"), // TODO reason about this
-                pin?.toCharArray(),
-                null,
-                null
-            )
+
+            if (clientDataHash != null) {
+                client.makeCredentialWithHash(
+                    clientDataHash,
+                    publicKeyCredentialCreationOptions,
+                    rpId.removePrefix("https://"), // TODO reason about this
+                    pin?.toCharArray(),
+                    null,
+                    null
+                )
+            } else {
+                client.makeCredential(
+                    buildClientData(
+                        "webauthn.create",
+                        rpId,
+                        requestJson["challenge"] as String
+                    ),
+                    publicKeyCredentialCreationOptions,
+                    rpId.removePrefix("https://"), // TODO reason about this
+                    pin?.toCharArray(),
+                    null,
+                    null
+                )
+            }
         }
 
     private suspend fun getAssertion(
-        pin: String?, rpId: String, request: String, onConnection: () -> Unit
+        pin: String?,
+        rpId: String,
+        clientDataHash: ByteArray?,
+        request: String,
+        onConnection: () -> Unit
     ): Result<PublicKeyCredential> =
         viewModel.useWebAuthn { client ->
             onConnection()
@@ -209,13 +245,24 @@ class FidoClientService(private val viewModel: MainViewModel = MainViewModel()) 
             val publicKeyCredentialRequestOptions = PublicKeyCredentialRequestOptions.fromMap(
                 JSONObject(request).toMap()
             )
-            client.getAssertion(
-                clientData,
-                publicKeyCredentialRequestOptions,
-                rpId.removePrefix("https://"), // TODO reason about this
-                pin?.toCharArray(),
-                null,
-            )
+
+            if (clientDataHash != null) {
+                client.getAssertionWithHash(
+                    clientDataHash,
+                    publicKeyCredentialRequestOptions,
+                    rpId.removePrefix("https://"), // TODO reason about this
+                    pin?.toCharArray(),
+                    null,
+                )
+            } else {
+                client.getAssertion(
+                    clientData,
+                    publicKeyCredentialRequestOptions,
+                    rpId.removePrefix("https://"), // TODO reason about this
+                    pin?.toCharArray(),
+                    null,
+                )
+            }
         }
 }
 
@@ -267,6 +314,7 @@ class YubiKitFidoActivity : ComponentActivity() {
 
         val rpId = intent.extras?.getString("rpId")
         val request = intent.extras?.getString("request")
+        val clientDataHash = intent.extras?.getString("clientDataHash")?.hexToByteArray()
         val operation = intent.extras?.getInt("type")?.let { type ->
             mapOf(
                 0 to FidoClientService.Operation.MAKE_CREDENTIAL,
@@ -307,10 +355,17 @@ class YubiKitFidoActivity : ComponentActivity() {
                         }
                     }
 
+                    val finishActivityWithCancel: () -> Unit = {
+                        setResult(
+                            RESULT_CANCELED
+                        )
+                        finishActivity()
+                    }
+
                     val finishActivityWithResult: (PublicKeyCredential) -> Unit = { result ->
                         setResult(
                             RESULT_OK, intent.putExtra(
-                                "credential", result.toMap(SerializationType.JSON).toString()
+                                "credential", JSONObject(result.toMap(SerializationType.JSON)).toString()
                             )
                         )
                         finishActivity()
@@ -343,22 +398,22 @@ class YubiKitFidoActivity : ComponentActivity() {
                             ModalBottomSheet(
                                 dragHandle = {},
                                 sheetState = sheetState,
-                                onDismissRequest = finishActivity,
+                                onDismissRequest = finishActivityWithCancel,
                             ) {
                                 FidoClientUi(
                                     operation,
                                     isUsb = viewModel.isUsb,
                                     rpId,
                                     request,
+                                    clientDataHash,
                                     fidoClientService = fidoClientService,
                                     onResult = { finishActivityWithResult(it) },
                                     onShowNfcGuideClick = {
                                         nfcGuideVisible = true
                                         bottomSheetVisible = false
                                     },
-                                    onCloseButtonClick = finishActivity
+                                    onCloseButtonClick = finishActivityWithCancel
                                 )
-
                             }
                         }
                     }
@@ -695,6 +750,7 @@ fun FidoClientUi(
     isUsb: Boolean,
     rpId: String,
     request: String,
+    clientDataHash: ByteArray?,
     fidoClientService: FidoClientService = remember { FidoClientService() },
     onResult: (PublicKeyCredential) -> Unit = {},
     onShowNfcGuideClick: () -> Unit,
@@ -723,7 +779,7 @@ fun FidoClientUi(
                 value = UiState.WaitingForKey
             }
 
-            fidoClientService.performOperation(pinValue, operation, rpId, request) {
+            fidoClientService.performOperation(pinValue, operation, rpId, clientDataHash, request) {
                 value = if (isUsb) UiState.TouchKey else UiState.Processing
             }
                 .fold(onSuccess = {

@@ -46,6 +46,7 @@ dependencies {
     implementation project(':android')
     api project(':fido')
 
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:2.2.0"
     implementation 'androidx.compose.material3:material3:1.5.0-alpha01'
 
     // Android Studio Preview support

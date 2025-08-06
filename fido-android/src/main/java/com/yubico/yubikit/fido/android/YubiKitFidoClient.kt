@@ -34,6 +34,7 @@ class YubiKitFidoClient {
     private data class FidoRequest(
         val operation: FidoClientService.Operation,
         val rpId: String,
+        val clientDataHash: String?,
         val request: String
     )
 
@@ -64,12 +65,28 @@ class YubiKitFidoClient {
         ) { result ->
             val continuation = currentContinuation
             if (continuation != null) {
-                continuation.resume(result)
+                result.fold(
+                    onSuccess = {
+                        continuation.resume(result)
+                    },
+                    onFailure = {
+                        continuation.cancel(it)
+                    }
+                )
                 currentContinuation = null
             }
         }
         Companion.extensions = extensions
     }
+
+    constructor(
+        activity: ComponentActivity,
+        extensions: List<Extension>? = null
+    ) : this(
+        activity,
+        extensions,
+        null
+    )
 
     constructor(
         activity: ComponentActivity,
@@ -82,7 +99,14 @@ class YubiKitFidoClient {
         ) { result ->
             val continuation = currentContinuation
             if (continuation != null) {
-                continuation.resume(result)
+                result.fold(
+                    onSuccess = {
+                        continuation.resume(result)
+                    },
+                    onFailure = {
+                        continuation.cancel(it)
+                    }
+                )
                 currentContinuation = null
             }
         }
@@ -92,23 +116,24 @@ class YubiKitFidoClient {
     private suspend fun execute(
         type: FidoClientService.Operation,
         rpId: String,
+        clientDataHash: String?,
         request: String
     ): Result<String> {
         return suspendCancellableCoroutine { continuation ->
             currentContinuation = continuation
-            launcher.launch(FidoRequest(type, rpId, request))
+            launcher.launch(FidoRequest(type, rpId, clientDataHash, request))
             continuation.invokeOnCancellation {
                 continuation.cancel(CancellationException())
             }
         }
     }
 
-    suspend fun makeCredential(rpId: String, request: String): Result<String> {
-        return execute(FidoClientService.Operation.MAKE_CREDENTIAL, rpId, request)
+    suspend fun makeCredential(rpId: String, request: String, clientDataHash: String?): Result<String> {
+        return execute(FidoClientService.Operation.MAKE_CREDENTIAL, rpId, clientDataHash, request)
     }
 
-    suspend fun getAssertion(rpId: String, request: String): Result<String> {
-        return execute(FidoClientService.Operation.GET_ASSERTION, rpId, request)
+    suspend fun getAssertion(rpId: String, request: String, clientDataHash: String?): Result<String> {
+        return execute(FidoClientService.Operation.GET_ASSERTION, rpId, clientDataHash, request)
     }
 
     private class FidoActivityResultContract :
@@ -118,6 +143,7 @@ class YubiKitFidoClient {
             return Intent(context, YubiKitFidoActivity::class.java).apply {
                 putExtra("type", input.operation.ordinal)
                 putExtra("rpId", input.rpId)
+                putExtra("clientDataHash", input.clientDataHash)
                 putExtra("request", input.request)
             }
         }
@@ -130,6 +156,8 @@ class YubiKitFidoClient {
                 } ?: run {
                     Result.failure(IllegalStateException())
                 }
+            } else if (resultCode == Activity.RESULT_CANCELED) {
+                Result.failure(CancellationException())
             } else {
                 Result.failure(IllegalStateException())
             }

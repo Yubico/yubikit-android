@@ -131,7 +131,7 @@ class FidoAppLocalFragment : Fragment() {
                     "App test user"
                 )
 
-                yubiKitFidoClient.makeCredential(rpId, mcRequest).fold(
+                yubiKitFidoClient.makeCredential(rpId, mcRequest, null).fold(
                     onSuccess = { result ->
                         logger.debug("Successful MC: {}", result)
                     },
@@ -149,7 +149,7 @@ class FidoAppLocalFragment : Fragment() {
                     rpId,
                 )
 
-                yubiKitFidoClient.getAssertion(rpId, gaRequest).fold(
+                yubiKitFidoClient.getAssertion(rpId, gaRequest, null).fold(
                     onSuccess = { result ->
                         logger.debug("Successful GA: {}", result)
                     },
