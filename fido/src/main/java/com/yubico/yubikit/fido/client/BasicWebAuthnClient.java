@@ -270,33 +270,33 @@ public class BasicWebAuthnClient implements Closeable {
    * @throws ClientError A higher level error
    */
   public PublicKeyCredential makeCredentialWithHash(
-          byte[] clientDataHash,
-          PublicKeyCredentialCreationOptions options,
-          String effectiveDomain,
-          @Nullable char[] pin,
-          @Nullable Integer enterpriseAttestation,
-          @Nullable CommandState state)
-          throws IOException, CommandException, ClientError {
+      byte[] clientDataHash,
+      PublicKeyCredentialCreationOptions options,
+      String effectiveDomain,
+      @Nullable char[] pin,
+      @Nullable Integer enterpriseAttestation,
+      @Nullable CommandState state)
+      throws IOException, CommandException, ClientError {
 
     try {
       Pair<Ctap2Session.CredentialData, ClientExtensionResults> result =
-              ctapMakeCredential(
-                      clientDataHash, options, effectiveDomain, pin, enterpriseAttestation, state);
+          ctapMakeCredential(
+              clientDataHash, options, effectiveDomain, pin, enterpriseAttestation, state);
       final Ctap2Session.CredentialData credential = result.first;
       final ClientExtensionResults clientExtensionResults = result.second;
 
       final AttestationObject attestationObject = AttestationObject.fromCredential(credential);
 
       AuthenticatorAttestationResponse response =
-              new AuthenticatorAttestationResponse(
-                      new byte[0], ctap.getCachedInfo().getTransports(), attestationObject);
+          new AuthenticatorAttestationResponse(
+              new byte[0], ctap.getCachedInfo().getTransports(), attestationObject);
 
       return new PublicKeyCredential(
-              Objects.requireNonNull(
-                              attestationObject.getAuthenticatorData().getAttestedCredentialData())
-                      .getCredentialId(),
-              response,
-              clientExtensionResults);
+          Objects.requireNonNull(
+                  attestationObject.getAuthenticatorData().getAttestedCredentialData())
+              .getCredentialId(),
+          response,
+          clientExtensionResults);
     } catch (CtapException e) {
       if (e.getCtapError() == CtapException.ERR_PIN_INVALID) {
         throw new PinInvalidClientError(e, clientPin.getPinRetries().getCount());
@@ -379,25 +379,25 @@ public class BasicWebAuthnClient implements Closeable {
    * @throws ClientError A higher level error
    */
   public PublicKeyCredential getAssertionWithHash(
-          byte[] clientDataHash,
-          PublicKeyCredentialRequestOptions options,
-          String effectiveDomain,
-          @Nullable char[] pin,
-          @Nullable CommandState state)
-          throws MultipleAssertionsAvailable, IOException, CommandException, ClientError {
+      byte[] clientDataHash,
+      PublicKeyCredentialRequestOptions options,
+      String effectiveDomain,
+      @Nullable char[] pin,
+      @Nullable CommandState state)
+      throws MultipleAssertionsAvailable, IOException, CommandException, ClientError {
     try {
       final List<Pair<Ctap2Session.AssertionData, ClientExtensionResults>> results =
-              ctapGetAssertions(clientDataHash, options, effectiveDomain, pin, state);
+          ctapGetAssertions(clientDataHash, options, effectiveDomain, pin, state);
 
       final List<PublicKeyCredentialDescriptor> allowCredentials =
-              removeUnsupportedCredentials(options.getAllowCredentials());
+          removeUnsupportedCredentials(options.getAllowCredentials());
 
       if (results.size() == 1) {
         final Ctap2Session.AssertionData assertion = results.get(0).first;
         final ClientExtensionResults clientExtensionResults = results.get(0).second;
 
         return PublicKeyCredential.fromAssertion(
-                assertion, new byte[0], allowCredentials, clientExtensionResults);
+            assertion, new byte[0], allowCredentials, clientExtensionResults);
       } else {
         throw new MultipleAssertionsAvailable(new byte[0], results);
       }
