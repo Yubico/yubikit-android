@@ -20,6 +20,7 @@ plugins {
     id 'project-convention-publishing'
     id 'com.google.devtools.ksp' version '2.2.0-2.0.2' apply false
     id 'org.jetbrains.kotlin.plugin.compose' version '2.2.0' apply false
+    id 'org.jetbrains.dokka' version "2.0.0" apply false
 }
 
 allprojects {
@@ -40,7 +41,6 @@ allprojects {
 subprojects {
     version = '2.8.2_1-fa'
     ext.pomName = "Yubico YubiKit ${project.name.capitalize()}"
-
 
     tasks.withType(Javadoc).tap {
         configureEach {

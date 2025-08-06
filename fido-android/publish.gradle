@@ -16,23 +16,18 @@
 
 apply plugin: 'maven-publish'
 apply plugin: 'signing'
+apply plugin: 'org.jetbrains.dokka'
 
 ext.isReleaseVersion = !version.endsWith("SNAPSHOT")
 android {
     libraryVariants.configureEach { variant ->
         if (variant.name == 'release') {
-            tasks.register('javadoc', Javadoc) {
-                source = android.sourceSets.main.java.srcDirs
-                classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
-                owner.classpath += variant.javaCompileProvider.get().classpath
-                exclude '**/R.html', '**/R.*.html', '**/index.html'
-            }
 
             // build a jar with javadoc
             tasks.register('javadocJar', Jar) {
-                dependsOn javadoc
+                dependsOn dokkaJavadoc
+                from(dokkaJavadoc)
                 archiveClassifier.set('javadoc')
-                from javadoc.destinationDir
             }
 
             // build a jar with source
