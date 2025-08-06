@@ -68,6 +68,9 @@ dependencies {
     implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.9.2'
     implementation 'androidx.compose.runtime:runtime-livedata'
 
+    // testing dependencies
+    testImplementation "junit:junit:4.13.2"
+
 }
 
 description = "This module provides user interface for YubiKit FIDO module."
