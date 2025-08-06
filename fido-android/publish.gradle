@@ -55,8 +55,8 @@ afterEvaluate {
         publications {
             maven(MavenPublication) {
                 from components.release
-                //artifact javadocJar
-                //artifact sourcesJar
+                artifact javadocJar
+                artifact sourcesJar
 
                 groupId = rootProject.group
                 artifactId = project.name
