@@ -16,6 +16,7 @@
 
 package com.yubico.yubikit.fido.android
 
+import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.yubico.yubikit.android.transport.nfc.NfcYubiKeyDevice
@@ -32,11 +33,18 @@ typealias YubiKeyAction = suspend (Result<YubiKeyDevice, Exception>) -> Unit
 
 class MainViewModel : ViewModel() {
 
+    private var _nfcAvailable = MutableLiveData<Boolean>(false)
     private var _device = MutableLiveData<YubiKeyDevice?>()
     private var _pendingYubiKeyAction = MutableLiveData<YubiKeyAction?>()
 
+    val isNfcAvailable: LiveData<Boolean> = _nfcAvailable
+
     val isUsb: Boolean
         get() = _device.value is UsbYubiKeyDevice
+
+    fun setNfcAvailable(value: Boolean) {
+        _nfcAvailable.postValue(value)
+    }
 
     suspend fun provideYubiKey(device: YubiKeyDevice) =
         _pendingYubiKeyAction.value?.let {

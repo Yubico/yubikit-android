@@ -66,6 +66,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
@@ -87,6 +88,7 @@ import androidx.core.view.WindowCompat
 import androidx.lifecycle.coroutineScope
 import com.yubico.yubikit.android.YubiKitManager
 import com.yubico.yubikit.android.transport.nfc.NfcConfiguration
+import com.yubico.yubikit.android.transport.nfc.NfcNotAvailable
 import com.yubico.yubikit.android.transport.usb.UsbConfiguration
 import com.yubico.yubikit.core.fido.CtapException
 import com.yubico.yubikit.fido.android.YubiKitFidoActivity.Companion.toMap
@@ -403,6 +405,8 @@ class YubiKitFidoActivity : ComponentActivity() {
                                 FidoClientUi(
                                     operation,
                                     isUsb = viewModel.isUsb,
+                                    isNfcAvailable =
+                                        viewModel.isNfcAvailable.observeAsState(false).value,
                                     rpId,
                                     request,
                                     clientDataHash,
@@ -428,10 +432,15 @@ class YubiKitFidoActivity : ComponentActivity() {
                 viewModel.provideYubiKey(it)
             }
         }
-        yubikit.startNfcDiscovery(NfcConfiguration().timeout(5000), this) {
-            lifecycle.coroutineScope.launch {
-                viewModel.provideYubiKey(it)
+        try {
+            yubikit.startNfcDiscovery(NfcConfiguration().timeout(5000), this) {
+                lifecycle.coroutineScope.launch {
+                    viewModel.provideYubiKey(it)
+                }
             }
+            viewModel.setNfcAvailable(true)
+        } catch (_: NfcNotAvailable) {
+            viewModel.setNfcAvailable(false)
         }
     }
 
@@ -504,6 +513,7 @@ fun ContentWrapper(
 @Composable
 fun TapOrInsertSecurityKey(
     operation: FidoClientService.Operation,
+    isNfcAvailable: Boolean,
     origin: String,
     onShowNfcGuideClick: (() -> Unit)? = null,
     onCloseButtonClick: () -> Unit
@@ -521,13 +531,23 @@ fun TapOrInsertSecurityKey(
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(text = stringResource(R.string.tap_or_insert_key))
-        Text(
-            text = "How to use NFC",
-            modifier = Modifier.clickable(onClick = onShowNfcGuideClick ?: {}),
-            color = MaterialTheme.colorScheme.onSecondaryFixedVariant,
-            fontSize = MaterialTheme.typography.bodySmall.fontSize,
-            textDecoration = TextDecoration.Underline
-        )
+        if (isNfcAvailable) {
+            Text(
+                text = "How to use NFC",
+                modifier = Modifier.clickable { onShowNfcGuideClick ?: {} },
+                color = MaterialTheme.colorScheme.onSecondaryFixedVariant,
+                fontSize = MaterialTheme.typography.bodySmall.fontSize,
+                textDecoration = TextDecoration.Underline
+            )
+        }
+        else {
+            Text(
+                text = "NFC not available",
+                color = MaterialTheme.colorScheme.onSecondaryFixedVariant,
+                fontSize = MaterialTheme.typography.bodySmall.fontSize,
+                textDecoration = TextDecoration.Underline
+            )
+        }
     }
 }
 
@@ -748,6 +768,7 @@ fun ErrorView(
 fun FidoClientUi(
     operation: FidoClientService.Operation,
     isUsb: Boolean,
+    isNfcAvailable: Boolean,
     rpId: String,
     request: String,
     clientDataHash: ByteArray?,
@@ -859,6 +880,7 @@ fun FidoClientUi(
                 is UiState.WaitingForKey -> {
                     TapOrInsertSecurityKey(
                         operation = operation,
+                        isNfcAvailable = isNfcAvailable,
                         origin = rpId,
                         onCloseButtonClick = onCloseButtonClick,
                         onShowNfcGuideClick = onShowNfcGuideClick
@@ -946,6 +968,7 @@ fun EnterPinWithErrorPreview() {
 @Composable
 fun TapOrInsertSecurityKeyForMakeCredentialPreview() {
     TapOrInsertSecurityKey(
+        isNfcAvailable = true,
         operation = FidoClientService.Operation.MAKE_CREDENTIAL,
         origin = "www.example.com"
     ) {}
@@ -955,6 +978,7 @@ fun TapOrInsertSecurityKeyForMakeCredentialPreview() {
 @Composable
 fun TapOrInsertSecurityKeyForGetAssertionPreview() {
     TapOrInsertSecurityKey(
+        isNfcAvailable = true,
         operation = FidoClientService.Operation.GET_ASSERTION,
         origin = "www.example.com"
     ) {}
