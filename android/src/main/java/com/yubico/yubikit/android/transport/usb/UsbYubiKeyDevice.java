@@ -62,11 +62,14 @@ public class UsbYubiKeyDevice implements YubiKeyDevice, Closeable {
   public UsbYubiKeyDevice(UsbManager usbManager, UsbDevice usbDevice)
       throws IllegalArgumentException {
 
-    if (usbDevice.getVendorId() != YUBICO_VENDOR_ID) {
-      throw new IllegalArgumentException("Invalid vendor id");
+    if (usbDevice.getVendorId() != YUBICO_VENDOR_ID && !UsbDeviceManager.isFidoDevice(usbDevice)) {
+      throw new IllegalArgumentException("Invalid vendor id/not FIDO device");
     }
 
-    this.usbPid = UsbPid.fromValue(usbDevice.getProductId());
+    this.usbPid =
+        (usbDevice.getVendorId() == YUBICO_VENDOR_ID)
+            ? UsbPid.fromValue(usbDevice.getProductId())
+            : UsbPid.FIDO_SECURITY_KEY;
 
     this.connectionManager = new ConnectionManager(usbManager, usbDevice);
     this.usbDevice = usbDevice;

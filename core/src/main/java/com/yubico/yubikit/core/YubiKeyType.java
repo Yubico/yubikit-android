@@ -21,7 +21,8 @@ public enum YubiKeyType {
   NEO("YubiKey NEO"),
   SKY("Security Key by Yubico"),
   YKP("YubiKey Plus"),
-  YK4("YubiKey");
+  YK4("YubiKey"),
+  FIDO_SECURITY_KEY("FIDO Security Key");
 
   public final String name;
 

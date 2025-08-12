@@ -22,7 +22,10 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.hardware.usb.UsbConstants;
 import android.hardware.usb.UsbDevice;
+import android.hardware.usb.UsbConfiguration;
+import android.hardware.usb.UsbInterface;
 import android.hardware.usb.UsbManager;
 import android.os.Build;
 import com.yubico.yubikit.core.internal.Logger;
@@ -70,6 +73,22 @@ final class UsbDeviceManager {
       new WeakHashMap<>();
   private final Set<UsbDevice> awaitingPermissions = new HashSet<>();
 
+  public static boolean isFidoDevice(UsbDevice device) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+      for (int configIndex = 0; configIndex < device.getConfigurationCount(); configIndex++) {
+        UsbConfiguration configuration = device.getConfiguration(configIndex);
+        for (int i = 0; i < configuration.getInterfaceCount(); i++) {
+          UsbInterface usbInterface = configuration.getInterface(i);
+          if (usbInterface.getInterfaceClass() == UsbConstants.USB_CLASS_HID
+              && usbInterface.getInterfaceSubclass() == 0) {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
+
   private synchronized void addUsbListener(Context context, UsbDeviceListener listener) {
     if (deviceListeners.isEmpty()) {
       UsbManager usbManager = (UsbManager) context.getSystemService(Context.USB_SERVICE);
@@ -78,7 +97,7 @@ final class UsbDeviceManager {
       intentFilter.addAction(UsbManager.ACTION_USB_DEVICE_DETACHED);
       context.registerReceiver(broadcastReceiver, intentFilter);
       for (UsbDevice usbDevice : usbDevices) {
-        if (usbDevice.getVendorId() == YUBICO_VENDOR_ID) {
+        if (usbDevice.getVendorId() == YUBICO_VENDOR_ID || isFidoDevice(usbDevice)) {
           onDeviceAttach(usbDevice);
         }
       }
@@ -182,7 +201,8 @@ final class UsbDeviceManager {
     public void onReceive(Context context, Intent intent) {
       String action = intent.getAction();
       UsbDevice usbDevice = getUsbManagerExtraDevice(intent);
-      if (usbDevice == null || usbDevice.getVendorId() != YUBICO_VENDOR_ID) {
+      if (usbDevice == null ||
+              (usbDevice.getVendorId() != YUBICO_VENDOR_ID && !isFidoDevice(usbDevice))) {
         return;
       }
 
