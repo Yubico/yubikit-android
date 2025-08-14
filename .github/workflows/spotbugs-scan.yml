@@ -9,6 +9,8 @@ on:
   schedule:
     - cron: "25 16 * * 0"
 
+permissions: read-all
+
 jobs:
   analyze:
     name: SpotBugs Analyze
@@ -26,10 +28,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683                 # v4.2.2
 
       - name: Setup Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00               # v4.7.1
         with:
           distribution: "temurin"
           java-version: "17"
@@ -37,7 +39,7 @@ jobs:
       - name: Build with Gradle
         run: ./gradlew spotbugsRelease spotbugsMain
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02          # v4.6.2
         with:
           name: sarif-files
           path: ./build/spotbugs/*.sarif
@@ -74,7 +76,7 @@ jobs:
           ]
 
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0        # v5.0.0
         with:
           name: sarif-files
 
@@ -94,7 +96,7 @@ jobs:
           jq -c '.' > ${OUTPUT}
 
       - name: Upload SARIF for ${{ matrix.module }}
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@7273f08caa1dcf2c2837f362f1982de0ab4dc344   #v2.22.3
         with:
           sarif_file: spotbugs-${{ matrix.module }}.json
           category: spotbugs-analysis-${{ matrix.module }}
