@@ -22,9 +22,9 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.hardware.usb.UsbConfiguration;
 import android.hardware.usb.UsbConstants;
 import android.hardware.usb.UsbDevice;
-import android.hardware.usb.UsbConfiguration;
 import android.hardware.usb.UsbInterface;
 import android.hardware.usb.UsbManager;
 import android.os.Build;
@@ -201,8 +201,8 @@ final class UsbDeviceManager {
     public void onReceive(Context context, Intent intent) {
       String action = intent.getAction();
       UsbDevice usbDevice = getUsbManagerExtraDevice(intent);
-      if (usbDevice == null ||
-              (usbDevice.getVendorId() != YUBICO_VENDOR_ID && !isFidoDevice(usbDevice))) {
+      if (usbDevice == null
+          || (usbDevice.getVendorId() != YUBICO_VENDOR_ID && !isFidoDevice(usbDevice))) {
         return;
       }
 
