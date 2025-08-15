@@ -959,7 +959,8 @@ public class BasicWebAuthnClient implements Closeable {
         creds = descriptors;
       }
 
-      int maxCreds = info.getMaxCredentialCountInList() != null ? info.getMaxCredentialCountInList() : 1;
+      int maxCreds =
+          info.getMaxCredentialCountInList() != null ? info.getMaxCredentialCountInList() : 1;
 
       byte[] clientDataHash = new byte[32];
       Arrays.fill(clientDataHash, (byte) 0x00);

@@ -114,7 +114,8 @@ public class SerializationTest {
     Assert.assertArrayEquals(descriptor.getId(), (byte[]) cborMap.get("id"));
     Assert.assertNull(cborMap.get("transports"));
 
-    PublicKeyCredentialDescriptor other = PublicKeyCredentialDescriptor.fromMap(cborMap, SerializationType.CBOR);
+    PublicKeyCredentialDescriptor other =
+        PublicKeyCredentialDescriptor.fromMap(cborMap, SerializationType.CBOR);
     Assert.assertEquals(descriptor.getType(), other.getType());
     Assert.assertArrayEquals(descriptor.getId(), other.getId());
     Assert.assertNull(other.getTransports());
