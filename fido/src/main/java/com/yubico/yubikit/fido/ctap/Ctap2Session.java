@@ -688,7 +688,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
     @Nullable private final List<Integer> vendorPrototypeConfigCommands;
     private final List<String> attestationFormats;
     @Nullable private final Integer uvCountSinceLastPinEntry;
-    @Nullable private final Boolean longTouchForReset;
+    private final boolean longTouchForReset;
     @Nullable private final byte[] encIdentifier;
     private final List<String> transportsForReset;
     @Nullable private final Boolean pinComplexityPolicy;
@@ -719,7 +719,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
         @Nullable List<Integer> vendorPrototypeConfigCommands,
         List<String> attestationFormats,
         @Nullable Integer uvCountSinceLastPinEntry,
-        @Nullable Boolean longTouchForReset,
+        boolean longTouchForReset,
         @Nullable byte[] encIdentifier,
         List<String> transportsForReset,
         @Nullable Boolean pinComplexityPolicy,
@@ -806,7 +806,9 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
               ? (List<String>) data.get(RESULT_ATTESTATION_FORMATS)
               : Collections.emptyList(),
           (Integer) data.get(RESULT_UV_COUNT_SINCE_LAST_PIN_ENTRY),
-          (Boolean) data.get(RESULT_LONG_TOUCH_FOR_RESET),
+          data.containsKey(RESULT_LONG_TOUCH_FOR_RESET)
+              ? (Boolean) data.get(RESULT_LONG_TOUCH_FOR_RESET)
+              : false,
           (byte[]) data.get(RESULT_ENC_IDENTIFIER),
           data.containsKey(RESULT_TRANSPORTS_FOR_RESET)
               ? (List<String>) data.get(RESULT_TRANSPORTS_FOR_RESET)
@@ -1096,8 +1098,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
      *
      * @return true if the authenticator requires a 10 second touch for reset
      */
-    @Nullable
-    public Boolean getLongTouchForReset() {
+    public boolean getLongTouchForReset() {
       return longTouchForReset;
     }
 
