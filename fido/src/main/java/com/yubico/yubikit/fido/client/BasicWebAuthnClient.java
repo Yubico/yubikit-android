@@ -852,7 +852,7 @@ public class BasicWebAuthnClient implements Closeable {
           }
         }
       } else {
-        creds = descriptors;
+        creds = new ArrayList<>(descriptors);
       }
 
       int maxCreds =
