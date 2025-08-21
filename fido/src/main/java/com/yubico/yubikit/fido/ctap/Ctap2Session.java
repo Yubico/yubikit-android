@@ -222,7 +222,16 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
     if (payload != null) {
       Cbor.encodeTo(baos, payload);
     }
-    byte[] response = backend.sendCbor(baos.toByteArray(), state);
+    byte[] data = baos.toByteArray();
+
+    int maxMsgSize = command == CMD_GET_INFO ? 1024 : info.maxMsgSize;
+    if (data.length > maxMsgSize) {
+      Logger.error(
+          logger, "Actual message size ({}) larger than maxMsgSize ({})", data.length, maxMsgSize);
+      throw new CtapException(CtapException.ERR_REQUEST_TOO_LARGE);
+    }
+
+    byte[] response = backend.sendCbor(data, state);
     byte status = response[0];
     if (status != 0x00) {
       throw new CtapException(status);
