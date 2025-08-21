@@ -48,7 +48,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -204,11 +204,12 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
   }
 
   /** Packs a list of objects into a 1-indexed map, discarding any null values. */
-  private static Map<Integer, ?> args(Object... params) {
+  private static Map<Integer, ?> args(@Nullable Object... params) {
     Map<Integer, Object> argMap = new HashMap<>();
     for (int i = 0; i < params.length; i++) {
-      if (params[i] != null) {
-        argMap.put(i + 1, params[i]);
+      Object pi = params[i];
+      if (pi != null) {
+        argMap.put(i + 1, pi);
       }
     }
     return argMap;
@@ -269,7 +270,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
       @Nullable List<Map<String, ?>> excludeList,
       @Nullable Map<String, ?> extensions,
       @Nullable Map<String, ?> options,
-      @Nullable byte[] pinUvAuthParam,
+      byte @Nullable [] pinUvAuthParam,
       @Nullable Integer pinUvAuthProtocol,
       @Nullable Integer enterpriseAttestation,
       @Nullable CommandState state)
@@ -339,7 +340,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
       @Nullable List<Map<String, ?>> allowList,
       @Nullable Map<String, ?> extensions,
       @Nullable Map<String, ?> options,
-      @Nullable byte[] pinUvAuthParam,
+      byte @Nullable [] pinUvAuthParam,
       @Nullable Integer pinUvAuthProtocol,
       @Nullable CommandState state)
       throws IOException, CommandException {
@@ -421,9 +422,9 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
       @Nullable Integer pinUvAuthProtocol,
       int subCommand,
       @Nullable Map<Integer, ?> keyAgreement,
-      @Nullable byte[] pinUvAuthParam,
-      @Nullable byte[] newPinEnc,
-      @Nullable byte[] pinHashEnc,
+      byte @Nullable [] pinUvAuthParam,
+      byte @Nullable [] newPinEnc,
+      byte @Nullable [] pinHashEnc,
       @Nullable Integer permissions,
       @Nullable String rpId,
       @Nullable CommandState state)
@@ -494,7 +495,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
       @Nullable Integer subCommand,
       @Nullable Map<?, ?> subCommandParams,
       @Nullable Integer pinUvAuthProtocol,
-      @Nullable byte[] pinUvAuthParam,
+      byte @Nullable [] pinUvAuthParam,
       @Nullable Boolean getModality,
       @Nullable CommandState state)
       throws IOException, CommandException {
@@ -524,7 +525,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
       int subCommand,
       @Nullable Map<?, ?> subCommandParams,
       @Nullable Integer pinUvAuthProtocol,
-      @Nullable byte[] pinUvAuthParam)
+      byte @Nullable [] pinUvAuthParam)
       throws IOException, CommandException {
     if (credentialManagerCommand == null) {
       throw new IllegalStateException("Credential manager not supported");
@@ -567,9 +568,9 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
   public Map<Integer, ?> largeBlobs(
       int offset,
       @Nullable Integer get,
-      @Nullable byte[] set,
+      byte @Nullable [] set,
       @Nullable Integer length,
-      @Nullable byte[] pinUvAuthParam,
+      byte @Nullable [] pinUvAuthParam,
       @Nullable Integer pinUvAuthProtocol)
       throws IOException, CommandException {
     return sendCbor(
@@ -604,7 +605,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
       byte subCommand,
       @Nullable Map<?, ?> subCommandParams,
       @Nullable Integer pinUvAuthProtocol,
-      @Nullable byte[] pinUvAuthParam)
+      byte @Nullable [] pinUvAuthParam)
       throws IOException, CommandException {
     return sendCbor(
         CMD_CONFIG,
@@ -944,8 +945,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
      *
      * @return the firmware version
      */
-    @Nullable
-    Integer getFirmwareVersion() {
+    @Nullable Integer getFirmwareVersion() {
       return firmwareVersion;
     }
 
@@ -1102,7 +1102,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
     private final byte[] authenticatorData;
     private final Map<String, ?> attestationStatement;
     @Nullable private final Boolean enterpriseAttestation;
-    @Nullable private final byte[] largeBlobKey;
+    private final byte @Nullable [] largeBlobKey;
     @Nullable private final Map<String, ?> unsignedExtensionOutputs;
 
     @Deprecated
@@ -1111,7 +1111,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
         byte[] authenticatorData,
         Map<String, ?> attestationStatement,
         @Nullable Boolean enterpriseAttestation,
-        @Nullable byte[] largeBlobKey) {
+        byte @Nullable [] largeBlobKey) {
       this(
           format,
           authenticatorData,
@@ -1126,7 +1126,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
         byte[] authenticatorData,
         Map<String, ?> attestationStatement,
         @Nullable Boolean enterpriseAttestation,
-        @Nullable byte[] largeBlobKey,
+        byte @Nullable [] largeBlobKey,
         @Nullable Map<String, ?> unsignedExtensionOutputs) {
       this.format = format;
       this.authenticatorData = authenticatorData;
@@ -1190,8 +1190,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
      *
      * @return the largeBlobKey for the credential
      */
-    @Nullable
-    public byte[] getLargeBlobKey() {
+    public byte @Nullable [] getLargeBlobKey() {
       return largeBlobKey;
     }
 
@@ -1231,7 +1230,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
     @Nullable private final Map<String, ?> user;
     @Nullable private final Integer numberOfCredentials;
     @Nullable private final Boolean userSelected;
-    @Nullable private final byte[] largeBlobKey;
+    private final byte @Nullable [] largeBlobKey;
 
     private AssertionData(
         @Nullable Map<String, ?> credential,
@@ -1240,7 +1239,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
         @Nullable Map<String, ?> user,
         @Nullable Integer numberOfCredentials,
         @Nullable Boolean userSelected,
-        @Nullable byte[] largeBlobKey) {
+        byte @Nullable [] largeBlobKey) {
       this.credential = credential;
       this.user = user;
       this.signature = signature;
@@ -1351,8 +1350,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
      *     href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#sctn-largeBlobKey-extension">Large
      *     Blob Key Extension</a>.
      */
-    @Nullable
-    public byte[] getLargeBlobKey() {
+    public byte @Nullable [] getLargeBlobKey() {
       return largeBlobKey;
     }
 

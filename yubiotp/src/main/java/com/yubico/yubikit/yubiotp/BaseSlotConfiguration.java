@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Yubico.
+ * Copyright (C) 2020-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 abstract class BaseSlotConfiguration<T extends BaseSlotConfiguration<T>>
     implements SlotConfiguration {
@@ -89,7 +89,7 @@ abstract class BaseSlotConfiguration<T extends BaseSlotConfiguration<T>>
   }
 
   @Override
-  public byte[] getConfig(@Nullable byte[] accCode) {
+  public byte[] getConfig(byte @Nullable [] accCode) {
     return buildConfig(
         fixed,
         uid,
@@ -150,7 +150,7 @@ abstract class BaseSlotConfiguration<T extends BaseSlotConfiguration<T>>
       byte extFlags,
       byte tktFlags,
       byte cfgFlags,
-      @Nullable byte[] accCode) {
+      byte @Nullable [] accCode) {
     if (fixed.length > FIXED_SIZE) {
       throw new IllegalArgumentException("Incorrect length for fixed");
     }

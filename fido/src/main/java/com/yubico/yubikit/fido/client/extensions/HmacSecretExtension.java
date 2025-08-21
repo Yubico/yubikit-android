@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Yubico.
+ * Copyright (C) 2024-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,7 +45,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -302,7 +302,7 @@ public class HmacSecretExtension extends Extension {
     byte[] salt1;
     byte[] salt2;
 
-    Salts(byte[] salt1, @Nullable byte[] salt2) {
+    Salts(byte[] salt1, byte @Nullable [] salt2) {
       this.salt1 = salt1;
       this.salt2 = salt2 != null ? salt2 : new byte[0];
     }
@@ -372,8 +372,7 @@ public class HmacSecretExtension extends Extension {
       this.hmac = HmacInputs.fromMap(hmac);
     }
 
-    @Nullable
-    Map<String, Object> evalByCredential(String key) {
+    @Nullable Map<String, Object> evalByCredential(String key) {
       if (prf == null || prf.evalByCredential == null) {
         return null;
       }

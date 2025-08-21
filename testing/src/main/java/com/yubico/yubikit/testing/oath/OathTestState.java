@@ -28,7 +28,7 @@ import com.yubico.yubikit.oath.OathSession;
 import com.yubico.yubikit.testing.ScpParameters;
 import com.yubico.yubikit.testing.TestState;
 import java.io.IOException;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 public class OathTestState extends TestState {
   public boolean isFipsApproved;

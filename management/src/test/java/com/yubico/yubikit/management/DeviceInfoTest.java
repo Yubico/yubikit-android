@@ -33,7 +33,7 @@ import static org.junit.Assert.assertTrue;
 import com.yubico.yubikit.core.Version;
 import java.util.HashMap;
 import java.util.Map;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.junit.Test;
 
 public class DeviceInfoTest {
@@ -245,7 +245,7 @@ public class DeviceInfoTest {
 
   // builds a DeviceInfo object from the given version and version qualifier bytes
   private DeviceInfo infoOfVersion(
-      @Nullable byte[] versionBytes, @Nullable byte[] versionQualifierBytes) {
+      byte @Nullable [] versionBytes, byte @Nullable [] versionQualifierBytes) {
 
     Map<Integer, byte[]> tlvs = new HashMap<>();
     if (versionBytes != null) {

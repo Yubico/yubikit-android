@@ -32,7 +32,7 @@ import com.yubico.yubikit.openpgp.Pw;
 import com.yubico.yubikit.testing.ScpParameters;
 import com.yubico.yubikit.testing.TestState;
 import java.io.IOException;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.junit.Assume;
 
 public class OpenPgpTestState extends TestState {

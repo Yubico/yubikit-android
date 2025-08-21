@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Yubico.
+ * Copyright (C) 2022-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.WeakHashMap;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.LoggerFactory;
 
 final class UsbDeviceManager {
@@ -234,7 +234,6 @@ final class UsbDeviceManager {
    * @return UsbDevice from intent's parcelable
    */
   @Nullable
-  @SuppressWarnings("deprecation")
   private static UsbDevice getUsbManagerExtraDevice(Intent intent) {
     return (Build.VERSION.SDK_INT > Build.VERSION_CODES.TIRAMISU)
         ? intent.getParcelableExtra(UsbManager.EXTRA_DEVICE, UsbDevice.class)

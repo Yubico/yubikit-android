@@ -27,7 +27,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.LoggerFactory;
 
 public class OtpProtocol implements Closeable {
@@ -99,7 +99,7 @@ public class OtpProtocol implements Closeable {
    * @throws IOException in case of communication error
    * @throws CommandException in case the command failed
    */
-  public byte[] sendAndReceive(byte slot, @Nullable byte[] data, @Nullable CommandState state)
+  public byte[] sendAndReceive(byte slot, byte @Nullable [] data, @Nullable CommandState state)
       throws IOException, CommandException {
     byte[] payload;
     if (data == null) {

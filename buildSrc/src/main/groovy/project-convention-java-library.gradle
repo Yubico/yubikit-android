@@ -2,6 +2,7 @@ plugins {
     id 'java-library'
     id 'project-convention-spotbugs'
     id 'project-convention-spotless'
+    id 'project-convention-jspecify'
 }
 
 java {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Yubico.
+ * Copyright (C) 2024-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,7 +45,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import javax.annotation.Nullable;
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
@@ -55,6 +54,7 @@ import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.LoggerFactory;
 
 /** Internal SCP state class for managing SCP state, handling encryption/decryption and MAC. */
@@ -178,7 +178,7 @@ public class ScpState {
   }
 
   public static Pair<ScpState, byte[]> scp03Init(
-      ApduProcessor processor, Scp03KeyParams keyParams, @Nullable byte[] hostChallenge)
+      ApduProcessor processor, Scp03KeyParams keyParams, byte @Nullable [] hostChallenge)
       throws BadResponseException, IOException, ApduException {
     if (hostChallenge == null) {
       hostChallenge = RandomUtils.getRandomBytes(8);

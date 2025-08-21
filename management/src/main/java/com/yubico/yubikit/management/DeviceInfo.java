@@ -25,7 +25,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.LoggerFactory;
 
 /** Contains metadata, including Device Configuration, of a YubiKey. */
@@ -246,7 +246,7 @@ public class DeviceInfo {
     int formFactorTagData = readInt(data.get(TAG_FORMFACTOR));
     boolean isFips = (formFactorTagData & 0x80) != 0;
     boolean isSky = (formFactorTagData & 0x40) != 0;
-    @Nullable String partNumber = null;
+    String partNumber = null;
     int fipsCapable = fromFips(readInt(data.get(TAG_FIPS_CAPABLE)));
     int fipsApproved = fromFips(readInt(data.get(TAG_FIPS_APPROVED)));
     boolean pinComplexity = readInt(data.get(TAG_PIN_COMPLEXITY)) == 1;
@@ -482,7 +482,7 @@ public class DeviceInfo {
   }
 
   /** Reads an int from a variable length byte array. */
-  private static int readInt(@Nullable byte[] data) {
+  private static int readInt(byte @Nullable [] data) {
     if (data == null || data.length == 0) {
       return 0;
     }
@@ -494,7 +494,7 @@ public class DeviceInfo {
     return value;
   }
 
-  private static VersionQualifier readVersionQualifier(Version version, @Nullable byte[] bytes) {
+  private static VersionQualifier readVersionQualifier(Version version, byte @Nullable [] bytes) {
     if (bytes == null) {
       return new VersionQualifier(version, VersionQualifier.Type.FINAL, 0);
     }

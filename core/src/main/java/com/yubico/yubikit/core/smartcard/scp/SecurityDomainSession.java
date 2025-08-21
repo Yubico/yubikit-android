@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Yubico.
+ * Copyright (C) 2024-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,8 +50,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import javax.annotation.Nullable;
 import javax.crypto.SecretKey;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.LoggerFactory;
 
 public class SecurityDomainSession extends ApplicationSession<SecurityDomainSession> {
@@ -127,7 +127,7 @@ public class SecurityDomainSession extends ApplicationSession<SecurityDomainSess
     dataEncryptor = protocol.initScp(keyParams);
   }
 
-  public byte[] getData(short tag, @Nullable byte[] data) throws ApduException, IOException {
+  public byte[] getData(short tag, byte @Nullable [] data) throws ApduException, IOException {
     return protocol.sendAndReceive(new Apdu(0, INS_GET_DATA, tag >> 8, tag & 0xff, data));
   }
 
