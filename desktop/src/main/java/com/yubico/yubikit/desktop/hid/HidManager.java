@@ -17,8 +17,8 @@ package com.yubico.yubikit.desktop.hid;
 
 import java.util.ArrayList;
 import java.util.List;
-import javax.annotation.Nullable;
 import org.hid4java.HidServices;
+import org.jspecify.annotations.Nullable;
 
 public class HidManager {
 

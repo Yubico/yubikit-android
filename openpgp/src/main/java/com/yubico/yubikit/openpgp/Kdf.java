@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Yubico.
+ * Copyright (C) 2023-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 public abstract class Kdf {
   protected final byte algorithm;
@@ -102,19 +102,19 @@ public abstract class Kdf {
     private final HashAlgorithm hashAlgorithm;
     private final int iterationCount;
     private final byte[] saltUser;
-    @Nullable private final byte[] saltReset;
-    @Nullable private final byte[] saltAdmin;
-    @Nullable private final byte[] initialHashUser;
-    @Nullable private final byte[] initialHashAdmin;
+    private final byte @Nullable [] saltReset;
+    private final byte @Nullable [] saltAdmin;
+    private final byte @Nullable [] initialHashUser;
+    private final byte @Nullable [] initialHashAdmin;
 
     public IterSaltedS2k(
         HashAlgorithm hashAlgorithm,
         int iterationCount,
         byte[] saltUser,
-        @Nullable byte[] saltReset,
-        @Nullable byte[] saltAdmin,
-        @Nullable byte[] initialHashUser,
-        @Nullable byte[] initialHashAdmin) {
+        byte @Nullable [] saltReset,
+        byte @Nullable [] saltAdmin,
+        byte @Nullable [] initialHashUser,
+        byte @Nullable [] initialHashAdmin) {
       super((byte) 3);
       this.hashAlgorithm = hashAlgorithm;
       this.iterationCount = iterationCount;

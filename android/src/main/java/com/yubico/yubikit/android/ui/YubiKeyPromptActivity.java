@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Yubico.
+ * Copyright (C) 2020-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ import com.yubico.yubikit.core.application.CommandState;
 import com.yubico.yubikit.core.internal.Logger;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Objects;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -204,7 +204,6 @@ public class YubiKeyPromptActivity extends Activity {
     allowNfc = args.getBoolean(ARG_ALLOW_NFC, true);
 
     // Get the action to perform on YubiKey connected
-    @SuppressWarnings("deprecation")
     Class<?> actionType =
         (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
             ? (Class<?>) args.getSerializable(ARG_ACTION_CLASS, Class.class)

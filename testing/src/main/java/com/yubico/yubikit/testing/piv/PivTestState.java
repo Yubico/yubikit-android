@@ -33,7 +33,7 @@ import com.yubico.yubikit.piv.PivSession;
 import com.yubico.yubikit.testing.ScpParameters;
 import com.yubico.yubikit.testing.TestState;
 import java.io.IOException;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 public class PivTestState extends TestState {
 

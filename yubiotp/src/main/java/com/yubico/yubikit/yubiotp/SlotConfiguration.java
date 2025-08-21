@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Yubico.
+ * Copyright (C) 2020-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ package com.yubico.yubikit.yubiotp;
 
 import com.yubico.yubikit.core.Version;
 import com.yubico.yubikit.core.application.Feature;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 public interface SlotConfiguration {
   // Constants in this file come from
@@ -172,7 +172,7 @@ public interface SlotConfiguration {
    */
   boolean isSupportedBy(Version version);
 
-  byte[] getConfig(@Nullable byte[] accCode);
+  byte[] getConfig(byte @Nullable [] accCode);
 
   enum FlagType {
     TKT,

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2022 Yubico.
+ * Copyright (C) 2019-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import android.nfc.NfcAdapter;
 import com.yubico.yubikit.core.util.Callback;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /** This class allows you to communicate with local NFC adapter */
 public class NfcYubiKeyManager {

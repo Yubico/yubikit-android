@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Yubico.
+ * Copyright (C) 2024-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.junit.Assert;
 import org.junit.Assume;
 
@@ -149,8 +149,7 @@ public class CredBlobExtensionTests {
     return extensions != null ? (Boolean) extensions.get(CRED_BLOB) : null;
   }
 
-  @Nullable
-  private byte[] getAssertionResult(PublicKeyCredential cred) {
+  private byte @Nullable [] getAssertionResult(PublicKeyCredential cred) {
     AuthenticatorAssertionResponse response = (AuthenticatorAssertionResponse) cred.getResponse();
     AuthenticatorData authenticatorData =
         AuthenticatorData.parseFrom(ByteBuffer.wrap(response.getAuthenticatorData()));

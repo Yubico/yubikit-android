@@ -28,7 +28,7 @@ import com.yubico.yubikit.core.smartcard.scp.ScpState;
 import com.yubico.yubikit.core.util.Pair;
 import java.io.Closeable;
 import java.io.IOException;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Support class for communication over a SmartCardConnection.

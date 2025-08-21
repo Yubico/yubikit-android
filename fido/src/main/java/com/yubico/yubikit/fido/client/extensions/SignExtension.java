@@ -37,7 +37,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 public class SignExtension extends Extension {
 
@@ -118,9 +118,9 @@ public class SignExtension extends Extension {
 
   private static class AuthenticationExtensionsSignGenerateKey {
     private final List<Integer> algorithms;
-    @Nullable private final byte[] tbs;
+    private final byte @Nullable [] tbs;
 
-    AuthenticationExtensionsSignGenerateKey(List<Integer> algorithms, @Nullable byte[] tbs) {
+    AuthenticationExtensionsSignGenerateKey(List<Integer> algorithms, byte @Nullable [] tbs) {
       this.algorithms = algorithms;
       this.tbs = tbs;
     }
@@ -171,12 +171,12 @@ public class SignExtension extends Extension {
   }
 
   private static class AuthenticationExtensionsSignOutputs {
-    @Nullable final SignExtension.AuthenticationExtensionsSignGeneratedKey generatedKey;
-    @Nullable final byte[] signature;
+    final SignExtension.@Nullable AuthenticationExtensionsSignGeneratedKey generatedKey;
+    final byte @Nullable [] signature;
 
     AuthenticationExtensionsSignOutputs(
         @Nullable AuthenticationExtensionsSignGeneratedKey generatedKey,
-        @Nullable byte[] signature) {
+        byte @Nullable [] signature) {
       this.generatedKey = generatedKey;
       this.signature = signature;
     }

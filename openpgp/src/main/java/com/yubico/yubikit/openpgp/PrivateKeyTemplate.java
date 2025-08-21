@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Yubico.
+ * Copyright (C) 2023-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,8 +22,8 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import javax.annotation.Nullable;
 import javax.security.auth.Destroyable;
+import org.jspecify.annotations.Nullable;
 
 abstract class PrivateKeyTemplate implements Destroyable {
   private final byte[] crt;
@@ -134,9 +134,9 @@ abstract class PrivateKeyTemplate implements Destroyable {
 
   static class Ec extends PrivateKeyTemplate {
     final byte[] privateKey;
-    @Nullable final byte[] publicKey;
+    final byte @Nullable [] publicKey;
 
-    Ec(byte[] crt, byte[] privateKey, @Nullable byte[] publicKey) {
+    Ec(byte[] crt, byte[] privateKey, byte @Nullable [] publicKey) {
       super(crt);
       this.privateKey = privateKey;
       this.publicKey = publicKey;

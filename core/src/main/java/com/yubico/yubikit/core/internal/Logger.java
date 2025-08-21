@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Yubico.
+ * Copyright (C) 2023-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 package com.yubico.yubikit.core.internal;
 
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.event.Level;
 import org.slf4j.helpers.FormattingTuple;
 import org.slf4j.helpers.MessageFormatter;
@@ -25,9 +25,9 @@ import org.slf4j.helpers.MessageFormatter;
 @SuppressWarnings({"unused", "deprecation"})
 public final class Logger {
 
-  @Nullable private static com.yubico.yubikit.core.Logger instance = null;
+  private static com.yubico.yubikit.core.@Nullable Logger instance = null;
 
-  public static void setLogger(@Nullable com.yubico.yubikit.core.Logger logger) {
+  public static void setLogger(com.yubico.yubikit.core.@Nullable Logger logger) {
     instance = logger;
   }
 
@@ -43,7 +43,7 @@ public final class Logger {
     log(Level.TRACE, logger, format, arg1, arg2);
   }
 
-  public static void trace(org.slf4j.Logger logger, String format, Object... args) {
+  public static void trace(org.slf4j.Logger logger, String format, @Nullable Object... args) {
     log(Level.TRACE, logger, format, args);
   }
 
@@ -51,15 +51,16 @@ public final class Logger {
     log(Level.DEBUG, logger, message);
   }
 
-  public static void debug(org.slf4j.Logger logger, String format, Object arg) {
+  public static void debug(org.slf4j.Logger logger, String format, @Nullable Object arg) {
     log(Level.DEBUG, logger, format, arg);
   }
 
-  public static void debug(org.slf4j.Logger logger, String format, Object arg1, Object arg2) {
+  public static void debug(
+      org.slf4j.Logger logger, String format, @Nullable Object arg1, @Nullable Object arg2) {
     log(Level.DEBUG, logger, format, arg1, arg2);
   }
 
-  public static void debug(org.slf4j.Logger logger, String format, Object... args) {
+  public static void debug(org.slf4j.Logger logger, String format, @Nullable Object... args) {
     log(Level.DEBUG, logger, format, args);
   }
 
@@ -67,15 +68,16 @@ public final class Logger {
     log(Level.INFO, logger, message);
   }
 
-  public static void info(org.slf4j.Logger logger, String format, Object arg) {
+  public static void info(org.slf4j.Logger logger, String format, @Nullable Object arg) {
     log(Level.INFO, logger, format, arg);
   }
 
-  public static void info(org.slf4j.Logger logger, String format, Object arg1, Object arg2) {
+  public static void info(
+      org.slf4j.Logger logger, String format, @Nullable Object arg1, @Nullable Object arg2) {
     log(Level.INFO, logger, format, arg1, arg2);
   }
 
-  public static void info(org.slf4j.Logger logger, String format, Object... args) {
+  public static void info(org.slf4j.Logger logger, String format, @Nullable Object... args) {
     log(Level.INFO, logger, format, args);
   }
 
@@ -83,15 +85,16 @@ public final class Logger {
     log(Level.WARN, logger, message);
   }
 
-  public static void warn(org.slf4j.Logger logger, String format, Object arg) {
+  public static void warn(org.slf4j.Logger logger, String format, @Nullable Object arg) {
     log(Level.WARN, logger, format, arg);
   }
 
-  public static void warn(org.slf4j.Logger logger, String format, Object arg1, Object arg2) {
+  public static void warn(
+      org.slf4j.Logger logger, String format, @Nullable Object arg1, @Nullable Object arg2) {
     log(Level.WARN, logger, format, arg1, arg2);
   }
 
-  public static void warn(org.slf4j.Logger logger, String format, Object... args) {
+  public static void warn(org.slf4j.Logger logger, String format, @Nullable Object... args) {
     log(Level.WARN, logger, format, args);
   }
 
@@ -99,15 +102,16 @@ public final class Logger {
     log(Level.ERROR, logger, message);
   }
 
-  public static void error(org.slf4j.Logger logger, String format, Object arg) {
+  public static void error(org.slf4j.Logger logger, String format, @Nullable Object arg) {
     Logger.log(Level.ERROR, logger, format, arg);
   }
 
-  public static void error(org.slf4j.Logger logger, String format, Object arg1, Object arg2) {
+  public static void error(
+      org.slf4j.Logger logger, String format, @Nullable Object arg1, @Nullable Object arg2) {
     Logger.log(Level.ERROR, logger, format, arg1, arg2);
   }
 
-  public static void error(org.slf4j.Logger logger, String format, Object... args) {
+  public static void error(org.slf4j.Logger logger, String format, @Nullable Object... args) {
     Logger.log(Level.ERROR, logger, format, args);
   }
 
@@ -140,7 +144,8 @@ public final class Logger {
     }
   }
 
-  private static void log(Level level, org.slf4j.Logger logger, String format, Object arg) {
+  private static void log(
+      Level level, org.slf4j.Logger logger, String format, @Nullable Object arg) {
     if (instance != null) {
       logToInstance(level, MessageFormatter.format(format, arg));
     } else {
@@ -165,7 +170,11 @@ public final class Logger {
   }
 
   private static void log(
-      Level level, org.slf4j.Logger logger, String format, Object arg1, Object arg2) {
+      Level level,
+      org.slf4j.Logger logger,
+      String format,
+      @Nullable Object arg1,
+      @Nullable Object arg2) {
     if (instance != null) {
       logToInstance(level, MessageFormatter.format(format, arg1, arg2));
     } else {
@@ -189,7 +198,8 @@ public final class Logger {
     }
   }
 
-  private static void log(Level level, org.slf4j.Logger logger, String format, Object... args) {
+  private static void log(
+      Level level, org.slf4j.Logger logger, String format, @Nullable Object... args) {
     if (instance != null) {
       logToInstance(level, MessageFormatter.arrayFormat(format, args));
     } else {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Yubico.
+ * Copyright (C) 2020-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,5 @@
  * prefer to use classes contained in the com.yubico.yubikit.fido.client package, which offer a
  * higher level of abstraction.
  */
-@PackageNonnullByDefault
+@org.jspecify.annotations.NullMarked
 package com.yubico.yubikit.fido.ctap;
-
-import com.yubico.yubikit.core.PackageNonnullByDefault;

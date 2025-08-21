@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Yubico.
+ * Copyright (C) 2024-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,10 +20,10 @@ import java.nio.ByteBuffer;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
-import javax.annotation.Nullable;
 import javax.crypto.Mac;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
+import org.jspecify.annotations.Nullable;
 
 public class StaticKeys {
   private static final byte[] DEFAULT_KEY =
@@ -36,7 +36,7 @@ public class StaticKeys {
   final SecretKey mac;
   @Nullable final SecretKey dek;
 
-  public StaticKeys(byte[] enc, byte[] mac, @Nullable byte[] dek) {
+  public StaticKeys(byte[] enc, byte[] mac, byte @Nullable [] dek) {
     this.enc = new SecretKeySpec(enc, "AES");
     this.mac = new SecretKeySpec(mac, "AES");
     this.dek = dek != null ? new SecretKeySpec(dek, "AES") : null;

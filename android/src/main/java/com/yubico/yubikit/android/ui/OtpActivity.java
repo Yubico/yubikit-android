@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Yubico.
+ * Copyright (C) 2020-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ import com.yubico.yubikit.core.util.Callback;
 import com.yubico.yubikit.core.util.NdefUtils;
 import com.yubico.yubikit.core.util.Pair;
 import java.io.IOException;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /** An Activity to prompt the user for a YubiKey to retrieve an OTP from a YubiOTP slot. */
 public class OtpActivity extends YubiKeyPromptActivity {

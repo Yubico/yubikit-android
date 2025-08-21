@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Yubico.
+ * Copyright (C) 2020-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.LoggerFactory;
 
 public class AuthenticatorAttestationResponse extends AuthenticatorResponse {
@@ -42,7 +42,7 @@ public class AuthenticatorAttestationResponse extends AuthenticatorResponse {
 
   private final AuthenticatorData authenticatorData;
   private final List<String> transports;
-  @Nullable private final byte[] publicKey;
+  private final byte @Nullable [] publicKey;
   private final Integer publicKeyAlgorithm;
   private final byte[] attestationObject;
 
@@ -53,7 +53,7 @@ public class AuthenticatorAttestationResponse extends AuthenticatorResponse {
       byte[] clientDataJson,
       AuthenticatorData authenticatorData,
       List<String> transports,
-      @Nullable byte[] publicKey,
+      byte @Nullable [] publicKey,
       int publicKeyAlgorithm,
       byte[] attestationObject) {
     super(clientDataJson);
@@ -105,9 +105,8 @@ public class AuthenticatorAttestationResponse extends AuthenticatorResponse {
     return transports;
   }
 
-  @Nullable
   @SuppressWarnings("unused")
-  public byte[] getPublicKey() {
+  public byte @Nullable [] getPublicKey() {
     return publicKey;
   }
 

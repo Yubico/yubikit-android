@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Yubico.
+ * Copyright (C) 2023-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 public class DiscretionaryDataObjects {
   private static final int TAG_EXTENDED_CAPABILITIES = 0xC0;
@@ -100,8 +100,7 @@ public class DiscretionaryDataObjects {
     }
   }
 
-  @Nullable
-  public byte[] getFingerprint(KeyRef keyRef) {
+  public byte @Nullable [] getFingerprint(KeyRef keyRef) {
     byte[] fingerprint = fingerprints.get(keyRef);
     if (fingerprint != null) {
       return Arrays.copyOf(fingerprint, fingerprint.length);
@@ -109,8 +108,7 @@ public class DiscretionaryDataObjects {
     return null;
   }
 
-  @Nullable
-  public byte[] getCaFingerprint(KeyRef keyRef) {
+  public byte @Nullable [] getCaFingerprint(KeyRef keyRef) {
     byte[] fingerprint = caFingerprints.get(keyRef);
     if (fingerprint != null) {
       return Arrays.copyOf(fingerprint, fingerprint.length);

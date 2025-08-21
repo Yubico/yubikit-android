@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Yubico.
+ * Copyright (C) 2020-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,15 +19,18 @@ import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
-import javax.annotation.Nonnull;
 import javax.annotation.meta.TypeQualifierDefault;
+import org.jspecify.annotations.NullUnmarked;
 
 /**
  * Annotation used in package-info.java to indicate that all fields, methods, and parameters are
  * Nonnull by default.
+ *
+ * <p>Deprecated, the SDK is now using @org.jspecify.annotations.NullMarked for packages
  */
 @Documented
-@Nonnull
+@Deprecated
+@NullUnmarked
 @TypeQualifierDefault({ElementType.FIELD, ElementType.METHOD, ElementType.PARAMETER})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface PackageNonnullByDefault {}

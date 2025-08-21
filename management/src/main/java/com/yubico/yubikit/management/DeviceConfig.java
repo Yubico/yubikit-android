@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022,2024 Yubico.
+ * Copyright (C) 2020-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /** Describes the configuration of a YubiKey which can be altered via the Management application. */
 public class DeviceConfig {
@@ -112,7 +112,8 @@ public class DeviceConfig {
     return deviceFlags;
   }
 
-  byte[] getBytes(boolean reboot, @Nullable byte[] currentLockCode, @Nullable byte[] newLockCode) {
+  byte[] getBytes(
+      boolean reboot, byte @Nullable [] currentLockCode, byte @Nullable [] newLockCode) {
     Map<Integer, byte[]> values = new LinkedHashMap<>();
     if (reboot) {
       values.put(TAG_REBOOT, null);

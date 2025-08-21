@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Yubico.
+ * Copyright (C) 2020-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,7 +60,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -119,14 +119,14 @@ public class BasicWebAuthnClient implements Closeable {
   }
 
   private static class AuthParams {
-    @Nullable private final byte[] pinToken;
+    private final byte @Nullable [] pinToken;
     @Nullable private final PinUvAuthProtocol pinUvAuthProtocol;
-    @Nullable private final byte[] pinUvAuthParam;
+    private final byte @Nullable [] pinUvAuthParam;
 
     AuthParams(
-        @Nullable byte[] pinToken,
+        byte @Nullable [] pinToken,
         @Nullable PinUvAuthProtocol pinUvAuthProtocol,
-        @Nullable byte[] pinUvAuthParam) {
+        byte @Nullable [] pinUvAuthParam) {
       this.pinToken = pinToken;
       this.pinUvAuthProtocol = pinUvAuthProtocol;
       this.pinUvAuthParam = pinUvAuthParam;
@@ -220,7 +220,7 @@ public class BasicWebAuthnClient implements Closeable {
       byte[] clientDataJson,
       PublicKeyCredentialCreationOptions options,
       String effectiveDomain,
-      @Nullable char[] pin,
+      char @Nullable [] pin,
       @Nullable Integer enterpriseAttestation,
       @Nullable CommandState state)
       throws IOException, CommandException, ClientError {
@@ -277,7 +277,7 @@ public class BasicWebAuthnClient implements Closeable {
       byte[] clientDataJson,
       PublicKeyCredentialRequestOptions options,
       String effectiveDomain,
-      @Nullable char[] pin,
+      char @Nullable [] pin,
       @Nullable CommandState state)
       throws MultipleAssertionsAvailable, IOException, CommandException, ClientError {
     byte[] clientDataHash = Utils.hash(clientDataJson);
@@ -436,7 +436,7 @@ public class BasicWebAuthnClient implements Closeable {
       byte[] clientDataHash,
       PublicKeyCredentialCreationOptions options,
       String effectiveDomain,
-      @Nullable char[] pin,
+      char @Nullable [] pin,
       @Nullable Integer enterpriseAttestation,
       @Nullable CommandState state)
       throws IOException, CommandException, ClientError {
@@ -504,7 +504,7 @@ public class BasicWebAuthnClient implements Closeable {
       }
     }
 
-    @Nullable Integer validatedEnterpriseAttestation = null;
+    Integer validatedEnterpriseAttestation = null;
     if (isEnterpriseAttestationSupported()
         && AttestationConveyancePreference.ENTERPRISE.equals(options.getAttestation())
         && userAgentConfiguration.supportsEpForRpId(rpId)
@@ -565,7 +565,7 @@ public class BasicWebAuthnClient implements Closeable {
       byte[] clientDataHash,
       PublicKeyCredentialRequestOptions options,
       String effectiveDomain,
-      @Nullable char[] pin,
+      char @Nullable [] pin,
       @Nullable CommandState state)
       throws IOException, CommandException, ClientError {
     String rpId = options.getRpId();
@@ -704,7 +704,7 @@ public class BasicWebAuthnClient implements Closeable {
   }
 
   private Map<String, Boolean> getCreateCtapOptions(
-      PublicKeyCredentialCreationOptions publicKeyCredentialCreationOptions, @Nullable char[] pin)
+      PublicKeyCredentialCreationOptions publicKeyCredentialCreationOptions, char @Nullable [] pin)
       throws ClientError {
     Map<String, Boolean> ctapOptions = new HashMap<>();
     AuthenticatorSelectionCriteria authenticatorSelection =
@@ -727,7 +727,7 @@ public class BasicWebAuthnClient implements Closeable {
   }
 
   private Map<String, Boolean> getRequestCtapOptions(
-      PublicKeyCredentialRequestOptions options, @Nullable char[] pin) throws ClientError {
+      PublicKeyCredentialRequestOptions options, char @Nullable [] pin) throws ClientError {
     Map<String, Boolean> ctapOptions = new HashMap<>();
     if (getCtapUv(options.getUserVerification(), pin != null)) {
       ctapOptions.put(OPTION_USER_VERIFICATION, true);
@@ -738,12 +738,12 @@ public class BasicWebAuthnClient implements Closeable {
   private AuthParams getAuthParams(
       byte[] clientDataHash,
       boolean shouldUv,
-      @Nullable char[] pin,
+      char @Nullable [] pin,
       @Nullable Integer permissions,
       @Nullable String rpId)
       throws ClientError, IOException, CommandException {
-    @Nullable byte[] authToken = null;
-    @Nullable byte[] authParam = null;
+    byte[] authToken = null;
+    byte[] authParam = null;
 
     if (pin != null) {
       authToken = clientPin.getPinToken(pin, permissions, rpId);
@@ -828,7 +828,7 @@ public class BasicWebAuthnClient implements Closeable {
         List<PublicKeyCredentialDescriptor> descriptors,
         String effectiveDomain,
         @Nullable PinUvAuthProtocol pinUvAuthProtocol,
-        @Nullable byte[] pinUvAuthToken)
+        byte @Nullable [] pinUvAuthToken)
         throws IOException, CommandException, ClientError {
 
       if (rpId == null) {

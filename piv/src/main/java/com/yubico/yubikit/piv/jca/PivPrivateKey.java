@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022,2024 Yubico.
+ * Copyright (C) 2022-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,15 +35,15 @@ import java.security.spec.ECParameterSpec;
 import java.util.Arrays;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-import javax.annotation.Nullable;
 import javax.security.auth.Destroyable;
+import org.jspecify.annotations.Nullable;
 
 public abstract class PivPrivateKey implements PrivateKey, Destroyable {
   final Slot slot;
   final KeyType keyType;
   @Nullable private final PinPolicy pinPolicy;
   @Nullable private final TouchPolicy touchPolicy;
-  @Nullable protected char[] pin;
+  protected char @Nullable [] pin;
   private boolean destroyed = false;
 
   static PivPrivateKey from(
@@ -51,7 +51,7 @@ public abstract class PivPrivateKey implements PrivateKey, Destroyable {
       Slot slot,
       @Nullable PinPolicy pinPolicy,
       @Nullable TouchPolicy touchPolicy,
-      @Nullable char[] pin) {
+      char @Nullable [] pin) {
     KeyType keyType = KeyType.fromKey(publicKey);
     if (keyType.params.algorithm == KeyType.Algorithm.RSA) {
       return new PivPrivateKey.RsaKey(
@@ -71,7 +71,7 @@ public abstract class PivPrivateKey implements PrivateKey, Destroyable {
       KeyType keyType,
       @Nullable PinPolicy pinPolicy,
       @Nullable TouchPolicy touchPolicy,
-      @Nullable char[] pin) {
+      char @Nullable [] pin) {
     this.slot = slot;
     this.keyType = keyType;
     this.pinPolicy = pinPolicy;
@@ -120,7 +120,7 @@ public abstract class PivPrivateKey implements PrivateKey, Destroyable {
    * Sets the PIN to use when performing key operations with this private key, or to null. Note that
    * a copy is made of the PIN, which can be cleared out by calling {@link #destroy()}.
    */
-  public void setPin(@Nullable char[] pin) {
+  public void setPin(char @Nullable [] pin) {
     if (destroyed) {
       throw new IllegalStateException("PivPrivateKey has been destroyed");
     }
@@ -156,8 +156,7 @@ public abstract class PivPrivateKey implements PrivateKey, Destroyable {
   }
 
   @Override
-  @Nullable
-  public byte[] getEncoded() {
+  public byte @Nullable [] getEncoded() {
     return null;
   }
 
@@ -170,7 +169,7 @@ public abstract class PivPrivateKey implements PrivateKey, Destroyable {
         @Nullable PinPolicy pinPolicy,
         @Nullable TouchPolicy touchPolicy,
         ECParameterSpec ecSpec,
-        @Nullable char[] pin) {
+        char @Nullable [] pin) {
       super(slot, keyType, pinPolicy, touchPolicy, pin);
       this.ecSpec = ecSpec;
     }
@@ -209,7 +208,7 @@ public abstract class PivPrivateKey implements PrivateKey, Destroyable {
         @Nullable PinPolicy pinPolicy,
         @Nullable TouchPolicy touchPolicy,
         BigInteger modulus,
-        @Nullable char[] pin) {
+        char @Nullable [] pin) {
       super(slot, keyType, pinPolicy, touchPolicy, pin);
       this.modulus = modulus;
     }
@@ -226,7 +225,7 @@ public abstract class PivPrivateKey implements PrivateKey, Destroyable {
         KeyType keyType,
         @Nullable PinPolicy pinPolicy,
         @Nullable TouchPolicy touchPolicy,
-        @Nullable char[] pin) {
+        char @Nullable [] pin) {
       super(slot, keyType, pinPolicy, touchPolicy, pin);
     }
   }
@@ -237,7 +236,7 @@ public abstract class PivPrivateKey implements PrivateKey, Destroyable {
         KeyType keyType,
         @Nullable PinPolicy pinPolicy,
         @Nullable TouchPolicy touchPolicy,
-        @Nullable char[] pin) {
+        char @Nullable [] pin) {
       super(slot, keyType, pinPolicy, touchPolicy, pin);
     }
 

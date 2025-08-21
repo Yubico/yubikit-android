@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022,2024 Yubico.
+ * Copyright (C) 2022-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,7 +44,7 @@ import java.util.Date;
 import java.util.Enumeration;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 public class PivKeyStoreSpi extends KeyStoreSpi {
   private final Callback<Callback<Result<PivSession, Exception>>> provider;
@@ -147,9 +147,8 @@ public class PivKeyStoreSpi extends KeyStoreSpi {
   }
 
   @Override
-  @Nullable
-  public KeyStore.Entry engineGetEntry(String alias, KeyStore.ProtectionParameter protParam)
-      throws UnrecoverableEntryException {
+  public KeyStore.@Nullable Entry engineGetEntry(
+      String alias, KeyStore.ProtectionParameter protParam) throws UnrecoverableEntryException {
     Slot slot = Slot.fromStringAlias(alias);
     try {
       BlockingQueue<Result<KeyStore.Entry, Exception>> queue = new ArrayBlockingQueue<>(1);
@@ -202,7 +201,7 @@ public class PivKeyStoreSpi extends KeyStoreSpi {
 
   @Override
   public void engineSetEntry(
-      String alias, KeyStore.Entry entry, @Nullable KeyStore.ProtectionParameter protParam)
+      String alias, KeyStore.Entry entry, KeyStore.@Nullable ProtectionParameter protParam)
       throws KeyStoreException {
     Slot slot = Slot.fromStringAlias(alias);
 
@@ -248,7 +247,7 @@ public class PivKeyStoreSpi extends KeyStoreSpi {
 
   @Override
   public void engineSetKeyEntry(
-      String alias, Key key, @Nullable char[] password, Certificate[] chain)
+      String alias, Key key, char @Nullable [] password, Certificate[] chain)
       throws KeyStoreException {
     Slot slot = Slot.fromStringAlias(alias);
 
@@ -369,7 +368,7 @@ public class PivKeyStoreSpi extends KeyStoreSpi {
   }
 
   @Override
-  public void engineLoad(@Nullable KeyStore.LoadStoreParameter param) {
+  public void engineLoad(KeyStore.@Nullable LoadStoreParameter param) {
     if (param != null) {
       throw new InvalidParameterException("KeyStore must be loaded with null");
     }

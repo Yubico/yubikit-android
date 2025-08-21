@@ -65,13 +65,13 @@ import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import javax.annotation.Nullable;
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -729,8 +729,7 @@ public class PivSession extends ApplicationSession<PivSession> {
    * @throws IllegalArgumentException in case of invalid key configuration
    * @throws UnsupportedOperationException in case bio specific verification is not supported
    */
-  @Nullable
-  public byte[] verifyUv(boolean requestTemporaryPin, boolean checkOnly)
+  public byte @Nullable [] verifyUv(boolean requestTemporaryPin, boolean checkOnly)
       throws IOException, ApduException, com.yubico.yubikit.core.application.InvalidPinException {
     if (requestTemporaryPin && checkOnly) {
       throw new IllegalArgumentException(
@@ -1458,7 +1457,7 @@ public class PivSession extends ApplicationSession<PivSession> {
    * @throws IOException in case of connection error
    * @throws ApduException in case of an error response from the YubiKey
    */
-  public void putObject(int objectId, @Nullable byte[] objectData)
+  public void putObject(int objectId, byte @Nullable [] objectData)
       throws IOException, ApduException {
     Logger.debug(logger, "Writing data to object slot {}", Integer.toString(objectId, 16));
     Map<Integer, byte[]> tlvs = new LinkedHashMap<>();

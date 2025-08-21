@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2022 Yubico.
+ * Copyright (C) 2019-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 package com.yubico.yubikit.core.smartcard;
 
 import java.util.Arrays;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /** Data model for encapsulating an APDU command, as defined by ISO/IEC 7816-4 standard. */
 public class Apdu {
@@ -38,7 +38,7 @@ public class Apdu {
    * @param data the command data
    * @param le the length of expected data in the response
    */
-  private Apdu(byte cla, byte ins, byte p1, byte p2, @Nullable byte[] data, int le) {
+  private Apdu(byte cla, byte ins, byte p1, byte p2, byte @Nullable [] data, int le) {
     this.cla = cla;
     this.ins = ins;
     this.p1 = p1;
@@ -47,12 +47,12 @@ public class Apdu {
     this.le = le;
   }
 
-  private Apdu(byte cla, byte ins, byte p1, byte p2, @Nullable byte[] data) {
+  private Apdu(byte cla, byte ins, byte p1, byte p2, byte @Nullable [] data) {
     this(cla, ins, p1, p2, data, 0);
   }
 
   /** Constructor using int's for convenience. See {@link #Apdu(byte, byte, byte, byte, byte[])}. */
-  public Apdu(int cla, int ins, int p1, int p2, @Nullable byte[] data, int le) {
+  public Apdu(int cla, int ins, int p1, int p2, byte @Nullable [] data, int le) {
     this(
         validateByte(cla, "CLA"),
         validateByte(ins, "INS"),
@@ -62,7 +62,7 @@ public class Apdu {
         le);
   }
 
-  public Apdu(int cla, int ins, int p1, int p2, @Nullable byte[] data) {
+  public Apdu(int cla, int ins, int p1, int p2, byte @Nullable [] data) {
     this(cla, ins, p1, p2, data, 0);
   }
 

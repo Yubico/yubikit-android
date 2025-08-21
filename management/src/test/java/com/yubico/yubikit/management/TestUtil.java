@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Yubico.
+ * Copyright (C) 2024-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,13 +23,13 @@ import static org.junit.Assert.assertEquals;
 import com.yubico.yubikit.core.Version;
 import java.util.HashMap;
 import java.util.Map;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 class TestUtil {
 
   static final Version defaultVersion = new Version(2, 2, 2);
 
-  static Map<Integer, byte[]> tlvs(Integer tag, @Nullable byte[] data) {
+  static Map<Integer, byte[]> tlvs(Integer tag, byte @Nullable [] data) {
     Map<Integer, byte[]> tlvs = new HashMap<>();
     tlvs.put(tag, data);
     return tlvs;

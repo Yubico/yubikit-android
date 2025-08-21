@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Yubico.
+ * Copyright (C) 2024-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.util.Collections;
 import java.util.Map;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -124,8 +124,8 @@ public class LargeBlobExtension extends Extension {
     return null;
   }
 
-  @Nullable
-  ClientExtensionResultProvider read(Ctap2Session.AssertionData assertionData, Ctap2Session ctap) {
+  @Nullable ClientExtensionResultProvider read(
+      Ctap2Session.AssertionData assertionData, Ctap2Session ctap) {
 
     byte[] largeBlobKey = assertionData.getLargeBlobKey();
     if (largeBlobKey == null) {
@@ -150,13 +150,12 @@ public class LargeBlobExtension extends Extension {
     return null;
   }
 
-  @Nullable
-  ClientExtensionResultProvider write(
+  @Nullable ClientExtensionResultProvider write(
       Ctap2Session.AssertionData assertionData,
       Ctap2Session ctap,
       byte[] bytes,
       PinUvAuthProtocol pinUvAuthProtocol,
-      @Nullable byte[] pinToken) {
+      byte @Nullable [] pinToken) {
 
     byte[] largeBlobKey = assertionData.getLargeBlobKey();
     if (largeBlobKey == null) {

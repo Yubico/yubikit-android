@@ -45,12 +45,12 @@ dependencies {
     implementation 'androidx.test:runner:1.6.2'
     implementation 'androidx.test.ext:junit:1.2.1'
 
-    implementation 'com.google.code.findbugs:jsr305:3.0.2'
-
     api project(':android')
     api project(':fido')
     api project(':piv')
     api project(':testing')
+
+    api 'org.jspecify:jspecify:1.0.0'
 
     implementation 'com.google.android.material:material:1.12.0'
 

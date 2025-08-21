@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Yubico.
+ * Copyright (C) 2022-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,15 +22,15 @@ import com.yubico.yubikit.piv.Slot;
 import com.yubico.yubikit.piv.TouchPolicy;
 import java.security.spec.AlgorithmParameterSpec;
 import java.util.Arrays;
-import javax.annotation.Nullable;
 import javax.security.auth.Destroyable;
+import org.jspecify.annotations.Nullable;
 
 public class PivAlgorithmParameterSpec implements AlgorithmParameterSpec, Destroyable {
   final Slot slot;
   final KeyType keyType;
   final PinPolicy pinPolicy;
   final TouchPolicy touchPolicy;
-  @Nullable final char[] pin;
+  final char @Nullable [] pin;
   private boolean destroyed = false;
 
   public PivAlgorithmParameterSpec(
@@ -38,7 +38,7 @@ public class PivAlgorithmParameterSpec implements AlgorithmParameterSpec, Destro
       KeyType keyType,
       @Nullable PinPolicy pinPolicy,
       @Nullable TouchPolicy touchPolicy,
-      @Nullable char[] pin) {
+      char @Nullable [] pin) {
     this.slot = slot;
     this.keyType = keyType;
     this.pinPolicy = pinPolicy != null ? pinPolicy : PinPolicy.DEFAULT;

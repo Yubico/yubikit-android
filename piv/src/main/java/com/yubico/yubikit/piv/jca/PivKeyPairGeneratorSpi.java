@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022,2024 Yubico.
+ * Copyright (C) 2022-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@ import java.security.SecureRandom;
 import java.security.spec.AlgorithmParameterSpec;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 abstract class PivKeyPairGeneratorSpi extends KeyPairGeneratorSpi {
   private final Callback<Callback<Result<PivSession, Exception>>> provider;
