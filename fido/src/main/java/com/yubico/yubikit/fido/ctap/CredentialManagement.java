@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Yubico.
+ * Copyright (C) 2020-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -79,6 +79,10 @@ public class CredentialManagement {
 
   public static boolean isSupported(Ctap2Session.InfoData info) {
     return supportsCredMgmt(info) || supportsCredentialMgmtPreview(info);
+  }
+
+  public static boolean isReadonlySupported(Ctap2Session.InfoData info) {
+    return Boolean.TRUE.equals(info.getOptions().get("perCredMgmtRO"));
   }
 
   private static boolean supportsCredMgmt(Ctap2Session.InfoData info) {

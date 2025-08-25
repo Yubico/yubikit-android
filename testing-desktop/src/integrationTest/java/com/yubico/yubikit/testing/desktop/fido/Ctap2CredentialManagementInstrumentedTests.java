@@ -45,9 +45,8 @@ public class Ctap2CredentialManagementInstrumentedTests {
     }
 
     @Test
-    @Category(SmokeTest.class)
-    public void testUpdateUserInformation() throws Throwable {
-      withCtap2Session(Ctap2CredentialManagementTests::testUpdateUserInformation);
+    public void testReadOnlyManagement() throws Throwable {
+      withDevice(Ctap2CredentialManagementTests::testReadOnlyManagement);
     }
   }
 
