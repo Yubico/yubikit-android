@@ -535,17 +535,11 @@ public class DeviceUtil {
         } else if ((supportedUsbCapabilities & Capability.PIV.bit) == Capability.PIV.bit) {
           namePartsList.add("- Multi-protocol Edition");
         }
-      }
-
-      if (info.isFips()) {
+      } else if (info.isFips()) {
         namePartsList.add("FIPS");
-      }
-
-      if (info.isSky() && info.getSerialNumber() != null) {
+      } else if (info.isSky() && info.getSerialNumber() != null) {
         namePartsList.add("- Enterprise Edition");
-      }
-
-      if (info.getPinComplexity() && !(info.isSky() || info.isFips())) {
+      } else if (info.getPinComplexity() && !(info.isSky() || info.isFips())) {
         namePartsList.add("- Enhanced PIN");
       }
 
