@@ -539,7 +539,7 @@ public class DeviceUtil {
         namePartsList.add("FIPS");
       } else if (info.isSky() && info.getSerialNumber() != null) {
         namePartsList.add("- Enterprise Edition");
-      } else if (info.getPinComplexity() && !(info.isSky() || info.isFips())) {
+      } else if (info.getPinComplexity() && !info.isSky()) {
         namePartsList.add("- Enhanced PIN");
       }
 
