@@ -545,6 +545,10 @@ public class DeviceUtil {
         namePartsList.add("- Enterprise Edition");
       }
 
+      if (info.getPinComplexity() && !(info.isSky() || info.isFips())) {
+        namePartsList.add("- Enhanced PIN");
+      }
+
       StringBuilder builder = new StringBuilder();
       for (int partCount = 0; partCount < namePartsList.size(); partCount++) {
         String s = namePartsList.get(partCount);
