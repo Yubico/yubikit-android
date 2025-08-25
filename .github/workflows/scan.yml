@@ -9,14 +9,18 @@ on:
   schedule:
     - cron: '25 16 * * 0'
 
+permissions:
+  contents: read
+
 jobs:
   analyze:
-    name: Analyze
-    runs-on: ubuntu-latest
     permissions:
       actions: read
       contents: read
       security-events: write
+
+    name: Analyze
+    runs-on: ubuntu-latest
 
     strategy:
       fail-fast: false
@@ -25,22 +29,22 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683                    # v4.2.2
 
     # Initializes the CodeQL tools for scanning.
     - name: Initialize CodeQL
-      uses: github/codeql-action/init@v3
+      uses: github/codeql-action/init@7273f08caa1dcf2c2837f362f1982de0ab4dc344           # v2.22.3
       with:
         languages: ${{ matrix.language }}
 
     - name: Setup Java
-      uses: actions/setup-java@v4
+      uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00                  # v4.7.1
       with:
         distribution: 'temurin'
         java-version: '17'
 
     - name: Autobuild
-      uses: github/codeql-action/autobuild@v3
+      uses: github/codeql-action/autobuild@7273f08caa1dcf2c2837f362f1982de0ab4dc344      # v2.22.3
 
     - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v3
+      uses: github/codeql-action/analyze@7273f08caa1dcf2c2837f362f1982de0ab4dc344        # v2.22.3

@@ -1,0 +1,28 @@
+version: 2
+updates:
+  # Keep Gradle dependencies up to date
+  - package-ecosystem: "gradle"
+    directory: "/"              # Root where build.gradle/settings.gradle reside
+    schedule:
+      interval: "daily"         # Adjust to "weekly" if preferred
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "gradle"
+
+  # GitHub Actions dependencies
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    rebase-strategy: disabled
+    commit-message:
+      prefix: ":🔼: "
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+        exclude-patterns:
+          - "actions/setup-java"
+          - "actions/cache"
+          - "actions/upload-artifact"
