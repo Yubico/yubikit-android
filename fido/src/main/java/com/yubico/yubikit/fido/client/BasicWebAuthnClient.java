@@ -21,6 +21,7 @@ import static com.yubico.yubikit.fido.webauthn.PublicKeyCredentialType.PUBLIC_KE
 import com.yubico.yubikit.core.application.CommandException;
 import com.yubico.yubikit.core.application.CommandState;
 import com.yubico.yubikit.core.fido.CtapException;
+import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.util.Pair;
 import com.yubico.yubikit.fido.client.extensions.CredBlobExtension;
 import com.yubico.yubikit.fido.client.extensions.CredPropsExtension;
@@ -851,17 +852,11 @@ public class BasicWebAuthnClient implements Closeable {
           }
         }
       } else {
-        creds = descriptors;
+        creds = new ArrayList<>(descriptors);
       }
 
       int maxCreds =
           info.getMaxCredentialCountInList() != null ? info.getMaxCredentialCountInList() : 1;
-
-      List<List<PublicKeyCredentialDescriptor>> chunks = new ArrayList<>();
-      for (int i = 0; i < creds.size(); i += maxCreds) {
-        int last = Math.min(i + maxCreds, creds.size());
-        chunks.add(creds.subList(i, last));
-      }
 
       byte[] clientDataHash = new byte[32];
       Arrays.fill(clientDataHash, (byte) 0x00);
@@ -873,7 +868,11 @@ public class BasicWebAuthnClient implements Closeable {
         pinUvAuthVersion = pinUvAuthProtocol.getVersion();
       }
 
-      for (List<PublicKeyCredentialDescriptor> chunk : chunks) {
+      final Map<String, Boolean> upFalse = Collections.singletonMap("up", false);
+      while (!creds.isEmpty()) {
+        Logger.trace(logger, "Pre-flighting list of {} credentials", creds.size());
+        final List<PublicKeyCredentialDescriptor> chunk =
+            creds.subList(0, Math.min(maxCreds, creds.size()));
         try {
           List<Ctap2Session.AssertionData> assertions =
               ctap.getAssertions(
@@ -881,7 +880,7 @@ public class BasicWebAuthnClient implements Closeable {
                   clientDataHash,
                   getCredentialList(chunk),
                   null,
-                  Collections.singletonMap("up", false),
+                  upFalse,
                   pinAuth,
                   pinUvAuthVersion,
                   null);
@@ -896,7 +895,17 @@ public class BasicWebAuthnClient implements Closeable {
           return new PublicKeyCredentialDescriptor(PUBLIC_KEY, id);
 
         } catch (CtapException ctapException) {
-          if (ctapException.getCtapError() == CtapException.ERR_NO_CREDENTIALS) {
+          final byte ctapError = ctapException.getCtapError();
+          if (ctapError == CtapException.ERR_NO_CREDENTIALS) {
+            Logger.trace(logger, "No credentials found in chunk");
+            chunk.clear();
+            continue;
+          } else if (ctapError == CtapException.ERR_REQUEST_TOO_LARGE) {
+            maxCreds--;
+            Logger.trace(logger, "Chunk request was too large, retrying with {} creds", maxCreds);
+            if (maxCreds == 0) {
+              throw ctapException;
+            }
             continue;
           }
 
