@@ -488,10 +488,12 @@ public class OpenPgpDeviceTests {
     // this reset the device to defaults - it is not FIPS approved anymore and
     // default PINs have to be used
     openpgp.verifyUserPin(Pw.DEFAULT_USER_PIN, false);
+    openpgp.verifyUserPin(Pw.DEFAULT_USER_PIN, true);
     openpgp.verifyAdminPin(Pw.DEFAULT_ADMIN_PIN);
 
     openpgp.changeUserPin(Pw.DEFAULT_USER_PIN, CHANGED_PIN);
     openpgp.verifyUserPin(CHANGED_PIN, false);
+    openpgp.verifyUserPin(CHANGED_PIN, true);
     openpgp.changeAdminPin(Pw.DEFAULT_ADMIN_PIN, CHANGED_PIN);
     openpgp.verifyAdminPin(CHANGED_PIN);
 
