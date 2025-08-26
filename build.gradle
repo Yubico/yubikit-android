@@ -9,7 +9,7 @@ buildscript {
         google()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.12.0'
+        classpath 'com.android.tools.build:gradle:8.12.1'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
 }
@@ -19,7 +19,7 @@ plugins {
     id 'com.diffplug.spotless' version "7.2.1" apply false
     id 'project-convention-publishing'
     id 'com.google.devtools.ksp' version '2.2.0-2.0.2' apply false
-    id 'org.jetbrains.kotlin.plugin.compose' version '2.2.0' apply false
+    id 'org.jetbrains.kotlin.plugin.compose' version '2.2.10' apply false
     id 'org.jetbrains.dokka' version "2.0.0" apply false
 }
 
@@ -39,7 +39,7 @@ allprojects {
 }
 
 subprojects {
-    version = '2.8.2_3-fa'
+    version = '2.8.2_4-fa'
     ext.pomName = "Yubico YubiKit ${project.name.capitalize()}"
 
     tasks.withType(Javadoc).tap {
