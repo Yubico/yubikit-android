@@ -333,14 +333,17 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
     Logger.info(logger, "KDF settings changed");
   }
 
-  private void doVerify(Pw pw, char[] pin) throws ApduException, IOException, InvalidPinException {
+  private void doVerify(Pw pw, char[] pin, byte mode)
+      throws ApduException, IOException, InvalidPinException {
     byte[] pinEnc = getKdf().process(pw, pin);
     try {
-      protocol.sendAndReceive(new Apdu(0, INS_VERIFY, 0, pw.getValue(), pinEnc));
+      protocol.sendAndReceive(new Apdu(0, INS_VERIFY, 0, pw.getValue() + mode, pinEnc));
     } catch (ApduException e) {
       if (e.getSw() == SW.SECURITY_CONDITION_NOT_SATISFIED) {
         int remaining = getPinStatus().getAttempts(pw);
         throw new InvalidPinException(remaining);
+      } else if (e.getSw() == SW.AUTH_METHOD_BLOCKED) {
+        throw new InvalidPinException(0, pw.name() + " PIN blocked");
       }
       throw e;
     } finally {
@@ -363,7 +366,7 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
    */
   public void verifyUserPin(char[] pin, boolean extended)
       throws ApduException, IOException, InvalidPinException {
-    doVerify(extended ? Pw.RESET : Pw.USER, pin);
+    doVerify(Pw.USER, pin, extended ? (byte) 1 : 0);
   }
 
   /**
@@ -377,7 +380,7 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
    * @throws InvalidPinException in case of the wrong PIN
    */
   public void verifyAdminPin(char[] pin) throws ApduException, IOException, InvalidPinException {
-    doVerify(Pw.ADMIN, pin);
+    doVerify(Pw.ADMIN, pin, (byte) 0);
   }
 
   private void doUnverifyPin(Pw pw) throws ApduException, IOException {
