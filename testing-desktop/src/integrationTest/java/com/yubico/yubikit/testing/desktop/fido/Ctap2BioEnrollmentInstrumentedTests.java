@@ -18,7 +18,7 @@ package com.yubico.yubikit.testing.desktop.fido;
 import com.yubico.yubikit.testing.desktop.AlwaysManualTest;
 import com.yubico.yubikit.testing.desktop.framework.FidoInstrumentedTests;
 import com.yubico.yubikit.testing.fido.Ctap2BioEnrollmentTests;
-import com.yubico.yubikit.testing.fido.Ctap2BioUVTests;
+import com.yubico.yubikit.testing.fido.Ctap2BioUvTests;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -31,6 +31,6 @@ public class Ctap2BioEnrollmentInstrumentedTests extends FidoInstrumentedTests {
   @Test
   @Category(AlwaysManualTest.class)
   public void testPinRequiredAfterUvBlocked() throws Throwable {
-    withDevice(Ctap2BioUVTests::testPinRequiredAfterUvBlocked);
+    withDevice(Ctap2BioUvTests::testPinRequiredAfterUvBlocked);
   }
 }

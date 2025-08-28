@@ -33,9 +33,9 @@ import com.yubico.yubikit.testing.fido.utils.CreationOptionsBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class Ctap2BioUVTests {
+public class Ctap2BioUvTests {
 
-  private static final Logger logger = LoggerFactory.getLogger(Ctap2BioUVTests.class);
+  private static final Logger logger = LoggerFactory.getLogger(Ctap2BioUvTests.class);
 
   /**
    * Needs to be ran manually with a Bio device.

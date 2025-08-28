@@ -32,6 +32,6 @@ public class Ctap2BioEnrollmentInstrumentedTests extends FidoInstrumentedTests {
   @Test
   @Category(AlwaysManualTest.class)
   public void testPinRequiredAfterUvBlocked() throws Throwable {
-    withDevice(Ctap2BioUVTests::testPinRequiredAfterUvBlocked);
+    withDevice(Ctap2BioUvTests::testPinRequiredAfterUvBlocked);
   }
 }
