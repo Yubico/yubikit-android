@@ -15,13 +15,22 @@
  */
 package com.yubico.yubikit.testing.desktop.fido;
 
+import com.yubico.yubikit.testing.desktop.AlwaysManualTest;
 import com.yubico.yubikit.testing.desktop.framework.FidoInstrumentedTests;
 import com.yubico.yubikit.testing.fido.Ctap2BioEnrollmentTests;
+import com.yubico.yubikit.testing.fido.Ctap2BioUVTests;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 public class Ctap2BioEnrollmentInstrumentedTests extends FidoInstrumentedTests {
   @Test
   public void testFingerprintEnrollment() throws Throwable {
     withCtap2Session(Ctap2BioEnrollmentTests::testFingerprintEnrollment);
+  }
+
+  @Test
+  @Category(AlwaysManualTest.class)
+  public void testPinRequiredAfterUvBlocked() throws Throwable {
+    withDevice(Ctap2BioUVTests::testPinRequiredAfterUvBlocked);
   }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Yubico.
+ * Copyright (C) 2024-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,13 +17,21 @@
 package com.yubico.yubikit.testing.fido;
 
 import androidx.test.filters.LargeTest;
+import com.yubico.yubikit.testing.AlwaysManualTest;
 import com.yubico.yubikit.testing.framework.FidoInstrumentedTests;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 @LargeTest
 public class Ctap2BioEnrollmentInstrumentedTests extends FidoInstrumentedTests {
   @Test
   public void testFingerprintEnrollment() throws Throwable {
     withCtap2Session(Ctap2BioEnrollmentTests::testFingerprintEnrollment);
+  }
+
+  @Test
+  @Category(AlwaysManualTest.class)
+  public void testPinRequiredAfterUvBlocked() throws Throwable {
+    withDevice(Ctap2BioUVTests::testPinRequiredAfterUvBlocked);
   }
 }
