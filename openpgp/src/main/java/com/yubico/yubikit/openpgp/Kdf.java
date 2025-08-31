@@ -25,6 +25,7 @@ import java.nio.CharBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -82,6 +83,12 @@ public abstract class Kdf {
       }
 
       private MessageDigest getMessageDigest() {
+        try {
+          return MessageDigest.getInstance(name(), "BC");
+        } catch (NoSuchAlgorithmException | NoSuchProviderException ignored) {
+          // noop
+        }
+
         try {
           return MessageDigest.getInstance(name());
         } catch (NoSuchAlgorithmException e) {
