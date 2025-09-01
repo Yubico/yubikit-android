@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Yubico.
+ * Copyright (C) 2024-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +39,7 @@ import org.junit.runners.Suite;
   UvDiscouragedInstrumentedTests.class,
   Ctap2ConfigInstrumentedTests.class,
   Ctap2BioEnrollmentInstrumentedTests.class,
+  Ctap2BioUvTests.class,
   Ctap2SessionResetInstrumentedTests.class,
   ExtensionsInstrumentedTests.class,
 })

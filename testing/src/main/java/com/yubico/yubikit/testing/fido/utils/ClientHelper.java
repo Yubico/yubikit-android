@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Yubico.
+ * Copyright (C) 2024-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package com.yubico.yubikit.testing.fido.utils;
 
+import static org.junit.Assert.assertNotNull;
+
 import com.yubico.yubikit.core.application.CommandException;
 import com.yubico.yubikit.fido.client.BasicWebAuthnClient;
 import com.yubico.yubikit.fido.client.ClientError;
@@ -31,16 +33,20 @@ import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialType;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import javax.annotation.Nullable;
 
 public class ClientHelper {
   final BasicWebAuthnClient client;
+  @Nullable private char[] pin;
 
   public ClientHelper(Ctap2Session ctap) throws IOException, CommandException {
+    this.pin = TestData.PIN;
     this.client = new BasicWebAuthnClient(ctap);
   }
 
   public ClientHelper(Ctap2Session ctap, List<Extension> extensions)
       throws IOException, CommandException {
+    this.pin = TestData.PIN;
     this.client = new BasicWebAuthnClient(ctap, extensions);
   }
 
@@ -51,19 +57,19 @@ public class ClientHelper {
   public PublicKeyCredential makeCredential(PublicKeyCredentialCreationOptions options)
       throws IOException, CommandException, ClientError {
     return client.makeCredential(
-        TestData.CLIENT_DATA_JSON_CREATE, options, TestData.RP_ID, TestData.PIN, null, null);
+        TestData.CLIENT_DATA_JSON_CREATE, options, TestData.RP_ID, pin, null, null);
   }
 
   public PublicKeyCredential getAssertions(PublicKeyCredentialRequestOptions options)
       throws IOException, CommandException, ClientError, MultipleAssertionsAvailable {
-    return client.getAssertion(
-        TestData.CLIENT_DATA_JSON_GET, options, TestData.RP_ID, TestData.PIN, null);
+    return client.getAssertion(TestData.CLIENT_DATA_JSON_GET, options, TestData.RP_ID, pin, null);
   }
 
   public void deleteCredentialsByIds(List<byte[]> credIds)
       throws IOException, CommandException, ClientError {
     try {
-      CredentialManager credentialManager = client.getCredentialManager(TestData.PIN);
+      assertNotNull("Pin cannot be null for delete credential", pin);
+      CredentialManager credentialManager = client.getCredentialManager(pin);
       for (byte[] credId : credIds) {
         credentialManager.deleteCredential(
             new PublicKeyCredentialDescriptor(PublicKeyCredentialType.PUBLIC_KEY, credId, null));
@@ -89,5 +95,10 @@ public class ClientHelper {
       credIds.add(credential.getRawId());
     }
     deleteCredentialsByIds(credIds);
+  }
+
+  public ClientHelper withPin(@Nullable char[] pin) {
+    this.pin = pin;
+    return this;
   }
 }
