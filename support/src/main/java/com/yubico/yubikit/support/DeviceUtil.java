@@ -535,14 +535,12 @@ public class DeviceUtil {
         } else if ((supportedUsbCapabilities & Capability.PIV.bit) == Capability.PIV.bit) {
           namePartsList.add("- Multi-protocol Edition");
         }
-      }
-
-      if (info.isFips()) {
+      } else if (info.isFips()) {
         namePartsList.add("FIPS");
-      }
-
-      if (info.isSky() && info.getSerialNumber() != null) {
+      } else if (info.isSky() && info.getSerialNumber() != null) {
         namePartsList.add("- Enterprise Edition");
+      } else if (info.getPinComplexity() && !info.isSky()) {
+        namePartsList.add("- Enhanced PIN");
       }
 
       StringBuilder builder = new StringBuilder();

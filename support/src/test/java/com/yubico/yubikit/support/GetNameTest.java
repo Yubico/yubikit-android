@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Yubico.
+ * Copyright (C) 2024-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -451,6 +451,35 @@ public class GetNameTest {
                   i.formFactor(USB_C_KEYCHAIN);
                   i.version(new Version(5, 4, 3));
                   i.isSky(true);
+                  i.supportedCapabilities(fidoCapabilities);
+                  i.serialNumber(65454545);
+                }),
+            YubiKeyType.YK4));
+  }
+
+  @Test
+  public void testEnhancedPin() {
+    assertEquals(
+        "YubiKey 5 NFC - Enhanced PIN",
+        DeviceUtil.getName(
+            info(
+                i -> {
+                  i.formFactor(USB_A_KEYCHAIN);
+                  i.version(new Version(5, 4, 3));
+                  i.pinComplexity(true);
+                  i.supportedCapabilities(fidoCapabilities);
+                  i.serialNumber(65454545);
+                }),
+            YubiKeyType.YK4));
+
+    assertEquals(
+        "YubiKey 5C NFC - Enhanced PIN",
+        DeviceUtil.getName(
+            info(
+                i -> {
+                  i.formFactor(USB_C_KEYCHAIN);
+                  i.version(new Version(5, 4, 3));
+                  i.pinComplexity(true);
                   i.supportedCapabilities(fidoCapabilities);
                   i.serialNumber(65454545);
                 }),
