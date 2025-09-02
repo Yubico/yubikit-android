@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Yubico.
+ * Copyright (C) 2024-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,14 +29,13 @@ import com.yubico.yubikit.management.DeviceInfo;
 import com.yubico.yubikit.management.ManagementSession;
 import com.yubico.yubikit.piv.PivSession;
 import com.yubico.yubikit.testing.TestState;
-import com.yubico.yubikit.testing.fido.FidoTestState;
-import com.yubico.yubikit.testing.piv.PivTestState;
+import java.util.Collections;
 
 public class MpeTestState extends TestState {
   public static class Builder extends TestState.Builder<MpeTestState.Builder> {
 
     public Builder(YubiKeyDevice device, UsbPid usbPid) {
-      super(device, usbPid);
+      super(device, Collections.singletonList(SmartCardConnection.class), usbPid);
     }
 
     @Override
@@ -56,7 +55,7 @@ public class MpeTestState extends TestState {
     assumeTrue("Cannot get device information", deviceInfo != null);
     assumeTrue("Not a MPE device", isMpe(deviceInfo));
 
-    try (SmartCardConnection connection = openSmartCardConnection()) {
+    try (YubiKeyConnection connection = openConnection()) {
       final ManagementSession managementSession = getManagementSession(connection, scpParameters);
       managementSession.deviceReset();
     }
@@ -77,8 +76,8 @@ public class MpeTestState extends TestState {
   }
 
   public void withPiv(StatefulSessionCallback<PivSession, MpeTestState> callback) throws Throwable {
-    try (SmartCardConnection connection = openSmartCardConnection()) {
-      final PivSession piv = PivTestState.getPivSession(connection, scpParameters);
+    try (YubiKeyConnection connection = openConnection()) {
+      final PivSession piv = getSession(connection, scpParameters.getKeyParams(), PivSession::new);
       assumeTrue("No PIV support", piv != null);
       callback.invoke(piv, this);
     }
@@ -88,7 +87,7 @@ public class MpeTestState extends TestState {
   public void withCtap2(TestState.StatefulSessionCallback<Ctap2Session, MpeTestState> callback)
       throws Throwable {
     try (YubiKeyConnection connection = openConnection()) {
-      final Ctap2Session ctap2 = FidoTestState.getCtap2Session(connection);
+      final Ctap2Session ctap2 = getSession(connection, scpParameters.getKeyParams());
       assumeTrue("No CTAP2 support", ctap2 != null);
       callback.invoke(ctap2, this);
     }

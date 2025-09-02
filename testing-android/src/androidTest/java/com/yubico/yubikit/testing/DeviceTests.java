@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Yubico.
+ * Copyright (C) 2024-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package com.yubico.yubikit.testing;
 
 import com.yubico.yubikit.testing.core.SmartCardProtocolInstrumentedTests;
+import com.yubico.yubikit.testing.fido.FidoOverCcidTests;
 import com.yubico.yubikit.testing.fido.FidoTests;
 import com.yubico.yubikit.testing.mpe.MultiProtocolResetTests;
 import com.yubico.yubikit.testing.oath.OathTests;
@@ -39,6 +40,7 @@ import org.junit.runners.Suite;
   OathTests.class,
   MultiProtocolResetTests.class,
   FidoTests.class,
+  FidoOverCcidTests.class,
   SmartCardProtocolInstrumentedTests.class
 })
 public class DeviceTests {}

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Yubico.
+ * Copyright (C) 2024-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,15 +20,13 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 import com.yubico.yubikit.core.UsbPid;
+import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.YubiKeyDevice;
-import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.management.Capability;
 import com.yubico.yubikit.oath.OathSession;
-import com.yubico.yubikit.testing.ScpParameters;
 import com.yubico.yubikit.testing.TestState;
-import java.io.IOException;
-import javax.annotation.Nullable;
+import java.util.Collections;
 
 public class OathTestState extends TestState {
   public boolean isFipsApproved;
@@ -37,7 +35,7 @@ public class OathTestState extends TestState {
   public static class Builder extends TestState.Builder<OathTestState.Builder> {
 
     public Builder(YubiKeyDevice device, UsbPid usbPid) {
-      super(device, usbPid);
+      super(device, Collections.singletonList(SmartCardConnection.class), usbPid);
     }
 
     @Override
@@ -67,10 +65,10 @@ public class OathTestState extends TestState {
           "No matching key params found for required kid", scpParameters.getKeyParams() != null);
     }
 
-    try (SmartCardConnection connection = openSmartCardConnection()) {
+    try (YubiKeyConnection connection = openConnection()) {
       assumeTrue("Smart card not available", connection != null);
 
-      OathSession oath = getOathSession(connection, scpParameters);
+      OathSession oath = getSession(connection, scpParameters.getKeyParams(), OathSession::new);
 
       assumeTrue("OATH not available", oath != null);
       oath.reset();
@@ -94,27 +92,16 @@ public class OathTestState extends TestState {
 
   public void withOath(StatefulSessionCallback<OathSession, OathTestState> callback)
       throws Throwable {
-    try (SmartCardConnection connection = openSmartCardConnection()) {
-      callback.invoke(getOathSession(connection, scpParameters), this);
+    try (YubiKeyConnection connection = openConnection()) {
+      callback.invoke(getSession(connection, scpParameters.getKeyParams(), OathSession::new), this);
     }
     reconnect();
   }
 
   public void withOath(SessionCallback<OathSession> callback) throws Throwable {
-    try (SmartCardConnection connection = openSmartCardConnection()) {
-      callback.invoke(getOathSession(connection, scpParameters));
+    try (YubiKeyConnection connection = openConnection()) {
+      callback.invoke(getSession(connection, scpParameters.getKeyParams(), OathSession::new));
     }
     reconnect();
-  }
-
-  @Nullable
-  public static OathSession getOathSession(
-      SmartCardConnection connection, ScpParameters scpParameters) throws IOException {
-    try {
-      return new OathSession(connection, scpParameters.getKeyParams());
-    } catch (ApplicationNotAvailableException ignored) {
-      // no OATH support
-    }
-    return null;
   }
 }

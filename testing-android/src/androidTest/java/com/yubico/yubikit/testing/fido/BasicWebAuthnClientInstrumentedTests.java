@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Yubico.
+ * Copyright (C) 2022-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,11 @@ public class BasicWebAuthnClientInstrumentedTests {
     @Category(SmokeTest.class)
     public void testMakeCredentialGetAssertion() throws Throwable {
       withDevice(BasicWebAuthnClientTests::testMakeCredentialGetAssertion);
+    }
+
+    @Test
+    public void testCancelMakeCredential() throws Throwable {
+      withDevice(BasicWebAuthnClientTests::testCancelMakeCredential);
     }
 
     @Test
