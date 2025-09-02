@@ -30,6 +30,7 @@ import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.smartcard.Apdu;
 import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.core.smartcard.AppId;
+import com.yubico.yubikit.core.smartcard.KeepAliveApduException;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.smartcard.SmartCardProtocol;
 import com.yubico.yubikit.core.smartcard.scp.ScpKeyParams;
@@ -67,6 +68,10 @@ import org.slf4j.LoggerFactory;
 public class Ctap2Session extends ApplicationSession<Ctap2Session> {
 
   private static final byte NFCCTAP_MSG = 0x10;
+  private static final byte NFCCTAP_GETRESPONSE = 0x11;
+  private static final byte P1_GET_RESPONSE = (byte) 0x80;
+  private static final byte P1_KEEP_ALIVE = 0x00;
+  private static final byte P1_CANCEL_KEEP_ALIVE = 0x11;
 
   private static final byte CMD_MAKE_CREDENTIAL = 0x01;
   private static final byte CMD_GET_ASSERTION = 0x02;
@@ -191,8 +196,30 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
     return new Backend<SmartCardProtocol>(protocol) {
       byte[] sendCbor(byte[] data, @Nullable CommandState state)
           throws IOException, CommandException {
-        // Cancellation is not implemented for NFC, and most likely not needed.
-        return delegate.sendAndReceive(new Apdu(0x80, NFCCTAP_MSG, 0x00, 0x00, data));
+
+        int ins = NFCCTAP_MSG;
+        int p1 = P1_GET_RESPONSE;
+        int lastStatus = 0;
+
+        while (true) {
+          try {
+            return delegate.sendAndReceive(new Apdu(0x80, ins, p1, 0x00, data));
+          } catch (KeepAliveApduException e) {
+            ins = NFCCTAP_GETRESPONSE;
+            p1 = P1_KEEP_ALIVE;
+            final byte status = e.getStatus();
+            if (state != null) {
+              if (lastStatus != status) {
+                lastStatus = status;
+                state.onKeepAliveStatus(status);
+              }
+              if (state.waitForCancel(100)) {
+                Logger.trace(logger, "NFCCTAP_GETRESPONSE cancelled");
+                p1 = P1_CANCEL_KEEP_ALIVE;
+              }
+            }
+          }
+        }
       }
     };
   }

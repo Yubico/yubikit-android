@@ -258,14 +258,17 @@ public class SmartCardProtocol implements Closeable {
    */
   public byte[] sendAndReceive(Apdu command) throws IOException, ApduException {
     try {
-      ApduResponse response = processor.sendApdu(command);
-      if (response.getSw() != SW.OK) {
-        throw new ApduException(response.getSw());
-      }
-      return response.getData();
+      return dataOrThrow(processor.sendApdu(command));
     } catch (BadResponseException e) {
       throw new IOException(e);
     }
+  }
+
+  byte[] dataOrThrow(ApduResponse response) throws ApduException {
+    if (response.getSw() != SW.OK) {
+      throw ApduExceptionBuilder.fromResponse(response);
+    }
+    return response.getData();
   }
 
   public @Nullable DataEncryptor initScp(ScpKeyParams keyParams)
