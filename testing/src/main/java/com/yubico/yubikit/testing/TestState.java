@@ -35,8 +35,10 @@ import com.yubico.yubikit.support.DeviceUtil;
 import java.io.IOException;
 import java.security.Security;
 import java.util.List;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.junit.Assume;
 
 public class TestState {
   public abstract static class Builder<T extends Builder<T>> {
@@ -145,12 +147,20 @@ public class TestState {
 
   // connection helpers
   protected YubiKeyConnection openConnection() throws IOException {
-    for (Class<? extends YubiKeyConnection> clazz : supportedConnectionTypes) {
-      if (currentDevice.supportsConnection(clazz)) {
-        return currentDevice.openConnection(clazz);
-      }
-    }
-    throw new IllegalArgumentException("Device does not support FIDO or SmartCard connection");
+    Class<? extends YubiKeyConnection> matching =
+        supportedConnectionTypes.stream()
+            .filter(clazz -> currentDevice.supportsConnection(clazz))
+            .findFirst()
+            .orElse(null);
+
+    Assume.assumeTrue(
+        "Device does not support any of: "
+            + supportedConnectionTypes.stream()
+                .map(Class::getSimpleName)
+                .collect(Collectors.toList()),
+        matching != null);
+
+    return currentDevice.openConnection(matching);
   }
 
   // common utils

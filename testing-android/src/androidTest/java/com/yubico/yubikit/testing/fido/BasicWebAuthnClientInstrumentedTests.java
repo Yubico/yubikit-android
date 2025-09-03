@@ -41,6 +41,7 @@ public class BasicWebAuthnClientInstrumentedTests {
     }
 
     @Test
+    @Category(SmokeTest.class)
     public void testCancelMakeCredential() throws Throwable {
       withDevice(BasicWebAuthnClientTests::testCancelMakeCredential);
     }
