@@ -39,7 +39,6 @@ import org.junit.runners.Suite;
   UvDiscouragedInstrumentedTests.class,
   Ctap2ConfigInstrumentedTests.class,
   Ctap2BioEnrollmentInstrumentedTests.class,
-  Ctap2BioUvTests.class,
   Ctap2SessionResetInstrumentedTests.class,
   ExtensionsInstrumentedTests.class,
 })

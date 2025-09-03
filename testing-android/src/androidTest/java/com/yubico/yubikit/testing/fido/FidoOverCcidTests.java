@@ -21,7 +21,7 @@ import org.junit.experimental.categories.Categories;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
-@RunWith(Categories.class)
+@RunWith(Suite.class)
 @Suite.SuiteClasses({FidoOverCcidTestSetup.class, FidoTests.class})
 @Categories.ExcludeCategory(AlwaysManualTest.class)
 public class FidoOverCcidTests {}
