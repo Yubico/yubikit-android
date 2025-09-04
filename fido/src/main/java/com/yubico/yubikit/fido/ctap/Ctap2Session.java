@@ -194,7 +194,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
       }
     }
     return new Backend<SmartCardProtocol>(protocol) {
-      private final Object monitor = new Object();
+      private final CommandState defaultState = new CommandState();
 
       byte[] sendCbor(byte[] data, @Nullable CommandState state)
           throws IOException, CommandException {
@@ -202,6 +202,8 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
         int ins = NFCCTAP_MSG;
         int p1 = P1_GET_RESPONSE;
         int lastKeepAliveStatus = 0;
+
+        state = state != null ? state : defaultState;
 
         while (true) {
           try {
@@ -216,26 +218,13 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
             p1 = P1_KEEP_ALIVE;
             final byte keepAliveStatus = apduException.getData()[0];
 
-            if (state != null) {
-              // check for cancellations
-              if (lastKeepAliveStatus != keepAliveStatus) {
-                lastKeepAliveStatus = keepAliveStatus;
-                state.onKeepAliveStatus(keepAliveStatus);
-              }
-              if (state.waitForCancel(100)) {
-                Logger.trace(logger, "NFCCTAP_GETRESPONSE cancelled");
-                p1 = P1_CANCEL_KEEP_ALIVE;
-              }
-              continue;
+            // check for cancellations
+            if (lastKeepAliveStatus != keepAliveStatus) {
+              lastKeepAliveStatus = keepAliveStatus;
+              state.onKeepAliveStatus(keepAliveStatus);
             }
-
-            // Cannot check for cancellations, just sleep
-            try {
-              synchronized (monitor) {
-                monitor.wait(100);
-              }
-            } catch (InterruptedException interruptedException) {
-              Logger.trace(logger, "NFCCTAP_GETRESPONSE interrupted");
+            if (state.waitForCancel(100)) {
+              Logger.trace(logger, "NFCCTAP_GETRESPONSE cancelled");
               p1 = P1_CANCEL_KEEP_ALIVE;
             }
           }
