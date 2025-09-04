@@ -32,10 +32,10 @@ import org.junit.runners.Suite;
 
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-  FidoOverCcidInstrumentedTests.NoScpTests.class,
-  FidoOverCcidInstrumentedTests.Scp11bTests.class,
+  FidoOverCcidTests.NoScpTests.class,
+  FidoOverCcidTests.Scp11bTests.class,
 })
-public class FidoOverCcidInstrumentedTests {
+public class FidoOverCcidTests {
   public static class NoScpTests extends FidoInstrumentedTests {
 
     @Before

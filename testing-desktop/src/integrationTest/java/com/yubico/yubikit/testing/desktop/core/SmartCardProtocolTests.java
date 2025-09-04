@@ -16,7 +16,7 @@
 
 package com.yubico.yubikit.testing.desktop.core;
 
-import com.yubico.yubikit.testing.core.SmartCardProtocolTests;
+import com.yubico.yubikit.testing.core.SmartCardProtocolDeviceTests;
 import com.yubico.yubikit.testing.desktop.SmokeTest;
 import com.yubico.yubikit.testing.desktop.framework.CoreInstrumentedTests;
 import org.junit.Test;
@@ -25,16 +25,16 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 @RunWith(Suite.class)
-public class SmartCardProtocolInstrumentedTests extends CoreInstrumentedTests {
+public class SmartCardProtocolTests extends CoreInstrumentedTests {
   @Test
   @Category(SmokeTest.class)
   public void testApduSizesOverScp() throws Throwable {
-    withState(SmartCardProtocolTests::testApduSizesOverScp);
+    withState(SmartCardProtocolDeviceTests::testApduSizesOverScp);
   }
 
   @Test
   @Category(SmokeTest.class)
   public void testApduSizes() throws Throwable {
-    withState(SmartCardProtocolTests::testApduSizes);
+    withState(SmartCardProtocolDeviceTests::testApduSizes);
   }
 }

@@ -21,16 +21,16 @@ import com.yubico.yubikit.testing.framework.CoreInstrumentedTests;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
-public class SmartCardProtocolInstrumentedTests extends CoreInstrumentedTests {
+public class SmartCardProtocolTests extends CoreInstrumentedTests {
   @Test
   @Category(SmokeTest.class)
   public void testApduSizesOverScp() throws Throwable {
-    withState(SmartCardProtocolTests::testApduSizesOverScp);
+    withState(SmartCardProtocolDeviceTests::testApduSizesOverScp);
   }
 
   @Test
   @Category(SmokeTest.class)
   public void testApduSizes() throws Throwable {
-    withState(SmartCardProtocolTests::testApduSizes);
+    withState(SmartCardProtocolDeviceTests::testApduSizes);
   }
 }

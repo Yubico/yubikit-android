@@ -15,7 +15,8 @@
  */
 package com.yubico.yubikit.testing.desktop;
 
-import com.yubico.yubikit.testing.desktop.fido.FidoOverCcidInstrumentedTests;
+import com.yubico.yubikit.testing.desktop.core.SmartCardProtocolTests;
+import com.yubico.yubikit.testing.desktop.fido.FidoOverCcidTests;
 import com.yubico.yubikit.testing.desktop.fido.FidoTests;
 import com.yubico.yubikit.testing.desktop.mpe.MultiProtocolResetTests;
 import com.yubico.yubikit.testing.desktop.oath.OathTests;
@@ -40,6 +41,7 @@ import org.junit.runners.Suite;
   OathTests.class,
   MultiProtocolResetTests.class,
   FidoTests.class,
-  FidoOverCcidInstrumentedTests.class
+  FidoOverCcidTests.class,
+  SmartCardProtocolTests.class
 })
 public class DeviceTests {}
