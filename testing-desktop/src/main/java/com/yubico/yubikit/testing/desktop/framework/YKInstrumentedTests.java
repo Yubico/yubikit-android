@@ -42,7 +42,7 @@ public class YKInstrumentedTests {
       new ExternalResource() {
 
         @Override
-        protected void before() throws Throwable {
+        protected void before() {
           getDevice();
         }
 

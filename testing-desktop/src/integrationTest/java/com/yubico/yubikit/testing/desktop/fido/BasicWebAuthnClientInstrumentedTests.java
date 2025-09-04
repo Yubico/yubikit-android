@@ -41,6 +41,11 @@ public class BasicWebAuthnClientInstrumentedTests {
     }
 
     @Test
+    public void testCancelMakeCredential() throws Throwable {
+      withDevice(BasicWebAuthnClientTests::testCancelMakeCredential);
+    }
+
+    @Test
     public void testMakeCredentialGetAssertionTokenUvOnly() throws Throwable {
       withDevice(BasicWebAuthnClientTests::testMakeCredentialGetAssertionTokenUvOnly);
     }

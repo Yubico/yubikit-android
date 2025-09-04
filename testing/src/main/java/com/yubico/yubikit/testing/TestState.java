@@ -20,31 +20,42 @@ import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.UsbPid;
 import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.YubiKeyDevice;
+import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
 import com.yubico.yubikit.core.application.ApplicationSession;
 import com.yubico.yubikit.core.application.CommandException;
 import com.yubico.yubikit.core.fido.FidoConnection;
+import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.smartcard.scp.ScpKeyParams;
+import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.management.Capability;
 import com.yubico.yubikit.management.DeviceInfo;
 import com.yubico.yubikit.management.ManagementSession;
 import com.yubico.yubikit.support.DeviceUtil;
 import java.io.IOException;
 import java.security.Security;
+import java.util.List;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.junit.Assume;
 
 public class TestState {
   public abstract static class Builder<T extends Builder<T>> {
     protected final YubiKeyDevice device;
+    protected final List<Class<? extends YubiKeyConnection>> supportedConnectionTypes;
     @Nullable private final UsbPid usbPid;
     @Nullable private Byte scpKid = null;
     @Nullable private ReconnectDeviceCallback reconnectDeviceCallback = null;
 
     public abstract T getThis();
 
-    public Builder(YubiKeyDevice device, @Nullable UsbPid usbPid) {
+    public Builder(
+        YubiKeyDevice device,
+        List<Class<? extends YubiKeyConnection>> supportedConnectionTypes,
+        @Nullable UsbPid usbPid) {
       this.device = device;
+      this.supportedConnectionTypes = supportedConnectionTypes;
       this.usbPid = usbPid;
     }
 
@@ -62,6 +73,7 @@ public class TestState {
   }
 
   protected YubiKeyDevice currentDevice;
+  protected final List<Class<? extends YubiKeyConnection>> supportedConnectionTypes;
   protected ScpParameters scpParameters;
   @Nullable public final UsbPid usbPid;
   @Nullable public final Byte scpKid;
@@ -70,6 +82,7 @@ public class TestState {
 
   protected TestState(Builder<?> builder) {
     this.currentDevice = builder.device;
+    this.supportedConnectionTypes = builder.supportedConnectionTypes;
     this.usbPid = builder.usbPid;
     this.scpKid = builder.scpKid;
 
@@ -133,21 +146,21 @@ public class TestState {
   }
 
   // connection helpers
-  protected SmartCardConnection openSmartCardConnection() throws IOException {
-    if (currentDevice.supportsConnection(SmartCardConnection.class)) {
-      return currentDevice.openConnection(SmartCardConnection.class);
-    }
-    return null;
-  }
-
   protected YubiKeyConnection openConnection() throws IOException {
-    if (currentDevice.supportsConnection(FidoConnection.class)) {
-      return currentDevice.openConnection(FidoConnection.class);
-    }
-    if (currentDevice.supportsConnection(SmartCardConnection.class)) {
-      return currentDevice.openConnection(SmartCardConnection.class);
-    }
-    throw new IllegalArgumentException("Device does not support FIDO or SmartCard connection");
+    Class<? extends YubiKeyConnection> matching =
+        supportedConnectionTypes.stream()
+            .filter(clazz -> currentDevice.supportsConnection(clazz))
+            .findFirst()
+            .orElse(null);
+
+    Assume.assumeTrue(
+        "Device does not support any of: "
+            + supportedConnectionTypes.stream()
+                .map(Class::getSimpleName)
+                .collect(Collectors.toList()),
+        matching != null);
+
+    return currentDevice.openConnection(matching);
   }
 
   // common utils
@@ -177,6 +190,45 @@ public class TestState {
     }
 
     return session;
+  }
+
+  @FunctionalInterface
+  protected interface SessionFactory<T extends ApplicationSession<T>> {
+    T create(SmartCardConnection connection, @Nullable ScpKeyParams params)
+        throws ApplicationNotAvailableException, ApduException, IOException;
+  }
+
+  protected <T extends ApplicationSession<T>> @Nullable T getSession(
+      YubiKeyConnection connection,
+      @Nullable ScpKeyParams scpKeyParams,
+      SessionFactory<T> sessionFactory)
+      throws IOException {
+
+    if (!(connection instanceof SmartCardConnection)) {
+      return null;
+    }
+
+    try {
+      return sessionFactory.create((SmartCardConnection) connection, scpKeyParams);
+    } catch (ApplicationNotAvailableException | ApduException ignored) {
+      // No application support
+    }
+    return null;
+  }
+
+  @Nullable
+  protected static Ctap2Session getSession(
+      YubiKeyConnection connection, @Nullable ScpKeyParams params) {
+    try {
+      return (connection instanceof FidoConnection)
+          ? new Ctap2Session((FidoConnection) connection)
+          : connection instanceof SmartCardConnection
+              ? new Ctap2Session((SmartCardConnection) connection, params)
+              : null;
+    } catch (IOException | CommandException ignored) {
+      // device does not provide CTAP2
+      return null;
+    }
   }
 
   protected boolean isMpe(DeviceInfo deviceInfo) {

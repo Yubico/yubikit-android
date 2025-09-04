@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Yubico.
+ * Copyright (C) 2022-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,14 +18,22 @@ package com.yubico.yubikit.testing.framework;
 
 import androidx.annotation.Nullable;
 import com.yubico.yubikit.core.Transport;
+import com.yubico.yubikit.core.YubiKeyConnection;
+import com.yubico.yubikit.core.fido.FidoConnection;
+import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.smartcard.scp.ScpKid;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV2;
 import com.yubico.yubikit.testing.TestState;
 import com.yubico.yubikit.testing.fido.FidoTestState;
+import java.util.Arrays;
+import java.util.List;
 
 public class FidoInstrumentedTests extends YKInstrumentedTests {
+
+  public static List<Class<? extends YubiKeyConnection>> connectionTypes =
+      Arrays.asList(FidoConnection.class, SmartCardConnection.class);
 
   protected void withDevice(TestState.StatefulDeviceCallback<FidoTestState> callback)
       throws Throwable {
@@ -35,7 +43,7 @@ public class FidoInstrumentedTests extends YKInstrumentedTests {
   protected void withDevice(
       boolean setPin, TestState.StatefulDeviceCallback<FidoTestState> callback) throws Throwable {
     FidoTestState state =
-        new FidoTestState.Builder(device, usbPid, getPinUvAuthProtocol())
+        new FidoTestState.Builder(device, connectionTypes, usbPid, getPinUvAuthProtocol())
             .scpKid(getScpKid())
             .reconnectDeviceCallback(this::reconnectDevice)
             .setPin(setPin)
@@ -47,7 +55,7 @@ public class FidoInstrumentedTests extends YKInstrumentedTests {
   protected void withCtap2Session(
       TestState.StatefulSessionCallback<Ctap2Session, FidoTestState> callback) throws Throwable {
     FidoTestState state =
-        new FidoTestState.Builder(device, usbPid, getPinUvAuthProtocol())
+        new FidoTestState.Builder(device, connectionTypes, usbPid, getPinUvAuthProtocol())
             .scpKid(getScpKid())
             .reconnectDeviceCallback(this::reconnectDevice)
             .setPin(true)

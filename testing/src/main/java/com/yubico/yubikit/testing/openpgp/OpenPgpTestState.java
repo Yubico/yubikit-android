@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Yubico.
+ * Copyright (C) 2024-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,18 +21,15 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 import com.yubico.yubikit.core.UsbPid;
+import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.YubiKeyDevice;
-import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
-import com.yubico.yubikit.core.application.CommandException;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.management.Capability;
 import com.yubico.yubikit.management.DeviceInfo;
 import com.yubico.yubikit.openpgp.OpenPgpSession;
 import com.yubico.yubikit.openpgp.Pw;
-import com.yubico.yubikit.testing.ScpParameters;
 import com.yubico.yubikit.testing.TestState;
-import java.io.IOException;
-import javax.annotation.Nullable;
+import java.util.Collections;
 import org.junit.Assume;
 
 public class OpenPgpTestState extends TestState {
@@ -47,7 +44,7 @@ public class OpenPgpTestState extends TestState {
   public static class Builder extends TestState.Builder<OpenPgpTestState.Builder> {
 
     public Builder(YubiKeyDevice device, UsbPid usbPid) {
-      super(device, usbPid);
+      super(device, Collections.singletonList(SmartCardConnection.class), usbPid);
     }
 
     @Override
@@ -81,10 +78,11 @@ public class OpenPgpTestState extends TestState {
           "No matching key params found for required kid", scpParameters.getKeyParams() != null);
     }
 
-    try (SmartCardConnection connection = openSmartCardConnection()) {
+    try (YubiKeyConnection connection = openConnection()) {
       assumeTrue("Smart card not available", connection != null);
 
-      OpenPgpSession openPgp = getOpenPgpSession(connection, scpParameters);
+      OpenPgpSession openPgp =
+          getSession(connection, scpParameters.getKeyParams(), OpenPgpSession::new);
 
       assumeTrue("OpenPGP not available", openPgp != null);
       openPgp.reset();
@@ -111,21 +109,10 @@ public class OpenPgpTestState extends TestState {
 
   public void withOpenPgp(StatefulSessionCallback<OpenPgpSession, OpenPgpTestState> callback)
       throws Throwable {
-    try (SmartCardConnection connection = openSmartCardConnection()) {
-      callback.invoke(getOpenPgpSession(connection, scpParameters), this);
+    try (YubiKeyConnection connection = openConnection()) {
+      callback.invoke(
+          getSession(connection, scpParameters.getKeyParams(), OpenPgpSession::new), this);
     }
     reconnect();
-  }
-
-  @Nullable
-  public static OpenPgpSession getOpenPgpSession(
-      SmartCardConnection connection, ScpParameters scpParameters)
-      throws IOException, CommandException {
-    try {
-      return new OpenPgpSession(connection, scpParameters.getKeyParams());
-    } catch (ApplicationNotAvailableException ignored) {
-      // no OpenPgp support
-    }
-    return null;
   }
 }

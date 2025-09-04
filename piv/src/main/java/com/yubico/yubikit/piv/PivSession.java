@@ -612,6 +612,7 @@ public class PivSession extends ApplicationSession<PivSession> {
       if (SW.INCORRECT_PARAMETERS == e.getSw()) {
         // TODO: Replace with new CommandException subclass, wrapping e.
         throw new ApduException(
+            e.getData(),
             e.getSw(),
             String.format(
                 Locale.ROOT,
@@ -1123,6 +1124,7 @@ public class PivSession extends ApplicationSession<PivSession> {
     } catch (ApduException e) {
       if (SW.INCORRECT_PARAMETERS == e.getSw()) {
         throw new ApduException(
+            e.getData(),
             e.getSw(),
             String.format(Locale.ROOT, "Make sure that key is generated on slot %02X", slot.value));
       }
