@@ -226,16 +226,17 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
                 Logger.trace(logger, "NFCCTAP_GETRESPONSE cancelled");
                 p1 = P1_CANCEL_KEEP_ALIVE;
               }
-            } else {
-              // Cannot check for cancellations, just sleep
-              try {
-                synchronized (monitor) {
-                  monitor.wait(100);
-                }
-              } catch (InterruptedException interruptedException) {
-                Logger.trace(logger, "NFCCTAP_GETRESPONSE interrupted");
-                p1 = P1_CANCEL_KEEP_ALIVE;
+              continue;
+            }
+
+            // Cannot check for cancellations, just sleep
+            try {
+              synchronized (monitor) {
+                monitor.wait(100);
               }
+            } catch (InterruptedException interruptedException) {
+              Logger.trace(logger, "NFCCTAP_GETRESPONSE interrupted");
+              p1 = P1_CANCEL_KEEP_ALIVE;
             }
           }
         }
