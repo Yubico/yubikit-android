@@ -194,30 +194,47 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
       }
     }
     return new Backend<SmartCardProtocol>(protocol) {
+      private final Object monitor = new Object();
+
       byte[] sendCbor(byte[] data, @Nullable CommandState state)
           throws IOException, CommandException {
 
         int ins = NFCCTAP_MSG;
         int p1 = P1_GET_RESPONSE;
-        int lastStatus = 0;
+        int lastKeepAliveStatus = 0;
 
         while (true) {
           try {
             return delegate.sendAndReceive(new Apdu(0x80, ins, p1, 0x00, data));
           } catch (ApduException apduException) {
-            if (SW_GETRESPONSE_OK == apduException.getSw()) {
-              ins = NFCCTAP_GETRESPONSE;
-              p1 = P1_KEEP_ALIVE;
-              final byte status = apduException.getData()[0];
-              if (state != null) {
-                if (lastStatus != status) {
-                  lastStatus = status;
-                  state.onKeepAliveStatus(status);
+            if (SW_GETRESPONSE_OK != apduException.getSw()) {
+              throw apduException;
+            }
+
+            // Handle SW_GETRESPONSE_OK (0x9100)
+            ins = NFCCTAP_GETRESPONSE;
+            p1 = P1_KEEP_ALIVE;
+            final byte keepAliveStatus = apduException.getData()[0];
+
+            if (state != null) {
+              // check for cancellations
+              if (lastKeepAliveStatus != keepAliveStatus) {
+                lastKeepAliveStatus = keepAliveStatus;
+                state.onKeepAliveStatus(keepAliveStatus);
+              }
+              if (state.waitForCancel(100)) {
+                Logger.trace(logger, "NFCCTAP_GETRESPONSE cancelled");
+                p1 = P1_CANCEL_KEEP_ALIVE;
+              }
+            } else {
+              // Cannot check for cancellations, just sleep
+              try {
+                synchronized (monitor) {
+                  monitor.wait(100);
                 }
-                if (state.waitForCancel(100)) {
-                  Logger.trace(logger, "NFCCTAP_GETRESPONSE cancelled");
-                  p1 = P1_CANCEL_KEEP_ALIVE;
-                }
+              } catch (InterruptedException interruptedException) {
+                Logger.trace(logger, "NFCCTAP_GETRESPONSE interrupted");
+                p1 = P1_CANCEL_KEEP_ALIVE;
               }
             }
           }
