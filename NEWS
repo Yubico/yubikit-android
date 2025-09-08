@@ -1,3 +1,19 @@
+* Version 2.9.0 (released 2025-09-08)
+ ** new:
+  - updated targetSdk to 36
+ ** core module:
+  - fixed a bug in formatting short APDUs
+ ** fido module:
+  - added support for CTAP2.2 features:
+    - new authenticatorGetInfo members
+    - persistentPinUvAuthToken
+  - added processing of CTAP2.2 extensions:
+    - hmac-secret-mc
+    - thirdPartyPayment
+  - added support for NFCCTAP_GETRESPONSE
+  - fixed credential list pre-flight
+ ** openpgp module:
+  - fixed implementation of verifyUserPin
 * Version 2.8.2 (released 2025-07-24)
  ** core module:
   - fixed SCP processing
