@@ -49,11 +49,7 @@ tasks.register('integrationTest', Test) {
 
     useJUnitPlatform()
 
-//    testLogging {
-//        events "passed"
-//    }
+    testLogging.showStandardStreams = true
 }
-
-
 
 description = "This module contains instrumented test framework and tests for yubikit-desktop."
