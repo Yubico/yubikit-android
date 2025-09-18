@@ -707,7 +707,8 @@ public class PivSession extends ApplicationSession<PivSession> {
           data.get(TAG_METADATA_RETRIES)[0],
           data.get(TAG_METADATA_TEMPORARY_PIN)[0] == 1);
     } catch (ApduException apduException) {
-      if (apduException.getSw() == SW.REFERENCED_DATA_NOT_FOUND) {
+      short sw = apduException.getSw();
+      if (sw == SW.REFERENCED_DATA_NOT_FOUND || sw == SW.INVALID_INSTRUCTION) {
         throw new UnsupportedOperationException(
             "Biometric verification not supported by this YubiKey");
       }
