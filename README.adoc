@@ -1,3 +1,5 @@
+link:https://scorecard.dev/viewer/?uri=github.com/Yubico/yubikit-android[image:https://api.scorecard.dev/projects/github.com/Yubico/yubikit-android/badge[OpenSSF Scorecard]]
+
 == Yubico Mobile SDK (YubiKit) for Android
 *YubiKit* is an Android library provided by Yubico to enable YubiKey support in
 Android apps. Both USB and NFC-enabled YubiKeys are supported.
