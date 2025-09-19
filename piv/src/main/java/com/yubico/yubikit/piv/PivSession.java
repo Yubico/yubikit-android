@@ -612,6 +612,7 @@ public class PivSession extends ApplicationSession<PivSession> {
       if (SW.INCORRECT_PARAMETERS == e.getSw()) {
         // TODO: Replace with new CommandException subclass, wrapping e.
         throw new ApduException(
+            e.getData(),
             e.getSw(),
             String.format(
                 Locale.ROOT,
@@ -706,7 +707,8 @@ public class PivSession extends ApplicationSession<PivSession> {
           data.get(TAG_METADATA_RETRIES)[0],
           data.get(TAG_METADATA_TEMPORARY_PIN)[0] == 1);
     } catch (ApduException apduException) {
-      if (apduException.getSw() == SW.REFERENCED_DATA_NOT_FOUND) {
+      short sw = apduException.getSw();
+      if (sw == SW.REFERENCED_DATA_NOT_FOUND || sw == SW.INVALID_INSTRUCTION) {
         throw new UnsupportedOperationException(
             "Biometric verification not supported by this YubiKey");
       }
@@ -1123,6 +1125,7 @@ public class PivSession extends ApplicationSession<PivSession> {
     } catch (ApduException e) {
       if (SW.INCORRECT_PARAMETERS == e.getSw()) {
         throw new ApduException(
+            e.getData(),
             e.getSw(),
             String.format(Locale.ROOT, "Make sure that key is generated on slot %02X", slot.value));
       }

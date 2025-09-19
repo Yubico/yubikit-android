@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Yubico.
+ * Copyright (C) 2024-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,8 +27,6 @@ import com.yubico.yubikit.core.UsbPid;
 import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.application.CommandException;
-import com.yubico.yubikit.core.fido.FidoConnection;
-import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.fido.client.BasicWebAuthnClient;
 import com.yubico.yubikit.fido.client.ClientError;
 import com.yubico.yubikit.fido.client.CredentialManager;
@@ -60,8 +58,12 @@ public class FidoTestState extends TestState {
     private final PinUvAuthProtocol pinUvAuthProtocol;
     private boolean setPin = false;
 
-    public Builder(YubiKeyDevice device, UsbPid usbPid, PinUvAuthProtocol pinUvAuthProtocol) {
-      super(device, usbPid);
+    public Builder(
+        YubiKeyDevice device,
+        List<Class<? extends YubiKeyConnection>> supportedConnectionTypes,
+        UsbPid usbPid,
+        PinUvAuthProtocol pinUvAuthProtocol) {
+      super(device, supportedConnectionTypes, usbPid);
       this.pinUvAuthProtocol = pinUvAuthProtocol;
     }
 
@@ -101,7 +103,7 @@ public class FidoTestState extends TestState {
         // failed to get device info, this is not a YubiKey
       }
 
-      Ctap2Session session = getCtap2Session(connection);
+      Ctap2Session session = getSession(connection, scpParameters.getKeyParams());
       assumeTrue("CTAP2 not supported", session != null);
       assumeTrue(
           "PIN UV Protocol not supported", supportsPinUvAuthProtocol(session, pinUvAuthProtocol));
@@ -146,7 +148,7 @@ public class FidoTestState extends TestState {
       // remove existing credentials
       if (builder.setPin) {
         // cannot use CredentialManager if there is no PIN set
-        session = getCtap2Session(connection);
+        session = getSession(connection, scpParameters.getKeyParams());
         deleteExistingCredentials(session);
       }
     }
@@ -212,7 +214,7 @@ public class FidoTestState extends TestState {
   public void withCtap2(TestState.StatefulSessionCallback<Ctap2Session, FidoTestState> callback)
       throws Throwable {
     try (YubiKeyConnection connection = openConnection()) {
-      final Ctap2Session ctap2 = getCtap2Session(connection);
+      final Ctap2Session ctap2 = getSession(connection, scpParameters.getKeyParams());
       assumeTrue("No CTAP2 support", ctap2 != null);
       callback.invoke(ctap2, this);
     }
@@ -222,7 +224,7 @@ public class FidoTestState extends TestState {
   public <R> R withCtap2(SessionCallbackT<Ctap2Session, R> callback) throws Throwable {
     R result;
     try (YubiKeyConnection connection = openConnection()) {
-      final Ctap2Session ctap2 = getCtap2Session(connection);
+      final Ctap2Session ctap2 = getSession(connection, scpParameters.getKeyParams());
       assumeTrue("No CTAP2 support", ctap2 != null);
       result = callback.invoke(ctap2);
     }
@@ -232,24 +234,10 @@ public class FidoTestState extends TestState {
 
   public void withCtap2(SessionCallback<Ctap2Session> callback) throws Throwable {
     try (YubiKeyConnection connection = openConnection()) {
-      final Ctap2Session ctap2 = getCtap2Session(connection);
+      final Ctap2Session ctap2 = getSession(connection, scpParameters.getKeyParams());
       assumeTrue("No CTAP2 support", ctap2 != null);
       callback.invoke(ctap2);
     }
     reconnect();
-  }
-
-  @Nullable
-  public static Ctap2Session getCtap2Session(YubiKeyConnection connection) {
-    try {
-      return (connection instanceof FidoConnection)
-          ? new Ctap2Session((FidoConnection) connection)
-          : connection instanceof SmartCardConnection
-              ? new Ctap2Session((SmartCardConnection) connection)
-              : null;
-    } catch (IOException | CommandException ignored) {
-      // device does not provide CTAP2
-      return null;
-    }
   }
 }

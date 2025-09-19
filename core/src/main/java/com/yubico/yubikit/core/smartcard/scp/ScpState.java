@@ -193,7 +193,7 @@ public class ScpState {
                 0x00,
                 hostChallenge));
     if (resp.getSw() != SW.OK) {
-      throw new ApduException(resp.getSw());
+      throw new ApduException(resp.getData(), resp.getSw());
     }
 
     byte[] diversificationData = new byte[10];
@@ -261,7 +261,7 @@ public class ScpState {
                       p2,
                       data));
           if (resp.getSw() != SW.OK) {
-            throw new ApduException(resp.getSw());
+            throw new ApduException(resp.getData(), resp.getSw());
           }
         } catch (CertificateEncodingException e) {
           throw new IllegalArgumentException("Invalid certificate encoding", e);
@@ -309,7 +309,7 @@ public class ScpState {
               new Apdu(
                   0x80, ins, keyParams.getKeyRef().getKvn(), keyParams.getKeyRef().getKid(), data));
       if (resp.getSw() != SW.OK) {
-        throw new ApduException(resp.getSw());
+        throw new ApduException(resp.getData(), resp.getSw());
       }
       List<Tlv> tlvs = Tlvs.decodeList(resp.getData());
       Tlv epkSdEckaTlv = tlvs.get(0);
