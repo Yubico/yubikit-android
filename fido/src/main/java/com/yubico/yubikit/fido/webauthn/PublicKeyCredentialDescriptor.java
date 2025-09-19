@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Yubico.
+ * Copyright (C) 2020-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,7 +64,8 @@ public class PublicKeyCredentialDescriptor {
     Map<String, Object> map = new HashMap<>();
     map.put(TYPE, type);
     map.put(ID, serializeBytes(id, serializationType));
-    if (transports != null) {
+    // never serialize transports to authenticator inputs
+    if (transports != null && serializationType != SerializationType.CBOR) {
       map.put(TRANSPORTS, transports);
     }
     return map;

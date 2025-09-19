@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Yubico.
+ * Copyright (C) 2020-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -123,7 +123,9 @@ public class AuthenticatorAttestationResponse extends AuthenticatorResponse {
   @Override
   public Map<String, ?> toMap(SerializationType serializationType) {
     Map<String, Object> map = new HashMap<>();
-    map.put(CLIENT_DATA_JSON, serializeBytes(getClientDataJson(), serializationType));
+    if (getClientDataJson().length > 0) {
+      map.put(CLIENT_DATA_JSON, serializeBytes(getClientDataJson(), serializationType));
+    }
     map.put(AUTHENTICATOR_DATA, serializeBytes(authenticatorData.getBytes(), serializationType));
     map.put(TRANSPORTS, transports);
     if (publicKey != null) {

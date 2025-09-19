@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2025 Yubico.
+ * Copyright (C) 2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,19 +14,20 @@
  * limitations under the License.
  */
 
-package com.yubico.yubikit.core;
+package com.yubico.yubikit.fido.android.ui.theme
 
-public enum YubiKeyType {
-  YKS("YubiKey Standard"),
-  NEO("YubiKey NEO"),
-  SKY("Security Key by Yubico"),
-  YKP("YubiKey Plus"),
-  YK4("YubiKey"),
-  FIDO_SECURITY_KEY("FIDO Security Key");
+import androidx.compose.material3.Typography
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 
-  public final String name;
-
-  YubiKeyType(String name) {
-    this.name = name;
-  }
-}
+val Typography = Typography(
+    bodyLarge = TextStyle(
+        fontFamily = FontFamily.Default,
+        fontWeight = FontWeight.Normal,
+        fontSize = 16.sp,
+        lineHeight = 24.sp,
+        letterSpacing = 0.5.sp
+    )
+)

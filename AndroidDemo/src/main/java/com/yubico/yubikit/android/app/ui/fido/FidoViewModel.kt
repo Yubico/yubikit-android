@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2025 Yubico.
+ * Copyright (C) 2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,19 +14,17 @@
  * limitations under the License.
  */
 
-package com.yubico.yubikit.core;
+package com.yubico.yubikit.android.app.ui.fido
 
-public enum YubiKeyType {
-  YKS("YubiKey Standard"),
-  NEO("YubiKey NEO"),
-  SKY("Security Key by Yubico"),
-  YKP("YubiKey Plus"),
-  YK4("YubiKey"),
-  FIDO_SECURITY_KEY("FIDO Security Key");
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.ViewModel
 
-  public final String name;
+class FidoViewModel : ViewModel() {
+    private val _url = MutableLiveData<String?>()
+    val url: LiveData<String?> = _url
 
-  YubiKeyType(String name) {
-    this.name = name;
-  }
+    fun setUrl(newUrl: String?) {
+        _url.postValue(newUrl)
+    }
 }

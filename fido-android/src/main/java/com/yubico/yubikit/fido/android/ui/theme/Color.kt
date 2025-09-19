@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2025 Yubico.
+ * Copyright (C) 2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,19 +14,14 @@
  * limitations under the License.
  */
 
-package com.yubico.yubikit.core;
+package com.yubico.yubikit.fido.android.ui.theme
 
-public enum YubiKeyType {
-  YKS("YubiKey Standard"),
-  NEO("YubiKey NEO"),
-  SKY("Security Key by Yubico"),
-  YKP("YubiKey Plus"),
-  YK4("YubiKey"),
-  FIDO_SECURITY_KEY("FIDO Security Key");
+import androidx.compose.ui.graphics.Color
 
-  public final String name;
+val Purple80 = Color(0xFFD0BCFF)
+val PurpleGrey80 = Color(0xFFCCC2DC)
+val Pink80 = Color(0xFFEFB8C8)
 
-  YubiKeyType(String name) {
-    this.name = name;
-  }
-}
+val Purple40 = Color(0xFF6650a4)
+val PurpleGrey40 = Color(0xFF625b71)
+val Pink40 = Color(0xFF7D5260)

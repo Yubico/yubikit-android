@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Yubico.
+ * Copyright (C) 2020-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -255,6 +255,58 @@ public class BasicWebAuthnClient implements Closeable {
   }
 
   /**
+   * Create a new WebAuthn credential.
+   *
+   * <p>PIN is always required if a PIN is configured.
+   *
+   * @param clientDataHash Hash of ClientData JSON object.
+   * @param options The options for creating the credential.
+   * @param effectiveDomain The effective domain for the request, which is used to validate the RP
+   *     ID against.
+   * @param pin If needed, the PIN to authorize the credential creation.
+   * @param state If needed, the state to provide control over the ongoing operation
+   * @return A WebAuthn public key credential.
+   * @throws IOException A communication error in the transport layer
+   * @throws CommandException A communication in the protocol layer
+   * @throws ClientError A higher level error
+   */
+  public PublicKeyCredential makeCredentialWithHash(
+      byte[] clientDataHash,
+      PublicKeyCredentialCreationOptions options,
+      String effectiveDomain,
+      @Nullable char[] pin,
+      @Nullable Integer enterpriseAttestation,
+      @Nullable CommandState state)
+      throws IOException, CommandException, ClientError {
+
+    try {
+      Pair<Ctap2Session.CredentialData, ClientExtensionResults> result =
+          ctapMakeCredential(
+              clientDataHash, options, effectiveDomain, pin, enterpriseAttestation, state);
+      final Ctap2Session.CredentialData credential = result.first;
+      final ClientExtensionResults clientExtensionResults = result.second;
+
+      final AttestationObject attestationObject = AttestationObject.fromCredential(credential);
+
+      AuthenticatorAttestationResponse response =
+          new AuthenticatorAttestationResponse(
+              new byte[0], ctap.getCachedInfo().getTransports(), attestationObject);
+
+      return new PublicKeyCredential(
+          Objects.requireNonNull(
+                  attestationObject.getAuthenticatorData().getAttestedCredentialData())
+              .getCredentialId(),
+          response,
+          clientExtensionResults);
+    } catch (CtapException e) {
+      if (e.getCtapError() == CtapException.ERR_PIN_INVALID) {
+        throw new PinInvalidClientError(e, clientPin.getPinRetries().getCount());
+      }
+      throw ClientError.wrapCtapException(e);
+    }
+  }
+
+  /**
    * Authenticate an existing WebAuthn credential. PIN is required if UV is "required", or if UV is
    * "preferred" and a PIN is configured. If no allowCredentials list is provided (which is the case
    * for a passwordless flow) the Authenticator may contain multiple discoverable credentials for
@@ -297,6 +349,58 @@ public class BasicWebAuthnClient implements Closeable {
             assertion, clientDataJson, allowCredentials, clientExtensionResults);
       } else {
         throw new MultipleAssertionsAvailable(clientDataJson, results);
+      }
+
+    } catch (CtapException e) {
+      if (e.getCtapError() == CtapException.ERR_PIN_INVALID) {
+        throw new PinInvalidClientError(e, clientPin.getPinRetries().getCount());
+      }
+      throw ClientError.wrapCtapException(e);
+    }
+  }
+
+  /**
+   * Authenticate an existing WebAuthn credential. PIN is required if UV is "required", or if UV is
+   * "preferred" and a PIN is configured. If no allowCredentials list is provided (which is the case
+   * for a passwordless flow) the Authenticator may contain multiple discoverable credentials for
+   * the given RP. In such cases MultipleAssertionsAvailable will be thrown, and can be handled to
+   * select an assertion.
+   *
+   * @param clientDataHash Hash of ClientData JSON object.
+   * @param options The options for authenticating the credential.
+   * @param effectiveDomain The effective domain for the request, which is used to validate the RP
+   *     ID against.
+   * @param pin If needed, the PIN to authorize the credential creation.
+   * @param state If needed, the state to provide control over the ongoing operation
+   * @return Webauthn public key credential with assertion response data.
+   * @throws MultipleAssertionsAvailable In case of multiple assertions, catch this to make a
+   *     selection and get the result.
+   * @throws IOException A communication error in the transport layer
+   * @throws CommandException A communication in the protocol layer
+   * @throws ClientError A higher level error
+   */
+  public PublicKeyCredential getAssertionWithHash(
+      byte[] clientDataHash,
+      PublicKeyCredentialRequestOptions options,
+      String effectiveDomain,
+      @Nullable char[] pin,
+      @Nullable CommandState state)
+      throws MultipleAssertionsAvailable, IOException, CommandException, ClientError {
+    try {
+      final List<Pair<Ctap2Session.AssertionData, ClientExtensionResults>> results =
+          ctapGetAssertions(clientDataHash, options, effectiveDomain, pin, state);
+
+      final List<PublicKeyCredentialDescriptor> allowCredentials =
+          removeUnsupportedCredentials(options.getAllowCredentials());
+
+      if (results.size() == 1) {
+        final Ctap2Session.AssertionData assertion = results.get(0).first;
+        final ClientExtensionResults clientExtensionResults = results.get(0).second;
+
+        return PublicKeyCredential.fromAssertion(
+            assertion, new byte[0], allowCredentials, clientExtensionResults);
+      } else {
+        throw new MultipleAssertionsAvailable(new byte[0], results);
       }
 
     } catch (CtapException e) {

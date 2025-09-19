@@ -26,6 +26,7 @@ import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.management.Capability;
 import com.yubico.yubikit.management.DeviceInfo;
+import com.yubico.yubikit.management.FormFactor;
 import com.yubico.yubikit.piv.KeyType;
 import com.yubico.yubikit.piv.ManagementKeyType;
 import com.yubico.yubikit.piv.PivSession;
@@ -86,6 +87,10 @@ public class PivTestState extends TestState {
 
     boolean isPivFipsCapable = isFipsCapable(deviceInfo, Capability.PIV);
     boolean hasPinComplexity = deviceInfo != null && deviceInfo.getPinComplexity();
+    boolean isBio =
+        deviceInfo != null
+            && (deviceInfo.getFormFactor() == FormFactor.USB_C_BIO
+                || deviceInfo.getFormFactor() == FormFactor.USB_A_BIO);
 
     if (scpParameters.getKid() == null && isPivFipsCapable) {
       assumeTrue("Trying to use PIV FIPS capable device over NFC without SCP", isUsbTransport());
@@ -101,9 +106,11 @@ public class PivTestState extends TestState {
       PivSession pivSession = getSession(connection, scpParameters.getKeyParams(), PivSession::new);
       assumeTrue("PIV not available", pivSession != null);
 
-      try {
-        pivSession.reset();
-      } catch (Exception ignored) {
+      if (!isBio) {
+        try {
+          pivSession.reset();
+        } catch (Exception ignored) {
+        }
       }
 
       if (hasPinComplexity) {
