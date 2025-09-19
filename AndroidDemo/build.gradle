@@ -7,11 +7,11 @@ plugins {
 
 
 android {
-    compileSdk 35
+    compileSdkVersion 36
 
     defaultConfig {
-        minSdkVersion 21
-        targetSdk 34
+        minSdkVersion 23
+        targetSdkVersion 34
         versionName version
         versionCode 1
 
