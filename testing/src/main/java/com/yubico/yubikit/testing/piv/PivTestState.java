@@ -27,7 +27,6 @@ import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.management.Capability;
 import com.yubico.yubikit.management.DeviceInfo;
 import com.yubico.yubikit.management.FormFactor;
-import com.yubico.yubikit.management.ManagementSession;
 import com.yubico.yubikit.piv.KeyType;
 import com.yubico.yubikit.piv.ManagementKeyType;
 import com.yubico.yubikit.piv.PivSession;
@@ -102,7 +101,6 @@ public class PivTestState extends TestState {
       assumeTrue(
           "No matching key params found for required kid", scpParameters.getKeyParams() != null);
     }
-
 
     try (YubiKeyConnection connection = openConnection()) {
       PivSession pivSession = getSession(connection, scpParameters.getKeyParams(), PivSession::new);
