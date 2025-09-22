@@ -1,0 +1,8 @@
+<resources>
+    <string name="provider_service_label">Security Key Provider</string>
+    <string name="provider_service_settingsSubtitle">Example by Yubico</string>
+    <string name="get_credential">Account on a hardware security key</string>
+    <string name="provider_activity_name">YubiKit Credential Manager Provider</string>
+    <string name="settings_activity_name">YubiKit Provider Settings</string>
+    <string name="tbd">TBD</string>
+</resources>

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.CREDENTIAL_MANAGER_SET_ALLOWED_PROVIDERS" />
+
+    <application android:supportsRtl="true">
+
+        <activity
+            android:name=".YubiKitFido2ProviderActivity"
+            android:label="@string/provider_activity_name"
+            android:theme="@style/Theme.Transparent" />
+
+        <activity
+            android:name=".YubiKitProviderSettingsActivity"
+            android:label="@string/settings_activity_name"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar"
+            android:exported="false" />
+
+        <service
+            android:name=".YubiKitProviderService"
+            android:enabled="true"
+            android:exported="true"
+            android:icon="@mipmap/ic_service"
+            android:label="@string/provider_service_label"
+            android:permission="android.permission.BIND_CREDENTIAL_PROVIDER_SERVICE"
+            android:roundIcon="@mipmap/ic_service_round">
+            <intent-filter>
+                <action android:name="android.service.credentials.CredentialProviderService" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.credentials.provider"
+                android:resource="@xml/provider" />
+        </service>
+    </application>
+
+</manifest>
