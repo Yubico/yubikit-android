@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Yubico.
+ * Copyright (C) 2023-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,8 @@ import com.yubico.yubikit.core.keys.PublicKeyValues;
 import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.core.smartcard.SW;
 import com.yubico.yubikit.management.DeviceInfo;
+import com.yubico.yubikit.openpgp.ApplicationRelatedData;
+import com.yubico.yubikit.openpgp.DiscretionaryDataObjects;
 import com.yubico.yubikit.openpgp.ExtendedCapabilityFlag;
 import com.yubico.yubikit.openpgp.Kdf;
 import com.yubico.yubikit.openpgp.KeyRef;
@@ -32,6 +34,7 @@ import com.yubico.yubikit.openpgp.OpenPgpSession;
 import com.yubico.yubikit.openpgp.PinPolicy;
 import com.yubico.yubikit.openpgp.Pw;
 import com.yubico.yubikit.openpgp.Uif;
+import com.yubico.yubikit.testing.Codec;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.math.BigInteger;
@@ -205,6 +208,28 @@ public class OpenPgpDeviceTests {
         Assert.assertArrayEquals(message, decrypted);
       }
     }
+  }
+
+  public static void testFingerprintOperations(OpenPgpSession openpgp, OpenPgpTestState state)
+      throws Exception {
+
+    openpgp.verifyAdminPin(state.defaultAdminPin);
+
+    byte[] sigFingerprint = Codec.fromHex("0102030405060708090A0102030405060708090A");
+    byte[] decFingerprint = Codec.fromHex("030405060708090A0102030405060708090A0102");
+    byte[] autFingerprint = Codec.fromHex("0708090A0102030405060708090A010203040506");
+    byte[] attFingerprint = Codec.fromHex("0A0102030405060708090A010203040506070809");
+    openpgp.setFingerprint(KeyRef.SIG, sigFingerprint);
+    openpgp.setFingerprint(KeyRef.DEC, decFingerprint);
+    openpgp.setFingerprint(KeyRef.AUT, autFingerprint);
+    openpgp.setFingerprint(KeyRef.ATT, attFingerprint);
+
+    ApplicationRelatedData applicationRelatedData = openpgp.getApplicationRelatedData();
+    DiscretionaryDataObjects ddo = applicationRelatedData.getDiscretionary();
+    Assert.assertArrayEquals(sigFingerprint, ddo.getFingerprint(KeyRef.SIG));
+    Assert.assertArrayEquals(decFingerprint, ddo.getFingerprint(KeyRef.DEC));
+    Assert.assertArrayEquals(autFingerprint, ddo.getFingerprint(KeyRef.AUT));
+    Assert.assertArrayEquals(attFingerprint, ddo.getFingerprint(KeyRef.ATT));
   }
 
   public static void testGenerateEcKeys(OpenPgpSession openpgp, OpenPgpTestState state)
