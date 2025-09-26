@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.yubico.yubikit.fido.android
+package com.yubico.yubikit.fido.android.ui.components
 
 import android.app.Activity
 import android.content.Context
@@ -32,14 +32,10 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -76,6 +72,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import kotlinx.coroutines.delay
 import java.io.IOException
+
 
 @Composable
 fun NfcUsageGuide(
@@ -262,52 +259,6 @@ fun NfcReader(
             onDisposed()
         }
     }
-}
-
-
-@Composable
-fun PulsingIcon(
-    painter: Painter,
-    contentDescription: String?,
-    modifier: Modifier = Modifier,
-    tint: Color = LocalContentColor.current
-) {
-    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
-
-    val scale by infiniteTransition.animateFloat(
-        initialValue = 1f,
-        targetValue = 1.1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(
-                durationMillis = 1000,
-                easing = FastOutSlowInEasing
-            ),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "scale"
-    )
-
-    val alpha by infiniteTransition.animateFloat(
-        initialValue = 1f,
-        targetValue = 0.7f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(
-                durationMillis = 1000,
-                easing = FastOutSlowInEasing
-            ),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "alpha"
-    )
-
-    Icon(
-        painter = painter,
-        contentDescription = contentDescription,
-        modifier = modifier
-            .scale(scale)
-            .alpha(alpha),
-        tint = tint
-    )
 }
 
 @Composable
