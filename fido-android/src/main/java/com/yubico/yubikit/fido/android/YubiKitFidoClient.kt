@@ -59,7 +59,7 @@ class YubiKitFidoClient {
         extensions: List<Extension>? = null,
         theme: (@Composable (content: @Composable () -> Unit) -> Unit)? = null
     ) {
-        YubiKitFidoActivity.ThemeManager.setTheme(theme)
+        YubiKitFidoActivity.setTheme(theme)
         launcher = fragment.registerForActivityResult(FidoActivityResultContract()) { result ->
             handleResult(result)
         }
@@ -78,7 +78,7 @@ class YubiKitFidoClient {
         extensions: List<Extension>? = null,
         theme: (@Composable (content: @Composable () -> Unit) -> Unit)? = null
     ) {
-        YubiKitFidoActivity.ThemeManager.setTheme(theme)
+        YubiKitFidoActivity.setTheme(theme)
         launcher = activity.registerForActivityResult(FidoActivityResultContract()) { result ->
             handleResult(result)
         }

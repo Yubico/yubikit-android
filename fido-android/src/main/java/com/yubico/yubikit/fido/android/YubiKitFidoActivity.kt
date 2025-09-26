@@ -17,6 +17,7 @@
 package com.yubico.yubikit.fido.android
 
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
@@ -46,202 +47,28 @@ import com.yubico.yubikit.android.YubiKitManager
 import com.yubico.yubikit.android.transport.nfc.NfcConfiguration
 import com.yubico.yubikit.android.transport.nfc.NfcNotAvailable
 import com.yubico.yubikit.android.transport.usb.UsbConfiguration
-import com.yubico.yubikit.fido.android.YubiKitFidoActivity.Companion.toMap
 import com.yubico.yubikit.fido.android.ui.components.NfcUsageGuide
 import com.yubico.yubikit.fido.android.ui.screens.FidoClientUi
 import com.yubico.yubikit.fido.android.ui.theme.FidoAndroidTheme
-import com.yubico.yubikit.fido.client.PinRequiredClientError
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredential
-import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialCreationOptions
-import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialRequestOptions
 import com.yubico.yubikit.fido.webauthn.SerializationType
 import kotlinx.coroutines.launch
-import org.json.JSONArray
 import org.json.JSONObject
-
-class FidoClientService(private val viewModel: MainViewModel = MainViewModel()) {
-
-    enum class Operation {
-        MAKE_CREDENTIAL,
-        GET_ASSERTION
-    }
-
-    suspend fun performOperation(
-        pin: String?,
-        operation: Operation,
-        rpId: String,
-        clientDataHash: ByteArray?,
-        request: String,
-        onConnection: () -> Unit
-    ): Result<PublicKeyCredential> {
-        return when (operation) {
-            Operation.MAKE_CREDENTIAL -> makeCredential(
-                pin,
-                rpId,
-                clientDataHash,
-                request,
-                onConnection
-            )
-
-            Operation.GET_ASSERTION -> getAssertion(
-                pin,
-                rpId,
-                clientDataHash,
-                request,
-                onConnection
-            )
-        }
-    }
-
-    suspend fun waitForKeyRemoval() {
-        viewModel.waitForKeyRemoval()
-    }
-
-    private fun buildClientData(
-        type: String, origin: String, challenge: String
-    ): ByteArray {
-        return """
-            {
-                "type": "$type",
-                "challenge": "$challenge",
-                "origin": "$origin"
-            }
-        """.trimIndent().toByteArray()
-    }
-
-    private suspend fun makeCredential(
-        pin: String?,
-        rpId: String,
-        clientDataHash: ByteArray?,
-        request: String,
-        onConnection: () -> Unit
-    ): Result<PublicKeyCredential> =
-        viewModel.useWebAuthn { client ->
-            onConnection()
-            if (pin == null && client.isPinSupported && client.isPinConfigured) {
-                /* TODO get remaining attempts or information about PIN blocked state and return
-                   the most appropriate error
-                 */
-                throw PinRequiredClientError()
-            }
-
-            val requestJson = JSONObject(request).toMap()
-
-            val publicKeyCredentialCreationOptions = PublicKeyCredentialCreationOptions.fromMap(
-                JSONObject(request).toMap()
-            )
-
-            if (clientDataHash != null) {
-                client.makeCredentialWithHash(
-                    clientDataHash,
-                    publicKeyCredentialCreationOptions,
-                    rpId.removePrefix("https://"), // TODO reason about this
-                    pin?.toCharArray(),
-                    null,
-                    null
-                )
-            } else {
-                client.makeCredential(
-                    buildClientData(
-                        "webauthn.create",
-                        rpId,
-                        requestJson["challenge"] as String
-                    ),
-                    publicKeyCredentialCreationOptions,
-                    rpId.removePrefix("https://"), // TODO reason about this
-                    pin?.toCharArray(),
-                    null,
-                    null
-                )
-            }
-        }
-
-    private suspend fun getAssertion(
-        pin: String?,
-        rpId: String,
-        clientDataHash: ByteArray?,
-        request: String,
-        onConnection: () -> Unit
-    ): Result<PublicKeyCredential> =
-        viewModel.useWebAuthn { client ->
-            onConnection()
-            if (pin == null && client.isPinSupported && client.isPinConfigured) {
-                /* TODO get remaining attempts or information about PIN blocked state and return
-                   the most appropriate error
-                 */
-                throw PinRequiredClientError()
-            }
-
-            val requestJson = JSONObject(request).toMap()
-
-            val clientData = buildClientData(
-                "webauthn.get",
-                rpId,
-                requestJson["challenge"] as String
-            )
-
-            val publicKeyCredentialRequestOptions = PublicKeyCredentialRequestOptions.fromMap(
-                JSONObject(request).toMap()
-            )
-
-            if (clientDataHash != null) {
-                client.getAssertionWithHash(
-                    clientDataHash,
-                    publicKeyCredentialRequestOptions,
-                    rpId.removePrefix("https://"), // TODO reason about this
-                    pin?.toCharArray(),
-                    null,
-                )
-            } else {
-                client.getAssertion(
-                    clientData,
-                    publicKeyCredentialRequestOptions,
-                    rpId.removePrefix("https://"), // TODO reason about this
-                    pin?.toCharArray(),
-                    null,
-                )
-            }
-        }
-}
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 class YubiKitFidoActivity : ComponentActivity() {
-
-    object ThemeManager {
-        private var theme: (@Composable (content: @Composable () -> Unit) -> Unit)? = null
+    companion object {
+        private val logger: Logger = LoggerFactory.getLogger(YubiKitFidoActivity::class.java)
+        private var customTheme: (@Composable (content: @Composable () -> Unit) -> Unit)? = null
 
         fun setTheme(theme: (@Composable (content: @Composable () -> Unit) -> Unit)?) {
-            this.theme = theme
-        }
-
-        @Composable
-        fun ApplyTheme(content: @Composable () -> Unit) {
-            val themeToUse = theme ?: { FidoAndroidTheme(content = it) }
-            themeToUse(content)
-        }
-    }
-
-    companion object {
-        var theme: (@Composable (content: @Composable () -> Unit) -> Unit)? = null
-
-        fun JSONObject.toMap(): Map<String, *> = keys().asSequence().associateWith {
-            when (val value = this[it]) {
-                is JSONArray -> {
-                    val map = (0 until value.length()).associate { mapValue ->
-                        Pair(
-                            mapValue.toString(), value[mapValue]
-                        )
-                    }
-                    JSONObject(map).toMap().values.toList()
-                }
-
-                is JSONObject -> value.toMap()
-                JSONObject.NULL -> null
-                else -> value
-            }
+            customTheme = theme
         }
     }
 
     private lateinit var yubikit: YubiKitManager
+    private lateinit var params: FidoActivityParameters
     private val viewModel: MainViewModel by viewModels()
     private val fidoClientService: FidoClientService by lazy { FidoClientService(viewModel) }
 
@@ -250,18 +77,13 @@ class YubiKitFidoActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val rpId = intent.extras?.getString("rpId")
-        val request = intent.extras?.getString("request")
-        val clientDataHash = intent.extras?.getString("clientDataHash")?.hexToByteArray()
-        val operation = intent.extras?.getInt("type")?.let { type ->
-            mapOf(
-                0 to FidoClientService.Operation.MAKE_CREDENTIAL,
-                1 to FidoClientService.Operation.GET_ASSERTION
-            )[type]
-        }
-
-        if (rpId == null || request == null || operation == null) {
-            throw IllegalArgumentException("Invalid parameters")
+        try {
+            params = FidoActivityParameters.fromIntent(intent)
+        } catch (e: Exception) {
+            logger.error("Invalid parameters: ", e)
+            setResult(RESULT_CANCELED)
+            finish()
+            return
         }
 
         WindowCompat.setDecorFitsSystemWindows(window, false)
@@ -271,7 +93,8 @@ class YubiKitFidoActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         setContent {
-            ThemeManager.ApplyTheme {
+            val theme = customTheme ?: { FidoAndroidTheme(content = it) }
+            theme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = Color.Transparent
@@ -339,13 +162,13 @@ class YubiKitFidoActivity : ComponentActivity() {
                                 onDismissRequest = finishActivityWithCancel,
                             ) {
                                 FidoClientUi(
-                                    operation,
+                                    params.operation,
                                     isUsb = viewModel.isUsb,
                                     isNfcAvailable =
                                         viewModel.isNfcAvailable.observeAsState(false).value,
-                                    rpId,
-                                    request,
-                                    clientDataHash,
+                                    params.rpId,
+                                    params.request,
+                                    params.clientDataHash?.toByteArray(),
                                     fidoClientService = fidoClientService,
                                     onResult = { finishActivityWithResult(it) },
                                     onShowNfcGuideClick = {
@@ -393,5 +216,34 @@ class YubiKitFidoActivity : ComponentActivity() {
     override fun onStop() {
         super.onStop()
         stopDiscovery()
+    }
+
+    data class FidoActivityParameters(
+        val rpId: String,
+        val request: String,
+        val clientDataHash: List<Byte>?,
+        val operation: FidoClientService.Operation
+    ) {
+        companion object {
+            fun fromIntent(intent: Intent): FidoActivityParameters {
+                val extras = intent.extras ?: throw IllegalArgumentException("Missing extras")
+
+                // This single line gets the int, maps it, and throws an exception if the mapping fails.
+                val operation = extras.getInt("type").let { type ->
+                    when (type) {
+                        0 -> FidoClientService.Operation.MAKE_CREDENTIAL
+                        1 -> FidoClientService.Operation.GET_ASSERTION
+                        else -> null
+                    }
+                } ?: throw IllegalArgumentException("Invalid operation type")
+
+                return FidoActivityParameters(
+                    rpId = extras.getString("rpId")!!,
+                    request = extras.getString("request")!!,
+                    clientDataHash = extras.getString("clientDataHash")?.hexToByteArray()?.toList(),
+                    operation = operation
+                )
+            }
+        }
     }
 }
