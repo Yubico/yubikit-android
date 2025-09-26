@@ -28,11 +28,11 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -61,8 +61,9 @@ import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -157,7 +158,7 @@ class FidoClientService(private val viewModel: MainViewModel = MainViewModel()) 
         }
     }
 
-    suspend fun waitForKeyRemoval(): Unit {
+    suspend fun waitForKeyRemoval() {
         viewModel.waitForKeyRemoval()
     }
 
@@ -336,11 +337,10 @@ class YubiKitFidoActivity : ComponentActivity() {
 
         setContent {
             ThemeManager.ApplyTheme {
-                Scaffold(
+                Surface(
                     modifier = Modifier.fillMaxSize(),
-                    containerColor = Color.Transparent
-                ) { _ ->
-
+                    color = Color.Transparent
+                ) {
                     val sheetState = rememberModalBottomSheetState()
                     val scope = rememberCoroutineScope()
                     var bottomSheetVisible by remember { mutableStateOf(true) }
@@ -367,7 +367,8 @@ class YubiKitFidoActivity : ComponentActivity() {
                     val finishActivityWithResult: (PublicKeyCredential) -> Unit = { result ->
                         setResult(
                             RESULT_OK, intent.putExtra(
-                                "credential", JSONObject(result.toMap(SerializationType.JSON)).toString()
+                                "credential",
+                                JSONObject(result.toMap(SerializationType.JSON)).toString()
                             )
                         )
                         finishActivity()
@@ -388,9 +389,9 @@ class YubiKitFidoActivity : ComponentActivity() {
                         ) {
                             nfcGuideVisible = !nfcGuideVisible
                             bottomSheetVisible = true
-
                         }
                     }
+
                     AnimatedVisibility(
                         visible = !nfcGuideVisible,
                         enter = fadeIn(),
@@ -515,7 +516,7 @@ fun TapOrInsertSecurityKey(
     operation: FidoClientService.Operation,
     isNfcAvailable: Boolean,
     origin: String,
-    onShowNfcGuideClick: (() -> Unit)? = null,
+    onShowNfcGuideClick: (() -> Unit) = {},
     onCloseButtonClick: () -> Unit
 ) {
     ContentWrapper(
@@ -532,18 +533,21 @@ fun TapOrInsertSecurityKey(
         Spacer(modifier = Modifier.height(16.dp))
         Text(text = stringResource(R.string.tap_or_insert_key))
         if (isNfcAvailable) {
-            Text(
-                text = "How to use NFC",
-                modifier = Modifier.clickable { onShowNfcGuideClick ?: {} },
-                color = MaterialTheme.colorScheme.onSecondaryFixedVariant,
-                fontSize = MaterialTheme.typography.bodySmall.fontSize,
-                textDecoration = TextDecoration.Underline
-            )
-        }
-        else {
+            TextButton(
+                onClick = { onShowNfcGuideClick() },
+                // Remove default padding to make it look just like text
+                contentPadding = PaddingValues(0.dp)
+            ) {
+                Text(
+                    text = "How to use NFC",
+                    fontSize = MaterialTheme.typography.bodySmall.fontSize,
+                    textDecoration = TextDecoration.Underline
+                )
+            }
+        } else {
             Text(
                 text = "NFC not available",
-                color = MaterialTheme.colorScheme.onSecondaryFixedVariant,
+                color = MaterialTheme.colorScheme.primary,
                 fontSize = MaterialTheme.typography.bodySmall.fontSize,
                 textDecoration = TextDecoration.Underline
             )

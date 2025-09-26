@@ -32,11 +32,18 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.rounded.StarOutline
@@ -92,6 +99,8 @@ fun NfcUsageGuide(
             val deviceWidthInMm = nfcAntennaInfo.deviceWidth
             val deviceHeightInMm = nfcAntennaInfo.deviceHeight
             val availableAntennas = nfcAntennaInfo.availableNfcAntennas
+            val statusBarPaddingValues = WindowInsets.statusBars.asPaddingValues()
+            val topOffset = statusBarPaddingValues.calculateTopPadding()
 
             BoxWithConstraints(
                 modifier = Modifier
@@ -114,31 +123,34 @@ fun NfcUsageGuide(
                     onDisposed = onDisposed
                 )
 
-                IconButton(modifier = Modifier.padding(8.dp), onClick = onClose) {
-                    Icon(Icons.Filled.Close, contentDescription = "close")
+                IconButton(modifier = Modifier.padding(start = 8.dp, top = topOffset), onClick = onClose) {
+                    Icon(Icons.Filled.Close, contentDescription = "close", tint = MaterialTheme.colorScheme.onBackground)
                 }
 
                 Text(
                     text = "This screen shows the NFC antenna locations on your phone.",
                     style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onBackground,
                     textAlign = TextAlign.Center,
                     modifier = Modifier
                         .padding(16.dp)
-                        .offset(y = 48.dp)
+                        .offset(y = 48.dp + topOffset)
                 )
 
                 Text(
                     text = "To use NFC with your YubiKey, place it on the back of the phone at the antenna area.",
                     style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onBackground,
                     textAlign = TextAlign.Center,
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
-                        .padding(bottom = 72.dp, start = 16.dp, end = 16.dp)
+                        .padding(top = topOffset, bottom = 72.dp, start = 16.dp, end = 16.dp)
                 )
 
                 Text(
                     text = "Try that!",
                     style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onBackground,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center,
                     modifier = Modifier
@@ -187,7 +199,7 @@ fun NfcReader(
                     isoDep.connect()
                     activeTagConnection.value = isoDep
                     onTagDiscovered(tag)
-                } catch (e: IOException) {
+                } catch (_: IOException) {
                     activeTagConnection.value = null
                     onTagLost()
                 }
@@ -201,7 +213,7 @@ fun NfcReader(
             while (connection.isConnected) {
                 delay(500)
             }
-        } catch (e: SecurityException) {
+        } catch (_: SecurityException) {
             activeTagConnection.value = null
             onTagLost()
             return@LaunchedEffect

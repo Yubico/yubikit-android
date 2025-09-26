@@ -6,7 +6,7 @@
             android:name=".YubiKitFidoActivity"
             android:exported="false"
             android:label="@string/app_name"
-            android:theme="@android:style/Theme.Translucent.NoTitleBar.Fullscreen" />
+            android:theme="@style/Theme.FidoAndroid" />
     </application>
 
 </manifest>
