@@ -46,24 +46,17 @@ android {
 }
 
 dependencies {
-
-    implementation 'androidx.credentials:credentials:1.5.0'
-
     implementation project(':android')
     implementation project(':fido-android')
 
-    implementation 'commons-codec:commons-codec:1.19.0'
     implementation 'androidx.activity:activity-ktx:1.11.0'
-
-    implementation 'org.bouncycastle:bcpkix-jdk15to18:1.82'
-
-    api 'org.slf4j:slf4j-api:2.0.17'
-    api 'com.github.tony19:logback-android:3.0.0'
     implementation 'androidx.appcompat:appcompat:1.7.1'
-    implementation 'com.google.android.material:material:1.13.0'
-    implementation 'androidx.activity:activity:1.11.0'
+    implementation 'androidx.credentials:credentials:1.6.0-beta01'
     implementation 'androidx.constraintlayout:constraintlayout:2.2.1'
 
+    implementation 'org.bouncycastle:bcpkix-jdk15to18:1.82'
+    api 'org.slf4j:slf4j-api:2.0.17'
+    api 'com.github.tony19:logback-android:3.0.0'
 }
 
 description = "This library implements Credential Provider Service with YubiKit Fido2 functionality"
