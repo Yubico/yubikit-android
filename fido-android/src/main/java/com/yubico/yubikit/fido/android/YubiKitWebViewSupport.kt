@@ -42,27 +42,35 @@ import org.json.JSONObject
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-class YubiKitWebViewSupport {
+fun WebView.withYubiKitWebauthn(
+    coroutineScope: CoroutineScope,
+    yubiKitFidoClient: YubiKitFidoClient
+) = YubiKitWebViewSupport.withYubiKitWebauthn(this, coroutineScope, yubiKitFidoClient)
+
+
+internal class YubiKitWebViewSupport {
     companion object {
         private val logger: Logger = LoggerFactory.getLogger(YubiKitWebViewSupport::class.java)
 
+        @JvmStatic
         @SuppressLint("SetJavaScriptEnabled")
-        fun WebView.withYubiKitWebauthn(
+        fun withYubiKitWebauthn(
+            webView: WebView,
             coroutineScope: CoroutineScope,
             yubiKitFidoClient: YubiKitFidoClient
         ) {
             this.apply {
-                settings.javaScriptEnabled = true
+                webView.settings.javaScriptEnabled = true
             }
             val webauthnListener =
-                WebauthnListener(context, coroutineScope, yubiKitFidoClient)
+                WebauthnListener(webView.context, coroutineScope, yubiKitFidoClient)
             val webViewClient = object : WebViewClient() {
                 override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
                     super.onPageStarted(view, url, favicon)
                     logger.trace("onPageStarted: {}", url)
                     logger.trace("userAgent: {}", view?.settings?.userAgentString)
                     webauthnListener.onPageStarted();
-                    evaluateJavascript(JS, null)
+                    webView.evaluateJavascript(JS, null)
                 }
 
                 override fun onReceivedHttpAuthRequest(
@@ -88,12 +96,12 @@ class YubiKitWebViewSupport {
             val rules = setOf("*")
             if (WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)) {
                 WebViewCompat.addWebMessageListener(
-                    this, INTERFACE_NAME,
+                    webView, INTERFACE_NAME,
                     rules, webauthnListener
                 )
             }
 
-            this.webViewClient = webViewClient
+            webView.webViewClient = webViewClient
         }
 
         @OptIn(ExperimentalCoroutinesApi::class)
