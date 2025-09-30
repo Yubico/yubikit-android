@@ -16,6 +16,8 @@
 
 package com.yubico.yubikit.fido.android.ui
 
+import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialUserEntity
+
 sealed class UiState {
     data object WaitingForKey : UiState()
     data object WaitingForKeyAgain : UiState()
@@ -24,6 +26,10 @@ sealed class UiState {
     data object Success : UiState()
     data class Error(val error: com.yubico.yubikit.fido.android.ui.Error) : UiState()
     data class WaitingForPinEntry(val error: com.yubico.yubikit.fido.android.ui.Error?) : UiState()
+    data class MultipleAssertions(
+        val users: List<PublicKeyCredentialUserEntity>,
+        val onSelect: (Int) -> Unit
+    ) : UiState()
 }
 
 sealed class Error {

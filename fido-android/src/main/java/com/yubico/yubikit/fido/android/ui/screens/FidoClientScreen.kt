@@ -40,9 +40,11 @@ import com.yubico.yubikit.fido.android.FidoClientService
 import com.yubico.yubikit.fido.android.ui.Error
 import com.yubico.yubikit.fido.android.ui.UiState
 import com.yubico.yubikit.fido.client.ClientError
+import com.yubico.yubikit.fido.client.MultipleAssertionsAvailable
 import com.yubico.yubikit.fido.client.PinInvalidClientError
 import com.yubico.yubikit.fido.client.PinRequiredClientError
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredential
+import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialUserEntity
 
 @Composable
 fun FidoClientUi(
@@ -61,15 +63,31 @@ fun FidoClientUi(
     var pinValue: String? by remember { mutableStateOf(null) }
     var retryOperation by remember { mutableStateOf(false) }
     var tapAgain by remember { mutableStateOf(false) }
+    var multipleAssertions: MultipleAssertionsAvailable? by remember { mutableStateOf(null) }
 
     val uiState = produceState<UiState>(
         initialValue = UiState.WaitingForKey,
-        key1 = retryOperation
+        key1 = retryOperation,
+        key2 = multipleAssertions
     ) {
         try {
             if (result != null) {
                 fidoClientService.waitForKeyRemoval()
                 onResult(result!!)
+                return@produceState
+            }
+
+            multipleAssertions?.let { assertions ->
+                val users = try {
+                    assertions.getUsers()
+                } catch (_: Exception) {
+                    emptyList<PublicKeyCredentialUserEntity>()
+                }
+                value = UiState.MultipleAssertions(users) {
+                    result = assertions.select(it)
+                    multipleAssertions = null
+                    retryOperation = !retryOperation
+                }
                 return@produceState
             }
 
@@ -90,6 +108,11 @@ fun FidoClientUi(
                     return@produceState
                 }, onFailure = { error ->
                     val errorState = when (error) {
+                        is MultipleAssertionsAvailable -> {
+                            multipleAssertions = error
+                            return@produceState
+                        }
+
                         is PinRequiredClientError -> Error.PinRequiredError
                         is PinInvalidClientError -> Error.IncorrectPinError(
                             error.pinRetries
@@ -126,7 +149,6 @@ fun FidoClientUi(
                         }
                     }
                     return@produceState
-
                 })
         } catch (e: Exception) {
             value = UiState.Error(
@@ -212,6 +234,16 @@ fun FidoClientUi(
                         pinValue = null
                         retryOperation = !retryOperation
                     }
+                }
+
+                is UiState.MultipleAssertions -> {
+                    MultipleAssertionsScreen(
+                        operation = operation,
+                        origin = rpId,
+                        onCloseButtonClick = onCloseButtonClick,
+                        users = state.users,
+                        onSelect = state.onSelect
+                    )
                 }
             }
         }

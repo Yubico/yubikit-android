@@ -35,6 +35,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.yubico.yubikit.fido.android.FidoClientService
 import com.yubico.yubikit.fido.android.R
@@ -44,11 +45,12 @@ fun ContentWrapper(
     operation: FidoClientService.Operation,
     origin: String,
     onCloseButtonClick: (() -> Unit)? = null,
+    height: Dp = 225.dp,
     content: @Composable (() -> Unit)
 ) {
     Column(
         modifier = Modifier
-            .height(225.dp)
+            .height(height)
             .fillMaxWidth()
             .padding(top = 0.dp, start = 0.dp, end = 0.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
