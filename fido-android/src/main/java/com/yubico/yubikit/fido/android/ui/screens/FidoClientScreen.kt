@@ -145,13 +145,13 @@ fun FidoClientUi(
                         }
 
                         else -> {
-                            UiState.Error(errorState)
+                            UiState.OperationError(errorState)
                         }
                     }
                     return@produceState
                 })
         } catch (e: Exception) {
-            value = UiState.Error(
+            value = UiState.OperationError(
                 Error.UnknownError(
                     e.message
                 )
@@ -225,7 +225,7 @@ fun FidoClientUi(
                     SuccessView(operation = operation, origin = rpId)
                 }
 
-                is UiState.Error -> {
+                is UiState.OperationError -> {
                     ErrorView(
                         operation = operation,
                         origin = rpId,

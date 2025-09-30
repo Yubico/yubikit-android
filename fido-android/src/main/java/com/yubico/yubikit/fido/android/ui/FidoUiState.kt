@@ -24,8 +24,8 @@ sealed class UiState {
     data object Processing : UiState()
     data object TouchKey : UiState()
     data object Success : UiState()
-    data class Error(val error: com.yubico.yubikit.fido.android.ui.Error) : UiState()
-    data class WaitingForPinEntry(val error: com.yubico.yubikit.fido.android.ui.Error?) : UiState()
+    data class OperationError(val error: Error) : UiState()
+    data class WaitingForPinEntry(val error: Error?) : UiState()
     data class MultipleAssertions(
         val users: List<PublicKeyCredentialUserEntity>,
         val onSelect: (Int) -> Unit
