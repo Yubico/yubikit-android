@@ -37,6 +37,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
@@ -63,7 +64,7 @@ fun MultipleAssertionsScreen(
         height = height,
     ) {
         Text(
-            text = "Select a passkey (${users.size} available)",
+            text = stringResource(R.string.select_passkey, users.size),
             style = MaterialTheme.typography.titleMedium
         )
         Spacer(modifier = Modifier.height(16.dp))
@@ -96,7 +97,8 @@ fun MultipleAssertionsScreen(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = user.name ?: user.displayName ?: "User $idx",
+                            text = user.name ?: user.displayName
+                            ?: stringResource(R.string.passkey_index, idx),
                             style = MaterialTheme.typography.bodyLarge
                         )
                     }
