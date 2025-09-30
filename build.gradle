@@ -40,7 +40,7 @@ allprojects {
 }
 
 subprojects {
-    version = '2.9.0_1-fa'
+    version = '2.9.0_2-fa'
     ext.pomName = "Yubico YubiKit ${project.name.capitalize()}"
 
     tasks.withType(Javadoc).tap {
