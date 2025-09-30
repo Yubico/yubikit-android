@@ -36,6 +36,7 @@ sealed class Error {
     data object PinRequiredError : Error()
     data object PinBlockedError : Error()
     data object PinAuthBlockedError : Error()
+    data object DeviceIneligible : Error()
     data class IncorrectPinError(val remainingAttempts: Int?) : Error()
     data object OperationFailed : Error()
     data class UnknownError(val message: String?) : Error()

@@ -27,7 +27,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -74,15 +73,20 @@ fun ErrorView(
         Icon(
             imageVector = Icons.Default.Error,
             contentDescription = stringResource(R.string.error),
-            tint = Color.Red,
+            tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier.size(48.dp)
         )
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        if (error is Error.UnknownError) {
-            Text(text = error.message ?: stringResource(R.string.unknown_error))
-        }
+        Text(
+            text =
+                when (error) {
+                    is Error.DeviceIneligible -> stringResource(R.string.device_ineligible)
+                    is Error.UnknownError -> error.message ?: stringResource(R.string.unknown_error)
+                    else -> stringResource(R.string.unknown_error)
+                }
+        )
 
         Spacer(modifier = Modifier.height(16.dp))
 

@@ -14,6 +14,7 @@
     <string name="pin_blocked">PIN is blocked. You have to reset the key.</string>
     <string name="pin_auth_blocked">PIN authentication is blocked. Reconnect the key.</string>
     <string name="unknown_error">Unknown error</string>
+    <string name="device_ineligible">The security key cannot be used for this operation.</string>
     <string name="retry">Retry</string>
     <string name="error">Error</string>
     <string name="remove_the_key">Remove the key</string>

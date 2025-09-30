@@ -119,7 +119,9 @@ fun FidoClientUi(
                         )
 
                         is ClientError -> {
-                            if (error.cause is CtapException) {
+                            if (error.errorCode == ClientError.Code.DEVICE_INELIGIBLE) {
+                                Error.DeviceIneligible
+                            } else if (error.cause is CtapException) {
                                 when ((error.cause as CtapException).ctapError) {
                                     CtapException.ERR_PIN_BLOCKED -> Error.PinBlockedError
                                     CtapException.ERR_PIN_AUTH_BLOCKED -> Error.PinAuthBlockedError
@@ -142,6 +144,9 @@ fun FidoClientUi(
                         is Error.IncorrectPinError -> {
                             // Show PIN entry screen with error
                             UiState.WaitingForPinEntry(errorState)
+                        }
+                        is Error.DeviceIneligible -> {
+                            UiState.OperationError(errorState)
                         }
 
                         else -> {
