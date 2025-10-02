@@ -13,6 +13,7 @@
     <string name="incorrect_pin">Incorrect PIN.</string>
     <string name="pin_blocked">PIN is blocked. You have to reset the key.</string>
     <string name="pin_auth_blocked">PIN authentication is blocked. Reconnect the key.</string>
+    <string name="pin_successfully_created">PIN successfully created</string>
     <string name="unknown_error">Unknown error</string>
     <string name="device_ineligible">The security key cannot be used for this operation.</string>
     <string name="select_passkey">"Select a passkey (%1$d available)"</string>
@@ -23,4 +24,11 @@
     <string name="login_successful">Login with passkey was successful</string>
     <string name="dont_remove_the_key">Don\'t remove the key</string>
     <string name="touch_the_key">Touch the security key</string>
+    <string name="create_pin">Create PIN</string>
+    <string name="cancel">Cancel</string>
+    <string name="new_pin">New PIN (min %1$d characters)</string>
+    <string name="repeat_pin">Repeat PIN</string>
+    <string name="pin_is_not_complex_enough">PIN is not complex enough.</string>
+    <string name="creating_pin_failed">Creating PIN failed</string>
+    <string name="info_no_pin_set">The Security Key does not have a PIN set. You need to create a PIN to continue.</string>
 </resources>

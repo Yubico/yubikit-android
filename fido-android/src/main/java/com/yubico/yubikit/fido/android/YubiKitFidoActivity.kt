@@ -162,6 +162,7 @@ class YubiKitFidoActivity : ComponentActivity() {
                                 onDismissRequest = finishActivityWithCancel,
                             ) {
                                 FidoClientUi(
+                                    viewModel,
                                     params.operation,
                                     isUsb = viewModel.isUsb,
                                     isNfcAvailable =

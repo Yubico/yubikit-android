@@ -37,6 +37,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.yubico.yubikit.core.fido.CtapException
 import com.yubico.yubikit.fido.android.FidoClientService
+import com.yubico.yubikit.fido.android.MainViewModel
 import com.yubico.yubikit.fido.android.ui.Error
 import com.yubico.yubikit.fido.android.ui.UiState
 import com.yubico.yubikit.fido.client.ClientError
@@ -48,6 +49,7 @@ import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialUserEntity
 
 @Composable
 fun FidoClientUi(
+    viewModel: MainViewModel,
     operation: FidoClientService.Operation,
     isUsb: Boolean,
     isNfcAvailable: Boolean,
@@ -61,6 +63,7 @@ fun FidoClientUi(
 ) {
     var result: PublicKeyCredential? by remember { mutableStateOf(null) }
     var pinValue: String? by remember { mutableStateOf(null) }
+    var newPinValue: String? by remember { mutableStateOf(null) }
     var retryOperation by remember { mutableStateOf(false) }
     var tapAgain by remember { mutableStateOf(false) }
     var multipleAssertions: MultipleAssertionsAvailable? by remember { mutableStateOf(null) }
@@ -98,6 +101,32 @@ fun FidoClientUi(
                 value = UiState.WaitingForKey
             }
 
+            newPinValue?.let { newPin ->
+                pinValue?.let { pin ->
+                    // TODO change pin
+                } ?: run {
+                    // create pin
+                    fidoClientService.createPin(newPin)
+                        .fold(
+                            {
+                                // setting the PIN succeeded, will continue with original operation
+                                pinValue = newPin
+                                value = UiState.PinCreated
+                            },
+                            {
+                                val createPinError = when (it) {
+                                    is ClientError -> Error.PinComplexityError
+                                    else -> Error.UnknownError("Creating Pin Failed")
+                                }
+                                value = UiState.PinNotSetError(createPinError)
+                            }
+                        ).also {
+                            newPinValue = null
+                        }
+                    return@produceState
+                }
+            }
+
             fidoClientService.performOperation(pinValue, operation, rpId, clientDataHash, request) {
                 value = if (isUsb) UiState.TouchKey else UiState.Processing
             }
@@ -121,6 +150,8 @@ fun FidoClientUi(
                         is ClientError -> {
                             if (error.errorCode == ClientError.Code.DEVICE_INELIGIBLE) {
                                 Error.DeviceIneligible
+                            } else if (error.errorCode == ClientError.Code.BAD_REQUEST) {
+                                resolveBadRequest(error)
                             } else if (error.cause is CtapException) {
                                 when ((error.cause as CtapException).ctapError) {
                                     CtapException.ERR_PIN_BLOCKED -> Error.PinBlockedError
@@ -145,6 +176,12 @@ fun FidoClientUi(
                             // Show PIN entry screen with error
                             UiState.WaitingForPinEntry(errorState)
                         }
+
+                        is Error.PinNotSetError -> {
+                            // Ask the user to create a PIN
+                            UiState.PinNotSetError(null)
+                        }
+
                         is Error.DeviceIneligible -> {
                             UiState.OperationError(errorState)
                         }
@@ -218,6 +255,31 @@ fun FidoClientUi(
                     }
                 }
 
+                is UiState.PinNotSetError -> {
+                    CreatePinScreen(
+                        operation = operation,
+                        origin = rpId,
+                        error = state.error,
+                        minPinLen = viewModel.info?.minPinLength ?: DEFAULT_MIN_PIN_LENGTH,
+                        onCloseButtonClick = onCloseButtonClick,
+                    ) {
+                        newPinValue = it.ifEmpty { null }
+                        retryOperation = !retryOperation
+                        tapAgain = true
+                    }
+                }
+
+                is UiState.PinCreated -> {
+                    PinCreatedScreen(
+                        operation = operation,
+                        origin = rpId,
+                        onCloseButtonClick = onCloseButtonClick,
+                    ) {
+                        retryOperation = !retryOperation
+                        tapAgain = true
+                    }
+                }
+
                 is UiState.Processing -> {
                     Processing(operation = operation, origin = rpId) {}
                 }
@@ -254,4 +316,28 @@ fun FidoClientUi(
         }
 
     }
+}
+
+private fun resolveBadRequest(
+    error: ClientError
+): Error {
+    // If error has a cause, try to resolve using that
+    error.cause?.let { cause ->
+        if (cause is CtapException) {
+            return when (cause.ctapError) {
+                CtapException.ERR_PIN_BLOCKED -> Error.PinBlockedError
+                CtapException.ERR_PIN_AUTH_BLOCKED -> Error.PinAuthBlockedError
+                CtapException.ERR_PIN_INVALID -> Error.IncorrectPinError(null)
+                CtapException.ERR_PIN_NOT_SET -> Error.PinNotSetError
+                CtapException.ERR_PIN_POLICY_VIOLATION -> Error.IncorrectPinError(null)
+                CtapException.ERR_UV_BLOCKED -> Error.OperationFailed
+                CtapException.ERR_UV_INVALID -> Error.OperationFailed
+                CtapException.ERR_OPERATION_DENIED -> Error.OperationFailed
+                else -> Error.UnknownError(cause.message ?: "Unknown CTAP error")
+            }
+        }
+        // If cause is not a CtapException, fallback to generic error
+        return Error.OperationFailed
+    }
+    return Error.UnknownError(error.message ?: "Unknown error")
 }

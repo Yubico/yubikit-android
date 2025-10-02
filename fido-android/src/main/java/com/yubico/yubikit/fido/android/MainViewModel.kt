@@ -36,6 +36,8 @@ class MainViewModel : ViewModel() {
     private val _nfcAvailable = MutableLiveData(false)
     val isNfcAvailable: LiveData<Boolean> = _nfcAvailable
 
+    var info: Ctap2Session.InfoData? = null
+
     private val _device = MutableLiveData<YubiKeyDevice?>()
     val device: LiveData<YubiKeyDevice?> = _device
 
@@ -75,11 +77,12 @@ class MainViewModel : ViewModel() {
         // directly use the device if it is a USB YubiKey
         (_device.value as? UsbYubiKeyDevice?)?.let { usbDevice ->
             return suspendCoroutine { inner ->
-                Ctap2Session.create(usbDevice) {
+                Ctap2Session.create(usbDevice) { result ->
                     inner.resume(runCatching {
+                        info = result.value.cachedInfo
                         extensions?.let { ext ->
-                            action.invoke(BasicWebAuthnClient(it.value, ext))
-                        } ?: action.invoke(BasicWebAuthnClient(it.value))
+                            action.invoke(BasicWebAuthnClient(result.value, ext))
+                        } ?: action.invoke(BasicWebAuthnClient(result.value))
                     })
                 }
             }
@@ -88,11 +91,12 @@ class MainViewModel : ViewModel() {
             _pendingYubiKeyAction.postValue { result ->
                 outer.resumeWith(runCatching {
                     suspendCoroutine { inner ->
-                        Ctap2Session.create(result.value) {
+                        Ctap2Session.create(result.value) { result ->
                             inner.resume(runCatching {
+                                info = result.value.cachedInfo
                                 extensions?.let { ext ->
-                                    action.invoke(BasicWebAuthnClient(it.value, ext))
-                                } ?: action.invoke(BasicWebAuthnClient(it.value))
+                                    action.invoke(BasicWebAuthnClient(result.value, ext))
+                                } ?: action.invoke(BasicWebAuthnClient(result.value))
                             })
                         }
                     }

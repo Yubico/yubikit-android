@@ -16,7 +16,9 @@
 
 package com.yubico.yubikit.fido.android
 
+import com.yubico.yubikit.core.fido.CtapException
 import com.yubico.yubikit.fido.android.util.toMap
+import com.yubico.yubikit.fido.client.ClientError
 import com.yubico.yubikit.fido.client.PinRequiredClientError
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredential
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialCreationOptions
@@ -87,6 +89,14 @@ class FidoClientService(private val viewModel: MainViewModel = MainViewModel()) 
                    the most appropriate error
                  */
                 throw PinRequiredClientError()
+            }
+
+            if (client.isPinSupported && !client.isPinConfigured) {
+                // there is not PIN set on the key, we deliberately don't allow this
+                throw ClientError(
+                    ClientError.Code.BAD_REQUEST,
+                    CtapException(CtapException.ERR_PIN_NOT_SET)
+                )
             }
 
             val requestJson = JSONObject(request).toMap()
@@ -166,5 +176,12 @@ class FidoClientService(private val viewModel: MainViewModel = MainViewModel()) 
                 )
             }
         }
+
+    suspend fun createPin(
+        pin: String,
+    ) = viewModel.useWebAuthn { client ->
+        client.setPin(pin.toCharArray())
+    }
+
 }
 
