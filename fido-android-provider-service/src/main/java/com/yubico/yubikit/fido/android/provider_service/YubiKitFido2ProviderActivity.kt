@@ -82,8 +82,7 @@ class YubiKitFido2ProviderActivity : ComponentActivity() {
             ?: return false
         val origin = extractOrigin(
             request.callingAppInfo,
-            createPublicKeyCredentialRequest.requestJson,
-            "id"
+            createPublicKeyCredentialRequest.requestJson
         ).getOrElse { return reportCreateCredentialError(it) }
 
         launchCredentialFlow(
@@ -117,8 +116,7 @@ class YubiKitFido2ProviderActivity : ComponentActivity() {
             ?: return false
         val origin = extractOrigin(
             request.callingAppInfo,
-            getPublicKeyCredentialOption.requestJson,
-            "rpId"
+            getPublicKeyCredentialOption.requestJson
         ).getOrElse { return reportGetCredentialError(it) }
 
         launchCredentialFlow(
@@ -190,8 +188,7 @@ class YubiKitFido2ProviderActivity : ComponentActivity() {
 
     private fun extractOrigin(
         appInfo: CallingAppInfo,
-        requestJson: String,
-        rpField: String
+        requestJson: String
     ): Result<String> {
         return runCatching {
             if (appInfo.isOriginPopulated()) {
@@ -199,7 +196,18 @@ class YubiKitFido2ProviderActivity : ComponentActivity() {
                 appInfo.getOrigin(allowList)
                     ?: throw NullPointerException("Origin is null from allowList")
             } else {
-                "https://" + JSONObject(requestJson).getJSONObject("rp").getString(rpField)
+                val rpId = "rpId"
+                val rp = "rp"
+                val id = "id"
+
+                val request = JSONObject(requestJson)
+                "https://" + if (request.has(rpId)) {
+                    request.getString(rpId)
+                } else if (request.has(rp)) {
+                    request.getJSONObject(rp).getString(id)
+                } else {
+                    throw IllegalArgumentException("Failed to extract origin")
+                }
             }
         }
     }
