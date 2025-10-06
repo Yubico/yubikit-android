@@ -29,6 +29,10 @@
     <string name="new_pin">New PIN (min %1$d characters)</string>
     <string name="repeat_pin">Repeat PIN</string>
     <string name="pin_is_not_complex_enough">PIN is not complex enough.</string>
+    <string name="ctap_err_no_credentials">No passkeys for %1$s exist on the security key.</string>
+    <string name="ctap_err_user_action_timeout">The operation timed out. Please try again.</string>
+    <string name="ctap_err_key_store_full">There is no space free for passkeys on the security key. Please remove an existing passkey to create a new one.</string>
+    <string name="ctap_err_puat_required">User verification is required for the operation, but the security key is not configured. Please configure the key by creating a PIN and try again.</string>
     <string name="creating_pin_failed">Creating PIN failed</string>
     <string name="info_no_pin_set">The Security Key does not have a PIN set. You need to create a PIN to continue.</string>
 </resources>

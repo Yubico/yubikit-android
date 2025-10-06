@@ -148,18 +148,14 @@ fun FidoClientUi(
                         )
 
                         is ClientError -> {
-                            if (error.errorCode == ClientError.Code.DEVICE_INELIGIBLE) {
-                                Error.DeviceIneligible
-                            } else if (error.errorCode == ClientError.Code.BAD_REQUEST) {
-                                resolveBadRequest(error)
-                            } else if (error.cause is CtapException) {
-                                when ((error.cause as CtapException).ctapError) {
-                                    CtapException.ERR_PIN_BLOCKED -> Error.PinBlockedError
-                                    CtapException.ERR_PIN_AUTH_BLOCKED -> Error.PinAuthBlockedError
-                                    else -> Error.OperationFailed
-                                }
-                            } else {
-                                Error.OperationFailed
+                            when((error.cause as? CtapException)?.ctapError) {
+                                CtapException.ERR_PIN_BLOCKED -> Error.PinBlockedError
+                                CtapException.ERR_PIN_AUTH_BLOCKED -> Error.PinAuthBlockedError
+                                CtapException.ERR_PIN_INVALID -> Error.IncorrectPinError(null)
+                                CtapException.ERR_PIN_NOT_SET -> Error.PinNotSetError
+                                CtapException.ERR_PIN_POLICY_VIOLATION -> Error.IncorrectPinError(null)
+                                // others will get an Error view with textual description of the error
+                                else -> Error.OperationError(error.cause)
                             }
                         }
 
@@ -179,11 +175,7 @@ fun FidoClientUi(
 
                         is Error.PinNotSetError -> {
                             // Ask the user to create a PIN
-                            UiState.PinNotSetError(null)
-                        }
-
-                        is Error.DeviceIneligible -> {
-                            UiState.OperationError(errorState)
+                            UiState.PinNotSetError()
                         }
 
                         else -> {
@@ -292,6 +284,16 @@ fun FidoClientUi(
                     SuccessView(operation = operation, origin = rpId)
                 }
 
+                is UiState.MultipleAssertions -> {
+                    MultipleAssertionsScreen(
+                        operation = operation,
+                        origin = rpId,
+                        onCloseButtonClick = onCloseButtonClick,
+                        users = state.users,
+                        onSelect = state.onSelect
+                    )
+                }
+
                 is UiState.OperationError -> {
                     ErrorView(
                         operation = operation,
@@ -302,42 +304,8 @@ fun FidoClientUi(
                         retryOperation = !retryOperation
                     }
                 }
-
-                is UiState.MultipleAssertions -> {
-                    MultipleAssertionsScreen(
-                        operation = operation,
-                        origin = rpId,
-                        onCloseButtonClick = onCloseButtonClick,
-                        users = state.users,
-                        onSelect = state.onSelect
-                    )
-                }
             }
         }
 
     }
-}
-
-private fun resolveBadRequest(
-    error: ClientError
-): Error {
-    // If error has a cause, try to resolve using that
-    error.cause?.let { cause ->
-        if (cause is CtapException) {
-            return when (cause.ctapError) {
-                CtapException.ERR_PIN_BLOCKED -> Error.PinBlockedError
-                CtapException.ERR_PIN_AUTH_BLOCKED -> Error.PinAuthBlockedError
-                CtapException.ERR_PIN_INVALID -> Error.IncorrectPinError(null)
-                CtapException.ERR_PIN_NOT_SET -> Error.PinNotSetError
-                CtapException.ERR_PIN_POLICY_VIOLATION -> Error.IncorrectPinError(null)
-                CtapException.ERR_UV_BLOCKED -> Error.OperationFailed
-                CtapException.ERR_UV_INVALID -> Error.OperationFailed
-                CtapException.ERR_OPERATION_DENIED -> Error.OperationFailed
-                else -> Error.UnknownError(cause.message ?: "Unknown CTAP error")
-            }
-        }
-        // If cause is not a CtapException, fallback to generic error
-        return Error.OperationFailed
-    }
-    return Error.UnknownError(error.message ?: "Unknown error")
 }

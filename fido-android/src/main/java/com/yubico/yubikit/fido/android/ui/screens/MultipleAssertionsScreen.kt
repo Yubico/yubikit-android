@@ -61,7 +61,7 @@ fun MultipleAssertionsScreen(
         operation = operation,
         origin = origin,
         onCloseButtonClick = onCloseButtonClick,
-        height = height,
+        contentHeight = height,
     ) {
         Text(
             text = stringResource(R.string.select_passkey, users.size),

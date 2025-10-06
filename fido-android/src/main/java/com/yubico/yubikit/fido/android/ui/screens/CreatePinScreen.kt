@@ -88,7 +88,7 @@ fun CreatePinScreen(
         operation = operation,
         origin = origin,
         onCloseButtonClick = onCloseButtonClick,
-        height = 320.dp
+        contentHeight = 320.dp
     ) {
         Text(
             text = stringResource(R.string.info_no_pin_set),
@@ -214,7 +214,7 @@ fun PinCreatedScreen(
     ContentWrapper(
         operation = operation,
         origin = origin,
-        height = 200.dp,
+        contentHeight = 200.dp,
         onCloseButtonClick = onCloseButtonClick
     ) {
         Text(

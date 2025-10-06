@@ -18,7 +18,9 @@ package com.yubico.yubikit.fido.android.ui.screens
 
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material3.Button
@@ -30,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.yubico.yubikit.core.fido.CtapException
 import com.yubico.yubikit.fido.android.FidoClientService
 import com.yubico.yubikit.fido.android.R
 import com.yubico.yubikit.fido.android.ui.Error
@@ -66,6 +69,7 @@ fun ErrorView(
     onRetry: () -> Unit
 ) {
     ContentWrapper(
+        modifier = Modifier.wrapContentSize(),
         operation = operation,
         origin = origin,
         onCloseButtonClick = null
@@ -80,10 +84,42 @@ fun ErrorView(
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
+            modifier = Modifier.padding(horizontal = 8.dp),
             text =
                 when (error) {
-                    is Error.DeviceIneligible -> stringResource(R.string.device_ineligible)
+                    is Error.OperationError -> {
+                        error.exception?.let { ex ->
+                            when (ex) {
+                                is CtapException -> {
+                                    when (ex.ctapError) {
+                                        CtapException.ERR_NO_CREDENTIALS -> stringResource(
+                                            R.string.ctap_err_no_credentials,
+                                            origin
+                                        )
+
+                                        CtapException.ERR_USER_ACTION_TIMEOUT -> stringResource(
+                                            R.string.ctap_err_user_action_timeout
+                                        )
+
+                                        CtapException.ERR_KEY_STORE_FULL -> stringResource(
+                                            R.string.ctap_err_key_store_full
+                                        )
+
+                                        CtapException.ERR_PUAT_REQUIRED -> stringResource(
+                                            R.string.ctap_err_puat_required
+                                        )
+
+                                        else -> stringResource(R.string.unknown_error)
+                                    }
+                                }
+
+                                else -> stringResource(R.string.unknown_error)
+                            }
+                        } ?: stringResource(R.string.unknown_error)
+                    }
+
                     is Error.UnknownError -> error.message ?: stringResource(R.string.unknown_error)
+
                     else -> stringResource(R.string.unknown_error)
                 }
         )

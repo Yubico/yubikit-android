@@ -25,7 +25,7 @@ sealed class UiState {
     data object TouchKey : UiState()
     data object Success : UiState()
     data object PinCreated : UiState()
-    data class PinNotSetError(val error: Error?) : UiState()
+    data class PinNotSetError(val error: Error? = null) : UiState()
     data class OperationError(val error: Error) : UiState()
     data class WaitingForPinEntry(val error: Error?) : UiState()
     data class MultipleAssertions(
@@ -40,8 +40,7 @@ sealed class Error {
     data object PinNotSetError : Error()
     data object PinBlockedError : Error()
     data object PinAuthBlockedError : Error()
-    data object DeviceIneligible : Error()
     data class IncorrectPinError(val remainingAttempts: Int?) : Error()
-    data object OperationFailed : Error()
+    data class OperationError(val exception: Throwable?) : Error()
     data class UnknownError(val message: String?) : Error()
 }

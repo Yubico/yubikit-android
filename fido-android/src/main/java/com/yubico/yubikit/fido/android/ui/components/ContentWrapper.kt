@@ -20,11 +20,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
@@ -42,17 +43,18 @@ import com.yubico.yubikit.fido.android.R
 
 @Composable
 fun ContentWrapper(
+    modifier: Modifier = Modifier,
     operation: FidoClientService.Operation,
     origin: String,
     onCloseButtonClick: (() -> Unit)? = null,
-    height: Dp = 225.dp,
+    contentHeight: Dp = 100.dp,
     content: @Composable (() -> Unit)
 ) {
     Column(
-        modifier = Modifier
-            .height(height)
+        modifier = modifier
             .fillMaxWidth()
-            .padding(top = 0.dp, start = 0.dp, end = 0.dp),
+            .padding(top = 0.dp, start = 0.dp, end = 0.dp)
+            .wrapContentHeight(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top
     ) {
@@ -82,7 +84,9 @@ fun ContentWrapper(
 
         }
         Column(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .defaultMinSize(minHeight = contentHeight),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
