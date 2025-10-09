@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -61,6 +62,7 @@ fun SuccessView(operation: FidoClientService.Operation, origin: String) {
     }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun ErrorView(
     operation: FidoClientService.Operation,
@@ -84,7 +86,8 @@ fun ErrorView(
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            modifier = Modifier.padding(horizontal = 8.dp),
+            modifier = Modifier.padding(horizontal = 32.dp),
+            style = MaterialTheme.typography.bodySmallEmphasized,
             text =
                 when (error) {
                     is Error.OperationError -> {
@@ -109,6 +112,10 @@ fun ErrorView(
                                             R.string.ctap_err_puat_required
                                         )
 
+                                        CtapException.ERR_UV_INVALID -> stringResource(
+                                            R.string.ctap_err_uv_invalid
+                                        )
+
                                         else -> stringResource(R.string.unknown_error)
                                     }
                                 }
@@ -117,6 +124,8 @@ fun ErrorView(
                             }
                         } ?: stringResource(R.string.unknown_error)
                     }
+
+                    is Error.DeviceNotConfiguredError -> stringResource(R.string.device_not_configured)
 
                     is Error.UnknownError -> error.message ?: stringResource(R.string.unknown_error)
 

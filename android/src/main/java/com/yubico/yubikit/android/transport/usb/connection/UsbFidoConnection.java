@@ -12,7 +12,7 @@ import com.yubico.yubikit.core.fido.FidoConnection;
 import java.io.IOException;
 
 public class UsbFidoConnection extends UsbYubiKeyConnection implements FidoConnection {
-  private static final int TIMEOUT = 1000;
+  private static final int TIMEOUT = 3000;
 
   private final UsbDeviceConnection connection;
   private final UsbEndpoint bulkIn;

@@ -10,12 +10,13 @@
     <string name="icon_content_description_password">Password</string>
     <string name="passkey_created">Passkey successfully created</string>
     <string name="incorrect_pin_with_attempts">Incorrect PIN. %1$d attempts remaining.</string>
+    <string name="incorrect_uv_with_attempts">Incorrect PIN. %1$d attempts remaining.</string>
     <string name="incorrect_pin">Incorrect PIN.</string>
     <string name="pin_blocked">PIN is blocked. You have to reset the key.</string>
     <string name="pin_auth_blocked">PIN authentication is blocked. Reconnect the key.</string>
     <string name="pin_successfully_created">PIN successfully created</string>
     <string name="unknown_error">Unknown error</string>
-    <string name="device_ineligible">The security key cannot be used for this operation.</string>
+    <string name="device_not_configured">The security key cannot be used, make sure PIN is set.</string>
     <string name="select_passkey">"Select a passkey (%1$d available)"</string>
     <string name="passkey_index">Passkey %1$d</string>
     <string name="retry">Retry</string>
@@ -33,6 +34,10 @@
     <string name="ctap_err_user_action_timeout">The operation timed out. Please try again.</string>
     <string name="ctap_err_key_store_full">There is no space free for passkeys on the security key. Please remove an existing passkey to create a new one.</string>
     <string name="ctap_err_puat_required">User verification is required for the operation, but the security key is not configured. Please configure the key by creating a PIN and try again.</string>
+    <string name="ctap_err_uv_invalid">Fingerprint did not match. Please try again.\n%1$d retries left.</string>
+    <string name="ctap_err_uv_invalid_use_pin">Fingerprint did not match, please use PIN.</string>
+    <string name="ctap_err_uv_unknown">There was an error when matching the fingerprint.</string>
     <string name="creating_pin_failed">Creating PIN failed</string>
     <string name="info_no_pin_set">The Security Key does not have a PIN set. You need to create a PIN to continue.</string>
+    <string name="fingerprint_icon">fingerprint icon</string>
 </resources>

@@ -44,8 +44,11 @@ import com.yubico.yubikit.fido.client.ClientError
 import com.yubico.yubikit.fido.client.MultipleAssertionsAvailable
 import com.yubico.yubikit.fido.client.PinInvalidClientError
 import com.yubico.yubikit.fido.client.PinRequiredClientError
+import com.yubico.yubikit.fido.client.UvInvalidClientError
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredential
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialUserEntity
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 @Composable
 fun FidoClientUi(
@@ -67,6 +70,7 @@ fun FidoClientUi(
     var retryOperation by remember { mutableStateOf(false) }
     var tapAgain by remember { mutableStateOf(false) }
     var multipleAssertions: MultipleAssertionsAvailable? by remember { mutableStateOf(null) }
+    val logger: Logger = LoggerFactory.getLogger("FidoClientUi")
 
     val uiState = produceState<UiState>(
         initialValue = UiState.WaitingForKey,
@@ -136,6 +140,7 @@ fun FidoClientUi(
                     retryOperation = !retryOperation
                     return@produceState
                 }, onFailure = { error ->
+                    logger.error("Operation failed: ", error)
                     val errorState = when (error) {
                         is MultipleAssertionsAvailable -> {
                             multipleAssertions = error
@@ -147,15 +152,32 @@ fun FidoClientUi(
                             error.pinRetries
                         )
 
+                        is UvInvalidClientError -> Error.IncorrectUvError(
+                            error.retries
+                        )
+
                         is ClientError -> {
-                            when((error.cause as? CtapException)?.ctapError) {
-                                CtapException.ERR_PIN_BLOCKED -> Error.PinBlockedError
-                                CtapException.ERR_PIN_AUTH_BLOCKED -> Error.PinAuthBlockedError
-                                CtapException.ERR_PIN_INVALID -> Error.IncorrectPinError(null)
-                                CtapException.ERR_PIN_NOT_SET -> Error.PinNotSetError
-                                CtapException.ERR_PIN_POLICY_VIOLATION -> Error.IncorrectPinError(null)
-                                // others will get an Error view with textual description of the error
-                                else -> Error.OperationError(error.cause)
+                            when (error.errorCode) {
+                                ClientError.Code.CONFIGURATION_UNSUPPORTED -> Error.DeviceNotConfiguredError
+
+                                else ->
+                                    when ((error.cause as? CtapException)?.ctapError) {
+                                        CtapException.ERR_PIN_BLOCKED -> Error.PinBlockedError
+                                        CtapException.ERR_PIN_AUTH_BLOCKED -> Error.PinAuthBlockedError
+                                        CtapException.ERR_PIN_INVALID -> Error.IncorrectPinError(
+                                            null
+                                        )
+
+                                        CtapException.ERR_PIN_NOT_SET -> Error.PinNotSetError
+                                        CtapException.ERR_PIN_POLICY_VIOLATION -> Error.IncorrectPinError(
+                                            null
+                                        )
+                                        // on ERR_UV_BLOCKED show the PIN entry dialog
+                                        CtapException.ERR_UV_BLOCKED,
+                                        CtapException.ERR_PUAT_REQUIRED -> Error.UvBlockedError
+                                        // others will get an Error view with textual description of the error
+                                        else -> Error.OperationError(error.cause)
+                                    }
                             }
                         }
 
@@ -168,9 +190,15 @@ fun FidoClientUi(
                         is Error.PinRequiredError,
                         is Error.PinBlockedError,
                         is Error.PinAuthBlockedError,
+                        is Error.UvBlockedError,
                         is Error.IncorrectPinError -> {
                             // Show PIN entry screen with error
                             UiState.WaitingForPinEntry(errorState)
+                        }
+
+                        is Error.IncorrectUvError -> {
+                            // Show UV screen with error
+                            UiState.WaitingForUvEntry(errorState)
                         }
 
                         is Error.PinNotSetError -> {
@@ -244,6 +272,17 @@ fun FidoClientUi(
                         }
                         retryOperation = !retryOperation
                         tapAgain = true
+                    }
+                }
+
+                is UiState.WaitingForUvEntry -> {
+                    MatchFingerprint(
+                        operation = operation,
+                        origin = rpId,
+                        error = state.error,
+                        onCloseButtonClick = onCloseButtonClick
+                    ) {
+                        retryOperation = !retryOperation
                     }
                 }
 

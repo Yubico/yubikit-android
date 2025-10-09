@@ -842,10 +842,7 @@ public class BasicWebAuthnClient implements Closeable {
     if (mc && hasUvConfigured && !Boolean.TRUE.equals(options.get(OPTION_MC_UV_NOT_RQD))) {
       return true;
     }
-    if (hasUvConfigured && additionalPerms != 0) {
-      return true;
-    }
-    return false;
+    return hasUvConfigured && additionalPerms != 0;
   }
 
   @Nullable
@@ -858,12 +855,15 @@ public class BasicWebAuthnClient implements Closeable {
       throws IOException, CommandException, ClientError {
     final Ctap2Session.InfoData info = ctap.getCachedInfo();
 
-    if (uvConfigured && clientPin.getUvRetries() > 0) {
+    if (uvConfigured && pin == null) {
       if (ClientPin.isTokenSupported(info)) {
-        return clientPin.getUvToken(permissions, rpId, state);
-      } else if (allowInternalUv) {
-        return null;
+        if (clientPin.getUvRetries() > 0) {
+          return clientPin.getUvToken(permissions, rpId, state);
+        } else if (allowInternalUv) {
+          return null;
+        }
       }
+      return null;
     }
 
     if (pinConfigured) {
@@ -898,7 +898,7 @@ public class BasicWebAuthnClient implements Closeable {
       }
     }
 
-    return new AuthParams(pinToken, /* clientPin.getPinUvAuth(), null,*/ internalUv);
+    return new AuthParams(pinToken, internalUv);
   }
 
   /**
@@ -998,14 +998,18 @@ public class BasicWebAuthnClient implements Closeable {
       byte[] clientDataHash = new byte[32];
       Arrays.fill(clientDataHash, (byte) 0x00);
 
+      Map<String, Boolean> options = new HashMap<>();
+      options.put("up", false);
+
       byte[] pinAuth = null;
       Integer pinUvAuthVersion = null;
       if (pinUvAuthToken != null && pinUvAuthProtocol != null) {
         pinAuth = pinUvAuthProtocol.authenticate(pinUvAuthToken, clientDataHash);
         pinUvAuthVersion = pinUvAuthProtocol.getVersion();
+      } else {
+        options.put("uv", true);
       }
 
-      final Map<String, Boolean> upFalse = Collections.singletonMap("up", false);
       while (!creds.isEmpty()) {
         Logger.trace(logger, "Pre-flighting list of {} credentials", creds.size());
         final List<PublicKeyCredentialDescriptor> chunk =
@@ -1017,7 +1021,7 @@ public class BasicWebAuthnClient implements Closeable {
                   clientDataHash,
                   getCredentialList(chunk),
                   null,
-                  upFalse,
+                  options,
                   pinAuth,
                   pinUvAuthVersion,
                   null);

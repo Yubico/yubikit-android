@@ -28,6 +28,7 @@ sealed class UiState {
     data class PinNotSetError(val error: Error? = null) : UiState()
     data class OperationError(val error: Error) : UiState()
     data class WaitingForPinEntry(val error: Error?) : UiState()
+    data class WaitingForUvEntry(val error: Error?) : UiState()
     data class MultipleAssertions(
         val users: List<PublicKeyCredentialUserEntity>,
         val onSelect: (Int) -> Unit
@@ -40,7 +41,10 @@ sealed class Error {
     data object PinNotSetError : Error()
     data object PinBlockedError : Error()
     data object PinAuthBlockedError : Error()
+    data object UvBlockedError : Error()
+    data object DeviceNotConfiguredError : Error()
     data class IncorrectPinError(val remainingAttempts: Int?) : Error()
+    data class IncorrectUvError(val remainingAttempts: Int) : Error()
     data class OperationError(val exception: Throwable?) : Error()
     data class UnknownError(val message: String?) : Error()
 }
