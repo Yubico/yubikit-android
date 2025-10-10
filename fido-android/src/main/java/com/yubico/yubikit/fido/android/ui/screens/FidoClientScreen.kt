@@ -158,9 +158,10 @@ fun FidoClientUi(
 
                         is ClientError -> {
                             when (error.errorCode) {
-                                ClientError.Code.CONFIGURATION_UNSUPPORTED -> Error.DeviceNotConfiguredError
-
-                                else ->
+                                ClientError.Code.CONFIGURATION_UNSUPPORTED -> when((error.cause as? CtapException)?.ctapError) {
+                                    CtapException.ERR_KEY_STORE_FULL -> Error.OperationError(error.cause)
+                                    else -> Error.DeviceNotConfiguredError
+                                } else ->
                                     when ((error.cause as? CtapException)?.ctapError) {
                                         CtapException.ERR_PIN_BLOCKED -> Error.PinBlockedError
                                         CtapException.ERR_PIN_AUTH_BLOCKED -> Error.PinAuthBlockedError
