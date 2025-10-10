@@ -58,10 +58,6 @@ class FidoClientService(private val viewModel: MainViewModel = MainViewModel()) 
         }
     }
 
-    suspend fun waitForKeyRemoval() {
-        viewModel.waitForKeyRemoval()
-    }
-
     private fun buildClientData(
         type: String, origin: String, challenge: String
     ): ByteArray {

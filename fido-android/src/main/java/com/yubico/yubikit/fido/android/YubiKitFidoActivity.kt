@@ -123,13 +123,16 @@ class YubiKitFidoActivity : ComponentActivity() {
                     }
 
                     val finishActivityWithResult: (PublicKeyCredential) -> Unit = { result ->
-                        setResult(
-                            RESULT_OK, intent.putExtra(
-                                "credential",
-                                JSONObject(result.toMap(SerializationType.JSON)).toString()
+                        scope.launch {
+                            viewModel.waitForKeyRemoval()
+                            setResult(
+                                RESULT_OK, intent.putExtra(
+                                    "credential",
+                                    JSONObject(result.toMap(SerializationType.JSON)).toString()
+                                )
                             )
-                        )
-                        finishActivity()
+                            finishActivity()
+                        }
                     }
 
                     BackHandler(enabled = nfcGuideVisible) {
@@ -171,7 +174,9 @@ class YubiKitFidoActivity : ComponentActivity() {
                                     params.request,
                                     params.clientDataHash?.toByteArray(),
                                     fidoClientService = fidoClientService,
-                                    onResult = { finishActivityWithResult(it) },
+                                    onResult = {
+                                        finishActivityWithResult(it)
+                                    },
                                     onShowNfcGuideClick = {
                                         nfcGuideVisible = true
                                         bottomSheetVisible = false
