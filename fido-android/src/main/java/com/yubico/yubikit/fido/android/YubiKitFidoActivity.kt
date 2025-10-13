@@ -167,7 +167,6 @@ class YubiKitFidoActivity : ComponentActivity() {
                                 FidoClientUi(
                                     viewModel,
                                     params.operation,
-                                    isUsb = viewModel.isUsb,
                                     isNfcAvailable =
                                         viewModel.isNfcAvailable.observeAsState(false).value,
                                     params.rpId,

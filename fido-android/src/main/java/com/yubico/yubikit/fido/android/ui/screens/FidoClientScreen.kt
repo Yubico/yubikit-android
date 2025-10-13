@@ -43,7 +43,6 @@ import com.yubico.yubikit.fido.webauthn.PublicKeyCredential
 fun FidoClientUi(
     viewModel: MainViewModel,
     operation: FidoClientService.Operation,
-    isUsb: Boolean,
     isNfcAvailable: Boolean,
     rpId: String,
     request: String,
@@ -56,14 +55,13 @@ fun FidoClientUi(
     val uiState by viewModel.uiState.collectAsState()
     val latestOnResult = remember(onResult) { onResult }
 
-    LaunchedEffect(operation, rpId, request, clientDataHash, isUsb) {
+    LaunchedEffect(operation, rpId, request, clientDataHash) {
         viewModel.startFidoOperation(
             fidoClientService,
             operation,
             rpId,
             request,
             clientDataHash,
-            isUsb,
             latestOnResult
         )
     }
@@ -110,10 +108,10 @@ fun FidoClientUi(
                         operation = operation,
                         origin = rpId,
                         error = state.error,
-                        pin = "",
+                        pin = state.pin,
                         onCloseButtonClick = onCloseButtonClick
                     ) {
-                        viewModel.enterPin(it)
+                        viewModel.onEnterPin(it)
                         viewModel.retryOperation(fidoClientService)
                     }
                 }
@@ -124,8 +122,12 @@ fun FidoClientUi(
                         origin = rpId,
                         error = state.error,
                         onCloseButtonClick = onCloseButtonClick
-                    ) {
-                        viewModel.retryOperation(fidoClientService)
+                    )
+
+                    if (state.error != null) {
+                        LaunchedEffect(state) {
+                            viewModel.retryOperation(fidoClientService)
+                        }
                     }
                 }
 
@@ -137,7 +139,7 @@ fun FidoClientUi(
                         minPinLen = viewModel.info?.minPinLength ?: DEFAULT_MIN_PIN_LENGTH,
                         onCloseButtonClick = onCloseButtonClick,
                     ) {
-                        viewModel.createPin(it)
+                        viewModel.onCreatePin(it)
                         viewModel.retryOperation(fidoClientService)
                     }
                 }
@@ -148,6 +150,7 @@ fun FidoClientUi(
                         origin = rpId,
                         onCloseButtonClick = onCloseButtonClick,
                     ) {
+                        viewModel.onPinCreatedConfirmation()
                         viewModel.retryOperation(fidoClientService)
                     }
                 }
@@ -180,7 +183,7 @@ fun FidoClientUi(
                         origin = rpId,
                         error = state.error
                     ) {
-                        viewModel.resetPin()
+                        viewModel.onErrorConfirmation()
                         viewModel.retryOperation(fidoClientService)
                     }
                 }

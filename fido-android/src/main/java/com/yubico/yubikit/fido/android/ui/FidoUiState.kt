@@ -27,7 +27,7 @@ sealed class UiState {
     data object PinCreated : UiState()
     data class PinNotSetError(val error: Error? = null) : UiState()
     data class OperationError(val error: Error) : UiState()
-    data class WaitingForPinEntry(val error: Error?) : UiState()
+    data class WaitingForPinEntry(val error: Error?, val pin: String) : UiState()
     data class WaitingForUvEntry(val error: Error?) : UiState()
     data class MultipleAssertions(
         val users: List<PublicKeyCredentialUserEntity>,

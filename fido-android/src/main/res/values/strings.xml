@@ -28,13 +28,14 @@
     <string name="create_pin">Create PIN</string>
     <string name="cancel">Cancel</string>
     <string name="new_pin">New PIN (min %1$d characters)</string>
+    <string name="touch_fingerprint">Touch the fingerprint sensor to continue</string>
     <string name="repeat_pin">Repeat PIN</string>
     <string name="pin_is_not_complex_enough">PIN is not complex enough.</string>
     <string name="ctap_err_no_credentials">No passkeys for %1$s exist on the security key.</string>
     <string name="ctap_err_user_action_timeout">The operation timed out. Please try again.</string>
     <string name="ctap_err_key_store_full">There is no space free for passkeys on the security key. Please remove an existing passkey to create a new one.</string>
     <string name="ctap_err_puat_required">User verification is required for the operation, but the security key is not configured. Please configure the key by creating a PIN and try again.</string>
-    <string name="ctap_err_uv_invalid">Fingerprint did not match. Please try again.\n%1$d retries left.</string>
+    <string name="ctap_err_uv_invalid">Fingerprint not recognized. Try again.\n%1$d retries left.</string>
     <string name="ctap_err_uv_invalid_use_pin">Fingerprint did not match, please use PIN.</string>
     <string name="ctap_err_uv_unknown">There was an error when matching the fingerprint.</string>
     <string name="creating_pin_failed">Creating PIN failed</string>

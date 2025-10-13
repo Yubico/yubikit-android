@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Fingerprint
-import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -32,6 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.yubico.yubikit.fido.android.FidoClientService
 import com.yubico.yubikit.fido.android.R
@@ -45,8 +45,7 @@ fun MatchFingerprint(
     operation: FidoClientService.Operation,
     origin: String,
     error: Error? = null,
-    onCloseButtonClick: () -> Unit,
-    onRetry: () -> Unit
+    onCloseButtonClick: () -> Unit
 ) {
 
     val (errorText, buttonText) = when (error) {
@@ -65,7 +64,7 @@ fun MatchFingerprint(
             }
         }
 
-        null -> Pair(null, stringResource(R.string.retry))
+        null -> Pair(stringResource(R.string.touch_fingerprint), stringResource(R.string.retry))
         else -> Pair(stringResource(R.string.ctap_err_uv_unknown), stringResource(R.string.retry))
     }
 
@@ -89,37 +88,31 @@ fun MatchFingerprint(
             tint = MaterialTheme.colorScheme.primary
         )
 
-        errorText?.let {
-            Text(
-                modifier = Modifier.padding(horizontal = 32.dp),
-                style = MaterialTheme.typography.bodySmallEmphasized,
-                text = errorText
-            )
-        }
-
-        Button(onClick = onRetry) {
-            Text(buttonText)
-        }
+        Text(
+            modifier = Modifier
+                .padding(start = 32.dp, end = 32.dp, top = 16.dp, bottom = 8.dp),
+            style = MaterialTheme.typography.bodySmallEmphasized,
+            textAlign = TextAlign.Center,
+            text = errorText
+        )
     }
 }
 
 @DefaultPreview
 @Composable
-fun MatchFingerprintPreview() {
+fun MatchFingerprintNewPreview() {
     MatchFingerprint(
         operation = FidoClientService.Operation.MAKE_CREDENTIAL,
         origin = "example.com",
-        onCloseButtonClick = {},
-        onRetry = {})
+        onCloseButtonClick = {})
 }
 
 @DefaultPreview
 @Composable
-fun MatchFingerprintWithErrorPreview() {
+fun MatchFingerprintNewWithErrorPreview() {
     MatchFingerprint(
         operation = FidoClientService.Operation.GET_ASSERTION,
         origin = "example.com",
         error = Error.IncorrectUvError(3),
-        onCloseButtonClick = {},
-        onRetry = {})
+        onCloseButtonClick = {})
 }

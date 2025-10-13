@@ -44,6 +44,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.input.VisualTransformation
@@ -92,7 +93,15 @@ fun EnterPin(
         origin = origin,
         onCloseButtonClick = onCloseButtonClick,
     ) {
-        var text by remember { mutableStateOf(TextFieldValue(pin ?: "")) }
+        var text by remember {
+            mutableStateOf(
+                if (!pin.isNullOrEmpty()) {
+                    TextFieldValue(pin, selection = TextRange(0, pin.length))
+                } else {
+                    TextFieldValue("")
+                }
+            )
+        }
         var showPassword by remember { mutableStateOf(false) }
         val focusRequester = remember { FocusRequester() }
         val keyboardController = LocalSoftwareKeyboardController.current
