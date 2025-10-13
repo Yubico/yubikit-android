@@ -41,7 +41,6 @@ fun TapOrInsertSecurityKey(
     operation: FidoClientService.Operation,
     isNfcAvailable: Boolean,
     origin: String,
-    onShowNfcGuideClick: (() -> Unit) = {},
     onCloseButtonClick: () -> Unit
 ) {
     ContentWrapper(
@@ -57,19 +56,7 @@ fun TapOrInsertSecurityKey(
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(text = stringResource(R.string.tap_or_insert_key))
-        if (isNfcAvailable) {
-            TextButton(
-                onClick = { onShowNfcGuideClick() },
-                // Remove default padding to make it look just like text
-                contentPadding = PaddingValues(0.dp)
-            ) {
-                Text(
-                    text = "How to use NFC",
-                    fontSize = MaterialTheme.typography.bodySmall.fontSize,
-                    textDecoration = TextDecoration.Underline
-                )
-            }
-        } else {
+        if (!isNfcAvailable) {
             Text(
                 text = "NFC not available",
                 color = MaterialTheme.colorScheme.primary,
@@ -85,7 +72,7 @@ fun TapOrInsertSecurityKey(
 @Composable
 fun TapOrInsertSecurityKeyForMakeCredentialPreview() {
     TapOrInsertSecurityKey(
-        isNfcAvailable = true,
+        isNfcAvailable = false,
         operation = FidoClientService.Operation.MAKE_CREDENTIAL,
         origin = "www.example.com"
     ) {}

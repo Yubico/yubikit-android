@@ -50,7 +50,6 @@ fun FidoClientUi(
     clientDataHash: ByteArray?,
     fidoClientService: FidoClientService = remember { FidoClientService() },
     onResult: (PublicKeyCredential) -> Unit = {},
-    onShowNfcGuideClick: () -> Unit,
     onCloseButtonClick: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -99,8 +98,7 @@ fun FidoClientUi(
                         operation = operation,
                         isNfcAvailable = isNfcAvailable,
                         origin = rpId,
-                        onCloseButtonClick = handleCloseButton,
-                        onShowNfcGuideClick = onShowNfcGuideClick
+                        onCloseButtonClick = handleCloseButton
                     )
                 }
 
