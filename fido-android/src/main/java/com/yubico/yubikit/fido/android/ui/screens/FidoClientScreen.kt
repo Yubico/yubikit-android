@@ -16,6 +16,7 @@
 
 package com.yubico.yubikit.fido.android.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -54,6 +55,14 @@ fun FidoClientUi(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val latestOnResult = remember(onResult) { onResult }
+    val handleCloseButton : () -> Unit = {
+        fidoClientService.cancelOngoingOperation()
+        onCloseButtonClick()
+    }
+
+    BackHandler {
+        handleCloseButton()
+    }
 
     LaunchedEffect(operation, rpId, request, clientDataHash) {
         viewModel.startFidoOperation(
@@ -90,7 +99,7 @@ fun FidoClientUi(
                         operation = operation,
                         isNfcAvailable = isNfcAvailable,
                         origin = rpId,
-                        onCloseButtonClick = onCloseButtonClick,
+                        onCloseButtonClick = handleCloseButton,
                         onShowNfcGuideClick = onShowNfcGuideClick
                     )
                 }
@@ -99,7 +108,7 @@ fun FidoClientUi(
                     TapAgainSecurityKey(
                         operation = operation,
                         origin = rpId,
-                        onCloseButtonClick = onCloseButtonClick
+                        onCloseButtonClick = handleCloseButton
                     )
                 }
 
@@ -109,7 +118,7 @@ fun FidoClientUi(
                         origin = rpId,
                         error = state.error,
                         pin = state.pin,
-                        onCloseButtonClick = onCloseButtonClick
+                        onCloseButtonClick = handleCloseButton
                     ) {
                         viewModel.onEnterPin(it)
                         viewModel.retryOperation(fidoClientService)
@@ -121,7 +130,7 @@ fun FidoClientUi(
                         operation = operation,
                         origin = rpId,
                         error = state.error,
-                        onCloseButtonClick = onCloseButtonClick
+                        onCloseButtonClick = handleCloseButton
                     )
 
                     if (state.error != null) {
@@ -137,7 +146,7 @@ fun FidoClientUi(
                         origin = rpId,
                         error = state.error,
                         minPinLen = viewModel.info?.minPinLength ?: DEFAULT_MIN_PIN_LENGTH,
-                        onCloseButtonClick = onCloseButtonClick,
+                        onCloseButtonClick = handleCloseButton,
                     ) {
                         viewModel.onCreatePin(it)
                         viewModel.retryOperation(fidoClientService)
@@ -148,7 +157,7 @@ fun FidoClientUi(
                     PinCreatedScreen(
                         operation = operation,
                         origin = rpId,
-                        onCloseButtonClick = onCloseButtonClick,
+                        onCloseButtonClick = handleCloseButton,
                     ) {
                         viewModel.onPinCreatedConfirmation()
                         viewModel.retryOperation(fidoClientService)
@@ -156,11 +165,19 @@ fun FidoClientUi(
                 }
 
                 is UiState.Processing -> {
-                    Processing(operation = operation, origin = rpId) {}
+                    Processing(
+                        operation = operation,
+                        origin = rpId,
+                        onCloseButtonClick = handleCloseButton
+                    )
                 }
 
                 is UiState.TouchKey -> {
-                    TouchTheSecurityKey(operation = operation, origin = rpId) {}
+                    TouchTheSecurityKey(
+                        operation = operation,
+                        origin = rpId,
+                        onCloseButtonClick = handleCloseButton
+                    )
                 }
 
                 is UiState.Success -> {
@@ -171,7 +188,7 @@ fun FidoClientUi(
                     MultipleAssertionsScreen(
                         operation = operation,
                         origin = rpId,
-                        onCloseButtonClick = onCloseButtonClick,
+                        onCloseButtonClick = handleCloseButton,
                         users = state.users,
                         onSelect = state.onSelect
                     )

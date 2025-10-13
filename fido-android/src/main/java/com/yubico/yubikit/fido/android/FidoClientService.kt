@@ -16,6 +16,7 @@
 
 package com.yubico.yubikit.fido.android
 
+import com.yubico.yubikit.core.application.CommandState
 import com.yubico.yubikit.core.fido.CtapException
 import com.yubico.yubikit.fido.android.util.toMap
 import com.yubico.yubikit.fido.client.ClientError
@@ -26,10 +27,14 @@ import org.json.JSONObject
 
 class FidoClientService(private val viewModel: MainViewModel = MainViewModel()) {
 
+    private val commandState = CommandState()
+
     enum class Operation {
         MAKE_CREDENTIAL,
         GET_ASSERTION
     }
+
+    fun cancelOngoingOperation() = commandState.cancel()
 
     suspend fun performOperation(
         pin: String?,
@@ -101,7 +106,7 @@ class FidoClientService(private val viewModel: MainViewModel = MainViewModel()) 
                     rpId.removePrefix("https://"), // TODO reason about this
                     pin?.toCharArray(),
                     null,
-                    null
+                    commandState
                 )
             } else {
                 client.makeCredential(
@@ -114,7 +119,7 @@ class FidoClientService(private val viewModel: MainViewModel = MainViewModel()) 
                     rpId.removePrefix("https://"), // TODO reason about this
                     pin?.toCharArray(),
                     null,
-                    null
+                    commandState
                 )
             }
         }
@@ -147,7 +152,7 @@ class FidoClientService(private val viewModel: MainViewModel = MainViewModel()) 
                     publicKeyCredentialRequestOptions,
                     rpId.removePrefix("https://"), // TODO reason about this
                     pin?.toCharArray(),
-                    null,
+                    commandState,
                 )
             } else {
                 client.getAssertion(
@@ -155,7 +160,7 @@ class FidoClientService(private val viewModel: MainViewModel = MainViewModel()) 
                     publicKeyCredentialRequestOptions,
                     rpId.removePrefix("https://"), // TODO reason about this
                     pin?.toCharArray(),
-                    null,
+                    commandState,
                 )
             }
         }
