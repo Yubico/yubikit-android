@@ -41,4 +41,5 @@
     <string name="creating_pin_failed">Creating PIN failed</string>
     <string name="info_no_pin_set">The Security Key does not have a PIN set. You need to create a PIN to continue.</string>
     <string name="fingerprint_icon">fingerprint icon</string>
+    <string name="content_description_nfc_antenna_location">NFC Antenna location</string>
 </resources>

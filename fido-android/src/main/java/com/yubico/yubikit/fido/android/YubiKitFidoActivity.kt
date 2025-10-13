@@ -41,6 +41,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.zIndex
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.coroutineScope
 import com.yubico.yubikit.android.YubiKitManager
@@ -56,6 +57,11 @@ import kotlinx.coroutines.launch
 import org.json.JSONObject
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import androidx.compose.runtime.collectAsState
+import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.unit.dp
+import androidx.compose.material3.MaterialTheme
+import com.yubico.yubikit.fido.android.ui.UiState
 
 class YubiKitFidoActivity : ComponentActivity() {
     companion object {
@@ -95,6 +101,8 @@ class YubiKitFidoActivity : ComponentActivity() {
         setContent {
             val theme = customTheme ?: { FidoAndroidTheme(content = it) }
             theme {
+                val uiState by viewModel.uiState.collectAsState()
+                val showAntennas = uiState is UiState.WaitingForKey || uiState is UiState.WaitingForKeyAgain
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = Color.Transparent
@@ -162,6 +170,7 @@ class YubiKitFidoActivity : ComponentActivity() {
                             ModalBottomSheet(
                                 dragHandle = {},
                                 sheetState = sheetState,
+                                scrimColor = Color.Transparent,
                                 onDismissRequest = finishActivityWithCancel,
                             ) {
                                 FidoClientUi(
@@ -186,6 +195,11 @@ class YubiKitFidoActivity : ComponentActivity() {
                         }
                     }
                 }
+
+                NfcAntennaHint(
+                    modifier = Modifier.fillMaxSize(),
+                    showAntennas = showAntennas
+                )
             }
         }
     }
