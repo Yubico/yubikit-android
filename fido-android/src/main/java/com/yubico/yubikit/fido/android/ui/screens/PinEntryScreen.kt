@@ -21,6 +21,8 @@ import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Password
 import androidx.compose.material.icons.filled.Visibility
@@ -34,6 +36,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -41,10 +44,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.input.VisualTransformation
@@ -53,6 +56,7 @@ import com.yubico.yubikit.fido.android.R
 import com.yubico.yubikit.fido.android.ui.Error
 import com.yubico.yubikit.fido.android.ui.components.ContentWrapper
 import com.yubico.yubikit.fido.android.ui.theme.DefaultPreview
+import kotlin.compareTo
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -105,6 +109,7 @@ fun EnterPin(
         var showPassword by remember { mutableStateOf(false) }
         val focusRequester = remember { FocusRequester() }
         val keyboardController = LocalSoftwareKeyboardController.current
+        val isPinValid = text.text.length >= 4
 
         LaunchedEffect(Unit) {
             focusRequester.requestFocus()
@@ -148,7 +153,17 @@ fun EnterPin(
             },
             onValueChange = {
                 text = it
-            })
+            },
+            keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Done),
+            keyboardActions = KeyboardActions(
+                onDone = {
+                    if (isPinValid) {
+                        onPinEntered.invoke(text.text)
+                    }
+                }
+            )
+        )
+
 
         Row(
             modifier = Modifier
@@ -158,8 +173,12 @@ fun EnterPin(
             Button(
                 modifier = Modifier.width(IntrinsicSize.Min),
                 onClick = {
-                    onPinEntered.invoke(text.text)
-                }, shapes = ButtonDefaults.shapes()
+                    if (isPinValid) {
+                        onPinEntered.invoke(text.text)
+                    }
+                },
+                enabled = isPinValid,
+                shapes = ButtonDefaults.shapes()
             ) {
                 Text(text = stringResource(R.string.continue_operation), maxLines = 1)
             }
