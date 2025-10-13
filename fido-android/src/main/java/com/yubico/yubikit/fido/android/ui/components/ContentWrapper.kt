@@ -47,7 +47,7 @@ fun ContentWrapper(
     operation: FidoClientService.Operation,
     origin: String,
     onCloseButtonClick: (() -> Unit)? = null,
-    contentHeight: Dp = 100.dp,
+    contentHeight: Dp = 160.dp,
     content: @Composable (() -> Unit)
 ) {
     Column(
