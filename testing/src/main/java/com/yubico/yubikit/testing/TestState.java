@@ -33,20 +33,36 @@ import com.yubico.yubikit.management.DeviceInfo;
 import com.yubico.yubikit.management.ManagementSession;
 import com.yubico.yubikit.support.DeviceUtil;
 import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.security.Security;
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.Assume;
 
 public class TestState {
+
+  public static class PowerTouchInfo {
+    public final String ip;
+    public final int port;
+
+    public PowerTouchInfo(String ip, int port) {
+      this.ip = ip;
+      this.port = port;
+    }
+  }
+
   public abstract static class Builder<T extends Builder<T>> {
     protected final YubiKeyDevice device;
     protected final List<Class<? extends YubiKeyConnection>> supportedConnectionTypes;
     @Nullable private final UsbPid usbPid;
     @Nullable private Byte scpKid = null;
     @Nullable private ReconnectDeviceCallback reconnectDeviceCallback = null;
+    @Nullable private GetPowerTouchInfoCallback powerTouchInfoCallback = null;
 
     public abstract T getThis();
 
@@ -69,6 +85,11 @@ public class TestState {
       return getThis();
     }
 
+    public T powerTouchInfoCallback(@Nullable GetPowerTouchInfoCallback powerTouchInfoCallback) {
+      this.powerTouchInfoCallback = powerTouchInfoCallback;
+      return getThis();
+    }
+
     public abstract TestState build() throws Throwable;
   }
 
@@ -78,7 +99,10 @@ public class TestState {
   @Nullable public final UsbPid usbPid;
   @Nullable public final Byte scpKid;
   @Nullable private final ReconnectDeviceCallback reconnectDeviceCallback;
+  @Nullable private final GetPowerTouchInfoCallback powerTouchInfoCallback;
   private final boolean isUsbTransport;
+  private final ScheduledExecutorService powerTouchExecutor =
+      Executors.newSingleThreadScheduledExecutor();
 
   protected TestState(Builder<?> builder) {
     this.currentDevice = builder.device;
@@ -91,6 +115,7 @@ public class TestState {
 
     this.scpParameters = new ScpParameters(builder.device, this.scpKid);
     this.reconnectDeviceCallback = builder.reconnectDeviceCallback;
+    this.powerTouchInfoCallback = builder.powerTouchInfoCallback;
     this.isUsbTransport = builder.device.getTransport() == Transport.USB;
   }
 
@@ -120,6 +145,10 @@ public class TestState {
 
   public interface ReconnectDeviceCallback {
     YubiKeyDevice invoke();
+  }
+
+  public interface GetPowerTouchInfoCallback {
+    PowerTouchInfo invoke();
   }
 
   protected void reconnect() {
@@ -238,5 +267,52 @@ public class TestState {
     final String name = DeviceUtil.getName(deviceInfo, null);
     return name.equals("YubiKey Bio - Multi-protocol Edition")
         || name.equals("YubiKey C Bio - Multi-protocol Edition");
+  }
+
+  public void shortTouch() {
+    powerTouchExecutor.execute(
+        () -> {
+          delay(200);
+          sendPowerTouchRequest("/shortTouch");
+          delay(200);
+        });
+  }
+
+  public void longTouch() {
+    powerTouchExecutor.execute(
+        () -> {
+          delay(200);
+          sendPowerTouchRequest("/longTouch");
+        });
+  }
+
+  public void powerOn() {
+    powerTouchExecutor.execute(() -> sendPowerTouchRequest("/powerOn"));
+  }
+
+  public void powerOff() {
+    powerTouchExecutor.execute(() -> sendPowerTouchRequest("/powerOff"));
+  }
+
+  private void delay(int ms) {
+    try {
+      Thread.sleep(ms);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+    }
+  }
+
+  private void sendPowerTouchRequest(String endpoint) {
+    if (powerTouchInfoCallback == null) return;
+    PowerTouchInfo powerTouchInfo = powerTouchInfoCallback.invoke();
+    try {
+      URL url = new URL("http://" + powerTouchInfo.ip + ":" + powerTouchInfo.port + endpoint);
+      HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+      conn.setRequestMethod("GET");
+      conn.getResponseCode(); // Triggers the host touch
+      conn.disconnect();
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 }

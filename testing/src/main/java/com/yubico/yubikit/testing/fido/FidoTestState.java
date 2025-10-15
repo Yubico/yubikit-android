@@ -216,6 +216,7 @@ public class FidoTestState extends TestState {
     try (YubiKeyConnection connection = openConnection()) {
       final Ctap2Session ctap2 = getSession(connection, scpParameters.getKeyParams());
       assumeTrue("No CTAP2 support", ctap2 != null);
+      shortTouch();
       callback.invoke(ctap2, this);
     }
     reconnect();
@@ -226,6 +227,7 @@ public class FidoTestState extends TestState {
     try (YubiKeyConnection connection = openConnection()) {
       final Ctap2Session ctap2 = getSession(connection, scpParameters.getKeyParams());
       assumeTrue("No CTAP2 support", ctap2 != null);
+      shortTouch();
       result = callback.invoke(ctap2);
     }
     reconnect();
@@ -236,6 +238,7 @@ public class FidoTestState extends TestState {
     try (YubiKeyConnection connection = openConnection()) {
       final Ctap2Session ctap2 = getSession(connection, scpParameters.getKeyParams());
       assumeTrue("No CTAP2 support", ctap2 != null);
+      shortTouch();
       callback.invoke(ctap2);
     }
     reconnect();

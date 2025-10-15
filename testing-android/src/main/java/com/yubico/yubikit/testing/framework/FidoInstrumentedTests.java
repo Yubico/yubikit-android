@@ -46,6 +46,7 @@ public class FidoInstrumentedTests extends YKInstrumentedTests {
         new FidoTestState.Builder(device, connectionTypes, usbPid, getPinUvAuthProtocol())
             .scpKid(getScpKid())
             .reconnectDeviceCallback(this::reconnectDevice)
+            .powerTouchInfoCallback(this::getPowerTouchInfo)
             .setPin(setPin)
             .build();
 
@@ -58,6 +59,7 @@ public class FidoInstrumentedTests extends YKInstrumentedTests {
         new FidoTestState.Builder(device, connectionTypes, usbPid, getPinUvAuthProtocol())
             .scpKid(getScpKid())
             .reconnectDeviceCallback(this::reconnectDevice)
+            .powerTouchInfoCallback(this::getPowerTouchInfo)
             .setPin(true)
             .build();
 
