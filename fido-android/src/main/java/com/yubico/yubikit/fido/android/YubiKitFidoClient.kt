@@ -151,6 +151,9 @@ class YubiKitFidoClient {
                 resultCode == Activity.RESULT_CANCELED ->
                     Result.failure(CancellationException("User cancelled FIDO operation"))
 
+                resultCode == RESULT_KEY_REMOVED ->
+                    Result.failure(CancellationException("Key was removed"))
+
                 else ->
                     Result.failure(IllegalStateException("Unknown error occurred (resultCode: $resultCode)"))
             }

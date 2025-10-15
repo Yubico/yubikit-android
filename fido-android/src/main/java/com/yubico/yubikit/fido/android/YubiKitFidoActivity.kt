@@ -32,6 +32,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
@@ -56,6 +57,8 @@ import kotlinx.coroutines.launch
 import org.json.JSONObject
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+
+const val RESULT_KEY_REMOVED = 10000;
 
 class YubiKitFidoActivity : ComponentActivity() {
     companion object {
@@ -98,6 +101,10 @@ class YubiKitFidoActivity : ComponentActivity() {
                 val uiState by viewModel.uiState.collectAsState()
                 val showAntennas =
                     uiState is UiState.WaitingForKey || uiState is UiState.WaitingForKeyAgain
+
+                val device by viewModel.device.observeAsState()
+                var wasConnected by remember { mutableStateOf(false) }
+
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = Color.Transparent
@@ -124,6 +131,13 @@ class YubiKitFidoActivity : ComponentActivity() {
                         finishActivity()
                     }
 
+                    val finishActivityWithKeyRemoved: () -> Unit = {
+                        setResult(
+                            RESULT_KEY_REMOVED
+                        )
+                        finishActivity()
+                    }
+
                     val finishActivityWithResult: (PublicKeyCredential) -> Unit = { result ->
                         scope.launch {
                             viewModel.waitForKeyRemoval()
@@ -134,6 +148,14 @@ class YubiKitFidoActivity : ComponentActivity() {
                                 )
                             )
                             finishActivity()
+                        }
+                    }
+
+                    LaunchedEffect(device) {
+                        if (device != null) {
+                            wasConnected = true
+                        } else if (wasConnected) {
+                            finishActivityWithKeyRemoved()
                         }
                     }
 
