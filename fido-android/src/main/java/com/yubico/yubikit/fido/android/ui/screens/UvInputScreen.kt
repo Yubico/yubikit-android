@@ -48,24 +48,18 @@ fun MatchFingerprint(
     onCloseButtonClick: () -> Unit
 ) {
 
-    val (errorText, buttonText) = when (error) {
+    val errorText = when (error) {
         is Error.IncorrectUvError -> {
             val attempts = error.remainingAttempts
             if (attempts > 0) {
-                Pair(
-                    stringResource(R.string.ctap_err_uv_invalid, attempts),
-                    stringResource(R.string.retry)
-                )
+                stringResource(R.string.ctap_err_uv_invalid, attempts)
             } else {
-                Pair(
-                    stringResource(R.string.ctap_err_uv_invalid_use_pin),
-                    stringResource(R.string.continue_operation)
-                )
+                stringResource(R.string.ctap_err_uv_invalid_use_pin)
             }
         }
 
-        null -> Pair(stringResource(R.string.touch_fingerprint), stringResource(R.string.retry))
-        else -> Pair(stringResource(R.string.ctap_err_uv_unknown), stringResource(R.string.retry))
+        null -> stringResource(R.string.touch_fingerprint)
+        else -> stringResource(R.string.ctap_err_uv_unknown)
     }
 
     ContentWrapper(

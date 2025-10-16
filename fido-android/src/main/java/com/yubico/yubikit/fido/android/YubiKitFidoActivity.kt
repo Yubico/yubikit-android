@@ -18,6 +18,7 @@ package com.yubico.yubikit.fido.android
 
 import android.annotation.SuppressLint
 import android.content.Intent
+import android.content.res.Configuration
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -29,7 +30,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.Surface
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -105,15 +105,16 @@ class YubiKitFidoActivity : ComponentActivity() {
                 val device by viewModel.device.observeAsState()
                 var wasConnected by remember { mutableStateOf(false) }
 
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = Color.Transparent
-                ) {
-                    val sheetState = rememberModalBottomSheetState()
-                    val scope = rememberCoroutineScope()
-                    var bottomSheetVisible by remember { mutableStateOf(true) }
 
-                    val finishActivity: () -> Unit = {
+                val sheetState = rememberModalBottomSheetState()
+                val scope = rememberCoroutineScope()
+                var bottomSheetVisible by remember { mutableStateOf(true) }
+                var isFinishing by remember { mutableStateOf(false) }
+
+                val finishActivity: () -> Unit = {
+                    if (!isFinishing) {
+                        isFinishing = true
+
                         scope.launch {
                             sheetState.hide()
                         }.invokeOnCompletion {
@@ -123,69 +124,70 @@ class YubiKitFidoActivity : ComponentActivity() {
                             }
                         }
                     }
+                }
 
-                    val finishActivityWithCancel: () -> Unit = {
+                val finishActivityWithCancel: () -> Unit = {
+                    setResult(
+                        RESULT_CANCELED
+                    )
+                    finishActivity()
+                }
+
+                val finishActivityWithKeyRemoved: () -> Unit = {
+                    setResult(
+                        RESULT_KEY_REMOVED
+                    )
+                    finishActivity()
+                }
+
+                val finishActivityWithResult: (PublicKeyCredential) -> Unit = { result ->
+                    scope.launch {
+                        viewModel.waitForKeyRemoval()
                         setResult(
-                            RESULT_CANCELED
-                        )
-                        finishActivity()
-                    }
-
-                    val finishActivityWithKeyRemoved: () -> Unit = {
-                        setResult(
-                            RESULT_KEY_REMOVED
-                        )
-                        finishActivity()
-                    }
-
-                    val finishActivityWithResult: (PublicKeyCredential) -> Unit = { result ->
-                        scope.launch {
-                            viewModel.waitForKeyRemoval()
-                            setResult(
-                                RESULT_OK, intent.putExtra(
-                                    "credential",
-                                    JSONObject(result.toMap(SerializationType.JSON)).toString()
-                                )
+                            RESULT_OK, intent.putExtra(
+                                "credential",
+                                JSONObject(result.toMap(SerializationType.JSON)).toString()
                             )
-                            finishActivity()
-                        }
+                        )
+                        finishActivity()
                     }
+                }
 
-                    LaunchedEffect(device) {
-                        if (device != null) {
-                            wasConnected = true
-                        } else if (wasConnected) {
-                            finishActivityWithKeyRemoved()
-                        }
+                LaunchedEffect(device) {
+                    if (device != null) {
+                        wasConnected = true
+                    } else if (wasConnected) {
+                        finishActivityWithKeyRemoved()
                     }
+                }
 
-                    AnimatedVisibility(
-                        visible = bottomSheetVisible,
-                        enter = fadeIn(),
-                        exit = fadeOut()
-                    ) {
-                        if (bottomSheetVisible) {
-                            ModalBottomSheet(
-                                dragHandle = {},
-                                sheetState = sheetState,
-                                scrimColor = Color.Transparent,
-                                onDismissRequest = finishActivityWithCancel,
-                            ) {
-                                FidoClientUi(
-                                    viewModel,
-                                    params.operation,
-                                    isNfcAvailable =
-                                        viewModel.isNfcAvailable.observeAsState(false).value,
-                                    params.rpId,
-                                    params.request,
-                                    params.clientDataHash?.toByteArray(),
-                                    fidoClientService = fidoClientService,
-                                    onResult = {
-                                        finishActivityWithResult(it)
-                                    },
-                                    onCloseButtonClick = finishActivityWithCancel
-                                )
-                            }
+                AnimatedVisibility(
+                    visible = bottomSheetVisible,
+                    enter = fadeIn(),
+                    exit = fadeOut()
+                ) {
+                    if (bottomSheetVisible) {
+                        logger.trace("Showing bottom sheet")
+                        ModalBottomSheet(
+                            dragHandle = {},
+                            sheetState = sheetState,
+                            scrimColor = Color.Transparent,
+                            onDismissRequest = finishActivityWithCancel,
+                        ) {
+                            FidoClientUi(
+                                viewModel,
+                                params.operation,
+                                isNfcAvailable =
+                                    viewModel.isNfcAvailable.observeAsState(false).value,
+                                params.rpId,
+                                params.request,
+                                params.clientDataHash?.toByteArray(),
+                                fidoClientService = fidoClientService,
+                                onResult = {
+                                    finishActivityWithResult(it)
+                                },
+                                onCloseButtonClick = finishActivityWithCancel
+                            )
                         }
                     }
                 }
@@ -201,12 +203,14 @@ class YubiKitFidoActivity : ComponentActivity() {
     private fun startDiscovery() {
         yubikit.startUsbDiscovery(UsbConfiguration()) {
             lifecycle.coroutineScope.launch {
+                logger.info("USB security key connected: {}", it.usbDevice.deviceName)
                 viewModel.provideYubiKey(it)
             }
         }
         try {
             yubikit.startNfcDiscovery(NfcConfiguration().timeout(5000), this) {
                 lifecycle.coroutineScope.launch {
+                    logger.info("NFC security key tapped")
                     viewModel.provideYubiKey(it)
                 }
             }

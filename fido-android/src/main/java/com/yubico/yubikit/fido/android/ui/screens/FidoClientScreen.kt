@@ -39,6 +39,8 @@ import com.yubico.yubikit.fido.android.FidoClientService
 import com.yubico.yubikit.fido.android.MainViewModel
 import com.yubico.yubikit.fido.android.ui.UiState
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredential
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 @Composable
 fun FidoClientUi(
@@ -48,22 +50,23 @@ fun FidoClientUi(
     rpId: String,
     request: String,
     clientDataHash: ByteArray?,
-    fidoClientService: FidoClientService = remember { FidoClientService() },
+    fidoClientService: FidoClientService,
     onResult: (PublicKeyCredential) -> Unit = {},
     onCloseButtonClick: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val latestOnResult = remember(onResult) { onResult }
-    val handleCloseButton : () -> Unit = {
+    val handleCloseButton: () -> Unit = {
         fidoClientService.cancelOngoingOperation()
         onCloseButtonClick()
     }
+    val logger: Logger = LoggerFactory.getLogger("FidoUiClient")
 
     BackHandler {
         handleCloseButton()
     }
 
-    LaunchedEffect(operation, rpId, request, clientDataHash) {
+    LaunchedEffect(Unit) {
         viewModel.startFidoOperation(
             fidoClientService,
             operation,
@@ -92,6 +95,7 @@ fun FidoClientUi(
                 fadeIn() togetherWith fadeOut()
             }
         ) { state ->
+            logger.trace("Client UI screen {}", state)
             when (state) {
                 is UiState.WaitingForKey -> {
                     TapOrInsertSecurityKey(
@@ -119,7 +123,6 @@ fun FidoClientUi(
                         onCloseButtonClick = handleCloseButton
                     ) {
                         viewModel.onEnterPin(it)
-                        viewModel.retryOperation(fidoClientService)
                     }
                 }
 
@@ -133,7 +136,7 @@ fun FidoClientUi(
 
                     if (state.error != null) {
                         LaunchedEffect(state) {
-                            viewModel.retryOperation(fidoClientService)
+                            viewModel.onUvMatchError()
                         }
                     }
                 }
@@ -147,7 +150,6 @@ fun FidoClientUi(
                         onCloseButtonClick = handleCloseButton,
                     ) {
                         viewModel.onCreatePin(it)
-                        viewModel.retryOperation(fidoClientService)
                     }
                 }
 
@@ -158,7 +160,6 @@ fun FidoClientUi(
                         onCloseButtonClick = handleCloseButton,
                     ) {
                         viewModel.onPinCreatedConfirmation()
-                        viewModel.retryOperation(fidoClientService)
                     }
                 }
 
@@ -199,7 +200,6 @@ fun FidoClientUi(
                         error = state.error
                     ) {
                         viewModel.onErrorConfirmation()
-                        viewModel.retryOperation(fidoClientService)
                     }
                 }
             }

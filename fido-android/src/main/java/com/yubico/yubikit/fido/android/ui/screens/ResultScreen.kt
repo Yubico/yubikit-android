@@ -116,6 +116,10 @@ fun ErrorView(
                                             R.string.ctap_err_uv_invalid
                                         )
 
+                                        CtapException.ERR_CREDENTIAL_EXCLUDED -> stringResource(
+                                            R.string.ctap_err_credential_excluded
+                                        )
+
                                         else -> stringResource(R.string.unknown_error)
                                     }
                                 }

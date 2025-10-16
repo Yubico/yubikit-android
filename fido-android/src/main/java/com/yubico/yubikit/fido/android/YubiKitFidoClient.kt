@@ -86,8 +86,7 @@ class YubiKitFidoClient {
     }
 
     private fun handleResult(result: Result<String>) {
-        val continuation = currentContinuation
-        if (continuation != null) {
+        currentContinuation?.let { continuation ->
             result
                 .onSuccess { continuation.resume(result) }
                 .onFailure { continuation.resumeWithException(it) }
@@ -108,7 +107,10 @@ class YubiKitFidoClient {
         currentContinuation = continuation
         launcher.launch(FidoRequest(type, rpId, clientDataHash, request))
         continuation.invokeOnCancellation {
-            currentContinuation = null
+
+            if (it is CancellationException) {
+                currentContinuation = null
+            }
         }
     }
 

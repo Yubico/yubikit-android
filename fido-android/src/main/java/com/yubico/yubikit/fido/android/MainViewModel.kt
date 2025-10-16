@@ -70,12 +70,13 @@ class MainViewModel : ViewModel() {
     private var result: PublicKeyCredential? = null
     private var pinValue: String? = null
     private var newPinValue: String? = null
-    private var tapAgain: Boolean = false
     private var multipleAssertions: MultipleAssertionsAvailable? = null
+    private var uvFallback: Boolean = false
 
     private val logger: Logger = LoggerFactory.getLogger(MainViewModel::class.java)
 
     // Store last parameters for retry
+    private var lastFidoClientService: FidoClientService? = null
     private var lastOperation: FidoClientService.Operation? = null
     private var lastRpId: String? = null
     private var lastRequest: String? = null
@@ -176,16 +177,48 @@ class MainViewModel : ViewModel() {
         }
     }
 
+    private fun signalRetry(forUsb: Boolean = true) {
+        if (_device.value?.transport == Transport.NFC) {
+            // we ask the user to tap the key again
+            _uiState.value = UiState.WaitingForKeyAgain
+        } else {
+            if (forUsb) {
+                // show the touch key with delay
+                setUiStateWithDelay(UiState.TouchKey)
+            }
+        }
+        runFidoOperation()
+    }
+
+    private fun runFidoOperation() {
+        startFidoOperation(
+            lastFidoClientService!!,
+            lastOperation!!,
+            lastRpId!!,
+            lastRequest!!,
+            lastClientDataHash,
+            lastOnResult!!
+        )
+    }
+
     fun startFidoOperation(
         fidoClientService: FidoClientService,
         operation: FidoClientService.Operation,
         rpId: String,
         request: String,
         clientDataHash: ByteArray?,
-        onResult: (PublicKeyCredential) -> Unit,
-        isRetry: Boolean = false
+        onResult: (PublicKeyCredential) -> Unit
     ) {
+
+        logger.trace(
+            "Start operation: {} on {}. Request: {}",
+            operation.name,
+            rpId,
+            request
+        )
+
         // Save parameters for retry
+        lastFidoClientService = fidoClientService
         lastOperation = operation
         lastRpId = rpId
         lastRequest = request
@@ -196,15 +229,6 @@ class MainViewModel : ViewModel() {
             try {
                 result?.let { deliverResult(it, onResult); return@launch }
                 multipleAssertions?.let { showMultipleAssertions(it, onResult); return@launch }
-
-                if (!isRetry) {
-                    if (tapAgain) {
-                        _uiState.value = UiState.WaitingForKeyAgain
-                        tapAgain = false
-                    } else {
-                        _uiState.value = UiState.WaitingForKey
-                    }
-                }
 
                 newPinValue?.let { newPin ->
                     pinValue?.let { pin ->
@@ -236,19 +260,19 @@ class MainViewModel : ViewModel() {
                     clientDataHash,
                     request
                 ) {
-                    if (!isRetry) {
-                        _uiState.value = info?.let {
-                            val bioEnrollmentConfigured = BioEnrollment.isConfigured(it)
-                            val isUsb = _device.value?.transport == Transport.USB
-                            if (bioEnrollmentConfigured) {
-                                UiState.WaitingForUvEntry(null)
-                            } else if (isUsb) {
-                                UiState.TouchKey
-                            } else {
-                                UiState.WaitingForKey
-                            }
-                        } ?: UiState.WaitingForKey
-                    }
+                    _uiState.value = info?.let {
+                        val bioEnrollmentConfigured = BioEnrollment.isConfigured(it)
+                        val isUsb = _device.value?.transport == Transport.USB
+                        if (bioEnrollmentConfigured && !uvFallback) {
+                            UiState.WaitingForUvEntry(
+                                (_uiState.value as? UiState.WaitingForUvEntry)?.error
+                            )
+                        } else if (isUsb) {
+                            UiState.TouchKey
+                        } else {
+                            UiState.Processing
+                        }
+                    } ?: UiState.WaitingForKey
                 }
                     .fold(onSuccess = {
                         result = it
@@ -301,11 +325,18 @@ class MainViewModel : ViewModel() {
                             is Error.PinRequiredError,
                             is Error.PinBlockedError,
                             is Error.PinAuthBlockedError,
-                            is Error.UvBlockedError,
                             is Error.IncorrectPinError -> UiState.WaitingForPinEntry(
                                 errorState,
                                 lastEnteredPin
                             )
+
+                            is Error.UvBlockedError -> {
+                                uvFallback = true
+                                UiState.WaitingForPinEntry(
+                                    errorState,
+                                    lastEnteredPin
+                                )
+                            }
 
                             is Error.IncorrectUvError -> UiState.WaitingForUvEntry(errorState)
                             is Error.PinNotSetError -> UiState.PinNotSetError()
@@ -319,11 +350,16 @@ class MainViewModel : ViewModel() {
         }
     }
 
+    // executed after UV error (fingerprint did not match)
+    fun onUvMatchError() {
+        runFidoOperation()
+    }
+
     // executed after the user entered PIN and taps the "Continue" button
     fun onEnterPin(pin: String) {
         lastEnteredPin = pin
         pinValue = pin.ifEmpty { null }
-        setRetryUiState()
+        signalRetry(forUsb = uvFallback)
     }
 
     // executed after the user taps the "Create PIN" button
@@ -331,32 +367,20 @@ class MainViewModel : ViewModel() {
         newPinValue = pin.ifEmpty { null }
         // we don't setup USB because there is no
         // need for touch. The touch will be required after onPinCreatedConfirmation
-        setRetryUiState(forUsb = false)
+        signalRetry(forUsb = false)
     }
 
     // executed after the user taps the "Continue" button in PIN created screen
     fun onPinCreatedConfirmation() {
-        setRetryUiState()
+        signalRetry()
     }
 
     // executed after the user taps the "Retry" button in Error screen
     fun onErrorConfirmation() {
         lastEnteredPin = ""
         pinValue = null
-        setRetryUiState()
-    }
-
-    fun setRetryUiState(forUsb: Boolean = true) {
-        if (_device.value?.transport == Transport.NFC) {
-            // we ask the user to tap the key again
-            _uiState.value = UiState.WaitingForKeyAgain
-            tapAgain = true
-        } else {
-            if (forUsb) {
-                // show the touch key with delay
-                setUiStateWithDelay(UiState.TouchKey)
-            }
-        }
+        uvFallback = false
+        runFidoOperation()
     }
 
     // job for changing the uiState with delay
@@ -374,25 +398,5 @@ class MainViewModel : ViewModel() {
     fun cancelUiStateTimer() {
         uiStateTimerJob?.cancel()
         uiStateTimerJob = null
-    }
-
-    fun retryOperation(fidoClientService: FidoClientService) {
-        logger.info(
-            "Retrying operation: {} on {}. Request: {}",
-            lastOperation?.name,
-            lastRpId,
-            lastRequest
-        )
-        if (lastOperation != null && lastRpId != null && lastRequest != null && lastOnResult != null) {
-            startFidoOperation(
-                fidoClientService,
-                lastOperation!!,
-                lastRpId!!,
-                lastRequest!!,
-                lastClientDataHash,
-                lastOnResult!!,
-                isRetry = true
-            )
-        }
     }
 }

@@ -36,6 +36,7 @@
     <string name="ctap_err_key_store_full">There is no space free for passkeys on the security key. Please remove an existing passkey to create a new one.</string>
     <string name="ctap_err_puat_required">User verification is required for the operation, but the security key is not configured. Please configure the key by creating a PIN and try again.</string>
     <string name="ctap_err_uv_invalid">Fingerprint not recognized. Try again.\n%1$d retries left.</string>
+    <string name="ctap_err_credential_excluded">Cannot create this passkey (CREDENTIAL_EXCLUDED).</string>
     <string name="ctap_err_uv_invalid_use_pin">Fingerprint did not match, please use PIN.</string>
     <string name="ctap_err_uv_unknown">There was an error when matching the fingerprint.</string>
     <string name="creating_pin_failed">Creating PIN failed</string>
