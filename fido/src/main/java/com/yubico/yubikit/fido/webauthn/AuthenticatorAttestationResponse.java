@@ -92,6 +92,11 @@ public class AuthenticatorAttestationResponse extends AuthenticatorResponse {
           logger,
           "Platform does not support binary serialization of the given key"
               + " type, the 'publicKey' field will be null.");
+    } catch (IllegalArgumentException exception) {
+      // we currently do not support this public key format
+      Logger.info(
+          logger,
+          "Platform does not support the public key type, the 'publicKey' field will be null.");
     }
     this.publicKey = resultPublicKey;
   }
