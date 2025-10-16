@@ -380,7 +380,7 @@ class MainViewModel : ViewModel() {
         lastEnteredPin = ""
         pinValue = null
         uvFallback = false
-        runFidoOperation()
+        signalRetry()
     }
 
     // job for changing the uiState with delay
