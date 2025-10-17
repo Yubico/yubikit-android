@@ -68,8 +68,8 @@ class MainViewModel : ViewModel() {
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
 
     private var result: PublicKeyCredential? = null
-    private var pinValue: String? = null
-    private var newPinValue: String? = null
+    private var pinValue: CharArray? = null
+    private var newPinValue: CharArray? = null
     private var multipleAssertions: MultipleAssertionsAvailable? = null
     private var uvFallback: Boolean = false
 
@@ -82,7 +82,19 @@ class MainViewModel : ViewModel() {
     private var lastRequest: String? = null
     private var lastClientDataHash: ByteArray? = null
     private var lastOnResult: ((PublicKeyCredential) -> Unit)? = null
-    private var lastEnteredPin: String = ""
+
+
+    var lastEnteredPin: CharArray? = null
+        private set
+
+    fun setLastEnteredPin(pin: CharArray) {
+        lastEnteredPin = pin.clone()
+    }
+
+    fun clearLastEnteredPin() {
+        lastEnteredPin?.fill('\u0000')
+        lastEnteredPin = null
+    }
 
     fun setNfcAvailable(value: Boolean) {
         _nfcAvailable.postValue(value)
@@ -237,7 +249,7 @@ class MainViewModel : ViewModel() {
                         fidoClientService.createPin(newPin)
                             .fold(
                                 {
-                                    pinValue = newPin
+                                    pinValue = newPin.clone()
                                     _uiState.value = UiState.PinCreated
                                 },
                                 {
@@ -248,6 +260,7 @@ class MainViewModel : ViewModel() {
                                     _uiState.value = UiState.PinNotSetError(createPinError)
                                 }
                             ).also {
+                                newPinValue?.fill('\u0000')
                                 newPinValue = null
                             }
                         return@launch
@@ -325,17 +338,11 @@ class MainViewModel : ViewModel() {
                             is Error.PinRequiredError,
                             is Error.PinBlockedError,
                             is Error.PinAuthBlockedError,
-                            is Error.IncorrectPinError -> UiState.WaitingForPinEntry(
-                                errorState,
-                                lastEnteredPin
-                            )
+                            is Error.IncorrectPinError -> UiState.WaitingForPinEntry(errorState)
 
                             is Error.UvBlockedError -> {
                                 uvFallback = true
-                                UiState.WaitingForPinEntry(
-                                    errorState,
-                                    lastEnteredPin
-                                )
+                                UiState.WaitingForPinEntry(errorState)
                             }
 
                             is Error.IncorrectUvError -> UiState.WaitingForUvEntry(errorState)
@@ -356,15 +363,19 @@ class MainViewModel : ViewModel() {
     }
 
     // executed after the user entered PIN and taps the "Continue" button
-    fun onEnterPin(pin: String) {
-        lastEnteredPin = pin
-        pinValue = pin.ifEmpty { null }
+    fun onEnterPin(pin: CharArray) {
+        setLastEnteredPin(pin)
+        pinValue?.fill('\u0000')
+        pinValue = pin.clone()
+        pin.fill('\u0000')
         signalRetry(forUsb = uvFallback)
     }
 
     // executed after the user taps the "Create PIN" button
-    fun onCreatePin(pin: String) {
-        newPinValue = pin.ifEmpty { null }
+    fun onCreatePin(pin: CharArray) {
+        newPinValue?.fill('\u0000')
+        newPinValue = pin.clone()
+        pin.fill('\u0000')
         // we don't setup USB because there is no
         // need for touch. The touch will be required after onPinCreatedConfirmation
         signalRetry(forUsb = false)
@@ -377,7 +388,8 @@ class MainViewModel : ViewModel() {
 
     // executed after the user taps the "Retry" button in Error screen
     fun onErrorConfirmation() {
-        lastEnteredPin = ""
+        clearLastEnteredPin()
+        pinValue?.fill('\u0000')
         pinValue = null
         uvFallback = false
         signalRetry()

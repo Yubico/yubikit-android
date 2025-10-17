@@ -119,7 +119,7 @@ fun FidoClientUi(
                         operation = operation,
                         origin = rpId,
                         error = state.error,
-                        pin = state.pin,
+                        pin = viewModel.lastEnteredPin,
                         onCloseButtonClick = handleCloseButton
                     ) {
                         viewModel.onEnterPin(it)

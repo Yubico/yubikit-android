@@ -56,7 +56,6 @@ import com.yubico.yubikit.fido.android.R
 import com.yubico.yubikit.fido.android.ui.Error
 import com.yubico.yubikit.fido.android.ui.components.ContentWrapper
 import com.yubico.yubikit.fido.android.ui.theme.DefaultPreview
-import kotlin.compareTo
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -65,10 +64,9 @@ fun EnterPin(
     origin: String,
     error: Error? = null,
     onCloseButtonClick: () -> Unit,
-    pin: String? = "",
-    onPinEntered: (pin: String) -> Unit
+    pin: CharArray? = null,
+    onPinEntered: (pin: CharArray) -> Unit
 ) {
-
     val errorText: String? = when (error) {
         is Error.IncorrectPinError -> {
             if (error.remainingAttempts != null) {
@@ -99,8 +97,11 @@ fun EnterPin(
     ) {
         var text by remember {
             mutableStateOf(
-                if (!pin.isNullOrEmpty()) {
-                    TextFieldValue(pin, selection = TextRange(0, pin.length))
+                if (pin != null) {
+                    TextFieldValue(
+                        String(pin),
+                        selection = TextRange(0, pin.size)
+                    )
                 } else {
                     TextFieldValue("")
                 }
@@ -110,6 +111,12 @@ fun EnterPin(
         val focusRequester = remember { FocusRequester() }
         val keyboardController = LocalSoftwareKeyboardController.current
         val isPinValid = text.text.length >= 4
+
+        val submit: () -> Unit = {
+            if (isPinValid) {
+                onPinEntered.invoke(text.text.toCharArray())
+            }
+        }
 
         LaunchedEffect(Unit) {
             focusRequester.requestFocus()
@@ -156,11 +163,7 @@ fun EnterPin(
             },
             keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(
-                onDone = {
-                    if (isPinValid) {
-                        onPinEntered.invoke(text.text)
-                    }
-                }
+                onDone = { submit.invoke() }
             )
         )
 
@@ -172,11 +175,7 @@ fun EnterPin(
         ) {
             Button(
                 modifier = Modifier.width(IntrinsicSize.Min),
-                onClick = {
-                    if (isPinValid) {
-                        onPinEntered.invoke(text.text)
-                    }
-                },
+                onClick = submit,
                 enabled = isPinValid,
                 shapes = ButtonDefaults.shapes()
             ) {

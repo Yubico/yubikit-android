@@ -63,7 +63,7 @@ fun CreatePinScreen(
     error: Error? = null,
     minPinLen: Int = DEFAULT_MIN_PIN_LENGTH,
     onCloseButtonClick: () -> Unit,
-    onCreatePin: (pin: String) -> Unit
+    onCreatePin: (pin: CharArray) -> Unit
 ) {
     var newPin by remember { mutableStateOf(TextFieldValue("")) }
     var repeatPin by remember { mutableStateOf(TextFieldValue("")) }
@@ -122,7 +122,7 @@ fun CreatePinScreen(
             keyboardActions = KeyboardActions(
                 onDone = {
                     if (isPinValid(newPin.text, repeatPin.text, minPinLen)) {
-                        onCreatePin(newPin.text)
+                        onCreatePin(newPin.text.toCharArray())
                     }
                 }
             )
@@ -151,7 +151,7 @@ fun CreatePinScreen(
             }
             Button(
                 onClick = {
-                    onCreatePin(newPin.text)
+                    onCreatePin(newPin.text.toCharArray())
                 },
                 enabled = isPinValid(newPin.text, repeatPin.text, minPinLen)
             ) {

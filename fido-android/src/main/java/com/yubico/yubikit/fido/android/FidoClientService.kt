@@ -37,7 +37,7 @@ class FidoClientService(private val viewModel: MainViewModel = MainViewModel()) 
     fun cancelOngoingOperation() = commandState.cancel()
 
     suspend fun performOperation(
-        pin: String?,
+        pin: CharArray?,
         operation: Operation,
         rpId: String,
         clientDataHash: ByteArray?,
@@ -76,7 +76,7 @@ class FidoClientService(private val viewModel: MainViewModel = MainViewModel()) 
     }
 
     private suspend fun makeCredential(
-        pin: String?,
+        pin: CharArray?,
         rpId: String,
         clientDataHash: ByteArray?,
         request: String,
@@ -104,7 +104,7 @@ class FidoClientService(private val viewModel: MainViewModel = MainViewModel()) 
                     clientDataHash,
                     publicKeyCredentialCreationOptions,
                     rpId.removePrefix("https://"), // TODO reason about this
-                    pin?.toCharArray(),
+                    pin,
                     null,
                     commandState
                 )
@@ -117,7 +117,7 @@ class FidoClientService(private val viewModel: MainViewModel = MainViewModel()) 
                     ),
                     publicKeyCredentialCreationOptions,
                     rpId.removePrefix("https://"), // TODO reason about this
-                    pin?.toCharArray(),
+                    pin,
                     null,
                     commandState
                 )
@@ -125,7 +125,7 @@ class FidoClientService(private val viewModel: MainViewModel = MainViewModel()) 
         }
 
     private suspend fun getAssertion(
-        pin: String?,
+        pin: CharArray?,
         rpId: String,
         clientDataHash: ByteArray?,
         request: String,
@@ -151,7 +151,7 @@ class FidoClientService(private val viewModel: MainViewModel = MainViewModel()) 
                     clientDataHash,
                     publicKeyCredentialRequestOptions,
                     rpId.removePrefix("https://"), // TODO reason about this
-                    pin?.toCharArray(),
+                    pin,
                     commandState,
                 )
             } else {
@@ -159,16 +159,16 @@ class FidoClientService(private val viewModel: MainViewModel = MainViewModel()) 
                     clientData,
                     publicKeyCredentialRequestOptions,
                     rpId.removePrefix("https://"), // TODO reason about this
-                    pin?.toCharArray(),
+                    pin,
                     commandState,
                 )
             }
         }
 
     suspend fun createPin(
-        pin: String,
+        pin: CharArray,
     ) = viewModel.useWebAuthn { client ->
-        client.setPin(pin.toCharArray())
+        client.setPin(pin)
     }
 
 }
