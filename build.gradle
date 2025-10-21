@@ -2,21 +2,21 @@
 
 buildscript {
     ext {
-        kotlin_version = '2.2.10'
+        kotlin_version = '2.2.20'
     }
     repositories {
         mavenCentral()
         google()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.12.1'
+        classpath 'com.android.tools.build:gradle:8.13.0'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
 }
 
 plugins {
     id 'maven-publish'
-    id 'com.diffplug.spotless' version "7.2.1" apply false
+    id 'com.diffplug.spotless' version "8.0.0" apply false
     id 'project-convention-publishing'
 }
 

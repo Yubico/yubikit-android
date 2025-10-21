@@ -14,7 +14,7 @@ dependencies {
 
     api 'junit:junit:4.13.2'
 
-    implementation 'org.bouncycastle:bcpkix-jdk15to18:1.81'
+    implementation 'org.bouncycastle:bcpkix-jdk15to18:1.82'
 
     implementation 'org.hamcrest:hamcrest:3.0'
     implementation 'org.hamcrest:hamcrest-library:3.0'
