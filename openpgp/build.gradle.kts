@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Yubico.
+ * Copyright (C) 2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-@PackageNonnullByDefault
-package com.yubico.yubikit.android.app;
 
-import com.yubico.yubikit.core.PackageNonnullByDefault;
+plugins {
+    id("yubikit-java-library")
+}
+
+dependencies {
+    api(project(":core"))
+}
+
+tasks.test {
+    systemProperty("org.slf4j.simpleLogger.defaultLogLevel", "trace")
+}
+
+extra["pomName"] = "Yubico YubiKit " + project.name.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+description = "This library provides OpenPGP card functionality for the YubiKey. Specs for the protocol can be found at https://gnupg.org/ftp/specs/"

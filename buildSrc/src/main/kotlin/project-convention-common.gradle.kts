@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Yubico.
+ * Copyright (C) 2024-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-@PackageNonnullByDefault
-package com.yubico.yubikit.android.app;
 
-import com.yubico.yubikit.core.PackageNonnullByDefault;
+plugins {
+    id("project-convention-spotbugs")
+    id("project-convention-spotless")
+    id("project-convention-logging")
+}

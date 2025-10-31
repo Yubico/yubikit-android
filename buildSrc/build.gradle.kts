@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Yubico.
+ * Copyright (C) 2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-@PackageNonnullByDefault
-package com.yubico.yubikit.android.app;
 
-import com.yubico.yubikit.core.PackageNonnullByDefault;
+plugins {
+    `kotlin-dsl`
+}
+
+repositories {
+    mavenCentral()
+    google()
+    gradlePluginPortal()
+}
+
+dependencies {
+    implementation("com.github.spotbugs.snom:spotbugs-gradle-plugin:6.2.2")
+    implementation("com.android.tools.build:gradle:8.13.0")
+    implementation("com.diffplug.spotless:spotless-plugin-gradle:8.0.0")
+}
+
