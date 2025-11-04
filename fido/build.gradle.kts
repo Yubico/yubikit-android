@@ -24,6 +24,5 @@ dependencies {
     implementation(libs.moshi)
 }
 
-extra["pomName"] = "Yubico YubiKit " + project.name.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
 description = "This module provides FIDO support for the YubiKit SDK."
 

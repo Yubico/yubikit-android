@@ -34,9 +34,11 @@ extensions.configure(PublishingExtension::class.java) {
         create<MavenPublication>("maven") {
             from(components["java"])
             apply(from = rootProject.file("pom.gradle.kts"))
-            @Suppress("UNCHECKED_CAST")
-            val pomData = extra["pomData"] as Action<MavenPom>
-            pom(pomData)
+            afterEvaluate {
+                @Suppress("UNCHECKED_CAST")
+                val pomData = extra["pomData"] as Action<MavenPom>
+                pom(pomData)
+            }
         }
     }
     repositories {

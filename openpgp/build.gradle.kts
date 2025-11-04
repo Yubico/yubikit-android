@@ -26,5 +26,4 @@ tasks.test {
     systemProperty("org.slf4j.simpleLogger.defaultLogLevel", "trace")
 }
 
-extra["pomName"] = "Yubico YubiKit " + project.name.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
 description = "This library provides OpenPGP card functionality for the YubiKey. Specs for the protocol can be found at https://gnupg.org/ftp/specs/"

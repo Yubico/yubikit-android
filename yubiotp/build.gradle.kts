@@ -22,5 +22,5 @@ dependencies {
     api(project(":core"))
 }
 
-extra["pomName"] = "Yubico YubiKit " + project.name.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
 description = "This module provides an interface to configure the YubiKey OTP application, which can be used to program a YubiKey slot with a Yubico OTP, OATH-HOTP, HMAC-SHA1 Challenge-Response, or static password credential."
+

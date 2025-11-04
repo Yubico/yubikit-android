@@ -22,6 +22,5 @@ dependencies {
     api(project(":core"))
 }
 
-extra["pomName"] = "Yubico YubiKit Management"
 description = "This library provides management functionality of YubiKey which allows to enable or disable applets/slots/transport."
 

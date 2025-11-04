@@ -22,5 +22,4 @@ dependencies {
     api(project(":core"))
 }
 
-extra["pomName"] = "Yubico YubiKit " + project.name.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
 description = "This library provides OATH functionality of YubiKey which allows to have an authenticator application and store secrets on YubiKey. Provides TOTP or HOTP."

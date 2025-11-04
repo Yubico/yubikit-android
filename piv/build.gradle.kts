@@ -26,5 +26,4 @@ tasks.test {
     systemProperty("org.slf4j.simpleLogger.defaultLogLevel", "trace")
 }
 
-extra["pomName"] = "Yubico YubiKit " + project.name.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
 description = "This library provides implementation of Personal Identity Verification (PIV) interface specified in NIST SP 800-73 document \"Cryptographic Algorithms and Key Sizes for PIV\". This enables you to perform RSA or ECC sign/decrypt operations using a private key stored on the YubiKey."

@@ -23,5 +23,4 @@ dependencies {
     api(project(":yubiotp"))
 }
 
-extra["pomName"] = "Yubico YubiKit " + project.name.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
 description = "This library provides support functionality for the YubiKit."

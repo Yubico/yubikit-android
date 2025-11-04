@@ -15,8 +15,9 @@
  */
 
 import org.gradle.api.publish.maven.MavenPom
+import org.gradle.api.Action
 
-extra["pomData"] = org.gradle.api.Action<MavenPom> {
+extra["pomData"] = Action<MavenPom> {
     name.set(extra["pomName"].toString())
     description.set(project.description)
     url.set("https://github.com/Yubico/yubikit-android/tree/main/${project.name}")

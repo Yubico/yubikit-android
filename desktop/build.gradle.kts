@@ -23,6 +23,5 @@ dependencies {
     implementation(libs.hid4java)
 }
 
-extra["pomName"] = "Yubico YubiKit Desktop"
 description = "This module is the core library desktop implementation and provides functionality to detect a YubiKey plugged in or tapped over NFC and to open an ISO/IEC 7816 connection, using the javax.smartcardio API."
 
