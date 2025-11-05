@@ -28,7 +28,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.TestName;
 
-public class YKInstrumentedTests {
+public class YkInstrumentedTests {
 
   private TestActivity activity;
   protected YubiKeyDevice device = null;

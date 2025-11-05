@@ -749,7 +749,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
     private final int minPinLength;
     @Nullable private final Integer firmwareVersion;
     private final int maxCredBlobLength;
-    private final int maxRPIDsForSetMinPinLength;
+    private final int maxRpidsForSetMinPinLength;
     @Nullable private final Integer preferredPlatformUvAttempts;
     private final int uvModality;
     private final Map<String, Object> certifications;
@@ -761,7 +761,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
     @Nullable private final byte[] encIdentifier;
     private final List<String> transportsForReset;
     @Nullable private final Boolean pinComplexityPolicy;
-    @Nullable private final byte[] pinComplexityPolicyURL;
+    @Nullable private final byte[] pinComplexityPolicyUrl;
     private final int maxPinLength;
 
     private InfoData(
@@ -780,7 +780,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
         int minPinLength,
         @Nullable Integer firmwareVersion,
         int maxCredBlobLength,
-        int maxRPIDsForSetMinPinLength,
+        int maxRpidsForSetMinPinLength,
         @Nullable Integer preferredPlatformUvAttempts,
         int uvModality,
         Map<String, Object> certifications,
@@ -792,7 +792,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
         @Nullable byte[] encIdentifier,
         List<String> transportsForReset,
         @Nullable Boolean pinComplexityPolicy,
-        @Nullable byte[] pinComplexityPolicyURL,
+        @Nullable byte[] pinComplexityPolicyUrl,
         int maxPinLength) {
       this.versions = versions;
       this.extensions = extensions;
@@ -809,7 +809,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
       this.minPinLength = minPinLength;
       this.firmwareVersion = firmwareVersion;
       this.maxCredBlobLength = maxCredBlobLength;
-      this.maxRPIDsForSetMinPinLength = maxRPIDsForSetMinPinLength;
+      this.maxRpidsForSetMinPinLength = maxRpidsForSetMinPinLength;
       this.preferredPlatformUvAttempts = preferredPlatformUvAttempts;
       this.uvModality = uvModality;
       this.certifications = certifications;
@@ -821,7 +821,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
       this.encIdentifier = encIdentifier;
       this.transportsForReset = transportsForReset;
       this.pinComplexityPolicy = pinComplexityPolicy;
-      this.pinComplexityPolicyURL = pinComplexityPolicyURL;
+      this.pinComplexityPolicyUrl = pinComplexityPolicyUrl;
       this.maxPinLength = maxPinLength;
     }
 
@@ -1069,8 +1069,8 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
      *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250228/fido-client-to-authenticator-protocol-v2.2-ps-20250228.html#getinfo-maxrpidsforsetminpinlength">Setting
      *     a minimum PIN Length</a>
      */
-    public int getMaxRPIDsForSetMinPinLength() {
-      return maxRPIDsForSetMinPinLength;
+    public int getMaxRpidsForSetMinPinLength() {
+      return maxRpidsForSetMinPinLength;
     }
 
     /**
@@ -1198,7 +1198,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
 
     /**
      * If present, returns whether the authenticator is enforcing an additional current PIN
-     * complexity policy beyond {@code minPINLength}. PIN complexity policies for authenticators are
+     * complexity policy beyond {@code minPinLength}. PIN complexity policies for authenticators are
      * listed in the FIDO MDS. The authenticator may have a pre-configured PIN complexity policy
      * value that is applied after a reset.
      *
@@ -1219,8 +1219,8 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
      * @return the URL providing more information about the enforced PIN policy
      */
     @Nullable
-    public byte[] getPinComplexityPolicyURL() {
-      return pinComplexityPolicyURL;
+    public byte[] getPinComplexityPolicyUrl() {
+      return pinComplexityPolicyUrl;
     }
 
     /**
@@ -1290,7 +1290,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
           + ", maxCredBlobLength="
           + maxCredBlobLength
           + ", maxRPIDsForSetMinPinLength="
-          + maxRPIDsForSetMinPinLength
+          + maxRpidsForSetMinPinLength
           + ", preferredPlatformUvAttempts="
           + preferredPlatformUvAttempts
           + ", uvModality="
@@ -1314,7 +1314,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
           + ", pinComplexityPolicy="
           + pinComplexityPolicy
           + ", pinComplexityPolicyURL="
-          + (pinComplexityPolicyURL != null ? StringUtils.bytesToHex(pinComplexityPolicyURL) : null)
+          + (pinComplexityPolicyUrl != null ? StringUtils.bytesToHex(pinComplexityPolicyUrl) : null)
           + ", maxPINLength="
           + maxPinLength
           + '}';

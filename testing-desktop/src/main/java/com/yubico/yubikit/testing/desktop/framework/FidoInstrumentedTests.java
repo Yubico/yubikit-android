@@ -29,7 +29,7 @@ import java.util.Arrays;
 import java.util.List;
 import org.jetbrains.annotations.Nullable;
 
-public class FidoInstrumentedTests extends YKInstrumentedTests {
+public class FidoInstrumentedTests extends YkInstrumentedTests {
 
   public static List<Class<? extends YubiKeyConnection>> connectionTypes =
       Arrays.asList(FidoConnection.class, SmartCardConnection.class);

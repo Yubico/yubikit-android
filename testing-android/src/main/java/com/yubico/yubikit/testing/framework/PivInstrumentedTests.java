@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Yubico.
+ * Copyright (C) 2022-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import com.yubico.yubikit.piv.PivSession;
 import com.yubico.yubikit.testing.TestState;
 import com.yubico.yubikit.testing.piv.PivTestState;
 
-public class PivInstrumentedTests extends YKInstrumentedTests {
+public class PivInstrumentedTests extends YkInstrumentedTests {
   protected void withPivSession(
       TestState.StatefulSessionCallback<PivSession, PivTestState> callback) throws Throwable {
     final PivTestState state = new PivTestState.Builder(device, usbPid).scpKid(getScpKid()).build();

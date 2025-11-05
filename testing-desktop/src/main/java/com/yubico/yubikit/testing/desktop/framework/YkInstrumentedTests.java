@@ -26,7 +26,7 @@ import org.junit.Rule;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.TestName;
 
-public class YKInstrumentedTests {
+public class YkInstrumentedTests {
 
   private final DesktopTestDriver testDriver = new DesktopTestDriver();
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Yubico.
+ * Copyright (C) 2023-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -77,21 +77,21 @@ public class AuthenticatorData {
     final byte flags = buffer.get();
     final int signCount = buffer.order(ByteOrder.BIG_ENDIAN).getInt();
 
-    boolean flagAT = getFlag(flags, FLAG_AT);
-    boolean flagED = getFlag(flags, FLAG_ED);
+    boolean flagAt = getFlag(flags, FLAG_AT);
+    boolean flagEd = getFlag(flags, FLAG_ED);
 
     AttestedCredentialData attestedCredentialData =
-        flagAT ? AttestedCredentialData.parseFrom(buffer) : null;
+        flagAt ? AttestedCredentialData.parseFrom(buffer) : null;
 
-    if (!flagED && buffer.hasRemaining()) {
+    if (!flagEd && buffer.hasRemaining()) {
       throw new IllegalArgumentException("Unexpected extensions data");
     }
 
-    if (flagED && !buffer.hasRemaining()) {
+    if (flagEd && !buffer.hasRemaining()) {
       throw new IllegalArgumentException("Missing extensions data");
     }
 
-    Map<String, ?> extensions = flagED ? (Map<String, ?>) Cbor.decodeFrom(buffer) : null;
+    Map<String, ?> extensions = flagEd ? (Map<String, ?>) Cbor.decodeFrom(buffer) : null;
 
     // there should not be anything more in the buffer at this point
     if (buffer.hasRemaining()) {

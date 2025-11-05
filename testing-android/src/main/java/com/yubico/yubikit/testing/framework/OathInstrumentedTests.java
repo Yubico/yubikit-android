@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Yubico.
+ * Copyright (C) 2024-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import com.yubico.yubikit.oath.OathSession;
 import com.yubico.yubikit.testing.TestState;
 import com.yubico.yubikit.testing.oath.OathTestState;
 
-public class OathInstrumentedTests extends YKInstrumentedTests {
+public class OathInstrumentedTests extends YkInstrumentedTests {
 
   protected void withDevice(TestState.StatefulDeviceCallback<OathTestState> callback)
       throws Throwable {
