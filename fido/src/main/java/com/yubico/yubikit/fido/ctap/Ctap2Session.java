@@ -93,6 +93,10 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
   @Nullable private final Byte credentialManagerCommand;
   @Nullable private final Byte bioEnrollmentCommand;
 
+  private static final byte[] encIdentifierBytes = "encIdentifier".getBytes(StandardCharsets.UTF_8);
+  private static final byte[] encCredStoreStateBytes =
+      "encCredStoreState".getBytes(StandardCharsets.UTF_8);
+
   private static final org.slf4j.Logger logger = LoggerFactory.getLogger(Ctap2Session.class);
 
   /**
@@ -733,6 +737,8 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
     private static final int RESULT_PIN_COMPLEXITY_POLICY = 0x1B;
     private static final int RESULT_PIN_COMPLEXITY_POLICY_URL = 0x1C;
     private static final int RESULT_MAX_PIN_LENGTH = 0x1D;
+    private static final int RESULT_ENC_CRED_STORE_STATE = 0x1E;
+    private static final int RESULT_AUTHENTICATOR_CONFIG_COMMANDS = 0x1F;
 
     private final List<String> versions;
     private final List<String> extensions;
@@ -763,6 +769,8 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
     @Nullable private final Boolean pinComplexityPolicy;
     @Nullable private final byte[] pinComplexityPolicyURL;
     private final int maxPinLength;
+    @Nullable private final byte[] encCredStoreState;
+    private final List<Integer> authenticatorConfigCommands;
 
     private InfoData(
         List<String> versions,
@@ -793,7 +801,9 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
         List<String> transportsForReset,
         @Nullable Boolean pinComplexityPolicy,
         @Nullable byte[] pinComplexityPolicyURL,
-        int maxPinLength) {
+        int maxPinLength,
+        @Nullable byte[] encCredStoreState,
+        List<Integer> authenticatorConfigCommands) {
       this.versions = versions;
       this.extensions = extensions;
       this.aaguid = aaguid;
@@ -823,6 +833,8 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
       this.pinComplexityPolicy = pinComplexityPolicy;
       this.pinComplexityPolicyURL = pinComplexityPolicyURL;
       this.maxPinLength = maxPinLength;
+      this.encCredStoreState = encCredStoreState;
+      this.authenticatorConfigCommands = authenticatorConfigCommands;
     }
 
     @SuppressWarnings("unchecked")
@@ -884,7 +896,11 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
               : Collections.emptyList(),
           (Boolean) data.get(RESULT_PIN_COMPLEXITY_POLICY),
           (byte[]) data.get(RESULT_PIN_COMPLEXITY_POLICY_URL),
-          data.containsKey(RESULT_MAX_PIN_LENGTH) ? (Integer) data.get(RESULT_MAX_PIN_LENGTH) : 63);
+          data.containsKey(RESULT_MAX_PIN_LENGTH) ? (Integer) data.get(RESULT_MAX_PIN_LENGTH) : 63,
+          (byte[]) data.get(RESULT_ENC_CRED_STORE_STATE),
+          data.containsKey(RESULT_AUTHENTICATOR_CONFIG_COMMANDS)
+              ? (List<Integer>) data.get(RESULT_AUTHENTICATOR_CONFIG_COMMANDS)
+              : Collections.emptyList());
     }
 
     /**
@@ -1240,17 +1256,24 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
       if (encIdentifier == null) {
         return null;
       }
+      return decrypt(encIdentifier, encIdentifierBytes, persistentPinUvAuthToken);
+    }
 
-      byte[] iv = Arrays.copyOfRange(encIdentifier, 0, 16);
-      byte[] ct = Arrays.copyOfRange(encIdentifier, 16, encIdentifier.length);
+    @Nullable
+    public byte[] getCredStoreState(byte[] persistentPinUvAuthToken)
+        throws GeneralSecurityException {
+      if (encCredStoreState == null) {
+        return null;
+      }
+      return decrypt(encCredStoreState, encCredStoreStateBytes, persistentPinUvAuthToken);
+    }
+
+    private byte[] decrypt(byte[] encrypted, byte[] info, byte[] persistentPinUvAuthToken)
+        throws GeneralSecurityException {
+      byte[] iv = Arrays.copyOfRange(encrypted, 0, 16);
+      byte[] ct = Arrays.copyOfRange(encrypted, 16, encrypted.length);
       Hkdf hkdf = new Hkdf("HmacSHA256");
-      byte[] secret =
-          hkdf.digest(
-              persistentPinUvAuthToken,
-              new byte[32],
-              "encIdentifier".getBytes(StandardCharsets.UTF_8),
-              16);
-
+      byte[] secret = hkdf.digest(persistentPinUvAuthToken, new byte[32], info, 16);
       Cipher cipher = Cipher.getInstance("AES/CBC/NoPadding");
       cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(secret, "AES"), new IvParameterSpec(iv));
       return cipher.doFinal(ct);
@@ -1317,6 +1340,10 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
           + (pinComplexityPolicyURL != null ? StringUtils.bytesToHex(pinComplexityPolicyURL) : null)
           + ", maxPINLength="
           + maxPinLength
+          + ", encCredStoreState="
+          + (encCredStoreState != null ? StringUtils.bytesToHex(encCredStoreState) : null)
+          + ", authenticatorConfigCommands="
+          + authenticatorConfigCommands
           + '}';
     }
   }
