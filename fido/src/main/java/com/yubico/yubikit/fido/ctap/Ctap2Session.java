@@ -770,7 +770,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
     @Nullable private final byte[] pinComplexityPolicyURL;
     private final int maxPinLength;
     @Nullable private final byte[] encCredStoreState;
-    private final List<Integer> authenticatorConfigCommands;
+    @Nullable private final List<Integer> authenticatorConfigCommands;
 
     private InfoData(
         List<String> versions,
@@ -803,7 +803,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
         @Nullable byte[] pinComplexityPolicyURL,
         int maxPinLength,
         @Nullable byte[] encCredStoreState,
-        List<Integer> authenticatorConfigCommands) {
+        @Nullable List<Integer> authenticatorConfigCommands) {
       this.versions = versions;
       this.extensions = extensions;
       this.aaguid = aaguid;
@@ -898,9 +898,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
           (byte[]) data.get(RESULT_PIN_COMPLEXITY_POLICY_URL),
           data.containsKey(RESULT_MAX_PIN_LENGTH) ? (Integer) data.get(RESULT_MAX_PIN_LENGTH) : 63,
           (byte[]) data.get(RESULT_ENC_CRED_STORE_STATE),
-          data.containsKey(RESULT_AUTHENTICATOR_CONFIG_COMMANDS)
-              ? (List<Integer>) data.get(RESULT_AUTHENTICATOR_CONFIG_COMMANDS)
-              : Collections.emptyList());
+          (List<Integer>) data.get(RESULT_AUTHENTICATOR_CONFIG_COMMANDS));
     }
 
     /**
@@ -1280,6 +1278,16 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
         return null;
       }
       return decrypt(encCredStoreState, encCredStoreStateBytes, persistentPinUvAuthToken);
+    }
+
+    /**
+     * List of supported authenticator config commands.
+     *
+     * @return list of supported authenticator config commands.
+     */
+    @Nullable
+    public List<Integer> getAuthenticatorConfigCommands() {
+      return authenticatorConfigCommands;
     }
 
     private byte[] decrypt(byte[] encrypted, byte[] info, byte[] persistentPinUvAuthToken)
