@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Yubico.
+ * Copyright (C) 2020-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,8 +22,8 @@ import java.util.Locale;
  * An error on the CTAP-level, returned from the Authenticator.
  *
  * <p>These error codes are defined by the <a
- * href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#error-responses">CTAP2
- * specification</a>
+ * href="https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html#error-responses">CTAP2
+ * Status codes</a>
  */
 public class CtapException extends CommandException {
   public static final byte ERR_SUCCESS = 0x00;
