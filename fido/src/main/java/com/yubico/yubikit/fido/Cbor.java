@@ -91,8 +91,7 @@ public class Cbor {
    * @param length The length of CBOR encoded data.
    * @return The decoded Object.
    */
-  @Nullable
-  public static Object decode(byte[] data, int offset, int length) {
+  public static @Nullable Object decode(byte[] data, int offset, int length) {
     ByteBuffer buf = ByteBuffer.wrap(data, offset, length);
     Object decoded = decodeFrom(buf);
     if (buf.hasRemaining()) {
@@ -107,8 +106,7 @@ public class Cbor {
    * @param data The CBOR encoded byte array.
    * @return The decoded Object.
    */
-  @Nullable
-  public static Object decode(byte[] data) {
+  public static @Nullable Object decode(byte[] data) {
     return decode(data, 0, data.length);
   }
 
@@ -119,8 +117,7 @@ public class Cbor {
    * @param buf the ByteBuffer from where the Object should be decoded.
    * @return The decoded object.
    */
-  @Nullable
-  public static Object decodeFrom(ByteBuffer buf) {
+  public static @Nullable Object decodeFrom(ByteBuffer buf) {
     int head = 0xff & buf.get();
     byte additionalInfo = (byte) (head & 0b11111);
     switch (head >> 5) {
@@ -267,7 +264,7 @@ public class Cbor {
   }
 
   private static List<?> loadList(byte additionalInfo, ByteBuffer buf) {
-    List<Object> list = new ArrayList<>();
+    List<@Nullable Object> list = new ArrayList<>();
     for (int i = loadInt(additionalInfo, buf); i > 0; i--) {
       list.add(decodeFrom(buf));
     }
@@ -275,7 +272,7 @@ public class Cbor {
   }
 
   private static Map<?, ?> loadMap(byte additionalInfo, ByteBuffer buf) {
-    Map<Object, Object> map = new HashMap<>();
+    Map<@Nullable Object, @Nullable Object> map = new HashMap<>();
     for (int i = loadInt(additionalInfo, buf); i > 0; i--) {
       map.put(decodeFrom(buf), decodeFrom(buf));
     }

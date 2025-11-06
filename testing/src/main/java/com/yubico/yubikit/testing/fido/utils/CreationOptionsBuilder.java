@@ -39,6 +39,7 @@ public class CreationOptionsBuilder {
   @Nullable Extensions extensions = null;
   @Nullable PublicKeyCredentialUserEntity userEntity = null;
   @Nullable List<PublicKeyCredentialDescriptor> excludeCredentials = null;
+  @Nullable String userVerification = null;
 
   public CreationOptionsBuilder residentKey(boolean residentKey) {
     this.residentKey = residentKey;
@@ -95,13 +96,18 @@ public class CreationOptionsBuilder {
     return this;
   }
 
+  public CreationOptionsBuilder userVerification(@Nullable String userVerification) {
+    this.userVerification = userVerification;
+    return this;
+  }
+
   public PublicKeyCredentialCreationOptions build() {
     PublicKeyCredentialRpEntity rp = TestData.RP;
     AuthenticatorSelectionCriteria criteria =
         new AuthenticatorSelectionCriteria(
             null,
             residentKey ? ResidentKeyRequirement.REQUIRED : ResidentKeyRequirement.DISCOURAGED,
-            null);
+            userVerification);
     return new PublicKeyCredentialCreationOptions(
         rp,
         userEntity != null ? userEntity : TestData.USER,

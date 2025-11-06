@@ -32,7 +32,12 @@ class ShortApduFormatter implements ApduFormatter {
     }
 
     ByteBuffer buf =
-        ByteBuffer.allocate(4 + (length > 0 ? 1 : 0) + length + (le > 0 ? 1 : 0))
+        ByteBuffer.allocate(
+                4
+                    + (length > 0 ? 1 : 0)
+                    + length
+                    + (le > 0 ? 1 : 0)
+                    + (length == 0 && le == 0 ? 1 : 0))
             .put(cla)
             .put(ins)
             .put(p1)
@@ -42,6 +47,8 @@ class ShortApduFormatter implements ApduFormatter {
     }
     if (le > 0) {
       buf.put((byte) le);
+    } else if (length == 0) {
+      buf.put((byte) 0);
     }
     return buf.array();
   }

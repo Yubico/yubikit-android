@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Yubico.
+ * Copyright (C) 2024-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,19 +21,16 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 import com.yubico.yubikit.core.UsbPid;
+import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.YubiKeyDevice;
-import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
-import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.management.Capability;
 import com.yubico.yubikit.management.DeviceInfo;
 import com.yubico.yubikit.piv.KeyType;
 import com.yubico.yubikit.piv.ManagementKeyType;
 import com.yubico.yubikit.piv.PivSession;
-import com.yubico.yubikit.testing.ScpParameters;
 import com.yubico.yubikit.testing.TestState;
-import java.io.IOException;
-import org.jspecify.annotations.Nullable;
+import java.util.Collections;
 
 public class PivTestState extends TestState {
 
@@ -63,7 +60,7 @@ public class PivTestState extends TestState {
   public static class Builder extends TestState.Builder<PivTestState.Builder> {
 
     public Builder(YubiKeyDevice device, UsbPid usbPid) {
-      super(device, usbPid);
+      super(device, Collections.singletonList(SmartCardConnection.class), usbPid);
     }
 
     @Override
@@ -100,8 +97,8 @@ public class PivTestState extends TestState {
           "No matching key params found for required kid", scpParameters.getKeyParams() != null);
     }
 
-    try (SmartCardConnection connection = openSmartCardConnection()) {
-      PivSession pivSession = getPivSession(connection, scpParameters);
+    try (YubiKeyConnection connection = openConnection()) {
+      PivSession pivSession = getSession(connection, scpParameters.getKeyParams(), PivSession::new);
       assumeTrue("PIV not available", pivSession != null);
 
       try {
@@ -139,22 +136,11 @@ public class PivTestState extends TestState {
   }
 
   public void withPiv(StatefulSessionCallback<PivSession, PivTestState> callback) throws Throwable {
-    try (SmartCardConnection connection = openSmartCardConnection()) {
-      final PivSession piv = getPivSession(connection, scpParameters);
+    try (YubiKeyConnection connection = openConnection()) {
+      final PivSession piv = getSession(connection, scpParameters.getKeyParams(), PivSession::new);
       assumeTrue("No PIV support", piv != null);
       callback.invoke(piv, this);
     }
     reconnect();
-  }
-
-  @Nullable
-  public static PivSession getPivSession(
-      SmartCardConnection connection, ScpParameters scpParameters) throws IOException {
-    try {
-      return new PivSession(connection, scpParameters.getKeyParams());
-    } catch (ApplicationNotAvailableException | ApduException ignored) {
-      // no PIV support
-    }
-    return null;
   }
 }

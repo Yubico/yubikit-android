@@ -61,6 +61,7 @@ public class ClientPin {
   public static final int PIN_PERMISSION_BE = 0x08;
   public static final int PIN_PERMISSION_LBW = 0x10;
   public static final int PIN_PERMISSION_ACFG = 0x20;
+  public static final int PIN_PERMISSION_PCMR = 0x40;
 
   private final Ctap2Session ctap;
   private final PinUvAuthProtocol pinUvAuth;

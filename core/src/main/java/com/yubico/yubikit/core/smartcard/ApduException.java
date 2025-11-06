@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2022 Yubico.
+ * Copyright (C) 2019-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,14 +26,28 @@ public class ApduException extends CommandException {
   private static final long serialVersionUID = 1L;
 
   private final short sw;
+  private final byte[] data;
 
+  @Deprecated
   public ApduException(short sw) {
     this(sw, String.format(Locale.ROOT, "APDU error: 0x%04x", sw));
   }
 
+  @Deprecated
   public ApduException(short sw, String message) {
     super(message);
     this.sw = sw;
+    this.data = new byte[0];
+  }
+
+  public ApduException(byte[] data, short sw) {
+    this(data, sw, String.format(Locale.ROOT, "APDU error: 0x%04x", sw));
+  }
+
+  public ApduException(byte[] data, short sw, String message) {
+    super(message);
+    this.sw = sw;
+    this.data = data;
   }
 
   /**
@@ -43,5 +57,14 @@ public class ApduException extends CommandException {
    */
   public short getSw() {
     return sw;
+  }
+
+  /**
+   * Gets the data received via APDU response
+   *
+   * @return response data
+   */
+  public byte[] getData() {
+    return data;
   }
 }

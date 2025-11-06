@@ -31,6 +31,7 @@ import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
 import com.yubico.yubikit.core.application.CommandException;
+import com.yubico.yubikit.core.application.CommandState;
 import com.yubico.yubikit.core.fido.CtapException;
 import com.yubico.yubikit.fido.Cbor;
 import com.yubico.yubikit.fido.client.BasicWebAuthnClient;
@@ -64,6 +65,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import javax.annotation.Nonnull;
 import org.jspecify.annotations.Nullable;
 import org.junit.Assert;
@@ -167,6 +170,41 @@ public class BasicWebAuthnClientTests {
           }
 
           deleteCredentials(webauthn, deleteCredIds);
+        });
+  }
+
+  public static void testCancelMakeCredential(FidoTestState state) throws Throwable {
+    assumeTrue("Test only supported over USB transport", state.isUsbTransport());
+
+    state.withCtap2(
+        session -> {
+          BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
+
+          CommandState commandState = new CommandState();
+          Executors.newSingleThreadScheduledExecutor()
+              .schedule(commandState::cancel, 500, TimeUnit.MILLISECONDS);
+
+          try {
+
+            PublicKeyCredentialCreationOptions creationOptionsNonRk =
+                getCreateOptions(
+                    new PublicKeyCredentialUserEntity(
+                        "user", "user".getBytes(StandardCharsets.UTF_8), "User"),
+                    false,
+                    Collections.singletonList(TestData.PUB_KEY_CRED_PARAMS_ES256),
+                    null);
+            webauthn.makeCredential(
+                TestData.CLIENT_DATA_JSON_CREATE,
+                creationOptionsNonRk,
+                Objects.requireNonNull(creationOptionsNonRk.getRp().getId()),
+                TestData.PIN,
+                null,
+                commandState);
+            // cred should not be created because mc was cancelled
+            fail("Failed to cancel");
+          } catch (ClientError clientError) {
+            assertEquals(ClientError.Code.TIMEOUT, clientError.getErrorCode());
+          }
         });
   }
 

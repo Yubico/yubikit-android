@@ -37,6 +37,7 @@ import org.junit.Assume;
 public class HmacSecretExtensionTests {
 
   private static final String KEY_HMAC_SECRET = "hmac-secret";
+  private static final String KEY_HMAC_SECRET_MC = "hmac-secret-mc";
   private static final String KEY_HMAC_CREATE_SECRET = "hmacCreateSecret";
   private static final String KEY_HMAC_GET_SECRET = "hmacGetSecret";
   private static final String KEY_SALT1 = "salt1";
@@ -66,9 +67,16 @@ public class HmacSecretExtensionTests {
             0x01, 0x07, 0x02, 0x08, 0x03, 0x06, 0x04, 0x05,
           });
 
-  public static void test(FidoTestState state) throws Throwable {
+  public static void testHmacSecret(FidoTestState state) throws Throwable {
     HmacSecretExtensionTests extTests = new HmacSecretExtensionTests();
-    extTests.runTest(state);
+    extTests.runHmacSecretTest(state, false);
+    extTests.runHmacSecretTest(state, true);
+  }
+
+  public static void testHmacSecretMc(FidoTestState state) throws Throwable {
+    HmacSecretExtensionTests extTests = new HmacSecretExtensionTests();
+    extTests.runHmacSecretMcTest(state, false);
+    extTests.runHmacSecretMcTest(state, true);
   }
 
   // this test is active only on devices without hmac-secret
@@ -79,176 +87,156 @@ public class HmacSecretExtensionTests {
 
   private HmacSecretExtensionTests() {}
 
-  private void runTest(FidoTestState state) throws Throwable {
+  private void runHmacSecretTest(FidoTestState state, boolean rk) throws Throwable {
 
-    // non-discoverable credential
-    {
-      // no output when no input
-      state.withCtap2(
-          session -> {
-            Assume.assumeTrue(session.getCachedInfo().getExtensions().contains(KEY_HMAC_SECRET));
-            PublicKeyCredential cred = new ClientHelper(session, extensions).makeCredential();
-            Assert.assertNull(getCreateResult(cred));
-          });
-
-      // no output when hmac-secret not allowed
-      // input:  { hmacSecretCreate: true }
-      // output: {  }
-      state.withCtap2(
-          session -> {
-            PublicKeyCredential cred =
-                new ClientHelper(session)
-                    .makeCredential(
-                        new CreationOptionsBuilder()
-                            .extensions(Collections.singletonMap(KEY_HMAC_CREATE_SECRET, true))
-                            .build());
-
-            Assert.assertNull(getCreateResult(cred));
-          });
-
-      // input:  { hmacSecretCreate: true }
-      // output: { hmacSecretCreate: true }
-      PublicKeyCredential publicKeyCredential =
-          state.withCtap2(
-              session -> {
-                PublicKeyCredential cred =
-                    new ClientHelper(session, extensions)
-                        .makeCredential(
-                            new CreationOptionsBuilder()
-                                .extensions(Collections.singletonMap(KEY_HMAC_CREATE_SECRET, true))
-                                .build());
-
-                Assert.assertEquals(Boolean.TRUE, getCreateResult(cred));
-                return cred;
-              });
-
-      // input:  { hmacGetSecret: { salt1: String } }
-      // output: { hmacGetSecret: { output1: String } }
-      state.withCtap2(
-          session -> {
-            PublicKeyCredential cred =
-                new ClientHelper(session, extensions)
-                    .getAssertions(
-                        new RequestOptionsBuilder()
-                            // this is no discoverable key, we have to pass the id
-                            .allowedCredentials(publicKeyCredential)
-                            .extensions(
-                                Collections.singletonMap(
-                                    KEY_HMAC_GET_SECRET,
-                                    Collections.singletonMap(KEY_SALT1, VALUE_SALT1)))
-                            .build());
-
-            Assert.assertNotNull(getGetResultsValue(cred, KEY_OUTPUT1));
-            Assert.assertNull(getGetResultsValue(cred, KEY_OUTPUT2));
-          });
-
-      // input:  { hmacGetSecret: { salt1: String, salt2: String } }
-      // output: { hmacGetSecret: { output1: String, output2: String } }
-      state.withCtap2(
-          session -> {
-            Map<String, Object> salts = new HashMap<>();
-            salts.put(KEY_SALT1, VALUE_SALT1);
-            salts.put(KEY_SALT2, VALUE_SALT2);
-
-            PublicKeyCredential cred =
-                new ClientHelper(session, extensions)
-                    .getAssertions(
-                        new RequestOptionsBuilder()
-                            // this is no discoverable key, we have to pass the id
-                            .allowedCredentials(publicKeyCredential)
-                            .extensions(Collections.singletonMap(KEY_HMAC_GET_SECRET, salts))
-                            .build());
-
-            Assert.assertNotNull(getGetResultsValue(cred, KEY_OUTPUT1));
-            Assert.assertNotNull(getGetResultsValue(cred, KEY_OUTPUT2));
-          });
-    }
-
-    // discoverable credential
-    {
-      // no output when no input
-      state.withCtap2(
-          session -> {
-            Assume.assumeTrue(session.getCachedInfo().getExtensions().contains(KEY_HMAC_SECRET));
-            ClientHelper client = new ClientHelper(session, extensions);
-            PublicKeyCredential cred =
-                client.makeCredential(new CreationOptionsBuilder().residentKey(true).build());
-            Assert.assertNull(getCreateResult(cred));
+    // no output when no input
+    state.withCtap2(
+        session -> {
+          Assume.assumeTrue(session.getCachedInfo().getExtensions().contains(KEY_HMAC_SECRET));
+          final ClientHelper client = new ClientHelper(session, extensions);
+          PublicKeyCredential cred =
+              client.makeCredential(new CreationOptionsBuilder().residentKey(rk).build());
+          Assert.assertNull(getCreateResult(cred));
+          if (rk) {
             client.deleteCredentials(cred);
-          });
+          }
+        });
 
-      // no output when hmac-secret not allowed
-      // input:  { hmacSecretCreate: true }
-      // output: { }
-      state.withCtap2(
-          session -> {
-            ClientHelper client = new ClientHelper(session);
-            PublicKeyCredential cred =
-                client.makeCredential(
-                    new CreationOptionsBuilder()
-                        .residentKey(true)
-                        .userEntity("tempCred")
-                        .extensions(Collections.singletonMap(KEY_HMAC_CREATE_SECRET, true))
-                        .build());
-            Assert.assertNull(getCreateResult(cred));
-            // directly delete the temporary credential
+    // no output when hmac-secret not allowed
+    // input:  { hmacSecretCreate: true }
+    // output: {  }
+    state.withCtap2(
+        session -> {
+          final ClientHelper client = new ClientHelper(session); // see that no extensions are used
+          PublicKeyCredential cred =
+              client.makeCredential(
+                  new CreationOptionsBuilder()
+                      .residentKey(rk)
+                      .extensions(Collections.singletonMap(KEY_HMAC_CREATE_SECRET, true))
+                      .build());
+
+          Assert.assertNull(getCreateResult(cred));
+          if (rk) {
             client.deleteCredentials(cred);
-          });
+          }
+        });
 
-      // input:  { hmacSecretCreate: true }
-      // output: { hmacSecretCreate: true }
-      PublicKeyCredential publicKeyCredential =
-          state.withCtap2(
-              session -> {
-                PublicKeyCredential cred =
-                    new ClientHelper(session, extensions)
-                        .makeCredential(
-                            new CreationOptionsBuilder()
-                                .residentKey(true)
-                                .extensions(Collections.singletonMap(KEY_HMAC_CREATE_SECRET, true))
-                                .build());
-                Assert.assertEquals(Boolean.TRUE, getCreateResult(cred));
-                return cred;
-              });
+    // input:  { hmacSecretCreate: true }
+    // output: { hmacSecretCreate: true }
+    PublicKeyCredential publicKeyCredential =
+        state.withCtap2(
+            session -> {
+              final ClientHelper client = new ClientHelper(session, extensions);
+              PublicKeyCredential cred =
+                  client.makeCredential(
+                      new CreationOptionsBuilder()
+                          .residentKey(rk)
+                          .extensions(Collections.singletonMap(KEY_HMAC_CREATE_SECRET, true))
+                          .build());
 
-      // input:  { hmacGetSecret: { salt1: String } }
-      // output: { hmacGetSecret: { output1: String } }
-      state.withCtap2(
-          session -> {
-            PublicKeyCredential cred =
-                new ClientHelper(session, extensions)
-                    .getAssertions(
-                        new RequestOptionsBuilder()
-                            .extensions(
-                                Collections.singletonMap(
-                                    KEY_HMAC_GET_SECRET,
-                                    Collections.singletonMap(KEY_SALT1, VALUE_SALT1)))
-                            .build());
-            Assert.assertNotNull(getGetResultsValue(cred, KEY_OUTPUT1));
-            Assert.assertNull(getGetResultsValue(cred, KEY_OUTPUT2));
-          });
+              Assert.assertEquals(Boolean.TRUE, getCreateResult(cred));
+              return cred;
+            });
 
-      // input:  { hmacGetSecret: { salt1: String, salt2: String } }
-      // output: { hmacGetSecret: { output1: String, output2: String } }
-      state.withCtap2(
-          session -> {
-            Map<String, Object> salts = new HashMap<>();
-            salts.put(KEY_SALT1, VALUE_SALT1);
-            salts.put(KEY_SALT2, VALUE_SALT2);
+    // input:  { hmacGetSecret: { salt1: String } }
+    // output: { hmacGetSecret: { output1: String } }
+    state.withCtap2(
+        session -> {
+          PublicKeyCredential cred =
+              new ClientHelper(session, extensions)
+                  .getAssertions(
+                      new RequestOptionsBuilder()
+                          // this is no discoverable key, we have to pass the id
+                          .allowedCredentials(publicKeyCredential)
+                          .extensions(
+                              Collections.singletonMap(
+                                  KEY_HMAC_GET_SECRET,
+                                  Collections.singletonMap(KEY_SALT1, VALUE_SALT1)))
+                          .build());
 
-            ClientHelper client = new ClientHelper(session, extensions);
-            PublicKeyCredential cred =
-                client.getAssertions(
-                    new RequestOptionsBuilder()
-                        .extensions(Collections.singletonMap(KEY_HMAC_GET_SECRET, salts))
-                        .build());
+          Assert.assertNotNull(getGetResultsValue(cred, KEY_OUTPUT1));
+          Assert.assertNull(getGetResultsValue(cred, KEY_OUTPUT2));
+        });
 
-            Assert.assertNotNull(getGetResultsValue(cred, KEY_OUTPUT1));
-            Assert.assertNotNull(getGetResultsValue(cred, KEY_OUTPUT2));
+    // input:  { hmacGetSecret: { salt1: String, salt2: String } }
+    // output: { hmacGetSecret: { output1: String, output2: String } }
+    state.withCtap2(
+        session -> {
+          Map<String, Object> salts = new HashMap<>();
+          salts.put(KEY_SALT1, VALUE_SALT1);
+          salts.put(KEY_SALT2, VALUE_SALT2);
 
-            client.deleteCredentials(publicKeyCredential);
-          });
-    }
+          final ClientHelper client = new ClientHelper(session, extensions);
+          PublicKeyCredential cred =
+              client.getAssertions(
+                  new RequestOptionsBuilder()
+                      // this is no discoverable key, we have to pass the id
+                      .allowedCredentials(publicKeyCredential)
+                      .extensions(Collections.singletonMap(KEY_HMAC_GET_SECRET, salts))
+                      .build());
+
+          Assert.assertNotNull(getGetResultsValue(cred, KEY_OUTPUT1));
+          Assert.assertNotNull(getGetResultsValue(cred, KEY_OUTPUT2));
+
+          if (rk) {
+            client.deleteCredentials(cred);
+          }
+        });
+  }
+
+  private void runHmacSecretMcTest(FidoTestState state, boolean rk) throws Throwable {
+
+    // input:  { hmacSecretCreate: true, hmacGetSecret: { salt1: String } }
+    // output: { hmacSecretCreate: true, hmacGetSecret: { output1: String } }
+    state.withCtap2(
+        session -> {
+          Assume.assumeTrue(
+              "No hmac-secret-mc support",
+              session.getCachedInfo().getExtensions().contains(KEY_HMAC_SECRET_MC));
+
+          Map<String, Object> extensionsInput = new HashMap<>();
+          extensionsInput.put(KEY_HMAC_CREATE_SECRET, true);
+          extensionsInput.put(
+              KEY_HMAC_GET_SECRET, Collections.singletonMap(KEY_SALT1, VALUE_SALT1));
+
+          final ClientHelper client = new ClientHelper(session, extensions);
+          PublicKeyCredential cred =
+              client.makeCredential(
+                  new CreationOptionsBuilder().residentKey(rk).extensions(extensionsInput).build());
+          Assert.assertEquals(Boolean.TRUE, getCreateResult(cred));
+          byte[] output1 = getGetResultsValue(cred, KEY_OUTPUT1);
+          Assert.assertNotNull(output1);
+          Assert.assertNull(getGetResultsValue(cred, KEY_OUTPUT2));
+          if (rk) {
+            client.deleteCredentials(cred);
+          }
+        });
+
+    // input:  { hmacSecretCreate: true, hmacGetSecret: { salt1: String, salt2: String } }
+    // output: { hmacSecretCreate: true, hmacGetSecret: { output1: String, output2: String } }
+    state.withCtap2(
+        session -> {
+          Map<String, String> salts = new HashMap<>();
+          salts.put(KEY_SALT1, VALUE_SALT1);
+          salts.put(KEY_SALT2, VALUE_SALT2);
+          Map<String, Object> extensionsInput = new HashMap<>();
+          extensionsInput.put(KEY_HMAC_CREATE_SECRET, true);
+          extensionsInput.put(KEY_HMAC_GET_SECRET, salts);
+
+          final ClientHelper client = new ClientHelper(session, extensions);
+          PublicKeyCredential cred =
+              client.makeCredential(
+                  new CreationOptionsBuilder().residentKey(rk).extensions(extensionsInput).build());
+          Assert.assertEquals(Boolean.TRUE, getCreateResult(cred));
+          byte[] output1 = getGetResultsValue(cred, KEY_OUTPUT1);
+          byte[] output2 = getGetResultsValue(cred, KEY_OUTPUT2);
+          Assert.assertNotNull(output1);
+          Assert.assertNotNull(output2);
+
+          if (rk) {
+            client.deleteCredentials(cred);
+          }
+        });
   }
 
   private void runNoSupportTest(FidoTestState state) throws Throwable {

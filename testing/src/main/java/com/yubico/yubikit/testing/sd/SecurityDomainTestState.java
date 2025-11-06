@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Yubico.
+ * Copyright (C) 2024-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,21 +20,20 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assume.assumeTrue;
 
 import com.yubico.yubikit.core.UsbPid;
+import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.YubiKeyDevice;
-import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.smartcard.scp.ScpKeyParams;
 import com.yubico.yubikit.core.smartcard.scp.SecurityDomainSession;
 import com.yubico.yubikit.testing.TestState;
-import java.io.IOException;
-import org.jspecify.annotations.Nullable;
+import java.util.Collections;
 
 public class SecurityDomainTestState extends TestState {
 
   public static class Builder extends TestState.Builder<SecurityDomainTestState.Builder> {
 
     public Builder(YubiKeyDevice device, UsbPid usbPid) {
-      super(device, usbPid);
+      super(device, Collections.singletonList(SmartCardConnection.class), usbPid);
     }
 
     @Override
@@ -50,9 +49,10 @@ public class SecurityDomainTestState extends TestState {
   protected SecurityDomainTestState(Builder builder) throws Throwable {
     super(builder);
 
-    try (SmartCardConnection connection = openSmartCardConnection()) {
+    try (YubiKeyConnection connection = openConnection()) {
       assumeTrue("Key does not support smart card connection", connection != null);
-      SecurityDomainSession sd = getSecurityDomainSession(connection);
+      SecurityDomainSession sd =
+          getSession(connection, scpParameters.getKeyParams(), SecurityDomainSession::new);
       assumeTrue("Security domain not supported", sd != null);
       assertNull("These tests expect kid to be null", scpParameters.getKid());
     }
@@ -64,8 +64,9 @@ public class SecurityDomainTestState extends TestState {
   }
 
   public void withSecurityDomain(SessionCallback<SecurityDomainSession> callback) throws Throwable {
-    try (SmartCardConnection connection = openSmartCardConnection()) {
-      callback.invoke(getSecurityDomainSession(connection));
+    try (YubiKeyConnection connection = openConnection()) {
+      callback.invoke(
+          getSession(connection, scpParameters.getKeyParams(), SecurityDomainSession::new));
     }
     reconnect();
   }
@@ -73,8 +74,10 @@ public class SecurityDomainTestState extends TestState {
   public <R> R withSecurityDomain(SessionCallbackT<SecurityDomainSession, R> callback)
       throws Throwable {
     R result;
-    try (SmartCardConnection connection = openSmartCardConnection()) {
-      result = callback.invoke(getSecurityDomainSession(connection));
+    try (YubiKeyConnection connection = openConnection()) {
+      result =
+          callback.invoke(
+              getSession(connection, scpParameters.getKeyParams(), SecurityDomainSession::new));
     }
     reconnect();
     return result;
@@ -82,8 +85,8 @@ public class SecurityDomainTestState extends TestState {
 
   public void withSecurityDomain(
       ScpKeyParams scpKeyParams, SessionCallback<SecurityDomainSession> callback) throws Throwable {
-    try (SmartCardConnection connection = openSmartCardConnection()) {
-      callback.invoke(getSecurityDomainSession(scpKeyParams, connection));
+    try (YubiKeyConnection connection = openConnection()) {
+      callback.invoke(getSession(connection, scpKeyParams, SecurityDomainSession::new));
     }
     reconnect();
   }
@@ -92,32 +95,10 @@ public class SecurityDomainTestState extends TestState {
       ScpKeyParams scpKeyParams, SessionCallbackT<SecurityDomainSession, R> callback)
       throws Throwable {
     R result;
-    try (SmartCardConnection connection = openSmartCardConnection()) {
-      result = callback.invoke(getSecurityDomainSession(scpKeyParams, connection));
+    try (YubiKeyConnection connection = openConnection()) {
+      result = callback.invoke(getSession(connection, scpKeyParams, SecurityDomainSession::new));
     }
     reconnect();
     return result;
-  }
-
-  @Nullable
-  protected SecurityDomainSession getSecurityDomainSession(SmartCardConnection connection)
-      throws IOException {
-    try {
-      return new SecurityDomainSession(connection, scpParameters.getKeyParams());
-    } catch (ApplicationNotAvailableException ignored) {
-      // no Security Domain support
-    }
-    return null;
-  }
-
-  @Nullable
-  public static SecurityDomainSession getSecurityDomainSession(
-      ScpKeyParams scpKeyParams, SmartCardConnection connection) throws IOException {
-    try {
-      return new SecurityDomainSession(connection, scpKeyParams);
-    } catch (ApplicationNotAvailableException ignored) {
-      // no Security Domain support
-    }
-    return null;
   }
 }

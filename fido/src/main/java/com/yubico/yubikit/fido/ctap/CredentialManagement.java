@@ -81,6 +81,10 @@ public class CredentialManagement {
     return supportsCredMgmt(info) || supportsCredentialMgmtPreview(info);
   }
 
+  public static boolean isReadonlySupported(Ctap2Session.InfoData info) {
+    return Boolean.TRUE.equals(info.getOptions().get("perCredMgmtRO"));
+  }
+
   private static boolean supportsCredMgmt(Ctap2Session.InfoData info) {
     return Boolean.TRUE.equals(info.getOptions().get("credMgmt"));
   }
