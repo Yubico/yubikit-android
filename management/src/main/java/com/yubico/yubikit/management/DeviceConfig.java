@@ -48,19 +48,6 @@ public class DeviceConfig {
   @Nullable private final Integer deviceFlags;
   @Nullable private final Boolean nfcRestricted;
 
-  @Deprecated
-  DeviceConfig(
-      Map<Transport, Integer> enabledCapabilities,
-      @Nullable Short autoEjectTimeout,
-      @Nullable Byte challengeResponseTimeout,
-      @Nullable Integer deviceFlags) {
-    this.enabledCapabilities = enabledCapabilities;
-    this.autoEjectTimeout = autoEjectTimeout;
-    this.challengeResponseTimeout = challengeResponseTimeout;
-    this.deviceFlags = deviceFlags;
-    this.nfcRestricted = null;
-  }
-
   DeviceConfig(Builder builder) {
     this.enabledCapabilities = builder.enabledCapabilities;
     this.autoEjectTimeout = builder.autoEjectTimeout;

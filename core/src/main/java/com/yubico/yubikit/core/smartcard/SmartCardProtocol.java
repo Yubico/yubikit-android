@@ -189,30 +189,6 @@ public class SmartCardProtocol implements Closeable {
   }
 
   /**
-   * YubiKey NEO doesn't support extended APDU's for most applications.
-   *
-   * @param apduFormat the APDU encoding to use when sending commands
-   * @deprecated use {@link #configure(Version)} instead.
-   */
-  @Deprecated
-  public void setApduFormat(ApduFormat apduFormat) {
-    switch (apduFormat) {
-      case SHORT:
-        if (extendedApdus) {
-          extendedApdus = false;
-          reconfigureProcessor();
-        }
-        break;
-      case EXTENDED:
-        if (!extendedApdus) {
-          extendedApdus = true;
-          reconfigureProcessor();
-        }
-        break;
-    }
-  }
-
-  /**
    * @return the underlying connection
    */
   public SmartCardConnection getConnection() {

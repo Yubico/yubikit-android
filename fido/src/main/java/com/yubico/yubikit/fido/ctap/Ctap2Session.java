@@ -1331,22 +1331,6 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
     @Nullable private final byte[] largeBlobKey;
     @Nullable private final Map<String, ?> unsignedExtensionOutputs;
 
-    @Deprecated
-    private CredentialData(
-        String format,
-        byte[] authenticatorData,
-        Map<String, ?> attestationStatement,
-        @Nullable Boolean enterpriseAttestation,
-        @Nullable byte[] largeBlobKey) {
-      this(
-          format,
-          authenticatorData,
-          attestationStatement,
-          enterpriseAttestation,
-          largeBlobKey,
-          null);
-    }
-
     private CredentialData(
         String format,
         byte[] authenticatorData,

@@ -209,16 +209,6 @@ public class OathSession extends ApplicationSession<OathSession> {
     }
   }
 
-  /**
-   * Returns true if an Access Key is currently set.
-   *
-   * @deprecated Use {@link #isAccessKeySet()} instead.
-   */
-  @Deprecated
-  public boolean hasAccessKey() {
-    return isAccessKeySet;
-  }
-
   /** Returns true if an Access Key is currently set. */
   public boolean isAccessKeySet() {
     return isAccessKeySet;
