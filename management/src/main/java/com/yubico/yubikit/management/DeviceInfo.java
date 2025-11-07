@@ -17,7 +17,6 @@ package com.yubico.yubikit.management;
 
 import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.Version;
-import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.util.Tlvs;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
@@ -26,6 +25,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import javax.annotation.Nullable;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Contains metadata, including Device Configuration, of a YubiKey. */
@@ -50,7 +50,7 @@ public class DeviceInfo {
   private static final int TAG_VERSION_QUALIFIER = 0x19;
   private static final int TAG_FPS_VERSION = 0x20;
   private static final int TAG_STM_VERSION = 0x21;
-  private static final org.slf4j.Logger logger = LoggerFactory.getLogger(DeviceInfo.class);
+  private static final Logger logger = LoggerFactory.getLogger(DeviceInfo.class);
 
   private final DeviceConfig config;
   @Nullable private final Integer serialNumber;
@@ -263,7 +263,7 @@ public class DeviceInfo {
 
     boolean isFinalVersion = versionQualifier.getType() == VersionQualifier.Type.FINAL;
     if (!isFinalVersion) {
-      Logger.debug(logger, "Overriding behavioral version with {}", versionQualifier.getVersion());
+      logger.debug("Overriding behavioral version with {}", versionQualifier.getVersion());
     }
 
     final Version version = isFinalVersion ? firmwareVersion : versionQualifier.getVersion();

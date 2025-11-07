@@ -21,7 +21,6 @@ import static com.yubico.yubikit.fido.webauthn.PublicKeyCredentialType.PUBLIC_KE
 import com.yubico.yubikit.core.application.CommandException;
 import com.yubico.yubikit.core.application.CommandState;
 import com.yubico.yubikit.core.fido.CtapException;
-import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.util.Pair;
 import com.yubico.yubikit.fido.client.extensions.CredBlobExtension;
 import com.yubico.yubikit.fido.client.extensions.CredPropsExtension;
@@ -62,6 +61,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import javax.annotation.Nullable;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -105,7 +105,7 @@ public class BasicWebAuthnClient implements Closeable {
 
   private final List<Extension> extensions;
 
-  private static final org.slf4j.Logger logger = LoggerFactory.getLogger(BasicWebAuthnClient.class);
+  private static final Logger logger = LoggerFactory.getLogger(BasicWebAuthnClient.class);
 
   public static class UserAgentConfiguration {
     private List<String> epSupportedRpIds = new ArrayList<>();
@@ -870,7 +870,7 @@ public class BasicWebAuthnClient implements Closeable {
 
       final Map<String, Boolean> upFalse = Collections.singletonMap("up", false);
       while (!creds.isEmpty()) {
-        Logger.trace(logger, "Pre-flighting list of {} credentials", creds.size());
+        logger.trace("Pre-flighting list of {} credentials", creds.size());
         final List<PublicKeyCredentialDescriptor> chunk =
             creds.subList(0, Math.min(maxCreds, creds.size()));
         try {
@@ -897,12 +897,12 @@ public class BasicWebAuthnClient implements Closeable {
         } catch (CtapException ctapException) {
           final byte ctapError = ctapException.getCtapError();
           if (ctapError == CtapException.ERR_NO_CREDENTIALS) {
-            Logger.trace(logger, "No credentials found in chunk");
+            logger.trace("No credentials found in chunk");
             chunk.clear();
             continue;
           } else if (ctapError == CtapException.ERR_REQUEST_TOO_LARGE) {
             maxCreds--;
-            Logger.trace(logger, "Chunk request was too large, retrying with {} creds", maxCreds);
+            logger.trace("Chunk request was too large, retrying with {} creds", maxCreds);
             if (maxCreds == 0) {
               throw ctapException;
             }

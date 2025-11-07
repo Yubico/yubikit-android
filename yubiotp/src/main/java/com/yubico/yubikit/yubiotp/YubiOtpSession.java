@@ -28,7 +28,6 @@ import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.application.CommandException;
 import com.yubico.yubikit.core.application.CommandState;
 import com.yubico.yubikit.core.application.Feature;
-import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.otp.ChecksumUtils;
 import com.yubico.yubikit.core.otp.OtpConnection;
 import com.yubico.yubikit.core.otp.OtpProtocol;
@@ -47,6 +46,7 @@ import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import javax.annotation.Nullable;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -119,7 +119,7 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
 
   private final Backend<?> backend;
 
-  private static final org.slf4j.Logger logger = LoggerFactory.getLogger(YubiOtpSession.class);
+  private static final Logger logger = LoggerFactory.getLogger(YubiOtpSession.class);
 
   /**
    * Connects to a YubiKeyDevice and establishes a new session with a YubiKeys OTP application.
@@ -319,7 +319,7 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
    * @throws CommandException in case of an error response from the YubiKey
    */
   public void swapConfigurations() throws IOException, CommandException {
-    Logger.debug(logger, "Swapping touch slots");
+    logger.debug("Swapping touch slots");
     require(FEATURE_SWAP);
     writeConfig(CMD_SWAP, new byte[0], null);
   }
@@ -338,7 +338,7 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
    */
   public void deleteConfiguration(Slot slot, @Nullable byte[] curAccCode)
       throws IOException, CommandException {
-    Logger.debug(logger, "Deleting slot {}", slot);
+    logger.debug("Deleting slot {}", slot);
     writeConfig(slot.map(CMD_CONFIG_1, CMD_CONFIG_2), new byte[CONFIG_SIZE], curAccCode);
   }
 
@@ -362,8 +362,7 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
       throw new UnsupportedOperationException(
           "This configuration update is not supported on this YubiKey version");
     }
-    Logger.debug(
-        logger,
+    logger.debug(
         "Writing configuration of type {} to slot {}",
         configuration.getClass().getSimpleName(),
         slot);
@@ -401,7 +400,7 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
           "The access code cannot be updated on this YubiKey. Instead, delete the slot and"
               + " configure it anew.");
     }
-    Logger.debug(logger, "Writing configuration update to slot {}", slot);
+    logger.debug("Writing configuration update to slot {}", slot);
     writeConfig(slot.map(CMD_UPDATE_1, CMD_UPDATE_2), configuration.getConfig(accCode), curAccCode);
   }
 
@@ -420,7 +419,7 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
   @SuppressWarnings("JavadocLinkAsPlainText")
   public void setNdefConfiguration(Slot slot, @Nullable String uri, @Nullable byte[] curAccCode)
       throws IOException, CommandException {
-    Logger.debug(logger, "Writing NDEF configuration for slot {} ", slot);
+    logger.debug("Writing NDEF configuration for slot {} ", slot);
     require(FEATURE_NDEF);
     writeConfig(
         slot.map(CMD_NDEF_1, CMD_NDEF_2),
@@ -443,7 +442,7 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
    */
   public byte[] calculateHmacSha1(Slot slot, byte[] challenge, @Nullable CommandState state)
       throws IOException, CommandException {
-    Logger.debug(logger, "Calculating response for slog {}", slot);
+    logger.debug("Calculating response for slog {}", slot);
     require(FEATURE_CHALLENGE_RESPONSE);
 
     // Pad challenge with byte different from last.
@@ -458,18 +457,15 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
 
   private void writeConfig(byte commandSlot, byte[] config, @Nullable byte[] curAccCode)
       throws IOException, CommandException {
-    Logger.debug(
-        logger,
-        "Writing configuration to slot {}, access code: {}",
-        commandSlot,
-        curAccCode != null);
+    logger.debug(
+        "Writing configuration to slot {}, access code: {}", commandSlot, curAccCode != null);
     backend.writeToSlot(
         commandSlot,
         ByteBuffer.allocate(config.length + ACC_CODE_SIZE)
             .put(config)
             .put(curAccCode == null ? new byte[ACC_CODE_SIZE] : curAccCode)
             .array());
-    Logger.info(logger, "Configuration written");
+    logger.info("Configuration written");
   }
 
   private static ConfigurationState parseConfigState(Version version, byte[] status) {
@@ -564,8 +560,7 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
 
   private void logCtor(YubiKeyConnection connection) {
     final Version version = getVersion();
-    Logger.debug(
-        logger,
+    logger.debug(
         "YubiOTP session initialized for connection={}, version={}, ledInverted={}",
         connection.getClass().getSimpleName(),
         version,
@@ -577,8 +572,7 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
       slotOneConfigured = backend.configurationState.isConfigured(Slot.ONE);
       slotTwoConfigured = backend.configurationState.isConfigured(Slot.TWO);
     } else {
-      Logger.debug(
-          logger, "This YubiKey does not support checking whether OTP slot " + "is configured");
+      logger.debug("This YubiKey does not support checking whether OTP slot " + "is configured");
     }
 
     Boolean slotOneTouchTriggered = null;
@@ -587,17 +581,14 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
       slotOneTouchTriggered = backend.configurationState.isTouchTriggered(Slot.ONE);
       slotTwoTouchTriggered = backend.configurationState.isTouchTriggered(Slot.TWO);
     } else {
-      Logger.debug(
-          logger,
+      logger.debug(
           "This YubiKey does not support checking whether OTP slot is " + "touch triggered");
     }
-    Logger.debug(
-        logger,
+    logger.debug(
         "Configuration slot 1: configured={}, touchTriggered={}",
         slotOneConfigured != null ? slotOneConfigured : "?",
         slotOneTouchTriggered != null ? slotOneTouchTriggered : "?");
-    Logger.debug(
-        logger,
+    logger.debug(
         "Configuration slot 2: configured={}, touchTriggered={}",
         slotTwoConfigured != null ? slotTwoConfigured : "?",
         slotTwoTouchTriggered != null ? slotTwoTouchTriggered : "?");

@@ -26,7 +26,6 @@ import com.yubico.yubikit.core.application.CommandState;
 import com.yubico.yubikit.core.fido.CtapException;
 import com.yubico.yubikit.core.fido.FidoConnection;
 import com.yubico.yubikit.core.fido.FidoProtocol;
-import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.smartcard.Apdu;
 import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.core.smartcard.AppId;
@@ -55,6 +54,7 @@ import javax.annotation.Nullable;
 import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -93,7 +93,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
   @Nullable private final Byte credentialManagerCommand;
   @Nullable private final Byte bioEnrollmentCommand;
 
-  private static final org.slf4j.Logger logger = LoggerFactory.getLogger(Ctap2Session.class);
+  private static final Logger logger = LoggerFactory.getLogger(Ctap2Session.class);
 
   /**
    * Construct a new Ctap2Session for a given YubiKey.
@@ -140,8 +140,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
       SmartCardConnection connection, Version version, @Nullable ScpKeyParams scpKeyParams)
       throws IOException, CommandException {
     this(version, getSmartCardBackend(connection, scpKeyParams));
-    Logger.debug(
-        logger,
+    logger.debug(
         "Ctap2Session session initialized for connection={}, version={}",
         connection.getClass().getSimpleName(),
         version);
@@ -149,8 +148,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
 
   public Ctap2Session(FidoConnection connection) throws IOException, CommandException {
     this(new FidoProtocol(connection));
-    Logger.debug(
-        logger,
+    logger.debug(
         "Ctap2Session session initialized for connection={}, version={}",
         connection.getClass().getSimpleName(),
         version);
@@ -224,7 +222,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
               state.onKeepAliveStatus(keepAliveStatus);
             }
             if (state.waitForCancel(100)) {
-              Logger.trace(logger, "NFCCTAP_GETRESPONSE cancelled");
+              logger.trace("NFCCTAP_GETRESPONSE cancelled");
               p1 = P1_CANCEL_KEEP_ALIVE;
             }
           }
@@ -268,8 +266,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
 
     int maxMsgSize = command == CMD_GET_INFO ? 1024 : info.maxMsgSize;
     if (data.length > maxMsgSize) {
-      Logger.error(
-          logger, "Actual message size ({}) larger than maxMsgSize ({})", data.length, maxMsgSize);
+      logger.error("Actual message size ({}) larger than maxMsgSize ({})", data.length, maxMsgSize);
       throw new CtapException(CtapException.ERR_REQUEST_TOO_LARGE);
     }
 
@@ -325,8 +322,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
       @Nullable Integer enterpriseAttestation,
       @Nullable CommandState state)
       throws IOException, CommandException {
-    Logger.debug(
-        logger,
+    logger.debug(
         "makeCredential for clientDataHash={},rp={},user={},"
             + "pubKeyCredParams={},excludeList={},extensions={},options={},"
             + "pinUvAuthParam={},pinUvAuthProtocol={},enterpriseAttestation={},state={}",
@@ -359,7 +355,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
             state);
 
     CredentialData credentialData = CredentialData.fromData(data);
-    Logger.info(logger, "Credential created");
+    logger.info("Credential created");
     return credentialData;
   }
 
@@ -394,8 +390,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
       @Nullable Integer pinUvAuthProtocol,
       @Nullable CommandState state)
       throws IOException, CommandException {
-    Logger.debug(
-        logger,
+    logger.debug(
         "getAssertions for rpId={},clientDataHash={},"
             + "allowList={},extensions={},options={},pinUvAuthParam={},"
             + "pinUvAuthProtocol={},state={}",
@@ -428,7 +423,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
           AssertionData.fromData(
               Objects.requireNonNull(sendCbor(CMD_GET_NEXT_ASSERTION, null, null))));
     }
-    Logger.info(logger, "Authenticator returned {} assertions.", credentialCount);
+    logger.info("Authenticator returned {} assertions.", credentialCount);
     return assertions;
   }
 
@@ -446,7 +441,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
   public InfoData getInfo() throws IOException, CommandException {
     final Map<Integer, ?> infoData = sendCbor(CMD_GET_INFO, null, null);
     final InfoData info = InfoData.fromData(infoData);
-    Logger.debug(logger, "Ctap2.InfoData: {}", info);
+    logger.debug("Ctap2.InfoData: {}", info);
     return info;
   }
 
@@ -479,8 +474,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
       @Nullable String rpId,
       @Nullable CommandState state)
       throws IOException, CommandException {
-    Logger.debug(
-        logger,
+    logger.debug(
         "clientPin for pinUvAuthProtocol={},subCommand={},"
             + "keyAgreement={},pinUvAuthParam={},newPinEnc={},pinHashEnc={},"
             + "permissions={},rpId={}",

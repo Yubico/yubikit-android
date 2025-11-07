@@ -17,7 +17,6 @@ package com.yubico.yubikit.core.fido;
 
 import com.yubico.yubikit.core.Version;
 import com.yubico.yubikit.core.application.CommandState;
-import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.util.RandomUtils;
 import com.yubico.yubikit.core.util.StringUtils;
 import java.io.Closeable;
@@ -26,6 +25,7 @@ import java.nio.ByteBuffer;
 import java.security.MessageDigest;
 import java.util.Arrays;
 import javax.annotation.Nullable;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class FidoProtocol implements Closeable {
@@ -63,7 +63,7 @@ public class FidoProtocol implements Closeable {
   private final int capabilities;
   private int channelId;
 
-  private static final org.slf4j.Logger logger = LoggerFactory.getLogger(FidoProtocol.class);
+  private static final Logger logger = LoggerFactory.getLogger(FidoProtocol.class);
 
   public FidoProtocol(FidoConnection connection) throws IOException {
     this.connection = connection;
@@ -85,8 +85,7 @@ public class FidoProtocol implements Closeable {
     buffer.get(versionBytes);
     version = Version.fromBytes(versionBytes);
     capabilities = buffer.get();
-    Logger.debug(
-        logger, "FIDO connection set up with channel ID: {}", String.format("0x%08x", channelId));
+    logger.debug("FIDO connection set up with channel ID: {}", String.format("0x%08x", channelId));
   }
 
   public byte[] sendAndReceive(byte cmd, byte[] payload, @Nullable CommandState state)
@@ -103,8 +102,7 @@ public class FidoProtocol implements Closeable {
     do {
       toSend.get(buffer, packet.position(), Math.min(toSend.remaining(), packet.remaining()));
       connection.send(buffer);
-      Logger.trace(
-          logger, "{} bytes sent over fido: {}", buffer.length, StringUtils.bytesToHex(buffer));
+      logger.trace("{} bytes sent over fido: {}", buffer.length, StringUtils.bytesToHex(buffer));
       Arrays.fill(buffer, (byte) 0);
       packet.clear();
       packet.putInt(channelId).put((byte) (0x7f & seq++));
@@ -116,16 +114,16 @@ public class FidoProtocol implements Closeable {
     do {
       packet.clear();
       if (state.waitForCancel(0)) {
-        Logger.debug(logger, "sending CTAP cancel...");
+        logger.debug("sending CTAP cancel...");
         Arrays.fill(buffer, (byte) 0);
         packet.putInt(channelId).put(CTAPHID_CANCEL);
         connection.send(buffer);
-        Logger.trace(logger, "Sent over fido: {}", StringUtils.bytesToHex(buffer));
+        logger.trace("Sent over fido: {}", StringUtils.bytesToHex(buffer));
         packet.clear();
       }
 
       connection.receive(buffer);
-      Logger.trace(logger, "Received over fido: {}", StringUtils.bytesToHex(buffer));
+      logger.trace("Received over fido: {}", StringUtils.bytesToHex(buffer));
       int responseChannel = packet.getInt();
       if (responseChannel != channelId) {
         throw new IOException(
@@ -168,6 +166,6 @@ public class FidoProtocol implements Closeable {
   @Override
   public void close() throws IOException {
     connection.close();
-    Logger.debug(logger, "fido connection closed");
+    logger.debug("fido connection closed");
   }
 }

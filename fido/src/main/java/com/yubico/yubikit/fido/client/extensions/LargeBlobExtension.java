@@ -20,7 +20,6 @@ import static com.yubico.yubikit.core.internal.codec.Base64.fromUrlSafeString;
 import static com.yubico.yubikit.core.internal.codec.Base64.toUrlSafeString;
 
 import com.yubico.yubikit.core.application.CommandException;
-import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.fido.ctap.ClientPin;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
@@ -34,6 +33,7 @@ import java.security.GeneralSecurityException;
 import java.util.Collections;
 import java.util.Map;
 import javax.annotation.Nullable;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -56,7 +56,7 @@ public class LargeBlobExtension extends Extension {
   private static final String SUPPORTED = "supported";
   private static final String REQUIRED = "required";
   private static final String BLOB = "blob";
-  private static final org.slf4j.Logger logger = LoggerFactory.getLogger(LargeBlobExtension.class);
+  private static final Logger logger = LoggerFactory.getLogger(LargeBlobExtension.class);
 
   public LargeBlobExtension() {
     super(LARGE_BLOB_KEY);
@@ -144,7 +144,7 @@ public class LargeBlobExtension extends Extension {
                       serializationType == SerializationType.JSON ? toUrlSafeString(blob) : blob)
                   : Collections.emptyMap());
     } catch (IOException | CommandException e) {
-      Logger.error(logger, "LargeBlob processing failed: ", e);
+      logger.error("LargeBlob processing failed: ", e);
     }
 
     return null;
@@ -171,7 +171,7 @@ public class LargeBlobExtension extends Extension {
           Collections.singletonMap(LARGE_BLOB, Collections.singletonMap(WRITTEN, true));
 
     } catch (IOException | CommandException | GeneralSecurityException e) {
-      Logger.error(logger, "LargeBlob processing failed: ", e);
+      logger.error("LargeBlob processing failed: ", e);
     }
 
     return null;

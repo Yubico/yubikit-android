@@ -16,16 +16,16 @@
 package com.yubico.yubikit.testing.desktop;
 
 import com.yubico.yubikit.core.YubiKeyDevice;
-import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.desktop.OperatingSystem;
 import com.yubico.yubikit.desktop.YubiKitManager;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class DesktopTestDriver {
 
   private final YubiKitManager yubikit;
 
-  private static final org.slf4j.Logger logger = LoggerFactory.getLogger(DesktopTestDriver.class);
+  private static final Logger logger = LoggerFactory.getLogger(DesktopTestDriver.class);
 
   public DesktopTestDriver() {
     if (OperatingSystem.isMac()) {
@@ -41,6 +41,6 @@ public class DesktopTestDriver {
   }
 
   public void returnSession(YubiKeyDevice ignoredDevice) {
-    Logger.debug(logger, "Device returned");
+    logger.debug("Device returned");
   }
 }

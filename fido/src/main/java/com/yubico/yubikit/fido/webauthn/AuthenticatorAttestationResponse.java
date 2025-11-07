@@ -19,7 +19,6 @@ package com.yubico.yubikit.fido.webauthn;
 import static com.yubico.yubikit.fido.webauthn.SerializationUtils.deserializeBytes;
 import static com.yubico.yubikit.fido.webauthn.SerializationUtils.serializeBytes;
 
-import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.fido.Cose;
 import java.nio.ByteBuffer;
 import java.security.NoSuchAlgorithmException;
@@ -31,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import javax.annotation.Nullable;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class AuthenticatorAttestationResponse extends AuthenticatorResponse {
@@ -46,7 +46,7 @@ public class AuthenticatorAttestationResponse extends AuthenticatorResponse {
   private final Integer publicKeyAlgorithm;
   private final byte[] attestationObject;
 
-  private static final org.slf4j.Logger logger =
+  private static final Logger logger =
       LoggerFactory.getLogger(AuthenticatorAttestationResponse.class);
 
   public AuthenticatorAttestationResponse(
@@ -88,8 +88,7 @@ public class AuthenticatorAttestationResponse extends AuthenticatorResponse {
       resultPublicKey = publicKey == null ? null : publicKey.getEncoded();
     } catch (InvalidKeySpecException | NoSuchAlgorithmException exception) {
       // library does not support this public key format
-      Logger.info(
-          logger,
+      logger.info(
           "Platform does not support binary serialization of the given key"
               + " type, the 'publicKey' field will be null.");
     }

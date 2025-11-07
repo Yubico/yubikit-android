@@ -26,11 +26,12 @@ import java.nio.charset.StandardCharsets;
 import java.util.zip.ZipException;
 import org.junit.Assert;
 import org.junit.Test;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class GzipUtilsTest {
 
-  private static final org.slf4j.Logger logger = LoggerFactory.getLogger(GzipUtilsTest.class);
+  private static final Logger logger = LoggerFactory.getLogger(GzipUtilsTest.class);
 
   private final byte[] testData =
       Codec.fromHex(

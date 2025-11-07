@@ -19,7 +19,6 @@ package com.yubico.yubikit.fido.ctap;
 import com.yubico.yubikit.core.application.CommandException;
 import com.yubico.yubikit.core.application.CommandState;
 import com.yubico.yubikit.core.fido.CtapException;
-import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.internal.codec.Base64;
 import com.yubico.yubikit.fido.Cbor;
 import java.io.ByteArrayOutputStream;
@@ -30,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import javax.annotation.Nullable;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -81,7 +81,7 @@ public class FingerprintBioEnrollment extends BioEnrollment {
   private final PinUvAuthProtocol pinUvAuth;
   private final byte[] pinUvToken;
 
-  private final org.slf4j.Logger logger = LoggerFactory.getLogger(FingerprintBioEnrollment.class);
+  private final Logger logger = LoggerFactory.getLogger(FingerprintBioEnrollment.class);
 
   public static class SensorInfo {
     public final int fingerprintKind;
@@ -319,13 +319,13 @@ public class FingerprintBioEnrollment extends BioEnrollment {
    */
   public EnrollBeginStatus enrollBegin(@Nullable Integer timeout, @Nullable CommandState state)
       throws IOException, CommandException {
-    Logger.debug(logger, "Starting fingerprint enrollment");
+    logger.debug("Starting fingerprint enrollment");
 
     Map<Integer, Object> parameters = new HashMap<>();
     if (timeout != null) parameters.put(PARAM_TIMEOUT_MS, timeout);
 
     final Map<Integer, ?> result = call(CMD_ENROLL_BEGIN, parameters, state);
-    Logger.debug(logger, "Sample capture result: {}", result);
+    logger.debug("Sample capture result: {}", result);
     return new EnrollBeginStatus(
         Objects.requireNonNull((byte[]) result.get(RESULT_TEMPLATE_ID)),
         Objects.requireNonNull((Integer) result.get(RESULT_LAST_SAMPLE_STATUS)),
@@ -354,17 +354,15 @@ public class FingerprintBioEnrollment extends BioEnrollment {
   public CaptureStatus enrollCaptureNext(
       byte[] templateId, @Nullable Integer timeout, @Nullable CommandState state)
       throws IOException, CommandException {
-    Logger.debug(
-        logger,
-        "Capturing next sample with (timeout={})",
-        timeout != null ? timeout : "none specified");
+    logger.debug(
+        "Capturing next sample with (timeout={})", timeout != null ? timeout : "none specified");
 
     Map<Integer, Object> parameters = new HashMap<>();
     parameters.put(PARAM_TEMPLATE_ID, templateId);
     if (timeout != null) parameters.put(PARAM_TIMEOUT_MS, timeout);
 
     final Map<Integer, ?> result = call(CMD_ENROLL_CAPTURE_NEXT, parameters, state);
-    Logger.debug(logger, "Sample capture result: {}", result);
+    logger.debug("Sample capture result: {}", result);
     return new CaptureStatus(
         Objects.requireNonNull((Integer) result.get(RESULT_LAST_SAMPLE_STATUS)),
         Objects.requireNonNull((Integer) result.get(RESULT_REMAINING_SAMPLES)));
@@ -380,7 +378,7 @@ public class FingerprintBioEnrollment extends BioEnrollment {
    *     current enrollment</a>
    */
   public void enrollCancel() throws IOException, CommandException {
-    Logger.debug(logger, "Cancelling fingerprint enrollment.");
+    logger.debug("Cancelling fingerprint enrollment.");
     call(CMD_ENROLL_CANCEL, null, null, false);
   }
 
@@ -446,15 +444,14 @@ public class FingerprintBioEnrollment extends BioEnrollment {
    *     FriendlyName</a>
    */
   public void setName(byte[] templateId, String name) throws IOException, CommandException {
-    Logger.debug(
-        logger, "Changing name of template: {} {}", Base64.toUrlSafeString(templateId), name);
+    logger.debug("Changing name of template: {} {}", Base64.toUrlSafeString(templateId), name);
 
     Map<Integer, Object> parameters = new HashMap<>();
     parameters.put(PARAM_TEMPLATE_ID, templateId);
     parameters.put(PARAM_TEMPLATE_FRIENDLY_NAME, name);
 
     call(CMD_SET_NAME, parameters, null);
-    Logger.info(logger, "Fingerprint template renamed");
+    logger.info("Fingerprint template renamed");
   }
 
   /**
@@ -468,12 +465,12 @@ public class FingerprintBioEnrollment extends BioEnrollment {
    *     enrollment</a>
    */
   public void removeEnrollment(byte[] templateId) throws IOException, CommandException {
-    Logger.debug(logger, "Deleting template: {}", Base64.toUrlSafeString(templateId));
+    logger.debug("Deleting template: {}", Base64.toUrlSafeString(templateId));
 
     Map<Integer, Object> parameters = new HashMap<>();
     parameters.put(PARAM_TEMPLATE_ID, templateId);
 
     call(CMD_REMOVE_ENROLLMENT, parameters, null);
-    Logger.info(logger, "Fingerprint template deleted");
+    logger.info("Fingerprint template deleted");
   }
 }

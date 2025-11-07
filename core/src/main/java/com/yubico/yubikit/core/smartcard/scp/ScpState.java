@@ -17,7 +17,6 @@
 package com.yubico.yubikit.core.smartcard.scp;
 
 import com.yubico.yubikit.core.application.BadResponseException;
-import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.keys.PublicKeyValues;
 import com.yubico.yubikit.core.smartcard.Apdu;
 import com.yubico.yubikit.core.smartcard.ApduException;
@@ -55,11 +54,12 @@ import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Internal SCP state class for managing SCP state, handling encryption/decryption and MAC. */
 public class ScpState {
-  private static final org.slf4j.Logger logger = LoggerFactory.getLogger(ScpState.class);
+  private static final Logger logger = LoggerFactory.getLogger(ScpState.class);
 
   private final SessionKeys keys;
   private byte[] macChain;
@@ -79,7 +79,7 @@ public class ScpState {
 
   public byte[] encrypt(byte[] data) {
     // Pad the data
-    Logger.trace(logger, "Plaintext data: {}", StringUtils.bytesToHex(data));
+    logger.trace("Plaintext data: {}", StringUtils.bytesToHex(data));
     int padLen = 16 - (data.length % 16);
     byte[] padded = Arrays.copyOf(data, data.length + padLen);
     padded[data.length] = (byte) 0x80;
@@ -124,7 +124,7 @@ public class ScpState {
       decrypted = cipher.doFinal(encrypted);
       for (int i = decrypted.length - 1; i > 0; i--) {
         if (decrypted[i] == (byte) 0x80) {
-          Logger.trace(logger, "Plaintext resp: {}", StringUtils.bytesToHex(decrypted));
+          logger.trace("Plaintext resp: {}", StringUtils.bytesToHex(decrypted));
           return Arrays.copyOf(decrypted, i);
         } else if (decrypted[i] != 0x00) {
           break;

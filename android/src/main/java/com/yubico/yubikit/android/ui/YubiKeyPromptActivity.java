@@ -33,10 +33,10 @@ import com.yubico.yubikit.android.transport.nfc.NfcYubiKeyManager;
 import com.yubico.yubikit.android.transport.usb.UsbConfiguration;
 import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.application.CommandState;
-import com.yubico.yubikit.core.internal.Logger;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Objects;
 import javax.annotation.Nullable;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -119,8 +119,7 @@ public class YubiKeyPromptActivity extends Activity {
   private boolean allowUsb;
   private boolean allowNfc;
 
-  private static final org.slf4j.Logger logger =
-      LoggerFactory.getLogger(YubiKeyPromptActivity.class);
+  private static final Logger logger = LoggerFactory.getLogger(YubiKeyPromptActivity.class);
 
   /**
    * Get the YubiKitManager used by this activity.
@@ -220,7 +219,7 @@ public class YubiKeyPromptActivity extends Activity {
         | InstantiationException
         | NoSuchMethodException
         | InvocationTargetException e) {
-      Logger.error(logger, "Unable to instantiate ConnectionAction", e);
+      logger.error("Unable to instantiate ConnectionAction", e);
       finish();
     }
 
