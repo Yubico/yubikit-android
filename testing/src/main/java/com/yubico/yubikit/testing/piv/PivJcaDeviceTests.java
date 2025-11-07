@@ -22,10 +22,10 @@ import static com.yubico.yubikit.testing.piv.PivJcaUtils.setupJca;
 import static com.yubico.yubikit.testing.piv.PivJcaUtils.tearDownJca;
 
 import com.yubico.yubikit.piv.KeyType;
-import com.yubico.yubikit.piv.PinPolicy;
 import com.yubico.yubikit.piv.PivSession;
 import com.yubico.yubikit.piv.Slot;
 import com.yubico.yubikit.piv.TouchPolicy;
+import com.yubico.yubikit.piv.VerificationPolicy;
 import com.yubico.yubikit.piv.jca.PivAlgorithmParameterSpec;
 import com.yubico.yubikit.piv.jca.PivKeyStoreKeyParameters;
 import com.yubico.yubikit.piv.jca.PivProvider;
@@ -70,7 +70,7 @@ public class PivJcaDeviceTests {
       keyStore.setEntry(
           alias,
           new KeyStore.PrivateKeyEntry(keyPair.getPrivate(), new Certificate[] {cert}),
-          new PivKeyStoreKeyParameters(PinPolicy.DEFAULT, TouchPolicy.DEFAULT));
+          new PivKeyStoreKeyParameters(VerificationPolicy.DEFAULT, TouchPolicy.DEFAULT));
       PrivateKey privateKey = (PrivateKey) keyStore.getKey(alias, state.pin);
 
       PivTestUtils.rsaEncryptAndDecrypt(privateKey, keyPair.getPublic());
@@ -94,7 +94,7 @@ public class PivJcaDeviceTests {
       keyStore.setEntry(
           alias,
           new KeyStore.PrivateKeyEntry(keyPair.getPrivate(), new Certificate[] {cert}),
-          new PivKeyStoreKeyParameters(PinPolicy.DEFAULT, TouchPolicy.DEFAULT));
+          new PivKeyStoreKeyParameters(VerificationPolicy.DEFAULT, TouchPolicy.DEFAULT));
       PrivateKey privateKey = (PrivateKey) keyStore.getKey(alias, state.pin);
 
       PivTestUtils.ecKeyAgreement(privateKey, keyPair.getPublic());
@@ -121,7 +121,7 @@ public class PivJcaDeviceTests {
         keyStore.setEntry(
             alias,
             new KeyStore.PrivateKeyEntry(keyPair.getPrivate(), new Certificate[] {cert}),
-            new PivKeyStoreKeyParameters(PinPolicy.DEFAULT, TouchPolicy.DEFAULT));
+            new PivKeyStoreKeyParameters(VerificationPolicy.DEFAULT, TouchPolicy.DEFAULT));
         PrivateKey privateKey = (PrivateKey) keyStore.getKey(alias, state.pin);
 
         if (keyType == KeyType.X25519) {

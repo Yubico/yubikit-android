@@ -25,10 +25,10 @@ import static com.yubico.yubikit.testing.piv.PivJcaUtils.tearDownJca;
 import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.piv.KeyType;
-import com.yubico.yubikit.piv.PinPolicy;
 import com.yubico.yubikit.piv.PivSession;
 import com.yubico.yubikit.piv.Slot;
 import com.yubico.yubikit.piv.TouchPolicy;
+import com.yubico.yubikit.piv.VerificationPolicy;
 import com.yubico.yubikit.piv.jca.PivAlgorithmParameterSpec;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -106,7 +106,7 @@ public class PivJcaSigningTests {
     KeyPairGenerator kpg = KeyPairGenerator.getInstance("YKPiv" + keyType.params.algorithm.name());
     kpg.initialize(
         new PivAlgorithmParameterSpec(
-            Slot.SIGNATURE, keyType, PinPolicy.DEFAULT, TouchPolicy.DEFAULT, state.pin));
+            Slot.SIGNATURE, keyType, VerificationPolicy.DEFAULT, TouchPolicy.DEFAULT, state.pin));
     KeyPair keyPair = kpg.generateKeyPair();
 
     signatureAlgorithmsWithPss = getAllSignatureAlgorithmsWithPSS();

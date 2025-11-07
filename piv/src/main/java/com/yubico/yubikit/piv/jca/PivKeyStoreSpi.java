@@ -22,11 +22,11 @@ import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.core.smartcard.SW;
 import com.yubico.yubikit.core.util.Callback;
 import com.yubico.yubikit.core.util.Result;
-import com.yubico.yubikit.piv.PinPolicy;
 import com.yubico.yubikit.piv.PivSession;
 import com.yubico.yubikit.piv.Slot;
 import com.yubico.yubikit.piv.SlotMetadata;
 import com.yubico.yubikit.piv.TouchPolicy;
+import com.yubico.yubikit.piv.VerificationPolicy;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.InvalidParameterException;
@@ -56,7 +56,7 @@ public class PivKeyStoreSpi extends KeyStoreSpi {
   private void putEntry(
       Slot slot,
       @Nullable PrivateKey key,
-      PinPolicy pinPolicy,
+      VerificationPolicy verificationPolicy,
       TouchPolicy touchPolicy,
       @Nullable X509Certificate certificate)
       throws Exception {
@@ -69,7 +69,10 @@ public class PivKeyStoreSpi extends KeyStoreSpi {
                       PivSession piv = result.getValue();
                       if (key != null) {
                         piv.putKey(
-                            slot, PrivateKeyValues.fromPrivateKey(key), pinPolicy, touchPolicy);
+                            slot,
+                            PrivateKeyValues.fromPrivateKey(key),
+                            verificationPolicy,
+                            touchPolicy);
                       }
                       if (certificate != null) {
                         piv.putCertificate(slot, certificate);
@@ -96,7 +99,7 @@ public class PivKeyStoreSpi extends KeyStoreSpi {
                           return PivPrivateKey.from(
                               data.getPublicKeyValues().toPublicKey(),
                               slot,
-                              data.getPinPolicy(),
+                              data.getVerificationPolicy(),
                               data.getTouchPolicy(),
                               password);
                         } else {
@@ -171,7 +174,7 @@ public class PivKeyStoreSpi extends KeyStoreSpi {
                               PivPrivateKey.from(
                                   data.getPublicKeyValues().toPublicKey(),
                                   slot,
-                                  data.getPinPolicy(),
+                                  data.getVerificationPolicy(),
                                   data.getTouchPolicy(),
                                   pin);
                         } else {
@@ -226,12 +229,12 @@ public class PivKeyStoreSpi extends KeyStoreSpi {
       }
     }
 
-    PinPolicy pinPolicy = PinPolicy.DEFAULT;
+    VerificationPolicy verificationPolicy = VerificationPolicy.DEFAULT;
     TouchPolicy touchPolicy = TouchPolicy.DEFAULT;
     if (privateKey != null) {
       if (protParam != null) {
         if (protParam instanceof PivKeyStoreKeyParameters) {
-          pinPolicy = ((PivKeyStoreKeyParameters) protParam).pinPolicy;
+          verificationPolicy = ((PivKeyStoreKeyParameters) protParam).verificationPolicy;
           touchPolicy = ((PivKeyStoreKeyParameters) protParam).touchPolicy;
         } else {
           throw new KeyStoreException("protParam must be an instance of PivKeyStoreKeyParameters");
@@ -240,7 +243,7 @@ public class PivKeyStoreSpi extends KeyStoreSpi {
     }
 
     try {
-      putEntry(slot, privateKey, pinPolicy, touchPolicy, (X509Certificate) certificate);
+      putEntry(slot, privateKey, verificationPolicy, touchPolicy, (X509Certificate) certificate);
     } catch (Exception e) {
       throw new KeyStoreException(e);
     }
@@ -264,7 +267,7 @@ public class PivKeyStoreSpi extends KeyStoreSpi {
         putEntry(
             slot,
             (PrivateKey) key,
-            PinPolicy.DEFAULT,
+            VerificationPolicy.DEFAULT,
             TouchPolicy.DEFAULT,
             (X509Certificate) chain[0]);
       } catch (Exception e) {
@@ -286,7 +289,8 @@ public class PivKeyStoreSpi extends KeyStoreSpi {
     Slot slot = Slot.fromStringAlias(alias);
     if (cert instanceof X509Certificate) {
       try {
-        putEntry(slot, null, PinPolicy.DEFAULT, TouchPolicy.DEFAULT, (X509Certificate) cert);
+        putEntry(
+            slot, null, VerificationPolicy.DEFAULT, TouchPolicy.DEFAULT, (X509Certificate) cert);
       } catch (Exception e) {
         throw new KeyStoreException(e);
       }

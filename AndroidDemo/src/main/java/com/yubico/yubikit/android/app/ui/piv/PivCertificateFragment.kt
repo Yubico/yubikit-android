@@ -31,7 +31,7 @@ import com.yubico.yubikit.android.app.databinding.FragmentPivCertifiateBinding
 import com.yubico.yubikit.android.app.ui.getSecret
 import com.yubico.yubikit.core.keys.PrivateKeyValues
 import com.yubico.yubikit.piv.KeyType
-import com.yubico.yubikit.piv.PinPolicy
+import com.yubico.yubikit.piv.VerificationPolicy
 import com.yubico.yubikit.piv.Slot
 import com.yubico.yubikit.piv.TouchPolicy
 import com.yubico.yubikit.piv.jca.PivAlgorithmParameterSpec
@@ -158,7 +158,7 @@ class PivCertificateFragment : Fragment() {
             lifecycleScope.launch(Dispatchers.Main) {
                 pivViewModel.pendingAction.value = {
                     authenticate(pivViewModel.mgmtKey)
-                    putKey(slot, PrivateKeyValues.fromPrivateKey(key), PinPolicy.DEFAULT, TouchPolicy.DEFAULT)
+                    putKey(slot, PrivateKeyValues.fromPrivateKey(key), VerificationPolicy.DEFAULT, TouchPolicy.DEFAULT)
                     putCertificate(slot, cert)
                     "Imported certificate ${cert.subjectDN} issued by ${cert.issuerDN}"
                 }
@@ -279,7 +279,7 @@ class PivCertificateFragment : Fragment() {
                     PivAlgorithmParameterSpec(
                         slot,
                         keyType,
-                        PinPolicy.DEFAULT,
+                        VerificationPolicy.DEFAULT,
                         TouchPolicy.DEFAULT,
                         pin.toCharArray()
                     )

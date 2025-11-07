@@ -28,10 +28,10 @@ import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.keys.PrivateKeyValues;
 import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.piv.KeyType;
-import com.yubico.yubikit.piv.PinPolicy;
 import com.yubico.yubikit.piv.PivSession;
 import com.yubico.yubikit.piv.Slot;
 import com.yubico.yubikit.piv.TouchPolicy;
+import com.yubico.yubikit.piv.VerificationPolicy;
 import java.io.IOException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
@@ -79,7 +79,7 @@ public class PivMoveKeyTests {
 
       KeyPair keyPair = PivTestUtils.loadKey(keyType);
       PrivateKeyValues privateKeyValues = PrivateKeyValues.fromPrivateKey(keyPair.getPrivate());
-      piv.putKey(srcSlot, privateKeyValues, PinPolicy.DEFAULT, TouchPolicy.DEFAULT);
+      piv.putKey(srcSlot, privateKeyValues, VerificationPolicy.DEFAULT, TouchPolicy.DEFAULT);
 
       if (hasKey(piv, dstSlot)) {
         piv.deleteKey(dstSlot);

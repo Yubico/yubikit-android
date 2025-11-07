@@ -20,10 +20,10 @@ import com.yubico.yubikit.core.keys.PublicKeyValues;
 import com.yubico.yubikit.core.util.Callback;
 import com.yubico.yubikit.core.util.Result;
 import com.yubico.yubikit.piv.KeyType;
-import com.yubico.yubikit.piv.PinPolicy;
 import com.yubico.yubikit.piv.PivSession;
 import com.yubico.yubikit.piv.Slot;
 import com.yubico.yubikit.piv.TouchPolicy;
+import com.yubico.yubikit.piv.VerificationPolicy;
 import java.math.BigInteger;
 import java.security.PrivateKey;
 import java.security.PublicKey;
@@ -41,7 +41,7 @@ import javax.security.auth.Destroyable;
 public abstract class PivPrivateKey implements PrivateKey, Destroyable {
   final Slot slot;
   final KeyType keyType;
-  @Nullable private final PinPolicy pinPolicy;
+  @Nullable private final VerificationPolicy verificationPolicy;
   @Nullable private final TouchPolicy touchPolicy;
   @Nullable protected char[] pin;
   private boolean destroyed = false;
@@ -49,32 +49,42 @@ public abstract class PivPrivateKey implements PrivateKey, Destroyable {
   static PivPrivateKey from(
       PublicKey publicKey,
       Slot slot,
-      @Nullable PinPolicy pinPolicy,
+      @Nullable VerificationPolicy verificationPolicy,
       @Nullable TouchPolicy touchPolicy,
       @Nullable char[] pin) {
     KeyType keyType = KeyType.fromKey(publicKey);
     if (keyType.params.algorithm == KeyType.Algorithm.RSA) {
       return new PivPrivateKey.RsaKey(
-          slot, keyType, pinPolicy, touchPolicy, ((RSAPublicKey) publicKey).getModulus(), pin);
+          slot,
+          keyType,
+          verificationPolicy,
+          touchPolicy,
+          ((RSAPublicKey) publicKey).getModulus(),
+          pin);
     } else if (keyType == KeyType.ED25519) {
-      return new PivPrivateKey.Ed25519Key(slot, keyType, pinPolicy, touchPolicy, pin);
+      return new PivPrivateKey.Ed25519Key(slot, keyType, verificationPolicy, touchPolicy, pin);
     } else if (keyType == KeyType.X25519) {
-      return new PivPrivateKey.X25519Key(slot, keyType, pinPolicy, touchPolicy, pin);
+      return new PivPrivateKey.X25519Key(slot, keyType, verificationPolicy, touchPolicy, pin);
     } else {
       return new PivPrivateKey.EcKey(
-          slot, keyType, pinPolicy, touchPolicy, ((ECPublicKey) publicKey).getParams(), pin);
+          slot,
+          keyType,
+          verificationPolicy,
+          touchPolicy,
+          ((ECPublicKey) publicKey).getParams(),
+          pin);
     }
   }
 
   protected PivPrivateKey(
       Slot slot,
       KeyType keyType,
-      @Nullable PinPolicy pinPolicy,
+      @Nullable VerificationPolicy verificationPolicy,
       @Nullable TouchPolicy touchPolicy,
       @Nullable char[] pin) {
     this.slot = slot;
     this.keyType = keyType;
-    this.pinPolicy = pinPolicy;
+    this.verificationPolicy = verificationPolicy;
     this.touchPolicy = touchPolicy;
     this.pin = pin != null ? Arrays.copyOf(pin, pin.length) : null;
   }
@@ -106,8 +116,8 @@ public abstract class PivPrivateKey implements PrivateKey, Destroyable {
 
   /** Get the PIN policy of the key, if available. */
   @Nullable
-  public PinPolicy getPinPolicy() {
-    return pinPolicy;
+  public VerificationPolicy getVerificationPolicy() {
+    return verificationPolicy;
   }
 
   /** Get the Touch policy of the key, if available. */
@@ -167,11 +177,11 @@ public abstract class PivPrivateKey implements PrivateKey, Destroyable {
     private EcKey(
         Slot slot,
         KeyType keyType,
-        @Nullable PinPolicy pinPolicy,
+        @Nullable VerificationPolicy verificationPolicy,
         @Nullable TouchPolicy touchPolicy,
         ECParameterSpec ecSpec,
         @Nullable char[] pin) {
-      super(slot, keyType, pinPolicy, touchPolicy, pin);
+      super(slot, keyType, verificationPolicy, touchPolicy, pin);
       this.ecSpec = ecSpec;
     }
 
@@ -206,11 +216,11 @@ public abstract class PivPrivateKey implements PrivateKey, Destroyable {
     private RsaKey(
         Slot slot,
         KeyType keyType,
-        @Nullable PinPolicy pinPolicy,
+        @Nullable VerificationPolicy verificationPolicy,
         @Nullable TouchPolicy touchPolicy,
         BigInteger modulus,
         @Nullable char[] pin) {
-      super(slot, keyType, pinPolicy, touchPolicy, pin);
+      super(slot, keyType, verificationPolicy, touchPolicy, pin);
       this.modulus = modulus;
     }
 
@@ -224,10 +234,10 @@ public abstract class PivPrivateKey implements PrivateKey, Destroyable {
     private Ed25519Key(
         Slot slot,
         KeyType keyType,
-        @Nullable PinPolicy pinPolicy,
+        @Nullable VerificationPolicy verificationPolicy,
         @Nullable TouchPolicy touchPolicy,
         @Nullable char[] pin) {
-      super(slot, keyType, pinPolicy, touchPolicy, pin);
+      super(slot, keyType, verificationPolicy, touchPolicy, pin);
     }
   }
 
@@ -235,10 +245,10 @@ public abstract class PivPrivateKey implements PrivateKey, Destroyable {
     private X25519Key(
         Slot slot,
         KeyType keyType,
-        @Nullable PinPolicy pinPolicy,
+        @Nullable VerificationPolicy verificationPolicy,
         @Nullable TouchPolicy touchPolicy,
         @Nullable char[] pin) {
-      super(slot, keyType, pinPolicy, touchPolicy, pin);
+      super(slot, keyType, verificationPolicy, touchPolicy, pin);
     }
 
     byte[] keyAgreement(

@@ -16,16 +16,16 @@
 
 package com.yubico.yubikit.piv.jca;
 
-import com.yubico.yubikit.piv.PinPolicy;
 import com.yubico.yubikit.piv.TouchPolicy;
+import com.yubico.yubikit.piv.VerificationPolicy;
 import java.security.KeyStore;
 
 public class PivKeyStoreKeyParameters implements KeyStore.ProtectionParameter {
-  final PinPolicy pinPolicy;
+  final VerificationPolicy verificationPolicy;
   final TouchPolicy touchPolicy;
 
-  public PivKeyStoreKeyParameters(PinPolicy pinPolicy, TouchPolicy touchPolicy) {
-    this.pinPolicy = pinPolicy;
+  public PivKeyStoreKeyParameters(VerificationPolicy verificationPolicy, TouchPolicy touchPolicy) {
+    this.verificationPolicy = verificationPolicy;
     this.touchPolicy = touchPolicy;
   }
 }

@@ -25,10 +25,10 @@ import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV2;
 import com.yubico.yubikit.piv.KeyType;
-import com.yubico.yubikit.piv.PinPolicy;
 import com.yubico.yubikit.piv.PivSession;
 import com.yubico.yubikit.piv.Slot;
 import com.yubico.yubikit.piv.TouchPolicy;
+import com.yubico.yubikit.piv.VerificationPolicy;
 import com.yubico.yubikit.testing.piv.PivTestUtils;
 import java.io.IOException;
 import java.security.KeyPair;
@@ -51,7 +51,7 @@ public class MultiProtocolResetDeviceTests {
     piv.putKey(
         Slot.RETIRED1,
         PrivateKeyValues.fromPrivateKey(rsaKeyPair.getPrivate()),
-        PinPolicy.DEFAULT,
+        VerificationPolicy.DEFAULT,
         TouchPolicy.DEFAULT);
 
     assertFalse(state.isPivResetBlocked());

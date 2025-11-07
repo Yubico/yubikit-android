@@ -17,11 +17,11 @@
 package com.yubico.yubikit.piv;
 
 /**
- * The PIN policy of a private key defines whether or not a PIN is required to use the key.
+ * The verification policy of a private key defines the required verification to use the key.
  *
- * <p>Setting a PIN policy other than DEFAULT requires YubiKey 4 or later.
+ * <p>Setting a verification policy other than DEFAULT requires YubiKey 4 or later.
  */
-public enum PinPolicy {
+public enum VerificationPolicy {
   /** The default behavior for the particular key slot is used. */
   DEFAULT(0x0),
 
@@ -42,15 +42,15 @@ public enum PinPolicy {
 
   public final int value;
 
-  PinPolicy(int value) {
+  VerificationPolicy(int value) {
     this.value = value;
   }
 
   /** Returns the PIN policy corresponding to the given PIV application constant. */
-  public static PinPolicy fromValue(int value) {
-    if (value >= 0 && value < PinPolicy.values().length) {
-      return PinPolicy.values()[value];
+  public static VerificationPolicy fromValue(int value) {
+    if (value >= 0 && value < VerificationPolicy.values().length) {
+      return VerificationPolicy.values()[value];
     }
-    throw new IllegalArgumentException("Not a valid PinPolicy :" + value);
+    throw new IllegalArgumentException("Not a valid VerificationPolicy :" + value);
   }
 }

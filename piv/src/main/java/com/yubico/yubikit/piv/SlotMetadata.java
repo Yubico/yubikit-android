@@ -24,19 +24,19 @@ import java.util.Arrays;
 /** Metadata about a key in a slot. */
 public class SlotMetadata {
   private final KeyType keyType;
-  private final PinPolicy pinPolicy;
+  private final VerificationPolicy verificationPolicy;
   private final TouchPolicy touchPolicy;
   private final boolean generated;
   private final byte[] publicKeyEncoded;
 
   public SlotMetadata(
       KeyType keyType,
-      PinPolicy pinPolicy,
+      VerificationPolicy verificationPolicy,
       TouchPolicy touchPolicy,
       boolean generated,
       byte[] publicKeyEncoded) {
     this.keyType = keyType;
-    this.pinPolicy = pinPolicy;
+    this.verificationPolicy = verificationPolicy;
     this.touchPolicy = touchPolicy;
     this.generated = generated;
     this.publicKeyEncoded = Arrays.copyOf(publicKeyEncoded, publicKeyEncoded.length);
@@ -47,9 +47,9 @@ public class SlotMetadata {
     return keyType;
   }
 
-  /** Returns the PIN policy for using the key. */
-  public PinPolicy getPinPolicy() {
-    return pinPolicy;
+  /** Returns the verification policy for using the key. */
+  public VerificationPolicy getVerificationPolicy() {
+    return verificationPolicy;
   }
 
   /** Returns the touch policy for using the key. */

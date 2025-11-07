@@ -78,11 +78,18 @@ abstract class PivKeyPairGeneratorSpi extends KeyPairGeneratorSpi {
                         PublicKey publicKey =
                             session
                                 .generateKeyValues(
-                                    spec.slot, spec.keyType, spec.pinPolicy, spec.touchPolicy)
+                                    spec.slot,
+                                    spec.keyType,
+                                    spec.verificationPolicy,
+                                    spec.touchPolicy)
                                 .toPublicKey();
                         PrivateKey privateKey =
                             PivPrivateKey.from(
-                                publicKey, spec.slot, spec.pinPolicy, spec.touchPolicy, spec.pin);
+                                publicKey,
+                                spec.slot,
+                                spec.verificationPolicy,
+                                spec.touchPolicy,
+                                spec.pin);
                         return new KeyPair(publicKey, privateKey);
                       })));
       return queue.take().getValue();

@@ -93,7 +93,7 @@ The instance then needs to be initialized with `PivAlgorithmParameterSpec` objec
 PivAlgorithmParameterSpec(
     Slot slot,
     KeyType keyType,
-    @Nullable PinPolicy pinPolicy,
+    @Nullable VerificationPolicy verificationPolicy,
     @Nullable TouchPolicy touchPolicy,
     @Nullable char[] pin)
 ----
@@ -102,14 +102,14 @@ PivAlgorithmParameterSpec(
 
 `keyType`:: one of `KeyType.RSA1024`, `KeyType.RSA2048`, `KeyType.ECCP256`, `KeyType.ECCP384`; must match the `KeyPairGenerator` type
 
-`pinPolicy`:: defines the pin policy for using the key. `PinPolicy.DEFAULT`, `PinPolicy.NEVER`, `PinPolicy.ONCE` or `PinPolicy.ALWAYS`
+`verificationPolicy`:: defines the verification policy for using the key. `VerificationPolicy.DEFAULT`, `VerificationPolicy.NEVER`, `VerificationPolicy.ONCE`, `VerificationPolicy.ALWAYS`, `VerificationPolicy.MATCH_ONCE` or `VerificationPolicy.MATCH_ALWAYS`
 
 `touchPolicy`:: defines the whether or not a user presence is required (physical touch) when using the key.
 One of `TouchPolicy.DEFAULT`, `TouchPolicy.NEVER`, `TouchPolicy.ALWAYS`, `TouchPolicy.CACHED`
 
-`pin`:: the PIV application PIN; valid PIN is required depending on the `PinPolicy` value and the operation which is planned to be performed with the resulting PrivateKey - signing and decrypting require PIN.
+`pin`:: the PIV application PIN; valid PIN is required depending on the `VerificationPolicy` value and the operation which is planned to be performed with the resulting PrivateKey - signing and decrypting require PIN.
 
-The `DEFAULT` values of `PinPolicy` and `TouchPolicy` depend on the `slot` value.
+The `DEFAULT` values of `VerificationPolicy` and `TouchPolicy` depend on the `slot` value.
 See https://developers.yubico.com/yubikit-android/JavaDoc/piv/latest[YubiKit PIV module JavaDoc] and https://developers.yubico.com/PIV/Introduction/Certificate_slots.html[PIV Certificate slots] for more details.
 
 Follows an example of generation of an RSA key pair.
@@ -122,7 +122,7 @@ rsaGen.initialize(
     new PivAlgorithmParameterSpec(
         Slot.AUTHENTICATION,
         KeyType.RSA1024,
-        null, // PinPolicy
+        null, // VerificationPolicy
         null, // TouchPolicy
         DEFAULT_PIN // PIV PIN
     )
@@ -148,7 +148,7 @@ X509Certificate cert = ...;
 keyStore.setEntry(
     Slot.SIGNATURE,
     new KeyStore.PrivateKeyEntry(keyPair.getPrivate(), new Certificate[]{cert}),
-    new PivKeyStoreKeyParameters(PinPolicy.DEFAULT, TouchPolicy.DEFAULT)
+    new PivKeyStoreKeyParameters(VerificationPolicy.DEFAULT, TouchPolicy.DEFAULT)
 );
 ----
 
