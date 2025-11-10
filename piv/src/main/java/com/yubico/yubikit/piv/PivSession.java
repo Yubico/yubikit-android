@@ -24,6 +24,7 @@ import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
 import com.yubico.yubikit.core.application.ApplicationSession;
 import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.application.Feature;
+import com.yubico.yubikit.core.application.InvalidPinException;
 import com.yubico.yubikit.core.keys.EllipticCurveValues;
 import com.yubico.yubikit.core.keys.PrivateKeyValues;
 import com.yubico.yubikit.core.keys.PublicKeyValues;
@@ -726,7 +727,7 @@ public class PivSession extends ApplicationSession<PivSession> {
    */
   @Nullable
   public byte[] verifyUv(boolean requestTemporaryPin, boolean checkOnly)
-      throws IOException, ApduException, com.yubico.yubikit.core.application.InvalidPinException {
+      throws IOException, ApduException, InvalidPinException {
     if (requestTemporaryPin && checkOnly) {
       throw new IllegalArgumentException(
           "Cannot request temporary pin when doing check-only verification");
@@ -753,7 +754,7 @@ public class PivSession extends ApplicationSession<PivSession> {
       }
       int retries = getRetriesFromCode(e.getSw());
       if (retries >= 0) {
-        throw new com.yubico.yubikit.core.application.InvalidPinException(
+        throw new InvalidPinException(
             retries, "Fingerprint mismatch, " + retries + " attempts remaining");
       } else {
         // status code returned error, not number of retries
@@ -779,7 +780,7 @@ public class PivSession extends ApplicationSession<PivSession> {
    * @throws UnsupportedOperationException in case bio specific verification is not supported
    */
   public void verifyTemporaryPin(byte[] pin)
-      throws IOException, ApduException, com.yubico.yubikit.core.application.InvalidPinException {
+      throws IOException, ApduException, InvalidPinException {
     if (pin.length != TEMPORARY_PIN_LEN) {
       throw new IllegalArgumentException(
           "Temporary PIN must be exactly " + TEMPORARY_PIN_LEN + " bytes");
@@ -797,7 +798,7 @@ public class PivSession extends ApplicationSession<PivSession> {
       }
       int retries = getRetriesFromCode(e.getSw());
       if (retries >= 0) {
-        throw new com.yubico.yubikit.core.application.InvalidPinException(
+        throw new InvalidPinException(
             retries, "Invalid temporary PIN, " + retries + " attempts remaining");
       } else {
         // status code returned error, not number of retries

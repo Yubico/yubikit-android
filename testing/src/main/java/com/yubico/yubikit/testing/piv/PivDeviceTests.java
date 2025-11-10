@@ -18,9 +18,9 @@ package com.yubico.yubikit.testing.piv;
 import static com.yubico.yubikit.piv.PivSession.FEATURE_AES_KEY;
 
 import com.yubico.yubikit.core.application.BadResponseException;
+import com.yubico.yubikit.core.application.InvalidPinException;
 import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.core.smartcard.SW;
-import com.yubico.yubikit.piv.InvalidPinException;
 import com.yubico.yubikit.piv.ManagementKeyType;
 import com.yubico.yubikit.piv.PivSession;
 import java.io.IOException;

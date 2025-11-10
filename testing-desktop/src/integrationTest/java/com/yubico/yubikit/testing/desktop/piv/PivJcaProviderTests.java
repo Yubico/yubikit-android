@@ -27,9 +27,13 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
+import org.junit.runners.Suite;
 
-@RunWith(JUnit4.class)
+@RunWith(Suite.class)
+@Suite.SuiteClasses({
+  PivJcaProviderTests.NoScpTests.class,
+  PivJcaProviderTests.Scp11bTests.class,
+})
 public class PivJcaProviderTests {
 
   public static class NoScpTests extends PivInstrumentedTests {
