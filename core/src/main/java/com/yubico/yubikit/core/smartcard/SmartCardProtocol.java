@@ -145,45 +145,12 @@ public class SmartCardProtocol implements Closeable {
     if (connection.getTransport() == Transport.USB
         && firmwareVersion.isAtLeast(4, 2, 0)
         && firmwareVersion.isLessThan(4, 2, 7)) {
-      //noinspection deprecation
-      setEnableTouchWorkaround(true);
-    } else if (firmwareVersion.isAtLeast(4, 0, 0)) {
-      extendedApdus = !configuration.forceShortApdus && connection.isExtendedLengthApduSupported();
-      maxApduSize = firmwareVersion.isAtLeast(4, 3, 0) ? MaxApduSize.YK4_3 : MaxApduSize.YK4;
-      reconfigureProcessor();
-    }
-  }
-
-  /**
-   * Enable all relevant workarounds given the firmware version of the YubiKey.
-   *
-   * @param firmwareVersion the firmware version to use for detection to enable the workarounds
-   * @deprecated use {@link #configure(Version)} instead.
-   */
-  @Deprecated
-  public void enableWorkarounds(Version firmwareVersion) {
-    try {
-      configure(firmwareVersion);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  /**
-   * YubiKey 4.2.0 - 4.2.6 have an issue with the touch timeout being too short in certain cases.
-   * Enable this workaround on such devices to trigger sending a dummy command which mitigates the
-   * issue.
-   *
-   * @param enableTouchWorkaround true to enable the workaround, false to disable it
-   * @deprecated use {@link #configure(Version)} instead.
-   */
-  @Deprecated
-  public void setEnableTouchWorkaround(boolean enableTouchWorkaround) {
-    if (enableTouchWorkaround) {
       extendedApdus = true;
       maxApduSize = MaxApduSize.YK4;
       processor = new TouchWorkaroundProcessor(buildBaseProcessor().first);
-    } else {
+    } else if (firmwareVersion.isAtLeast(4, 0, 0)) {
+      extendedApdus = !configuration.forceShortApdus && connection.isExtendedLengthApduSupported();
+      maxApduSize = firmwareVersion.isAtLeast(4, 3, 0) ? MaxApduSize.YK4_3 : MaxApduSize.YK4;
       reconfigureProcessor();
     }
   }
