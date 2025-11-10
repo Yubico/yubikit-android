@@ -67,8 +67,8 @@ public class PivProvider extends Provider {
    *
    * @param sessionRequester a mechanism for the Provider to get an instance of a PivSession.
    */
+  @SuppressWarnings("deprecation") // Provider(String, double, String) is deprecated from Java 9
   public PivProvider(Callback<Callback<Result<PivSession, Exception>>> sessionRequester) {
-    //noinspection deprecation
     super("YKPiv", 1.0, "JCA Provider for YubiKey PIV");
     this.sessionRequester = sessionRequester;
 

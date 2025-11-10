@@ -50,16 +50,10 @@ import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
-import java.security.PublicKey;
-import java.security.Signature;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
-import java.security.interfaces.ECPublicKey;
-import java.security.spec.ECPoint;
-import java.security.spec.InvalidKeySpecException;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Locale;
@@ -322,27 +316,6 @@ public class PivSession extends ApplicationSession<PivSession> {
   /**
    * Authenticate with the Management Key.
    *
-   * @param keyType the algorithm used for the management key The default key uses TDES
-   * @param managementKey management key as byte array The default 3DES/AES192 management key (9B)
-   *     is 010203040506070801020304050607080102030405060708.
-   * @throws IllegalArgumentException in case of wrong keyType
-   * @throws IOException in case of connection error
-   * @throws ApduException in case of an error response from the YubiKey
-   * @throws BadResponseException in case of incorrect YubiKey response
-   * @deprecated Replaced by {@link #authenticate(byte[])}
-   */
-  @Deprecated
-  public void authenticate(ManagementKeyType keyType, byte[] managementKey)
-      throws IOException, ApduException, BadResponseException {
-    if (keyType != managementKeyType) {
-      throw new IllegalArgumentException("Invalid Management Key type " + keyType.name());
-    }
-    authenticate(managementKey);
-  }
-
-  /**
-   * Authenticate with the Management Key.
-   *
    * @param managementKey management key as byte array The default 3DES/AES192 management key (9B)
    *     is 010203040506070801020304050607080102030405060708.
    * @throws IOException in case of connection error
@@ -405,32 +378,6 @@ public class PivSession extends ApplicationSession<PivSession> {
   }
 
   /**
-   * Create a signature for a given message.
-   *
-   * <p>The algorithm must be compatible with the given key type.
-   *
-   * <p>DEPRECATED: Use the PivProvider JCA Security Provider instead.
-   *
-   * @param slot the slot containing the private key to use
-   * @param keyType the type of the key stored in the slot
-   * @param message the message to hash
-   * @param algorithm the signing algorithm to use
-   * @return the signature
-   * @throws IOException in case of connection error
-   * @throws ApduException in case of an error response from the YubiKey
-   * @throws BadResponseException in case of incorrect YubiKey response
-   * @throws NoSuchAlgorithmException if the algorithm isn't supported
-   */
-  @Deprecated
-  public byte[] sign(Slot slot, KeyType keyType, byte[] message, Signature algorithm)
-      throws IOException, ApduException, BadResponseException, NoSuchAlgorithmException {
-    logger.debug(
-        "Signing data with key in slot {} of type {} using algorithm {}", slot, keyType, algorithm);
-    byte[] payload = Padding.pad(keyType, message, algorithm);
-    return usePrivateKey(slot, keyType, payload, false);
-  }
-
-  /**
    * Performs a private key operation on the given payload. Any hashing and/or padding required
    * should already be done prior to calling this method.
    *
@@ -466,92 +413,6 @@ public class PivSession extends ApplicationSession<PivSession> {
     }
     logger.debug("Decrypting data with key in slot {} of type {}", slot, keyType);
     return usePrivateKey(slot, keyType, padded, false);
-  }
-
-  /**
-   * Decrypt an RSA-encrypted message.
-   *
-   * <p>DEPRECATED: Use the PivProvider JCA Security Provider instead.
-   *
-   * @param slot the slot containing the RSA private key to use
-   * @param cipherText the encrypted payload to decrypt
-   * @param algorithm the algorithm used for encryption
-   * @return the decrypted plaintext
-   * @throws IOException in case of connection error
-   * @throws ApduException in case of an error response from the YubiKey
-   * @throws BadResponseException in case of incorrect YubiKey response
-   * @throws NoSuchPaddingException in case the padding algorithm isn't supported
-   * @throws NoSuchAlgorithmException in case the algorithm isn't supported
-   * @throws BadPaddingException in case of a padding error
-   */
-  @Deprecated
-  public byte[] decrypt(Slot slot, byte[] cipherText, Cipher algorithm)
-      throws IOException,
-          ApduException,
-          BadResponseException,
-          NoSuchAlgorithmException,
-          NoSuchPaddingException,
-          BadPaddingException {
-    KeyType keyType;
-    switch (cipherText.length) {
-      case 1024 / 8:
-        keyType = KeyType.RSA1024;
-        break;
-      case 2048 / 8:
-        keyType = KeyType.RSA2048;
-        break;
-      case 3072 / 8:
-        keyType = KeyType.RSA3072;
-        break;
-      case 4096 / 8:
-        keyType = KeyType.RSA4096;
-        break;
-      default:
-        throw new IllegalArgumentException("Invalid length of ciphertext");
-    }
-    logger.debug("Decrypting data with key in slot {} of type {}", slot, keyType);
-    return Padding.unpad(usePrivateKey(slot, keyType, cipherText, false), algorithm);
-  }
-
-  /**
-   * Perform an ECDH operation with a given public key to compute a shared secret.
-   *
-   * @param slot the slot containing the private EC key
-   * @param peerPublicKey the peer public key for the operation
-   * @return the shared secret, comprising the x-coordinate of the ECDH result point.
-   * @throws IOException in case of connection error
-   * @throws ApduException in case of an error response from the YubiKey
-   * @throws BadResponseException in case of incorrect YubiKey response
-   */
-  @Deprecated
-  public byte[] calculateSecret(Slot slot, ECPublicKey peerPublicKey)
-      throws IOException, ApduException, BadResponseException {
-    return calculateSecret(slot, peerPublicKey.getW());
-  }
-
-  /**
-   * Perform an ECDH operation with a given public key to compute a shared secret.
-   *
-   * @param slot the slot containing the private EC key
-   * @param peerPublicKey the peer public key for the operation
-   * @return the shared secret, comprising the x-coordinate of the ECDH result point.
-   * @throws IOException in case of connection error
-   * @throws ApduException in case of an error response from the YubiKey
-   * @throws BadResponseException in case of incorrect YubiKey response
-   */
-  @Deprecated
-  public byte[] calculateSecret(Slot slot, ECPoint peerPublicKey)
-      throws IOException, ApduException, BadResponseException {
-    KeyType keyType =
-        peerPublicKey.getAffineX().bitLength() > 256 ? KeyType.ECCP384 : KeyType.ECCP256;
-    byte[] encodedPoint =
-        new PublicKeyValues.Ec(
-                ((KeyType.EcKeyParams) keyType.params).getCurveParams(),
-                peerPublicKey.getAffineX(),
-                peerPublicKey.getAffineY())
-            .getEncodedPoint();
-    logger.debug("Performing key agreement with key in slot {} of type {}", slot, keyType);
-    return usePrivateKey(slot, keyType, encodedPoint, true);
   }
 
   /**
@@ -1101,7 +962,7 @@ public class PivSession extends ApplicationSession<PivSession> {
    * a normal slot it can be attested by this special key
    *
    * <p>This method requires authentication {@link #authenticate} This method requires key to be
-   * generated on slot {@link #generateKey(Slot, KeyType, PinPolicy, TouchPolicy)}
+   * generated on slot.
    *
    * @param slot Key reference '9A', '9C', '9D', or '9E'. {@link Slot}.
    * @return an attestation certificate for the key in the given slot
@@ -1261,40 +1122,6 @@ public class PivSession extends ApplicationSession<PivSession> {
   }
 
   /**
-   * Generates a new key pair within the YubiKey. This method requires verification with pin {@link
-   * #verifyPin}} and authentication with management key {@link #authenticate}.
-   *
-   * <p>RSA key types require {@link #FEATURE_RSA_GENERATION}, available on YubiKeys OTHER THAN
-   * 4.2.6-4.3.4. KeyType P348 requires {@link #FEATURE_P384}, available on YubiKey 4 or later.
-   * PinPolicy or TouchPolicy other than default require {@link #FEATURE_USAGE_POLICY}, available on
-   * YubiKey 4 or later. TouchPolicy.CACHED requires {@link #FEATURE_TOUCH_CACHED}, available on
-   * YubiKey 4.3 or later.
-   *
-   * <p>NOTE: YubiKey FIPS does not allow RSA1024 nor PinProtocol.NEVER.
-   *
-   * @param slot Key reference '9A', '9C', '9D', or '9E'. {@link Slot}.
-   * @param keyType which algorithm is used for key generation {@link KeyType}
-   * @param pinPolicy the PIN policy for using the private key
-   * @param touchPolicy the touch policy for using the private key
-   * @return the public key of the generated key pair
-   * @throws IOException in case of connection error
-   * @throws ApduException in case of an error response from the YubiKey
-   * @throws BadResponseException in case of incorrect YubiKey response
-   * @deprecated use generateKeyValues instead, which will replace this method in the next major
-   *     version release
-   */
-  @Deprecated
-  public PublicKey generateKey(
-      Slot slot, KeyType keyType, PinPolicy pinPolicy, TouchPolicy touchPolicy)
-      throws IOException, ApduException, BadResponseException {
-    try {
-      return generateKeyValues(slot, keyType, pinPolicy, touchPolicy).toPublicKey();
-    } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  /**
    * Import a private key into a slot. This method requires authentication {@link #authenticate}.
    *
    * <p>KeyType P348 requires {@link #FEATURE_P384}, available on YubiKey 4 or later. PinPolicy or
@@ -1356,30 +1183,6 @@ public class PivSession extends ApplicationSession<PivSession> {
         new Apdu(0, INS_IMPORT_KEY, keyType.value, slot.value, Tlvs.encodeMap(tlvs)));
     logger.info("Private key imported in slot {} of type {}", slot, keyType);
     return keyType;
-  }
-
-  /**
-   * Import a private key into a slot. This method requires authentication {@link #authenticate}.
-   *
-   * <p>KeyType P348 requires {@link #FEATURE_P384}, available on YubiKey 4 or later. PinPolicy or
-   * TouchPolicy other than default require {@link #FEATURE_USAGE_POLICY}, available on YubiKey 4 or
-   * later.
-   *
-   * <p>NOTE: YubiKey FIPS does not allow RSA1024 nor PinProtocol.NEVER.
-   *
-   * @param slot Key reference '9A', '9C', '9D', or '9E'. {@link Slot}.
-   * @param key the private key to import
-   * @param pinPolicy the PIN policy for using the private key
-   * @param touchPolicy the touch policy for using the private key
-   * @return the KeyType value of the imported key
-   * @throws IOException in case of connection error
-   * @throws ApduException in case of an error response from the YubiKey
-   * @deprecated use {@link #putKey(Slot, PrivateKeyValues, PinPolicy, TouchPolicy)} instead
-   */
-  @Deprecated
-  public KeyType putKey(Slot slot, PrivateKey key, PinPolicy pinPolicy, TouchPolicy touchPolicy)
-      throws IOException, ApduException {
-    return putKey(slot, PrivateKeyValues.fromPrivateKey(key), pinPolicy, touchPolicy);
   }
 
   /**
