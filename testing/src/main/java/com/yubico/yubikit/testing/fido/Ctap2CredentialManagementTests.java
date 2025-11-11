@@ -32,6 +32,7 @@ import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialUserEntity;
 import com.yubico.yubikit.fido.webauthn.SerializationType;
+import com.yubico.yubikit.testing.fido.utils.TestData;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;

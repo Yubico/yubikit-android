@@ -23,6 +23,7 @@ import com.yubico.yubikit.core.application.CommandState;
 import com.yubico.yubikit.core.fido.CtapException;
 import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.util.Pair;
+import com.yubico.yubikit.fido.client.clientdata.ClientDataProvider;
 import com.yubico.yubikit.fido.client.extensions.CredBlobExtension;
 import com.yubico.yubikit.fido.client.extensions.CredPropsExtension;
 import com.yubico.yubikit.fido.client.extensions.CredProtectExtension;
@@ -52,8 +53,6 @@ import com.yubico.yubikit.fido.webauthn.SerializationType;
 import com.yubico.yubikit.fido.webauthn.UserVerificationRequirement;
 import java.io.Closeable;
 import java.io.IOException;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -206,7 +205,7 @@ public class BasicWebAuthnClient implements Closeable {
    *
    * <p>PIN is always required if a PIN is configured.
    *
-   * @param clientDataJson The UTF-8 encoded ClientData JSON object.
+   * @param clientData ClientDataProvider.
    * @param options The options for creating the credential.
    * @param effectiveDomain The effective domain for the request, which is used to validate the RP
    *     ID against.
@@ -218,19 +217,18 @@ public class BasicWebAuthnClient implements Closeable {
    * @throws ClientError A higher level error
    */
   public PublicKeyCredential makeCredential(
-      byte[] clientDataJson,
+      ClientDataProvider clientData,
       PublicKeyCredentialCreationOptions options,
       String effectiveDomain,
       @Nullable char[] pin,
       @Nullable Integer enterpriseAttestation,
       @Nullable CommandState state)
       throws IOException, CommandException, ClientError {
-    byte[] clientDataHash = Utils.hash(clientDataJson);
 
     try {
       Pair<Ctap2Session.CredentialData, ClientExtensionResults> result =
           ctapMakeCredential(
-              clientDataHash, options, effectiveDomain, pin, enterpriseAttestation, state);
+              clientData.getHash(), options, effectiveDomain, pin, enterpriseAttestation, state);
       final Ctap2Session.CredentialData credential = result.first;
       final ClientExtensionResults clientExtensionResults = result.second;
 
@@ -238,7 +236,9 @@ public class BasicWebAuthnClient implements Closeable {
 
       AuthenticatorAttestationResponse response =
           new AuthenticatorAttestationResponse(
-              clientDataJson, ctap.getCachedInfo().getTransports(), attestationObject);
+              clientData.getClientDataJson(),
+              ctap.getCachedInfo().getTransports(),
+              attestationObject);
 
       return new PublicKeyCredential(
           Objects.requireNonNull(
@@ -261,7 +261,7 @@ public class BasicWebAuthnClient implements Closeable {
    * the given RP. In such cases MultipleAssertionsAvailable will be thrown, and can be handled to
    * select an assertion.
    *
-   * @param clientDataJson The UTF-8 encoded ClientData JSON object.
+   * @param clientData The ClientDataProvider.
    * @param options The options for authenticating the credential.
    * @param effectiveDomain The effective domain for the request, which is used to validate the RP
    *     ID against.
@@ -275,16 +275,15 @@ public class BasicWebAuthnClient implements Closeable {
    * @throws ClientError A higher level error
    */
   public PublicKeyCredential getAssertion(
-      byte[] clientDataJson,
+      ClientDataProvider clientData,
       PublicKeyCredentialRequestOptions options,
       String effectiveDomain,
       @Nullable char[] pin,
       @Nullable CommandState state)
       throws MultipleAssertionsAvailable, IOException, CommandException, ClientError {
-    byte[] clientDataHash = Utils.hash(clientDataJson);
     try {
       final List<Pair<Ctap2Session.AssertionData, ClientExtensionResults>> results =
-          ctapGetAssertions(clientDataHash, options, effectiveDomain, pin, state);
+          ctapGetAssertions(clientData.getHash(), options, effectiveDomain, pin, state);
 
       final List<PublicKeyCredentialDescriptor> allowCredentials =
           removeUnsupportedCredentials(options.getAllowCredentials());
@@ -294,9 +293,9 @@ public class BasicWebAuthnClient implements Closeable {
         final ClientExtensionResults clientExtensionResults = results.get(0).second;
 
         return PublicKeyCredential.fromAssertion(
-            assertion, clientDataJson, allowCredentials, clientExtensionResults);
+            assertion, clientData.getClientDataJson(), allowCredentials, clientExtensionResults);
       } else {
-        throw new MultipleAssertionsAvailable(clientDataJson, results);
+        throw new MultipleAssertionsAvailable(clientData.getClientDataJson(), results);
       }
 
     } catch (CtapException e) {
@@ -930,20 +929,6 @@ public class BasicWebAuthnClient implements Closeable {
         creds.add(descriptor.toMap(SerializationType.CBOR));
       }
       return creds;
-    }
-
-    /**
-     * Return SHA-256 hash of the provided input
-     *
-     * @param message The hash input
-     * @return SHA-256 of the input
-     */
-    static byte[] hash(byte[] message) {
-      try {
-        return MessageDigest.getInstance("SHA-256").digest(message);
-      } catch (NoSuchAlgorithmException e) {
-        throw new RuntimeException(e);
-      }
     }
   }
 }

@@ -57,12 +57,13 @@ public class ClientHelper {
   public PublicKeyCredential makeCredential(PublicKeyCredentialCreationOptions options)
       throws IOException, CommandException, ClientError {
     return client.makeCredential(
-        TestData.CLIENT_DATA_JSON_CREATE, options, TestData.RP_ID, pin, null, null);
+        TestData.CLIENT_DATA_JSON_CREATE_PROVIDER, options, TestData.RP_ID, pin, null, null);
   }
 
   public PublicKeyCredential getAssertions(PublicKeyCredentialRequestOptions options)
       throws IOException, CommandException, ClientError, MultipleAssertionsAvailable {
-    return client.getAssertion(TestData.CLIENT_DATA_JSON_GET, options, TestData.RP_ID, pin, null);
+    return client.getAssertion(
+        TestData.CLIENT_DATA_JSON_GET_PROVIDER, options, TestData.RP_ID, pin, null);
   }
 
   public void deleteCredentialsByIds(List<byte[]> credIds)
