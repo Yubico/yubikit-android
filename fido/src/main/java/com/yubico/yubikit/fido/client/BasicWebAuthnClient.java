@@ -798,7 +798,7 @@ public class BasicWebAuthnClient implements Closeable {
       }
     }
 
-    return new AuthParams(pinToken, /* clientPin.getPinUvAuth(), null,*/ internalUv);
+    return new AuthParams(pinToken, internalUv);
   }
 
   /**
