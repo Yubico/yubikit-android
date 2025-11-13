@@ -15,10 +15,14 @@
  */
 
 plugins {
-    id("java-library")
+    id("com.diffplug.spotless")
 }
 
-java {
-    targetCompatibility = JavaVersion.VERSION_1_8
-    sourceCompatibility = JavaVersion.VERSION_1_8
+spotless {
+    java {
+        target("src/*/java/**/*.java")
+        googleJavaFormat("1.25.2")
+        trimTrailingWhitespace()
+        endWithNewline()
+    }
 }

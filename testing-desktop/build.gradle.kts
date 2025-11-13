@@ -16,7 +16,7 @@
 
 plugins {
     java
-    id("project-convention-java-library")
+    id("yubikit-java-convention")
 }
 
 repositories {

@@ -14,13 +14,8 @@
  * limitations under the License.
  */
 
-plugins {
-    id("project-convention-java-library")
-    id("project-convention-common")
-    id("project-convention-publishing")
-}
+val libs = extensions.getByType<VersionCatalogsExtension>().named("libs")
 
 dependencies {
-    testImplementation(project(":testing"))
-    testImplementation("junit:junit:4.13.2")
+    add("api", libs.findLibrary("slf4j-api").get())
 }

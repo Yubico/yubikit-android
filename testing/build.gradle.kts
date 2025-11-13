@@ -15,8 +15,8 @@
  */
 
 plugins {
-    id("project-convention-java-library")
-    id("project-convention-common")
+    id("yubikit-java-convention")
+    id("yubikit-common")
 }
 
 dependencies {

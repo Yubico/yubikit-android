@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Yubico.
+ * Copyright (C) 2024-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,18 +15,10 @@
  */
 
 plugins {
-    `kotlin-dsl`
+    id("java-library")
 }
 
-repositories {
-    mavenCentral()
-    google()
-    gradlePluginPortal()
+java {
+    targetCompatibility = JavaVersion.VERSION_1_8
+    sourceCompatibility = JavaVersion.VERSION_1_8
 }
-
-dependencies {
-    implementation("com.github.spotbugs.snom:spotbugs-gradle-plugin:6.2.2")
-    implementation("com.android.tools.build:gradle:8.13.0")
-    implementation("com.diffplug.spotless:spotless-plugin-gradle:8.0.0")
-}
-

@@ -15,7 +15,9 @@
  */
 
 plugins {
-    id("maven-publish")
+    alias(libs.plugins.android.application) apply false
+    alias(libs.plugins.android.library) apply false
+    alias(libs.plugins.kotlin.android) apply false
 }
 
 allprojects {
@@ -29,7 +31,6 @@ allprojects {
 
 subprojects {
     version = "2.9.1-SNAPSHOT"
-    extra["pomName"] = "Yubico YubiKit " + project.name.replaceFirstChar { it.titlecase() }
     tasks.withType<Javadoc>().configureEach {
         (options as? StandardJavadocDocletOptions)?.addStringOption(
             "Xdoclint:all,-missing",

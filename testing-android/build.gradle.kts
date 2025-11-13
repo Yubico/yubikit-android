@@ -15,8 +15,8 @@
  */
 
 plugins {
-    id("com.android.library")
-    id("project-convention-common")
+    alias(libs.plugins.android.library)
+    id("yubikit-common")
 }
 
 android {
