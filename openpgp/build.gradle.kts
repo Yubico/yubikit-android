@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2025 Yubico.
+ * Copyright (C) 2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,17 +14,16 @@
  * limitations under the License.
  */
 
-package com.yubico.yubikit.android.transport.usb;
-
-import android.hardware.usb.UsbDevice;
-import java.io.IOException;
-
-/** Exception that thrown when user didn't provide permissions to connect to USB device */
-public class NoPermissionsException extends IOException {
-  private static final long serialVersionUID = 1L;
-
-  public NoPermissionsException(UsbDevice usbDevice) {
-    // with L+ devices we can get more verbal device name
-    super("No permission granted to communicate with device " + usbDevice.getProductName());
-  }
+plugins {
+    id("yubikit-java-library")
 }
+
+dependencies {
+    api(project(":core"))
+}
+
+tasks.test {
+    systemProperty("org.slf4j.simpleLogger.defaultLogLevel", "trace")
+}
+
+description = "This library provides OpenPGP card functionality for the YubiKey. Specs for the protocol can be found at https://gnupg.org/ftp/specs/"

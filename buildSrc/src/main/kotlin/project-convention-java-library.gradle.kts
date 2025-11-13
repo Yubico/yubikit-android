@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2025 Yubico.
+ * Copyright (C) 2024-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,17 +14,11 @@
  * limitations under the License.
  */
 
-package com.yubico.yubikit.android.transport.usb;
+plugins {
+    id("java-library")
+}
 
-import android.hardware.usb.UsbDevice;
-import java.io.IOException;
-
-/** Exception that thrown when user didn't provide permissions to connect to USB device */
-public class NoPermissionsException extends IOException {
-  private static final long serialVersionUID = 1L;
-
-  public NoPermissionsException(UsbDevice usbDevice) {
-    // with L+ devices we can get more verbal device name
-    super("No permission granted to communicate with device " + usbDevice.getProductName());
-  }
+java {
+    targetCompatibility = JavaVersion.VERSION_1_8
+    sourceCompatibility = JavaVersion.VERSION_1_8
 }
