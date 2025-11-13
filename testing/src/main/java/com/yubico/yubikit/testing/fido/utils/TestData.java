@@ -16,14 +16,13 @@
 
 package com.yubico.yubikit.testing.fido.utils;
 
+import com.yubico.yubikit.core.internal.codec.Base64;
 import com.yubico.yubikit.fido.client.clientdata.ClientDataProvider;
-import com.yubico.yubikit.fido.client.clientdata.ClientDataType;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialParameters;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialRpEntity;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialType;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialUserEntity;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
 
 public class TestData {
 
@@ -48,22 +47,10 @@ public class TestData {
   private static final String PACKAGE_NAME = "TestPackage";
 
   public static final ClientDataProvider CLIENT_DATA_JSON_CREATE_PROVIDER =
-      ClientDataProvider.fromFields(
-          ClientDataType.CREATE,
-          CHALLENGE,
-          ORIGIN,
-          false,
-          null,
-          Collections.singletonMap("androidPackageName", PACKAGE_NAME));
+      ClientDataProvider.fromClientDataJson(createTestClientDataJson("webauthn.create"));
 
   public static final ClientDataProvider CLIENT_DATA_JSON_GET_PROVIDER =
-      ClientDataProvider.fromFields(
-          ClientDataType.GET,
-          CHALLENGE,
-          ORIGIN,
-          false,
-          null,
-          Collections.singletonMap("androidPackageName", PACKAGE_NAME));
+      ClientDataProvider.fromClientDataJson(createTestClientDataJson("webauthn.get"));
 
   public static final byte[] CLIENT_DATA_HASH =
       new byte[] {
@@ -76,4 +63,13 @@ public class TestData {
 
   public static final PublicKeyCredentialParameters PUB_KEY_CRED_PARAMS_EDDSA =
       new PublicKeyCredentialParameters(PublicKeyCredentialType.PUBLIC_KEY, -8);
+
+  // Constructs a test client data JSON for WebAuthn operations.
+  private static byte[] createTestClientDataJson(String type) {
+    String json =
+        String.format(
+            "{\"type\":\"%s\",\"challenge\":\"%s\",\"origin\":\"%s\",\"crossOrigin\":false,\"androidPackageName\":\"%s\"}",
+            type, Base64.toUrlSafeString(TestData.CHALLENGE), TestData.ORIGIN, PACKAGE_NAME);
+    return json.getBytes(StandardCharsets.UTF_8);
+  }
 }

@@ -261,7 +261,9 @@ public class BasicWebAuthnClient implements Closeable {
    * the given RP. In such cases MultipleAssertionsAvailable will be thrown, and can be handled to
    * select an assertion.
    *
-   * @param clientData The ClientDataProvider.
+   * @param clientData The {@link ClientDataProvider} instance supplying client data for the
+   *     request. If a provider that only supplies the hash is passed, the resulting credential will
+   *     contain an empty clientDataJSON in the response.
    * @param options The options for authenticating the credential.
    * @param effectiveDomain The effective domain for the request, which is used to validate the RP
    *     ID against.
