@@ -205,7 +205,9 @@ public class BasicWebAuthnClient implements Closeable {
    *
    * <p>PIN is always required if a PIN is configured.
    *
-   * @param clientData ClientDataProvider.
+   * @param clientData The {@link ClientDataProvider} instance supplying client data for the
+   *     request. If a provider that only supplies the hash is passed, the resulting credential will
+   *     contain an empty clientDataJSON in the response.
    * @param options The options for creating the credential.
    * @param effectiveDomain The effective domain for the request, which is used to validate the RP
    *     ID against.

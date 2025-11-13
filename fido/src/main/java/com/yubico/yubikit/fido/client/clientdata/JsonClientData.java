@@ -21,27 +21,7 @@ import com.yubico.yubikit.fido.client.Utils;
 /**
  * Internal immutable representation of WebAuthn {@code clientDataJSON}.
  *
- * <p>Provides both the raw JSON bytes and their SHA-256 hash. Used when full {@code clientDataJSON}
- * must be supplied (e.g. for attestation) rather than only its hash.
- *
- * <p>Construction either wraps provided raw bytes or builds deterministic JSON from field inputs:
- *
- * <ul>
- *   <li>Standard fields: type, challenge (base64url), origin, crossOrigin, optional topOrigin.
- *   <li>Extra parameters: filtered to exclude reserved keys and serialized in lexicographic key
- *       order at the top level.
- *   <li>Nested structures: values of type {@code Map} and {@code Iterable} (e.g. {@code List},
- *       {@code Set}) are recursively serialized into JSON (not via {@code toString()}).
- *   <li>Nested {@code Map} keys are emitted in the iteration order of the provided map (not
- *       re-sorted). Use {@code LinkedHashMap} if deterministic ordering is required.
- *   <li>Reserved key filtering applies only to the top-level extras; nested maps are not filtered.
- *   <li>Binary ({@code byte[]}) values at any depth are base64url encoded as JSON strings.
- *   <li>Other object types (non-primitive, non-collection, non-byte[]) are serialized via {@code
- *       String.valueOf(value)} as JSON strings.
- * </ul>
- *
- * <p>Reserved keys ignored in top-level extras: {@code type}, {@code challenge}, {@code origin},
- * {@code crossOrigin}, {@code topOrigin}.
+ * <p>Provides both the raw JSON bytes and their SHA-256 hash.
  *
  * <p>This class is package-private; external users interact via {@link ClientDataProvider}
  * factories.
