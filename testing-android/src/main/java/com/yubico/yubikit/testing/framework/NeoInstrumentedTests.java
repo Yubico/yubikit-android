@@ -18,7 +18,7 @@ package com.yubico.yubikit.testing.framework;
 
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 
-public class NeoInstrumentedTests extends YKInstrumentedTests {
+public class NeoInstrumentedTests extends YkInstrumentedTests {
 
   public interface SmartCardConnectionCallback {
     void invoke(SmartCardConnection value) throws Throwable;

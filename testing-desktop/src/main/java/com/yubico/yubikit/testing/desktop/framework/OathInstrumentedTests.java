@@ -19,7 +19,7 @@ import com.yubico.yubikit.oath.OathSession;
 import com.yubico.yubikit.testing.TestState;
 import com.yubico.yubikit.testing.oath.OathTestState;
 
-public class OathInstrumentedTests extends YKInstrumentedTests {
+public class OathInstrumentedTests extends YkInstrumentedTests {
 
   protected void withDevice(TestState.StatefulDeviceCallback<OathTestState> callback)
       throws Throwable {

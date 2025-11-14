@@ -20,7 +20,7 @@ import com.yubico.yubikit.piv.PivSession;
 import com.yubico.yubikit.testing.TestState;
 import com.yubico.yubikit.testing.mpe.MpeTestState;
 
-public class MpeInstrumentedTests extends YKInstrumentedTests {
+public class MpeInstrumentedTests extends YkInstrumentedTests {
 
   protected void withPivSession(
       TestState.StatefulSessionCallback<PivSession, MpeTestState> callback) throws Throwable {

@@ -21,7 +21,7 @@ import com.yubico.yubikit.testing.piv.PivTestState;
 import java.security.Security;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
-public class PivInstrumentedTests extends YKInstrumentedTests {
+public class PivInstrumentedTests extends YkInstrumentedTests {
 
   protected void withPivSession(
       TestState.StatefulSessionCallback<PivSession, PivTestState> callback) throws Throwable {

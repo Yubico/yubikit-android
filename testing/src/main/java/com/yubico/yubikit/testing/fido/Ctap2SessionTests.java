@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Yubico.
+ * Copyright (C) 2020-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,7 +61,7 @@ public class Ctap2SessionTests {
     assertEquals("Option 'plat' incorrect", false, options.get("plat"));
     assertEquals("Option 'rk' incorrect", true, options.get("rk"));
     assertEquals("Option 'up' incorrect", true, options.get("up"));
-    assertTrue("Options do not contain 'clientPIN'", options.containsKey("clientPin"));
+    assertTrue("Options do not contain 'clientPin'", options.containsKey("clientPin"));
 
     // Check PIN/UV Auth protocol
     List<Integer> pinUvAuthProtocols = info.getPinUvAuthProtocols();

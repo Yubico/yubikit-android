@@ -19,7 +19,7 @@ import com.yubico.yubikit.openpgp.OpenPgpSession;
 import com.yubico.yubikit.testing.TestState;
 import com.yubico.yubikit.testing.openpgp.OpenPgpTestState;
 
-public class OpenPgpInstrumentedTests extends YKInstrumentedTests {
+public class OpenPgpInstrumentedTests extends YkInstrumentedTests {
   protected void withOpenPgpSession(
       TestState.StatefulSessionCallback<OpenPgpSession, OpenPgpTestState> callback)
       throws Throwable {

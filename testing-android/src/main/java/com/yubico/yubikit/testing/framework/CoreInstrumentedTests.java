@@ -19,7 +19,7 @@ package com.yubico.yubikit.testing.framework;
 import com.yubico.yubikit.testing.TestState;
 import com.yubico.yubikit.testing.core.CoreTestState;
 
-public class CoreInstrumentedTests extends YKInstrumentedTests {
+public class CoreInstrumentedTests extends YkInstrumentedTests {
   protected void withState(TestState.StatefulDeviceCallback<CoreTestState> callback)
       throws Throwable {
     final CoreTestState state =
