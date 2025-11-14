@@ -289,8 +289,7 @@ public class BasicWebAuthnClient implements Closeable {
       final List<Pair<Ctap2Session.AssertionData, ClientExtensionResults>> results =
           ctapGetAssertions(clientData.getHash(), options, effectiveDomain, pin, state);
 
-      final List<PublicKeyCredentialDescriptor> allowCredentials =
-          removeUnsupportedCredentials(options.getAllowCredentials());
+      final List<PublicKeyCredentialDescriptor> allowCredentials = options.getAllowCredentials();
 
       if (results.size() == 1) {
         final Ctap2Session.AssertionData assertion = results.get(0).first;
@@ -486,7 +485,8 @@ public class BasicWebAuthnClient implements Closeable {
     }
 
     final List<PublicKeyCredentialDescriptor> excludeCredentials =
-        removeUnsupportedCredentials(options.getExcludeCredentials());
+        Utils.preprocessCredentialList(
+            options.getExcludeCredentials(), ctap.getCachedInfo().getMaxCredentialIdLength());
 
     PublicKeyCredentialDescriptor credToExclude =
         excludeCredentials != null
@@ -581,7 +581,8 @@ public class BasicWebAuthnClient implements Closeable {
     }
     Map<String, Boolean> ctapOptions = getRequestCtapOptions(options, pin);
     final List<PublicKeyCredentialDescriptor> allowCredentials =
-        removeUnsupportedCredentials(options.getAllowCredentials());
+        Utils.preprocessCredentialList(
+            options.getAllowCredentials(), ctap.getCachedInfo().getMaxCredentialIdLength());
 
     int permissions = ClientPin.PIN_PERMISSION_GA;
     List<Extension.AuthenticationProcessor> authenticationProcessors = new ArrayList<>();
@@ -792,25 +793,6 @@ public class BasicWebAuthnClient implements Closeable {
     return PUBLIC_KEY.equals(type);
   }
 
-  /**
-   * @return new list containing only descriptors with valid {@code PublicKeyCredentialType} type
-   */
-  @Nullable
-  private static List<PublicKeyCredentialDescriptor> removeUnsupportedCredentials(
-      @Nullable List<PublicKeyCredentialDescriptor> descriptors) {
-    if (descriptors == null || descriptors.isEmpty()) {
-      return descriptors;
-    }
-
-    final List<PublicKeyCredentialDescriptor> list = new ArrayList<>();
-    for (PublicKeyCredentialDescriptor credential : descriptors) {
-      if (isPublicKeyCredentialTypeSupported(credential.getType())) {
-        list.add(credential);
-      }
-    }
-    return list;
-  }
-
   private static final List<Extension> defaultExtensions =
       Arrays.asList(
           new CredPropsExtension(),
@@ -842,22 +824,8 @@ public class BasicWebAuthnClient implements Closeable {
             ClientError.Code.BAD_REQUEST, "RP ID is not valid for effective domain");
       }
 
-      List<PublicKeyCredentialDescriptor> creds;
-
-      // filter out credential IDs which are too long
       Ctap2Session.InfoData info = ctap.getCachedInfo();
-      Integer maxCredIdLength = info.getMaxCredentialIdLength();
-      if (maxCredIdLength != null) {
-        creds = new ArrayList<>();
-        for (PublicKeyCredentialDescriptor desc : descriptors) {
-          if (desc.getId().length <= maxCredIdLength) {
-            creds.add(desc);
-          }
-        }
-      } else {
-        creds = new ArrayList<>(descriptors);
-      }
-
+      final List<PublicKeyCredentialDescriptor> creds = new ArrayList<>(descriptors);
       int maxCreds =
           info.getMaxCredentialCountInList() != null ? info.getMaxCredentialCountInList() : 1;
 
@@ -917,6 +885,49 @@ public class BasicWebAuthnClient implements Closeable {
       }
 
       return null;
+    }
+
+    /**
+     * Preprocesses a list of credential descriptors before sending to the authenticator.
+     *
+     * <p>This method performs the following transformations:
+     *
+     * <ul>
+     *   <li>Filters out unsupported credential types (keeps only "public-key")
+     *   <li>Removes credentials exceeding the authenticator's max credential ID length
+     *   <li>Strips transport information (not used by CTAP)
+     * </ul>
+     *
+     * @param descriptors The credential descriptors to preprocess
+     * @param maxCredIdLength Maximum credential ID length supported by the authenticator, or null
+     *     for no limit
+     * @return Preprocessed list ready for CTAP operations, or null if no valid credentials remain
+     */
+    @Nullable
+    static List<PublicKeyCredentialDescriptor> preprocessCredentialList(
+        @Nullable List<PublicKeyCredentialDescriptor> descriptors,
+        @Nullable Integer maxCredIdLength) {
+      if (descriptors == null || descriptors.isEmpty()) {
+        return null;
+      }
+
+      List<PublicKeyCredentialDescriptor> filtered = new ArrayList<>();
+      for (PublicKeyCredentialDescriptor credential : descriptors) {
+        // Skip unsupported types
+        if (!isPublicKeyCredentialTypeSupported(credential.getType())) {
+          continue;
+        }
+
+        // Skip credentials that exceed max length
+        if (maxCredIdLength != null && credential.getId().length > maxCredIdLength) {
+          continue;
+        }
+
+        // Add without transports
+        filtered.add(new PublicKeyCredentialDescriptor(credential.getType(), credential.getId()));
+      }
+
+      return filtered.isEmpty() ? null : filtered;
     }
 
     /**
