@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Yubico.
+ * Copyright (C) 2020-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import java.util.Map;
  * Implements a dummy PIN/UV Auth Protocol
  *
  * @see <a
- *     href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#authnrClientPin-puaprot-abstract-dfn">PIN/UV
+ *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html#authnrClientPin-puaprot-abstract-dfn">PIN/UV
  *     Auth Protocol Abstract Definition</a>.
  */
 public class PinUvAuthDummyProtocol implements PinUvAuthProtocol {
