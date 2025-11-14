@@ -85,6 +85,11 @@ public class OpenPgpTests {
     }
 
     @Test
+    public void testFingerprintOperations() throws Throwable {
+      withOpenPgpSession(OpenPgpDeviceTests::testFingerprintOperations);
+    }
+
+    @Test
     public void testGenerateEd25519() throws Throwable {
       withOpenPgpSession(OpenPgpDeviceTests::testGenerateEd25519);
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Yubico.
+ * Copyright (C) 2023-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -151,8 +151,8 @@ public class DiscretionaryDataObjects {
     KeyRef[] refs = KeyRef.values();
     Map<KeyRef, byte[]> fingerprints = new HashMap<>();
     ByteBuffer buf = ByteBuffer.wrap(encoded);
-    byte[] fingerprint = new byte[20];
     for (int i = 0; buf.remaining() > 0; i++) {
+      byte[] fingerprint = new byte[20];
       buf.get(fingerprint);
       fingerprints.put(refs[i], fingerprint);
     }
