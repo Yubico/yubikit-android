@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Yubico.
+ * Copyright (C) 2020-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,17 +20,25 @@ import com.yubico.yubikit.core.fido.CtapException;
 
 /**
  * A subclass of {@link ClientError} used by {@link BasicWebAuthnClient} to indicate that
- * makeCredential or getAssertion was called with an invalid PIN.
+ * makeCredential or getAssertion was called with invalid authentication (PIN or UV).
  */
-public class PinInvalidClientError extends ClientError {
+public class AuthInvalidClientError extends ClientError {
 
-  public final int pinRetries;
+  public enum AuthType {
+    PIN,
+    UV
+  }
+
+  public final AuthType authType;
+  public final int retries;
 
   /**
-   * @param pinRetries number of retries left before the authenticator is blocked
+   * @param authType type of authentication (PIN or UV)
+   * @param retries number of retries left before the authenticator is blocked
    */
-  public PinInvalidClientError(CtapException cause, int pinRetries) {
+  public AuthInvalidClientError(CtapException cause, AuthType authType, int retries) {
     super(Code.BAD_REQUEST, cause);
-    this.pinRetries = pinRetries;
+    this.authType = authType;
+    this.retries = retries;
   }
 }
