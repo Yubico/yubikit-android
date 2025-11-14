@@ -13,15 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 plugins {
-    id("yubikit-library")
+    `maven-publish`
+    signing
 }
 
-dependencies {
-    api(project(":support"))
-    implementation(libs.hid4java)
+extensions.getByType(JavaPluginExtension::class.java).apply {
+    withJavadocJar()
+    withSourcesJar()
 }
 
-description = "This module is the core library desktop implementation and provides functionality to detect a YubiKey plugged in or tapped over NFC and to open an ISO/IEC 7816 connection, using the javax.smartcardio API."
+val publishing = extensions.getByType(PublishingExtension::class.java)
+val signing = extensions.getByType(SigningExtension::class.java)
 
+publishing.publications {
+    create<MavenPublication>("maven") {
+        from(components["java"])
+        afterEvaluate {
+            pom(applyPomConfiguration())
+        }
+    }
+}
+
+configureSonatypeRepository(publishing)
+configureSigning(signing, publishing)
+registerFinalizeCentralPublicationTask()

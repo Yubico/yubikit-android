@@ -15,7 +15,14 @@
  */
 
 plugins {
-    id("project-convention-spotbugs")
-    id("project-convention-spotless")
-    id("project-convention-logging")
+    id("yubikit-java-convention")
+    id("yubikit-common")
+    id("yubikit-publishing")
+}
+
+val libs = extensions.getByType<VersionCatalogsExtension>().named("libs")
+
+dependencies {
+    testImplementation(project(":testing"))
+    testImplementation(libs.findLibrary("junit-junit").get())
 }

@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
-dependencies {
-    add("api", "org.slf4j:slf4j-api:2.0.17")
+plugins {
+    id("yubikit-spotbugs")
+    id("yubikit-spotless")
+    id("yubikit-logging")
 }

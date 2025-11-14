@@ -14,14 +14,19 @@
  * limitations under the License.
  */
 
-plugins {
-    id("yubikit-library")
+dependencyResolutionManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+    versionCatalogs {
+        create("libs") {
+            from(files("../gradle/libs.versions.toml"))
+        }
+    }
 }
 
-dependencies {
-    api(project(":support"))
-    implementation(libs.hid4java)
-}
+rootProject.name = "build-logic"
 
-description = "This module is the core library desktop implementation and provides functionality to detect a YubiKey plugged in or tapped over NFC and to open an ISO/IEC 7816 connection, using the javax.smartcardio API."
 

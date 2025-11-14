@@ -16,8 +16,8 @@
 
 plugins {
     application
-    id("project-convention-spotbugs")
-    id("project-convention-spotless")
+    id("yubikit-spotbugs")
+    id("yubikit-spotless")
 }
 
 dependencies {

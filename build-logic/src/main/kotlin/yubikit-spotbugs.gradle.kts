@@ -21,11 +21,13 @@ plugins {
     id("com.github.spotbugs")
 }
 
-dependencies {
-    spotbugs("com.github.spotbugs:spotbugs:4.9.8")
-    spotbugsPlugins("com.h3xstream.findsecbugs:findsecbugs-plugin:1.14.0")
+val libs = extensions.getByType<VersionCatalogsExtension>().named("libs")
 
-    add("implementation", "com.github.spotbugs:spotbugs-annotations:4.9.8")
+dependencies {
+    spotbugs(libs.findLibrary("spotbugs").get())
+    spotbugsPlugins(libs.findLibrary("findsecbugs-plugin").get())
+
+    add("implementation", libs.findLibrary("spotbugs-annotations").get())
 }
 
 spotbugs {
