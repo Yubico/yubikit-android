@@ -39,6 +39,7 @@ import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialCreationOptions;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialRpEntity;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialUserEntity;
 import com.yubico.yubikit.fido.webauthn.ResidentKeyRequirement;
+import com.yubico.yubikit.testing.fido.utils.TestData;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;
@@ -231,7 +232,7 @@ public class EnterpriseAttestationTests {
       throws ClientError, IOException, CommandException {
     PublicKeyCredentialCreationOptions creationOptions = getCredentialCreationOptions(attestation);
     return webauthn.makeCredential(
-        TestData.CLIENT_DATA_JSON_CREATE,
+        TestData.CLIENT_DATA_JSON_CREATE_PROVIDER,
         creationOptions,
         Objects.requireNonNull(creationOptions.getRp().getId()),
         TestData.PIN,

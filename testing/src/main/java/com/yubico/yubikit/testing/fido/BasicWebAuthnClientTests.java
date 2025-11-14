@@ -55,6 +55,7 @@ import com.yubico.yubikit.fido.webauthn.ResidentKeyRequirement;
 import com.yubico.yubikit.fido.webauthn.UserVerificationRequirement;
 import com.yubico.yubikit.testing.fido.utils.ClientHelper;
 import com.yubico.yubikit.testing.fido.utils.CreationOptionsBuilder;
+import com.yubico.yubikit.testing.fido.utils.TestData;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -99,7 +100,7 @@ public class BasicWebAuthnClientTests {
                   null);
           PublicKeyCredential credNonRk =
               webauthn.makeCredential(
-                  TestData.CLIENT_DATA_JSON_CREATE,
+                  TestData.CLIENT_DATA_JSON_CREATE_PROVIDER,
                   creationOptionsNonRk,
                   Objects.requireNonNull(creationOptionsNonRk.getRp().getId()),
                   TestData.PIN,
@@ -126,7 +127,7 @@ public class BasicWebAuthnClientTests {
                   null);
           PublicKeyCredential credRk =
               webauthn.makeCredential(
-                  TestData.CLIENT_DATA_JSON_CREATE,
+                  TestData.CLIENT_DATA_JSON_CREATE_PROVIDER,
                   creationOptionsRk,
                   Objects.requireNonNull(creationOptionsRk.getRp().getId()),
                   TestData.PIN,
@@ -154,7 +155,7 @@ public class BasicWebAuthnClientTests {
           try {
             PublicKeyCredential credential =
                 webauthn.getAssertion(
-                    TestData.CLIENT_DATA_JSON_GET,
+                    TestData.CLIENT_DATA_JSON_GET_PROVIDER,
                     requestOptions,
                     TestData.RP_ID,
                     TestData.PIN,
@@ -194,7 +195,7 @@ public class BasicWebAuthnClientTests {
                     Collections.singletonList(TestData.PUB_KEY_CRED_PARAMS_ES256),
                     null);
             webauthn.makeCredential(
-                TestData.CLIENT_DATA_JSON_CREATE,
+                TestData.CLIENT_DATA_JSON_CREATE_PROVIDER,
                 creationOptionsNonRk,
                 Objects.requireNonNull(creationOptionsNonRk.getRp().getId()),
                 TestData.PIN,
@@ -247,7 +248,7 @@ public class BasicWebAuthnClientTests {
                       UserVerificationRequirement.DISCOURAGED);
               PublicKeyCredential publicKeyCredential =
                   webauthn.makeCredential(
-                      TestData.CLIENT_DATA_JSON_CREATE,
+                      TestData.CLIENT_DATA_JSON_CREATE_PROVIDER,
                       creationOptionsNonRk,
                       Objects.requireNonNull(creationOptionsNonRk.getRp().getId()),
                       null,
@@ -281,7 +282,11 @@ public class BasicWebAuthnClientTests {
           try {
             PublicKeyCredential credential =
                 webauthn.getAssertion(
-                    TestData.CLIENT_DATA_JSON_GET, requestOptionsNonRk, TestData.RP_ID, null, null);
+                    TestData.CLIENT_DATA_JSON_GET_PROVIDER,
+                    requestOptionsNonRk,
+                    TestData.RP_ID,
+                    null,
+                    null);
             AuthenticatorAssertionResponse response =
                 (AuthenticatorAssertionResponse) credential.getResponse();
             assertNotNull(
@@ -310,7 +315,7 @@ public class BasicWebAuthnClientTests {
                       UserVerificationRequirement.DISCOURAGED);
               PublicKeyCredential publicKeyCredential =
                   webauthn.makeCredential(
-                      TestData.CLIENT_DATA_JSON_CREATE,
+                      TestData.CLIENT_DATA_JSON_CREATE_PROVIDER,
                       creationOptionsRk,
                       Objects.requireNonNull(creationOptionsRk.getRp().getId()),
                       null,
@@ -343,7 +348,11 @@ public class BasicWebAuthnClientTests {
           try {
             PublicKeyCredential credential =
                 webauthn.getAssertion(
-                    TestData.CLIENT_DATA_JSON_GET, requestOptionsRk, TestData.RP_ID, null, null);
+                    TestData.CLIENT_DATA_JSON_GET_PROVIDER,
+                    requestOptionsRk,
+                    TestData.RP_ID,
+                    null,
+                    null);
             AuthenticatorAssertionResponse response =
                 (AuthenticatorAssertionResponse) credential.getResponse();
             assertNotNull(
@@ -379,7 +388,7 @@ public class BasicWebAuthnClientTests {
                     null);
             PublicKeyCredential credential =
                 webauthn.makeCredential(
-                    TestData.CLIENT_DATA_JSON_CREATE,
+                    TestData.CLIENT_DATA_JSON_CREATE_PROVIDER,
                     creationOptions,
                     Objects.requireNonNull(creationOptions.getRp().getId()),
                     TestData.PIN,
@@ -408,7 +417,7 @@ public class BasicWebAuthnClientTests {
             BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
             try {
               webauthn.getAssertion(
-                  TestData.CLIENT_DATA_JSON_GET,
+                  TestData.CLIENT_DATA_JSON_GET_PROVIDER,
                   requestOptions,
                   TestData.RP_ID,
                   TestData.PIN,
@@ -456,7 +465,7 @@ public class BasicWebAuthnClientTests {
                   ClientError.class,
                   () ->
                       webauthn.getAssertion(
-                          TestData.CLIENT_DATA_JSON_GET,
+                          TestData.CLIENT_DATA_JSON_GET_PROVIDER,
                           options,
                           TestData.RP_ID,
                           TestData.PIN,
@@ -494,7 +503,7 @@ public class BasicWebAuthnClientTests {
                       null);
 
               return webauthn.makeCredential(
-                  TestData.CLIENT_DATA_JSON_CREATE,
+                  TestData.CLIENT_DATA_JSON_CREATE_PROVIDER,
                   options,
                   Objects.requireNonNull(TestData.RP.getId()),
                   TestData.PIN,
@@ -516,7 +525,7 @@ public class BasicWebAuthnClientTests {
                       null);
 
               return webauthn.makeCredential(
-                  TestData.CLIENT_DATA_JSON_CREATE,
+                  TestData.CLIENT_DATA_JSON_CREATE_PROVIDER,
                   options,
                   Objects.requireNonNull(TestData.RP.getId()),
                   TestData.PIN,
@@ -539,7 +548,7 @@ public class BasicWebAuthnClientTests {
 
           PublicKeyCredential credential =
               webauthn.getAssertion(
-                  TestData.CLIENT_DATA_JSON_GET,
+                  TestData.CLIENT_DATA_JSON_GET_PROVIDER,
                   requestOptions,
                   TestData.RP_ID,
                   TestData.PIN,
@@ -561,7 +570,7 @@ public class BasicWebAuthnClientTests {
           BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
           PublicKeyCredential credential =
               webauthn.getAssertion(
-                  TestData.CLIENT_DATA_JSON_GET,
+                  TestData.CLIENT_DATA_JSON_GET_PROVIDER,
                   requestOptions,
                   TestData.RP_ID,
                   TestData.PIN,
@@ -670,7 +679,7 @@ public class BasicWebAuthnClientTests {
                 getCreateOptions(null, false, Collections.singletonList(param), null);
             PublicKeyCredential credential =
                 webauthn.makeCredential(
-                    TestData.CLIENT_DATA_JSON_CREATE,
+                    TestData.CLIENT_DATA_JSON_CREATE_PROVIDER,
                     creationOptions,
                     Objects.requireNonNull(creationOptions.getRp().getId()),
                     TestData.PIN,
@@ -698,7 +707,7 @@ public class BasicWebAuthnClientTests {
               getCreateOptions(null, false, credParams, null);
           PublicKeyCredential credential =
               webauthn.makeCredential(
-                  TestData.CLIENT_DATA_JSON_CREATE,
+                  TestData.CLIENT_DATA_JSON_CREATE_PROVIDER,
                   creationOptions,
                   Objects.requireNonNull(creationOptions.getRp().getId()),
                   TestData.PIN,
@@ -724,7 +733,7 @@ public class BasicWebAuthnClientTests {
               getCreateOptions(null, false, credParams, null);
           PublicKeyCredential credential =
               webauthn.makeCredential(
-                  TestData.CLIENT_DATA_JSON_CREATE,
+                  TestData.CLIENT_DATA_JSON_CREATE_PROVIDER,
                   creationOptions,
                   Objects.requireNonNull(creationOptions.getRp().getId()),
                   TestData.PIN,
@@ -776,7 +785,7 @@ public class BasicWebAuthnClientTests {
               getCreateOptions(
                   null, true, Collections.singletonList(TestData.PUB_KEY_CRED_PARAMS_ES256), null);
           webauthn.makeCredential(
-              TestData.CLIENT_DATA_JSON_CREATE,
+              TestData.CLIENT_DATA_JSON_CREATE_PROVIDER,
               creationOptions,
               Objects.requireNonNull(creationOptions.getRp().getId()),
               TestData.PIN,

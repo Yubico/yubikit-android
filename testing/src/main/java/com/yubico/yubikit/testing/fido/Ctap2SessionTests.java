@@ -32,6 +32,7 @@ import com.yubico.yubikit.core.fido.CtapException;
 import com.yubico.yubikit.fido.ctap.ClientPin;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.fido.webauthn.SerializationType;
+import com.yubico.yubikit.testing.fido.utils.TestData;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;

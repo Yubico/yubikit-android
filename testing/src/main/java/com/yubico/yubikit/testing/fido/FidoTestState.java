@@ -41,6 +41,7 @@ import com.yubico.yubikit.management.Capability;
 import com.yubico.yubikit.management.DeviceInfo;
 import com.yubico.yubikit.support.DeviceUtil;
 import com.yubico.yubikit.testing.TestState;
+import com.yubico.yubikit.testing.fido.utils.TestData;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;

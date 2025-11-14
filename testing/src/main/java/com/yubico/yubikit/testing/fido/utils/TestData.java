@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Yubico.
+ * Copyright (C) 2020-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,36 +16,15 @@
 
 package com.yubico.yubikit.testing.fido.utils;
 
-import com.squareup.moshi.Moshi;
+import com.yubico.yubikit.core.internal.codec.Base64;
+import com.yubico.yubikit.fido.client.clientdata.ClientDataProvider;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialParameters;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialRpEntity;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialType;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialUserEntity;
 import java.nio.charset.StandardCharsets;
-import org.bouncycastle.util.encoders.Base64;
 
-class TestData {
-
-  static class ClientData {
-    @SuppressWarnings("unused")
-    public final String type;
-
-    @SuppressWarnings("unused")
-    public final String origin;
-
-    @SuppressWarnings("unused")
-    public final String challenge;
-
-    @SuppressWarnings("unused")
-    public final String androidPackageName;
-
-    public ClientData(String type, String origin, byte[] challenge, String androidPackageName) {
-      this.type = type;
-      this.origin = origin;
-      this.challenge = Base64.toBase64String(challenge);
-      this.androidPackageName = androidPackageName;
-    }
-  }
+public class TestData {
 
   public static final char[] PIN = "11234567".toCharArray();
   public static final char[] OTHER_PIN = "11231234".toCharArray();
@@ -67,19 +46,11 @@ class TestData {
 
   private static final String PACKAGE_NAME = "TestPackage";
 
-  public static final byte[] CLIENT_DATA_JSON_CREATE =
-      new Moshi.Builder()
-          .build()
-          .adapter(ClientData.class)
-          .toJson(new ClientData("webauthn.create", ORIGIN, CHALLENGE, PACKAGE_NAME))
-          .getBytes(StandardCharsets.UTF_8);
+  public static final ClientDataProvider CLIENT_DATA_JSON_CREATE_PROVIDER =
+      ClientDataProvider.fromClientDataJson(createTestClientDataJson("webauthn.create"));
 
-  public static final byte[] CLIENT_DATA_JSON_GET =
-      new Moshi.Builder()
-          .build()
-          .adapter(ClientData.class)
-          .toJson(new ClientData("webauthn.get", ORIGIN, CHALLENGE, PACKAGE_NAME))
-          .getBytes(StandardCharsets.UTF_8);
+  public static final ClientDataProvider CLIENT_DATA_JSON_GET_PROVIDER =
+      ClientDataProvider.fromClientDataJson(createTestClientDataJson("webauthn.get"));
 
   public static final byte[] CLIENT_DATA_HASH =
       new byte[] {
@@ -92,4 +63,13 @@ class TestData {
 
   public static final PublicKeyCredentialParameters PUB_KEY_CRED_PARAMS_EDDSA =
       new PublicKeyCredentialParameters(PublicKeyCredentialType.PUBLIC_KEY, -8);
+
+  // Constructs a test client data JSON for WebAuthn operations.
+  private static byte[] createTestClientDataJson(String type) {
+    String json =
+        String.format(
+            "{\"type\":\"%s\",\"challenge\":\"%s\",\"origin\":\"%s\",\"crossOrigin\":false,\"androidPackageName\":\"%s\"}",
+            type, Base64.toUrlSafeString(TestData.CHALLENGE), TestData.ORIGIN, PACKAGE_NAME);
+    return json.getBytes(StandardCharsets.UTF_8);
+  }
 }

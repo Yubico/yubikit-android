@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Yubico.
+ * Copyright (C) 2020-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -99,7 +99,7 @@ public class CredentialManager {
           new HashMap<>();
       byte[] rpIdHash = rpIdHashes.get(rpId);
       if (rpIdHash == null) {
-        rpIdHash = BasicWebAuthnClient.Utils.hash(rpId.getBytes(StandardCharsets.UTF_8));
+        rpIdHash = Utils.hash(rpId.getBytes(StandardCharsets.UTF_8));
       }
 
       for (CredentialManagement.CredentialData credData :
