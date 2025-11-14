@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Yubico.
+ * Copyright (C) 2020-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -141,10 +141,10 @@ public class BasicWebAuthnClient implements Closeable {
    * @param session CTAP session
    * @throws IOException A communication error in the transport layer
    * @throws CommandException A communication in the protocol layer
-   * @see <a href="https://www.w3.org/TR/webauthn-2/#webauthn-client">Webauthn client</a>
-   * @see <a href="https://www.w3.org/TR/webauthn-2/#sctn-extensions">Webauthn extensions</a>
+   * @see <a href="https://www.w3.org/TR/webauthn-3/#webauthn-client">Webauthn client</a>
+   * @see <a href="https://www.w3.org/TR/webauthn-3/#sctn-extensions">Webauthn extensions</a>
    * @see <a
-   *     href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#sctn-defined-extensions">CTAP
+   *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html#sctn-defined-extensions">CTAP
    *     extensions</a>
    */
   public BasicWebAuthnClient(Ctap2Session session) throws IOException, CommandException {
@@ -160,10 +160,10 @@ public class BasicWebAuthnClient implements Closeable {
    * @param extensions List of extensions
    * @throws IOException A communication error in the transport layer
    * @throws CommandException A communication in the protocol layer
-   * @see <a href="https://www.w3.org/TR/webauthn-2/#webauthn-client">Webauthn client</a>
-   * @see <a href="https://www.w3.org/TR/webauthn-2/#sctn-extensions">Webauthn extensions</a>
+   * @see <a href="https://www.w3.org/TR/webauthn-3/#webauthn-client">Webauthn client</a>
+   * @see <a href="https://www.w3.org/TR/webauthn-3/#sctn-extensions">Webauthn extensions</a>
    * @see <a
-   *     href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#sctn-defined-extensions">CTAP
+   *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html#sctn-defined-extensions">CTAP
    *     extensions</a>
    */
   public BasicWebAuthnClient(Ctap2Session session, List<Extension> extensions)
@@ -334,7 +334,7 @@ public class BasicWebAuthnClient implements Closeable {
    * @return true if the authenticator is enterprise attestation capable and enterprise attestation
    *     is enabled.
    * @see <a
-   *     href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#sctn-feature-descriptions-enterp-attstn">Enterprise
+   *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html#sctn-feature-descriptions-enterp-attstn">Enterprise
    *     Attestation</a>
    */
   public boolean isEnterpriseAttestationSupported() {

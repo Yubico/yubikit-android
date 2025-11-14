@@ -1,7 +1,7 @@
 == FIDO module
 The FIDO module enables applications to authenticate WebAuthn credentials on a YubiKey.
 
-The current implementation follows the https://www.w3.org/TR/webauthn-2/[Webauthn Level 2] and https://fidoalliance.org/specs/fido-v2.0-ps-20190130/fido-client-to-authenticator-protocol-v2.0-ps-20190130.html[CTAP 2.0] specifications and can include more properties from newer standard versions.
+The current implementation follows the https://www.w3.org/TR/webauthn-3/[Webauthn Level 3] and https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html[CTAP 2.2] specifications and can include more properties from newer standard versions.
 
 https://developers.yubico.com/yubikit-android/JavaDoc/fido/latest/[JavaDoc API documentation]
 

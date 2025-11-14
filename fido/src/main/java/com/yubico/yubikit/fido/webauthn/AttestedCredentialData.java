@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Yubico.
+ * Copyright (C) 2023-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,9 +24,8 @@ import java.util.Map;
 /**
  * Webauthn AttestedCredentialData structure
  *
- * @see <a
- *     href="https://www.w3.org/TR/2021/REC-webauthn-2-20210408/#sctn-attested-credential-data">WebAuthn
- *     Attested Credential Data</a>
+ * @see <a href="https://www.w3.org/TR/webauthn-3/#sctn-attested-credential-data">WebAuthn Attested
+ *     Credential Data</a>
  */
 public class AttestedCredentialData {
   private final byte[] aaguid;
