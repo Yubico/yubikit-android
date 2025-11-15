@@ -39,9 +39,9 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
-public class SignExtension extends Extension {
+public class PreviewSignExtension extends Extension {
 
-  static final String SIGN = "sign";
+  static final String PREVIEW_SIGN = "previewSign";
   static final String ALGORITHMS = "algorithms";
   static final String TBS = "tbs";
   static final String KEY_HANDLE_BY_CREDENTIAL = "keyHandleByCredential";
@@ -55,8 +55,8 @@ public class SignExtension extends Extension {
   static final String AUTH_DATA = "authData";
   static final String ATT_STMT = "attStmt";
 
-  public SignExtension() {
-    super(SIGN);
+  public PreviewSignExtension() {
+    super(PREVIEW_SIGN);
   }
 
   private static class AuthenticationExtensionsSign {
@@ -81,7 +81,7 @@ public class SignExtension extends Extension {
           AuthenticationExtensionsSignGenerateKey.fromMap(
               (Map<String, Object>) inputs.get(GENERATE_KEY));
       AuthenticationExtensionsSignSign signSign =
-          AuthenticationExtensionsSignSign.fromMap((Map<String, Object>) inputs.get(SIGN));
+          AuthenticationExtensionsSignSign.fromMap((Map<String, Object>) inputs.get(PREVIEW_SIGN));
 
       return new AuthenticationExtensionsSign(signGenerateKey, signSign);
     }
@@ -171,7 +171,7 @@ public class SignExtension extends Extension {
   }
 
   private static class AuthenticationExtensionsSignOutputs {
-    @Nullable final SignExtension.AuthenticationExtensionsSignGeneratedKey generatedKey;
+    @Nullable final PreviewSignExtension.AuthenticationExtensionsSignGeneratedKey generatedKey;
     @Nullable final byte[] signature;
 
     AuthenticationExtensionsSignOutputs(
@@ -206,7 +206,7 @@ public class SignExtension extends Extension {
     }
 
     AuthenticationExtensionsSign extSign =
-        AuthenticationExtensionsSign.fromMap((Map<String, ?>) extensions.get(SIGN));
+        AuthenticationExtensionsSign.fromMap((Map<String, ?>) extensions.get(PREVIEW_SIGN));
 
     if (extSign == null || !isSupported(ctap2)) {
       return null;
@@ -285,8 +285,8 @@ public class SignExtension extends Extension {
                       Cbor.encode(newAttObj));
 
               return Collections.singletonMap(
-                  SIGN,
-                  new SignExtension.AuthenticationExtensionsSignOutputs(
+                  PREVIEW_SIGN,
+                  new PreviewSignExtension.AuthenticationExtensionsSignOutputs(
                           generatedKey, (byte[]) authDataSign.get(6)) // sig
                       .toMap());
             };
@@ -317,7 +317,7 @@ public class SignExtension extends Extension {
     if (extensions == null) {
       return null;
     }
-    Map<String, Object> inputs = (Map<String, Object>) extensions.get(SIGN);
+    Map<String, Object> inputs = (Map<String, Object>) extensions.get(PREVIEW_SIGN);
 
     AuthenticationExtensionsSign extSign = AuthenticationExtensionsSign.fromMap(inputs);
     if (extSign == null || !isSupported(ctap)) {
@@ -368,8 +368,8 @@ public class SignExtension extends Extension {
           Map<Integer, Object> signResults = (Map<Integer, Object>) extensionResults.get(name);
           return serializationType ->
               Collections.singletonMap(
-                  SIGN,
-                  new SignExtension.AuthenticationExtensionsSignOutputs(
+                  PREVIEW_SIGN,
+                  new PreviewSignExtension.AuthenticationExtensionsSignOutputs(
                           null, (byte[]) signResults.get(6)) // sig
                       .toMap());
         };

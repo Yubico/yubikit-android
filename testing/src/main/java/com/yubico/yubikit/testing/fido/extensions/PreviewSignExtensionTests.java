@@ -18,7 +18,7 @@ package com.yubico.yubikit.testing.fido.extensions;
 
 import com.squareup.moshi.JsonReader;
 import com.yubico.yubikit.fido.client.extensions.Extension;
-import com.yubico.yubikit.fido.client.extensions.SignExtension;
+import com.yubico.yubikit.fido.client.extensions.PreviewSignExtension;
 import com.yubico.yubikit.fido.webauthn.ClientExtensionResults;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredential;
 import com.yubico.yubikit.fido.webauthn.SerializationType;
@@ -37,29 +37,30 @@ import okio.Buffer;
 import org.junit.Assert;
 import org.junit.Assume;
 
-public class SignExtensionTests {
+public class PreviewSignExtensionTests {
 
-  private static final String SIGN_EXT = "sign";
+  private static final String SIGN_EXT = "previewSign";
 
-  private static final List<Extension> extensions = Collections.singletonList(new SignExtension());
+  private static final List<Extension> extensions =
+      Collections.singletonList(new PreviewSignExtension());
 
   public static void testWithDiscoverableCredential(FidoTestState state) throws Throwable {
-    SignExtensionTests extTests = new SignExtensionTests();
+    PreviewSignExtensionTests extTests = new PreviewSignExtensionTests();
     extTests.runTest(state, true);
   }
 
   public static void testWithNonDiscoverableCredential(FidoTestState state) throws Throwable {
-    SignExtensionTests extTests = new SignExtensionTests();
+    PreviewSignExtensionTests extTests = new PreviewSignExtensionTests();
     extTests.runTest(state, false);
   }
 
   // this test is active only on devices without sign extension
   public static void testNoExtensionSupport(FidoTestState state) throws Throwable {
-    SignExtensionTests extTests = new SignExtensionTests();
+    PreviewSignExtensionTests extTests = new PreviewSignExtensionTests();
     extTests.runNoSupportTest(state);
   }
 
-  private SignExtensionTests() {}
+  private PreviewSignExtensionTests() {}
 
   @SuppressWarnings("unchecked")
   private void runTest(FidoTestState state, boolean residentKey) throws Throwable {
@@ -87,7 +88,7 @@ public class SignExtensionTests {
                             .residentKey(residentKey)
                             .extensions(
                                 JsonUtils.fromJson(
-                                    "{\"sign\": {"
+                                    "{\"previewSign\": {"
                                         + "    \"generateKey\": {"
                                         + "      \"algorithms\": ["
                                         + "          -65600,"
