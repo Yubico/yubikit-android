@@ -24,7 +24,7 @@ import com.yubico.yubikit.core.smartcard.scp.ScpKeyParams;
 import com.yubico.yubikit.core.smartcard.scp.SecurityDomainSession;
 import com.yubico.yubikit.testing.TestState;
 import java.util.Collections;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 public class CoreTestState extends TestState {
 

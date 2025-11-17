@@ -68,8 +68,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.junit.Assert;
 
 public class BasicWebAuthnClientTests {
@@ -915,7 +915,7 @@ public class BasicWebAuthnClientTests {
   }
 
   private static void deleteCredentials(
-      @Nonnull BasicWebAuthnClient webAuthnClient, @Nonnull List<byte[]> credIds)
+      @NonNull BasicWebAuthnClient webAuthnClient, @NonNull List<byte[]> credIds)
       throws IOException, CommandException, ClientError {
     CredentialManager credentialManager = webAuthnClient.getCredentialManager(TestData.PIN);
     for (byte[] credId : credIds) {

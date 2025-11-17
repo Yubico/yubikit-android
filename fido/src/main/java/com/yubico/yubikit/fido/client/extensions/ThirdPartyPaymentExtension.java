@@ -23,7 +23,7 @@ import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialCreationOptions;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialRequestOptions;
 import java.util.Collections;
 import java.util.Map;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Implements the Third-party payment authentication (thirdPartyPayment) CTAP2 extension.
@@ -68,8 +68,7 @@ public class ThirdPartyPaymentExtension extends Extension {
     }
 
     return new RegistrationProcessor(
-        (pinToken) ->
-            Collections.singletonMap(THIRD_PARTY_PAYMENT, Boolean.TRUE.equals(isPayment)));
+        (pinToken) -> Collections.singletonMap(THIRD_PARTY_PAYMENT, isPayment));
   }
 
   @Nullable
@@ -89,8 +88,7 @@ public class ThirdPartyPaymentExtension extends Extension {
     }
 
     final AuthenticationInput prepareInput =
-        (selected, pinToken) ->
-            Collections.singletonMap(THIRD_PARTY_PAYMENT, Boolean.TRUE.equals(isPayment));
+        (selected, pinToken) -> Collections.singletonMap(THIRD_PARTY_PAYMENT, isPayment);
 
     return new AuthenticationProcessor(prepareInput);
   }

@@ -46,7 +46,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import javax.annotation.Nullable;
 
 public class FidoTestState extends TestState {
 
@@ -119,7 +118,7 @@ public class FidoTestState extends TestState {
         verifyOrSetPin(session);
       }
 
-      @Nullable Boolean alwaysUv = (Boolean) session.getInfo().getOptions().get("alwaysUv");
+      Boolean alwaysUv = (Boolean) session.getInfo().getOptions().get("alwaysUv");
       if (isFidoFipsCapable && Boolean.FALSE.equals(alwaysUv)) {
         // set always UV on
         Config config = getConfig(session, this);

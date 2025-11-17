@@ -27,7 +27,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -62,7 +62,7 @@ public class Config {
    * @param pinUvToken the PIN/UV token to use
    */
   public Config(
-      Ctap2Session ctap, @Nullable PinUvAuthProtocol pinUvAuth, @Nullable byte[] pinUvToken) {
+      Ctap2Session ctap, @Nullable PinUvAuthProtocol pinUvAuth, byte @Nullable [] pinUvToken) {
 
     if (!isSupported(ctap.getCachedInfo())) {
       throw new IllegalStateException("Not supported");

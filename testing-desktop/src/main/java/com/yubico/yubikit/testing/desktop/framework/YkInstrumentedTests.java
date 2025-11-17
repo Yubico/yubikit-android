@@ -21,7 +21,7 @@ import com.yubico.yubikit.desktop.CompositeDevice;
 import com.yubico.yubikit.testing.AllowList;
 import com.yubico.yubikit.testing.desktop.DesktopAllowListProvider;
 import com.yubico.yubikit.testing.desktop.DesktopTestDriver;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.junit.Rule;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.TestName;

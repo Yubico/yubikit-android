@@ -46,7 +46,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -336,7 +336,7 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
    * @throws IOException in case of communication error
    * @throws CommandException in case of an error response from the YubiKey
    */
-  public void deleteConfiguration(Slot slot, @Nullable byte[] curAccCode)
+  public void deleteConfiguration(Slot slot, byte @Nullable [] curAccCode)
       throws IOException, CommandException {
     Logger.debug(logger, "Deleting slot {}", slot);
     writeConfig(slot.map(CMD_CONFIG_1, CMD_CONFIG_2), new byte[CONFIG_SIZE], curAccCode);
@@ -355,8 +355,8 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
   public void putConfiguration(
       Slot slot,
       SlotConfiguration configuration,
-      @Nullable byte[] accCode,
-      @Nullable byte[] curAccCode)
+      byte @Nullable [] accCode,
+      byte @Nullable [] curAccCode)
       throws IOException, CommandException {
     if (!configuration.isSupportedBy(backend.version)) {
       throw new UnsupportedOperationException(
@@ -386,8 +386,8 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
   public void updateConfiguration(
       Slot slot,
       UpdateConfiguration configuration,
-      @Nullable byte[] accCode,
-      @Nullable byte[] curAccCode)
+      byte @Nullable [] accCode,
+      byte @Nullable [] curAccCode)
       throws IOException, CommandException {
     require(FEATURE_UPDATE);
     if (!configuration.isSupportedBy(backend.version)) {
@@ -418,7 +418,7 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
    * @throws CommandException in case of an error response from the YubiKey
    */
   @SuppressWarnings("JavadocLinkAsPlainText")
-  public void setNdefConfiguration(Slot slot, @Nullable String uri, @Nullable byte[] curAccCode)
+  public void setNdefConfiguration(Slot slot, @Nullable String uri, byte @Nullable [] curAccCode)
       throws IOException, CommandException {
     Logger.debug(logger, "Writing NDEF configuration for slot {} ", slot);
     require(FEATURE_NDEF);
@@ -456,7 +456,7 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
         slot.map(CMD_CHALLENGE_HMAC_1, CMD_CHALLENGE_HMAC_2), padded, HMAC_RESPONSE_SIZE, state);
   }
 
-  private void writeConfig(byte commandSlot, byte[] config, @Nullable byte[] curAccCode)
+  private void writeConfig(byte commandSlot, byte[] config, byte @Nullable [] curAccCode)
       throws IOException, CommandException {
     Logger.debug(
         logger,

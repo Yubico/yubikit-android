@@ -17,6 +17,7 @@
 plugins {
     java
     id("yubikit-java-convention")
+    id("yubikit-common")
 }
 
 repositories {
@@ -40,7 +41,6 @@ dependencies {
     implementation(project(":piv"))
     implementation(project(":testing"))
 
-    implementation(libs.annotations)
     implementation(libs.bcpkix.jdk15to18)
 
     add("integrationTestImplementation", libs.junit.junit)

@@ -36,8 +36,9 @@ import java.io.IOException;
 import java.security.Security;
 import java.util.List;
 import java.util.stream.Collectors;
-import javax.annotation.Nullable;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.junit.Assume;
 
 public class TestState {
@@ -102,15 +103,16 @@ public class TestState {
     void invoke(S state) throws Throwable;
   }
 
-  public interface SessionCallback<T extends ApplicationSession<T>> {
+  public interface SessionCallback<T extends @Nullable ApplicationSession<@NonNull T>> {
     void invoke(T session) throws Throwable;
   }
 
-  public interface StatefulSessionCallback<T extends ApplicationSession<T>, S extends TestState> {
+  public interface StatefulSessionCallback<
+      T extends @Nullable ApplicationSession<@NonNull T>, S extends TestState> {
     void invoke(T session, S state) throws Throwable;
   }
 
-  public interface SessionCallbackT<T extends ApplicationSession<T>, R> {
+  public interface SessionCallbackT<T extends @Nullable ApplicationSession<@NonNull T>, R> {
     R invoke(T session) throws Throwable;
   }
 

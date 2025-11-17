@@ -18,7 +18,7 @@ package com.yubico.yubikit.testing.desktop.mpe;
 import com.yubico.yubikit.core.smartcard.scp.ScpKid;
 import com.yubico.yubikit.testing.desktop.framework.MpeInstrumentedTests;
 import com.yubico.yubikit.testing.mpe.MultiProtocolResetDeviceTests;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;

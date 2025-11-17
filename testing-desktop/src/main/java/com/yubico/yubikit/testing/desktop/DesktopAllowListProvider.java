@@ -21,6 +21,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -35,11 +36,16 @@ public class DesktopAllowListProvider implements AllowList.AllowListProvider {
   public List<Integer> getList() {
     List<Integer> allowedSerials = new ArrayList<>();
     ClassLoader classLoader = getClass().getClassLoader();
-    try (InputStream inputStream = classLoader.getResourceAsStream(ALLOW_LIST_FILENAME)) {
-      if (inputStream == null) {
+    try (InputStream inputStream = classLoader.getResourceAsStream(ALLOW_LIST_FILENAME);
+        BufferedReader reader =
+            inputStream == null
+                ? null
+                : new BufferedReader(
+                    new InputStreamReader(inputStream, StandardCharsets.UTF_8)); ) {
+      if (reader == null) {
         return allowedSerials;
       }
-      BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+
       String line;
       while ((line = reader.readLine()) != null) {
         Arrays.stream(line.split(","))

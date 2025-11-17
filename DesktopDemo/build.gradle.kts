@@ -26,8 +26,6 @@ dependencies {
     implementation(project(":fido"))
     implementation(project(":yubiotp"))
 
-    compileOnly(libs.jsr305)
-
     implementation(libs.logback.classic)
 }
 

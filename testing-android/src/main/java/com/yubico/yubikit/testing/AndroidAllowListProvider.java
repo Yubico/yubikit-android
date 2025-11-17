@@ -23,6 +23,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -40,7 +41,8 @@ class AndroidAllowListProvider implements AllowList.AllowListProvider {
     List<Integer> allowedSerials = new ArrayList<>();
 
     try (InputStream inputStream = assetManager.open(ALLOW_LIST_FILENAME);
-        BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
+        BufferedReader reader =
+            new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
       String line;
       while ((line = reader.readLine()) != null) {
         Arrays.stream(line.split(","))

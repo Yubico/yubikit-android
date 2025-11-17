@@ -19,7 +19,5 @@
  *
  * <p>Contains interface and implementation related to building ClientDataJSON.
  */
-@PackageNonnullByDefault
+@org.jspecify.annotations.NullMarked
 package com.yubico.yubikit.fido.client.clientdata;
-
-import com.yubico.yubikit.core.PackageNonnullByDefault;

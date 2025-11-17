@@ -18,4 +18,5 @@ plugins {
     id("yubikit-spotbugs")
     id("yubikit-spotless")
     id("yubikit-logging")
+    id("yubikit-jspecify")
 }

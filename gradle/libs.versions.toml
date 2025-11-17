@@ -22,7 +22,6 @@ androidx-test-rules = { module = "androidx.test:rules", version.ref = "androidx-
 androidx-test-core = { module = "androidx.test:core", version.ref = "androidx-test" }
 
 # Submodule: testing-desktop
-annotations = { module = "org.jetbrains:annotations", version.ref = "annotations" }
 junit-vintage-engine = { module = "org.junit.vintage:junit-vintage-engine", version.ref = "junit-vintage-engine" }
 
 # Submodule: testing
@@ -32,9 +31,6 @@ hamcrest-hamcrest = { module = "org.hamcrest:hamcrest", version.ref = "hamcrest"
 
 # Submodule: desktop
 hid4java = { module = "org.hid4java:hid4java", version.ref = "hid4java" }
-
-# Submodule: DesktopDemo
-jsr305 = { module = "com.google.code.findbugs:jsr305", version.ref = "jsr305" }
 
 # Build plugins (for build-logic)
 spotbugs-gradle-plugin = { module = "com.github.spotbugs.snom:spotbugs-gradle-plugin", version.ref = "spotbugs-plugin" }
@@ -59,6 +55,7 @@ logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "lo
 material = { module = "com.google.android.material:material", version.ref = "material" }
 moshi = { module = "com.squareup.moshi:moshi", version.ref = "moshi" }
 mockito = { module = "org.mockito:mockito-core", version.ref = "mockito" }
+jspecify = { module = "org.jspecify:jspecify", version.ref = "jspecify" }
 
 [plugins]
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
@@ -72,7 +69,6 @@ spotbugs-core = "4.9.8"
 findsecbugs = "1.14.0"
 spotless = "8.0.0"
 slf4j = "2.0.17"
-annotations = "26.0.2-1"
 appcompat = "1.7.1"
 bcpkix-jdk15to18 = "1.82"
 core-ktx = "1.17.0"
@@ -82,7 +78,7 @@ fragment-ktx = "1.8.9"
 hamcrest = "3.0"
 hamcrest-library = "3.0"
 hid4java = "0.8.0"
-jsr305 = "3.0.2"
+jspecify = "1.0.0"
 junit-version = "4.13.2"
 junit-vintage-engine = "5.14.0"
 kotlin = "2.2.21"

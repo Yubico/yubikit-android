@@ -23,7 +23,7 @@ import com.yubico.yubikit.testing.piv.PivJcaDecryptTests;
 import com.yubico.yubikit.testing.piv.PivJcaDeviceTests;
 import com.yubico.yubikit.testing.piv.PivJcaSigningTests;
 import com.yubico.yubikit.testing.piv.PivMoveKeyTests;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;

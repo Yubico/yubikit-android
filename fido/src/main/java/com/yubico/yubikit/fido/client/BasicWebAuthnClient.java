@@ -60,7 +60,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -124,10 +124,10 @@ public class BasicWebAuthnClient implements Closeable {
   }
 
   private static class AuthParams {
-    @Nullable private final byte[] pinToken;
+    private final byte @Nullable [] pinToken;
     private final boolean internalUv;
 
-    AuthParams(@Nullable byte[] pinToken, boolean internalUv) {
+    AuthParams(byte @Nullable [] pinToken, boolean internalUv) {
       this.pinToken = pinToken;
       this.internalUv = internalUv;
     }
@@ -225,7 +225,7 @@ public class BasicWebAuthnClient implements Closeable {
       ClientDataProvider clientData,
       PublicKeyCredentialCreationOptions options,
       String effectiveDomain,
-      @Nullable char[] pin,
+      char @Nullable [] pin,
       @Nullable Integer enterpriseAttestation,
       @Nullable CommandState state)
       throws IOException, CommandException, ClientError {
@@ -290,7 +290,7 @@ public class BasicWebAuthnClient implements Closeable {
       ClientDataProvider clientData,
       PublicKeyCredentialRequestOptions options,
       String effectiveDomain,
-      @Nullable char[] pin,
+      char @Nullable [] pin,
       @Nullable CommandState state)
       throws MultipleAssertionsAvailable, IOException, CommandException, ClientError {
     try {
@@ -453,7 +453,7 @@ public class BasicWebAuthnClient implements Closeable {
       byte[] clientDataHash,
       PublicKeyCredentialCreationOptions options,
       String effectiveDomain,
-      @Nullable char[] pin,
+      char @Nullable [] pin,
       @Nullable Integer enterpriseAttestation,
       @Nullable CommandState state)
       throws IOException, CommandException, ClientError {
@@ -541,7 +541,7 @@ public class BasicWebAuthnClient implements Closeable {
       }
     }
 
-    @Nullable Integer validatedEnterpriseAttestation = null;
+    Integer validatedEnterpriseAttestation = null;
     if (isEnterpriseAttestationSupported()
         && AttestationConveyancePreference.ENTERPRISE.equals(options.getAttestation())
         && userAgentConfiguration.supportsEpForRpId(rpId)
@@ -607,7 +607,7 @@ public class BasicWebAuthnClient implements Closeable {
       byte[] clientDataHash,
       PublicKeyCredentialRequestOptions options,
       String effectiveDomain,
-      @Nullable char[] pin,
+      char @Nullable [] pin,
       @Nullable CommandState state)
       throws IOException, CommandException, ClientError {
     String rpId = options.getRpId();
@@ -751,9 +751,8 @@ public class BasicWebAuthnClient implements Closeable {
     return hasUvConfigured && additionalPerms != 0;
   }
 
-  @Nullable
-  private byte[] getToken(
-      @Nullable char[] pin,
+  private byte @Nullable [] getToken(
+      char @Nullable [] pin,
       int permissions,
       @Nullable String rpId,
       boolean allowInternalUv,
@@ -781,7 +780,7 @@ public class BasicWebAuthnClient implements Closeable {
   }
 
   private AuthParams getAuthParams(
-      @Nullable char[] pin,
+      char @Nullable [] pin,
       @Nullable String userVerification,
       int permissions,
       @Nullable String rpId,
@@ -869,7 +868,7 @@ public class BasicWebAuthnClient implements Closeable {
         List<PublicKeyCredentialDescriptor> descriptors,
         String effectiveDomain,
         @Nullable PinUvAuthProtocol pinUvAuthProtocol,
-        @Nullable byte[] pinUvAuthToken)
+        byte @Nullable [] pinUvAuthToken)
         throws IOException, CommandException, ClientError {
 
       if (rpId == null) {
