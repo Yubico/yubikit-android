@@ -118,19 +118,19 @@ public class Ctap2SessionTests {
         pin.getPinToken(TestData.PIN, ClientPin.PIN_PERMISSION_MC, TestData.RP.getId());
     byte[] pinAuth = pin.getPinUvAuth().authenticate(pinToken, TestData.CLIENT_DATA_HASH);
 
-    CommandState state = new CommandState();
-    if (delay) {
-      try (ScheduledExecutorService executorService =
-          Executors.newSingleThreadScheduledExecutor()) {
-        executorService.schedule(state::cancel, 500, TimeUnit.MILLISECONDS);
-      }
-    } else {
-      state.cancel();
-    }
-
-    final SerializationType cborType = SerializationType.CBOR;
-
+    @SuppressWarnings("resource")
+    ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
     try {
+
+      CommandState state = new CommandState();
+      if (delay) {
+        executorService.schedule(state::cancel, 500, TimeUnit.MILLISECONDS);
+      } else {
+        state.cancel();
+      }
+
+      final SerializationType cborType = SerializationType.CBOR;
+
       session.makeCredential(
           TestData.CLIENT_DATA_HASH,
           TestData.RP.toMap(cborType),
@@ -146,6 +146,8 @@ public class Ctap2SessionTests {
       fail("Make credential completed without being cancelled.");
     } catch (CtapException e) {
       assertThat(e.getCtapError(), is(CtapException.ERR_KEEPALIVE_CANCEL));
+    } finally {
+      executorService.shutdown();
     }
 
     session.getInfo(); // Make sure connection still works.

@@ -184,12 +184,10 @@ public class BasicWebAuthnClientTests {
 
           CommandState commandState = new CommandState();
 
-          try (ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor()) {
-            executor.schedule(commandState::cancel, 500, TimeUnit.MILLISECONDS);
-          }
-
+          @SuppressWarnings("resource")
+          ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
           try {
-
+            executor.schedule(commandState::cancel, 500, TimeUnit.MILLISECONDS);
             PublicKeyCredentialCreationOptions creationOptionsNonRk =
                 getCreateOptions(
                     new PublicKeyCredentialUserEntity(
@@ -208,6 +206,8 @@ public class BasicWebAuthnClientTests {
             fail("Failed to cancel");
           } catch (ClientError clientError) {
             assertEquals(ClientError.Code.TIMEOUT, clientError.getErrorCode());
+          } finally {
+            executor.shutdown();
           }
         });
   }
