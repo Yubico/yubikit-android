@@ -134,7 +134,7 @@ public class OpenPgpDeviceTests {
       openpgp.resetPin(state.defaultUserPin, null);
       Assert.fail();
     } catch (ApduException e) {
-      Assert.assertEquals(e.getSw(), SW.SECURITY_CONDITION_NOT_SATISFIED);
+      Assert.assertEquals(SW.SECURITY_CONDITION_NOT_SATISFIED, e.getSw());
     }
 
     // Reset PIN using Admin PIN

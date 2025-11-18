@@ -16,6 +16,7 @@
 
 package com.yubico.yubikit.testing.framework;
 
+import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.management.ManagementSession;
 
@@ -26,7 +27,11 @@ public class ManagementInstrumentedTests extends YkInstrumentedTests {
   }
 
   protected void withManagementSession(Callback callback) throws Throwable {
-    try (SmartCardConnection connection = device.openConnection(SmartCardConnection.class)) {
+    YubiKeyDevice currentDevice = this.device;
+    if (currentDevice == null) {
+      throw new IllegalStateException("Device not available");
+    }
+    try (SmartCardConnection connection = currentDevice.openConnection(SmartCardConnection.class)) {
       callback.invoke(new ManagementSession(connection));
     }
   }

@@ -37,6 +37,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public class Ctap2SessionTests {
@@ -119,8 +120,10 @@ public class Ctap2SessionTests {
 
     CommandState state = new CommandState();
     if (delay) {
-      Executors.newSingleThreadScheduledExecutor()
-          .schedule(state::cancel, 500, TimeUnit.MILLISECONDS);
+      try (ScheduledExecutorService executorService =
+          Executors.newSingleThreadScheduledExecutor()) {
+        executorService.schedule(state::cancel, 500, TimeUnit.MILLISECONDS);
+      }
     } else {
       state.cancel();
     }

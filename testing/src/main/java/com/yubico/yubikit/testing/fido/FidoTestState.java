@@ -46,6 +46,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import org.jspecify.annotations.NonNull;
 
 public class FidoTestState extends TestState {
 
@@ -221,7 +222,7 @@ public class FidoTestState extends TestState {
     reconnect();
   }
 
-  public <R> R withCtap2(SessionCallbackT<Ctap2Session, R> callback) throws Throwable {
+  public <R> R withCtap2(SessionCallbackT<@NonNull Ctap2Session, R> callback) throws Throwable {
     R result;
     try (YubiKeyConnection connection = openConnection()) {
       final Ctap2Session ctap2 = getSession(connection, scpParameters.getKeyParams());
@@ -232,7 +233,7 @@ public class FidoTestState extends TestState {
     return result;
   }
 
-  public void withCtap2(SessionCallback<Ctap2Session> callback) throws Throwable {
+  public void withCtap2(SessionCallback<@NonNull Ctap2Session> callback) throws Throwable {
     try (YubiKeyConnection connection = openConnection()) {
       final Ctap2Session ctap2 = getSession(connection, scpParameters.getKeyParams());
       assumeTrue("No CTAP2 support", ctap2 != null);

@@ -30,8 +30,8 @@ public class YkInstrumentedTests {
 
   private final DesktopTestDriver testDriver = new DesktopTestDriver();
 
-  protected YubiKeyDevice device = null;
-  protected UsbPid usbPid = null;
+  protected @Nullable YubiKeyDevice device = null;
+  protected @Nullable UsbPid usbPid = null;
 
   @Rule public final TestName name = new TestName();
 
@@ -55,6 +55,9 @@ public class YkInstrumentedTests {
   protected YubiKeyDevice reconnectDevice() {
     releaseDevice();
     getDevice();
+    if (this.device == null) {
+      throw new IllegalStateException("Device not available");
+    }
     return device;
   }
 

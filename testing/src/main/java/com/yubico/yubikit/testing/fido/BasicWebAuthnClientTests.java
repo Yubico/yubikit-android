@@ -67,6 +67,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
@@ -182,8 +183,10 @@ public class BasicWebAuthnClientTests {
           BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
 
           CommandState commandState = new CommandState();
-          Executors.newSingleThreadScheduledExecutor()
-              .schedule(commandState::cancel, 500, TimeUnit.MILLISECONDS);
+
+          try (ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor()) {
+            executor.schedule(commandState::cancel, 500, TimeUnit.MILLISECONDS);
+          }
 
           try {
 

@@ -27,6 +27,7 @@ import com.yubico.yubikit.management.Capability;
 import com.yubico.yubikit.oath.OathSession;
 import com.yubico.yubikit.testing.TestState;
 import java.util.Collections;
+import org.jspecify.annotations.NonNull;
 
 public class OathTestState extends TestState {
   public boolean isFipsApproved;
@@ -98,9 +99,13 @@ public class OathTestState extends TestState {
     reconnect();
   }
 
-  public void withOath(SessionCallback<OathSession> callback) throws Throwable {
+  public void withOath(SessionCallback<@NonNull OathSession> callback) throws Throwable {
     try (YubiKeyConnection connection = openConnection()) {
-      callback.invoke(getSession(connection, scpParameters.getKeyParams(), OathSession::new));
+      OathSession session = getSession(connection, scpParameters.getKeyParams(), OathSession::new);
+      if (session == null) {
+        throw new IllegalStateException("Failed to open OATH session");
+      }
+      callback.invoke(session);
     }
     reconnect();
   }

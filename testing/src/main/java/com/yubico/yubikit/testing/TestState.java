@@ -195,12 +195,12 @@ public class TestState {
   }
 
   @FunctionalInterface
-  protected interface SessionFactory<T extends ApplicationSession<T>> {
+  protected interface SessionFactory<T extends ApplicationSession<@NonNull T>> {
     T create(SmartCardConnection connection, @Nullable ScpKeyParams params)
         throws ApplicationNotAvailableException, ApduException, IOException;
   }
 
-  protected <T extends ApplicationSession<T>> @Nullable T getSession(
+  protected <T extends ApplicationSession<@NonNull T>> @Nullable T getSession(
       YubiKeyConnection connection,
       @Nullable ScpKeyParams scpKeyParams,
       SessionFactory<T> sessionFactory)

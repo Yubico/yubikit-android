@@ -27,6 +27,7 @@ import com.yubico.yubikit.core.smartcard.scp.ScpKeyParams;
 import com.yubico.yubikit.core.smartcard.scp.SecurityDomainSession;
 import com.yubico.yubikit.testing.TestState;
 import java.util.Collections;
+import org.jspecify.annotations.NonNull;
 
 public class SecurityDomainTestState extends TestState {
 
@@ -58,26 +59,35 @@ public class SecurityDomainTestState extends TestState {
     }
   }
 
-  public void withDeviceCallback(StatefulDeviceCallback<SecurityDomainTestState> callback)
+  public void withDeviceCallback(StatefulDeviceCallback<@NonNull SecurityDomainTestState> callback)
       throws Throwable {
     callback.invoke(this);
   }
 
-  public void withSecurityDomain(SessionCallback<SecurityDomainSession> callback) throws Throwable {
+  public void withSecurityDomain(SessionCallback<@NonNull SecurityDomainSession> callback)
+      throws Throwable {
     try (YubiKeyConnection connection = openConnection()) {
-      callback.invoke(
-          getSession(connection, scpParameters.getKeyParams(), SecurityDomainSession::new));
+      SecurityDomainSession session =
+          getSession(connection, scpParameters.getKeyParams(), SecurityDomainSession::new);
+      if (session == null) {
+        throw new IllegalStateException("Failed to open SecurityDomainSession");
+      }
+      callback.invoke(session);
     }
     reconnect();
   }
 
-  public <R> R withSecurityDomain(SessionCallbackT<SecurityDomainSession, R> callback)
+  public <R> R withSecurityDomain(SessionCallbackT<@NonNull SecurityDomainSession, R> callback)
       throws Throwable {
     R result;
     try (YubiKeyConnection connection = openConnection()) {
-      result =
-          callback.invoke(
-              getSession(connection, scpParameters.getKeyParams(), SecurityDomainSession::new));
+      SecurityDomainSession session =
+          getSession(connection, scpParameters.getKeyParams(), SecurityDomainSession::new);
+      if (session == null) {
+        throw new IllegalStateException("Failed to open SecurityDomainSession");
+      }
+
+      result = callback.invoke(session);
     }
     reconnect();
     return result;

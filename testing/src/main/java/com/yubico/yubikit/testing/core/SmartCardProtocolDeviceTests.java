@@ -93,7 +93,7 @@ public class SmartCardProtocolDeviceTests {
                         .build();
                 protocol.configure(version, configuration);
                 protocol.select(AppId.MANAGEMENT);
-                if (useScp && keyParams != null) {
+                if (useScp) {
                   protocol.initScp(keyParams);
                 }
 

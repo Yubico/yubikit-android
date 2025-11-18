@@ -16,6 +16,7 @@
 
 package com.yubico.yubikit.testing.framework;
 
+import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 
 public class NeoInstrumentedTests extends YkInstrumentedTests {
@@ -25,6 +26,10 @@ public class NeoInstrumentedTests extends YkInstrumentedTests {
   }
 
   protected void withConnection(SmartCardConnectionCallback callback) throws Throwable {
+    YubiKeyDevice currentDevice = this.device;
+    if (currentDevice == null) {
+      throw new IllegalStateException("Device not available");
+    }
     try (SmartCardConnection connection = device.openConnection(SmartCardConnection.class)) {
       callback.invoke(connection);
     }
