@@ -102,4 +102,22 @@ public class Ctap2ClientPinTests {
           assertThat(pin.getPinRetries().getCount(), is(8));
         });
   }
+
+  public static void testCtapExceptionMessage(Ctap2Session session, FidoTestState state)
+      throws Throwable {
+    ClientPin pin = new ClientPin(session, state.getPinUvAuthProtocol());
+
+    try {
+      pin.getPinToken(
+          TestData.OTHER_PIN,
+          ClientPin.PIN_PERMISSION_MC | ClientPin.PIN_PERMISSION_GA,
+          "localhost");
+      fail("Wrong PIN was accepted");
+    } catch (CtapException e) {
+      assertThat(e.getCtapError(), is(CtapException.ERR_PIN_INVALID));
+      assertThat(e.getMessage().contains("PIN_INVALID"), is(true));
+      assertThat(e.getMessage().contains("0x31"), is(true));
+      assertThat(e.getErrorName(), is("PIN_INVALID"));
+    }
+  }
 }
