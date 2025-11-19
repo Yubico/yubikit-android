@@ -27,7 +27,7 @@ import com.yubico.yubikit.core.fido.FidoConnection;
 import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.smartcard.scp.ScpKeyParams;
-import com.yubico.yubikit.fido.ctap.Ctap2Session;
+import com.yubico.yubikit.fido.ctap.CtapSession;
 import com.yubico.yubikit.management.Capability;
 import com.yubico.yubikit.management.DeviceInfo;
 import com.yubico.yubikit.management.ManagementSession;
@@ -37,7 +37,6 @@ import java.security.Security;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.junit.Assume;
 
@@ -103,16 +102,16 @@ public class TestState {
     void invoke(S state) throws Throwable;
   }
 
-  public interface SessionCallback<T extends @Nullable ApplicationSession<@NonNull T>> {
+  public interface SessionCallback<T extends @Nullable ApplicationSession<?>> {
     void invoke(T session) throws Throwable;
   }
 
   public interface StatefulSessionCallback<
-      T extends @Nullable ApplicationSession<@NonNull T>, S extends TestState> {
+      T extends @Nullable ApplicationSession<?>, S extends TestState> {
     void invoke(T session, S state) throws Throwable;
   }
 
-  public interface SessionCallbackT<T extends @Nullable ApplicationSession<@NonNull T>, R> {
+  public interface SessionCallbackT<T extends @Nullable ApplicationSession<?>, R> {
     R invoke(T session) throws Throwable;
   }
 
@@ -218,17 +217,42 @@ public class TestState {
     return null;
   }
 
+  //  @Nullable
+  //  protected static Ctap2Session getSession(
+  //      YubiKeyConnection connection, @Nullable ScpKeyParams params) {
+  //    try {
+  //      return (connection instanceof FidoConnection)
+  //          ? new Ctap2Session((FidoConnection) connection)
+  //          : connection instanceof SmartCardConnection
+  //              ? new Ctap2Session((SmartCardConnection) connection, params)
+  //              : null;
+  //    } catch (IOException | CommandException ignored) {
+  //      // device does not provide CTAP2
+  //      return null;
+  //    }
+  //  }
+  //
+  //  @Nullable
+  //  protected static Ctap1Session getCtap1Session(YubiKeyConnection connection) {
+  //    try {
+  //      return (connection instanceof FidoConnection)
+  //          ? new Ctap1Session((FidoConnection) connection)
+  //          : connection instanceof SmartCardConnection
+  //              ? new Ctap1Session((SmartCardConnection) connection)
+  //              : null;
+  //    } catch (IOException | CommandException ignored) {
+  //      // device does not provide CTAP2
+  //      return null;
+  //    }
+  //  }
+
   @Nullable
-  protected static Ctap2Session getSession(
+  protected static CtapSession getSession(
       YubiKeyConnection connection, @Nullable ScpKeyParams params) {
     try {
-      return (connection instanceof FidoConnection)
-          ? new Ctap2Session((FidoConnection) connection)
-          : connection instanceof SmartCardConnection
-              ? new Ctap2Session((SmartCardConnection) connection, params)
-              : null;
-    } catch (IOException | CommandException ignored) {
-      // device does not provide CTAP2
+      return CtapSession.create(connection, params);
+    } catch (IOException | ApplicationNotAvailableException ignored) {
+      // device does not provide CTAP
       return null;
     }
   }
