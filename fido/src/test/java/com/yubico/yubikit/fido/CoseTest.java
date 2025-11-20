@@ -115,13 +115,13 @@ public class CoseTest {
     ES256.put(-3, decode(ES256_Y)); // y
 
     ES384.put(1, 2); // kty
-    ES384.put(3, -7); // alg
+    ES384.put(3, -35); // alg
     ES384.put(-1, 2); // crv
     ES384.put(-2, decode(ES384_X)); // x
     ES384.put(-3, decode(ES384_Y)); // y
 
     ES512.put(1, 2); // kty
-    ES512.put(3, -7); // alg
+    ES512.put(3, -36); // alg
     ES512.put(-1, 3); // crv
     ES512.put(-2, decode(ES512_X)); // x
     ES512.put(-3, decode(ES512_Y)); // y
@@ -149,8 +149,8 @@ public class CoseTest {
   public void getAlgorithm() {
     Assert.assertEquals(Integer.valueOf(-257), Cose.getAlgorithm(RS256));
     Assert.assertEquals(Integer.valueOf(-7), Cose.getAlgorithm(ES256));
-    Assert.assertEquals(Integer.valueOf(-7), Cose.getAlgorithm(ES384));
-    Assert.assertEquals(Integer.valueOf(-7), Cose.getAlgorithm(ES512));
+    Assert.assertEquals(Integer.valueOf(-35), Cose.getAlgorithm(ES384));
+    Assert.assertEquals(Integer.valueOf(-36), Cose.getAlgorithm(ES512));
     Assert.assertEquals(Integer.valueOf(-8), Cose.getAlgorithm(EDDSA));
   }
 
