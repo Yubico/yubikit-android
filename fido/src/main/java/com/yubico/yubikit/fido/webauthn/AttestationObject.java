@@ -42,19 +42,8 @@ public class AttestationObject {
   private final AuthenticatorData authenticatorData;
   private final Map<String, ?> attestationStatement;
   @Nullable private final Boolean enterpriseAttestation;
-  @Nullable private final byte[] largeBlobKey;
+  private final byte @Nullable [] largeBlobKey;
   @Nullable private final Map<String, ?> unsignedExtensionOutputs;
-
-  @Deprecated
-  public AttestationObject(
-      String format,
-      AuthenticatorData authenticatorData,
-      Map<String, ?> attestationStatement,
-      @Nullable Boolean enterpriseAttestation,
-      byte @Nullable [] largeBlobKey) {
-    this(
-        format, authenticatorData, attestationStatement, enterpriseAttestation, largeBlobKey, null);
-  }
 
   public AttestationObject(
       String format,
@@ -102,8 +91,7 @@ public class AttestationObject {
   }
 
   @SuppressWarnings("unused")
-  @Nullable
-  public byte[] getLargeBlobKey() {
+  public byte @Nullable [] getLargeBlobKey() {
     return largeBlobKey;
   }
 

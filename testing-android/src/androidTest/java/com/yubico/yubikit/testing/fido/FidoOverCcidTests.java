@@ -16,7 +16,6 @@
 
 package com.yubico.yubikit.testing.fido;
 
-import androidx.annotation.Nullable;
 import com.yubico.yubikit.core.fido.FidoConnection;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.smartcard.scp.ScpKid;
@@ -24,6 +23,7 @@ import com.yubico.yubikit.testing.PinUvAuthProtocolV1Test;
 import com.yubico.yubikit.testing.SmokeTest;
 import com.yubico.yubikit.testing.framework.FidoInstrumentedTests;
 import java.util.Collections;
+import org.jspecify.annotations.Nullable;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;

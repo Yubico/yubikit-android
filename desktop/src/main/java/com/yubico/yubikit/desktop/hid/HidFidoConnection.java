@@ -16,9 +16,9 @@
 package com.yubico.yubikit.desktop.hid;
 
 import com.yubico.yubikit.core.fido.FidoConnection;
-import com.yubico.yubikit.core.internal.Logger;
 import java.io.IOException;
 import org.hid4java.HidDevice;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class HidFidoConnection implements FidoConnection {
@@ -26,10 +26,10 @@ public class HidFidoConnection implements FidoConnection {
 
   private final HidDevice hidDevice;
 
-  private final org.slf4j.Logger logger = LoggerFactory.getLogger(HidFidoConnection.class);
+  private final Logger logger = LoggerFactory.getLogger(HidFidoConnection.class);
 
   public HidFidoConnection(HidDevice hidDevice) throws IOException {
-    Logger.debug(logger, "Opening HID FIDO connection");
+    logger.debug("Opening HID FIDO connection");
 
     if (!hidDevice.isClosed()) {
       throw new IOException("Device already open");
@@ -43,7 +43,7 @@ public class HidFidoConnection implements FidoConnection {
 
   @Override
   public void close() {
-    Logger.debug(logger, "Closing HID FIDO connection");
+    logger.debug("Closing HID FIDO connection");
     hidDevice.close();
   }
 

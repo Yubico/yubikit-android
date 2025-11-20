@@ -17,7 +17,6 @@ package com.yubico.yubikit.management;
 
 import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.Version;
-import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.util.Tlvs;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
@@ -26,6 +25,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Contains metadata, including Device Configuration, of a YubiKey. */
@@ -50,7 +50,7 @@ public class DeviceInfo {
   private static final int TAG_VERSION_QUALIFIER = 0x19;
   private static final int TAG_FPS_VERSION = 0x20;
   private static final int TAG_STM_VERSION = 0x21;
-  private static final org.slf4j.Logger logger = LoggerFactory.getLogger(DeviceInfo.class);
+  private static final Logger logger = LoggerFactory.getLogger(DeviceInfo.class);
 
   private final DeviceConfig config;
   @Nullable private final Integer serialNumber;
@@ -86,53 +86,6 @@ public class DeviceInfo {
     this.resetBlocked = builder.resetBlocked;
     this.fpsVersion = builder.fpsVersion;
     this.stmVersion = builder.stmVersion;
-  }
-
-  /**
-   * Constructs a new DeviceInfo.
-   *
-   * @param config the mutable configuration of the YubiKey
-   * @param serialNumber the YubiKeys serial number
-   * @param version the firmware version of the YubiKey
-   * @param formFactor the YubiKeys physical form factor
-   * @param supportedCapabilities the capabilities supported by the YubiKey
-   * @param isLocked whether or not the configuration is protected by a lock code
-   * @param isFips whether or not the YubiKey is a FIPS model
-   * @param isSky whether or not the YubiKey is a Security Key by Yubico model
-   * @deprecated Replaced with {@link Builder#build()}.
-   */
-  @Deprecated
-  public DeviceInfo(
-      DeviceConfig config,
-      @Nullable Integer serialNumber,
-      Version version,
-      FormFactor formFactor,
-      Map<Transport, Integer> supportedCapabilities,
-      boolean isLocked,
-      boolean isFips,
-      boolean isSky) {
-    this(
-        new Builder()
-            .config(config)
-            .serialNumber(serialNumber)
-            .version(version)
-            .formFactor(formFactor)
-            .supportedCapabilities(supportedCapabilities)
-            .isLocked(isLocked)
-            .isFips(isFips)
-            .isSky(isSky));
-  }
-
-  /** Legacy constructor, retained for backwards compatibility until 3.0.0. */
-  @Deprecated
-  public DeviceInfo(
-      DeviceConfig config,
-      @Nullable Integer serialNumber,
-      Version version,
-      FormFactor formFactor,
-      Map<Transport, Integer> supportedCapabilities,
-      boolean isLocked) {
-    this(config, serialNumber, version, formFactor, supportedCapabilities, isLocked, false, false);
   }
 
   /** Returns the current Device configuration of the YubiKey. */
@@ -263,7 +216,7 @@ public class DeviceInfo {
 
     boolean isFinalVersion = versionQualifier.getType() == VersionQualifier.Type.FINAL;
     if (!isFinalVersion) {
-      Logger.debug(logger, "Overriding behavioral version with {}", versionQualifier.getVersion());
+      logger.debug("Overriding behavioral version with {}", versionQualifier.getVersion());
     }
 
     final Version version = isFinalVersion ? firmwareVersion : versionQualifier.getVersion();

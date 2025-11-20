@@ -20,7 +20,6 @@ import static com.yubico.yubikit.core.internal.codec.Base64.fromUrlSafeString;
 import static com.yubico.yubikit.core.internal.codec.Base64.toUrlSafeString;
 
 import com.yubico.yubikit.core.application.CommandException;
-import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.util.Pair;
 import com.yubico.yubikit.core.util.StringUtils;
 import com.yubico.yubikit.fido.ctap.ClientPin;
@@ -45,6 +44,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -64,7 +64,7 @@ import org.slf4j.LoggerFactory;
  */
 public class HmacSecretExtension extends Extension {
   private final boolean allowHmacSecret;
-  private static final org.slf4j.Logger logger = LoggerFactory.getLogger(HmacSecretExtension.class);
+  private static final Logger logger = LoggerFactory.getLogger(HmacSecretExtension.class);
   private static final int SALT_LEN = 32;
 
   private static final String PRF = "prf";
@@ -220,8 +220,7 @@ public class HmacSecretExtension extends Extension {
                   ? Arrays.copyOfRange(decrypted, SALT_LEN, 2 * SALT_LEN)
                   : new byte[0];
 
-          Logger.debug(
-              logger,
+          logger.debug(
               "Decrypted:  {}, o1: {}, o2: {}",
               StringUtils.bytesToHex(decrypted),
               StringUtils.bytesToHex(output1),
@@ -300,7 +299,7 @@ public class HmacSecretExtension extends Extension {
         return null;
       }
 
-      Logger.debug(logger, "PRF inputs: {}, {}", secrets.get(FIRST), secrets.get(SECOND));
+      logger.debug("PRF inputs: {}, {}", secrets.get(FIRST), secrets.get(SECOND));
 
       String firstInput = (String) secrets.get(FIRST);
       if (firstInput == null) {
@@ -319,8 +318,7 @@ public class HmacSecretExtension extends Extension {
         return null;
       }
 
-      Logger.debug(
-          logger,
+      logger.debug(
           "hmacGetSecret inputs: {}, {}",
           inputs.hmac.salt1 != null ? inputs.hmac.salt1 : "none",
           inputs.hmac.salt2 != null ? inputs.hmac.salt2 : "none");
@@ -336,11 +334,8 @@ public class HmacSecretExtension extends Extension {
       salts = new Salts(salt1, salt2);
     }
 
-    Logger.debug(
-        logger,
-        "Salts: {}, {}",
-        StringUtils.bytesToHex(salts.salt1),
-        StringUtils.bytesToHex(salts.salt2));
+    logger.debug(
+        "Salts: {}, {}", StringUtils.bytesToHex(salts.salt1), StringUtils.bytesToHex(salts.salt2));
     if (!(salts.salt1.length == SALT_LEN
         && (salts.salt2.length == 0 || salts.salt2.length == SALT_LEN))) {
       throw new IllegalArgumentException("Invalid salt length");
@@ -504,7 +499,7 @@ public class HmacSecretExtension extends Extension {
       try {
         keyAgreement = clientPin.getSharedSecret();
       } catch (IOException | CommandException e) {
-        Logger.error(logger, "Failed to get shared secret: ", e);
+        logger.error("Failed to get shared secret: ", e);
       }
       this.keyAgreement = keyAgreement;
     }

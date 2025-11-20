@@ -20,7 +20,6 @@ import com.yubico.yubikit.core.Version;
 import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
 import com.yubico.yubikit.core.application.ApplicationSession;
 import com.yubico.yubikit.core.application.BadResponseException;
-import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.keys.EllipticCurveValues;
 import com.yubico.yubikit.core.keys.PrivateKeyValues;
 import com.yubico.yubikit.core.keys.PublicKeyValues;
@@ -52,6 +51,7 @@ import java.util.Locale;
 import java.util.Map;
 import javax.crypto.SecretKey;
 import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class SecurityDomainSession extends ApplicationSession<SecurityDomainSession> {
@@ -83,8 +83,7 @@ public class SecurityDomainSession extends ApplicationSession<SecurityDomainSess
   private final SmartCardProtocol protocol;
   @Nullable private DataEncryptor dataEncryptor;
 
-  private static final org.slf4j.Logger logger =
-      LoggerFactory.getLogger(SecurityDomainSession.class);
+  private static final Logger logger = LoggerFactory.getLogger(SecurityDomainSession.class);
 
   public SecurityDomainSession(SmartCardConnection connection)
       throws IOException, ApplicationNotAvailableException {
@@ -104,7 +103,7 @@ public class SecurityDomainSession extends ApplicationSession<SecurityDomainSess
         throw new IllegalStateException(e);
       }
     }
-    Logger.debug(logger, "Security Domain session initialized");
+    logger.debug("Security Domain session initialized");
   }
 
   @Override
@@ -152,7 +151,7 @@ public class SecurityDomainSession extends ApplicationSession<SecurityDomainSess
 
   public List<X509Certificate> getCertificateBundle(KeyRef keyRef)
       throws ApduException, IOException, CertificateException {
-    Logger.debug(logger, "Getting certificate bundle for key={}", keyRef);
+    logger.debug("Getting certificate bundle for key={}", keyRef);
     List<X509Certificate> certificates = new ArrayList<>();
     try {
       byte[] resp =
@@ -178,7 +177,7 @@ public class SecurityDomainSession extends ApplicationSession<SecurityDomainSess
     if (!kloc && !klcc) {
       throw new IllegalArgumentException("At least one of kloc and klcc must be true");
     }
-    Logger.debug(logger, "Getting CA identifiers KLOC={}, KLCC={}", kloc, klcc);
+    logger.debug("Getting CA identifiers KLOC={}, KLCC={}", kloc, klcc);
     ByteArrayOutputStream data = new ByteArrayOutputStream();
     if (kloc) {
       try {
@@ -223,7 +222,7 @@ public class SecurityDomainSession extends ApplicationSession<SecurityDomainSess
    */
   public void storeCertificateBundle(KeyRef keyRef, List<X509Certificate> certificates)
       throws ApduException, IOException {
-    Logger.debug(logger, "Storing certificate bundle for {}", keyRef);
+    logger.debug("Storing certificate bundle for {}", keyRef);
     ByteArrayOutputStream data = new ByteArrayOutputStream();
     for (X509Certificate cert : certificates) {
       try {
@@ -237,7 +236,7 @@ public class SecurityDomainSession extends ApplicationSession<SecurityDomainSess
             Arrays.asList(
                 new Tlv(0xA6, new Tlv(0x83, keyRef.getBytes()).getBytes()),
                 new Tlv(TAG_CERTIFICATE_STORE, data.toByteArray()))));
-    Logger.info(logger, "Certificate bundle stored");
+    logger.info("Certificate bundle stored");
   }
 
   /**
@@ -252,7 +251,7 @@ public class SecurityDomainSession extends ApplicationSession<SecurityDomainSess
    */
   public void storeAllowlist(KeyRef keyRef, List<BigInteger> serials)
       throws ApduException, IOException {
-    Logger.debug(logger, "Storing serial allowlist for {}", keyRef);
+    logger.debug("Storing serial allowlist for {}", keyRef);
     ByteArrayOutputStream data = new ByteArrayOutputStream();
     for (BigInteger serial : serials) {
       data.write(new Tlv(0x93, serial.toByteArray()).getBytes());
@@ -262,7 +261,7 @@ public class SecurityDomainSession extends ApplicationSession<SecurityDomainSess
             Arrays.asList(
                 new Tlv(0xA6, new Tlv(0x83, keyRef.getBytes()).getBytes()),
                 new Tlv(0x70, data.toByteArray()))));
-    Logger.info(logger, "Serial allowlist stored");
+    logger.info("Serial allowlist stored");
   }
 
   /**
@@ -274,7 +273,7 @@ public class SecurityDomainSession extends ApplicationSession<SecurityDomainSess
    * @param ski the Subject Key Identifier to store
    */
   public void storeCaIssuer(KeyRef keyRef, byte[] ski) throws ApduException, IOException {
-    Logger.debug(logger, "Storing CA issuer SKI for {}: {}", keyRef, StringUtils.bytesToHex(ski));
+    logger.debug("Storing CA issuer SKI for {}: {}", keyRef, StringUtils.bytesToHex(ski));
     byte klcc = 0;
     switch (keyRef.getKid()) {
       case ScpKid.SCP11a:
@@ -291,7 +290,7 @@ public class SecurityDomainSession extends ApplicationSession<SecurityDomainSess
                         new Tlv(0x42, ski),
                         new Tlv(0x83, keyRef.getBytes()))))
             .getBytes());
-    Logger.info(logger, "CA issuer SKI stored");
+    logger.info("CA issuer SKI stored");
   }
 
   /**
@@ -318,7 +317,7 @@ public class SecurityDomainSession extends ApplicationSession<SecurityDomainSess
         throw new IllegalArgumentException("SCP03 keys can only be deleted by KVN");
       }
     }
-    Logger.debug(logger, "Deleting keys matching {}", keyRef);
+    logger.debug("Deleting keys matching {}", keyRef);
     List<Tlv> tlvs = new ArrayList<>();
     if (kid != 0) {
       tlvs.add(new Tlv(0xD0, new byte[] {kid}));
@@ -328,7 +327,7 @@ public class SecurityDomainSession extends ApplicationSession<SecurityDomainSess
     }
     protocol.sendAndReceive(
         new Apdu(0x80, INS_DELETE, 0, deleteLast ? 1 : 0, Tlvs.encodeList(tlvs)));
-    Logger.info(logger, "Keys deleted");
+    logger.info("Keys deleted");
   }
 
   /**
@@ -346,8 +345,7 @@ public class SecurityDomainSession extends ApplicationSession<SecurityDomainSess
    */
   public PublicKeyValues.Ec generateEcKey(KeyRef keyRef, int replaceKvn)
       throws ApduException, IOException, BadResponseException {
-    Logger.debug(
-        logger,
+    logger.debug(
         "Generating new key for {}"
             + (replaceKvn == 0
                 ? ""
@@ -378,7 +376,7 @@ public class SecurityDomainSession extends ApplicationSession<SecurityDomainSess
    */
   public void putKey(KeyRef keyRef, StaticKeys keys, int replaceKvn)
       throws ApduException, IOException, BadResponseException {
-    Logger.debug(logger, "Importing SCP03 key set into {}", keyRef);
+    logger.debug("Importing SCP03 key set into {}", keyRef);
     if (keyRef.getKid() != ScpKid.SCP03) {
       throw new IllegalArgumentException("KID must be 0x01 for SCP03 key sets");
     }
@@ -410,7 +408,7 @@ public class SecurityDomainSession extends ApplicationSession<SecurityDomainSess
     if (!MessageDigest.isEqual(resp, expected.array())) {
       throw new BadResponseException("Incorrect key check value");
     }
-    Logger.info(logger, "SCP03 Key set imported");
+    logger.info("SCP03 Key set imported");
   }
 
   /**
@@ -428,7 +426,7 @@ public class SecurityDomainSession extends ApplicationSession<SecurityDomainSess
    */
   public void putKey(KeyRef keyRef, PrivateKeyValues secretKey, int replaceKvn)
       throws ApduException, IOException, BadResponseException {
-    Logger.debug(logger, "Importing SCP11 private key into {}", keyRef);
+    logger.debug("Importing SCP11 private key into {}", keyRef);
     if (!(secretKey instanceof PrivateKeyValues.Ec)
         || !((PrivateKeyValues.Ec) secretKey)
             .getCurveParams()
@@ -458,7 +456,7 @@ public class SecurityDomainSession extends ApplicationSession<SecurityDomainSess
     if (!MessageDigest.isEqual(resp, expected)) {
       throw new BadResponseException("Incorrect key check value");
     }
-    Logger.info(logger, "SCP11 private key imported");
+    logger.info("SCP11 private key imported");
   }
 
   /**
@@ -476,7 +474,7 @@ public class SecurityDomainSession extends ApplicationSession<SecurityDomainSess
    */
   public void putKey(KeyRef keyRef, PublicKeyValues publicKey, int replaceKvn)
       throws ApduException, IOException, BadResponseException {
-    Logger.debug(logger, "Importing SCP11 public key into {}", keyRef);
+    logger.debug("Importing SCP11 public key into {}", keyRef);
     if (!(publicKey instanceof PublicKeyValues.Ec)
         || !((PublicKeyValues.Ec) publicKey)
             .getCurveParams()
@@ -500,7 +498,7 @@ public class SecurityDomainSession extends ApplicationSession<SecurityDomainSess
     if (!MessageDigest.isEqual(resp, expected)) {
       throw new BadResponseException("Incorrect key check value");
     }
-    Logger.info(logger, "SCP11 public key imported");
+    logger.info("SCP11 public key imported");
   }
 
   /**
@@ -510,7 +508,7 @@ public class SecurityDomainSession extends ApplicationSession<SecurityDomainSess
    * keys, and generate a new (attestable) SCP11b key.
    */
   public void reset() throws BadResponseException, ApduException, IOException {
-    Logger.debug(logger, "Resetting all SCP keys");
+    logger.debug("Resetting all SCP keys");
     // Reset is done by blocking all available keys
     byte[] data = new byte[8];
     for (KeyRef keyRef : getKeyInformation().keySet()) {
@@ -554,6 +552,6 @@ public class SecurityDomainSession extends ApplicationSession<SecurityDomainSess
         }
       }
     }
-    Logger.info(logger, "SCP keys reset");
+    logger.info("SCP keys reset");
   }
 }

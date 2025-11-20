@@ -28,18 +28,6 @@ public class ApduException extends CommandException {
   private final short sw;
   private final byte[] data;
 
-  @Deprecated
-  public ApduException(short sw) {
-    this(sw, String.format(Locale.ROOT, "APDU error: 0x%04x", sw));
-  }
-
-  @Deprecated
-  public ApduException(short sw, String message) {
-    super(message);
-    this.sw = sw;
-    this.data = new byte[0];
-  }
-
   public ApduException(byte[] data, short sw) {
     this(data, sw, String.format(Locale.ROOT, "APDU error: 0x%04x", sw));
   }

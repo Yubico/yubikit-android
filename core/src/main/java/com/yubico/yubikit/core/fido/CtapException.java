@@ -68,9 +68,7 @@ public class CtapException extends CommandException {
   public static final byte ERR_PIN_AUTH_INVALID = 0x33;
   public static final byte ERR_PIN_AUTH_BLOCKED = 0x34;
   public static final byte ERR_PIN_NOT_SET = 0x35;
-  @Deprecated // use ERR_PUAT_REQUIRED
-  public static final byte ERR_PIN_REQUIRED = 0x36;
-  public static final byte ERR_PUAT_REQUIRED = 0x36; // CTAP2.1 naming
+  public static final byte ERR_PUAT_REQUIRED = 0x36;
   public static final byte ERR_PIN_POLICY_VIOLATION = 0x37;
   public static final byte ERR_PIN_TOKEN_EXPIRED = 0x38;
   public static final byte ERR_REQUEST_TOO_LARGE = 0x39;

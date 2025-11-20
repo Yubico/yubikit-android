@@ -26,7 +26,6 @@ import com.yubico.yubikit.core.application.ApplicationSession;
 import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.application.Feature;
 import com.yubico.yubikit.core.application.InvalidPinException;
-import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.keys.PrivateKeyValues;
 import com.yubico.yubikit.core.keys.PublicKeyValues;
 import com.yubico.yubikit.core.smartcard.Apdu;
@@ -58,6 +57,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -141,7 +141,7 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
   private final Version version;
   private final ApplicationRelatedData appData;
 
-  private static final org.slf4j.Logger logger = LoggerFactory.getLogger(OpenPgpSession.class);
+  private static final Logger logger = LoggerFactory.getLogger(OpenPgpSession.class);
 
   /**
    * Create new instance of {@link OpenPgpSession} and selects the application for use.
@@ -184,7 +184,7 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
       }
     }
 
-    Logger.debug(logger, "Getting version number");
+    logger.debug("Getting version number");
     byte[] versionBcd = protocol.sendAndReceive(new Apdu(0, INS_GET_VERSION, 0, 0, null));
     byte[] versionBytes = new byte[3];
     for (int i = 0; i < 3; i++) {
@@ -197,7 +197,7 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
     // Do not rely on contained information that can change!
     appData = getApplicationRelatedData();
 
-    Logger.debug(logger, "OpenPGP session initialized (version={})", version);
+    logger.debug("OpenPGP session initialized (version={})", version);
   }
 
   private void activate(IOException e)
@@ -207,7 +207,7 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
       short sw = ((ApduException) cause).getSw();
       if (sw == SW.NO_INPUT_DATA || sw == SW.CONDITIONS_NOT_SATISFIED) {
         // Not activated, activate
-        Logger.warn(logger, "Application not active, sending ACTIVATE");
+        logger.warn("Application not active, sending ACTIVATE");
         protocol.sendAndReceive(new Apdu(0, INS_ACTIVATE, 0, 0, null));
         protocol.select(AppId.OPENPGP);
         return;
@@ -235,7 +235,7 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
    * @throws IOException in case of connection error
    */
   public byte[] getData(int doId) throws ApduException, IOException {
-    Logger.debug(logger, "Reading Data Object {}", doId);
+    logger.debug("Reading Data Object {}", doId);
     return protocol.sendAndReceive(new Apdu(0, INS_GET_DATA, doId >> 8, doId & 0xff, null));
   }
 
@@ -249,7 +249,7 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
    */
   public void putData(int doId, byte[] data) throws ApduException, IOException {
     protocol.sendAndReceive(new Apdu(0, INS_PUT_DATA, doId >> 8, doId & 0xff, data));
-    Logger.debug(logger, "Wrote Data Object {}", doId);
+    logger.debug("Wrote Data Object {}", doId);
   }
 
   /**
@@ -328,9 +328,9 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
       throw new UnsupportedOperationException("KDF is not supported");
     }
 
-    Logger.debug(logger, "Setting PIN KDF to algorithm: {}", kdf.getAlgorithm());
+    logger.debug("Setting PIN KDF to algorithm: {}", kdf.getAlgorithm());
     putData(Do.KDF, kdf.getBytes());
-    Logger.info(logger, "KDF settings changed");
+    logger.info("KDF settings changed");
   }
 
   private void doVerify(Pw pw, char[] pin, byte mode)
@@ -385,9 +385,9 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
 
   private void doUnverifyPin(Pw pw) throws ApduException, IOException {
     require(FEATURE_UNVERIFY_PIN);
-    Logger.debug(logger, "Resetting verification for {} PIN", pw.name());
+    logger.debug("Resetting verification for {} PIN", pw.name());
     protocol.sendAndReceive(new Apdu(0, INS_VERIFY, 0xff, pw.getValue(), null));
-    Logger.info(logger, "{} PIN unverified", pw.name());
+    logger.info("{} PIN unverified", pw.name());
   }
 
   /**
@@ -439,7 +439,7 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
       throw new UnsupportedOperationException("Unsupported challenge length");
     }
 
-    Logger.debug(logger, "Getting {} random bytes", length);
+    logger.debug("Getting {} random bytes", length);
     return protocol.sendAndReceive(new Apdu(0, INS_GET_CHALLENGE, 0, 0, null, length));
   }
 
@@ -455,9 +455,9 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
    * @throws IOException in case of connection error
    */
   public void setSignaturePinPolicy(PinPolicy pinPolicy) throws ApduException, IOException {
-    Logger.debug(logger, "Setting Signature PIN policy to {}", pinPolicy);
+    logger.debug("Setting Signature PIN policy to {}", pinPolicy);
     putData(Do.PW_STATUS_BYTES, new byte[] {pinPolicy.value});
-    Logger.info(logger, "Signature PIN policy set");
+    logger.info("Signature PIN policy set");
   }
 
   /**
@@ -470,12 +470,12 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
    */
   public void reset() throws ApduException, IOException {
     require(FEATURE_RESET);
-    Logger.debug(logger, "Preparing OpenPGP reset");
+    logger.debug("Preparing OpenPGP reset");
 
     // Ensure the User and Admin PINs are blocked
     PwStatus status = getPinStatus();
     for (Pw pw : Arrays.asList(Pw.USER, Pw.ADMIN)) {
-      Logger.debug(logger, "Verify {} PIN with invalid attempts until blocked", pw);
+      logger.debug("Verify {} PIN with invalid attempts until blocked", pw);
       for (int i = status.getAttempts(pw); i > 0; i--) {
         try {
           protocol.sendAndReceive(new Apdu(0, INS_VERIFY, 0, pw.getValue(), INVALID_PIN));
@@ -486,10 +486,10 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
     }
 
     // Reset the application
-    Logger.debug(logger, "Sending TERMINATE, then ACTIVATE");
+    logger.debug("Sending TERMINATE, then ACTIVATE");
     protocol.sendAndReceive(new Apdu(0, INS_TERMINATE, 0, 0, null));
     protocol.sendAndReceive(new Apdu(0, INS_ACTIVATE, 0, 0, null));
-    Logger.info(logger, "OpenPGP application data reset performed");
+    logger.info("OpenPGP application data reset performed");
   }
 
   /**
@@ -509,8 +509,8 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
       throws ApduException, IOException {
     require(FEATURE_PIN_ATTEMPTS);
 
-    Logger.debug(
-        logger, "Setting PIN attempts to ({}, {}, {})", userAttempts, resetAttempts, adminAttempts);
+    logger.debug(
+        "Setting PIN attempts to ({}, {}, {})", userAttempts, resetAttempts, adminAttempts);
     protocol.sendAndReceive(
         new Apdu(
             0,
@@ -518,12 +518,12 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
             0,
             0,
             new byte[] {(byte) userAttempts, (byte) resetAttempts, (byte) adminAttempts}));
-    Logger.info(logger, "Number of PIN attempts has been changed");
+    logger.info("Number of PIN attempts has been changed");
   }
 
   private void changePw(Pw pw, char[] pin, char[] newPin)
       throws ApduException, IOException, InvalidPinException {
-    Logger.debug(logger, "Changing {} PIN", pw);
+    logger.debug("Changing {} PIN", pw);
     Kdf kdf = getKdf();
     byte[] pinBytes = null;
     byte[] newPinBytes = null;
@@ -555,7 +555,7 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
         Arrays.fill(newPinBytes, (byte) 0);
       }
     }
-    Logger.info(logger, "New {} PIN set", pw);
+    logger.info("New {} PIN set", pw);
   }
 
   /**
@@ -599,7 +599,7 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
    * @throws IOException in case of connection error
    */
   public void setResetCode(char[] resetCode) throws ApduException, IOException {
-    Logger.debug(logger, "Setting a new PIN Reset Code");
+    logger.debug("Setting a new PIN Reset Code");
     byte[] data = null;
     try {
       data = getKdf().process(Pw.RESET, resetCode);
@@ -610,7 +610,7 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
       }
     }
 
-    Logger.info(logger, "New Reset Code has been set");
+    logger.info("New Reset Code has been set");
   }
 
   /**
@@ -629,12 +629,12 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
    */
   public void resetPin(char[] newPin, char @Nullable [] resetCode)
       throws ApduException, IOException, InvalidPinException {
-    Logger.debug(logger, "Resetting User PIN");
+    logger.debug("Resetting User PIN");
     byte p1 = 2;
     Kdf kdf = getKdf();
     byte[] data = kdf.process(Pw.USER, newPin);
     if (resetCode != null) {
-      Logger.debug(logger, "Using Reset Code");
+      logger.debug("Using Reset Code");
       byte[] resetCodeBytes = kdf.process(Pw.RESET, resetCode);
       data =
           ByteBuffer.allocate(resetCodeBytes.length + data.length)
@@ -654,7 +654,7 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
       }
       throw e;
     }
-    Logger.info(logger, "New User PIN has been set");
+    logger.info("New User PIN has been set");
   }
 
   /**
@@ -697,14 +697,14 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
       require(FEATURE_CACHED);
     }
 
-    Logger.debug(logger, "Setting UIF for {} to {}", keyRef, uif);
+    logger.debug("Setting UIF for {} to {}", keyRef, uif);
 
     if (getUif(keyRef).isFixed()) {
       throw new IllegalStateException("Cannot change UIF when set to FIXED");
     }
 
     putData(keyRef.getUif(), uif.getBytes());
-    Logger.info(logger, "UIF changed for {}", keyRef);
+    logger.info("UIF changed for {}", keyRef);
   }
 
   /**
@@ -747,7 +747,7 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
       data.put(KeyRef.DEC, Collections.unmodifiableList(attributes));
       data.put(KeyRef.AUT, Collections.unmodifiableList(attributes));
     } else {
-      Logger.debug(logger, "Getting supported Algorithm Information");
+      logger.debug("Getting supported Algorithm Information");
       byte[] buf = getData(Do.ALGORITHM_INFORMATION);
       try {
         buf = Tlvs.unpackValue(Do.ALGORITHM_INFORMATION, buf);
@@ -810,7 +810,7 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
    */
   public void setAlgorithmAttributes(KeyRef keyRef, AlgorithmAttributes attributes)
       throws BadResponseException, ApduException, IOException {
-    Logger.debug(logger, "Setting Algorithm Attributes for {}", keyRef);
+    logger.debug("Setting Algorithm Attributes for {}", keyRef);
 
     Map<KeyRef, List<AlgorithmAttributes>> supported = getAlgorithmInformation();
     if (!supported.containsKey(keyRef)) {
@@ -822,7 +822,7 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
     }
 
     putData(keyRef.getAlgorithmAttributes(), attributes.getBytes());
-    Logger.info(logger, "Algorithm Attributes have been changed");
+    logger.info("Algorithm Attributes have been changed");
   }
 
   /**
@@ -834,9 +834,9 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
    * @throws IOException in case of connection error
    */
   public void setGenerationTime(KeyRef keyRef, int timestamp) throws ApduException, IOException {
-    Logger.debug(logger, "Setting key generation timestamp for {}", keyRef);
+    logger.debug("Setting key generation timestamp for {}", keyRef);
     putData(keyRef.getGenerationTime(), ByteBuffer.allocate(4).putInt(timestamp).array());
-    Logger.info(logger, "Key generation timestamp set for {}", keyRef);
+    logger.info("Key generation timestamp set for {}", keyRef);
   }
 
   /**
@@ -848,9 +848,9 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
    * @throws IOException in case of connection error
    */
   public void setFingerprint(KeyRef keyRef, byte[] fingerprint) throws ApduException, IOException {
-    Logger.debug(logger, "Setting key fingerprint for {}", keyRef);
+    logger.debug("Setting key fingerprint for {}", keyRef);
     putData(keyRef.getFingerprint(), fingerprint);
-    Logger.info(logger, "Key fingerprint set for {}", keyRef);
+    logger.info("Key fingerprint set for {}", keyRef);
   }
 
   private void selectCertificate(KeyRef keyRef) throws ApduException, IOException {
@@ -887,7 +887,7 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
    */
   @Nullable
   public X509Certificate getCertificate(KeyRef keyRef) throws ApduException, IOException {
-    Logger.debug(logger, "Getting certificate for key {}", keyRef);
+    logger.debug("Getting certificate for key {}", keyRef);
     byte[] data;
     if (keyRef == KeyRef.ATT) {
       require(FEATURE_ATTESTATION);
@@ -925,7 +925,7 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
     } catch (CertificateEncodingException e) {
       throw new IllegalArgumentException("Failed to get encoded version of certificate", e);
     }
-    Logger.debug(logger, "Importing certificate for key {}", keyRef);
+    logger.debug("Importing certificate for key {}", keyRef);
     if (keyRef == KeyRef.ATT) {
       require(FEATURE_ATTESTATION);
       putData(Do.ATT_CERTIFICATE, certData);
@@ -933,7 +933,7 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
       selectCertificate(keyRef);
       putData(Do.CARDHOLDER_CERTIFICATE, certData);
     }
-    Logger.info(logger, "Certificate imported for key {}", keyRef);
+    logger.info("Certificate imported for key {}", keyRef);
   }
 
   /**
@@ -946,7 +946,7 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
    * @throws IOException in case of connection error
    */
   public void deleteCertificate(KeyRef keyRef) throws ApduException, IOException {
-    Logger.debug(logger, "Deleting certificate for key {}", keyRef);
+    logger.debug("Deleting certificate for key {}", keyRef);
     if (keyRef == KeyRef.ATT) {
       require(FEATURE_ATTESTATION);
       putData(Do.ATT_CERTIFICATE, new byte[0]);
@@ -954,7 +954,7 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
       selectCertificate(keyRef);
       putData(Do.CARDHOLDER_CERTIFICATE, new byte[0]);
     }
-    Logger.info(logger, "Certificate deleted for key {}", keyRef);
+    logger.info("Certificate deleted for key {}", keyRef);
   }
 
   static AlgorithmAttributes getKeyAttributes(
@@ -1016,7 +1016,7 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
   public PublicKeyValues generateRsaKey(KeyRef keyRef, int keySize)
       throws BadResponseException, ApduException, IOException {
     require(FEATURE_RSA_GENERATION);
-    Logger.debug(logger, "Generating RSA private key for {}", keyRef);
+    logger.debug("Generating RSA private key for {}", keyRef);
 
     if (getExtendedCapabilities()
         .getFlags()
@@ -1034,7 +1034,7 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
       setGenerationTime(keyRef, 0);
     }
     Map<Integer, byte[]> data = Tlvs.decodeMap(Tlvs.unpackValue(TAG_PUBLIC_KEY, resp));
-    Logger.info(logger, "RSA key generated for {}", keyRef);
+    logger.info("RSA key generated for {}", keyRef);
     return new PublicKeyValues.Rsa(
         new BigInteger(1, data.get(0x81)), new BigInteger(1, data.get(0x82)));
   }
@@ -1054,7 +1054,7 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
   public PublicKeyValues generateEcKey(KeyRef keyRef, OpenPgpCurve curve)
       throws BadResponseException, ApduException, IOException {
     require(FEATURE_EC_KEYS);
-    Logger.debug(logger, "Generating EC private key for {}", keyRef);
+    logger.debug("Generating EC private key for {}", keyRef);
 
     setAlgorithmAttributes(keyRef, AlgorithmAttributes.Ec.create(keyRef, curve));
 
@@ -1064,7 +1064,7 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
       setGenerationTime(keyRef, 0);
     }
     Map<Integer, byte[]> data = Tlvs.decodeMap(Tlvs.unpackValue(TAG_PUBLIC_KEY, resp));
-    Logger.info(logger, "EC key generated for {}", keyRef);
+    logger.info("EC key generated for {}", keyRef);
     byte[] encoded = data.get(0x86);
     if (curve == OpenPgpCurve.Ed25519 || curve == OpenPgpCurve.X25519) {
       return new PublicKeyValues.Cv25519(curve.getValues(), encoded);
@@ -1085,7 +1085,7 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
    */
   public void putKey(KeyRef keyRef, PrivateKeyValues privateKey)
       throws BadResponseException, ApduException, IOException {
-    Logger.debug(logger, "Importing a private key for {}", keyRef);
+    logger.debug("Importing a private key for {}", keyRef);
     AlgorithmAttributes attributes = getKeyAttributes(privateKey, keyRef, version);
 
     if (getExtendedCapabilities()
@@ -1116,7 +1116,7 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
     if (version.isLessThan(5, 0, 0)) {
       setGenerationTime(keyRef, 0);
     }
-    Logger.info(logger, "Private key imported for {}", keyRef);
+    logger.info("Private key imported for {}", keyRef);
   }
 
   /**
@@ -1130,7 +1130,7 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
    */
   public PublicKeyValues getPublicKey(KeyRef keyRef)
       throws ApduException, IOException, BadResponseException {
-    Logger.debug(logger, "Getting public key for {}", keyRef);
+    logger.debug("Getting public key for {}", keyRef);
     byte[] resp =
         protocol.sendAndReceive(new Apdu(0, INS_GENERATE_ASYM, 0x81, 0x00, keyRef.getCrt()));
     Map<Integer, byte[]> data = Tlvs.decodeMap(Tlvs.unpackValue(TAG_PUBLIC_KEY, resp));
@@ -1158,9 +1158,9 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
    * @throws IOException in case of connection error
    */
   public void deleteKey(KeyRef keyRef) throws BadResponseException, ApduException, IOException {
-    Logger.debug(logger, "Deleting private key for {}", keyRef);
+    logger.debug("Deleting private key for {}", keyRef);
     if (version.isLessThan(4, 0, 0)) {
-      Logger.debug(logger, "Overwriting with dummy key");
+      logger.debug("Overwriting with dummy key");
       // Import over the key, using a dummy
       try {
         KeyPairGenerator rsaGen = KeyPairGenerator.getInstance("RSA");
@@ -1170,7 +1170,7 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
         throw new RuntimeException(e);
       }
     } else {
-      Logger.debug(logger, "Changing algorithm attributes");
+      logger.debug("Changing algorithm attributes");
       // Delete key by changing the key attributes twice.
       // Use putData to avoid checking for RSA 4096 support
       putData(
@@ -1181,7 +1181,7 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
           keyRef,
           AlgorithmAttributes.Rsa.create(2048, AlgorithmAttributes.Rsa.ImportFormat.STANDARD));
     }
-    Logger.info(logger, "Private key deleted for {}", keyRef);
+    logger.info("Private key deleted for {}", keyRef);
   }
 
   static byte[] formatDssSignature(byte[] response) {
@@ -1210,9 +1210,9 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
     AlgorithmAttributes attributes =
         Objects.requireNonNull(
             getApplicationRelatedData().getDiscretionary().getAlgorithmAttributes(KeyRef.SIG));
-    Logger.debug(logger, "Signing a message with {}", attributes);
+    logger.debug("Signing a message with {}", attributes);
     byte[] response = protocol.sendAndReceive(new Apdu(0, INS_PSO, 0x9e, 0x9a, payload));
-    Logger.info(logger, "Message signed");
+    logger.info("Message signed");
     if (attributes.getAlgorithmId() == 0x13) {
       return formatDssSignature(response);
     }
@@ -1235,7 +1235,7 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
    * @throws IOException in case of connection error
    */
   public byte[] decrypt(byte[] payload) throws ApduException, IOException {
-    Logger.debug(logger, "Decrypting a value");
+    logger.debug("Decrypting a value");
     byte[] response =
         protocol.sendAndReceive(
             new Apdu(
@@ -1244,7 +1244,7 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
                 0x80,
                 0x86,
                 ByteBuffer.allocate(payload.length + 1).put((byte) 0).put(payload).array()));
-    Logger.info(logger, "Value decrypted");
+    logger.info("Value decrypted");
     return response;
   }
 
@@ -1277,7 +1277,7 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
                 0x86,
                 new Tlv(0xA6, new Tlv(0x7F49, new Tlv(0x86, encodedPoint).getBytes()).getBytes())
                     .getBytes()));
-    Logger.info(logger, "ECDH key agreement performed");
+    logger.info("ECDH key agreement performed");
     return response;
   }
 
@@ -1295,10 +1295,10 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
     AlgorithmAttributes attributes =
         Objects.requireNonNull(
             getApplicationRelatedData().getDiscretionary().getAlgorithmAttributes(KeyRef.AUT));
-    Logger.debug(logger, "Authenticating a message with {}", attributes);
+    logger.debug("Authenticating a message with {}", attributes);
     byte[] response =
         protocol.sendAndReceive(new Apdu(0, INS_INTERNAL_AUTHENTICATE, 0x0, 0x0, payload));
-    Logger.info(logger, "Message authenticated");
+    logger.info("Message authenticated");
     if (attributes.getAlgorithmId() == 0x13) {
       return formatDssSignature(response);
     }
@@ -1320,9 +1320,9 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
   public X509Certificate attestKey(KeyRef keyRef) throws ApduException, IOException {
     require(FEATURE_ATTESTATION);
 
-    Logger.debug(logger, "Attesting key {}", keyRef);
+    logger.debug("Attesting key {}", keyRef);
     protocol.sendAndReceive(new Apdu(0x80, INS_GET_ATTESTATION, keyRef.getValue(), 0, null));
-    Logger.info(logger, "Attestation certificate created for {}", keyRef);
+    logger.info("Attestation certificate created for {}", keyRef);
 
     return Objects.requireNonNull(getCertificate(keyRef));
   }

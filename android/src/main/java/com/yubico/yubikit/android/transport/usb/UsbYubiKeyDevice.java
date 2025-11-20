@@ -25,7 +25,6 @@ import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.UsbPid;
 import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.YubiKeyDevice;
-import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.otp.OtpConnection;
 import com.yubico.yubikit.core.util.Callback;
 import com.yubico.yubikit.core.util.Result;
@@ -35,6 +34,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class UsbYubiKeyDevice implements YubiKeyDevice, Closeable {
@@ -49,7 +49,7 @@ public class UsbYubiKeyDevice implements YubiKeyDevice, Closeable {
 
   @Nullable private Runnable onClosed = null;
 
-  private static final org.slf4j.Logger logger = LoggerFactory.getLogger(UsbYubiKeyDevice.class);
+  private static final Logger logger = LoggerFactory.getLogger(UsbYubiKeyDevice.class);
 
   /**
    * Creates the instance of usb session to interact with the yubikey device.
@@ -164,7 +164,7 @@ public class UsbYubiKeyDevice implements YubiKeyDevice, Closeable {
 
   @Override
   public void close() {
-    Logger.debug(logger, "Closing YubiKey device");
+    logger.debug("Closing YubiKey device");
     if (otpConnection != null) {
       otpConnection.close();
       otpConnection = null;
@@ -182,7 +182,7 @@ public class UsbYubiKeyDevice implements YubiKeyDevice, Closeable {
         new LinkedBlockingQueue<>();
 
     private CachedOtpConnection(Callback<Result<OtpConnection, IOException>> callback) {
-      Logger.debug(logger, "Creating new CachedOtpConnection");
+      logger.debug("Creating new CachedOtpConnection");
       queue.offer(callback);
       executorService.submit(
           () -> {
@@ -191,16 +191,16 @@ public class UsbYubiKeyDevice implements YubiKeyDevice, Closeable {
                 try {
                   Callback<Result<OtpConnection, IOException>> action = queue.take();
                   if (action == CLOSE_OTP) {
-                    Logger.debug(logger, "Closing CachedOtpConnection");
+                    logger.debug("Closing CachedOtpConnection");
                     break;
                   }
                   try {
                     action.invoke(Result.success(connection));
                   } catch (Exception e) {
-                    Logger.error(logger, "OtpConnection callback threw an exception", e);
+                    logger.error("OtpConnection callback threw an exception", e);
                   }
                 } catch (InterruptedException e) {
-                  Logger.error(logger, "InterruptedException when processing OtpConnection: ", e);
+                  logger.error("InterruptedException when processing OtpConnection: ", e);
                 }
               }
             } catch (IOException e) {
