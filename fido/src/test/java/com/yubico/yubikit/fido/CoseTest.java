@@ -149,8 +149,8 @@ public class CoseTest {
   public void getAlgorithm() {
     Assert.assertEquals(Integer.valueOf(-257), Cose.getAlgorithm(RS256));
     Assert.assertEquals(Integer.valueOf(-7), Cose.getAlgorithm(ES256));
-    Assert.assertEquals(Integer.valueOf(-7), Cose.getAlgorithm(ES384));
-    Assert.assertEquals(Integer.valueOf(-7), Cose.getAlgorithm(ES512));
+    Assert.assertEquals(Integer.valueOf(-35), Cose.getAlgorithm(ES384));
+    Assert.assertEquals(Integer.valueOf(-36), Cose.getAlgorithm(ES512));
     Assert.assertEquals(Integer.valueOf(-8), Cose.getAlgorithm(EDDSA));
   }
 
