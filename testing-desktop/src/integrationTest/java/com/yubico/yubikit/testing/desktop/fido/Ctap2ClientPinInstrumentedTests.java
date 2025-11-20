@@ -41,6 +41,11 @@ public class Ctap2ClientPinInstrumentedTests {
     public void testPinComplexity() throws Throwable {
       withDevice(Ctap2ClientPinTests::testPinComplexity);
     }
+
+    @Test
+    public void testCtapExceptionMessage() throws Throwable {
+      withCtap2Session(Ctap2ClientPinTests::testCtapExceptionMessage);
+    }
   }
 
   @Category(PinUvAuthProtocolV1Test.class)
