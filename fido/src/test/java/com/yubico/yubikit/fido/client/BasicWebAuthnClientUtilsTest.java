@@ -452,8 +452,9 @@ public class BasicWebAuthnClientUtilsTest {
   public static class PreprocessCredentialListTests {
     @Test
     public void testNullAndEmptyInput() {
-      assertNull(BasicWebAuthnClient.Utils.preprocessCredentialList(null, 128));
-      assertNull(BasicWebAuthnClient.Utils.preprocessCredentialList(Collections.emptyList(), 128));
+      List<PublicKeyCredentialDescriptor> descriptors =
+          BasicWebAuthnClient.Utils.preprocessCredentialList(Collections.emptyList(), 128);
+      assertTrue(descriptors.isEmpty());
     }
 
     @Test
@@ -485,8 +486,7 @@ public class BasicWebAuthnClientUtilsTest {
       List<PublicKeyCredentialDescriptor> result =
           BasicWebAuthnClient.Utils.preprocessCredentialList(descriptors, 64);
 
-      // Should return null when all credentials are filtered out
-      assertNull(result);
+      assertTrue(result.isEmpty());
 
       descriptors =
           Arrays.asList(
@@ -495,7 +495,7 @@ public class BasicWebAuthnClientUtilsTest {
 
       result = BasicWebAuthnClient.Utils.preprocessCredentialList(descriptors, 128);
 
-      assertNull(result);
+      assertTrue(result.isEmpty());
     }
 
     @Test
@@ -541,7 +541,7 @@ public class BasicWebAuthnClientUtilsTest {
           BasicWebAuthnClient.Utils.preprocessCredentialList(
               Collections.singletonList(new PublicKeyCredentialDescriptor(PUBLIC_KEY, overMax)),
               128);
-      assertNull(result);
+      assertTrue(result.isEmpty());
     }
 
     @Test

@@ -60,6 +60,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.slf4j.LoggerFactory;
 
@@ -181,7 +182,7 @@ public class BasicWebAuthnClient implements Closeable {
     this.clientPin =
         new ClientPin(ctap, getPreferredPinUvAuthProtocol(info.getPinUvAuthProtocols()));
 
-    pinConfigured = pinSupported && Boolean.TRUE.equals(optionClientPin);
+    pinConfigured = pinSupported && optionClientPin;
 
     Boolean uv = (Boolean) options.get(OPTION_USER_VERIFICATION);
     uvSupported = uv != null;
@@ -456,11 +457,11 @@ public class BasicWebAuthnClient implements Closeable {
     }
 
     Map<String, Boolean> ctapOptions = getCreateCtapOptions(options, pin);
+    final List<PublicKeyCredentialDescriptor> excludeCredentials = options.getExcludeCredentials();
 
-    int permissions = ClientPin.PIN_PERMISSION_MC;
-    if (!options.getExcludeCredentials().isEmpty()) {
-      permissions |= ClientPin.PIN_PERMISSION_GA;
-    }
+    int permissions =
+        ClientPin.PIN_PERMISSION_MC
+            | (excludeCredentials.isEmpty() ? 0 : ClientPin.PIN_PERMISSION_GA);
     List<Extension.RegistrationProcessor> registrationProcessors = new ArrayList<>();
     for (Extension extension : extensions) {
       Extension.RegistrationProcessor processor =
@@ -484,20 +485,16 @@ public class BasicWebAuthnClient implements Closeable {
       authenticatorInputs.putAll(processor.getInput(authParams.pinToken));
     }
 
-    final List<PublicKeyCredentialDescriptor> excludeCredentials =
-        Utils.preprocessCredentialList(
-            options.getExcludeCredentials(), ctap.getCachedInfo().getMaxCredentialIdLength());
-
-    PublicKeyCredentialDescriptor credToExclude =
-        excludeCredentials != null
-            ? Utils.filterCreds(
+    final PublicKeyCredentialDescriptor credToExclude =
+        excludeCredentials.isEmpty()
+            ? null
+            : Utils.filterCreds(
                 ctap,
                 rpId,
                 excludeCredentials,
                 effectiveDomain,
                 authParams.pinUvAuthProtocol,
-                authParams.pinToken)
-            : null;
+                authParams.pinToken);
 
     final Map<String, ?> user = options.getUser().toMap(serializationType);
 
@@ -580,10 +577,7 @@ public class BasicWebAuthnClient implements Closeable {
           ClientError.Code.BAD_REQUEST, "RP ID is not valid for effective domain");
     }
     Map<String, Boolean> ctapOptions = getRequestCtapOptions(options, pin);
-    final List<PublicKeyCredentialDescriptor> allowCredentials =
-        Utils.preprocessCredentialList(
-            options.getAllowCredentials(), ctap.getCachedInfo().getMaxCredentialIdLength());
-
+    final List<PublicKeyCredentialDescriptor> allowCredentials = options.getAllowCredentials();
     int permissions = ClientPin.PIN_PERMISSION_GA;
     List<Extension.AuthenticationProcessor> authenticationProcessors = new ArrayList<>();
     for (Extension extension : extensions) {
@@ -603,28 +597,27 @@ public class BasicWebAuthnClient implements Closeable {
             permissions,
             rpId);
 
-    final boolean hasValidAllowList = allowCredentials != null && !allowCredentials.isEmpty();
     PublicKeyCredentialDescriptor selectedCred =
-        hasValidAllowList
-            ? Utils.filterCreds(
+        allowCredentials.isEmpty()
+            ? null
+            : Utils.filterCreds(
                 ctap,
                 rpId,
                 allowCredentials,
                 effectiveDomain,
                 authParams.pinUvAuthProtocol,
-                authParams.pinToken)
-            : null;
-
-    if (hasValidAllowList && selectedCred == null) {
-      // We still need to send a dummy value if there was an allowCredentials list but no matches
-      // were found.
-      selectedCred =
-          new PublicKeyCredentialDescriptor(allowCredentials.get(0).getType(), new byte[] {0x00});
-    }
+                authParams.pinToken);
 
     HashMap<String, Object> authenticatorInputs = new HashMap<>();
     for (Extension.AuthenticationProcessor processor : authenticationProcessors) {
       authenticatorInputs.putAll(processor.getInput(selectedCred, authParams.pinToken));
+    }
+
+    if (!allowCredentials.isEmpty() && selectedCred == null) {
+      // We still need to send a dummy value if there was an allowCredentials list but no matches
+      // were found.
+      selectedCred =
+          new PublicKeyCredentialDescriptor(allowCredentials.get(0).getType(), new byte[] {0x00});
     }
 
     try {
@@ -805,7 +798,8 @@ public class BasicWebAuthnClient implements Closeable {
   static class Utils {
 
     /**
-     * @return first acceptable credential from the list available on the authenticator
+     * @return first acceptable credential from the list available on the authenticator or null if
+     *     no acceptable credential is present in the list
      */
     @Nullable
     static PublicKeyCredentialDescriptor filterCreds(
@@ -816,7 +810,6 @@ public class BasicWebAuthnClient implements Closeable {
         @Nullable PinUvAuthProtocol pinUvAuthProtocol,
         @Nullable byte[] pinUvAuthToken)
         throws IOException, CommandException, ClientError {
-
       if (rpId == null) {
         rpId = effectiveDomain;
       } else if (!(effectiveDomain.equals(rpId) || effectiveDomain.endsWith("." + rpId))) {
@@ -825,7 +818,10 @@ public class BasicWebAuthnClient implements Closeable {
       }
 
       Ctap2Session.InfoData info = ctap.getCachedInfo();
-      final List<PublicKeyCredentialDescriptor> creds = new ArrayList<>(descriptors);
+      final List<PublicKeyCredentialDescriptor> creds =
+          Utils.preprocessCredentialList(
+              descriptors, ctap.getCachedInfo().getMaxCredentialIdLength());
+
       int maxCreds =
           info.getMaxCredentialCountInList() != null ? info.getMaxCredentialCountInList() : 1;
 
@@ -901,33 +897,18 @@ public class BasicWebAuthnClient implements Closeable {
      * @param descriptors The credential descriptors to preprocess
      * @param maxCredIdLength Maximum credential ID length supported by the authenticator, or null
      *     for no limit
-     * @return Preprocessed list ready for CTAP operations, or null if no valid credentials remain
+     * @return Preprocessed list ready for CTAP operations
      */
-    @Nullable
     static List<PublicKeyCredentialDescriptor> preprocessCredentialList(
-        @Nullable List<PublicKeyCredentialDescriptor> descriptors,
-        @Nullable Integer maxCredIdLength) {
-      if (descriptors == null || descriptors.isEmpty()) {
-        return null;
+        List<PublicKeyCredentialDescriptor> descriptors, @Nullable Integer maxCredIdLength) {
+      if (descriptors.isEmpty()) {
+        return descriptors;
       }
-
-      List<PublicKeyCredentialDescriptor> filtered = new ArrayList<>();
-      for (PublicKeyCredentialDescriptor credential : descriptors) {
-        // Skip unsupported types
-        if (!isPublicKeyCredentialTypeSupported(credential.getType())) {
-          continue;
-        }
-
-        // Skip credentials that exceed max length
-        if (maxCredIdLength != null && credential.getId().length > maxCredIdLength) {
-          continue;
-        }
-
-        // Add without transports
-        filtered.add(new PublicKeyCredentialDescriptor(credential.getType(), credential.getId()));
-      }
-
-      return filtered.isEmpty() ? null : filtered;
+      return descriptors.stream()
+          .filter(c -> isPublicKeyCredentialTypeSupported(c.getType()))
+          .filter(c -> maxCredIdLength == null || c.getId().length <= maxCredIdLength)
+          .map(c -> new PublicKeyCredentialDescriptor(c.getType(), c.getId()))
+          .collect(Collectors.toList());
     }
 
     /**
