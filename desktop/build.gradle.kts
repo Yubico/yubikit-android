@@ -15,7 +15,7 @@
  */
 
 plugins {
-    id("yubikit-java-library")
+    id("yubikit-library")
 }
 
 dependencies {

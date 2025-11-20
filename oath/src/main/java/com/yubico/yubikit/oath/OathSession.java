@@ -48,11 +48,11 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import javax.annotation.Nullable;
 import javax.crypto.Mac;
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -114,7 +114,7 @@ public class OathSession extends ApplicationSession<OathSession> {
 
   private String deviceId;
   private byte[] salt;
-  @Nullable private byte[] challenge;
+  private byte @Nullable [] challenge;
   private boolean isAccessKeySet;
 
   private static final org.slf4j.Logger logger = LoggerFactory.getLogger(OathSession.class);
@@ -392,7 +392,7 @@ public class OathSession extends ApplicationSession<OathSession> {
    * @throws ApduException in case of communication error
    * @throws BadResponseException in case of incorrect YubiKey response
    */
-  public Map<Credential, Code> calculateCodes()
+  public Map<Credential, @Nullable Code> calculateCodes()
       throws IOException, ApduException, BadResponseException {
     return calculateCodes(System.currentTimeMillis());
   }
@@ -409,7 +409,7 @@ public class OathSession extends ApplicationSession<OathSession> {
    * @throws ApduException in case of communication error
    * @throws BadResponseException in case of incorrect YubiKey response
    */
-  public Map<Credential, Code> calculateCodes(long timestamp)
+  public Map<Credential, @Nullable Code> calculateCodes(long timestamp)
       throws IOException, ApduException, BadResponseException {
     // CALCULATE_ALL uses a single time step, so we run it with the most common one (period=30)
     // and then recalculate any codes where period != 30.
@@ -424,7 +424,7 @@ public class OathSession extends ApplicationSession<OathSession> {
         protocol.sendAndReceive(
             new Apdu(0, INS_CALCULATE_ALL, 0, 1, new Tlv(TAG_CHALLENGE, challenge).getBytes()));
     Iterator<Tlv> responseTlvs = Tlvs.decodeList(data).iterator();
-    Map<Credential, Code> map = new HashMap<>();
+    Map<Credential, @Nullable Code> map = new HashMap<>();
     while (responseTlvs.hasNext()) {
       Tlv nameTlv = responseTlvs.next();
       if (nameTlv.getTag() != TAG_NAME) {
@@ -796,7 +796,7 @@ public class OathSession extends ApplicationSession<OathSession> {
   private static class SelectResponse {
     private final Version version;
     private final byte[] salt;
-    @Nullable private final byte[] challenge;
+    private final byte @Nullable [] challenge;
 
     /**
      * Creates an instance of OATH application info from SELECT response

@@ -33,11 +33,11 @@ import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialType;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 public class ClientHelper {
   final BasicWebAuthnClient client;
-  @Nullable private char[] pin;
+  private char @Nullable [] pin;
 
   public ClientHelper(Ctap2Session ctap) throws IOException, CommandException {
     this.pin = TestData.PIN;
@@ -98,7 +98,7 @@ public class ClientHelper {
     deleteCredentialsByIds(credIds);
   }
 
-  public ClientHelper withPin(@Nullable char[] pin) {
+  public ClientHelper withPin(char @Nullable [] pin) {
     this.pin = pin;
     return this;
   }

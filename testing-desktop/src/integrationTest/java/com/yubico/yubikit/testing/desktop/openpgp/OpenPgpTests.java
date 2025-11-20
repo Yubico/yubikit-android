@@ -20,7 +20,7 @@ import com.yubico.yubikit.testing.desktop.SlowTest;
 import com.yubico.yubikit.testing.desktop.SmokeTest;
 import com.yubico.yubikit.testing.desktop.framework.OpenPgpInstrumentedTests;
 import com.yubico.yubikit.testing.openpgp.OpenPgpDeviceTests;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -82,6 +82,11 @@ public class OpenPgpTests {
     @Test
     public void testGenerateEcKeys() throws Throwable {
       withOpenPgpSession(OpenPgpDeviceTests::testGenerateEcKeys);
+    }
+
+    @Test
+    public void testFingerprintOperations() throws Throwable {
+      withOpenPgpSession(OpenPgpDeviceTests::testFingerprintOperations);
     }
 
     @Test

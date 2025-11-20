@@ -16,8 +16,8 @@
 
 plugins {
     application
-    id("project-convention-spotbugs")
-    id("project-convention-spotless")
+    id("yubikit-spotbugs")
+    id("yubikit-spotless")
 }
 
 dependencies {
@@ -25,8 +25,6 @@ dependencies {
     implementation(project(":oath"))
     implementation(project(":fido"))
     implementation(project(":yubiotp"))
-
-    compileOnly(libs.jsr305)
 
     implementation(libs.logback.classic)
 }

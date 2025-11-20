@@ -18,7 +18,7 @@ package com.yubico.yubikit.testing.desktop.framework;
 import com.yubico.yubikit.testing.TestState;
 import com.yubico.yubikit.testing.sd.SecurityDomainTestState;
 
-public class SecurityDomainInstrumentedTests extends YKInstrumentedTests {
+public class SecurityDomainInstrumentedTests extends YkInstrumentedTests {
 
   protected void withState(TestState.StatefulDeviceCallback<SecurityDomainTestState> callback)
       throws Throwable {

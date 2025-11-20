@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Yubico.
+ * Copyright (C) 2020-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,5 @@
  * <p>These data classes are derived from the types defined by the W3C WebAuthn Level 1
  * specification. For details on their usage, please see: https://www.w3.org/TR/webauthn/
  */
-@PackageNonnullByDefault
+@org.jspecify.annotations.NullMarked
 package com.yubico.yubikit.fido.webauthn;
-
-import com.yubico.yubikit.core.PackageNonnullByDefault;

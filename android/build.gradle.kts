@@ -15,8 +15,8 @@
  */
 
 plugins {
-    id("com.android.library")
-    id("project-convention-common")
+    id("yubikit-android-publishing")
+    id("yubikit-common")
 }
 
 android {
@@ -59,5 +59,4 @@ dependencies {
 
 description = "This module is the core library implementation and provides functionality to detect a YubiKey plugged in or tapped over NFC and to open an ISO/IEC 7816 connection that allows sending raw APDU commands to the key."
 
-apply(from = project.file("publish.gradle.kts"))
 

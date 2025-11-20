@@ -22,13 +22,13 @@ import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.UsbPid;
 import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.testing.TestActivity;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.TestName;
 
-public class YKInstrumentedTests {
+public class YkInstrumentedTests {
 
   private TestActivity activity;
   protected YubiKeyDevice device = null;

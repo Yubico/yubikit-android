@@ -15,8 +15,8 @@
  */
 
 plugins {
-    id("com.android.library")
-    id("project-convention-common")
+    alias(libs.plugins.android.library)
+    id("yubikit-common")
 }
 
 android {
@@ -69,7 +69,6 @@ dependencies {
     implementation(libs.androidx.test.rules)
     implementation(libs.androidx.test.runner)
 
-    implementation(libs.jsr305)
     implementation(libs.material)
 
     implementation(libs.logback.android)

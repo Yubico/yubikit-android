@@ -21,7 +21,7 @@ import com.yubico.yubikit.testing.desktop.framework.PivInstrumentedTests;
 import com.yubico.yubikit.testing.piv.PivCertificateTests;
 import com.yubico.yubikit.testing.piv.PivDeviceTests;
 import com.yubico.yubikit.testing.piv.PivPinComplexityDeviceTests;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;

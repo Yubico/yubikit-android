@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Yubico.
+ * Copyright (C) 2024-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ import com.yubico.yubikit.testing.fido.utils.CreationOptionsBuilder;
 import com.yubico.yubikit.testing.fido.utils.RequestOptionsBuilder;
 import java.util.Collections;
 import java.util.Map;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.junit.Assert;
 import org.junit.Assume;
 
@@ -189,8 +189,7 @@ public class LargeBlobExtensionTests {
     return largeBlob.get(key);
   }
 
-  @Nullable
-  private byte[] getBlob(PublicKeyCredential credential) {
+  private byte @Nullable [] getBlob(PublicKeyCredential credential) {
     Map<String, ?> largeBlob = getResult(credential, SerializationType.CBOR);
     Assert.assertNotNull(largeBlob);
     return (byte[]) largeBlob.get(KEY_BLOB);
@@ -210,7 +209,7 @@ public class LargeBlobExtensionTests {
   @Nullable
   private Map<String, ?> getResult(PublicKeyCredential cred) {
     ClientExtensionResults results = cred.getClientExtensionResults();
-    ;
+
     Assert.assertNotNull(results);
     Map<String, Object> resultsMap = results.toMap(SerializationType.JSON);
     return (Map<String, ?>) resultsMap.get(LARGE_BLOB);

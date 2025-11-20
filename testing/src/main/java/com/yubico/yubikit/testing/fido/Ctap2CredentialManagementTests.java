@@ -21,6 +21,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
@@ -34,6 +35,7 @@ import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialUserEntity;
 import com.yubico.yubikit.fido.webauthn.SerializationType;
 import com.yubico.yubikit.testing.fido.utils.TestData;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -182,10 +184,12 @@ public class Ctap2CredentialManagementTests {
               byte[] token =
                   clientPin.getPinToken(TestData.PIN, ClientPin.PIN_PERMISSION_PCMR, null);
               byte[] identifier = session.getInfo().getIdentifier(token);
+              byte[] credStoreState = session.getInfo().getCredStoreState(token);
 
               Map<String, Object> retval = new HashMap<>();
               retval.put("token", token);
               retval.put("identifier", identifier);
+              retval.put("credStoreState", credStoreState);
               retval.put("credentialData", credentialData);
 
               // this performs the verification without reconnecting
@@ -200,18 +204,39 @@ public class Ctap2CredentialManagementTests {
         session -> {
           byte[] token = (byte[]) testData.get("token");
           byte[] identifier = (byte[]) testData.get("identifier");
+          byte[] credStoreState = (byte[]) testData.get("credStoreState");
 
           assertArrayEquals(
               "Identifier mismatch", identifier, session.getInfo().getIdentifier(token));
+
+          if (credStoreState != null) {
+            assertArrayEquals(
+                "CredStoreState mismatch",
+                credStoreState,
+                session.getInfo().getCredStoreState(token));
+          }
         });
 
     // verify with reconnecting
-    // TODO
-    //    state.withCtap2(
-    //        session -> {
-    //          byte[] token = (byte[]) testData.get("token");
-    //          verifyReadOnlyManagement(session, state.getPinUvAuthProtocol(), token);
-    //        });
+    state.withCtap2(
+        session -> {
+          byte[] token = (byte[]) testData.get("token");
+          verifyReadOnlyManagement(session, state.getPinUvAuthProtocol(), token);
+
+          // identifier and credStoreState must be the same
+          byte[] identifier = (byte[]) testData.get("identifier");
+          byte[] credStoreState = (byte[]) testData.get("credStoreState");
+
+          assertArrayEquals(
+              "Identifier mismatch", identifier, session.getInfo().getIdentifier(token));
+
+          if (credStoreState != null) {
+            assertArrayEquals(
+                "CredStoreState mismatch",
+                credStoreState,
+                session.getInfo().getCredStoreState(token));
+          }
+        });
 
     // cleanup
     state.withCtap2(
@@ -220,6 +245,15 @@ public class Ctap2CredentialManagementTests {
               (CredentialManagement.CredentialData) testData.get("credentialData");
           CredentialManagement credentialManagement = setupCredentialManagement(session, state);
           credentialManagement.deleteCredential(credentialData.getCredentialId());
+
+          // credStoreState has changed now, as we removed a credential
+          byte[] credStoreState = (byte[]) testData.get("credStoreState");
+          if (credStoreState != null) {
+            byte[] token = (byte[]) testData.get("token");
+            assertFalse(
+                "CredStoreState still same",
+                Arrays.equals(credStoreState, session.getInfo().getCredStoreState(token)));
+          }
         });
   }
 

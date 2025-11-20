@@ -17,9 +17,9 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
+    alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
-    id("com.android.application")
-    id("project-convention-common")
+    id("yubikit-common")
 }
 
 android {

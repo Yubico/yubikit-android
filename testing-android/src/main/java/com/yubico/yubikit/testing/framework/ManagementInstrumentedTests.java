@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Yubico.
+ * Copyright (C) 2024-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ package com.yubico.yubikit.testing.framework;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.management.ManagementSession;
 
-public class ManagementInstrumentedTests extends YKInstrumentedTests {
+public class ManagementInstrumentedTests extends YkInstrumentedTests {
 
   public interface Callback {
     void invoke(ManagementSession value) throws Throwable;

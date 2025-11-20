@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2025 Yubico.
+ * Copyright (C) 2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-plugins {
-    id("project-convention-spotbugs")
-    id("project-convention-spotless")
-    id("project-convention-logging")
+val libs = extensions.getByType<VersionCatalogsExtension>().named("libs")
+
+dependencies {
+    add("api", libs.findLibrary("jspecify").get())
 }
+

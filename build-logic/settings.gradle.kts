@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2025 Yubico.
+ * Copyright (C) 2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,18 @@
  * limitations under the License.
  */
 
-plugins {
-    id("project-convention-java-library")
-    id("project-convention-common")
-    id("project-convention-publishing")
+@Suppress("UnstableApiUsage")
+dependencyResolutionManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+    versionCatalogs {
+        create("libs") {
+            from(files("../gradle/libs.versions.toml"))
+        }
+    }
 }
 
-dependencies {
-    testImplementation(project(":testing"))
-    testImplementation("junit:junit:4.13.2")
-}
+

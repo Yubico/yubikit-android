@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Yubico.
+ * Copyright (C) 2023-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,14 +27,14 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.LoggerFactory;
 
 /**
  * Implements Config commands.
  *
  * @see <a
- *     href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#authenticatorConfig">authenticatorConfig</a>
+ *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html#authenticatorConfig">authenticatorConfig</a>
  */
 @SuppressWarnings("unused")
 public class Config {
@@ -62,7 +62,7 @@ public class Config {
    * @param pinUvToken the PIN/UV token to use
    */
   public Config(
-      Ctap2Session ctap, @Nullable PinUvAuthProtocol pinUvAuth, @Nullable byte[] pinUvToken) {
+      Ctap2Session ctap, @Nullable PinUvAuthProtocol pinUvAuth, byte @Nullable [] pinUvToken) {
 
     if (!isSupported(ctap.getCachedInfo())) {
       throw new IllegalStateException("Not supported");
@@ -119,7 +119,7 @@ public class Config {
    * @throws IOException A communication error in the transport layer.
    * @throws CommandException A communication in the protocol layer.
    * @see <a
-   *     href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#enable-enterprise-attestation">Enable
+   *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html#enable-enterprise-attestation">Enable
    *     Enterprise Attestation</a>
    */
   public void enableEnterpriseAttestation() throws IOException, CommandException {
@@ -135,7 +135,7 @@ public class Config {
    * @throws IOException A communication error in the transport layer.
    * @throws CommandException A communication in the protocol layer.
    * @see <a
-   *     href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#toggle-alwaysUv">Toggle
+   *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html#toggle-alwaysUv">Toggle
    *     Always Require User Verification</a>
    */
   public void toggleAlwaysUv() throws IOException, CommandException {
@@ -155,7 +155,7 @@ public class Config {
    * @throws IOException A communication error in the transport layer.
    * @throws CommandException A communication in the protocol layer.
    * @see <a
-   *     href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#setMinPINLength">Setting
+   *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html#setMinPINLength">Setting
    *     a minimum PIN Length</a>
    */
   public void setMinPinLength(
@@ -183,7 +183,7 @@ public class Config {
    * @throws IOException A communication error in the transport layer.
    * @throws CommandException A communication in the protocol layer.
    * @see <a
-   *     href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#vendorPrototype">Vendor
+   *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html#vendorPrototype">Vendor
    *     Prototype Command</a>
    */
   public Map<Integer, ?> vendorPrototype(Integer vendorCommandId)

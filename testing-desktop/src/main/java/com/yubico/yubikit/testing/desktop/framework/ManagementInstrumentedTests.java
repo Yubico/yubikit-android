@@ -18,7 +18,7 @@ package com.yubico.yubikit.testing.desktop.framework;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.management.ManagementSession;
 
-public class ManagementInstrumentedTests extends YKInstrumentedTests {
+public class ManagementInstrumentedTests extends YkInstrumentedTests {
 
   public interface Callback {
     void invoke(ManagementSession value) throws Throwable;

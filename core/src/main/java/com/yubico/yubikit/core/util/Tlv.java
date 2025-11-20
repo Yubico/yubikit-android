@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2022 Yubico.
+ * Copyright (C) 2019-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Locale;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Tag, length, Value structure that helps to parse APDU response data.
@@ -35,7 +35,7 @@ public class Tlv {
   private final int offset;
 
   /** Creates a new Tlv given a tag and a value. */
-  public Tlv(int tag, @Nullable byte[] value) {
+  public Tlv(int tag, byte @Nullable [] value) {
     this.tag = tag;
     ByteArrayOutputStream stream = new ByteArrayOutputStream();
 

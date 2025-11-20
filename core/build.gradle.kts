@@ -15,7 +15,7 @@
  */
 
 plugins {
-    id("yubikit-java-library")
+    id("yubikit-library")
 }
 
 description = "The core module is the base library, with common interfaces and utilities used throughout the rest of the modules."

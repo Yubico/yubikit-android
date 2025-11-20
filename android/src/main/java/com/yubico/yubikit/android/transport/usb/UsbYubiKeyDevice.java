@@ -34,8 +34,7 @@ import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.LoggerFactory;
 
 public class UsbYubiKeyDevice implements YubiKeyDevice, Closeable {
@@ -237,7 +236,6 @@ public class UsbYubiKeyDevice implements YubiKeyDevice, Closeable {
     }
   }
 
-  @Nonnull
   @Override
   public String toString() {
     return "UsbYubiKeyDevice{" + "usbDevice=" + usbDevice + ", usbPid=" + usbPid + '}';

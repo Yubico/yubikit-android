@@ -30,7 +30,7 @@ import com.yubico.yubikit.testing.fido.FidoTestState;
 import java.util.Arrays;
 import java.util.List;
 
-public class FidoInstrumentedTests extends YKInstrumentedTests {
+public class FidoInstrumentedTests extends YkInstrumentedTests {
 
   public static List<Class<? extends YubiKeyConnection>> connectionTypes =
       Arrays.asList(FidoConnection.class, SmartCardConnection.class);

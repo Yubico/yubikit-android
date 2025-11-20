@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Yubico.
+ * Copyright (C) 2024-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.junit.Assert;
 import org.junit.Assume;
 
@@ -267,8 +267,7 @@ public class HmacSecretExtensionTests {
   }
 
   @SuppressWarnings("unchecked")
-  @Nullable
-  private byte[] getGetResultsValue(PublicKeyCredential credential, String key) {
+  private byte @Nullable [] getGetResultsValue(PublicKeyCredential credential, String key) {
     ClientExtensionResults extensionResults = credential.getClientExtensionResults();
     Assert.assertNotNull(extensionResults);
     Map<String, Object> resultsMap = extensionResults.toMap(SerializationType.CBOR);

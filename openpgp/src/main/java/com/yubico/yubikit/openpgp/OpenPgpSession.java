@@ -57,7 +57,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -627,7 +627,7 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
    * @throws IOException in case of connection error
    * @throws InvalidPinException in case of the wrong PIN
    */
-  public void resetPin(char[] newPin, @Nullable char[] resetCode)
+  public void resetPin(char[] newPin, char @Nullable [] resetCode)
       throws ApduException, IOException, InvalidPinException {
     Logger.debug(logger, "Resetting User PIN");
     byte p1 = 2;

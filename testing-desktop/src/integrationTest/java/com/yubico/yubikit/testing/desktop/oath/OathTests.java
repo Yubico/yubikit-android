@@ -19,7 +19,7 @@ import com.yubico.yubikit.core.smartcard.scp.ScpKid;
 import com.yubico.yubikit.testing.desktop.SmokeTest;
 import com.yubico.yubikit.testing.desktop.framework.OathInstrumentedTests;
 import com.yubico.yubikit.testing.oath.OathDeviceTests;
-import org.jetbrains.annotations.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;

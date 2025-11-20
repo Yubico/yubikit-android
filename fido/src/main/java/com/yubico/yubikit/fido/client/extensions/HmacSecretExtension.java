@@ -44,7 +44,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -56,10 +56,10 @@ import org.slf4j.LoggerFactory;
  *
  * @see <a href="https://www.w3.org/TR/webauthn-3/#prf-extension">PRF extension</a>
  * @see <a
- *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250228/fido-client-to-authenticator-protocol-v2.2-ps-20250228.html#sctn-hmac-secret-extension">HMAC
+ *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html#sctn-hmac-secret-extension">HMAC
  *     secret extension (hmac-secret)</a>
  * @see <a
- *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250228/fido-client-to-authenticator-protocol-v2.2-ps-20250228.html#sctn-hmac-secret-make-cred-extension">HMAC
+ *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html#sctn-hmac-secret-make-cred-extension">HMAC
  *     Secret MakeCredential Extension (hmac-secret-mc)</a>
  */
 public class HmacSecretExtension extends Extension {
@@ -130,7 +130,7 @@ public class HmacSecretExtension extends Extension {
         byte[] saltEnc = pinUvAuthHelper.encrypt(salts.concat());
         byte[] saltAuth = pinUvAuthHelper.authenticate(saltEnc);
 
-        final Map<Integer, Object> hmacCreateSecretInput = new HashMap<>();
+        final Map<Integer, @Nullable Object> hmacCreateSecretInput = new HashMap<>();
         hmacCreateSecretInput.put(1, pinUvAuthHelper.keyAgreement.first);
         hmacCreateSecretInput.put(2, saltEnc);
         hmacCreateSecretInput.put(3, saltAuth);
@@ -186,7 +186,7 @@ public class HmacSecretExtension extends Extension {
           byte[] saltEnc = pinUvAuthHelper.encrypt(salts.concat());
           byte[] saltAuth = pinUvAuthHelper.authenticate(saltEnc);
 
-          final Map<Integer, Object> hmacGetSecretInput = new HashMap<>();
+          final Map<Integer, @Nullable Object> hmacGetSecretInput = new HashMap<>();
           hmacGetSecretInput.put(1, pinUvAuthHelper.keyAgreement.first);
           hmacGetSecretInput.put(2, saltEnc);
           hmacGetSecretInput.put(3, saltAuth);
@@ -352,13 +352,13 @@ public class HmacSecretExtension extends Extension {
   private Map<String, Object> formatOutputs(
       SerializationType serializationType,
       @Nullable Boolean enabled,
-      @Nullable byte[] decrypted,
+      byte @Nullable [] decrypted,
       boolean prf) {
     byte[] output1 = decrypted != null ? Arrays.copyOfRange(decrypted, 0, SALT_LEN) : null;
     byte[] output2 =
         decrypted != null ? Arrays.copyOfRange(decrypted, SALT_LEN, decrypted.length) : null;
 
-    Map<String, Object> result = new HashMap<>();
+    Map<String, @Nullable Object> result = new HashMap<>();
     if (prf) {
       result.put(ENABLED, enabled);
       Map<String, Object> results = new HashMap<>();
@@ -403,7 +403,7 @@ public class HmacSecretExtension extends Extension {
     byte[] salt1;
     byte[] salt2;
 
-    Salts(byte[] salt1, @Nullable byte[] salt2) {
+    Salts(byte[] salt1, byte @Nullable [] salt2) {
       this.salt1 = salt1;
       this.salt2 = salt2 != null ? salt2 : new byte[0];
     }
@@ -495,7 +495,7 @@ public class HmacSecretExtension extends Extension {
     private final PinUvAuthProtocol pinUvAuthProtocol;
     private final ClientPin clientPin;
 
-    @Nullable private final Pair<Map<Integer, ?>, byte[]> keyAgreement;
+    private final @Nullable Pair<Map<Integer, ?>, byte[]> keyAgreement;
 
     PinUvAuthHelper(Ctap2Session session, PinUvAuthProtocol pinUvAuthProtocol) {
       this.pinUvAuthProtocol = pinUvAuthProtocol;
@@ -509,24 +509,21 @@ public class HmacSecretExtension extends Extension {
       this.keyAgreement = keyAgreement;
     }
 
-    @Nullable
-    byte[] encrypt(byte[] data) {
+    byte @Nullable [] encrypt(byte[] data) {
       if (keyAgreement == null) {
         return null;
       }
       return clientPin.getPinUvAuth().encrypt(keyAgreement.second, data);
     }
 
-    @Nullable
-    byte[] decrypt(@Nullable byte[] data) {
+    byte @Nullable [] decrypt(byte @Nullable [] data) {
       if (keyAgreement == null || data == null) {
         return null;
       }
       return pinUvAuthProtocol.decrypt(keyAgreement.second, data);
     }
 
-    @Nullable
-    byte[] authenticate(@Nullable byte[] data) {
+    byte @Nullable [] authenticate(byte @Nullable [] data) {
       if (keyAgreement == null || data == null) {
         return null;
       }

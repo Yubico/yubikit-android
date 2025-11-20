@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2025 Yubico.
+ * Copyright (C) 2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,14 +15,12 @@
  */
 
 plugins {
-    id("com.diffplug.spotless")
+    `kotlin-dsl`
 }
 
-spotless {
-    java {
-        target("src/*/java/**/*.java")
-        googleJavaFormat("1.25.2")
-        trimTrailingWhitespace()
-        endWithNewline()
-    }
+dependencies {
+    implementation(libs.spotbugs.gradle.plugin)
+    implementation(libs.android.gradle.plugin)
+    implementation(libs.spotless.plugin.gradle)
+    implementation(libs.kotlin.gradle.plugin)
 }

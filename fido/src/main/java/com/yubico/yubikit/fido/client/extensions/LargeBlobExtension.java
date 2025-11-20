@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Yubico.
+ * Copyright (C) 2024-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.util.Collections;
 import java.util.Map;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -42,7 +42,7 @@ import org.slf4j.LoggerFactory;
  * @see <a href="https://www.w3.org/TR/webauthn-3/#sctn-large-blob-extension">Large blob
  *     extension</a>
  * @see <a
- *     href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#sctn-largeBlobKey-extension">Large
+ *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html#sctn-largeBlobKey-extension">Large
  *     Blob Key (largeBlobKey)</a>
  */
 public class LargeBlobExtension extends Extension {
@@ -124,8 +124,8 @@ public class LargeBlobExtension extends Extension {
     return null;
   }
 
-  @Nullable
-  ClientExtensionResultProvider read(Ctap2Session.AssertionData assertionData, Ctap2Session ctap) {
+  @Nullable ClientExtensionResultProvider read(
+      Ctap2Session.AssertionData assertionData, Ctap2Session ctap) {
 
     byte[] largeBlobKey = assertionData.getLargeBlobKey();
     if (largeBlobKey == null) {
@@ -150,13 +150,12 @@ public class LargeBlobExtension extends Extension {
     return null;
   }
 
-  @Nullable
-  ClientExtensionResultProvider write(
+  @Nullable ClientExtensionResultProvider write(
       Ctap2Session.AssertionData assertionData,
       Ctap2Session ctap,
       byte[] bytes,
       PinUvAuthProtocol pinUvAuthProtocol,
-      @Nullable byte[] pinToken) {
+      byte @Nullable [] pinToken) {
 
     byte[] largeBlobKey = assertionData.getLargeBlobKey();
     if (largeBlobKey == null) {

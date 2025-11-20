@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Yubico.
+ * Copyright (C) 2020-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,5 @@
  *
  * <p>Contains classes for implementing a WebAuthn client which uses a YubiKeySession.
  */
-@PackageNonnullByDefault
+@org.jspecify.annotations.NullMarked
 package com.yubico.yubikit.fido.client;
-
-import com.yubico.yubikit.core.PackageNonnullByDefault;
