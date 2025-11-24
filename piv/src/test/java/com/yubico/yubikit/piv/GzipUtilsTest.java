@@ -19,8 +19,8 @@ package com.yubico.yubikit.piv;
 import static com.yubico.yubikit.piv.GzipUtils.compress;
 import static com.yubico.yubikit.piv.GzipUtils.decompress;
 
+import com.yubico.yubikit.Codec;
 import com.yubico.yubikit.core.util.StringUtils;
-import com.yubico.yubikit.testing.Codec;
 import java.io.EOFException;
 import java.nio.charset.StandardCharsets;
 import java.util.zip.ZipException;

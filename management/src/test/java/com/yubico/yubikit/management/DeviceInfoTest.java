@@ -16,6 +16,7 @@
 
 package com.yubico.yubikit.management;
 
+import static com.yubico.yubikit.Codec.fromHex;
 import static com.yubico.yubikit.management.Capability.FIDO2;
 import static com.yubico.yubikit.management.Capability.HSMAUTH;
 import static com.yubico.yubikit.management.Capability.OATH;
@@ -24,7 +25,6 @@ import static com.yubico.yubikit.management.Capability.PIV;
 import static com.yubico.yubikit.management.TestUtil.defaultVersion;
 import static com.yubico.yubikit.management.TestUtil.emptyTlvs;
 import static com.yubico.yubikit.management.TestUtil.tlvs;
-import static com.yubico.yubikit.testing.Codec.fromHex;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
