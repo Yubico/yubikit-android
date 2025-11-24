@@ -17,9 +17,14 @@
 package com.yubico.yubikit.fido.ctap;
 
 import com.yubico.yubikit.core.YubiKeyConnection;
+import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
 import com.yubico.yubikit.core.application.ApplicationSession;
+import com.yubico.yubikit.core.fido.FidoConnection;
+import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.smartcard.scp.ScpKeyParams;
+import com.yubico.yubikit.core.util.Callback;
+import com.yubico.yubikit.core.util.Result;
 import java.io.IOException;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -36,12 +41,56 @@ public abstract class CtapSession extends ApplicationSession<CtapSession> {
   protected final YubiKeyConnection connection;
   private static final Logger logger = LoggerFactory.getLogger(CtapSession.class);
 
-  protected CtapSession(YubiKeyConnection connection) {
+  public CtapSession(YubiKeyConnection connection) {
     this.connection = connection;
   }
 
   public YubiKeyConnection getConnection() {
     return connection;
+  }
+
+  /**
+   * Construct a new Ctap2Session for a given YubiKey.
+   *
+   * @param device a YubiKeyDevice over NFC or USB
+   * @param callback a callback to invoke with the session
+   */
+  public static void create(
+      YubiKeyDevice device, Callback<Result<CtapSession, Exception>> callback) {
+    if (device.supportsConnection(FidoConnection.class)) {
+      device.requestConnection(
+          FidoConnection.class,
+          value -> {
+            try {
+              CtapSession ctapSession = CtapSession.create(value.getValue());
+              if (ctapSession == null) {
+                throw new ApplicationNotAvailableException("Creation failed");
+              }
+              callback.invoke(Result.of(() -> ctapSession));
+            } catch (IOException | ApplicationNotAvailableException e) {
+              logger.error("Failed to create CTAP session over FIDO Connection", e);
+            }
+          });
+    } else if (device.supportsConnection(SmartCardConnection.class)) {
+      device.requestConnection(
+          SmartCardConnection.class,
+          value -> {
+            try {
+              CtapSession ctapSession = CtapSession.create(value.getValue());
+              if (ctapSession == null) {
+                throw new ApplicationNotAvailableException("Creation failed");
+              }
+              callback.invoke(Result.of(() -> ctapSession));
+            } catch (IOException | ApplicationNotAvailableException e) {
+              logger.error("Failed to create CTAP session over SmartCardConnection", e);
+            }
+          });
+    } else {
+      callback.invoke(
+          Result.failure(
+              new ApplicationNotAvailableException(
+                  "Session does not support any compatible connection type")));
+    }
   }
 
   /**

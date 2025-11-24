@@ -102,7 +102,7 @@ public class Ctap2Session extends CtapSession {
    * @param callback a callback to invoke with the session
    */
   public static void create(
-      YubiKeyDevice device, Callback<Result<Ctap2Session, Exception>> callback) {
+      YubiKeyDevice device, Callback<Result<CtapSession, Exception>> callback) {
     if (device.supportsConnection(FidoConnection.class)) {
       device.requestConnection(
           FidoConnection.class,

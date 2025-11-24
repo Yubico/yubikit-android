@@ -34,6 +34,7 @@ import com.yubico.yubikit.core.util.Callback;
 import com.yubico.yubikit.core.util.Result;
 import com.yubico.yubikit.core.util.Tlv;
 import com.yubico.yubikit.core.util.Tlvs;
+import com.yubico.yubikit.fido.client.ClientError;
 import com.yubico.yubikit.fido.webauthn.AttestationObject;
 import com.yubico.yubikit.fido.webauthn.AttestedCredentialData;
 import com.yubico.yubikit.fido.webauthn.AuthenticatorData;
@@ -64,8 +65,15 @@ import org.slf4j.LoggerFactory;
  * <p>This class provides methods for U2F registration and authentication operations using the
  * legacy CTAP1 protocol, also known as FIDO U2F.
  *
- * @see <a href="https://fidoalliance.org/specs/fido-u2f-v1.2-ps-20170411/">FIDO U2F
- *     Specification</a>
+ * @see <a
+ *     href="https://fidoalliance.org/specs/fido-u2f-v1.2-ps-20170411/fido-u2f-raw-message-formats-v1.2-ps-20170411.html">FIDO
+ *     U2F Raw Message Formats</a>
+ * @see <a
+ *     href="https://fidoalliance.org/specs/fido-u2f-v1.2-ps-20170411/fido-u2f-nfc-protocol-v1.2-ps-20170411.html">FIDO
+ *     NFC Protocol Specification v1.0</a>
+ * @see <a
+ *     href="https://fidoalliance.org/specs/fido-u2f-v1.2-ps-20170411/fido-u2f-hid-protocol-v1.2-ps-20170411.html">FIDO
+ *     U2F HID Protocol Specification</a>
  */
 public class Ctap1Session extends CtapSession {
 
@@ -89,7 +97,7 @@ public class Ctap1Session extends CtapSession {
    * @param callback a callback to invoke with the session
    */
   public static void create(
-      YubiKeyDevice device, Callback<Result<Ctap1Session, Exception>> callback) {
+      YubiKeyDevice device, Callback<Result<CtapSession, Exception>> callback) {
     if (device.supportsConnection(FidoConnection.class)) {
       device.requestConnection(
           FidoConnection.class,
@@ -182,8 +190,7 @@ public class Ctap1Session extends CtapSession {
                     .put(p1)
                     .put((byte) 0)
                     .put((byte) 0) // Extended length Lc high byte
-                    .put((byte) ((data.length >> 8) & 0xFF)) // Lc high
-                    .put((byte) (data.length & 0xFF)) // Lc low
+                    .putShort((short) data.length)
                     .put(data)
                     .put((byte) 0) // Le high
                     .put((byte) 0); // Le low (256 bytes expected)
@@ -261,6 +268,9 @@ public class Ctap1Session extends CtapSession {
    * @return the registration response from the authenticator
    * @throws IOException if communication fails
    * @throws ApduException if the command returns an error status
+   * @see <a
+   *     href="https://fidoalliance.org/specs/fido-u2f-v1.2-ps-20170411/fido-u2f-raw-message-formats-v1.2-ps-20170411.html#registration-messages">Registration
+   *     Messages</a>
    */
   public RegistrationData register(byte[] clientParam, byte[] appParam)
       throws IOException, ApduException {
@@ -288,10 +298,13 @@ public class Ctap1Session extends CtapSession {
    * @return the authentication response from the authenticator
    * @throws IOException if communication fails
    * @throws ApduException if the command returns an error status
+   * @see <a
+   *     href="https://fidoalliance.org/specs/fido-u2f-v1.2-ps-20170411/fido-u2f-raw-message-formats-v1.2-ps-20170411.html#authentication-messages">Authentication
+   *     Messages</a>
    */
   public SignatureData authenticate(
       byte[] clientParam, byte[] appParam, byte[] keyHandle, boolean checkOnly)
-      throws IOException, ApduException {
+      throws IOException, ApduException, ClientError {
     if (clientParam.length != 32) {
       throw new IllegalArgumentException("clientParam must be 32 bytes");
     }
@@ -306,8 +319,27 @@ public class Ctap1Session extends CtapSession {
             .put((byte) keyHandle.length)
             .put(keyHandle);
     byte p1 = checkOnly ? P1_CHECK_ONLY : P1_ENFORCE_USER_PRESENCE;
-    byte[] response = sendApdu(INS_AUTHENTICATE, p1, buffer.array());
-    return new SignatureData(response);
+
+    try {
+      byte[] response = sendApdu(INS_AUTHENTICATE, p1, buffer.array());
+      return new SignatureData(response);
+    } catch (ApduException e) {
+
+      if (checkOnly && e.getSw() == SW.CONDITIONS_NOT_SATISFIED) {
+        // 0x07 ("check-only"): if the control byte is set to 0x07 by the FIDO Client, the U2F token
+        // is supposed to simply check whether the provided key handle was originally created by
+        // this token, and whether it was created for the provided application parameter. If so, the
+        // U2F token MUST respond with an authentication response
+        // message:error:test-of-user-presence-required (note that despite the name this signals a
+        // success condition). If the key handle was not created by this U2F token, or if it was
+        // created for a different application parameter, the token MUST respond with an
+        // authentication response message:error:bad-key-handle.
+        throw new ClientError(
+            ClientError.Code.DEVICE_INELIGIBLE, "Credential in exclude list already registered");
+      }
+
+      throw e;
+    }
   }
 
   /**
@@ -509,9 +541,18 @@ public class Ctap1Session extends CtapSession {
       // Build AttestedCredentialData
       AttestedCredentialData credentialData =
           new AttestedCredentialData(aaguid, credentialId, coseKey);
+      byte[] credentialDataBytes = credentialData.bytes();
+
       // Build AuthenticatorData
       AuthenticatorData authData =
-          new AuthenticatorData(appParam, flags, signCount, credentialData, null, null);
+          AuthenticatorData.parseFrom(
+              ByteBuffer.allocate(32 + 1 + 4 + credentialDataBytes.length)
+                  .put(appParam)
+                  .put(flags)
+                  .putInt(signCount)
+                  .put(credentialDataBytes)
+                  .rewind());
+
       // Build attestation statement
       Map<String, Object> attStmt = new HashMap<>();
       attStmt.put("x5c", Collections.singletonList(getCertificate()));

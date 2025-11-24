@@ -118,10 +118,6 @@ public class Ctap1Client implements CtapClient {
         for (PublicKeyCredentialDescriptor cred : excludeList) {
           try {
             callPolling(() -> ctap1.authenticate(dummy, appParam, cred.getId(), true), state);
-            // If authenticate succeeds, credential is already registered
-            throw new ClientError(
-                ClientError.Code.DEVICE_INELIGIBLE,
-                "Credential in exclude list already registered");
           } catch (ClientError e) {
             throw e;
           } catch (Exception e) {

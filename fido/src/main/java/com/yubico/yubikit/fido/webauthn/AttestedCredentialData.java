@@ -52,19 +52,26 @@ public class AttestedCredentialData {
     return new AttestedCredentialData(aaguid, credentialId, cosePublicKey);
   }
 
-  @SuppressWarnings("unused")
   public byte[] getAaguid() {
     return aaguid;
   }
 
-  @SuppressWarnings("unused")
   public byte[] getCredentialId() {
     return credentialId;
   }
 
-  @SuppressWarnings("unused")
   public Map<Integer, ?> getCosePublicKey() {
     return cosePublicKey;
+  }
+
+  public byte[] bytes() {
+    byte[] cosePublicKey = Cbor.encode(getCosePublicKey());
+    return ByteBuffer.allocate(16 + 2 + credentialId.length + cosePublicKey.length)
+        .put(getAaguid())
+        .putShort((short) credentialId.length)
+        .put(credentialId)
+        .put(cosePublicKey)
+        .array();
   }
 
   @Override
