@@ -40,11 +40,10 @@ public class ClientHelper {
   private char @Nullable [] pin;
 
   public ClientHelper(Ctap2Session ctap) throws IOException, CommandException {
-    this.pin = TestData.PIN;
-    this.client = new BasicWebAuthnClient(ctap);
+    this(ctap, null);
   }
 
-  public ClientHelper(Ctap2Session ctap, List<Extension> extensions)
+  public ClientHelper(Ctap2Session ctap, @Nullable List<Extension> extensions)
       throws IOException, CommandException {
     this.pin = TestData.PIN;
     this.client = new BasicWebAuthnClient(ctap, extensions);

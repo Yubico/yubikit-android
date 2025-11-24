@@ -93,10 +93,6 @@ public class Ctap2Session extends CtapSession {
   @Nullable private final Byte credentialManagerCommand;
   @Nullable private final Byte bioEnrollmentCommand;
 
-  private static final byte[] encIdentifierBytes = "encIdentifier".getBytes(StandardCharsets.UTF_8);
-  private static final byte[] encCredStoreStateBytes =
-      "encCredStoreState".getBytes(StandardCharsets.UTF_8);
-
   private static final Logger logger = LoggerFactory.getLogger(Ctap2Session.class);
 
   /**
@@ -164,13 +160,13 @@ public class Ctap2Session extends CtapSession {
 
   public Ctap2Session(SmartCardConnection connection, Version version)
       throws IOException, CommandException {
-    this(connection, version, null);
+    this(connection, version, (ScpKeyParams) null);
   }
 
   public Ctap2Session(
       SmartCardConnection connection, Version version, @Nullable ScpKeyParams scpKeyParams)
       throws IOException, CommandException {
-    this(version, getSmartCardBackend(connection, scpKeyParams));
+    this(connection, version, getSmartCardBackend(connection, scpKeyParams));
     logger.debug(
         "Ctap2Session session initialized for connection={}, version={}",
         connection.getClass().getSimpleName(),
@@ -178,14 +174,16 @@ public class Ctap2Session extends CtapSession {
   }
 
   public Ctap2Session(FidoConnection connection) throws IOException, CommandException {
-    this(new FidoProtocol(connection));
+    this(connection, new FidoProtocol(connection));
     logger.debug(
         "Ctap2Session session initialized for connection={}, version={}",
         connection.getClass().getSimpleName(),
         version);
   }
 
-  private Ctap2Session(Version version, Backend<?> backend) throws IOException, CommandException {
+  private Ctap2Session(YubiKeyConnection connection, Version version, Backend<?> backend)
+      throws IOException, CommandException {
+    super(connection);
     this.version = version;
     this.backend = backend;
     this.info = getInfo();
@@ -262,8 +260,10 @@ public class Ctap2Session extends CtapSession {
     };
   }
 
-  private Ctap2Session(FidoProtocol protocol) throws IOException, CommandException {
+  private Ctap2Session(FidoConnection connection, FidoProtocol protocol)
+      throws IOException, CommandException {
     this(
+        connection,
         protocol.getVersion(),
         new Backend<FidoProtocol>(protocol) {
           @Override
@@ -432,7 +432,8 @@ public class Ctap2Session extends CtapSession {
         extensions,
         options,
         pinUvAuthParam,
-        pinUvAuthProtocol);
+        pinUvAuthProtocol,
+        state);
 
     final Map<Integer, ?> assertion =
         sendCbor(
@@ -761,6 +762,11 @@ public class Ctap2Session extends CtapSession {
     private static final int RESULT_MAX_PIN_LENGTH = 0x1D;
     private static final int RESULT_ENC_CRED_STORE_STATE = 0x1E;
     private static final int RESULT_AUTHENTICATOR_CONFIG_COMMANDS = 0x1F;
+
+    private static final byte[] encIdentifierBytes =
+        "encIdentifier".getBytes(StandardCharsets.UTF_8);
+    private static final byte[] encCredStoreStateBytes =
+        "encCredStoreState".getBytes(StandardCharsets.UTF_8);
 
     private final List<String> versions;
     private final List<String> extensions;

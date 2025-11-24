@@ -23,6 +23,7 @@ import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.core.smartcard.SW;
 import com.yubico.yubikit.fido.client.clientdata.ClientDataProvider;
 import com.yubico.yubikit.fido.ctap.Ctap1Session;
+import com.yubico.yubikit.fido.ctap.CtapSession;
 import com.yubico.yubikit.fido.webauthn.AttestationConveyancePreference;
 import com.yubico.yubikit.fido.webauthn.AttestationObject;
 import com.yubico.yubikit.fido.webauthn.AuthenticatorAssertionResponse;
@@ -35,7 +36,6 @@ import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialParameters;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialRequestOptions;
 import com.yubico.yubikit.fido.webauthn.ResidentKeyRequirement;
 import com.yubico.yubikit.fido.webauthn.UserVerificationRequirement;
-import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -43,12 +43,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-public class Ctap1Client implements Closeable {
+public class Ctap1Client implements CtapClient {
   private final Ctap1Session ctap1;
-  private final Logger logger = LoggerFactory.getLogger(Ctap1Client.class);
   private final CommandState defaultState = new CommandState();
 
   public Ctap1Client(Ctap1Session session) {
@@ -56,14 +53,17 @@ public class Ctap1Client implements Closeable {
   }
 
   @Override
-  public void close() throws IOException {
-    ctap1.close();
+  public CtapSession getSession() {
+    return ctap1;
   }
 
+  @Override
   public PublicKeyCredential makeCredential(
       ClientDataProvider clientData,
       PublicKeyCredentialCreationOptions options,
       String effectiveDomain,
+      char @Nullable [] pin,
+      @Nullable Integer enterpriseAttestation,
       @Nullable CommandState state)
       throws IOException, ClientError {
     try {
@@ -153,10 +153,12 @@ public class Ctap1Client implements Closeable {
     }
   }
 
+  @Override
   public PublicKeyCredential getAssertion(
       ClientDataProvider clientData,
       PublicKeyCredentialRequestOptions options,
       String effectiveDomain,
+      char @Nullable [] pin,
       @Nullable CommandState state)
       throws IOException, ClientError {
     try {
@@ -213,6 +215,11 @@ public class Ctap1Client implements Closeable {
     } catch (ApduException e) {
       throw convertApduException(e);
     }
+  }
+
+  @Override
+  public void close() throws IOException {
+    ctap1.close();
   }
 
   /**

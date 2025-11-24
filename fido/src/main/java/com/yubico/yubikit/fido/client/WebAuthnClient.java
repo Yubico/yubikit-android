@@ -61,22 +61,7 @@ import org.jspecify.annotations.Nullable;
  */
 public class WebAuthnClient implements Closeable {
 
-  private final Object delegateClient;
-
-  /**
-   * Create a new WebAuthn client from a CTAP session.
-   *
-   * <p>The client will automatically detect whether the session is CTAP1 or CTAP2 and instantiate
-   * the appropriate implementation.
-   *
-   * @param session The CTAP session (either Ctap1Session or Ctap2Session)
-   * @throws IOException A communication error in the transport layer
-   * @throws CommandException A communication error in the protocol layer (CTAP2 only)
-   * @throws IllegalArgumentException If the session type is not supported
-   */
-  public WebAuthnClient(CtapSession session) throws IOException, CommandException {
-    this(session, null);
-  }
+  private final CtapClient ctapClient;
 
   /**
    * Create a new WebAuthn client from a CTAP session with specific extensions.
@@ -85,7 +70,8 @@ public class WebAuthnClient implements Closeable {
    * parameter is ignored.
    *
    * @param session The CTAP session (either Ctap1Session or Ctap2Session)
-   * @param extensions List of extensions (only applicable for CTAP2)
+   * @param extensions List of extensions (only applicable for CTAP2), passing null will use default
+   *     extension set
    * @throws IOException A communication error in the transport layer
    * @throws CommandException A communication error in the protocol layer (CTAP2 only)
    * @throws IllegalArgumentException If the session type is not supported
@@ -94,13 +80,9 @@ public class WebAuthnClient implements Closeable {
       throws IOException, CommandException {
 
     if (session instanceof Ctap2Session) {
-      if (extensions != null) {
-        this.delegateClient = new BasicWebAuthnClient((Ctap2Session) session, extensions);
-      } else {
-        this.delegateClient = new BasicWebAuthnClient((Ctap2Session) session);
-      }
+      this.ctapClient = new BasicWebAuthnClient((Ctap2Session) session, extensions);
     } else if (session instanceof Ctap1Session) {
-      this.delegateClient = new Ctap1Client((Ctap1Session) session);
+      this.ctapClient = new Ctap1Client((Ctap1Session) session);
     } else {
       throw new IllegalArgumentException(
           "Unsupported session type: " + session.getClass().getName());
@@ -132,38 +114,8 @@ public class WebAuthnClient implements Closeable {
       @Nullable Integer enterpriseAttestation,
       @Nullable CommandState state)
       throws IOException, CommandException, ClientError {
-
-    if (delegateClient instanceof BasicWebAuthnClient) {
-      return ((BasicWebAuthnClient) delegateClient)
-          .makeCredential(clientData, options, effectiveDomain, pin, enterpriseAttestation, state);
-    } else if (delegateClient instanceof Ctap1Client) {
-      // CTAP1 doesn't support PIN or enterprise attestation
-      return ((Ctap1Client) delegateClient)
-          .makeCredential(clientData, options, effectiveDomain, state);
-    } else {
-      throw new IllegalStateException("Unknown delegate client type");
-    }
-  }
-
-  /**
-   * Create a new WebAuthn credential (simplified version without PIN or enterprise attestation).
-   *
-   * @param clientData The {@link ClientDataProvider} instance supplying client data for the request
-   * @param options The options for creating the credential
-   * @param effectiveDomain The effective domain for the request, used to validate the RP ID
-   * @param state If needed, the state to provide control over the ongoing operation
-   * @return A WebAuthn public key credential
-   * @throws IOException A communication error in the transport layer
-   * @throws CommandException A communication error in the protocol layer
-   * @throws ClientError A higher level error
-   */
-  public PublicKeyCredential makeCredential(
-      ClientDataProvider clientData,
-      PublicKeyCredentialCreationOptions options,
-      String effectiveDomain,
-      @Nullable CommandState state)
-      throws IOException, CommandException, ClientError {
-    return makeCredential(clientData, options, effectiveDomain, null, null, state);
+    return ctapClient.makeCredential(
+        clientData, options, effectiveDomain, pin, enterpriseAttestation, state);
   }
 
   /**
@@ -193,91 +145,23 @@ public class WebAuthnClient implements Closeable {
       char @Nullable [] pin,
       @Nullable CommandState state)
       throws MultipleAssertionsAvailable, IOException, CommandException, ClientError {
-
-    if (delegateClient instanceof BasicWebAuthnClient) {
-      return ((BasicWebAuthnClient) delegateClient)
-          .getAssertion(clientData, options, effectiveDomain, pin, state);
-    } else if (delegateClient instanceof Ctap1Client) {
-      // CTAP1 doesn't support PIN
-      return ((Ctap1Client) delegateClient)
-          .getAssertion(clientData, options, effectiveDomain, state);
-    } else {
-      throw new IllegalStateException("Unknown delegate client type");
-    }
+    return ctapClient.getAssertion(clientData, options, effectiveDomain, pin, state);
   }
 
   /**
-   * Authenticate an existing WebAuthn credential (simplified version without PIN).
+   * Returns the underlying CTAP client implementation.
    *
-   * @param clientData The {@link ClientDataProvider} instance supplying client data for the request
-   * @param options The options for the authentication request
-   * @param effectiveDomain The effective domain for the request, used to validate the RP ID
-   * @param state If needed, the state to provide control over the ongoing operation
-   * @return A WebAuthn public key credential with assertion
-   * @throws MultipleAssertionsAvailable Multiple discoverable credentials found (CTAP2 only)
-   * @throws IOException A communication error in the transport layer
-   * @throws CommandException A communication error in the protocol layer
-   * @throws ClientError A higher level error
+   * <p>This allows access to protocol-specific operations or advanced features not exposed by the
+   * unified {@link WebAuthnClient} API.
+   *
+   * @return the {@link CtapClient} instance used by this client
    */
-  public PublicKeyCredential getAssertion(
-      ClientDataProvider clientData,
-      PublicKeyCredentialRequestOptions options,
-      String effectiveDomain,
-      @Nullable CommandState state)
-      throws MultipleAssertionsAvailable, IOException, CommandException, ClientError {
-    return getAssertion(clientData, options, effectiveDomain, null, state);
-  }
-
-  /**
-   * Check if the underlying session is CTAP2.
-   *
-   * <p>This can be used to determine if CTAP2-specific features are available, such as PIN support,
-   * enterprise attestation, or discoverable credentials.
-   *
-   * @return true if the session is CTAP2, false if CTAP1
-   */
-  public boolean isCtap2() {
-    return delegateClient instanceof BasicWebAuthnClient;
-  }
-
-  /**
-   * Check if the underlying session is CTAP1.
-   *
-   * @return true if the session is CTAP1, false if CTAP2
-   */
-  public boolean isCtap1() {
-    return delegateClient instanceof Ctap1Client;
-  }
-
-  /**
-   * Get the underlying CTAP2 client if available.
-   *
-   * <p>This allows access to CTAP2-specific functionality such as PIN management, credential
-   * management, and bio enrollment.
-   *
-   * @return The BasicWebAuthnClient instance, or null if the session is CTAP1
-   */
-  @Nullable
-  public BasicWebAuthnClient getBasicWebAuthnClient() {
-    return delegateClient instanceof BasicWebAuthnClient
-        ? (BasicWebAuthnClient) delegateClient
-        : null;
-  }
-
-  /**
-   * Get the underlying CTAP1 client if available.
-   *
-   * @return The Ctap1Client instance, or null if the session is CTAP2
-   */
-  @Nullable
-  public Ctap1Client getCtap1Client() {
-    return delegateClient instanceof Ctap1Client ? (Ctap1Client) delegateClient : null;
+  public CtapClient getClient() {
+    return ctapClient;
   }
 
   @Override
   public void close() throws IOException {
-    if (delegateClient instanceof Closeable) {
-      ((Closeable) delegateClient).close();
-    }
+    ctapClient.close();
   }
 }

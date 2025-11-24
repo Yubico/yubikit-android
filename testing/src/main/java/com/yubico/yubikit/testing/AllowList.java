@@ -16,6 +16,7 @@
 
 package com.yubico.yubikit.testing;
 
+import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.UsbPid;
 import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.YubiKeyDevice;
@@ -103,6 +104,15 @@ public class AllowList {
       DeviceInfo deviceInfo = DeviceUtil.readInfo(connection, pid);
       Integer serial = deviceInfo.getSerialNumber();
       return serial != null ? serial : 0; // Return 0 if serial number is not available
+    } catch (IllegalArgumentException e) {
+      if (connection instanceof SmartCardConnection
+          && ((SmartCardConnection) connection).getTransport() == Transport.NFC) {
+        // This exception is thrown when readInfo fails to open Management Session
+        logger.warn("Using a security Key without serial number", e);
+        return 0;
+      }
+      logger.error("Error reading device info", e);
+      return null;
     } catch (IOException e) {
       logger.error("Error reading device info", e);
       return null;

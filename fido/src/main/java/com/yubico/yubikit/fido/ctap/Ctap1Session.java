@@ -133,17 +133,6 @@ public class Ctap1Session extends CtapSession {
   }
 
   /**
-   * Creates a new CTAP1 session from a FIDO connection.
-   *
-   * @param connection a FIDO HID connection
-   * @throws IOException if communication with the device fails
-   */
-  public Ctap1Session(FidoConnection connection) throws IOException {
-    this(new FidoProtocol(connection));
-    logger.debug("Ctap1Session initialized for FIDO connection");
-  }
-
-  /**
    * Creates a new CTAP1 session from a SmartCard connection.
    *
    * @param connection a SmartCard/NFC connection
@@ -152,6 +141,7 @@ public class Ctap1Session extends CtapSession {
    */
   public Ctap1Session(SmartCardConnection connection)
       throws IOException, ApplicationNotAvailableException {
+    super(connection);
     SmartCardProtocol protocol = new SmartCardProtocol(connection);
     // Select FIDO application - using the same AppId as CTAP2
     protocol.select(AppId.FIDO);
@@ -169,7 +159,15 @@ public class Ctap1Session extends CtapSession {
     logger.debug("Ctap1Session initialized for SmartCard connection");
   }
 
-  private Ctap1Session(FidoProtocol protocol) {
+  /**
+   * Creates a new CTAP1 session from a FIDO connection.
+   *
+   * @param connection a FIDO HID connection
+   * @throws IOException if communication with the device fails
+   */
+  public Ctap1Session(FidoConnection connection) throws IOException {
+    super(connection);
+    final FidoProtocol protocol = new FidoProtocol(connection);
     this.version = protocol.getVersion();
     this.backend =
         new Backend<FidoProtocol>(protocol) {

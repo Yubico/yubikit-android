@@ -58,6 +58,8 @@ public class Ctap1ClientTests {
                       TestData.CLIENT_DATA_JSON_CREATE_PROVIDER,
                       creationOptionsNonRk,
                       Objects.requireNonNull(creationOptionsNonRk.getRp().getId()),
+                      null,
+                      null,
                       null);
               AuthenticatorAttestationResponse responseNonRk =
                   (AuthenticatorAttestationResponse) pk.getResponse();
@@ -86,7 +88,11 @@ public class Ctap1ClientTests {
 
           PublicKeyCredential credential =
               ctap1Client.getAssertion(
-                  TestData.CLIENT_DATA_JSON_GET_PROVIDER, requestOptions, TestData.RP_ID, null);
+                  TestData.CLIENT_DATA_JSON_GET_PROVIDER,
+                  requestOptions,
+                  TestData.RP_ID,
+                  null,
+                  null);
           AuthenticatorAssertionResponse response =
               (AuthenticatorAssertionResponse) credential.getResponse();
           assertNotNull(

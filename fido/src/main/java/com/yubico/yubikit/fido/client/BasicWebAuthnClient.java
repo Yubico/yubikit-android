@@ -33,6 +33,7 @@ import com.yubico.yubikit.fido.client.extensions.MinPinLengthExtension;
 import com.yubico.yubikit.fido.ctap.ClientPin;
 import com.yubico.yubikit.fido.ctap.CredentialManagement;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
+import com.yubico.yubikit.fido.ctap.CtapSession;
 import com.yubico.yubikit.fido.ctap.PinUvAuthDummyProtocol;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV1;
@@ -50,7 +51,6 @@ import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialRequestOptions;
 import com.yubico.yubikit.fido.webauthn.ResidentKeyRequirement;
 import com.yubico.yubikit.fido.webauthn.SerializationType;
 import com.yubico.yubikit.fido.webauthn.UserVerificationRequirement;
-import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -82,7 +82,7 @@ import org.slf4j.LoggerFactory;
  * CommandState} instance to the call and use its cancel method.
  */
 @SuppressWarnings("unused")
-public class BasicWebAuthnClient implements Closeable {
+public class BasicWebAuthnClient implements CtapClient {
   private static final String OPTION_CLIENT_PIN = "clientPin";
   private static final String OPTION_USER_VERIFICATION = "uv";
   private static final String OPTION_BIO_ENROLLMENT = "bioEnroll";
@@ -149,7 +149,7 @@ public class BasicWebAuthnClient implements Closeable {
    *     extensions</a>
    */
   public BasicWebAuthnClient(Ctap2Session session) throws IOException, CommandException {
-    this(session, defaultExtensions);
+    this(session, null);
   }
 
   /**
@@ -158,7 +158,7 @@ public class BasicWebAuthnClient implements Closeable {
    * <p>This client will only process provided extensions.
    *
    * @param session CTAP2 session
-   * @param extensions List of extensions
+   * @param extensions List of extensions or null to use default extensions
    * @throws IOException A communication error in the transport layer
    * @throws CommandException A communication in the protocol layer
    * @see <a href="https://www.w3.org/TR/webauthn-3/#webauthn-client">Webauthn client</a>
@@ -167,10 +167,10 @@ public class BasicWebAuthnClient implements Closeable {
    *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html#sctn-defined-extensions">CTAP
    *     extensions</a>
    */
-  public BasicWebAuthnClient(Ctap2Session session, List<Extension> extensions)
+  public BasicWebAuthnClient(Ctap2Session session, @Nullable List<Extension> extensions)
       throws IOException, CommandException {
     this.ctap = session;
-    this.extensions = extensions;
+    this.extensions = extensions != null ? extensions : defaultExtensions;
 
     Ctap2Session.InfoData info = ctap.getInfo();
 
@@ -204,24 +204,20 @@ public class BasicWebAuthnClient implements Closeable {
     return userAgentConfiguration;
   }
 
+  @Override
+  public CtapSession getSession() {
+    return ctap;
+  }
+
   /**
    * Create a new WebAuthn credential.
    *
-   * <p>PIN is always required if a PIN is configured.
-   *
-   * @param clientData The {@link ClientDataProvider} instance supplying client data for the
-   *     request. If a provider that only supplies the hash is passed, the resulting credential will
-   *     contain an empty clientDataJSON in the response.
-   * @param options The options for creating the credential.
-   * @param effectiveDomain The effective domain for the request, which is used to validate the RP
-   *     ID against.
-   * @param pin If needed, the PIN to authorize the credential creation.
-   * @param state If needed, the state to provide control over the ongoing operation
    * @return A WebAuthn public key credential.
    * @throws IOException A communication error in the transport layer
    * @throws CommandException A communication in the protocol layer
    * @throws ClientError A higher level error
    */
+  @Override
   public PublicKeyCredential makeCredential(
       ClientDataProvider clientData,
       PublicKeyCredentialCreationOptions options,

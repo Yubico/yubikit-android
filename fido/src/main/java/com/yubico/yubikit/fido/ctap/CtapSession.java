@@ -33,25 +33,23 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class CtapSession extends ApplicationSession<CtapSession> {
 
+  protected final YubiKeyConnection connection;
   private static final Logger logger = LoggerFactory.getLogger(CtapSession.class);
 
+  protected CtapSession(YubiKeyConnection connection) {
+    this.connection = connection;
+  }
+
+  public YubiKeyConnection getConnection() {
+    return connection;
+  }
+
   /**
-   * Creates a CTAP session from a YubiKey connection.
+   * Creates a CTAP session from a YubiKey connection. Attempts CTAP2 first, then falls back to
+   * CTAP1.
    *
-   * <p>This method attempts to create a CTAP2 session first, and if that fails, falls back to
-   * CTAP1. The method tries both FidoConnection and SmartCardConnection types in order.
-   *
-   * <p>Priority order:
-   *
-   * <ol>
-   *   <li>CTAP2 over FidoConnection (if connection is FidoConnection)
-   *   <li>CTAP2 over SmartCardConnection (if connection is SmartCardConnection)
-   *   <li>CTAP1 over FidoConnection (if connection is FidoConnection)
-   *   <li>CTAP1 over SmartCardConnection (if connection is SmartCardConnection)
-   * </ol>
-   *
-   * @param connection The YubiKey connection (FidoConnection or SmartCardConnection)
-   * @return A CtapSession instance (either Ctap2Session or Ctap1Session)
+   * @param connection The YubiKey connection
+   * @return A CtapSession instance, or null if not available
    * @throws IOException if communication with the device fails
    * @throws IllegalArgumentException if the connection type is not supported
    */
@@ -78,9 +76,14 @@ public abstract class CtapSession extends ApplicationSession<CtapSession> {
       throws IOException, ApplicationNotAvailableException, IllegalArgumentException {
     CtapSession ctap2Session = Ctap2Session.create(connection, scpKeyParams);
     if (ctap2Session != null) {
+      logger.debug("Created CTAP2 session");
       return ctap2Session;
     }
 
-    return Ctap1Session.create(connection);
+    CtapSession ctap1Session = Ctap1Session.create(connection);
+    if (ctap1Session != null) {
+      logger.debug("Created CTAP1 session");
+    }
+    return ctap1Session;
   }
 }
