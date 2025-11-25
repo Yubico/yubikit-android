@@ -85,6 +85,7 @@ import org.slf4j.LoggerFactory;
 public class BasicWebAuthnClient implements CtapClient {
   private static final String OPTION_CLIENT_PIN = "clientPin";
   private static final String OPTION_USER_VERIFICATION = "uv";
+  private static final String OPTION_USER_PRESENCE = "up";
   private static final String OPTION_BIO_ENROLLMENT = "bioEnroll";
   private static final String OPTION_RESIDENT_KEY = "rk";
   private static final String OPTION_EP = "ep";
@@ -750,12 +751,15 @@ public class BasicWebAuthnClient implements CtapClient {
       throws IOException, CommandException, ClientError {
     final Ctap2Session.InfoData info = ctap.getCachedInfo();
 
-    if (uvConfigured && clientPin.getUvRetries() > 0) {
+    if (uvConfigured && pin == null) {
       if (ClientPin.isTokenSupported(info)) {
-        return clientPin.getUvToken(permissions, rpId, state);
-      } else if (allowInternalUv) {
-        return null;
+        if (clientPin.getUvRetries() > 0) {
+          return clientPin.getUvToken(permissions, rpId, state);
+        } else if (allowInternalUv) {
+          return null;
+        }
       }
+      return null;
     }
 
     if (pinConfigured) {
@@ -860,14 +864,18 @@ public class BasicWebAuthnClient implements CtapClient {
       byte[] clientDataHash = new byte[32];
       Arrays.fill(clientDataHash, (byte) 0x00);
 
+      Map<String, Boolean> options = new HashMap<>();
+      options.put(OPTION_USER_PRESENCE, false);
+
       byte[] pinAuth = null;
       Integer pinUvAuthVersion = null;
       if (pinUvAuthToken != null && pinUvAuthProtocol != null) {
         pinAuth = pinUvAuthProtocol.authenticate(pinUvAuthToken, clientDataHash);
         pinUvAuthVersion = pinUvAuthProtocol.getVersion();
+      } else {
+        options.put(OPTION_USER_VERIFICATION, true);
       }
 
-      final Map<String, Boolean> upFalse = Collections.singletonMap("up", false);
       while (!creds.isEmpty()) {
         logger.trace("Pre-flighting list of {} credentials", creds.size());
         final List<PublicKeyCredentialDescriptor> chunk =
@@ -879,7 +887,7 @@ public class BasicWebAuthnClient implements CtapClient {
                   clientDataHash,
                   getCredentialList(chunk),
                   null,
-                  upFalse,
+                  options,
                   pinAuth,
                   pinUvAuthVersion,
                   null);
