@@ -17,7 +17,6 @@
 package com.yubico.yubikit.mpe;
 
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assume.assumeNotNull;
 import static org.junit.Assume.assumeTrue;
 
 import com.yubico.yubikit.TestState;
@@ -89,7 +88,7 @@ public class MpeTestState extends TestState {
       throws Throwable {
     try (YubiKeyConnection connection = openConnection()) {
       final Ctap2Session ctap2 = Ctap2Session.create(connection, scpParameters.getKeyParams());
-      assumeNotNull("No CTAP2 support", ctap2);
+      assumeTrue("No CTAP2 support", ctap2 != null);
       callback.invoke(ctap2, this);
     }
     reconnect();

@@ -20,6 +20,9 @@ import com.yubico.yubikit.core.Version;
 import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
+import com.yubico.yubikit.core.application.BadResponseException;
+import com.yubico.yubikit.core.application.CommandState;
+import com.yubico.yubikit.core.fido.CtapException;
 import com.yubico.yubikit.core.fido.FidoConnection;
 import com.yubico.yubikit.core.fido.FidoProtocol;
 import com.yubico.yubikit.core.keys.EllipticCurveValues;
@@ -30,11 +33,11 @@ import com.yubico.yubikit.core.smartcard.AppId;
 import com.yubico.yubikit.core.smartcard.SW;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.smartcard.SmartCardProtocol;
+import com.yubico.yubikit.core.smartcard.scp.ScpKeyParams;
 import com.yubico.yubikit.core.util.Callback;
 import com.yubico.yubikit.core.util.Result;
 import com.yubico.yubikit.core.util.Tlv;
 import com.yubico.yubikit.core.util.Tlvs;
-import com.yubico.yubikit.fido.client.ClientError;
 import com.yubico.yubikit.fido.webauthn.AttestationObject;
 import com.yubico.yubikit.fido.webauthn.AttestedCredentialData;
 import com.yubico.yubikit.fido.webauthn.AuthenticatorData;
@@ -76,15 +79,12 @@ import org.slf4j.LoggerFactory;
  *     U2F HID Protocol Specification</a>
  */
 public class Ctap1Session extends CtapSession {
-
-  private static final byte CLA = 0x00;
   private static final byte INS_REGISTER = 0x01;
   private static final byte INS_AUTHENTICATE = 0x02;
   private static final byte INS_VERSION = 0x03;
 
-  public static final byte P1_CHECK_ONLY = 0x07;
-  public static final byte P1_ENFORCE_USER_PRESENCE = 0x03;
-
+  private static final byte P1_CHECK_ONLY = 0x07;
+  private static final byte P1_ENFORCE_USER_PRESENCE = 0x03;
   private static final org.slf4j.Logger logger = LoggerFactory.getLogger(Ctap1Session.class);
 
   private final Backend<?> backend;
@@ -97,7 +97,9 @@ public class Ctap1Session extends CtapSession {
    * @param callback a callback to invoke with the session
    */
   public static void create(
-      YubiKeyDevice device, Callback<Result<CtapSession, Exception>> callback) {
+      YubiKeyDevice device,
+      @Nullable ScpKeyParams scpKeyParams,
+      Callback<Result<CtapSession, Exception>> callback) {
     if (device.supportsConnection(FidoConnection.class)) {
       device.requestConnection(
           FidoConnection.class,
@@ -105,7 +107,8 @@ public class Ctap1Session extends CtapSession {
     } else if (device.supportsConnection(SmartCardConnection.class)) {
       device.requestConnection(
           SmartCardConnection.class,
-          value -> callback.invoke(Result.of(() -> new Ctap1Session(value.getValue()))));
+          value ->
+              callback.invoke(Result.of(() -> new Ctap1Session(value.getValue(), scpKeyParams))));
     } else {
       callback.invoke(
           Result.failure(
@@ -140,6 +143,11 @@ public class Ctap1Session extends CtapSession {
     }
   }
 
+  public Ctap1Session(SmartCardConnection connection)
+      throws IOException, ApplicationNotAvailableException {
+    this(connection, null);
+  }
+
   /**
    * Creates a new CTAP1 session from a SmartCard connection.
    *
@@ -147,23 +155,13 @@ public class Ctap1Session extends CtapSession {
    * @throws IOException if communication with the device fails
    * @throws ApplicationNotAvailableException if the FIDO application is not available
    */
-  public Ctap1Session(SmartCardConnection connection)
+  public Ctap1Session(SmartCardConnection connection, @Nullable ScpKeyParams scpKeyParams)
       throws IOException, ApplicationNotAvailableException {
-    super(connection);
     SmartCardProtocol protocol = new SmartCardProtocol(connection);
-    // Select FIDO application - using the same AppId as CTAP2
-    protocol.select(AppId.FIDO);
 
     // CTAP1 doesn't have version information accessible via NFC
     this.version = new Version(0, 0, 0);
-    this.backend =
-        new Backend<SmartCardProtocol>(protocol) {
-          @Override
-          byte[] sendApdu(byte ins, byte p1, byte[] data) throws IOException, ApduException {
-            Apdu apdu = new Apdu(CLA, ins, p1, 0, data);
-            return delegate.sendAndReceive(apdu);
-          }
-        };
+    this.backend = getSmartCardProtocolBackend(protocol, scpKeyParams);
     logger.debug("Ctap1Session initialized for SmartCard connection");
   }
 
@@ -174,48 +172,16 @@ public class Ctap1Session extends CtapSession {
    * @throws IOException if communication with the device fails
    */
   public Ctap1Session(FidoConnection connection) throws IOException {
-    super(connection);
-    final FidoProtocol protocol = new FidoProtocol(connection);
-    this.version = protocol.getVersion();
-    this.backend =
-        new Backend<FidoProtocol>(protocol) {
-          private static final byte CTAPHID_MSG = (byte) 0x83;
+    this(new FidoProtocol(connection));
+  }
 
-          @Override
-          byte[] sendApdu(byte ins, byte p1, byte[] data) throws IOException, ApduException {
-            ByteBuffer buffer =
-                ByteBuffer.allocate(9 + data.length)
-                    .put(CLA)
-                    .put(ins)
-                    .put(p1)
-                    .put((byte) 0)
-                    .put((byte) 0) // Extended length Lc high byte
-                    .putShort((short) data.length)
-                    .put(data)
-                    .put((byte) 0) // Le high
-                    .put((byte) 0); // Le low (256 bytes expected)
+  public Ctap1Session(FidoProtocol protocol) {
+    this(protocol.getVersion(), new FidoBackend(protocol));
+  }
 
-            byte[] response = delegate.sendAndReceive(CTAPHID_MSG, buffer.array(), null);
-
-            // Check status word (last 2 bytes)
-            if (response.length < 2) {
-              throw new IOException("Response too short");
-            }
-
-            short sw =
-                (short)
-                    (((response[response.length - 2] & 0xFF) << 8)
-                        | (response[response.length - 1] & 0xFF));
-            byte[] responseData = new byte[response.length - 2];
-            System.arraycopy(response, 0, responseData, 0, responseData.length);
-
-            if (sw != SW.OK) {
-              throw new ApduException(responseData, sw);
-            }
-
-            return responseData;
-          }
-        };
+  Ctap1Session(Version version, Backend<?> backend) {
+    this.version = version;
+    this.backend = backend;
   }
 
   @Override
@@ -237,26 +203,14 @@ public class Ctap1Session extends CtapSession {
   }
 
   /**
-   * Sends an APDU command and receives the response. This is a low-level method mainly used
-   * internally.
-   *
-   * @return the response data
-   * @throws IOException if communication fails
-   * @throws ApduException if the command returns an error status
-   */
-  private byte[] sendApdu(byte ins, int p1, byte[] data) throws IOException, ApduException {
-    return backend.sendApdu(ins, (byte) (p1 & 0xff), data);
-  }
-
-  /**
    * Gets the U2F version implemented by the authenticator. The only version specified is "U2F_V2".
    *
    * @return a U2F version string
    * @throws IOException if communication fails
    * @throws ApduException if the command returns an error status
    */
-  public String getU2fVersion() throws IOException, ApduException {
-    byte[] response = sendApdu(INS_VERSION, 0, new byte[0]);
+  public String getU2fVersion() throws IOException, ApduException, CtapException {
+    byte[] response = backend.sendApdu(INS_VERSION, (byte) 0, new byte[0], null);
     return new String(response, StandardCharsets.UTF_8);
   }
 
@@ -272,8 +226,10 @@ public class Ctap1Session extends CtapSession {
    *     href="https://fidoalliance.org/specs/fido-u2f-v1.2-ps-20170411/fido-u2f-raw-message-formats-v1.2-ps-20170411.html#registration-messages">Registration
    *     Messages</a>
    */
-  public RegistrationData register(byte[] clientParam, byte[] appParam)
-      throws IOException, ApduException {
+  public RegistrationData register(
+      byte[] clientParam, byte[] appParam, @Nullable CommandState state)
+      throws IOException, ApduException, CtapException {
+
     if (clientParam.length != 32) {
       throw new IllegalArgumentException("clientParam must be 32 bytes");
     }
@@ -284,7 +240,7 @@ public class Ctap1Session extends CtapSession {
     ByteBuffer buffer =
         ByteBuffer.allocate(clientParam.length + appParam.length).put(clientParam).put(appParam);
 
-    byte[] response = sendApdu(INS_REGISTER, 0, buffer.array());
+    byte[] response = backend.sendApdu(INS_REGISTER, (byte) 0, buffer.array(), state);
     return new RegistrationData(response);
   }
 
@@ -303,8 +259,12 @@ public class Ctap1Session extends CtapSession {
    *     Messages</a>
    */
   public SignatureData authenticate(
-      byte[] clientParam, byte[] appParam, byte[] keyHandle, boolean checkOnly)
-      throws IOException, ApduException, ClientError {
+      byte[] clientParam,
+      byte[] appParam,
+      byte[] keyHandle,
+      boolean checkOnly,
+      @Nullable CommandState state)
+      throws IOException, ApduException, CtapException {
     if (clientParam.length != 32) {
       throw new IllegalArgumentException("clientParam must be 32 bytes");
     }
@@ -319,27 +279,105 @@ public class Ctap1Session extends CtapSession {
             .put((byte) keyHandle.length)
             .put(keyHandle);
     byte p1 = checkOnly ? P1_CHECK_ONLY : P1_ENFORCE_USER_PRESENCE;
+    byte[] response = backend.sendApdu(INS_AUTHENTICATE, p1, buffer.array(), state);
+    return new SignatureData(response);
+  }
 
-    try {
-      byte[] response = sendApdu(INS_AUTHENTICATE, p1, buffer.array());
-      return new SignatureData(response);
-    } catch (ApduException e) {
+  abstract static class Backend<T extends Closeable> implements Closeable {
+    protected final T delegate;
 
-      if (checkOnly && e.getSw() == SW.CONDITIONS_NOT_SATISFIED) {
-        // 0x07 ("check-only"): if the control byte is set to 0x07 by the FIDO Client, the U2F token
-        // is supposed to simply check whether the provided key handle was originally created by
-        // this token, and whether it was created for the provided application parameter. If so, the
-        // U2F token MUST respond with an authentication response
-        // message:error:test-of-user-presence-required (note that despite the name this signals a
-        // success condition). If the key handle was not created by this U2F token, or if it was
-        // created for a different application parameter, the token MUST respond with an
-        // authentication response message:error:bad-key-handle.
-        throw new ClientError(
-            ClientError.Code.DEVICE_INELIGIBLE, "Credential in exclude list already registered");
+    protected Backend(T delegate) {
+      this.delegate = delegate;
+    }
+
+    abstract byte[] sendApdu(byte ins, byte p1, byte[] data, @Nullable CommandState state)
+        throws IOException, ApduException, CtapException;
+
+    @Override
+    public void close() throws IOException {
+      delegate.close();
+    }
+  }
+
+  static class SmartCardBackend extends Backend<SmartCardProtocol> {
+    protected SmartCardBackend(SmartCardProtocol delegate) {
+      super(delegate);
+    }
+
+    @Override
+    public byte[] sendApdu(byte ins, byte p1, byte[] data, @Nullable CommandState state)
+        throws IOException, ApduException {
+      return delegate.sendAndReceive(new Apdu(0x00, ins, p1, 0x00, data));
+    }
+  }
+
+  static class FidoBackend extends Backend<FidoProtocol> {
+    final byte CLA = 0x00;
+    final byte CTAPHID_MSG = (byte) 0x83;
+
+    private final CommandState defaultState = new CommandState();
+
+    protected FidoBackend(FidoProtocol delegate) {
+      super(delegate);
+    }
+
+    @Override
+    public byte[] sendApdu(byte ins, byte p1, byte[] data, @Nullable CommandState state)
+        throws IOException, ApduException, CtapException {
+      state = state != null ? state : defaultState;
+      ByteBuffer buffer =
+          ByteBuffer.allocate(9 + data.length)
+              .put(CLA)
+              .put(ins)
+              .put(p1)
+              .put((byte) 0)
+              .put((byte) 0) // Extended length Lc high byte
+              .putShort((short) data.length)
+              .put(data)
+              .put((byte) 0) // Le high
+              .put((byte) 0); // Le low (256 bytes expected)
+
+      // handle cancellation
+      if (state.waitForCancel(0)) {
+        throw new CtapException(CtapException.ERR_KEEPALIVE_CANCEL);
       }
 
-      throw e;
+      byte[] response = delegate.sendAndReceive(CTAPHID_MSG, buffer.array(), null);
+
+      // Check status word (last 2 bytes)
+      if (response.length < 2) {
+        throw new IOException("Response too short");
+      }
+
+      short sw =
+          (short)
+              (((response[response.length - 2] & 0xFF) << 8)
+                  | (response[response.length - 1] & 0xFF));
+      byte[] responseData = new byte[response.length - 2];
+      System.arraycopy(response, 0, responseData, 0, responseData.length);
+
+      if (sw != SW.OK) {
+        throw new ApduException(responseData, sw);
+      }
+
+      return responseData;
     }
+  }
+
+  private static Backend<SmartCardProtocol> getSmartCardProtocolBackend(
+      SmartCardProtocol protocol, @Nullable ScpKeyParams scpKeyParams)
+      throws IOException, ApplicationNotAvailableException {
+
+    protocol.select(AppId.FIDO);
+    protocol.configure(new Version(4, 0, 0));
+    if (scpKeyParams != null) {
+      try {
+        protocol.initScp(scpKeyParams);
+      } catch (BadResponseException | ApduException e) {
+        throw new IllegalStateException(e);
+      }
+    }
+    return new SmartCardBackend(protocol);
   }
 
   /**
@@ -713,20 +751,5 @@ public class Ctap1Session extends CtapSession {
         throw new InvalidKeyException("Failed to parse public key", e);
       }
     }
-  }
-
-  private abstract static class Backend<T extends Closeable> implements Closeable {
-    protected final T delegate;
-
-    private Backend(T delegate) {
-      this.delegate = delegate;
-    }
-
-    @Override
-    public void close() throws IOException {
-      delegate.close();
-    }
-
-    abstract byte[] sendApdu(byte ins, byte p1, byte[] data) throws IOException, ApduException;
   }
 }

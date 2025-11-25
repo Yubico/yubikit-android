@@ -19,6 +19,7 @@ package com.yubico.yubikit.fido.client;
 import static com.yubico.yubikit.fido.client.Utils.hash;
 
 import com.yubico.yubikit.core.application.CommandState;
+import com.yubico.yubikit.core.fido.CtapException;
 import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.core.smartcard.SW;
 import com.yubico.yubikit.fido.client.clientdata.ClientDataProvider;
@@ -46,7 +47,6 @@ import org.jspecify.annotations.Nullable;
 
 public class Ctap1Client implements CtapClient {
   private final Ctap1Session ctap1;
-  private final CommandState defaultState = new CommandState();
 
   public Ctap1Client(Ctap1Session session) {
     this.ctap1 = session;
@@ -57,6 +57,19 @@ public class Ctap1Client implements CtapClient {
     return ctap1;
   }
 
+  /**
+   * Creates a new credential using the CTAP protocol.
+   *
+   * @param clientData provider for client data
+   * @param options options for credential creation
+   * @param effectiveDomain effective domain for RP ID validation
+   * @param pin ignored
+   * @param enterpriseAttestation ignored
+   * @param state optional command state for operation control
+   * @return a {@link PublicKeyCredential} representing the created credential
+   * @throws IOException if a transport error occurs
+   * @throws ClientError for higher-level client errors
+   */
   @Override
   public PublicKeyCredential makeCredential(
       ClientDataProvider clientData,
@@ -117,9 +130,23 @@ public class Ctap1Client implements CtapClient {
         byte[] dummy = new byte[32];
         for (PublicKeyCredentialDescriptor cred : excludeList) {
           try {
-            callPolling(() -> ctap1.authenticate(dummy, appParam, cred.getId(), true), state);
-          } catch (ClientError e) {
-            throw e;
+            ctap1.authenticate(dummy, appParam, cred.getId(), true, state);
+            // Should not succeed
+            throw new ClientError(
+                ClientError.Code.OTHER_ERROR,
+                "Authentication should not succeed for excluded credential");
+          } catch (ApduException e) {
+            if (e.getSw() == SW.CONDITIONS_NOT_SATISFIED) {
+              try {
+                callPolling(() -> ctap1.register(dummy, dummy, state));
+              } catch (Exception ex) {
+                throw new ClientError(ClientError.Code.OTHER_ERROR, e);
+              }
+              throw new ClientError(ClientError.Code.DEVICE_INELIGIBLE, e);
+            }
+            throw convertApduException(e);
+          } catch (CtapException e) {
+            throw ClientError.wrapCtapException(e);
           } catch (Exception e) {
             throw new IOException(e);
           }
@@ -131,10 +158,12 @@ public class Ctap1Client implements CtapClient {
 
       Ctap1Session.RegistrationData regData;
       try {
-        regData = callPolling(() -> ctap1.register(clientDataHash, appParam), state);
+        regData = callPolling(() -> ctap1.register(clientDataHash, appParam, state));
+      } catch (CtapException e) {
+        throw ClientError.wrapCtapException(e);
+      } catch (ApduException | ClientError e) {
+        throw e;
       } catch (Exception e) {
-        if (e instanceof ClientError) throw (ClientError) e;
-        if (e instanceof ApduException) throw (ApduException) e;
         throw new IOException(e);
       }
 
@@ -149,6 +178,18 @@ public class Ctap1Client implements CtapClient {
     }
   }
 
+  /**
+   * Performs an assertion (authentication) using the CTAP protocol.
+   *
+   * @param clientData provider for client data
+   * @param options options for the assertion request
+   * @param effectiveDomain effective domain for RP ID validation
+   * @param pin ignored
+   * @param state optional command state for operation control
+   * @return a {@link PublicKeyCredential} containing the assertion result
+   * @throws IOException if a transport error occurs
+   * @throws ClientError for higher-level client errors
+   */
   @Override
   public PublicKeyCredential getAssertion(
       ClientDataProvider clientData,
@@ -178,8 +219,9 @@ public class Ctap1Client implements CtapClient {
         try {
           Ctap1Session.SignatureData sigData =
               callPolling(
-                  () -> ctap1.authenticate(clientDataHash, appParam, descriptor.getId(), false),
-                  state);
+                  () ->
+                      ctap1.authenticate(
+                          clientDataHash, appParam, descriptor.getId(), false, state));
           ByteBuffer authDataBuffer =
               ByteBuffer.allocate(appParam.length + 1 + 4)
                   .put(appParam)
@@ -218,30 +260,29 @@ public class Ctap1Client implements CtapClient {
     ctap1.close();
   }
 
-  /**
-   * Polling utility for CTAP1 operations. Retries the callable on CONDITIONS_NOT_SATISFIED.
-   * Cancellable through provided CommandState
-   */
-  private <T> T callPolling(Callable<T> func, @Nullable CommandState state) throws Exception {
+  /** Polling utility for CTAP1 operations. Retries the callable on CONDITIONS_NOT_SATISFIED. */
+  private <T> T callPolling(Callable<T> func) throws Exception {
     final int POLL_INTERVAL = 250;
-    boolean keepaliveSent = false;
-    state = state == null ? defaultState : state;
-    do {
+    Exception lastError = null;
+    while (lastError == null) {
       try {
         return func.call();
       } catch (ApduException e) {
         if (e.getSw() == SW.CONDITIONS_NOT_SATISFIED) {
-          if (!keepaliveSent) {
-            state.onKeepAliveStatus(CommandState.STATUS_UPNEEDED);
-            keepaliveSent = true;
+          synchronized (this) {
+            try {
+              wait(POLL_INTERVAL);
+            } catch (InterruptedException interruptedException) {
+              Thread.currentThread().interrupt();
+              lastError = interruptedException;
+            }
           }
         } else {
-          throw new ClientError(ClientError.Code.OTHER_ERROR, e);
+          lastError = e;
         }
       }
-    } while (!state.waitForCancel(POLL_INTERVAL));
-
-    throw new ClientError(ClientError.Code.TIMEOUT, "Time out");
+    }
+    throw new ClientError(ClientError.Code.OTHER_ERROR, lastError);
   }
 
   private static ClientError convertApduException(ApduException e) {

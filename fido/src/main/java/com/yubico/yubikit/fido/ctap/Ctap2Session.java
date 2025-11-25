@@ -64,15 +64,7 @@ import org.slf4j.LoggerFactory;
  *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html">Client
  *     to Authenticator Protocol (CTAP)</a>
  */
-public class Ctap2Session extends CtapSession {
-
-  private static final byte NFCCTAP_MSG = 0x10;
-  private static final byte NFCCTAP_GETRESPONSE = 0x11;
-  private static final byte P1_GET_RESPONSE = (byte) 0x80;
-  private static final byte P1_KEEP_ALIVE = 0x00;
-  private static final byte P1_CANCEL_KEEP_ALIVE = 0x11;
-  private static final short SW_GETRESPONSE_OK = (short) 0x9100;
-
+public class Ctap2Session extends Ctap1Session {
   private static final byte CMD_MAKE_CREDENTIAL = 0x01;
   private static final byte CMD_GET_ASSERTION = 0x02;
   private static final byte CMD_GET_INFO = 0x04;
@@ -88,7 +80,7 @@ public class Ctap2Session extends CtapSession {
   private static final byte CMD_CREDENTIAL_MANAGEMENT_PRE = 0x41;
 
   private final Version version;
-  private final Backend<?> backend;
+  private final Backend<?, ?> backend;
   private final InfoData info;
   @Nullable private final Byte credentialManagerCommand;
   @Nullable private final Byte bioEnrollmentCommand;
@@ -102,7 +94,9 @@ public class Ctap2Session extends CtapSession {
    * @param callback a callback to invoke with the session
    */
   public static void create(
-      YubiKeyDevice device, Callback<Result<CtapSession, Exception>> callback) {
+      YubiKeyDevice device,
+      @Nullable ScpKeyParams scpKeyParams,
+      Callback<Result<CtapSession, Exception>> callback) {
     if (device.supportsConnection(FidoConnection.class)) {
       device.requestConnection(
           FidoConnection.class,
@@ -110,7 +104,8 @@ public class Ctap2Session extends CtapSession {
     } else if (device.supportsConnection(SmartCardConnection.class)) {
       device.requestConnection(
           SmartCardConnection.class,
-          value -> callback.invoke(Result.of(() -> new Ctap2Session(value.getValue()))));
+          value ->
+              callback.invoke(Result.of(() -> new Ctap2Session(value.getValue(), scpKeyParams))));
     } else {
       callback.invoke(
           Result.failure(
@@ -166,24 +161,18 @@ public class Ctap2Session extends CtapSession {
   public Ctap2Session(
       SmartCardConnection connection, Version version, @Nullable ScpKeyParams scpKeyParams)
       throws IOException, CommandException {
-    this(connection, version, getSmartCardBackend(connection, scpKeyParams));
-    logger.debug(
-        "Ctap2Session session initialized for connection={}, version={}",
-        connection.getClass().getSimpleName(),
-        version);
+    this(version, getCtap2SmartCardBackend(new SmartCardProtocol(connection), scpKeyParams));
+    logger.debug("Ctap2Session session initialized for SmartCardConnection, version={}", version);
   }
 
   public Ctap2Session(FidoConnection connection) throws IOException, CommandException {
-    this(connection, new FidoProtocol(connection));
-    logger.debug(
-        "Ctap2Session session initialized for connection={}, version={}",
-        connection.getClass().getSimpleName(),
-        version);
+    this(new FidoProtocol(connection));
+    logger.debug("Ctap2Session session initialized for FidoConnection, version={}", version);
   }
 
-  private Ctap2Session(YubiKeyConnection connection, Version version, Backend<?> backend)
+  private Ctap2Session(Version version, Backend<?, ?> backend)
       throws IOException, CommandException {
-    super(connection);
+    super(version, backend);
     this.version = version;
     this.backend = backend;
     this.info = getInfo();
@@ -208,70 +197,8 @@ public class Ctap2Session extends CtapSession {
     }
   }
 
-  private static Backend<SmartCardProtocol> getSmartCardBackend(
-      SmartCardConnection connection, @Nullable ScpKeyParams scpKeyParams)
-      throws IOException, ApplicationNotAvailableException {
-    final SmartCardProtocol protocol = new SmartCardProtocol(connection);
-    protocol.select(AppId.FIDO);
-    if (scpKeyParams != null) {
-      try {
-        protocol.initScp(scpKeyParams);
-      } catch (BadResponseException | ApduException e) {
-        throw new IllegalStateException(e);
-      }
-    }
-    return new Backend<SmartCardProtocol>(protocol) {
-      private final CommandState defaultState = new CommandState();
-
-      byte[] sendCbor(byte[] data, @Nullable CommandState state)
-          throws IOException, CommandException {
-
-        int ins = NFCCTAP_MSG;
-        int p1 = P1_GET_RESPONSE;
-        int lastKeepAliveStatus = 0;
-
-        state = state != null ? state : defaultState;
-
-        while (true) {
-          try {
-            return delegate.sendAndReceive(new Apdu(0x80, ins, p1, 0x00, data));
-          } catch (ApduException apduException) {
-            if (SW_GETRESPONSE_OK != apduException.getSw()) {
-              throw apduException;
-            }
-
-            // Handle SW_GETRESPONSE_OK (0x9100)
-            ins = NFCCTAP_GETRESPONSE;
-            p1 = P1_KEEP_ALIVE;
-            final byte keepAliveStatus = apduException.getData()[0];
-
-            // check for cancellations
-            if (lastKeepAliveStatus != keepAliveStatus) {
-              lastKeepAliveStatus = keepAliveStatus;
-              state.onKeepAliveStatus(keepAliveStatus);
-            }
-            if (state.waitForCancel(100)) {
-              logger.trace("NFCCTAP_GETRESPONSE cancelled");
-              p1 = P1_CANCEL_KEEP_ALIVE;
-            }
-          }
-        }
-      }
-    };
-  }
-
-  private Ctap2Session(FidoConnection connection, FidoProtocol protocol)
-      throws IOException, CommandException {
-    this(
-        connection,
-        protocol.getVersion(),
-        new Backend<FidoProtocol>(protocol) {
-          @Override
-          byte[] sendCbor(byte[] data, @Nullable CommandState state) throws IOException {
-            byte CTAPHID_CBOR = (byte) 0x80 | 0x10;
-            return delegate.sendAndReceive(CTAPHID_CBOR, data, state);
-          }
-        });
+  private Ctap2Session(FidoProtocol protocol) throws IOException, CommandException {
+    this(protocol.getVersion(), getCtap2FidoBackend(protocol));
   }
 
   /** Packs a list of objects into a 1-indexed map, discarding any null values. */
@@ -663,6 +590,30 @@ public class Ctap2Session extends CtapSession {
   }
 
   /**
+   * Authenticates a previously registered CTAP1 credential.
+   *
+   * @param clientParam SHA256 hash of the ClientData used for the request
+   * @param appParam SHA256 hash of the app ID used for the request
+   * @param keyHandle the binary key handle of the credential
+   * @param checkOnly true to send a "check-only" request to determine if a key handle is known
+   * @return the authentication response from the authenticator
+   * @throws IOException if communication fails
+   * @throws ApduException if the command returns an error status
+   * @see <a
+   *     href="https://fidoalliance.org/specs/fido-u2f-v1.2-ps-20170411/fido-u2f-raw-message-formats-v1.2-ps-20170411.html#authentication-messages">Authentication
+   *     Messages</a>
+   */
+  public SignatureData authenticate(
+      byte[] clientParam,
+      byte[] appParam,
+      byte[] keyHandle,
+      boolean checkOnly,
+      @Nullable CommandState state)
+      throws ApduException, IOException {
+    return authenticate(clientParam, appParam, keyHandle, checkOnly, state);
+  }
+
+  /**
    * This command is used to configure various authenticator features through the use of its
    * subcommands.
    *
@@ -706,22 +657,6 @@ public class Ctap2Session extends CtapSession {
 
   public InfoData getCachedInfo() {
     return info;
-  }
-
-  private abstract static class Backend<T extends Closeable> implements Closeable {
-    protected final T delegate;
-
-    private Backend(T delegate) {
-      this.delegate = delegate;
-    }
-
-    @Override
-    public void close() throws IOException {
-      delegate.close();
-    }
-
-    abstract byte[] sendCbor(byte[] data, @Nullable CommandState state)
-        throws IOException, CommandException;
   }
 
   /**
@@ -1666,5 +1601,106 @@ public class Ctap2Session extends CtapSession {
       }
       return credentialId;
     }
+  }
+
+  abstract static class Backend<T extends Closeable, R extends Ctap1Session.Backend<T>>
+      extends Ctap1Session.Backend<T> {
+    protected final R backend;
+
+    protected Backend(T delegate, R backend) {
+      super(delegate);
+      this.backend = backend;
+    }
+
+    @Override
+    byte[] sendApdu(byte ins, byte p1, byte[] data, @Nullable CommandState state)
+        throws IOException, ApduException, CtapException {
+      return backend.sendApdu(ins, p1, data, state);
+    }
+
+    abstract byte[] sendCbor(byte[] data, @Nullable CommandState state)
+        throws IOException, CommandException;
+  }
+
+  static class SmartCardBackend extends Backend<SmartCardProtocol, Ctap1Session.SmartCardBackend> {
+    private final CommandState defaultState = new CommandState();
+
+    protected SmartCardBackend(SmartCardProtocol delegate, Ctap1Session.SmartCardBackend b) {
+      super(delegate, b);
+    }
+
+    @Override
+    public byte[] sendCbor(byte[] data, @Nullable CommandState state)
+        throws IOException, CommandException {
+
+      final byte NFCCTAP_MSG = 0x10;
+      final byte NFCCTAP_GETRESPONSE = 0x11;
+      final byte P1_GET_RESPONSE = (byte) 0x80;
+      final short SW_GETRESPONSE_OK = (short) 0x9100;
+      final byte P1_KEEP_ALIVE = 0x00;
+      final byte P1_CANCEL_KEEP_ALIVE = 0x11;
+
+      int ins = NFCCTAP_MSG;
+      int p1 = P1_GET_RESPONSE;
+      int lastKeepAliveStatus = 0;
+
+      state = state != null ? state : defaultState;
+
+      while (true) {
+        try {
+          return delegate.sendAndReceive(new Apdu(0x80, ins, p1, 0x00, data));
+        } catch (ApduException apduException) {
+          if (SW_GETRESPONSE_OK != apduException.getSw()) {
+            throw apduException;
+          }
+
+          // Handle SW_GETRESPONSE_OK (0x9100)
+          ins = NFCCTAP_GETRESPONSE;
+          p1 = P1_KEEP_ALIVE;
+          final byte keepAliveStatus = apduException.getData()[0];
+
+          // check for cancellations
+          if (lastKeepAliveStatus != keepAliveStatus) {
+            lastKeepAliveStatus = keepAliveStatus;
+            state.onKeepAliveStatus(keepAliveStatus);
+          }
+          if (state.waitForCancel(100)) {
+            logger.trace("NFCCTAP_GETRESPONSE cancelled");
+            p1 = P1_CANCEL_KEEP_ALIVE;
+          }
+        }
+      }
+    }
+  }
+
+  static class FidoBackend extends Backend<FidoProtocol, Ctap1Session.FidoBackend> {
+
+    protected FidoBackend(FidoProtocol delegate, Ctap1Session.FidoBackend backend) {
+      super(delegate, backend);
+    }
+
+    @Override
+    byte[] sendCbor(byte[] data, @Nullable CommandState state) throws IOException {
+      byte CTAPHID_CBOR = (byte) 0x80 | 0x10;
+      return delegate.sendAndReceive(CTAPHID_CBOR, data, state);
+    }
+  }
+
+  private static SmartCardBackend getCtap2SmartCardBackend(
+      SmartCardProtocol protocol, @Nullable ScpKeyParams scpKeyParams)
+      throws IOException, ApplicationNotAvailableException {
+    protocol.select(AppId.FIDO);
+    if (scpKeyParams != null) {
+      try {
+        protocol.initScp(scpKeyParams);
+      } catch (BadResponseException | ApduException e) {
+        throw new IllegalStateException(e);
+      }
+    }
+    return new SmartCardBackend(protocol, new Ctap1Session.SmartCardBackend(protocol));
+  }
+
+  private static FidoBackend getCtap2FidoBackend(FidoProtocol protocol) {
+    return new FidoBackend(protocol, new Ctap1Session.FidoBackend(protocol));
   }
 }

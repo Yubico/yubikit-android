@@ -16,10 +16,16 @@
 
 package com.yubico.yubikit.fido.client;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
+import com.yubico.yubikit.core.application.CommandState;
 import com.yubico.yubikit.fido.FidoTestState;
+import com.yubico.yubikit.fido.ctap.Ctap1Session;
 import com.yubico.yubikit.fido.utils.TestData;
 import com.yubico.yubikit.fido.webauthn.AuthenticatorAssertionResponse;
 import com.yubico.yubikit.fido.webauthn.AuthenticatorAttestationResponse;
@@ -36,6 +42,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import org.jspecify.annotations.Nullable;
 
 public class Ctap1ClientTests {
@@ -99,6 +107,55 @@ public class Ctap1ClientTests {
           assertNotNull("Assertion response missing signature", response.getSignature());
           assertNull("Assertion response missing user handle", response.getUserHandle());
         });
+  }
+
+  public static void testCancellationImmediate(Ctap1Session session, FidoTestState state)
+      throws Throwable {
+    testCancellation(session, state, false);
+  }
+
+  public static void testCancellationWithDelay(Ctap1Session session, FidoTestState state)
+      throws Throwable {
+    testCancellation(session, state, true);
+  }
+
+  private static void testCancellation(Ctap1Session session, FidoTestState testState, boolean delay)
+      throws Throwable {
+
+    assumeTrue("Not a USB connection", testState.isUsbTransport());
+
+    // slow down
+    Thread.sleep(3000);
+
+    Ctap1Client ctap1Client = new Ctap1Client(session);
+
+    PublicKeyCredentialCreationOptions creationOptionsNonRk =
+        getCreateOptions(
+            new PublicKeyCredentialUserEntity(
+                "user", "user".getBytes(StandardCharsets.UTF_8), "User"),
+            Collections.singletonList(TestData.PUB_KEY_CRED_PARAMS_ES256),
+            null);
+
+    CommandState state = new CommandState();
+    if (delay) {
+      Executors.newSingleThreadScheduledExecutor()
+          .schedule(state::cancel, 500, TimeUnit.MILLISECONDS);
+    } else {
+      state.cancel();
+    }
+
+    try {
+      ctap1Client.makeCredential(
+          TestData.CLIENT_DATA_JSON_CREATE_PROVIDER,
+          creationOptionsNonRk,
+          Objects.requireNonNull(creationOptionsNonRk.getRp().getId()),
+          null,
+          null,
+          state);
+      fail("Make credential completed without being cancelled.");
+    } catch (ClientError e) {
+      assertThat(e.getErrorCode(), is(ClientError.Code.TIMEOUT));
+    }
   }
 
   private static PublicKeyCredentialCreationOptions getCreateOptions(

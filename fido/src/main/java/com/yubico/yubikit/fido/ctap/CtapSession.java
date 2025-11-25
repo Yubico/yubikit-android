@@ -38,16 +38,7 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class CtapSession extends ApplicationSession<CtapSession> {
 
-  protected final YubiKeyConnection connection;
   private static final Logger logger = LoggerFactory.getLogger(CtapSession.class);
-
-  public CtapSession(YubiKeyConnection connection) {
-    this.connection = connection;
-  }
-
-  public YubiKeyConnection getConnection() {
-    return connection;
-  }
 
   /**
    * Construct a new Ctap2Session for a given YubiKey.

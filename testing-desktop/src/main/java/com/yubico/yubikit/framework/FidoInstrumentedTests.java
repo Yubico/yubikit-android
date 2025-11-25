@@ -22,6 +22,7 @@ import com.yubico.yubikit.core.fido.FidoConnection;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.smartcard.scp.ScpKid;
 import com.yubico.yubikit.fido.FidoTestState;
+import com.yubico.yubikit.fido.ctap.Ctap1Session;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV2;
@@ -68,6 +69,17 @@ public class FidoInstrumentedTests extends YkInstrumentedTests {
             .build();
 
     state.withCtap2(callback);
+  }
+
+  protected void withCtap1Session(
+      TestState.StatefulSessionCallback<Ctap1Session, FidoTestState> callback) throws Throwable {
+    FidoTestState state =
+        new FidoTestState.Builder(device, connectionTypes, usbPid, getPinUvAuthProtocol())
+            .scpKid(getScpKid())
+            .reconnectDeviceCallback(this::reconnectDevice)
+            .build();
+
+    state.withCtap1(callback);
   }
 
   @Nullable
