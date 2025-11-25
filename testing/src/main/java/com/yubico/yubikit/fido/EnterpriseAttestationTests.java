@@ -24,8 +24,8 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 import com.yubico.yubikit.core.application.CommandException;
-import com.yubico.yubikit.fido.client.BasicWebAuthnClient;
 import com.yubico.yubikit.fido.client.ClientError;
+import com.yubico.yubikit.fido.client.Ctap2Client;
 import com.yubico.yubikit.fido.ctap.ClientPin;
 import com.yubico.yubikit.fido.ctap.Config;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
@@ -66,7 +66,7 @@ public class EnterpriseAttestationTests {
         "Enterprise attestation not supported",
         session.getCachedInfo().getOptions().containsKey("ep"));
     enableEp(session, state);
-    BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
+    Ctap2Client webauthn = new Ctap2Client(session);
     webauthn
         .getUserAgentConfiguration()
         .setEpSupportedRpIds(Collections.singletonList(TestData.RP_ID));
@@ -87,7 +87,7 @@ public class EnterpriseAttestationTests {
         session.getCachedInfo().getOptions().containsKey("ep"));
 
     enableEp(session, state);
-    BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
+    Ctap2Client webauthn = new Ctap2Client(session);
 
     PublicKeyCredential credential =
         makeCredential(webauthn, AttestationConveyancePreference.ENTERPRISE, 2);
@@ -105,7 +105,7 @@ public class EnterpriseAttestationTests {
         session.getCachedInfo().getOptions().containsKey("ep"));
 
     enableEp(session, state);
-    BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
+    Ctap2Client webauthn = new Ctap2Client(session);
     webauthn
         .getUserAgentConfiguration()
         .setEpSupportedRpIds(Collections.singletonList(TestData.RP_ID));
@@ -133,7 +133,7 @@ public class EnterpriseAttestationTests {
     // attestation = null
     state.withCtap2(
         session -> {
-          final BasicWebAuthnClient webauthn = setupClient(session);
+          final Ctap2Client webauthn = setupClient(session);
           PublicKeyCredential credential = makeCredential(webauthn, null, 2);
 
           Map<String, ?> attestationObject = getAttestationObject(credential.getResponse());
@@ -143,7 +143,7 @@ public class EnterpriseAttestationTests {
     // attestation = DIRECT
     state.withCtap2(
         session -> {
-          final BasicWebAuthnClient webauthn = setupClient(session);
+          final Ctap2Client webauthn = setupClient(session);
           PublicKeyCredential credential =
               makeCredential(webauthn, AttestationConveyancePreference.DIRECT, 2);
           Map<String, ?> attestationObject = getAttestationObject(credential.getResponse());
@@ -153,7 +153,7 @@ public class EnterpriseAttestationTests {
     // attestation = INDIRECT
     state.withCtap2(
         session -> {
-          final BasicWebAuthnClient webauthn = setupClient(session);
+          final Ctap2Client webauthn = setupClient(session);
           PublicKeyCredential credential =
               makeCredential(webauthn, AttestationConveyancePreference.DIRECT, 2);
 
@@ -164,7 +164,7 @@ public class EnterpriseAttestationTests {
     // attestation = ENTERPRISE but null enterpriseAttestation
     state.withCtap2(
         session -> {
-          final BasicWebAuthnClient webauthn = setupClient(session);
+          final Ctap2Client webauthn = setupClient(session);
           PublicKeyCredential credential =
               makeCredential(webauthn, AttestationConveyancePreference.ENTERPRISE, null);
 
@@ -175,7 +175,7 @@ public class EnterpriseAttestationTests {
     // attestation = ENTERPRISE
     state.withCtap2(
         session -> {
-          final BasicWebAuthnClient webauthn = setupClient(session);
+          final Ctap2Client webauthn = setupClient(session);
           PublicKeyCredential credential =
               makeCredential(webauthn, AttestationConveyancePreference.ENTERPRISE, 2);
 
@@ -184,9 +184,9 @@ public class EnterpriseAttestationTests {
         });
   }
 
-  private static BasicWebAuthnClient setupClient(Ctap2Session session)
+  private static Ctap2Client setupClient(Ctap2Session session)
       throws IOException, CommandException {
-    BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
+    Ctap2Client webauthn = new Ctap2Client(session);
     webauthn
         .getUserAgentConfiguration()
         .setEpSupportedRpIds(Collections.singletonList(TestData.RP_ID));
@@ -225,9 +225,7 @@ public class EnterpriseAttestationTests {
    * enterpriseAttestation
    */
   private static PublicKeyCredential makeCredential(
-      BasicWebAuthnClient webauthn,
-      @Nullable String attestation,
-      @Nullable Integer enterpriseAttestation)
+      Ctap2Client webauthn, @Nullable String attestation, @Nullable Integer enterpriseAttestation)
       throws ClientError, IOException, CommandException {
     PublicKeyCredentialCreationOptions creationOptions = getCredentialCreationOptions(attestation);
     return webauthn.makeCredential(

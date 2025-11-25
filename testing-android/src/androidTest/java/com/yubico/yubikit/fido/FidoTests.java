@@ -17,6 +17,15 @@
 package com.yubico.yubikit.fido;
 
 import com.yubico.yubikit.AlwaysManualTest;
+import com.yubico.yubikit.fido.client.Ctap2ClientInstrumentedTests;
+import com.yubico.yubikit.fido.client.Ctap2ClientPinInstrumentedTests;
+import com.yubico.yubikit.fido.client.UvDiscouragedInstrumentedTests;
+import com.yubico.yubikit.fido.client.extensions.ExtensionsInstrumentedTests;
+import com.yubico.yubikit.fido.ctap.Ctap2BioEnrollmentInstrumentedTests;
+import com.yubico.yubikit.fido.ctap.Ctap2ConfigInstrumentedTests;
+import com.yubico.yubikit.fido.ctap.Ctap2CredentialManagementInstrumentedTests;
+import com.yubico.yubikit.fido.ctap.Ctap2SessionInstrumentedTests;
+import com.yubico.yubikit.fido.ctap.Ctap2SessionResetInstrumentedTests;
 import org.junit.experimental.categories.Categories;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
@@ -31,7 +40,7 @@ import org.junit.runners.Suite;
  */
 @RunWith(Categories.class)
 @Suite.SuiteClasses({
-  BasicWebAuthnClientInstrumentedTests.class,
+  Ctap2ClientInstrumentedTests.class,
   Ctap2ClientPinInstrumentedTests.class,
   Ctap2CredentialManagementInstrumentedTests.class,
   Ctap2SessionInstrumentedTests.class,

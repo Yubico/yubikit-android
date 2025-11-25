@@ -28,9 +28,9 @@ import com.yubico.yubikit.core.UsbPid;
 import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.application.CommandException;
-import com.yubico.yubikit.fido.client.BasicWebAuthnClient;
 import com.yubico.yubikit.fido.client.ClientError;
 import com.yubico.yubikit.fido.client.CredentialManager;
+import com.yubico.yubikit.fido.client.Ctap2Client;
 import com.yubico.yubikit.fido.ctap.ClientPin;
 import com.yubico.yubikit.fido.ctap.Config;
 import com.yubico.yubikit.fido.ctap.CredentialManagement;
@@ -186,7 +186,7 @@ public class FidoTestState extends TestState {
 
   void deleteExistingCredentials(Ctap2Session session)
       throws IOException, CommandException, ClientError {
-    final BasicWebAuthnClient webauthn = new BasicWebAuthnClient(session);
+    final Ctap2Client webauthn = new Ctap2Client(session);
     if (!CredentialManagement.isSupported(session.getCachedInfo())) {
       return;
     }

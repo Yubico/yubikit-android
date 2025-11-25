@@ -19,9 +19,9 @@ package com.yubico.yubikit.fido.utils;
 import static org.junit.Assert.assertNotNull;
 
 import com.yubico.yubikit.core.application.CommandException;
-import com.yubico.yubikit.fido.client.BasicWebAuthnClient;
 import com.yubico.yubikit.fido.client.ClientError;
 import com.yubico.yubikit.fido.client.CredentialManager;
+import com.yubico.yubikit.fido.client.Ctap2Client;
 import com.yubico.yubikit.fido.client.MultipleAssertionsAvailable;
 import com.yubico.yubikit.fido.client.extensions.Extension;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
@@ -36,7 +36,7 @@ import java.util.List;
 import org.jspecify.annotations.Nullable;
 
 public class ClientHelper {
-  final BasicWebAuthnClient client;
+  final Ctap2Client client;
   private char @Nullable [] pin;
 
   public ClientHelper(Ctap2Session ctap) throws IOException, CommandException {
@@ -46,7 +46,7 @@ public class ClientHelper {
   public ClientHelper(Ctap2Session ctap, @Nullable List<Extension> extensions)
       throws IOException, CommandException {
     this.pin = TestData.PIN;
-    this.client = new BasicWebAuthnClient(ctap, extensions);
+    this.client = new Ctap2Client(ctap, extensions);
   }
 
   public PublicKeyCredential makeCredential() throws IOException, CommandException, ClientError {

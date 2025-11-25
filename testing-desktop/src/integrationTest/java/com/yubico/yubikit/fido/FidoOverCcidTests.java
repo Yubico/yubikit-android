@@ -21,6 +21,7 @@ import com.yubico.yubikit.SmokeTest;
 import com.yubico.yubikit.core.fido.FidoConnection;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.smartcard.scp.ScpKid;
+import com.yubico.yubikit.fido.client.Ctap2ClientTests;
 import com.yubico.yubikit.framework.FidoInstrumentedTests;
 import java.util.Collections;
 import org.junit.Before;
@@ -45,25 +46,25 @@ public class FidoOverCcidTests {
     @Test
     @Category(SmokeTest.class)
     public void testMakeCredentialGetAssertion() throws Throwable {
-      withDevice(BasicWebAuthnClientTests::testMakeCredentialGetAssertion);
+      withDevice(Ctap2ClientTests::testMakeCredentialGetAssertion);
     }
 
     @Test
     @Category(SmokeTest.class)
     public void testCancelMakeCredential() throws Throwable {
-      withDevice(BasicWebAuthnClientTests::testCancelMakeCredential);
+      withDevice(Ctap2ClientTests::testCancelMakeCredential);
     }
 
     @Test
     @Category(SmokeTest.class)
     public void testSwitchTransports() throws Throwable {
-      withDevice(BasicWebAuthnClientTests::testCancelMakeCredential);
+      withDevice(Ctap2ClientTests::testCancelMakeCredential);
       connectionTypes = Collections.singletonList(FidoConnection.class);
-      withDevice(BasicWebAuthnClientTests::testCancelMakeCredential);
+      withDevice(Ctap2ClientTests::testCancelMakeCredential);
       connectionTypes = Collections.singletonList(SmartCardConnection.class);
-      withDevice(BasicWebAuthnClientTests::testCancelMakeCredential);
+      withDevice(Ctap2ClientTests::testCancelMakeCredential);
       connectionTypes = Collections.singletonList(FidoConnection.class);
-      withDevice(BasicWebAuthnClientTests::testCancelMakeCredential);
+      withDevice(Ctap2ClientTests::testCancelMakeCredential);
     }
   }
 

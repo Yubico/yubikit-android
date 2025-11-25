@@ -13,11 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.yubico.yubikit.fido;
+
+package com.yubico.yubikit.fido.client;
 
 import com.yubico.yubikit.AlwaysManualTest;
-import com.yubico.yubikit.fido.client.Ctap2ClientTests;
-import com.yubico.yubikit.fido.client.PinRequiredClientError;
 import com.yubico.yubikit.framework.FidoInstrumentedTests;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;

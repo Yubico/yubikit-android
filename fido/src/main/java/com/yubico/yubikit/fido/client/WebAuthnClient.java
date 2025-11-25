@@ -35,8 +35,8 @@ import org.jspecify.annotations.Nullable;
  * A unified WebAuthn client that works with both CTAP1 and CTAP2 protocols.
  *
  * <p>This client automatically detects the CTAP protocol version from the session and delegates to
- * the appropriate implementation (Ctap1Client or BasicWebAuthnClient). This provides a single,
- * unified API for WebAuthn operations regardless of the underlying protocol version.
+ * the appropriate implementation (Ctap1Client or Ctap2Client). This provides a single, unified API
+ * for WebAuthn operations regardless of the underlying protocol version.
  *
  * <p>Key features:
  *
@@ -56,7 +56,7 @@ import org.jspecify.annotations.Nullable;
  * }</pre>
  *
  * @see Ctap1Client
- * @see BasicWebAuthnClient
+ * @see Ctap2Client
  * @see CtapSession
  */
 public class WebAuthnClient implements Closeable {
@@ -80,7 +80,7 @@ public class WebAuthnClient implements Closeable {
       throws IOException, CommandException {
 
     if (session instanceof Ctap2Session) {
-      this.ctapClient = new BasicWebAuthnClient((Ctap2Session) session, extensions);
+      this.ctapClient = new Ctap2Client((Ctap2Session) session, extensions);
     } else if (session instanceof Ctap1Session) {
       this.ctapClient = new Ctap1Client((Ctap1Session) session);
     } else {
