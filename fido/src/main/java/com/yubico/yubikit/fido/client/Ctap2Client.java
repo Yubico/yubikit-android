@@ -864,16 +864,11 @@ public class Ctap2Client implements CtapClient {
       byte[] clientDataHash = new byte[32];
       Arrays.fill(clientDataHash, (byte) 0x00);
 
-      Map<String, Boolean> options = new HashMap<>();
-      options.put(OPTION_USER_PRESENCE, false);
-
       byte[] pinAuth = null;
       Integer pinUvAuthVersion = null;
       if (pinUvAuthToken != null && pinUvAuthProtocol != null) {
         pinAuth = pinUvAuthProtocol.authenticate(pinUvAuthToken, clientDataHash);
         pinUvAuthVersion = pinUvAuthProtocol.getVersion();
-      } else {
-        options.put(OPTION_USER_VERIFICATION, true);
       }
 
       while (!creds.isEmpty()) {
@@ -887,7 +882,7 @@ public class Ctap2Client implements CtapClient {
                   clientDataHash,
                   getCredentialList(chunk),
                   null,
-                  options,
+                  Collections.singletonMap(OPTION_USER_PRESENCE, false),
                   pinAuth,
                   pinUvAuthVersion,
                   null);
