@@ -64,7 +64,7 @@ public class AttestedCredentialData {
     return cosePublicKey;
   }
 
-  public byte[] bytes() {
+  public byte[] getBytes() {
     byte[] cosePublicKey = Cbor.encode(getCosePublicKey());
     return ByteBuffer.allocate(16 + 2 + credentialId.length + cosePublicKey.length)
         .put(getAaguid())

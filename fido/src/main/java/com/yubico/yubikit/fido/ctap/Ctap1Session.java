@@ -579,7 +579,7 @@ public class Ctap1Session extends CtapSession {
       // Build AttestedCredentialData
       AttestedCredentialData credentialData =
           new AttestedCredentialData(aaguid, credentialId, coseKey);
-      byte[] credentialDataBytes = credentialData.bytes();
+      byte[] credentialDataBytes = credentialData.getBytes();
 
       // Build AuthenticatorData
       AuthenticatorData authData =
