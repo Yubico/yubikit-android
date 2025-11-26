@@ -15,39 +15,47 @@
  */
 package com.yubico.yubikit.desktop.hid;
 
-import java.util.ArrayList;
+import com.yubico.yubikit.core.YubiKeyDevice;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.hid4java.HidServices;
 import org.jspecify.annotations.Nullable;
 
 public class HidManager {
 
-  private static final int YUBICO_VENDOR_ID = 0x1050;
   private static final int HID_USAGE_PAGE_OTP = 0x0001;
   private static final int HID_USAGE_PAGE_FIDO = 0xf1d0;
 
   private final HidServices services;
 
   public HidManager() {
-    services = org.hid4java.HidManager.getHidServices();
+    this(org.hid4java.HidManager.getHidServices());
+  }
+
+  HidManager(HidServices services) {
+    this.services = services;
   }
 
   public List<HidDevice> getHidDevices(int vendorId, @Nullable Integer usagePage) {
-    List<HidDevice> yubikeys = new ArrayList<>();
-    for (org.hid4java.HidDevice device : services.getAttachedHidDevices()) {
-      if (device.getVendorId() == vendorId
-          && (usagePage != null && (device.getUsagePage() & 0xffff) == usagePage)) {
-        yubikeys.add(new HidDevice(device));
-      }
-    }
-    return yubikeys;
+    return services.getAttachedHidDevices().stream()
+        .filter(
+            d -> d.getVendorId() == vendorId && (usagePage != null && getUsagePage(d) == usagePage))
+        .map(HidDevice::new)
+        .collect(Collectors.toList());
   }
 
   public List<HidDevice> getOtpDevices() {
-    return getHidDevices(YUBICO_VENDOR_ID, HID_USAGE_PAGE_OTP);
+    return getHidDevices(YubiKeyDevice.YUBICO_VENDOR_ID, HID_USAGE_PAGE_OTP);
   }
 
   public List<HidDevice> getFidoDevices() {
-    return getHidDevices(YUBICO_VENDOR_ID, HID_USAGE_PAGE_FIDO);
+    return services.getAttachedHidDevices().stream()
+        .filter(d -> getUsagePage(d) == HID_USAGE_PAGE_FIDO)
+        .map(HidDevice::new)
+        .collect(Collectors.toList());
+  }
+
+  private int getUsagePage(org.hid4java.HidDevice device) {
+    return device.getUsagePage() & 0xffff;
   }
 }

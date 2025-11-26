@@ -19,6 +19,7 @@ package com.yubico.yubikit.android.transport.usb.connection;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbInterface;
+import android.hardware.usb.UsbManager;
 import com.yubico.yubikit.core.YubiKeyConnection;
 import java.io.IOException;
 import org.jspecify.annotations.Nullable;
@@ -34,7 +35,7 @@ abstract class InterfaceConnectionHandler<T extends YubiKeyConnection>
   }
 
   @Override
-  public boolean isAvailable(UsbDevice usbDevice) {
+  public boolean isAvailable(UsbManager manager, UsbDevice usbDevice) {
     return getInterface(usbDevice) != null;
   }
 

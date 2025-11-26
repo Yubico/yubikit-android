@@ -21,6 +21,7 @@ plugins {
 dependencies {
     api(project(":management"))
     api(project(":yubiotp"))
+    api(project(":fido"))
 }
 
 description = "This library provides support functionality for the YubiKit."

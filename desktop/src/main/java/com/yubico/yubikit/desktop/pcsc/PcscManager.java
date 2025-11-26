@@ -37,7 +37,10 @@ public class PcscManager {
     try {
       for (CardTerminal device :
           terminalFactory.terminals().list(CardTerminals.State.CARD_PRESENT)) {
-        yubikeys.add(new UsbPcscDevice(device));
+        UsbPcscDevice usbPcscDevice = UsbPcscDevice.fromCardTerminal(device);
+        if (usbPcscDevice != null) {
+          yubikeys.add(usbPcscDevice);
+        }
       }
     } catch (CardException e) {
       throw new RuntimeException(e);

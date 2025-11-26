@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Yubico.
+ * Copyright (C) 2020-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,11 +19,19 @@ package com.yubico.yubikit.android.transport.usb.connection;
 import android.hardware.usb.UsbConstants;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbDeviceConnection;
+import android.hardware.usb.UsbManager;
+import com.yubico.yubikit.core.YubiKeyDevice;
 import java.io.IOException;
 
 public class OtpConnectionHandler extends InterfaceConnectionHandler<UsbOtpConnection> {
   public OtpConnectionHandler() {
     super(UsbConstants.USB_CLASS_HID, UsbConstants.USB_INTERFACE_SUBCLASS_BOOT);
+  }
+
+  @Override
+  public boolean isAvailable(UsbManager manager, UsbDevice usbDevice) {
+    return usbDevice.getVendorId() == YubiKeyDevice.YUBICO_VENDOR_ID
+        && super.isAvailable(manager, usbDevice);
   }
 
   @Override

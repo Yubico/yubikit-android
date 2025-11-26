@@ -37,7 +37,6 @@ import org.slf4j.LoggerFactory;
 final class UsbDeviceManager {
 
   private static final String ACTION_USB_PERMISSION = "com.yubico.yubikey.USB_PERMISSION";
-  public static final int YUBICO_VENDOR_ID = 0x1050;
 
   @Nullable private static UsbDeviceManager instance;
 
@@ -78,9 +77,7 @@ final class UsbDeviceManager {
       intentFilter.addAction(UsbManager.ACTION_USB_DEVICE_DETACHED);
       context.registerReceiver(broadcastReceiver, intentFilter);
       for (UsbDevice usbDevice : usbDevices) {
-        if (usbDevice.getVendorId() == YUBICO_VENDOR_ID) {
-          onDeviceAttach(usbDevice);
-        }
+        onDeviceAttach(usbDevice);
       }
     }
     deviceListeners.add(listener);
@@ -181,7 +178,8 @@ final class UsbDeviceManager {
     public void onReceive(Context context, Intent intent) {
       String action = intent.getAction();
       UsbDevice usbDevice = getUsbManagerExtraDevice(intent);
-      if (usbDevice == null || usbDevice.getVendorId() != YUBICO_VENDOR_ID) {
+
+      if (usbDevice == null) {
         return;
       }
 
