@@ -24,7 +24,6 @@ import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.core.smartcard.SW;
 import com.yubico.yubikit.fido.client.clientdata.ClientDataProvider;
 import com.yubico.yubikit.fido.ctap.Ctap1Session;
-import com.yubico.yubikit.fido.ctap.CtapSession;
 import com.yubico.yubikit.fido.webauthn.AttestationConveyancePreference;
 import com.yubico.yubikit.fido.webauthn.AttestationObject;
 import com.yubico.yubikit.fido.webauthn.AuthenticatorAssertionResponse;
@@ -45,15 +44,14 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import org.jspecify.annotations.Nullable;
 
-public class Ctap1Client implements CtapClient {
+public class Ctap1Client implements WebAuthnClient {
   private final Ctap1Session ctap1;
 
   public Ctap1Client(Ctap1Session session) {
     this.ctap1 = session;
   }
 
-  @Override
-  public CtapSession getSession() {
+  public Ctap1Session getSession() {
     return ctap1;
   }
 

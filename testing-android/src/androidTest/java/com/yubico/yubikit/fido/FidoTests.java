@@ -17,6 +17,7 @@
 package com.yubico.yubikit.fido;
 
 import com.yubico.yubikit.AlwaysManualTest;
+import com.yubico.yubikit.fido.client.Ctap1ClientInstrumentedTests;
 import com.yubico.yubikit.fido.client.Ctap2ClientInstrumentedTests;
 import com.yubico.yubikit.fido.client.Ctap2ClientPinInstrumentedTests;
 import com.yubico.yubikit.fido.client.UvDiscouragedInstrumentedTests;
@@ -40,6 +41,7 @@ import org.junit.runners.Suite;
  */
 @RunWith(Categories.class)
 @Suite.SuiteClasses({
+  Ctap1ClientInstrumentedTests.class,
   Ctap2ClientInstrumentedTests.class,
   Ctap2ClientPinInstrumentedTests.class,
   Ctap2CredentialManagementInstrumentedTests.class,

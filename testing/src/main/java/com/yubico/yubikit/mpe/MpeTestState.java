@@ -87,7 +87,7 @@ public class MpeTestState extends TestState {
   public void withCtap2(TestState.StatefulSessionCallback<Ctap2Session, MpeTestState> callback)
       throws Throwable {
     try (YubiKeyConnection connection = openConnection()) {
-      final Ctap2Session ctap2 = Ctap2Session.create(connection, scpParameters.getKeyParams());
+      final Ctap2Session ctap2 = getCtap2Session(connection, scpParameters.getKeyParams());
       assumeTrue("No CTAP2 support", ctap2 != null);
       callback.invoke(ctap2, this);
     }

@@ -231,7 +231,7 @@ public class FidoTestState extends TestState {
   public void withCtap2(TestState.StatefulSessionCallback<Ctap2Session, FidoTestState> callback)
       throws Throwable {
     try (YubiKeyConnection connection = openConnection()) {
-      final Ctap2Session ctap2 = Ctap2Session.create(connection, scpParameters.getKeyParams());
+      final Ctap2Session ctap2 = getCtap2Session(connection, scpParameters.getKeyParams());
       assumeTrue("No CTAP2 support", ctap2 != null);
       callback.invoke(ctap2, this);
     }
@@ -241,7 +241,7 @@ public class FidoTestState extends TestState {
   public <R> R withCtap2(SessionCallbackT<Ctap2Session, R> callback) throws Throwable {
     R result;
     try (YubiKeyConnection connection = openConnection()) {
-      final Ctap2Session ctap2 = Ctap2Session.create(connection, scpParameters.getKeyParams());
+      final Ctap2Session ctap2 = getCtap2Session(connection, scpParameters.getKeyParams());
       assumeTrue("No CTAP2 support", ctap2 != null);
       result = callback.invoke(ctap2);
     }
@@ -251,7 +251,7 @@ public class FidoTestState extends TestState {
 
   public void withCtap2(SessionCallback<@NonNull Ctap2Session> callback) throws Throwable {
     try (YubiKeyConnection connection = openConnection()) {
-      final Ctap2Session ctap2 = Ctap2Session.create(connection, scpParameters.getKeyParams());
+      final Ctap2Session ctap2 = getCtap2Session(connection, scpParameters.getKeyParams());
       assumeTrue("No CTAP2 support", ctap2 != null);
       callback.invoke(ctap2);
     }
@@ -261,7 +261,7 @@ public class FidoTestState extends TestState {
   public void withCtap1(TestState.StatefulSessionCallback<Ctap1Session, FidoTestState> callback)
       throws Throwable {
     try (YubiKeyConnection connection = openConnection()) {
-      final Ctap1Session ctap1 = Ctap1Session.create(connection);
+      final Ctap1Session ctap1 = getCtap1Session(connection);
       assumeTrue("No CTAP1 support", ctap1 != null);
       callback.invoke(ctap1, this);
     }
@@ -271,7 +271,7 @@ public class FidoTestState extends TestState {
   public <R> R withCtap1(SessionCallbackT<@NonNull Ctap1Session, R> callback) throws Throwable {
     R result;
     try (YubiKeyConnection connection = openConnection()) {
-      final Ctap1Session ctap1 = Ctap1Session.create(connection);
+      final Ctap1Session ctap1 = getCtap1Session(connection);
       assumeTrue("No CTAP1 support", ctap1 != null);
       result = callback.invoke(ctap1);
     }
@@ -281,7 +281,7 @@ public class FidoTestState extends TestState {
 
   public void withCtap1(SessionCallback<@NonNull Ctap1Session> callback) throws Throwable {
     try (YubiKeyConnection connection = openConnection()) {
-      final Ctap1Session ctap1 = Ctap1Session.create(connection);
+      final Ctap1Session ctap1 = getCtap1Session(connection);
       assumeTrue("No CTAP1 support", ctap1 != null);
       callback.invoke(ctap1);
     }

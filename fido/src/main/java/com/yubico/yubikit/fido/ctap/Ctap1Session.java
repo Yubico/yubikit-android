@@ -17,7 +17,6 @@
 package com.yubico.yubikit.fido.ctap;
 
 import com.yubico.yubikit.core.Version;
-import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
 import com.yubico.yubikit.core.application.BadResponseException;
@@ -114,32 +113,6 @@ public class Ctap1Session extends CtapSession {
           Result.failure(
               new ApplicationNotAvailableException(
                   "Session does not support any compatible connection type")));
-    }
-  }
-
-  public static @Nullable Ctap1Session create(YubiKeyConnection connection)
-      throws IOException, ApplicationNotAvailableException, IllegalArgumentException {
-    if (connection instanceof FidoConnection) {
-      try {
-        logger.debug("Attempting to create Ctap1Session from FidoConnection");
-        return new Ctap1Session((FidoConnection) connection);
-      } catch (IOException e) {
-        logger.debug("Failed to create Ctap1Session from FidoConnection: {}", e.getMessage());
-        return null;
-      }
-    } else if (connection instanceof SmartCardConnection) {
-      try {
-        logger.debug("Attempting to create Ctap1Session from SmartCardConnection");
-        return new Ctap1Session((SmartCardConnection) connection);
-      } catch (IOException | ApplicationNotAvailableException e) {
-        logger.debug("Failed to create Ctap1Session from SmartCardConnection: {}", e.getMessage());
-        return null;
-      }
-    } else {
-      throw new IllegalArgumentException(
-          "Unsupported connection type: "
-              + connection.getClass().getName()
-              + ". Expected FidoConnection or SmartCardConnection.");
     }
   }
 

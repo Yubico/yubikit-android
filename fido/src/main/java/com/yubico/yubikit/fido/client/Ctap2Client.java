@@ -33,7 +33,6 @@ import com.yubico.yubikit.fido.client.extensions.MinPinLengthExtension;
 import com.yubico.yubikit.fido.ctap.ClientPin;
 import com.yubico.yubikit.fido.ctap.CredentialManagement;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
-import com.yubico.yubikit.fido.ctap.CtapSession;
 import com.yubico.yubikit.fido.ctap.PinUvAuthDummyProtocol;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV1;
@@ -65,7 +64,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A "basic" WebAuthn client implementation which wraps a YubiKeySession.
+ * WebAuthn client implementation which wraps a YubiKeySession.
  *
  * <p>Provides the following functionality:
  *
@@ -81,8 +80,7 @@ import org.slf4j.LoggerFactory;
  * The timeout parameter in the request options is ignored. To cancel a request pass a {@link
  * CommandState} instance to the call and use its cancel method.
  */
-@SuppressWarnings("unused")
-public class Ctap2Client implements CtapClient {
+public class Ctap2Client implements WebAuthnClient {
   private static final String OPTION_CLIENT_PIN = "clientPin";
   private static final String OPTION_USER_VERIFICATION = "uv";
   private static final String OPTION_USER_PRESENCE = "up";
@@ -205,8 +203,7 @@ public class Ctap2Client implements CtapClient {
     return userAgentConfiguration;
   }
 
-  @Override
-  public CtapSession getSession() {
+  public Ctap2Session getSession() {
     return ctap;
   }
 

@@ -16,13 +16,13 @@
 
 package com.yubico.yubikit.fido.client;
 
+import com.yubico.yubikit.core.YubiKeyConnection;
+import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.application.CommandException;
 import com.yubico.yubikit.core.application.CommandState;
+import com.yubico.yubikit.core.smartcard.scp.ScpKeyParams;
 import com.yubico.yubikit.fido.client.clientdata.ClientDataProvider;
 import com.yubico.yubikit.fido.client.extensions.Extension;
-import com.yubico.yubikit.fido.ctap.Ctap1Session;
-import com.yubico.yubikit.fido.ctap.Ctap2Session;
-import com.yubico.yubikit.fido.ctap.CtapSession;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredential;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialCreationOptions;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialRequestOptions;
@@ -32,61 +32,59 @@ import java.util.List;
 import org.jspecify.annotations.Nullable;
 
 /**
- * A unified WebAuthn client that works with both CTAP1 and CTAP2 protocols.
+ * Protocol-agnostic interface for WebAuthn operations.
  *
- * <p>This client automatically detects the CTAP protocol version from the session and delegates to
- * the appropriate implementation (Ctap1Client or Ctap2Client). This provides a single, unified API
- * for WebAuthn operations regardless of the underlying protocol version.
- *
- * <p>Key features:
- *
- * <ul>
- *   <li>Automatic protocol detection and delegation
- *   <li>Unified API for both CTAP1 (U2F) and CTAP2 (WebAuthn) protocols
- *   <li>Support for makeCredential and getAssertion operations
- *   <li>Extensible design for future protocol versions
- * </ul>
- *
- * <p>Usage example:
- *
- * <pre>{@code
- * CtapSession session = ...; // Either Ctap1Session or Ctap2Session
- * WebAuthnClient client = new WebAuthnClient(session);
- * PublicKeyCredential credential = client.makeCredential(...);
- * }</pre>
+ * <p>Implementations provide support for specific CTAP protocol versions (e.g., CTAP1/U2F,
+ * CTAP2/WebAuthn). Use {@link #create(YubiKeyDevice, List)} or {@link #create(YubiKeyConnection,
+ * List, ScpKeyParams)} to obtain the correct implementation for a given session.
  *
  * @see Ctap1Client
  * @see Ctap2Client
- * @see CtapSession
+ * @see <a href="https://www.w3.org/TR/webauthn-3/">WebAuthn</a>
  */
-public class WebAuthnClient implements Closeable {
-
-  private final CtapClient ctapClient;
+public interface WebAuthnClient extends Closeable {
 
   /**
-   * Create a new WebAuthn client from a CTAP session with specific extensions.
+   * Create a new WebAuthn client from a YubiKey device with specific extensions.
    *
    * <p>Note: Extensions are only supported for CTAP2 sessions. For CTAP1 sessions, the extensions
    * parameter is ignored.
    *
-   * @param session The CTAP session (either Ctap1Session or Ctap2Session)
+   * @param device The YubiKey device to use for the session
    * @param extensions List of extensions (only applicable for CTAP2), passing null will use default
    *     extension set
+   * @param useScp use Secure Channel protocol if available
+   * @return A WebAuthnClient instance for the given device
    * @throws IOException A communication error in the transport layer
    * @throws CommandException A communication error in the protocol layer (CTAP2 only)
-   * @throws IllegalArgumentException If the session type is not supported
    */
-  public WebAuthnClient(CtapSession session, @Nullable List<Extension> extensions)
+  static WebAuthnClient create(
+      YubiKeyDevice device, @Nullable List<Extension> extensions, boolean useScp)
       throws IOException, CommandException {
+    return Utils.createWebAuthnClient(device, extensions, useScp);
+  }
 
-    if (session instanceof Ctap2Session) {
-      this.ctapClient = new Ctap2Client((Ctap2Session) session, extensions);
-    } else if (session instanceof Ctap1Session) {
-      this.ctapClient = new Ctap1Client((Ctap1Session) session);
-    } else {
-      throw new IllegalArgumentException(
-          "Unsupported session type: " + session.getClass().getName());
-    }
+  /**
+   * Create a new WebAuthn client from a YubiKey connection with specific extensions and optional
+   * SCP key parameters.
+   *
+   * <p>Note: Extensions are only supported for CTAP2 sessions. For CTAP1 sessions, the extensions
+   * parameter is ignored.
+   *
+   * @param connection The YubiKey connection to use for the session
+   * @param extensions List of extensions (only applicable for CTAP2), passing null will use default
+   *     extension set
+   * @param scpKeyParams Optional SCP key parameters for secure channel (may be null)
+   * @return A WebAuthnClient instance for the given connection
+   * @throws IOException A communication error in the transport layer
+   * @throws CommandException A communication error in the protocol layer (CTAP2 only)
+   */
+  static WebAuthnClient create(
+      YubiKeyConnection connection,
+      @Nullable List<Extension> extensions,
+      @Nullable ScpKeyParams scpKeyParams)
+      throws IOException, CommandException {
+    return Utils.createWebAuthnClient(connection, extensions, scpKeyParams);
   }
 
   /**
@@ -106,17 +104,14 @@ public class WebAuthnClient implements Closeable {
    * @throws CommandException A communication error in the protocol layer
    * @throws ClientError A higher level error
    */
-  public PublicKeyCredential makeCredential(
+  PublicKeyCredential makeCredential(
       ClientDataProvider clientData,
       PublicKeyCredentialCreationOptions options,
       String effectiveDomain,
       char @Nullable [] pin,
       @Nullable Integer enterpriseAttestation,
       @Nullable CommandState state)
-      throws IOException, CommandException, ClientError {
-    return ctapClient.makeCredential(
-        clientData, options, effectiveDomain, pin, enterpriseAttestation, state);
-  }
+      throws IOException, CommandException, ClientError;
 
   /**
    * Authenticate an existing WebAuthn credential.
@@ -138,30 +133,11 @@ public class WebAuthnClient implements Closeable {
    * @throws CommandException A communication error in the protocol layer
    * @throws ClientError A higher level error
    */
-  public PublicKeyCredential getAssertion(
+  PublicKeyCredential getAssertion(
       ClientDataProvider clientData,
       PublicKeyCredentialRequestOptions options,
       String effectiveDomain,
       char @Nullable [] pin,
       @Nullable CommandState state)
-      throws MultipleAssertionsAvailable, IOException, CommandException, ClientError {
-    return ctapClient.getAssertion(clientData, options, effectiveDomain, pin, state);
-  }
-
-  /**
-   * Returns the underlying CTAP client implementation.
-   *
-   * <p>This allows access to protocol-specific operations or advanced features not exposed by the
-   * unified {@link WebAuthnClient} API.
-   *
-   * @return the {@link CtapClient} instance used by this client
-   */
-  public CtapClient getClient() {
-    return ctapClient;
-  }
-
-  @Override
-  public void close() throws IOException {
-    ctapClient.close();
-  }
+      throws MultipleAssertionsAvailable, IOException, CommandException, ClientError;
 }
