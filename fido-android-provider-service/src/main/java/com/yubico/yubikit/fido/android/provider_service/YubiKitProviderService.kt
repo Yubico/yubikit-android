@@ -221,6 +221,18 @@ class YubiKitProviderService : CredentialProviderService() {
                 {
                   "type": "android",
                   "info": {
+                    "package_name": "com.brave.browser",
+                    "signatures": [
+                      {
+                        "build": "release",
+                        "cert_fingerprint_sha256": "9C:2D:B7:05:13:51:5F:DB:FB:BC:58:5B:3E:DF:3D:71:23:D4:DC:67:C9:4F:FD:30:63:61:C1:D7:9B:BF:18:AC"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "type": "android",
+                  "info": {
                     "package_name": "com.google.android.gms",
                     "signatures": [
                       {
