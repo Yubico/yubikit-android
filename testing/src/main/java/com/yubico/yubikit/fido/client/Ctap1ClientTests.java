@@ -124,9 +124,6 @@ public class Ctap1ClientTests {
 
     assumeTrue("Not a USB connection", testState.isUsbTransport());
 
-    // slow down
-    Thread.sleep(3000);
-
     Ctap1Client ctap1Client = new Ctap1Client(session);
 
     PublicKeyCredentialCreationOptions creationOptionsNonRk =

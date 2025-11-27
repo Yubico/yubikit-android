@@ -46,6 +46,7 @@ import org.jspecify.annotations.Nullable;
 
 public class Ctap1Client implements WebAuthnClient {
   private final Ctap1Session ctap1;
+  private final CommandState defaultState = new CommandState();
 
   public Ctap1Client(Ctap1Session session) {
     this.ctap1 = session;
@@ -128,7 +129,7 @@ public class Ctap1Client implements WebAuthnClient {
         byte[] dummy = new byte[32];
         for (PublicKeyCredentialDescriptor cred : excludeList) {
           try {
-            ctap1.authenticate(dummy, appParam, cred.getId(), true, state);
+            ctap1.authenticate(dummy, appParam, cred.getId(), true);
             // Should not succeed
             throw new ClientError(
                 ClientError.Code.OTHER_ERROR,
@@ -136,7 +137,7 @@ public class Ctap1Client implements WebAuthnClient {
           } catch (ApduException e) {
             if (e.getSw() == SW.CONDITIONS_NOT_SATISFIED) {
               try {
-                callPolling(() -> ctap1.register(dummy, dummy, state));
+                callPolling(() -> ctap1.register(dummy, dummy), state);
               } catch (Exception ex) {
                 throw new ClientError(ClientError.Code.OTHER_ERROR, e);
               }
@@ -156,7 +157,7 @@ public class Ctap1Client implements WebAuthnClient {
 
       Ctap1Session.RegistrationData regData;
       try {
-        regData = callPolling(() -> ctap1.register(clientDataHash, appParam, state));
+        regData = callPolling(() -> ctap1.register(clientDataHash, appParam), state);
       } catch (CtapException e) {
         throw ClientError.wrapCtapException(e);
       } catch (ApduException | ClientError e) {
@@ -217,9 +218,8 @@ public class Ctap1Client implements WebAuthnClient {
         try {
           Ctap1Session.SignatureData sigData =
               callPolling(
-                  () ->
-                      ctap1.authenticate(
-                          clientDataHash, appParam, descriptor.getId(), false, state));
+                  () -> ctap1.authenticate(clientDataHash, appParam, descriptor.getId(), false),
+                  state);
           ByteBuffer authDataBuffer =
               ByteBuffer.allocate(appParam.length + 1 + 4)
                   .put(appParam)
@@ -259,28 +259,28 @@ public class Ctap1Client implements WebAuthnClient {
   }
 
   /** Polling utility for CTAP1 operations. Retries the callable on CONDITIONS_NOT_SATISFIED. */
-  private <T> T callPolling(Callable<T> func) throws Exception {
+  private <T> T callPolling(Callable<T> func, @Nullable CommandState state) throws Exception {
     final int POLL_INTERVAL = 250;
-    Exception lastError = null;
-    while (lastError == null) {
+    CommandState cmdState = state != null ? state : defaultState;
+    boolean keepAliveSent = false;
+
+    do {
+      if (cmdState.waitForCancel(0)) {
+        throw new CtapException(CtapException.ERR_KEEPALIVE_CANCEL);
+      }
       try {
         return func.call();
       } catch (ApduException e) {
-        if (e.getSw() == SW.CONDITIONS_NOT_SATISFIED) {
-          synchronized (this) {
-            try {
-              wait(POLL_INTERVAL);
-            } catch (InterruptedException interruptedException) {
-              Thread.currentThread().interrupt();
-              lastError = interruptedException;
-            }
-          }
-        } else {
-          lastError = e;
+        if (e.getSw() != SW.CONDITIONS_NOT_SATISFIED) {
+          throw new ClientError(ClientError.Code.OTHER_ERROR, e);
+        }
+        if (!keepAliveSent) {
+          keepAliveSent = true;
+          cmdState.onKeepAliveStatus(CommandState.STATUS_UPNEEDED);
         }
       }
-    }
-    throw new ClientError(ClientError.Code.OTHER_ERROR, lastError);
+    } while (!cmdState.waitForCancel(POLL_INTERVAL));
+    throw new CtapException(CtapException.ERR_KEEPALIVE_CANCEL);
   }
 
   private static ClientError convertApduException(ApduException e) {

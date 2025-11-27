@@ -96,7 +96,7 @@ public class FidoTestState extends TestState {
     try (YubiKeyConnection connection = openConnection()) {
 
       CtapSession session = getSession(connection, scpParameters.getKeyParams());
-      if (session instanceof Ctap1Session) {
+      if (session instanceof Ctap1Session && !(session instanceof Ctap2Session)) {
         this.isFipsApproved = false;
         this.alwaysUv = false;
         return;

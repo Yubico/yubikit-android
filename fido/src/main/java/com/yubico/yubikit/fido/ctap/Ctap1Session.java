@@ -169,8 +169,7 @@ public class Ctap1Session extends CtapSession {
    *     href="https://fidoalliance.org/specs/fido-u2f-v1.2-ps-20170411/fido-u2f-raw-message-formats-v1.2-ps-20170411.html#registration-messages">Registration
    *     Messages</a>
    */
-  public RegistrationData register(
-      byte[] clientParam, byte[] appParam, @Nullable CommandState state)
+  public RegistrationData register(byte[] clientParam, byte[] appParam)
       throws IOException, ApduException, CtapException {
 
     if (clientParam.length != 32) {
@@ -183,7 +182,7 @@ public class Ctap1Session extends CtapSession {
     ByteBuffer buffer =
         ByteBuffer.allocate(clientParam.length + appParam.length).put(clientParam).put(appParam);
 
-    byte[] response = backend.sendApdu(INS_REGISTER, (byte) 0, buffer.array(), state);
+    byte[] response = backend.sendApdu(INS_REGISTER, (byte) 0, buffer.array(), null);
     return new RegistrationData(response);
   }
 
@@ -202,11 +201,7 @@ public class Ctap1Session extends CtapSession {
    *     Messages</a>
    */
   public SignatureData authenticate(
-      byte[] clientParam,
-      byte[] appParam,
-      byte[] keyHandle,
-      boolean checkOnly,
-      @Nullable CommandState state)
+      byte[] clientParam, byte[] appParam, byte[] keyHandle, boolean checkOnly)
       throws IOException, ApduException, CtapException {
     if (clientParam.length != 32) {
       throw new IllegalArgumentException("clientParam must be 32 bytes");
@@ -222,7 +217,7 @@ public class Ctap1Session extends CtapSession {
             .put((byte) keyHandle.length)
             .put(keyHandle);
     byte p1 = checkOnly ? P1_CHECK_ONLY : P1_ENFORCE_USER_PRESENCE;
-    byte[] response = backend.sendApdu(INS_AUTHENTICATE, p1, buffer.array(), state);
+    byte[] response = backend.sendApdu(INS_AUTHENTICATE, p1, buffer.array(), null);
     return new SignatureData(response);
   }
 
@@ -258,16 +253,13 @@ public class Ctap1Session extends CtapSession {
     final byte CLA = 0x00;
     final byte CTAPHID_MSG = (byte) 0x83;
 
-    private final CommandState defaultState = new CommandState();
-
     protected FidoBackend(FidoProtocol delegate) {
       super(delegate);
     }
 
     @Override
     public byte[] sendApdu(byte ins, byte p1, byte[] data, @Nullable CommandState state)
-        throws IOException, ApduException, CtapException {
-      state = state != null ? state : defaultState;
+        throws IOException, ApduException {
       ByteBuffer buffer =
           ByteBuffer.allocate(9 + data.length)
               .put(CLA)
@@ -279,11 +271,6 @@ public class Ctap1Session extends CtapSession {
               .put(data)
               .put((byte) 0) // Le high
               .put((byte) 0); // Le low (256 bytes expected)
-
-      // handle cancellation
-      if (state.waitForCancel(0)) {
-        throw new CtapException(CtapException.ERR_KEEPALIVE_CANCEL);
-      }
 
       byte[] response = delegate.sendAndReceive(CTAPHID_MSG, buffer.array(), null);
 
