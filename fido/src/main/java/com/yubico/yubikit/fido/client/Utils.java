@@ -19,24 +19,16 @@ package com.yubico.yubikit.fido.client;
 import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
-import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.application.CommandException;
 import com.yubico.yubikit.core.fido.FidoConnection;
-import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
-import com.yubico.yubikit.core.smartcard.scp.KeyRef;
-import com.yubico.yubikit.core.smartcard.scp.Scp11KeyParams;
 import com.yubico.yubikit.core.smartcard.scp.ScpKeyParams;
-import com.yubico.yubikit.core.smartcard.scp.ScpKid;
-import com.yubico.yubikit.core.smartcard.scp.SecurityDomainSession;
 import com.yubico.yubikit.fido.client.extensions.Extension;
 import com.yubico.yubikit.fido.ctap.Ctap1Session;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -63,15 +55,13 @@ public class Utils {
   }
 
   static WebAuthnClient createWebAuthnClient(
-      YubiKeyDevice device, @Nullable List<Extension> extensions, boolean useScp)
+      YubiKeyDevice device, @Nullable List<Extension> extensions)
       throws IOException, CommandException {
-
     try {
       return createWebAuthnClient(device.openConnection(FidoConnection.class), extensions, null);
-    } catch (IOException e) {
-      SmartCardConnection smartCardConnection = device.openConnection(SmartCardConnection.class);
+    } catch (Exception e) {
       return createWebAuthnClient(
-          smartCardConnection, extensions, useScp ? readScpKeyParams(smartCardConnection) : null);
+          device.openConnection(SmartCardConnection.class), extensions, null);
     }
   }
 
@@ -120,39 +110,6 @@ public class Utils {
           "Unsupported connection type: "
               + connection.getClass().getName()
               + ". Expected FidoConnection or SmartCardConnection.");
-    }
-  }
-
-  @Nullable
-  private static ScpKeyParams readScpKeyParams(SmartCardConnection connection) {
-    logger.debug("Checking for usable SCP11b key...");
-    try {
-      SecurityDomainSession securityDomainSession = new SecurityDomainSession(connection);
-
-      KeyRef keyRef =
-          securityDomainSession.getKeyInformation().keySet().stream()
-              .filter(key -> key.getKid() == ScpKid.SCP11b)
-              .findFirst()
-              .orElse(null);
-
-      if (keyRef == null) {
-        return null;
-      }
-
-      List<X509Certificate> certs = securityDomainSession.getCertificateBundle(keyRef);
-
-      if (certs.isEmpty()) {
-        logger.debug("No SCP certificates found.");
-        return null;
-      }
-      return new Scp11KeyParams(keyRef, certs.get(certs.size() - 1).getPublicKey());
-    } catch (IOException
-        | ApplicationNotAvailableException
-        | BadResponseException
-        | ApduException
-        | CertificateException e) {
-      logger.debug("Failed querying SCP key params. ", e);
-      return null;
     }
   }
 }

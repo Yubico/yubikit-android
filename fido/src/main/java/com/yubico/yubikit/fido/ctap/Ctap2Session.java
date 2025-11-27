@@ -17,7 +17,6 @@
 package com.yubico.yubikit.fido.ctap;
 
 import com.yubico.yubikit.core.Version;
-import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
 import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.application.CommandException;
@@ -31,8 +30,6 @@ import com.yubico.yubikit.core.smartcard.AppId;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.smartcard.SmartCardProtocol;
 import com.yubico.yubikit.core.smartcard.scp.ScpKeyParams;
-import com.yubico.yubikit.core.util.Callback;
-import com.yubico.yubikit.core.util.Result;
 import com.yubico.yubikit.core.util.StringUtils;
 import com.yubico.yubikit.fido.Cbor;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialDescriptor;
@@ -85,33 +82,6 @@ public class Ctap2Session extends Ctap1Session {
   @Nullable private final Byte bioEnrollmentCommand;
 
   private static final Logger logger = LoggerFactory.getLogger(Ctap2Session.class);
-
-  /**
-   * Construct a new Ctap2Session for a given YubiKey.
-   *
-   * @param device a YubiKeyDevice over NFC or USB
-   * @param callback a callback to invoke with the session
-   */
-  public static void create(
-      YubiKeyDevice device,
-      @Nullable ScpKeyParams scpKeyParams,
-      Callback<Result<CtapSession, Exception>> callback) {
-    if (device.supportsConnection(FidoConnection.class)) {
-      device.requestConnection(
-          FidoConnection.class,
-          value -> callback.invoke(Result.of(() -> new Ctap2Session(value.getValue()))));
-    } else if (device.supportsConnection(SmartCardConnection.class)) {
-      device.requestConnection(
-          SmartCardConnection.class,
-          value ->
-              callback.invoke(Result.of(() -> new Ctap2Session(value.getValue(), scpKeyParams))));
-    } else {
-      callback.invoke(
-          Result.failure(
-              new ApplicationNotAvailableException(
-                  "Session does not support any compatible connection type")));
-    }
-  }
 
   public Ctap2Session(SmartCardConnection connection) throws IOException, CommandException {
     this(connection, new Version(0, 0, 0));

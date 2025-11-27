@@ -38,9 +38,9 @@ import org.jspecify.annotations.Nullable;
  * CTAP2/WebAuthn). Use {@link #create(YubiKeyDevice, List)} or {@link #create(YubiKeyConnection,
  * List, ScpKeyParams)} to obtain the correct implementation for a given session.
  *
+ * @see <a href="https://www.w3.org/TR/webauthn-3/">WebAuthn</a>
  * @see Ctap1Client
  * @see Ctap2Client
- * @see <a href="https://www.w3.org/TR/webauthn-3/">WebAuthn</a>
  */
 public interface WebAuthnClient extends Closeable {
 
@@ -53,15 +53,13 @@ public interface WebAuthnClient extends Closeable {
    * @param device The YubiKey device to use for the session
    * @param extensions List of extensions (only applicable for CTAP2), passing null will use default
    *     extension set
-   * @param useScp use Secure Channel protocol if available
    * @return A WebAuthnClient instance for the given device
    * @throws IOException A communication error in the transport layer
    * @throws CommandException A communication error in the protocol layer (CTAP2 only)
    */
-  static WebAuthnClient create(
-      YubiKeyDevice device, @Nullable List<Extension> extensions, boolean useScp)
+  static WebAuthnClient create(YubiKeyDevice device, @Nullable List<Extension> extensions)
       throws IOException, CommandException {
-    return Utils.createWebAuthnClient(device, extensions, useScp);
+    return Utils.createWebAuthnClient(device, extensions);
   }
 
   /**

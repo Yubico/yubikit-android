@@ -17,7 +17,6 @@
 package com.yubico.yubikit.fido.ctap;
 
 import com.yubico.yubikit.core.Version;
-import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
 import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.application.CommandState;
@@ -33,8 +32,6 @@ import com.yubico.yubikit.core.smartcard.SW;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.smartcard.SmartCardProtocol;
 import com.yubico.yubikit.core.smartcard.scp.ScpKeyParams;
-import com.yubico.yubikit.core.util.Callback;
-import com.yubico.yubikit.core.util.Result;
 import com.yubico.yubikit.core.util.Tlv;
 import com.yubico.yubikit.core.util.Tlvs;
 import com.yubico.yubikit.fido.webauthn.AttestationObject;
@@ -88,33 +85,6 @@ public class Ctap1Session extends CtapSession {
 
   private final Backend<?> backend;
   private final Version version;
-
-  /**
-   * Construct a new Ctap1Session for a given YubiKey.
-   *
-   * @param device a YubiKeyDevice over NFC or USB
-   * @param callback a callback to invoke with the session
-   */
-  public static void create(
-      YubiKeyDevice device,
-      @Nullable ScpKeyParams scpKeyParams,
-      Callback<Result<CtapSession, Exception>> callback) {
-    if (device.supportsConnection(FidoConnection.class)) {
-      device.requestConnection(
-          FidoConnection.class,
-          value -> callback.invoke(Result.of(() -> new Ctap1Session(value.getValue()))));
-    } else if (device.supportsConnection(SmartCardConnection.class)) {
-      device.requestConnection(
-          SmartCardConnection.class,
-          value ->
-              callback.invoke(Result.of(() -> new Ctap1Session(value.getValue(), scpKeyParams))));
-    } else {
-      callback.invoke(
-          Result.failure(
-              new ApplicationNotAvailableException(
-                  "Session does not support any compatible connection type")));
-    }
-  }
 
   public Ctap1Session(SmartCardConnection connection)
       throws IOException, ApplicationNotAvailableException {
