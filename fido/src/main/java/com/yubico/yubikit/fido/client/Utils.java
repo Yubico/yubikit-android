@@ -76,7 +76,7 @@ public class Utils {
     try {
       return new Ctap2Client(createCtap2Session(connection, scpKeyParams), extensions);
     } catch (Exception e) {
-      return new Ctap1Client(createCtap1Session(connection));
+      return new Ctap1Client(createCtap1Session(connection, scpKeyParams));
     }
   }
 
@@ -97,14 +97,15 @@ public class Utils {
     }
   }
 
-  static Ctap1Session createCtap1Session(YubiKeyConnection connection)
+  static Ctap1Session createCtap1Session(
+      YubiKeyConnection connection, @Nullable ScpKeyParams scpKeyParams)
       throws IOException, ApplicationNotAvailableException, IllegalArgumentException {
     if (connection instanceof FidoConnection) {
       logger.debug("Attempting to create Ctap1Session from FidoConnection");
       return new Ctap1Session((FidoConnection) connection);
     } else if (connection instanceof SmartCardConnection) {
       logger.debug("Attempting to create Ctap1Session from SmartCardConnection");
-      return new Ctap1Session((SmartCardConnection) connection);
+      return new Ctap1Session((SmartCardConnection) connection, scpKeyParams);
     } else {
       throw new IllegalArgumentException(
           "Unsupported connection type: "
