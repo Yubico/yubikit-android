@@ -30,7 +30,6 @@ import com.yubico.yubikit.core.otp.OtpConnection;
 import com.yubico.yubikit.core.smartcard.AppId;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.smartcard.SmartCardProtocol;
-import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.management.Capability;
 import com.yubico.yubikit.management.DeviceConfig;
 import com.yubico.yubikit.management.DeviceInfo;
@@ -240,24 +239,7 @@ public class DeviceUtil {
           keyType == YubiKeyType.YKP ? new Version(4, 0, 0) : new Version(3, 0, 0);
 
       Map<Transport, Integer> supportedApps = new EnumMap<>(Transport.class);
-      if (keyType == YubiKeyType.OTHER) {
-        // probe for version
-        try {
-          Ctap2Session ctap2Session = new Ctap2Session(connection);
-          List<String> versions = ctap2Session.getInfo().getVersions();
-          supportedApps.put(
-              Transport.USB,
-              (versions.contains("U2F_V2") ? Capability.U2F.bit : 0)
-                  | (versions.stream().anyMatch((String v) -> v.startsWith("FIDO"))
-                      ? Capability.FIDO2.bit
-                      : 0));
-
-        } catch (CommandException commandException) {
-          logger.error("Failed to open CTAP session", commandException);
-        }
-      } else {
-        supportedApps.put(Transport.USB, Capability.U2F.bit);
-      }
+      supportedApps.put(Transport.USB, Capability.U2F.bit);
       if (keyType == YubiKeyType.NEO) {
         supportedApps.put(Transport.USB, Capability.U2F.bit | baseNeoApps);
         supportedApps.put(Transport.NFC, supportedApps.get(Transport.USB));
@@ -303,6 +285,11 @@ public class DeviceUtil {
     int interfaces = 0;
 
     if (pid != null) {
+
+      if (pid == UsbPid.OTHER) {
+        throw new IllegalArgumentException("Cannot read info from this device");
+      }
+
       keyType = pid.type;
       interfaces = pid.usbInterfaces;
     } else if (connection instanceof SmartCardConnection
