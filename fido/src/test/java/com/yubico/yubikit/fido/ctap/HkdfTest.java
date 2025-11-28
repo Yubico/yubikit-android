@@ -16,7 +16,7 @@
 
 package com.yubico.yubikit.fido.ctap;
 
-import com.yubico.yubikit.testing.Codec;
+import com.yubico.yubikit.Codec;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import org.junit.Assert;

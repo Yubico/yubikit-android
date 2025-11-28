@@ -31,8 +31,7 @@ import java.util.Map;
 
 /**
  * Provides management of resident key type credentials, which are stored on a YubiKey. An instance
- * of this class can be obtained by calling {@link
- * BasicWebAuthnClient#getCredentialManager(char[])}.
+ * of this class can be obtained by calling {@link Ctap2Client#getCredentialManager(char[])}.
  */
 @SuppressWarnings("unused")
 public class CredentialManager {
