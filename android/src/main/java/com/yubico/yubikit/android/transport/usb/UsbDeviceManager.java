@@ -25,6 +25,7 @@ import android.content.IntentFilter;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
 import android.os.Build;
+import com.yubico.yubikit.core.YubiKitConfig;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Objects;
@@ -77,7 +78,9 @@ final class UsbDeviceManager {
       intentFilter.addAction(UsbManager.ACTION_USB_DEVICE_DETACHED);
       context.registerReceiver(broadcastReceiver, intentFilter);
       for (UsbDevice usbDevice : usbDevices) {
-        onDeviceAttach(usbDevice);
+        if (isVendorSupported(usbDevice.getVendorId())) {
+          onDeviceAttach(usbDevice);
+        }
       }
     }
     deviceListeners.add(listener);
@@ -179,7 +182,7 @@ final class UsbDeviceManager {
       String action = intent.getAction();
       UsbDevice usbDevice = getUsbManagerExtraDevice(intent);
 
-      if (usbDevice == null) {
+      if (usbDevice == null || !isVendorSupported(usbDevice.getVendorId())) {
         return;
       }
 
@@ -235,5 +238,9 @@ final class UsbDeviceManager {
     return (Build.VERSION.SDK_INT > Build.VERSION_CODES.TIRAMISU)
         ? intent.getParcelableExtra(UsbManager.EXTRA_DEVICE, UsbDevice.class)
         : intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
+  }
+
+  static boolean isVendorSupported(int vendorId) {
+    return vendorId == UsbYubiKeyDevice.YUBICO_VENDOR_ID || YubiKitConfig.isSupportOtherVendors();
   }
 }

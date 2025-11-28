@@ -77,6 +77,10 @@ public class UsbPidGroup implements Closeable {
       Class<? extends YubiKeyConnection> connectionType,
       UsbYubiKeyDevice device,
       boolean forceResolve) {
+    if (pid == UsbPid.OTHER) {
+      logger.trace("Ignoring device {}{}", device, connectionType);
+      return;
+    }
     logger.trace("Add device node {}{}", device, connectionType);
     int usbInterface = getUsbInterface(connectionType);
     devCount.put(usbInterface, devCount.getOrDefault(usbInterface, 0) + 1);
@@ -93,7 +97,7 @@ public class UsbPidGroup implements Closeable {
         logger.trace(
             "Resolved device {}", serialNumber != null ? serialNumber : "without serial number");
         return;
-      } catch (UnsupportedOperationException | IOException e) {
+      } catch (UnsupportedOperationException | IllegalArgumentException | IOException e) {
         logger.error("Failed opening device: {}", e.getMessage());
       }
     }

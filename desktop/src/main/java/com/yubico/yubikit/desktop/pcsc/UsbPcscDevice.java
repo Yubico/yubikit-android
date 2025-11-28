@@ -19,6 +19,7 @@ import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.UsbInterface;
 import com.yubico.yubikit.core.UsbPid;
 import com.yubico.yubikit.core.YubiKeyType;
+import com.yubico.yubikit.core.YubiKitConfig;
 import com.yubico.yubikit.desktop.UsbYubiKeyDevice;
 import javax.smartcardio.CardTerminal;
 import org.jspecify.annotations.Nullable;
@@ -32,8 +33,8 @@ public class UsbPcscDevice extends PcscDevice implements UsbYubiKeyDevice {
   @Nullable
   public static UsbPcscDevice fromCardTerminal(CardTerminal terminal) {
     String name = terminal.getName();
-    if (!name.toLowerCase().contains("yubikey")) {
-      logger.debug("PCSC card '{}' is not a YubiKey", name);
+    if (!name.toLowerCase().contains("yubikey") && !YubiKitConfig.isSupportOtherVendors()) {
+      logger.debug("PCSC card '{}' is not a recognized device", name);
       return null;
     }
 
@@ -62,6 +63,10 @@ public class UsbPcscDevice extends PcscDevice implements UsbYubiKeyDevice {
       if (pid.type == keyType && pid.usbInterfaces == usbInterfaces) {
         return pid;
       }
+    }
+
+    if (YubiKitConfig.isSupportOtherVendors()) {
+      return UsbPid.OTHER;
     }
 
     throw new IllegalArgumentException("No known PID for device name");

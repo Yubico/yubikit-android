@@ -21,9 +21,7 @@ import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbEndpoint;
 import android.hardware.usb.UsbInterface;
-import android.hardware.usb.UsbManager;
 import android.util.Pair;
-import com.yubico.yubikit.core.YubiKeyDevice;
 import java.io.IOException;
 
 public class SmartCardConnectionHandler extends InterfaceConnectionHandler<UsbSmartCardConnection> {
@@ -38,12 +36,6 @@ public class SmartCardConnectionHandler extends InterfaceConnectionHandler<UsbSm
     Pair<UsbEndpoint, UsbEndpoint> endpoints = findEndpoints(usbInterface);
     return new UsbSmartCardConnection(
         usbDeviceConnection, usbInterface, endpoints.first, endpoints.second);
-  }
-
-  @Override
-  public boolean isAvailable(UsbManager manager, UsbDevice usbDevice) {
-    return usbDevice.getVendorId() == YubiKeyDevice.YUBICO_VENDOR_ID
-        && super.isAvailable(manager, usbDevice);
   }
 
   private Pair<UsbEndpoint, UsbEndpoint> findEndpoints(UsbInterface usbInterface) {
