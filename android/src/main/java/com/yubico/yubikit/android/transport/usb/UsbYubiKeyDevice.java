@@ -61,7 +61,7 @@ public class UsbYubiKeyDevice implements YubiKeyDevice, Closeable {
     this.usbPid =
         (usbDevice.getVendorId() == YUBICO_VENDOR_ID)
             ? UsbPid.fromValue(usbDevice.getProductId())
-            : UsbPid.FIDO_SECURITY_KEY;
+            : UsbPid.OTHER;
 
     this.connectionManager = new ConnectionManager(usbManager, usbDevice);
     this.usbDevice = usbDevice;

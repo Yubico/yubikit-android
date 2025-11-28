@@ -240,7 +240,7 @@ public class DeviceUtil {
           keyType == YubiKeyType.YKP ? new Version(4, 0, 0) : new Version(3, 0, 0);
 
       Map<Transport, Integer> supportedApps = new EnumMap<>(Transport.class);
-      if (keyType == YubiKeyType.FIDO_SECURITY_KEY) {
+      if (keyType == YubiKeyType.OTHER) {
         // probe for version
         try {
           Ctap2Session ctap2Session = new Ctap2Session(connection);
