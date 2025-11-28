@@ -19,8 +19,8 @@ package com.yubico.yubikit.fido.client;
 import com.yubico.yubikit.core.fido.CtapException;
 
 /**
- * A subclass of {@link ClientError} used by {@link BasicWebAuthnClient} to indicate that
- * makeCredential or getAssertion was called with invalid authentication (PIN or UV).
+ * A subclass of {@link ClientError} used by {@link Ctap2Client} to indicate that makeCredential or
+ * getAssertion was called with invalid authentication (PIN or UV).
  */
 public class AuthInvalidClientError extends ClientError {
 

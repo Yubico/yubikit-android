@@ -19,7 +19,7 @@ package com.yubico.yubikit.core.keys;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-import com.yubico.yubikit.testing.Codec;
+import com.yubico.yubikit.Codec;
 import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.ECPublicKey;

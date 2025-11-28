@@ -22,7 +22,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import com.yubico.yubikit.testing.Codec;
+import com.yubico.yubikit.Codec;
 import org.junit.Test;
 
 @SuppressWarnings("SpellCheckingInspection")

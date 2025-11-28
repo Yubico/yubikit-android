@@ -44,7 +44,7 @@ public class UsbFidoConnection extends UsbYubiKeyConnection implements FidoConne
   public void send(byte[] packet) throws IOException {
     int sent = connection.bulkTransfer(bulkOut, packet, packet.length, TIMEOUT);
     if (sent != FidoConnection.PACKET_SIZE) {
-      throw new IOException("Failed to send full packed");
+      throw new IOException("Failed to send full packet");
     }
   }
 
@@ -52,7 +52,7 @@ public class UsbFidoConnection extends UsbYubiKeyConnection implements FidoConne
   public void receive(byte[] packet) throws IOException {
     int read = connection.bulkTransfer(bulkIn, packet, packet.length, TIMEOUT);
     if (read != FidoConnection.PACKET_SIZE) {
-      throw new IOException("Failed to read full packed");
+      throw new IOException("Failed to read full packet");
     }
   }
 }
