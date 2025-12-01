@@ -22,14 +22,14 @@ import org.jspecify.annotations.Nullable;
 /** Additional configurations for USB discovery management */
 public class UsbConfiguration {
 
-  static final UsbDeviceFilter DEFAULT_USB_DEVICE_FILTER =
+  static final VendorProductFilter DEFAULT_VENDOR_PRODUCT_FILTER =
       (vendorId, productId) -> vendorId == UsbYubiKeyDevice.YUBICO_VENDOR_ID;
 
-  static final UsbManagerFilter DEFAULT_USB_MANAGER_FILTER =
-      new UsbManagerFilter() {
+  static final DeviceAccessFilter DEFAULT_DEVICE_ACCESS_FILTER =
+      new DeviceAccessFilter() {
         @Override
-        public UsbDeviceFilter getDeviceFilter() {
-          return DEFAULT_USB_DEVICE_FILTER;
+        public VendorProductFilter getVendorProductFilter() {
+          return DEFAULT_VENDOR_PRODUCT_FILTER;
         }
 
         @Override
@@ -42,25 +42,35 @@ public class UsbConfiguration {
   private boolean handlePermissions = true;
 
   // filter for usb devices
-  private @Nullable UsbManagerFilter deviceFilter;
+  private @Nullable DeviceAccessFilter deviceAccessFilter;
 
   boolean isHandlePermissions() {
     return handlePermissions;
   }
 
-  UsbDeviceFilter getUsbDeviceFilter() {
-    if (deviceFilter != null) {
-      return deviceFilter.getDeviceFilter();
+  /**
+   * Returns the configured VendorProductFilter, or the default if none is set.
+   *
+   * @return the VendorProductFilter in use
+   */
+  VendorProductFilter getVendorProductFilter() {
+    if (deviceAccessFilter != null) {
+      return deviceAccessFilter.getVendorProductFilter();
     }
-    return DEFAULT_USB_DEVICE_FILTER;
+    return DEFAULT_VENDOR_PRODUCT_FILTER;
   }
 
-  UsbManagerFilter getUsbManagerFilter() {
-    if (deviceFilter != null) {
-      return deviceFilter;
+  /**
+   * Returns the configured DeviceAccessFilter, or the default if none is set.
+   *
+   * @return the DeviceAccessFilter in use
+   */
+  DeviceAccessFilter getDeviceAccessFilter() {
+    if (deviceAccessFilter != null) {
+      return deviceAccessFilter;
     }
 
-    return DEFAULT_USB_MANAGER_FILTER;
+    return DEFAULT_DEVICE_ACCESS_FILTER;
   }
 
   /**
@@ -75,12 +85,18 @@ public class UsbConfiguration {
     return this;
   }
 
-  public UsbConfiguration deviceFilter(UsbDeviceFilter usbDeviceFilter) {
-    this.deviceFilter =
-        new UsbManagerFilter() {
+  /**
+   * Sets a VendorProductFilter for USB device selection.
+   *
+   * @param vendorProductFilter the VendorProductFilter to use
+   * @return this UsbConfiguration instance for chaining
+   */
+  public UsbConfiguration setVendorProductFilter(VendorProductFilter vendorProductFilter) {
+    this.deviceAccessFilter =
+        new DeviceAccessFilter() {
           @Override
-          public UsbDeviceFilter getDeviceFilter() {
-            return usbDeviceFilter;
+          public VendorProductFilter getVendorProductFilter() {
+            return vendorProductFilter;
           }
 
           @Override
@@ -91,8 +107,14 @@ public class UsbConfiguration {
     return this;
   }
 
-  public UsbConfiguration deviceFilter(UsbManagerFilter usbManagerFilter) {
-    this.deviceFilter = usbManagerFilter;
+  /**
+   * Sets a DeviceAccessFilter for USB device selection.
+   *
+   * @param deviceAccessFilter the DeviceAccessFilter to use
+   * @return this UsbConfiguration instance for chaining
+   */
+  public UsbConfiguration setDeviceAccessFilter(DeviceAccessFilter deviceAccessFilter) {
+    this.deviceAccessFilter = deviceAccessFilter;
     return this;
   }
 }

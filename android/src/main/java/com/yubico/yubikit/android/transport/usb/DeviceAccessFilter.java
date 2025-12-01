@@ -19,8 +19,24 @@ package com.yubico.yubikit.android.transport.usb;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
 
-public interface UsbManagerFilter {
-  UsbDeviceFilter getDeviceFilter();
+/**
+ * Interface for filtering USB devices based on access criteria. Implementations can define custom
+ * logic to determine if a device should be accessible.
+ */
+public interface DeviceAccessFilter {
+  /**
+   * Returns the associated VendorProductFilter for vendor/product ID matching.
+   *
+   * @return the VendorProductFilter used by this filter
+   */
+  VendorProductFilter getVendorProductFilter();
 
+  /**
+   * Determines whether the specified USB device matches the access criteria.
+   *
+   * @param manager the UsbManager instance
+   * @param device the UsbDevice to check
+   * @return true if the device matches the filter, false otherwise
+   */
   boolean matches(UsbManager manager, UsbDevice device);
 }

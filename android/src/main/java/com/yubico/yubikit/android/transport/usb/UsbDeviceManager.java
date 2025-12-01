@@ -83,7 +83,7 @@ final class UsbDeviceManager {
       intentFilter.addAction(UsbManager.ACTION_USB_DEVICE_DETACHED);
       context.registerReceiver(broadcastReceiver, intentFilter);
       for (UsbDevice usbDevice : usbDevices) {
-        UsbDeviceFilter deviceFilter = usbConfiguration.getUsbDeviceFilter();
+        VendorProductFilter deviceFilter = usbConfiguration.getVendorProductFilter();
         if (deviceFilter.matches(usbDevice.getVendorId(), usbDevice.getDeviceId())) {
           onDeviceAttach(usbDevice);
         }
@@ -188,9 +188,9 @@ final class UsbDeviceManager {
       String action = intent.getAction();
       UsbDevice usbDevice = getUsbManagerExtraDevice(intent);
 
-      UsbDeviceFilter usbDeviceFilter = usbConfiguration.getUsbDeviceFilter();
+      VendorProductFilter vendorProductFilter = usbConfiguration.getVendorProductFilter();
       if (usbDevice == null
-          || !usbDeviceFilter.matches(usbDevice.getVendorId(), usbDevice.getProductId())) {
+          || !vendorProductFilter.matches(usbDevice.getVendorId(), usbDevice.getProductId())) {
         return;
       }
 

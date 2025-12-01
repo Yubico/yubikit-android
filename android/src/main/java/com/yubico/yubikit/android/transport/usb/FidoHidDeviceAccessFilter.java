@@ -26,16 +26,28 @@ import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class AnyFidoUsbDevice implements UsbManagerFilter {
+public class FidoHidDeviceAccessFilter implements DeviceAccessFilter {
   private static final byte[] fidoUsagePage = new byte[] {0x06, (byte) 0xD0, (byte) 0xF1};
-  private final Logger logger = LoggerFactory.getLogger(AnyFidoUsbDevice.class);
+  private final Logger logger = LoggerFactory.getLogger(FidoHidDeviceAccessFilter.class);
 
+  /**
+   * Returns a VendorProductFilter that matches all vendor and product IDs.
+   *
+   * @return a VendorProductFilter accepting any vendor/product combination
+   */
   @Override
-  public UsbDeviceFilter getDeviceFilter() {
+  public VendorProductFilter getVendorProductFilter() {
     // match all vendors
     return (vendorId, productId) -> true;
   }
 
+  /**
+   * Determines if the specified USB device supports the FIDO HID usage page.
+   *
+   * @param manager the UsbManager instance
+   * @param usbDevice the UsbDevice to check
+   * @return true if the device matches FIDO HID criteria, false otherwise
+   */
   @Override
   public boolean matches(UsbManager manager, UsbDevice usbDevice) {
     return isFidoDevice(manager, usbDevice);

@@ -59,7 +59,7 @@ public class UsbYubiKeyDevice implements YubiKeyDevice, Closeable {
   public UsbYubiKeyDevice(UsbManager usbManager, UsbDevice usbDevice) {
 
     this.usbPid =
-        UsbConfiguration.DEFAULT_USB_DEVICE_FILTER.matches(
+        UsbConfiguration.DEFAULT_VENDOR_PRODUCT_FILTER.matches(
                 usbDevice.getVendorId(), usbDevice.getProductId())
             ? UsbPid.fromValue(usbDevice.getProductId())
             : UsbPid.OTHER;

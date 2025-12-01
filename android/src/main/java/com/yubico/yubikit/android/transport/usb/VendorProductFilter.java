@@ -16,6 +16,17 @@
 
 package com.yubico.yubikit.android.transport.usb;
 
-public interface UsbDeviceFilter {
+/**
+ * Interface for filtering USB devices by vendor and product ID. Implementations should define
+ * matching logic for specific vendor/product pairs.
+ */
+public interface VendorProductFilter {
+  /**
+   * Determines whether the given vendor and product IDs match the filter criteria.
+   *
+   * @param vendorId the USB vendor ID
+   * @param productId the USB product ID
+   * @return true if the device matches the filter, false otherwise
+   */
   boolean matches(int vendorId, int productId);
 }
