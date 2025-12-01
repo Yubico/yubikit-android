@@ -15,13 +15,9 @@
  */
 package com.yubico.yubikit;
 
-import static org.junit.Assume.assumeFalse;
-
 import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.desktop.OperatingSystem;
 import com.yubico.yubikit.desktop.YubiKitManager;
-import com.yubico.yubikit.management.DeviceInfo;
-import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,10 +37,7 @@ public class DesktopTestDriver {
   }
 
   public YubiKeyDevice awaitSession() throws InterruptedException {
-    Map<YubiKeyDevice, DeviceInfo> allDevices = yubikit.listAllDevices();
-
-    assumeFalse("No device found", allDevices.isEmpty());
-    return allDevices.keySet().iterator().next();
+    return yubikit.listAllDevices().keySet().iterator().next();
   }
 
   public void returnSession(YubiKeyDevice ignoredDevice) {

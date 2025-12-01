@@ -49,10 +49,7 @@ public class HidManager {
   }
 
   public List<HidDevice> getFidoDevices() {
-    return services.getAttachedHidDevices().stream()
-        .filter(d -> getUsagePage(d) == HID_USAGE_PAGE_FIDO)
-        .map(HidDevice::new)
-        .collect(Collectors.toList());
+    return getHidDevices(YubiKeyDevice.YUBICO_VENDOR_ID, HID_USAGE_PAGE_FIDO);
   }
 
   private int getUsagePage(org.hid4java.HidDevice device) {

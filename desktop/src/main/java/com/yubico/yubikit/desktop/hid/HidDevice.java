@@ -96,9 +96,7 @@ public class HidDevice implements UsbYubiKeyDevice, Closeable {
 
   @Override
   public UsbPid getPid() {
-    return (hidDevice.getVendorId() == YUBICO_VENDOR_ID)
-        ? UsbPid.fromValue(hidDevice.getProductId())
-        : UsbPid.OTHER;
+    return UsbPid.fromValue(hidDevice.getProductId());
   }
 
   @Override

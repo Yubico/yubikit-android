@@ -61,10 +61,6 @@ public class YubiKitManager {
       logger.debug("Enumerate devices for {}", connectionType);
       for (UsbYubiKeyDevice device : listDevices(connectionType)) {
         UsbPid pid = device.getPid();
-        if (pid == UsbPid.OTHER) {
-          logger.debug("Ignoring device");
-          continue;
-        }
         logger.debug("Found device with PID {}", pid);
         if (!groups.containsKey(pid)) {
           groups.put(pid, new UsbPidGroup(pid));

@@ -19,34 +19,22 @@ import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.UsbInterface;
 import com.yubico.yubikit.core.UsbPid;
 import com.yubico.yubikit.core.YubiKeyType;
-import com.yubico.yubikit.core.YubiKitConfig;
 import com.yubico.yubikit.desktop.UsbYubiKeyDevice;
 import javax.smartcardio.CardTerminal;
-import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class UsbPcscDevice extends PcscDevice implements UsbYubiKeyDevice {
   private final UsbPid pid;
-  private static final Logger logger = LoggerFactory.getLogger(UsbPcscDevice.class);
 
-  @Nullable
-  public static UsbPcscDevice fromCardTerminal(CardTerminal terminal) {
-    String name = terminal.getName();
-    if (!name.toLowerCase().contains("yubikey") && !YubiKitConfig.isSupportOtherVendors()) {
-      logger.debug("PCSC card '{}' is not a recognized device", name);
-      return null;
-    }
-
-    return new UsbPcscDevice(terminal);
-  }
-
-  private UsbPcscDevice(CardTerminal terminal) {
+  public UsbPcscDevice(CardTerminal terminal) {
     super(terminal);
     this.pid = getPidFromName(terminal.getName());
   }
 
   private static UsbPid getPidFromName(String name) {
+    if (!name.toLowerCase().contains("yubikey")) {
+      throw new IllegalArgumentException("Given argument is not a USB YubiKey");
+    }
+
     int usbInterfaces = 0;
     if (name.contains("CCID")) {
       usbInterfaces |= UsbInterface.CCID;
@@ -63,10 +51,6 @@ public class UsbPcscDevice extends PcscDevice implements UsbYubiKeyDevice {
       if (pid.type == keyType && pid.usbInterfaces == usbInterfaces) {
         return pid;
       }
-    }
-
-    if (YubiKitConfig.isSupportOtherVendors()) {
-      return UsbPid.OTHER;
     }
 
     throw new IllegalArgumentException("No known PID for device name");

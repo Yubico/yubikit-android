@@ -61,7 +61,7 @@ public class ConnectionManager {
    */
   public boolean supportsConnection(Class<? extends YubiKeyConnection> connectionType) {
     ConnectionHandler<?> handler = getHandler(connectionType);
-    return handler != null && handler.isAvailable(usbManager, usbDevice);
+    return handler != null && handler.isAvailable(usbDevice);
   }
 
   /**

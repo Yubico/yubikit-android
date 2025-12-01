@@ -64,7 +64,7 @@ public class UsbYubiKeyManager {
       UsbConfiguration usbConfiguration, Callback<? super UsbYubiKeyDevice> listener) {
     disable();
     internalListener = new MyDeviceListener(usbConfiguration, listener);
-    UsbDeviceManager.registerUsbListener(context, internalListener);
+    UsbDeviceManager.registerUsbListener(context, usbConfiguration, internalListener);
   }
 
   public synchronized void disable() {
@@ -88,33 +88,47 @@ public class UsbYubiKeyManager {
     @Override
     public void deviceAttached(UsbDevice usbDevice) {
 
-      try {
-        UsbYubiKeyDevice yubikey = new UsbYubiKeyDevice(usbManager, usbDevice);
-        devices.put(usbDevice, yubikey);
-
-        if (usbConfiguration.isHandlePermissions() && !yubikey.hasPermission()) {
-          logger.debug("request permission");
-          UsbDeviceManager.requestPermission(
-              context,
-              usbDevice,
-              (usbDevice1, hasPermission) -> {
-                logger.debug("permission result {}", hasPermission);
-                if (hasPermission) {
-                  synchronized (UsbYubiKeyManager.this) {
-                    if (internalListener == this) {
-                      listener.invoke(yubikey);
-                    }
-                  }
-                }
-              });
-        } else {
-          listener.invoke(yubikey);
-        }
-      } catch (IllegalArgumentException ignored) {
+      if (!usbConfiguration
+          .getVendorProductFilter()
+          .matches(usbDevice.getVendorId(), usbDevice.getProductId())) {
         logger.debug(
             "Attached usbDevice(vid={},pid={}) is not recognized as a valid YubiKey",
             usbDevice.getVendorId(),
             usbDevice.getProductId());
+        return;
+      }
+
+      UsbYubiKeyDevice yubikey = new UsbYubiKeyDevice(usbManager, usbDevice);
+      devices.put(usbDevice, yubikey);
+
+      if (usbConfiguration.isHandlePermissions() && !yubikey.hasPermission()) {
+        logger.debug("request permission");
+        UsbDeviceManager.requestPermission(
+            context,
+            usbDevice,
+            (usbDevice1, hasPermission) -> {
+              logger.debug("permission result {}", hasPermission);
+              if (hasPermission) {
+                synchronized (UsbYubiKeyManager.this) {
+                  if (internalListener == this) {
+                    invoke(usbManager, yubikey, listener);
+                  }
+                }
+              }
+            });
+      } else {
+        invoke(usbManager, yubikey, listener);
+      }
+    }
+
+    private void invoke(
+        UsbManager usbManager,
+        UsbYubiKeyDevice yubiKeyDevice,
+        Callback<? super UsbYubiKeyDevice> listener) {
+      if (usbConfiguration
+          .getDeviceAccessFilter()
+          .matches(usbManager, yubiKeyDevice.getUsbDevice())) {
+        listener.invoke(yubiKeyDevice);
       }
     }
 
