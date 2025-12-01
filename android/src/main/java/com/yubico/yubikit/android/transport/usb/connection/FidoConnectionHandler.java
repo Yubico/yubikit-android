@@ -27,7 +27,6 @@ import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 
 public class FidoConnectionHandler extends InterfaceConnectionHandler<UsbFidoConnection> {
-
   public FidoConnectionHandler() {
     super(UsbConstants.USB_CLASS_HID, 0);
   }

@@ -36,7 +36,6 @@ import com.yubico.yubikit.android.YubiKitManager
 import com.yubico.yubikit.android.app.databinding.DialogAboutBinding
 import com.yubico.yubikit.android.transport.nfc.NfcConfiguration
 import com.yubico.yubikit.android.transport.nfc.NfcNotAvailable
-import com.yubico.yubikit.android.transport.usb.FidoHidDeviceAccessFilter
 import com.yubico.yubikit.android.transport.usb.UsbConfiguration
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.slf4j.LoggerFactory
@@ -82,9 +81,7 @@ class MainActivity : AppCompatActivity() {
         viewModel.handleYubiKey.observe(this) {
             if (it) {
                 logger.info("Enable listening")
-                yubikit.startUsbDiscovery(
-                    UsbConfiguration().setDeviceAccessFilter(FidoHidDeviceAccessFilter())
-                ) { device ->
+                yubikit.startUsbDiscovery(UsbConfiguration()) { device ->
                     logger.info("USB device attached {}, current: {}", device, viewModel.yubiKey.value)
                     viewModel.yubiKey.postValue(device)
                     device.setOnClosed {
