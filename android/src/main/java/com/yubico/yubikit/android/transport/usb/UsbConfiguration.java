@@ -22,10 +22,10 @@ import org.jspecify.annotations.Nullable;
 /** Additional configurations for USB discovery management */
 public class UsbConfiguration {
 
-  public static final UsbDeviceFilter DEFAULT_USB_DEVICE_FILTER =
+  static final UsbDeviceFilter DEFAULT_USB_DEVICE_FILTER =
       (vendorId, productId) -> vendorId == UsbYubiKeyDevice.YUBICO_VENDOR_ID;
 
-  public static final UsbManagerFilter DEFAULT_USB_MANAGER_FILTER =
+  static final UsbManagerFilter DEFAULT_USB_MANAGER_FILTER =
       new UsbManagerFilter() {
         @Override
         public UsbDeviceFilter getDeviceFilter() {
@@ -42,60 +42,20 @@ public class UsbConfiguration {
   private boolean handlePermissions = true;
 
   // filter for usb devices
-  private UsbDeviceFilter usbDeviceFilter = DEFAULT_USB_DEVICE_FILTER;
-
-  // filter for usb devices
-  private UsbManagerFilter usbManagerFilter = DEFAULT_USB_MANAGER_FILTER;
-
-  // filter for usb devices
-  private @Nullable UsbDeviceFilter usbDeviceFilterAlt;
-
-  // filter for usb devices
-  private @Nullable UsbManagerFilter usbManagerFilterAlt;
-
-  // filter for usb devices
   private @Nullable UsbManagerFilter deviceFilter;
 
   boolean isHandlePermissions() {
     return handlePermissions;
   }
 
-  // first variant - 2 variables
-  UsbDeviceFilter usbDeviceFilter() {
-    return usbDeviceFilter;
-  }
-
-  UsbManagerFilter usbManagerFilter() {
-    return usbManagerFilter;
-  }
-
-  // first variant - 2 variables
-  UsbDeviceFilter usbDeviceFilterAlt() {
-    if (usbManagerFilterAlt != null) {
-      return usbManagerFilterAlt.getDeviceFilter();
-    }
-    if (usbDeviceFilterAlt != null) {
-      return usbDeviceFilterAlt;
-    }
-    return DEFAULT_USB_DEVICE_FILTER;
-  }
-
-  UsbManagerFilter getUsbManagerFilterAlt() {
-    if (usbManagerFilterAlt != null) {
-      return usbManagerFilterAlt;
-    }
-    return DEFAULT_USB_MANAGER_FILTER;
-  }
-
-  // third variant - 1 variable
-  UsbDeviceFilter usbDeviceFilterAlt2() {
+  UsbDeviceFilter getUsbDeviceFilter() {
     if (deviceFilter != null) {
       return deviceFilter.getDeviceFilter();
     }
     return DEFAULT_USB_DEVICE_FILTER;
   }
 
-  UsbManagerFilter getUsbManagerFilterAlt2() {
+  UsbManagerFilter getUsbManagerFilter() {
     if (deviceFilter != null) {
       return deviceFilter;
     }
@@ -115,19 +75,8 @@ public class UsbConfiguration {
     return this;
   }
 
-  public UsbConfiguration usbDeviceFilter(UsbDeviceFilter usbDeviceFilter) {
-    this.usbDeviceFilter = usbDeviceFilter;
-    return this;
-  }
-
-  public UsbConfiguration usbManagerFilter(UsbManagerFilter usbManagerFilter) {
-    this.usbManagerFilter = usbManagerFilter;
-    return this;
-  }
-
-  public UsbConfiguration deviceFilterAlt1(UsbDeviceFilter usbDeviceFilter) {
-    this.usbDeviceFilterAlt = usbDeviceFilter;
-    this.usbManagerFilterAlt =
+  public UsbConfiguration deviceFilter(UsbDeviceFilter usbDeviceFilter) {
+    this.deviceFilter =
         new UsbManagerFilter() {
           @Override
           public UsbDeviceFilter getDeviceFilter() {
@@ -142,29 +91,7 @@ public class UsbConfiguration {
     return this;
   }
 
-  public UsbConfiguration deviceFilterAlt1(UsbManagerFilter usbManagerFilter) {
-    this.usbManagerFilterAlt = usbManagerFilter;
-    this.usbDeviceFilterAlt = usbManagerFilter.getDeviceFilter();
-    return this;
-  }
-
-  public UsbConfiguration deviceFilterAlt2(UsbDeviceFilter usbDeviceFilter) {
-    this.usbManagerFilterAlt =
-        new UsbManagerFilter() {
-          @Override
-          public UsbDeviceFilter getDeviceFilter() {
-            return usbDeviceFilter;
-          }
-
-          @Override
-          public boolean matches(UsbManager manager, UsbDevice device) {
-            return true;
-          }
-        };
-    return this;
-  }
-
-  public UsbConfiguration deviceFilterAlt2(UsbManagerFilter usbManagerFilter) {
+  public UsbConfiguration deviceFilter(UsbManagerFilter usbManagerFilter) {
     this.deviceFilter = usbManagerFilter;
     return this;
   }

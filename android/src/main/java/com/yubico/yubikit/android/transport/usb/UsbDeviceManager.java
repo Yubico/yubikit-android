@@ -38,7 +38,7 @@ final class UsbDeviceManager {
 
   private static final String ACTION_USB_PERMISSION = "com.yubico.yubikey.USB_PERMISSION";
 
-  private static @Nullable UsbConfiguration usbConfiguration;
+  private static UsbConfiguration usbConfiguration = new UsbConfiguration();
 
   @Nullable private static UsbDeviceManager instance;
 
@@ -55,11 +55,7 @@ final class UsbDeviceManager {
 
   static void registerUsbListener(
       Context context, UsbConfiguration usbConfiguration, UsbDeviceListener listener) {
-    if (UsbDeviceManager.usbConfiguration == null) {
-      UsbDeviceManager.usbConfiguration = usbConfiguration;
-    } else {
-      logger.warn("Usb configuration already registered.");
-    }
+    UsbDeviceManager.usbConfiguration = usbConfiguration;
     getInstance().addUsbListener(context, listener);
   }
 
@@ -87,10 +83,7 @@ final class UsbDeviceManager {
       intentFilter.addAction(UsbManager.ACTION_USB_DEVICE_DETACHED);
       context.registerReceiver(broadcastReceiver, intentFilter);
       for (UsbDevice usbDevice : usbDevices) {
-        UsbDeviceFilter deviceFilter =
-            usbConfiguration != null
-                ? usbConfiguration.usbDeviceFilterAlt2()
-                : UsbConfiguration.DEFAULT_USB_DEVICE_FILTER;
+        UsbDeviceFilter deviceFilter = usbConfiguration.getUsbDeviceFilter();
         if (deviceFilter.matches(usbDevice.getVendorId(), usbDevice.getDeviceId())) {
           onDeviceAttach(usbDevice);
         }
@@ -195,10 +188,7 @@ final class UsbDeviceManager {
       String action = intent.getAction();
       UsbDevice usbDevice = getUsbManagerExtraDevice(intent);
 
-      UsbDeviceFilter usbDeviceFilter =
-          usbConfiguration != null
-              ? usbConfiguration.usbDeviceFilter()
-              : UsbConfiguration.DEFAULT_USB_DEVICE_FILTER;
+      UsbDeviceFilter usbDeviceFilter = usbConfiguration.getUsbDeviceFilter();
       if (usbDevice == null
           || !usbDeviceFilter.matches(usbDevice.getVendorId(), usbDevice.getProductId())) {
         return;

@@ -83,8 +83,7 @@ class MainActivity : AppCompatActivity() {
             if (it) {
                 logger.info("Enable listening")
                 yubikit.startUsbDiscovery(
-                    UsbConfiguration()
-                        .deviceFilterAlt2(AnyFidoUsbDevice())
+                    UsbConfiguration().deviceFilter(AnyFidoUsbDevice())
                 ) { device ->
                     logger.info("USB device attached {}, current: {}", device, viewModel.yubiKey.value)
                     viewModel.yubiKey.postValue(device)
