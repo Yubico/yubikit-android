@@ -25,7 +25,6 @@ import android.content.IntentFilter;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
 import android.os.Build;
-import com.yubico.yubikit.core.YubiKitConfig;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Objects;
@@ -39,6 +38,8 @@ final class UsbDeviceManager {
 
   private static final String ACTION_USB_PERMISSION = "com.yubico.yubikey.USB_PERMISSION";
 
+  private static @Nullable UsbConfiguration usbConfiguration;
+
   @Nullable private static UsbDeviceManager instance;
 
   private static final Logger logger = LoggerFactory.getLogger(UsbDeviceManager.class);
@@ -50,7 +51,15 @@ final class UsbDeviceManager {
     return instance;
   }
 
-  static void registerUsbListener(Context context, UsbDeviceListener listener) {
+  private UsbDeviceManager() {}
+
+  static void registerUsbListener(
+      Context context, UsbConfiguration usbConfiguration, UsbDeviceListener listener) {
+    if (UsbDeviceManager.usbConfiguration == null) {
+      UsbDeviceManager.usbConfiguration = usbConfiguration;
+    } else {
+      logger.warn("Usb configuration already registered.");
+    }
     getInstance().addUsbListener(context, listener);
   }
 
@@ -78,7 +87,11 @@ final class UsbDeviceManager {
       intentFilter.addAction(UsbManager.ACTION_USB_DEVICE_DETACHED);
       context.registerReceiver(broadcastReceiver, intentFilter);
       for (UsbDevice usbDevice : usbDevices) {
-        if (isVendorSupported(usbDevice.getVendorId())) {
+        UsbDeviceFilter deviceFilter =
+            usbConfiguration != null
+                ? usbConfiguration.usbDeviceFilter()
+                : UsbConfiguration.DEFAULT_USB_DEVICE_FILTER;
+        if (deviceFilter.matches(usbDevice.getVendorId(), usbDevice.getDeviceId())) {
           onDeviceAttach(usbDevice);
         }
       }
@@ -182,7 +195,12 @@ final class UsbDeviceManager {
       String action = intent.getAction();
       UsbDevice usbDevice = getUsbManagerExtraDevice(intent);
 
-      if (usbDevice == null || !isVendorSupported(usbDevice.getVendorId())) {
+      UsbDeviceFilter usbDeviceFilter =
+          usbConfiguration != null
+              ? usbConfiguration.usbDeviceFilter()
+              : UsbConfiguration.DEFAULT_USB_DEVICE_FILTER;
+      if (usbDevice == null
+          || !usbDeviceFilter.matches(usbDevice.getVendorId(), usbDevice.getProductId())) {
         return;
       }
 
@@ -238,9 +256,5 @@ final class UsbDeviceManager {
     return (Build.VERSION.SDK_INT > Build.VERSION_CODES.TIRAMISU)
         ? intent.getParcelableExtra(UsbManager.EXTRA_DEVICE, UsbDevice.class)
         : intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
-  }
-
-  static boolean isVendorSupported(int vendorId) {
-    return vendorId == UsbYubiKeyDevice.YUBICO_VENDOR_ID || YubiKitConfig.isSupportOtherVendors();
   }
 }

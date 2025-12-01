@@ -18,11 +18,30 @@ package com.yubico.yubikit.android.transport.usb;
 /** Additional configurations for USB discovery management */
 public class UsbConfiguration {
 
+  public static final UsbDeviceFilter DEFAULT_USB_DEVICE_FILTER =
+      (vendorId, productId) -> vendorId == UsbYubiKeyDevice.YUBICO_VENDOR_ID;
+
+  public static final UsbManagerFilter DEFAULT_USB_MANAGER_FILTER = (manager, device) -> true;
+
   // whether to prompt permissions when application needs them
   private boolean handlePermissions = true;
 
+  // filter for usb devices
+  private UsbDeviceFilter usbDeviceFilter = DEFAULT_USB_DEVICE_FILTER;
+
+  // filter for usb devices
+  private UsbManagerFilter usbManagerFilter = DEFAULT_USB_MANAGER_FILTER;
+
   boolean isHandlePermissions() {
     return handlePermissions;
+  }
+
+  UsbDeviceFilter usbDeviceFilter() {
+    return usbDeviceFilter;
+  }
+
+  UsbManagerFilter usbManagerFilter() {
+    return usbManagerFilter;
   }
 
   /**
@@ -34,6 +53,16 @@ public class UsbConfiguration {
    */
   public UsbConfiguration handlePermissions(boolean handlePermissions) {
     this.handlePermissions = handlePermissions;
+    return this;
+  }
+
+  public UsbConfiguration usbDeviceFilter(UsbDeviceFilter usbDeviceFilter) {
+    this.usbDeviceFilter = usbDeviceFilter;
+    return this;
+  }
+
+  public UsbConfiguration usbManagerFilter(UsbManagerFilter usbManagerFilter) {
+    this.usbManagerFilter = usbManagerFilter;
     return this;
   }
 }
