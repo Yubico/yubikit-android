@@ -89,7 +89,7 @@ final class UsbDeviceManager {
       for (UsbDevice usbDevice : usbDevices) {
         UsbDeviceFilter deviceFilter =
             usbConfiguration != null
-                ? usbConfiguration.usbDeviceFilter()
+                ? usbConfiguration.usbDeviceFilterAlt2()
                 : UsbConfiguration.DEFAULT_USB_DEVICE_FILTER;
         if (deviceFilter.matches(usbDevice.getVendorId(), usbDevice.getDeviceId())) {
           onDeviceAttach(usbDevice);

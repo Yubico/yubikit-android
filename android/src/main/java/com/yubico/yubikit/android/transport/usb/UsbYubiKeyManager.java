@@ -125,7 +125,9 @@ public class UsbYubiKeyManager {
         UsbManager usbManager,
         UsbYubiKeyDevice yubiKeyDevice,
         Callback<? super UsbYubiKeyDevice> listener) {
-      if (usbConfiguration.usbManagerFilter().matches(usbManager, yubiKeyDevice.getUsbDevice())) {
+      if (usbConfiguration
+          .getUsbManagerFilterAlt2()
+          .matches(usbManager, yubiKeyDevice.getUsbDevice())) {
         listener.invoke(yubiKeyDevice);
       }
     }

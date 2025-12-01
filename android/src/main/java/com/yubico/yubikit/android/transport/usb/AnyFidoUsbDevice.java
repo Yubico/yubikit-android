@@ -31,6 +31,12 @@ public class AnyFidoUsbDevice implements UsbManagerFilter {
   private final Logger logger = LoggerFactory.getLogger(AnyFidoUsbDevice.class);
 
   @Override
+  public UsbDeviceFilter getDeviceFilter() {
+    // match all vendors
+    return (vendorId, productId) -> true;
+  }
+
+  @Override
   public boolean matches(UsbManager manager, UsbDevice usbDevice) {
     return isFidoDevice(manager, usbDevice);
   }
