@@ -89,8 +89,8 @@ public class UsbYubiKeyManager {
     public void deviceAttached(UsbDevice usbDevice) {
 
       if (!usbConfiguration
-          .getVendorProductFilter()
-          .matches(usbDevice.getVendorId(), usbDevice.getProductId())) {
+          .getDeviceFilter()
+          .matchesVendorProduct(usbDevice.getVendorId(), usbDevice.getProductId())) {
         logger.debug(
             "Attached usbDevice(vid={},pid={}) is not recognized as a valid YubiKey",
             usbDevice.getVendorId(),
@@ -126,8 +126,8 @@ public class UsbYubiKeyManager {
         UsbYubiKeyDevice yubiKeyDevice,
         Callback<? super UsbYubiKeyDevice> listener) {
       if (usbConfiguration
-          .getDeviceAccessFilter()
-          .matches(usbManager, yubiKeyDevice.getUsbDevice())) {
+          .getDeviceFilter()
+          .canUseDevice(usbManager, yubiKeyDevice.getUsbDevice())) {
         listener.invoke(yubiKeyDevice);
       }
     }

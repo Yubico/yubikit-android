@@ -26,30 +26,37 @@ import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class FidoHidDeviceAccessFilter implements DeviceAccessFilter {
+/**
+ * A filter for identifying USB devices that support the FIDO HID protocol. This class matches all
+ * vendor and product IDs, and checks device properties to determine FIDO HID compatibility using
+ * the HID usage page.
+ */
+public class FidoDeviceFilter extends DeviceFilter {
   private static final byte[] fidoUsagePage = new byte[] {0x06, (byte) 0xD0, (byte) 0xF1};
-  private final Logger logger = LoggerFactory.getLogger(FidoHidDeviceAccessFilter.class);
+  private final Logger logger = LoggerFactory.getLogger(FidoDeviceFilter.class);
 
   /**
-   * Returns a VendorProductFilter that matches all vendor and product IDs.
+   * Matches any vendor and product ID combination.
    *
-   * @return a VendorProductFilter accepting any vendor/product combination
+   * @param vendorId the USB vendor ID
+   * @param productId the USB product ID
+   * @return always true, as all IDs are accepted
    */
   @Override
-  public VendorProductFilter getVendorProductFilter() {
-    // match all vendors
-    return (vendorId, productId) -> true;
+  public boolean matchesVendorProduct(int vendorId, int productId) {
+    // match all vendors and products
+    return true;
   }
 
   /**
-   * Determines if the specified USB device supports the FIDO HID usage page.
+   * Checks if the specified USB device supports the FIDO HID usage page.
    *
    * @param manager the UsbManager instance
    * @param usbDevice the UsbDevice to check
    * @return true if the device matches FIDO HID criteria, false otherwise
    */
   @Override
-  public boolean matches(UsbManager manager, UsbDevice usbDevice) {
+  public boolean canUseDevice(UsbManager manager, UsbDevice usbDevice) {
     return isFidoDevice(manager, usbDevice);
   }
 

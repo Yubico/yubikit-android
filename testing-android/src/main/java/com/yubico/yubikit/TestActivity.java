@@ -26,6 +26,7 @@ import com.yubico.yubikit.android.YubiKitManager;
 import com.yubico.yubikit.android.transport.nfc.NfcConfiguration;
 import com.yubico.yubikit.android.transport.nfc.NfcNotAvailable;
 import com.yubico.yubikit.android.transport.nfc.NfcYubiKeyDevice;
+import com.yubico.yubikit.android.transport.usb.FidoDeviceFilter;
 import com.yubico.yubikit.android.transport.usb.UsbConfiguration;
 import com.yubico.yubikit.android.transport.usb.UsbYubiKeyDevice;
 import com.yubico.yubikit.core.UsbPid;
@@ -70,7 +71,7 @@ public class TestActivity extends AppCompatActivity {
     yubiKitManager = new YubiKitManager(this);
 
     yubiKitManager.startUsbDiscovery(
-        new UsbConfiguration(),
+        new UsbConfiguration().setDeviceFilter(new FidoDeviceFilter()),
         device -> {
           bottomText.setVisibility(View.VISIBLE);
           bottomText.setText(R.string.touch);

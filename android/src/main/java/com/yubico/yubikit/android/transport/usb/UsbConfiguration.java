@@ -15,62 +15,20 @@
  */
 package com.yubico.yubikit.android.transport.usb;
 
-import android.hardware.usb.UsbDevice;
-import android.hardware.usb.UsbManager;
-import org.jspecify.annotations.Nullable;
-
 /** Additional configurations for USB discovery management */
 public class UsbConfiguration {
-
-  static final VendorProductFilter DEFAULT_VENDOR_PRODUCT_FILTER =
-      (vendorId, productId) -> vendorId == UsbYubiKeyDevice.YUBICO_VENDOR_ID;
-
-  static final DeviceAccessFilter DEFAULT_DEVICE_ACCESS_FILTER =
-      new DeviceAccessFilter() {
-        @Override
-        public VendorProductFilter getVendorProductFilter() {
-          return DEFAULT_VENDOR_PRODUCT_FILTER;
-        }
-
-        @Override
-        public boolean matches(UsbManager manager, UsbDevice device) {
-          return true;
-        }
-      };
-
   // whether to prompt permissions when application needs them
   private boolean handlePermissions = true;
 
-  // filter for usb devices
-  private @Nullable DeviceAccessFilter deviceAccessFilter;
+  // default filter
+  private DeviceFilter deviceFilter = YUBICO_VENDOR_FILTER;
 
   boolean isHandlePermissions() {
     return handlePermissions;
   }
 
-  /**
-   * Returns the configured VendorProductFilter, or the default if none is set.
-   *
-   * @return the VendorProductFilter in use
-   */
-  VendorProductFilter getVendorProductFilter() {
-    if (deviceAccessFilter != null) {
-      return deviceAccessFilter.getVendorProductFilter();
-    }
-    return DEFAULT_VENDOR_PRODUCT_FILTER;
-  }
-
-  /**
-   * Returns the configured DeviceAccessFilter, or the default if none is set.
-   *
-   * @return the DeviceAccessFilter in use
-   */
-  DeviceAccessFilter getDeviceAccessFilter() {
-    if (deviceAccessFilter != null) {
-      return deviceAccessFilter;
-    }
-
-    return DEFAULT_DEVICE_ACCESS_FILTER;
+  DeviceFilter getDeviceFilter() {
+    return deviceFilter;
   }
 
   /**
@@ -85,36 +43,17 @@ public class UsbConfiguration {
     return this;
   }
 
-  /**
-   * Sets a VendorProductFilter for USB device selection.
-   *
-   * @param vendorProductFilter the VendorProductFilter to use
-   * @return this UsbConfiguration instance for chaining
-   */
-  public UsbConfiguration setVendorProductFilter(VendorProductFilter vendorProductFilter) {
-    this.deviceAccessFilter =
-        new DeviceAccessFilter() {
-          @Override
-          public VendorProductFilter getVendorProductFilter() {
-            return vendorProductFilter;
-          }
-
-          @Override
-          public boolean matches(UsbManager manager, UsbDevice device) {
-            return true;
-          }
-        };
+  public UsbConfiguration setDeviceFilter(DeviceFilter deviceFilter) {
+    this.deviceFilter = deviceFilter;
     return this;
   }
 
-  /**
-   * Sets a DeviceAccessFilter for USB device selection.
-   *
-   * @param deviceAccessFilter the DeviceAccessFilter to use
-   * @return this UsbConfiguration instance for chaining
-   */
-  public UsbConfiguration setDeviceAccessFilter(DeviceAccessFilter deviceAccessFilter) {
-    this.deviceAccessFilter = deviceAccessFilter;
-    return this;
+  public static final YubicoVendorFilter YUBICO_VENDOR_FILTER = new YubicoVendorFilter();
+
+  public static class YubicoVendorFilter extends DeviceFilter {
+    @Override
+    boolean matchesVendorProduct(int vendorId, int productId) {
+      return vendorId == UsbYubiKeyDevice.YUBICO_VENDOR_ID;
+    }
   }
 }
