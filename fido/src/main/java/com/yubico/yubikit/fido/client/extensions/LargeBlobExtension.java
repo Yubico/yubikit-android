@@ -46,17 +46,17 @@ import org.slf4j.LoggerFactory;
  *     Blob Key (largeBlobKey)</a>
  */
 public class LargeBlobExtension extends Extension {
-  private static final String LARGE_BLOB_KEY = "largeBlobKey";
-  private static final String LARGE_BLOB = "largeBlob";
-  private static final String LARGE_BLOBS = "largeBlobs";
-  private static final String ACTION_READ = "read";
-  private static final String ACTION_WRITE = "write";
-  private static final String WRITTEN = "written";
-  private static final String SUPPORT = "support";
-  private static final String SUPPORTED = "supported";
-  private static final String REQUIRED = "required";
-  private static final String BLOB = "blob";
-  private static final Logger logger = LoggerFactory.getLogger(LargeBlobExtension.class);
+  static final String LARGE_BLOB_KEY = "largeBlobKey";
+  static final String LARGE_BLOB = "largeBlob";
+  static final String LARGE_BLOBS = "largeBlobs";
+  static final String ACTION_READ = "read";
+  static final String ACTION_WRITE = "write";
+  static final String WRITTEN = "written";
+  static final String SUPPORT = "support";
+  static final String SUPPORTED = "supported";
+  static final String REQUIRED = "required";
+  static final String BLOB = "blob";
+  static final Logger logger = LoggerFactory.getLogger(LargeBlobExtension.class);
 
   public LargeBlobExtension() {
     super(LARGE_BLOB_KEY);

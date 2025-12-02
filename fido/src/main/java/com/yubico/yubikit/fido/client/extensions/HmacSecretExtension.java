@@ -63,27 +63,26 @@ import org.slf4j.LoggerFactory;
  *     Secret MakeCredential Extension (hmac-secret-mc)</a>
  */
 public class HmacSecretExtension extends Extension {
+  static final String PRF = "prf";
+  static final String HMAC_GET_SECRET = "hmacGetSecret";
+  static final String HMAC_CREATE_SECRET = "hmacCreateSecret";
+  static final String FIRST = "first";
+  static final String SECOND = "second";
+  static final String OUTPUT_1 = "output1";
+  static final String OUTPUT_2 = "output2";
+  static final String SALT_1 = "salt1";
+  static final String SALT_2 = "salt2";
+  static final String ENABLED = "enabled";
+  static final String RESULTS = "results";
+  static final String EVAL_BY_CREDENTIAL = "evalByCredential";
+  static final String EVAL = "eval";
+  static final byte[] WEBAUTHN_PRF_BYTES = "WebAuthn PRF".getBytes(StandardCharsets.US_ASCII);
+  static final String NAME = "hmac-secret";
+  static final String NAME_MC = "hmac-secret-mc";
+
   private final boolean allowHmacSecret;
   private static final Logger logger = LoggerFactory.getLogger(HmacSecretExtension.class);
   private static final int SALT_LEN = 32;
-
-  private static final String PRF = "prf";
-  private static final String HMAC_GET_SECRET = "hmacGetSecret";
-  private static final String HMAC_CREATE_SECRET = "hmacCreateSecret";
-  private static final String FIRST = "first";
-  private static final String SECOND = "second";
-  private static final String OUTPUT_1 = "output1";
-  private static final String OUTPUT_2 = "output2";
-  private static final String SALT_1 = "salt1";
-  private static final String SALT_2 = "salt2";
-  private static final String ENABLED = "enabled";
-  private static final String RESULTS = "results";
-  private static final String EVAL_BY_CREDENTIAL = "evalByCredential";
-  private static final String EVAL = "eval";
-  private static final byte[] WEBAUTHN_PRF_BYTES =
-      "WebAuthn PRF".getBytes(StandardCharsets.US_ASCII);
-  private static final String NAME = "hmac-secret";
-  private static final String NAME_MC = "hmac-secret-mc";
 
   public HmacSecretExtension() {
     this(false);

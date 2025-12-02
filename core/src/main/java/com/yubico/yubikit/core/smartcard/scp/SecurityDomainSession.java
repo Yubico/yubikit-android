@@ -55,30 +55,29 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class SecurityDomainSession extends ApplicationSession<SecurityDomainSession> {
-  private static final byte[] DEFAULT_KCV_IV =
-      new byte[] {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+  static final byte[] DEFAULT_KCV_IV = new byte[] {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
 
-  private static final byte INS_GET_DATA = (byte) 0xCA;
-  private static final byte INS_PUT_KEY = (byte) 0xD8;
-  private static final byte INS_STORE_DATA = (byte) 0xE2;
-  private static final byte INS_DELETE = (byte) 0xE4;
-  private static final byte INS_GENERATE_KEY = (byte) 0xF1;
+  static final byte INS_GET_DATA = (byte) 0xCA;
+  static final byte INS_PUT_KEY = (byte) 0xD8;
+  static final byte INS_STORE_DATA = (byte) 0xE2;
+  static final byte INS_DELETE = (byte) 0xE4;
+  static final byte INS_GENERATE_KEY = (byte) 0xF1;
 
   static final byte INS_INITIALIZE_UPDATE = (byte) 0x50;
   static final byte INS_EXTERNAL_AUTHENTICATE = (byte) 0x82;
   static final byte INS_INTERNAL_AUTHENTICATE = (byte) 0x88;
   static final byte INS_PERFORM_SECURITY_OPERATION = (byte) 0x2A;
 
-  private static final short TAG_KEY_INFORMATION = 0xE0;
-  private static final short TAG_CARD_RECOGNITION_DATA = 0x66;
-  private static final short TAG_CA_KLOC_IDENTIFIERS = (short) 0xFF33;
-  private static final short TAG_CA_KLCC_IDENTIFIERS = (short) 0xFF34;
-  private static final short TAG_CERTIFICATE_STORE = (short) 0xBF21;
+  static final short TAG_KEY_INFORMATION = 0xE0;
+  static final short TAG_CARD_RECOGNITION_DATA = 0x66;
+  static final short TAG_CA_KLOC_IDENTIFIERS = (short) 0xFF33;
+  static final short TAG_CA_KLCC_IDENTIFIERS = (short) 0xFF34;
+  static final short TAG_CERTIFICATE_STORE = (short) 0xBF21;
 
-  private static final int KEY_TYPE_AES = 0x88;
-  private static final int KEY_TYPE_ECC_PUBLIC_KEY = 0xB0;
-  private static final int KEY_TYPE_ECC_PRIVATE_KEY = 0xB1;
-  private static final int KEY_TYPE_ECC_KEY_PARAMS = 0xF0;
+  static final int KEY_TYPE_AES = 0x88;
+  static final int KEY_TYPE_ECC_PUBLIC_KEY = 0xB0;
+  static final int KEY_TYPE_ECC_PRIVATE_KEY = 0xB1;
+  static final int KEY_TYPE_ECC_KEY_PARAMS = 0xF0;
 
   private final SmartCardProtocol protocol;
   @Nullable private DataEncryptor dataEncryptor;
@@ -92,13 +91,18 @@ public class SecurityDomainSession extends ApplicationSession<SecurityDomainSess
 
   public SecurityDomainSession(SmartCardConnection connection, @Nullable ScpKeyParams scpKeyParams)
       throws IOException, ApplicationNotAvailableException {
-    protocol = new SmartCardProtocol(connection);
-    protocol.select(AppId.SECURITYDOMAIN);
+    this(new SmartCardProtocol(connection), scpKeyParams);
+  }
+
+  SecurityDomainSession(SmartCardProtocol protocol, @Nullable ScpKeyParams scpKeyParams)
+      throws IOException, ApplicationNotAvailableException {
+    this.protocol = protocol;
+    this.protocol.select(AppId.SECURITYDOMAIN);
     // We don't know the version, but we know it's at least 5.3.0
-    protocol.configure(new Version(5, 3, 0));
+    this.protocol.configure(new Version(5, 3, 0));
     if (scpKeyParams != null) {
       try {
-        protocol.initScp(scpKeyParams);
+        this.protocol.initScp(scpKeyParams);
       } catch (BadResponseException | ApduException e) {
         throw new IllegalStateException(e);
       }

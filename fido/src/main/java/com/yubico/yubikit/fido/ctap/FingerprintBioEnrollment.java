@@ -39,28 +39,28 @@ import org.slf4j.LoggerFactory;
  *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html#authenticatorConfig">authenticatorConfig</a>
  */
 public class FingerprintBioEnrollment extends BioEnrollment {
-  private static final int CMD_ENROLL_BEGIN = 0x01;
-  private static final int CMD_ENROLL_CAPTURE_NEXT = 0x02;
-  private static final int CMD_ENROLL_CANCEL = 0x03;
-  private static final int CMD_ENUMERATE_ENROLLMENTS = 0x04;
-  private static final int CMD_SET_NAME = 0x05;
-  private static final int CMD_REMOVE_ENROLLMENT = 0x06;
-  private static final int CMD_GET_SENSOR_INFO = 0x07;
+  static final int CMD_ENROLL_BEGIN = 0x01;
+  static final int CMD_ENROLL_CAPTURE_NEXT = 0x02;
+  static final int CMD_ENROLL_CANCEL = 0x03;
+  static final int CMD_ENUMERATE_ENROLLMENTS = 0x04;
+  static final int CMD_SET_NAME = 0x05;
+  static final int CMD_REMOVE_ENROLLMENT = 0x06;
+  static final int CMD_GET_SENSOR_INFO = 0x07;
 
-  private static final int RESULT_FINGERPRINT_KIND = 0x02;
-  private static final int RESULT_MAX_SAMPLES_REQUIRED = 0x03;
-  private static final int RESULT_TEMPLATE_ID = 0x04;
-  private static final int RESULT_LAST_SAMPLE_STATUS = 0x05;
-  private static final int RESULT_REMAINING_SAMPLES = 0x06;
-  private static final int RESULT_TEMPLATE_INFOS = 0x07;
-  private static final int RESULT_MAX_TEMPLATE_FRIENDLY_NAME = 0x08;
+  static final int RESULT_FINGERPRINT_KIND = 0x02;
+  static final int RESULT_MAX_SAMPLES_REQUIRED = 0x03;
+  static final int RESULT_TEMPLATE_ID = 0x04;
+  static final int RESULT_LAST_SAMPLE_STATUS = 0x05;
+  static final int RESULT_REMAINING_SAMPLES = 0x06;
+  static final int RESULT_TEMPLATE_INFOS = 0x07;
+  static final int RESULT_MAX_TEMPLATE_FRIENDLY_NAME = 0x08;
 
-  protected static final int TEMPLATE_INFO_ID = 0x01;
-  protected static final int TEMPLATE_INFO_FRIENDLY_NAME = 0x02;
+  static final int TEMPLATE_INFO_ID = 0x01;
+  static final int TEMPLATE_INFO_FRIENDLY_NAME = 0x02;
 
-  private static final int PARAM_TEMPLATE_ID = 0x01;
-  private static final int PARAM_TEMPLATE_FRIENDLY_NAME = 0x02;
-  private static final int PARAM_TIMEOUT_MS = 0x03;
+  static final int PARAM_TEMPLATE_ID = 0x01;
+  static final int PARAM_TEMPLATE_FRIENDLY_NAME = 0x02;
+  static final int PARAM_TIMEOUT_MS = 0x03;
 
   public static final int FEEDBACK_FP_GOOD = 0x00;
   public static final int FEEDBACK_FP_TOO_HIGH = 0x01;

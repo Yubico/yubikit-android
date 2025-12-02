@@ -43,9 +43,9 @@ import org.jspecify.annotations.Nullable;
  */
 public class ThirdPartyPaymentExtension extends Extension {
 
-  private static final String THIRD_PARTY_PAYMENT = "thirdPartyPayment";
-  private static final String PAYMENT = "payment";
-  private static final String IS_PAYMENT = "isPayment";
+  static final String THIRD_PARTY_PAYMENT = "thirdPartyPayment";
+  static final String PAYMENT = "payment";
+  static final String IS_PAYMENT = "isPayment";
 
   public ThirdPartyPaymentExtension() {
     super(THIRD_PARTY_PAYMENT);

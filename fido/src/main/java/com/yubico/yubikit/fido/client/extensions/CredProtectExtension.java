@@ -32,11 +32,11 @@ import org.jspecify.annotations.Nullable;
  */
 public class CredProtectExtension extends Extension {
 
-  private static final String POLICY = "credentialProtectionPolicy";
-  private static final String OPTIONAL = "userVerificationOptional";
-  private static final String OPTIONAL_WITH_LIST = "userVerificationOptionalWithCredentialIDList";
-  private static final String REQUIRED = "userVerificationRequired";
-  private static final String ENFORCE = "enforceCredentialProtectionPolicy";
+  static final String POLICY = "credentialProtectionPolicy";
+  static final String OPTIONAL = "userVerificationOptional";
+  static final String OPTIONAL_WITH_LIST = "userVerificationOptionalWithCredentialIDList";
+  static final String REQUIRED = "userVerificationRequired";
+  static final String ENFORCE = "enforceCredentialProtectionPolicy";
 
   public CredProtectExtension() {
     super("credProtect");

@@ -297,9 +297,9 @@ public class LargeBlobs {
   }
 
   static class LargeBlobMap {
-    private static final int CIPHERTEXT = 1;
-    private static final int NONCE = 2;
-    private static final int ORIG_SIZE = 3;
+    static final int CIPHERTEXT = 1;
+    static final int NONCE = 2;
+    static final int ORIG_SIZE = 3;
 
     private final Map<Integer, Object> data;
 

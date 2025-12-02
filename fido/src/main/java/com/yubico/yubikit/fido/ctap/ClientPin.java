@@ -34,25 +34,25 @@ import org.slf4j.LoggerFactory;
 
 /** Implements Client PIN commands. */
 public class ClientPin {
-  private static final byte CMD_GET_RETRIES = 0x01;
-  private static final byte CMD_GET_KEY_AGREEMENT = 0x02;
-  private static final byte CMD_SET_PIN = 0x03;
-  private static final byte CMD_CHANGE_PIN = 0x04;
-  private static final byte CMD_GET_PIN_TOKEN = 0x05;
-  private static final byte CMD_GET_PIN_TOKEN_USING_UV_WITH_PERMISSIONS = 0x06;
-  private static final byte CMD_GET_UV_RETRIES = 0x07;
-  private static final byte CMD_GET_PIN_TOKEN_USING_PIN_WITH_PERMISSIONS = 0x09;
+  static final byte CMD_GET_RETRIES = 0x01;
+  static final byte CMD_GET_KEY_AGREEMENT = 0x02;
+  static final byte CMD_SET_PIN = 0x03;
+  static final byte CMD_CHANGE_PIN = 0x04;
+  static final byte CMD_GET_PIN_TOKEN = 0x05;
+  static final byte CMD_GET_PIN_TOKEN_USING_UV_WITH_PERMISSIONS = 0x06;
+  static final byte CMD_GET_UV_RETRIES = 0x07;
+  static final byte CMD_GET_PIN_TOKEN_USING_PIN_WITH_PERMISSIONS = 0x09;
 
-  private static final int RESULT_KEY_AGREEMENT = 0x01;
-  private static final int RESULT_PIN_UV_TOKEN = 0x02;
-  private static final int RESULT_RETRIES = 0x03;
-  private static final int RESULT_POWER_CYCLE_STATE = 0x04;
-  private static final int RESULT_UV_RETRIES = 0x05;
+  static final int RESULT_KEY_AGREEMENT = 0x01;
+  static final int RESULT_PIN_UV_TOKEN = 0x02;
+  static final int RESULT_RETRIES = 0x03;
+  static final int RESULT_POWER_CYCLE_STATE = 0x04;
+  static final int RESULT_UV_RETRIES = 0x05;
 
-  private static final int MIN_PIN_LEN = 4;
-  private static final int PIN_BUFFER_LEN = 64;
-  private static final int MAX_PIN_LEN = PIN_BUFFER_LEN - 1;
-  private static final int PIN_HASH_LEN = 16;
+  static final int MIN_PIN_LEN = 4;
+  static final int PIN_BUFFER_LEN = 64;
+  static final int MAX_PIN_LEN = PIN_BUFFER_LEN - 1;
+  static final int PIN_HASH_LEN = 16;
 
   public static final int PIN_PERMISSION_NONE = 0x00;
   public static final int PIN_PERMISSION_MC = 0x01;

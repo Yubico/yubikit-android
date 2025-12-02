@@ -44,11 +44,11 @@ import javax.crypto.spec.SecretKeySpec;
 public class PinUvAuthProtocolV2 extends PinUvAuthProtocolV1 {
   public static final int VERSION = 2;
 
-  private static final String HKDF_ALG = "HmacSHA256";
-  private static final byte[] HKDF_SALT = new byte[32];
-  private static final byte[] HKDF_INFO_HMAC = "CTAP2 HMAC key".getBytes(StandardCharsets.UTF_8);
-  private static final byte[] HKDF_INFO_AES = "CTAP2 AES key".getBytes(StandardCharsets.UTF_8);
-  private static final int HKDF_LENGTH = 32;
+  static final String HKDF_ALG = "HmacSHA256";
+  static final byte[] HKDF_SALT = new byte[32];
+  static final byte[] HKDF_INFO_HMAC = "CTAP2 HMAC key".getBytes(StandardCharsets.UTF_8);
+  static final byte[] HKDF_INFO_AES = "CTAP2 AES key".getBytes(StandardCharsets.UTF_8);
+  static final int HKDF_LENGTH = 32;
 
   @Override
   public int getVersion() {

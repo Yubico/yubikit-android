@@ -36,9 +36,9 @@ import org.jspecify.annotations.Nullable;
  * <p>This class handles APDU encoding and chaining, and implements workarounds for known issues.
  */
 public class SmartCardProtocol implements Closeable {
-  private static final byte INS_SELECT = (byte) 0xa4;
-  private static final byte P1_SELECT = (byte) 0x04;
-  private static final byte P2_SELECT = (byte) 0x00;
+  static final byte INS_SELECT = (byte) 0xa4;
+  static final byte P1_SELECT = (byte) 0x04;
+  static final byte P2_SELECT = (byte) 0x00;
 
   private static final byte INS_SEND_REMAINING = (byte) 0xc0;
 

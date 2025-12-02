@@ -81,35 +81,35 @@ public class OathSession extends ApplicationSession<OathSession> {
   public static final Feature<OathSession> FEATURE_SCP = new Feature.Versioned<>("SCP", 5, 6, 3);
 
   // Tlv tags YKOATH data
-  private static final int TAG_NAME = 0x71;
-  private static final int TAG_KEY = 0x73;
-  private static final int TAG_RESPONSE = 0x75;
-  private static final int TAG_PROPERTY = 0x78;
-  private static final int TAG_IMF = 0x7a;
-  private static final int TAG_CHALLENGE = 0x74;
-  private static final int TAG_VERSION = 0x79;
+  static final int TAG_NAME = 0x71;
+  static final int TAG_KEY = 0x73;
+  static final int TAG_RESPONSE = 0x75;
+  static final int TAG_PROPERTY = 0x78;
+  static final int TAG_IMF = 0x7a;
+  static final int TAG_CHALLENGE = 0x74;
+  static final int TAG_VERSION = 0x79;
 
   // Instruction bytes for APDU commands
-  private static final byte INS_LIST = (byte) 0xa1;
-  private static final byte INS_PUT = 0x01;
-  private static final byte INS_DELETE = 0x02;
-  private static final byte INS_SET_CODE = 0x03;
-  private static final byte INS_RESET = 0x04;
-  private static final byte INS_RENAME = 0x05;
-  private static final byte INS_CALCULATE = (byte) 0xa2;
-  private static final byte INS_VALIDATE = (byte) 0xa3;
-  private static final byte INS_CALCULATE_ALL = (byte) 0xa4;
-  private static final byte INS_SEND_REMAINING = (byte) 0xa5;
+  static final byte INS_LIST = (byte) 0xa1;
+  static final byte INS_PUT = 0x01;
+  static final byte INS_DELETE = 0x02;
+  static final byte INS_SET_CODE = 0x03;
+  static final byte INS_RESET = 0x04;
+  static final byte INS_RENAME = 0x05;
+  static final byte INS_CALCULATE = (byte) 0xa2;
+  static final byte INS_VALIDATE = (byte) 0xa3;
+  static final byte INS_CALCULATE_ALL = (byte) 0xa4;
+  static final byte INS_SEND_REMAINING = (byte) 0xa5;
 
-  private static final byte PROPERTY_REQUIRE_TOUCH = (byte) 0x02;
+  static final byte PROPERTY_REQUIRE_TOUCH = (byte) 0x02;
 
-  private static final long MILLS_IN_SECOND = 1000;
-  private static final int DEFAULT_TOTP_PERIOD = 30;
-  private static final int CHALLENGE_LEN = 8;
-  private static final int ACCESS_KEY_LEN = 16;
+  static final long MILLS_IN_SECOND = 1000;
+  static final int DEFAULT_TOTP_PERIOD = 30;
+  static final int CHALLENGE_LEN = 8;
+  static final int ACCESS_KEY_LEN = 16;
 
-  private final SmartCardProtocol protocol;
-  private final Version version;
+  final SmartCardProtocol protocol;
+  final Version version;
   @Nullable private final ScpKeyParams scpKeyParams;
 
   private String deviceId;
@@ -141,7 +141,12 @@ public class OathSession extends ApplicationSession<OathSession> {
    */
   public OathSession(SmartCardConnection connection, @Nullable ScpKeyParams scpKeyParams)
       throws IOException, ApplicationNotAvailableException {
-    protocol = new SmartCardProtocol(connection, INS_SEND_REMAINING);
+    this(new SmartCardProtocol(connection, INS_SEND_REMAINING), scpKeyParams);
+  }
+
+  OathSession(SmartCardProtocol protocol, @Nullable ScpKeyParams scpKeyParams)
+      throws IOException, ApplicationNotAvailableException {
+    this.protocol = protocol;
     SelectResponse selectResponse = new SelectResponse(protocol.select(AppId.OATH));
     this.scpKeyParams = scpKeyParams;
     version = SessionVersionOverride.overrideOf(selectResponse.version);
