@@ -3,141 +3,81 @@ Yubico
 :toc:
 :toclevels: 2
 
-This guide provides a comprehensive migration path to `yubikit-android` 3.0. It covers breaking API changes, new features, refactoring steps, and essential upgrade notes for developers migrating from pre-3.0 versions.
+This guide helps you upgrade your application to use `yubikit-android` 3.0. It highlights key changes that may affect your code, with migration steps and troubleshooting notes.
 
-== Table of Contents
-1. API Naming Changes
-2. Nullness Annotations Migration and Non-Nullable Generics (JSpecify)
-3. FIDO/WebAuthn Client Data Refactor
-4. Deprecated API Removals
-5. Major Feature Additions & Refactoring
-5.1 CTAP1/CTAP2 FIDO Client Architecture
-5.2 Enhanced CTAP Error Handling
-5.3 Gradle Build Logic & Project Structure
-5.4 User Verification Parameter Improvements
-5.5 Support for CTAP2.3 Info Members
-5.6 Enhanced Testability
-5.7 USB Security Key Filtering and Access
+== Migration Checklist
+
+- Update any usage of public API identifiers that previously used ALL CAPS abbreviations (e.g. `getPinComplexityPolicyURL` → `getPinComplexityPolicyUrl`).
+- Remove usage of deprecated APIs; they have been fully removed.
+- If you use FIDO/WebAuthn APIs:
+- Switch from `BasicWebAuthnClient` to `WebAuthnClient`, if you instantiate these clients directly.
+- Change your code to use `ClientDataProvider` for client data instead of passing raw byte arrays.
+- Update error handling: use `AuthInvalidClientError` to catch invalid PIN or UV errors.
+- If your code uses SDK generics like `Result<T, E>` in Kotlin, ensure you specify non-nullable type arguments (`<T : Any>`).
 
 == 1. API Naming Changes
-All abbreviation-based identifiers (e.g., PIN, RPID, URL, YK) have been changed to CamelCase:
+
+If your code references SDK identifiers using ALL CAPS abbreviations (such as PIN, RPID, URL, YK), update those references to their new CamelCase forms.
+
+.Examples:
 - `getPinComplexityPolicyURL` → `getPinComplexityPolicyUrl`
 - `YKInstrumentedTests` → `YkInstrumentedTests`
-Update all references in your application accordingly.
-See PR#230 for details: https://github.com/Yubico/yubikit-android/pull/230
+
+See https://github.com/Yubico/yubikit-android/pull/230[PR#230] for details.
 
 == 2. Nullness Annotations Migration and Non-Nullable Generics (JSpecify)
-The SDK now uses JSpecify (`org.jspecify.annotations`) for nullness annotations. This change enforces stricter rules about which types can be null.
-In Kotlin, generic type parameters (e.g., `<T>`) are nullable by default. For APIs requiring their type arguments to be non-nullable, declare the constraint explicitly using `<T : Any>`.
+
+The SDK now uses JSpecify (`org.jspecify.annotations`) nullness annotations, enforcing stricter rules about which types can be null.
+
+If you use Kotlin, update any function or class generic parameters that interact with SDK types like `Result<T, E>`: generics must be non-nullable and use `<T : Any>`.
 
 .Migration Example:
 [source,kotlin]
 ----
-Kotlin
 // Old
 fun <T> returnsResult(): Result<T, Throwable> { ... }
-
-// New with JSpecify nullness
-fun <T: Any> returnsResult(): Result<T, Throwable> { ... }
+// New
+fun <T : Any> returnsResult(): Result<T, Throwable> { ... }
 ----
-See PR#231: https://github.com/Yubico/yubikit-android/pull/231
+
+See https://github.com/Yubico/yubikit-android/pull/231[PR#231].
 
 == 3. FIDO/WebAuthn Client Data Refactor
-- APIs now expect a `ClientDataProvider` abstraction instead of raw byte arrays for client data.
-Implement `ClientDataProvider`:
+
+If you use FIDO/WebAuthn APIs, you must now provide client data through a `ClientDataProvider` implementation (not as a raw byte array).
+
+.Migration Example:
 [source,kotlin]
 ----
-class MyClientDataProvider(private val json: ByteArray): ClientDataProvider {
+class MyClientDataProvider(private val json: ByteArray) : ClientDataProvider {
     override fun getJson(): ByteArray = json
     override fun getHash(): ByteArray = MessageDigest.getInstance("SHA-256").digest(json)
 }
 ----
-See PR#233: https://github.com/Yubico/yubikit-android/pull/233
+
+See https://github.com/Yubico/yubikit-android/pull/233[PR#233].
 
 == 4. Deprecated API Removals
-All previously deprecated APIs are now *removed*.
-- Review PR#237 for specifics: https://github.com/Yubico/yubikit-android/pull/237
-- Replace removed class references with promoted alternatives.
 
-== 5. Major Feature Additions & Refactoring
+All APIs previously marked as deprecated have been removed. If your application depended on any deprecated items, update your code to supported alternatives.
 
-=== 5.1 CTAP1/CTAP2 FIDO Client Architecture (PR#240)
-- New class: `Ctap1Client` (implements `CtapClient`), supports CTAP1 protocol for credential management and assertion flows.
-- Refactor: `BasicWebAuthnClient` is now `Ctap2Client`. This class implements the new shared `CtapClient` interface.
-- *Impact*: Existing code using `BasicWebAuthnClient` must switch to `Ctap2Client`, update constructors, and review protocol-specific code.
-[source,java]
-----
-// Old
-BasicWebAuthnClient client = new BasicWebAuthnClient(...);
-// New
-Ctap2Client client = new Ctap2Client(...);
-----
-- Improved constructor logic, error handling, and extension management.
+See https://github.com/Yubico/yubikit-android/pull/237[PR#237].
 
-See: https://github.com/Yubico/yubikit-android/pull/240
+== 5. FIDO Client and Error Handling Changes
 
-=== 5.2 Enhanced CTAP Error Handling (PR#238)
-- `CtapException` class now includes human-readable error names mapped from CTAP error codes. Exception messages and error handling are improved for debugging and user feedback.
-[source,java]
-----
-try {
-    ...
-} catch (CtapException e) {
-    log.error("CTAP error: " + e.getErrorName() + " (" + e.getErrorCode() + ")");
-}
-----
-- New unit and integration tests are available to guide proper error handling and upgrade.
-See: https://github.com/Yubico/yubikit-android/pull/238
+If you directly instantiate FIDO/WebAuthn clients:
+- Use `WebAuthnClient` in place of `BasicWebAuthnClient`.
 
-=== 5.3 Gradle Build Logic & Project Structure (PR#235)
-- Gradle logic has been refactored: plugins/scripts moved from `buildSrc` to a new `build-logic` directory.
-- All modules now use centralized, reusable build logic.
-See: https://github.com/Yubico/yubikit-android/pull/235
+If you catch authentication errors in FIDO flows, use `AuthInvalidClientError` (instead of legacy errors like `PinInvalidClientError`).
 
-=== 5.4 User Verification Parameter Improvements (PR#234)
-- Authentication flows (especially for credential creation and assertion) now support improved separation of PIN-based and UV (user verification) errors.
-- Error class for authentication has been generalized and renamed, see `AuthInvalidClientError`.
-- Review all code handling FIDO credential flows; adjust parameter handling and error checking logic.
-See: https://github.com/Yubico/yubikit-android/pull/234
+See https://github.com/Yubico/yubikit-android/pull/240[PR#240] and https://github.com/Yubico/yubikit-android/pull/234[PR#234].
 
-=== 5.5 Support for CTAP2.3 Info Members (PR#229)
-- New fields in `Ctap2Session.InfoData`: `encCredStoreState`, `authenticatorConfigCommands`
-- New method: `Ctap2Session.getCredStoreState(token)`
-- Javadoc updated with correct FIDO specification links.
-- Test new info members, update integration code to use the new API.
-See: https://github.com/Yubico/yubikit-android/pull/229
+== Troubleshooting
 
-=== 5.6 Enhanced Testability (PR#243)
-- Package-private constructors introduced for protocol argument injection.
-- Constants’ visibility now package-private, accessible for tests.
-- Mockito added as a test dependency for improved unit testing.
-- Unit tests improved/added for various ApplicationSession classes (SecurityDomainSession, PivSession, OathSession, ManagementSession, OpenPgpSession, YubiOtpSession, Ctap1Session, Ctap2Session).
+- **Compile errors on missing APIs:** Check if the item was deprecated and removed. Use the SDK documentation or release notes to find the correct replacement.
+- **Generics issues in Kotlin:** If you see type errors with `Result<T, E>`, update declarations to `<T : Any>`, ensuring that type arguments are non-nullable.
+- **Client data handling:** If previous code for FIDO/WebAuthn fails, ensure you pass a proper `ClientDataProvider` implementation.
 
-See: https://github.com/Yubico/yubikit-android/pull/243
+== Getting Help
 
-=== 5.7 USB Security Key Filtering and Access (PR#241)
-- Introduces `VendorProductFilter` and `DeviceAccessFilter` interfaces in the USB transport layer.
-- Configurable, programmatic USB device discovery replacing hardcoded vendor ID checks.
-- Default and custom filters can be set in `UsbConfiguration`.
-[source,java]
-----
-// Example: USB device filter for FIDO keys
-UsbConfiguration config = new UsbConfiguration();
-config.setDeviceAccessFilter(new FidoHidDeviceAccessFilter());
-----
-- Code that selects YubiKeys by vendor/product ID must be updated to use the new filter system; e.g., for custom selection logic or future device types.
-- Longer default FIDO timeout for improved reliability.
-
-See: https://github.com/Yubico/yubikit-android/pull/241
-
-== 6. Migration Checklist
-
-== Migration Checklist
-
-- If you directly use public API identifiers that contained ALL CAPS abbreviations, update to new CamelCase names (e.g. `getPinComplexityPolicyURL` → `getPinComplexityPolicyUrl`).
-- If your code interacts with FIDO/WebAuthn APIs using byte arrays for client data, update to use the new `ClientDataProvider` interface.
-- If you rely on API elements previously marked as deprecated (see previous release notes or compiler warnings), those are now removed; update your usage to recommended alternatives.
-- If you handle FIDO authentication errors, update your error handling to reference the new `AuthInvalidClientError`.
-- If you use generics with the SDK’s `Result<T, E>` types in Kotlin, ensure type arguments are non-nullable (`<T: Any>`).
-
-For issues or migration questions, open an issue or consult Yubico support.
+For migration questions or issues, open a GitHub https://github.com/Yubico/yubikit-android/issues[Issue].
