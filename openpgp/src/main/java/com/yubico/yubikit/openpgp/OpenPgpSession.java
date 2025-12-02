@@ -116,26 +116,26 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
         }
       };
 
-  private static final byte INS_VERIFY = 0x20;
-  private static final byte INS_CHANGE_PIN = 0x24;
-  private static final byte INS_RESET_RETRY_COUNTER = 0x2c;
-  private static final byte INS_PSO = 0x2A;
-  private static final byte INS_ACTIVATE = 0x44;
-  private static final byte INS_GENERATE_ASYM = 0x47;
-  private static final byte INS_GET_CHALLENGE = (byte) 0x84;
-  private static final byte INS_INTERNAL_AUTHENTICATE = (byte) 0x88;
-  private static final byte INS_SELECT_DATA = (byte) 0xa5;
-  private static final byte INS_GET_DATA = (byte) 0xca;
-  private static final byte INS_PUT_DATA = (byte) 0xda;
-  private static final byte INS_PUT_DATA_ODD = (byte) 0xdb;
-  private static final byte INS_TERMINATE = (byte) 0xe6;
-  private static final byte INS_GET_VERSION = (byte) 0xf1;
-  private static final byte INS_SET_PIN_RETRIES = (byte) 0xf2;
-  private static final byte INS_GET_ATTESTATION = (byte) 0xfb;
+  static final byte INS_VERIFY = 0x20;
+  static final byte INS_CHANGE_PIN = 0x24;
+  static final byte INS_RESET_RETRY_COUNTER = 0x2c;
+  static final byte INS_PSO = 0x2A;
+  static final byte INS_ACTIVATE = 0x44;
+  static final byte INS_GENERATE_ASYM = 0x47;
+  static final byte INS_GET_CHALLENGE = (byte) 0x84;
+  static final byte INS_INTERNAL_AUTHENTICATE = (byte) 0x88;
+  static final byte INS_SELECT_DATA = (byte) 0xa5;
+  static final byte INS_GET_DATA = (byte) 0xca;
+  static final byte INS_PUT_DATA = (byte) 0xda;
+  static final byte INS_PUT_DATA_ODD = (byte) 0xdb;
+  static final byte INS_TERMINATE = (byte) 0xe6;
+  static final byte INS_GET_VERSION = (byte) 0xf1;
+  static final byte INS_SET_PIN_RETRIES = (byte) 0xf2;
+  static final byte INS_GET_ATTESTATION = (byte) 0xfb;
 
-  private static final int TAG_PUBLIC_KEY = 0x7F49;
+  static final int TAG_PUBLIC_KEY = 0x7F49;
 
-  private static final byte[] INVALID_PIN = new byte[8];
+  static final byte[] INVALID_PIN = new byte[8];
 
   private final SmartCardProtocol protocol;
   private final Version version;
@@ -166,9 +166,13 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
    * @throws ApplicationNotAvailableException if the application is missing or disabled
    */
   public OpenPgpSession(SmartCardConnection connection, @Nullable ScpKeyParams scpKeyParams)
-      throws IOException, ApplicationNotAvailableException, ApduException {
-    protocol = new SmartCardProtocol(connection);
+      throws ApduException, IOException, ApplicationNotAvailableException {
+    this(new SmartCardProtocol(connection), scpKeyParams);
+  }
 
+  OpenPgpSession(SmartCardProtocol protocol, @Nullable ScpKeyParams scpKeyParams)
+      throws IOException, ApplicationNotAvailableException, ApduException {
+    this.protocol = protocol;
     try {
       protocol.select(AppId.OPENPGP);
     } catch (IOException e) {

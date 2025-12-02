@@ -25,4 +25,5 @@ val libs = extensions.getByType<VersionCatalogsExtension>().named("libs")
 dependencies {
     testImplementation(project(":testing"))
     testImplementation(libs.findLibrary("junit-junit").get())
+    testImplementation(libs.findLibrary("mockito").get())
 }

@@ -30,18 +30,18 @@ import org.slf4j.LoggerFactory;
 
 public class FidoProtocol implements Closeable {
 
-  private static final byte TYPE_INIT = (byte) 0x80;
+  static final byte TYPE_INIT = (byte) 0x80;
 
-  private static final byte CTAPHID_PING = TYPE_INIT | 0x01;
-  private static final byte CTAPHID_MSG = TYPE_INIT | 0x03;
-  private static final byte CTAPHID_LOCK = TYPE_INIT | 0x04;
-  private static final byte CTAPHID_INIT = TYPE_INIT | 0x06;
-  private static final byte CTAPHID_WINK = TYPE_INIT | 0x08;
-  private static final byte CTAPHID_CBOR = TYPE_INIT | 0x10;
-  private static final byte CTAPHID_CANCEL = TYPE_INIT | 0x11;
+  static final byte CTAPHID_PING = TYPE_INIT | 0x01;
+  static final byte CTAPHID_MSG = TYPE_INIT | 0x03;
+  static final byte CTAPHID_LOCK = TYPE_INIT | 0x04;
+  static final byte CTAPHID_INIT = TYPE_INIT | 0x06;
+  static final byte CTAPHID_WINK = TYPE_INIT | 0x08;
+  static final byte CTAPHID_CBOR = TYPE_INIT | 0x10;
+  static final byte CTAPHID_CANCEL = TYPE_INIT | 0x11;
 
-  private static final byte CTAPHID_ERROR = TYPE_INIT | 0x3f;
-  private static final byte CTAPHID_KEEPALIVE = TYPE_INIT | 0x3b;
+  static final byte CTAPHID_ERROR = TYPE_INIT | 0x3f;
+  static final byte CTAPHID_KEEPALIVE = TYPE_INIT | 0x3b;
 
   /**
    * Protocol capabilities

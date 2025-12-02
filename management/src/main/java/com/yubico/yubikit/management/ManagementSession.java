@@ -19,7 +19,6 @@ package com.yubico.yubikit.management;
 import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.UsbInterface;
 import com.yubico.yubikit.core.Version;
-import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
 import com.yubico.yubikit.core.application.ApplicationSession;
@@ -82,24 +81,24 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
       new Feature.Versioned<>("Device Reset", 5, 6, 0);
 
   // Smart card command constants
-  private static final byte OTP_INS_CONFIG = 0x01;
-  private static final byte INS_READ_CONFIG = 0x1d;
-  private static final byte INS_WRITE_CONFIG = 0x1c;
-  private static final byte INS_SET_MODE = 0x16;
-  private static final byte INS_DEVICE_RESET = 0x1f;
-  private static final byte P1_DEVICE_CONFIG = 0x11;
+  static final byte OTP_INS_CONFIG = 0x01;
+  static final byte INS_READ_CONFIG = 0x1d;
+  static final byte INS_WRITE_CONFIG = 0x1c;
+  static final byte INS_SET_MODE = 0x16;
+  static final byte INS_DEVICE_RESET = 0x1f;
+  static final byte P1_DEVICE_CONFIG = 0x11;
 
   // OTP command constants
-  private static final byte CMD_DEVICE_CONFIG = 0x11;
-  private static final byte CMD_YK4_CAPABILITIES = 0x13;
-  private static final byte CMD_YK4_SET_DEVICE_INFO = 0x15;
+  static final byte CMD_DEVICE_CONFIG = 0x11;
+  static final byte CMD_YK4_CAPABILITIES = 0x13;
+  static final byte CMD_YK4_SET_DEVICE_INFO = 0x15;
 
   // FIDO command constants
-  private static final byte CTAP_TYPE_INIT = (byte) 0x80;
-  private static final byte CTAP_VENDOR_FIRST = 0x40;
-  private static final byte CTAP_YUBIKEY_DEVICE_CONFIG = CTAP_TYPE_INIT | CTAP_VENDOR_FIRST;
-  private static final byte CTAP_READ_CONFIG = CTAP_TYPE_INIT | CTAP_VENDOR_FIRST + 2;
-  private static final byte CTAP_WRITE_CONFIG = CTAP_TYPE_INIT | CTAP_VENDOR_FIRST + 3;
+  static final byte CTAP_TYPE_INIT = (byte) 0x80;
+  static final byte CTAP_VENDOR_FIRST = 0x40;
+  static final byte CTAP_YUBIKEY_DEVICE_CONFIG = CTAP_TYPE_INIT | CTAP_VENDOR_FIRST;
+  static final byte CTAP_READ_CONFIG = CTAP_TYPE_INIT | CTAP_VENDOR_FIRST + 2;
+  static final byte CTAP_WRITE_CONFIG = CTAP_TYPE_INIT | CTAP_VENDOR_FIRST + 3;
 
   private final Backend<?> backend;
   private final Version version;
@@ -130,7 +129,11 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
    */
   public ManagementSession(SmartCardConnection connection, @Nullable ScpKeyParams scpKeyParams)
       throws IOException, ApplicationNotAvailableException {
-    SmartCardProtocol protocol = new SmartCardProtocol(connection);
+    this(new SmartCardProtocol(connection), scpKeyParams);
+  }
+
+  ManagementSession(SmartCardProtocol protocol, @Nullable ScpKeyParams scpKeyParams)
+      throws IOException, ApplicationNotAvailableException {
     Version version;
     try {
       version =
@@ -139,11 +142,11 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
         protocol.initScp(scpKeyParams);
       } else if (version.major == 3) {
         // Workaround to "de-select" on NEO
-        connection.sendAndReceive(new byte[] {(byte) 0xa4, 0x04, 0x00, 0x08});
+        protocol.getConnection().sendAndReceive(new byte[] {(byte) 0xa4, 0x04, 0x00, 0x08});
         protocol.select(AppId.OTP);
       }
     } catch (ApplicationNotAvailableException e) {
-      if (connection.getTransport() == Transport.NFC) {
+      if (protocol.getConnection().getTransport() == Transport.NFC) {
         // NEO doesn't support the Management Application over NFC, but can use the OTP application.
         version = Version.fromBytes(protocol.select(AppId.OTP));
       } else {
@@ -181,7 +184,7 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
           new Backend<SmartCardProtocol>(protocol) {
             @Override
             byte[] readConfig(int page) throws IOException, CommandException {
-              logger.debug("Reading config page {}...", page);
+              logger.debug("Reading config page {} over SmartCardConnection...", page);
               return delegate.sendAndReceive(new Apdu(0, INS_READ_CONFIG, page, 0, null));
             }
 
@@ -203,7 +206,8 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
     }
     this.version = getQualifiedVersion(version);
     protocol.configure(version);
-    logCtor(connection);
+    logger.debug(
+        "Management session initialized for SmartCardConnection, version={}", getVersion());
   }
 
   /**
@@ -216,7 +220,10 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
    */
   public ManagementSession(OtpConnection connection)
       throws IOException, ApplicationNotAvailableException {
-    OtpProtocol protocol = new OtpProtocol(connection);
+    this(new OtpProtocol(connection));
+  }
+
+  ManagementSession(OtpProtocol protocol) throws IOException, ApplicationNotAvailableException {
     Version version = Version.fromBytes(protocol.readStatus());
     if (version.isLessThan(3, 0, 0) && version.major != 0) {
       throw new ApplicationNotAvailableException(
@@ -226,7 +233,7 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
         new Backend<OtpProtocol>(protocol) {
           @Override
           byte[] readConfig(int page) throws IOException, CommandException {
-            logger.debug("Reading config page {}...", page);
+            logger.debug("Reading config page {} over OtpConnection...", page);
             byte[] response =
                 delegate.sendAndReceive(CMD_YK4_CAPABILITIES, pagePayload(page), null);
             if (ChecksumUtils.checkCrc(response, response[0] + 1 + 2)) {
@@ -251,7 +258,7 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
           }
         };
     this.version = getQualifiedVersion(version);
-    logCtor(connection);
+    logger.debug("Management session initialized for OtpConnection, version={}", getVersion());
   }
 
   /**
@@ -262,7 +269,10 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
    * @throws IOException in case of connection error
    */
   public ManagementSession(FidoConnection connection) throws IOException {
-    FidoProtocol protocol = new FidoProtocol(connection);
+    this(new FidoProtocol(connection));
+  }
+
+  ManagementSession(FidoProtocol protocol) throws IOException {
     Version version = protocol.getVersion();
     if (version.major < 4) {
       // Prior to YK4 this was not firmware version
@@ -275,7 +285,7 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
         new Backend<FidoProtocol>(protocol) {
           @Override
           byte[] readConfig(int page) throws IOException {
-            logger.debug("Reading config page {}...", page);
+            logger.debug("Reading config page {} over FidoConnection...", page);
             return delegate.sendAndReceive(CTAP_READ_CONFIG, pagePayload(page), null);
           }
 
@@ -295,7 +305,7 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
           }
         };
     this.version = getQualifiedVersion(version);
-    logCtor(connection);
+    logger.debug("Management session initialized for FidoConnection, version={}", getVersion());
   }
 
   /**
@@ -502,13 +512,6 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
     public void close() throws IOException {
       delegate.close();
     }
-  }
-
-  private void logCtor(YubiKeyConnection connection) {
-    logger.debug(
-        "Management session initialized for connection={}, version={}",
-        connection.getClass().getSimpleName(),
-        getVersion());
   }
 
   private static byte[] pagePayload(int page) {

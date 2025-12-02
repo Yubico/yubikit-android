@@ -61,19 +61,19 @@ import org.slf4j.LoggerFactory;
  *     to Authenticator Protocol (CTAP)</a>
  */
 public class Ctap2Session extends Ctap1Session {
-  private static final byte CMD_MAKE_CREDENTIAL = 0x01;
-  private static final byte CMD_GET_ASSERTION = 0x02;
-  private static final byte CMD_GET_INFO = 0x04;
-  private static final byte CMD_CLIENT_PIN = 0x06;
-  private static final byte CMD_RESET = 0x07;
-  private static final byte CMD_GET_NEXT_ASSERTION = 0x08;
-  private static final byte CMD_BIO_ENROLLMENT = 0x09;
-  private static final byte CMD_CREDENTIAL_MANAGEMENT = 0x0A;
-  private static final byte CMD_SELECTION = 0x0B;
-  private static final byte CMD_LARGE_BLOBS = 0x0C;
-  private static final byte CMD_CONFIG = 0x0D;
-  private static final byte CMD_BIO_ENROLLMENT_PRE = 0x40;
-  private static final byte CMD_CREDENTIAL_MANAGEMENT_PRE = 0x41;
+  static final byte CMD_MAKE_CREDENTIAL = 0x01;
+  static final byte CMD_GET_ASSERTION = 0x02;
+  static final byte CMD_GET_INFO = 0x04;
+  static final byte CMD_CLIENT_PIN = 0x06;
+  static final byte CMD_RESET = 0x07;
+  static final byte CMD_GET_NEXT_ASSERTION = 0x08;
+  static final byte CMD_BIO_ENROLLMENT = 0x09;
+  static final byte CMD_CREDENTIAL_MANAGEMENT = 0x0A;
+  static final byte CMD_SELECTION = 0x0B;
+  static final byte CMD_LARGE_BLOBS = 0x0C;
+  static final byte CMD_CONFIG = 0x0D;
+  static final byte CMD_BIO_ENROLLMENT_PRE = 0x40;
+  static final byte CMD_CREDENTIAL_MANAGEMENT_PRE = 0x41;
 
   private final Version version;
   private final Backend<?, ?> backend;
@@ -104,43 +104,78 @@ public class Ctap2Session extends Ctap1Session {
       SmartCardConnection connection, Version version, @Nullable ScpKeyParams scpKeyParams)
       throws IOException, CommandException {
     this(version, getCtap2SmartCardBackend(new SmartCardProtocol(connection), scpKeyParams));
+  }
+
+  Ctap2Session(SmartCardProtocol protocol, Version version, @Nullable ScpKeyParams scpKeyParams)
+      throws IOException, CommandException {
+    this(version, getCtap2SmartCardBackend(protocol, scpKeyParams));
     logger.debug("Ctap2Session session initialized for SmartCardConnection, version={}", version);
   }
 
   public Ctap2Session(FidoConnection connection) throws IOException, CommandException {
     this(new FidoProtocol(connection));
-    logger.debug("Ctap2Session session initialized for FidoConnection, version={}", version);
   }
 
-  private Ctap2Session(Version version, Backend<?, ?> backend)
-      throws IOException, CommandException {
+  Ctap2Session(FidoProtocol protocol) throws IOException, CommandException {
+    this(protocol.getVersion(), getCtap2FidoBackend(protocol));
+  }
+
+  Ctap2Session(FidoProtocol protocol, InfoData infoData) throws IOException, CommandException {
+    this(protocol.getVersion(), getCtap2FidoBackend(protocol), infoData);
+  }
+
+  Ctap2Session(Version version, Backend<?, ?> backend) throws IOException, CommandException {
     super(version, backend);
     this.version = version;
     this.backend = backend;
     this.info = getInfo();
+    Map<String, ?> options = info.getOptions();
+    this.credentialManagerCommand = computeCredentialManagerCommand(options);
+    this.bioEnrollmentCommand = computeBioEnrollmentCommand(options);
+  }
 
-    final Map<String, ?> options = info.getOptions();
+  Ctap2Session(
+      Version version,
+      SmartCardProtocol protocol,
+      @Nullable ScpKeyParams scpKeyParams,
+      InfoData info)
+      throws IOException, CommandException {
+    this(version, getCtap2SmartCardBackend(protocol, scpKeyParams), info);
+  }
+
+  Ctap2Session(Version version, Backend<?, ?> backend, InfoData info)
+      throws IOException, CommandException {
+    super(version, backend);
+    this.version = version;
+    this.backend = backend;
+    this.info = info;
+    Map<String, ?> options = info.getOptions();
+    this.credentialManagerCommand = computeCredentialManagerCommand(options);
+    this.bioEnrollmentCommand = computeBioEnrollmentCommand(options);
+  }
+
+  @Nullable
+  private Byte computeCredentialManagerCommand(Map<String, ?> options) {
     if (Boolean.TRUE.equals(options.get("credMgmt"))) {
-      this.credentialManagerCommand = CMD_CREDENTIAL_MANAGEMENT;
+      return CMD_CREDENTIAL_MANAGEMENT;
     } else if (info.getVersions().contains("FIDO_2_1_PRE")
         && Boolean.TRUE.equals(options.get("credentialMgmtPreview"))) {
-      this.credentialManagerCommand = CMD_CREDENTIAL_MANAGEMENT_PRE;
+      return CMD_CREDENTIAL_MANAGEMENT_PRE;
     } else {
-      this.credentialManagerCommand = null;
-    }
-
-    if (options.containsKey("bioEnroll")) {
-      this.bioEnrollmentCommand = CMD_BIO_ENROLLMENT;
-    } else if (info.getVersions().contains("FIDO_2_1_PRE")
-        && options.containsKey("userVerificationMgmtPreview")) {
-      this.bioEnrollmentCommand = CMD_BIO_ENROLLMENT_PRE;
-    } else {
-      this.bioEnrollmentCommand = null;
+      return null;
     }
   }
 
-  private Ctap2Session(FidoProtocol protocol) throws IOException, CommandException {
-    this(protocol.getVersion(), getCtap2FidoBackend(protocol));
+  @Nullable
+  private Byte computeBioEnrollmentCommand(Map<String, ?> options) {
+    if (options.containsKey("bioEnroll")) {
+      return CMD_BIO_ENROLLMENT;
+    } else if (info.getVersions().contains("FIDO_2_1_PRE")
+        && options.containsKey("userVerificationMgmtPreview")) {
+      return CMD_BIO_ENROLLMENT_PRE;
+    } else {
+      return null;
+    }
   }
 
   /** Packs a list of objects into a 1-indexed map, discarding any null values. */
@@ -165,7 +200,7 @@ public class Ctap2Session extends Ctap1Session {
     }
     byte[] data = baos.toByteArray();
 
-    int maxMsgSize = command == CMD_GET_INFO ? 1024 : info.maxMsgSize;
+    int maxMsgSize = command == CMD_GET_INFO ? 1024 : info.getMaxMsgSize();
     if (data.length > maxMsgSize) {
       logger.error("Actual message size ({}) larger than maxMsgSize ({})", data.length, maxMsgSize);
       throw new CtapException(CtapException.ERR_REQUEST_TOO_LARGE);
@@ -608,37 +643,37 @@ public class Ctap2Session extends Ctap1Session {
    *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html#authenticatorGetInfo">authenticatorGetInfo</a>
    */
   public static class InfoData {
-    private static final int RESULT_VERSIONS = 0x01;
-    private static final int RESULT_EXTENSIONS = 0x02;
-    private static final int RESULT_AAGUID = 0x03;
-    private static final int RESULT_OPTIONS = 0x04;
-    private static final int RESULT_MAX_MSG_SIZE = 0x05;
-    private static final int RESULT_PIN_UV_AUTH_PROTOCOLS = 0x06;
-    private static final int RESULT_MAX_CREDS_IN_LIST = 0x07;
-    private static final int RESULT_MAX_CRED_ID_LENGTH = 0x08;
-    private static final int RESULT_TRANSPORTS = 0x09;
-    private static final int RESULT_ALGORITHMS = 0x0A;
-    private static final int RESULT_MAX_SERIALIZED_LARGE_BLOB_ARRAY = 0x0B;
-    private static final int RESULT_FORCE_PIN_CHANGE = 0x0C;
-    private static final int RESULT_MIN_PIN_LENGTH = 0x0D;
-    private static final int RESULT_FIRMWARE_VERSION = 0x0E;
-    private static final int RESULT_MAX_CRED_BLOB_LENGTH = 0x0F;
-    private static final int RESULT_MAX_RPID_FOR_SET_MIN_PIN_LENGTH = 0x10;
-    private static final int RESULT_PREFERRED_PLATFORM_UV_ATTEMPTS = 0x11;
-    private static final int RESULT_UV_MODALITY = 0x12;
-    private static final int RESULT_CERTIFICATIONS = 0x13;
-    private static final int RESULT_REMAINING_DISCOVERABLE_CREDENTIALS = 0x14;
-    private static final int RESULT_VENDOR_PROTOTYPE_CONFIG_COMMANDS = 0x15;
-    private static final int RESULT_ATTESTATION_FORMATS = 0x16;
-    private static final int RESULT_UV_COUNT_SINCE_LAST_PIN_ENTRY = 0x17;
-    private static final int RESULT_LONG_TOUCH_FOR_RESET = 0x18;
-    private static final int RESULT_ENC_IDENTIFIER = 0x19;
-    private static final int RESULT_TRANSPORTS_FOR_RESET = 0x1A;
-    private static final int RESULT_PIN_COMPLEXITY_POLICY = 0x1B;
-    private static final int RESULT_PIN_COMPLEXITY_POLICY_URL = 0x1C;
-    private static final int RESULT_MAX_PIN_LENGTH = 0x1D;
-    private static final int RESULT_ENC_CRED_STORE_STATE = 0x1E;
-    private static final int RESULT_AUTHENTICATOR_CONFIG_COMMANDS = 0x1F;
+    static final int RESULT_VERSIONS = 0x01;
+    static final int RESULT_EXTENSIONS = 0x02;
+    static final int RESULT_AAGUID = 0x03;
+    static final int RESULT_OPTIONS = 0x04;
+    static final int RESULT_MAX_MSG_SIZE = 0x05;
+    static final int RESULT_PIN_UV_AUTH_PROTOCOLS = 0x06;
+    static final int RESULT_MAX_CREDS_IN_LIST = 0x07;
+    static final int RESULT_MAX_CRED_ID_LENGTH = 0x08;
+    static final int RESULT_TRANSPORTS = 0x09;
+    static final int RESULT_ALGORITHMS = 0x0A;
+    static final int RESULT_MAX_SERIALIZED_LARGE_BLOB_ARRAY = 0x0B;
+    static final int RESULT_FORCE_PIN_CHANGE = 0x0C;
+    static final int RESULT_MIN_PIN_LENGTH = 0x0D;
+    static final int RESULT_FIRMWARE_VERSION = 0x0E;
+    static final int RESULT_MAX_CRED_BLOB_LENGTH = 0x0F;
+    static final int RESULT_MAX_RPID_FOR_SET_MIN_PIN_LENGTH = 0x10;
+    static final int RESULT_PREFERRED_PLATFORM_UV_ATTEMPTS = 0x11;
+    static final int RESULT_UV_MODALITY = 0x12;
+    static final int RESULT_CERTIFICATIONS = 0x13;
+    static final int RESULT_REMAINING_DISCOVERABLE_CREDENTIALS = 0x14;
+    static final int RESULT_VENDOR_PROTOTYPE_CONFIG_COMMANDS = 0x15;
+    static final int RESULT_ATTESTATION_FORMATS = 0x16;
+    static final int RESULT_UV_COUNT_SINCE_LAST_PIN_ENTRY = 0x17;
+    static final int RESULT_LONG_TOUCH_FOR_RESET = 0x18;
+    static final int RESULT_ENC_IDENTIFIER = 0x19;
+    static final int RESULT_TRANSPORTS_FOR_RESET = 0x1A;
+    static final int RESULT_PIN_COMPLEXITY_POLICY = 0x1B;
+    static final int RESULT_PIN_COMPLEXITY_POLICY_URL = 0x1C;
+    static final int RESULT_MAX_PIN_LENGTH = 0x1D;
+    static final int RESULT_ENC_CRED_STORE_STATE = 0x1E;
+    static final int RESULT_AUTHENTICATOR_CONFIG_COMMANDS = 0x1F;
 
     private static final byte[] encIdentifierBytes =
         "encIdentifier".getBytes(StandardCharsets.UTF_8);
@@ -1273,12 +1308,12 @@ public class Ctap2Session extends Ctap1Session {
 
   /** Data class holding the result of makeCredential. */
   public static class CredentialData {
-    private static final int RESULT_FMT = 0x01;
-    private static final int RESULT_AUTH_DATA = 0x02;
-    private static final int RESULT_ATT_STMT = 0x03;
-    private static final int RESULT_EP_ATT = 0x04;
-    private static final int RESULT_LARGE_BLOB_KEY = 0x05;
-    private static final int RESULT_UNSIGNED_EXTENSION_OUTPUTS = 0x06;
+    static final int RESULT_FMT = 0x01;
+    static final int RESULT_AUTH_DATA = 0x02;
+    static final int RESULT_ATT_STMT = 0x03;
+    static final int RESULT_EP_ATT = 0x04;
+    static final int RESULT_LARGE_BLOB_KEY = 0x05;
+    static final int RESULT_UNSIGNED_EXTENSION_OUTPUTS = 0x06;
 
     private final String format;
     private final byte[] authenticatorData;
@@ -1382,13 +1417,13 @@ public class Ctap2Session extends Ctap1Session {
    *     response structure</a>.
    */
   public static class AssertionData {
-    private static final int RESULT_CREDENTIAL = 1;
-    private static final int RESULT_AUTH_DATA = 2;
-    private static final int RESULT_SIGNATURE = 3;
-    private static final int RESULT_USER = 4;
-    private static final int RESULT_N_CREDS = 5;
-    private static final int RESULT_USER_SELECTED = 6;
-    private static final int RESULT_LARGE_BLOB_KEY = 7;
+    static final int RESULT_CREDENTIAL = 1;
+    static final int RESULT_AUTH_DATA = 2;
+    static final int RESULT_SIGNATURE = 3;
+    static final int RESULT_USER = 4;
+    static final int RESULT_N_CREDS = 5;
+    static final int RESULT_USER_SELECTED = 6;
+    static final int RESULT_LARGE_BLOB_KEY = 7;
 
     @Nullable private final Map<String, ?> credential;
     private final byte[] authenticatorData;
@@ -1628,7 +1663,7 @@ public class Ctap2Session extends Ctap1Session {
     }
   }
 
-  private static SmartCardBackend getCtap2SmartCardBackend(
+  static SmartCardBackend getCtap2SmartCardBackend(
       SmartCardProtocol protocol, @Nullable ScpKeyParams scpKeyParams)
       throws IOException, ApplicationNotAvailableException {
     protocol.select(AppId.FIDO);
@@ -1642,7 +1677,7 @@ public class Ctap2Session extends Ctap1Session {
     return new SmartCardBackend(protocol, new Ctap1Session.SmartCardBackend(protocol));
   }
 
-  private static FidoBackend getCtap2FidoBackend(FidoProtocol protocol) {
+  static FidoBackend getCtap2FidoBackend(FidoProtocol protocol) {
     return new FidoBackend(protocol, new Ctap1Session.FidoBackend(protocol));
   }
 }

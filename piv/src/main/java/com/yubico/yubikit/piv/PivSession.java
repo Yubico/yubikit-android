@@ -137,58 +137,58 @@ public class PivSession extends ApplicationSession<PivSession> {
   private static final int SLOT_OCC_AUTH = 0x96;
 
   // Instruction set
-  private static final byte INS_VERIFY = 0x20;
-  private static final byte INS_CHANGE_REFERENCE = 0x24;
-  private static final byte INS_RESET_RETRY = 0x2c;
-  private static final byte INS_GENERATE_ASYMMETRIC = 0x47;
-  private static final byte INS_AUTHENTICATE = (byte) 0x87;
-  private static final byte INS_GET_DATA = (byte) 0xcb;
-  private static final byte INS_PUT_DATA = (byte) 0xdb;
-  private static final byte INS_MOVE_KEY = (byte) 0xf6;
-  private static final byte INS_GET_METADATA = (byte) 0xf7;
-  private static final byte INS_GET_SERIAL = (byte) 0xf8;
-  private static final byte INS_ATTEST = (byte) 0xf9;
-  private static final byte INS_SET_PIN_RETRIES = (byte) 0xfa;
-  private static final byte INS_RESET = (byte) 0xfb;
-  private static final byte INS_GET_VERSION = (byte) 0xfd;
-  private static final byte INS_IMPORT_KEY = (byte) 0xfe;
-  private static final byte INS_SET_MGMKEY = (byte) 0xff;
+  static final byte INS_VERIFY = 0x20;
+  static final byte INS_CHANGE_REFERENCE = 0x24;
+  static final byte INS_RESET_RETRY = 0x2c;
+  static final byte INS_GENERATE_ASYMMETRIC = 0x47;
+  static final byte INS_AUTHENTICATE = (byte) 0x87;
+  static final byte INS_GET_DATA = (byte) 0xcb;
+  static final byte INS_PUT_DATA = (byte) 0xdb;
+  static final byte INS_MOVE_KEY = (byte) 0xf6;
+  static final byte INS_GET_METADATA = (byte) 0xf7;
+  static final byte INS_GET_SERIAL = (byte) 0xf8;
+  static final byte INS_ATTEST = (byte) 0xf9;
+  static final byte INS_SET_PIN_RETRIES = (byte) 0xfa;
+  static final byte INS_RESET = (byte) 0xfb;
+  static final byte INS_GET_VERSION = (byte) 0xfd;
+  static final byte INS_IMPORT_KEY = (byte) 0xfe;
+  static final byte INS_SET_MGMKEY = (byte) 0xff;
 
   // Tags for parsing responses and preparing requests
-  private static final int TAG_AUTH_WITNESS = 0x80;
-  private static final int TAG_AUTH_CHALLENGE = 0x81;
-  private static final int TAG_AUTH_RESPONSE = 0x82;
-  private static final int TAG_AUTH_EXPONENTIATION = 0x85;
-  private static final int TAG_GEN_ALGORITHM = 0x80;
-  private static final int TAG_OBJ_DATA = 0x53;
-  private static final int TAG_OBJ_ID = 0x5c;
-  private static final int TAG_CERTIFICATE = 0x70;
-  private static final int TAG_CERT_INFO = 0x71;
-  private static final int TAG_DYN_AUTH = 0x7c;
-  private static final int TAG_LRC = 0xfe;
-  private static final int TAG_PIN_POLICY = 0xaa;
-  private static final int TAG_TOUCH_POLICY = 0xab;
+  static final int TAG_AUTH_WITNESS = 0x80;
+  static final int TAG_AUTH_CHALLENGE = 0x81;
+  static final int TAG_AUTH_RESPONSE = 0x82;
+  static final int TAG_AUTH_EXPONENTIATION = 0x85;
+  static final int TAG_GEN_ALGORITHM = 0x80;
+  static final int TAG_OBJ_DATA = 0x53;
+  static final int TAG_OBJ_ID = 0x5c;
+  static final int TAG_CERTIFICATE = 0x70;
+  static final int TAG_CERT_INFO = 0x71;
+  static final int TAG_DYN_AUTH = 0x7c;
+  static final int TAG_LRC = 0xfe;
+  static final int TAG_PIN_POLICY = 0xaa;
+  static final int TAG_TOUCH_POLICY = 0xab;
 
   // Metadata tags
-  private static final int TAG_METADATA_ALGO = 0x01;
-  private static final int TAG_METADATA_POLICY = 0x02;
-  private static final int TAG_METADATA_ORIGIN = 0x03;
-  private static final int TAG_METADATA_PUBLIC_KEY = 0x04;
-  private static final int TAG_METADATA_IS_DEFAULT = 0x05;
-  private static final int TAG_METADATA_RETRIES = 0x06;
-  private static final int TAG_METADATA_BIO_CONFIGURED = 0x07;
-  private static final int TAG_METADATA_TEMPORARY_PIN = 0x08;
+  static final int TAG_METADATA_ALGO = 0x01;
+  static final int TAG_METADATA_POLICY = 0x02;
+  static final int TAG_METADATA_ORIGIN = 0x03;
+  static final int TAG_METADATA_PUBLIC_KEY = 0x04;
+  static final int TAG_METADATA_IS_DEFAULT = 0x05;
+  static final int TAG_METADATA_RETRIES = 0x06;
+  static final int TAG_METADATA_BIO_CONFIGURED = 0x07;
+  static final int TAG_METADATA_TEMPORARY_PIN = 0x08;
 
-  private static final byte ORIGIN_GENERATED = 1;
-  private static final byte ORIGIN_IMPORTED = 2;
+  static final byte ORIGIN_GENERATED = 1;
+  static final byte ORIGIN_IMPORTED = 2;
 
-  private static final int INDEX_PIN_POLICY = 0;
-  private static final int INDEX_TOUCH_POLICY = 1;
-  private static final int INDEX_RETRIES_TOTAL = 0;
-  private static final int INDEX_RETRIES_REMAINING = 1;
+  static final int INDEX_PIN_POLICY = 0;
+  static final int INDEX_TOUCH_POLICY = 1;
+  static final int INDEX_RETRIES_TOTAL = 0;
+  static final int INDEX_RETRIES_REMAINING = 1;
 
-  private static final byte PIN_P2 = (byte) 0x80;
-  private static final byte PUK_P2 = (byte) 0x81;
+  static final byte PIN_P2 = (byte) 0x80;
+  static final byte PUK_P2 = (byte) 0x81;
 
   private final SmartCardProtocol protocol;
   private final Version version;
@@ -221,7 +221,12 @@ public class PivSession extends ApplicationSession<PivSession> {
    */
   public PivSession(SmartCardConnection connection, @Nullable ScpKeyParams scpKeyParams)
       throws IOException, ApduException, ApplicationNotAvailableException {
-    protocol = new SmartCardProtocol(connection);
+    this(new SmartCardProtocol(connection), scpKeyParams);
+  }
+
+  PivSession(SmartCardProtocol protocol, @Nullable ScpKeyParams scpKeyParams)
+      throws IOException, ApduException, ApplicationNotAvailableException {
+    this.protocol = protocol;
     protocol.select(AppId.PIV);
     if (scpKeyParams != null) {
       try {

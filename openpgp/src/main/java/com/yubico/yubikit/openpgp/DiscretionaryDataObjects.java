@@ -24,11 +24,11 @@ import java.util.Map;
 import org.jspecify.annotations.Nullable;
 
 public class DiscretionaryDataObjects {
-  private static final int TAG_EXTENDED_CAPABILITIES = 0xC0;
-  private static final int TAG_FINGERPRINTS = 0xC5;
-  private static final int TAG_CA_FINGERPRINTS = 0xC6;
-  private static final int TAG_GENERATION_TIMES = 0xCD;
-  private static final int TAG_KEY_INFORMATION = 0xDE;
+  static final int TAG_EXTENDED_CAPABILITIES = 0xC0;
+  static final int TAG_FINGERPRINTS = 0xC5;
+  static final int TAG_CA_FINGERPRINTS = 0xC6;
+  static final int TAG_GENERATION_TIMES = 0xCD;
+  static final int TAG_KEY_INFORMATION = 0xDE;
   private final ExtendedCapabilities extendedCapabilities;
 
   private final AlgorithmAttributes attributesSig;
