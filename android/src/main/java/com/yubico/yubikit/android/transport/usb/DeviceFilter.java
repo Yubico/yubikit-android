@@ -28,8 +28,8 @@ public class DeviceFilter {
    * @param productId the USB product ID
    * @return true if the IDs match the filter, false otherwise
    */
-  boolean matchesVendorProduct(int vendorId, int productId) {
-    return false;
+  boolean checkVendorProductIds(int vendorId, int productId) {
+    return true;
   }
 
   /**
@@ -41,7 +41,7 @@ public class DeviceFilter {
    * @param usbDevice the UsbDevice to evaluate
    * @return true if the device is allowed for SDK use, false otherwise
    */
-  boolean canUseDevice(UsbManager usbManager, UsbDevice usbDevice) {
+  boolean checkUsbDevice(UsbManager usbManager, UsbDevice usbDevice) {
     return true;
   }
 }

@@ -87,7 +87,7 @@ final class UsbDeviceManager {
       context.registerReceiver(broadcastReceiver, intentFilter);
       for (UsbDevice usbDevice : usbDevices) {
         DeviceFilter deviceFilter = usbConfiguration.getDeviceFilter();
-        if (deviceFilter.matchesVendorProduct(usbDevice.getVendorId(), usbDevice.getDeviceId())) {
+        if (deviceFilter.checkVendorProductIds(usbDevice.getVendorId(), usbDevice.getDeviceId())) {
           onDeviceAttach(usbDevice);
         }
       }
@@ -193,7 +193,7 @@ final class UsbDeviceManager {
 
       DeviceFilter deviceFilter = usbConfiguration.getDeviceFilter();
       if (usbDevice == null
-          || !deviceFilter.matchesVendorProduct(
+          || !deviceFilter.checkVendorProductIds(
               usbDevice.getVendorId(), usbDevice.getProductId())) {
         return;
       }

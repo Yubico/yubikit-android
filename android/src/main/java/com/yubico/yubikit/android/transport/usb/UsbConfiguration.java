@@ -52,7 +52,7 @@ public class UsbConfiguration {
 
   public static class YubicoVendorFilter extends DeviceFilter {
     @Override
-    boolean matchesVendorProduct(int vendorId, int productId) {
+    boolean checkVendorProductIds(int vendorId, int productId) {
       return vendorId == UsbYubiKeyDevice.YUBICO_VENDOR_ID;
     }
   }
