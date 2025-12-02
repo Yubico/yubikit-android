@@ -36,7 +36,7 @@ public class Ctap2SessionTest {
     when(infoData.getVersions()).thenReturn(Collections.singletonList("FIDO_2_0"));
     try (Ctap2Session session = new Ctap2Session(new Version(1, 2, 3), protocol, null, infoData)) {
       assertEquals(new Version(1, 2, 3), session.getVersion());
-      assertEquals("FIDO_2_0", session.getCachedInfo().getVersions().getFirst());
+      assertEquals("FIDO_2_0", session.getCachedInfo().getVersions().get(0));
     }
     verify(protocol).select(AppId.FIDO);
     verify(protocol).close();
@@ -50,7 +50,7 @@ public class Ctap2SessionTest {
     when(infoData.getVersions()).thenReturn(Collections.singletonList("FIDO_2_0"));
     try (Ctap2Session session = new Ctap2Session(protocol, infoData)) {
       assertEquals(new Version(1, 2, 3), session.getVersion());
-      assertEquals("FIDO_2_0", session.getCachedInfo().getVersions().getFirst());
+      assertEquals("FIDO_2_0", session.getCachedInfo().getVersions().get(0));
     }
     verify(protocol).close();
   }
