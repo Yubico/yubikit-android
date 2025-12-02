@@ -38,8 +38,6 @@ final class UsbDeviceManager {
 
   private static final String ACTION_USB_PERMISSION = "com.yubico.yubikey.USB_PERMISSION";
 
-  private static UsbConfiguration usbConfiguration = new UsbConfiguration();
-
   @Nullable private static UsbDeviceManager instance;
 
   private static final Logger logger = LoggerFactory.getLogger(UsbDeviceManager.class);
@@ -51,12 +49,9 @@ final class UsbDeviceManager {
     return instance;
   }
 
-  private UsbDeviceManager() {}
-
   static void registerUsbListener(
       Context context, UsbConfiguration usbConfiguration, UsbDeviceListener listener) {
-    UsbDeviceManager.usbConfiguration = usbConfiguration;
-    getInstance().addUsbListener(context, listener);
+    getInstance().setUsbConfiguration(usbConfiguration).addUsbListener(context, listener);
   }
 
   static void unregisterUsbListener(Context context, UsbDeviceListener listener) {
@@ -74,6 +69,14 @@ final class UsbDeviceManager {
   private final WeakHashMap<UsbDevice, Set<PermissionResultListener>> contexts =
       new WeakHashMap<>();
   private final Set<UsbDevice> awaitingPermissions = new HashSet<>();
+  private UsbConfiguration usbConfiguration = new UsbConfiguration();
+
+  private UsbDeviceManager() {}
+
+  private synchronized UsbDeviceManager setUsbConfiguration(UsbConfiguration usbConfiguration) {
+    this.usbConfiguration = usbConfiguration;
+    return this;
+  }
 
   private synchronized void addUsbListener(Context context, UsbDeviceListener listener) {
     if (deviceListeners.isEmpty()) {
