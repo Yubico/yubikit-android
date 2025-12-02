@@ -1,0 +1,157 @@
+= yubikit-android 3.0 Migration Guide
+Yubico
+:toc:
+:toclevels: 2
+
+This guide provides a comprehensive migration path to `yubikit-android` 3.0. It covers breaking API changes, new features, refactoring steps, and essential upgrade notes for developers migrating from pre-3.0 versions.
+
+== Table of Contents
+1. API Naming Changes
+2. Nullness Annotations Migration
+3. FIDO/WebAuthn Client Data Refactor
+4. Deprecated API Removals
+5. Major Feature Additions & Refactoring
+5.1 CTAP1/CTAP2 FIDO Client Architecture
+5.2 Enhanced CTAP Error Handling
+5.3 Gradle Build Logic & Project Structure
+5.4 User Verification Parameter Improvements
+5.5 Support for CTAP2.3 Info Members
+5.6 Enhanced Testability
+5.7 USB Security Key Filtering and Access
+6. Migration Checklist
+7. References
+
+== 1. API Naming Changes
+All abbreviation-based identifiers (e.g., PIN, RPID, URL) have been changed to CamelCase:
+- `YKInstrumentedTests` → `YkInstrumentedTests`
+- `getPinComplexityPolicyURL` → `getPinComplexityPolicyUrl`
+Update all references in your application accordingly.
+See PR#230 for details: https://github.com/Yubico/yubikit-android/pull/230
+
+== 2. Nullness Annotations Migration
+- Remove `javax.annotation` nullability annotations.
+- Use JSpecify `org.jspecify.annotations.NullMarked` (at package level) and `@Nullable` (where needed).
+- Update package-info.java:
+[source,java]
+----
+@NullMarked
+package com.your.package;
+
+import org.jspecify.annotations.NullMarked;
+----
+See PR#231: https://github.com/Yubico/yubikit-android/pull/231
+
+== 3. FIDO/WebAuthn Client Data Refactor
+- APIs now expect a `ClientDataProvider` abstraction instead of raw byte arrays for client data.
+Implement `ClientDataProvider`:
+[source,kotlin]
+----
+class MyClientDataProvider(private val json: ByteArray): ClientDataProvider {
+    override fun getJson(): ByteArray = json
+    override fun getHash(): ByteArray = MessageDigest.getInstance("SHA-256").digest(json)
+}
+----
+See PR#233: https://github.com/Yubico/yubikit-android/pull/233
+
+== 4. Deprecated API Removals
+All previously deprecated APIs are now *removed*.
+- Review PR#237 for specifics: https://github.com/Yubico/yubikit-android/pull/237
+- Replace removed class references with promoted alternatives.
+
+== 5. Major Feature Additions & Refactoring
+
+=== 5.1 CTAP1/CTAP2 FIDO Client Architecture (PR#240)
+- New class: `Ctap1Client` (implements `CtapClient`), supports older CTAP1 protocol for credential management and assertion flows.
+- Refactor: `BasicWebAuthnClient` is now `Ctap2Client`. This class implements the new shared `CtapClient` interface.
+- *Impact*: Existing code using `BasicWebAuthnClient` must switch to `Ctap2Client`, update constructors, and review protocol-specific code.
+[source,java]
+----
+// Old
+BasicWebAuthnClient client = new BasicWebAuthnClient(...);
+// New
+Ctap2Client client = new Ctap2Client(...);
+----
+- Improved constructor logic, error handling, and extension management.
+
+See: https://github.com/Yubico/yubikit-android/pull/240
+
+=== 5.2 Enhanced CTAP Error Handling (PR#238)
+- `CtapException` class now includes human-readable error names mapped from CTAP error codes. Exception messages and error handling are improved for debugging and user feedback.
+[source,java]
+----
+try {
+    ...
+} catch (CtapException e) {
+    log.error("CTAP error: " + e.getErrorName() + " (" + e.getErrorCode() + ")");
+}
+----
+- New unit and integration tests are available to guide proper error handling and upgrade.
+See: https://github.com/Yubico/yubikit-android/pull/238
+
+=== 5.3 Gradle Build Logic & Project Structure (PR#235)
+- Gradle logic has been refactored: plugins/scripts moved from `buildSrc` to a new `build-logic` directory.
+- All modules now use centralized, reusable build logic.
+- *Action*: Update custom build scripts to use the new structure. Refactor your `.gradle` files to rely on shared plugins from `build-logic`.
+See: https://github.com/Yubico/yubikit-android/pull/235
+
+=== 5.4 User Verification Parameter Improvements (PR#234)
+- Authentication flows (especially for credential creation and assertion) now support improved separation of PIN-based and UV (user verification) errors.
+- Error class for authentication has been generalized and renamed.
+- Review all code handling FIDO credential flows; adjust parameter handling and error checking logic.
+See: https://github.com/Yubico/yubikit-android/pull/234
+
+=== 5.5 Support for CTAP2.3 Info Members (PR#229)
+- New fields added:
+- `encCredStoreState` and `authenticatorConfigCommands` in `Ctap2Session.InfoData`
+- New method: `Ctap2Session.getCredStoreState(token)`
+- Javadoc updated with correct FIDO specification links.
+- Test new info members, update integration code to use the new API.
+See: https://github.com/Yubico/yubikit-android/pull/229
+
+=== 5.6 Enhanced Testability (PR#243)
+- Package-private constructors introduced for protocol argument injection.
+- Constants’ visibility now package-private, accessible for tests.
+- Mockito added as a test dependency for improved unit testing.
+- Unit tests improved/added for various ApplicationSession classes (SecurityDomainSession, PivSession, OathSession, ManagementSession, OpenPgpSession, YubiOtpSession, Ctap1Session, Ctap2Session).
+- *Action*: You may now write comprehensive tests for internal constants and session logic.
+See: https://github.com/Yubico/yubikit-android/pull/243
+
+=== 5.7 USB Security Key Filtering and Access (PR#241)
+- Introduces `VendorProductFilter` and `DeviceAccessFilter` interfaces in the USB transport layer.
+- Configurable, programmatic USB device discovery replacing hardcoded vendor ID checks.
+- Default and custom filters can be set in `UsbConfiguration`.
+[source,java]
+----
+// Example: USB device filter for FIDO keys
+UsbConfiguration config = new UsbConfiguration();
+config.setDeviceAccessFilter(new FidoHidDeviceAccessFilter());
+----
+- Code that selects YubiKeys by vendor/product ID must be updated to use the new filter system; e.g., for custom selection logic or future device types.
+- Longer default FIDO timeout for improved reliability.
+
+See: https://github.com/Yubico/yubikit-android/pull/241
+
+== 6. Migration Checklist
+
+. **Update CamelCase API Naming:** Refactor all references and invocations of affected methods, classes, and constants.
+. **Nullness Annotations:** Remove javax.annotation usages; add org.jspecify.annotations, annotate packages/classes as required.
+. **FIDO Client Data:** Implement and use ClientDataProvider.
+. **Replace Deprecated APIs:** Audit and refactor all references to now-removed APIs, check exception flows.
+. **Refactor FIDO Architecture:** Swap BasicWebAuthnClient for Ctap2Client, review protocol branching logic.
+. **Update Error Handling:** Use new CtapException error naming conventions and methods.
+. **Migrate Build Scripts:** Refactor Gradle builds to use build-logic.
+. **Authentication Flow Changes:** Ensure PIN and user verification errors are handled as per new class design.
+. **Access CTAP2.3 Info:** Use new fields and methods in Ctap2Session.InfoData.
+. **Enhance Test Coverage:** Utilize package-private session constructors and test internal logic; add Mockito as required.
+. **USB Device Discovery:** Implement and configure VendorProductFilter/DeviceAccessFilter for YubiKey detection.
+
+== 7. References
+
+- Release notes: https://github.com/Yubico/yubikit-android/releases
+- Key PRs: [#230](https://github.com/Yubico/yubikit-android/pull/230), [#231](https://github.com/Yubico/yubikit-android/pull/231), [#233](https://github.com/Yubico/yubikit-android/pull/233), [#237](https://github.com/Yubico/yubikit-android/pull/237), [#240](https://github.com/Yubico/yubikit-android/pull/240), [#238](https://github.com/Yubico/yubikit-android/pull/238), [#235](https://github.com/Yubico/yubikit-android/pull/235), [#234](https://github.com/Yubico/yubikit-android/pull/234), [#229](https://github.com/Yubico/yubikit-android/pull/229), [#243](https://github.com/Yubico/yubikit-android/pull/243), [#241](https://github.com/Yubico/yubikit-android/pull/241)
+- Discussions for migration: https://github.com/Yubico/yubikit-android/discussions
+
+For issues or migration questions, open an issue/discussion or consult Yubico support.
+
+--
+This document summarizes all core migration steps, API refactoring, and architectural upgrades for `yubikit-android` 3.0.
