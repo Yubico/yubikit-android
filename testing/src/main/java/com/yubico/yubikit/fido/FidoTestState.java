@@ -21,6 +21,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeNoException;
 import static org.junit.Assume.assumeTrue;
 
 import com.yubico.yubikit.TestState;
@@ -48,8 +49,8 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import org.jspecify.annotations.NonNull;
 
+@org.jspecify.annotations.NullMarked
 public class FidoTestState extends TestState {
 
   private final PinUvAuthProtocol pinUvAuthProtocol;
@@ -60,6 +61,7 @@ public class FidoTestState extends TestState {
 
     private final PinUvAuthProtocol pinUvAuthProtocol;
     private boolean setPin = false;
+    private boolean requireCtap1 = false;
 
     public Builder(
         YubiKeyDevice device,
@@ -80,6 +82,11 @@ public class FidoTestState extends TestState {
       return this;
     }
 
+    public Builder requireCtap1(boolean setPin) {
+      this.requireCtap1 = setPin;
+      return this;
+    }
+
     public FidoTestState build() throws Throwable {
       return new FidoTestState(this);
     }
@@ -95,8 +102,14 @@ public class FidoTestState extends TestState {
 
     try (YubiKeyConnection connection = openConnection()) {
 
-      CtapSession session = getSession(connection, scpParameters.getKeyParams());
-      if (session instanceof Ctap1Session && !(session instanceof Ctap2Session)) {
+      if (builder.requireCtap1) {
+        Ctap1Session session = getCtap1Session(connection, scpParameters.getKeyParams());
+        try {
+          // test whether CTAP1 is available
+          assumeTrue("Unsupported CTAP1 version", "U2F_V2".equals(session.getU2fVersion()));
+        } catch (IOException | CommandException e) {
+          assumeNoException("CTAP1 not available", e);
+        }
         this.isFipsApproved = false;
         this.alwaysUv = false;
         return;
@@ -115,11 +128,9 @@ public class FidoTestState extends TestState {
       }
 
       // from here we use CTAP2
-      assumeTrue("CTAP2 not supported", session != null);
-      Ctap2Session ctap2 = (Ctap2Session) session;
-
+      Ctap2Session ctap2 = getCtap2Session(connection, scpParameters.getKeyParams());
       assumeTrue(
-          "PIN UV Protocol not supported", supportsPinUvAuthProtocol(session, pinUvAuthProtocol));
+          "PIN UV Protocol not supported", supportsPinUvAuthProtocol(ctap2, pinUvAuthProtocol));
 
       if (isFidoFipsCapable) {
         assumeTrue(
@@ -131,7 +142,7 @@ public class FidoTestState extends TestState {
         verifyOrSetPin(ctap2);
       }
 
-      Boolean alwaysUv = (Boolean) ctap2.getInfo().getOptions().get("alwaysUv");
+      Boolean alwaysUv = (Boolean) ctap2.getCachedInfo().getOptions().get("alwaysUv");
       if (isFidoFipsCapable && Boolean.FALSE.equals(alwaysUv)) {
         // set always UV on
         Config config = getConfig(ctap2, this);
@@ -161,7 +172,7 @@ public class FidoTestState extends TestState {
       // remove existing credentials
       if (builder.setPin) {
         // cannot use CredentialManager if there is no PIN set
-        ctap2 = (Ctap2Session) getSession(connection, scpParameters.getKeyParams());
+        ctap2 = getCtap2Session(connection, scpParameters.getKeyParams());
         deleteExistingCredentials(ctap2);
       }
     }
@@ -205,7 +216,7 @@ public class FidoTestState extends TestState {
   /** Attempts to set (or verify) the default PIN, or fails. */
   void verifyOrSetPin(Ctap2Session session) throws IOException, CommandException {
 
-    Ctap2Session.InfoData info = session.getInfo();
+    Ctap2Session.InfoData info = session.getCachedInfo();
 
     ClientPin pin = new ClientPin(session, pinUvAuthProtocol);
     boolean pinSet = Objects.requireNonNull((Boolean) info.getOptions().get("clientPin"));
@@ -231,29 +242,23 @@ public class FidoTestState extends TestState {
   public void withCtap2(TestState.StatefulSessionCallback<Ctap2Session, FidoTestState> callback)
       throws Throwable {
     try (YubiKeyConnection connection = openConnection()) {
-      final Ctap2Session ctap2 = getCtap2Session(connection, scpParameters.getKeyParams());
-      assumeTrue("No CTAP2 support", ctap2 != null);
-      callback.invoke(ctap2, this);
+      callback.invoke(getCtap2Session(connection, scpParameters.getKeyParams()), this);
     }
     reconnect();
   }
 
-  public <R> R withCtap2(SessionCallbackT<@NonNull Ctap2Session, R> callback) throws Throwable {
+  public <R> R withCtap2(SessionCallbackT<Ctap2Session, R> callback) throws Throwable {
     R result;
     try (YubiKeyConnection connection = openConnection()) {
-      final Ctap2Session ctap2 = getCtap2Session(connection, scpParameters.getKeyParams());
-      assumeTrue("No CTAP2 support", ctap2 != null);
-      result = callback.invoke(ctap2);
+      result = callback.invoke(getCtap2Session(connection, scpParameters.getKeyParams()));
     }
     reconnect();
     return result;
   }
 
-  public void withCtap2(SessionCallback<@NonNull Ctap2Session> callback) throws Throwable {
+  public void withCtap2(SessionCallback<Ctap2Session> callback) throws Throwable {
     try (YubiKeyConnection connection = openConnection()) {
-      final Ctap2Session ctap2 = getCtap2Session(connection, scpParameters.getKeyParams());
-      assumeTrue("No CTAP2 support", ctap2 != null);
-      callback.invoke(ctap2);
+      callback.invoke(getCtap2Session(connection, scpParameters.getKeyParams()));
     }
     reconnect();
   }
@@ -261,29 +266,23 @@ public class FidoTestState extends TestState {
   public void withCtap1(TestState.StatefulSessionCallback<Ctap1Session, FidoTestState> callback)
       throws Throwable {
     try (YubiKeyConnection connection = openConnection()) {
-      final Ctap1Session ctap1 = getCtap1Session(connection);
-      assumeTrue("No CTAP1 support", ctap1 != null);
-      callback.invoke(ctap1, this);
+      callback.invoke(getCtap1Session(connection, null), this);
     }
     reconnect();
   }
 
-  public <R> R withCtap1(SessionCallbackT<@NonNull Ctap1Session, R> callback) throws Throwable {
+  public <R> R withCtap1(SessionCallbackT<Ctap1Session, R> callback) throws Throwable {
     R result;
     try (YubiKeyConnection connection = openConnection()) {
-      final Ctap1Session ctap1 = getCtap1Session(connection);
-      assumeTrue("No CTAP1 support", ctap1 != null);
-      result = callback.invoke(ctap1);
+      result = callback.invoke(getCtap1Session(connection, null));
     }
     reconnect();
     return result;
   }
 
-  public void withCtap1(SessionCallback<@NonNull Ctap1Session> callback) throws Throwable {
+  public void withCtap1(SessionCallback<Ctap1Session> callback) throws Throwable {
     try (YubiKeyConnection connection = openConnection()) {
-      final Ctap1Session ctap1 = getCtap1Session(connection);
-      assumeTrue("No CTAP1 support", ctap1 != null);
-      callback.invoke(ctap1);
+      callback.invoke(getCtap1Session(connection, null));
     }
     reconnect();
   }

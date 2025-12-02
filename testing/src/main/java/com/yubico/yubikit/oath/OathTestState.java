@@ -28,6 +28,7 @@ import com.yubico.yubikit.management.Capability;
 import java.util.Collections;
 import org.jspecify.annotations.NonNull;
 
+@org.jspecify.annotations.NullMarked
 public class OathTestState extends TestState {
   public boolean isFipsApproved;
   public char[] password;
@@ -66,11 +67,7 @@ public class OathTestState extends TestState {
     }
 
     try (YubiKeyConnection connection = openConnection()) {
-      assumeTrue("Smart card not available", connection != null);
-
       OathSession oath = getSession(connection, scpParameters.getKeyParams(), OathSession::new);
-
-      assumeTrue("OATH not available", oath != null);
       oath.reset();
 
       final char[] complexPassword = "11234567".toCharArray();

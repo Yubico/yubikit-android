@@ -21,6 +21,7 @@ import com.yubico.yubikit.SmokeTest;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV1;
 import com.yubico.yubikit.framework.FidoInstrumentedTests;
+import org.jspecify.annotations.NonNull;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.runner.RunWith;
@@ -85,6 +86,7 @@ public class Ctap2ClientInstrumentedTests {
   @Category(PinUvAuthProtocolV1Test.class)
   public static class PinUvAuthV1Test extends PinUvAuthV2Test {
     @Override
+    @NonNull
     protected PinUvAuthProtocol getPinUvAuthProtocol() {
       return new PinUvAuthProtocolV1();
     }

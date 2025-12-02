@@ -59,6 +59,7 @@ import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.List;
 
+@org.jspecify.annotations.NullMarked
 public class Scp11DeviceTests {
   private static final ScpKeyParams defaultKeyParams =
       new Scp03KeyParams(new KeyRef((byte) 0x01, (byte) 0xff), StaticKeys.getDefaultKeys());

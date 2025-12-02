@@ -29,7 +29,6 @@ import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.smartcard.scp.ScpKeyParams;
 import com.yubico.yubikit.fido.ctap.Ctap1Session;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
-import com.yubico.yubikit.fido.ctap.CtapSession;
 import com.yubico.yubikit.management.Capability;
 import com.yubico.yubikit.management.DeviceInfo;
 import com.yubico.yubikit.management.ManagementSession;
@@ -39,10 +38,10 @@ import java.security.Security;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.junit.Assume;
 
+@org.jspecify.annotations.NullMarked
 public class TestState {
   public abstract static class Builder<T extends Builder<T>> {
     protected final YubiKeyDevice device;
@@ -105,16 +104,15 @@ public class TestState {
     void invoke(S state) throws Throwable;
   }
 
-  public interface SessionCallback<T extends @Nullable ApplicationSession<?>> {
+  public interface SessionCallback<T extends ApplicationSession<?>> {
     void invoke(T session) throws Throwable;
   }
 
-  public interface StatefulSessionCallback<
-      T extends @Nullable ApplicationSession<?>, S extends TestState> {
+  public interface StatefulSessionCallback<T extends ApplicationSession<?>, S extends TestState> {
     void invoke(T session, S state) throws Throwable;
   }
 
-  public interface SessionCallbackT<T extends @Nullable ApplicationSession<?>, R> {
+  public interface SessionCallbackT<T extends ApplicationSession<?>, R> {
     R invoke(T session) throws Throwable;
   }
 
@@ -133,7 +131,7 @@ public class TestState {
     }
   }
 
-  public boolean isFipsCapable(DeviceInfo deviceInfo, Capability capability) {
+  public boolean isFipsCapable(@Nullable DeviceInfo deviceInfo, Capability capability) {
     return deviceInfo != null && (deviceInfo.getFipsCapable() & capability.bit) == capability.bit;
   }
 
@@ -145,7 +143,7 @@ public class TestState {
     return isFipsApproved(getDeviceInfo(), capability);
   }
 
-  public boolean isFipsApproved(DeviceInfo deviceInfo, Capability capability) {
+  public boolean isFipsApproved(@Nullable DeviceInfo deviceInfo, Capability capability) {
     return deviceInfo != null && (deviceInfo.getFipsApproved() & capability.bit) == capability.bit;
   }
 
@@ -168,6 +166,7 @@ public class TestState {
   }
 
   // common utils
+  @Nullable
   public DeviceInfo getDeviceInfo() {
     DeviceInfo deviceInfo = null;
     try (YubiKeyConnection connection = openConnection()) {
@@ -179,7 +178,7 @@ public class TestState {
   }
 
   protected ManagementSession getManagementSession(
-      YubiKeyConnection connection, ScpParameters scpParameters)
+      YubiKeyConnection connection, @Nullable ScpParameters scpParameters)
       throws IOException, CommandException {
     ScpKeyParams keyParams = scpParameters != null ? scpParameters.getKeyParams() : null;
     ManagementSession session =
@@ -197,66 +196,59 @@ public class TestState {
   }
 
   @FunctionalInterface
-  protected interface SessionFactory<T extends ApplicationSession<@NonNull T>> {
+  protected interface SessionFactory<T extends ApplicationSession<T>> {
     T create(SmartCardConnection connection, @Nullable ScpKeyParams params)
         throws ApplicationNotAvailableException, ApduException, IOException;
   }
 
-  protected <T extends ApplicationSession<@NonNull T>> @Nullable T getSession(
+  protected <T extends ApplicationSession<T>> T getSession(
       YubiKeyConnection connection,
       @Nullable ScpKeyParams scpKeyParams,
-      SessionFactory<T> sessionFactory)
-      throws IOException {
+      SessionFactory<T> sessionFactory) {
 
-    if (!(connection instanceof SmartCardConnection)) {
-      return null;
-    }
-
+    Assume.assumeTrue("Not a smartcard connection", connection instanceof SmartCardConnection);
     try {
       return sessionFactory.create((SmartCardConnection) connection, scpKeyParams);
-    } catch (ApplicationNotAvailableException | ApduException ignored) {
-      // No application support
+    } catch (Exception e) {
+      Assume.assumeNoException(
+          "Application " + sessionFactory.getClass().getSimpleName() + " not supported", e);
+      //noinspection DataFlowIssue
+      return null; // not reachable
     }
-    return null;
   }
 
-  @Nullable
-  protected static CtapSession getSession(
-      YubiKeyConnection connection, @Nullable ScpKeyParams params) {
-    CtapSession ctapSession = getCtap2Session(connection, params);
-    if (ctapSession != null) {
-      return ctapSession;
-    }
-    return getCtap1Session(connection);
-  }
-
-  protected static @Nullable Ctap2Session getCtap2Session(
-      YubiKeyConnection connection, @Nullable ScpKeyParams scpKeyParams) {
+  protected static Ctap2Session getCtap2Session(
+      YubiKeyConnection connection, @Nullable ScpKeyParams scpKeyParams)
+      throws IOException, CommandException {
     try {
       if (connection instanceof FidoConnection) {
         return new Ctap2Session((FidoConnection) connection);
       } else {
         return new Ctap2Session((SmartCardConnection) connection, scpKeyParams);
       }
-    } catch (Exception e) {
-      return null;
+    } catch (ApplicationNotAvailableException e) {
+      Assume.assumeNoException("CTAP2 not available", e);
+      //noinspection DataFlowIssue
+      return null; // not reachable
     }
   }
 
-  protected static @Nullable Ctap1Session getCtap1Session(YubiKeyConnection connection) {
+  protected static Ctap1Session getCtap1Session(
+      YubiKeyConnection connection, @Nullable ScpKeyParams scpKeyParams)
+      throws IOException, CommandException {
     try {
       if (connection instanceof FidoConnection) {
         return new Ctap1Session((FidoConnection) connection);
-
-      } else {
-        return new Ctap1Session((SmartCardConnection) connection);
       }
-    } catch (Exception e) {
-      return null;
+      return new Ctap1Session((SmartCardConnection) connection, scpKeyParams);
+    } catch (ApplicationNotAvailableException e) {
+      Assume.assumeNoException("CTAP1 not available", e);
+      //noinspection DataFlowIssue
+      return null; // not reachable
     }
   }
 
-  protected boolean isMpe(DeviceInfo deviceInfo) {
+  protected boolean isMpe(@Nullable DeviceInfo deviceInfo) {
     if (deviceInfo == null) {
       return false;
     }

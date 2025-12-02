@@ -43,6 +43,7 @@ public class Ctap2SessionInstrumentedTests {
     }
 
     @Test
+    @Category(SmokeTest.class)
     public void testCancelCborCommandAfterDelay() throws Throwable {
       withCtap2Session(Ctap2SessionTests::testCancelCborCommandAfterDelay);
     }

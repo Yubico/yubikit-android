@@ -41,7 +41,6 @@ public class Ctap1ClientInstrumentedTests {
     }
 
     @Test
-    @Category(SmokeTest.class)
     public void testCancellation() throws Throwable {
       withCtap1Session(Ctap1ClientTests::testCancellationImmediate);
     }

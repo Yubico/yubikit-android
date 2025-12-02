@@ -19,6 +19,7 @@ package com.yubico.yubikit.fido.ctap;
 import com.yubico.yubikit.core.Version;
 import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
 import com.yubico.yubikit.core.application.BadResponseException;
+import com.yubico.yubikit.core.application.CommandException;
 import com.yubico.yubikit.core.application.CommandState;
 import com.yubico.yubikit.core.fido.CtapException;
 import com.yubico.yubikit.core.fido.FidoConnection;
@@ -86,8 +87,7 @@ public class Ctap1Session extends CtapSession {
   private final Backend<?> backend;
   private final Version version;
 
-  public Ctap1Session(SmartCardConnection connection)
-      throws IOException, ApplicationNotAvailableException {
+  public Ctap1Session(SmartCardConnection connection) throws IOException, CommandException {
     this(connection, null);
   }
 
@@ -99,8 +99,12 @@ public class Ctap1Session extends CtapSession {
    * @throws ApplicationNotAvailableException if the FIDO application is not available
    */
   public Ctap1Session(SmartCardConnection connection, @Nullable ScpKeyParams scpKeyParams)
-      throws IOException, ApplicationNotAvailableException {
-    SmartCardProtocol protocol = new SmartCardProtocol(connection);
+      throws IOException, CommandException {
+    this(new SmartCardProtocol(connection), scpKeyParams);
+  }
+
+  Ctap1Session(SmartCardProtocol protocol, @Nullable ScpKeyParams scpKeyParams)
+      throws IOException, CommandException {
 
     // CTAP1 doesn't have version information accessible via NFC
     this.version = new Version(0, 0, 0);
@@ -114,7 +118,7 @@ public class Ctap1Session extends CtapSession {
    * @param connection a FIDO HID connection
    * @throws IOException if communication with the device fails
    */
-  public Ctap1Session(FidoConnection connection) throws IOException {
+  public Ctap1Session(FidoConnection connection) throws IOException, CommandException {
     this(new FidoProtocol(connection));
   }
 

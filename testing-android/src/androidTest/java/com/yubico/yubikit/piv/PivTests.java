@@ -62,7 +62,6 @@ public class PivTests {
     }
 
     @Test
-    @Category(SmokeTest.class)
     public void testPutCompressedCertificate() throws Throwable {
       withPivSession(PivCertificateTests::putCompressedCertificate);
     }
