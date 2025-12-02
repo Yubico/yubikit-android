@@ -19,20 +19,20 @@ import com.yubico.yubikit.core.UsbPid;
 import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.fido.FidoConnection;
-import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.otp.OtpConnection;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.desktop.hid.HidManager;
 import com.yubico.yubikit.desktop.pcsc.PcscManager;
 import com.yubico.yubikit.management.DeviceInfo;
 import java.util.*;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class YubiKitManager {
   private final PcscManager pcscManager;
   private final HidManager hidManager;
 
-  private final org.slf4j.Logger logger = LoggerFactory.getLogger(YubiKitManager.class);
+  private final Logger logger = LoggerFactory.getLogger(YubiKitManager.class);
 
   public YubiKitManager(PcscManager pcscManager, HidManager hidManager) {
     this.pcscManager = pcscManager;
@@ -58,10 +58,10 @@ public class YubiKitManager {
       Set<Class<? extends YubiKeyConnection>> connectionTypes) {
     Map<UsbPid, UsbPidGroup> groups = new HashMap<>();
     for (Class<? extends YubiKeyConnection> connectionType : connectionTypes) {
-      Logger.debug(logger, "Enumerate devices for {}", connectionType);
+      logger.debug("Enumerate devices for {}", connectionType);
       for (UsbYubiKeyDevice device : listDevices(connectionType)) {
         UsbPid pid = device.getPid();
-        Logger.debug(logger, "Found device with PID {}", pid);
+        logger.debug("Found device with PID {}", pid);
         if (!groups.containsKey(pid)) {
           groups.put(pid, new UsbPidGroup(pid));
         }

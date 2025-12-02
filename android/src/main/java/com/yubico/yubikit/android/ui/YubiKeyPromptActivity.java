@@ -33,10 +33,10 @@ import com.yubico.yubikit.android.transport.nfc.NfcYubiKeyManager;
 import com.yubico.yubikit.android.transport.usb.UsbConfiguration;
 import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.application.CommandState;
-import com.yubico.yubikit.core.internal.Logger;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -106,28 +106,27 @@ public class YubiKeyPromptActivity extends Activity {
 
   private final MyCommandState commandState = new MyCommandState();
 
-  private YubiKitManager yubiKit;
-  private YubiKeyPromptAction action;
+  private @Nullable YubiKitManager yubiKit;
+  private @Nullable YubiKeyPromptAction action;
 
   private boolean hasNfc = true;
   private int usbSessionCounter = 0;
   private boolean isDone = false;
-  protected Button cancelButton;
-  protected Button enableNfcButton;
-  protected TextView helpTextView;
+  protected @Nullable Button cancelButton;
+  protected @Nullable Button enableNfcButton;
+  protected @Nullable TextView helpTextView;
 
   private boolean allowUsb;
   private boolean allowNfc;
 
-  private static final org.slf4j.Logger logger =
-      LoggerFactory.getLogger(YubiKeyPromptActivity.class);
+  private static final Logger logger = LoggerFactory.getLogger(YubiKeyPromptActivity.class);
 
   /**
    * Get the YubiKitManager used by this activity.
    *
    * @return a YubiKitManager
    */
-  protected YubiKitManager getYubiKitManager() {
+  protected @Nullable YubiKitManager getYubiKitManager() {
     return yubiKit;
   }
 
@@ -154,9 +153,12 @@ public class YubiKeyPromptActivity extends Activity {
    * @param device a connected YubiKey
    */
   protected void onYubiKeyDevice(YubiKeyDevice device, Runnable onDone) {
+    if (action == null) {
+      return;
+    }
     action.onYubiKey(
         device,
-        getIntent().getExtras(),
+        Objects.requireNonNull(getIntent().getExtras()),
         commandState,
         value -> {
           if (value.first == YubiKeyPromptAction.RESULT_CONTINUE) {
@@ -165,7 +167,7 @@ public class YubiKeyPromptActivity extends Activity {
               // Reset the help text if touch was prompted for
               runOnUiThread(
                   () ->
-                      helpTextView.setText(
+                      setHelpText(
                           hasNfc
                               ? R.string.yubikit_prompt_plug_in_or_tap
                               : R.string.yubikit_prompt_plug_in));
@@ -206,7 +208,7 @@ public class YubiKeyPromptActivity extends Activity {
     // Get the action to perform on YubiKey connected
     Class<?> actionType =
         (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
-            ? (Class<?>) args.getSerializable(ARG_ACTION_CLASS, Class.class)
+            ? args.getSerializable(ARG_ACTION_CLASS, Class.class)
             : (Class<?>) args.getSerializable(ARG_ACTION_CLASS);
     try {
       if (actionType != null && YubiKeyPromptAction.class.isAssignableFrom(actionType)) {
@@ -219,7 +221,7 @@ public class YubiKeyPromptActivity extends Activity {
         | InstantiationException
         | NoSuchMethodException
         | InvocationTargetException e) {
-      Logger.error(logger, "Unable to instantiate ConnectionAction", e);
+      logger.error("Unable to instantiate ConnectionAction", e);
       finish();
     }
 
@@ -239,13 +241,15 @@ public class YubiKeyPromptActivity extends Activity {
     helpTextView =
         findViewById(args.getInt(ARG_HELP_TEXT_VIEW_ID, R.id.yubikit_prompt_help_text_view));
     cancelButton = findViewById(args.getInt(ARG_CANCEL_BUTTON_ID, R.id.yubikit_prompt_cancel_btn));
-    cancelButton.setFocusable(false);
-    cancelButton.setOnClickListener(
-        v -> {
-          commandState.cancel();
-          setResult(Activity.RESULT_CANCELED);
-          finish();
-        });
+    if (cancelButton != null) {
+      cancelButton.setFocusable(false);
+      cancelButton.setOnClickListener(
+          v -> {
+            commandState.cancel();
+            setResult(Activity.RESULT_CANCELED);
+            finish();
+          });
+    }
 
     yubiKit = new YubiKitManager(this);
     if (allowUsb) {
@@ -259,13 +263,13 @@ public class YubiKeyPromptActivity extends Activity {
                   if (usbSessionCounter == 0) {
                     runOnUiThread(
                         () ->
-                            helpTextView.setText(
+                            setHelpText(
                                 hasNfc
                                     ? R.string.yubikit_prompt_plug_in_or_tap
                                     : R.string.yubikit_prompt_plug_in));
                   }
                 });
-            runOnUiThread(() -> helpTextView.setText(R.string.yubikit_prompt_wait));
+            runOnUiThread(() -> setHelpText(R.string.yubikit_prompt_wait));
             onYubiKeyDevice(device, YubiKeyPromptActivity.this::finishIfDone);
           });
     }
@@ -273,9 +277,11 @@ public class YubiKeyPromptActivity extends Activity {
     if (allowNfc) {
       enableNfcButton =
           findViewById(args.getInt(ARG_ENABLE_NFC_BUTTON_ID, R.id.yubikit_prompt_enable_nfc_btn));
-      enableNfcButton.setFocusable(false);
-      enableNfcButton.setOnClickListener(
-          v -> startActivity(new Intent(NfcYubiKeyManager.NFC_SETTINGS_ACTION)));
+      if (enableNfcButton != null) {
+        enableNfcButton.setFocusable(false);
+        enableNfcButton.setOnClickListener(
+            v -> startActivity(new Intent(NfcYubiKeyManager.NFC_SETTINGS_ACTION)));
+      }
     }
   }
 
@@ -283,8 +289,10 @@ public class YubiKeyPromptActivity extends Activity {
   protected void onResume() {
     super.onResume();
 
-    if (allowNfc) {
-      enableNfcButton.setVisibility(View.GONE);
+    if (allowNfc && yubiKit != null) {
+      if (enableNfcButton != null) {
+        enableNfcButton.setVisibility(View.GONE);
+      }
       try {
         yubiKit.startNfcDiscovery(
             new NfcConfiguration(),
@@ -293,13 +301,13 @@ public class YubiKeyPromptActivity extends Activity {
                 onYubiKeyDevice(
                     device,
                     () -> {
-                      runOnUiThread(() -> helpTextView.setText(R.string.yubikit_prompt_remove));
+                      runOnUiThread(() -> setHelpText(R.string.yubikit_prompt_remove));
                       device.remove(this::finishIfDone);
                     }));
       } catch (NfcNotAvailable e) {
         hasNfc = false;
-        helpTextView.setText(R.string.yubikit_prompt_plug_in);
-        if (e.isDisabled()) {
+        setHelpText(R.string.yubikit_prompt_plug_in);
+        if (e.isDisabled() && enableNfcButton != null) {
           enableNfcButton.setVisibility(View.VISIBLE);
         }
       }
@@ -308,7 +316,7 @@ public class YubiKeyPromptActivity extends Activity {
 
   @Override
   protected void onPause() {
-    if (allowNfc) {
+    if (allowNfc && yubiKit != null) {
       yubiKit.stopNfcDiscovery(this);
     }
     super.onPause();
@@ -316,7 +324,7 @@ public class YubiKeyPromptActivity extends Activity {
 
   @Override
   protected void onDestroy() {
-    if (allowUsb) {
+    if (allowUsb && yubiKit != null) {
       yubiKit.stopUsbDiscovery();
     }
     super.onDestroy();
@@ -328,6 +336,12 @@ public class YubiKeyPromptActivity extends Activity {
     }
   }
 
+  private void setHelpText(@StringRes int textResId) {
+    if (helpTextView != null) {
+      helpTextView.setText(textResId);
+    }
+  }
+
   private class MyCommandState extends CommandState {
     boolean awaitingTouch = false;
 
@@ -335,7 +349,7 @@ public class YubiKeyPromptActivity extends Activity {
     public void onKeepAliveStatus(byte status) {
       if (!awaitingTouch && status == CommandState.STATUS_UPNEEDED) {
         awaitingTouch = true;
-        runOnUiThread(() -> helpTextView.setText(R.string.yubikit_prompt_uv));
+        runOnUiThread(() -> setHelpText(R.string.yubikit_prompt_uv));
       }
     }
   }

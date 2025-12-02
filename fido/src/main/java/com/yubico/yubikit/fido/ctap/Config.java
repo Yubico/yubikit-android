@@ -17,7 +17,6 @@
 package com.yubico.yubikit.fido.ctap;
 
 import com.yubico.yubikit.core.application.CommandException;
-import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.util.Pair;
 import com.yubico.yubikit.fido.Cbor;
 import java.io.IOException;
@@ -28,6 +27,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -52,7 +52,7 @@ public class Config {
   private final Ctap2Session ctap;
   @Nullable private final Pair<PinUvAuthProtocol, byte[]> pinUv;
 
-  private static final org.slf4j.Logger logger = LoggerFactory.getLogger(Config.class);
+  private static final Logger logger = LoggerFactory.getLogger(Config.class);
 
   /**
    * Construct a new Config object using a specified PIN/UV Auth protocol and token.
@@ -123,9 +123,9 @@ public class Config {
    *     Enterprise Attestation</a>
    */
   public void enableEnterpriseAttestation() throws IOException, CommandException {
-    Logger.debug(logger, "Enabling enterprise attestation");
+    logger.debug("Enabling enterprise attestation");
     call(CMD_ENABLE_ENTERPRISE_ATT, null);
-    Logger.info(logger, "Enterprise attestation enabled");
+    logger.info("Enterprise attestation enabled");
   }
 
   /**
@@ -139,9 +139,9 @@ public class Config {
    *     Always Require User Verification</a>
    */
   public void toggleAlwaysUv() throws IOException, CommandException {
-    Logger.debug(logger, "Toggling always UV");
+    logger.debug("Toggling always UV");
     call(CMD_TOGGLE_ALWAYS_UV, null);
-    Logger.info(logger, "Always UV toggled");
+    logger.info("Always UV toggled");
   }
 
   /**
@@ -163,7 +163,7 @@ public class Config {
       @Nullable List<String> rpIds,
       @Nullable Boolean forceChangePin)
       throws IOException, CommandException {
-    Logger.debug(logger, "Setting minimum PIN length");
+    logger.debug("Setting minimum PIN length");
     Map<Byte, Object> parameters = new HashMap<>();
     if (minPinLength != null) parameters.put(PARAM_NEW_MIN_PIN_LENGTH, minPinLength);
     if (rpIds != null) parameters.put(PARAM_MIN_PIN_LENGTH_RPIDS, rpIds);
@@ -171,9 +171,9 @@ public class Config {
 
     call(CMD_SET_MIN_PIN_LENGTH, parameters.isEmpty() ? null : parameters);
 
-    if (minPinLength != null) Logger.info(logger, "Minimum PIN length set");
-    if (rpIds != null) Logger.info(logger, "Minimum PIN length RP ID list set");
-    if (forceChangePin != null) Logger.info(logger, "ForcePINChange set");
+    if (minPinLength != null) logger.info("Minimum PIN length set");
+    if (rpIds != null) logger.info("Minimum PIN length RP ID list set");
+    if (forceChangePin != null) logger.info("ForcePINChange set");
   }
 
   /**
@@ -188,10 +188,10 @@ public class Config {
    */
   public Map<Integer, ?> vendorPrototype(Integer vendorCommandId)
       throws IOException, CommandException {
-    Logger.debug(logger, "Call vendor prototype command");
+    logger.debug("Call vendor prototype command");
     final Map<Integer, ?> response =
         call(CMD_VENDOR_PROTOTYPE, Collections.singletonMap(PARAM_VENDOR_CMD_ID, vendorCommandId));
-    Logger.info(logger, "Vendor prototype command executed");
+    logger.info("Vendor prototype command executed");
     return response;
   }
 }

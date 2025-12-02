@@ -25,7 +25,7 @@ import static org.mockito.Mockito.when;
 import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbEndpoint;
 import android.hardware.usb.UsbInterface;
-import com.yubico.yubikit.testing.Codec;
+import com.yubico.yubikit.Codec;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;

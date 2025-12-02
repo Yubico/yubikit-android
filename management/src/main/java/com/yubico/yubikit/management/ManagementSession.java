@@ -29,7 +29,6 @@ import com.yubico.yubikit.core.application.Feature;
 import com.yubico.yubikit.core.application.SessionVersionOverride;
 import com.yubico.yubikit.core.fido.FidoConnection;
 import com.yubico.yubikit.core.fido.FidoProtocol;
-import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.otp.ChecksumUtils;
 import com.yubico.yubikit.core.otp.OtpConnection;
 import com.yubico.yubikit.core.otp.OtpProtocol;
@@ -50,6 +49,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -104,7 +104,7 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
   private final Backend<?> backend;
   private final Version version;
 
-  private static final org.slf4j.Logger logger = LoggerFactory.getLogger(ManagementSession.class);
+  private static final Logger logger = LoggerFactory.getLogger(ManagementSession.class);
 
   /**
    * Establishes a new session with a YubiKeys Management application, over a {@link
@@ -181,7 +181,7 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
           new Backend<SmartCardProtocol>(protocol) {
             @Override
             byte[] readConfig(int page) throws IOException, CommandException {
-              Logger.debug(logger, "Reading config page {}...", page);
+              logger.debug("Reading config page {}...", page);
               return delegate.sendAndReceive(new Apdu(0, INS_READ_CONFIG, page, 0, null));
             }
 
@@ -226,7 +226,7 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
         new Backend<OtpProtocol>(protocol) {
           @Override
           byte[] readConfig(int page) throws IOException, CommandException {
-            Logger.debug(logger, "Reading config page {}...", page);
+            logger.debug("Reading config page {}...", page);
             byte[] response =
                 delegate.sendAndReceive(CMD_YK4_CAPABILITIES, pagePayload(page), null);
             if (ChecksumUtils.checkCrc(response, response[0] + 1 + 2)) {
@@ -275,7 +275,7 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
         new Backend<FidoProtocol>(protocol) {
           @Override
           byte[] readConfig(int page) throws IOException {
-            Logger.debug(logger, "Reading config page {}...", page);
+            logger.debug("Reading config page {}...", page);
             return delegate.sendAndReceive(CTAP_READ_CONFIG, pagePayload(page), null);
           }
 
@@ -400,15 +400,14 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
       throws IOException, CommandException {
     require(FEATURE_DEVICE_CONFIG);
     byte[] data = config.getBytes(reboot, currentLockCode, newLockCode);
-    Logger.debug(
-        logger,
+    logger.debug(
         "Writing device config: {}, reboot: {}, " + "current lock code: {}, new lock code: {}",
         config,
         reboot,
         currentLockCode != null,
         newLockCode != null);
     backend.writeConfig(data);
-    Logger.info(logger, "Device config written");
+    logger.info("Device config written");
   }
 
   /**
@@ -426,8 +425,7 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
    */
   public void setMode(UsbInterface.Mode mode, byte chalrespTimeout, short autoejectTimeout)
       throws IOException, CommandException {
-    Logger.debug(
-        logger,
+    logger.debug(
         "Set mode: {}, chalresp_timeout: {}, auto_eject_timeout: {}",
         mode,
         chalrespTimeout,
@@ -444,7 +442,7 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
       if ((mode.interfaces & UsbInterface.FIDO) != 0) {
         usbEnabled |= Capability.U2F.bit | Capability.FIDO2.bit;
       }
-      Logger.debug(logger, "Delegating to DeviceConfig with usb_enabled: {}", usbEnabled);
+      logger.debug("Delegating to DeviceConfig with usb_enabled: {}", usbEnabled);
       updateDeviceConfig(
           new DeviceConfig.Builder()
               .enabledCapabilities(Transport.USB, usbEnabled)
@@ -463,7 +461,7 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
               .putShort(autoejectTimeout)
               .array();
       backend.setMode(data);
-      Logger.info(logger, "Mode configuration written");
+      logger.info("Mode configuration written");
     }
   }
 
@@ -478,7 +476,7 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
   public void deviceReset() throws IOException, CommandException {
     require(FEATURE_DEVICE_RESET);
     backend.deviceReset();
-    Logger.info(logger, "Device reset");
+    logger.info("Device reset");
   }
 
   private abstract static class Backend<T extends Closeable> implements Closeable {
@@ -507,8 +505,7 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
   }
 
   private void logCtor(YubiKeyConnection connection) {
-    Logger.debug(
-        logger,
+    logger.debug(
         "Management session initialized for connection={}, version={}",
         connection.getClass().getSimpleName(),
         getVersion());

@@ -22,7 +22,6 @@ import com.yubico.yubikit.core.application.ApplicationSession;
 import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.application.Feature;
 import com.yubico.yubikit.core.application.SessionVersionOverride;
-import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.internal.codec.Base64;
 import com.yubico.yubikit.core.smartcard.Apdu;
 import com.yubico.yubikit.core.smartcard.ApduException;
@@ -53,6 +52,7 @@ import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -117,7 +117,7 @@ public class OathSession extends ApplicationSession<OathSession> {
   private byte @Nullable [] challenge;
   private boolean isAccessKeySet;
 
-  private static final org.slf4j.Logger logger = LoggerFactory.getLogger(OathSession.class);
+  private static final Logger logger = LoggerFactory.getLogger(OathSession.class);
 
   /**
    * Establishes a new session with a YubiKeys OATH application.
@@ -158,11 +158,8 @@ public class OathSession extends ApplicationSession<OathSession> {
         throw new IOException("Failed setting up SCP session", e);
       }
     }
-    Logger.debug(
-        logger,
-        "OATH session initialized (version={}, isAccessKeySet={})",
-        version,
-        isAccessKeySet);
+    logger.debug(
+        "OATH session initialized (version={}, isAccessKeySet={})", version, isAccessKeySet);
   }
 
   @Override
@@ -206,20 +203,10 @@ public class OathSession extends ApplicationSession<OathSession> {
           throw new IOException("Failed setting up SCP session", e);
         }
       }
-      Logger.info(logger, "OATH application data reset performed");
+      logger.info("OATH application data reset performed");
     } catch (ApplicationNotAvailableException e) {
       throw new IllegalStateException(e); // This shouldn't happen
     }
-  }
-
-  /**
-   * Returns true if an Access Key is currently set.
-   *
-   * @deprecated Use {@link #isAccessKeySet()} instead.
-   */
-  @Deprecated
-  public boolean hasAccessKey() {
-    return isAccessKeySet;
   }
 
   /** Returns true if an Access Key is currently set. */
@@ -277,7 +264,7 @@ public class OathSession extends ApplicationSession<OathSession> {
       return true;
     }
 
-    Logger.debug(logger, "Unlocking session");
+    logger.debug("Unlocking session");
 
     try {
       Map<Integer, byte[]> request = new LinkedHashMap<>();
@@ -348,7 +335,7 @@ public class OathSession extends ApplicationSession<OathSession> {
 
     protocol.sendAndReceive(new Apdu(0, INS_SET_CODE, 0, 0, Tlvs.encodeMap(request)));
     isAccessKeySet = true;
-    Logger.info(logger, "New access key set");
+    logger.info("New access key set");
   }
 
   /**
@@ -360,7 +347,7 @@ public class OathSession extends ApplicationSession<OathSession> {
   public void deleteAccessKey() throws IOException, ApduException {
     protocol.sendAndReceive(new Apdu(0, INS_SET_CODE, 0, 0, new Tlv(TAG_KEY, null).getBytes()));
     isAccessKeySet = false;
-    Logger.info(logger, "Access key removed");
+    logger.info("Access key removed");
   }
 
   /**
@@ -418,7 +405,7 @@ public class OathSession extends ApplicationSession<OathSession> {
     long validFrom = validFrom(timestamp, DEFAULT_TOTP_PERIOD);
     long validUntil = validFrom + DEFAULT_TOTP_PERIOD * MILLS_IN_SECOND;
 
-    Logger.info(logger, "Calculating all codes for time={}", timestamp);
+    logger.info("Calculating all codes for time={}", timestamp);
 
     byte[] data =
         protocol.sendAndReceive(
@@ -441,7 +428,7 @@ public class OathSession extends ApplicationSession<OathSession> {
         int period = credential.getPeriod();
         if (period != DEFAULT_TOTP_PERIOD) {
           // Recalculate TOTP for correct period.
-          Logger.debug(logger, "Recalculating code for period={}", period);
+          logger.debug("Recalculating code for period={}", period);
           map.put(credential, calculateCode(credential, timestamp));
         } else {
           map.put(credential, new Code(formatTruncated(response), validFrom, validUntil));
@@ -513,13 +500,10 @@ public class OathSession extends ApplicationSession<OathSession> {
     }
 
     if (credential.getOathType() == OathType.TOTP) {
-      Logger.debug(
-          logger,
-          "Calculating TOTP code for time={}, period={}",
-          timestamp,
-          credential.getPeriod());
+      logger.debug(
+          "Calculating TOTP code for time={}, period={}", timestamp, credential.getPeriod());
     } else {
-      Logger.debug(logger, "Calculating HOTP code");
+      logger.debug("Calculating HOTP code");
     }
 
     Map<Integer, byte[]> requestTlv = new LinkedHashMap<>();
@@ -590,8 +574,7 @@ public class OathSession extends ApplicationSession<OathSession> {
       output.write(ByteBuffer.allocate(4).putInt(credentialData.getCounter()).array());
     }
 
-    Logger.debug(
-        logger,
+    logger.debug(
         "Importing credential (type={}, hash={}, digits={}, "
             + "period={}, imf={}, touch_required={})",
         credentialData.getOathType(),
@@ -602,7 +585,7 @@ public class OathSession extends ApplicationSession<OathSession> {
         requireTouch);
 
     protocol.sendAndReceive(new Apdu(0x00, INS_PUT, 0, 0, output.toByteArray()));
-    Logger.info(logger, "Credential imported");
+    logger.info("Credential imported");
     return new Credential(
         deviceId, credentialData.getId(), credentialData.getOathType(), requireTouch);
   }
@@ -617,7 +600,7 @@ public class OathSession extends ApplicationSession<OathSession> {
   public void deleteCredential(byte[] credentialId) throws IOException, ApduException {
     protocol.sendAndReceive(
         new Apdu(0x00, INS_DELETE, 0, 0, new Tlv(TAG_NAME, credentialId).getBytes()));
-    Logger.info(logger, "Credential deleted");
+    logger.info("Credential deleted");
   }
 
   /**
@@ -657,7 +640,7 @@ public class OathSession extends ApplicationSession<OathSession> {
             Tlvs.encodeList(
                 Arrays.asList(
                     new Tlv(TAG_NAME, credentialId), new Tlv(TAG_NAME, newCredentialId)))));
-    Logger.info(logger, "Credential renamed");
+    logger.info("Credential renamed");
   }
 
   /**
