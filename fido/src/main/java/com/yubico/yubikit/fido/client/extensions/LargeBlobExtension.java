@@ -42,7 +42,7 @@ import org.slf4j.LoggerFactory;
  * @see <a href="https://www.w3.org/TR/webauthn-3/#sctn-large-blob-extension">Large blob
  *     extension</a>
  * @see <a
- *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html#sctn-largeBlobKey-extension">Large
+ *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#sctn-largeBlobKey-extension">Large
  *     Blob Key (largeBlobKey)</a>
  */
 public class LargeBlobExtension extends Extension {

@@ -49,7 +49,9 @@ public class Ctap2SessionTests {
         versions.contains("U2F_V2")
             || versions.contains("FIDO_2_0")
             || versions.contains("FIDO_2_1_PRE")
-            || versions.contains("FIDO_2_1"));
+            || versions.contains("FIDO_2_1")
+            || versions.contains("FIDO_2_2")
+            || versions.contains("FIDO_2_3"));
 
     // Check AAGUID
     byte[] aaguid = info.getAaguid();

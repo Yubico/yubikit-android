@@ -25,7 +25,7 @@ import java.util.Objects;
  * Implements Bio enrollment commands.
  *
  * @see <a
- *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html#authenticatorBioEnrollment">authenticatorBioEnrollment</a>
+ *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#authenticatorBioEnrollment">authenticatorBioEnrollment</a>
  */
 public class BioEnrollment {
   protected static final int RESULT_MODALITY = 0x01;
@@ -64,7 +64,7 @@ public class BioEnrollment {
    * @throws IOException A communication error in the transport layer.
    * @throws CommandException A communication in the protocol layer.
    * @see <a
-   *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html#getUserVerificationModality">Get
+   *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#getUserVerificationModality">Get
    *     bio modality</a>
    */
   public static int getModality(Ctap2Session ctap) throws IOException, CommandException {

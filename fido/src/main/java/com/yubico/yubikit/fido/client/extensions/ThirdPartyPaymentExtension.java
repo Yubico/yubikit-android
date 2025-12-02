@@ -37,7 +37,7 @@ import org.jspecify.annotations.Nullable;
  * without a client that supports the WebAuthn payment extension.
  *
  * @see <a
- *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html#sctn-thirdPartyPayment-extension">Third-Party
+ *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#sctn-thirdPartyPayment-extension">Third-Party
  *     Payment authentication (thirdPartyPayment)</a>
  * @see <a href="https://www.w3.org/TR/secure-payment-confirmation">Secure Payment Confirmation</a>
  */

@@ -27,7 +27,7 @@ import org.jspecify.annotations.Nullable;
  * Implements the Credential Protection CTAP2 extension.
  *
  * @see <a
- *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html#sctn-credProtect-extension">Credential
+ *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#sctn-credProtect-extension">Credential
  *     Protection (credProtect)</a>
  */
 public class CredProtectExtension extends Extension {
