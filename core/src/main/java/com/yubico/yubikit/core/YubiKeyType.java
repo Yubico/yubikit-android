@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Yubico.
+ * Copyright (C) 2022-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,8 @@ public enum YubiKeyType {
   NEO("YubiKey NEO"),
   SKY("Security Key by Yubico"),
   YKP("YubiKey Plus"),
-  YK4("YubiKey");
+  YK4("YubiKey"),
+  OTHER("Generic Security Key");
 
   public final String name;
 

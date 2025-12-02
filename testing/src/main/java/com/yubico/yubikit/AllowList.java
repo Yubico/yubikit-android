@@ -61,7 +61,7 @@ public class AllowList {
   // verify that the device is in the allow-list
   public void verify(YubiKeyDevice connectedDevice, @Nullable UsbPid pid) {
     Integer serialNumber = getDeviceSerialNumber(connectedDevice, pid);
-    if (!isDeviceAllowed(serialNumber)) {
+    if (pid != UsbPid.OTHER && !isDeviceAllowed(serialNumber)) {
       logger.error("{}", allowListProvider.onNotAllowedErrorMessage(serialNumber));
       System.exit(-1);
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Yubico.
+ * Copyright (C) 2022-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,8 @@ public enum UsbPid {
   YK4_FIDO_CCID(0x0406, YubiKeyType.YK4, UsbInterface.FIDO | UsbInterface.CCID),
   YK4_OTP_FIDO_CCID(
       0x0407, YubiKeyType.YK4, UsbInterface.OTP | UsbInterface.FIDO | UsbInterface.CCID),
-  YKP_OTP_FIDO(0x0410, YubiKeyType.YKP, UsbInterface.OTP | UsbInterface.FIDO);
+  YKP_OTP_FIDO(0x0410, YubiKeyType.YKP, UsbInterface.OTP | UsbInterface.FIDO),
+  OTHER(0x0, YubiKeyType.OTHER, UsbInterface.FIDO | UsbInterface.CCID);
 
   public final int value;
   public final YubiKeyType type;
