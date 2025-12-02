@@ -26,7 +26,6 @@ import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.management.Capability;
 import java.util.Collections;
-import org.jspecify.annotations.NonNull;
 
 @org.jspecify.annotations.NullMarked
 public class OathTestState extends TestState {
@@ -95,13 +94,9 @@ public class OathTestState extends TestState {
     reconnect();
   }
 
-  public void withOath(SessionCallback<@NonNull OathSession> callback) throws Throwable {
+  public void withOath(SessionCallback<OathSession> callback) throws Throwable {
     try (YubiKeyConnection connection = openConnection()) {
-      OathSession session = getSession(connection, scpParameters.getKeyParams(), OathSession::new);
-      if (session == null) {
-        throw new IllegalStateException("Failed to open OATH session");
-      }
-      callback.invoke(session);
+      callback.invoke(getSession(connection, scpParameters.getKeyParams(), OathSession::new));
     }
     reconnect();
   }

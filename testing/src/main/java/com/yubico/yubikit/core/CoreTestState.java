@@ -62,12 +62,7 @@ public class CoreTestState extends TestState {
       @Nullable ScpKeyParams scpKeyParams, SessionCallback<SecurityDomainSession> callback)
       throws Throwable {
     try (YubiKeyConnection connection = openConnection()) {
-      SecurityDomainSession session =
-          getSession(connection, scpKeyParams, SecurityDomainSession::new);
-      if (session == null) {
-        throw new IllegalStateException("Failed to open SecurityDomainSession");
-      }
-      callback.invoke(session);
+      callback.invoke(getSession(connection, scpKeyParams, SecurityDomainSession::new));
     }
     reconnect();
   }
@@ -77,12 +72,7 @@ public class CoreTestState extends TestState {
       throws Throwable {
     R result;
     try (YubiKeyConnection connection = openConnection()) {
-      SecurityDomainSession session =
-          getSession(connection, scpKeyParams, SecurityDomainSession::new);
-      if (session == null) {
-        throw new IllegalStateException("Failed to open SecurityDomainSession");
-      }
-      result = callback.invoke(session);
+      result = callback.invoke(getSession(connection, scpKeyParams, SecurityDomainSession::new));
     }
     reconnect();
     return result;

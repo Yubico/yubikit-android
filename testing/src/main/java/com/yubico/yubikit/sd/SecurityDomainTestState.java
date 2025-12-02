@@ -26,7 +26,6 @@ import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.smartcard.scp.ScpKeyParams;
 import com.yubico.yubikit.core.smartcard.scp.SecurityDomainSession;
 import java.util.Collections;
-import org.jspecify.annotations.NonNull;
 
 @org.jspecify.annotations.NullMarked
 public class SecurityDomainTestState extends TestState {
@@ -57,35 +56,26 @@ public class SecurityDomainTestState extends TestState {
     }
   }
 
-  public void withDeviceCallback(StatefulDeviceCallback<@NonNull SecurityDomainTestState> callback)
+  public void withDeviceCallback(StatefulDeviceCallback<SecurityDomainTestState> callback)
       throws Throwable {
     callback.invoke(this);
   }
 
-  public void withSecurityDomain(SessionCallback<@NonNull SecurityDomainSession> callback)
-      throws Throwable {
+  public void withSecurityDomain(SessionCallback<SecurityDomainSession> callback) throws Throwable {
     try (YubiKeyConnection connection = openConnection()) {
-      SecurityDomainSession session =
-          getSession(connection, scpParameters.getKeyParams(), SecurityDomainSession::new);
-      if (session == null) {
-        throw new IllegalStateException("Failed to open SecurityDomainSession");
-      }
-      callback.invoke(session);
+      callback.invoke(
+          getSession(connection, scpParameters.getKeyParams(), SecurityDomainSession::new));
     }
     reconnect();
   }
 
-  public <R> R withSecurityDomain(SessionCallbackT<@NonNull SecurityDomainSession, R> callback)
+  public <R> R withSecurityDomain(SessionCallbackT<SecurityDomainSession, R> callback)
       throws Throwable {
     R result;
     try (YubiKeyConnection connection = openConnection()) {
-      SecurityDomainSession session =
-          getSession(connection, scpParameters.getKeyParams(), SecurityDomainSession::new);
-      if (session == null) {
-        throw new IllegalStateException("Failed to open SecurityDomainSession");
-      }
-
-      result = callback.invoke(session);
+      result =
+          callback.invoke(
+              getSession(connection, scpParameters.getKeyParams(), SecurityDomainSession::new));
     }
     reconnect();
     return result;
