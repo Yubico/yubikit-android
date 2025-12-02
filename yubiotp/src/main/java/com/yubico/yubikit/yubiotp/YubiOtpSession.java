@@ -20,7 +20,6 @@ import static com.yubico.yubikit.core.application.SessionVersionOverride.overrid
 
 import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.Version;
-import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
 import com.yubico.yubikit.core.application.ApplicationSession;
@@ -92,30 +91,29 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
   public static final Feature<YubiOtpSession> FEATURE_NDEF =
       new Feature.Versioned<>("NDEF", 3, 0, 0);
 
-  private static final int ACC_CODE_SIZE = 6; // Size of access code to re-program device
-  private static final int CONFIG_SIZE =
-      52; // Size of config struct (excluding current access code)
-  private static final int NDEF_DATA_SIZE = 54; // Size of the NDEF payload data
+  static final int ACC_CODE_SIZE = 6; // Size of access code to re-program device
+  static final int CONFIG_SIZE = 52; // Size of config struct (excluding current access code)
+  static final int NDEF_DATA_SIZE = 54; // Size of the NDEF payload data
 
-  private static final byte INS_CONFIG = 0x01;
+  static final byte INS_CONFIG = 0x01;
 
-  private static final int HMAC_CHALLENGE_SIZE = 64;
-  private static final int HMAC_RESPONSE_SIZE = 20;
+  static final int HMAC_CHALLENGE_SIZE = 64;
+  static final int HMAC_RESPONSE_SIZE = 20;
 
-  private static final byte CMD_CONFIG_1 = 0x1;
-  private static final byte CMD_NAV = 0x2;
-  private static final byte CMD_CONFIG_2 = 0x3;
-  private static final byte CMD_UPDATE_1 = 0x4;
-  private static final byte CMD_UPDATE_2 = 0x5;
-  private static final byte CMD_SWAP = 0x6;
-  private static final byte CMD_NDEF_1 = 0x8;
-  private static final byte CMD_NDEF_2 = 0x9;
-  private static final byte CMD_DEVICE_SERIAL = 0x10;
-  private static final byte CMD_SCAN_MAP = 0x12;
-  private static final byte CMD_CHALLENGE_OTP_1 = 0x20;
-  private static final byte CMD_CHALLENGE_OTP_2 = 0x28;
-  private static final byte CMD_CHALLENGE_HMAC_1 = 0x30;
-  private static final byte CMD_CHALLENGE_HMAC_2 = 0x38;
+  static final byte CMD_CONFIG_1 = 0x1;
+  static final byte CMD_NAV = 0x2;
+  static final byte CMD_CONFIG_2 = 0x3;
+  static final byte CMD_UPDATE_1 = 0x4;
+  static final byte CMD_UPDATE_2 = 0x5;
+  static final byte CMD_SWAP = 0x6;
+  static final byte CMD_NDEF_1 = 0x8;
+  static final byte CMD_NDEF_2 = 0x9;
+  static final byte CMD_DEVICE_SERIAL = 0x10;
+  static final byte CMD_SCAN_MAP = 0x12;
+  static final byte CMD_CHALLENGE_OTP_1 = 0x20;
+  static final byte CMD_CHALLENGE_OTP_2 = 0x28;
+  static final byte CMD_CHALLENGE_HMAC_1 = 0x30;
+  static final byte CMD_CHALLENGE_HMAC_2 = 0x38;
 
   private final Backend<?> backend;
 
@@ -173,10 +171,13 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
    */
   public YubiOtpSession(SmartCardConnection connection, @Nullable ScpKeyParams scpKeyParams)
       throws IOException, ApplicationNotAvailableException {
-    Version version = null;
-    SmartCardProtocol protocol = new SmartCardProtocol(connection);
+    this(new SmartCardProtocol(connection), scpKeyParams);
+  }
 
-    if (connection.getTransport() == Transport.NFC) {
+  YubiOtpSession(SmartCardProtocol protocol, @Nullable ScpKeyParams scpKeyParams)
+      throws IOException, ApplicationNotAvailableException {
+    Version version = null;
+    if (protocol.getConnection().getTransport() == Transport.NFC) {
       // If available, this is more reliable than status.getVersion() over NFC
       try {
         byte[] response = protocol.select(AppId.MANAGEMENT);
@@ -210,7 +211,7 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
         new Backend<SmartCardProtocol>(protocol, version, parseConfigState(version, statusBytes)) {
           // 5.0.0-5.2.5 have an issue with status over NFC
           private final boolean dummyStatus =
-              connection.getTransport() == Transport.NFC
+              protocol.getConnection().getTransport() == Transport.NFC
                   && version.isAtLeast(5, 0, 0)
                   && version.isLessThan(5, 2, 5);
 
@@ -240,7 +241,7 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
             return response;
           }
         };
-    logCtor(connection);
+    logCtor("SmartCardConnection");
   }
 
   /**
@@ -250,7 +251,10 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
    * @throws IOException in case of connection error
    */
   public YubiOtpSession(OtpConnection connection) throws IOException {
-    OtpProtocol protocol = new OtpProtocol(connection);
+    this(new OtpProtocol(connection));
+  }
+
+  public YubiOtpSession(OtpProtocol protocol) throws IOException {
     byte[] statusBytes = protocol.readStatus();
     Version version = protocol.getVersion();
     backend =
@@ -272,7 +276,7 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
             throw new IOException("Invalid CRC");
           }
         };
-    logCtor(connection);
+    logCtor("OtpConnection");
   }
 
   @Override
@@ -558,11 +562,11 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
     }
   }
 
-  private void logCtor(YubiKeyConnection connection) {
+  private void logCtor(String connectionName) {
     final Version version = getVersion();
     logger.debug(
         "YubiOTP session initialized for connection={}, version={}, ledInverted={}",
-        connection.getClass().getSimpleName(),
+        connectionName,
         version,
         backend.configurationState.isLedInverted());
 

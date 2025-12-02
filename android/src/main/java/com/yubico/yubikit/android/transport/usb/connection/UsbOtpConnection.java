@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2022 Yubico.
+ * Copyright (C) 2019-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,6 @@ import java.io.IOException;
 public class UsbOtpConnection extends UsbYubiKeyConnection implements OtpConnection {
   private static final int TIMEOUT = 1000;
 
-  private static final int TYPE_CLASS = 0x20;
   private static final int RECIPIENT_INTERFACE = 0x01;
   private static final int HID_GET_REPORT = 0x01;
   private static final int HID_SET_REPORT = 0x09;
@@ -60,7 +59,7 @@ public class UsbOtpConnection extends UsbYubiKeyConnection implements OtpConnect
   public void receive(byte[] report) throws IOException {
     int received =
         connection.controlTransfer(
-            UsbConstants.USB_DIR_IN | TYPE_CLASS | RECIPIENT_INTERFACE,
+            UsbConstants.USB_DIR_IN | UsbConstants.USB_TYPE_CLASS | RECIPIENT_INTERFACE,
             HID_GET_REPORT,
             REPORT_TYPE_FEATURE << 8,
             hidInterface.getId(),
@@ -81,7 +80,7 @@ public class UsbOtpConnection extends UsbYubiKeyConnection implements OtpConnect
   public void send(byte[] report) throws IOException {
     int sent =
         connection.controlTransfer(
-            UsbConstants.USB_DIR_OUT | TYPE_CLASS | RECIPIENT_INTERFACE,
+            UsbConstants.USB_DIR_OUT | UsbConstants.USB_TYPE_CLASS | RECIPIENT_INTERFACE,
             HID_SET_REPORT,
             REPORT_TYPE_FEATURE << 8,
             hidInterface.getId(),

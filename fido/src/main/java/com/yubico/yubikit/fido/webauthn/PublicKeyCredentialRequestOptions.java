@@ -29,12 +29,12 @@ import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 
 public class PublicKeyCredentialRequestOptions {
-  private static final String CHALLENGE = "challenge";
-  private static final String TIMEOUT = "timeout";
-  private static final String RP_ID = "rpId";
-  private static final String ALLOW_CREDENTIALS = "allowCredentials";
-  private static final String USER_VERIFICATION = "userVerification";
-  private static final String EXTENSIONS = "extensions";
+  static final String CHALLENGE = "challenge";
+  static final String TIMEOUT = "timeout";
+  static final String RP_ID = "rpId";
+  static final String ALLOW_CREDENTIALS = "allowCredentials";
+  static final String USER_VERIFICATION = "userVerification";
+  static final String EXTENSIONS = "extensions";
 
   private final byte[] challenge;
   @Nullable private final Long timeout;

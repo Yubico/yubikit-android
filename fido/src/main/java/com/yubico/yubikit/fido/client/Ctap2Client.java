@@ -81,14 +81,14 @@ import org.slf4j.LoggerFactory;
  * CommandState} instance to the call and use its cancel method.
  */
 public class Ctap2Client implements WebAuthnClient {
-  private static final String OPTION_CLIENT_PIN = "clientPin";
-  private static final String OPTION_USER_VERIFICATION = "uv";
-  private static final String OPTION_USER_PRESENCE = "up";
-  private static final String OPTION_BIO_ENROLLMENT = "bioEnroll";
-  private static final String OPTION_RESIDENT_KEY = "rk";
-  private static final String OPTION_EP = "ep";
-  private static final String OPTION_ALWAYS_UV = "alwaysUv";
-  private static final String OPTION_MC_UV_NOT_RQD = "makeCredUvNotRqd";
+  static final String OPTION_CLIENT_PIN = "clientPin";
+  static final String OPTION_USER_VERIFICATION = "uv";
+  static final String OPTION_USER_PRESENCE = "up";
+  static final String OPTION_BIO_ENROLLMENT = "bioEnroll";
+  static final String OPTION_RESIDENT_KEY = "rk";
+  static final String OPTION_EP = "ep";
+  static final String OPTION_ALWAYS_UV = "alwaysUv";
+  static final String OPTION_MC_UV_NOT_RQD = "makeCredUvNotRqd";
 
   private final UserAgentConfiguration userAgentConfiguration = new UserAgentConfiguration();
 

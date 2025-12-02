@@ -285,6 +285,11 @@ public class DeviceUtil {
     int interfaces = 0;
 
     if (pid != null) {
+
+      if (pid == UsbPid.OTHER) {
+        throw new IllegalArgumentException("Cannot read info from this device");
+      }
+
       keyType = pid.type;
       interfaces = pid.usbInterfaces;
     } else if (connection instanceof SmartCardConnection

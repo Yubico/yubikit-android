@@ -76,13 +76,13 @@ import org.slf4j.LoggerFactory;
  *     U2F HID Protocol Specification</a>
  */
 public class Ctap1Session extends CtapSession {
-  private static final byte INS_REGISTER = 0x01;
-  private static final byte INS_AUTHENTICATE = 0x02;
-  private static final byte INS_VERSION = 0x03;
+  static final byte INS_REGISTER = 0x01;
+  static final byte INS_AUTHENTICATE = 0x02;
+  static final byte INS_VERSION = 0x03;
 
-  private static final byte P1_CHECK_ONLY = 0x07;
-  private static final byte P1_ENFORCE_USER_PRESENCE = 0x03;
-  private static final org.slf4j.Logger logger = LoggerFactory.getLogger(Ctap1Session.class);
+  static final byte P1_CHECK_ONLY = 0x07;
+  static final byte P1_ENFORCE_USER_PRESENCE = 0x03;
+  static final org.slf4j.Logger logger = LoggerFactory.getLogger(Ctap1Session.class);
 
   private final Backend<?> backend;
   private final Version version;
@@ -122,7 +122,7 @@ public class Ctap1Session extends CtapSession {
     this(new FidoProtocol(connection));
   }
 
-  public Ctap1Session(FidoProtocol protocol) {
+  Ctap1Session(FidoProtocol protocol) {
     this(protocol.getVersion(), new FidoBackend(protocol));
   }
 
@@ -254,8 +254,8 @@ public class Ctap1Session extends CtapSession {
   }
 
   static class FidoBackend extends Backend<FidoProtocol> {
-    final byte CLA = 0x00;
-    final byte CTAPHID_MSG = (byte) 0x83;
+    static final byte CLA = 0x00;
+    static final byte CTAPHID_MSG = (byte) 0x83;
 
     protected FidoBackend(FidoProtocol delegate) {
       super(delegate);
@@ -321,7 +321,7 @@ public class Ctap1Session extends CtapSession {
    * including the credential public key, key handle, attestation certificate, and signature.
    */
   public static class RegistrationData {
-    private static final byte RESERVED_BYTE = 0x05;
+    static final byte RESERVED_BYTE = 0x05;
 
     private final byte[] data;
     private final byte[] publicKey;

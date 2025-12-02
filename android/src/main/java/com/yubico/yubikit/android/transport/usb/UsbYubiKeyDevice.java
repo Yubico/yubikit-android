@@ -16,8 +16,6 @@
 
 package com.yubico.yubikit.android.transport.usb;
 
-import static com.yubico.yubikit.android.transport.usb.UsbDeviceManager.YUBICO_VENDOR_ID;
-
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
 import com.yubico.yubikit.android.transport.usb.connection.ConnectionManager;
@@ -33,12 +31,12 @@ import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
+import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class UsbYubiKeyDevice implements YubiKeyDevice, Closeable {
-
   private final ExecutorService executorService = Executors.newSingleThreadExecutor();
   private final ConnectionManager connectionManager;
   private final UsbManager usbManager;
@@ -58,14 +56,13 @@ public class UsbYubiKeyDevice implements YubiKeyDevice, Closeable {
    * @param usbDevice device connected over usb that has permissions to interact with
    * @throws IllegalArgumentException when the usbDevice is not a recognized YubiKey
    */
-  public UsbYubiKeyDevice(UsbManager usbManager, UsbDevice usbDevice)
-      throws IllegalArgumentException {
+  public UsbYubiKeyDevice(UsbManager usbManager, UsbDevice usbDevice) {
 
-    if (usbDevice.getVendorId() != YUBICO_VENDOR_ID) {
-      throw new IllegalArgumentException("Invalid vendor id");
-    }
-
-    this.usbPid = UsbPid.fromValue(usbDevice.getProductId());
+    this.usbPid =
+        UsbConfiguration.YUBICO_VENDOR_FILTER.checkVendorProductIds(
+                usbDevice.getVendorId(), usbDevice.getProductId())
+            ? UsbPid.fromValue(usbDevice.getProductId())
+            : UsbPid.OTHER;
 
     this.connectionManager = new ConnectionManager(usbManager, usbDevice);
     this.usbDevice = usbDevice;
@@ -115,7 +112,7 @@ public class UsbYubiKeyDevice implements YubiKeyDevice, Closeable {
     if (OtpConnection.class.isAssignableFrom(connectionType)) {
       @SuppressWarnings("unchecked")
       Callback<Result<OtpConnection, IOException>> otpCallback =
-          value -> callback.invoke((Result<T, IOException>) value);
+          value -> callback.invoke((Result<T, @NonNull IOException>) value);
       if (otpConnection == null) {
         otpConnection = new CachedOtpConnection(otpCallback);
       } else {

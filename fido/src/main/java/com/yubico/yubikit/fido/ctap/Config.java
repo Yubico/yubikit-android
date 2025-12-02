@@ -38,16 +38,16 @@ import org.slf4j.LoggerFactory;
  */
 @SuppressWarnings("unused")
 public class Config {
-  private static final byte CMD_ENABLE_ENTERPRISE_ATT = 0x01;
-  private static final byte CMD_TOGGLE_ALWAYS_UV = 0x02;
-  private static final byte CMD_SET_MIN_PIN_LENGTH = 0x03;
-  private static final byte CMD_VENDOR_PROTOTYPE = (byte) 0xFF;
+  static final byte CMD_ENABLE_ENTERPRISE_ATT = 0x01;
+  static final byte CMD_TOGGLE_ALWAYS_UV = 0x02;
+  static final byte CMD_SET_MIN_PIN_LENGTH = 0x03;
+  static final byte CMD_VENDOR_PROTOTYPE = (byte) 0xFF;
 
-  private static final byte PARAM_NEW_MIN_PIN_LENGTH = 0x01;
-  private static final byte PARAM_MIN_PIN_LENGTH_RPIDS = 0x02;
-  private static final byte PARAM_FORCE_CHANGE_PIN = 0x03;
+  static final byte PARAM_NEW_MIN_PIN_LENGTH = 0x01;
+  static final byte PARAM_MIN_PIN_LENGTH_RPIDS = 0x02;
+  static final byte PARAM_FORCE_CHANGE_PIN = 0x03;
 
-  private static final byte PARAM_VENDOR_CMD_ID = 0x01;
+  static final byte PARAM_VENDOR_CMD_ID = 0x01;
 
   private final Ctap2Session ctap;
   @Nullable private final Pair<PinUvAuthProtocol, byte[]> pinUv;

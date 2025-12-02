@@ -26,7 +26,7 @@ import java.util.Set;
 import org.jspecify.annotations.Nullable;
 
 public class ApplicationRelatedData {
-  private static final int TAG_DISCRETIONARY = 0x73;
+  static final int TAG_DISCRETIONARY = 0x73;
   private final OpenPgpAid aid;
   private final byte[] historical;
   @Nullable private final ExtendedLengthInfo extendedLengthInfo;

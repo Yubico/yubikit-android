@@ -32,22 +32,21 @@ import org.slf4j.LoggerFactory;
 
 public class OtpProtocol implements Closeable {
 
-  private static final int FEATURE_RPT_SIZE = 8;
-  private static final int FEATURE_RPT_DATA_SIZE = FEATURE_RPT_SIZE - 1;
+  static final int FEATURE_RPT_SIZE = 8;
+  static final int FEATURE_RPT_DATA_SIZE = FEATURE_RPT_SIZE - 1;
 
-  private static final int SLOT_DATA_SIZE = 64;
-  private static final int FRAME_SIZE = SLOT_DATA_SIZE + 6;
+  static final int SLOT_DATA_SIZE = 64;
+  static final int FRAME_SIZE = SLOT_DATA_SIZE + 6;
 
-  private static final int RESP_PENDING_FLAG = 0x40; /* Response pending flag */
-  private static final int SLOT_WRITE_FLAG = 0x80; /* Write flag - set by app - cleared by device */
-  private static final int RESP_TIMEOUT_WAIT_FLAG =
+  static final int RESP_PENDING_FLAG = 0x40; /* Response pending flag */
+  static final int SLOT_WRITE_FLAG = 0x80; /* Write flag - set by app - cleared by device */
+  static final int RESP_TIMEOUT_WAIT_FLAG =
       0x20; /* Waiting for timeout operation - seconds left in lower 5 bits */
-  private static final int DUMMY_REPORT_WRITE =
-      0x8f; /* Write a dummy report to force update or abort */
+  static final int DUMMY_REPORT_WRITE = 0x8f; /* Write a dummy report to force update or abort */
 
-  private static final int SEQUENCE_MASK = 0x1f;
-  private static final int STATUS_OFFSET_PROG_SEQ = 0x4;
-  private static final int STATUS_OFFSET_TOUCH_LOW = 0x5;
+  static final int SEQUENCE_MASK = 0x1f;
+  static final int STATUS_OFFSET_PROG_SEQ = 0x4;
+  static final int STATUS_OFFSET_TOUCH_LOW = 0x5;
 
   private static final int CONFIG_SLOTS_PROGRAMMED_MASK = 0b00000011; // Slot 1 or 2 programmed
 
