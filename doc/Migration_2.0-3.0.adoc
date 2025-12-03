@@ -7,13 +7,14 @@ This guide helps you upgrade your application to use `yubikit-android` 3.0. It h
 
 == Migration Checklist
 
-- Update any usage of public API identifiers that previously used ALL CAPS abbreviations (e.g. `getPinComplexityPolicyURL` → `getPinComplexityPolicyUrl`).
-- Remove usage of deprecated APIs; they have been fully removed.
-- If you use FIDO/WebAuthn APIs:
-- Switch from `BasicWebAuthnClient` to `WebAuthnClient`, if you instantiate these clients directly.
-- Change your code to use `ClientDataProvider` for client data instead of passing raw byte arrays.
-- Update error handling: use `AuthInvalidClientError` to catch invalid PIN or UV errors.
-- If your code uses SDK generics like `Result<T, E>` in Kotlin, ensure you specify non-nullable type arguments (`<T : Any>`).
+
+* Update any usage of public API identifiers that previously used ALL CAPS abbreviations (e.g. `getPinComplexityPolicyURL` → `getPinComplexityPolicyUrl`).
+* Remove usage of deprecated APIs; they have been fully removed.
+* If you use FIDO/WebAuthn APIs:
+** Switch from `BasicWebAuthnClient` to `WebAuthnClient`, if you instantiate these clients directly.
+** Change your code to use `ClientDataProvider` for client data instead of passing raw byte arrays.
+** Update error handling: use `AuthInvalidClientError` to catch invalid PIN or UV errors.
+* If your code uses SDK generics like `Result<T, E>` in Kotlin, ensure you specify non-nullable type arguments (`<T : Any>`).
 
 == 1. API Naming Changes
 
@@ -27,7 +28,7 @@ See https://github.com/Yubico/yubikit-android/pull/230[PR#230] for details.
 
 == 2. Nullness Annotations Migration and Non-Nullable Generics (JSpecify)
 
-The SDK now uses JSpecify (`org.jspecify.annotations`) nullness annotations, enforcing stricter rules about which types can be null.
+The SDK now uses JSpecify (https://jspecify.dev/[https://jspecify.dev/]) nullness annotations, enforcing stricter rules about which types can be null.
 
 If you use Kotlin, update any function or class generic parameters that interact with SDK types like `Result<T, E>`: generics must be non-nullable and use `<T : Any>`.
 
