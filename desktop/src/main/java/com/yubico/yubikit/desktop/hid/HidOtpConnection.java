@@ -15,19 +15,19 @@
  */
 package com.yubico.yubikit.desktop.hid;
 
-import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.otp.OtpConnection;
 import java.io.IOException;
 import org.hid4java.HidDevice;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class HidOtpConnection implements OtpConnection {
   private final HidDevice hidDevice;
   private final byte interfaceId;
-  private static final org.slf4j.Logger logger = LoggerFactory.getLogger(HidOtpConnection.class);
+  private static final Logger logger = LoggerFactory.getLogger(HidOtpConnection.class);
 
   HidOtpConnection(HidDevice hidDevice, byte interfaceId) throws IOException {
-    Logger.debug(logger, "Opening HID OTP connection");
+    logger.debug("Opening HID OTP connection");
 
     if (!hidDevice.isClosed()) {
       throw new IOException("Device already open");
@@ -65,7 +65,7 @@ public class HidOtpConnection implements OtpConnection {
 
   @Override
   public void close() {
-    Logger.debug(logger, "Closing HID OTP connection");
+    logger.debug("Closing HID OTP connection");
     hidDevice.close();
   }
 }

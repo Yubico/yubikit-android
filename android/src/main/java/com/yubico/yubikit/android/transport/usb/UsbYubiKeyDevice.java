@@ -16,8 +16,6 @@
 
 package com.yubico.yubikit.android.transport.usb;
 
-import static com.yubico.yubikit.android.transport.usb.UsbDeviceManager.YUBICO_VENDOR_ID;
-
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
 import com.yubico.yubikit.android.transport.usb.connection.ConnectionManager;
@@ -25,7 +23,6 @@ import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.UsbPid;
 import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.YubiKeyDevice;
-import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.otp.OtpConnection;
 import com.yubico.yubikit.core.util.Callback;
 import com.yubico.yubikit.core.util.Result;
@@ -34,12 +31,12 @@ import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class UsbYubiKeyDevice implements YubiKeyDevice, Closeable {
-
   private final ExecutorService executorService = Executors.newSingleThreadExecutor();
   private final ConnectionManager connectionManager;
   private final UsbManager usbManager;
@@ -50,7 +47,7 @@ public class UsbYubiKeyDevice implements YubiKeyDevice, Closeable {
 
   @Nullable private Runnable onClosed = null;
 
-  private static final org.slf4j.Logger logger = LoggerFactory.getLogger(UsbYubiKeyDevice.class);
+  private static final Logger logger = LoggerFactory.getLogger(UsbYubiKeyDevice.class);
 
   /**
    * Creates the instance of usb session to interact with the yubikey device.
@@ -59,14 +56,13 @@ public class UsbYubiKeyDevice implements YubiKeyDevice, Closeable {
    * @param usbDevice device connected over usb that has permissions to interact with
    * @throws IllegalArgumentException when the usbDevice is not a recognized YubiKey
    */
-  public UsbYubiKeyDevice(UsbManager usbManager, UsbDevice usbDevice)
-      throws IllegalArgumentException {
+  public UsbYubiKeyDevice(UsbManager usbManager, UsbDevice usbDevice) {
 
-    if (usbDevice.getVendorId() != YUBICO_VENDOR_ID) {
-      throw new IllegalArgumentException("Invalid vendor id");
-    }
-
-    this.usbPid = UsbPid.fromValue(usbDevice.getProductId());
+    this.usbPid =
+        UsbConfiguration.YUBICO_VENDOR_FILTER.checkVendorProductIds(
+                usbDevice.getVendorId(), usbDevice.getProductId())
+            ? UsbPid.fromValue(usbDevice.getProductId())
+            : UsbPid.OTHER;
 
     this.connectionManager = new ConnectionManager(usbManager, usbDevice);
     this.usbDevice = usbDevice;
@@ -116,7 +112,7 @@ public class UsbYubiKeyDevice implements YubiKeyDevice, Closeable {
     if (OtpConnection.class.isAssignableFrom(connectionType)) {
       @SuppressWarnings("unchecked")
       Callback<Result<OtpConnection, IOException>> otpCallback =
-          value -> callback.invoke((Result<T, IOException>) value);
+          value -> callback.invoke((Result<T, @NonNull IOException>) value);
       if (otpConnection == null) {
         otpConnection = new CachedOtpConnection(otpCallback);
       } else {
@@ -165,7 +161,7 @@ public class UsbYubiKeyDevice implements YubiKeyDevice, Closeable {
 
   @Override
   public void close() {
-    Logger.debug(logger, "Closing YubiKey device");
+    logger.debug("Closing YubiKey device");
     if (otpConnection != null) {
       otpConnection.close();
       otpConnection = null;
@@ -183,7 +179,7 @@ public class UsbYubiKeyDevice implements YubiKeyDevice, Closeable {
         new LinkedBlockingQueue<>();
 
     private CachedOtpConnection(Callback<Result<OtpConnection, IOException>> callback) {
-      Logger.debug(logger, "Creating new CachedOtpConnection");
+      logger.debug("Creating new CachedOtpConnection");
       queue.offer(callback);
       executorService.submit(
           () -> {
@@ -192,16 +188,16 @@ public class UsbYubiKeyDevice implements YubiKeyDevice, Closeable {
                 try {
                   Callback<Result<OtpConnection, IOException>> action = queue.take();
                   if (action == CLOSE_OTP) {
-                    Logger.debug(logger, "Closing CachedOtpConnection");
+                    logger.debug("Closing CachedOtpConnection");
                     break;
                   }
                   try {
                     action.invoke(Result.success(connection));
                   } catch (Exception e) {
-                    Logger.error(logger, "OtpConnection callback threw an exception", e);
+                    logger.error("OtpConnection callback threw an exception", e);
                   }
                 } catch (InterruptedException e) {
-                  Logger.error(logger, "InterruptedException when processing OtpConnection: ", e);
+                  logger.error("InterruptedException when processing OtpConnection: ", e);
                 }
               }
             } catch (IOException e) {
@@ -237,7 +233,6 @@ public class UsbYubiKeyDevice implements YubiKeyDevice, Closeable {
     }
   }
 
-  @Nonnull
   @Override
   public String toString() {
     return "UsbYubiKeyDevice{" + "usbDevice=" + usbDevice + ", usbPid=" + usbPid + '}';

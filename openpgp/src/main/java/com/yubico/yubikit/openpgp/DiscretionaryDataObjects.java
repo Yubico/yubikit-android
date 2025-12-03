@@ -21,14 +21,14 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 public class DiscretionaryDataObjects {
-  private static final int TAG_EXTENDED_CAPABILITIES = 0xC0;
-  private static final int TAG_FINGERPRINTS = 0xC5;
-  private static final int TAG_CA_FINGERPRINTS = 0xC6;
-  private static final int TAG_GENERATION_TIMES = 0xCD;
-  private static final int TAG_KEY_INFORMATION = 0xDE;
+  static final int TAG_EXTENDED_CAPABILITIES = 0xC0;
+  static final int TAG_FINGERPRINTS = 0xC5;
+  static final int TAG_CA_FINGERPRINTS = 0xC6;
+  static final int TAG_GENERATION_TIMES = 0xCD;
+  static final int TAG_KEY_INFORMATION = 0xDE;
   private final ExtendedCapabilities extendedCapabilities;
 
   private final AlgorithmAttributes attributesSig;
@@ -100,8 +100,7 @@ public class DiscretionaryDataObjects {
     }
   }
 
-  @Nullable
-  public byte[] getFingerprint(KeyRef keyRef) {
+  public byte @Nullable [] getFingerprint(KeyRef keyRef) {
     byte[] fingerprint = fingerprints.get(keyRef);
     if (fingerprint != null) {
       return Arrays.copyOf(fingerprint, fingerprint.length);
@@ -109,8 +108,7 @@ public class DiscretionaryDataObjects {
     return null;
   }
 
-  @Nullable
-  public byte[] getCaFingerprint(KeyRef keyRef) {
+  public byte @Nullable [] getCaFingerprint(KeyRef keyRef) {
     byte[] fingerprint = caFingerprints.get(keyRef);
     if (fingerprint != null) {
       return Arrays.copyOf(fingerprint, fingerprint.length);

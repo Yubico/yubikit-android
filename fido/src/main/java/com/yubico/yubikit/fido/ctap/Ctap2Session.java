@@ -17,24 +17,19 @@
 package com.yubico.yubikit.fido.ctap;
 
 import com.yubico.yubikit.core.Version;
-import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
-import com.yubico.yubikit.core.application.ApplicationSession;
 import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.application.CommandException;
 import com.yubico.yubikit.core.application.CommandState;
 import com.yubico.yubikit.core.fido.CtapException;
 import com.yubico.yubikit.core.fido.FidoConnection;
 import com.yubico.yubikit.core.fido.FidoProtocol;
-import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.smartcard.Apdu;
 import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.core.smartcard.AppId;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.smartcard.SmartCardProtocol;
 import com.yubico.yubikit.core.smartcard.scp.ScpKeyParams;
-import com.yubico.yubikit.core.util.Callback;
-import com.yubico.yubikit.core.util.Result;
 import com.yubico.yubikit.core.util.StringUtils;
 import com.yubico.yubikit.fido.Cbor;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialDescriptor;
@@ -51,77 +46,42 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import javax.annotation.Nullable;
 import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Implements CTAP 2.2
+ * Implements CTAP 2.3
  *
  * @see <a
- *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html">Client
+ *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html">Client
  *     to Authenticator Protocol (CTAP)</a>
  */
-public class Ctap2Session extends ApplicationSession<Ctap2Session> {
-
-  private static final byte NFCCTAP_MSG = 0x10;
-  private static final byte NFCCTAP_GETRESPONSE = 0x11;
-  private static final byte P1_GET_RESPONSE = (byte) 0x80;
-  private static final byte P1_KEEP_ALIVE = 0x00;
-  private static final byte P1_CANCEL_KEEP_ALIVE = 0x11;
-  private static final short SW_GETRESPONSE_OK = (short) 0x9100;
-
-  private static final byte CMD_MAKE_CREDENTIAL = 0x01;
-  private static final byte CMD_GET_ASSERTION = 0x02;
-  private static final byte CMD_GET_INFO = 0x04;
-  private static final byte CMD_CLIENT_PIN = 0x06;
-  private static final byte CMD_RESET = 0x07;
-  private static final byte CMD_GET_NEXT_ASSERTION = 0x08;
-  private static final byte CMD_BIO_ENROLLMENT = 0x09;
-  private static final byte CMD_CREDENTIAL_MANAGEMENT = 0x0A;
-  private static final byte CMD_SELECTION = 0x0B;
-  private static final byte CMD_LARGE_BLOBS = 0x0C;
-  private static final byte CMD_CONFIG = 0x0D;
-  private static final byte CMD_BIO_ENROLLMENT_PRE = 0x40;
-  private static final byte CMD_CREDENTIAL_MANAGEMENT_PRE = 0x41;
+public class Ctap2Session extends Ctap1Session {
+  static final byte CMD_MAKE_CREDENTIAL = 0x01;
+  static final byte CMD_GET_ASSERTION = 0x02;
+  static final byte CMD_GET_INFO = 0x04;
+  static final byte CMD_CLIENT_PIN = 0x06;
+  static final byte CMD_RESET = 0x07;
+  static final byte CMD_GET_NEXT_ASSERTION = 0x08;
+  static final byte CMD_BIO_ENROLLMENT = 0x09;
+  static final byte CMD_CREDENTIAL_MANAGEMENT = 0x0A;
+  static final byte CMD_SELECTION = 0x0B;
+  static final byte CMD_LARGE_BLOBS = 0x0C;
+  static final byte CMD_CONFIG = 0x0D;
+  static final byte CMD_BIO_ENROLLMENT_PRE = 0x40;
+  static final byte CMD_CREDENTIAL_MANAGEMENT_PRE = 0x41;
 
   private final Version version;
-  private final Backend<?> backend;
+  private final Backend<?, ?> backend;
   private final InfoData info;
   @Nullable private final Byte credentialManagerCommand;
   @Nullable private final Byte bioEnrollmentCommand;
 
-  private static final byte[] encIdentifierBytes = "encIdentifier".getBytes(StandardCharsets.UTF_8);
-  private static final byte[] encCredStoreStateBytes =
-      "encCredStoreState".getBytes(StandardCharsets.UTF_8);
-
-  private static final org.slf4j.Logger logger = LoggerFactory.getLogger(Ctap2Session.class);
-
-  /**
-   * Construct a new Ctap2Session for a given YubiKey.
-   *
-   * @param device a YubiKeyDevice over NFC or USB
-   * @param callback a callback to invoke with the session
-   */
-  public static void create(
-      YubiKeyDevice device, Callback<Result<Ctap2Session, Exception>> callback) {
-    if (device.supportsConnection(FidoConnection.class)) {
-      device.requestConnection(
-          FidoConnection.class,
-          value -> callback.invoke(Result.of(() -> new Ctap2Session(value.getValue()))));
-    } else if (device.supportsConnection(SmartCardConnection.class)) {
-      device.requestConnection(
-          SmartCardConnection.class,
-          value -> callback.invoke(Result.of(() -> new Ctap2Session(value.getValue()))));
-    } else {
-      callback.invoke(
-          Result.failure(
-              new ApplicationNotAvailableException(
-                  "Session does not support any compatible connection type")));
-    }
-  }
+  private static final Logger logger = LoggerFactory.getLogger(Ctap2Session.class);
 
   public Ctap2Session(SmartCardConnection connection) throws IOException, CommandException {
     this(connection, new Version(0, 0, 0));
@@ -137,124 +97,94 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
 
   public Ctap2Session(SmartCardConnection connection, Version version)
       throws IOException, CommandException {
-    this(connection, version, null);
+    this(connection, version, (ScpKeyParams) null);
   }
 
   public Ctap2Session(
       SmartCardConnection connection, Version version, @Nullable ScpKeyParams scpKeyParams)
       throws IOException, CommandException {
-    this(version, getSmartCardBackend(connection, scpKeyParams));
-    Logger.debug(
-        logger,
-        "Ctap2Session session initialized for connection={}, version={}",
-        connection.getClass().getSimpleName(),
-        version);
+    this(version, getCtap2SmartCardBackend(new SmartCardProtocol(connection), scpKeyParams));
+  }
+
+  Ctap2Session(SmartCardProtocol protocol, Version version, @Nullable ScpKeyParams scpKeyParams)
+      throws IOException, CommandException {
+    this(version, getCtap2SmartCardBackend(protocol, scpKeyParams));
+    logger.debug("Ctap2Session session initialized for SmartCardConnection, version={}", version);
   }
 
   public Ctap2Session(FidoConnection connection) throws IOException, CommandException {
     this(new FidoProtocol(connection));
-    Logger.debug(
-        logger,
-        "Ctap2Session session initialized for connection={}, version={}",
-        connection.getClass().getSimpleName(),
-        version);
   }
 
-  private Ctap2Session(Version version, Backend<?> backend) throws IOException, CommandException {
+  Ctap2Session(FidoProtocol protocol) throws IOException, CommandException {
+    this(protocol.getVersion(), getCtap2FidoBackend(protocol));
+  }
+
+  Ctap2Session(FidoProtocol protocol, InfoData infoData) throws IOException, CommandException {
+    this(protocol.getVersion(), getCtap2FidoBackend(protocol), infoData);
+  }
+
+  Ctap2Session(Version version, Backend<?, ?> backend) throws IOException, CommandException {
+    super(version, backend);
     this.version = version;
     this.backend = backend;
     this.info = getInfo();
+    Map<String, ?> options = info.getOptions();
+    this.credentialManagerCommand = computeCredentialManagerCommand(options);
+    this.bioEnrollmentCommand = computeBioEnrollmentCommand(options);
+  }
 
-    final Map<String, ?> options = info.getOptions();
+  Ctap2Session(
+      Version version,
+      SmartCardProtocol protocol,
+      @Nullable ScpKeyParams scpKeyParams,
+      InfoData info)
+      throws IOException, CommandException {
+    this(version, getCtap2SmartCardBackend(protocol, scpKeyParams), info);
+  }
+
+  Ctap2Session(Version version, Backend<?, ?> backend, InfoData info)
+      throws IOException, CommandException {
+    super(version, backend);
+    this.version = version;
+    this.backend = backend;
+    this.info = info;
+    Map<String, ?> options = info.getOptions();
+    this.credentialManagerCommand = computeCredentialManagerCommand(options);
+    this.bioEnrollmentCommand = computeBioEnrollmentCommand(options);
+  }
+
+  @Nullable
+  private Byte computeCredentialManagerCommand(Map<String, ?> options) {
     if (Boolean.TRUE.equals(options.get("credMgmt"))) {
-      this.credentialManagerCommand = CMD_CREDENTIAL_MANAGEMENT;
+      return CMD_CREDENTIAL_MANAGEMENT;
     } else if (info.getVersions().contains("FIDO_2_1_PRE")
         && Boolean.TRUE.equals(options.get("credentialMgmtPreview"))) {
-      this.credentialManagerCommand = CMD_CREDENTIAL_MANAGEMENT_PRE;
+      return CMD_CREDENTIAL_MANAGEMENT_PRE;
     } else {
-      this.credentialManagerCommand = null;
+      return null;
     }
+  }
 
+  @Nullable
+  private Byte computeBioEnrollmentCommand(Map<String, ?> options) {
     if (options.containsKey("bioEnroll")) {
-      this.bioEnrollmentCommand = CMD_BIO_ENROLLMENT;
+      return CMD_BIO_ENROLLMENT;
     } else if (info.getVersions().contains("FIDO_2_1_PRE")
         && options.containsKey("userVerificationMgmtPreview")) {
-      this.bioEnrollmentCommand = CMD_BIO_ENROLLMENT_PRE;
+      return CMD_BIO_ENROLLMENT_PRE;
     } else {
-      this.bioEnrollmentCommand = null;
+      return null;
     }
-  }
-
-  private static Backend<SmartCardProtocol> getSmartCardBackend(
-      SmartCardConnection connection, @Nullable ScpKeyParams scpKeyParams)
-      throws IOException, ApplicationNotAvailableException {
-    final SmartCardProtocol protocol = new SmartCardProtocol(connection);
-    protocol.select(AppId.FIDO);
-    if (scpKeyParams != null) {
-      try {
-        protocol.initScp(scpKeyParams);
-      } catch (BadResponseException | ApduException e) {
-        throw new IllegalStateException(e);
-      }
-    }
-    return new Backend<SmartCardProtocol>(protocol) {
-      private final CommandState defaultState = new CommandState();
-
-      byte[] sendCbor(byte[] data, @Nullable CommandState state)
-          throws IOException, CommandException {
-
-        int ins = NFCCTAP_MSG;
-        int p1 = P1_GET_RESPONSE;
-        int lastKeepAliveStatus = 0;
-
-        state = state != null ? state : defaultState;
-
-        while (true) {
-          try {
-            return delegate.sendAndReceive(new Apdu(0x80, ins, p1, 0x00, data));
-          } catch (ApduException apduException) {
-            if (SW_GETRESPONSE_OK != apduException.getSw()) {
-              throw apduException;
-            }
-
-            // Handle SW_GETRESPONSE_OK (0x9100)
-            ins = NFCCTAP_GETRESPONSE;
-            p1 = P1_KEEP_ALIVE;
-            final byte keepAliveStatus = apduException.getData()[0];
-
-            // check for cancellations
-            if (lastKeepAliveStatus != keepAliveStatus) {
-              lastKeepAliveStatus = keepAliveStatus;
-              state.onKeepAliveStatus(keepAliveStatus);
-            }
-            if (state.waitForCancel(100)) {
-              Logger.trace(logger, "NFCCTAP_GETRESPONSE cancelled");
-              p1 = P1_CANCEL_KEEP_ALIVE;
-            }
-          }
-        }
-      }
-    };
-  }
-
-  private Ctap2Session(FidoProtocol protocol) throws IOException, CommandException {
-    this(
-        protocol.getVersion(),
-        new Backend<FidoProtocol>(protocol) {
-          @Override
-          byte[] sendCbor(byte[] data, @Nullable CommandState state) throws IOException {
-            byte CTAPHID_CBOR = (byte) 0x80 | 0x10;
-            return delegate.sendAndReceive(CTAPHID_CBOR, data, state);
-          }
-        });
   }
 
   /** Packs a list of objects into a 1-indexed map, discarding any null values. */
-  private static Map<Integer, ?> args(Object... params) {
+  private static Map<Integer, ?> args(@Nullable Object... params) {
     Map<Integer, Object> argMap = new HashMap<>();
     for (int i = 0; i < params.length; i++) {
-      if (params[i] != null) {
-        argMap.put(i + 1, params[i]);
+      Object pi = params[i];
+      if (pi != null) {
+        argMap.put(i + 1, pi);
       }
     }
     return argMap;
@@ -270,10 +200,9 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
     }
     byte[] data = baos.toByteArray();
 
-    int maxMsgSize = command == CMD_GET_INFO ? 1024 : info.maxMsgSize;
+    int maxMsgSize = command == CMD_GET_INFO ? 1024 : info.getMaxMsgSize();
     if (data.length > maxMsgSize) {
-      Logger.error(
-          logger, "Actual message size ({}) larger than maxMsgSize ({})", data.length, maxMsgSize);
+      logger.error("Actual message size ({}) larger than maxMsgSize ({})", data.length, maxMsgSize);
       throw new CtapException(CtapException.ERR_REQUEST_TOO_LARGE);
     }
 
@@ -314,7 +243,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
    * @throws IOException A communication error in the transport layer.
    * @throws CommandException A communication in the protocol layer.
    * @see <a
-   *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html#authenticatorMakeCredential">authenticatorMakeCredential</a>
+   *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#authenticatorMakeCredential">authenticatorMakeCredential</a>
    */
   public CredentialData makeCredential(
       byte[] clientDataHash,
@@ -324,13 +253,12 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
       @Nullable List<Map<String, ?>> excludeList,
       @Nullable Map<String, ?> extensions,
       @Nullable Map<String, ?> options,
-      @Nullable byte[] pinUvAuthParam,
+      byte @Nullable [] pinUvAuthParam,
       @Nullable Integer pinUvAuthProtocol,
       @Nullable Integer enterpriseAttestation,
       @Nullable CommandState state)
       throws IOException, CommandException {
-    Logger.debug(
-        logger,
+    logger.debug(
         "makeCredential for clientDataHash={},rp={},user={},"
             + "pubKeyCredParams={},excludeList={},extensions={},options={},"
             + "pinUvAuthParam={},pinUvAuthProtocol={},enterpriseAttestation={},state={}",
@@ -363,7 +291,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
             state);
 
     CredentialData credentialData = CredentialData.fromData(data);
-    Logger.info(logger, "Credential created");
+    logger.info("Credential created");
     return credentialData;
   }
 
@@ -384,9 +312,9 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
    * @throws IOException A communication error in the transport layer.
    * @throws CommandException A communication in the protocol layer.
    * @see <a
-   *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html#authenticatorGetAssertion">authenticatorGetAssertion</a>
+   *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#authenticatorGetAssertion">authenticatorGetAssertion</a>
    * @see <a
-   *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html#authenticatorGetNextAssertion">authenticatorGetNextAssertion</a>
+   *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#authenticatorGetNextAssertion">authenticatorGetNextAssertion</a>
    */
   public List<AssertionData> getAssertions(
       String rpId,
@@ -394,12 +322,11 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
       @Nullable List<Map<String, ?>> allowList,
       @Nullable Map<String, ?> extensions,
       @Nullable Map<String, ?> options,
-      @Nullable byte[] pinUvAuthParam,
+      byte @Nullable [] pinUvAuthParam,
       @Nullable Integer pinUvAuthProtocol,
       @Nullable CommandState state)
       throws IOException, CommandException {
-    Logger.debug(
-        logger,
+    logger.debug(
         "getAssertions for rpId={},clientDataHash={},"
             + "allowList={},extensions={},options={},pinUvAuthParam={},"
             + "pinUvAuthProtocol={},state={}",
@@ -409,7 +336,8 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
         extensions,
         options,
         pinUvAuthParam,
-        pinUvAuthProtocol);
+        pinUvAuthProtocol,
+        state);
 
     final Map<Integer, ?> assertion =
         sendCbor(
@@ -432,7 +360,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
           AssertionData.fromData(
               Objects.requireNonNull(sendCbor(CMD_GET_NEXT_ASSERTION, null, null))));
     }
-    Logger.info(logger, "Authenticator returned {} assertions.", credentialCount);
+    logger.info("Authenticator returned {} assertions.", credentialCount);
     return assertions;
   }
 
@@ -445,12 +373,12 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
    * @throws IOException A communication error in the transport layer.
    * @throws CommandException A communication in the protocol layer.
    * @see <a
-   *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html#authenticatorGetInfo">authenticatorGetInfo</a>
+   *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#authenticatorGetInfo">authenticatorGetInfo</a>
    */
   public InfoData getInfo() throws IOException, CommandException {
     final Map<Integer, ?> infoData = sendCbor(CMD_GET_INFO, null, null);
     final InfoData info = InfoData.fromData(infoData);
-    Logger.debug(logger, "Ctap2.InfoData: {}", info);
+    logger.debug("Ctap2.InfoData: {}", info);
     return info;
   }
 
@@ -470,21 +398,20 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
    * @throws IOException A communication error in the transport layer.
    * @throws CommandException A communication in the protocol layer.
    * @see <a
-   *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html#authenticatorClientPIN">authenticatorClientPIN</a>
+   *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#authenticatorClientPIN">authenticatorClientPIN</a>
    */
   Map<Integer, ?> clientPin(
       @Nullable Integer pinUvAuthProtocol,
       int subCommand,
       @Nullable Map<Integer, ?> keyAgreement,
-      @Nullable byte[] pinUvAuthParam,
-      @Nullable byte[] newPinEnc,
-      @Nullable byte[] pinHashEnc,
+      byte @Nullable [] pinUvAuthParam,
+      byte @Nullable [] newPinEnc,
+      byte @Nullable [] pinHashEnc,
       @Nullable Integer permissions,
       @Nullable String rpId,
       @Nullable CommandState state)
       throws IOException, CommandException {
-    Logger.debug(
-        logger,
+    logger.debug(
         "clientPin for pinUvAuthProtocol={},subCommand={},"
             + "keyAgreement={},pinUvAuthParam={},newPinEnc={},pinHashEnc={},"
             + "permissions={},rpId={}",
@@ -522,7 +449,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
    * @throws IOException A communication error in the transport layer.
    * @throws CommandException A communication in the protocol layer.
    * @see <a
-   *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html#authenticatorReset">authenticatorReset</a>
+   *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#authenticatorReset">authenticatorReset</a>
    */
   public void reset(@Nullable CommandState state) throws IOException, CommandException {
     sendCbor(CMD_RESET, null, state);
@@ -542,14 +469,14 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
    * @throws IOException A communication error in the transport layer.
    * @throws CommandException A communication in the protocol layer.
    * @see <a
-   *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html#authenticatorBioEnrollment">authenticatorBioEnrollment</a>
+   *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#authenticatorBioEnrollment">authenticatorBioEnrollment</a>
    */
   Map<Integer, ?> bioEnrollment(
       @Nullable Integer modality,
       @Nullable Integer subCommand,
       @Nullable Map<?, ?> subCommandParams,
       @Nullable Integer pinUvAuthProtocol,
-      @Nullable byte[] pinUvAuthParam,
+      byte @Nullable [] pinUvAuthParam,
       @Nullable Boolean getModality,
       @Nullable CommandState state)
       throws IOException, CommandException {
@@ -573,13 +500,13 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
    * @throws IOException A communication error in the transport layer.
    * @throws CommandException A communication in the protocol layer.
    * @see <a
-   *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html#authenticatorCredentialManagement">authenticatorCredentialManagement</a>
+   *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#authenticatorCredentialManagement">authenticatorCredentialManagement</a>
    */
   Map<Integer, ?> credentialManagement(
       int subCommand,
       @Nullable Map<?, ?> subCommandParams,
       @Nullable Integer pinUvAuthProtocol,
-      @Nullable byte[] pinUvAuthParam)
+      byte @Nullable [] pinUvAuthParam)
       throws IOException, CommandException {
     if (credentialManagerCommand == null) {
       throw new IllegalStateException("Credential manager not supported");
@@ -597,7 +524,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
    * @throws IOException A communication error in the transport layer.
    * @throws CommandException A communication in the protocol layer.
    * @see <a
-   *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html#authenticatorSelection">authenticatorSelection</a>
+   *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#authenticatorSelection">authenticatorSelection</a>
    */
   public void selection(@Nullable CommandState state) throws IOException, CommandException {
     sendCbor(CMD_SELECTION, null, state);
@@ -617,14 +544,14 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
    * @throws IOException A communication error in the transport layer.
    * @throws CommandException A communication in the protocol layer.
    * @see <a
-   *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html#authenticatorLargeBlobs">authenticatorLargeBlobs</a>
+   *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#authenticatorLargeBlobs">authenticatorLargeBlobs</a>
    */
   public Map<Integer, ?> largeBlobs(
       int offset,
       @Nullable Integer get,
-      @Nullable byte[] set,
+      byte @Nullable [] set,
       @Nullable Integer length,
-      @Nullable byte[] pinUvAuthParam,
+      byte @Nullable [] pinUvAuthParam,
       @Nullable Integer pinUvAuthProtocol)
       throws IOException, CommandException {
     return sendCbor(
@@ -653,13 +580,13 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
    * @throws IOException A communication error in the transport layer.
    * @throws CommandException A communication in the protocol layer.
    * @see <a
-   *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html#authenticatorConfig">authenticatorConfig</a>
+   *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#authenticatorConfig">authenticatorConfig</a>
    */
   public Map<Integer, ?> config(
       byte subCommand,
       @Nullable Map<?, ?> subCommandParams,
       @Nullable Integer pinUvAuthProtocol,
-      @Nullable byte[] pinUvAuthParam)
+      byte @Nullable [] pinUvAuthParam)
       throws IOException, CommandException {
     return sendCbor(
         CMD_CONFIG,
@@ -685,60 +612,49 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
     return info;
   }
 
-  private abstract static class Backend<T extends Closeable> implements Closeable {
-    protected final T delegate;
-
-    private Backend(T delegate) {
-      this.delegate = delegate;
-    }
-
-    @Override
-    public void close() throws IOException {
-      delegate.close();
-    }
-
-    abstract byte[] sendCbor(byte[] data, @Nullable CommandState state)
-        throws IOException, CommandException;
-  }
-
   /**
    * Data object containing the information readable form a YubiKey using the getInfo command.
    *
    * @see <a
-   *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html#authenticatorGetInfo">authenticatorGetInfo</a>
+   *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#authenticatorGetInfo">authenticatorGetInfo</a>
    */
   public static class InfoData {
-    private static final int RESULT_VERSIONS = 0x01;
-    private static final int RESULT_EXTENSIONS = 0x02;
-    private static final int RESULT_AAGUID = 0x03;
-    private static final int RESULT_OPTIONS = 0x04;
-    private static final int RESULT_MAX_MSG_SIZE = 0x05;
-    private static final int RESULT_PIN_UV_AUTH_PROTOCOLS = 0x06;
-    private static final int RESULT_MAX_CREDS_IN_LIST = 0x07;
-    private static final int RESULT_MAX_CRED_ID_LENGTH = 0x08;
-    private static final int RESULT_TRANSPORTS = 0x09;
-    private static final int RESULT_ALGORITHMS = 0x0A;
-    private static final int RESULT_MAX_SERIALIZED_LARGE_BLOB_ARRAY = 0x0B;
-    private static final int RESULT_FORCE_PIN_CHANGE = 0x0C;
-    private static final int RESULT_MIN_PIN_LENGTH = 0x0D;
-    private static final int RESULT_FIRMWARE_VERSION = 0x0E;
-    private static final int RESULT_MAX_CRED_BLOB_LENGTH = 0x0F;
-    private static final int RESULT_MAX_RPID_FOR_SET_MIN_PIN_LENGTH = 0x10;
-    private static final int RESULT_PREFERRED_PLATFORM_UV_ATTEMPTS = 0x11;
-    private static final int RESULT_UV_MODALITY = 0x12;
-    private static final int RESULT_CERTIFICATIONS = 0x13;
-    private static final int RESULT_REMAINING_DISCOVERABLE_CREDENTIALS = 0x14;
-    private static final int RESULT_VENDOR_PROTOTYPE_CONFIG_COMMANDS = 0x15;
-    private static final int RESULT_ATTESTATION_FORMATS = 0x16;
-    private static final int RESULT_UV_COUNT_SINCE_LAST_PIN_ENTRY = 0x17;
-    private static final int RESULT_LONG_TOUCH_FOR_RESET = 0x18;
-    private static final int RESULT_ENC_IDENTIFIER = 0x19;
-    private static final int RESULT_TRANSPORTS_FOR_RESET = 0x1A;
-    private static final int RESULT_PIN_COMPLEXITY_POLICY = 0x1B;
-    private static final int RESULT_PIN_COMPLEXITY_POLICY_URL = 0x1C;
-    private static final int RESULT_MAX_PIN_LENGTH = 0x1D;
-    private static final int RESULT_ENC_CRED_STORE_STATE = 0x1E;
-    private static final int RESULT_AUTHENTICATOR_CONFIG_COMMANDS = 0x1F;
+    static final int RESULT_VERSIONS = 0x01;
+    static final int RESULT_EXTENSIONS = 0x02;
+    static final int RESULT_AAGUID = 0x03;
+    static final int RESULT_OPTIONS = 0x04;
+    static final int RESULT_MAX_MSG_SIZE = 0x05;
+    static final int RESULT_PIN_UV_AUTH_PROTOCOLS = 0x06;
+    static final int RESULT_MAX_CREDS_IN_LIST = 0x07;
+    static final int RESULT_MAX_CRED_ID_LENGTH = 0x08;
+    static final int RESULT_TRANSPORTS = 0x09;
+    static final int RESULT_ALGORITHMS = 0x0A;
+    static final int RESULT_MAX_SERIALIZED_LARGE_BLOB_ARRAY = 0x0B;
+    static final int RESULT_FORCE_PIN_CHANGE = 0x0C;
+    static final int RESULT_MIN_PIN_LENGTH = 0x0D;
+    static final int RESULT_FIRMWARE_VERSION = 0x0E;
+    static final int RESULT_MAX_CRED_BLOB_LENGTH = 0x0F;
+    static final int RESULT_MAX_RPID_FOR_SET_MIN_PIN_LENGTH = 0x10;
+    static final int RESULT_PREFERRED_PLATFORM_UV_ATTEMPTS = 0x11;
+    static final int RESULT_UV_MODALITY = 0x12;
+    static final int RESULT_CERTIFICATIONS = 0x13;
+    static final int RESULT_REMAINING_DISCOVERABLE_CREDENTIALS = 0x14;
+    static final int RESULT_VENDOR_PROTOTYPE_CONFIG_COMMANDS = 0x15;
+    static final int RESULT_ATTESTATION_FORMATS = 0x16;
+    static final int RESULT_UV_COUNT_SINCE_LAST_PIN_ENTRY = 0x17;
+    static final int RESULT_LONG_TOUCH_FOR_RESET = 0x18;
+    static final int RESULT_ENC_IDENTIFIER = 0x19;
+    static final int RESULT_TRANSPORTS_FOR_RESET = 0x1A;
+    static final int RESULT_PIN_COMPLEXITY_POLICY = 0x1B;
+    static final int RESULT_PIN_COMPLEXITY_POLICY_URL = 0x1C;
+    static final int RESULT_MAX_PIN_LENGTH = 0x1D;
+    static final int RESULT_ENC_CRED_STORE_STATE = 0x1E;
+    static final int RESULT_AUTHENTICATOR_CONFIG_COMMANDS = 0x1F;
+
+    private static final byte[] encIdentifierBytes =
+        "encIdentifier".getBytes(StandardCharsets.UTF_8);
+    private static final byte[] encCredStoreStateBytes =
+        "encCredStoreState".getBytes(StandardCharsets.UTF_8);
 
     private final List<String> versions;
     private final List<String> extensions;
@@ -755,7 +671,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
     private final int minPinLength;
     @Nullable private final Integer firmwareVersion;
     private final int maxCredBlobLength;
-    private final int maxRPIDsForSetMinPinLength;
+    private final int maxRpidsForSetMinPinLength;
     @Nullable private final Integer preferredPlatformUvAttempts;
     private final int uvModality;
     private final Map<String, Object> certifications;
@@ -764,12 +680,12 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
     private final List<String> attestationFormats;
     @Nullable private final Integer uvCountSinceLastPinEntry;
     private final boolean longTouchForReset;
-    @Nullable private final byte[] encIdentifier;
+    private final byte @Nullable [] encIdentifier;
     private final List<String> transportsForReset;
     @Nullable private final Boolean pinComplexityPolicy;
-    @Nullable private final byte[] pinComplexityPolicyURL;
+    private final byte @Nullable [] pinComplexityPolicyUrl;
     private final int maxPinLength;
-    @Nullable private final byte[] encCredStoreState;
+    private final byte @Nullable [] encCredStoreState;
     @Nullable private final List<Integer> authenticatorConfigCommands;
 
     private InfoData(
@@ -788,7 +704,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
         int minPinLength,
         @Nullable Integer firmwareVersion,
         int maxCredBlobLength,
-        int maxRPIDsForSetMinPinLength,
+        int maxRpidsForSetMinPinLength,
         @Nullable Integer preferredPlatformUvAttempts,
         int uvModality,
         Map<String, Object> certifications,
@@ -797,12 +713,12 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
         List<String> attestationFormats,
         @Nullable Integer uvCountSinceLastPinEntry,
         boolean longTouchForReset,
-        @Nullable byte[] encIdentifier,
+        byte @Nullable [] encIdentifier,
         List<String> transportsForReset,
         @Nullable Boolean pinComplexityPolicy,
-        @Nullable byte[] pinComplexityPolicyURL,
+        byte @Nullable [] pinComplexityPolicyUrl,
         int maxPinLength,
-        @Nullable byte[] encCredStoreState,
+        byte @Nullable [] encCredStoreState,
         @Nullable List<Integer> authenticatorConfigCommands) {
       this.versions = versions;
       this.extensions = extensions;
@@ -819,7 +735,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
       this.minPinLength = minPinLength;
       this.firmwareVersion = firmwareVersion;
       this.maxCredBlobLength = maxCredBlobLength;
-      this.maxRPIDsForSetMinPinLength = maxRPIDsForSetMinPinLength;
+      this.maxRpidsForSetMinPinLength = maxRpidsForSetMinPinLength;
       this.preferredPlatformUvAttempts = preferredPlatformUvAttempts;
       this.uvModality = uvModality;
       this.certifications = certifications;
@@ -831,7 +747,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
       this.encIdentifier = encIdentifier;
       this.transportsForReset = transportsForReset;
       this.pinComplexityPolicy = pinComplexityPolicy;
-      this.pinComplexityPolicyURL = pinComplexityPolicyURL;
+      this.pinComplexityPolicyUrl = pinComplexityPolicyUrl;
       this.maxPinLength = maxPinLength;
       this.encCredStoreState = encCredStoreState;
       this.authenticatorConfigCommands = authenticatorConfigCommands;
@@ -905,7 +821,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
      * List of supported versions.
      *
      * <p>Supported versions are: {@code FIDO_2_0}, {@code FIDO_2_1_PRE}, {@code FIDO_2_1} and
-     * {@code FIDO_2_2} for CTAP2 / FIDO2 / Web Authentication authenticators and {@code U2F_V2} for
+     * {@code FIDO_2_3} for CTAP2 / FIDO2 / Web Authentication authenticators and {@code U2F_V2} for
      * CTAP1/U2F authenticators.
      *
      * @return list of supported versions
@@ -956,7 +872,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
      *
      * @return a list of supported protocol versions
      * @see <a
-     *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html#getinfo-pinuvauthprotocols">pinUvAuthProtocols</a>
+     *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#getinfo-pinuvauthprotocols">pinUvAuthProtocols</a>
      */
     public List<Integer> getPinUvAuthProtocols() {
       return pinUvAuthProtocols;
@@ -1016,7 +932,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
      * @return maximum size of serialized large-blob array the authenticator can store if {@code
      *     authenticatorLargeBlobs} command is supported by the authenticator, 0 otherwise
      * @see <a
-     *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html#getinfo-maxserializedlargeblobarray">authenticatorLargeBlobs</a>
+     *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#getinfo-maxserializedlargeblobarray">authenticatorLargeBlobs</a>
      */
     public int getMaxSerializedLargeBlobArray() {
       return maxSerializedLargeBlobArray;
@@ -1027,8 +943,8 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
      *
      * @return force PIN Change requirement
      * @see <a
-     *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html#getinfo-forcepinchange">PIN
-     *     Change</a>
+     *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#getinfo-forcepinchange">Force
+     *     PIN Change</a>
      */
     public boolean getForcePinChange() {
       return forcePinChange;
@@ -1043,7 +959,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
      *
      * @return current minimum PIN length
      * @see <a
-     *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html#getinfo-minpinlength">Minimum
+     *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#getinfo-minpinlength">Minimum
      *     PIN length</a>
      */
     public int getMinPinLength() {
@@ -1055,8 +971,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
      *
      * @return the firmware version
      */
-    @Nullable
-    Integer getFirmwareVersion() {
+    @Nullable Integer getFirmwareVersion() {
       return firmwareVersion;
     }
 
@@ -1066,7 +981,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
      * @return maximum credBlob length if the authenticator supports {@code credBlob} extension, 0
      *     otherwise
      * @see <a
-     *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html#getinfo-maxcredbloblength">Maximum
+     *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#getinfo-maxcredbloblength">Maximum
      *     credBlob length</a>
      */
     public int getMaxCredBlobLength() {
@@ -1080,11 +995,11 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
      *
      * @return the maximum number of RP IDs
      * @see <a
-     *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html#getinfo-maxrpidsforsetminpinlength">Setting
-     *     a minimum PIN Length</a>
+     *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#getinfo-maxrpidsforsetminpinlength">Maximum
+     *     number of RPIDs for setMinPinLength</a>
      */
-    public int getMaxRPIDsForSetMinPinLength() {
-      return maxRPIDsForSetMinPinLength;
+    public int getMaxRpidsForSetMinPinLength() {
+      return maxRpidsForSetMinPinLength;
     }
 
     /**
@@ -1094,7 +1009,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
      *
      * @return the preferred number of {@code getPinUvAuthTokenUsingUvWithPermissions} invocations
      * @see <a
-     *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html#getinfo-preferredplatformuvattempts">Preferred
+     *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#getinfo-preferredplatformuvattempts">Preferred
      *     platfrom UV attempts</a>
      */
     @Nullable
@@ -1121,7 +1036,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
      *
      * @return certifications in the form key-value pairs with string IDs and integer values
      * @see <a
-     *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html#sctn-feature-descriptions-certifications">Authenticator
+     *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#sctn-feature-descriptions-certifications">Authenticator
      *     Certifications</a>
      */
     public final Map<String, Object> getCertifications() {
@@ -1143,7 +1058,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
      *
      * @return list of vendor command id's
      * @see <a
-     *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html#getinfo-vendorprototypeconfigcommands">Vendor
+     *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#getinfo-vendorprototypeconfigcommands">Vendor
      *     prototype config commands</a>
      */
     @Nullable
@@ -1169,7 +1084,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
      *
      * @return the count of UV attempts since the last PIN entry
      * @see <a
-     *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html#getinfo-uvcountsincelastpinentry">uvCountSinceLastPinEntry</a>
+     *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#getinfo-uvcountsincelastpinentry">uvCountSinceLastPinEntry</a>
      */
     @Nullable
     public Integer getUvCountSinceLastPinEntry() {
@@ -1190,10 +1105,9 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
      *
      * @return the encrypted identifier
      * @see <a
-     *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html#getinfo-encidentifier">encIdentifier</a>
+     *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#getinfo-encidentifier">encIdentifier</a>
      */
-    @Nullable
-    public byte[] getEncIdentifier() {
+    public byte @Nullable [] getEncIdentifier() {
       return encIdentifier;
     }
 
@@ -1202,7 +1116,10 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
      *
      * @return list of transports that support the reset command
      * @see <a
-     *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html#authenticatorReset">authenticatorReset</a>
+     *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#getinfo-transportsforreset">Transports
+     *     for reset</a>
+     * @see <a
+     *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#authenticatorReset">authenticatorReset</a>
      * @see <a href="https://www.w3.org/TR/webauthn/#enumdef-authenticatortransport">WebAuthn
      *     Authenticator Transport Enumeration</a>
      */
@@ -1212,14 +1129,14 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
 
     /**
      * If present, returns whether the authenticator is enforcing an additional current PIN
-     * complexity policy beyond {@code minPINLength}. PIN complexity policies for authenticators are
+     * complexity policy beyond {@code minPinLength}. PIN complexity policies for authenticators are
      * listed in the FIDO MDS. The authenticator may have a pre-configured PIN complexity policy
      * value that is applied after a reset.
      *
      * @return true if whether the authenticator is enforcing an additional current PIN complexity
      *     policy
      * @see <a
-     *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html#getinfo-pincomplexitypolicy">pinComplexityPolicy</a>
+     *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#getinfo-pincomplexitypolicy">pinComplexityPolicy</a>
      */
     @Nullable
     public Boolean getPinComplexityPolicy() {
@@ -1232,11 +1149,10 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
      *
      * @return the URL providing more information about the enforced PIN policy
      * @see <a
-     *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html#getinfo-pincomplexitypolicyurl">pinComplexityPolicyURL</a>
+     *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#getinfo-pincomplexitypolicyurl">pinComplexityPolicyURL</a>
      */
-    @Nullable
-    public byte[] getPinComplexityPolicyURL() {
-      return pinComplexityPolicyURL;
+    public byte @Nullable [] getPinComplexityPolicyUrl() {
+      return pinComplexityPolicyUrl;
     }
 
     /**
@@ -1245,7 +1161,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
      *
      * @return the maximum PIN length
      * @see <a
-     *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html#getinfo-maxpinlength">maxPinLength</a>
+     *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#getinfo-maxpinlength">maxPinLength</a>
      */
     public int getMaxPinLength() {
       return maxPinLength;
@@ -1256,10 +1172,10 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
      *
      * @return the decrypted encIdentifier
      * @see <a
-     *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html#getinfo-encidentifier">encIdentifier</a>
+     *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#getinfo-encidentifier">encIdentifier</a>
      */
-    @Nullable
-    public byte[] getIdentifier(byte[] persistentPinUvAuthToken) throws GeneralSecurityException {
+    public byte @Nullable [] getIdentifier(byte[] persistentPinUvAuthToken)
+        throws GeneralSecurityException {
       if (encIdentifier == null) {
         return null;
       }
@@ -1270,9 +1186,10 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
      * Get decrypted encCredStoreState.
      *
      * @return the decrypted credStoreState
+     * @see <a
+     *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#getinfo-enccredstorestate">encCredStoreState</a>
      */
-    @Nullable
-    public byte[] getCredStoreState(byte[] persistentPinUvAuthToken)
+    public byte @Nullable [] getCredStoreState(byte[] persistentPinUvAuthToken)
         throws GeneralSecurityException {
       if (encCredStoreState == null) {
         return null;
@@ -1284,6 +1201,9 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
      * List of supported authenticator config commands.
      *
      * @return list of supported authenticator config commands.
+     * @see <a
+     *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#getinfo-authenticatorconfigcommands">List
+     *     of supported config commands</a>
      */
     @Nullable
     public List<Integer> getAuthenticatorConfigCommands() {
@@ -1335,7 +1255,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
           + ", maxCredBlobLength="
           + maxCredBlobLength
           + ", maxRPIDsForSetMinPinLength="
-          + maxRPIDsForSetMinPinLength
+          + maxRpidsForSetMinPinLength
           + ", preferredPlatformUvAttempts="
           + preferredPlatformUvAttempts
           + ", uvModality="
@@ -1359,7 +1279,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
           + ", pinComplexityPolicy="
           + pinComplexityPolicy
           + ", pinComplexityPolicyURL="
-          + (pinComplexityPolicyURL != null ? StringUtils.bytesToHex(pinComplexityPolicyURL) : null)
+          + (pinComplexityPolicyUrl != null ? StringUtils.bytesToHex(pinComplexityPolicyUrl) : null)
           + ", maxPINLength="
           + maxPinLength
           + ", encCredStoreState="
@@ -1372,42 +1292,26 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
 
   /** Data class holding the result of makeCredential. */
   public static class CredentialData {
-    private static final int RESULT_FMT = 0x01;
-    private static final int RESULT_AUTH_DATA = 0x02;
-    private static final int RESULT_ATT_STMT = 0x03;
-    private static final int RESULT_EP_ATT = 0x04;
-    private static final int RESULT_LARGE_BLOB_KEY = 0x05;
-    private static final int RESULT_UNSIGNED_EXTENSION_OUTPUTS = 0x06;
+    static final int RESULT_FMT = 0x01;
+    static final int RESULT_AUTH_DATA = 0x02;
+    static final int RESULT_ATT_STMT = 0x03;
+    static final int RESULT_EP_ATT = 0x04;
+    static final int RESULT_LARGE_BLOB_KEY = 0x05;
+    static final int RESULT_UNSIGNED_EXTENSION_OUTPUTS = 0x06;
 
     private final String format;
     private final byte[] authenticatorData;
     private final Map<String, ?> attestationStatement;
     @Nullable private final Boolean enterpriseAttestation;
-    @Nullable private final byte[] largeBlobKey;
+    private final byte @Nullable [] largeBlobKey;
     @Nullable private final Map<String, ?> unsignedExtensionOutputs;
 
-    @Deprecated
     private CredentialData(
         String format,
         byte[] authenticatorData,
         Map<String, ?> attestationStatement,
         @Nullable Boolean enterpriseAttestation,
-        @Nullable byte[] largeBlobKey) {
-      this(
-          format,
-          authenticatorData,
-          attestationStatement,
-          enterpriseAttestation,
-          largeBlobKey,
-          null);
-    }
-
-    private CredentialData(
-        String format,
-        byte[] authenticatorData,
-        Map<String, ?> attestationStatement,
-        @Nullable Boolean enterpriseAttestation,
-        @Nullable byte[] largeBlobKey,
+        byte @Nullable [] largeBlobKey,
         @Nullable Map<String, ?> unsignedExtensionOutputs) {
       this.format = format;
       this.authenticatorData = authenticatorData;
@@ -1471,8 +1375,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
      *
      * @return the largeBlobKey for the credential
      */
-    @Nullable
-    public byte[] getLargeBlobKey() {
+    public byte @Nullable [] getLargeBlobKey() {
       return largeBlobKey;
     }
 
@@ -1494,17 +1397,17 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
    * Data class holding the result of getAssertion.
    *
    * @see <a
-   *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html#authenticatorgetassertion-response-structure">authenticatorGetAssertion
+   *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#authenticatorgetassertion-response-structure">authenticatorGetAssertion
    *     response structure</a>.
    */
   public static class AssertionData {
-    private static final int RESULT_CREDENTIAL = 1;
-    private static final int RESULT_AUTH_DATA = 2;
-    private static final int RESULT_SIGNATURE = 3;
-    private static final int RESULT_USER = 4;
-    private static final int RESULT_N_CREDS = 5;
-    private static final int RESULT_USER_SELECTED = 6;
-    private static final int RESULT_LARGE_BLOB_KEY = 7;
+    static final int RESULT_CREDENTIAL = 1;
+    static final int RESULT_AUTH_DATA = 2;
+    static final int RESULT_SIGNATURE = 3;
+    static final int RESULT_USER = 4;
+    static final int RESULT_N_CREDS = 5;
+    static final int RESULT_USER_SELECTED = 6;
+    static final int RESULT_LARGE_BLOB_KEY = 7;
 
     @Nullable private final Map<String, ?> credential;
     private final byte[] authenticatorData;
@@ -1512,7 +1415,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
     @Nullable private final Map<String, ?> user;
     @Nullable private final Integer numberOfCredentials;
     @Nullable private final Boolean userSelected;
-    @Nullable private final byte[] largeBlobKey;
+    private final byte @Nullable [] largeBlobKey;
 
     private AssertionData(
         @Nullable Map<String, ?> credential,
@@ -1521,7 +1424,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
         @Nullable Map<String, ?> user,
         @Nullable Integer numberOfCredentials,
         @Nullable Boolean userSelected,
-        @Nullable byte[] largeBlobKey) {
+        byte @Nullable [] largeBlobKey) {
       this.credential = credential;
       this.user = user;
       this.signature = signature;
@@ -1591,7 +1494,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
      *
      * @return Total number of account credentials for the RP.
      * @see <a
-     *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html#authenticatorgetassertion-response-structure">authenticatorGetAssertion
+     *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#authenticatorgetassertion-response-structure">authenticatorGetAssertion
      *     response structure</a>.
      */
     @Nullable
@@ -1612,7 +1515,7 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
      * @return True if the credential was selected by the user via interaction directly with the
      *     authenticator.
      * @see <a
-     *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html#authenticatorgetassertion-response-structure">authenticatorGetAssertion
+     *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#authenticatorgetassertion-response-structure">authenticatorGetAssertion
      *     response structure</a>.
      */
     @Nullable
@@ -1626,14 +1529,13 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
      *
      * @return The contents of the associated largeBlobKey.
      * @see <a
-     *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html#authenticatorgetassertion-response-structure">authenticatorGetAssertion
+     *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#authenticatorgetassertion-response-structure">authenticatorGetAssertion
      *     response structure</a>.
      * @see <a
-     *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html#sctn-largeBlobKey-extension">Large
+     *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#sctn-largeBlobKey-extension">Large
      *     Blob Key Extension</a>.
      */
-    @Nullable
-    public byte[] getLargeBlobKey() {
+    public byte @Nullable [] getLargeBlobKey() {
       return largeBlobKey;
     }
 
@@ -1660,5 +1562,106 @@ public class Ctap2Session extends ApplicationSession<Ctap2Session> {
       }
       return credentialId;
     }
+  }
+
+  abstract static class Backend<T extends Closeable, R extends Ctap1Session.Backend<T>>
+      extends Ctap1Session.Backend<T> {
+    protected final R backend;
+
+    protected Backend(T delegate, R backend) {
+      super(delegate);
+      this.backend = backend;
+    }
+
+    @Override
+    byte[] sendApdu(byte ins, byte p1, byte[] data, @Nullable CommandState state)
+        throws IOException, ApduException, CtapException {
+      return backend.sendApdu(ins, p1, data, state);
+    }
+
+    abstract byte[] sendCbor(byte[] data, @Nullable CommandState state)
+        throws IOException, CommandException;
+  }
+
+  static class SmartCardBackend extends Backend<SmartCardProtocol, Ctap1Session.SmartCardBackend> {
+    private final CommandState defaultState = new CommandState();
+
+    protected SmartCardBackend(SmartCardProtocol delegate, Ctap1Session.SmartCardBackend b) {
+      super(delegate, b);
+    }
+
+    @Override
+    public byte[] sendCbor(byte[] data, @Nullable CommandState state)
+        throws IOException, CommandException {
+
+      final byte NFCCTAP_MSG = 0x10;
+      final byte NFCCTAP_GETRESPONSE = 0x11;
+      final byte P1_GET_RESPONSE = (byte) 0x80;
+      final short SW_GETRESPONSE_OK = (short) 0x9100;
+      final byte P1_KEEP_ALIVE = 0x00;
+      final byte P1_CANCEL_KEEP_ALIVE = 0x11;
+
+      int ins = NFCCTAP_MSG;
+      int p1 = P1_GET_RESPONSE;
+      int lastKeepAliveStatus = 0;
+
+      state = state != null ? state : defaultState;
+
+      while (true) {
+        try {
+          return delegate.sendAndReceive(new Apdu(0x80, ins, p1, 0x00, data));
+        } catch (ApduException apduException) {
+          if (SW_GETRESPONSE_OK != apduException.getSw()) {
+            throw apduException;
+          }
+
+          // Handle SW_GETRESPONSE_OK (0x9100)
+          ins = NFCCTAP_GETRESPONSE;
+          p1 = P1_KEEP_ALIVE;
+          final byte keepAliveStatus = apduException.getData()[0];
+
+          // check for cancellations
+          if (lastKeepAliveStatus != keepAliveStatus) {
+            lastKeepAliveStatus = keepAliveStatus;
+            state.onKeepAliveStatus(keepAliveStatus);
+          }
+          if (state.waitForCancel(100)) {
+            logger.trace("NFCCTAP_GETRESPONSE cancelled");
+            p1 = P1_CANCEL_KEEP_ALIVE;
+          }
+        }
+      }
+    }
+  }
+
+  static class FidoBackend extends Backend<FidoProtocol, Ctap1Session.FidoBackend> {
+
+    protected FidoBackend(FidoProtocol delegate, Ctap1Session.FidoBackend backend) {
+      super(delegate, backend);
+    }
+
+    @Override
+    byte[] sendCbor(byte[] data, @Nullable CommandState state) throws IOException {
+      byte CTAPHID_CBOR = (byte) 0x80 | 0x10;
+      return delegate.sendAndReceive(CTAPHID_CBOR, data, state);
+    }
+  }
+
+  static SmartCardBackend getCtap2SmartCardBackend(
+      SmartCardProtocol protocol, @Nullable ScpKeyParams scpKeyParams)
+      throws IOException, ApplicationNotAvailableException {
+    protocol.select(AppId.FIDO);
+    if (scpKeyParams != null) {
+      try {
+        protocol.initScp(scpKeyParams);
+      } catch (BadResponseException | ApduException e) {
+        throw new IllegalStateException(e);
+      }
+    }
+    return new SmartCardBackend(protocol, new Ctap1Session.SmartCardBackend(protocol));
+  }
+
+  static FidoBackend getCtap2FidoBackend(FidoProtocol protocol) {
+    return new FidoBackend(protocol, new Ctap1Session.FidoBackend(protocol));
   }
 }

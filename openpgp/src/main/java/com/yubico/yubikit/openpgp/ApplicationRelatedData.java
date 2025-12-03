@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Yubico.
+ * Copyright (C) 2023-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,10 +23,10 @@ import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 public class ApplicationRelatedData {
-  private static final int TAG_DISCRETIONARY = 0x73;
+  static final int TAG_DISCRETIONARY = 0x73;
   private final OpenPgpAid aid;
   private final byte[] historical;
   @Nullable private final ExtendedLengthInfo extendedLengthInfo;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2024 Yubico.
+ * Copyright (C) 2022-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 package com.yubico.yubikit.piv.jca;
 
-import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.util.Callback;
 import com.yubico.yubikit.core.util.Result;
 import com.yubico.yubikit.piv.KeyType;
@@ -31,8 +30,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import javax.annotation.Nullable;
 import javax.crypto.NoSuchPaddingException;
+import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class PivProvider extends Provider {
@@ -48,7 +48,7 @@ public class PivProvider extends Provider {
   private final Callback<Callback<Result<PivSession, Exception>>> sessionRequester;
   private final Map<KeyType, KeyPair> rsaDummyKeys = new HashMap<>();
 
-  private static final org.slf4j.Logger logger = LoggerFactory.getLogger(PivProvider.class);
+  private static final Logger logger = LoggerFactory.getLogger(PivProvider.class);
 
   /**
    * Creates a Security Provider wrapping an instance of a PivSession.
@@ -67,13 +67,13 @@ public class PivProvider extends Provider {
    *
    * @param sessionRequester a mechanism for the Provider to get an instance of a PivSession.
    */
+  @SuppressWarnings("deprecation") // Provider(String, double, String) is deprecated from Java 9
   public PivProvider(Callback<Callback<Result<PivSession, Exception>>> sessionRequester) {
-    //noinspection deprecation
     super("YKPiv", 1.0, "JCA Provider for YubiKey PIV");
     this.sessionRequester = sessionRequester;
 
-    Logger.debug(logger, "EC attributes: {}", ecAttributes);
-    Logger.debug(logger, "RSA attributes: {}", rsaAttributes);
+    logger.debug("EC attributes: {}", ecAttributes);
+    logger.debug("RSA attributes: {}", rsaAttributes);
 
     //noinspection SpellCheckingInspection
     putService(
@@ -128,11 +128,11 @@ public class PivProvider extends Provider {
         rsaDummyKeys.put(keyType, rsaGen.generateKeyPair());
       }
       long end = System.currentTimeMillis();
-      Logger.debug(logger, "Time taken to generate dummy RSA keys: {}ms", (end - start));
+      logger.debug("Time taken to generate dummy RSA keys: {}ms", (end - start));
 
       putService(new PivRsaCipherService());
     } catch (NoSuchAlgorithmException e) {
-      Logger.error(logger, "Unable to support RSA, no underlying Provider with RSA capability", e);
+      logger.error("Unable to support RSA, no underlying Provider with RSA capability", e);
     }
 
     Set<String> digests = Security.getAlgorithms("MessageDigest");

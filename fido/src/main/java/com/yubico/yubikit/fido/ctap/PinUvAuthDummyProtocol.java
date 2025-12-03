@@ -23,7 +23,7 @@ import java.util.Map;
  * Implements a dummy PIN/UV Auth Protocol
  *
  * @see <a
- *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html#authnrClientPin-puaprot-abstract-dfn">PIN/UV
+ *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#authnrClientPin-puaprot-abstract-dfn">PIN/UV
  *     Auth Protocol Abstract Definition</a>.
  */
 public class PinUvAuthDummyProtocol implements PinUvAuthProtocol {

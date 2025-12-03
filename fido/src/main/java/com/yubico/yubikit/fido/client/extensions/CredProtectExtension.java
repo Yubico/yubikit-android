@@ -21,22 +21,22 @@ import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
 import com.yubico.yubikit.fido.webauthn.Extensions;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialCreationOptions;
 import java.util.Collections;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Implements the Credential Protection CTAP2 extension.
  *
  * @see <a
- *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html#sctn-credProtect-extension">Credential
+ *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#sctn-credProtect-extension">Credential
  *     Protection (credProtect)</a>
  */
 public class CredProtectExtension extends Extension {
 
-  private static final String POLICY = "credentialProtectionPolicy";
-  private static final String OPTIONAL = "userVerificationOptional";
-  private static final String OPTIONAL_WITH_LIST = "userVerificationOptionalWithCredentialIDList";
-  private static final String REQUIRED = "userVerificationRequired";
-  private static final String ENFORCE = "enforceCredentialProtectionPolicy";
+  static final String POLICY = "credentialProtectionPolicy";
+  static final String OPTIONAL = "userVerificationOptional";
+  static final String OPTIONAL_WITH_LIST = "userVerificationOptionalWithCredentialIDList";
+  static final String REQUIRED = "userVerificationRequired";
+  static final String ENFORCE = "enforceCredentialProtectionPolicy";
 
   public CredProtectExtension() {
     super("credProtect");

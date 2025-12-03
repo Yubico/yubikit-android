@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Yubico.
+ * Copyright (C) 2020-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,9 @@ import java.io.IOException;
 
 /** A reference to a physical YubiKey. */
 public interface YubiKeyDevice {
+
+  int YUBICO_VENDOR_ID = 0x1050;
+
   /** Returns the transport used for communication */
   Transport getTransport();
 

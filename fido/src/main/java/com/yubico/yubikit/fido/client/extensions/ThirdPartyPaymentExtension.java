@@ -23,7 +23,7 @@ import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialCreationOptions;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialRequestOptions;
 import java.util.Collections;
 import java.util.Map;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Implements the Third-party payment authentication (thirdPartyPayment) CTAP2 extension.
@@ -37,15 +37,15 @@ import javax.annotation.Nullable;
  * without a client that supports the WebAuthn payment extension.
  *
  * @see <a
- *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html#sctn-thirdPartyPayment-extension">Third-Party
+ *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#sctn-thirdPartyPayment-extension">Third-Party
  *     Payment authentication (thirdPartyPayment)</a>
  * @see <a href="https://www.w3.org/TR/secure-payment-confirmation">Secure Payment Confirmation</a>
  */
 public class ThirdPartyPaymentExtension extends Extension {
 
-  private static final String THIRD_PARTY_PAYMENT = "thirdPartyPayment";
-  private static final String PAYMENT = "payment";
-  private static final String IS_PAYMENT = "isPayment";
+  static final String THIRD_PARTY_PAYMENT = "thirdPartyPayment";
+  static final String PAYMENT = "payment";
+  static final String IS_PAYMENT = "isPayment";
 
   public ThirdPartyPaymentExtension() {
     super(THIRD_PARTY_PAYMENT);
@@ -68,8 +68,7 @@ public class ThirdPartyPaymentExtension extends Extension {
     }
 
     return new RegistrationProcessor(
-        (pinToken) ->
-            Collections.singletonMap(THIRD_PARTY_PAYMENT, Boolean.TRUE.equals(isPayment)));
+        (pinToken) -> Collections.singletonMap(THIRD_PARTY_PAYMENT, isPayment));
   }
 
   @Nullable
@@ -89,8 +88,7 @@ public class ThirdPartyPaymentExtension extends Extension {
     }
 
     final AuthenticationInput prepareInput =
-        (selected, pinToken) ->
-            Collections.singletonMap(THIRD_PARTY_PAYMENT, Boolean.TRUE.equals(isPayment));
+        (selected, pinToken) -> Collections.singletonMap(THIRD_PARTY_PAYMENT, isPayment);
 
     return new AuthenticationProcessor(prepareInput);
   }

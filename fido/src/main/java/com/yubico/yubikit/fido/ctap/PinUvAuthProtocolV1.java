@@ -46,28 +46,28 @@ import javax.crypto.spec.SecretKeySpec;
  * Implements PIN/UV Auth Protocol 1
  *
  * @see <a
- *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html#authenticatorClientPIN">authenticatorClientPIN</a>.
+ *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#authenticatorClientPIN">authenticatorClientPIN</a>.
  * @see <a
- *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html#pinProto1">PIN/UV
+ *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#pinProto1">PIN/UV
  *     Auth Protocol One</a>.
  */
 public class PinUvAuthProtocolV1 implements PinUvAuthProtocol {
   public static final int VERSION = 1;
 
-  private static final String HASH_ALG = "SHA-256";
-  private static final String MAC_ALG = "HmacSHA256";
-  private static final String CIPHER_ALG = "AES";
-  private static final String CIPHER_TRANSFORMATION = "AES/CBC/NoPadding";
-  private static final String KEY_AGREEMENT_ALG = "ECDH";
-  private static final String KEY_AGREEMENT_KEY_ALG = "EC";
+  static final String HASH_ALG = "SHA-256";
+  static final String MAC_ALG = "HmacSHA256";
+  static final String CIPHER_ALG = "AES";
+  static final String CIPHER_TRANSFORMATION = "AES/CBC/NoPadding";
+  static final String KEY_AGREEMENT_ALG = "ECDH";
+  static final String KEY_AGREEMENT_KEY_ALG = "EC";
 
-  private static final byte[] IV = new byte[16]; // All zero IV
+  static final byte[] IV = new byte[16]; // All zero IV
 
-  private static final int COORDINATE_SIZE = 32;
-  private static final int AUTHENTICATE_HASH_LEN = 16;
+  static final int COORDINATE_SIZE = 32;
+  static final int AUTHENTICATE_HASH_LEN = 16;
 
-  private static final int KEY_SHAREDSECRET_POINT_X = -2;
-  private static final int KEY_SHAREDSECRET_POINT_Y = -3;
+  static final int KEY_SHARED_SECRET_POINT_X = -2;
+  static final int KEY_SHARED_SECRET_POINT_Y = -3;
 
   @Override
   public int getVersion() {
@@ -85,13 +85,13 @@ public class PinUvAuthProtocolV1 implements PinUvAuthProtocol {
       keyAgreement.put(1, 2);
       keyAgreement.put(3, -25);
       keyAgreement.put(-1, 1);
-      keyAgreement.put(KEY_SHAREDSECRET_POINT_X, encodeCoordinate(point.getAffineX()));
-      keyAgreement.put(KEY_SHAREDSECRET_POINT_Y, encodeCoordinate(point.getAffineY()));
+      keyAgreement.put(KEY_SHARED_SECRET_POINT_X, encodeCoordinate(point.getAffineX()));
+      keyAgreement.put(KEY_SHARED_SECRET_POINT_Y, encodeCoordinate(point.getAffineY()));
 
       ECPoint w =
           new ECPoint(
-              new BigInteger(1, ((byte[]) peerCoseKey.get(KEY_SHAREDSECRET_POINT_X))),
-              new BigInteger(1, ((byte[]) peerCoseKey.get(KEY_SHAREDSECRET_POINT_Y))));
+              new BigInteger(1, ((byte[]) peerCoseKey.get(KEY_SHARED_SECRET_POINT_X))),
+              new BigInteger(1, ((byte[]) peerCoseKey.get(KEY_SHARED_SECRET_POINT_Y))));
       ECPublicKeySpec otherKeySpec =
           new ECPublicKeySpec(w, ((ECPublicKey) kp.getPublic()).getParams());
       KeyFactory keyFactory = KeyFactory.getInstance(KEY_AGREEMENT_KEY_ALG);

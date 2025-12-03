@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Yubico.
+ * Copyright (C) 2024-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,10 +41,10 @@ import java.util.zip.Deflater;
 import java.util.zip.DeflaterInputStream;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
-import javax.annotation.Nullable;
 import javax.crypto.Cipher;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+import org.jspecify.annotations.Nullable;
 
 public class LargeBlobs {
 
@@ -52,7 +52,7 @@ public class LargeBlobs {
   private final int maxFragmentLen;
 
   @Nullable final PinUvAuthProtocol pinUvAuthProtocol;
-  @Nullable final byte[] pinUvAuthToken;
+  final byte @Nullable [] pinUvAuthToken;
 
   LargeBlobs(Ctap2Session session) {
     this(session, null, null);
@@ -61,7 +61,7 @@ public class LargeBlobs {
   LargeBlobs(
       Ctap2Session session,
       @Nullable PinUvAuthProtocol pinUvAuthProtocol,
-      @Nullable byte[] pinUvAuthToken) {
+      byte @Nullable [] pinUvAuthToken) {
 
     final Ctap2Session.InfoData info = session.getCachedInfo();
 
@@ -164,8 +164,7 @@ public class LargeBlobs {
         .array();
   }
 
-  @Nullable
-  byte[] getBlob(byte[] largeBlobKey) throws IOException, CommandException {
+  byte @Nullable [] getBlob(byte[] largeBlobKey) throws IOException, CommandException {
     for (LargeBlobMap entry : readBlobArray()) {
       try {
         byte[] blob = CompressionUtils.decompress(unpack(largeBlobKey, entry));
@@ -179,7 +178,7 @@ public class LargeBlobs {
     return null;
   }
 
-  void putBlob(byte[] largeBlobKey, @Nullable byte[] data)
+  void putBlob(byte[] largeBlobKey, byte @Nullable [] data)
       throws IOException, CommandException, GeneralSecurityException {
     boolean modified = data != null;
     LargeBlobArray blobArray = readBlobArray();
@@ -298,9 +297,9 @@ public class LargeBlobs {
   }
 
   static class LargeBlobMap {
-    private static final int CIPHERTEXT = 1;
-    private static final int NONCE = 2;
-    private static final int ORIG_SIZE = 3;
+    static final int CIPHERTEXT = 1;
+    static final int NONCE = 2;
+    static final int ORIG_SIZE = 3;
 
     private final Map<Integer, Object> data;
 

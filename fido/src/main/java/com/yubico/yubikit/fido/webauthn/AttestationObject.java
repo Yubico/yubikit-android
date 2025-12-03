@@ -23,7 +23,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Webauthn AttestationObject which exposes attestation authenticator data.
@@ -42,26 +42,15 @@ public class AttestationObject {
   private final AuthenticatorData authenticatorData;
   private final Map<String, ?> attestationStatement;
   @Nullable private final Boolean enterpriseAttestation;
-  @Nullable private final byte[] largeBlobKey;
+  private final byte @Nullable [] largeBlobKey;
   @Nullable private final Map<String, ?> unsignedExtensionOutputs;
 
-  @Deprecated
   public AttestationObject(
       String format,
       AuthenticatorData authenticatorData,
       Map<String, ?> attestationStatement,
       @Nullable Boolean enterpriseAttestation,
-      @Nullable byte[] largeBlobKey) {
-    this(
-        format, authenticatorData, attestationStatement, enterpriseAttestation, largeBlobKey, null);
-  }
-
-  public AttestationObject(
-      String format,
-      AuthenticatorData authenticatorData,
-      Map<String, ?> attestationStatement,
-      @Nullable Boolean enterpriseAttestation,
-      @Nullable byte[] largeBlobKey,
+      byte @Nullable [] largeBlobKey,
       @Nullable Map<String, ?> unsignedExtensionOutputs) {
     this.format = format;
     this.authenticatorData = authenticatorData;
@@ -102,8 +91,7 @@ public class AttestationObject {
   }
 
   @SuppressWarnings("unused")
-  @Nullable
-  public byte[] getLargeBlobKey() {
+  public byte @Nullable [] getLargeBlobKey() {
     return largeBlobKey;
   }
 

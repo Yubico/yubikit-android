@@ -15,7 +15,7 @@
  */
 package com.yubico.yubikit.core.application;
 
-import com.yubico.yubikit.core.internal.Logger;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -31,7 +31,7 @@ public class CommandState {
 
   private boolean cancelled = false;
 
-  private static final org.slf4j.Logger logger = LoggerFactory.getLogger(CommandState.class);
+  private static final Logger logger = LoggerFactory.getLogger(CommandState.class);
 
   /**
    * Override this method to handle keep-alive messages sent from the YubiKey. The default
@@ -40,7 +40,7 @@ public class CommandState {
    * @param status The keep alive status byte
    */
   public void onKeepAliveStatus(byte status) {
-    Logger.debug(logger, "received keepalive status: {}", status);
+    logger.debug("received keepalive status: {}", status);
   }
 
   /**
@@ -57,7 +57,7 @@ public class CommandState {
       try {
         wait(ms);
       } catch (InterruptedException e) {
-        Logger.debug(logger, "Thread interrupted, cancelling command");
+        logger.debug("Thread interrupted, cancelling command");
         cancelled = true;
         Thread.currentThread().interrupt();
       }

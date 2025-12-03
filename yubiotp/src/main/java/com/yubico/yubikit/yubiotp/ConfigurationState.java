@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2022 Yubico.
+ * Copyright (C) 2019-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,17 +20,17 @@ import com.yubico.yubikit.core.Version;
 
 /** Data object containing the state of slot programming for a YubiKey. */
 public class ConfigurationState {
-  private static final byte CONFIG1_VALID =
+  static final byte CONFIG1_VALID =
       0x01; /* Bit in touchLevel indicating that configuration 1 is valid (from firmware 2.1) */
-  private static final byte CONFIG2_VALID =
+  static final byte CONFIG2_VALID =
       0x02; /* Bit in touchLevel indicating that configuration 2 is valid (from firmware 2.1) */
-  private static final byte CONFIG1_TOUCH =
+  static final byte CONFIG1_TOUCH =
       0x04; /* Bit in touchLevel indicating that configuration 1 requires touch (from firmware 3.0) */
-  private static final byte CONFIG2_TOUCH =
+  static final byte CONFIG2_TOUCH =
       0x08; /* Bit in touchLevel indicating that configuration 2 requires touch (from firmware 3.0) */
-  private static final byte CONFIG_LED_INV =
+  static final byte CONFIG_LED_INV =
       0x10; /* Bit in touchLevel indicating that LED behavior is inverted (EXTFLAG_LED_INV mirror) */
-  private static final byte CONFIG_STATUS_MASK = 0x1f; /* Mask for status bits */
+  static final byte CONFIG_STATUS_MASK = 0x1f; /* Mask for status bits */
 
   private final Version version;
   private final byte flags;

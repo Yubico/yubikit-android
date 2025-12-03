@@ -1,0 +1,100 @@
+[libraries]
+# Submodule: android
+androidx-annotation = { module = "androidx.annotation:annotation", version.ref = "androidx-annotation" }
+robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
+
+# Submodule: AndroidDemo
+androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompat" }
+androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "core-ktx" }
+androidx-espresso-core = { module = "androidx.test.espresso:espresso-core", version.ref = "espresso-core" }
+androidx-fragment-ktx = { module = "androidx.fragment:fragment-ktx", version.ref = "fragment-ktx" }
+androidx-legacy-support-v4 = { module = "androidx.legacy:legacy-support-v4", version.ref = "legacy-support-v4" }
+androidx-lifecycle-extensions = { module = "androidx.lifecycle:lifecycle-extensions", version.ref = "lifecycle-extensions" }
+androidx-lifecycle-viewmodel-ktx = { module = "androidx.lifecycle:lifecycle-viewmodel-ktx", version.ref = "lifecycle-viewmodel-ktx" }
+androidx-navigation-dynamic-features-fragment = { module = "androidx.navigation:navigation-dynamic-features-fragment", version.ref = "navigation-fragment-ktx" }
+androidx-navigation-fragment-ktx = { module = "androidx.navigation:navigation-fragment-ktx", version.ref = "navigation-fragment-ktx" }
+androidx-navigation-ui-ktx = { module = "androidx.navigation:navigation-ui-ktx", version.ref = "navigation-fragment-ktx" }
+androidx-recyclerview = { module = "androidx.recyclerview:recyclerview", version.ref = "recyclerview" }
+kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinx-coroutines-android" }
+
+# Submodule: testing-android
+androidx-test-rules = { module = "androidx.test:rules", version.ref = "androidx-test" }
+androidx-test-core = { module = "androidx.test:core", version.ref = "androidx-test" }
+
+# Submodule: testing-desktop
+junit-vintage-engine = { module = "org.junit.vintage:junit-vintage-engine", version.ref = "junit-vintage-engine" }
+
+# Submodule: testing
+junit-junit = { module = "junit:junit", version.ref = "junit-version" }
+hamcrest-library = { module = "org.hamcrest:hamcrest-library", version.ref = "hamcrest-library" }
+hamcrest-hamcrest = { module = "org.hamcrest:hamcrest", version.ref = "hamcrest" }
+
+# Submodule: desktop
+hid4java = { module = "org.hid4java:hid4java", version.ref = "hid4java" }
+
+# Build plugins (for build-logic)
+spotbugs-gradle-plugin = { module = "com.github.spotbugs.snom:spotbugs-gradle-plugin", version.ref = "spotbugs-plugin" }
+android-gradle-plugin = { module = "com.android.tools.build:gradle", version.ref = "android-gradle" }
+spotless-plugin-gradle = { module = "com.diffplug.spotless:spotless-plugin-gradle", version.ref = "spotless" }
+kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+
+# Build dependencies
+spotbugs = { module = "com.github.spotbugs:spotbugs", version.ref = "spotbugs-core" }
+spotbugs-annotations = { module = "com.github.spotbugs:spotbugs-annotations", version.ref = "spotbugs-core" }
+findsecbugs-plugin = { module = "com.h3xstream.findsecbugs:findsecbugs-plugin", version.ref = "findsecbugs" }
+slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
+
+# Shared
+androidx-multidex = { module = "androidx.multidex:multidex", version.ref = "multidex" }
+androidx-junit = { module = "androidx.test.ext:junit", version.ref = "androidx-junit" }
+androidx-test-runner = { module = "androidx.test:runner", version.ref = "androidx-test" }
+bcpkix-jdk15to18 = { module = "org.bouncycastle:bcpkix-jdk15to18", version.ref = "bcpkix-jdk15to18" }
+desugar_jdk_libs = { module = "com.android.tools:desugar_jdk_libs", version.ref = "desugar_jdk_libs" }
+logback-android = { module = "com.github.tony19:logback-android", version.ref = "logback-android" }
+logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback-classic" }
+material = { module = "com.google.android.material:material", version.ref = "material" }
+moshi = { module = "com.squareup.moshi:moshi", version.ref = "moshi" }
+mockito = { module = "org.mockito:mockito-core", version.ref = "mockito" }
+jspecify = { module = "org.jspecify:jspecify", version.ref = "jspecify" }
+
+[plugins]
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+android-application = { id = "com.android.application", version.ref = "android-gradle" }
+android-library = { id = "com.android.library", version.ref = "android-gradle" }
+
+[versions]
+android-gradle = "8.13.1"
+spotbugs-plugin = "6.2.2"
+spotbugs-core = "4.9.8"
+findsecbugs = "1.14.0"
+spotless = "8.1.0"
+slf4j = "2.0.17"
+appcompat = "1.7.1"
+bcpkix-jdk15to18 = "1.82"
+core-ktx = "1.17.0"
+desugar_jdk_libs = "2.1.5"
+espresso-core = "3.7.0"
+fragment-ktx = "1.8.9"
+hamcrest = "3.0"
+hamcrest-library = "3.0"
+hid4java = "0.8.0"
+jspecify = "1.0.0"
+junit-version = "4.13.2"
+junit-vintage-engine = "5.14.0"
+kotlin = "2.2.21"
+kotlinx-coroutines-android = "1.10.2"
+legacy-support-v4 = "1.0.0"
+lifecycle-extensions = "2.2.0"
+lifecycle-viewmodel-ktx = "2.9.4"
+logback-android = "3.0.0"
+logback-classic = "1.5.21"
+material = "1.13.0"
+moshi = "1.15.2"
+multidex = "2.0.1"
+navigation-fragment-ktx = "2.9.6"
+recyclerview = "1.4.0"
+androidx-annotation = "1.9.1"
+androidx-junit = "1.3.0"
+robolectric = "4.16"
+mockito = "5.20.0"
+androidx-test = "1.7.0"

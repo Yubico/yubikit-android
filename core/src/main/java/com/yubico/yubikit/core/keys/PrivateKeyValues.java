@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Yubico.
+ * Copyright (C) 2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,9 +27,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import javax.annotation.Nullable;
 import javax.security.auth.DestroyFailedException;
 import javax.security.auth.Destroyable;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Contains private key values to be imported into a YubiKey.

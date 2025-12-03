@@ -20,7 +20,6 @@ import static com.yubico.yubikit.core.internal.codec.Base64.fromUrlSafeString;
 import static com.yubico.yubikit.core.internal.codec.Base64.toUrlSafeString;
 
 import com.yubico.yubikit.core.application.CommandException;
-import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.fido.ctap.ClientPin;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
@@ -33,7 +32,8 @@ import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.util.Collections;
 import java.util.Map;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -42,21 +42,21 @@ import org.slf4j.LoggerFactory;
  * @see <a href="https://www.w3.org/TR/webauthn-3/#sctn-large-blob-extension">Large blob
  *     extension</a>
  * @see <a
- *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html#sctn-largeBlobKey-extension">Large
+ *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#sctn-largeBlobKey-extension">Large
  *     Blob Key (largeBlobKey)</a>
  */
 public class LargeBlobExtension extends Extension {
-  private static final String LARGE_BLOB_KEY = "largeBlobKey";
-  private static final String LARGE_BLOB = "largeBlob";
-  private static final String LARGE_BLOBS = "largeBlobs";
-  private static final String ACTION_READ = "read";
-  private static final String ACTION_WRITE = "write";
-  private static final String WRITTEN = "written";
-  private static final String SUPPORT = "support";
-  private static final String SUPPORTED = "supported";
-  private static final String REQUIRED = "required";
-  private static final String BLOB = "blob";
-  private static final org.slf4j.Logger logger = LoggerFactory.getLogger(LargeBlobExtension.class);
+  static final String LARGE_BLOB_KEY = "largeBlobKey";
+  static final String LARGE_BLOB = "largeBlob";
+  static final String LARGE_BLOBS = "largeBlobs";
+  static final String ACTION_READ = "read";
+  static final String ACTION_WRITE = "write";
+  static final String WRITTEN = "written";
+  static final String SUPPORT = "support";
+  static final String SUPPORTED = "supported";
+  static final String REQUIRED = "required";
+  static final String BLOB = "blob";
+  static final Logger logger = LoggerFactory.getLogger(LargeBlobExtension.class);
 
   public LargeBlobExtension() {
     super(LARGE_BLOB_KEY);
@@ -124,8 +124,8 @@ public class LargeBlobExtension extends Extension {
     return null;
   }
 
-  @Nullable
-  ClientExtensionResultProvider read(Ctap2Session.AssertionData assertionData, Ctap2Session ctap) {
+  @Nullable ClientExtensionResultProvider read(
+      Ctap2Session.AssertionData assertionData, Ctap2Session ctap) {
 
     byte[] largeBlobKey = assertionData.getLargeBlobKey();
     if (largeBlobKey == null) {
@@ -144,19 +144,18 @@ public class LargeBlobExtension extends Extension {
                       serializationType == SerializationType.JSON ? toUrlSafeString(blob) : blob)
                   : Collections.emptyMap());
     } catch (IOException | CommandException e) {
-      Logger.error(logger, "LargeBlob processing failed: ", e);
+      logger.error("LargeBlob processing failed: ", e);
     }
 
     return null;
   }
 
-  @Nullable
-  ClientExtensionResultProvider write(
+  @Nullable ClientExtensionResultProvider write(
       Ctap2Session.AssertionData assertionData,
       Ctap2Session ctap,
       byte[] bytes,
       PinUvAuthProtocol pinUvAuthProtocol,
-      @Nullable byte[] pinToken) {
+      byte @Nullable [] pinToken) {
 
     byte[] largeBlobKey = assertionData.getLargeBlobKey();
     if (largeBlobKey == null) {
@@ -171,7 +170,7 @@ public class LargeBlobExtension extends Extension {
           Collections.singletonMap(LARGE_BLOB, Collections.singletonMap(WRITTEN, true));
 
     } catch (IOException | CommandException | GeneralSecurityException e) {
-      Logger.error(logger, "LargeBlob processing failed: ", e);
+      logger.error("LargeBlob processing failed: ", e);
     }
 
     return null;
