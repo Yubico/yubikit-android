@@ -21,8 +21,8 @@ This guide helps you upgrade your application to use `yubikit-android` 3.0. It h
 If your code references SDK identifiers using ALL CAPS abbreviations (such as PIN, RPID, URL, YK), update those references to their new CamelCase forms.
 
 .Examples:
-- `getPinComplexityPolicyURL` → `getPinComplexityPolicyUrl`
-- `YKInstrumentedTests` → `YkInstrumentedTests`
+* `getPinComplexityPolicyURL` → `getPinComplexityPolicyUrl`
+* `YKInstrumentedTests` → `YkInstrumentedTests`
 
 See https://github.com/Yubico/yubikit-android/pull/230[PR#230] for details.
 
@@ -81,7 +81,8 @@ See https://github.com/Yubico/yubikit-android/pull/237[PR#237].
 == 5. FIDO Client and Error Handling Changes
 
 If you directly instantiate FIDO/WebAuthn clients:
-- Use `WebAuthnClient` in place of `BasicWebAuthnClient`.
+
+* Use `WebAuthnClient` in place of `BasicWebAuthnClient`.
 
 .Migration Example:
 [source,java]
@@ -109,9 +110,9 @@ See https://github.com/Yubico/yubikit-android/pull/240[PR#240] and https://githu
 
 == Troubleshooting
 
-- **Compile errors on missing APIs:** Check if the item was deprecated and removed. Use the SDK documentation or release notes to find the correct replacement.
-- **Generics issues in Kotlin:** If you see type errors with `Result<T, E>`, update declarations to `<T : Any>`, ensuring that type arguments are non-nullable.
-- **Client data handling:** If previous code for FIDO/WebAuthn fails, ensure you pass a proper `ClientDataProvider` implementation.
+* **Compile errors on missing APIs:** Check if the item was deprecated and removed. Use the SDK documentation or release notes to find the correct replacement.
+* **Generics issues in Kotlin:** If you see type errors with `Result<T, E>`, update declarations to `<T : Any>`, ensuring that type arguments are non-nullable.
+* **Client data handling:** If previous code for FIDO/WebAuthn fails, ensure you pass a proper `ClientDataProvider` implementation.
 
 == Getting Help
 
