@@ -75,7 +75,7 @@ webAuthnClient.makeCredential(
   ...
 
 // New
-import com.yubico.yubikit.webauthn.JsonClientDataProvider
+import com.yubico.yubikit.fido.client.clientdata.JsonClientData;
 
 byte[] clientData = ...
 ClientDataProvider clientDataProvider = new JsonClientData(clientData);
@@ -105,16 +105,16 @@ If you directly instantiate FIDO/WebAuthn clients:
 ----
 // Old
 Ctap2Session session = new Ctap2Session(connection);
-BasicWebauthnClient client = new BasicWebAuthnClient(session);
+BasicWebAuthnClient client = new BasicWebAuthnClient(session);
 PublicKeyCredential credential = client.makeCredential(params);
 String response = JSONObject(credential.toMap()).toString();
 
 // New
 List<Extension> extensions = ...; // provide list of extensions this client should process or null for default list containing defined WebAuthn extensions
-WebauthnClient client = new WebAuthnClient.create(/* YubiKeyDevice */ device, extensions);
+WebAuthnClient client = WebAuthnClient.create(/* YubiKeyDevice */ device, extensions);
 
 // Alternative way
-// WebauthnClient client = new WebAuthnClient.create(/* YubiKeyConnection */ connection, extensions, scpKeyParams);
+// WebAuthnClient client = WebAuthnClient.create(/* YubiKeyConnection */ connection, extensions, scpKeyParams);
 
 PublicKeyCredential credential = client.makeCredential(params);
 String response = JSONObject(credential.toMap()).toString();
