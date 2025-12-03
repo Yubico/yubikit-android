@@ -19,15 +19,14 @@ package com.yubico.yubikit.android.transport.usb.connection;
 import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbInterface;
 import com.yubico.yubikit.core.YubiKeyConnection;
-import com.yubico.yubikit.core.internal.Logger;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 abstract class UsbYubiKeyConnection implements YubiKeyConnection {
   private final UsbDeviceConnection usbDeviceConnection;
   private final UsbInterface usbInterface;
 
-  private static final org.slf4j.Logger logger =
-      LoggerFactory.getLogger(UsbYubiKeyConnection.class);
+  private static final Logger logger = LoggerFactory.getLogger(UsbYubiKeyConnection.class);
 
   /**
    * Base class for USB based Connections.
@@ -39,13 +38,13 @@ abstract class UsbYubiKeyConnection implements YubiKeyConnection {
       UsbDeviceConnection usbDeviceConnection, UsbInterface usbInterface) {
     this.usbDeviceConnection = usbDeviceConnection;
     this.usbInterface = usbInterface;
-    Logger.debug(logger, "USB connection opened: {}", this);
+    logger.debug("USB connection opened: {}", this);
   }
 
   @Override
   public void close() {
     usbDeviceConnection.releaseInterface(usbInterface);
     usbDeviceConnection.close();
-    Logger.debug(logger, "USB connection closed: {}", this);
+    logger.debug("USB connection closed: {}", this);
   }
 }

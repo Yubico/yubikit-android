@@ -16,7 +16,6 @@
 package com.yubico.yubikit.desktop.pcsc;
 
 import com.yubico.yubikit.core.Transport;
-import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.util.StringUtils;
 import java.io.IOException;
@@ -25,6 +24,7 @@ import javax.smartcardio.Card;
 import javax.smartcardio.CardChannel;
 import javax.smartcardio.CardException;
 import javax.smartcardio.CommandAPDU;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class PcscSmartCardConnection implements SmartCardConnection {
@@ -32,13 +32,13 @@ public class PcscSmartCardConnection implements SmartCardConnection {
   private final Transport transport;
   private final CardChannel cardChannel;
 
-  private final org.slf4j.Logger logger = LoggerFactory.getLogger(PcscSmartCardConnection.class);
+  private final Logger logger = LoggerFactory.getLogger(PcscSmartCardConnection.class);
 
   public PcscSmartCardConnection(Card card) throws IOException {
     this.card = card;
     this.transport = (card.getATR().getBytes()[1] & 0xf0) == 0xf0 ? Transport.USB : Transport.NFC;
     try {
-      Logger.debug(logger, "Opening CCID connection");
+      logger.debug("Opening CCID connection");
       card.beginExclusive();
       this.cardChannel = card.getBasicChannel();
     } catch (CardException e) {
@@ -63,7 +63,7 @@ public class PcscSmartCardConnection implements SmartCardConnection {
 
   @Override
   public void close() throws IOException {
-    Logger.debug(logger, "Closing CCID connection");
+    logger.debug("Closing CCID connection");
     try {
       card.endExclusive();
       card.disconnect(true);
@@ -75,15 +75,13 @@ public class PcscSmartCardConnection implements SmartCardConnection {
   @Override
   public byte[] sendAndReceive(byte[] apdu) throws IOException {
     try {
-      Logger.trace(
-          logger, "{} bytes sent over PCSC: {}", apdu.length, StringUtils.bytesToHex(apdu));
+      logger.trace("{} bytes sent over PCSC: {}", apdu.length, StringUtils.bytesToHex(apdu));
       if (apdu.length < 5) {
         // CardChannel.transmit requires at least 5 bytes.
         apdu = Arrays.copyOf(apdu, 5);
       }
       byte[] response = cardChannel.transmit(new CommandAPDU(apdu)).getBytes();
-      Logger.trace(
-          logger, "{} bytes received: {}", response.length, StringUtils.bytesToHex(response));
+      logger.trace("{} bytes received: {}", response.length, StringUtils.bytesToHex(response));
       return response;
     } catch (CardException e) {
       throw new IOException(e);

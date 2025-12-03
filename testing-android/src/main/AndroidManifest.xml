@@ -12,7 +12,7 @@
         android:supportsRtl="true"
         android:theme="@style/YubiKitTesterTheme">
         <activity
-            android:name=".TestActivity"
+            android:name="com.yubico.yubikit.TestActivity"
             android:configChanges="keyboard|keyboardHidden"
             android:exported="true"
             android:screenOrientation="portrait">

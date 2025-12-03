@@ -20,6 +20,8 @@ import com.yubico.yubikit.core.application.CommandState
 import com.yubico.yubikit.core.fido.CtapException
 import com.yubico.yubikit.fido.android.util.toMap
 import com.yubico.yubikit.fido.client.ClientError
+import com.yubico.yubikit.fido.client.Ctap2Client
+import com.yubico.yubikit.fido.client.clientdata.ClientDataProvider
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredential
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialCreationOptions
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialRequestOptions
@@ -85,12 +87,14 @@ class FidoClientService(private val viewModel: MainViewModel = MainViewModel()) 
         viewModel.useWebAuthn { client ->
             onConnection()
 
-            if (client.isPinSupported && !client.isPinConfigured) {
-                // there is not PIN set on the key, we deliberately don't allow this
-                throw ClientError(
-                    ClientError.Code.BAD_REQUEST,
-                    CtapException(CtapException.ERR_PIN_NOT_SET)
-                )
+            (client as? Ctap2Client)?.run {
+                if (isPinSupported && !isPinConfigured) {
+                    // there is not PIN set on the key, we deliberately don't allow this
+                    throw ClientError(
+                        ClientError.Code.BAD_REQUEST,
+                        CtapException(CtapException.ERR_PIN_NOT_SET)
+                    )
+                }
             }
 
             val requestJson = JSONObject(request).toMap()
@@ -99,29 +103,23 @@ class FidoClientService(private val viewModel: MainViewModel = MainViewModel()) 
                 JSONObject(request).toMap()
             )
 
-            if (clientDataHash != null) {
-                client.makeCredentialWithHash(
-                    clientDataHash,
-                    publicKeyCredentialCreationOptions,
-                    rpId.removePrefix("https://"), // TODO reason about this
-                    pin,
-                    null,
-                    commandState
-                )
-            } else {
-                client.makeCredential(
+            val clientData = clientDataHash?.let { ClientDataProvider.fromHash(clientDataHash) }
+                ?: ClientDataProvider.fromClientDataJson(
                     buildClientData(
                         "webauthn.create",
                         rpId,
                         requestJson["challenge"] as String
-                    ),
-                    publicKeyCredentialCreationOptions,
-                    rpId.removePrefix("https://"), // TODO reason about this
-                    pin,
-                    null,
-                    commandState
+                    )
                 )
-            }
+
+            client.makeCredential(
+                clientData,
+                publicKeyCredentialCreationOptions,
+                rpId.removePrefix("https://"), // TODO reason about this
+                pin,
+                null,
+                commandState
+            )
         }
 
     private suspend fun getAssertion(
@@ -136,39 +134,32 @@ class FidoClientService(private val viewModel: MainViewModel = MainViewModel()) 
 
             val requestJson = JSONObject(request).toMap()
 
-            val clientData = buildClientData(
-                "webauthn.get",
-                rpId,
-                requestJson["challenge"] as String
-            )
+            val clientData = clientDataHash?.let { ClientDataProvider.fromHash(it) }
+                ?: ClientDataProvider.fromClientDataJson(
+                    buildClientData(
+                        "webauthn.get",
+                        rpId,
+                        requestJson["challenge"] as String
+                    )
+                )
 
             val publicKeyCredentialRequestOptions = PublicKeyCredentialRequestOptions.fromMap(
                 JSONObject(request).toMap()
             )
 
-            if (clientDataHash != null) {
-                client.getAssertionWithHash(
-                    clientDataHash,
-                    publicKeyCredentialRequestOptions,
-                    rpId.removePrefix("https://"), // TODO reason about this
-                    pin,
-                    commandState,
-                )
-            } else {
-                client.getAssertion(
-                    clientData,
-                    publicKeyCredentialRequestOptions,
-                    rpId.removePrefix("https://"), // TODO reason about this
-                    pin,
-                    commandState,
-                )
-            }
+            client.getAssertion(
+                clientData,
+                publicKeyCredentialRequestOptions,
+                rpId.removePrefix("https://"), // TODO reason about this
+                pin,
+                commandState,
+            )
         }
 
     suspend fun createPin(
         pin: CharArray,
     ) = viewModel.useWebAuthn { client ->
-        client.setPin(pin)
+        (client as? Ctap2Client)?.setPin(pin)
     }
 
 }

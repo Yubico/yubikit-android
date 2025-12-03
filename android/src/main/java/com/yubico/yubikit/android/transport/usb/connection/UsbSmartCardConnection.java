@@ -20,7 +20,6 @@ import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbEndpoint;
 import android.hardware.usb.UsbInterface;
 import com.yubico.yubikit.core.Transport;
-import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.util.StringUtils;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
@@ -30,6 +29,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.Locale;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -76,8 +76,7 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
 
   private byte sequence = 0;
 
-  private static final org.slf4j.Logger logger =
-      LoggerFactory.getLogger(UsbSmartCardConnection.class);
+  private static final Logger logger = LoggerFactory.getLogger(UsbSmartCardConnection.class);
 
   /**
    * Sets endpoints and connection and sends power on command if ATR is invalid then throws
@@ -172,8 +171,7 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
           connection.bulkTransfer(
               endpointOut, bufferOut, bytesSent, bufferOut.length - bytesSent, TIMEOUT);
       if (bytesSentPackage > 0) {
-        Logger.trace(
-            logger,
+        logger.trace(
             "{} bytes sent over ccid: {}",
             bytesSentPackage,
             StringUtils.bytesToHex(bufferOut, bytesSent, bytesSentPackage));
@@ -199,11 +197,8 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
     do {
       bytesRead = connection.bulkTransfer(endpointIn, bufferRead, bufferRead.length, TIMEOUT);
       if (bytesRead > 0) {
-        Logger.trace(
-            logger,
-            "{} bytes received: {}",
-            bytesRead,
-            StringUtils.bytesToHex(bufferRead, 0, bytesRead));
+        logger.trace(
+            "{} bytes received: {}", bytesRead, StringUtils.bytesToHex(bufferRead, 0, bytesRead));
 
         if (receivedExpectedPrefix) {
           stream.write(bufferRead, 0, bytesRead);
@@ -218,8 +213,7 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
             receivedExpectedPrefix = true;
             stream.write(bufferRead, 0, bytesRead);
           } else if (messageHeader.error != 0 && !responseRequiresTimeExtension) {
-            Logger.debug(
-                logger,
+            logger.debug(
                 "Invalid response from card reader bStatus={} and bError={}",
                 String.format(Locale.ROOT, "0x%02X", messageHeader.status),
                 String.format(Locale.ROOT, "0x%02X", messageHeader.error));

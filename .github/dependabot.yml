@@ -2,7 +2,7 @@ version: 2
 updates:
   # Keep Gradle dependencies up to date
   - package-ecosystem: "gradle"
-    directory: "/"              # Root where build.gradle/settings.gradle reside
+    directory: "/"              # Root where build.gradle.kts/settings.gradle.kts reside
     schedule:
       interval: "daily"         # Adjust to "weekly" if preferred
     open-pull-requests-limit: 5

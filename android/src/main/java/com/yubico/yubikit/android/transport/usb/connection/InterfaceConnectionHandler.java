@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Yubico.
+ * Copyright (C) 2020-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbInterface;
 import com.yubico.yubikit.core.YubiKeyConnection;
 import java.io.IOException;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 abstract class InterfaceConnectionHandler<T extends YubiKeyConnection>
     implements ConnectionHandler<T> {

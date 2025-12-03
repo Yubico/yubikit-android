@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Yubico.
+ * Copyright (C) 2022-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,11 +26,11 @@ import com.yubico.yubikit.android.transport.usb.connection.SmartCardConnectionHa
 import com.yubico.yubikit.android.transport.usb.connection.UsbFidoConnection;
 import com.yubico.yubikit.android.transport.usb.connection.UsbOtpConnection;
 import com.yubico.yubikit.android.transport.usb.connection.UsbSmartCardConnection;
-import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.util.Callback;
 import java.util.HashMap;
 import java.util.Map;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class UsbYubiKeyManager {
@@ -46,7 +46,7 @@ public class UsbYubiKeyManager {
   private final UsbManager usbManager;
   @Nullable private MyDeviceListener internalListener = null;
 
-  private static final org.slf4j.Logger logger = LoggerFactory.getLogger(UsbYubiKeyManager.class);
+  private static final Logger logger = LoggerFactory.getLogger(UsbYubiKeyManager.class);
 
   public UsbYubiKeyManager(Context context) {
     this.context = context;
@@ -64,7 +64,7 @@ public class UsbYubiKeyManager {
       UsbConfiguration usbConfiguration, Callback<? super UsbYubiKeyDevice> listener) {
     disable();
     internalListener = new MyDeviceListener(usbConfiguration, listener);
-    UsbDeviceManager.registerUsbListener(context, internalListener);
+    UsbDeviceManager.registerUsbListener(context, usbConfiguration, internalListener);
   }
 
   public synchronized void disable() {
@@ -88,34 +88,47 @@ public class UsbYubiKeyManager {
     @Override
     public void deviceAttached(UsbDevice usbDevice) {
 
-      try {
-        UsbYubiKeyDevice yubikey = new UsbYubiKeyDevice(usbManager, usbDevice);
-        devices.put(usbDevice, yubikey);
-
-        if (usbConfiguration.isHandlePermissions() && !yubikey.hasPermission()) {
-          Logger.debug(logger, "request permission");
-          UsbDeviceManager.requestPermission(
-              context,
-              usbDevice,
-              (usbDevice1, hasPermission) -> {
-                Logger.debug(logger, "permission result {}", hasPermission);
-                if (hasPermission) {
-                  synchronized (UsbYubiKeyManager.this) {
-                    if (internalListener == this) {
-                      listener.invoke(yubikey);
-                    }
-                  }
-                }
-              });
-        } else {
-          listener.invoke(yubikey);
-        }
-      } catch (IllegalArgumentException ignored) {
-        Logger.debug(
-            logger,
+      if (!usbConfiguration
+          .getDeviceFilter()
+          .checkVendorProductIds(usbDevice.getVendorId(), usbDevice.getProductId())) {
+        logger.debug(
             "Attached usbDevice(vid={},pid={}) is not recognized as a valid YubiKey",
             usbDevice.getVendorId(),
             usbDevice.getProductId());
+        return;
+      }
+
+      UsbYubiKeyDevice yubikey = new UsbYubiKeyDevice(usbManager, usbDevice);
+      devices.put(usbDevice, yubikey);
+
+      if (usbConfiguration.isHandlePermissions() && !yubikey.hasPermission()) {
+        logger.debug("request permission");
+        UsbDeviceManager.requestPermission(
+            context,
+            usbDevice,
+            (usbDevice1, hasPermission) -> {
+              logger.debug("permission result {}", hasPermission);
+              if (hasPermission) {
+                synchronized (UsbYubiKeyManager.this) {
+                  if (internalListener == this) {
+                    invoke(usbManager, yubikey, listener);
+                  }
+                }
+              }
+            });
+      } else {
+        invoke(usbManager, yubikey, listener);
+      }
+    }
+
+    private void invoke(
+        UsbManager usbManager,
+        UsbYubiKeyDevice yubiKeyDevice,
+        Callback<? super UsbYubiKeyDevice> listener) {
+      if (usbConfiguration
+          .getDeviceFilter()
+          .checkUsbDevice(usbManager, yubiKeyDevice.getUsbDevice())) {
+        listener.invoke(yubiKeyDevice);
       }
     }
 

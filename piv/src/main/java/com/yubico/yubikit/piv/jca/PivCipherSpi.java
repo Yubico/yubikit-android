@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Yubico.
+ * Copyright (C) 2022-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 package com.yubico.yubikit.piv.jca;
 
-import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.util.Callback;
 import com.yubico.yubikit.core.util.Result;
 import com.yubico.yubikit.piv.KeyType;
@@ -31,13 +30,14 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.spec.AlgorithmParameterSpec;
 import java.util.Map;
-import javax.annotation.Nullable;
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.CipherSpi;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.ShortBufferException;
+import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class PivCipherSpi extends CipherSpi {
@@ -49,7 +49,7 @@ public class PivCipherSpi extends CipherSpi {
   @Nullable private String padding;
   private int opmode = -1;
 
-  private static final org.slf4j.Logger logger = LoggerFactory.getLogger(PivCipherSpi.class);
+  private static final Logger logger = LoggerFactory.getLogger(PivCipherSpi.class);
 
   PivCipherSpi(
       Callback<Callback<Result<PivSession, Exception>>> provider, Map<KeyType, KeyPair> dummyKeys)
@@ -94,7 +94,7 @@ public class PivCipherSpi extends CipherSpi {
 
   @Override
   protected void engineInit(int opmode, Key key, SecureRandom random) throws InvalidKeyException {
-    Logger.debug(logger, "Engine init: mode={} padding={}", mode, padding);
+    logger.debug("Engine init: mode={} padding={}", mode, padding);
     if (key instanceof PivPrivateKey) {
       if (!KeyType.Algorithm.RSA.name().equals(key.getAlgorithm())) {
         throw new InvalidKeyException("Cipher only supports RSA.");

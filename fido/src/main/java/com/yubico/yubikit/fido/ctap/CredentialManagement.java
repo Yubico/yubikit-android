@@ -27,34 +27,34 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /** Provides Credential management on the CTAP level. */
 @SuppressWarnings("unused")
 public class CredentialManagement {
-  private static final byte CMD_GET_CREDS_METADATA = 0x01;
-  private static final byte CMD_ENUMERATE_RPS_BEGIN = 0x02;
-  private static final byte CMD_ENUMERATE_RPS_NEXT = 0x03;
-  private static final byte CMD_ENUMERATE_CREDS_BEGIN = 0x04;
-  private static final byte CMD_ENUMERATE_CREDS_NEXT = 0x05;
-  private static final byte CMD_DELETE_CREDENTIAL = 0x06;
-  private static final byte CMD_UPDATE_USER_INFORMATION = 0x07;
+  static final byte CMD_GET_CREDS_METADATA = 0x01;
+  static final byte CMD_ENUMERATE_RPS_BEGIN = 0x02;
+  static final byte CMD_ENUMERATE_RPS_NEXT = 0x03;
+  static final byte CMD_ENUMERATE_CREDS_BEGIN = 0x04;
+  static final byte CMD_ENUMERATE_CREDS_NEXT = 0x05;
+  static final byte CMD_DELETE_CREDENTIAL = 0x06;
+  static final byte CMD_UPDATE_USER_INFORMATION = 0x07;
 
-  private static final byte PARAM_RP_ID_HASH = 0x01;
-  private static final byte PARAM_CREDENTIAL_ID = 0x02;
-  private static final byte PARAM_USER = 0x03;
+  static final byte PARAM_RP_ID_HASH = 0x01;
+  static final byte PARAM_CREDENTIAL_ID = 0x02;
+  static final byte PARAM_USER = 0x03;
 
-  private static final int RESULT_EXISTING_CRED_COUNT = 0x01;
-  private static final int RESULT_MAX_REMAINING_COUNT = 0x02;
-  private static final int RESULT_RP = 0x03;
-  private static final int RESULT_RP_ID_HASH = 0x04;
-  private static final int RESULT_TOTAL_RPS = 0x05;
-  private static final int RESULT_USER = 0x06;
-  private static final int RESULT_CREDENTIAL_ID = 0x07;
-  private static final int RESULT_PUBLIC_KEY = 0x08;
-  private static final int RESULT_TOTAL_CREDENTIALS = 0x09;
-  private static final int RESULT_CRED_PROTECT = 0x0A;
-  private static final int RESULT_LARGE_BLOB_KEY = 0x0B;
+  static final int RESULT_EXISTING_CRED_COUNT = 0x01;
+  static final int RESULT_MAX_REMAINING_COUNT = 0x02;
+  static final int RESULT_RP = 0x03;
+  static final int RESULT_RP_ID_HASH = 0x04;
+  static final int RESULT_TOTAL_RPS = 0x05;
+  static final int RESULT_USER = 0x06;
+  static final int RESULT_CREDENTIAL_ID = 0x07;
+  static final int RESULT_PUBLIC_KEY = 0x08;
+  static final int RESULT_TOTAL_CREDENTIALS = 0x09;
+  static final int RESULT_CRED_PROTECT = 0x0A;
+  static final int RESULT_LARGE_BLOB_KEY = 0x0B;
 
   private final Ctap2Session ctap;
   private final PinUvAuthProtocol pinUvAuth;

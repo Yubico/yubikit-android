@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Yubico.
+ * Copyright (C) 2020-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 public class AuthenticatorAssertionResponse extends AuthenticatorResponse {
   public static final String AUTHENTICATOR_DATA = "authenticatorData";
@@ -32,13 +32,13 @@ public class AuthenticatorAssertionResponse extends AuthenticatorResponse {
 
   private final byte[] authenticatorData;
   private final byte[] signature;
-  @Nullable private final byte[] userHandle;
+  private final byte @Nullable [] userHandle;
 
   public AuthenticatorAssertionResponse(
       byte[] clientDataJson,
       byte[] authenticatorData,
       byte[] signature,
-      @Nullable byte[] userHandle) {
+      byte @Nullable [] userHandle) {
     super(clientDataJson);
     this.authenticatorData = authenticatorData;
     this.signature = signature;
@@ -53,8 +53,7 @@ public class AuthenticatorAssertionResponse extends AuthenticatorResponse {
     return signature;
   }
 
-  @Nullable
-  public byte[] getUserHandle() {
+  public byte @Nullable [] getUserHandle() {
     return userHandle;
   }
 

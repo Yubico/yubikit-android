@@ -2,6 +2,10 @@
 *YubiKit* is an Android library provided by Yubico to enable YubiKey support in
 Android apps. Both USB and NFC-enabled YubiKeys are supported.
 
+NOTE: Version 3.0 breaks compatibility with 2.0. See
+link:./doc/Migration_2.0-3.0.adoc[the migration guide] for some pointers on
+migrating.
+
 NOTE: Version 2.0 breaks compatibility with 1.0. See
 link:./doc/Migration_1.0-2.0.adoc[the migration guide] for some pointers on
 migrating.
@@ -36,7 +40,7 @@ This module provides concrete implementations for the interfaces in *core*, the
 various reusable UI elements.
 
 link:./fido/[Fido]::
-This module adds FIDO2 support. Current implementation supports Webauthn Level 2 and CTAP 2.1 for managing FIDO credentials on YubiKeys.
+This module adds FIDO2 support. Current implementation supports Webauthn Level 2 and CTAP 2.3 for managing FIDO credentials on YubiKeys.
 
 link:./management/[Management]::
 This module provides the ability to read out metadata from a YubiKey, such as
@@ -91,7 +95,7 @@ There are two related modules:
 === FAQ
 
 ==== Q1. Does YubiKit work with all versions of Android?
-A1. All YubiKit modules should work on Android API 19+. Yubico typically tests
+A1. All YubiKit modules should work on Android API 21+. Yubico typically tests
 and supports n-1 per https://en.wikipedia.org/wiki/Android_version_history.
 
 ==== Q2. How can I debug my app on Android when a YubiKey takes up the USB port?

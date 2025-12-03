@@ -22,7 +22,7 @@ public enum YubiKeyType {
   SKY("Security Key by Yubico"),
   YKP("YubiKey Plus"),
   YK4("YubiKey"),
-  FIDO_SECURITY_KEY("FIDO Security Key");
+  OTHER("Generic Security Key");
 
   public final String name;
 

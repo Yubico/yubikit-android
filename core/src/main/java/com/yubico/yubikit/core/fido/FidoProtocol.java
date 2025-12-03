@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Yubico.
+ * Copyright (C) 2020-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@ package com.yubico.yubikit.core.fido;
 
 import com.yubico.yubikit.core.Version;
 import com.yubico.yubikit.core.application.CommandState;
-import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.util.RandomUtils;
 import com.yubico.yubikit.core.util.StringUtils;
 import java.io.Closeable;
@@ -25,29 +24,30 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.security.MessageDigest;
 import java.util.Arrays;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class FidoProtocol implements Closeable {
 
-  private static final byte TYPE_INIT = (byte) 0x80;
+  static final byte TYPE_INIT = (byte) 0x80;
 
-  private static final byte CTAPHID_PING = TYPE_INIT | 0x01;
-  private static final byte CTAPHID_MSG = TYPE_INIT | 0x03;
-  private static final byte CTAPHID_LOCK = TYPE_INIT | 0x04;
-  private static final byte CTAPHID_INIT = TYPE_INIT | 0x06;
-  private static final byte CTAPHID_WINK = TYPE_INIT | 0x08;
-  private static final byte CTAPHID_CBOR = TYPE_INIT | 0x10;
-  private static final byte CTAPHID_CANCEL = TYPE_INIT | 0x11;
+  static final byte CTAPHID_PING = TYPE_INIT | 0x01;
+  static final byte CTAPHID_MSG = TYPE_INIT | 0x03;
+  static final byte CTAPHID_LOCK = TYPE_INIT | 0x04;
+  static final byte CTAPHID_INIT = TYPE_INIT | 0x06;
+  static final byte CTAPHID_WINK = TYPE_INIT | 0x08;
+  static final byte CTAPHID_CBOR = TYPE_INIT | 0x10;
+  static final byte CTAPHID_CANCEL = TYPE_INIT | 0x11;
 
-  private static final byte CTAPHID_ERROR = TYPE_INIT | 0x3f;
-  private static final byte CTAPHID_KEEPALIVE = TYPE_INIT | 0x3b;
+  static final byte CTAPHID_ERROR = TYPE_INIT | 0x3f;
+  static final byte CTAPHID_KEEPALIVE = TYPE_INIT | 0x3b;
 
   /**
    * Protocol capabilities
    *
    * @see <a
-   *     href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#usb-hid-init">CTAPHID_INIT</a>
+   *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#usb-hid-init">CTAPHID_INIT</a>
    */
   public static class Capability {
     public static final byte WINK = 0x01;
@@ -63,7 +63,7 @@ public class FidoProtocol implements Closeable {
   private final int capabilities;
   private int channelId;
 
-  private static final org.slf4j.Logger logger = LoggerFactory.getLogger(FidoProtocol.class);
+  private static final Logger logger = LoggerFactory.getLogger(FidoProtocol.class);
 
   public FidoProtocol(FidoConnection connection) throws IOException {
     this.connection = connection;
@@ -85,8 +85,7 @@ public class FidoProtocol implements Closeable {
     buffer.get(versionBytes);
     version = Version.fromBytes(versionBytes);
     capabilities = buffer.get();
-    Logger.debug(
-        logger, "FIDO connection set up with channel ID: {}", String.format("0x%08x", channelId));
+    logger.debug("FIDO connection set up with channel ID: {}", String.format("0x%08x", channelId));
   }
 
   public byte[] sendAndReceive(byte cmd, byte[] payload, @Nullable CommandState state)
@@ -103,8 +102,7 @@ public class FidoProtocol implements Closeable {
     do {
       toSend.get(buffer, packet.position(), Math.min(toSend.remaining(), packet.remaining()));
       connection.send(buffer);
-      Logger.trace(
-          logger, "{} bytes sent over fido: {}", buffer.length, StringUtils.bytesToHex(buffer));
+      logger.trace("{} bytes sent over fido: {}", buffer.length, StringUtils.bytesToHex(buffer));
       Arrays.fill(buffer, (byte) 0);
       packet.clear();
       packet.putInt(channelId).put((byte) (0x7f & seq++));
@@ -116,16 +114,16 @@ public class FidoProtocol implements Closeable {
     do {
       packet.clear();
       if (state.waitForCancel(0)) {
-        Logger.debug(logger, "sending CTAP cancel...");
+        logger.debug("sending CTAP cancel...");
         Arrays.fill(buffer, (byte) 0);
         packet.putInt(channelId).put(CTAPHID_CANCEL);
         connection.send(buffer);
-        Logger.trace(logger, "Sent over fido: {}", StringUtils.bytesToHex(buffer));
+        logger.trace("Sent over fido: {}", StringUtils.bytesToHex(buffer));
         packet.clear();
       }
 
       connection.receive(buffer);
-      Logger.trace(logger, "Received over fido: {}", StringUtils.bytesToHex(buffer));
+      logger.trace("Received over fido: {}", StringUtils.bytesToHex(buffer));
       int responseChannel = packet.getInt();
       if (responseChannel != channelId) {
         throw new IOException(
@@ -168,6 +166,6 @@ public class FidoProtocol implements Closeable {
   @Override
   public void close() throws IOException {
     connection.close();
-    Logger.debug(logger, "fido connection closed");
+    logger.debug("fido connection closed");
   }
 }
