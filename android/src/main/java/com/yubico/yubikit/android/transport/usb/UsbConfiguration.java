@@ -31,6 +31,13 @@ public class UsbConfiguration {
     return deviceFilter;
   }
 
+  public UsbConfiguration() {}
+
+  public UsbConfiguration(UsbConfiguration other) {
+    this.handlePermissions = other.handlePermissions;
+    this.deviceFilter = other.deviceFilter;
+  }
+
   /**
    * Set YubiKitManager to show dialog for permissions on USB connection
    *

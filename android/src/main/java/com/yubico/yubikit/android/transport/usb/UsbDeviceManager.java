@@ -74,7 +74,7 @@ final class UsbDeviceManager {
   private UsbDeviceManager() {}
 
   private synchronized UsbDeviceManager setUsbConfiguration(UsbConfiguration usbConfiguration) {
-    this.usbConfiguration = usbConfiguration;
+    this.usbConfiguration = new UsbConfiguration(usbConfiguration);
     return this;
   }
 
