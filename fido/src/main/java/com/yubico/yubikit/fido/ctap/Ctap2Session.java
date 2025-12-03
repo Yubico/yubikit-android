@@ -567,30 +567,6 @@ public class Ctap2Session extends Ctap1Session {
   }
 
   /**
-   * Authenticates a previously registered CTAP1 credential.
-   *
-   * @param clientParam SHA256 hash of the ClientData used for the request
-   * @param appParam SHA256 hash of the app ID used for the request
-   * @param keyHandle the binary key handle of the credential
-   * @param checkOnly true to send a "check-only" request to determine if a key handle is known
-   * @return the authentication response from the authenticator
-   * @throws IOException if communication fails
-   * @throws ApduException if the command returns an error status
-   * @see <a
-   *     href="https://fidoalliance.org/specs/fido-u2f-v1.2-ps-20170411/fido-u2f-raw-message-formats-v1.2-ps-20170411.html#authentication-messages">Authentication
-   *     Messages</a>
-   */
-  public SignatureData authenticate(
-      byte[] clientParam,
-      byte[] appParam,
-      byte[] keyHandle,
-      boolean checkOnly,
-      @Nullable CommandState state)
-      throws ApduException, IOException {
-    return authenticate(clientParam, appParam, keyHandle, checkOnly, state);
-  }
-
-  /**
    * This command is used to configure various authenticator features through the use of its
    * subcommands.
    *
