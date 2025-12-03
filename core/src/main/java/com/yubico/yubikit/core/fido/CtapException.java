@@ -26,7 +26,7 @@ import java.util.Map;
  * An error on the CTAP-level, returned from the Authenticator.
  *
  * <p>These error codes are defined by the <a
- * href="https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html#error-responses">CTAP2
+ * href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#error-responses">CTAP2
  * Status codes</a>
  */
 public class CtapException extends CommandException {

@@ -23,7 +23,7 @@ import java.util.Locale;
  * describe the methods and capabilities of a FIDO authenticator for locally verifying a user.
  *
  * @see <a
- *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html#user-verification-methods">User
+ *     href="https://fidoalliance.org/specs/common-specs/fido-registry-v2.2-ps-20220523.html#user-verification-methods">User
  *     Verification Methods</a>
  */
 public enum UserVerify {

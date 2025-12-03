@@ -47,7 +47,7 @@ public class FidoProtocol implements Closeable {
    * Protocol capabilities
    *
    * @see <a
-   *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250714/fido-client-to-authenticator-protocol-v2.2-ps-20250714.html#usb-hid-init">CTAPHID_INIT</a>
+   *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#usb-hid-init">CTAPHID_INIT</a>
    */
   public static class Capability {
     public static final byte WINK = 0x01;
