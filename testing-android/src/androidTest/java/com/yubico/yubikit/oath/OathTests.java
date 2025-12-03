@@ -44,7 +44,6 @@ public class OathTests {
     }
 
     @Test
-    @Category(SmokeTest.class)
     public void testAccountManagement() throws Throwable {
       withOathSession(OathDeviceTests::testAccountManagement);
     }

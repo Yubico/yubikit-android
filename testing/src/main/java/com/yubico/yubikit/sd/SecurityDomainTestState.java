@@ -17,7 +17,6 @@
 package com.yubico.yubikit.sd;
 
 import static org.junit.Assert.assertNull;
-import static org.junit.Assume.assumeTrue;
 
 import com.yubico.yubikit.TestState;
 import com.yubico.yubikit.core.UsbPid;
@@ -28,6 +27,7 @@ import com.yubico.yubikit.core.smartcard.scp.ScpKeyParams;
 import com.yubico.yubikit.core.smartcard.scp.SecurityDomainSession;
 import java.util.Collections;
 
+@org.jspecify.annotations.NullMarked
 public class SecurityDomainTestState extends TestState {
 
   public static class Builder extends TestState.Builder<SecurityDomainTestState.Builder> {
@@ -50,10 +50,8 @@ public class SecurityDomainTestState extends TestState {
     super(builder);
 
     try (YubiKeyConnection connection = openConnection()) {
-      assumeTrue("Key does not support smart card connection", connection != null);
       SecurityDomainSession sd =
           getSession(connection, scpParameters.getKeyParams(), SecurityDomainSession::new);
-      assumeTrue("Security domain not supported", sd != null);
       assertNull("These tests expect kid to be null", scpParameters.getKid());
     }
   }

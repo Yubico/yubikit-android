@@ -29,6 +29,7 @@ import com.yubico.yubikit.management.Capability;
 import com.yubico.yubikit.management.DeviceInfo;
 import java.util.Collections;
 
+@org.jspecify.annotations.NullMarked
 public class PivTestState extends TestState {
 
   static final char[] DEFAULT_PIN = "123456".toCharArray();
@@ -96,7 +97,6 @@ public class PivTestState extends TestState {
 
     try (YubiKeyConnection connection = openConnection()) {
       PivSession pivSession = getSession(connection, scpParameters.getKeyParams(), PivSession::new);
-      assumeTrue("PIV not available", pivSession != null);
 
       try {
         pivSession.reset();
@@ -134,9 +134,7 @@ public class PivTestState extends TestState {
 
   public void withPiv(StatefulSessionCallback<PivSession, PivTestState> callback) throws Throwable {
     try (YubiKeyConnection connection = openConnection()) {
-      final PivSession piv = getSession(connection, scpParameters.getKeyParams(), PivSession::new);
-      assumeTrue("No PIV support", piv != null);
-      callback.invoke(piv, this);
+      callback.invoke(getSession(connection, scpParameters.getKeyParams(), PivSession::new), this);
     }
     reconnect();
   }

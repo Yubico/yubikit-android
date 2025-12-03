@@ -18,7 +18,6 @@ package com.yubico.yubikit.openpgp;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
 
 import com.yubico.yubikit.TestState;
 import com.yubico.yubikit.core.UsbPid;
@@ -30,6 +29,7 @@ import com.yubico.yubikit.management.DeviceInfo;
 import java.util.Collections;
 import org.junit.Assume;
 
+@org.jspecify.annotations.NullMarked
 public class OpenPgpTestState extends TestState {
 
   private static final char[] COMPLEX_USER_PIN = "112345678".toCharArray();
@@ -77,12 +77,8 @@ public class OpenPgpTestState extends TestState {
     }
 
     try (YubiKeyConnection connection = openConnection()) {
-      assumeTrue("Smart card not available", connection != null);
-
       OpenPgpSession openPgp =
           getSession(connection, scpParameters.getKeyParams(), OpenPgpSession::new);
-
-      assumeTrue("OpenPGP not available", openPgp != null);
       openPgp.reset();
 
       if (hasPinComplexity) {

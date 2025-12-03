@@ -31,17 +31,17 @@ import org.junit.runners.Suite;
   Ctap1ClientInstrumentedTests.PinUvAuthV2Test.class,
   Ctap1ClientInstrumentedTests.PinUvAuthV1Test.class,
 })
+@org.jspecify.annotations.NullMarked
 public class Ctap1ClientInstrumentedTests {
   public static class PinUvAuthV2Test extends FidoInstrumentedTests {
 
     @Test
     @Category(SmokeTest.class)
     public void testMakeCredentialGetAssertion() throws Throwable {
-      withDevice(Ctap1ClientTests::testMakeCredentialGetAssertion);
+      withDevice(Ctap1ClientTests::testMakeCredentialGetAssertion, true);
     }
 
     @Test
-    @Category(SmokeTest.class)
     public void testCancellation() throws Throwable {
       withCtap1Session(Ctap1ClientTests::testCancellationImmediate);
     }

@@ -37,6 +37,7 @@ import java.security.cert.X509Certificate;
 import java.util.List;
 import org.junit.Assume;
 
+@org.jspecify.annotations.NullMarked
 public class SmartCardProtocolDeviceTests {
   private static final ScpKeyParams defaultKeyParams =
       new Scp03KeyParams(new KeyRef((byte) 0x01, (byte) 0xff), StaticKeys.getDefaultKeys());
@@ -92,7 +93,7 @@ public class SmartCardProtocolDeviceTests {
                         .build();
                 protocol.configure(version, configuration);
                 protocol.select(AppId.MANAGEMENT);
-                if (useScp && keyParams != null) {
+                if (useScp) {
                   protocol.initScp(keyParams);
                 }
 

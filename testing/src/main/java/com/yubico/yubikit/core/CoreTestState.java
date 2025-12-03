@@ -23,6 +23,7 @@ import com.yubico.yubikit.core.smartcard.scp.SecurityDomainSession;
 import java.util.Collections;
 import org.jspecify.annotations.Nullable;
 
+@org.jspecify.annotations.NullMarked
 public class CoreTestState extends TestState {
 
   public static class Builder extends TestState.Builder<Builder> {
@@ -41,7 +42,7 @@ public class CoreTestState extends TestState {
     }
   }
 
-  public CoreTestState(Builder builder) throws Throwable {
+  public CoreTestState(Builder builder) {
     super(builder);
   }
 

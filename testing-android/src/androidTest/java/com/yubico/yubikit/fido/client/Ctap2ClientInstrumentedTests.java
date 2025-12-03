@@ -31,6 +31,7 @@ import org.junit.runners.Suite;
   Ctap2ClientInstrumentedTests.PinUvAuthV2Test.class,
   Ctap2ClientInstrumentedTests.PinUvAuthV1Test.class,
 })
+@org.jspecify.annotations.NullMarked
 public class Ctap2ClientInstrumentedTests {
   public static class PinUvAuthV2Test extends FidoInstrumentedTests {
 

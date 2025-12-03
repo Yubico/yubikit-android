@@ -23,7 +23,6 @@ import org.junit.experimental.categories.Category;
 
 public class SmartCardProtocolTests extends CoreInstrumentedTests {
   @Test
-  @Category(SmokeTest.class)
   public void testApduSizesOverScp() throws Throwable {
     withState(SmartCardProtocolDeviceTests::testApduSizesOverScp);
   }

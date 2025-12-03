@@ -56,7 +56,6 @@ public class FidoOverCcidTests {
     }
 
     @Test
-    @Category(SmokeTest.class)
     public void testSwitchTransports() throws Throwable {
       withDevice(Ctap2ClientTests::testCancelMakeCredential);
       connectionTypes = Collections.singletonList(FidoConnection.class);

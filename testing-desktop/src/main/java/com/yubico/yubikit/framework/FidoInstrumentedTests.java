@@ -18,6 +18,7 @@ package com.yubico.yubikit.framework;
 import com.yubico.yubikit.TestState;
 import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.YubiKeyConnection;
+import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.fido.FidoConnection;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.smartcard.scp.ScpKid;
@@ -85,7 +86,8 @@ public class FidoInstrumentedTests extends YkInstrumentedTests {
   @Nullable
   @Override
   protected Byte getScpKid() {
-    if (device.getTransport() == Transport.NFC) {
+    YubiKeyDevice currentDevice = this.device;
+    if (currentDevice != null && currentDevice.getTransport() == Transport.NFC) {
       return ScpKid.SCP11b;
     }
     return null;

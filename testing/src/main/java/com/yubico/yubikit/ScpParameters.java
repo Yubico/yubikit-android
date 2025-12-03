@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import org.jspecify.annotations.Nullable;
 
+@org.jspecify.annotations.NullMarked
 public class ScpParameters {
   @Nullable private final Byte kid;
   @Nullable private ScpKeyParams keyParams = null;
@@ -54,6 +55,7 @@ public class ScpParameters {
     return keyParams;
   }
 
+  @Nullable
   private ScpKeyParams readScpKeyParams(YubiKeyDevice device) throws Throwable {
     if (kid == null) {
       return null;
@@ -74,6 +76,7 @@ public class ScpParameters {
     }
   }
 
+  @Nullable
   private KeyRef getKeyRef(SecurityDomainSession scp, byte kid)
       throws ApduException, IOException, BadResponseException {
     Map<KeyRef, Map<Byte, Byte>> keyInformation = scp.getKeyInformation();

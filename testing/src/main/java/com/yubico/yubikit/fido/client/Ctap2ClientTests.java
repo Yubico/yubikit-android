@@ -64,6 +64,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
@@ -179,11 +180,11 @@ public class Ctap2ClientTests {
           Ctap2Client webauthn = new Ctap2Client(session);
 
           CommandState commandState = new CommandState();
-          Executors.newSingleThreadScheduledExecutor()
-              .schedule(commandState::cancel, 500, TimeUnit.MILLISECONDS);
 
+          @SuppressWarnings("resource")
+          ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
           try {
-
+            executor.schedule(commandState::cancel, 500, TimeUnit.MILLISECONDS);
             PublicKeyCredentialCreationOptions creationOptionsNonRk =
                 getCreateOptions(
                     new PublicKeyCredentialUserEntity(
@@ -202,6 +203,8 @@ public class Ctap2ClientTests {
             fail("Failed to cancel");
           } catch (ClientError clientError) {
             assertEquals(ClientError.Code.TIMEOUT, clientError.getErrorCode());
+          } finally {
+            executor.shutdown();
           }
         });
   }

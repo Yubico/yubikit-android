@@ -30,9 +30,9 @@ import org.junit.rules.TestName;
 
 public class YkInstrumentedTests {
 
-  private TestActivity activity;
-  protected YubiKeyDevice device = null;
-  protected UsbPid usbPid = null;
+  private @Nullable TestActivity activity;
+  protected @Nullable YubiKeyDevice device = null;
+  protected @Nullable UsbPid usbPid = null;
 
   @Rule public final TestName name = new TestName();
 
@@ -43,8 +43,11 @@ public class YkInstrumentedTests {
   @Before
   public void getYubiKey() throws InterruptedException {
     scenarioRule.getScenario().onActivity((TestActivity activity) -> this.activity = activity);
-    device = activity.awaitSession(getClass().getSimpleName(), name.getMethodName());
-    usbPid = device instanceof UsbYubiKeyDevice ? ((UsbYubiKeyDevice) device).getPid() : null;
+    TestActivity currentActivity = this.activity;
+    if (currentActivity != null) {
+      device = currentActivity.awaitSession(getClass().getSimpleName(), name.getMethodName());
+      usbPid = device instanceof UsbYubiKeyDevice ? ((UsbYubiKeyDevice) device).getPid() : null;
+    }
   }
 
   @After
@@ -53,7 +56,9 @@ public class YkInstrumentedTests {
   }
 
   public void releaseYubiKey() throws InterruptedException {
-    activity.returnSession(device);
+    if (activity != null && device != null) {
+      activity.returnSession(device);
+    }
     device = null;
     activity = null;
     usbPid = null;
@@ -61,9 +66,13 @@ public class YkInstrumentedTests {
 
   protected YubiKeyDevice reconnectDevice() {
     try {
-      if (device.getTransport() == Transport.NFC) {
+      YubiKeyDevice currentDevice = this.device;
+      if (currentDevice != null && currentDevice.getTransport() == Transport.NFC) {
         releaseYubiKey();
         getYubiKey();
+      }
+      if (device == null) {
+        throw new IllegalStateException("Device not available");
       }
       return device;
     } catch (InterruptedException e) {

@@ -14,22 +14,5 @@
  * limitations under the License.
  */
 
-package com.yubico.yubikit.core;
-
-import com.yubico.yubikit.SmokeTest;
-import com.yubico.yubikit.framework.CoreInstrumentedTests;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-
-public class SmartCardProtocolTests extends CoreInstrumentedTests {
-  @Test
-  public void testApduSizesOverScp() throws Throwable {
-    withState(SmartCardProtocolDeviceTests::testApduSizesOverScp);
-  }
-
-  @Test
-  @Category(SmokeTest.class)
-  public void testApduSizes() throws Throwable {
-    withState(SmartCardProtocolDeviceTests::testApduSizes);
-  }
-}
+@org.jspecify.annotations.NullMarked
+package com.yubico.yubikit.fido.ctap;

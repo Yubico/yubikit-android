@@ -31,6 +31,7 @@ import com.yubico.yubikit.management.ManagementSession;
 import com.yubico.yubikit.piv.PivSession;
 import java.util.Collections;
 
+@org.jspecify.annotations.NullMarked
 public class MpeTestState extends TestState {
   public static class Builder extends TestState.Builder<MpeTestState.Builder> {
 
@@ -77,9 +78,7 @@ public class MpeTestState extends TestState {
 
   public void withPiv(StatefulSessionCallback<PivSession, MpeTestState> callback) throws Throwable {
     try (YubiKeyConnection connection = openConnection()) {
-      final PivSession piv = getSession(connection, scpParameters.getKeyParams(), PivSession::new);
-      assumeTrue("No PIV support", piv != null);
-      callback.invoke(piv, this);
+      callback.invoke(getSession(connection, scpParameters.getKeyParams(), PivSession::new), this);
     }
     reconnect();
   }
@@ -87,9 +86,7 @@ public class MpeTestState extends TestState {
   public void withCtap2(TestState.StatefulSessionCallback<Ctap2Session, MpeTestState> callback)
       throws Throwable {
     try (YubiKeyConnection connection = openConnection()) {
-      final Ctap2Session ctap2 = getCtap2Session(connection, scpParameters.getKeyParams());
-      assumeTrue("No CTAP2 support", ctap2 != null);
-      callback.invoke(ctap2, this);
+      callback.invoke(getCtap2Session(connection, scpParameters.getKeyParams()), this);
     }
     reconnect();
   }

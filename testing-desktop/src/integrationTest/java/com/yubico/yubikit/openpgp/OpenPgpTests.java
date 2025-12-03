@@ -104,7 +104,6 @@ public class OpenPgpTests {
     }
 
     @Test
-    @Category(SmokeTest.class)
     public void testSigPinPolicy() throws Throwable {
       withOpenPgpSession(OpenPgpDeviceTests::testSigPinPolicy);
     }

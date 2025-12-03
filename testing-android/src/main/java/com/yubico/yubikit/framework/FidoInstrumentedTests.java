@@ -38,7 +38,13 @@ public class FidoInstrumentedTests extends YkInstrumentedTests {
 
   protected void withDevice(TestState.StatefulDeviceCallback<FidoTestState> callback)
       throws Throwable {
-    withDevice(true, callback);
+    withDevice(true, callback, false);
+  }
+
+  protected void withDevice(
+      TestState.StatefulDeviceCallback<FidoTestState> callback, boolean requireCtap1)
+      throws Throwable {
+    withDevice(true, callback, requireCtap1);
   }
 
   protected void withDevice(
@@ -53,6 +59,22 @@ public class FidoInstrumentedTests extends YkInstrumentedTests {
     state.withDeviceCallback(callback);
   }
 
+  protected void withDevice(
+      boolean setPin,
+      TestState.StatefulDeviceCallback<FidoTestState> callback,
+      boolean requireCtap1)
+      throws Throwable {
+    FidoTestState state =
+        new FidoTestState.Builder(device, connectionTypes, usbPid, getPinUvAuthProtocol())
+            .scpKid(getScpKid())
+            .reconnectDeviceCallback(this::reconnectDevice)
+            .setPin(setPin)
+            .requireCtap1(requireCtap1)
+            .build();
+
+    state.withDeviceCallback(callback);
+  }
+
   protected void withCtap2Session(
       TestState.StatefulSessionCallback<Ctap2Session, FidoTestState> callback) throws Throwable {
     FidoTestState state =
@@ -60,6 +82,7 @@ public class FidoInstrumentedTests extends YkInstrumentedTests {
             .scpKid(getScpKid())
             .reconnectDeviceCallback(this::reconnectDevice)
             .setPin(true)
+            .requireCtap1(false)
             .build();
 
     state.withCtap2(callback);
@@ -71,6 +94,7 @@ public class FidoInstrumentedTests extends YkInstrumentedTests {
         new FidoTestState.Builder(device, connectionTypes, usbPid, getPinUvAuthProtocol())
             .scpKid(getScpKid())
             .reconnectDeviceCallback(this::reconnectDevice)
+            .requireCtap1(true)
             .build();
 
     state.withCtap1(callback);

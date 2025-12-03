@@ -18,7 +18,6 @@ package com.yubico.yubikit.fido.client;
 
 import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.YubiKeyDevice;
-import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
 import com.yubico.yubikit.core.application.CommandException;
 import com.yubico.yubikit.core.fido.FidoConnection;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
@@ -99,7 +98,7 @@ public class Utils {
 
   static Ctap1Session createCtap1Session(
       YubiKeyConnection connection, @Nullable ScpKeyParams scpKeyParams)
-      throws IOException, ApplicationNotAvailableException, IllegalArgumentException {
+      throws IOException, CommandException, IllegalArgumentException {
     if (connection instanceof FidoConnection) {
       logger.debug("Attempting to create Ctap1Session from FidoConnection");
       return new Ctap1Session((FidoConnection) connection);
