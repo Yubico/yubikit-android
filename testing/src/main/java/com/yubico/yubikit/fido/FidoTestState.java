@@ -82,8 +82,8 @@ public class FidoTestState extends TestState {
       return this;
     }
 
-    public Builder requireCtap1(boolean setPin) {
-      this.requireCtap1 = setPin;
+    public Builder requireCtap1(boolean requireCtap1) {
+      this.requireCtap1 = requireCtap1;
       return this;
     }
 
