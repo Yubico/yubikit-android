@@ -28,10 +28,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683                 # v4.2.2
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8                 # v6.0.1
 
       - name: Setup Java
-        uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00               # v4.7.1
+        uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00               # v5.0.0
         with:
           distribution: "temurin"
           java-version: "17"
@@ -39,7 +39,7 @@ jobs:
       - name: Build with Gradle
         run: ./gradlew spotbugsRelease spotbugsMain
 
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02          # v4.6.2
+      - uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4          # v5.0.0
         with:
           name: sarif-files
           path: ./build/spotbugs/*.sarif
@@ -76,7 +76,7 @@ jobs:
           ]
 
     steps:
-      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0        # v5.0.0
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53        # v6.0.0
         with:
           name: sarif-files
 
@@ -96,7 +96,7 @@ jobs:
           jq -c '.' > ${OUTPUT}
 
       - name: Upload SARIF for ${{ matrix.module }}
-        uses: github/codeql-action/upload-sarif@7273f08caa1dcf2c2837f362f1982de0ab4dc344   #v2.22.3
+        uses: github/codeql-action/upload-sarif@fe4161a26a8629af62121b670040955b330f9af2   #v4.31.6
         with:
           sarif_file: spotbugs-${{ matrix.module }}.json
           category: spotbugs-analysis-${{ matrix.module }}
