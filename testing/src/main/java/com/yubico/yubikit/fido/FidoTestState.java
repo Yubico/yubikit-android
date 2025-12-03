@@ -103,7 +103,7 @@ public class FidoTestState extends TestState {
     try (YubiKeyConnection connection = openConnection()) {
 
       if (builder.requireCtap1) {
-        Ctap1Session session = getCtap1Session(connection, scpParameters.getKeyParams());
+        Ctap1Session session = getCtap1Session(connection, null);
         try {
           // test whether CTAP1 is available
           assumeTrue("Unsupported CTAP1 version", "U2F_V2".equals(session.getU2fVersion()));
