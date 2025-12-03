@@ -45,7 +45,7 @@ See https://github.com/Yubico/yubikit-android/pull/231[PR#231].
 
 == 3. FIDO/WebAuthn Client Data Refactor
 
-If you use FIDO/WebAuthn APIs, you must now provide client data through a `ClientDataProvider` implementation (not as a raw byte array). Use the provided `JsonClientDataProvider` class.
+If you use FIDO/WebAuthn APIs, you must now provide client data through a `ClientDataProvider` implementation (not as a raw byte array). Use the provided `JsonClientData` class.
 
 .Migration Example:
 [source,java]
@@ -62,7 +62,7 @@ webAuthnClient.makeCredential(
 import com.yubico.yubikit.webauthn.JsonClientDataProvider
 
 byte[] clientData = ...
-ClientDataProvider clientDataProvider = new JsonClientDataProvider(clientData);
+ClientDataProvider clientDataProvider = new JsonClientData(clientData);
 webAuthnClient.makeCredential(
   /* ClientDataProvider */ clientDataProvider,
   /* PublicKeyCredentialCreationOptions*/ options,
