@@ -7,16 +7,32 @@ This guide helps you upgrade your application to use `yubikit-android` 3.0. It h
 
 == Migration Checklist
 
-
+* The minimum supported Android API level is now 21 (was 19). Update your app’s `minSdkVersion` as needed.
 * Update any usage of public API identifiers that previously used ALL CAPS abbreviations (e.g. `getPinComplexityPolicyURL` → `getPinComplexityPolicyUrl`).
 * Remove usage of deprecated APIs; they have been fully removed.
 * If you use FIDO/WebAuthn APIs:
-** Switch from `BasicWebAuthnClient` to `WebAuthnClient`, if you instantiate these clients directly.
-** Change your code to use `ClientDataProvider` for client data instead of passing raw byte arrays.
-** Update error handling: use `AuthInvalidClientError` to catch invalid PIN or UV errors.
+  ** Switch from `BasicWebAuthnClient` to `WebAuthnClient`, if you instantiate these clients directly.
+  ** Change your code to use `ClientDataProvider` for client data instead of passing raw byte arrays.
+  ** Update error handling: use `AuthInvalidClientError` to catch invalid PIN or UV errors.
 * If your code uses SDK generics like `Result<T, E>` in Kotlin, ensure you specify non-nullable type arguments (`<T : Any>`).
 
-== 1. API Naming Changes
+== 1. Minimum Supported Android Version
+
+The minimum supported Android API level for `yubikit-android` is now **21** (Android 5.0, Lollipop).
+This is an increase from the previous minimum, which was API level 19.
+If your app’s `minSdkVersion` is set below 21, you must raise it to use yubikit-android 3.0.
+
+.Example (build.gradle.kts):
+[source,kotlin]
+----
+android {
+    defaultConfig {
+        minSdk = 21
+    }
+}
+----
+
+== 2. API Naming Changes
 
 If your code references SDK identifiers using ALL CAPS abbreviations (such as PIN, RPID, URL, YK), update those references to their new CamelCase forms.
 
@@ -26,7 +42,7 @@ If your code references SDK identifiers using ALL CAPS abbreviations (such as PI
 
 See https://github.com/Yubico/yubikit-android/pull/230[PR#230] for details.
 
-== 2. Nullness Annotations Migration and Non-Nullable Generics (JSpecify)
+== 3. Nullness Annotations Migration and Non-Nullable Generics (JSpecify)
 
 The SDK now uses JSpecify (https://jspecify.dev/[https://jspecify.dev/]) nullness annotations, enforcing stricter rules about which types can be null.
 
@@ -43,7 +59,7 @@ fun <T : Any> returnsResult(): Result<T, Throwable> { ... }
 
 See https://github.com/Yubico/yubikit-android/pull/231[PR#231].
 
-== 3. FIDO/WebAuthn Client Data Refactor
+== 4. FIDO/WebAuthn Client Data Refactor
 
 If you use FIDO/WebAuthn APIs, you must now provide client data through a `ClientDataProvider` implementation (not as a raw byte array). Use the provided `JsonClientData` class.
 
@@ -72,13 +88,13 @@ webAuthnClient.makeCredential(
 
 See https://github.com/Yubico/yubikit-android/pull/233[PR#233].
 
-== 4. Deprecated API Removals
+== 5. Deprecated API Removals
 
 All APIs previously marked as deprecated have been removed. If your application depended on any deprecated items, update your code to supported alternatives.
 
 See https://github.com/Yubico/yubikit-android/pull/237[PR#237].
 
-== 5. FIDO Client and Error Handling Changes
+== 6. FIDO Client and Error Handling Changes
 
 If you directly instantiate FIDO/WebAuthn clients:
 
