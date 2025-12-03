@@ -1,0 +1,135 @@
+= yubikit-android 3.0 Migration Guide
+Yubico
+:toc:
+:toclevels: 2
+
+This guide helps you upgrade your application to use `yubikit-android` 3.0. It highlights key changes that may affect your code, with migration steps and troubleshooting notes.
+
+== Migration Checklist
+
+* The minimum supported Android API level is now 21 (was 19). Update your app’s `minSdkVersion` as needed.
+* Update any usage of public API identifiers that previously used ALL CAPS abbreviations (e.g. `getPinComplexityPolicyURL` → `getPinComplexityPolicyUrl`).
+* Remove usage of deprecated APIs; they have been fully removed.
+* If you use FIDO/WebAuthn APIs:
+  ** Switch from `BasicWebAuthnClient` to `WebAuthnClient`, if you instantiate these clients directly.
+  ** Change your code to use `ClientDataProvider` for client data instead of passing raw byte arrays.
+  ** Update error handling: use `AuthInvalidClientError` to catch invalid PIN or UV errors.
+* If your code uses SDK generics like `Result<T, E>` in Kotlin, ensure you specify non-nullable type arguments (`<T : Any>`).
+
+== 1. Minimum Supported Android Version
+
+The minimum supported Android API level for `yubikit-android` is now **21** (Android 5.0, Lollipop).
+This is an increase from the previous minimum, which was API level 19.
+If your app’s `minSdkVersion` is set below 21, you must raise it to use yubikit-android 3.0.
+
+.Example (build.gradle.kts):
+[source,kotlin]
+----
+android {
+    defaultConfig {
+        minSdk = 21
+    }
+}
+----
+
+== 2. API Naming Changes
+
+If your code references SDK identifiers using ALL CAPS abbreviations (such as PIN, RPID, URL, YK), update those references to their new CamelCase forms.
+
+.Examples:
+* `getPinComplexityPolicyURL` → `getPinComplexityPolicyUrl`
+* `YKInstrumentedTests` → `YkInstrumentedTests`
+
+See https://github.com/Yubico/yubikit-android/pull/230[PR#230] for details.
+
+== 3. Nullness Annotations Migration and Non-Nullable Generics (JSpecify)
+
+The SDK now uses JSpecify (https://jspecify.dev/[https://jspecify.dev/]) nullness annotations, enforcing stricter rules about which types can be null.
+
+If you use Kotlin, update any function or class generic parameters that interact with SDK types like `Result<T, E>`: generics must be non-nullable and use `<T : Any>`.
+
+.Migration Example:
+[source,kotlin]
+----
+// Old
+fun <T> returnsResult(): Result<T, Throwable> { ... }
+// New
+fun <T : Any> returnsResult(): Result<T, Throwable> { ... }
+----
+
+See https://github.com/Yubico/yubikit-android/pull/231[PR#231].
+
+== 4. FIDO/WebAuthn Client Data Refactor
+
+If you use FIDO/WebAuthn APIs, you must now provide client data through a `ClientDataProvider` implementation (not as a raw byte array). Use the provided `JsonClientData` class.
+
+.Migration Example:
+[source,java]
+----
+// Old
+byte[] clientData = ...
+webAuthnClient.makeCredential(
+  /* byte[] */ clientData,
+  /* PublicKeyCredentialCreationOptions*/ options,
+  /* String */ effectiveDomain,
+  ...
+
+// New
+import com.yubico.yubikit.fido.client.clientdata.JsonClientData;
+
+byte[] clientData = ...
+ClientDataProvider clientDataProvider = new JsonClientData(clientData);
+webAuthnClient.makeCredential(
+  /* ClientDataProvider */ clientDataProvider,
+  /* PublicKeyCredentialCreationOptions*/ options,
+  /* String */ effectiveDomain,
+  ...
+----
+
+See https://github.com/Yubico/yubikit-android/pull/233[PR#233].
+
+== 5. Deprecated API Removals
+
+All APIs previously marked as deprecated have been removed. If your application depended on any deprecated items, update your code to supported alternatives.
+
+See https://github.com/Yubico/yubikit-android/pull/237[PR#237].
+
+== 6. FIDO Client and Error Handling Changes
+
+If you directly instantiate FIDO/WebAuthn clients:
+
+* Use `WebAuthnClient` in place of `BasicWebAuthnClient`.
+
+.Migration Example:
+[source,java]
+----
+// Old
+Ctap2Session session = new Ctap2Session(connection);
+BasicWebAuthnClient client = new BasicWebAuthnClient(session);
+PublicKeyCredential credential = client.makeCredential(params);
+String response = JSONObject(credential.toMap()).toString();
+
+// New
+List<Extension> extensions = ...; // provide list of extensions this client should process or null for default list containing defined WebAuthn extensions
+WebAuthnClient client = WebAuthnClient.create(/* YubiKeyDevice */ device, extensions);
+
+// Alternative way
+// WebAuthnClient client = WebAuthnClient.create(/* YubiKeyConnection */ connection, extensions, scpKeyParams);
+
+PublicKeyCredential credential = client.makeCredential(params);
+String response = JSONObject(credential.toMap()).toString();
+----
+
+If you catch authentication errors in FIDO flows, use `AuthInvalidClientError` (instead of legacy errors like `PinInvalidClientError`).
+
+See https://github.com/Yubico/yubikit-android/pull/240[PR#240] and https://github.com/Yubico/yubikit-android/pull/234[PR#234].
+
+== Troubleshooting
+
+* **Compile errors on missing APIs:** Check if the item was deprecated and removed. Use the SDK documentation or release notes to find the correct replacement.
+* **Generics issues in Kotlin:** If you see type errors with `Result<T, E>`, update declarations to `<T : Any>`, ensuring that type arguments are non-nullable.
+* **Client data handling:** If previous code for FIDO/WebAuthn fails, ensure you pass a proper `ClientDataProvider` implementation.
+
+== Getting Help
+
+For migration questions or issues, open a GitHub https://github.com/Yubico/yubikit-android/issues[Issue].
