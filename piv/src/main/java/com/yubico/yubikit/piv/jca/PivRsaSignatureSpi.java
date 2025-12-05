@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Yubico.
+ * Copyright (C) 2022-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,16 +33,16 @@ import java.security.SignatureException;
 import java.security.SignatureSpi;
 import java.security.spec.AlgorithmParameterSpec;
 import java.util.Map;
-import javax.annotation.Nullable;
 import javax.crypto.Cipher;
 import javax.crypto.NoSuchPaddingException;
+import org.jspecify.annotations.Nullable;
 
 public class PivRsaSignatureSpi extends SignatureSpi {
   private final Callback<Callback<Result<PivSession, Exception>>> provider;
   private final Map<KeyType, KeyPair> dummyKeys;
   private final String signature;
 
-  @Nullable private PivPrivateKey.RsaKey privateKey;
+  private PivPrivateKey.@Nullable RsaKey privateKey;
 
   @Nullable private Signature delegate;
 
@@ -135,7 +135,6 @@ public class PivRsaSignatureSpi extends SignatureSpi {
   @Override
   protected void engineSetParameter(String param, Object value) throws InvalidParameterException {
     try {
-      //noinspection deprecation
       getDelegate(true).setParameter(param, value);
     } catch (NoSuchAlgorithmException e) {
       throw new InvalidParameterException("Not initialized");
@@ -144,9 +143,9 @@ public class PivRsaSignatureSpi extends SignatureSpi {
 
   @SuppressWarnings("deprecation")
   @Override
+  @Deprecated
   protected Object engineGetParameter(String param) throws InvalidParameterException {
     if (delegate != null) {
-      //noinspection deprecation
       return delegate.getParameter(param);
     } else {
       throw new InvalidParameterException("Not initialized");

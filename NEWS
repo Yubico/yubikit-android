@@ -1,3 +1,22 @@
+* Version 3.0.0 (released 2025-12-04)
+ ** breaking changes:
+  - minimum supported Android API level raised to 21 (was 19)
+  - removed all previously deprecated APIs
+  - renamed all ALL CAPS abbreviations in API identifiers to CamelCase
+  - fido: removed BasicWebAuthnClient, use WebAuthnClient instead
+  - fido: client data must now be provided via ClientDataProvider, not as raw byte arrays
+  - nullness: adopted JSpecify annotations; Kotlin generics (e.g. Result<T, E>) now require
+              non-nullable type arguments (<T : Any>)
+ ** new:
+  - fido: support for CTAP2.3 (new fields and commands)
+  - fido: initial support for CTAP1
+  - fido: added human readable error-names to CtapException
+  - fido: WebAuthnClient now supports UV (fingerprints)
+  - core: added unified, configurable USB device filtering using DeviceFilter
+  - core: improved testability of ApplicationSessions
+ ** fixes & improvements:
+  - openpgp: fix to implementation of parseFingerprints
+  - fido: improved error handling (new AuthInvalidClientError for PIN/UV errors)
 * Version 2.9.0 (released 2025-09-08)
  ** new:
   - updated targetSdk to 36

@@ -16,12 +16,12 @@
 
 package com.yubico.yubikit.piv;
 
-import com.yubico.yubikit.core.internal.Logger;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory;
  * @see <a href="https://www.rfc-editor.org/rfc/rfc1952">RFC1952</a>
  */
 public class GzipUtils {
-  private static final org.slf4j.Logger logger = LoggerFactory.getLogger(GzipUtils.class);
+  private static final Logger logger = LoggerFactory.getLogger(GzipUtils.class);
 
   /**
    * @param input byte array to be compressed
@@ -38,12 +38,12 @@ public class GzipUtils {
    * @throws IOException if the compression failed
    */
   static byte[] compress(byte[] input) throws IOException {
-    Logger.debug(logger, "Compressing {} bytes", input.length);
+    logger.debug("Compressing {} bytes", input.length);
     try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream(input.length);
         GZIPOutputStream gzipOutputStream = new GZIPOutputStream(byteArrayOutputStream)) {
       gzipOutputStream.write(input);
       gzipOutputStream.finish();
-      Logger.debug(logger, "Compressed to {} bytes", byteArrayOutputStream.size());
+      logger.debug("Compressed to {} bytes", byteArrayOutputStream.size());
       return byteArrayOutputStream.toByteArray();
     }
   }
@@ -54,7 +54,7 @@ public class GzipUtils {
    * @throws IOException if the decompression failed
    */
   static byte[] decompress(byte[] input) throws IOException {
-    Logger.debug(logger, "Decompressing {} bytes", input.length);
+    logger.debug("Decompressing {} bytes", input.length);
     final int BUFFER_SIZE = 512;
     byte[] buffer = new byte[BUFFER_SIZE];
     int bytesRead;
@@ -66,7 +66,7 @@ public class GzipUtils {
         byteArrayOutputStream.write(buffer, 0, bytesRead);
       }
 
-      Logger.debug(logger, "Decompressed to {} bytes", byteArrayOutputStream.size());
+      logger.debug("Decompressed to {} bytes", byteArrayOutputStream.size());
       return byteArrayOutputStream.toByteArray();
     }
   }

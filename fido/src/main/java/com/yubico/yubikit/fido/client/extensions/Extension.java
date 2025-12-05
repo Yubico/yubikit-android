@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Yubico.
+ * Copyright (C) 2024-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialDescriptor;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialRequestOptions;
 import java.util.Collections;
 import java.util.Map;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Base class for FIDO2 extensions.
@@ -61,26 +61,22 @@ public abstract class Extension {
   }
 
   public interface RegistrationInput {
-    @Nullable
-    Map<String, Object> prepareInput(@Nullable byte[] pinToken);
+    @Nullable Map<String, Object> prepareInput(byte @Nullable [] pinToken);
   }
 
   public interface RegistrationOutput {
-    @Nullable
-    ClientExtensionResultProvider prepareOutput(
-        AttestationObject attestationObject, @Nullable byte[] pinToken);
+    @Nullable ClientExtensionResultProvider prepareOutput(
+        AttestationObject attestationObject, byte @Nullable [] pinToken);
   }
 
   public interface AuthenticationInput {
-    @Nullable
-    Map<String, Object> prepareInput(
-        @Nullable PublicKeyCredentialDescriptor selected, @Nullable byte[] pinToken);
+    @Nullable Map<String, Object> prepareInput(
+        @Nullable PublicKeyCredentialDescriptor selected, byte @Nullable [] pinToken);
   }
 
   public interface AuthenticationOutput {
-    @Nullable
-    ClientExtensionResultProvider prepareOutput(
-        Ctap2Session.AssertionData assertionData, @Nullable byte[] pinToken);
+    @Nullable ClientExtensionResultProvider prepareOutput(
+        Ctap2Session.AssertionData assertionData, byte @Nullable [] pinToken);
   }
 
   public static class RegistrationProcessor {
@@ -116,13 +112,13 @@ public abstract class Extension {
       this(null, output);
     }
 
-    public Map<String, Object> getInput(@Nullable byte[] pinToken) {
+    public Map<String, Object> getInput(byte @Nullable [] pinToken) {
       Map<String, Object> registrationInput = input != null ? input.prepareInput(pinToken) : null;
       return registrationInput != null ? registrationInput : Collections.emptyMap();
     }
 
     public ClientExtensionResultProvider getOutput(
-        AttestationObject attestationObject, @Nullable byte[] pinToken) {
+        AttestationObject attestationObject, byte @Nullable [] pinToken) {
       ClientExtensionResultProvider resultProvider =
           output != null ? output.prepareOutput(attestationObject, pinToken) : null;
       return resultProvider != null ? resultProvider : serializationType -> Collections.emptyMap();
@@ -169,14 +165,14 @@ public abstract class Extension {
     }
 
     public Map<String, Object> getInput(
-        @Nullable PublicKeyCredentialDescriptor selected, @Nullable byte[] pinToken) {
+        @Nullable PublicKeyCredentialDescriptor selected, byte @Nullable [] pinToken) {
       Map<String, Object> authenticatorInput =
           input != null ? input.prepareInput(selected, pinToken) : null;
       return authenticatorInput != null ? authenticatorInput : Collections.emptyMap();
     }
 
     public ClientExtensionResultProvider getOutput(
-        Ctap2Session.AssertionData assertionData, @Nullable byte[] pinToken) {
+        Ctap2Session.AssertionData assertionData, byte @Nullable [] pinToken) {
       ClientExtensionResultProvider resultProvider =
           output != null ? output.prepareOutput(assertionData, pinToken) : null;
       return resultProvider != null ? resultProvider : serializationType -> Collections.emptyMap();

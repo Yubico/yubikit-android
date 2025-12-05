@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Yubico.
+ * Copyright (C) 2020-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,15 +26,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 public class PublicKeyCredentialRequestOptions {
-  private static final String CHALLENGE = "challenge";
-  private static final String TIMEOUT = "timeout";
-  private static final String RP_ID = "rpId";
-  private static final String ALLOW_CREDENTIALS = "allowCredentials";
-  private static final String USER_VERIFICATION = "userVerification";
-  private static final String EXTENSIONS = "extensions";
+  static final String CHALLENGE = "challenge";
+  static final String TIMEOUT = "timeout";
+  static final String RP_ID = "rpId";
+  static final String ALLOW_CREDENTIALS = "allowCredentials";
+  static final String USER_VERIFICATION = "userVerification";
+  static final String EXTENSIONS = "extensions";
 
   private final byte[] challenge;
   @Nullable private final Long timeout;

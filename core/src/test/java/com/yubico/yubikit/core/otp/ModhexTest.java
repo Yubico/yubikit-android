@@ -15,7 +15,7 @@
  */
 package com.yubico.yubikit.core.otp;
 
-import com.yubico.yubikit.testing.Codec;
+import com.yubico.yubikit.Codec;
 import java.nio.charset.StandardCharsets;
 import org.junit.Assert;
 import org.junit.Test;

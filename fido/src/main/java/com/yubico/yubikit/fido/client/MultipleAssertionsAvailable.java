@@ -59,8 +59,8 @@ public class MultipleAssertionsAvailable extends Throwable {
    * The list of users for which credentials are stored by the Authenticator. The indexes of the
    * user objects correspond to the value which should be passed to select() to select a response.
    *
-   * <p>NOTE: If PIV/UV wasn't provided to the call to {@link BasicWebAuthnClient#getAssertion} then
-   * user information may not be available, in which case this method will throw an exception.
+   * <p>NOTE: If PIV/UV wasn't provided to the call to {@link Ctap2Client#getAssertion} then user
+   * information may not be available, in which case this method will throw an exception.
    *
    * @return a list of available users.
    * @throws UserInformationNotAvailableError in case PIN/UV wasn't provided

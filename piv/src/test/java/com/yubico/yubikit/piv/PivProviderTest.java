@@ -18,7 +18,6 @@ package com.yubico.yubikit.piv;
 
 import com.yubico.yubikit.core.util.Result;
 import com.yubico.yubikit.piv.jca.PivProvider;
-import com.yubico.yubikit.testing.piv.PivTestUtils;
 import java.security.Security;
 import org.junit.Test;
 

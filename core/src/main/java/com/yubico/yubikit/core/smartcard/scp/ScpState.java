@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Yubico.
+ * Copyright (C) 2024-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 package com.yubico.yubikit.core.smartcard.scp;
 
 import com.yubico.yubikit.core.application.BadResponseException;
-import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.keys.PublicKeyValues;
 import com.yubico.yubikit.core.smartcard.Apdu;
 import com.yubico.yubikit.core.smartcard.ApduException;
@@ -45,7 +44,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import javax.annotation.Nullable;
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
@@ -55,11 +53,13 @@ import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Internal SCP state class for managing SCP state, handling encryption/decryption and MAC. */
 public class ScpState {
-  private static final org.slf4j.Logger logger = LoggerFactory.getLogger(ScpState.class);
+  private static final Logger logger = LoggerFactory.getLogger(ScpState.class);
 
   private final SessionKeys keys;
   private byte[] macChain;
@@ -79,7 +79,7 @@ public class ScpState {
 
   public byte[] encrypt(byte[] data) {
     // Pad the data
-    Logger.trace(logger, "Plaintext data: {}", StringUtils.bytesToHex(data));
+    logger.trace("Plaintext data: {}", StringUtils.bytesToHex(data));
     int padLen = 16 - (data.length % 16);
     byte[] padded = Arrays.copyOf(data, data.length + padLen);
     padded[data.length] = (byte) 0x80;
@@ -124,7 +124,7 @@ public class ScpState {
       decrypted = cipher.doFinal(encrypted);
       for (int i = decrypted.length - 1; i > 0; i--) {
         if (decrypted[i] == (byte) 0x80) {
-          Logger.trace(logger, "Plaintext resp: {}", StringUtils.bytesToHex(decrypted));
+          logger.trace("Plaintext resp: {}", StringUtils.bytesToHex(decrypted));
           return Arrays.copyOf(decrypted, i);
         } else if (decrypted[i] != 0x00) {
           break;
@@ -178,7 +178,7 @@ public class ScpState {
   }
 
   public static Pair<ScpState, byte[]> scp03Init(
-      ApduProcessor processor, Scp03KeyParams keyParams, @Nullable byte[] hostChallenge)
+      ApduProcessor processor, Scp03KeyParams keyParams, byte @Nullable [] hostChallenge)
       throws BadResponseException, IOException, ApduException {
     if (hostChallenge == null) {
       hostChallenge = RandomUtils.getRandomBytes(8);

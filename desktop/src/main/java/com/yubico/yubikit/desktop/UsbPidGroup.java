@@ -22,7 +22,6 @@ import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.YubiKeyType;
 import com.yubico.yubikit.core.fido.FidoConnection;
-import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.otp.OtpConnection;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.util.Callback;
@@ -32,6 +31,7 @@ import com.yubico.yubikit.support.DeviceUtil;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.*;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class UsbPidGroup implements Closeable {
@@ -42,7 +42,7 @@ public class UsbPidGroup implements Closeable {
   private final Map<Integer, List<UsbYubiKeyDevice>> unresolved = new HashMap<>();
   private final Map<Integer, Integer> devCount = new HashMap<>();
 
-  private final org.slf4j.Logger logger = LoggerFactory.getLogger(UsbPidGroup.class);
+  private final Logger logger = LoggerFactory.getLogger(UsbPidGroup.class);
 
   UsbPidGroup(UsbPid pid) {
     this.pid = pid;
@@ -77,7 +77,7 @@ public class UsbPidGroup implements Closeable {
       Class<? extends YubiKeyConnection> connectionType,
       UsbYubiKeyDevice device,
       boolean forceResolve) {
-    Logger.trace(logger, "Add device node {}{}", device, connectionType);
+    logger.trace("Add device node {}{}", device, connectionType);
     int usbInterface = getUsbInterface(connectionType);
     devCount.put(usbInterface, devCount.getOrDefault(usbInterface, 0) + 1);
     if (forceResolve || resolved.size() < devCount.values().stream().reduce(0, Math::max)) {
@@ -90,13 +90,11 @@ public class UsbPidGroup implements Closeable {
         }
         resolved.get(key).put(usbInterface, device);
         Integer serialNumber = info.getSerialNumber();
-        Logger.trace(
-            logger,
-            "Resolved device {}",
-            serialNumber != null ? serialNumber : "without serial number");
+        logger.trace(
+            "Resolved device {}", serialNumber != null ? serialNumber : "without serial number");
         return;
       } catch (UnsupportedOperationException | IOException e) {
-        Logger.error(logger, "Failed opening device: {}", e.getMessage());
+        logger.error("Failed opening device: {}", e.getMessage());
       }
     }
     if (!unresolved.containsKey(usbInterface)) {
@@ -117,14 +115,14 @@ public class UsbPidGroup implements Closeable {
       return device.openConnection(connectionType);
     }
 
-    Logger.debug(logger, "Resolve device for {}, {}", connectionType, key);
+    logger.debug("Resolve device for {}, {}", connectionType, key);
     List<UsbYubiKeyDevice> devices = unresolved.getOrDefault(usbInterface, new ArrayList<>());
-    Logger.debug(logger, "Unresolved: {}", devices);
+    logger.debug("Unresolved: {}", devices);
     List<UsbYubiKeyDevice> failed = new ArrayList<>();
     try {
       while (!devices.isEmpty()) {
         device = devices.remove(0);
-        Logger.debug(logger, "Candidate: {}", device);
+        logger.debug("Candidate: {}", device);
         T connection = null;
         try {
           connection = device.openConnection(connectionType);
@@ -138,7 +136,7 @@ public class UsbPidGroup implements Closeable {
             if (deviceKey.equals(key)) {
               return connection;
             } else if (pid.type == YubiKeyType.NEO && devices.isEmpty()) {
-              Logger.debug(logger, "Resolved last NEO device without serial");
+              logger.debug("Resolved last NEO device without serial");
               return connection;
             }
           }
@@ -147,7 +145,7 @@ public class UsbPidGroup implements Closeable {
           if (connection != null) {
             connection.close();
           }
-          Logger.error(logger, "Failed opening candidate device: ", e);
+          logger.error("Failed opening candidate device: ", e);
           failed.add(device);
         } catch (Exception e) {
           if (connection != null) {
@@ -172,14 +170,14 @@ public class UsbPidGroup implements Closeable {
       device.requestConnection(connectionType, callback);
       return;
     } else {
-      Logger.debug(logger, "Resolve device for {}, {}", connectionType, key);
+      logger.debug("Resolve device for {}, {}", connectionType, key);
       List<UsbYubiKeyDevice> devices = unresolved.getOrDefault(usbInterface, new ArrayList<>());
-      Logger.debug(logger, "Unresolved: {}", devices);
+      logger.debug("Unresolved: {}", devices);
       List<UsbYubiKeyDevice> failed = new ArrayList<>();
       try {
         while (!devices.isEmpty()) {
           device = devices.remove(0);
-          Logger.debug(logger, "Candidate: {}", device);
+          logger.debug("Candidate: {}", device);
           try (T connection = device.openConnection(connectionType)) {
             DeviceInfo info = DeviceUtil.readInfo(connection, pid);
             String deviceKey = buildKey(info);
@@ -192,13 +190,13 @@ public class UsbPidGroup implements Closeable {
                 device.requestConnection(connectionType, callback);
                 return;
               } else if (pid.type == YubiKeyType.NEO && devices.isEmpty()) {
-                Logger.debug(logger, "Resolved last NEO device without serial");
+                logger.debug("Resolved last NEO device without serial");
                 device.requestConnection(connectionType, callback);
                 return;
               }
             }
           } catch (UnsupportedOperationException | IOException e) {
-            Logger.error(logger, "Failed opening candidate device: {}", e.getMessage());
+            logger.error("Failed opening candidate device: {}", e.getMessage());
             lastException = e;
             failed.add(device);
           }
@@ -229,7 +227,7 @@ public class UsbPidGroup implements Closeable {
     for (String resolvedEntry : resolved.keySet()) {
       Map<Integer, UsbYubiKeyDevice> ifaceDevice = resolved.get(resolvedEntry);
       for (UsbYubiKeyDevice device : ifaceDevice.values()) {
-        Logger.debug(logger, "Closing resolved device {}", device.getFingerprint());
+        logger.debug("Closing resolved device {}", device.getFingerprint());
         device.close();
       }
     }
@@ -237,7 +235,7 @@ public class UsbPidGroup implements Closeable {
     for (Integer unresolvedIface : unresolved.keySet()) {
       List<UsbYubiKeyDevice> unresolvedDevices = unresolved.get(unresolvedIface);
       for (UsbYubiKeyDevice device : unresolvedDevices) {
-        Logger.debug(logger, "Closing unresolved device {}", device.getFingerprint());
+        logger.debug("Closing unresolved device {}", device.getFingerprint());
         device.close();
       }
     }

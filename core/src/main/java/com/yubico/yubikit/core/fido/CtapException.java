@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Yubico.
+ * Copyright (C) 2020-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,15 +15,19 @@
  */
 package com.yubico.yubikit.core.fido;
 
+import static java.util.Collections.unmodifiableMap;
+
 import com.yubico.yubikit.core.application.CommandException;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 
 /**
  * An error on the CTAP-level, returned from the Authenticator.
  *
  * <p>These error codes are defined by the <a
- * href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#error-responses">CTAP2
- * specification</a>
+ * href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#error-responses">CTAP2
+ * Status codes</a>
  */
 public class CtapException extends CommandException {
   public static final byte ERR_SUCCESS = 0x00;
@@ -64,9 +68,7 @@ public class CtapException extends CommandException {
   public static final byte ERR_PIN_AUTH_INVALID = 0x33;
   public static final byte ERR_PIN_AUTH_BLOCKED = 0x34;
   public static final byte ERR_PIN_NOT_SET = 0x35;
-  @Deprecated // use ERR_PUAT_REQUIRED
-  public static final byte ERR_PIN_REQUIRED = 0x36;
-  public static final byte ERR_PUAT_REQUIRED = 0x36; // CTAP2.1 naming
+  public static final byte ERR_PUAT_REQUIRED = 0x36;
   public static final byte ERR_PIN_POLICY_VIOLATION = 0x37;
   public static final byte ERR_PIN_TOKEN_EXPIRED = 0x38;
   public static final byte ERR_REQUEST_TOO_LARGE = 0x39;
@@ -84,15 +86,110 @@ public class CtapException extends CommandException {
   public static final byte ERR_VENDOR_FIRST = (byte) 0xF0;
   public static final byte ERR_VENDOR_LAST = (byte) 0xFF;
 
+  private static final Map<Byte, String> ERROR_NAMES = createErrorNamesMap();
+
   private final byte ctapError;
 
+  /**
+   * Constructs a new CtapException with the specified CTAP error code.
+   *
+   * @param ctapError the CTAP error code returned from the authenticator
+   */
   public CtapException(byte ctapError) {
-    super(String.format(Locale.ROOT, "CTAP error: 0x%02x", ctapError));
+    super(
+        String.format(Locale.ROOT, "CTAP error: %s (0x%02x)", getErrorName(ctapError), ctapError));
 
     this.ctapError = ctapError;
   }
 
+  /**
+   * Returns the CTAP error code associated with this exception.
+   *
+   * @return the CTAP error code
+   */
   public byte getCtapError() {
     return ctapError;
+  }
+
+  /**
+   * Returns the name of the CTAP error associated with this exception.
+   *
+   * @return the CTAP error name as a String
+   */
+  public String getErrorName() {
+    return getErrorName(ctapError);
+  }
+
+  private static String getErrorName(byte error) {
+    String name = ERROR_NAMES.get(error);
+    if (name != null) {
+      return name;
+    }
+
+    int errorUnsigned = error & 0xFF;
+    if (errorUnsigned >= (ERR_EXTENSION_FIRST & 0xFF)
+        && errorUnsigned <= (ERR_EXTENSION_LAST & 0xFF)) {
+      return "EXTENSION_ERROR";
+    } else if (errorUnsigned >= (ERR_VENDOR_FIRST & 0xFF)) {
+      return "VENDOR_ERROR";
+    } else {
+      // Unknown error within spec range (0x00-0xDF)
+      return "UNKNOWN";
+    }
+  }
+
+  private static Map<Byte, String> createErrorNamesMap() {
+    Map<Byte, String> map = new HashMap<>();
+    map.put(ERR_SUCCESS, "SUCCESS");
+    map.put(ERR_INVALID_COMMAND, "INVALID_COMMAND");
+    map.put(ERR_INVALID_PARAMETER, "INVALID_PARAMETER");
+    map.put(ERR_INVALID_LENGTH, "INVALID_LENGTH");
+    map.put(ERR_INVALID_SEQ, "INVALID_SEQ");
+    map.put(ERR_TIMEOUT, "TIMEOUT");
+    map.put(ERR_CHANNEL_BUSY, "CHANNEL_BUSY");
+    map.put(ERR_LOCK_REQUIRED, "LOCK_REQUIRED");
+    map.put(ERR_INVALID_CHANNEL, "INVALID_CHANNEL");
+    map.put(ERR_CBOR_UNEXPECTED_TYPE, "CBOR_UNEXPECTED_TYPE");
+    map.put(ERR_INVALID_CBOR, "INVALID_CBOR");
+    map.put(ERR_MISSING_PARAMETER, "MISSING_PARAMETER");
+    map.put(ERR_LIMIT_EXCEEDED, "LIMIT_EXCEEDED");
+    map.put(ERR_UNSUPPORTED_EXTENSION, "UNSUPPORTED_EXTENSION");
+    map.put(ERR_FP_DATABASE_FULL, "FP_DATABASE_FULL");
+    map.put(ERR_LARGE_BLOB_STORAGE_FULL, "LARGE_BLOB_STORAGE_FULL");
+    map.put(ERR_CREDENTIAL_EXCLUDED, "CREDENTIAL_EXCLUDED");
+    map.put(ERR_PROCESSING, "PROCESSING");
+    map.put(ERR_INVALID_CREDENTIAL, "INVALID_CREDENTIAL");
+    map.put(ERR_USER_ACTION_PENDING, "USER_ACTION_PENDING");
+    map.put(ERR_OPERATION_PENDING, "OPERATION_PENDING");
+    map.put(ERR_NO_OPERATIONS, "NO_OPERATIONS");
+    map.put(ERR_UNSUPPORTED_ALGORITHM, "UNSUPPORTED_ALGORITHM");
+    map.put(ERR_OPERATION_DENIED, "OPERATION_DENIED");
+    map.put(ERR_KEY_STORE_FULL, "KEY_STORE_FULL");
+    map.put(ERR_NOT_BUSY, "NOT_BUSY");
+    map.put(ERR_NO_OPERATION_PENDING, "NO_OPERATION_PENDING");
+    map.put(ERR_UNSUPPORTED_OPTION, "UNSUPPORTED_OPTION");
+    map.put(ERR_INVALID_OPTION, "INVALID_OPTION");
+    map.put(ERR_KEEPALIVE_CANCEL, "KEEPALIVE_CANCEL");
+    map.put(ERR_NO_CREDENTIALS, "NO_CREDENTIALS");
+    map.put(ERR_USER_ACTION_TIMEOUT, "USER_ACTION_TIMEOUT");
+    map.put(ERR_NOT_ALLOWED, "NOT_ALLOWED");
+    map.put(ERR_PIN_INVALID, "PIN_INVALID");
+    map.put(ERR_PIN_BLOCKED, "PIN_BLOCKED");
+    map.put(ERR_PIN_AUTH_INVALID, "PIN_AUTH_INVALID");
+    map.put(ERR_PIN_AUTH_BLOCKED, "PIN_AUTH_BLOCKED");
+    map.put(ERR_PIN_NOT_SET, "PIN_NOT_SET");
+    map.put(ERR_PUAT_REQUIRED, "PUAT_REQUIRED");
+    map.put(ERR_PIN_POLICY_VIOLATION, "PIN_POLICY_VIOLATION");
+    map.put(ERR_PIN_TOKEN_EXPIRED, "PIN_TOKEN_EXPIRED");
+    map.put(ERR_REQUEST_TOO_LARGE, "REQUEST_TOO_LARGE");
+    map.put(ERR_ACTION_TIMEOUT, "ACTION_TIMEOUT");
+    map.put(ERR_UP_REQUIRED, "UP_REQUIRED");
+    map.put(ERR_UV_BLOCKED, "UV_BLOCKED");
+    map.put(ERR_INTEGRITY_FAILURE, "INTEGRITY_FAILURE");
+    map.put(ERR_INVALID_SUBCOMMAND, "INVALID_SUBCOMMAND");
+    map.put(ERR_UV_INVALID, "UV_INVALID");
+    map.put(ERR_UNAUTHORIZED_PERMISSION, "UNAUTHORIZED_PERMISSION");
+    map.put(ERR_OTHER, "OTHER");
+    return unmodifiableMap(map);
   }
 }

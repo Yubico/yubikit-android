@@ -16,7 +16,6 @@
 
 package com.yubico.yubikit.fido;
 
-import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.internal.codec.Base64;
 import com.yubico.yubikit.core.keys.EllipticCurveValues;
 import com.yubico.yubikit.core.keys.PublicKeyValues.Cv25519;
@@ -28,16 +27,17 @@ import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Map;
 import java.util.Objects;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class Cose {
 
-  private static final org.slf4j.Logger logger = LoggerFactory.getLogger(Cose.class);
+  private static final Logger logger = LoggerFactory.getLogger(Cose.class);
 
   public static Integer getAlgorithm(Map<Integer, ?> cosePublicKey) {
     Integer alg = (Integer) Objects.requireNonNull(cosePublicKey.get(3));
-    Logger.debug(logger, "alg: {}", alg);
+    logger.debug("alg: {}", alg);
     return alg;
   }
 
@@ -50,7 +50,7 @@ public class Cose {
     }
 
     final Integer kty = (Integer) Objects.requireNonNull(cosePublicKey.get(1));
-    Logger.debug(logger, "kty: {}", kty);
+    logger.debug("kty: {}", kty);
     PublicKey publicKey;
     switch (kty) {
       case 1:
@@ -66,7 +66,7 @@ public class Cose {
         throw new IllegalArgumentException("Unsupported key type: " + kty);
     }
 
-    Logger.debug(logger, "publicKey: {}", Base64.toUrlSafeString(publicKey.getEncoded()));
+    logger.debug("publicKey: {}", Base64.toUrlSafeString(publicKey.getEncoded()));
 
     return publicKey;
   }
@@ -74,7 +74,7 @@ public class Cose {
   private static PublicKey importCoseEdDsaPublicKey(Map<Integer, ?> cosePublicKey)
       throws InvalidKeySpecException, NoSuchAlgorithmException {
     final Integer crv = (Integer) Objects.requireNonNull(cosePublicKey.get(-1));
-    Logger.debug(logger, "crv: {}", crv);
+    logger.debug("crv: {}", crv);
     if (crv == 6) {
       return importCoseEd25519PublicKey(cosePublicKey);
     }
@@ -84,7 +84,7 @@ public class Cose {
   private static PublicKey importCoseEd25519PublicKey(Map<Integer, ?> cosePublicKey)
       throws InvalidKeySpecException, NoSuchAlgorithmException {
     final byte[] rawKey = (byte[]) Objects.requireNonNull(cosePublicKey.get(-2));
-    Logger.debug(logger, "raw: {}", Base64.toUrlSafeString(rawKey));
+    logger.debug("raw: {}", Base64.toUrlSafeString(rawKey));
     return new Cv25519(EllipticCurveValues.Ed25519, rawKey).toPublicKey();
   }
 
@@ -94,9 +94,9 @@ public class Cose {
     final byte[] x = (byte[]) Objects.requireNonNull(cosePublicKey.get(-2));
     final byte[] y = (byte[]) Objects.requireNonNull(cosePublicKey.get(-3));
 
-    Logger.debug(logger, "crv: {}", crv);
-    Logger.debug(logger, "x: {}", Base64.toUrlSafeString(x));
-    Logger.debug(logger, "y: {}", Base64.toUrlSafeString(y));
+    logger.debug("crv: {}", crv);
+    logger.debug("x: {}", Base64.toUrlSafeString(x));
+    logger.debug("y: {}", Base64.toUrlSafeString(y));
 
     EllipticCurveValues ellipticCurveValues;
 
@@ -124,8 +124,8 @@ public class Cose {
       throws NoSuchAlgorithmException, InvalidKeySpecException {
     byte[] n = (byte[]) Objects.requireNonNull(cosePublicKey.get(-1));
     byte[] e = (byte[]) Objects.requireNonNull(cosePublicKey.get(-2));
-    Logger.debug(logger, "n: {}", Base64.toUrlSafeString(n));
-    Logger.debug(logger, "e: {}", Base64.toUrlSafeString(e));
+    logger.debug("n: {}", Base64.toUrlSafeString(n));
+    logger.debug("e: {}", Base64.toUrlSafeString(e));
     return new Rsa(new BigInteger(1, n), new BigInteger(1, e)).toPublicKey();
   }
 }

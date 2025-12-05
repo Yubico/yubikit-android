@@ -29,22 +29,22 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683                    # v4.2.2
+      uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8                    # v6.0.1
 
     # Initializes the CodeQL tools for scanning.
     - name: Initialize CodeQL
-      uses: github/codeql-action/init@7273f08caa1dcf2c2837f362f1982de0ab4dc344           # v2.22.3
+      uses: github/codeql-action/init@fe4161a26a8629af62121b670040955b330f9af2           # v4.31.6
       with:
         languages: ${{ matrix.language }}
 
     - name: Setup Java
-      uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00                  # v4.7.1
+      uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165                  # v5.0.0
       with:
         distribution: 'temurin'
         java-version: '17'
 
     - name: Autobuild
-      uses: github/codeql-action/autobuild@7273f08caa1dcf2c2837f362f1982de0ab4dc344      # v2.22.3
+      uses: github/codeql-action/autobuild@fe4161a26a8629af62121b670040955b330f9af2      # v4.31.6
 
     - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@7273f08caa1dcf2c2837f362f1982de0ab4dc344        # v2.22.3
+      uses: github/codeql-action/analyze@fe4161a26a8629af62121b670040955b330f9af2        # v4.31.6
