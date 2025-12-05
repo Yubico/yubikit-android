@@ -22,9 +22,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.hardware.usb.UsbConstants;
 import android.hardware.usb.UsbDevice;
-import android.hardware.usb.UsbInterface;
 import android.hardware.usb.UsbManager;
 import android.os.Build;
 import java.util.Collection;
@@ -78,20 +76,6 @@ final class UsbDeviceManager {
   private synchronized UsbDeviceManager setUsbConfiguration(UsbConfiguration usbConfiguration) {
     this.usbConfiguration = new UsbConfiguration(usbConfiguration);
     return this;
-  }
-
-  public static boolean isFidoDevice(UsbDevice device) {
-    for (int configIndex = 0; configIndex < device.getConfigurationCount(); configIndex++) {
-      android.hardware.usb.UsbConfiguration configuration = device.getConfiguration(configIndex);
-      for (int i = 0; i < configuration.getInterfaceCount(); i++) {
-        UsbInterface usbInterface = configuration.getInterface(i);
-        if (usbInterface.getInterfaceClass() == UsbConstants.USB_CLASS_HID
-            && usbInterface.getInterfaceSubclass() == 0) {
-          return true;
-        }
-      }
-    }
-    return false;
   }
 
   private synchronized void addUsbListener(Context context, UsbDeviceListener listener) {
