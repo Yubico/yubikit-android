@@ -69,7 +69,7 @@ internal class YubiKitWebViewSupport {
                     super.onPageStarted(view, url, favicon)
                     logger.trace("onPageStarted: {}", url)
                     logger.trace("userAgent: {}", view?.settings?.userAgentString)
-                    webauthnListener.onPageStarted();
+                    webauthnListener.onPageStarted()
                     webView.evaluateJavascript(JS, null)
                 }
 
@@ -130,20 +130,20 @@ internal class YubiKitWebViewSupport {
                         Pair(
                             usernameInput.text.toString(),
                             passwordInput.text.toString()
-                        ),
-                        null
-                    )
+                        )
+                    ) { _, _, _ -> }
                 }
                 builder.setNegativeButton("Cancel") { _, _ ->
-                    cont.resume(Pair(null, null), null)
+                    cont.resume(Pair(null, null)) { _, _, _ -> }
                 }
                 builder.setOnCancelListener {
-                    cont.resume(Pair(null, null), null)
+                    cont.resume(Pair(null, null)) { _, _, _ -> }
                 }
                 builder.show()
             }
 
         private const val INTERFACE_NAME = "__webauthn_interface__"
+        @Suppress("SpellCheckingInspection")
         private const val JS = """
             var __webauthn_interface__,__webauthn_hooks__;!function(e){console.log('In the hook.');let n=(e,n)=>n instanceof Uint8Array?u(n):n instanceof ArrayBuffer?u(new Uint8Array(n)):n,t=e=>JSON.stringify(e,n);__webauthn_interface__.addEventListener('message',function e(n){var t=JSON.parse(n.data),r=t[2];console.log('Called onReply with '+n),'get'===r?l(t):'create'===r?c(t):console.log('Incorrect response format for reply')});var r=null,a=null,o=null,s=null;function l(e){if(console.log('Received get reply: '+e),null===r||null===o){console.log('Reply failure: Resolve: '+a+' and reject: '+s);return}if('success'!=e[0]){var n=o;r=null,o=null,n(new DOMException(e[1],'NotAllowedError'));return}console.log('Credential: '+e[1]);var t=f(e[1]),l=r;r=null,o=null,l(t)}function i(e){var n=e.length%4;return Uint8Array.from(atob(e.replace(/-/g,'+').replace(/_/g,'/').padEnd(e.length+(0===n?0:4-n),'=')),function(e){return e.charCodeAt(0)}).buffer}function u(e){return btoa(Array.from(new Uint8Array(e),function(e){return String.fromCharCode(e)}).join('')).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+${'$'}/,'')}function c(e){if(console.log('Received create reply: '+e),null!==a&&null!==s){if('success'!=e[0]){var n=s;a=null,s=null,n(new DOMException(e[1],'NotAllowedError'));return}var t=f(e[1]),r=a;a=null,s=null,r(t)}}function p(e){return largeBlob={},e.hasOwnProperty('blob')&&(largeBlob.blob=i(e.blob)),e.hasOwnProperty('supported')&&(largeBlob.supported=e.supported),e.hasOwnProperty('written')&&(largeBlob.written=e.written),largeBlob}function g(e){return console.log('Recode prf input: '+t(e)),recodedPrf={},e.hasOwnProperty('enabled')&&(recodedPrf.enabled=e.enabled),e.hasOwnProperty('results')&&(resultsValue={},e.results.hasOwnProperty('first')&&(resultsValue.first=i(e.results.first)),e.results.hasOwnProperty('second')&&(resultsValue.second=i(e.results.second)),recodedPrf.results=resultsValue),console.log('Recode prf output: '+t(recodedPrf)),recodedPrf}function h(e){return console.log('Recode sign input: '+t(e)),recodedSign={},e.hasOwnProperty('generatedKey')&&(generatedKeyValue={},e.generatedKey.hasOwnProperty('publicKey')&&(generatedKeyValue.publicKey=i(e.generatedKey.publicKey)),e.generatedKey.hasOwnProperty('attestationObject')&&(generatedKeyValue.attestationObject=i(e.generatedKey.attestationObject)),e.generatedKey.hasOwnProperty('algorithm')&&(generatedKeyValue.algorithm=e.generatedKey.algorithm),recodedSign.generatedKey=generatedKeyValue),e.hasOwnProperty('signature')&&(recodedSign.signature=i(e.signature)),console.log('Recode sign output: '+t(recodedSign)),recodedSign}function f(e){return e.rawId=i(e.rawId),e.response.clientDataJSON=i(e.response.clientDataJSON),console.log('response: '+t(e.response)),e.response.hasOwnProperty('attestationObject')&&(e.response.attestationObject=i(e.response.attestationObject)),e.response.hasOwnProperty('authenticatorData')&&(e.response.authenticatorData=i(e.response.authenticatorData)),e.response.hasOwnProperty('signature')&&(e.response.signature=i(e.response.signature)),e.response.hasOwnProperty('userHandle')&&(e.response.userHandle=i(e.response.userHandle)),e.getClientExtensionResults=function t(){for(key in result=e.hasOwnProperty('clientExtensionResults')?e.clientExtensionResults:{},dict={},result)result.hasOwnProperty(key)&&('largeBlob'==key?dict.largeBlob=p(result[key]):'prf'==key?dict.prf=g(result[key]):'sign'==key?dict.sign=h(result[key]):dict[key]=result[key]);return console.log('Returning result: '+JSON.stringify(dict,n)),dict},e}e.create=function n(r){if(!('publicKey'in r))return e.originalCreateFunction(r);var o=new Promise(function(e,n){a=e,s=n}),l=r.publicKey;if(l.hasOwnProperty('challenge')){var i=u(l.challenge);l.challenge=i}if(l.hasOwnProperty('user')&&l.user.hasOwnProperty('id')){var c=u(l.user.id);l.user.id=c}var p=t({type:'create',request:l});return console.log('Post message: '+p),__webauthn_interface__.postMessage(p),o},e.get=function n(a){if(!('publicKey'in a))return e.originalGetFunction(a);var s=new Promise(function(e,n){r=e,o=n}),l=a.publicKey;if(l.hasOwnProperty('challenge')){var i=u(l.challenge);l.challenge=i}var c=t({type:'get',request:l});return __webauthn_interface__.postMessage(c),s},e.onReplyGet=l,e.CM_base64url_decode=i,e.CM_base64url_encode=u,e.onReplyCreate=c}(__webauthn_hooks__||(__webauthn_hooks__={})),__webauthn_hooks__.originalGetFunction=navigator.credentials.get,__webauthn_hooks__.originalCreateFunction=navigator.credentials.create,navigator.credentials.get=__webauthn_hooks__.get,navigator.credentials.create=__webauthn_hooks__.create,window.PublicKeyCredential=function(){},window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable=function(){return Promise.resolve(!1)};
         """

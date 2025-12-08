@@ -206,6 +206,7 @@ public class YubiKeyPromptActivity extends Activity {
     allowNfc = args.getBoolean(ARG_ALLOW_NFC, true);
 
     // Get the action to perform on YubiKey connected
+    @SuppressWarnings({"deprecation", "RedundantSuppression"})
     Class<?> actionType =
         (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
             ? args.getSerializable(ARG_ACTION_CLASS, Class.class)
