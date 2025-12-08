@@ -22,6 +22,7 @@ plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.ksp)
     id("yubikit-android-publishing")
+    id("yubikit-common")
 }
 
 ext.set("customPom", true)
