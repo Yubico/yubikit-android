@@ -234,6 +234,10 @@ class YubiKitFidoActivity : ComponentActivity() {
         stopDiscovery()
     }
 
+    override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
+        super.onConfigurationChanged(newConfig)
+    }
+
     data class FidoActivityParameters(
         val rpId: String,
         val request: String,
