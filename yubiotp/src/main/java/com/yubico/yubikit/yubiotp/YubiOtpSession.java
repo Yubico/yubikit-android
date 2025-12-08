@@ -20,7 +20,6 @@ import static com.yubico.yubikit.core.application.SessionVersionOverride.overrid
 
 import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.Version;
-import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
 import com.yubico.yubikit.core.application.ApplicationSession;
@@ -28,7 +27,6 @@ import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.application.CommandException;
 import com.yubico.yubikit.core.application.CommandState;
 import com.yubico.yubikit.core.application.Feature;
-import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.otp.ChecksumUtils;
 import com.yubico.yubikit.core.otp.OtpConnection;
 import com.yubico.yubikit.core.otp.OtpProtocol;
@@ -46,7 +44,8 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -92,34 +91,33 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
   public static final Feature<YubiOtpSession> FEATURE_NDEF =
       new Feature.Versioned<>("NDEF", 3, 0, 0);
 
-  private static final int ACC_CODE_SIZE = 6; // Size of access code to re-program device
-  private static final int CONFIG_SIZE =
-      52; // Size of config struct (excluding current access code)
-  private static final int NDEF_DATA_SIZE = 54; // Size of the NDEF payload data
+  static final int ACC_CODE_SIZE = 6; // Size of access code to re-program device
+  static final int CONFIG_SIZE = 52; // Size of config struct (excluding current access code)
+  static final int NDEF_DATA_SIZE = 54; // Size of the NDEF payload data
 
-  private static final byte INS_CONFIG = 0x01;
+  static final byte INS_CONFIG = 0x01;
 
-  private static final int HMAC_CHALLENGE_SIZE = 64;
-  private static final int HMAC_RESPONSE_SIZE = 20;
+  static final int HMAC_CHALLENGE_SIZE = 64;
+  static final int HMAC_RESPONSE_SIZE = 20;
 
-  private static final byte CMD_CONFIG_1 = 0x1;
-  private static final byte CMD_NAV = 0x2;
-  private static final byte CMD_CONFIG_2 = 0x3;
-  private static final byte CMD_UPDATE_1 = 0x4;
-  private static final byte CMD_UPDATE_2 = 0x5;
-  private static final byte CMD_SWAP = 0x6;
-  private static final byte CMD_NDEF_1 = 0x8;
-  private static final byte CMD_NDEF_2 = 0x9;
-  private static final byte CMD_DEVICE_SERIAL = 0x10;
-  private static final byte CMD_SCAN_MAP = 0x12;
-  private static final byte CMD_CHALLENGE_OTP_1 = 0x20;
-  private static final byte CMD_CHALLENGE_OTP_2 = 0x28;
-  private static final byte CMD_CHALLENGE_HMAC_1 = 0x30;
-  private static final byte CMD_CHALLENGE_HMAC_2 = 0x38;
+  static final byte CMD_CONFIG_1 = 0x1;
+  static final byte CMD_NAV = 0x2;
+  static final byte CMD_CONFIG_2 = 0x3;
+  static final byte CMD_UPDATE_1 = 0x4;
+  static final byte CMD_UPDATE_2 = 0x5;
+  static final byte CMD_SWAP = 0x6;
+  static final byte CMD_NDEF_1 = 0x8;
+  static final byte CMD_NDEF_2 = 0x9;
+  static final byte CMD_DEVICE_SERIAL = 0x10;
+  static final byte CMD_SCAN_MAP = 0x12;
+  static final byte CMD_CHALLENGE_OTP_1 = 0x20;
+  static final byte CMD_CHALLENGE_OTP_2 = 0x28;
+  static final byte CMD_CHALLENGE_HMAC_1 = 0x30;
+  static final byte CMD_CHALLENGE_HMAC_2 = 0x38;
 
   private final Backend<?> backend;
 
-  private static final org.slf4j.Logger logger = LoggerFactory.getLogger(YubiOtpSession.class);
+  private static final Logger logger = LoggerFactory.getLogger(YubiOtpSession.class);
 
   /**
    * Connects to a YubiKeyDevice and establishes a new session with a YubiKeys OTP application.
@@ -173,10 +171,13 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
    */
   public YubiOtpSession(SmartCardConnection connection, @Nullable ScpKeyParams scpKeyParams)
       throws IOException, ApplicationNotAvailableException {
-    Version version = null;
-    SmartCardProtocol protocol = new SmartCardProtocol(connection);
+    this(new SmartCardProtocol(connection), scpKeyParams);
+  }
 
-    if (connection.getTransport() == Transport.NFC) {
+  YubiOtpSession(SmartCardProtocol protocol, @Nullable ScpKeyParams scpKeyParams)
+      throws IOException, ApplicationNotAvailableException {
+    Version version = null;
+    if (protocol.getConnection().getTransport() == Transport.NFC) {
       // If available, this is more reliable than status.getVersion() over NFC
       try {
         byte[] response = protocol.select(AppId.MANAGEMENT);
@@ -210,7 +211,7 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
         new Backend<SmartCardProtocol>(protocol, version, parseConfigState(version, statusBytes)) {
           // 5.0.0-5.2.5 have an issue with status over NFC
           private final boolean dummyStatus =
-              connection.getTransport() == Transport.NFC
+              protocol.getConnection().getTransport() == Transport.NFC
                   && version.isAtLeast(5, 0, 0)
                   && version.isLessThan(5, 2, 5);
 
@@ -240,7 +241,7 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
             return response;
           }
         };
-    logCtor(connection);
+    logCtor("SmartCardConnection");
   }
 
   /**
@@ -250,7 +251,10 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
    * @throws IOException in case of connection error
    */
   public YubiOtpSession(OtpConnection connection) throws IOException {
-    OtpProtocol protocol = new OtpProtocol(connection);
+    this(new OtpProtocol(connection));
+  }
+
+  public YubiOtpSession(OtpProtocol protocol) throws IOException {
     byte[] statusBytes = protocol.readStatus();
     Version version = protocol.getVersion();
     backend =
@@ -272,7 +276,7 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
             throw new IOException("Invalid CRC");
           }
         };
-    logCtor(connection);
+    logCtor("OtpConnection");
   }
 
   @Override
@@ -319,7 +323,7 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
    * @throws CommandException in case of an error response from the YubiKey
    */
   public void swapConfigurations() throws IOException, CommandException {
-    Logger.debug(logger, "Swapping touch slots");
+    logger.debug("Swapping touch slots");
     require(FEATURE_SWAP);
     writeConfig(CMD_SWAP, new byte[0], null);
   }
@@ -336,9 +340,9 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
    * @throws IOException in case of communication error
    * @throws CommandException in case of an error response from the YubiKey
    */
-  public void deleteConfiguration(Slot slot, @Nullable byte[] curAccCode)
+  public void deleteConfiguration(Slot slot, byte @Nullable [] curAccCode)
       throws IOException, CommandException {
-    Logger.debug(logger, "Deleting slot {}", slot);
+    logger.debug("Deleting slot {}", slot);
     writeConfig(slot.map(CMD_CONFIG_1, CMD_CONFIG_2), new byte[CONFIG_SIZE], curAccCode);
   }
 
@@ -355,15 +359,14 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
   public void putConfiguration(
       Slot slot,
       SlotConfiguration configuration,
-      @Nullable byte[] accCode,
-      @Nullable byte[] curAccCode)
+      byte @Nullable [] accCode,
+      byte @Nullable [] curAccCode)
       throws IOException, CommandException {
     if (!configuration.isSupportedBy(backend.version)) {
       throw new UnsupportedOperationException(
           "This configuration update is not supported on this YubiKey version");
     }
-    Logger.debug(
-        logger,
+    logger.debug(
         "Writing configuration of type {} to slot {}",
         configuration.getClass().getSimpleName(),
         slot);
@@ -386,8 +389,8 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
   public void updateConfiguration(
       Slot slot,
       UpdateConfiguration configuration,
-      @Nullable byte[] accCode,
-      @Nullable byte[] curAccCode)
+      byte @Nullable [] accCode,
+      byte @Nullable [] curAccCode)
       throws IOException, CommandException {
     require(FEATURE_UPDATE);
     if (!configuration.isSupportedBy(backend.version)) {
@@ -401,7 +404,7 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
           "The access code cannot be updated on this YubiKey. Instead, delete the slot and"
               + " configure it anew.");
     }
-    Logger.debug(logger, "Writing configuration update to slot {}", slot);
+    logger.debug("Writing configuration update to slot {}", slot);
     writeConfig(slot.map(CMD_UPDATE_1, CMD_UPDATE_2), configuration.getConfig(accCode), curAccCode);
   }
 
@@ -418,9 +421,9 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
    * @throws CommandException in case of an error response from the YubiKey
    */
   @SuppressWarnings("JavadocLinkAsPlainText")
-  public void setNdefConfiguration(Slot slot, @Nullable String uri, @Nullable byte[] curAccCode)
+  public void setNdefConfiguration(Slot slot, @Nullable String uri, byte @Nullable [] curAccCode)
       throws IOException, CommandException {
-    Logger.debug(logger, "Writing NDEF configuration for slot {} ", slot);
+    logger.debug("Writing NDEF configuration for slot {} ", slot);
     require(FEATURE_NDEF);
     writeConfig(
         slot.map(CMD_NDEF_1, CMD_NDEF_2),
@@ -443,7 +446,7 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
    */
   public byte[] calculateHmacSha1(Slot slot, byte[] challenge, @Nullable CommandState state)
       throws IOException, CommandException {
-    Logger.debug(logger, "Calculating response for slog {}", slot);
+    logger.debug("Calculating response for slog {}", slot);
     require(FEATURE_CHALLENGE_RESPONSE);
 
     // Pad challenge with byte different from last.
@@ -456,20 +459,17 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
         slot.map(CMD_CHALLENGE_HMAC_1, CMD_CHALLENGE_HMAC_2), padded, HMAC_RESPONSE_SIZE, state);
   }
 
-  private void writeConfig(byte commandSlot, byte[] config, @Nullable byte[] curAccCode)
+  private void writeConfig(byte commandSlot, byte[] config, byte @Nullable [] curAccCode)
       throws IOException, CommandException {
-    Logger.debug(
-        logger,
-        "Writing configuration to slot {}, access code: {}",
-        commandSlot,
-        curAccCode != null);
+    logger.debug(
+        "Writing configuration to slot {}, access code: {}", commandSlot, curAccCode != null);
     backend.writeToSlot(
         commandSlot,
         ByteBuffer.allocate(config.length + ACC_CODE_SIZE)
             .put(config)
             .put(curAccCode == null ? new byte[ACC_CODE_SIZE] : curAccCode)
             .array());
-    Logger.info(logger, "Configuration written");
+    logger.info("Configuration written");
   }
 
   private static ConfigurationState parseConfigState(Version version, byte[] status) {
@@ -562,12 +562,11 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
     }
   }
 
-  private void logCtor(YubiKeyConnection connection) {
+  private void logCtor(String connectionName) {
     final Version version = getVersion();
-    Logger.debug(
-        logger,
+    logger.debug(
         "YubiOTP session initialized for connection={}, version={}, ledInverted={}",
-        connection.getClass().getSimpleName(),
+        connectionName,
         version,
         backend.configurationState.isLedInverted());
 
@@ -577,8 +576,7 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
       slotOneConfigured = backend.configurationState.isConfigured(Slot.ONE);
       slotTwoConfigured = backend.configurationState.isConfigured(Slot.TWO);
     } else {
-      Logger.debug(
-          logger, "This YubiKey does not support checking whether OTP slot " + "is configured");
+      logger.debug("This YubiKey does not support checking whether OTP slot " + "is configured");
     }
 
     Boolean slotOneTouchTriggered = null;
@@ -587,17 +585,14 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
       slotOneTouchTriggered = backend.configurationState.isTouchTriggered(Slot.ONE);
       slotTwoTouchTriggered = backend.configurationState.isTouchTriggered(Slot.TWO);
     } else {
-      Logger.debug(
-          logger,
+      logger.debug(
           "This YubiKey does not support checking whether OTP slot is " + "touch triggered");
     }
-    Logger.debug(
-        logger,
+    logger.debug(
         "Configuration slot 1: configured={}, touchTriggered={}",
         slotOneConfigured != null ? slotOneConfigured : "?",
         slotOneTouchTriggered != null ? slotOneTouchTriggered : "?");
-    Logger.debug(
-        logger,
+    logger.debug(
         "Configuration slot 2: configured={}, touchTriggered={}",
         slotTwoConfigured != null ? slotTwoConfigured : "?",
         slotTwoTouchTriggered != null ? slotTwoTouchTriggered : "?");

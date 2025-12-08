@@ -18,7 +18,6 @@ package com.yubico.yubikit.fido.android
 
 import android.annotation.SuppressLint
 import android.content.Intent
-import android.content.res.Configuration
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -201,7 +200,7 @@ class YubiKitFidoActivity : ComponentActivity() {
     }
 
     private fun startDiscovery() {
-        yubikit.startUsbDiscovery(UsbConfiguration()) {
+        yubikit.startUsbDiscovery(UsbConfiguration().setDeviceFilter(FidoDeviceFilter())) {
             lifecycle.coroutineScope.launch {
                 logger.info("USB security key connected: {}", it.usbDevice.deviceName)
                 viewModel.provideYubiKey(it)

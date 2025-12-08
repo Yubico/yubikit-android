@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Yubico.
+ * Copyright (C) 2024-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ package com.yubico.yubikit.fido.ctap;
 import com.yubico.yubikit.core.application.CommandException;
 import com.yubico.yubikit.core.application.CommandState;
 import com.yubico.yubikit.core.fido.CtapException;
-import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.internal.codec.Base64;
 import com.yubico.yubikit.fido.Cbor;
 import java.io.ByteArrayOutputStream;
@@ -29,38 +28,39 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Implements Fingerprint Bio Enrollment commands.
  *
  * @see <a
- *     href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#authenticatorConfig">authenticatorConfig</a>
+ *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#authenticatorConfig">authenticatorConfig</a>
  */
 public class FingerprintBioEnrollment extends BioEnrollment {
-  private static final int CMD_ENROLL_BEGIN = 0x01;
-  private static final int CMD_ENROLL_CAPTURE_NEXT = 0x02;
-  private static final int CMD_ENROLL_CANCEL = 0x03;
-  private static final int CMD_ENUMERATE_ENROLLMENTS = 0x04;
-  private static final int CMD_SET_NAME = 0x05;
-  private static final int CMD_REMOVE_ENROLLMENT = 0x06;
-  private static final int CMD_GET_SENSOR_INFO = 0x07;
+  static final int CMD_ENROLL_BEGIN = 0x01;
+  static final int CMD_ENROLL_CAPTURE_NEXT = 0x02;
+  static final int CMD_ENROLL_CANCEL = 0x03;
+  static final int CMD_ENUMERATE_ENROLLMENTS = 0x04;
+  static final int CMD_SET_NAME = 0x05;
+  static final int CMD_REMOVE_ENROLLMENT = 0x06;
+  static final int CMD_GET_SENSOR_INFO = 0x07;
 
-  private static final int RESULT_FINGERPRINT_KIND = 0x02;
-  private static final int RESULT_MAX_SAMPLES_REQUIRED = 0x03;
-  private static final int RESULT_TEMPLATE_ID = 0x04;
-  private static final int RESULT_LAST_SAMPLE_STATUS = 0x05;
-  private static final int RESULT_REMAINING_SAMPLES = 0x06;
-  private static final int RESULT_TEMPLATE_INFOS = 0x07;
-  private static final int RESULT_MAX_TEMPLATE_FRIENDLY_NAME = 0x08;
+  static final int RESULT_FINGERPRINT_KIND = 0x02;
+  static final int RESULT_MAX_SAMPLES_REQUIRED = 0x03;
+  static final int RESULT_TEMPLATE_ID = 0x04;
+  static final int RESULT_LAST_SAMPLE_STATUS = 0x05;
+  static final int RESULT_REMAINING_SAMPLES = 0x06;
+  static final int RESULT_TEMPLATE_INFOS = 0x07;
+  static final int RESULT_MAX_TEMPLATE_FRIENDLY_NAME = 0x08;
 
-  protected static final int TEMPLATE_INFO_ID = 0x01;
-  protected static final int TEMPLATE_INFO_FRIENDLY_NAME = 0x02;
+  static final int TEMPLATE_INFO_ID = 0x01;
+  static final int TEMPLATE_INFO_FRIENDLY_NAME = 0x02;
 
-  private static final int PARAM_TEMPLATE_ID = 0x01;
-  private static final int PARAM_TEMPLATE_FRIENDLY_NAME = 0x02;
-  private static final int PARAM_TIMEOUT_MS = 0x03;
+  static final int PARAM_TEMPLATE_ID = 0x01;
+  static final int PARAM_TEMPLATE_FRIENDLY_NAME = 0x02;
+  static final int PARAM_TIMEOUT_MS = 0x03;
 
   public static final int FEEDBACK_FP_GOOD = 0x00;
   public static final int FEEDBACK_FP_TOO_HIGH = 0x01;
@@ -81,7 +81,7 @@ public class FingerprintBioEnrollment extends BioEnrollment {
   private final PinUvAuthProtocol pinUvAuth;
   private final byte[] pinUvToken;
 
-  private final org.slf4j.Logger logger = LoggerFactory.getLogger(FingerprintBioEnrollment.class);
+  private final Logger logger = LoggerFactory.getLogger(FingerprintBioEnrollment.class);
 
   public static class SensorInfo {
     public final int fingerprintKind;
@@ -172,13 +172,13 @@ public class FingerprintBioEnrollment extends BioEnrollment {
   public static class Context {
     private final FingerprintBioEnrollment bioEnrollment;
     @Nullable private final Integer timeout;
-    @Nullable private byte[] templateId;
+    private byte @Nullable [] templateId;
     @Nullable private Integer remaining;
 
     public Context(
         FingerprintBioEnrollment bioEnrollment,
         @Nullable Integer timeout,
-        @Nullable byte[] templateId,
+        byte @Nullable [] templateId,
         @Nullable Integer remaining) {
       this.bioEnrollment = bioEnrollment;
       this.timeout = timeout;
@@ -198,8 +198,7 @@ public class FingerprintBioEnrollment extends BioEnrollment {
      * @throws CommandException A communication error in the protocol layer.
      * @throws CaptureError An error during fingerprint capture.
      */
-    @Nullable
-    public byte[] capture(@Nullable CommandState state)
+    public byte @Nullable [] capture(@Nullable CommandState state)
         throws IOException, CommandException, CaptureError {
       int sampleStatus;
       if (templateId == null) {
@@ -287,7 +286,7 @@ public class FingerprintBioEnrollment extends BioEnrollment {
    * @throws IOException A communication error in the transport layer.
    * @throws CommandException A communication error in the protocol layer.
    * @see <a
-   *     href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#getFingerprintSensorInfo">Get
+   *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#getFingerprintSensorInfo">Get
    *     fingerprint sensor info</a>
    */
   public SensorInfo getSensorInfo() throws IOException, CommandException {
@@ -314,18 +313,18 @@ public class FingerprintBioEnrollment extends BioEnrollment {
    * @throws IOException A communication error in the transport layer.
    * @throws CommandException A communication error in the protocol layer.
    * @see <a
-   *     href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#enrollingFingerprint">Enrolling
+   *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#enrollingFingerprint">Enrolling
    *     fingerprint</a>
    */
   public EnrollBeginStatus enrollBegin(@Nullable Integer timeout, @Nullable CommandState state)
       throws IOException, CommandException {
-    Logger.debug(logger, "Starting fingerprint enrollment");
+    logger.debug("Starting fingerprint enrollment");
 
     Map<Integer, Object> parameters = new HashMap<>();
     if (timeout != null) parameters.put(PARAM_TIMEOUT_MS, timeout);
 
     final Map<Integer, ?> result = call(CMD_ENROLL_BEGIN, parameters, state);
-    Logger.debug(logger, "Sample capture result: {}", result);
+    logger.debug("Sample capture result: {}", result);
     return new EnrollBeginStatus(
         Objects.requireNonNull((byte[]) result.get(RESULT_TEMPLATE_ID)),
         Objects.requireNonNull((Integer) result.get(RESULT_LAST_SAMPLE_STATUS)),
@@ -348,23 +347,21 @@ public class FingerprintBioEnrollment extends BioEnrollment {
    * @throws IOException A communication error in the transport layer.
    * @throws CommandException A communication error in the protocol layer.
    * @see <a
-   *     href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#enrollingFingerprint">Enrolling
+   *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#enrollingFingerprint">Enrolling
    *     fingerprint</a>
    */
   public CaptureStatus enrollCaptureNext(
       byte[] templateId, @Nullable Integer timeout, @Nullable CommandState state)
       throws IOException, CommandException {
-    Logger.debug(
-        logger,
-        "Capturing next sample with (timeout={})",
-        timeout != null ? timeout : "none specified");
+    logger.debug(
+        "Capturing next sample with (timeout={})", timeout != null ? timeout : "none specified");
 
     Map<Integer, Object> parameters = new HashMap<>();
     parameters.put(PARAM_TEMPLATE_ID, templateId);
     if (timeout != null) parameters.put(PARAM_TIMEOUT_MS, timeout);
 
     final Map<Integer, ?> result = call(CMD_ENROLL_CAPTURE_NEXT, parameters, state);
-    Logger.debug(logger, "Sample capture result: {}", result);
+    logger.debug("Sample capture result: {}", result);
     return new CaptureStatus(
         Objects.requireNonNull((Integer) result.get(RESULT_LAST_SAMPLE_STATUS)),
         Objects.requireNonNull((Integer) result.get(RESULT_REMAINING_SAMPLES)));
@@ -376,11 +373,11 @@ public class FingerprintBioEnrollment extends BioEnrollment {
    * @throws IOException A communication error in the transport layer.
    * @throws CommandException A communication error in the protocol layer.
    * @see <a
-   *     href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#cancelEnrollment">Cancel
+   *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#cancelEnrollment">Cancel
    *     current enrollment</a>
    */
   public void enrollCancel() throws IOException, CommandException {
-    Logger.debug(logger, "Cancelling fingerprint enrollment.");
+    logger.debug("Cancelling fingerprint enrollment.");
     call(CMD_ENROLL_CANCEL, null, null, false);
   }
 
@@ -402,19 +399,19 @@ public class FingerprintBioEnrollment extends BioEnrollment {
    * @throws IOException A communication error in the transport layer.
    * @throws CommandException A communication error in the protocol layer.
    * @see <a
-   *     href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#enumerateEnrollments">Enumerate
+   *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#enumerateEnrollments">Enumerate
    *     enrollments</a>
    */
-  public Map<byte[], String> enumerateEnrollments() throws IOException, CommandException {
+  public Map<byte[], @Nullable String> enumerateEnrollments() throws IOException, CommandException {
     try {
       final Map<Integer, ?> result = call(CMD_ENUMERATE_ENROLLMENTS, null, null);
 
       @SuppressWarnings("unchecked")
       final List<Map<Integer, ?>> infos = (List<Map<Integer, ?>>) result.get(RESULT_TEMPLATE_INFOS);
-      final Map<byte[], String> enrollments = new HashMap<>();
+      final Map<byte[], @Nullable String> enrollments = new HashMap<>();
       for (Map<Integer, ?> info : infos) {
         final byte[] id = Objects.requireNonNull((byte[]) info.get(TEMPLATE_INFO_ID));
-        @Nullable String friendlyName = (String) info.get(TEMPLATE_INFO_FRIENDLY_NAME);
+        String friendlyName = (String) info.get(TEMPLATE_INFO_FRIENDLY_NAME);
         // treat empty strings as null values
         if (friendlyName != null) {
           friendlyName = friendlyName.trim();
@@ -442,19 +439,18 @@ public class FingerprintBioEnrollment extends BioEnrollment {
    * @throws IOException A communication error in the transport layer.
    * @throws CommandException A communication error in the protocol layer.
    * @see <a
-   *     href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#setFriendlyName">Rename/Set
+   *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#setFriendlyName">Rename/Set
    *     FriendlyName</a>
    */
   public void setName(byte[] templateId, String name) throws IOException, CommandException {
-    Logger.debug(
-        logger, "Changing name of template: {} {}", Base64.toUrlSafeString(templateId), name);
+    logger.debug("Changing name of template: {} {}", Base64.toUrlSafeString(templateId), name);
 
     Map<Integer, Object> parameters = new HashMap<>();
     parameters.put(PARAM_TEMPLATE_ID, templateId);
     parameters.put(PARAM_TEMPLATE_FRIENDLY_NAME, name);
 
     call(CMD_SET_NAME, parameters, null);
-    Logger.info(logger, "Fingerprint template renamed");
+    logger.info("Fingerprint template renamed");
   }
 
   /**
@@ -464,16 +460,16 @@ public class FingerprintBioEnrollment extends BioEnrollment {
    * @throws IOException A communication error in the transport layer.
    * @throws CommandException A communication error in the protocol layer.
    * @see <a
-   *     href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#removeEnrollment">Remove
+   *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#removeEnrollment">Remove
    *     enrollment</a>
    */
   public void removeEnrollment(byte[] templateId) throws IOException, CommandException {
-    Logger.debug(logger, "Deleting template: {}", Base64.toUrlSafeString(templateId));
+    logger.debug("Deleting template: {}", Base64.toUrlSafeString(templateId));
 
     Map<Integer, Object> parameters = new HashMap<>();
     parameters.put(PARAM_TEMPLATE_ID, templateId);
 
     call(CMD_REMOVE_ENROLLMENT, parameters, null);
-    Logger.info(logger, "Fingerprint template deleted");
+    logger.info("Fingerprint template deleted");
   }
 }

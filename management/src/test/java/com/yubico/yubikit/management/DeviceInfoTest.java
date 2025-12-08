@@ -16,6 +16,7 @@
 
 package com.yubico.yubikit.management;
 
+import static com.yubico.yubikit.Codec.fromHex;
 import static com.yubico.yubikit.management.Capability.FIDO2;
 import static com.yubico.yubikit.management.Capability.HSMAUTH;
 import static com.yubico.yubikit.management.Capability.OATH;
@@ -24,7 +25,6 @@ import static com.yubico.yubikit.management.Capability.PIV;
 import static com.yubico.yubikit.management.TestUtil.defaultVersion;
 import static com.yubico.yubikit.management.TestUtil.emptyTlvs;
 import static com.yubico.yubikit.management.TestUtil.tlvs;
-import static com.yubico.yubikit.testing.Codec.fromHex;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
@@ -33,7 +33,7 @@ import static org.junit.Assert.assertTrue;
 import com.yubico.yubikit.core.Version;
 import java.util.HashMap;
 import java.util.Map;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.junit.Test;
 
 public class DeviceInfoTest {
@@ -245,7 +245,7 @@ public class DeviceInfoTest {
 
   // builds a DeviceInfo object from the given version and version qualifier bytes
   private DeviceInfo infoOfVersion(
-      @Nullable byte[] versionBytes, @Nullable byte[] versionQualifierBytes) {
+      byte @Nullable [] versionBytes, byte @Nullable [] versionQualifierBytes) {
 
     Map<Integer, byte[]> tlvs = new HashMap<>();
     if (versionBytes != null) {

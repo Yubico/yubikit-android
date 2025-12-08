@@ -16,9 +16,6 @@
 package com.yubico.yubikit.piv;
 
 import com.yubico.yubikit.core.keys.PublicKeyValues;
-import java.security.NoSuchAlgorithmException;
-import java.security.PublicKey;
-import java.security.spec.InvalidKeySpecException;
 import java.util.Arrays;
 
 /** Metadata about a key in a slot. */
@@ -70,19 +67,5 @@ public class SlotMetadata {
   /** Returns the public key corresponding to the key in the slot. */
   public PublicKeyValues getPublicKeyValues() {
     return PivSession.parsePublicKeyFromDevice(keyType, publicKeyEncoded);
-  }
-
-  /**
-   * Returns the public key corresponding to the key in the slot.
-   *
-   * @deprecated Use {@link #getPublicKeyValues()}.toPublicKey() instead.
-   */
-  @Deprecated
-  public PublicKey getPublicKey() {
-    try {
-      return getPublicKeyValues().toPublicKey();
-    } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
-      throw new RuntimeException(e);
-    }
   }
 }

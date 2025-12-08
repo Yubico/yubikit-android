@@ -17,7 +17,7 @@
 package com.yubico.yubikit.core.application;
 
 import com.yubico.yubikit.core.Version;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Adds support for overriding YubiKey session version number.

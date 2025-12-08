@@ -28,23 +28,27 @@ import com.yubico.yubikit.core.fido.CtapException
 import com.yubico.yubikit.core.util.Result
 import com.yubico.yubikit.fido.android.YubiKitFidoClient.Companion.extensions
 import com.yubico.yubikit.fido.android.ui.Error
+import com.yubico.yubikit.fido.android.ui.Error.IncorrectPinError
+import com.yubico.yubikit.fido.android.ui.Error.IncorrectUvError
 import com.yubico.yubikit.fido.android.ui.UiState
-import com.yubico.yubikit.fido.client.BasicWebAuthnClient
+import com.yubico.yubikit.fido.client.AuthInvalidClientError
 import com.yubico.yubikit.fido.client.ClientError
+import com.yubico.yubikit.fido.client.Ctap2Client
 import com.yubico.yubikit.fido.client.MultipleAssertionsAvailable
-import com.yubico.yubikit.fido.client.PinInvalidClientError
 import com.yubico.yubikit.fido.client.PinRequiredClientError
-import com.yubico.yubikit.fido.client.UvInvalidClientError
+import com.yubico.yubikit.fido.client.WebAuthnClient
 import com.yubico.yubikit.fido.ctap.BioEnrollment
 import com.yubico.yubikit.fido.ctap.Ctap2Session
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredential
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialUserEntity
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import kotlin.coroutines.resume
@@ -130,38 +134,30 @@ class MainViewModel : ViewModel() {
      * Requests a WebAuthn client, and uses it to produce some result
      */
     suspend fun <T> useWebAuthn(
-        action: (BasicWebAuthnClient) -> T
-    ): kotlin.Result<T> {
-        // directly use the device if it is a USB YubiKey
-        (_device.value as? UsbYubiKeyDevice?)?.let { usbDevice ->
-            return suspendCoroutine { inner ->
-                Ctap2Session.create(usbDevice) { result ->
-                    inner.resume(runCatching {
-                        info = result.value.cachedInfo
-                        extensions?.let { ext ->
-                            action.invoke(BasicWebAuthnClient(result.value, ext))
-                        } ?: action.invoke(BasicWebAuthnClient(result.value))
-                    })
-                }
+        action: (WebAuthnClient) -> T
+    ): kotlin.Result<T> = runCatching {
+        val device = (_device.value as? UsbYubiKeyDevice)
+            ?: awaitPendingYubiKeyDevice()
+        withWebAuthnClient(device, action)
+    }
+
+    private suspend fun awaitPendingYubiKeyDevice(): YubiKeyDevice =
+        suspendCoroutine { cont ->
+            _pendingYubiKeyAction.postValue { result ->
+                cont.resume(result.value)
             }
         }
-        return suspendCoroutine { outer ->
-            _pendingYubiKeyAction.postValue { result ->
-                outer.resumeWith(runCatching {
-                    suspendCoroutine { inner ->
-                        Ctap2Session.create(result.value) { result ->
-                            inner.resume(runCatching {
-                                info = result.value.cachedInfo
-                                extensions?.let { ext ->
-                                    action.invoke(BasicWebAuthnClient(result.value, ext))
-                                } ?: action.invoke(BasicWebAuthnClient(result.value))
-                            })
-                        }
-                    }
-                })
-            }
+
+    private suspend fun <T> withWebAuthnClient(
+        device: YubiKeyDevice,
+        action: (WebAuthnClient) -> T
+    ): T = withContext(Dispatchers.IO) {
+        WebAuthnClient.create(device, extensions).use { client ->
+            if (client is Ctap2Client) info = client.session.cachedInfo
+            action(client)
         }
     }
+
 
     private fun deliverResult(
         credential: PublicKeyCredential,
@@ -299,8 +295,11 @@ class MainViewModel : ViewModel() {
 
                         val errorState = when (error) {
                             is PinRequiredClientError -> Error.PinRequiredError
-                            is PinInvalidClientError -> Error.IncorrectPinError(error.pinRetries)
-                            is UvInvalidClientError -> Error.IncorrectUvError(error.retries)
+                            is AuthInvalidClientError -> when (error.authType) {
+                                AuthInvalidClientError.AuthType.PIN -> IncorrectPinError(error.retries)
+                                AuthInvalidClientError.AuthType.UV -> IncorrectUvError(error.retries)
+                            }
+
                             is ClientError -> {
                                 when (error.errorCode) {
                                     ClientError.Code.CONFIGURATION_UNSUPPORTED -> when ((error.cause as? CtapException)?.ctapError) {

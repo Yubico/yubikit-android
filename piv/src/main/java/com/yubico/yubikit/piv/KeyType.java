@@ -23,7 +23,6 @@ import java.security.Key;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.interfaces.RSAKey;
-import javax.annotation.Nonnull;
 
 /** Supported private key types for use with the PIV YubiKey application. */
 public enum KeyType {
@@ -134,7 +133,6 @@ public enum KeyType {
 
   /** Algorithm parameters used by a KeyType. */
   public abstract static class KeyParams {
-    @Nonnull // Needed for Kotlin to use when() on algorithm and not have to null check.
     public final Algorithm algorithm;
     public final int bitLength;
 

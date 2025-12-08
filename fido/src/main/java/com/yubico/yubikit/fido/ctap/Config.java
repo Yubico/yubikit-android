@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2024 Yubico.
+ * Copyright (C) 2023-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 package com.yubico.yubikit.fido.ctap;
 
 import com.yubico.yubikit.core.application.CommandException;
-import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.util.Pair;
 import com.yubico.yubikit.fido.Cbor;
 import java.io.IOException;
@@ -27,32 +26,33 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Implements Config commands.
  *
  * @see <a
- *     href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#authenticatorConfig">authenticatorConfig</a>
+ *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#authenticatorConfig">authenticatorConfig</a>
  */
 @SuppressWarnings("unused")
 public class Config {
-  private static final byte CMD_ENABLE_ENTERPRISE_ATT = 0x01;
-  private static final byte CMD_TOGGLE_ALWAYS_UV = 0x02;
-  private static final byte CMD_SET_MIN_PIN_LENGTH = 0x03;
-  private static final byte CMD_VENDOR_PROTOTYPE = (byte) 0xFF;
+  static final byte CMD_ENABLE_ENTERPRISE_ATT = 0x01;
+  static final byte CMD_TOGGLE_ALWAYS_UV = 0x02;
+  static final byte CMD_SET_MIN_PIN_LENGTH = 0x03;
+  static final byte CMD_VENDOR_PROTOTYPE = (byte) 0xFF;
 
-  private static final byte PARAM_NEW_MIN_PIN_LENGTH = 0x01;
-  private static final byte PARAM_MIN_PIN_LENGTH_RPIDS = 0x02;
-  private static final byte PARAM_FORCE_CHANGE_PIN = 0x03;
+  static final byte PARAM_NEW_MIN_PIN_LENGTH = 0x01;
+  static final byte PARAM_MIN_PIN_LENGTH_RPIDS = 0x02;
+  static final byte PARAM_FORCE_CHANGE_PIN = 0x03;
 
-  private static final byte PARAM_VENDOR_CMD_ID = 0x01;
+  static final byte PARAM_VENDOR_CMD_ID = 0x01;
 
   private final Ctap2Session ctap;
   @Nullable private final Pair<PinUvAuthProtocol, byte[]> pinUv;
 
-  private static final org.slf4j.Logger logger = LoggerFactory.getLogger(Config.class);
+  private static final Logger logger = LoggerFactory.getLogger(Config.class);
 
   /**
    * Construct a new Config object using a specified PIN/UV Auth protocol and token.
@@ -62,7 +62,7 @@ public class Config {
    * @param pinUvToken the PIN/UV token to use
    */
   public Config(
-      Ctap2Session ctap, @Nullable PinUvAuthProtocol pinUvAuth, @Nullable byte[] pinUvToken) {
+      Ctap2Session ctap, @Nullable PinUvAuthProtocol pinUvAuth, byte @Nullable [] pinUvToken) {
 
     if (!isSupported(ctap.getCachedInfo())) {
       throw new IllegalStateException("Not supported");
@@ -119,13 +119,13 @@ public class Config {
    * @throws IOException A communication error in the transport layer.
    * @throws CommandException A communication in the protocol layer.
    * @see <a
-   *     href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#enable-enterprise-attestation">Enable
+   *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#enable-enterprise-attestation">Enable
    *     Enterprise Attestation</a>
    */
   public void enableEnterpriseAttestation() throws IOException, CommandException {
-    Logger.debug(logger, "Enabling enterprise attestation");
+    logger.debug("Enabling enterprise attestation");
     call(CMD_ENABLE_ENTERPRISE_ATT, null);
-    Logger.info(logger, "Enterprise attestation enabled");
+    logger.info("Enterprise attestation enabled");
   }
 
   /**
@@ -135,13 +135,13 @@ public class Config {
    * @throws IOException A communication error in the transport layer.
    * @throws CommandException A communication in the protocol layer.
    * @see <a
-   *     href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#toggle-alwaysUv">Toggle
+   *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#toggle-alwaysUv">Toggle
    *     Always Require User Verification</a>
    */
   public void toggleAlwaysUv() throws IOException, CommandException {
-    Logger.debug(logger, "Toggling always UV");
+    logger.debug("Toggling always UV");
     call(CMD_TOGGLE_ALWAYS_UV, null);
-    Logger.info(logger, "Always UV toggled");
+    logger.info("Always UV toggled");
   }
 
   /**
@@ -155,7 +155,7 @@ public class Config {
    * @throws IOException A communication error in the transport layer.
    * @throws CommandException A communication in the protocol layer.
    * @see <a
-   *     href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#setMinPINLength">Setting
+   *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#setMinPINLength">Setting
    *     a minimum PIN Length</a>
    */
   public void setMinPinLength(
@@ -163,7 +163,7 @@ public class Config {
       @Nullable List<String> rpIds,
       @Nullable Boolean forceChangePin)
       throws IOException, CommandException {
-    Logger.debug(logger, "Setting minimum PIN length");
+    logger.debug("Setting minimum PIN length");
     Map<Byte, Object> parameters = new HashMap<>();
     if (minPinLength != null) parameters.put(PARAM_NEW_MIN_PIN_LENGTH, minPinLength);
     if (rpIds != null) parameters.put(PARAM_MIN_PIN_LENGTH_RPIDS, rpIds);
@@ -171,9 +171,9 @@ public class Config {
 
     call(CMD_SET_MIN_PIN_LENGTH, parameters.isEmpty() ? null : parameters);
 
-    if (minPinLength != null) Logger.info(logger, "Minimum PIN length set");
-    if (rpIds != null) Logger.info(logger, "Minimum PIN length RP ID list set");
-    if (forceChangePin != null) Logger.info(logger, "ForcePINChange set");
+    if (minPinLength != null) logger.info("Minimum PIN length set");
+    if (rpIds != null) logger.info("Minimum PIN length RP ID list set");
+    if (forceChangePin != null) logger.info("ForcePINChange set");
   }
 
   /**
@@ -183,15 +183,15 @@ public class Config {
    * @throws IOException A communication error in the transport layer.
    * @throws CommandException A communication in the protocol layer.
    * @see <a
-   *     href="https://fidoalliance.org/specs/fido-v2.1-ps-20210615/fido-client-to-authenticator-protocol-v2.1-ps-errata-20220621.html#vendorPrototype">Vendor
+   *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#vendorPrototype">Vendor
    *     Prototype Command</a>
    */
   public Map<Integer, ?> vendorPrototype(Integer vendorCommandId)
       throws IOException, CommandException {
-    Logger.debug(logger, "Call vendor prototype command");
+    logger.debug("Call vendor prototype command");
     final Map<Integer, ?> response =
         call(CMD_VENDOR_PROTOTYPE, Collections.singletonMap(PARAM_VENDOR_CMD_ID, vendorCommandId));
-    Logger.info(logger, "Vendor prototype command executed");
+    logger.info("Vendor prototype command executed");
     return response;
   }
 }

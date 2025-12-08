@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022,2024 Yubico.
+ * Copyright (C) 2022-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SignatureException;
 import java.security.SignatureSpi;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 public abstract class PivEcSignatureSpi extends SignatureSpi {
   private final Callback<Callback<Result<PivSession, Exception>>> provider;
@@ -98,11 +98,13 @@ public abstract class PivEcSignatureSpi extends SignatureSpi {
   }
 
   @Override
+  @Deprecated
   protected void engineSetParameter(String param, Object value) throws InvalidParameterException {
     throw new InvalidParameterException("ECDSA doesn't take parameters");
   }
 
   @Override
+  @Deprecated
   protected Object engineGetParameter(String param) throws InvalidParameterException {
     throw new InvalidParameterException("ECDSA doesn't take parameters");
   }

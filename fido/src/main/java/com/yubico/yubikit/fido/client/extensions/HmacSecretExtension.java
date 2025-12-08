@@ -20,7 +20,6 @@ import static com.yubico.yubikit.core.internal.codec.Base64.fromUrlSafeString;
 import static com.yubico.yubikit.core.internal.codec.Base64.toUrlSafeString;
 
 import com.yubico.yubikit.core.application.CommandException;
-import com.yubico.yubikit.core.internal.Logger;
 import com.yubico.yubikit.core.util.Pair;
 import com.yubico.yubikit.core.util.StringUtils;
 import com.yubico.yubikit.fido.ctap.ClientPin;
@@ -44,7 +43,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import javax.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -56,34 +56,33 @@ import org.slf4j.LoggerFactory;
  *
  * @see <a href="https://www.w3.org/TR/webauthn-3/#prf-extension">PRF extension</a>
  * @see <a
- *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250228/fido-client-to-authenticator-protocol-v2.2-ps-20250228.html#sctn-hmac-secret-extension">HMAC
+ *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#sctn-hmac-secret-extension">HMAC
  *     secret extension (hmac-secret)</a>
  * @see <a
- *     href="https://fidoalliance.org/specs/fido-v2.2-ps-20250228/fido-client-to-authenticator-protocol-v2.2-ps-20250228.html#sctn-hmac-secret-make-cred-extension">HMAC
+ *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#sctn-hmac-secret-make-cred-extension">HMAC
  *     Secret MakeCredential Extension (hmac-secret-mc)</a>
  */
 public class HmacSecretExtension extends Extension {
-  private final boolean allowHmacSecret;
-  private static final org.slf4j.Logger logger = LoggerFactory.getLogger(HmacSecretExtension.class);
-  private static final int SALT_LEN = 32;
+  static final String PRF = "prf";
+  static final String HMAC_GET_SECRET = "hmacGetSecret";
+  static final String HMAC_CREATE_SECRET = "hmacCreateSecret";
+  static final String FIRST = "first";
+  static final String SECOND = "second";
+  static final String OUTPUT_1 = "output1";
+  static final String OUTPUT_2 = "output2";
+  static final String SALT_1 = "salt1";
+  static final String SALT_2 = "salt2";
+  static final String ENABLED = "enabled";
+  static final String RESULTS = "results";
+  static final String EVAL_BY_CREDENTIAL = "evalByCredential";
+  static final String EVAL = "eval";
+  static final byte[] WEBAUTHN_PRF_BYTES = "WebAuthn PRF".getBytes(StandardCharsets.US_ASCII);
+  static final String NAME = "hmac-secret";
+  static final String NAME_MC = "hmac-secret-mc";
 
-  private static final String PRF = "prf";
-  private static final String HMAC_GET_SECRET = "hmacGetSecret";
-  private static final String HMAC_CREATE_SECRET = "hmacCreateSecret";
-  private static final String FIRST = "first";
-  private static final String SECOND = "second";
-  private static final String OUTPUT_1 = "output1";
-  private static final String OUTPUT_2 = "output2";
-  private static final String SALT_1 = "salt1";
-  private static final String SALT_2 = "salt2";
-  private static final String ENABLED = "enabled";
-  private static final String RESULTS = "results";
-  private static final String EVAL_BY_CREDENTIAL = "evalByCredential";
-  private static final String EVAL = "eval";
-  private static final byte[] WEBAUTHN_PRF_BYTES =
-      "WebAuthn PRF".getBytes(StandardCharsets.US_ASCII);
-  private static final String NAME = "hmac-secret";
-  private static final String NAME_MC = "hmac-secret-mc";
+  private final boolean allowHmacSecret;
+  private static final Logger logger = LoggerFactory.getLogger(HmacSecretExtension.class);
+  private static final int SALT_LEN = 32;
 
   public HmacSecretExtension() {
     this(false);
@@ -130,7 +129,7 @@ public class HmacSecretExtension extends Extension {
         byte[] saltEnc = pinUvAuthHelper.encrypt(salts.concat());
         byte[] saltAuth = pinUvAuthHelper.authenticate(saltEnc);
 
-        final Map<Integer, Object> hmacCreateSecretInput = new HashMap<>();
+        final Map<Integer, @Nullable Object> hmacCreateSecretInput = new HashMap<>();
         hmacCreateSecretInput.put(1, pinUvAuthHelper.keyAgreement.first);
         hmacCreateSecretInput.put(2, saltEnc);
         hmacCreateSecretInput.put(3, saltAuth);
@@ -186,7 +185,7 @@ public class HmacSecretExtension extends Extension {
           byte[] saltEnc = pinUvAuthHelper.encrypt(salts.concat());
           byte[] saltAuth = pinUvAuthHelper.authenticate(saltEnc);
 
-          final Map<Integer, Object> hmacGetSecretInput = new HashMap<>();
+          final Map<Integer, @Nullable Object> hmacGetSecretInput = new HashMap<>();
           hmacGetSecretInput.put(1, pinUvAuthHelper.keyAgreement.first);
           hmacGetSecretInput.put(2, saltEnc);
           hmacGetSecretInput.put(3, saltAuth);
@@ -220,8 +219,7 @@ public class HmacSecretExtension extends Extension {
                   ? Arrays.copyOfRange(decrypted, SALT_LEN, 2 * SALT_LEN)
                   : new byte[0];
 
-          Logger.debug(
-              logger,
+          logger.debug(
               "Decrypted:  {}, o1: {}, o2: {}",
               StringUtils.bytesToHex(decrypted),
               StringUtils.bytesToHex(output1),
@@ -300,7 +298,7 @@ public class HmacSecretExtension extends Extension {
         return null;
       }
 
-      Logger.debug(logger, "PRF inputs: {}, {}", secrets.get(FIRST), secrets.get(SECOND));
+      logger.debug("PRF inputs: {}, {}", secrets.get(FIRST), secrets.get(SECOND));
 
       String firstInput = (String) secrets.get(FIRST);
       if (firstInput == null) {
@@ -319,8 +317,7 @@ public class HmacSecretExtension extends Extension {
         return null;
       }
 
-      Logger.debug(
-          logger,
+      logger.debug(
           "hmacGetSecret inputs: {}, {}",
           inputs.hmac.salt1 != null ? inputs.hmac.salt1 : "none",
           inputs.hmac.salt2 != null ? inputs.hmac.salt2 : "none");
@@ -336,11 +333,8 @@ public class HmacSecretExtension extends Extension {
       salts = new Salts(salt1, salt2);
     }
 
-    Logger.debug(
-        logger,
-        "Salts: {}, {}",
-        StringUtils.bytesToHex(salts.salt1),
-        StringUtils.bytesToHex(salts.salt2));
+    logger.debug(
+        "Salts: {}, {}", StringUtils.bytesToHex(salts.salt1), StringUtils.bytesToHex(salts.salt2));
     if (!(salts.salt1.length == SALT_LEN
         && (salts.salt2.length == 0 || salts.salt2.length == SALT_LEN))) {
       throw new IllegalArgumentException("Invalid salt length");
@@ -352,13 +346,13 @@ public class HmacSecretExtension extends Extension {
   private Map<String, Object> formatOutputs(
       SerializationType serializationType,
       @Nullable Boolean enabled,
-      @Nullable byte[] decrypted,
+      byte @Nullable [] decrypted,
       boolean prf) {
     byte[] output1 = decrypted != null ? Arrays.copyOfRange(decrypted, 0, SALT_LEN) : null;
     byte[] output2 =
         decrypted != null ? Arrays.copyOfRange(decrypted, SALT_LEN, decrypted.length) : null;
 
-    Map<String, Object> result = new HashMap<>();
+    Map<String, @Nullable Object> result = new HashMap<>();
     if (prf) {
       result.put(ENABLED, enabled);
       Map<String, Object> results = new HashMap<>();
@@ -403,7 +397,7 @@ public class HmacSecretExtension extends Extension {
     byte[] salt1;
     byte[] salt2;
 
-    Salts(byte[] salt1, @Nullable byte[] salt2) {
+    Salts(byte[] salt1, byte @Nullable [] salt2) {
       this.salt1 = salt1;
       this.salt2 = salt2 != null ? salt2 : new byte[0];
     }
@@ -495,7 +489,7 @@ public class HmacSecretExtension extends Extension {
     private final PinUvAuthProtocol pinUvAuthProtocol;
     private final ClientPin clientPin;
 
-    @Nullable private final Pair<Map<Integer, ?>, byte[]> keyAgreement;
+    private final @Nullable Pair<Map<Integer, ?>, byte[]> keyAgreement;
 
     PinUvAuthHelper(Ctap2Session session, PinUvAuthProtocol pinUvAuthProtocol) {
       this.pinUvAuthProtocol = pinUvAuthProtocol;
@@ -504,29 +498,26 @@ public class HmacSecretExtension extends Extension {
       try {
         keyAgreement = clientPin.getSharedSecret();
       } catch (IOException | CommandException e) {
-        Logger.error(logger, "Failed to get shared secret: ", e);
+        logger.error("Failed to get shared secret: ", e);
       }
       this.keyAgreement = keyAgreement;
     }
 
-    @Nullable
-    byte[] encrypt(byte[] data) {
+    byte @Nullable [] encrypt(byte[] data) {
       if (keyAgreement == null) {
         return null;
       }
       return clientPin.getPinUvAuth().encrypt(keyAgreement.second, data);
     }
 
-    @Nullable
-    byte[] decrypt(@Nullable byte[] data) {
+    byte @Nullable [] decrypt(byte @Nullable [] data) {
       if (keyAgreement == null || data == null) {
         return null;
       }
       return pinUvAuthProtocol.decrypt(keyAgreement.second, data);
     }
 
-    @Nullable
-    byte[] authenticate(@Nullable byte[] data) {
+    byte @Nullable [] authenticate(byte @Nullable [] data) {
       if (keyAgreement == null || data == null) {
         return null;
       }

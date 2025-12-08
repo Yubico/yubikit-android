@@ -19,18 +19,19 @@ package com.yubico.yubikit.piv;
 import static com.yubico.yubikit.piv.GzipUtils.compress;
 import static com.yubico.yubikit.piv.GzipUtils.decompress;
 
+import com.yubico.yubikit.Codec;
 import com.yubico.yubikit.core.util.StringUtils;
-import com.yubico.yubikit.testing.Codec;
 import java.io.EOFException;
 import java.nio.charset.StandardCharsets;
 import java.util.zip.ZipException;
 import org.junit.Assert;
 import org.junit.Test;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class GzipUtilsTest {
 
-  private static final org.slf4j.Logger logger = LoggerFactory.getLogger(GzipUtilsTest.class);
+  private static final Logger logger = LoggerFactory.getLogger(GzipUtilsTest.class);
 
   private final byte[] testData =
       Codec.fromHex(

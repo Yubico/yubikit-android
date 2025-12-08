@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Yubico.
+ * Copyright (C) 2020-2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,5 @@
  * limitations under the License.
  */
 
-@PackageNonnullByDefault
+@org.jspecify.annotations.NullMarked
 package com.yubico.yubikit.android.internal;
-
-import com.yubico.yubikit.core.PackageNonnullByDefault;

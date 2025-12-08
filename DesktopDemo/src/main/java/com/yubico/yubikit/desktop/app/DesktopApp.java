@@ -30,11 +30,12 @@ import com.yubico.yubikit.yubiotp.Slot;
 import com.yubico.yubikit.yubiotp.YubiOtpSession;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class DesktopApp {
 
-  private static final org.slf4j.Logger logger = LoggerFactory.getLogger(DesktopApp.class);
+  private static final Logger logger = LoggerFactory.getLogger(DesktopApp.class);
 
   public static void main(String[] argv) throws Exception {
     if (OperatingSystem.isMac()) {
