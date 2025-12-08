@@ -28,8 +28,6 @@ import com.yubico.yubikit.core.fido.CtapException
 import com.yubico.yubikit.core.util.Result
 import com.yubico.yubikit.fido.android.YubiKitFidoClient.Companion.extensions
 import com.yubico.yubikit.fido.android.ui.Error
-import com.yubico.yubikit.fido.android.ui.Error.IncorrectPinError
-import com.yubico.yubikit.fido.android.ui.Error.IncorrectUvError
 import com.yubico.yubikit.fido.android.ui.UiState
 import com.yubico.yubikit.fido.client.AuthInvalidClientError
 import com.yubico.yubikit.fido.client.ClientError
@@ -40,7 +38,6 @@ import com.yubico.yubikit.fido.client.WebAuthnClient
 import com.yubico.yubikit.fido.ctap.BioEnrollment
 import com.yubico.yubikit.fido.ctap.Ctap2Session
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredential
-import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialUserEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -174,7 +171,7 @@ class MainViewModel : ViewModel() {
     ) {
         multipleAssertions = assertions
         val users = runCatching { assertions.getUsers() }
-            .getOrElse { emptyList<PublicKeyCredentialUserEntity>() }
+            .getOrElse { emptyList() }
 
         _uiState.value = UiState.MultipleAssertions(users) { user ->
             assertions.select(user).let { selected ->
@@ -296,8 +293,8 @@ class MainViewModel : ViewModel() {
                         val errorState = when (error) {
                             is PinRequiredClientError -> Error.PinRequiredError
                             is AuthInvalidClientError -> when (error.authType) {
-                                AuthInvalidClientError.AuthType.PIN -> IncorrectPinError(error.retries)
-                                AuthInvalidClientError.AuthType.UV -> IncorrectUvError(error.retries)
+                                AuthInvalidClientError.AuthType.PIN -> Error.IncorrectPinError(error.retries)
+                                AuthInvalidClientError.AuthType.UV -> Error.IncorrectUvError(error.retries)
                             }
 
                             is ClientError -> {

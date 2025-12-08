@@ -57,7 +57,7 @@ import org.json.JSONObject
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-const val RESULT_KEY_REMOVED = 10000;
+const val RESULT_KEY_REMOVED = 10000
 
 class YubiKitFidoActivity : ComponentActivity() {
     companion object {

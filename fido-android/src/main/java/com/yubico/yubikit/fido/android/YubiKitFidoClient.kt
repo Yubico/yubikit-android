@@ -47,7 +47,6 @@ class YubiKitFidoClient {
         var extensions: List<Extension>? = emptyList()
     }
 
-    @Suppress("unused")
     constructor(fragment: Fragment, extensions: List<Extension>? = null) : this(
         fragment,
         extensions,
@@ -66,7 +65,6 @@ class YubiKitFidoClient {
         Companion.extensions = extensions
     }
 
-    @Suppress("unused")
     constructor(activity: ComponentActivity, extensions: List<Extension>? = null) : this(
         activity,
         extensions,
@@ -143,21 +141,20 @@ class YubiKitFidoClient {
         }
 
         override fun parseResult(resultCode: Int, intent: Intent?): Result<String> =
-            when {
-                resultCode == Activity.RESULT_OK && intent != null ->
+            when (resultCode) {
+                Activity.RESULT_OK if intent != null ->
                     intent.getStringExtra("credential")?.let { credentialJson ->
                         Result.success(credentialJson)
                     }
                         ?: Result.failure(IllegalStateException("Credential missing in Intent result"))
 
-                resultCode == Activity.RESULT_CANCELED ->
+                Activity.RESULT_CANCELED ->
                     Result.failure(CancellationException("User cancelled FIDO operation"))
 
-                resultCode == RESULT_KEY_REMOVED ->
+                RESULT_KEY_REMOVED ->
                     Result.failure(CancellationException("Key was removed"))
 
-                else ->
-                    Result.failure(IllegalStateException("Unknown error occurred (resultCode: $resultCode)"))
+                else -> Result.failure(IllegalStateException("Unknown error occurred (resultCode: $resultCode)"))
             }
     }
 }

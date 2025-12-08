@@ -103,7 +103,7 @@ class FidoClientService(private val viewModel: MainViewModel = MainViewModel()) 
                 JSONObject(request).toMap()
             )
 
-            val clientData = clientDataHash?.let { ClientDataProvider.fromHash(clientDataHash) }
+            val clientData = clientDataHash?.let { ClientDataProvider.fromHash(it) }
                 ?: ClientDataProvider.fromClientDataJson(
                     buildClientData(
                         "webauthn.create",
