@@ -245,6 +245,30 @@ class YubiKitProviderService : CredentialProviderService() {
                 {
                   "type": "android",
                   "info": {
+                    "package_name": "com.sec.android.app.sbrowser",
+                    "signatures": [
+                      {
+                        "build": "release",
+                        "cert_fingerprint_sha256": "34:DF:0E:7A:9F:1C:F1:89:2E:45:C0:56:B4:97:3C:D8:1C:CF:14:8A:40:50:D1:1A:EA:4A:C5:A6:5F:90:0A:42"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "type": "android",
+                  "info": {
+                    "package_name": "ai.perplexity.comet",
+                    "signatures": [
+                      {
+                        "build": "release",
+                        "cert_fingerprint_sha256": "89:58:A4:05:40:1F:69:F5:B0:FB:54:44:24:74:6C:40:DE:C3:0C:09:1F:40:1F:95:1F:61:3C:48:35:C3:E5:EC"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "type": "android",
+                  "info": {
                     "package_name": "com.google.android.gms",
                     "signatures": [
                       {
