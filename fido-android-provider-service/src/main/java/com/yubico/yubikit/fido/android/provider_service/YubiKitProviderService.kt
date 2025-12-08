@@ -233,6 +233,18 @@ class YubiKitProviderService : CredentialProviderService() {
                 {
                   "type": "android",
                   "info": {
+                    "package_name": "com.vivaldi.browser",
+                    "signatures": [
+                      {
+                        "build": "release",
+                        "cert_fingerprint_sha256": "E8:A7:85:44:65:5B:A8:C0:98:17:F7:32:76:8F:56:89:B1:66:2E:C4:B2:BC:5A:0B:C0:EC:13:8D:33:CA:3D:1E"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "type": "android",
+                  "info": {
                     "package_name": "com.google.android.gms",
                     "signatures": [
                       {
