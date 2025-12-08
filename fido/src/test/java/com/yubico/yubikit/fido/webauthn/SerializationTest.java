@@ -112,13 +112,8 @@ public class SerializationTest {
     Map<String, ?> cborMap = descriptor.toMap(SerializationType.CBOR);
     Assert.assertEquals(descriptor.getType(), cborMap.get("type"));
     Assert.assertArrayEquals(descriptor.getId(), (byte[]) cborMap.get("id"));
-    Assert.assertNull(cborMap.get("transports"));
-
-    PublicKeyCredentialDescriptor other =
-        PublicKeyCredentialDescriptor.fromMap(cborMap, SerializationType.CBOR);
-    Assert.assertEquals(descriptor.getType(), other.getType());
-    Assert.assertArrayEquals(descriptor.getId(), other.getId());
-    Assert.assertNull(other.getTransports());
+    Assert.assertEquals(
+            descriptor, PublicKeyCredentialDescriptor.fromMap(cborMap, SerializationType.CBOR));
 
     Map<String, ?> jsonMap = descriptor.toMap(SerializationType.JSON);
     Assert.assertEquals(descriptor.getType(), jsonMap.get("type"));

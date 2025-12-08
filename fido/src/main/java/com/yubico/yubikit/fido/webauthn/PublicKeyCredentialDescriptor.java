@@ -64,8 +64,7 @@ public class PublicKeyCredentialDescriptor {
     Map<String, Object> map = new HashMap<>();
     map.put(TYPE, type);
     map.put(ID, serializeBytes(id, serializationType));
-    // never serialize transports to authenticator inputs
-    if (transports != null && serializationType != SerializationType.CBOR) {
+    if (transports != null) {
       map.put(TRANSPORTS, transports);
     }
     return map;
