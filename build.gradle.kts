@@ -30,7 +30,7 @@ allprojects {
 }
 
 subprojects {
-    version = "3.0.1-SNAPSHOT"
+    version = "3.0.0_fa-1"
     tasks.withType<Javadoc>().configureEach {
         (options as? StandardJavadocDocletOptions)?.addStringOption(
             "Xdoclint:all,-missing",
