@@ -21,9 +21,6 @@ kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutine
 androidx-test-rules = { module = "androidx.test:rules", version.ref = "androidx-test" }
 androidx-test-core = { module = "androidx.test:core", version.ref = "androidx-test" }
 
-# Submodule: testing-desktop
-junit-vintage-engine = { module = "org.junit.vintage:junit-vintage-engine", version.ref = "junit-vintage-engine" }
-
 # Submodule: testing
 junit-junit = { module = "junit:junit", version.ref = "junit-version" }
 hamcrest-library = { module = "org.hamcrest:hamcrest-library", version.ref = "hamcrest-library" }
@@ -80,7 +77,6 @@ hamcrest-library = "3.0"
 hid4java = "0.8.0"
 jspecify = "1.0.0"
 junit-version = "4.13.2"
-junit-vintage-engine = "5.14.0"
 kotlin = "2.2.21"
 kotlinx-coroutines-android = "1.10.2"
 legacy-support-v4 = "1.0.0"

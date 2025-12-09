@@ -45,7 +45,6 @@ dependencies {
 
     add("integrationTestImplementation", libs.junit.junit)
     add("integrationTestImplementation", libs.logback.classic)
-    add("integrationTestRuntimeOnly", libs.junit.vintage.engine)
 }
 
 java {
@@ -59,7 +58,6 @@ tasks.register<Test>("integrationTest") {
     testClassesDirs = integrationTest.output.classesDirs
     classpath = integrationTest.runtimeClasspath
     mustRunAfter(tasks.named("test"))
-    useJUnitPlatform()
     testLogging.showStandardStreams = true
 }
 
