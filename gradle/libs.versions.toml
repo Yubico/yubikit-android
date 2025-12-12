@@ -61,7 +61,7 @@ android-library = { id = "com.android.library", version.ref = "android-gradle" }
 
 [versions]
 android-gradle = "8.13.1"
-spotbugs-plugin = "6.4.7"
+spotbugs-plugin = "6.4.8"
 spotbugs-core = "4.9.8"
 findsecbugs = "1.14.0"
 spotless = "8.1.0"
