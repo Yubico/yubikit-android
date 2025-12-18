@@ -145,6 +145,16 @@ class FidoClientService(private val viewModel: MainViewModel = MainViewModel()) 
         viewModel.useWebAuthn { client ->
             onConnection()
 
+            (client as? Ctap2Client)?.run {
+                if (this.session.cachedInfo.forcePinChange) {
+                    // there is PIN set, but it must be changed first
+                    throw ClientError(
+                        ClientError.Code.BAD_REQUEST,
+                        CtapException(CtapException.ERR_PIN_POLICY_VIOLATION),
+                    )
+                }
+            }
+
             val requestJson = JSONObject(request).toMap()
 
             val clientData =
