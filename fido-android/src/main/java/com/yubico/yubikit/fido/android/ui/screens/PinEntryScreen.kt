@@ -57,6 +57,30 @@ import com.yubico.yubikit.fido.android.ui.Error
 import com.yubico.yubikit.fido.android.ui.components.ContentWrapper
 import com.yubico.yubikit.fido.android.ui.theme.DefaultPreview
 
+@Composable
+fun resolvePinEntryError(error: Error?) : String? = when (error) {
+    is Error.IncorrectPinError -> {
+        if (error.remainingAttempts != null) {
+            stringResource(
+                R.string.incorrect_pin_with_attempts,
+                error.remainingAttempts
+            )
+        } else {
+            stringResource(R.string.incorrect_pin)
+        }
+    }
+
+    is Error.PinBlockedError -> {
+        stringResource(R.string.pin_blocked)
+    }
+
+    is Error.PinAuthBlockedError -> {
+        stringResource(R.string.pin_auth_blocked)
+    }
+
+    else -> null
+}
+
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun EnterPin(
@@ -67,28 +91,7 @@ fun EnterPin(
     pin: CharArray? = null,
     onPinEntered: (pin: CharArray) -> Unit
 ) {
-    val errorText: String? = when (error) {
-        is Error.IncorrectPinError -> {
-            if (error.remainingAttempts != null) {
-                stringResource(
-                    R.string.incorrect_pin_with_attempts,
-                    error.remainingAttempts
-                )
-            } else {
-                stringResource(R.string.incorrect_pin)
-            }
-        }
-
-        is Error.PinBlockedError -> {
-            stringResource(R.string.pin_blocked)
-        }
-
-        is Error.PinAuthBlockedError -> {
-            stringResource(R.string.pin_auth_blocked)
-        }
-
-        else -> null
-    }
+    val errorText = resolvePinEntryError(error)
 
     ContentWrapper(
         operation = operation,

@@ -88,6 +88,15 @@ class FidoClientService(private val viewModel: MainViewModel = MainViewModel()) 
             onConnection()
 
             (client as? Ctap2Client)?.run {
+
+                if (this.session.cachedInfo.forcePinChange) {
+                    // there is PIN set, but it must be changed first
+                    throw ClientError(
+                        ClientError.Code.BAD_REQUEST,
+                        CtapException(CtapException.ERR_PIN_POLICY_VIOLATION)
+                    )
+                }
+
                 if (isPinSupported && !isPinConfigured) {
                     // there is not PIN set on the key, we deliberately don't allow this
                     throw ClientError(
@@ -160,6 +169,13 @@ class FidoClientService(private val viewModel: MainViewModel = MainViewModel()) 
         pin: CharArray,
     ) = viewModel.useWebAuthn { client ->
         (client as? Ctap2Client)?.setPin(pin)
+    }
+
+    suspend fun changePin(
+        currentPin: CharArray,
+        newPin: CharArray,
+    ) = viewModel.useWebAuthn { client ->
+        (client as? Ctap2Client)?.changePin(currentPin, newPin)
     }
 
 }

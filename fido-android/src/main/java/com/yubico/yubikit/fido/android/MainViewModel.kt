@@ -236,9 +236,47 @@ class MainViewModel : ViewModel() {
                 multipleAssertions?.let { showMultipleAssertions(it, onResult); return@launch }
 
                 newPinValue?.let { newPin ->
-                    pinValue?.let { pin ->
-                        // TODO change pin
-                    } ?: run {
+                    val currentPinValue = pinValue?.clone()
+                    if (currentPinValue != null) {
+                        // change pin
+                        fidoClientService.changePin(currentPinValue, newPin)
+                            .fold(
+                                {
+                                    pinValue = newPin.clone()
+                                    _uiState.value = UiState.PinChanged
+                                },
+                                {
+                                    val forcePinChangeError = when (it) {
+                                        // there can be various errors during force change pin
+                                        is AuthInvalidClientError -> when (it.authType) {
+                                            AuthInvalidClientError.AuthType.PIN -> Error.IncorrectPinError(it.retries)
+                                            AuthInvalidClientError.AuthType.UV -> Error.IncorrectUvError(it.retries)
+                                        }
+                                        is ClientError -> when (it.errorCode) {
+                                            ClientError.Code.BAD_REQUEST -> when ((it.cause as? CtapException)?.ctapError) {
+                                                CtapException.ERR_PIN_BLOCKED -> Error.PinBlockedError
+                                                CtapException.ERR_PIN_AUTH_BLOCKED -> Error.PinAuthBlockedError
+                                                CtapException.ERR_PIN_NOT_SET -> Error.PinNotSetError
+                                                CtapException.ERR_PIN_POLICY_VIOLATION -> when (info?.forcePinChange) {
+                                                    true -> Error.PinComplexityError
+                                                    else -> Error.IncorrectPinError(null)
+                                                }
+                                                else -> Error.UnknownError("Changing pin Failed")
+                                            }
+                                            else -> Error.UnknownError("Changing pin Failed")
+                                        }
+                                        else -> Error.UnknownError("Changing pin Failed")
+                                    }
+                                    _uiState.value = UiState.ForcePinChangeError(forcePinChangeError)
+                                }
+                            ).also {
+                                newPinValue?.fill('\u0000')
+                                newPinValue = null
+                                pinValue?.fill('\u0000')
+                                pinValue = null
+                            }
+                    } else {
+                        // create pin
                         fidoClientService.createPin(newPin)
                             .fold(
                                 {
@@ -256,9 +294,10 @@ class MainViewModel : ViewModel() {
                                 newPinValue?.fill('\u0000')
                                 newPinValue = null
                             }
-                        return@launch
                     }
+                    return@launch
                 }
+
                 fidoClientService.performOperation(
                     pinValue,
                     operation,
@@ -311,14 +350,12 @@ class MainViewModel : ViewModel() {
                                         when ((error.cause as? CtapException)?.ctapError) {
                                             CtapException.ERR_PIN_BLOCKED -> Error.PinBlockedError
                                             CtapException.ERR_PIN_AUTH_BLOCKED -> Error.PinAuthBlockedError
-                                            CtapException.ERR_PIN_INVALID -> Error.IncorrectPinError(
-                                                null
-                                            )
 
                                             CtapException.ERR_PIN_NOT_SET -> Error.PinNotSetError
-                                            CtapException.ERR_PIN_POLICY_VIOLATION -> Error.IncorrectPinError(
-                                                null
-                                            )
+                                            CtapException.ERR_PIN_POLICY_VIOLATION -> when (info?.forcePinChange) {
+                                                true -> Error.ForcePinChangeError(null)
+                                                else -> Error.IncorrectPinError(null)
+                                            }
 
                                             CtapException.ERR_UV_BLOCKED,
                                             CtapException.ERR_PUAT_REQUIRED -> Error.UvBlockedError
@@ -343,6 +380,7 @@ class MainViewModel : ViewModel() {
 
                             is Error.IncorrectUvError -> UiState.WaitingForUvEntry(errorState)
                             is Error.PinNotSetError -> UiState.PinNotSetError()
+                            is Error.ForcePinChangeError -> UiState.ForcePinChangeError()
                             else -> UiState.OperationError(errorState)
                         }
                         return@launch
@@ -377,8 +415,26 @@ class MainViewModel : ViewModel() {
         signalRetry(forUsb = false)
     }
 
+    // executed after the user taps the "Create PIN" button
+    fun onChangePin(currentPin: CharArray, newPin: CharArray) {
+        newPinValue?.fill('\u0000')
+        newPinValue = newPin.clone()
+        newPin.fill('\u0000')
+        pinValue?.fill('\u0000')
+        pinValue = currentPin.clone()
+        currentPin.fill('\u0000')
+        // we don't setup USB because there is no
+        // need for touch. The touch will be required after onPinCreatedConfirmation
+        signalRetry(forUsb = false)
+    }
+
     // executed after the user taps the "Continue" button in PIN created screen
     fun onPinCreatedConfirmation() {
+        signalRetry()
+    }
+
+    // executed after the user taps the "Continue" button in PIN changed screen
+    fun onPinChangedConfirmation() {
         signalRetry()
     }
 
@@ -392,8 +448,8 @@ class MainViewModel : ViewModel() {
     }
 
     // job for changing the uiState with delay
-    // used currently for setting TouchKey state when USB key is connected
-    // default delay is value which worked best
+// used currently for setting TouchKey state when USB key is connected
+// default delay is value which worked best
     private var uiStateTimerJob: Job? = null
     fun setUiStateWithDelay(newState: UiState, delayMillis: Long = 500) {
         uiStateTimerJob?.cancel()

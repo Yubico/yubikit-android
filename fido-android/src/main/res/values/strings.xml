@@ -15,6 +15,7 @@
     <string name="pin_blocked">PIN is blocked. You have to reset the key.</string>
     <string name="pin_auth_blocked">PIN authentication is blocked. Reconnect the key.</string>
     <string name="pin_successfully_created">PIN successfully created</string>
+    <string name="pin_successfully_changed">PIN successfully changed</string>
     <string name="unknown_error">Unknown error</string>
     <string name="device_not_configured">The security key cannot be used, make sure PIN is set.</string>
     <string name="select_passkey">"Select a passkey (%1$d available)"</string>
@@ -26,8 +27,10 @@
     <string name="dont_remove_the_key">Don\'t remove the key</string>
     <string name="touch_the_key">Touch the security key</string>
     <string name="create_pin">Create PIN</string>
+    <string name="change_pin">Change PIN</string>
     <string name="cancel">Cancel</string>
     <string name="new_pin">New PIN (min %1$d characters)</string>
+    <string name="current_pin">Current PIN</string>
     <string name="touch_fingerprint">Touch the fingerprint sensor to continue</string>
     <string name="repeat_pin">Repeat PIN</string>
     <string name="pin_is_not_complex_enough">PIN is not complex enough.</string>
@@ -41,6 +44,7 @@
     <string name="ctap_err_uv_unknown">There was an error when matching the fingerprint.</string>
     <string name="creating_pin_failed">Creating PIN failed</string>
     <string name="info_no_pin_set">The Security Key does not have a PIN set. You need to create a PIN to continue.</string>
+    <string name="info_force_change_pin">For security reasons, the current PIN has to be changed.</string>
     <string name="fingerprint_icon">fingerprint icon</string>
     <string name="content_description_nfc_antenna_location">NFC Antenna location</string>
 </resources>

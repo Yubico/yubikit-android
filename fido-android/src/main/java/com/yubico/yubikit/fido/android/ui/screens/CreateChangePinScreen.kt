@@ -44,6 +44,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.input.VisualTransformation
@@ -63,24 +64,77 @@ fun CreatePinScreen(
     error: Error? = null,
     minPinLen: Int = DEFAULT_MIN_PIN_LENGTH,
     onCloseButtonClick: () -> Unit,
-    onCreatePin: (pin: CharArray) -> Unit
+    onCreatePin: (newPin: CharArray) -> Unit
 ) {
+    CreateChangePinScreen(
+        operation = operation,
+        origin = origin,
+        error = error,
+        minPinLen = minPinLen,
+        forceChangePin = false,
+        onCloseButtonClick = onCloseButtonClick
+    ) { newPin, _ ->
+        onCreatePin(newPin)
+    }
+}
+
+@Composable
+fun ForceChangePinScreen(
+    operation: FidoClientService.Operation,
+    origin: String,
+    error: Error? = null,
+    minPinLen: Int = DEFAULT_MIN_PIN_LENGTH,
+    onCloseButtonClick: () -> Unit,
+    onChangePin: (currentPin: CharArray, newPin: CharArray) -> Unit
+) {
+    CreateChangePinScreen(
+        operation = operation,
+        origin = origin,
+        error = error,
+        minPinLen = minPinLen,
+        forceChangePin = true,
+        onCloseButtonClick = onCloseButtonClick
+    ) { newPin, currentPin ->
+        onChangePin(currentPin, newPin)
+    }
+}
+
+@Composable
+private fun CreateChangePinScreen(
+    operation: FidoClientService.Operation,
+    origin: String,
+    error: Error? = null,
+    minPinLen: Int = DEFAULT_MIN_PIN_LENGTH,
+    forceChangePin: Boolean = false,
+    onCloseButtonClick: () -> Unit,
+    onPinAction: (newPin: CharArray, currentPin: CharArray) -> Unit
+) {
+    var currentPin by remember { mutableStateOf(TextFieldValue("")) }
     var newPin by remember { mutableStateOf(TextFieldValue("")) }
     var repeatPin by remember { mutableStateOf(TextFieldValue("")) }
+    var showCurrentPin by remember { mutableStateOf(false) }
     var showNewPin by remember { mutableStateOf(false) }
     var showRepeatPin by remember { mutableStateOf(false) }
+    val currentPinFocusRequester = remember { FocusRequester() }
     val newPinFocusRequester = remember { FocusRequester() }
     val repeatPinFocusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
 
-    val errorText: String? = when (error) {
-        is Error.PinComplexityError -> stringResource(R.string.pin_is_not_complex_enough)
-        null -> null
+    val currentPinErrorText: String? = resolvePinEntryError(error)
+
+    val newPinErrorText: String? = when {
+        currentPinErrorText != null -> null
+        error is Error.PinComplexityError -> stringResource(R.string.pin_is_not_complex_enough)
+        error == null -> null
         else -> stringResource(R.string.creating_pin_failed)
     }
 
     LaunchedEffect(Unit) {
-        newPinFocusRequester.requestFocus()
+        if (forceChangePin) {
+            currentPinFocusRequester.requestFocus()
+        } else {
+            newPinFocusRequester.requestFocus()
+        }
         keyboardController?.show()
     }
 
@@ -91,10 +145,44 @@ fun CreatePinScreen(
         contentHeight = 320.dp
     ) {
         Text(
-            text = stringResource(R.string.info_no_pin_set),
+            text = stringResource(
+                if (forceChangePin)
+                    R.string.info_force_change_pin
+                else
+                    R.string.info_no_pin_set
+            ),
             style = MaterialTheme.typography.bodyLarge,
             modifier = Modifier.padding(vertical = 8.dp)
         )
+
+        if (forceChangePin) {
+            PinTextField(
+                value = currentPin,
+                onValueChange = { currentPin = it },
+                label = stringResource(R.string.current_pin),
+                showPin = showCurrentPin,
+                onToggleShowPin = { showCurrentPin = !showCurrentPin },
+                modifier = Modifier
+                    .padding(bottom = if (currentPinErrorText == null) 16.dp else 0.dp)
+                    .fillMaxWidth()
+                    .focusRequester(currentPinFocusRequester),
+                keyboardOptions = KeyboardOptions.Default.copy(
+                    imeAction = ImeAction.Next,
+                    autoCorrectEnabled = false,
+                    keyboardType = KeyboardType.Password
+                ),
+                keyboardActions = KeyboardActions(onNext = { newPinFocusRequester.requestFocus() })
+            )
+        }
+
+        if (currentPinErrorText != null) {
+            Text(
+                text = currentPinErrorText,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(top = 8.dp, bottom = 16.dp)
+            )
+        }
 
         PinTextField(
             value = newPin,
@@ -105,7 +193,11 @@ fun CreatePinScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .focusRequester(newPinFocusRequester),
-            keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Next),
+            keyboardOptions = KeyboardOptions.Default.copy(
+                imeAction = ImeAction.Next,
+                autoCorrectEnabled = false,
+                keyboardType = KeyboardType.Password
+            ),
             keyboardActions = KeyboardActions(onNext = { repeatPinFocusRequester.requestFocus() })
         )
 
@@ -118,19 +210,23 @@ fun CreatePinScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .focusRequester(repeatPinFocusRequester),
-            keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Done),
+            keyboardOptions = KeyboardOptions.Default.copy(
+                imeAction = ImeAction.Done,
+                autoCorrectEnabled = false,
+                keyboardType = KeyboardType.Password
+            ),
             keyboardActions = KeyboardActions(
                 onDone = {
                     if (isPinValid(newPin.text, repeatPin.text, minPinLen)) {
-                        onCreatePin(newPin.text.toCharArray())
+                        onPinAction(newPin.text.toCharArray(), currentPin.text.toCharArray())
                     }
                 }
             )
         )
 
-        if (errorText != null) {
+        if (newPinErrorText != null) {
             Text(
-                text = errorText,
+                text = newPinErrorText,
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(top = 8.dp)
@@ -151,11 +247,16 @@ fun CreatePinScreen(
             }
             Button(
                 onClick = {
-                    onCreatePin(newPin.text.toCharArray())
+                    onPinAction(newPin.text.toCharArray(), currentPin.text.toCharArray())
                 },
                 enabled = isPinValid(newPin.text, repeatPin.text, minPinLen)
             ) {
-                Text(stringResource(R.string.create_pin))
+                Text(
+                    if (forceChangePin)
+                        stringResource(R.string.change_pin)
+                    else
+                        stringResource(R.string.create_pin)
+                )
             }
         }
     }
@@ -237,24 +338,68 @@ fun PinCreatedScreen(
     }
 }
 
+@Composable
+fun PinChangedScreen(
+    operation: FidoClientService.Operation,
+    origin: String,
+    onCloseButtonClick: () -> Unit,
+    onContinue: () -> Unit
+) {
+    ContentWrapper(
+        operation = operation,
+        origin = origin,
+        contentHeight = 200.dp,
+        onCloseButtonClick = onCloseButtonClick
+    ) {
+        Text(
+            text = stringResource(R.string.pin_successfully_changed),
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.padding(vertical = 24.dp)
+        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 16.dp),
+            horizontalArrangement = Arrangement.End
+        ) {
+            Button(
+                onClick = onContinue
+            ) {
+                Text(stringResource(R.string.continue_operation))
+            }
+        }
+    }
+}
+
 @DefaultPreview
 @Composable
-fun CreatePinPreview() {
-    CreatePinScreen(
+fun CreateChangePinPreview() {
+    CreateChangePinScreen(
         operation = FidoClientService.Operation.MAKE_CREDENTIAL,
         origin = "example.com",
-        onCreatePin = {},
+        onPinAction = { _, _ -> },
         onCloseButtonClick = {})
 }
 
 @DefaultPreview
 @Composable
-fun CreatePinErrorPreview() {
-    CreatePinScreen(
+fun ForceChangePinPreview() {
+    CreateChangePinScreen(
+        operation = FidoClientService.Operation.MAKE_CREDENTIAL,
+        origin = "example.com",
+        forceChangePin = true,
+        onPinAction = { _, _ -> },
+        onCloseButtonClick = {})
+}
+
+@DefaultPreview
+@Composable
+fun CreateChangePinErrorPreview() {
+    CreateChangePinScreen(
         operation = FidoClientService.Operation.MAKE_CREDENTIAL,
         origin = "example.com",
         error = Error.PinComplexityError,
-        onCreatePin = {},
+        onPinAction = { _, _ -> },
         onCloseButtonClick = {})
 }
 
@@ -262,6 +407,17 @@ fun CreatePinErrorPreview() {
 @Composable
 fun PinCreatedPreview() {
     PinCreatedScreen(
+        operation = FidoClientService.Operation.MAKE_CREDENTIAL,
+        origin = "example.com",
+        onContinue = {},
+        onCloseButtonClick = {}
+    )
+}
+
+@DefaultPreview
+@Composable
+fun PinChangedPreview() {
+    PinChangedScreen(
         operation = FidoClientService.Operation.MAKE_CREDENTIAL,
         origin = "example.com",
         onContinue = {},

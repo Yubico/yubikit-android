@@ -148,8 +148,20 @@ fun FidoClientUi(
                         error = state.error,
                         minPinLen = viewModel.info?.minPinLength ?: DEFAULT_MIN_PIN_LENGTH,
                         onCloseButtonClick = handleCloseButton,
-                    ) {
-                        viewModel.onCreatePin(it)
+                    ) { newPin ->
+                        viewModel.onCreatePin(newPin)
+                    }
+                }
+
+                is UiState.ForcePinChangeError -> {
+                    ForceChangePinScreen(
+                        operation = operation,
+                        origin = rpId,
+                        error = state.error,
+                        minPinLen = viewModel.info?.minPinLength ?: DEFAULT_MIN_PIN_LENGTH,
+                        onCloseButtonClick = handleCloseButton,
+                    ) { currentPin, newPin ->
+                        viewModel.onChangePin(currentPin, newPin)
                     }
                 }
 
@@ -160,6 +172,16 @@ fun FidoClientUi(
                         onCloseButtonClick = handleCloseButton,
                     ) {
                         viewModel.onPinCreatedConfirmation()
+                    }
+                }
+
+                is UiState.PinChanged -> {
+                    PinChangedScreen(
+                        operation = operation,
+                        origin = rpId,
+                        onCloseButtonClick = handleCloseButton,
+                    ) {
+                        viewModel.onPinChangedConfirmation()
                     }
                 }
 
