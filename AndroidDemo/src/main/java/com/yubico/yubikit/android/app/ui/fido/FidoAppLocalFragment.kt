@@ -36,11 +36,10 @@ class FidoAppLocalFragment : Fragment() {
     val binding get() = _binding!!
     private lateinit var yubiKitFidoClient: YubiKitFidoClient
 
-
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
-        savedInstanceState: Bundle?
+        savedInstanceState: Bundle?,
     ): View? {
         yubiKitFidoClient = YubiKitFidoClient(this)
         _binding = FragmentFidoAppLocalBinding.inflate(inflater, container, false)
@@ -54,28 +53,33 @@ class FidoAppLocalFragment : Fragment() {
 
     private fun buildMcRequest(
         userName: String,
-        userDisplayName: String = userName
+        userDisplayName: String = userName,
     ): String {
         val challenge = ByteArray(16).also { Random.Default.nextBytes(it) }
         val userId = ByteArray(32).also { Random.Default.nextBytes(it) }
-        val request = McRequest(
-            challenge = Base64.toUrlSafeString(challenge),
-            rp = Rp(RP_ID, RP_ID),
-            user = User(Base64.toUrlSafeString(userId), userName, userDisplayName)
-        )
+        val request =
+            McRequest(
+                challenge = Base64.toUrlSafeString(challenge),
+                rp = Rp(RP_ID, RP_ID),
+                user = User(Base64.toUrlSafeString(userId), userName, userDisplayName),
+            )
         return json.encodeToString(request)
     }
 
     private fun buildGaRequest(): String {
         val challenge = ByteArray(16).also { Random.Default.nextBytes(it) }
-        val request = GaRequest(
-            challenge = Base64.toUrlSafeString(challenge),
-            rpId = RP_ID
-        )
+        val request =
+            GaRequest(
+                challenge = Base64.toUrlSafeString(challenge),
+                rpId = RP_ID,
+            )
         return json.encodeToString(request)
     }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?,
+    ) {
         super.onViewCreated(view, savedInstanceState)
 
         binding.btnMc.setOnClickListener {

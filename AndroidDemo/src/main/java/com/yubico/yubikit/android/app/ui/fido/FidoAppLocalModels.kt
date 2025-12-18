@@ -29,7 +29,7 @@ data class AuthenticatorSelection(
     val userVerification: String = "required",
     val residentKey: String = "required",
     val requireResidentKey: Boolean = true,
-    val authenticatorAttachment: String = "cross-platform"
+    val authenticatorAttachment: String = "cross-platform",
 )
 
 @Serializable
@@ -45,11 +45,12 @@ data class McRequest(
     val excludeCredentials: List<String> = emptyList(),
     val timeout: Int = 90000,
     val extensions: Map<String, Boolean> = mapOf("credProps" to true),
-    val pubKeyCredParams: List<PubKeyCredParams> = listOf(
-        PubKeyCredParams(alg = -8),
-        PubKeyCredParams(alg = -7),
-        PubKeyCredParams(alg = -257),
-    )
+    val pubKeyCredParams: List<PubKeyCredParams> =
+        listOf(
+            PubKeyCredParams(alg = -8),
+            PubKeyCredParams(alg = -7),
+            PubKeyCredParams(alg = -257),
+        ),
 )
 
 @Serializable
@@ -58,5 +59,5 @@ data class GaRequest(
     val rpId: String,
     val userVerification: String = "required",
     val timeout: Int = 90000,
-    val allowCredentials: List<String> = emptyList()
+    val allowCredentials: List<String> = emptyList(),
 )

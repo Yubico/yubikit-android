@@ -71,8 +71,16 @@ class MainActivity : AppCompatActivity() {
         navController = findNavController(R.id.nav_host_fragment)
         // Passing each menu ID as a set of Ids because each
         // menu should be considered as top level destinations.
-        appBarConfiguration = AppBarConfiguration(setOf(
-                R.id.nav_management, R.id.nav_yubiotp, R.id.nav_piv, R.id.nav_oath), drawerLayout)
+        appBarConfiguration =
+            AppBarConfiguration(
+                setOf(
+                    R.id.nav_management,
+                    R.id.nav_yubiotp,
+                    R.id.nav_piv,
+                    R.id.nav_oath,
+                ),
+                drawerLayout,
+            )
         setupActionBarWithNavController(navController, appBarConfiguration)
         navView.setupWithNavController(navController)
 
@@ -123,12 +131,17 @@ class MainActivity : AppCompatActivity() {
             R.id.action_about -> {
                 val binding = DialogAboutBinding.inflate(LayoutInflater.from(this))
                 AlertDialog.Builder(this)
-                        .setView(binding.root)
-                        .create().apply {
-                            setOnShowListener {
-                                binding.version.text = String.format(Locale.getDefault(), getString(R.string.version), BuildConfig.VERSION_NAME)
-                            }
-                        }.show()
+                    .setView(binding.root)
+                    .create().apply {
+                        setOnShowListener {
+                            binding.version.text =
+                                String.format(
+                                    Locale.getDefault(),
+                                    getString(R.string.version),
+                                    BuildConfig.VERSION_NAME,
+                                )
+                        }
+                    }.show()
             }
         }
         return super.onOptionsItemSelected(item)

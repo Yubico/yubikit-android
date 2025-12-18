@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.yubico.yubikit.fido.android.provider_service
+package com.yubico.yubikit.fido.android.providerservice
 
 import android.app.PendingIntent
 import android.content.Intent
@@ -43,7 +43,6 @@ import org.json.JSONObject
 import org.slf4j.LoggerFactory
 
 class YubiKitProviderService : CredentialProviderService() {
-
     private val logger = LoggerFactory.getLogger(YubiKitProviderService::class.java)
 
     /**
@@ -54,18 +53,18 @@ class YubiKitProviderService : CredentialProviderService() {
     override fun onBeginCreateCredentialRequest(
         request: BeginCreateCredentialRequest,
         cancellationSignal: CancellationSignal,
-        callback: OutcomeReceiver<BeginCreateCredentialResponse, CreateCredentialException>
+        callback: OutcomeReceiver<BeginCreateCredentialResponse, CreateCredentialException>,
     ) {
         logger.debug("onBeginCreateCredentialRequest.type: {}", request.type)
         logger.debug("callingAppInfo packageName: {}", request.callingAppInfo?.packageName)
         logger.debug(
             "callingAppInfo isOriginPopulated: {}",
-            request.callingAppInfo?.isOriginPopulated()
+            request.callingAppInfo?.isOriginPopulated(),
         )
         logger.debug("callingAppInfo origin: {}", request.callingAppInfo?.getOrigin(allowList))
         logger.debug(
             "onBeginCreateCredentialRequest.candidateQueryData: {}",
-            request.candidateQueryData
+            request.candidateQueryData,
         )
 
         if (request !is BeginCreatePublicKeyCredentialRequest) {
@@ -81,12 +80,13 @@ class YubiKitProviderService : CredentialProviderService() {
             return
         }
 
-        val pe = PendingIntent.getActivity(
-            applicationContext,
-            REQUEST_CODE,
-            Intent(applicationContext, YubiKitFido2ProviderActivity::class.java),
-            PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-        )
+        val pe =
+            PendingIntent.getActivity(
+                applicationContext,
+                REQUEST_CODE,
+                Intent(applicationContext, YubiKitFido2ProviderActivity::class.java),
+                PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+            )
 
         val response =
             BeginCreateCredentialResponse(listOf(CreateEntry.Builder(displayName, pe).build()))
@@ -103,7 +103,7 @@ class YubiKitProviderService : CredentialProviderService() {
     override fun onBeginGetCredentialRequest(
         request: BeginGetCredentialRequest,
         cancellationSignal: CancellationSignal,
-        callback: OutcomeReceiver<BeginGetCredentialResponse, GetCredentialException>
+        callback: OutcomeReceiver<BeginGetCredentialResponse, GetCredentialException>,
     ) {
         logger.debug("onBeginGetCredentialRequest: {}", request.beginGetCredentialOptions)
 
@@ -116,7 +116,6 @@ class YubiKitProviderService : CredentialProviderService() {
         var foundSupportedOption = false
 
         for (option in request.beginGetCredentialOptions) {
-
             if (option is BeginGetPublicKeyCredentialOption) {
                 foundSupportedOption = true
                 logger.trace("id  :               {}", option.id)
@@ -125,37 +124,41 @@ class YubiKitProviderService : CredentialProviderService() {
                 logger.trace("clientDataHash:     {}", option.clientDataHash)
                 logger.trace("candidateQueryData: {}", option.candidateQueryData)
 
-                val pendingIntent = PendingIntent.getActivity(
-                    applicationContext,
-                    REQUEST_CODE,
-                    Intent(applicationContext, YubiKitFido2ProviderActivity::class.java),
-                    PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-                )
+                val pendingIntent =
+                    PendingIntent.getActivity(
+                        applicationContext,
+                        REQUEST_CODE,
+                        Intent(applicationContext, YubiKitFido2ProviderActivity::class.java),
+                        PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+                    )
 
-                val icon = try {
-                    Icon.createWithResource(applicationContext, R.drawable.ic_service)
-                } catch (e: Resources.NotFoundException) {
-                    logger.error("Resource not found: ic_service", e)
-                    Icon.createWithResource(applicationContext, android.R.drawable.ic_dialog_alert)
-                }
+                val icon =
+                    try {
+                        Icon.createWithResource(applicationContext, R.drawable.ic_service)
+                    } catch (e: Resources.NotFoundException) {
+                        logger.error("Resource not found: ic_service", e)
+                        Icon.createWithResource(applicationContext, android.R.drawable.ic_dialog_alert)
+                    }
 
-                val label = try {
-                    applicationContext.getString(R.string.get_credential)
-                } catch (e: Resources.NotFoundException) {
-                    logger.error("Resource not found: get_credential", e)
-                    "Credential" // Fallback label
-                }
+                val label =
+                    try {
+                        applicationContext.getString(R.string.get_credential)
+                    } catch (e: Resources.NotFoundException) {
+                        logger.error("Resource not found: get_credential", e)
+                        "Credential" // Fallback label
+                    }
 
-                val entry = PublicKeyCredentialEntry.Builder(
-                    applicationContext,
-                    label,
-                    pendingIntent,
-                    option
-                )
-                    // can use also .setDisplayName("Choose later...")
-                    .setIcon(icon)
-                    .setAutoSelectAllowed(false)
-                    .build()
+                val entry =
+                    PublicKeyCredentialEntry.Builder(
+                        applicationContext,
+                        label,
+                        pendingIntent,
+                        option,
+                    )
+                        // can use also .setDisplayName("Choose later...")
+                        .setIcon(icon)
+                        .setAutoSelectAllowed(false)
+                        .build()
 
                 credentialEntries.add(entry)
             }
@@ -179,7 +182,7 @@ class YubiKitProviderService : CredentialProviderService() {
     override fun onClearCredentialStateRequest(
         request: ProviderClearCredentialStateRequest,
         cancellationSignal: CancellationSignal,
-        callback: OutcomeReceiver<Void?, ClearCredentialException>
+        callback: OutcomeReceiver<Void?, ClearCredentialException>,
     ) {
         logger.debug("onClearCredentialStateRequest")
         callback.onError(ClearCredentialUnsupportedException("Not implemented"))
@@ -187,7 +190,8 @@ class YubiKitProviderService : CredentialProviderService() {
 
     companion object {
         private const val REQUEST_CODE = 1
-        val allowList = """
+        val allowList =
+            """
             {
               "apps": [
                 {
@@ -283,7 +287,7 @@ class YubiKitProviderService : CredentialProviderService() {
                   }
                 }
               ]
-            }""".trimIndent()
-
+            }
+            """.trimIndent()
     }
 }

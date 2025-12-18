@@ -28,12 +28,18 @@ class FidoDeviceFilter : DeviceFilter() {
      * @param productId the USB product ID
      * @return always true, as all IDs are accepted
      */
-    override fun checkVendorProductIds(vendorId: Int, productId: Int): Boolean {
+    override fun checkVendorProductIds(
+        vendorId: Int,
+        productId: Int,
+    ): Boolean {
         // match all vendors and products
         return true
     }
 
-    override fun checkUsbDevice(manager: UsbManager, usbDevice: UsbDevice): Boolean {
+    override fun checkUsbDevice(
+        manager: UsbManager,
+        usbDevice: UsbDevice,
+    ): Boolean {
         return true
     }
 }

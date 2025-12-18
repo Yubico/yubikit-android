@@ -40,20 +40,21 @@ import org.slf4j.LoggerFactory
 class FidoFragment : Fragment() {
     private val viewModel: FidoViewModel by activityViewModels()
     private var _binding: FragmentFidoBinding? = null
-    private val binding get() = _binding!!
+    val binding get() = _binding!!
     private val logger = LoggerFactory.getLogger(FidoFragment::class.java)
     private lateinit var yubiKitFidoClient: YubiKitFidoClient
 
     companion object {
-        private val EXTENSIONS = listOf(
-            CredPropsExtension(),
-            CredBlobExtension(),
-            CredProtectExtension(),
-            HmacSecretExtension(),
-            MinPinLengthExtension(),
-            LargeBlobExtension(),
-            SignExtension()
-        )
+        private val EXTENSIONS =
+            listOf(
+                CredPropsExtension(),
+                CredBlobExtension(),
+                CredProtectExtension(),
+                HmacSecretExtension(),
+                MinPinLengthExtension(),
+                LargeBlobExtension(),
+                SignExtension(),
+            )
         private const val URL_PASSKEY = "https://passkey.org"
         private const val URL_WEBAUTHN_IO = "https://webauthn.io"
         private const val URL_YUBICO_DEMO = "https://demo.yubico.com/webauthn-developers"
@@ -64,9 +65,8 @@ class FidoFragment : Fragment() {
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
-        savedInstanceState: Bundle?
+        savedInstanceState: Bundle?,
     ): View {
-
         yubiKitFidoClient = YubiKitFidoClient(this, EXTENSIONS)
         _binding = FragmentFidoBinding.inflate(inflater, container, false)
         return binding.root
@@ -77,7 +77,10 @@ class FidoFragment : Fragment() {
         _binding = null
     }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?,
+    ) {
         super.onViewCreated(view, savedInstanceState)
         setupButtons()
         setupWebView()

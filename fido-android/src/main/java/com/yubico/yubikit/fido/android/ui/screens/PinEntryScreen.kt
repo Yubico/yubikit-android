@@ -54,46 +54,47 @@ import androidx.compose.ui.text.input.VisualTransformation
 import com.yubico.yubikit.fido.android.FidoClientService
 import com.yubico.yubikit.fido.android.R
 import com.yubico.yubikit.fido.android.ui.Error
-import com.yubico.yubikit.fido.android.ui.components.ContentWrapper
+import com.yubico.yubikit.fido.android.ui.components.contentWrapper
 import com.yubico.yubikit.fido.android.ui.theme.DefaultPreview
 
 @Composable
-fun resolvePinEntryError(error: Error?) : String? = when (error) {
-    is Error.IncorrectPinError -> {
-        if (error.remainingAttempts != null) {
-            stringResource(
-                R.string.incorrect_pin_with_attempts,
-                error.remainingAttempts
-            )
-        } else {
-            stringResource(R.string.incorrect_pin)
+fun resolvePinEntryError(error: Error?): String? =
+    when (error) {
+        is Error.IncorrectPinError -> {
+            if (error.remainingAttempts != null) {
+                stringResource(
+                    R.string.incorrect_pin_with_attempts,
+                    error.remainingAttempts,
+                )
+            } else {
+                stringResource(R.string.incorrect_pin)
+            }
         }
-    }
 
-    is Error.PinBlockedError -> {
-        stringResource(R.string.pin_blocked)
-    }
+        is Error.PinBlockedError -> {
+            stringResource(R.string.pin_blocked)
+        }
 
-    is Error.PinAuthBlockedError -> {
-        stringResource(R.string.pin_auth_blocked)
-    }
+        is Error.PinAuthBlockedError -> {
+            stringResource(R.string.pin_auth_blocked)
+        }
 
-    else -> null
-}
+        else -> null
+    }
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun EnterPin(
+fun enterPin(
     operation: FidoClientService.Operation,
     origin: String,
     error: Error? = null,
     onCloseButtonClick: () -> Unit,
     pin: CharArray? = null,
-    onPinEntered: (pin: CharArray) -> Unit
+    onPinEntered: (pin: CharArray) -> Unit,
 ) {
     val errorText = resolvePinEntryError(error)
 
-    ContentWrapper(
+    contentWrapper(
         operation = operation,
         origin = origin,
         onCloseButtonClick = onCloseButtonClick,
@@ -103,11 +104,11 @@ fun EnterPin(
                 if (pin != null) {
                     TextFieldValue(
                         String(pin),
-                        selection = TextRange(0, pin.size)
+                        selection = TextRange(0, pin.size),
                     )
                 } else {
                     TextFieldValue("")
-                }
+                },
             )
         }
         var showPassword by remember { mutableStateOf(false) }
@@ -127,20 +128,22 @@ fun EnterPin(
         }
 
         OutlinedTextField(
-            modifier = Modifier
-                .fillMaxWidth()
-                .focusRequester(focusRequester),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .focusRequester(focusRequester),
             value = text,
             supportingText = { Text(text = errorText ?: "") },
             trailingIcon = {
                 IconButton(onClick = { showPassword = !showPassword }) {
                     Icon(
-                        imageVector = if (showPassword) {
-                            Icons.Default.VisibilityOff
-                        } else {
-                            Icons.Default.Visibility
-                        },
-                        contentDescription = "Show"
+                        imageVector =
+                            if (showPassword) {
+                                Icons.Default.VisibilityOff
+                            } else {
+                                Icons.Default.Visibility
+                            },
+                        contentDescription = "Show",
                     )
                 }
             },
@@ -150,60 +153,64 @@ fun EnterPin(
             leadingIcon = {
                 Icon(
                     imageVector = Icons.Default.Password,
-                    contentDescription = stringResource(
-                        R.string.icon_content_description_password
-                    ),
-                    tint = MaterialTheme.colorScheme.onBackground
+                    contentDescription =
+                        stringResource(
+                            R.string.icon_content_description_password,
+                        ),
+                    tint = MaterialTheme.colorScheme.onBackground,
                 )
             },
-            visualTransformation = if (!showPassword) {
-                PasswordVisualTransformation()
-            } else {
-                VisualTransformation.None
-            },
+            visualTransformation =
+                if (!showPassword) {
+                    PasswordVisualTransformation()
+                } else {
+                    VisualTransformation.None
+                },
             onValueChange = {
                 text = it
             },
             keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Done),
-            keyboardActions = KeyboardActions(
-                onDone = { submit.invoke() }
-            )
+            keyboardActions =
+                KeyboardActions(
+                    onDone = { submit.invoke() },
+                ),
         )
 
-
         Row(
-            modifier = Modifier
-                .fillMaxWidth(),
-            horizontalArrangement = Arrangement.End
+            modifier =
+                Modifier
+                    .fillMaxWidth(),
+            horizontalArrangement = Arrangement.End,
         ) {
             Button(
                 modifier = Modifier.width(IntrinsicSize.Min),
                 onClick = submit,
                 enabled = isPinValid,
-                shapes = ButtonDefaults.shapes()
+                shapes = ButtonDefaults.shapes(),
             ) {
                 Text(text = stringResource(R.string.continue_operation), maxLines = 1)
             }
         }
-
     }
 }
 
 @DefaultPreview
 @Composable
-fun EnterPinPreview() {
-    EnterPin(
+fun enterPinPreview() {
+    enterPin(
         operation = FidoClientService.Operation.MAKE_CREDENTIAL,
         origin = "example.com",
-        onCloseButtonClick = {}) {}
+        onCloseButtonClick = {},
+    ) {}
 }
 
 @DefaultPreview
 @Composable
-fun EnterPinWithErrorPreview() {
-    EnterPin(
+fun enterPinWithErrorPreview() {
+    enterPin(
         operation = FidoClientService.Operation.GET_ASSERTION,
         origin = "example.com",
         error = Error.IncorrectPinError(3),
-        onCloseButtonClick = {}) {}
+        onCloseButtonClick = {},
+    ) {}
 }

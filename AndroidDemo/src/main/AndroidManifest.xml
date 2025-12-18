@@ -5,7 +5,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
 
     <uses-sdk
-        tools:overrideLibrary="com.yubico.yubikit.fido.android.provider_service, com.yubico.yubikit.fido.android,androidx.credentials,androidx.compose.material3,androidx.navigationevent.compose,androidx.navigationevent,androidx.activity,androidx.activity.ktx,androidx.activity.compose" />
+        tools:overrideLibrary="com.yubico.yubikit.fido.android.providerservice, com.yubico.yubikit.fido.android,androidx.credentials,androidx.compose.material3,androidx.navigationevent.compose,androidx.navigationevent,androidx.activity,androidx.activity.ktx,androidx.activity.compose" />
 
     <application
         android:name="androidx.multidex.MultiDexApplication"

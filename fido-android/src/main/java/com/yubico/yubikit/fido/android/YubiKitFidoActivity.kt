@@ -48,8 +48,8 @@ import com.yubico.yubikit.android.transport.nfc.NfcConfiguration
 import com.yubico.yubikit.android.transport.nfc.NfcNotAvailable
 import com.yubico.yubikit.android.transport.usb.UsbConfiguration
 import com.yubico.yubikit.fido.android.ui.UiState
-import com.yubico.yubikit.fido.android.ui.screens.FidoClientUi
-import com.yubico.yubikit.fido.android.ui.theme.FidoAndroidTheme
+import com.yubico.yubikit.fido.android.ui.screens.fidoClientUi
+import com.yubico.yubikit.fido.android.ui.theme.fidoAndroidTheme
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredential
 import com.yubico.yubikit.fido.webauthn.SerializationType
 import kotlinx.coroutines.launch
@@ -95,7 +95,7 @@ class YubiKitFidoActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         setContent {
-            val theme = customTheme ?: { FidoAndroidTheme(content = it) }
+            val theme = customTheme ?: { fidoAndroidTheme(content = it) }
             theme {
                 val uiState by viewModel.uiState.collectAsState()
                 val showAntennas =
@@ -103,7 +103,6 @@ class YubiKitFidoActivity : ComponentActivity() {
 
                 val device by viewModel.device.observeAsState()
                 var wasConnected by remember { mutableStateOf(false) }
-
 
                 val sheetState = rememberModalBottomSheetState()
                 val scope = rememberCoroutineScope()
@@ -127,14 +126,14 @@ class YubiKitFidoActivity : ComponentActivity() {
 
                 val finishActivityWithCancel: () -> Unit = {
                     setResult(
-                        RESULT_CANCELED
+                        RESULT_CANCELED,
                     )
                     finishActivity()
                 }
 
                 val finishActivityWithKeyRemoved: () -> Unit = {
                     setResult(
-                        RESULT_KEY_REMOVED
+                        RESULT_KEY_REMOVED,
                     )
                     finishActivity()
                 }
@@ -143,10 +142,11 @@ class YubiKitFidoActivity : ComponentActivity() {
                     scope.launch {
                         viewModel.waitForKeyRemoval()
                         setResult(
-                            RESULT_OK, intent.putExtra(
+                            RESULT_OK,
+                            intent.putExtra(
                                 "credential",
-                                JSONObject(result.toMap(SerializationType.JSON)).toString()
-                            )
+                                JSONObject(result.toMap(SerializationType.JSON)).toString(),
+                            ),
                         )
                         finishActivity()
                     }
@@ -163,7 +163,7 @@ class YubiKitFidoActivity : ComponentActivity() {
                 AnimatedVisibility(
                     visible = bottomSheetVisible,
                     enter = fadeIn(),
-                    exit = fadeOut()
+                    exit = fadeOut(),
                 ) {
                     if (bottomSheetVisible) {
                         logger.trace("Showing bottom sheet")
@@ -173,7 +173,7 @@ class YubiKitFidoActivity : ComponentActivity() {
                             scrimColor = Color.Transparent,
                             onDismissRequest = finishActivityWithCancel,
                         ) {
-                            FidoClientUi(
+                            fidoClientUi(
                                 viewModel,
                                 params.operation,
                                 isNfcAvailable =
@@ -185,15 +185,15 @@ class YubiKitFidoActivity : ComponentActivity() {
                                 onResult = {
                                     finishActivityWithResult(it)
                                 },
-                                onCloseButtonClick = finishActivityWithCancel
+                                onCloseButtonClick = finishActivityWithCancel,
                             )
                         }
                     }
                 }
 
-                NfcAntennaHint(
+                nfcAntennaHint(
                     modifier = Modifier.fillMaxSize(),
-                    showAntennas = showAntennas
+                    showAntennas = showAntennas,
                 )
             }
         }
@@ -242,26 +242,27 @@ class YubiKitFidoActivity : ComponentActivity() {
         val rpId: String,
         val request: String,
         val clientDataHash: List<Byte>?,
-        val operation: FidoClientService.Operation
+        val operation: FidoClientService.Operation,
     ) {
         companion object {
             fun fromIntent(intent: Intent): FidoActivityParameters {
                 val extras = intent.extras ?: throw IllegalArgumentException("Missing extras")
 
                 // This single line gets the int, maps it, and throws an exception if the mapping fails.
-                val operation = extras.getInt("type").let { type ->
-                    when (type) {
-                        0 -> FidoClientService.Operation.MAKE_CREDENTIAL
-                        1 -> FidoClientService.Operation.GET_ASSERTION
-                        else -> null
-                    }
-                } ?: throw IllegalArgumentException("Invalid operation type")
+                val operation =
+                    extras.getInt("type").let { type ->
+                        when (type) {
+                            0 -> FidoClientService.Operation.MAKE_CREDENTIAL
+                            1 -> FidoClientService.Operation.GET_ASSERTION
+                            else -> null
+                        }
+                    } ?: throw IllegalArgumentException("Invalid operation type")
 
                 return FidoActivityParameters(
                     rpId = extras.getString("rpId")!!,
                     request = extras.getString("request")!!,
                     clientDataHash = extras.getString("clientDataHash")?.hexToByteArray()?.toList(),
-                    operation = operation
+                    operation = operation,
                 )
             }
         }

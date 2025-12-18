@@ -29,15 +29,15 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.yubico.yubikit.fido.android.FidoClientService
 import com.yubico.yubikit.fido.android.R
-import com.yubico.yubikit.fido.android.ui.components.ContentWrapper
+import com.yubico.yubikit.fido.android.ui.components.contentWrapper
 
 @Composable
-fun TouchTheSecurityKey(
+fun touchTheSecurityKey(
     operation: FidoClientService.Operation,
     origin: String,
     onCloseButtonClick: () -> Unit,
 ) {
-    ContentWrapper(
+    contentWrapper(
         operation = operation,
         origin = origin,
         onCloseButtonClick = onCloseButtonClick,

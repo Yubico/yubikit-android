@@ -32,12 +32,11 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
 class YubiKitFidoClient {
-
     private data class FidoRequest(
         val operation: FidoClientService.Operation,
         val rpId: String,
         val clientDataHash: String?,
-        val request: String
+        val request: String,
     )
 
     private var currentContinuation: CancellableContinuation<Result<String>>? = null
@@ -50,36 +49,38 @@ class YubiKitFidoClient {
     constructor(fragment: Fragment, extensions: List<Extension>? = null) : this(
         fragment,
         extensions,
-        null
+        null,
     )
 
     constructor(
         fragment: Fragment,
         extensions: List<Extension>? = null,
-        theme: (@Composable (content: @Composable () -> Unit) -> Unit)? = null
+        theme: (@Composable (content: @Composable () -> Unit) -> Unit)? = null,
     ) {
         YubiKitFidoActivity.setTheme(theme)
-        launcher = fragment.registerForActivityResult(FidoActivityResultContract()) { result ->
-            handleResult(result)
-        }
+        launcher =
+            fragment.registerForActivityResult(FidoActivityResultContract()) { result ->
+                handleResult(result)
+            }
         Companion.extensions = extensions
     }
 
     constructor(activity: ComponentActivity, extensions: List<Extension>? = null) : this(
         activity,
         extensions,
-        null
+        null,
     )
 
     constructor(
         activity: ComponentActivity,
         extensions: List<Extension>? = null,
-        theme: (@Composable (content: @Composable () -> Unit) -> Unit)? = null
+        theme: (@Composable (content: @Composable () -> Unit) -> Unit)? = null,
     ) {
         YubiKitFidoActivity.setTheme(theme)
-        launcher = activity.registerForActivityResult(FidoActivityResultContract()) { result ->
-            handleResult(result)
-        }
+        launcher =
+            activity.registerForActivityResult(FidoActivityResultContract()) { result ->
+                handleResult(result)
+            }
         Companion.extensions = extensions
     }
 
@@ -96,26 +97,26 @@ class YubiKitFidoClient {
         type: FidoClientService.Operation,
         rpId: String,
         clientDataHash: String?,
-        request: String
-    ): Result<String> = suspendCancellableCoroutine { continuation ->
-        if (currentContinuation != null) {
-            continuation.resumeWithException(IllegalStateException("A FIDO request is already in progress"))
-            return@suspendCancellableCoroutine
-        }
-        currentContinuation = continuation
-        launcher.launch(FidoRequest(type, rpId, clientDataHash, request))
-        continuation.invokeOnCancellation {
-
-            if (it is CancellationException) {
-                currentContinuation = null
+        request: String,
+    ): Result<String> =
+        suspendCancellableCoroutine { continuation ->
+            if (currentContinuation != null) {
+                continuation.resumeWithException(IllegalStateException("A FIDO request is already in progress"))
+                return@suspendCancellableCoroutine
+            }
+            currentContinuation = continuation
+            launcher.launch(FidoRequest(type, rpId, clientDataHash, request))
+            continuation.invokeOnCancellation {
+                if (it is CancellationException) {
+                    currentContinuation = null
+                }
             }
         }
-    }
 
     suspend fun makeCredential(
         rpId: String,
         request: String,
-        clientDataHash: String?
+        clientDataHash: String?,
     ): Result<String> {
         return execute(FidoClientService.Operation.MAKE_CREDENTIAL, rpId, clientDataHash, request)
     }
@@ -123,15 +124,17 @@ class YubiKitFidoClient {
     suspend fun getAssertion(
         rpId: String,
         request: String,
-        clientDataHash: String?
+        clientDataHash: String?,
     ): Result<String> {
         return execute(FidoClientService.Operation.GET_ASSERTION, rpId, clientDataHash, request)
     }
 
     private class FidoActivityResultContract :
         ActivityResultContract<FidoRequest, Result<String>>() {
-
-        override fun createIntent(context: Context, input: FidoRequest): Intent {
+        override fun createIntent(
+            context: Context,
+            input: FidoRequest,
+        ): Intent {
             return Intent(context, YubiKitFidoActivity::class.java).apply {
                 putExtra("type", input.operation.ordinal)
                 putExtra("rpId", input.rpId)
@@ -140,18 +143,21 @@ class YubiKitFidoClient {
             }
         }
 
-        override fun parseResult(resultCode: Int, intent: Intent?): Result<String> =
-            when (resultCode) {
-                Activity.RESULT_OK if intent != null ->
+        override fun parseResult(
+            resultCode: Int,
+            intent: Intent?,
+        ): Result<String> =
+            when {
+                resultCode == Activity.RESULT_OK && intent != null ->
                     intent.getStringExtra("credential")?.let { credentialJson ->
                         Result.success(credentialJson)
                     }
                         ?: Result.failure(IllegalStateException("Credential missing in Intent result"))
 
-                Activity.RESULT_CANCELED ->
+                resultCode == Activity.RESULT_CANCELED ->
                     Result.failure(CancellationException("User cancelled FIDO operation"))
 
-                RESULT_KEY_REMOVED ->
+                resultCode == RESULT_KEY_REMOVED ->
                     Result.failure(CancellationException("Key was removed"))
 
                 else -> Result.failure(IllegalStateException("Unknown error occurred (resultCode: $resultCode)"))

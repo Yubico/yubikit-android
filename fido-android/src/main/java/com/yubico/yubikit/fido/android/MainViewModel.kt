@@ -54,16 +54,15 @@ import kotlin.coroutines.suspendCoroutine
 typealias YubiKeyAction = suspend (Result<YubiKeyDevice, Exception>) -> Unit
 
 class MainViewModel : ViewModel() {
-
-    private val _nfcAvailable = MutableLiveData(false)
-    val isNfcAvailable: LiveData<Boolean> = _nfcAvailable
+    private val nfcAvailable = MutableLiveData(false)
+    val isNfcAvailable: LiveData<Boolean> = nfcAvailable
 
     var info: Ctap2Session.InfoData? = null
 
     private val _device = MutableLiveData<YubiKeyDevice?>()
     val device: LiveData<YubiKeyDevice?> = _device
 
-    private val _pendingYubiKeyAction = MutableLiveData<YubiKeyAction?>()
+    private val pendingYubiKeyAction = MutableLiveData<YubiKeyAction?>()
 
     private val _uiState = MutableStateFlow<UiState>(UiState.WaitingForKey)
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
@@ -84,7 +83,6 @@ class MainViewModel : ViewModel() {
     private var lastClientDataHash: ByteArray? = null
     private var lastOnResult: ((PublicKeyCredential) -> Unit)? = null
 
-
     var lastEnteredPin: CharArray? = null
         private set
 
@@ -98,12 +96,12 @@ class MainViewModel : ViewModel() {
     }
 
     fun setNfcAvailable(value: Boolean) {
-        _nfcAvailable.postValue(value)
+        nfcAvailable.postValue(value)
     }
 
     suspend fun provideYubiKey(device: YubiKeyDevice) {
-        _pendingYubiKeyAction.value?.let {
-            _pendingYubiKeyAction.postValue(null)
+        pendingYubiKeyAction.value?.let {
+            pendingYubiKeyAction.postValue(null)
             it.invoke(Result.success(device))
         }
         (device as? UsbYubiKeyDevice?)?.setOnClosed {
@@ -116,9 +114,10 @@ class MainViewModel : ViewModel() {
         delay(250)
         suspendCoroutine { continuation ->
             when (val dev = _device.value) {
-                is NfcYubiKeyDevice -> dev.remove {
-                    continuation.resume(Unit)
-                }
+                is NfcYubiKeyDevice ->
+                    dev.remove {
+                        continuation.resume(Unit)
+                    }
 
                 else -> {
                     continuation.resume(Unit)
@@ -130,35 +129,35 @@ class MainViewModel : ViewModel() {
     /**
      * Requests a WebAuthn client, and uses it to produce some result
      */
-    suspend fun <T> useWebAuthn(
-        action: (WebAuthnClient) -> T
-    ): kotlin.Result<T> = runCatching {
-        val device = (_device.value as? UsbYubiKeyDevice)
-            ?: awaitPendingYubiKeyDevice()
-        withWebAuthnClient(device, action)
-    }
+    suspend fun <T> useWebAuthn(action: (WebAuthnClient) -> T): kotlin.Result<T> =
+        runCatching {
+            val device =
+                (_device.value as? UsbYubiKeyDevice)
+                    ?: awaitPendingYubiKeyDevice()
+            withWebAuthnClient(device, action)
+        }
 
     private suspend fun awaitPendingYubiKeyDevice(): YubiKeyDevice =
         suspendCoroutine { cont ->
-            _pendingYubiKeyAction.postValue { result ->
+            pendingYubiKeyAction.postValue { result ->
                 cont.resume(result.value)
             }
         }
 
     private suspend fun <T> withWebAuthnClient(
         device: YubiKeyDevice,
-        action: (WebAuthnClient) -> T
-    ): T = withContext(Dispatchers.IO) {
-        WebAuthnClient.create(device, extensions).use { client ->
-            if (client is Ctap2Client) info = client.session.cachedInfo
-            action(client)
+        action: (WebAuthnClient) -> T,
+    ): T =
+        withContext(Dispatchers.IO) {
+            WebAuthnClient.create(device, extensions).use { client ->
+                if (client is Ctap2Client) info = client.session.cachedInfo
+                action(client)
+            }
         }
-    }
-
 
     private fun deliverResult(
         credential: PublicKeyCredential,
-        onResult: (PublicKeyCredential) -> Unit
+        onResult: (PublicKeyCredential) -> Unit,
     ) {
         _uiState.value = UiState.Success
         onResult(credential)
@@ -167,19 +166,21 @@ class MainViewModel : ViewModel() {
 
     private fun showMultipleAssertions(
         assertions: MultipleAssertionsAvailable,
-        onResult: (PublicKeyCredential) -> Unit
+        onResult: (PublicKeyCredential) -> Unit,
     ) {
         multipleAssertions = assertions
-        val users = runCatching { assertions.getUsers() }
-            .getOrElse { emptyList() }
+        val users =
+            runCatching { assertions.getUsers() }
+                .getOrElse { emptyList() }
 
-        _uiState.value = UiState.MultipleAssertions(users) { user ->
-            assertions.select(user).let { selected ->
-                result = selected
-                deliverResult(selected, onResult)
+        _uiState.value =
+            UiState.MultipleAssertions(users) { user ->
+                assertions.select(user).let { selected ->
+                    result = selected
+                    deliverResult(selected, onResult)
+                }
+                multipleAssertions = null
             }
-            multipleAssertions = null
-        }
     }
 
     private fun signalRetry(forUsb: Boolean = true) {
@@ -202,7 +203,7 @@ class MainViewModel : ViewModel() {
             lastRpId!!,
             lastRequest!!,
             lastClientDataHash,
-            lastOnResult!!
+            lastOnResult!!,
         )
     }
 
@@ -212,14 +213,13 @@ class MainViewModel : ViewModel() {
         rpId: String,
         request: String,
         clientDataHash: ByteArray?,
-        onResult: (PublicKeyCredential) -> Unit
+        onResult: (PublicKeyCredential) -> Unit,
     ) {
-
         logger.trace(
             "Start operation: {} on {}. Request: {}",
             operation.name,
             rpId,
-            request
+            request,
         )
 
         // Save parameters for retry
@@ -232,8 +232,14 @@ class MainViewModel : ViewModel() {
 
         viewModelScope.launch {
             try {
-                result?.let { deliverResult(it, onResult); return@launch }
-                multipleAssertions?.let { showMultipleAssertions(it, onResult); return@launch }
+                result?.let {
+                    deliverResult(it, onResult)
+                    return@launch
+                }
+                multipleAssertions?.let {
+                    showMultipleAssertions(it, onResult)
+                    return@launch
+                }
 
                 newPinValue?.let { newPin ->
                     val currentPinValue = pinValue?.clone()
@@ -246,29 +252,34 @@ class MainViewModel : ViewModel() {
                                     _uiState.value = UiState.PinChanged
                                 },
                                 {
-                                    val forcePinChangeError = when (it) {
-                                        // there can be various errors during force change pin
-                                        is AuthInvalidClientError -> when (it.authType) {
-                                            AuthInvalidClientError.AuthType.PIN -> Error.IncorrectPinError(it.retries)
-                                            AuthInvalidClientError.AuthType.UV -> Error.IncorrectUvError(it.retries)
-                                        }
-                                        is ClientError -> when (it.errorCode) {
-                                            ClientError.Code.BAD_REQUEST -> when ((it.cause as? CtapException)?.ctapError) {
-                                                CtapException.ERR_PIN_BLOCKED -> Error.PinBlockedError
-                                                CtapException.ERR_PIN_AUTH_BLOCKED -> Error.PinAuthBlockedError
-                                                CtapException.ERR_PIN_NOT_SET -> Error.PinNotSetError
-                                                CtapException.ERR_PIN_POLICY_VIOLATION -> when (info?.forcePinChange) {
-                                                    true -> Error.PinComplexityError
-                                                    else -> Error.IncorrectPinError(null)
+                                    val forcePinChangeError =
+                                        when (it) {
+                                            // there can be various errors during force change pin
+                                            is AuthInvalidClientError ->
+                                                when (it.authType) {
+                                                    AuthInvalidClientError.AuthType.PIN -> Error.IncorrectPinError(it.retries)
+                                                    AuthInvalidClientError.AuthType.UV -> Error.IncorrectUvError(it.retries)
                                                 }
-                                                else -> Error.UnknownError("Changing pin Failed")
-                                            }
+                                            is ClientError ->
+                                                when (it.errorCode) {
+                                                    ClientError.Code.BAD_REQUEST ->
+                                                        when ((it.cause as? CtapException)?.ctapError) {
+                                                            CtapException.ERR_PIN_BLOCKED -> Error.PinBlockedError
+                                                            CtapException.ERR_PIN_AUTH_BLOCKED -> Error.PinAuthBlockedError
+                                                            CtapException.ERR_PIN_NOT_SET -> Error.PinNotSetError
+                                                            CtapException.ERR_PIN_POLICY_VIOLATION ->
+                                                                when (info?.forcePinChange) {
+                                                                    true -> Error.PinComplexityError
+                                                                    else -> Error.IncorrectPinError(null)
+                                                                }
+                                                            else -> Error.UnknownError("Changing pin Failed")
+                                                        }
+                                                    else -> Error.UnknownError("Changing pin Failed")
+                                                }
                                             else -> Error.UnknownError("Changing pin Failed")
                                         }
-                                        else -> Error.UnknownError("Changing pin Failed")
-                                    }
                                     _uiState.value = UiState.ForcePinChangeError(forcePinChangeError)
-                                }
+                                },
                             ).also {
                                 newPinValue?.fill('\u0000')
                                 newPinValue = null
@@ -284,12 +295,13 @@ class MainViewModel : ViewModel() {
                                     _uiState.value = UiState.PinCreated
                                 },
                                 {
-                                    val createPinError = when (it) {
-                                        is ClientError -> Error.PinComplexityError
-                                        else -> Error.UnknownError("Creating Pin Failed")
-                                    }
+                                    val createPinError =
+                                        when (it) {
+                                            is ClientError -> Error.PinComplexityError
+                                            else -> Error.UnknownError("Creating Pin Failed")
+                                        }
                                     _uiState.value = UiState.PinNotSetError(createPinError)
-                                }
+                                },
                             ).also {
                                 newPinValue?.fill('\u0000')
                                 newPinValue = null
@@ -303,14 +315,14 @@ class MainViewModel : ViewModel() {
                     operation,
                     rpId,
                     clientDataHash,
-                    request
+                    request,
                 ) {
                     _uiState.value = info?.let {
                         val bioEnrollmentConfigured = BioEnrollment.isConfigured(it)
                         val isUsb = _device.value?.transport == Transport.USB
                         if (bioEnrollmentConfigured && !uvFallback) {
                             UiState.WaitingForUvEntry(
-                                (_uiState.value as? UiState.WaitingForUvEntry)?.error
+                                (_uiState.value as? UiState.WaitingForUvEntry)?.error,
                             )
                         } else if (isUsb) {
                             UiState.TouchKey
@@ -329,60 +341,68 @@ class MainViewModel : ViewModel() {
                             return@launch
                         }
 
-                        val errorState = when (error) {
-                            is PinRequiredClientError -> Error.PinRequiredError
-                            is AuthInvalidClientError -> when (error.authType) {
-                                AuthInvalidClientError.AuthType.PIN -> Error.IncorrectPinError(error.retries)
-                                AuthInvalidClientError.AuthType.UV -> Error.IncorrectUvError(error.retries)
-                            }
-
-                            is ClientError -> {
-                                when (error.errorCode) {
-                                    ClientError.Code.CONFIGURATION_UNSUPPORTED -> when ((error.cause as? CtapException)?.ctapError) {
-                                        CtapException.ERR_KEY_STORE_FULL -> Error.OperationError(
-                                            error.cause
-                                        )
-
-                                        else -> Error.DeviceNotConfiguredError
+                        val errorState =
+                            when (error) {
+                                is PinRequiredClientError -> Error.PinRequiredError
+                                is AuthInvalidClientError ->
+                                    when (error.authType) {
+                                        AuthInvalidClientError.AuthType.PIN -> Error.IncorrectPinError(error.retries)
+                                        AuthInvalidClientError.AuthType.UV -> Error.IncorrectUvError(error.retries)
                                     }
 
-                                    else ->
-                                        when ((error.cause as? CtapException)?.ctapError) {
-                                            CtapException.ERR_PIN_BLOCKED -> Error.PinBlockedError
-                                            CtapException.ERR_PIN_AUTH_BLOCKED -> Error.PinAuthBlockedError
+                                is ClientError -> {
+                                    when (error.errorCode) {
+                                        ClientError.Code.CONFIGURATION_UNSUPPORTED ->
+                                            when ((error.cause as? CtapException)?.ctapError) {
+                                                CtapException.ERR_KEY_STORE_FULL ->
+                                                    Error.OperationError(
+                                                        error.cause,
+                                                    )
 
-                                            CtapException.ERR_PIN_NOT_SET -> Error.PinNotSetError
-                                            CtapException.ERR_PIN_POLICY_VIOLATION -> when (info?.forcePinChange) {
-                                                true -> Error.ForcePinChangeError(null)
-                                                else -> Error.IncorrectPinError(null)
+                                                else -> Error.DeviceNotConfiguredError
                                             }
 
-                                            CtapException.ERR_UV_BLOCKED,
-                                            CtapException.ERR_PUAT_REQUIRED -> Error.UvBlockedError
+                                        else ->
+                                            when ((error.cause as? CtapException)?.ctapError) {
+                                                CtapException.ERR_PIN_BLOCKED -> Error.PinBlockedError
+                                                CtapException.ERR_PIN_AUTH_BLOCKED -> Error.PinAuthBlockedError
 
-                                            else -> Error.OperationError(error.cause)
-                                        }
+                                                CtapException.ERR_PIN_NOT_SET -> Error.PinNotSetError
+                                                CtapException.ERR_PIN_POLICY_VIOLATION ->
+                                                    when (info?.forcePinChange) {
+                                                        true -> Error.ForcePinChangeError(null)
+                                                        else -> Error.IncorrectPinError(null)
+                                                    }
+
+                                                CtapException.ERR_UV_BLOCKED,
+                                                CtapException.ERR_PUAT_REQUIRED,
+                                                -> Error.UvBlockedError
+
+                                                else -> Error.OperationError(error.cause)
+                                            }
+                                    }
                                 }
+
+                                else -> Error.UnknownError(error.message)
                             }
+                        _uiState.value =
+                            when (errorState) {
+                                is Error.PinRequiredError,
+                                is Error.PinBlockedError,
+                                is Error.PinAuthBlockedError,
+                                is Error.IncorrectPinError,
+                                -> UiState.WaitingForPinEntry(errorState)
 
-                            else -> Error.UnknownError(error.message)
-                        }
-                        _uiState.value = when (errorState) {
-                            is Error.PinRequiredError,
-                            is Error.PinBlockedError,
-                            is Error.PinAuthBlockedError,
-                            is Error.IncorrectPinError -> UiState.WaitingForPinEntry(errorState)
+                                is Error.UvBlockedError -> {
+                                    uvFallback = true
+                                    UiState.WaitingForPinEntry(errorState)
+                                }
 
-                            is Error.UvBlockedError -> {
-                                uvFallback = true
-                                UiState.WaitingForPinEntry(errorState)
+                                is Error.IncorrectUvError -> UiState.WaitingForUvEntry(errorState)
+                                is Error.PinNotSetError -> UiState.PinNotSetError()
+                                is Error.ForcePinChangeError -> UiState.ForcePinChangeError()
+                                else -> UiState.OperationError(errorState)
                             }
-
-                            is Error.IncorrectUvError -> UiState.WaitingForUvEntry(errorState)
-                            is Error.PinNotSetError -> UiState.PinNotSetError()
-                            is Error.ForcePinChangeError -> UiState.ForcePinChangeError()
-                            else -> UiState.OperationError(errorState)
-                        }
                         return@launch
                     })
             } catch (e: Exception) {
@@ -416,7 +436,10 @@ class MainViewModel : ViewModel() {
     }
 
     // executed after the user taps the "Create PIN" button
-    fun onChangePin(currentPin: CharArray, newPin: CharArray) {
+    fun onChangePin(
+        currentPin: CharArray,
+        newPin: CharArray,
+    ) {
         newPinValue?.fill('\u0000')
         newPinValue = newPin.clone()
         newPin.fill('\u0000')
@@ -451,12 +474,17 @@ class MainViewModel : ViewModel() {
 // used currently for setting TouchKey state when USB key is connected
 // default delay is value which worked best
     private var uiStateTimerJob: Job? = null
-    fun setUiStateWithDelay(newState: UiState, delayMillis: Long = 500) {
+
+    fun setUiStateWithDelay(
+        newState: UiState,
+        delayMillis: Long = 500,
+    ) {
         uiStateTimerJob?.cancel()
-        uiStateTimerJob = viewModelScope.launch {
-            delay(delayMillis)
-            _uiState.value = newState
-        }
+        uiStateTimerJob =
+            viewModelScope.launch {
+                delay(delayMillis)
+                _uiState.value = newState
+            }
     }
 
     fun cancelUiStateTimer() {

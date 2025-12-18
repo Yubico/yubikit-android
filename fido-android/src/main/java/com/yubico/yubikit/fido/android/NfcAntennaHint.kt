@@ -50,11 +50,11 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun NfcAntennaHint(
+fun nfcAntennaHint(
     modifier: Modifier = Modifier,
     iconSize: Dp = 64.dp,
     iconColor: Color = MaterialTheme.colorScheme.primary,
-    showAntennas: Boolean = true
+    showAntennas: Boolean = true,
 ) {
     val context = LocalContext.current
     val density = LocalDensity.current
@@ -62,25 +62,28 @@ fun NfcAntennaHint(
     val scale by infiniteTransition.animateFloat(
         initialValue = 1f,
         targetValue = 1.2f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1000, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "scale"
+        animationSpec =
+            infiniteRepeatable(
+                animation = tween(durationMillis = 1000, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Reverse,
+            ),
+        label = "scale",
     )
     val alpha by infiniteTransition.animateFloat(
         initialValue = 1f,
         targetValue = 0.9f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1000, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "alpha"
+        animationSpec =
+            infiniteRepeatable(
+                animation = tween(durationMillis = 1000, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Reverse,
+            ),
+        label = "alpha",
     )
     BoxWithConstraints(
-        modifier = modifier
-            .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.35f))
+        modifier =
+            modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.35f)),
     ) {
         if (!showAntennas) {
             return@BoxWithConstraints
@@ -102,52 +105,55 @@ fun NfcAntennaHint(
                     val yPx = antenna.locationY * mmToPxY
 
                     Box(
-                        modifier = Modifier
-                            .absoluteOffset(
-                                x = with(density) { xPx.toDp() - iconSize / 2 },
-                                y = with(density) { yPx.toDp() - iconSize / 2 }
-                            )
-                            .size(iconSize)
+                        modifier =
+                            Modifier
+                                .absoluteOffset(
+                                    x = with(density) { xPx.toDp() - iconSize / 2 },
+                                    y = with(density) { yPx.toDp() - iconSize / 2 },
+                                )
+                                .size(iconSize),
                     ) {
-
                         Icon(
                             imageVector = Icons.Rounded.Circle,
-                            modifier = Modifier
-                                .align(Alignment.Center)
-                                .size(iconSize)
-                                .graphicsLayer(
-                                    scaleX = scale,
-                                    scaleY = scale,
-                                    alpha = 0.5f
-                                ),
+                            modifier =
+                                Modifier
+                                    .align(Alignment.Center)
+                                    .size(iconSize)
+                                    .graphicsLayer(
+                                        scaleX = scale,
+                                        scaleY = scale,
+                                        alpha = 0.5f,
+                                    ),
                             contentDescription = stringResource(R.string.content_description_nfc_antenna_location),
-                            tint = MaterialTheme.colorScheme.primaryContainer
+                            tint = MaterialTheme.colorScheme.primaryContainer,
                         )
                         Icon(
                             imageVector = Icons.Outlined.Nfc,
-                            modifier = Modifier
-                                .align(Alignment.Center)
-                                .size(iconSize / 2.0f + 1.dp)
-                                .graphicsLayer(
-                                    scaleX = scale,
-                                    scaleY = scale,
-                                    alpha = 1.0f
-                                ),
+                            modifier =
+                                Modifier
+                                    .align(Alignment.Center)
+                                    .size(iconSize / 2.0f + 1.dp)
+                                    .graphicsLayer(
+                                        scaleX = scale,
+                                        scaleY = scale,
+                                        alpha = 1.0f,
+                                    ),
                             contentDescription = stringResource(R.string.content_description_nfc_antenna_location),
-                            tint = Color.White
+                            tint = Color.White,
                         )
                         Icon(
                             imageVector = Icons.Outlined.Nfc,
-                            modifier = Modifier
-                                .align(Alignment.Center)
-                                .size(iconSize / 2.0f)
-                                .graphicsLayer(
-                                    scaleX = scale,
-                                    scaleY = scale,
-                                    alpha = alpha
-                                ),
+                            modifier =
+                                Modifier
+                                    .align(Alignment.Center)
+                                    .size(iconSize / 2.0f)
+                                    .graphicsLayer(
+                                        scaleX = scale,
+                                        scaleY = scale,
+                                        alpha = alpha,
+                                    ),
                             contentDescription = stringResource(R.string.content_description_nfc_antenna_location),
-                            tint = iconColor
+                            tint = iconColor,
                         )
                     }
                 }

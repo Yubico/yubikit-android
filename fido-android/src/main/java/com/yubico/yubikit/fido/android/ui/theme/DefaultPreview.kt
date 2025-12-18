@@ -19,6 +19,7 @@ package com.yubico.yubikit.fido.android.ui.theme
 import androidx.compose.ui.tooling.preview.Preview
 
 @Preview(
-    name = "default preview", showBackground = true
+    name = "default preview",
+    showBackground = true,
 )
 annotation class DefaultPreview

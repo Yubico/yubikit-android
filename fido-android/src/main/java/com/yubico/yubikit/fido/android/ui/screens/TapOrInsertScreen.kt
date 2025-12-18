@@ -30,18 +30,17 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import com.yubico.yubikit.fido.android.FidoClientService
 import com.yubico.yubikit.fido.android.R
-import com.yubico.yubikit.fido.android.ui.components.ContentWrapper
+import com.yubico.yubikit.fido.android.ui.components.contentWrapper
 import com.yubico.yubikit.fido.android.ui.theme.DefaultPreview
 
-
 @Composable
-fun TapOrInsertSecurityKey(
+fun tapOrInsertSecurityKey(
     operation: FidoClientService.Operation,
     isNfcAvailable: Boolean,
     origin: String,
-    onCloseButtonClick: () -> Unit
+    onCloseButtonClick: () -> Unit,
 ) {
-    ContentWrapper(
+    contentWrapper(
         operation = operation,
         origin = origin,
         onCloseButtonClick = onCloseButtonClick,
@@ -50,7 +49,7 @@ fun TapOrInsertSecurityKey(
             painter = painterResource(R.drawable.ic_baseline_passkey_24),
             contentDescription = stringResource(R.string.passkey_icon),
             modifier = Modifier.size(64.dp),
-            tint = MaterialTheme.colorScheme.primary
+            tint = MaterialTheme.colorScheme.primary,
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(text = stringResource(R.string.tap_or_insert_key))
@@ -59,29 +58,28 @@ fun TapOrInsertSecurityKey(
                 text = "NFC not available",
                 color = MaterialTheme.colorScheme.primary,
                 fontSize = MaterialTheme.typography.bodySmall.fontSize,
-                textDecoration = TextDecoration.Underline
+                textDecoration = TextDecoration.Underline,
             )
         }
     }
 }
 
-
 @DefaultPreview
 @Composable
-fun TapOrInsertSecurityKeyForMakeCredentialPreview() {
-    TapOrInsertSecurityKey(
+fun tapOrInsertSecurityKeyForMakeCredentialPreview() {
+    tapOrInsertSecurityKey(
         isNfcAvailable = false,
         operation = FidoClientService.Operation.MAKE_CREDENTIAL,
-        origin = "www.example.com"
+        origin = "www.example.com",
     ) {}
 }
 
 @DefaultPreview
 @Composable
-fun TapOrInsertSecurityKeyForGetAssertionPreview() {
-    TapOrInsertSecurityKey(
+fun tapOrInsertSecurityKeyForGetAssertionPreview() {
+    tapOrInsertSecurityKey(
         isNfcAvailable = true,
         operation = FidoClientService.Operation.GET_ASSERTION,
-        origin = "www.example.com"
+        origin = "www.example.com",
     ) {}
 }

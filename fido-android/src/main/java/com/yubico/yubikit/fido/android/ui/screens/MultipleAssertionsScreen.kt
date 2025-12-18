@@ -43,21 +43,21 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import com.yubico.yubikit.fido.android.FidoClientService
 import com.yubico.yubikit.fido.android.R
-import com.yubico.yubikit.fido.android.ui.components.ContentWrapper
+import com.yubico.yubikit.fido.android.ui.components.contentWrapper
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialUserEntity
 
 @Composable
-fun MultipleAssertionsScreen(
+fun multipleAssertionsScreen(
     operation: FidoClientService.Operation,
     origin: String,
     users: List<PublicKeyCredentialUserEntity>,
     onSelect: (Int) -> Unit,
-    onCloseButtonClick: () -> Unit
+    onCloseButtonClick: () -> Unit,
 ) {
     val height: Dp = if (users.size > 2) 255.dp else 225.dp
     val scrollable = users.size > 3
 
-    ContentWrapper(
+    contentWrapper(
         operation = operation,
         origin = origin,
         onCloseButtonClick = onCloseButtonClick,
@@ -65,62 +65,68 @@ fun MultipleAssertionsScreen(
     ) {
         Text(
             text = stringResource(R.string.select_passkey, users.size),
-            style = MaterialTheme.typography.titleMedium
+            style = MaterialTheme.typography.titleMedium,
         )
         Spacer(modifier = Modifier.height(16.dp))
         Box(
-            modifier = Modifier
-                .height(height)
-                .fillMaxWidth()
+            modifier =
+                Modifier
+                    .height(height)
+                    .fillMaxWidth(),
         ) {
             val scrollState = rememberScrollState()
             val canScrollUp = scrollState.value > 0
             val canScrollDown = scrollState.value < scrollState.maxValue
 
             Column(
-                modifier = Modifier
-                    .let { if (scrollable) it.verticalScroll(scrollState) else it }
-                    .fillMaxWidth()
+                modifier =
+                    Modifier
+                        .let { if (scrollable) it.verticalScroll(scrollState) else it }
+                        .fillMaxWidth(),
             ) {
                 users.forEachIndexed { idx, user ->
                     Button(
                         onClick = { onSelect(idx) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(48.dp)
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .height(48.dp),
                     ) {
                         Icon(
                             painter = painterResource(R.drawable.ic_baseline_passkey_24),
                             contentDescription = null,
                             modifier = Modifier.size(24.dp),
-                            tint = MaterialTheme.colorScheme.onPrimary
+                            tint = MaterialTheme.colorScheme.onPrimary,
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = user.name ?: user.displayName
-                            ?: stringResource(R.string.passkey_index, idx),
-                            style = MaterialTheme.typography.bodyLarge
+                            text =
+                                user.name ?: user.displayName
+                                    ?: stringResource(R.string.passkey_index, idx),
+                            style = MaterialTheme.typography.bodyLarge,
                         )
                     }
                     Spacer(modifier = Modifier.height(8.dp))
                 }
             }
             if (scrollable && canScrollUp) {
-                FadeOverlay(
+                fadeOverlay(
                     alignment = Alignment.TopCenter,
-                    colors = listOf(
-                        MaterialTheme.colorScheme.background,
-                        Color.Transparent
-                    )
+                    colors =
+                        listOf(
+                            MaterialTheme.colorScheme.background,
+                            Color.Transparent,
+                        ),
                 )
             }
             if (scrollable && canScrollDown) {
-                FadeOverlay(
+                fadeOverlay(
                     alignment = Alignment.BottomCenter,
-                    colors = listOf(
-                        Color.Transparent,
-                        MaterialTheme.colorScheme.background
-                    )
+                    colors =
+                        listOf(
+                            Color.Transparent,
+                            MaterialTheme.colorScheme.background,
+                        ),
                 )
             }
         }
@@ -128,19 +134,20 @@ fun MultipleAssertionsScreen(
 }
 
 @Composable
-private fun BoxScope.FadeOverlay(
+private fun BoxScope.fadeOverlay(
     alignment: Alignment,
     colors: List<Color>,
-    height: Dp = 18.dp
+    height: Dp = 18.dp,
 ) {
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(height)
-            .align(alignment)
-            .zIndex(1f)
-            .background(
-                brush = Brush.verticalGradient(colors = colors)
-            )
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .height(height)
+                .align(alignment)
+                .zIndex(1f)
+                .background(
+                    brush = Brush.verticalGradient(colors = colors),
+                ),
     )
 }

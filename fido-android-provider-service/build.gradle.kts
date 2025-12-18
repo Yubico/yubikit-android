@@ -31,7 +31,7 @@ repositories {
 }
 
 android {
-    namespace = "com.yubico.yubikit.fido.android.provider_service"
+    namespace = "com.yubico.yubikit.fido.android.providerservice"
     compileSdk = 36
 
     defaultConfig {

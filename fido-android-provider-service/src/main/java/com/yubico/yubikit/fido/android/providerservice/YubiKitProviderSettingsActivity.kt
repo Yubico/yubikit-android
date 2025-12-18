@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.yubico.yubikit.fido.android.provider_service
+package com.yubico.yubikit.fido.android.providerservice
 
 import android.os.Bundle
 import androidx.activity.enableEdgeToEdge

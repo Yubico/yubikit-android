@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.yubico.yubikit.fido.android.provider_service
+package com.yubico.yubikit.fido.android.providerservice
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -31,7 +31,7 @@ import androidx.credentials.provider.CallingAppInfo
 import androidx.credentials.provider.PendingIntentHandler
 import androidx.lifecycle.coroutineScope
 import com.yubico.yubikit.fido.android.YubiKitFidoClient
-import com.yubico.yubikit.fido.android.provider_service.YubiKitProviderService.Companion.allowList
+import com.yubico.yubikit.fido.android.providerservice.YubiKitProviderService.Companion.allowList
 import com.yubico.yubikit.fido.client.extensions.CredBlobExtension
 import com.yubico.yubikit.fido.client.extensions.CredPropsExtension
 import com.yubico.yubikit.fido.client.extensions.CredProtectExtension
@@ -48,21 +48,21 @@ import java.security.Security
 import kotlin.coroutines.cancellation.CancellationException
 
 class YubiKitFido2ProviderActivity : ComponentActivity() {
-
     private val yubiKitFidoClient by lazy {
         YubiKitFidoClient(this, extensions = defaultExtensions)
     }
 
-    private val defaultExtensions: List<Extension> = listOf(
-        CredPropsExtension(),
-        CredBlobExtension(),
-        CredProtectExtension(),
-        HmacSecretExtension(),
-        MinPinLengthExtension(),
-        LargeBlobExtension(),
-        //ThirdPartyPaymentExtension(),
-        SignExtension(),
-    )
+    private val defaultExtensions: List<Extension> =
+        listOf(
+            CredPropsExtension(),
+            CredBlobExtension(),
+            CredProtectExtension(),
+            HmacSecretExtension(),
+            MinPinLengthExtension(),
+            LargeBlobExtension(),
+            // ThirdPartyPaymentExtension(),
+            SignExtension(),
+        )
 
     private val logger = LoggerFactory.getLogger(YubiKitFido2ProviderActivity::class.java)
 
@@ -77,76 +77,82 @@ class YubiKitFido2ProviderActivity : ComponentActivity() {
 
     private fun handleCreateCredential(): Boolean {
         val request = PendingIntentHandler.retrieveProviderCreateCredentialRequest(intent)
-        val createPublicKeyCredentialRequest = request
-            ?.callingRequest as? CreatePublicKeyCredentialRequest
-            ?: return false
-        val origin = extractOrigin(
-            request.callingAppInfo,
-            createPublicKeyCredentialRequest.requestJson
-        ).getOrElse { return reportCreateCredentialError(it) }
+        val createPublicKeyCredentialRequest =
+            request
+                ?.callingRequest as? CreatePublicKeyCredentialRequest
+                ?: return false
+        val origin =
+            extractOrigin(
+                request.callingAppInfo,
+                createPublicKeyCredentialRequest.requestJson,
+            ).getOrElse { return reportCreateCredentialError(it) }
 
         launchCredentialFlow(
             action = {
-                val response = yubiKitFidoClient.makeCredential(
-                    origin.removeSuffix("/"),
-                    createPublicKeyCredentialRequest.requestJson,
-                    createPublicKeyCredentialRequest.clientDataHash?.toHexString()
-                ).getOrThrow()
+                val response =
+                    yubiKitFidoClient.makeCredential(
+                        origin.removeSuffix("/"),
+                        createPublicKeyCredentialRequest.requestJson,
+                        createPublicKeyCredentialRequest.clientDataHash?.toHexString(),
+                    ).getOrThrow()
                 logger.debug("CreatePublicKeyCredentialResponse: {}", response)
                 PendingIntentHandler.setCreateCredentialResponse(
                     intent,
-                    CreatePublicKeyCredentialResponse(response)
+                    CreatePublicKeyCredentialResponse(response),
                 )
             },
             onCancel = {
                 logger.debug("User cancelled CreateCredential")
                 PendingIntentHandler.setCreateCredentialException(
                     intent,
-                    CreateCredentialCancellationException()
+                    CreateCredentialCancellationException(),
                 )
-            }
+            },
         )
         return true
     }
 
     private fun handleGetCredential(): Boolean {
         val request = PendingIntentHandler.retrieveProviderGetCredentialRequest(intent)
-        val getPublicKeyCredentialOption = request
-            ?.credentialOptions?.getOrNull(0) as? GetPublicKeyCredentialOption
-            ?: return false
-        val origin = extractOrigin(
-            request.callingAppInfo,
-            getPublicKeyCredentialOption.requestJson
-        ).getOrElse { return reportGetCredentialError(it) }
+        val getPublicKeyCredentialOption =
+            request
+                ?.credentialOptions?.getOrNull(0) as? GetPublicKeyCredentialOption
+                ?: return false
+        val origin =
+            extractOrigin(
+                request.callingAppInfo,
+                getPublicKeyCredentialOption.requestJson,
+            ).getOrElse { return reportGetCredentialError(it) }
 
         launchCredentialFlow(
             action = {
-                val response = yubiKitFidoClient.getAssertion(
-                    origin.removeSuffix("/"),
-                    getPublicKeyCredentialOption.requestJson,
-                    getPublicKeyCredentialOption.clientDataHash?.toHexString()
-                ).getOrThrow()
+                val response =
+                    yubiKitFidoClient.getAssertion(
+                        origin.removeSuffix("/"),
+                        getPublicKeyCredentialOption.requestJson,
+                        getPublicKeyCredentialOption.clientDataHash?.toHexString(),
+                    ).getOrThrow()
 
                 logger.debug("GetCredentialResponse: {}", response)
                 PendingIntentHandler.setGetCredentialResponse(
                     intent,
-                    GetCredentialResponse(PublicKeyCredential(response))
+                    GetCredentialResponse(PublicKeyCredential(response)),
                 )
             },
             onCancel = {
                 logger.debug("User cancelled GetCredential")
                 PendingIntentHandler.setGetCredentialException(
                     intent,
-                    GetCredentialCancellationException()
+                    GetCredentialCancellationException(),
                 )
-            }
+            },
         )
         return true
     }
 
     private fun launchCredentialFlow(
         action: suspend () -> Unit,
-        onCancel: () -> Unit
+        onCancel: () -> Unit,
     ) = lifecycle.coroutineScope.launch {
         try {
             action()
@@ -164,8 +170,8 @@ class YubiKitFido2ProviderActivity : ComponentActivity() {
             intent,
             CreateCredentialCustomException(
                 PublicKeyCredential.TYPE_PUBLIC_KEY_CREDENTIAL,
-                "CreateCredential failed: ${error::class.simpleName}: ${error.message ?: "Unknown error"}"
-            )
+                "CreateCredential failed: ${error::class.simpleName}: ${error.message ?: "Unknown error"}",
+            ),
         )
         setResult(RESULT_OK, intent)
         finish()
@@ -179,7 +185,7 @@ class YubiKitFido2ProviderActivity : ComponentActivity() {
             GetCredentialCustomException(
                 PublicKeyCredential.TYPE_PUBLIC_KEY_CREDENTIAL,
                 "GetCredential failed: ${error::class.simpleName}: ${error.message ?: "Unknown error"}",
-            )
+            ),
         )
         setResult(RESULT_OK, intent)
         finish()
@@ -188,7 +194,7 @@ class YubiKitFido2ProviderActivity : ComponentActivity() {
 
     private fun extractOrigin(
         appInfo: CallingAppInfo,
-        requestJson: String
+        requestJson: String,
     ): Result<String> {
         return runCatching {
             if (appInfo.isOriginPopulated()) {
@@ -201,15 +207,15 @@ class YubiKitFido2ProviderActivity : ComponentActivity() {
                 val id = "id"
 
                 val request = JSONObject(requestJson)
-                "https://" + if (request.has(rpId)) {
-                    request.getString(rpId)
-                } else if (request.has(rp)) {
-                    request.getJSONObject(rp).getString(id)
-                } else {
-                    throw IllegalArgumentException("Failed to extract origin")
-                }
+                "https://" +
+                    if (request.has(rpId)) {
+                        request.getString(rpId)
+                    } else if (request.has(rp)) {
+                        request.getJSONObject(rp).getString(id)
+                    } else {
+                        throw IllegalArgumentException("Failed to extract origin")
+                    }
             }
         }
     }
-
 }

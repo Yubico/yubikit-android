@@ -28,12 +28,11 @@ import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialRequestOptions
 import org.json.JSONObject
 
 class FidoClientService(private val viewModel: MainViewModel = MainViewModel()) {
-
     private val commandState = CommandState()
 
     enum class Operation {
         MAKE_CREDENTIAL,
-        GET_ASSERTION
+        GET_ASSERTION,
     }
 
     fun cancelOngoingOperation() = commandState.cancel()
@@ -44,29 +43,33 @@ class FidoClientService(private val viewModel: MainViewModel = MainViewModel()) 
         rpId: String,
         clientDataHash: ByteArray?,
         request: String,
-        onConnection: () -> Unit
+        onConnection: () -> Unit,
     ): Result<PublicKeyCredential> {
         return when (operation) {
-            Operation.MAKE_CREDENTIAL -> makeCredential(
-                pin,
-                rpId,
-                clientDataHash,
-                request,
-                onConnection
-            )
+            Operation.MAKE_CREDENTIAL ->
+                makeCredential(
+                    pin,
+                    rpId,
+                    clientDataHash,
+                    request,
+                    onConnection,
+                )
 
-            Operation.GET_ASSERTION -> getAssertion(
-                pin,
-                rpId,
-                clientDataHash,
-                request,
-                onConnection
-            )
+            Operation.GET_ASSERTION ->
+                getAssertion(
+                    pin,
+                    rpId,
+                    clientDataHash,
+                    request,
+                    onConnection,
+                )
         }
     }
 
     private fun buildClientData(
-        type: String, origin: String, challenge: String
+        type: String,
+        origin: String,
+        challenge: String,
     ): ByteArray {
         return """
             {
@@ -74,7 +77,7 @@ class FidoClientService(private val viewModel: MainViewModel = MainViewModel()) 
                 "challenge": "$challenge",
                 "origin": "$origin"
             }
-        """.trimIndent().toByteArray()
+            """.trimIndent().toByteArray()
     }
 
     private suspend fun makeCredential(
@@ -82,18 +85,17 @@ class FidoClientService(private val viewModel: MainViewModel = MainViewModel()) 
         rpId: String,
         clientDataHash: ByteArray?,
         request: String,
-        onConnection: () -> Unit
+        onConnection: () -> Unit,
     ): Result<PublicKeyCredential> =
         viewModel.useWebAuthn { client ->
             onConnection()
 
             (client as? Ctap2Client)?.run {
-
                 if (this.session.cachedInfo.forcePinChange) {
                     // there is PIN set, but it must be changed first
                     throw ClientError(
                         ClientError.Code.BAD_REQUEST,
-                        CtapException(CtapException.ERR_PIN_POLICY_VIOLATION)
+                        CtapException(CtapException.ERR_PIN_POLICY_VIOLATION),
                     )
                 }
 
@@ -101,25 +103,27 @@ class FidoClientService(private val viewModel: MainViewModel = MainViewModel()) 
                     // there is not PIN set on the key, we deliberately don't allow this
                     throw ClientError(
                         ClientError.Code.BAD_REQUEST,
-                        CtapException(CtapException.ERR_PIN_NOT_SET)
+                        CtapException(CtapException.ERR_PIN_NOT_SET),
                     )
                 }
             }
 
             val requestJson = JSONObject(request).toMap()
 
-            val publicKeyCredentialCreationOptions = PublicKeyCredentialCreationOptions.fromMap(
-                JSONObject(request).toMap()
-            )
-
-            val clientData = clientDataHash?.let { ClientDataProvider.fromHash(it) }
-                ?: ClientDataProvider.fromClientDataJson(
-                    buildClientData(
-                        "webauthn.create",
-                        rpId,
-                        requestJson["challenge"] as String
-                    )
+            val publicKeyCredentialCreationOptions =
+                PublicKeyCredentialCreationOptions.fromMap(
+                    JSONObject(request).toMap(),
                 )
+
+            val clientData =
+                clientDataHash?.let { ClientDataProvider.fromHash(it) }
+                    ?: ClientDataProvider.fromClientDataJson(
+                        buildClientData(
+                            "webauthn.create",
+                            rpId,
+                            requestJson["challenge"] as String,
+                        ),
+                    )
 
             client.makeCredential(
                 clientData,
@@ -127,7 +131,7 @@ class FidoClientService(private val viewModel: MainViewModel = MainViewModel()) 
                 rpId.removePrefix("https://"), // TODO reason about this
                 pin,
                 null,
-                commandState
+                commandState,
             )
         }
 
@@ -136,25 +140,27 @@ class FidoClientService(private val viewModel: MainViewModel = MainViewModel()) 
         rpId: String,
         clientDataHash: ByteArray?,
         request: String,
-        onConnection: () -> Unit
+        onConnection: () -> Unit,
     ): Result<PublicKeyCredential> =
         viewModel.useWebAuthn { client ->
             onConnection()
 
             val requestJson = JSONObject(request).toMap()
 
-            val clientData = clientDataHash?.let { ClientDataProvider.fromHash(it) }
-                ?: ClientDataProvider.fromClientDataJson(
-                    buildClientData(
-                        "webauthn.get",
-                        rpId,
-                        requestJson["challenge"] as String
+            val clientData =
+                clientDataHash?.let { ClientDataProvider.fromHash(it) }
+                    ?: ClientDataProvider.fromClientDataJson(
+                        buildClientData(
+                            "webauthn.get",
+                            rpId,
+                            requestJson["challenge"] as String,
+                        ),
                     )
-                )
 
-            val publicKeyCredentialRequestOptions = PublicKeyCredentialRequestOptions.fromMap(
-                JSONObject(request).toMap()
-            )
+            val publicKeyCredentialRequestOptions =
+                PublicKeyCredentialRequestOptions.fromMap(
+                    JSONObject(request).toMap(),
+                )
 
             client.getAssertion(
                 clientData,
@@ -165,11 +171,10 @@ class FidoClientService(private val viewModel: MainViewModel = MainViewModel()) 
             )
         }
 
-    suspend fun createPin(
-        pin: CharArray,
-    ) = viewModel.useWebAuthn { client ->
-        (client as? Ctap2Client)?.setPin(pin)
-    }
+    suspend fun createPin(pin: CharArray) =
+        viewModel.useWebAuthn { client ->
+            (client as? Ctap2Client)?.setPin(pin)
+        }
 
     suspend fun changePin(
         currentPin: CharArray,
@@ -177,6 +182,4 @@ class FidoClientService(private val viewModel: MainViewModel = MainViewModel()) 
     ) = viewModel.useWebAuthn { client ->
         (client as? Ctap2Client)?.changePin(currentPin, newPin)
     }
-
 }
-

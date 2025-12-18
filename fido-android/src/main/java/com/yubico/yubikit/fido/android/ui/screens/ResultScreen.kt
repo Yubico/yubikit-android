@@ -37,50 +37,55 @@ import com.yubico.yubikit.core.fido.CtapException
 import com.yubico.yubikit.fido.android.FidoClientService
 import com.yubico.yubikit.fido.android.R
 import com.yubico.yubikit.fido.android.ui.Error
-import com.yubico.yubikit.fido.android.ui.components.ContentWrapper
+import com.yubico.yubikit.fido.android.ui.components.contentWrapper
 
 @Composable
-fun SuccessView(operation: FidoClientService.Operation, origin: String) {
-    ContentWrapper(
+fun successView(
+    operation: FidoClientService.Operation,
+    origin: String,
+) {
+    contentWrapper(
         operation = operation,
         origin = origin,
-        onCloseButtonClick = null
+        onCloseButtonClick = null,
     ) {
         Text(
-            text = if (operation == FidoClientService.Operation.MAKE_CREDENTIAL)
-                stringResource(R.string.passkey_created)
-            else
-                stringResource(R.string.login_successful),
+            text =
+                if (operation == FidoClientService.Operation.MAKE_CREDENTIAL) {
+                    stringResource(R.string.passkey_created)
+                } else {
+                    stringResource(R.string.login_successful)
+                },
             style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = stringResource(R.string.remove_the_key),
-            style = MaterialTheme.typography.bodyMedium
+            style = MaterialTheme.typography.bodyMedium,
         )
     }
 }
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun ErrorView(
+fun errorView(
     operation: FidoClientService.Operation,
     origin: String,
     error: Error? = null,
-    onRetry: () -> Unit
+    onRetry: () -> Unit,
 ) {
-    ContentWrapper(
+    contentWrapper(
         modifier = Modifier.wrapContentSize(),
         operation = operation,
         origin = origin,
-        onCloseButtonClick = null
+        onCloseButtonClick = null,
     ) {
         Icon(
             imageVector = Icons.Default.Error,
             contentDescription = stringResource(R.string.error),
             tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(48.dp)
+            modifier = Modifier.size(48.dp),
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -95,30 +100,36 @@ fun ErrorView(
                             when (ex) {
                                 is CtapException -> {
                                     when (ex.ctapError) {
-                                        CtapException.ERR_NO_CREDENTIALS -> stringResource(
-                                            R.string.ctap_err_no_credentials,
-                                            origin
-                                        )
+                                        CtapException.ERR_NO_CREDENTIALS ->
+                                            stringResource(
+                                                R.string.ctap_err_no_credentials,
+                                                origin,
+                                            )
 
-                                        CtapException.ERR_USER_ACTION_TIMEOUT -> stringResource(
-                                            R.string.ctap_err_user_action_timeout
-                                        )
+                                        CtapException.ERR_USER_ACTION_TIMEOUT ->
+                                            stringResource(
+                                                R.string.ctap_err_user_action_timeout,
+                                            )
 
-                                        CtapException.ERR_KEY_STORE_FULL -> stringResource(
-                                            R.string.ctap_err_key_store_full
-                                        )
+                                        CtapException.ERR_KEY_STORE_FULL ->
+                                            stringResource(
+                                                R.string.ctap_err_key_store_full,
+                                            )
 
-                                        CtapException.ERR_PUAT_REQUIRED -> stringResource(
-                                            R.string.ctap_err_puat_required
-                                        )
+                                        CtapException.ERR_PUAT_REQUIRED ->
+                                            stringResource(
+                                                R.string.ctap_err_puat_required,
+                                            )
 
-                                        CtapException.ERR_UV_INVALID -> stringResource(
-                                            R.string.ctap_err_uv_invalid
-                                        )
+                                        CtapException.ERR_UV_INVALID ->
+                                            stringResource(
+                                                R.string.ctap_err_uv_invalid,
+                                            )
 
-                                        CtapException.ERR_CREDENTIAL_EXCLUDED -> stringResource(
-                                            R.string.ctap_err_credential_excluded
-                                        )
+                                        CtapException.ERR_CREDENTIAL_EXCLUDED ->
+                                            stringResource(
+                                                R.string.ctap_err_credential_excluded,
+                                            )
 
                                         else -> stringResource(R.string.unknown_error)
                                     }
@@ -134,7 +145,7 @@ fun ErrorView(
                     is Error.UnknownError -> error.message ?: stringResource(R.string.unknown_error)
 
                     else -> stringResource(R.string.unknown_error)
-                }
+                },
         )
 
         Spacer(modifier = Modifier.height(16.dp))

@@ -25,4 +25,11 @@ spotless {
         trimTrailingWhitespace()
         endWithNewline()
     }
+    kotlin {
+        target("**/*.kt")
+        targetExclude("${layout.buildDirectory}/**/*.kt")
+        ktlint("1.2.1")
+        trimTrailingWhitespace()
+        endWithNewline()
+    }
 }

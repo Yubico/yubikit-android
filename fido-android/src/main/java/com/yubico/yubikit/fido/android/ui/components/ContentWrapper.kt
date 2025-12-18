@@ -42,53 +42,59 @@ import com.yubico.yubikit.fido.android.FidoClientService
 import com.yubico.yubikit.fido.android.R
 
 @Composable
-fun ContentWrapper(
+fun contentWrapper(
     modifier: Modifier = Modifier,
     operation: FidoClientService.Operation,
     origin: String,
     onCloseButtonClick: (() -> Unit)? = null,
     contentHeight: Dp = 160.dp,
-    content: @Composable (() -> Unit)
+    content: @Composable (() -> Unit),
 ) {
     Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(top = 0.dp, start = 0.dp, end = 0.dp)
-            .wrapContentHeight(),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .padding(top = 0.dp, start = 0.dp, end = 0.dp)
+                .wrapContentHeight(),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Top
+        verticalArrangement = Arrangement.Top,
     ) {
         Row(
-            verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth(),
         ) {
             if (onCloseButtonClick != null) {
                 IconButton(onClick = onCloseButtonClick) {
                     Icon(
-                        imageVector = Icons.Default.Close, contentDescription = "Close"
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Close",
                     )
                 }
             } else {
                 Box(
-                    modifier = Modifier
-                        .width(16.dp)
-                        .height(48.dp)
+                    modifier =
+                        Modifier
+                            .width(16.dp)
+                            .height(48.dp),
                 )
             }
             Text(
-                text = if (operation == FidoClientService.Operation.MAKE_CREDENTIAL) {
-                    stringResource(R.string.create_passkey_for, origin)
-                } else {
-                    stringResource(R.string.login_with_passkey, origin)
-                }, style = MaterialTheme.typography.titleSmall
+                text =
+                    if (operation == FidoClientService.Operation.MAKE_CREDENTIAL) {
+                        stringResource(R.string.create_passkey_for, origin)
+                    } else {
+                        stringResource(R.string.login_with_passkey, origin)
+                    },
+                style = MaterialTheme.typography.titleSmall,
             )
-
         }
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .defaultMinSize(minHeight = contentHeight),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .defaultMinSize(minHeight = contentHeight),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            verticalArrangement = Arrangement.Center,
         ) {
             content()
         }

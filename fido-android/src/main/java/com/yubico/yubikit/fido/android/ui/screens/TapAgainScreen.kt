@@ -41,26 +41,25 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.yubico.yubikit.fido.android.FidoClientService
 import com.yubico.yubikit.fido.android.R
-import com.yubico.yubikit.fido.android.ui.components.ContentWrapper
+import com.yubico.yubikit.fido.android.ui.components.contentWrapper
 import com.yubico.yubikit.fido.android.ui.theme.DefaultPreview
 
-
 @Composable
-fun TapAgainSecurityKey(
+fun tapAgainSecurityKey(
     operation: FidoClientService.Operation,
     origin: String,
-    onCloseButtonClick: () -> Unit
+    onCloseButtonClick: () -> Unit,
 ) {
-    ContentWrapper(
+    contentWrapper(
         operation = operation,
         origin = origin,
         onCloseButtonClick = onCloseButtonClick,
     ) {
-        PulsingIcon(
+        pulsingIcon(
             painter = painterResource(R.drawable.ic_baseline_passkey_24),
             contentDescription = stringResource(R.string.passkey_icon),
             modifier = Modifier.size(64.dp),
-            tint = MaterialTheme.colorScheme.primary
+            tint = MaterialTheme.colorScheme.primary,
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(text = stringResource(R.string.tap_key_again))
@@ -68,55 +67,60 @@ fun TapAgainSecurityKey(
 }
 
 @Composable
-fun PulsingIcon(
+fun pulsingIcon(
     painter: Painter,
     contentDescription: String?,
     modifier: Modifier = Modifier,
-    tint: Color = LocalContentColor.current
+    tint: Color = LocalContentColor.current,
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "pulse")
 
     val scale by infiniteTransition.animateFloat(
         initialValue = 1f,
         targetValue = 1.1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(
-                durationMillis = 1000,
-                easing = FastOutSlowInEasing
+        animationSpec =
+            infiniteRepeatable(
+                animation =
+                    tween(
+                        durationMillis = 1000,
+                        easing = FastOutSlowInEasing,
+                    ),
+                repeatMode = RepeatMode.Reverse,
             ),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "scale"
+        label = "scale",
     )
 
     val alpha by infiniteTransition.animateFloat(
         initialValue = 1f,
         targetValue = 0.7f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(
-                durationMillis = 1000,
-                easing = FastOutSlowInEasing
+        animationSpec =
+            infiniteRepeatable(
+                animation =
+                    tween(
+                        durationMillis = 1000,
+                        easing = FastOutSlowInEasing,
+                    ),
+                repeatMode = RepeatMode.Reverse,
             ),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "alpha"
+        label = "alpha",
     )
 
     Icon(
         painter = painter,
         contentDescription = contentDescription,
-        modifier = modifier
-            .scale(scale)
-            .alpha(alpha),
-        tint = tint
+        modifier =
+            modifier
+                .scale(scale)
+                .alpha(alpha),
+        tint = tint,
     )
 }
 
 @DefaultPreview
 @Composable
-fun TapSecurityKeyAgainForGetAssertionPreview() {
-    TapAgainSecurityKey(
+fun tapSecurityKeyAgainForGetAssertionPreview() {
+    tapAgainSecurityKey(
         operation = FidoClientService.Operation.GET_ASSERTION,
-        origin = "www.example.com"
+        origin = "www.example.com",
     ) {}
 }
