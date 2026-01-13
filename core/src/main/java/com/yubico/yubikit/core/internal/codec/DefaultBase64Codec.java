@@ -16,6 +16,7 @@
 
 package com.yubico.yubikit.core.internal.codec;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
 /**
@@ -27,11 +28,11 @@ public class DefaultBase64Codec implements Base64Codec {
 
   @Override
   public String toUrlSafeString(byte[] data) {
-    return new String(Base64.getUrlEncoder().withoutPadding().encode(data));
+    return new String(Base64.getUrlEncoder().withoutPadding().encode(data), StandardCharsets.UTF_8);
   }
 
   public String toString(byte[] data) {
-    return new String(Base64.getEncoder().withoutPadding().encode(data));
+    return new String(Base64.getEncoder().withoutPadding().encode(data), StandardCharsets.UTF_8);
   }
 
   @Override

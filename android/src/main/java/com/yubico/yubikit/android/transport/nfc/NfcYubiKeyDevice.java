@@ -30,7 +30,6 @@ import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.smartcard.SmartCardProtocol;
 import com.yubico.yubikit.core.util.Callback;
 import com.yubico.yubikit.core.util.Result;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.IOException;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
@@ -71,7 +70,6 @@ public class NfcYubiKeyDevice implements YubiKeyDevice {
     return new NfcSmartCardConnection(card);
   }
 
-  @SuppressFBWarnings("RCN_REDUNDANT_NULLCHECK_OF_NONNULL_VALUE")
   public byte[] readNdef() throws IOException {
     try (Ndef ndef = Ndef.get(tag)) {
       if (ndef != null) {

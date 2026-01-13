@@ -224,16 +224,16 @@ public class UsbPidGroup implements Closeable {
 
   @Override
   public void close() throws IOException {
-    for (String resolvedEntry : resolved.keySet()) {
-      Map<Integer, UsbYubiKeyDevice> ifaceDevice = resolved.get(resolvedEntry);
+    for (Map.Entry<String, Map<Integer, UsbYubiKeyDevice>> entry : resolved.entrySet()) {
+      Map<Integer, UsbYubiKeyDevice> ifaceDevice = entry.getValue();
       for (UsbYubiKeyDevice device : ifaceDevice.values()) {
         logger.debug("Closing resolved device {}", device.getFingerprint());
         device.close();
       }
     }
 
-    for (Integer unresolvedIface : unresolved.keySet()) {
-      List<UsbYubiKeyDevice> unresolvedDevices = unresolved.get(unresolvedIface);
+    for (Map.Entry<Integer, List<UsbYubiKeyDevice>> entry : unresolved.entrySet()) {
+      List<UsbYubiKeyDevice> unresolvedDevices = entry.getValue();
       for (UsbYubiKeyDevice device : unresolvedDevices) {
         logger.debug("Closing unresolved device {}", device.getFingerprint());
         device.close();

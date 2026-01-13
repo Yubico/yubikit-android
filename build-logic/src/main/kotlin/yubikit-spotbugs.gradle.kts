@@ -27,7 +27,7 @@ dependencies {
     spotbugs(libs.findLibrary("spotbugs").get())
     spotbugsPlugins(libs.findLibrary("findsecbugs-plugin").get())
 
-    add("implementation", libs.findLibrary("spotbugs-annotations").get())
+    add("compileOnly", libs.findLibrary("spotbugs-annotations").get())
 }
 
 spotbugs {
