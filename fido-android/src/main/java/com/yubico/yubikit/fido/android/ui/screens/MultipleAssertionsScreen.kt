@@ -100,9 +100,7 @@ fun multipleAssertionsScreen(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text =
-                                user.name ?: user.displayName
-                                    ?: stringResource(R.string.passkey_index, idx),
+                            text = user.displayName,
                             style = MaterialTheme.typography.bodyLarge,
                         )
                     }
