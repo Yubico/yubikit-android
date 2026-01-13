@@ -52,13 +52,13 @@ import androidx.compose.ui.unit.dp
 import com.yubico.yubikit.fido.android.FidoClientService
 import com.yubico.yubikit.fido.android.R
 import com.yubico.yubikit.fido.android.ui.Error
-import com.yubico.yubikit.fido.android.ui.components.contentWrapper
+import com.yubico.yubikit.fido.android.ui.components.ContentWrapper
 import com.yubico.yubikit.fido.android.ui.theme.DefaultPreview
 
 const val DEFAULT_MIN_PIN_LENGTH = 4
 
 @Composable
-fun createPinScreen(
+fun CreatePinScreen(
     operation: FidoClientService.Operation,
     origin: String,
     error: Error? = null,
@@ -66,7 +66,7 @@ fun createPinScreen(
     onCloseButtonClick: () -> Unit,
     onCreatePin: (newPin: CharArray) -> Unit,
 ) {
-    createChangePinScreen(
+    CreateChangePinScreen(
         operation = operation,
         origin = origin,
         error = error,
@@ -79,7 +79,7 @@ fun createPinScreen(
 }
 
 @Composable
-fun forceChangePinScreen(
+fun ForceChangePinScreen(
     operation: FidoClientService.Operation,
     origin: String,
     error: Error? = null,
@@ -87,7 +87,7 @@ fun forceChangePinScreen(
     onCloseButtonClick: () -> Unit,
     onChangePin: (currentPin: CharArray, newPin: CharArray) -> Unit,
 ) {
-    createChangePinScreen(
+    CreateChangePinScreen(
         operation = operation,
         origin = origin,
         error = error,
@@ -100,7 +100,7 @@ fun forceChangePinScreen(
 }
 
 @Composable
-private fun createChangePinScreen(
+private fun CreateChangePinScreen(
     operation: FidoClientService.Operation,
     origin: String,
     error: Error? = null,
@@ -139,7 +139,7 @@ private fun createChangePinScreen(
         keyboardController?.show()
     }
 
-    contentWrapper(
+    ContentWrapper(
         operation = operation,
         origin = origin,
         onCloseButtonClick = onCloseButtonClick,
@@ -159,7 +159,7 @@ private fun createChangePinScreen(
         )
 
         if (forceChangePin) {
-            pinTextField(
+            PinTextField(
                 value = currentPin,
                 onValueChange = { currentPin = it },
                 label = stringResource(R.string.current_pin),
@@ -189,7 +189,7 @@ private fun createChangePinScreen(
             )
         }
 
-        pinTextField(
+        PinTextField(
             value = newPin,
             onValueChange = { newPin = it },
             label = stringResource(R.string.new_pin, minPinLen),
@@ -208,7 +208,7 @@ private fun createChangePinScreen(
             keyboardActions = KeyboardActions(onNext = { repeatPinFocusRequester.requestFocus() }),
         )
 
-        pinTextField(
+        PinTextField(
             value = repeatPin,
             onValueChange = { repeatPin = it },
             label = stringResource(R.string.repeat_pin),
@@ -284,7 +284,7 @@ private fun isPinValid(
 }
 
 @Composable
-fun pinTextField(
+fun PinTextField(
     value: TextFieldValue,
     onValueChange: (TextFieldValue) -> Unit,
     label: String,
@@ -322,13 +322,13 @@ fun pinTextField(
 }
 
 @Composable
-fun pinCreatedScreen(
+fun PinCreatedScreen(
     operation: FidoClientService.Operation,
     origin: String,
     onCloseButtonClick: () -> Unit,
     onContinue: () -> Unit,
 ) {
-    contentWrapper(
+    ContentWrapper(
         operation = operation,
         origin = origin,
         contentHeight = 200.dp,
@@ -356,13 +356,13 @@ fun pinCreatedScreen(
 }
 
 @Composable
-fun pinChangedScreen(
+fun PinChangedScreen(
     operation: FidoClientService.Operation,
     origin: String,
     onCloseButtonClick: () -> Unit,
     onContinue: () -> Unit,
 ) {
-    contentWrapper(
+    ContentWrapper(
         operation = operation,
         origin = origin,
         contentHeight = 200.dp,
@@ -391,8 +391,8 @@ fun pinChangedScreen(
 
 @DefaultPreview
 @Composable
-fun createChangePinPreview() {
-    createChangePinScreen(
+fun CreateChangePinPreview() {
+    CreateChangePinScreen(
         operation = FidoClientService.Operation.MAKE_CREDENTIAL,
         origin = "example.com",
         onPinAction = { _, _ -> },
@@ -402,8 +402,8 @@ fun createChangePinPreview() {
 
 @DefaultPreview
 @Composable
-fun forceChangePinPreview() {
-    createChangePinScreen(
+fun ForceChangePinPreview() {
+    CreateChangePinScreen(
         operation = FidoClientService.Operation.MAKE_CREDENTIAL,
         origin = "example.com",
         forceChangePin = true,
@@ -414,8 +414,8 @@ fun forceChangePinPreview() {
 
 @DefaultPreview
 @Composable
-fun createChangePinErrorPreview() {
-    createChangePinScreen(
+fun CreateChangePinErrorPreview() {
+    CreateChangePinScreen(
         operation = FidoClientService.Operation.MAKE_CREDENTIAL,
         origin = "example.com",
         error = Error.PinComplexityError,
@@ -426,8 +426,8 @@ fun createChangePinErrorPreview() {
 
 @DefaultPreview
 @Composable
-fun pinCreatedPreview() {
-    pinCreatedScreen(
+fun PinCreatedPreview() {
+    PinCreatedScreen(
         operation = FidoClientService.Operation.MAKE_CREDENTIAL,
         origin = "example.com",
         onContinue = {},
@@ -437,8 +437,8 @@ fun pinCreatedPreview() {
 
 @DefaultPreview
 @Composable
-fun pinChangedPreview() {
-    pinChangedScreen(
+fun PinChangedPreview() {
+    PinChangedScreen(
         operation = FidoClientService.Operation.MAKE_CREDENTIAL,
         origin = "example.com",
         onContinue = {},

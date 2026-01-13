@@ -42,7 +42,7 @@ import com.yubico.yubikit.fido.android.FidoClientService
 import com.yubico.yubikit.fido.android.R
 
 @Composable
-fun contentWrapper(
+fun ContentWrapper(
     modifier: Modifier = Modifier,
     operation: FidoClientService.Operation,
     origin: String,

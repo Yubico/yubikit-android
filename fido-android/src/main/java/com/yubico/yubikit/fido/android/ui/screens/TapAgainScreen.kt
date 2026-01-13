@@ -41,21 +41,21 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.yubico.yubikit.fido.android.FidoClientService
 import com.yubico.yubikit.fido.android.R
-import com.yubico.yubikit.fido.android.ui.components.contentWrapper
+import com.yubico.yubikit.fido.android.ui.components.ContentWrapper
 import com.yubico.yubikit.fido.android.ui.theme.DefaultPreview
 
 @Composable
-fun tapAgainSecurityKey(
+fun TapAgainSecurityKey(
     operation: FidoClientService.Operation,
     origin: String,
     onCloseButtonClick: () -> Unit,
 ) {
-    contentWrapper(
+    ContentWrapper(
         operation = operation,
         origin = origin,
         onCloseButtonClick = onCloseButtonClick,
     ) {
-        pulsingIcon(
+        PulsingIcon(
             painter = painterResource(R.drawable.ic_baseline_passkey_24),
             contentDescription = stringResource(R.string.passkey_icon),
             modifier = Modifier.size(64.dp),
@@ -67,7 +67,7 @@ fun tapAgainSecurityKey(
 }
 
 @Composable
-fun pulsingIcon(
+fun PulsingIcon(
     painter: Painter,
     contentDescription: String?,
     modifier: Modifier = Modifier,
@@ -118,8 +118,8 @@ fun pulsingIcon(
 
 @DefaultPreview
 @Composable
-fun tapSecurityKeyAgainForGetAssertionPreview() {
-    tapAgainSecurityKey(
+fun TapSecurityKeyAgainForGetAssertionPreview() {
+    TapAgainSecurityKey(
         operation = FidoClientService.Operation.GET_ASSERTION,
         origin = "www.example.com",
     ) {}

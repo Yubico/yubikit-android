@@ -48,8 +48,8 @@ import com.yubico.yubikit.android.transport.nfc.NfcConfiguration
 import com.yubico.yubikit.android.transport.nfc.NfcNotAvailable
 import com.yubico.yubikit.android.transport.usb.UsbConfiguration
 import com.yubico.yubikit.fido.android.ui.UiState
-import com.yubico.yubikit.fido.android.ui.screens.fidoClientUi
-import com.yubico.yubikit.fido.android.ui.theme.fidoAndroidTheme
+import com.yubico.yubikit.fido.android.ui.screens.FidoClientUi
+import com.yubico.yubikit.fido.android.ui.theme.FidoAndroidTheme
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredential
 import com.yubico.yubikit.fido.webauthn.SerializationType
 import kotlinx.coroutines.launch
@@ -95,7 +95,7 @@ class YubiKitFidoActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         setContent {
-            val theme = customTheme ?: { fidoAndroidTheme(content = it) }
+            val theme = customTheme ?: { FidoAndroidTheme(content = it) }
             theme {
                 val uiState by viewModel.uiState.collectAsState()
                 val showAntennas =
@@ -173,7 +173,7 @@ class YubiKitFidoActivity : ComponentActivity() {
                             scrimColor = Color.Transparent,
                             onDismissRequest = finishActivityWithCancel,
                         ) {
-                            fidoClientUi(
+                            FidoClientUi(
                                 viewModel,
                                 params.operation,
                                 isNfcAvailable =
@@ -191,7 +191,7 @@ class YubiKitFidoActivity : ComponentActivity() {
                     }
                 }
 
-                nfcAntennaHint(
+                NfcAntennaHint(
                     modifier = Modifier.fillMaxSize(),
                     showAntennas = showAntennas,
                 )

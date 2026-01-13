@@ -36,12 +36,12 @@ import androidx.compose.ui.unit.dp
 import com.yubico.yubikit.fido.android.FidoClientService
 import com.yubico.yubikit.fido.android.R
 import com.yubico.yubikit.fido.android.ui.Error
-import com.yubico.yubikit.fido.android.ui.components.contentWrapper
+import com.yubico.yubikit.fido.android.ui.components.ContentWrapper
 import com.yubico.yubikit.fido.android.ui.theme.DefaultPreview
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun matchFingerprint(
+fun MatchFingerprint(
     operation: FidoClientService.Operation,
     origin: String,
     error: Error? = null,
@@ -62,7 +62,7 @@ fun matchFingerprint(
             else -> stringResource(R.string.ctap_err_uv_unknown)
         }
 
-    contentWrapper(
+    ContentWrapper(
         operation = operation,
         origin = origin,
         onCloseButtonClick = onCloseButtonClick,
@@ -95,8 +95,8 @@ fun matchFingerprint(
 
 @DefaultPreview
 @Composable
-fun matchFingerprintNewPreview() {
-    matchFingerprint(
+fun MatchFingerprintNewPreview() {
+    MatchFingerprint(
         operation = FidoClientService.Operation.MAKE_CREDENTIAL,
         origin = "example.com",
         onCloseButtonClick = {},
@@ -105,8 +105,8 @@ fun matchFingerprintNewPreview() {
 
 @DefaultPreview
 @Composable
-fun matchFingerprintNewWithErrorPreview() {
-    matchFingerprint(
+fun MatchFingerprintNewWithErrorPreview() {
+    MatchFingerprint(
         operation = FidoClientService.Operation.GET_ASSERTION,
         origin = "example.com",
         error = Error.IncorrectUvError(3),

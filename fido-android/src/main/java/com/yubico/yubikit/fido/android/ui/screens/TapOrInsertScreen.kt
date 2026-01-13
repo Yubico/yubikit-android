@@ -30,17 +30,17 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import com.yubico.yubikit.fido.android.FidoClientService
 import com.yubico.yubikit.fido.android.R
-import com.yubico.yubikit.fido.android.ui.components.contentWrapper
+import com.yubico.yubikit.fido.android.ui.components.ContentWrapper
 import com.yubico.yubikit.fido.android.ui.theme.DefaultPreview
 
 @Composable
-fun tapOrInsertSecurityKey(
+fun TapOrInsertSecurityKey(
     operation: FidoClientService.Operation,
     isNfcAvailable: Boolean,
     origin: String,
     onCloseButtonClick: () -> Unit,
 ) {
-    contentWrapper(
+    ContentWrapper(
         operation = operation,
         origin = origin,
         onCloseButtonClick = onCloseButtonClick,
@@ -66,8 +66,8 @@ fun tapOrInsertSecurityKey(
 
 @DefaultPreview
 @Composable
-fun tapOrInsertSecurityKeyForMakeCredentialPreview() {
-    tapOrInsertSecurityKey(
+fun TapOrInsertSecurityKeyForMakeCredentialPreview() {
+    TapOrInsertSecurityKey(
         isNfcAvailable = false,
         operation = FidoClientService.Operation.MAKE_CREDENTIAL,
         origin = "www.example.com",
@@ -76,8 +76,8 @@ fun tapOrInsertSecurityKeyForMakeCredentialPreview() {
 
 @DefaultPreview
 @Composable
-fun tapOrInsertSecurityKeyForGetAssertionPreview() {
-    tapOrInsertSecurityKey(
+fun TapOrInsertSecurityKeyForGetAssertionPreview() {
+    TapOrInsertSecurityKey(
         isNfcAvailable = true,
         operation = FidoClientService.Operation.GET_ASSERTION,
         origin = "www.example.com",

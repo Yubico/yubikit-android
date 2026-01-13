@@ -50,7 +50,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun nfcAntennaHint(
+fun NfcAntennaHint(
     modifier: Modifier = Modifier,
     iconSize: Dp = 64.dp,
     iconColor: Color = MaterialTheme.colorScheme.primary,

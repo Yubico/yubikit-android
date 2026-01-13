@@ -28,17 +28,17 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.yubico.yubikit.fido.android.FidoClientService
 import com.yubico.yubikit.fido.android.R
-import com.yubico.yubikit.fido.android.ui.components.contentWrapper
+import com.yubico.yubikit.fido.android.ui.components.ContentWrapper
 import com.yubico.yubikit.fido.android.ui.theme.DefaultPreview
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun processing(
+fun Processing(
     operation: FidoClientService.Operation,
     origin: String,
     onCloseButtonClick: () -> Unit,
 ) {
-    contentWrapper(
+    ContentWrapper(
         operation = operation,
         origin = origin,
         onCloseButtonClick = onCloseButtonClick,
@@ -51,8 +51,8 @@ fun processing(
 
 @DefaultPreview
 @Composable
-fun processingPreview() {
-    processing(
+fun ProcessingPreview() {
+    Processing(
         operation = FidoClientService.Operation.MAKE_CREDENTIAL,
         origin = "example.com",
         onCloseButtonClick = {},

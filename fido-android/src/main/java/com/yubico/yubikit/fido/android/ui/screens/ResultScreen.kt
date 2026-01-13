@@ -37,14 +37,14 @@ import com.yubico.yubikit.core.fido.CtapException
 import com.yubico.yubikit.fido.android.FidoClientService
 import com.yubico.yubikit.fido.android.R
 import com.yubico.yubikit.fido.android.ui.Error
-import com.yubico.yubikit.fido.android.ui.components.contentWrapper
+import com.yubico.yubikit.fido.android.ui.components.ContentWrapper
 
 @Composable
-fun successView(
+fun SuccessView(
     operation: FidoClientService.Operation,
     origin: String,
 ) {
-    contentWrapper(
+    ContentWrapper(
         operation = operation,
         origin = origin,
         onCloseButtonClick = null,
@@ -69,13 +69,13 @@ fun successView(
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun errorView(
+fun ErrorView(
     operation: FidoClientService.Operation,
     origin: String,
     error: Error? = null,
     onRetry: () -> Unit,
 ) {
-    contentWrapper(
+    ContentWrapper(
         modifier = Modifier.wrapContentSize(),
         operation = operation,
         origin = origin,

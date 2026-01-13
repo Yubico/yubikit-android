@@ -43,7 +43,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 @Composable
-fun fidoClientUi(
+fun FidoClientUi(
     viewModel: MainViewModel,
     operation: FidoClientService.Operation,
     isNfcAvailable: Boolean,
@@ -99,7 +99,7 @@ fun fidoClientUi(
             logger.trace("Client UI screen {}", state)
             when (state) {
                 is UiState.WaitingForKey -> {
-                    tapOrInsertSecurityKey(
+                    TapOrInsertSecurityKey(
                         operation = operation,
                         isNfcAvailable = isNfcAvailable,
                         origin = rpId,
@@ -108,7 +108,7 @@ fun fidoClientUi(
                 }
 
                 is UiState.WaitingForKeyAgain -> {
-                    tapAgainSecurityKey(
+                    TapAgainSecurityKey(
                         operation = operation,
                         origin = rpId,
                         onCloseButtonClick = handleCloseButton,
@@ -116,7 +116,7 @@ fun fidoClientUi(
                 }
 
                 is UiState.WaitingForPinEntry -> {
-                    enterPin(
+                    EnterPin(
                         operation = operation,
                         origin = rpId,
                         error = state.error,
@@ -128,7 +128,7 @@ fun fidoClientUi(
                 }
 
                 is UiState.WaitingForUvEntry -> {
-                    matchFingerprint(
+                    MatchFingerprint(
                         operation = operation,
                         origin = rpId,
                         error = state.error,
@@ -143,7 +143,7 @@ fun fidoClientUi(
                 }
 
                 is UiState.PinNotSetError -> {
-                    createPinScreen(
+                    CreatePinScreen(
                         operation = operation,
                         origin = rpId,
                         error = state.error,
@@ -155,7 +155,7 @@ fun fidoClientUi(
                 }
 
                 is UiState.ForcePinChangeError -> {
-                    forceChangePinScreen(
+                    ForceChangePinScreen(
                         operation = operation,
                         origin = rpId,
                         error = state.error,
@@ -167,7 +167,7 @@ fun fidoClientUi(
                 }
 
                 is UiState.PinCreated -> {
-                    pinCreatedScreen(
+                    PinCreatedScreen(
                         operation = operation,
                         origin = rpId,
                         onCloseButtonClick = handleCloseButton,
@@ -177,7 +177,7 @@ fun fidoClientUi(
                 }
 
                 is UiState.PinChanged -> {
-                    pinChangedScreen(
+                    PinChangedScreen(
                         operation = operation,
                         origin = rpId,
                         onCloseButtonClick = handleCloseButton,
@@ -187,7 +187,7 @@ fun fidoClientUi(
                 }
 
                 is UiState.Processing -> {
-                    processing(
+                    Processing(
                         operation = operation,
                         origin = rpId,
                         onCloseButtonClick = handleCloseButton,
@@ -195,7 +195,7 @@ fun fidoClientUi(
                 }
 
                 is UiState.TouchKey -> {
-                    touchTheSecurityKey(
+                    TouchTheSecurityKey(
                         operation = operation,
                         origin = rpId,
                         onCloseButtonClick = handleCloseButton,
@@ -203,11 +203,11 @@ fun fidoClientUi(
                 }
 
                 is UiState.Success -> {
-                    successView(operation = operation, origin = rpId)
+                    SuccessView(operation = operation, origin = rpId)
                 }
 
                 is UiState.MultipleAssertions -> {
-                    multipleAssertionsScreen(
+                    MultipleAssertionsScreen(
                         operation = operation,
                         origin = rpId,
                         onCloseButtonClick = handleCloseButton,
@@ -217,7 +217,7 @@ fun fidoClientUi(
                 }
 
                 is UiState.OperationError -> {
-                    errorView(
+                    ErrorView(
                         operation = operation,
                         origin = rpId,
                         error = state.error,

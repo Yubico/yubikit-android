@@ -54,7 +54,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import com.yubico.yubikit.fido.android.FidoClientService
 import com.yubico.yubikit.fido.android.R
 import com.yubico.yubikit.fido.android.ui.Error
-import com.yubico.yubikit.fido.android.ui.components.contentWrapper
+import com.yubico.yubikit.fido.android.ui.components.ContentWrapper
 import com.yubico.yubikit.fido.android.ui.theme.DefaultPreview
 
 @Composable
@@ -84,7 +84,7 @@ fun resolvePinEntryError(error: Error?): String? =
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun enterPin(
+fun EnterPin(
     operation: FidoClientService.Operation,
     origin: String,
     error: Error? = null,
@@ -94,7 +94,7 @@ fun enterPin(
 ) {
     val errorText = resolvePinEntryError(error)
 
-    contentWrapper(
+    ContentWrapper(
         operation = operation,
         origin = origin,
         onCloseButtonClick = onCloseButtonClick,
@@ -196,8 +196,8 @@ fun enterPin(
 
 @DefaultPreview
 @Composable
-fun enterPinPreview() {
-    enterPin(
+fun EnterPinPreview() {
+    EnterPin(
         operation = FidoClientService.Operation.MAKE_CREDENTIAL,
         origin = "example.com",
         onCloseButtonClick = {},
@@ -206,8 +206,8 @@ fun enterPinPreview() {
 
 @DefaultPreview
 @Composable
-fun enterPinWithErrorPreview() {
-    enterPin(
+fun EnterPinWithErrorPreview() {
+    EnterPin(
         operation = FidoClientService.Operation.GET_ASSERTION,
         origin = "example.com",
         error = Error.IncorrectPinError(3),

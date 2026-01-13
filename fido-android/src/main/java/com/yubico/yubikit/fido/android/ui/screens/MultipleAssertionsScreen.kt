@@ -43,11 +43,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import com.yubico.yubikit.fido.android.FidoClientService
 import com.yubico.yubikit.fido.android.R
-import com.yubico.yubikit.fido.android.ui.components.contentWrapper
+import com.yubico.yubikit.fido.android.ui.components.ContentWrapper
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialUserEntity
 
 @Composable
-fun multipleAssertionsScreen(
+fun MultipleAssertionsScreen(
     operation: FidoClientService.Operation,
     origin: String,
     users: List<PublicKeyCredentialUserEntity>,
@@ -57,7 +57,7 @@ fun multipleAssertionsScreen(
     val height: Dp = if (users.size > 2) 255.dp else 225.dp
     val scrollable = users.size > 3
 
-    contentWrapper(
+    ContentWrapper(
         operation = operation,
         origin = origin,
         onCloseButtonClick = onCloseButtonClick,
@@ -108,7 +108,7 @@ fun multipleAssertionsScreen(
                 }
             }
             if (scrollable && canScrollUp) {
-                fadeOverlay(
+                FadeOverlay(
                     alignment = Alignment.TopCenter,
                     colors =
                         listOf(
@@ -118,7 +118,7 @@ fun multipleAssertionsScreen(
                 )
             }
             if (scrollable && canScrollDown) {
-                fadeOverlay(
+                FadeOverlay(
                     alignment = Alignment.BottomCenter,
                     colors =
                         listOf(
@@ -132,7 +132,7 @@ fun multipleAssertionsScreen(
 }
 
 @Composable
-private fun BoxScope.fadeOverlay(
+private fun BoxScope.FadeOverlay(
     alignment: Alignment,
     colors: List<Color>,
     height: Dp = 18.dp,
