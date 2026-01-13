@@ -30,6 +30,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -122,9 +123,7 @@ fun ErrorView(
                                             )
 
                                         CtapException.ERR_UV_INVALID ->
-                                            stringResource(
-                                                R.string.ctap_err_uv_invalid,
-                                            )
+                                            stringResource(R.string.ctap_err_uv_unknown)
 
                                         CtapException.ERR_CREDENTIAL_EXCLUDED ->
                                             stringResource(

@@ -45,6 +45,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.ImeAction
@@ -62,9 +63,10 @@ fun resolvePinEntryError(error: Error?): String? =
     when (error) {
         is Error.IncorrectPinError -> {
             if (error.remainingAttempts != null) {
-                stringResource(
-                    R.string.incorrect_pin_with_attempts,
-                    error.remainingAttempts,
+                pluralStringResource(
+                    R.plurals.incorrect_pin_with_attempts,
+                    count = error.remainingAttempts,
+                    error.remainingAttempts
                 )
             } else {
                 stringResource(R.string.incorrect_pin)

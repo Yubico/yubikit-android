@@ -42,6 +42,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -192,7 +193,7 @@ private fun CreateChangePinScreen(
         PinTextField(
             value = newPin,
             onValueChange = { newPin = it },
-            label = stringResource(R.string.new_pin, minPinLen),
+            label = pluralStringResource(R.plurals.new_pin, count = minPinLen, minPinLen),
             showPin = showNewPin,
             onToggleShowPin = { showNewPin = !showNewPin },
             modifier =

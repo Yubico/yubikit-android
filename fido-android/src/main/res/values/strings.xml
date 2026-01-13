@@ -9,8 +9,14 @@
     <string name="provide_pin">PIN</string>
     <string name="icon_content_description_password">Password</string>
     <string name="passkey_created">Passkey successfully created</string>
-    <string name="incorrect_pin_with_attempts">Incorrect PIN. %1$d attempts remaining.</string>
-    <string name="incorrect_uv_with_attempts">Incorrect PIN. %1$d attempts remaining.</string>
+    <plurals name="incorrect_pin_with_attempts">
+        <item quantity="one">Incorrect PIN. %d attempt remaining.</item>
+        <item quantity="other">Incorrect PIN. %d attempts remaining.</item>
+    </plurals>
+    <plurals name="incorrect_uv_with_attempts">
+        <item quantity="one">Incorrect PIN. %d attempt remaining.</item>
+        <item quantity="other">Incorrect PIN. %1$d attempts remaining.</item>
+    </plurals>
     <string name="incorrect_pin">Incorrect PIN.</string>
     <string name="pin_blocked">PIN is blocked. You have to reset the key.</string>
     <string name="pin_auth_blocked">PIN authentication is blocked. Reconnect the key.</string>
@@ -29,7 +35,11 @@
     <string name="create_pin">Create PIN</string>
     <string name="change_pin">Change PIN</string>
     <string name="cancel">Cancel</string>
-    <string name="new_pin">New PIN (min %1$d characters)</string>
+    <plurals name="new_pin">
+        <item quantity="one">New PIN (min %1$d character)</item>
+        <item quantity="other">New PIN (min %1$d characters)</item>
+    </plurals>
+
     <string name="current_pin">Current PIN</string>
     <string name="touch_fingerprint">Touch the fingerprint sensor to continue</string>
     <string name="repeat_pin">Repeat PIN</string>
@@ -38,7 +48,10 @@
     <string name="ctap_err_user_action_timeout">The operation timed out. Please try again.</string>
     <string name="ctap_err_key_store_full">There is no space free for passkeys on the security key. Please remove an existing passkey to create a new one.</string>
     <string name="ctap_err_puat_required">User verification is required for the operation, but the security key is not configured. Please configure the key by creating a PIN and try again.</string>
-    <string name="ctap_err_uv_invalid">Fingerprint not recognized. Try again.\n%1$d retries left.</string>
+    <plurals name="ctap_err_uv_invalid">
+        <item quantity="one">Fingerprint not recognized. Try again.\n%d retry left.</item>
+        <item quantity="other">Fingerprint not recognized. Try again.\n%d retries left.</item>
+    </plurals>
     <string name="ctap_err_credential_excluded">Cannot create this passkey (CREDENTIAL_EXCLUDED).</string>
     <string name="ctap_err_uv_invalid_use_pin">Fingerprint did not match, please use PIN.</string>
     <string name="ctap_err_uv_unknown">There was an error when matching the fingerprint.</string>

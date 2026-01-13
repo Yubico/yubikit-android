@@ -30,6 +30,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -52,7 +53,7 @@ fun MatchFingerprint(
             is Error.IncorrectUvError -> {
                 val attempts = error.remainingAttempts
                 if (attempts > 0) {
-                    stringResource(R.string.ctap_err_uv_invalid, attempts)
+                    pluralStringResource(R.plurals.ctap_err_uv_invalid, count = attempts, attempts)
                 } else {
                     stringResource(R.string.ctap_err_uv_invalid_use_pin)
                 }
