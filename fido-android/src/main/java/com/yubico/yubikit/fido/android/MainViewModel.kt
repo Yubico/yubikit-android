@@ -317,6 +317,7 @@ class MainViewModel : ViewModel() {
                     clientDataHash,
                     request,
                 ) {
+                    // this code is executed when a connection is established
                     _uiState.value = info?.let {
                         val bioEnrollmentConfigured = BioEnrollment.isConfigured(it)
                         val isUsb = _device.value?.transport == Transport.USB
@@ -385,6 +386,7 @@ class MainViewModel : ViewModel() {
 
                                 else -> Error.UnknownError(error.message)
                             }
+                        // handle the error by advancing to the next UI state
                         _uiState.value =
                             when (errorState) {
                                 is Error.PinRequiredError,
