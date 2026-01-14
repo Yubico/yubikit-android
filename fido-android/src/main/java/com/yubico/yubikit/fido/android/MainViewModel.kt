@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Yubico.
+ * Copyright (C) 2025-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import com.yubico.yubikit.core.YubiKeyDevice
 import com.yubico.yubikit.core.fido.CtapException
 import com.yubico.yubikit.core.util.Result
 import com.yubico.yubikit.fido.android.YubiKitFidoClient.Companion.extensions
+import com.yubico.yubikit.fido.android.config.YubiKitFidoConfigManager
 import com.yubico.yubikit.fido.android.ui.Error
 import com.yubico.yubikit.fido.android.ui.UiState
 import com.yubico.yubikit.fido.client.AuthInvalidClientError
@@ -64,7 +65,14 @@ class MainViewModel : ViewModel() {
 
     private val pendingYubiKeyAction = MutableLiveData<YubiKeyAction?>()
 
-    private val _uiState = MutableStateFlow<UiState>(UiState.WaitingForKey)
+    private val _uiState =
+        MutableStateFlow<UiState>(
+            if (YubiKitFidoConfigManager.current.prioritizePin) {
+                UiState.WaitingForPinEntry(null)
+            } else {
+                UiState.WaitingForKey
+            },
+        )
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
 
     private var result: PublicKeyCredential? = null
@@ -184,7 +192,9 @@ class MainViewModel : ViewModel() {
     }
 
     private fun signalRetry(forUsb: Boolean = true) {
-        if (_device.value?.transport == Transport.NFC) {
+        if ((YubiKitFidoConfigManager.current.prioritizePin && _device.value == null) ||
+            _device.value?.transport == Transport.NFC
+        ) {
             // we ask the user to tap the key again
             _uiState.value = UiState.WaitingForKeyAgain
         } else {
@@ -257,9 +267,17 @@ class MainViewModel : ViewModel() {
                                             // there can be various errors during force change pin
                                             is AuthInvalidClientError ->
                                                 when (it.authType) {
-                                                    AuthInvalidClientError.AuthType.PIN -> Error.IncorrectPinError(it.retries)
-                                                    AuthInvalidClientError.AuthType.UV -> Error.IncorrectUvError(it.retries)
+                                                    AuthInvalidClientError.AuthType.PIN ->
+                                                        Error.IncorrectPinError(
+                                                            it.retries,
+                                                        )
+
+                                                    AuthInvalidClientError.AuthType.UV ->
+                                                        Error.IncorrectUvError(
+                                                            it.retries,
+                                                        )
                                                 }
+
                                             is ClientError ->
                                                 when (it.errorCode) {
                                                     ClientError.Code.BAD_REQUEST ->
@@ -270,15 +288,22 @@ class MainViewModel : ViewModel() {
                                                             CtapException.ERR_PIN_POLICY_VIOLATION ->
                                                                 when (info?.forcePinChange) {
                                                                     true -> Error.PinComplexityError
-                                                                    else -> Error.IncorrectPinError(null)
+                                                                    else ->
+                                                                        Error.IncorrectPinError(
+                                                                            null,
+                                                                        )
                                                                 }
+
                                                             else -> Error.UnknownError("Changing pin Failed")
                                                         }
+
                                                     else -> Error.UnknownError("Changing pin Failed")
                                                 }
+
                                             else -> Error.UnknownError("Changing pin Failed")
                                         }
-                                    _uiState.value = UiState.ForcePinChangeError(forcePinChangeError)
+                                    _uiState.value =
+                                        UiState.ForcePinChangeError(forcePinChangeError)
                                 },
                             ).also {
                                 newPinValue?.fill('\u0000')
@@ -347,8 +372,15 @@ class MainViewModel : ViewModel() {
                                 is PinRequiredClientError -> Error.PinRequiredError
                                 is AuthInvalidClientError ->
                                     when (error.authType) {
-                                        AuthInvalidClientError.AuthType.PIN -> Error.IncorrectPinError(error.retries)
-                                        AuthInvalidClientError.AuthType.UV -> Error.IncorrectUvError(error.retries)
+                                        AuthInvalidClientError.AuthType.PIN ->
+                                            Error.IncorrectPinError(
+                                                error.retries,
+                                            )
+
+                                        AuthInvalidClientError.AuthType.UV ->
+                                            Error.IncorrectUvError(
+                                                error.retries,
+                                            )
                                     }
 
                                 is ClientError -> {
@@ -429,6 +461,10 @@ class MainViewModel : ViewModel() {
 
     // executed after the user taps the "Create PIN" button
     fun onCreatePin(pin: CharArray) {
+        pinValue?.let {
+            it.fill('\u0000')
+            pinValue = null
+        }
         newPinValue?.fill('\u0000')
         newPinValue = pin.clone()
         pin.fill('\u0000')
@@ -473,8 +509,8 @@ class MainViewModel : ViewModel() {
     }
 
     // job for changing the uiState with delay
-// used currently for setting TouchKey state when USB key is connected
-// default delay is value which worked best
+    // used currently for setting TouchKey state when USB key is connected
+    // default delay is value which worked best
     private var uiStateTimerJob: Job? = null
 
     fun setUiStateWithDelay(

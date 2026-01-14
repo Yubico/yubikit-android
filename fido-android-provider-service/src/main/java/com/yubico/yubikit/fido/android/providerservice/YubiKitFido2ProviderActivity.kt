@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Yubico.
+ * Copyright (C) 2025-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ import androidx.credentials.provider.CallingAppInfo
 import androidx.credentials.provider.PendingIntentHandler
 import androidx.lifecycle.coroutineScope
 import com.yubico.yubikit.fido.android.YubiKitFidoClient
+import com.yubico.yubikit.fido.android.config.YubiKitFidoConfigManager
 import com.yubico.yubikit.fido.android.providerservice.YubiKitProviderService.Companion.allowList
 import com.yubico.yubikit.fido.client.extensions.CredBlobExtension
 import com.yubico.yubikit.fido.client.extensions.CredPropsExtension
@@ -67,6 +68,10 @@ class YubiKitFido2ProviderActivity : ComponentActivity() {
     private val logger = LoggerFactory.getLogger(YubiKitFido2ProviderActivity::class.java)
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Load config from preferences and update ClientConfiguration
+        ProviderServicePreferences.loadConfiguration(this).also {
+            YubiKitFidoConfigManager.replace(it)
+        }
         super.onCreate(savedInstanceState)
 
         Security.removeProvider("BC")

@@ -14,7 +14,7 @@
         <activity
             android:name=".YubiKitProviderSettingsActivity"
             android:label="@string/settings_activity_name"
-            android:theme="@style/Theme.AppCompat.Light.NoActionBar"
+            android:theme="@style/Theme.AppCompat.DayNight.NoActionBar"
             android:exported="false" />
 
         <service

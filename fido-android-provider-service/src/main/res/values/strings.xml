@@ -3,6 +3,7 @@
     <string name="provider_service_settingsSubtitle">Example by Yubico</string>
     <string name="get_credential">Account on a hardware security key</string>
     <string name="provider_activity_name">YubiKit Credential Manager Provider</string>
-    <string name="settings_activity_name">YubiKit Provider Settings</string>
-    <string name="tbd">TBD</string>
+    <string name="settings_activity_name">%1$s Settings</string>
+    <string name="version">Version: %1$s</string>
+    <string name="assume_pin_exists">Always ask for PIN</string>
 </resources>

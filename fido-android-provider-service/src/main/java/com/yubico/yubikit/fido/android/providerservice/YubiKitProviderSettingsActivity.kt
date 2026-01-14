@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Yubico.
+ * Copyright (C) 2025-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,21 +16,152 @@
 
 package com.yubico.yubikit.fido.android.providerservice
 
+import android.content.res.Configuration
 import android.os.Bundle
-import androidx.activity.enableEdgeToEdge
-import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
+import android.view.WindowInsetsController
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.lifecycleScope
+import com.yubico.yubikit.fido.android.config.YubiKitFidoConfigManager
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 
-class YubiKitProviderSettingsActivity : AppCompatActivity() {
+class YubiKitProviderSettingsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-        setContentView(R.layout.activity_settings)
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-            insets
+        // Load config from preferences and update ClientConfiguration
+        val config = ProviderServicePreferences.loadConfiguration(this)
+        YubiKitFidoConfigManager.replace(config)
+        setContent {
+            YubiKitProviderServiceTheme {
+                SettingsScreen()
+            }
         }
+
+        val isDarkMode =
+            (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+        if (isDarkMode) {
+            // Use default (light icons on dark background)
+            window.insetsController?.setSystemBarsAppearance(
+                0,
+                WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
+            )
+        } else {
+            // Set dark icons for light background
+            window.insetsController?.setSystemBarsAppearance(
+                WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS,
+                WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SettingsScreen() {
+    var prioritizePin by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+
+    // Get version name
+    val versionName = try {
+        val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
+        packageInfo.versionName ?: ""
+    } catch (_: android.content.pm.PackageManager.NameNotFoundException) {
+        ""
+    }
+
+    LaunchedEffect(Unit) {
+        (context as? androidx.lifecycle.LifecycleOwner)?.lifecycleScope?.launch {
+            YubiKitFidoConfigManager.configuration.collectLatest {
+                prioritizePin = it.prioritizePin
+            }
+        }
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Column {
+                        Text(
+                            text = stringResource(
+                                id = R.string.settings_activity_name,
+                                stringResource(id = R.string.provider_service_label)
+                            ),
+                        )
+                        Text(
+                            text = stringResource(id = R.string.provider_service_settingsSubtitle),
+                            style = MaterialTheme.typography.bodySmall
+                        )
+
+                    }
+                }
+            )
+        },
+        content = { padding: PaddingValues ->
+            Column(
+                modifier = Modifier
+                    .padding(padding)
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+            ) {
+                SettingSwitch(
+                    title = stringResource(R.string.assume_pin_exists),
+                    checked = prioritizePin,
+                    onCheckedChange = {
+                        YubiKitFidoConfigManager.setPrioritizePin(it)
+                        ProviderServicePreferences.savePrioritizePin(context, it)
+                    }
+                )
+                // Spacer to push version to bottom
+                Spacer(modifier = Modifier.weight(1f))
+                Text(
+                    text = stringResource(R.string.version, versionName),
+                    modifier = Modifier
+                        .align(Alignment.CenterHorizontally)
+                        .padding(bottom = 16.dp),
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+        }
+    )
+}
+
+@Composable
+fun SettingSwitch(title: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(title, modifier = Modifier.weight(1f))
+        Switch(checked = checked, onCheckedChange = onCheckedChange)
     }
 }

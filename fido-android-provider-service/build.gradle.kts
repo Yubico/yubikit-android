@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Yubico.
+ * Copyright (C) 2025-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,9 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
-    alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.android.library)
     id("yubikit-android-publishing")
     id("yubikit-common")
 }
@@ -59,6 +60,10 @@ android {
         compilerOptions {
             jvmTarget = JvmTarget.JVM_11
         }
+    }
+
+    buildFeatures {
+        compose = true
     }
 }
 
@@ -102,9 +107,11 @@ dependencies {
     implementation(project(":fido-android"))
 
     implementation(libs.androidx.activity.ktx)
-    implementation(libs.androidx.appcompat)
     implementation(libs.androidx.credentials)
-    implementation(libs.androidx.constraintlayout)
+
+    implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.material3)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
 
     implementation(libs.bcpkix.jdk15to18)
     implementation(libs.logback.android)

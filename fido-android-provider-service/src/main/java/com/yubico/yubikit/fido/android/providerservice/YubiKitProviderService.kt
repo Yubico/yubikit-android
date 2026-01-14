@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Yubico.
+ * Copyright (C) 2025-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -186,6 +186,14 @@ class YubiKitProviderService : CredentialProviderService() {
     ) {
         logger.debug("onClearCredentialStateRequest")
         callback.onError(ClearCredentialUnsupportedException("Not implemented"))
+    }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        // Load config from preferences and update ClientConfiguration
+        ProviderServicePreferences.loadConfiguration(this).also {
+            com.yubico.yubikit.fido.android.config.YubiKitFidoConfigManager.replace(it)
+        }
+        return super.onStartCommand(intent, flags, startId)
     }
 
     companion object {
