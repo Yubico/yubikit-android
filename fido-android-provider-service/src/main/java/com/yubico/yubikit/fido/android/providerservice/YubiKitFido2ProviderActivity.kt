@@ -32,7 +32,6 @@ import androidx.credentials.provider.PendingIntentHandler
 import androidx.lifecycle.coroutineScope
 import com.yubico.yubikit.fido.android.YubiKitFidoClient
 import com.yubico.yubikit.fido.android.config.YubiKitFidoConfigManager
-import com.yubico.yubikit.fido.android.providerservice.YubiKitProviderService.Companion.allowList
 import com.yubico.yubikit.fido.client.extensions.CredBlobExtension
 import com.yubico.yubikit.fido.client.extensions.CredPropsExtension
 import com.yubico.yubikit.fido.client.extensions.CredProtectExtension
