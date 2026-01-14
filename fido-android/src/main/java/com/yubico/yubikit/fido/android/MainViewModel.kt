@@ -86,7 +86,7 @@ class MainViewModel : ViewModel() {
     // Store last parameters for retry
     private var lastFidoClientService: FidoClientService? = null
     private var lastOperation: FidoClientService.Operation? = null
-    private var lastRpId: String? = null
+    private var lastOrigin: Origin? = null
     private var lastRequest: String? = null
     private var lastClientDataHash: ByteArray? = null
     private var lastOnResult: ((PublicKeyCredential) -> Unit)? = null
@@ -210,7 +210,7 @@ class MainViewModel : ViewModel() {
         startFidoOperation(
             lastFidoClientService!!,
             lastOperation!!,
-            lastRpId!!,
+            lastOrigin!!,
             lastRequest!!,
             lastClientDataHash,
             lastOnResult!!,
@@ -220,7 +220,7 @@ class MainViewModel : ViewModel() {
     fun startFidoOperation(
         fidoClientService: FidoClientService,
         operation: FidoClientService.Operation,
-        rpId: String,
+        origin: Origin,
         request: String,
         clientDataHash: ByteArray?,
         onResult: (PublicKeyCredential) -> Unit,
@@ -228,14 +228,14 @@ class MainViewModel : ViewModel() {
         logger.trace(
             "Start operation: {} on {}. Request: {}",
             operation.name,
-            rpId,
+            origin,
             request,
         )
 
         // Save parameters for retry
         lastFidoClientService = fidoClientService
         lastOperation = operation
-        lastRpId = rpId
+        lastOrigin = origin
         lastRequest = request
         lastClientDataHash = clientDataHash
         lastOnResult = onResult
@@ -338,7 +338,7 @@ class MainViewModel : ViewModel() {
                 fidoClientService.performOperation(
                     pinValue,
                     operation,
-                    rpId,
+                    origin,
                     clientDataHash,
                     request,
                 ) {

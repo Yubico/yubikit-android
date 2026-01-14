@@ -20,6 +20,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.android.library)
+    alias(libs.plugins.kotlinx.serialization)
     id("yubikit-android-publishing")
     id("yubikit-common")
 }
@@ -115,6 +116,8 @@ dependencies {
 
     implementation(libs.bcpkix.jdk15to18)
     implementation(libs.logback.android)
+
+    implementation(libs.kotlinx.serialization.json)
 }
 
 description = "This library implements Credential Provider Service with YubiKit Fido2 functionality"

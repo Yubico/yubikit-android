@@ -24,6 +24,7 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.yubico.yubikit.android.app.databinding.FragmentFidoAppLocalBinding
 import com.yubico.yubikit.core.internal.codec.Base64
+import com.yubico.yubikit.fido.android.Origin
 import com.yubico.yubikit.fido.android.YubiKitFidoClient
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
@@ -63,6 +64,8 @@ class FidoAppLocalFragment : Fragment() {
                 rp = Rp(RP_ID, RP_ID),
                 user = User(Base64.toUrlSafeString(userId), userName, userDisplayName),
             )
+
+        val test = json.decodeFromString(McRequest.serializer(), "")
         return json.encodeToString(request)
     }
 
@@ -87,7 +90,7 @@ class FidoAppLocalFragment : Fragment() {
                 val request = buildMcRequest("App test user")
                 logger.debug("Make credential request: {}", request)
 
-                yubiKitFidoClient.makeCredential(RP_ID, request, null)
+                yubiKitFidoClient.makeCredential(Origin(RP_ID, RP_ID), request, null)
                     .onSuccess { logger.debug("Successful MC: {}", it) }
                     .onFailure { logger.error("Error during MC: ", it) }
             }
@@ -98,7 +101,7 @@ class FidoAppLocalFragment : Fragment() {
                 val request = buildGaRequest()
                 logger.debug("Get assertions request: {}", request)
 
-                yubiKitFidoClient.getAssertion(RP_ID, request, null)
+                yubiKitFidoClient.getAssertion(Origin(RP_ID, RP_ID), request, null)
                     .onSuccess { logger.debug("Successful GA: {}", it) }
                     .onFailure { logger.error("Error during GA:", it) }
             }

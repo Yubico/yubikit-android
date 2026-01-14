@@ -178,7 +178,7 @@ class YubiKitFidoActivity : ComponentActivity() {
                                 params.operation,
                                 isNfcAvailable =
                                 viewModel.isNfcAvailable.observeAsState(false).value,
-                                params.rpId,
+                                params.origin,
                                 params.request,
                                 params.clientDataHash?.toByteArray(),
                                 fidoClientService = fidoClientService,
@@ -239,7 +239,7 @@ class YubiKitFidoActivity : ComponentActivity() {
     }
 
     data class FidoActivityParameters(
-        val rpId: String,
+        val origin: Origin,
         val request: String,
         val clientDataHash: List<Byte>?,
         val operation: FidoClientService.Operation,
@@ -259,7 +259,10 @@ class YubiKitFidoActivity : ComponentActivity() {
                     } ?: throw IllegalArgumentException("Invalid operation type")
 
                 return FidoActivityParameters(
-                    rpId = extras.getString("rpId")!!,
+                    origin = Origin(
+                        extras.getString("callingAppOrigin")!!,
+                        extras.getString("relatedOrigin")!!,
+                    ),
                     request = extras.getString("request")!!,
                     clientDataHash = extras.getString("clientDataHash")?.hexToByteArray()?.toList(),
                     operation = operation,

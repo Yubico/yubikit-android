@@ -30,6 +30,7 @@ import androidx.credentials.exceptions.GetCredentialCustomException
 import androidx.credentials.provider.CallingAppInfo
 import androidx.credentials.provider.PendingIntentHandler
 import androidx.lifecycle.coroutineScope
+import com.yubico.yubikit.fido.android.Origin
 import com.yubico.yubikit.fido.android.YubiKitFidoClient
 import com.yubico.yubikit.fido.android.config.YubiKitFidoConfigManager
 import com.yubico.yubikit.fido.client.extensions.CredBlobExtension
@@ -48,9 +49,8 @@ import java.security.Security
 import kotlin.coroutines.cancellation.CancellationException
 
 class YubiKitFido2ProviderActivity : ComponentActivity() {
-    private val yubiKitFidoClient by lazy {
-        YubiKitFidoClient(this, extensions = defaultExtensions)
-    }
+
+    private lateinit var yubiKitFidoClient: YubiKitFidoClient
 
     private val defaultExtensions: List<Extension> =
         listOf(
@@ -73,6 +73,8 @@ class YubiKitFido2ProviderActivity : ComponentActivity() {
         }
         super.onCreate(savedInstanceState)
 
+        yubiKitFidoClient = YubiKitFidoClient(this, extensions = defaultExtensions)
+
         Security.removeProvider("BC")
         Security.insertProviderAt(BouncyCastleProvider(), 1)
 
@@ -85,17 +87,17 @@ class YubiKitFido2ProviderActivity : ComponentActivity() {
             request
                 ?.callingRequest as? CreatePublicKeyCredentialRequest
                 ?: return false
-        val origin =
-            extractOrigin(
-                request.callingAppInfo,
-                createPublicKeyCredentialRequest.requestJson,
-            ).getOrElse { return reportCreateCredentialError(it) }
 
         launchCredentialFlow(
             action = {
+                val origin =
+                    extractOrigin(
+                        request.callingAppInfo,
+                        createPublicKeyCredentialRequest.requestJson,
+                    ).getOrThrow()
                 val response =
                     yubiKitFidoClient.makeCredential(
-                        origin.removeSuffix("/"),
+                        origin,
                         createPublicKeyCredentialRequest.requestJson,
                         createPublicKeyCredentialRequest.clientDataHash?.toHexString(),
                     ).getOrThrow()
@@ -122,17 +124,17 @@ class YubiKitFido2ProviderActivity : ComponentActivity() {
             request
                 ?.credentialOptions?.getOrNull(0) as? GetPublicKeyCredentialOption
                 ?: return false
-        val origin =
-            extractOrigin(
-                request.callingAppInfo,
-                getPublicKeyCredentialOption.requestJson,
-            ).getOrElse { return reportGetCredentialError(it) }
 
         launchCredentialFlow(
             action = {
+                val origin =
+                    extractOrigin(
+                        request.callingAppInfo,
+                        getPublicKeyCredentialOption.requestJson,
+                    ).getOrThrow()
                 val response =
                     yubiKitFidoClient.getAssertion(
-                        origin.removeSuffix("/"),
+                        origin,
                         getPublicKeyCredentialOption.requestJson,
                         getPublicKeyCredentialOption.clientDataHash?.toHexString(),
                     ).getOrThrow()
@@ -196,30 +198,46 @@ class YubiKitFido2ProviderActivity : ComponentActivity() {
         return false
     }
 
-    private fun extractOrigin(
+    private suspend fun extractOrigin(
         appInfo: CallingAppInfo,
         requestJson: String,
-    ): Result<String> {
+    ): Result<Origin> {
         return runCatching {
-            if (appInfo.isOriginPopulated()) {
+
+            // request RpID
+            val rpId = getRpId(requestJson)
+
+            val origin = if (appInfo.isOriginPopulated()) {
                 // getOrigin might return null, so handle it
                 appInfo.getOrigin(allowList)
                     ?: throw NullPointerException("Origin is null from allowList")
             } else {
-                val rpId = "rpId"
-                val rp = "rp"
-                val id = "id"
+                rpId
+            }.removeSuffix("/")
 
-                val request = JSONObject(requestJson)
-                "https://" +
-                    if (request.has(rpId)) {
-                        request.getString(rpId)
-                    } else if (request.has(rp)) {
-                        request.getJSONObject(rp).getString(id)
-                    } else {
-                        throw IllegalArgumentException("Failed to extract origin")
-                    }
+            if ("https://$rpId" == origin) {
+                logger.debug("Using original origin: $origin")
+                Origin(origin, origin)
+            } else {
+                logger.debug("Validating ROR for origin=$origin, rpId=$rpId")
+                Origin(origin, validateOrigin(origin, rpId))
             }
+        }
+    }
+
+    private fun getRpId(requestJson: String): String {
+        val rpId = "rpId"
+        val rp = "rp"
+        val id = "id"
+
+        val request = JSONObject(requestJson)
+
+        return if (request.has(rpId)) {
+            request.getString(rpId)
+        } else if (request.has(rp)) {
+            request.getJSONObject(rp).getString(id)
+        } else {
+            throw IllegalArgumentException("Failed to get request rpId")
         }
     }
 }

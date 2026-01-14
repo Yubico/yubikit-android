@@ -40,7 +40,7 @@ class FidoClientService(private val viewModel: MainViewModel = MainViewModel()) 
     suspend fun performOperation(
         pin: CharArray?,
         operation: Operation,
-        rpId: String,
+        origin: Origin,
         clientDataHash: ByteArray?,
         request: String,
         onConnection: () -> Unit,
@@ -49,7 +49,7 @@ class FidoClientService(private val viewModel: MainViewModel = MainViewModel()) 
             Operation.MAKE_CREDENTIAL ->
                 makeCredential(
                     pin,
-                    rpId,
+                    origin,
                     clientDataHash,
                     request,
                     onConnection,
@@ -58,7 +58,7 @@ class FidoClientService(private val viewModel: MainViewModel = MainViewModel()) 
             Operation.GET_ASSERTION ->
                 getAssertion(
                     pin,
-                    rpId,
+                    origin,
                     clientDataHash,
                     request,
                     onConnection,
@@ -82,7 +82,7 @@ class FidoClientService(private val viewModel: MainViewModel = MainViewModel()) 
 
     private suspend fun makeCredential(
         pin: CharArray?,
-        rpId: String,
+        origin: Origin,
         clientDataHash: ByteArray?,
         request: String,
         onConnection: () -> Unit,
@@ -120,7 +120,7 @@ class FidoClientService(private val viewModel: MainViewModel = MainViewModel()) 
                     ?: ClientDataProvider.fromClientDataJson(
                         buildClientData(
                             "webauthn.create",
-                            rpId,
+                            origin.related,
                             requestJson["challenge"] as String,
                         ),
                     )
@@ -128,7 +128,7 @@ class FidoClientService(private val viewModel: MainViewModel = MainViewModel()) 
             client.makeCredential(
                 clientData,
                 publicKeyCredentialCreationOptions,
-                rpId.removePrefix("https://"), // TODO reason about this
+                origin.related.removePrefix("https://"), // TODO reason about this
                 pin,
                 null,
                 commandState,
@@ -137,7 +137,7 @@ class FidoClientService(private val viewModel: MainViewModel = MainViewModel()) 
 
     private suspend fun getAssertion(
         pin: CharArray?,
-        rpId: String,
+        origin: Origin,
         clientDataHash: ByteArray?,
         request: String,
         onConnection: () -> Unit,
@@ -162,7 +162,7 @@ class FidoClientService(private val viewModel: MainViewModel = MainViewModel()) 
                     ?: ClientDataProvider.fromClientDataJson(
                         buildClientData(
                             "webauthn.get",
-                            rpId,
+                            origin.related,
                             requestJson["challenge"] as String,
                         ),
                     )
@@ -175,7 +175,7 @@ class FidoClientService(private val viewModel: MainViewModel = MainViewModel()) 
             client.getAssertion(
                 clientData,
                 publicKeyCredentialRequestOptions,
-                rpId.removePrefix("https://"), // TODO reason about this
+                origin.related.removePrefix("https://"), // TODO reason about this
                 pin,
                 commandState,
             )

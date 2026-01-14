@@ -19,6 +19,7 @@ package com.yubico.yubikit.fido.android
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.webkit.WebStorage
 import androidx.activity.ComponentActivity
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContract
@@ -34,7 +35,7 @@ import kotlin.coroutines.resumeWithException
 class YubiKitFidoClient {
     private data class FidoRequest(
         val operation: FidoClientService.Operation,
-        val rpId: String,
+        val origin: Origin,
         val clientDataHash: String?,
         val request: String,
     )
@@ -95,7 +96,7 @@ class YubiKitFidoClient {
 
     private suspend fun execute(
         type: FidoClientService.Operation,
-        rpId: String,
+        origin: Origin,
         clientDataHash: String?,
         request: String,
     ): Result<String> =
@@ -105,7 +106,7 @@ class YubiKitFidoClient {
                 return@suspendCancellableCoroutine
             }
             currentContinuation = continuation
-            launcher.launch(FidoRequest(type, rpId, clientDataHash, request))
+            launcher.launch(FidoRequest(type, origin, clientDataHash, request))
             continuation.invokeOnCancellation {
                 if (it is CancellationException) {
                     currentContinuation = null
@@ -114,19 +115,19 @@ class YubiKitFidoClient {
         }
 
     suspend fun makeCredential(
-        rpId: String,
+        origin: Origin,
         request: String,
         clientDataHash: String?,
     ): Result<String> {
-        return execute(FidoClientService.Operation.MAKE_CREDENTIAL, rpId, clientDataHash, request)
+        return execute(FidoClientService.Operation.MAKE_CREDENTIAL, origin, clientDataHash, request)
     }
 
     suspend fun getAssertion(
-        rpId: String,
+        origin: Origin,
         request: String,
         clientDataHash: String?,
     ): Result<String> {
-        return execute(FidoClientService.Operation.GET_ASSERTION, rpId, clientDataHash, request)
+        return execute(FidoClientService.Operation.GET_ASSERTION, origin, clientDataHash, request)
     }
 
     private class FidoActivityResultContract :
@@ -137,7 +138,8 @@ class YubiKitFidoClient {
         ): Intent {
             return Intent(context, YubiKitFidoActivity::class.java).apply {
                 putExtra("type", input.operation.ordinal)
-                putExtra("rpId", input.rpId)
+                putExtra("callingAppOrigin", input.origin.callingApp)
+                putExtra("relatedOrigin", input.origin.related)
                 putExtra("clientDataHash", input.clientDataHash)
                 putExtra("request", input.request)
             }
@@ -147,17 +149,17 @@ class YubiKitFidoClient {
             resultCode: Int,
             intent: Intent?,
         ): Result<String> =
-            when {
-                resultCode == Activity.RESULT_OK && intent != null ->
+            when (resultCode) {
+                Activity.RESULT_OK if intent != null ->
                     intent.getStringExtra("credential")?.let { credentialJson ->
                         Result.success(credentialJson)
                     }
                         ?: Result.failure(IllegalStateException("Credential missing in Intent result"))
 
-                resultCode == Activity.RESULT_CANCELED ->
+                Activity.RESULT_CANCELED ->
                     Result.failure(CancellationException("User cancelled FIDO operation"))
 
-                resultCode == RESULT_KEY_REMOVED ->
+                RESULT_KEY_REMOVED ->
                     Result.failure(CancellationException("Key was removed"))
 
                 else -> Result.failure(IllegalStateException("Unknown error occurred (resultCode: $resultCode)"))
