@@ -85,8 +85,8 @@ fun MatchFingerprint(
 
         Text(
             modifier =
-                Modifier
-                    .padding(start = 32.dp, end = 32.dp, top = 16.dp, bottom = 8.dp),
+            Modifier
+                .padding(start = 32.dp, end = 32.dp, top = 16.dp, bottom = 8.dp),
             style = MaterialTheme.typography.bodySmallEmphasized,
             textAlign = TextAlign.Center,
             text = errorText,

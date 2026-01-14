@@ -52,10 +52,10 @@ fun ContentWrapper(
 ) {
     Column(
         modifier =
-            modifier
-                .fillMaxWidth()
-                .padding(top = 0.dp, start = 0.dp, end = 0.dp)
-                .wrapContentHeight(),
+        modifier
+            .fillMaxWidth()
+            .padding(top = 0.dp, start = 0.dp, end = 0.dp)
+            .wrapContentHeight(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top,
     ) {
@@ -73,26 +73,26 @@ fun ContentWrapper(
             } else {
                 Box(
                     modifier =
-                        Modifier
-                            .width(16.dp)
-                            .height(48.dp),
+                    Modifier
+                        .width(16.dp)
+                        .height(48.dp),
                 )
             }
             Text(
                 text =
-                    if (operation == FidoClientService.Operation.MAKE_CREDENTIAL) {
-                        stringResource(R.string.create_passkey_for, origin)
-                    } else {
-                        stringResource(R.string.login_with_passkey, origin)
-                    },
+                if (operation == FidoClientService.Operation.MAKE_CREDENTIAL) {
+                    stringResource(R.string.create_passkey_for, origin)
+                } else {
+                    stringResource(R.string.login_with_passkey, origin)
+                },
                 style = MaterialTheme.typography.titleSmall,
             )
         }
         Column(
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .defaultMinSize(minHeight = contentHeight),
+            Modifier
+                .fillMaxWidth()
+                .defaultMinSize(minHeight = contentHeight),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {

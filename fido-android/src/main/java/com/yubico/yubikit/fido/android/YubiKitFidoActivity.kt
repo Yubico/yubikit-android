@@ -177,7 +177,7 @@ class YubiKitFidoActivity : ComponentActivity() {
                                 viewModel,
                                 params.operation,
                                 isNfcAvailable =
-                                    viewModel.isNfcAvailable.observeAsState(false).value,
+                                viewModel.isNfcAvailable.observeAsState(false).value,
                                 params.rpId,
                                 params.request,
                                 params.clientDataHash?.toByteArray(),

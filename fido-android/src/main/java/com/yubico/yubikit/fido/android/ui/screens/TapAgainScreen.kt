@@ -79,14 +79,14 @@ fun PulsingIcon(
         initialValue = 1f,
         targetValue = 1.1f,
         animationSpec =
-            infiniteRepeatable(
-                animation =
-                    tween(
-                        durationMillis = 1000,
-                        easing = FastOutSlowInEasing,
-                    ),
-                repeatMode = RepeatMode.Reverse,
+        infiniteRepeatable(
+            animation =
+            tween(
+                durationMillis = 1000,
+                easing = FastOutSlowInEasing,
             ),
+            repeatMode = RepeatMode.Reverse,
+        ),
         label = "scale",
     )
 
@@ -94,14 +94,14 @@ fun PulsingIcon(
         initialValue = 1f,
         targetValue = 0.7f,
         animationSpec =
-            infiniteRepeatable(
-                animation =
-                    tween(
-                        durationMillis = 1000,
-                        easing = FastOutSlowInEasing,
-                    ),
-                repeatMode = RepeatMode.Reverse,
+        infiniteRepeatable(
+            animation =
+            tween(
+                durationMillis = 1000,
+                easing = FastOutSlowInEasing,
             ),
+            repeatMode = RepeatMode.Reverse,
+        ),
         label = "alpha",
     )
 
@@ -109,9 +109,9 @@ fun PulsingIcon(
         painter = painter,
         contentDescription = contentDescription,
         modifier =
-            modifier
-                .scale(scale)
-                .alpha(alpha),
+        modifier
+            .scale(scale)
+            .alpha(alpha),
         tint = tint,
     )
 }

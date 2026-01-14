@@ -30,7 +30,7 @@ object ProviderServicePreferences {
     fun loadConfiguration(context: Context): YubiKitFidoConfig {
         val prefs = getPrefs(context)
         return YubiKitFidoConfig(
-            prioritizePin = prefs.getBoolean(KEY_PRIORITIZE_PIN, false)
+            prioritizePin = prefs.getBoolean(KEY_PRIORITIZE_PIN, false),
         )
     }
 
@@ -46,4 +46,3 @@ object ProviderServicePreferences {
         prefs.edit().putBoolean(KEY_PRIORITIZE_PIN, value).apply()
     }
 }
-

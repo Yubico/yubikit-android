@@ -32,7 +32,6 @@ fun YubiKitProviderServiceTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit,
 ) {
-
     val context = LocalContext.current
     val colorScheme =
         if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)

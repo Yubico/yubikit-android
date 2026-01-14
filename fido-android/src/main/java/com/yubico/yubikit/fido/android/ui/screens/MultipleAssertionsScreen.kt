@@ -70,9 +70,9 @@ fun MultipleAssertionsScreen(
         Spacer(modifier = Modifier.height(16.dp))
         Box(
             modifier =
-                Modifier
-                    .height(height)
-                    .fillMaxWidth(),
+            Modifier
+                .height(height)
+                .fillMaxWidth(),
         ) {
             val scrollState = rememberScrollState()
             val canScrollUp = scrollState.value > 0
@@ -80,17 +80,17 @@ fun MultipleAssertionsScreen(
 
             Column(
                 modifier =
-                    Modifier
-                        .let { if (scrollable) it.verticalScroll(scrollState) else it }
-                        .fillMaxWidth(),
+                Modifier
+                    .let { if (scrollable) it.verticalScroll(scrollState) else it }
+                    .fillMaxWidth(),
             ) {
                 users.forEachIndexed { idx, user ->
                     Button(
                         onClick = { onSelect(idx) },
                         modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .height(48.dp),
+                        Modifier
+                            .fillMaxWidth()
+                            .height(48.dp),
                     ) {
                         Icon(
                             painter = painterResource(R.drawable.ic_baseline_passkey_24),
@@ -111,20 +111,20 @@ fun MultipleAssertionsScreen(
                 FadeOverlay(
                     alignment = Alignment.TopCenter,
                     colors =
-                        listOf(
-                            MaterialTheme.colorScheme.background,
-                            Color.Transparent,
-                        ),
+                    listOf(
+                        MaterialTheme.colorScheme.background,
+                        Color.Transparent,
+                    ),
                 )
             }
             if (scrollable && canScrollDown) {
                 FadeOverlay(
                     alignment = Alignment.BottomCenter,
                     colors =
-                        listOf(
-                            Color.Transparent,
-                            MaterialTheme.colorScheme.background,
-                        ),
+                    listOf(
+                        Color.Transparent,
+                        MaterialTheme.colorScheme.background,
+                    ),
                 )
             }
         }
@@ -139,13 +139,13 @@ private fun BoxScope.FadeOverlay(
 ) {
     Box(
         modifier =
-            Modifier
-                .fillMaxWidth()
-                .height(height)
-                .align(alignment)
-                .zIndex(1f)
-                .background(
-                    brush = Brush.verticalGradient(colors = colors),
-                ),
+        Modifier
+            .fillMaxWidth()
+            .height(height)
+            .align(alignment)
+            .zIndex(1f)
+            .background(
+                brush = Brush.verticalGradient(colors = colors),
+            ),
     )
 }

@@ -98,7 +98,7 @@ class ManagementFragment : YubiKeyFragment<ManagementSession, ManagementViewMode
                             checkbox.isChecked = (
                                 info.config.getEnabledCapabilities(transport)
                                     ?: 0
-                            ) and capability.bit != 0
+                                ) and capability.bit != 0
                             checkbox.visibility = View.VISIBLE
                         } else {
                             checkbox.visibility = View.GONE

@@ -70,13 +70,13 @@ class YubiKitProviderSettingsActivity : ComponentActivity() {
             // Use default (light icons on dark background)
             window.insetsController?.setSystemBarsAppearance(
                 0,
-                WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
+                WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS,
             )
         } else {
             // Set dark icons for light background
             window.insetsController?.setSystemBarsAppearance(
                 WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS,
-                WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
+                WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS,
             )
         }
     }
@@ -112,16 +112,15 @@ fun SettingsScreen() {
                         Text(
                             text = stringResource(
                                 id = R.string.settings_activity_name,
-                                stringResource(id = R.string.provider_service_label)
+                                stringResource(id = R.string.provider_service_label),
                             ),
                         )
                         Text(
                             text = stringResource(id = R.string.provider_service_settingsSubtitle),
-                            style = MaterialTheme.typography.bodySmall
+                            style = MaterialTheme.typography.bodySmall,
                         )
-
                     }
-                }
+                },
             )
         },
         content = { padding: PaddingValues ->
@@ -129,7 +128,7 @@ fun SettingsScreen() {
                 modifier = Modifier
                     .padding(padding)
                     .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
+                    .verticalScroll(rememberScrollState()),
             ) {
                 SettingSwitch(
                     title = stringResource(R.string.assume_pin_exists),
@@ -137,7 +136,7 @@ fun SettingsScreen() {
                     onCheckedChange = {
                         YubiKitFidoConfigManager.setPrioritizePin(it)
                         ProviderServicePreferences.savePrioritizePin(context, it)
-                    }
+                    },
                 )
                 // Spacer to push version to bottom
                 Spacer(modifier = Modifier.weight(1f))
@@ -146,10 +145,10 @@ fun SettingsScreen() {
                     modifier = Modifier
                         .align(Alignment.CenterHorizontally)
                         .padding(bottom = 16.dp),
-                    style = MaterialTheme.typography.bodySmall
+                    style = MaterialTheme.typography.bodySmall,
                 )
             }
-        }
+        },
     )
 }
 
@@ -159,7 +158,7 @@ fun SettingSwitch(title: String, checked: Boolean, onCheckedChange: (Boolean) ->
         modifier = Modifier
             .fillMaxWidth()
             .padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(title, modifier = Modifier.weight(1f))
         Switch(checked = checked, onCheckedChange = onCheckedChange)

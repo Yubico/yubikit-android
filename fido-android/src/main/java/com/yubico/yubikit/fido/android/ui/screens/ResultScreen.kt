@@ -30,7 +30,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -52,11 +51,11 @@ fun SuccessView(
     ) {
         Text(
             text =
-                if (operation == FidoClientService.Operation.MAKE_CREDENTIAL) {
-                    stringResource(R.string.passkey_created)
-                } else {
-                    stringResource(R.string.login_successful)
-                },
+            if (operation == FidoClientService.Operation.MAKE_CREDENTIAL) {
+                stringResource(R.string.passkey_created)
+            } else {
+                stringResource(R.string.login_successful)
+            },
             style = MaterialTheme.typography.bodyLarge,
             fontWeight = FontWeight.Bold,
         )
@@ -95,56 +94,56 @@ fun ErrorView(
             modifier = Modifier.padding(horizontal = 32.dp),
             style = MaterialTheme.typography.bodySmallEmphasized,
             text =
-                when (error) {
-                    is Error.OperationError -> {
-                        error.exception?.let { ex ->
-                            when (ex) {
-                                is CtapException -> {
-                                    when (ex.ctapError) {
-                                        CtapException.ERR_NO_CREDENTIALS ->
-                                            stringResource(
-                                                R.string.ctap_err_no_credentials,
-                                                origin,
-                                            )
+            when (error) {
+                is Error.OperationError -> {
+                    error.exception?.let { ex ->
+                        when (ex) {
+                            is CtapException -> {
+                                when (ex.ctapError) {
+                                    CtapException.ERR_NO_CREDENTIALS ->
+                                        stringResource(
+                                            R.string.ctap_err_no_credentials,
+                                            origin,
+                                        )
 
-                                        CtapException.ERR_USER_ACTION_TIMEOUT ->
-                                            stringResource(
-                                                R.string.ctap_err_user_action_timeout,
-                                            )
+                                    CtapException.ERR_USER_ACTION_TIMEOUT ->
+                                        stringResource(
+                                            R.string.ctap_err_user_action_timeout,
+                                        )
 
-                                        CtapException.ERR_KEY_STORE_FULL ->
-                                            stringResource(
-                                                R.string.ctap_err_key_store_full,
-                                            )
+                                    CtapException.ERR_KEY_STORE_FULL ->
+                                        stringResource(
+                                            R.string.ctap_err_key_store_full,
+                                        )
 
-                                        CtapException.ERR_PUAT_REQUIRED ->
-                                            stringResource(
-                                                R.string.ctap_err_puat_required,
-                                            )
+                                    CtapException.ERR_PUAT_REQUIRED ->
+                                        stringResource(
+                                            R.string.ctap_err_puat_required,
+                                        )
 
-                                        CtapException.ERR_UV_INVALID ->
-                                            stringResource(R.string.ctap_err_uv_unknown)
+                                    CtapException.ERR_UV_INVALID ->
+                                        stringResource(R.string.ctap_err_uv_unknown)
 
-                                        CtapException.ERR_CREDENTIAL_EXCLUDED ->
-                                            stringResource(
-                                                R.string.ctap_err_credential_excluded,
-                                            )
+                                    CtapException.ERR_CREDENTIAL_EXCLUDED ->
+                                        stringResource(
+                                            R.string.ctap_err_credential_excluded,
+                                        )
 
-                                        else -> stringResource(R.string.unknown_error)
-                                    }
+                                    else -> stringResource(R.string.unknown_error)
                                 }
-
-                                else -> stringResource(R.string.unknown_error)
                             }
-                        } ?: stringResource(R.string.unknown_error)
-                    }
 
-                    is Error.DeviceNotConfiguredError -> stringResource(R.string.device_not_configured)
+                            else -> stringResource(R.string.unknown_error)
+                        }
+                    } ?: stringResource(R.string.unknown_error)
+                }
 
-                    is Error.UnknownError -> error.message ?: stringResource(R.string.unknown_error)
+                is Error.DeviceNotConfiguredError -> stringResource(R.string.device_not_configured)
 
-                    else -> stringResource(R.string.unknown_error)
-                },
+                is Error.UnknownError -> error.message ?: stringResource(R.string.unknown_error)
+
+                else -> stringResource(R.string.unknown_error)
+            },
         )
 
         Spacer(modifier = Modifier.height(16.dp))

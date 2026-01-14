@@ -67,7 +67,7 @@ fun resolvePinEntryError(error: Error?): String? =
                 pluralStringResource(
                     R.plurals.incorrect_pin_with_attempts,
                     count = error.remainingAttempts,
-                    error.remainingAttempts
+                    error.remainingAttempts,
                 )
             } else {
                 stringResource(R.string.incorrect_pin)
@@ -132,20 +132,20 @@ fun EnterPin(
 
         OutlinedTextField(
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .focusRequester(focusRequester),
+            Modifier
+                .fillMaxWidth()
+                .focusRequester(focusRequester),
             value = text,
             supportingText = { Text(text = errorText ?: "") },
             trailingIcon = {
                 IconButton(onClick = { showPassword = !showPassword }) {
                     Icon(
                         imageVector =
-                            if (showPassword) {
-                                Icons.Default.VisibilityOff
-                            } else {
-                                Icons.Default.Visibility
-                            },
+                        if (showPassword) {
+                            Icons.Default.VisibilityOff
+                        } else {
+                            Icons.Default.Visibility
+                        },
                         contentDescription = "Show",
                     )
                 }
@@ -157,33 +157,36 @@ fun EnterPin(
                 Icon(
                     imageVector = Icons.Default.Password,
                     contentDescription =
-                        stringResource(
-                            R.string.icon_content_description_password,
-                        ),
+                    stringResource(
+                        R.string.icon_content_description_password,
+                    ),
                     tint = MaterialTheme.colorScheme.onBackground,
                 )
             },
             visualTransformation =
-                if (!showPassword) {
-                    PasswordVisualTransformation()
-                } else {
-                    VisualTransformation.None
-                },
+            if (!showPassword) {
+                PasswordVisualTransformation()
+            } else {
+                VisualTransformation.None
+            },
             onValueChange = {
                 text = it
             },
-            keyboardOptions = KeyboardOptions.Default.copy(autoCorrectEnabled = false,
-                keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
+            keyboardOptions = KeyboardOptions.Default.copy(
+                autoCorrectEnabled = false,
+                keyboardType = KeyboardType.Password,
+                imeAction = ImeAction.Done,
+            ),
             keyboardActions =
-                KeyboardActions(
-                    onDone = { submit.invoke() },
-                ),
+            KeyboardActions(
+                onDone = { submit.invoke() },
+            ),
         )
 
         Row(
             modifier =
-                Modifier
-                    .fillMaxWidth(),
+            Modifier
+                .fillMaxWidth(),
             horizontalArrangement = Arrangement.End,
         ) {
             Button(

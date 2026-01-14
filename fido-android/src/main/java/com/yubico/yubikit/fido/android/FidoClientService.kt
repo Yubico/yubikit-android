@@ -77,7 +77,7 @@ class FidoClientService(private val viewModel: MainViewModel = MainViewModel()) 
                 "challenge": "$challenge",
                 "origin": "$origin"
             }
-            """.trimIndent().toByteArray()
+        """.trimIndent().toByteArray()
     }
 
     private suspend fun makeCredential(

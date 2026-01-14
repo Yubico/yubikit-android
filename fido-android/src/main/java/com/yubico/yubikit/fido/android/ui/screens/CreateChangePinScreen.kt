@@ -148,13 +148,13 @@ private fun CreateChangePinScreen(
     ) {
         Text(
             text =
-                stringResource(
-                    if (forceChangePin) {
-                        R.string.info_force_change_pin
-                    } else {
-                        R.string.info_no_pin_set
-                    },
-                ),
+            stringResource(
+                if (forceChangePin) {
+                    R.string.info_force_change_pin
+                } else {
+                    R.string.info_no_pin_set
+                },
+            ),
             style = MaterialTheme.typography.bodyLarge,
             modifier = Modifier.padding(vertical = 8.dp),
         )
@@ -167,16 +167,16 @@ private fun CreateChangePinScreen(
                 showPin = showCurrentPin,
                 onToggleShowPin = { showCurrentPin = !showCurrentPin },
                 modifier =
-                    Modifier
-                        .padding(bottom = if (currentPinErrorText == null) 16.dp else 0.dp)
-                        .fillMaxWidth()
-                        .focusRequester(currentPinFocusRequester),
+                Modifier
+                    .padding(bottom = if (currentPinErrorText == null) 16.dp else 0.dp)
+                    .fillMaxWidth()
+                    .focusRequester(currentPinFocusRequester),
                 keyboardOptions =
-                    KeyboardOptions.Default.copy(
-                        imeAction = ImeAction.Next,
-                        autoCorrectEnabled = false,
-                        keyboardType = KeyboardType.Password,
-                    ),
+                KeyboardOptions.Default.copy(
+                    imeAction = ImeAction.Next,
+                    autoCorrectEnabled = false,
+                    keyboardType = KeyboardType.Password,
+                ),
                 keyboardActions = KeyboardActions(onNext = { newPinFocusRequester.requestFocus() }),
             )
         }
@@ -197,15 +197,15 @@ private fun CreateChangePinScreen(
             showPin = showNewPin,
             onToggleShowPin = { showNewPin = !showNewPin },
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .focusRequester(newPinFocusRequester),
+            Modifier
+                .fillMaxWidth()
+                .focusRequester(newPinFocusRequester),
             keyboardOptions =
-                KeyboardOptions.Default.copy(
-                    imeAction = ImeAction.Next,
-                    autoCorrectEnabled = false,
-                    keyboardType = KeyboardType.Password,
-                ),
+            KeyboardOptions.Default.copy(
+                imeAction = ImeAction.Next,
+                autoCorrectEnabled = false,
+                keyboardType = KeyboardType.Password,
+            ),
             keyboardActions = KeyboardActions(onNext = { repeatPinFocusRequester.requestFocus() }),
         )
 
@@ -216,23 +216,23 @@ private fun CreateChangePinScreen(
             showPin = showRepeatPin,
             onToggleShowPin = { showRepeatPin = !showRepeatPin },
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .focusRequester(repeatPinFocusRequester),
+            Modifier
+                .fillMaxWidth()
+                .focusRequester(repeatPinFocusRequester),
             keyboardOptions =
-                KeyboardOptions.Default.copy(
-                    imeAction = ImeAction.Done,
-                    autoCorrectEnabled = false,
-                    keyboardType = KeyboardType.Password,
-                ),
+            KeyboardOptions.Default.copy(
+                imeAction = ImeAction.Done,
+                autoCorrectEnabled = false,
+                keyboardType = KeyboardType.Password,
+            ),
             keyboardActions =
-                KeyboardActions(
-                    onDone = {
-                        if (isPinValid(newPin.text, repeatPin.text, minPinLen)) {
-                            onPinAction(newPin.text.toCharArray(), currentPin.text.toCharArray())
-                        }
-                    },
-                ),
+            KeyboardActions(
+                onDone = {
+                    if (isPinValid(newPin.text, repeatPin.text, minPinLen)) {
+                        onPinAction(newPin.text.toCharArray(), currentPin.text.toCharArray())
+                    }
+                },
+            ),
         )
 
         if (newPinErrorText != null) {
@@ -246,9 +246,9 @@ private fun CreateChangePinScreen(
 
         Row(
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp),
+            Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp),
             horizontalArrangement = Arrangement.End,
         ) {
             Button(
@@ -342,9 +342,9 @@ fun PinCreatedScreen(
         )
         Row(
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(top = 16.dp),
+            Modifier
+                .fillMaxWidth()
+                .padding(top = 16.dp),
             horizontalArrangement = Arrangement.End,
         ) {
             Button(
@@ -376,9 +376,9 @@ fun PinChangedScreen(
         )
         Row(
             modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(top = 16.dp),
+            Modifier
+                .fillMaxWidth()
+                .padding(top = 16.dp),
             horizontalArrangement = Arrangement.End,
         ) {
             Button(
