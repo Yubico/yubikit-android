@@ -49,6 +49,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.input.VisualTransformation
@@ -171,7 +172,8 @@ fun EnterPin(
             onValueChange = {
                 text = it
             },
-            keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Done),
+            keyboardOptions = KeyboardOptions.Default.copy(autoCorrectEnabled = false,
+                keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
             keyboardActions =
                 KeyboardActions(
                     onDone = { submit.invoke() },
