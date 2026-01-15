@@ -19,7 +19,6 @@ package com.yubico.yubikit.fido.android
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
-import android.webkit.WebStorage
 import androidx.activity.ComponentActivity
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContract
@@ -145,21 +144,22 @@ class YubiKitFidoClient {
             }
         }
 
+        @Suppress("IntroduceWhenSubject")
         override fun parseResult(
             resultCode: Int,
             intent: Intent?,
         ): Result<String> =
-            when (resultCode) {
-                Activity.RESULT_OK if intent != null ->
+            when {
+                resultCode == Activity.RESULT_OK && intent != null ->
                     intent.getStringExtra("credential")?.let { credentialJson ->
                         Result.success(credentialJson)
                     }
                         ?: Result.failure(IllegalStateException("Credential missing in Intent result"))
 
-                Activity.RESULT_CANCELED ->
+                resultCode == Activity.RESULT_CANCELED ->
                     Result.failure(CancellationException("User cancelled FIDO operation"))
 
-                RESULT_KEY_REMOVED ->
+                resultCode == RESULT_KEY_REMOVED ->
                     Result.failure(CancellationException("Key was removed"))
 
                 else -> Result.failure(IllegalStateException("Unknown error occurred (resultCode: $resultCode)"))

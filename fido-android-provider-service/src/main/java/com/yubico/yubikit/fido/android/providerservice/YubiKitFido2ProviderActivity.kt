@@ -203,7 +203,6 @@ class YubiKitFido2ProviderActivity : ComponentActivity() {
         requestJson: String,
     ): Result<Origin> {
         return runCatching {
-
             // request RpID
             val rpId = getRpId(requestJson)
 
