@@ -20,5 +20,9 @@
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
 
--keep public class com.yubico.yubikit.fido.android.YubiKitFidoClient { *; }
+-keep public class com.yubico.yubikit.fido.android.* { *; }
 -keep public class com.yubico.yubikit.fido.android.YubiKitWebViewSupportKt { *; }
+-keep public class com.yubico.yubikit.fido.android.Origin { *; }
+-keep public class com.yubico.yubikit.fido.android.config.YubiKitFidoConfigManager { *; }
+-keep public class com.yubico.yubikit.fido.android.config.YubiKitFidoConfig { *; }
+-keep public class com.yubico.yubikit.fido.android.ui.theme.TypeKt { *; }
