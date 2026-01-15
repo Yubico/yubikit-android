@@ -26,15 +26,15 @@ import javax.net.ssl.HttpsURLConnection
 
 @Serializable
 data class WebAuthnWellKnownResponse(
-    val origins: List<String>? = null
+    val origins: List<String>? = null,
 )
 
-val _logger = LoggerFactory.getLogger("RelatedOriginRequestsUtils")
+private val logger = LoggerFactory.getLogger("RelatedOriginRequestsUtils")
 
 internal suspend fun fetchWebauthnWellKnown(rpId: String): String =
     withContext(Dispatchers.IO) {
         val url = URL("https://$rpId/.well-known/webauthn")
-        _logger.debug("Reading {}", url)
+        logger.debug("Reading {}", url)
         val conn = url.openConnection() as HttpsURLConnection
 
         conn.requestMethod = "GET"
@@ -52,7 +52,7 @@ internal suspend fun fetchWebauthnWellKnown(rpId: String): String =
             }
             conn.inputStream.bufferedReader().use { it.readText() }
         } catch (e: Throwable) {
-            _logger.debug("Failed read {}", url, e)
+            logger.debug("Failed read {}", url, e)
             throw e
         } finally {
             conn.disconnect()
@@ -62,7 +62,7 @@ internal suspend fun fetchWebauthnWellKnown(rpId: String): String =
 // Main validation function
 suspend fun validateOrigin(
     callerOrigin: String,
-    rpId: String
+    rpId: String,
 ): String {
     runCatching {
         val body = fetchWebauthnWellKnown(rpId)
@@ -70,9 +70,9 @@ suspend fun validateOrigin(
         val parsed: WebAuthnWellKnownResponse =
             Json.decodeFromString(WebAuthnWellKnownResponse.serializer(), body)
         parsed.origins?.let {
-            _logger.debug("There are {} related origins: {}", it.size, it)
+            logger.debug("There are {} related origins: {}", it.size, it)
             if (it.contains(callerOrigin)) {
-                _logger.debug("Found caller origin in related origins")
+                logger.debug("Found caller origin in related origins")
                 return "https://$rpId"
             }
         }
