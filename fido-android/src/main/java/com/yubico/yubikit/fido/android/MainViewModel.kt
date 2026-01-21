@@ -57,7 +57,7 @@ import kotlin.coroutines.suspendCoroutine
 typealias YubiKeyAction = suspend (Result<YubiKeyDevice, Exception>) -> Unit
 
 open class MainViewModel(
-    private val dispatcher: CoroutineDispatcher = Dispatchers.Default
+    private val dispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) : ViewModel() {
     private val nfcAvailable = MutableLiveData(false)
     val isNfcAvailable: LiveData<Boolean> = nfcAvailable
@@ -69,9 +69,7 @@ open class MainViewModel(
 
     private val pendingYubiKeyAction = MutableLiveData<YubiKeyAction?>()
 
-    @Suppress("PropertyName")
-    @VisibleForTesting
-    internal val _uiState =
+    private val _uiState =
         MutableStateFlow<UiState>(
             if (YubiKitFidoConfigManager.current.prioritizePin) {
                 UiState.WaitingForPinEntry(null)
@@ -112,19 +110,6 @@ open class MainViewModel(
 
     var lastEnteredPin: CharArray? = null
         private set
-
-//    /**
-//     * Coroutine scope used for launching operations.
-//     * Can be overridden in tests to use a test scope.
-//     */
-//    @VisibleForTesting
-//    internal open val coroutineScope: CoroutineScope
-//        get() = viewModelScope
-//
-//    @VisibleForTesting
-//    internal open val operationDispatcher: CoroutineDispatcher
-//        get() = Dispatchers.Default
-
 
     /**
      * The current transport type of the connected device (USB or NFC).
@@ -460,7 +445,7 @@ open class MainViewModel(
 
                                                 CtapException.ERR_UV_BLOCKED,
                                                 CtapException.ERR_PUAT_REQUIRED,
-                                                    -> Error.UvBlockedError
+                                                -> Error.UvBlockedError
 
                                                 else -> Error.OperationError(error.cause)
                                             }
@@ -476,7 +461,7 @@ open class MainViewModel(
                                 is Error.PinBlockedError,
                                 is Error.PinAuthBlockedError,
                                 is Error.IncorrectPinError,
-                                    -> UiState.WaitingForPinEntry(errorState)
+                                -> UiState.WaitingForPinEntry(errorState)
 
                                 is Error.UvBlockedError -> {
                                     uvFallback = true
