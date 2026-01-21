@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Yubico.
+ * Copyright (C) 2025-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,6 +68,12 @@ fun FidoClientUi(
     }
 
     LaunchedEffect(Unit) {
+        logger.trace(
+            "Start operation: {} on {}. Request: {}",
+            operation.name,
+            origin,
+            request,
+        )
         viewModel.startFidoOperation(
             fidoClientService,
             operation,
@@ -90,6 +96,10 @@ fun FidoClientUi(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
+        LaunchedEffect(uiState) {
+            logger.debug("Current state: {}", uiState)
+        }
+
         AnimatedContent(
             targetState = uiState,
             label = "FidoClientUi",
@@ -97,7 +107,6 @@ fun FidoClientUi(
                 fadeIn() togetherWith fadeOut()
             },
         ) { state ->
-            logger.trace("Client UI screen {}", state)
             when (state) {
                 is UiState.WaitingForKey -> {
                     TapOrInsertSecurityKey(

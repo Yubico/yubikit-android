@@ -206,20 +206,18 @@ class YubiKitFido2ProviderActivity : ComponentActivity() {
             // request RpID
             val rpId = getRpId(requestJson)
 
-            val origin = if (appInfo.isOriginPopulated()) {
-                // getOrigin might return null, so handle it
-                appInfo.getOrigin(allowList)
+            if (appInfo.isOriginPopulated()) {
+                val origin = appInfo.getOrigin(allowList)?.removeSuffix("/")
                     ?: throw NullPointerException("Origin is null from allowList")
+                if ("https://$rpId" == origin) {
+                    logger.debug("Using original origin: $origin")
+                    Origin(origin)
+                } else {
+                    logger.debug("Validating ROR for origin=$origin, rpId=$rpId")
+                    Origin(origin, validateOrigin(origin, rpId))
+                }
             } else {
-                rpId
-            }.removeSuffix("/")
-
-            if ("https://$rpId" == origin) {
-                logger.debug("Using original origin: $origin")
-                Origin(origin, origin)
-            } else {
-                logger.debug("Validating ROR for origin=$origin, rpId=$rpId")
-                Origin(origin, validateOrigin(origin, rpId))
+                Origin(rpId)
             }
         }
     }

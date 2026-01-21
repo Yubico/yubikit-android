@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Yubico.
+ * Copyright (C) 2025-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,6 +61,12 @@ android {
     buildFeatures {
         compose = true
     }
+
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+        }
+    }
 }
 
 afterEvaluate {
@@ -107,9 +113,10 @@ dependencies {
     implementation(libs.androidx.fragment.ktx)
     implementation(libs.androidx.webkit)
 
-    val composeBom = platform ("androidx.compose:compose-bom:2025.09.01")
+    val composeBom = platform("androidx.compose:compose-bom:2025.09.01")
     implementation(composeBom)
     androidTestImplementation(composeBom)
+    testImplementation(composeBom)
 
 
     implementation(libs.kotlin.stdlib.jdk8)
@@ -138,6 +145,19 @@ dependencies {
 
     // testing dependencies
     testImplementation(libs.junit.junit)
+    testImplementation(libs.mockito)
+    testImplementation(libs.mockito.kotlin)
+    testImplementation(libs.turbine)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.ui.test.junit4)
+    testImplementation(libs.androidx.test.core)
+    testImplementation(libs.slf4j.api)
+    testRuntimeOnly(libs.logback.classic)
+
+    // Instrumented test dependencies
+    androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.test.rules)
 
 }
 

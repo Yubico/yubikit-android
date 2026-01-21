@@ -4,7 +4,6 @@ androidx-annotation = { module = "androidx.annotation:annotation", version.ref =
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activity-ktx" }
 androidx-activity-ktx = { module = "androidx.activity:activity-ktx", version.ref = "activity-ktx" }
 androidx-adaptive = { module = "androidx.compose.material3.adaptive:adaptive" }
-androidx-constraintlayout = { module = "androidx.constraintlayout:constraintlayout", version.ref = "constraintlayout" }
 androidx-credentials = { module = "androidx.credentials:credentials", version.ref = "credentials" }
 androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycle-viewmodel-compose" }
 androidx-material-icons-core = { module = "androidx.compose.material:material-icons-core" }
@@ -16,6 +15,8 @@ androidx-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4" }
 androidx-ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
 androidx-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
 androidx-webkit = { module = "androidx.webkit:webkit", version.ref = "webkit" }
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines-test" }
+mockito-kotlin = { module = "org.mockito.kotlin:mockito-kotlin", version.ref = "mockito-kotlin" }
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 
 # Submodule: AndroidDemo
@@ -58,7 +59,7 @@ kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", v
 spotbugs = { module = "com.github.spotbugs:spotbugs", version.ref = "spotbugs-core" }
 spotbugs-annotations = { module = "com.github.spotbugs:spotbugs-annotations", version.ref = "spotbugs-core" }
 findsecbugs-plugin = { module = "com.h3xstream.findsecbugs:findsecbugs-plugin", version.ref = "findsecbugs" }
-slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
+slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j-api" }
 
 # Shared
 androidx-multidex = { module = "androidx.multidex:multidex", version.ref = "multidex" }
@@ -72,6 +73,8 @@ material = { module = "com.google.android.material:material", version.ref = "mat
 moshi = { module = "com.squareup.moshi:moshi", version.ref = "moshi" }
 mockito = { module = "org.mockito:mockito-core", version.ref = "mockito" }
 jspecify = { module = "org.jspecify:jspecify", version.ref = "jspecify" }
+turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
+ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4" }
 
 [plugins]
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
@@ -83,17 +86,18 @@ kotlinx-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", vers
 
 [versions]
 activity-ktx = "1.12.2"
-constraintlayout = "2.2.1"
 credentials = "1.6.0-rc01"
+kotlinx-coroutines-test = "1.10.2"
 lifecycle-viewmodel-compose = "2.10.0"
-material3 = "1.5.0-alpha11"
-runtime-livedata = "1.10.0"
+material3 = "1.5.0-alpha12"
+mockito-kotlin = "6.2.1"
+runtime-livedata = "1.10.1"
 android-gradle = "8.13.2"
+slf4j-api = "2.0.17"
 spotbugs-plugin = "6.4.7"
 spotbugs-core = "4.9.8"
 findsecbugs = "1.14.0"
 spotless = "8.1.0"
-slf4j = "2.0.17"
 appcompat = "1.7.1"
 bcpkix-jdk15to18 = "1.83"
 core-ktx = "1.17.0"
@@ -111,7 +115,7 @@ legacy-support-v4 = "1.0.0"
 lifecycle-extensions = "2.2.0"
 lifecycle-viewmodel-ktx = "2.10.0"
 logback-android = "3.0.0"
-logback-classic = "1.5.24"
+logback-classic = "1.5.25"
 material = "1.13.0"
 moshi = "1.15.2"
 multidex = "2.0.1"
@@ -119,9 +123,10 @@ navigation-fragment-ktx = "2.9.6"
 recyclerview = "1.4.0"
 androidx-annotation = "1.9.1"
 androidx-junit = "1.3.0"
-robolectric = "4.16"
+robolectric = "4.16.1"
 mockito = "5.21.0"
 androidx-test = "1.7.0"
+turbine = "1.2.1"
 webkit = "1.15.0"
 kotlinx-serialization-json = "1.9.0"
 ksp = "2.2.21-2.0.4"

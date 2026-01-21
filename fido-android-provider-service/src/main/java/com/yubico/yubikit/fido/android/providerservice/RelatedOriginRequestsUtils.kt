@@ -24,6 +24,19 @@ import org.slf4j.LoggerFactory
 import java.net.URL
 import javax.net.ssl.HttpsURLConnection
 
+/**
+ * Utilities for handling WebAuthn related origin requests as specified in the W3C Web Authentication specification.
+ *
+ * Related origin requests allow a Relying Party (RP) to declare a set of origins that are considered related,
+ * enabling credentials to be shared across these origins. This is defined in the WebAuthn specification.
+ *
+ *
+ * This file provides functions to fetch and validate the `.well-known/webauthn` resource for a given RP ID,
+ * and to check if a caller origin is included in the set of related origins.
+ *
+ * @see <a href="https://w3c.github.io/webauthn/#sctn-related-origins">Related origins</a>
+ */
+
 @Serializable
 data class WebAuthnWellKnownResponse(
     val origins: List<String>? = null,
@@ -31,7 +44,7 @@ data class WebAuthnWellKnownResponse(
 
 private val logger = LoggerFactory.getLogger("RelatedOriginRequestsUtils")
 
-internal suspend fun fetchWebauthnWellKnown(rpId: String): String =
+private suspend fun fetchWebauthnWellKnown(rpId: String): String =
     withContext(Dispatchers.IO) {
         val url = URL("https://$rpId/.well-known/webauthn")
         logger.debug("Reading {}", url)
@@ -63,9 +76,10 @@ internal suspend fun fetchWebauthnWellKnown(rpId: String): String =
 suspend fun validateOrigin(
     callerOrigin: String,
     rpId: String,
+    fetchWebauthnWellKnownFn: suspend (String) -> String = ::fetchWebauthnWellKnown,
 ): String {
     runCatching {
-        val body = fetchWebauthnWellKnown(rpId)
+        val body = fetchWebauthnWellKnownFn(rpId)
 
         val parsed: WebAuthnWellKnownResponse =
             Json.decodeFromString(WebAuthnWellKnownResponse.serializer(), body)

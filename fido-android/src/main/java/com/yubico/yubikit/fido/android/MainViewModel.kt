@@ -16,6 +16,7 @@
 
 package com.yubico.yubikit.fido.android
 
+import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -39,6 +40,7 @@ import com.yubico.yubikit.fido.client.WebAuthnClient
 import com.yubico.yubikit.fido.ctap.BioEnrollment
 import com.yubico.yubikit.fido.ctap.Ctap2Session
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredential
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -54,7 +56,9 @@ import kotlin.coroutines.suspendCoroutine
 
 typealias YubiKeyAction = suspend (Result<YubiKeyDevice, Exception>) -> Unit
 
-class MainViewModel : ViewModel() {
+open class MainViewModel(
+    private val dispatcher: CoroutineDispatcher = Dispatchers.Default
+) : ViewModel() {
     private val nfcAvailable = MutableLiveData(false)
     val isNfcAvailable: LiveData<Boolean> = nfcAvailable
 
@@ -65,7 +69,9 @@ class MainViewModel : ViewModel() {
 
     private val pendingYubiKeyAction = MutableLiveData<YubiKeyAction?>()
 
-    private val _uiState =
+    @Suppress("PropertyName")
+    @VisibleForTesting
+    internal val _uiState =
         MutableStateFlow<UiState>(
             if (YubiKitFidoConfigManager.current.prioritizePin) {
                 UiState.WaitingForPinEntry(null)
@@ -79,20 +85,63 @@ class MainViewModel : ViewModel() {
     private var pinValue: CharArray? = null
     private var newPinValue: CharArray? = null
     private var multipleAssertions: MultipleAssertionsAvailable? = null
-    private var uvFallback: Boolean = false
+
+    @VisibleForTesting
+    internal var uvFallback: Boolean = false
 
     private val logger: Logger = LoggerFactory.getLogger(MainViewModel::class.java)
 
     // Store last parameters for retry
-    private var lastFidoClientService: FidoClientService? = null
-    private var lastOperation: FidoClientService.Operation? = null
-    private var lastOrigin: Origin? = null
-    private var lastRequest: String? = null
-    private var lastClientDataHash: ByteArray? = null
-    private var lastOnResult: ((PublicKeyCredential) -> Unit)? = null
+    @VisibleForTesting
+    internal var lastFidoClientService: FidoClientService? = null
+
+    @VisibleForTesting
+    internal var lastOperation: FidoClientService.Operation? = null
+
+    @VisibleForTesting
+    internal var lastOrigin: Origin? = null
+
+    @VisibleForTesting
+    internal var lastRequest: String? = null
+
+    @VisibleForTesting
+    internal var lastClientDataHash: ByteArray? = null
+
+    @VisibleForTesting
+    internal var lastOnResult: ((PublicKeyCredential) -> Unit)? = null
 
     var lastEnteredPin: CharArray? = null
         private set
+
+//    /**
+//     * Coroutine scope used for launching operations.
+//     * Can be overridden in tests to use a test scope.
+//     */
+//    @VisibleForTesting
+//    internal open val coroutineScope: CoroutineScope
+//        get() = viewModelScope
+//
+//    @VisibleForTesting
+//    internal open val operationDispatcher: CoroutineDispatcher
+//        get() = Dispatchers.Default
+
+
+    /**
+     * The current transport type of the connected device (USB or NFC).
+     * Returns null if no device is connected.
+     * Can be overridden in tests to simulate different connection types.
+     */
+    @VisibleForTesting
+    internal open val currentTransport: Transport?
+        get() = _device.value?.transport
+
+    /**
+     * Whether a device is currently connected.
+     * Can be overridden in tests to simulate device connection state.
+     */
+    @VisibleForTesting
+    internal open val isDeviceConnected: Boolean
+        get() = _device.value != null
 
     fun setLastEnteredPin(pin: CharArray) {
         lastEnteredPin = pin.clone()
@@ -192,8 +241,8 @@ class MainViewModel : ViewModel() {
     }
 
     private fun signalRetry(forUsb: Boolean = true) {
-        if ((YubiKitFidoConfigManager.current.prioritizePin && _device.value == null) ||
-            _device.value?.transport == Transport.NFC
+        if ((YubiKitFidoConfigManager.current.prioritizePin && !isDeviceConnected) ||
+            currentTransport == Transport.NFC
         ) {
             // we ask the user to tap the key again
             _uiState.value = UiState.WaitingForKeyAgain
@@ -206,7 +255,8 @@ class MainViewModel : ViewModel() {
         runFidoOperation()
     }
 
-    private fun runFidoOperation() {
+    @VisibleForTesting
+    internal fun runFidoOperation() {
         startFidoOperation(
             lastFidoClientService!!,
             lastOperation!!,
@@ -342,10 +392,11 @@ class MainViewModel : ViewModel() {
                     clientDataHash,
                     request,
                 ) {
-                    // this code is executed when a connection is established
+                    // onConnection
+                    // executed after USB key is connected, or NFC key is tapped
                     _uiState.value = info?.let {
                         val bioEnrollmentConfigured = BioEnrollment.isConfigured(it)
-                        val isUsb = _device.value?.transport == Transport.USB
+                        val isUsb = currentTransport == Transport.USB
                         if (bioEnrollmentConfigured && !uvFallback) {
                             UiState.WaitingForUvEntry(
                                 (_uiState.value as? UiState.WaitingForUvEntry)?.error,
@@ -409,7 +460,7 @@ class MainViewModel : ViewModel() {
 
                                                 CtapException.ERR_UV_BLOCKED,
                                                 CtapException.ERR_PUAT_REQUIRED,
-                                                -> Error.UvBlockedError
+                                                    -> Error.UvBlockedError
 
                                                 else -> Error.OperationError(error.cause)
                                             }
@@ -425,7 +476,7 @@ class MainViewModel : ViewModel() {
                                 is Error.PinBlockedError,
                                 is Error.PinAuthBlockedError,
                                 is Error.IncorrectPinError,
-                                -> UiState.WaitingForPinEntry(errorState)
+                                    -> UiState.WaitingForPinEntry(errorState)
 
                                 is Error.UvBlockedError -> {
                                     uvFallback = true
@@ -519,7 +570,7 @@ class MainViewModel : ViewModel() {
     ) {
         uiStateTimerJob?.cancel()
         uiStateTimerJob =
-            viewModelScope.launch {
+            viewModelScope.launch(dispatcher) {
                 delay(delayMillis)
                 _uiState.value = newState
             }

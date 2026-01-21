@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Yubico.
+ * Copyright (C) 2025-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -249,7 +249,7 @@ internal class YubiKitWebViewSupport {
 
                 val response =
                     yubiKitFidoClient.getAssertion(
-                        Origin(sourceOrigin.toString(), sourceOrigin.toString()),
+                        Origin(sourceOrigin.toString()),
                         message,
                         null,
                     ).fold(
@@ -283,7 +283,6 @@ internal class YubiKitWebViewSupport {
                 val result =
                     yubiKitFidoClient.makeCredential(
                         Origin(
-                            sourceOrigin.toString(),
                             sourceOrigin.toString(),
                         ),
                         message,

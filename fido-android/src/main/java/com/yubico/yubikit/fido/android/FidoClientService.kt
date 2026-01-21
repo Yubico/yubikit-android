@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Yubico.
+ * Copyright (C) 2025-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,12 +28,13 @@ import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialRequestOptions
 import org.json.JSONObject
 
 class FidoClientService(private val viewModel: MainViewModel = MainViewModel()) {
-    private val commandState = CommandState()
 
     enum class Operation {
         MAKE_CREDENTIAL,
         GET_ASSERTION,
     }
+
+    private val commandState = CommandState()
 
     fun cancelOngoingOperation() = commandState.cancel()
 
@@ -120,7 +121,7 @@ class FidoClientService(private val viewModel: MainViewModel = MainViewModel()) 
                     ?: ClientDataProvider.fromClientDataJson(
                         buildClientData(
                             "webauthn.create",
-                            origin.related,
+                            origin.resolved,
                             requestJson["challenge"] as String,
                         ),
                     )
@@ -128,7 +129,7 @@ class FidoClientService(private val viewModel: MainViewModel = MainViewModel()) 
             client.makeCredential(
                 clientData,
                 publicKeyCredentialCreationOptions,
-                origin.related.removePrefix("https://"), // TODO reason about this
+                origin.effectiveDomain,
                 pin,
                 null,
                 commandState,
@@ -162,7 +163,7 @@ class FidoClientService(private val viewModel: MainViewModel = MainViewModel()) 
                     ?: ClientDataProvider.fromClientDataJson(
                         buildClientData(
                             "webauthn.get",
-                            origin.related,
+                            origin.resolved,
                             requestJson["challenge"] as String,
                         ),
                     )
@@ -175,13 +176,13 @@ class FidoClientService(private val viewModel: MainViewModel = MainViewModel()) 
             client.getAssertion(
                 clientData,
                 publicKeyCredentialRequestOptions,
-                origin.related.removePrefix("https://"), // TODO reason about this
+                origin.effectiveDomain,
                 pin,
                 commandState,
             )
         }
 
-    suspend fun createPin(pin: CharArray) =
+    suspend fun createPin(pin: CharArray): Result<Unit> =
         viewModel.useWebAuthn { client ->
             (client as? Ctap2Client)?.setPin(pin)
         }
@@ -189,7 +190,7 @@ class FidoClientService(private val viewModel: MainViewModel = MainViewModel()) 
     suspend fun changePin(
         currentPin: CharArray,
         newPin: CharArray,
-    ) = viewModel.useWebAuthn { client ->
+    ): Result<Unit> = viewModel.useWebAuthn { client ->
         (client as? Ctap2Client)?.changePin(currentPin, newPin)
     }
 }

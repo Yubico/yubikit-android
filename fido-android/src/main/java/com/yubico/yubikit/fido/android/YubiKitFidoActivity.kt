@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Yubico.
+ * Copyright (C) 2025-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -261,7 +261,7 @@ class YubiKitFidoActivity : ComponentActivity() {
                 return FidoActivityParameters(
                     origin = Origin(
                         extras.getString("callingAppOrigin")!!,
-                        extras.getString("relatedOrigin")!!,
+                        extras.getString("resolvedOrigin")!!,
                     ),
                     request = extras.getString("request")!!,
                     clientDataHash = extras.getString("clientDataHash")?.hexToByteArray()?.toList(),

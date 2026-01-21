@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Yubico.
+ * Copyright (C) 2025-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -138,7 +138,8 @@ class YubiKitFidoClient {
             return Intent(context, YubiKitFidoActivity::class.java).apply {
                 putExtra("type", input.operation.ordinal)
                 putExtra("callingAppOrigin", input.origin.callingApp)
-                putExtra("relatedOrigin", input.origin.related)
+                putExtra("resolvedOrigin", input.origin.resolved)
+                putExtra("effectiveDomain", input.origin.effectiveDomain)
                 putExtra("clientDataHash", input.clientDataHash)
                 putExtra("request", input.request)
             }

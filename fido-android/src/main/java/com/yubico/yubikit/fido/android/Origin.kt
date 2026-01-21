@@ -16,7 +16,20 @@
 
 package com.yubico.yubikit.fido.android
 
+/**
+ * Represents the origin of a FIDO authentication request.
+ *
+ * @property callingApp The package name of the calling application.
+ * @property resolved The resolved origin URI (e\.g\., scheme and domain). Can be different from
+ * callingApp
+ */
 data class Origin(
     val callingApp: String,
-    val related: String,
-)
+    val resolved: String = callingApp,
+) {
+    /**
+     * Returns the effective domain of the origin.
+     */
+    val effectiveDomain: String
+        get() = resolved.removePrefix("https://")
+}

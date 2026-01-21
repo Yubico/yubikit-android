@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Yubico.
+ * Copyright (C) 2025-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,8 +56,8 @@ class FidoAppLocalFragment : Fragment() {
         userName: String,
         userDisplayName: String = userName,
     ): String {
-        val challenge = ByteArray(16).also { Random.Default.nextBytes(it) }
-        val userId = ByteArray(32).also { Random.Default.nextBytes(it) }
+        val challenge = ByteArray(16).also { Random.nextBytes(it) }
+        val userId = ByteArray(32).also { Random.nextBytes(it) }
         val request =
             McRequest(
                 challenge = Base64.toUrlSafeString(challenge),
@@ -65,12 +65,11 @@ class FidoAppLocalFragment : Fragment() {
                 user = User(Base64.toUrlSafeString(userId), userName, userDisplayName),
             )
 
-        val test = json.decodeFromString(McRequest.serializer(), "")
         return json.encodeToString(request)
     }
 
     private fun buildGaRequest(): String {
-        val challenge = ByteArray(16).also { Random.Default.nextBytes(it) }
+        val challenge = ByteArray(16).also { Random.nextBytes(it) }
         val request =
             GaRequest(
                 challenge = Base64.toUrlSafeString(challenge),
@@ -90,7 +89,7 @@ class FidoAppLocalFragment : Fragment() {
                 val request = buildMcRequest("App test user")
                 logger.debug("Make credential request: {}", request)
 
-                yubiKitFidoClient.makeCredential(Origin(RP_ID, RP_ID), request, null)
+                yubiKitFidoClient.makeCredential(Origin(ORIGIN), request, null)
                     .onSuccess { logger.debug("Successful MC: {}", it) }
                     .onFailure { logger.error("Error during MC: ", it) }
             }
@@ -101,7 +100,7 @@ class FidoAppLocalFragment : Fragment() {
                 val request = buildGaRequest()
                 logger.debug("Get assertions request: {}", request)
 
-                yubiKitFidoClient.getAssertion(Origin(RP_ID, RP_ID), request, null)
+                yubiKitFidoClient.getAssertion(Origin(ORIGIN), request, null)
                     .onSuccess { logger.debug("Successful GA: {}", it) }
                     .onFailure { logger.error("Error during GA:", it) }
             }
@@ -109,6 +108,7 @@ class FidoAppLocalFragment : Fragment() {
     }
 
     companion object {
+        const val ORIGIN = "https://demo.yubico.app"
         const val RP_ID = "demo.yubico.app"
         val json = Json { encodeDefaults = true }
     }
