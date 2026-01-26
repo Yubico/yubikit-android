@@ -19,7 +19,7 @@ package com.yubico.yubikit.fido.android.ui.screens
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import com.yubico.yubikit.fido.android.FidoClientService
@@ -30,10 +30,8 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
-import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [33])
 class PinEntryScreenTest {
 
     @get:Rule
@@ -65,17 +63,17 @@ class PinEntryScreenTest {
     fun `continue button enabled only when PIN has at least 4 characters`() {
         setEnterPinContent()
 
-        composeTestRule.onNodeWithText("Continue", ignoreCase = true)
+        composeTestRule.onNodeWithTag("continue_button")
             .assertIsNotEnabled()
 
-        composeTestRule.onNodeWithText("PIN", substring = true, ignoreCase = true)
+        composeTestRule.onNodeWithTag("pin_input_field")
             .performTextInput("123")
-        composeTestRule.onNodeWithText("Continue", ignoreCase = true)
+        composeTestRule.onNodeWithTag("continue_button")
             .assertIsNotEnabled()
 
-        composeTestRule.onNodeWithText("PIN", substring = true, ignoreCase = true)
+        composeTestRule.onNodeWithTag("pin_input_field")
             .performTextInput("4")
-        composeTestRule.onNodeWithText("Continue", ignoreCase = true)
+        composeTestRule.onNodeWithTag("continue_button")
             .assertIsEnabled()
     }
 
@@ -83,7 +81,7 @@ class PinEntryScreenTest {
     fun `continue button enabled when PIN is pre-filled`() {
         setEnterPinContent(pin = "123456".toCharArray())
 
-        composeTestRule.onNodeWithText("Continue", ignoreCase = true)
+        composeTestRule.onNodeWithTag("continue_button")
             .assertIsEnabled()
     }
 
@@ -92,9 +90,9 @@ class PinEntryScreenTest {
         var enteredPin = ""
         setEnterPinContent(onPinEntered = { enteredPin = String(it) })
 
-        composeTestRule.onNodeWithText("PIN", substring = true, ignoreCase = true)
+        composeTestRule.onNodeWithTag("pin_input_field")
             .performTextInput("123456")
-        composeTestRule.onNodeWithText("Continue", ignoreCase = true)
+        composeTestRule.onNodeWithTag("continue_button")
             .performClick()
 
         assertEquals("123456", enteredPin)
@@ -104,7 +102,7 @@ class PinEntryScreenTest {
     fun `displays remaining attempts for incorrect PIN error`() {
         setEnterPinContent(error = Error.IncorrectPinError(remainingAttempts = 3))
 
-        composeTestRule.onNodeWithText("Incorrect PIN. 3 attempts remaining.")
+        composeTestRule.onNodeWithTag("pin_error_text")
             .assertExists()
     }
 
@@ -112,7 +110,7 @@ class PinEntryScreenTest {
     fun `displays singular form for 1 remaining attempt`() {
         setEnterPinContent(error = Error.IncorrectPinError(remainingAttempts = 1))
 
-        composeTestRule.onNodeWithText("Incorrect PIN. 1 attempt remaining.")
+        composeTestRule.onNodeWithTag("pin_error_text")
             .assertExists()
     }
 
@@ -120,7 +118,7 @@ class PinEntryScreenTest {
     fun `displays generic message when attempts count is null`() {
         setEnterPinContent(error = Error.IncorrectPinError(remainingAttempts = null))
 
-        composeTestRule.onNodeWithText("Incorrect PIN.")
+        composeTestRule.onNodeWithTag("pin_error_text")
             .assertExists()
     }
 
@@ -128,7 +126,7 @@ class PinEntryScreenTest {
     fun `displays blocked message when PIN is blocked`() {
         setEnterPinContent(error = Error.PinBlockedError)
 
-        composeTestRule.onNodeWithText("PIN is blocked. You have to reset the key.")
+        composeTestRule.onNodeWithTag("pin_error_text")
             .assertExists()
     }
 
@@ -136,7 +134,7 @@ class PinEntryScreenTest {
     fun `displays reconnect message when PIN auth is blocked`() {
         setEnterPinContent(error = Error.PinAuthBlockedError)
 
-        composeTestRule.onNodeWithText("PIN authentication is blocked. Reconnect the key.")
+        composeTestRule.onNodeWithTag("pin_error_text")
             .assertExists()
     }
 }

@@ -38,7 +38,7 @@ import androidx.compose.ui.unit.dp
 import com.yubico.yubikit.fido.android.FidoClientService
 import com.yubico.yubikit.fido.android.MainViewModel
 import com.yubico.yubikit.fido.android.Origin
-import com.yubico.yubikit.fido.android.ui.UiState
+import com.yubico.yubikit.fido.android.ui.State
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredential
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -55,7 +55,7 @@ fun FidoClientUi(
     onResult: (PublicKeyCredential) -> Unit = {},
     onCloseButtonClick: () -> Unit,
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.state.collectAsState()
     val latestOnResult = remember(onResult) { onResult }
     val handleCloseButton: () -> Unit = {
         fidoClientService.cancelOngoingOperation()
@@ -108,7 +108,7 @@ fun FidoClientUi(
             },
         ) { state ->
             when (state) {
-                is UiState.WaitingForKey -> {
+                is State.WaitingForKey -> {
                     TapOrInsertSecurityKey(
                         operation = operation,
                         isNfcAvailable = isNfcAvailable,
@@ -117,7 +117,7 @@ fun FidoClientUi(
                     )
                 }
 
-                is UiState.WaitingForKeyAgain -> {
+                is State.WaitingForKeyAgain -> {
                     TapAgainSecurityKey(
                         operation = operation,
                         origin = origin.callingApp,
@@ -125,7 +125,7 @@ fun FidoClientUi(
                     )
                 }
 
-                is UiState.WaitingForPinEntry -> {
+                is State.WaitingForPinEntry -> {
                     EnterPin(
                         operation = operation,
                         origin = origin.callingApp,
@@ -137,7 +137,7 @@ fun FidoClientUi(
                     }
                 }
 
-                is UiState.WaitingForUvEntry -> {
+                is State.WaitingForUvEntry -> {
                     MatchFingerprint(
                         operation = operation,
                         origin = origin.callingApp,
@@ -152,7 +152,7 @@ fun FidoClientUi(
                     }
                 }
 
-                is UiState.PinNotSetError -> {
+                is State.PinNotSetError -> {
                     CreatePinScreen(
                         operation = operation,
                         origin = origin.callingApp,
@@ -164,7 +164,7 @@ fun FidoClientUi(
                     }
                 }
 
-                is UiState.ForcePinChangeError -> {
+                is State.ForcePinChangeError -> {
                     ForceChangePinScreen(
                         operation = operation,
                         origin = origin.callingApp,
@@ -176,7 +176,7 @@ fun FidoClientUi(
                     }
                 }
 
-                is UiState.PinCreated -> {
+                is State.PinCreated -> {
                     PinCreatedScreen(
                         operation = operation,
                         origin = origin.callingApp,
@@ -186,7 +186,7 @@ fun FidoClientUi(
                     }
                 }
 
-                is UiState.PinChanged -> {
+                is State.PinChanged -> {
                     PinChangedScreen(
                         operation = operation,
                         origin = origin.callingApp,
@@ -196,7 +196,7 @@ fun FidoClientUi(
                     }
                 }
 
-                is UiState.Processing -> {
+                is State.Processing -> {
                     Processing(
                         operation = operation,
                         origin = origin.callingApp,
@@ -204,7 +204,7 @@ fun FidoClientUi(
                     )
                 }
 
-                is UiState.TouchKey -> {
+                is State.TouchKey -> {
                     TouchTheSecurityKey(
                         operation = operation,
                         origin = origin.callingApp,
@@ -212,11 +212,11 @@ fun FidoClientUi(
                     )
                 }
 
-                is UiState.Success -> {
+                is State.Success -> {
                     SuccessView(operation = operation, origin = origin.callingApp)
                 }
 
-                is UiState.MultipleAssertions -> {
+                is State.MultipleAssertions -> {
                     MultipleAssertionsScreen(
                         operation = operation,
                         origin = origin.callingApp,
@@ -226,7 +226,7 @@ fun FidoClientUi(
                     )
                 }
 
-                is UiState.OperationError -> {
+                is State.OperationError -> {
                     ErrorView(
                         operation = operation,
                         origin = origin.callingApp,

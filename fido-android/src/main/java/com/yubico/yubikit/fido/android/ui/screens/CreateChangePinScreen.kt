@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Yubico.
+ * Copyright (C) 2025-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,6 +42,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
@@ -156,7 +157,7 @@ private fun CreateChangePinScreen(
                 },
             ),
             style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.padding(vertical = 8.dp),
+            modifier = Modifier.padding(vertical = 8.dp).testTag("pin_info_text"),
         )
 
         if (forceChangePin) {
@@ -170,7 +171,8 @@ private fun CreateChangePinScreen(
                 Modifier
                     .padding(bottom = if (currentPinErrorText == null) 16.dp else 0.dp)
                     .fillMaxWidth()
-                    .focusRequester(currentPinFocusRequester),
+                    .focusRequester(currentPinFocusRequester)
+                    .testTag("current_pin_input"),
                 keyboardOptions =
                 KeyboardOptions.Default.copy(
                     imeAction = ImeAction.Next,
@@ -186,7 +188,7 @@ private fun CreateChangePinScreen(
                 text = currentPinErrorText,
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.padding(top = 8.dp, bottom = 16.dp),
+                modifier = Modifier.padding(top = 8.dp, bottom = 16.dp).testTag("pin_error_text"),
             )
         }
 
@@ -199,7 +201,8 @@ private fun CreateChangePinScreen(
             modifier =
             Modifier
                 .fillMaxWidth()
-                .focusRequester(newPinFocusRequester),
+                .focusRequester(newPinFocusRequester)
+                .testTag("new_pin_input"),
             keyboardOptions =
             KeyboardOptions.Default.copy(
                 imeAction = ImeAction.Next,
@@ -218,7 +221,8 @@ private fun CreateChangePinScreen(
             modifier =
             Modifier
                 .fillMaxWidth()
-                .focusRequester(repeatPinFocusRequester),
+                .focusRequester(repeatPinFocusRequester)
+                .testTag("repeat_pin_input"),
             keyboardOptions =
             KeyboardOptions.Default.copy(
                 imeAction = ImeAction.Done,
@@ -239,8 +243,8 @@ private fun CreateChangePinScreen(
             Text(
                 text = newPinErrorText,
                 color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.padding(top = 8.dp),
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(top = 8.dp).testTag("pin_error_text"),
             )
         }
 
@@ -262,6 +266,7 @@ private fun CreateChangePinScreen(
                     onPinAction(newPin.text.toCharArray(), currentPin.text.toCharArray())
                 },
                 enabled = isPinValid(newPin.text, repeatPin.text, minPinLen),
+                modifier = Modifier.testTag(if (forceChangePin) "change_pin_button" else "create_pin_button"),
             ) {
                 Text(
                     if (forceChangePin) {

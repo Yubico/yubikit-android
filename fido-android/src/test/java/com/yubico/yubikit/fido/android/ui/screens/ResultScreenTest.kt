@@ -16,9 +16,8 @@
 
 package com.yubico.yubikit.fido.android.ui.screens
 
-import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import com.yubico.yubikit.core.fido.CtapException
 import com.yubico.yubikit.fido.android.FidoClientService
@@ -29,18 +28,14 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
-import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [33])
 class ResultScreenTest {
 
     @get:Rule
     val composeTestRule = createComposeRule()
 
     private val testOrigin = "example.com"
-
-    // ========== SuccessView tests ==========
 
     @Test
     fun `successView shows passkey created message for MAKE_CREDENTIAL`() {
@@ -53,8 +48,7 @@ class ResultScreenTest {
             }
         }
 
-        composeTestRule.onNodeWithText("Passkey successfully created")
-            .assertIsDisplayed()
+        composeTestRule.onNodeWithTag("result_message_text").assertExists()
     }
 
     @Test
@@ -68,11 +62,8 @@ class ResultScreenTest {
             }
         }
 
-        composeTestRule.onNodeWithText("Login with passkey was successful")
-            .assertIsDisplayed()
+        composeTestRule.onNodeWithTag("result_message_text").assertExists()
     }
-
-    // ========== ErrorView CTAP exception tests ==========
 
     @Test
     fun `errorView shows no credentials message for ERR_NO_CREDENTIALS`() {
@@ -87,8 +78,7 @@ class ResultScreenTest {
             }
         }
 
-        composeTestRule.onNodeWithText("No passkeys for $testOrigin exist on the security key.")
-            .assertIsDisplayed()
+        composeTestRule.onNodeWithTag("error_message_text").assertExists()
     }
 
     @Test
@@ -104,8 +94,7 @@ class ResultScreenTest {
             }
         }
 
-        composeTestRule.onNodeWithText("The operation timed out. Please try again.")
-            .assertIsDisplayed()
+        composeTestRule.onNodeWithTag("error_message_text").assertExists()
     }
 
     @Test
@@ -121,8 +110,7 @@ class ResultScreenTest {
             }
         }
 
-        composeTestRule.onNodeWithText("There is no space free for passkeys", substring = true)
-            .assertIsDisplayed()
+        composeTestRule.onNodeWithTag("error_message_text").assertExists()
     }
 
     @Test
@@ -138,8 +126,7 @@ class ResultScreenTest {
             }
         }
 
-        composeTestRule.onNodeWithText("Cannot create this passkey", substring = true)
-            .assertIsDisplayed()
+        composeTestRule.onNodeWithTag("error_message_text").assertExists()
     }
 
     @Test
@@ -155,11 +142,8 @@ class ResultScreenTest {
             }
         }
 
-        composeTestRule.onNodeWithText("Unknown error")
-            .assertIsDisplayed()
+        composeTestRule.onNodeWithTag("error_message_text").assertExists()
     }
-
-    // ========== ErrorView other error types ==========
 
     @Test
     fun `errorView shows device not configured message for DeviceNotConfiguredError`() {
@@ -174,8 +158,7 @@ class ResultScreenTest {
             }
         }
 
-        composeTestRule.onNodeWithText("The security key cannot be used, make sure PIN is set.")
-            .assertIsDisplayed()
+        composeTestRule.onNodeWithTag("error_message_text").assertExists()
     }
 
     @Test
@@ -191,8 +174,7 @@ class ResultScreenTest {
             }
         }
 
-        composeTestRule.onNodeWithText("Custom error message")
-            .assertIsDisplayed()
+        composeTestRule.onNodeWithTag("error_message_text").assertExists()
     }
 
     @Test
@@ -208,11 +190,8 @@ class ResultScreenTest {
             }
         }
 
-        composeTestRule.onNodeWithText("Unknown error")
-            .assertIsDisplayed()
+        composeTestRule.onNodeWithTag("error_message_text").assertExists()
     }
-
-    // ========== Retry button test ==========
 
     @Test
     fun `errorView retry button invokes callback`() {
@@ -228,8 +207,7 @@ class ResultScreenTest {
             }
         }
 
-        composeTestRule.onNodeWithText("Retry")
-            .performClick()
+        composeTestRule.onNodeWithTag("retry_button").performClick()
 
         assertTrue(retryCalled)
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Yubico.
+ * Copyright (C) 2025-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -86,7 +87,8 @@ fun MatchFingerprint(
         Text(
             modifier =
             Modifier
-                .padding(start = 32.dp, end = 32.dp, top = 16.dp, bottom = 8.dp),
+                .padding(start = 32.dp, end = 32.dp, top = 16.dp, bottom = 8.dp)
+                .testTag("uv_error_text"),
             style = MaterialTheme.typography.bodySmallEmphasized,
             textAlign = TextAlign.Center,
             text = errorText,

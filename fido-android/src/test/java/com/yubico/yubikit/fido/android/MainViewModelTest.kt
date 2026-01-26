@@ -19,7 +19,7 @@ package com.yubico.yubikit.fido.android
 import app.cash.turbine.test
 import com.yubico.yubikit.fido.android.config.YubiKitFidoConfig
 import com.yubico.yubikit.fido.android.config.YubiKitFidoConfigManager
-import com.yubico.yubikit.fido.android.ui.UiState
+import com.yubico.yubikit.fido.android.ui.State
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -55,16 +55,14 @@ class MainViewModelTest {
         Dispatchers.resetMain()
     }
 
-    // ========== Initial State Tests ==========
-
     @Test
     fun `initial state is WaitingForKey when prioritizePin is false`() = runTest {
         YubiKitFidoConfigManager.setPrioritizePin(false)
         val viewModel = MainViewModel()
 
-        viewModel.uiState.test {
+        viewModel.state.test {
             val state = awaitItem()
-            assertTrue(state is UiState.WaitingForKey)
+            assertTrue(state is State.WaitingForKey)
         }
     }
 
@@ -73,13 +71,11 @@ class MainViewModelTest {
         YubiKitFidoConfigManager.setPrioritizePin(true)
         val viewModel = MainViewModel()
 
-        viewModel.uiState.test {
+        viewModel.state.test {
             val state = awaitItem()
-            assertTrue(state is UiState.WaitingForPinEntry)
+            assertTrue(state is State.WaitingForPinEntry)
         }
     }
-
-    // ========== PIN Storage Tests ==========
 
     @Test
     fun `setLastEnteredPin stores PIN`() {
@@ -106,8 +102,6 @@ class MainViewModelTest {
 
         assertEquals('1', viewModel.lastEnteredPin!![0])
     }
-
-    // ========== Timer Tests ==========
 
     @Test
     fun `cancelUiStateTimer does not throw when no timer active`() {

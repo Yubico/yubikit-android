@@ -30,7 +30,7 @@ import com.yubico.yubikit.core.util.Result
 import com.yubico.yubikit.fido.android.YubiKitFidoClient.Companion.extensions
 import com.yubico.yubikit.fido.android.config.YubiKitFidoConfigManager
 import com.yubico.yubikit.fido.android.ui.Error
-import com.yubico.yubikit.fido.android.ui.UiState
+import com.yubico.yubikit.fido.android.ui.State
 import com.yubico.yubikit.fido.client.AuthInvalidClientError
 import com.yubico.yubikit.fido.client.ClientError
 import com.yubico.yubikit.fido.client.Ctap2Client
@@ -69,15 +69,15 @@ open class MainViewModel(
 
     private val pendingYubiKeyAction = MutableLiveData<YubiKeyAction?>()
 
-    private val _uiState =
-        MutableStateFlow<UiState>(
+    private val _state =
+        MutableStateFlow<State>(
             if (YubiKitFidoConfigManager.current.prioritizePin) {
-                UiState.WaitingForPinEntry(null)
+                State.WaitingForPinEntry(null)
             } else {
-                UiState.WaitingForKey
+                State.WaitingForKey
             },
         )
-    val uiState: StateFlow<UiState> = _uiState.asStateFlow()
+    val state: StateFlow<State> = _state.asStateFlow()
 
     private var result: PublicKeyCredential? = null
     private var pinValue: CharArray? = null
@@ -201,7 +201,7 @@ open class MainViewModel(
         credential: PublicKeyCredential,
         onResult: (PublicKeyCredential) -> Unit,
     ) {
-        _uiState.value = UiState.Success
+        _state.value = State.Success
         onResult(credential)
         result = null
     }
@@ -215,8 +215,8 @@ open class MainViewModel(
             runCatching { assertions.getUsers() }
                 .getOrElse { emptyList() }
 
-        _uiState.value =
-            UiState.MultipleAssertions(users) { user ->
+        _state.value =
+            State.MultipleAssertions(users) { user ->
                 assertions.select(user).let { selected ->
                     result = selected
                     deliverResult(selected, onResult)
@@ -230,11 +230,11 @@ open class MainViewModel(
             currentTransport == Transport.NFC
         ) {
             // we ask the user to tap the key again
-            _uiState.value = UiState.WaitingForKeyAgain
+            _state.value = State.WaitingForKeyAgain
         } else {
             if (forUsb) {
                 // show the touch key with delay
-                setUiStateWithDelay(UiState.TouchKey)
+                setUiStateWithDelay(State.TouchKey)
             }
         }
         runFidoOperation()
@@ -294,7 +294,7 @@ open class MainViewModel(
                             .fold(
                                 {
                                     pinValue = newPin.clone()
-                                    _uiState.value = UiState.PinChanged
+                                    _state.value = State.PinChanged
                                 },
                                 {
                                     val forcePinChangeError =
@@ -337,8 +337,8 @@ open class MainViewModel(
 
                                             else -> Error.UnknownError("Changing pin Failed")
                                         }
-                                    _uiState.value =
-                                        UiState.ForcePinChangeError(forcePinChangeError)
+                                    _state.value =
+                                        State.ForcePinChangeError(forcePinChangeError)
                                 },
                             ).also {
                                 newPinValue?.fill('\u0000')
@@ -352,7 +352,7 @@ open class MainViewModel(
                             .fold(
                                 {
                                     pinValue = newPin.clone()
-                                    _uiState.value = UiState.PinCreated
+                                    _state.value = State.PinCreated
                                 },
                                 {
                                     val createPinError =
@@ -360,7 +360,7 @@ open class MainViewModel(
                                             is ClientError -> Error.PinComplexityError
                                             else -> Error.UnknownError("Creating Pin Failed")
                                         }
-                                    _uiState.value = UiState.PinNotSetError(createPinError)
+                                    _state.value = State.PinNotSetError(createPinError)
                                 },
                             ).also {
                                 newPinValue?.fill('\u0000')
@@ -379,19 +379,19 @@ open class MainViewModel(
                 ) {
                     // onConnection
                     // executed after USB key is connected, or NFC key is tapped
-                    _uiState.value = info?.let {
+                    _state.value = info?.let {
                         val bioEnrollmentConfigured = BioEnrollment.isConfigured(it)
                         val isUsb = currentTransport == Transport.USB
                         if (bioEnrollmentConfigured && !uvFallback) {
-                            UiState.WaitingForUvEntry(
-                                (_uiState.value as? UiState.WaitingForUvEntry)?.error,
+                            State.WaitingForUvEntry(
+                                (_state.value as? State.WaitingForUvEntry)?.error,
                             )
                         } else if (isUsb) {
-                            UiState.TouchKey
+                            State.TouchKey
                         } else {
-                            UiState.Processing
+                            State.Processing
                         }
-                    } ?: UiState.WaitingForKey
+                    } ?: State.WaitingForKey
                 }
                     .fold(onSuccess = {
                         result = it
@@ -455,28 +455,28 @@ open class MainViewModel(
                                 else -> Error.UnknownError(error.message)
                             }
                         // handle the error by advancing to the next UI state
-                        _uiState.value =
+                        _state.value =
                             when (errorState) {
                                 is Error.PinRequiredError,
                                 is Error.PinBlockedError,
                                 is Error.PinAuthBlockedError,
                                 is Error.IncorrectPinError,
-                                -> UiState.WaitingForPinEntry(errorState)
+                                -> State.WaitingForPinEntry(errorState)
 
                                 is Error.UvBlockedError -> {
                                     uvFallback = true
-                                    UiState.WaitingForPinEntry(errorState)
+                                    State.WaitingForPinEntry(errorState)
                                 }
 
-                                is Error.IncorrectUvError -> UiState.WaitingForUvEntry(errorState)
-                                is Error.PinNotSetError -> UiState.PinNotSetError()
-                                is Error.ForcePinChangeError -> UiState.ForcePinChangeError()
-                                else -> UiState.OperationError(errorState)
+                                is Error.IncorrectUvError -> State.WaitingForUvEntry(errorState)
+                                is Error.PinNotSetError -> State.PinNotSetError()
+                                is Error.ForcePinChangeError -> State.ForcePinChangeError()
+                                else -> State.OperationError(errorState)
                             }
                         return@launch
                     })
             } catch (e: Exception) {
-                _uiState.value = UiState.OperationError(Error.UnknownError(e.message))
+                _state.value = State.OperationError(Error.UnknownError(e.message))
             }
         }
     }
@@ -550,14 +550,14 @@ open class MainViewModel(
     private var uiStateTimerJob: Job? = null
 
     fun setUiStateWithDelay(
-        newState: UiState,
+        newState: State,
         delayMillis: Long = 500,
     ) {
         uiStateTimerJob?.cancel()
         uiStateTimerJob =
             viewModelScope.launch(dispatcher) {
                 delay(delayMillis)
-                _uiState.value = newState
+                _state.value = newState
             }
     }
 

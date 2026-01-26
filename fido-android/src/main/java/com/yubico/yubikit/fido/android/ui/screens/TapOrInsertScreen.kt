@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Yubico.
+ * Copyright (C) 2025-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextDecoration
@@ -59,6 +60,7 @@ fun TapOrInsertSecurityKey(
                 color = MaterialTheme.colorScheme.primary,
                 fontSize = MaterialTheme.typography.bodySmall.fontSize,
                 textDecoration = TextDecoration.Underline,
+                modifier = Modifier.testTag("nfc_not_available_text"),
             )
         }
     }

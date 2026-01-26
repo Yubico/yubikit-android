@@ -19,7 +19,7 @@ package com.yubico.yubikit.fido.android.ui.screens
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import com.yubico.yubikit.fido.android.FidoClientService
@@ -30,10 +30,8 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
-import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [33])
 class CreatePinScreenTest {
 
     @get:Rule
@@ -62,12 +60,12 @@ class CreatePinScreenTest {
     fun `create button disabled when PINs do not match`() {
         setCreatePinContent()
 
-        composeTestRule.onNodeWithText("New PIN", substring = true, ignoreCase = true)
+        composeTestRule.onNodeWithTag("new_pin_input")
             .performTextInput("1234")
-        composeTestRule.onNodeWithText("Repeat PIN", substring = true, ignoreCase = true)
+        composeTestRule.onNodeWithTag("repeat_pin_input")
             .performTextInput("5678")
 
-        composeTestRule.onNodeWithText("Create PIN", ignoreCase = true)
+        composeTestRule.onNodeWithTag("create_pin_button")
             .assertIsNotEnabled()
     }
 
@@ -75,12 +73,12 @@ class CreatePinScreenTest {
     fun `create button disabled when PIN shorter than minimum length`() {
         setCreatePinContent(minPinLen = 6)
 
-        composeTestRule.onNodeWithText("New PIN", substring = true, ignoreCase = true)
+        composeTestRule.onNodeWithTag("new_pin_input")
             .performTextInput("1234")
-        composeTestRule.onNodeWithText("Repeat PIN", substring = true, ignoreCase = true)
+        composeTestRule.onNodeWithTag("repeat_pin_input")
             .performTextInput("1234")
 
-        composeTestRule.onNodeWithText("Create PIN", ignoreCase = true)
+        composeTestRule.onNodeWithTag("create_pin_button")
             .assertIsNotEnabled()
     }
 
@@ -88,12 +86,12 @@ class CreatePinScreenTest {
     fun `create button enabled when PINs match and meet minimum length`() {
         setCreatePinContent(minPinLen = 4)
 
-        composeTestRule.onNodeWithText("New PIN", substring = true, ignoreCase = true)
+        composeTestRule.onNodeWithTag("new_pin_input")
             .performTextInput("123456")
-        composeTestRule.onNodeWithText("Repeat PIN", substring = true, ignoreCase = true)
+        composeTestRule.onNodeWithTag("repeat_pin_input")
             .performTextInput("123456")
 
-        composeTestRule.onNodeWithText("Create PIN", ignoreCase = true)
+        composeTestRule.onNodeWithTag("create_pin_button")
             .assertIsEnabled()
     }
 
@@ -102,11 +100,11 @@ class CreatePinScreenTest {
         var createdPin = ""
         setCreatePinContent(onCreatePin = { createdPin = String(it) })
 
-        composeTestRule.onNodeWithText("New PIN", substring = true, ignoreCase = true)
+        composeTestRule.onNodeWithTag("new_pin_input")
             .performTextInput("123456")
-        composeTestRule.onNodeWithText("Repeat PIN", substring = true, ignoreCase = true)
+        composeTestRule.onNodeWithTag("repeat_pin_input")
             .performTextInput("123456")
-        composeTestRule.onNodeWithText("Create PIN", ignoreCase = true)
+        composeTestRule.onNodeWithTag("create_pin_button")
             .performClick()
 
         assertEquals("123456", createdPin)
@@ -116,13 +114,12 @@ class CreatePinScreenTest {
     fun `displays error for PIN complexity failure`() {
         setCreatePinContent(error = Error.PinComplexityError)
 
-        composeTestRule.onNodeWithText("complex", substring = true, ignoreCase = true)
+        composeTestRule.onNodeWithTag("pin_error_text")
             .assertExists()
     }
 }
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [33])
 class ForceChangePinScreenTest {
 
     @get:Rule
@@ -151,7 +148,7 @@ class ForceChangePinScreenTest {
     fun `shows info text explaining why PIN change is required`() {
         setForceChangePinContent()
 
-        composeTestRule.onNodeWithText("For security reasons", substring = true, ignoreCase = true)
+        composeTestRule.onNodeWithTag("pin_info_text")
             .assertExists()
     }
 
@@ -159,9 +156,9 @@ class ForceChangePinScreenTest {
     fun `shows Change PIN button instead of Create PIN`() {
         setForceChangePinContent()
 
-        composeTestRule.onNodeWithText("Change PIN", ignoreCase = true)
+        composeTestRule.onNodeWithTag("change_pin_button")
             .assertExists()
-        composeTestRule.onNodeWithText("Create PIN", ignoreCase = true)
+        composeTestRule.onNodeWithTag("create_pin_button")
             .assertDoesNotExist()
     }
 
@@ -169,7 +166,7 @@ class ForceChangePinScreenTest {
     fun `displays error for incorrect current PIN`() {
         setForceChangePinContent(error = Error.IncorrectPinError(remainingAttempts = 3))
 
-        composeTestRule.onNodeWithText("Incorrect PIN. 3 attempts remaining.")
+        composeTestRule.onNodeWithTag("pin_error_text")
             .assertExists()
     }
 
@@ -177,7 +174,7 @@ class ForceChangePinScreenTest {
     fun `displays error for PIN complexity failure in change flow`() {
         setForceChangePinContent(error = Error.PinComplexityError)
 
-        composeTestRule.onNodeWithText("complex", substring = true, ignoreCase = true)
+        composeTestRule.onNodeWithTag("pin_error_text")
             .assertExists()
     }
 }

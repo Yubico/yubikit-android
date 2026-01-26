@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import com.android.build.api.dsl.ManagedVirtualDevice
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -40,11 +41,7 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = true
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
+            isMinifyEnabled = false
         }
     }
     compileOptions {
@@ -62,7 +59,39 @@ android {
         compose = true
     }
 
+    @Suppress("UnstableApiUsage")
     testOptions {
+        managedDevices {
+            allDevices {
+                create("smallPhone", ManagedVirtualDevice::class) {
+                    device = "Pixel 4"
+                    apiLevel = 36
+                    systemImageSource = "aosp"
+                }
+                create("largePhone", ManagedVirtualDevice::class) {
+                    device = "Pixel 7 Pro"
+                    apiLevel = 36
+                    systemImageSource = "aosp"
+                }
+                create("tablet", ManagedVirtualDevice::class) {
+                    device = "Pixel C"
+                    apiLevel = 36
+                    systemImageSource = "aosp"
+                }
+            }
+            groups {
+                create("allDevicesGroup") {
+                    targetDevices.addAll(
+                        listOf(
+                            allDevices.getByName("smallPhone"),
+                            allDevices.getByName("largePhone"),
+                            allDevices.getByName("tablet")
+                        )
+                    )
+                }
+            }
+        }
+
         unitTests {
             isIncludeAndroidResources = true
         }
@@ -128,7 +157,7 @@ dependencies {
 
     // UI Tests
     androidTestImplementation(libs.androidx.ui.test.junit4)
-    debugImplementation(libs.androidx.ui.test.manifest)
+    implementation(libs.androidx.ui.test.manifest)
 
     implementation(libs.androidx.material.icons.core)
     implementation(libs.androidx.runtime.livedata)

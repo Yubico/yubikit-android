@@ -139,7 +139,6 @@ class YubiKitFidoClient {
                 putExtra("type", input.operation.ordinal)
                 putExtra("callingAppOrigin", input.origin.callingApp)
                 putExtra("resolvedOrigin", input.origin.resolved)
-                putExtra("effectiveDomain", input.origin.effectiveDomain)
                 putExtra("clientDataHash", input.clientDataHash)
                 putExtra("request", input.request)
             }

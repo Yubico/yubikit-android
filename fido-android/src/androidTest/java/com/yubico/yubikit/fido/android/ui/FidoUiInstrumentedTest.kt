@@ -47,8 +47,6 @@ class FidoUiInstrumentedTest {
 
     private val testOrigin = "example.com"
 
-    // ========== PIN Entry Screen Tests ==========
-
     @Test
     fun pinEntryScreen_displaysAllRequiredElements() {
         composeTestRule.setContent {
@@ -163,8 +161,6 @@ class FidoUiInstrumentedTest {
         composeTestRule.onNodeWithText("NFC not available", ignoreCase = true)
             .assertDoesNotExist()
     }
-
-    // ========== Error State Tests ==========
 
     @Test
     fun pinEntryScreen_withIncorrectPinError_showsErrorMessage() {

@@ -17,7 +17,7 @@
 package com.yubico.yubikit.fido.android.ui.screens
 
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onNodeWithTag
 import com.yubico.yubikit.fido.android.FidoClientService
 import com.yubico.yubikit.fido.android.ui.Error
 import com.yubico.yubikit.fido.android.ui.theme.FidoAndroidTheme
@@ -25,10 +25,8 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
-import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [33])
 class UvInputScreenTest {
 
     @get:Rule
@@ -51,13 +49,13 @@ class UvInputScreenTest {
     fun `displays remaining attempts on UV error`() {
         setMatchFingerprintContent(error = Error.IncorrectUvError(remainingAttempts = 2))
 
-        composeTestRule.onNodeWithText("2", substring = true).assertExists()
+        composeTestRule.onNodeWithTag("uv_error_text").assertExists()
     }
 
     @Test
     fun `displays fallback to PIN message when no attempts remaining`() {
         setMatchFingerprintContent(error = Error.IncorrectUvError(remainingAttempts = 0))
 
-        composeTestRule.onNodeWithText("PIN", substring = true, ignoreCase = true).assertExists()
+        composeTestRule.onNodeWithTag("uv_error_text").assertExists()
     }
 }

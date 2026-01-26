@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Yubico.
+ * Copyright (C) 2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,39 +15,6 @@
  */
 
 package com.yubico.yubikit.fido.android.ui
-
-import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialUserEntity
-
-sealed class UiState {
-    data object WaitingForKey : UiState()
-
-    data object WaitingForKeyAgain : UiState()
-
-    data object Processing : UiState()
-
-    data object TouchKey : UiState()
-
-    data object Success : UiState()
-
-    data object PinCreated : UiState()
-
-    data object PinChanged : UiState()
-
-    data class PinNotSetError(val error: Error? = null) : UiState()
-
-    data class ForcePinChangeError(val error: Error? = null) : UiState()
-
-    data class OperationError(val error: Error) : UiState()
-
-    data class WaitingForPinEntry(val error: Error?) : UiState()
-
-    data class WaitingForUvEntry(val error: Error?) : UiState()
-
-    data class MultipleAssertions(
-        val users: List<PublicKeyCredentialUserEntity>,
-        val onSelect: (Int) -> Unit,
-    ) : UiState()
-}
 
 sealed class Error {
     data object PinRequiredError : Error()

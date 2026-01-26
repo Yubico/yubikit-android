@@ -47,7 +47,7 @@ import com.yubico.yubikit.android.YubiKitManager
 import com.yubico.yubikit.android.transport.nfc.NfcConfiguration
 import com.yubico.yubikit.android.transport.nfc.NfcNotAvailable
 import com.yubico.yubikit.android.transport.usb.UsbConfiguration
-import com.yubico.yubikit.fido.android.ui.UiState
+import com.yubico.yubikit.fido.android.ui.State
 import com.yubico.yubikit.fido.android.ui.screens.FidoClientUi
 import com.yubico.yubikit.fido.android.ui.theme.FidoAndroidTheme
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredential
@@ -97,9 +97,9 @@ class YubiKitFidoActivity : ComponentActivity() {
         setContent {
             val theme = customTheme ?: { FidoAndroidTheme(content = it) }
             theme {
-                val uiState by viewModel.uiState.collectAsState()
+                val uiState by viewModel.state.collectAsState()
                 val showAntennas =
-                    uiState is UiState.WaitingForKey || uiState is UiState.WaitingForKeyAgain
+                    uiState is State.WaitingForKey || uiState is State.WaitingForKeyAgain
 
                 val device by viewModel.device.observeAsState()
                 var wasConnected by remember { mutableStateOf(false) }

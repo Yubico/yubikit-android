@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Yubico.
+ * Copyright (C) 2025-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -58,6 +59,7 @@ fun SuccessView(
             },
             style = MaterialTheme.typography.bodyLarge,
             fontWeight = FontWeight.Bold,
+            modifier = Modifier.testTag("result_message_text"),
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
@@ -91,7 +93,7 @@ fun ErrorView(
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            modifier = Modifier.padding(horizontal = 32.dp),
+            modifier = Modifier.padding(horizontal = 32.dp).testTag("error_message_text"),
             style = MaterialTheme.typography.bodySmallEmphasized,
             text =
             when (error) {
@@ -148,7 +150,10 @@ fun ErrorView(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        Button(onClick = onRetry) {
+        Button(
+            onClick = onRetry,
+            modifier = Modifier.testTag("retry_button"),
+        ) {
             Text(stringResource(R.string.retry))
         }
     }

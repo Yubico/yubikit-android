@@ -16,23 +16,19 @@
 
 package com.yubico.yubikit.fido.android.ui.screens
 
-import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onNodeWithTag
 import com.yubico.yubikit.fido.android.FidoClientService
 import com.yubico.yubikit.fido.android.ui.theme.FidoAndroidTheme
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
-import org.robolectric.annotation.Config
 
 /**
  * UI tests for TapOrInsertSecurityKey screen.
  */
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [33])
 class TapOrInsertScreenTest {
 
     @get:Rule
@@ -53,8 +49,7 @@ class TapOrInsertScreenTest {
             }
         }
 
-        composeTestRule.onNodeWithText("NFC not available")
-            .assertIsDisplayed()
+        composeTestRule.onNodeWithTag("nfc_not_available_text").assertExists()
     }
 
     @Test
@@ -70,7 +65,6 @@ class TapOrInsertScreenTest {
             }
         }
 
-        composeTestRule.onNodeWithText("NFC not available")
-            .assertIsNotDisplayed()
+        composeTestRule.onNodeWithTag("nfc_not_available_text").assertDoesNotExist()
     }
 }
