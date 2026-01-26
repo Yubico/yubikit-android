@@ -31,7 +31,7 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
-class YubiKitFidoClient {
+public class YubiKitFidoClient {
     private data class FidoRequest(
         val operation: FidoClientService.Operation,
         val origin: Origin,
@@ -42,17 +42,17 @@ class YubiKitFidoClient {
     private var currentContinuation: CancellableContinuation<Result<String>>? = null
     private var launcher: ActivityResultLauncher<FidoRequest>
 
-    companion object {
+    internal companion object {
         var extensions: List<Extension>? = emptyList()
     }
 
-    constructor(fragment: Fragment, extensions: List<Extension>? = null) : this(
+    public constructor(fragment: Fragment, extensions: List<Extension>? = null) : this(
         fragment,
         extensions,
         null,
     )
 
-    constructor(
+    public constructor(
         fragment: Fragment,
         extensions: List<Extension>? = null,
         theme: (@Composable (content: @Composable () -> Unit) -> Unit)? = null,
@@ -65,13 +65,13 @@ class YubiKitFidoClient {
         Companion.extensions = extensions
     }
 
-    constructor(activity: ComponentActivity, extensions: List<Extension>? = null) : this(
+    public constructor(activity: ComponentActivity, extensions: List<Extension>? = null) : this(
         activity,
         extensions,
         null,
     )
 
-    constructor(
+    public constructor(
         activity: ComponentActivity,
         extensions: List<Extension>? = null,
         theme: (@Composable (content: @Composable () -> Unit) -> Unit)? = null,
@@ -113,7 +113,7 @@ class YubiKitFidoClient {
             }
         }
 
-    suspend fun makeCredential(
+    public suspend fun makeCredential(
         origin: Origin,
         request: String,
         clientDataHash: String?,
@@ -121,7 +121,7 @@ class YubiKitFidoClient {
         return execute(FidoClientService.Operation.MAKE_CREDENTIAL, origin, clientDataHash, request)
     }
 
-    suspend fun getAssertion(
+    public suspend fun getAssertion(
         origin: Origin,
         request: String,
         clientDataHash: String?,

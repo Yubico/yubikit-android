@@ -33,7 +33,7 @@ import com.yubico.yubikit.fido.android.ui.theme.DefaultPreview
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun Processing(
+internal fun Processing(
     operation: FidoClientService.Operation,
     origin: String,
     onCloseButtonClick: () -> Unit,
@@ -51,7 +51,7 @@ fun Processing(
 
 @DefaultPreview
 @Composable
-fun ProcessingPreview() {
+internal fun ProcessingPreview() {
     Processing(
         operation = FidoClientService.Operation.MAKE_CREDENTIAL,
         origin = "example.com",

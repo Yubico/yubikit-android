@@ -16,6 +16,6 @@
 
 package com.yubico.yubikit.fido.android.config
 
-data class YubiKitFidoConfig(
+public data class YubiKitFidoConfig(
     val prioritizePin: Boolean = false,
 )

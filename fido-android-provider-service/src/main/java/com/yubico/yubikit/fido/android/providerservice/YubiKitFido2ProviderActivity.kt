@@ -48,7 +48,7 @@ import org.slf4j.LoggerFactory
 import java.security.Security
 import kotlin.coroutines.cancellation.CancellationException
 
-class YubiKitFido2ProviderActivity : ComponentActivity() {
+internal class YubiKitFido2ProviderActivity : ComponentActivity() {
 
     private lateinit var yubiKitFidoClient: YubiKitFidoClient
 

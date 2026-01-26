@@ -21,21 +21,21 @@ import kotlinx.coroutines.flow.StateFlow
 /**
  * Public API for reading and mutating the FIDO UI configuration.
  */
-object YubiKitFidoConfigManager {
-    val configuration: StateFlow<YubiKitFidoConfig> = YubiKitFidoConfigStore.config
+public object YubiKitFidoConfigManager {
+    public val configuration: StateFlow<YubiKitFidoConfig> = YubiKitFidoConfigStore.config
 
-    val current: YubiKitFidoConfig
+    public val current: YubiKitFidoConfig
         get() = configuration.value
 
-    fun setPrioritizePin(value: Boolean) {
+    public fun setPrioritizePin(value: Boolean) {
         update { it.copy(prioritizePin = value) }
     }
 
-    fun update(transform: (YubiKitFidoConfig) -> YubiKitFidoConfig) {
+    public fun update(transform: (YubiKitFidoConfig) -> YubiKitFidoConfig) {
         YubiKitFidoConfigStore.update(transform)
     }
 
-    fun replace(configuration: YubiKitFidoConfig) {
+    public fun replace(configuration: YubiKitFidoConfig) {
         YubiKitFidoConfigStore.replace(configuration)
     }
 }

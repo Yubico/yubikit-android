@@ -19,7 +19,7 @@ package com.yubico.yubikit.fido.android.providerservice
 /**
  * Google Password Manager allowlist from https://www.gstatic.com/gpm-passkeys-privileged-apps/apps.json
  */
-val allowList =
+internal val allowList =
     """
 {
   "apps": [

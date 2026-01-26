@@ -41,7 +41,7 @@ import com.yubico.yubikit.fido.android.ui.Error
 import com.yubico.yubikit.fido.android.ui.components.ContentWrapper
 
 @Composable
-fun SuccessView(
+internal fun SuccessView(
     operation: FidoClientService.Operation,
     origin: String,
 ) {
@@ -71,7 +71,7 @@ fun SuccessView(
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun ErrorView(
+internal fun ErrorView(
     operation: FidoClientService.Operation,
     origin: String,
     error: Error? = null,

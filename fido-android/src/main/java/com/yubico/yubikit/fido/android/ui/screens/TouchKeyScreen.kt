@@ -32,7 +32,7 @@ import com.yubico.yubikit.fido.android.R
 import com.yubico.yubikit.fido.android.ui.components.ContentWrapper
 
 @Composable
-fun TouchTheSecurityKey(
+internal fun TouchTheSecurityKey(
     operation: FidoClientService.Operation,
     origin: String,
     onCloseButtonClick: () -> Unit,

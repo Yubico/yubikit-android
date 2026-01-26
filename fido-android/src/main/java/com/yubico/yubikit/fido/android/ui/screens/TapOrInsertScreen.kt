@@ -35,7 +35,7 @@ import com.yubico.yubikit.fido.android.ui.components.ContentWrapper
 import com.yubico.yubikit.fido.android.ui.theme.DefaultPreview
 
 @Composable
-fun TapOrInsertSecurityKey(
+internal fun TapOrInsertSecurityKey(
     operation: FidoClientService.Operation,
     isNfcAvailable: Boolean,
     origin: String,
@@ -68,7 +68,7 @@ fun TapOrInsertSecurityKey(
 
 @DefaultPreview
 @Composable
-fun TapOrInsertSecurityKeyForMakeCredentialPreview() {
+internal fun TapOrInsertSecurityKeyForMakeCredentialPreview() {
     TapOrInsertSecurityKey(
         isNfcAvailable = false,
         operation = FidoClientService.Operation.MAKE_CREDENTIAL,
@@ -78,7 +78,7 @@ fun TapOrInsertSecurityKeyForMakeCredentialPreview() {
 
 @DefaultPreview
 @Composable
-fun TapOrInsertSecurityKeyForGetAssertionPreview() {
+internal fun TapOrInsertSecurityKeyForGetAssertionPreview() {
     TapOrInsertSecurityKey(
         isNfcAvailable = true,
         operation = FidoClientService.Operation.GET_ASSERTION,

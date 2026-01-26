@@ -45,7 +45,7 @@ import com.yubico.yubikit.fido.android.ui.components.ContentWrapper
 import com.yubico.yubikit.fido.android.ui.theme.DefaultPreview
 
 @Composable
-fun TapAgainSecurityKey(
+internal fun TapAgainSecurityKey(
     operation: FidoClientService.Operation,
     origin: String,
     onCloseButtonClick: () -> Unit,
@@ -67,7 +67,7 @@ fun TapAgainSecurityKey(
 }
 
 @Composable
-fun PulsingIcon(
+internal fun PulsingIcon(
     painter: Painter,
     contentDescription: String?,
     modifier: Modifier = Modifier,
@@ -118,7 +118,7 @@ fun PulsingIcon(
 
 @DefaultPreview
 @Composable
-fun TapSecurityKeyAgainForGetAssertionPreview() {
+internal fun TapSecurityKeyAgainForGetAssertionPreview() {
     TapAgainSecurityKey(
         operation = FidoClientService.Operation.GET_ASSERTION,
         origin = "www.example.com",

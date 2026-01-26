@@ -43,7 +43,7 @@ import com.yubico.yubikit.fido.android.ui.theme.DefaultPreview
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun MatchFingerprint(
+internal fun MatchFingerprint(
     operation: FidoClientService.Operation,
     origin: String,
     error: Error? = null,
@@ -98,7 +98,7 @@ fun MatchFingerprint(
 
 @DefaultPreview
 @Composable
-fun MatchFingerprintNewPreview() {
+internal fun MatchFingerprintNewPreview() {
     MatchFingerprint(
         operation = FidoClientService.Operation.MAKE_CREDENTIAL,
         origin = "example.com",
@@ -108,7 +108,7 @@ fun MatchFingerprintNewPreview() {
 
 @DefaultPreview
 @Composable
-fun MatchFingerprintNewWithErrorPreview() {
+internal fun MatchFingerprintNewWithErrorPreview() {
     MatchFingerprint(
         operation = FidoClientService.Operation.GET_ASSERTION,
         origin = "example.com",

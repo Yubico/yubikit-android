@@ -23,7 +23,7 @@ package com.yubico.yubikit.fido.android
  * @property resolved The resolved origin URI (e\.g\., scheme and domain). Can be different from
  * callingApp
  */
-data class Origin(
+public data class Origin(
     val callingApp: String,
     val resolved: String = callingApp,
 ) {

@@ -48,7 +48,7 @@ import com.yubico.yubikit.fido.android.ui.components.ContentWrapper
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialUserEntity
 
 @Composable
-fun MultipleAssertionsScreen(
+internal fun MultipleAssertionsScreen(
     operation: FidoClientService.Operation,
     origin: String,
     users: List<PublicKeyCredentialUserEntity>,

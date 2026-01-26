@@ -42,7 +42,7 @@ import androidx.credentials.provider.PublicKeyCredentialEntry
 import org.json.JSONObject
 import org.slf4j.LoggerFactory
 
-class YubiKitProviderService : CredentialProviderService() {
+internal class YubiKitProviderService : CredentialProviderService() {
     private val logger = LoggerFactory.getLogger(YubiKitProviderService::class.java)
 
     /**

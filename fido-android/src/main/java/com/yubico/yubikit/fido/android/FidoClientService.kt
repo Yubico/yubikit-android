@@ -27,18 +27,18 @@ import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialCreationOptions
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialRequestOptions
 import org.json.JSONObject
 
-class FidoClientService(private val viewModel: MainViewModel = MainViewModel()) {
+internal class FidoClientService(private val viewModel: MainViewModel = MainViewModel()) {
 
-    enum class Operation {
+    internal enum class Operation {
         MAKE_CREDENTIAL,
         GET_ASSERTION,
     }
 
     private val commandState = CommandState()
 
-    fun cancelOngoingOperation() = commandState.cancel()
+    internal fun cancelOngoingOperation() = commandState.cancel()
 
-    suspend fun performOperation(
+    internal suspend fun performOperation(
         pin: CharArray?,
         operation: Operation,
         origin: Origin,
@@ -182,12 +182,12 @@ class FidoClientService(private val viewModel: MainViewModel = MainViewModel()) 
             )
         }
 
-    suspend fun createPin(pin: CharArray): Result<Unit> =
+    internal suspend fun createPin(pin: CharArray): Result<Unit> =
         viewModel.useWebAuthn { client ->
             (client as? Ctap2Client)?.setPin(pin)
         }
 
-    suspend fun changePin(
+    internal suspend fun changePin(
         currentPin: CharArray,
         newPin: CharArray,
     ): Result<Unit> = viewModel.useWebAuthn { client ->

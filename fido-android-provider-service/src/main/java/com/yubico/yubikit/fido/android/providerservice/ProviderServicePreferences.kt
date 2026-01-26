@@ -18,9 +18,10 @@ package com.yubico.yubikit.fido.android.providerservice
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.core.content.edit
 import com.yubico.yubikit.fido.android.config.YubiKitFidoConfig
 
-object ProviderServicePreferences {
+internal object ProviderServicePreferences {
     private const val PREFS_NAME = "fido_provider_service_prefs"
     private const val KEY_PRIORITIZE_PIN = "prioritize_pin"
 
@@ -36,13 +37,13 @@ object ProviderServicePreferences {
 
     fun saveConfiguration(context: Context, config: YubiKitFidoConfig) {
         val prefs = getPrefs(context)
-        prefs.edit()
-            .putBoolean(KEY_PRIORITIZE_PIN, config.prioritizePin)
-            .apply()
+        prefs.edit {
+            putBoolean(KEY_PRIORITIZE_PIN, config.prioritizePin)
+        }
     }
 
     fun savePrioritizePin(context: Context, value: Boolean) {
         val prefs = getPrefs(context)
-        prefs.edit().putBoolean(KEY_PRIORITIZE_PIN, value).apply()
+        prefs.edit { putBoolean(KEY_PRIORITIZE_PIN, value) }
     }
 }

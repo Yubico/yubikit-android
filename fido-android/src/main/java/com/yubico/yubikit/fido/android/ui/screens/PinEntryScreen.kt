@@ -63,7 +63,7 @@ import com.yubico.yubikit.fido.android.ui.components.ContentWrapper
 import com.yubico.yubikit.fido.android.ui.theme.DefaultPreview
 
 @Composable
-fun resolvePinEntryError(error: Error?): String? =
+internal fun resolvePinEntryError(error: Error?): String? =
     when (error) {
         is Error.IncorrectPinError -> {
             if (error.remainingAttempts != null) {
@@ -90,7 +90,7 @@ fun resolvePinEntryError(error: Error?): String? =
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun EnterPin(
+internal fun EnterPin(
     operation: FidoClientService.Operation,
     origin: String,
     error: Error? = null,
@@ -214,7 +214,7 @@ fun EnterPin(
 
 @DefaultPreview
 @Composable
-fun EnterPinPreview() {
+internal fun EnterPinPreview() {
     EnterPin(
         operation = FidoClientService.Operation.MAKE_CREDENTIAL,
         origin = "example.com",
@@ -224,7 +224,7 @@ fun EnterPinPreview() {
 
 @DefaultPreview
 @Composable
-fun EnterPinWithErrorPreview() {
+internal fun EnterPinWithErrorPreview() {
     EnterPin(
         operation = FidoClientService.Operation.GET_ASSERTION,
         origin = "example.com",

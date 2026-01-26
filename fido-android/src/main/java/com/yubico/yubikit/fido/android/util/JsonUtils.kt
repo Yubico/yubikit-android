@@ -19,7 +19,7 @@ package com.yubico.yubikit.fido.android.util
 import org.json.JSONArray
 import org.json.JSONObject
 
-fun JSONObject.toMap(): Map<String, *> =
+internal fun JSONObject.toMap(): Map<String, *> =
     keys().asSequence().associateWith {
         when (val value = this[it]) {
             is JSONArray -> {

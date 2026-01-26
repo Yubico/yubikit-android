@@ -22,4 +22,4 @@ import androidx.compose.ui.tooling.preview.Preview
     name = "default preview",
     showBackground = true,
 )
-annotation class DefaultPreview
+internal annotation class DefaultPreview

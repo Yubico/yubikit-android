@@ -54,13 +54,13 @@ import org.slf4j.LoggerFactory
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
-typealias YubiKeyAction = suspend (Result<YubiKeyDevice, Exception>) -> Unit
+internal typealias YubiKeyAction = suspend (Result<YubiKeyDevice, Exception>) -> Unit
 
-open class MainViewModel(
+internal open class MainViewModel(
     private val dispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) : ViewModel() {
     private val nfcAvailable = MutableLiveData(false)
-    val isNfcAvailable: LiveData<Boolean> = nfcAvailable
+    internal val isNfcAvailable: LiveData<Boolean> = nfcAvailable
 
     var info: Ctap2Session.InfoData? = null
 

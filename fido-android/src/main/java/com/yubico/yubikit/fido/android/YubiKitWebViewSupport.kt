@@ -42,10 +42,10 @@ import org.json.JSONObject
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-fun WebView.withYubiKitWebauthn(
+public fun WebView.withYubiKitWebauthn(
     coroutineScope: CoroutineScope,
     yubiKitFidoClient: YubiKitFidoClient,
-) = YubiKitWebViewSupport.withYubiKitWebauthn(this, coroutineScope, yubiKitFidoClient)
+): Unit = YubiKitWebViewSupport.withYubiKitWebauthn(this, coroutineScope, yubiKitFidoClient)
 
 internal class YubiKitWebViewSupport {
     companion object {

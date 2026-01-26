@@ -57,14 +57,14 @@ import org.json.JSONObject
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-const val RESULT_KEY_REMOVED = 10000
+internal const val RESULT_KEY_REMOVED = 10000
 
-class YubiKitFidoActivity : ComponentActivity() {
-    companion object {
+internal class YubiKitFidoActivity : ComponentActivity() {
+    internal companion object {
         private val logger: Logger = LoggerFactory.getLogger(YubiKitFidoActivity::class.java)
         private var customTheme: (@Composable (content: @Composable () -> Unit) -> Unit)? = null
 
-        fun setTheme(theme: (@Composable (content: @Composable () -> Unit) -> Unit)?) {
+        internal fun setTheme(theme: (@Composable (content: @Composable () -> Unit) -> Unit)?) {
             customTheme = theme
         }
     }
@@ -238,13 +238,13 @@ class YubiKitFidoActivity : ComponentActivity() {
         super.onConfigurationChanged(newConfig)
     }
 
-    data class FidoActivityParameters(
+    internal data class FidoActivityParameters(
         val origin: Origin,
         val request: String,
         val clientDataHash: List<Byte>?,
         val operation: FidoClientService.Operation,
     ) {
-        companion object {
+        internal companion object {
             fun fromIntent(intent: Intent): FidoActivityParameters {
                 val extras = intent.extras ?: throw IllegalArgumentException("Missing extras")
 

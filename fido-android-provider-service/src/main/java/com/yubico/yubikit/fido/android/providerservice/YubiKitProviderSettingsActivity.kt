@@ -52,7 +52,7 @@ import com.yubico.yubikit.fido.android.config.YubiKitFidoConfigManager
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
-class YubiKitProviderSettingsActivity : ComponentActivity() {
+internal class YubiKitProviderSettingsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // Load config from preferences and update ClientConfiguration
@@ -84,7 +84,7 @@ class YubiKitProviderSettingsActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen() {
+internal fun SettingsScreen() {
     var prioritizePin by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
@@ -153,7 +153,7 @@ fun SettingsScreen() {
 }
 
 @Composable
-fun SettingSwitch(title: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+private fun SettingSwitch(title: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()

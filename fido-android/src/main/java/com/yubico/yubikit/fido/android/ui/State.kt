@@ -18,7 +18,7 @@ package com.yubico.yubikit.fido.android.ui
 
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialUserEntity
 
-sealed class State {
+internal sealed class State {
     data object WaitingForKey : State()
 
     data object WaitingForKeyAgain : State()

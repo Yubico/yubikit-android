@@ -20,7 +20,7 @@ import android.hardware.usb.UsbDevice
 import android.hardware.usb.UsbManager
 import com.yubico.yubikit.android.transport.usb.DeviceFilter
 
-class FidoDeviceFilter : DeviceFilter() {
+internal class FidoDeviceFilter : DeviceFilter() {
     /**
      * Matches any vendor and product ID combination.
      *

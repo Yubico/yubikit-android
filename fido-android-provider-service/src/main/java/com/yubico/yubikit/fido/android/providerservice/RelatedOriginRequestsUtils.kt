@@ -38,7 +38,7 @@ import javax.net.ssl.HttpsURLConnection
  */
 
 @Serializable
-data class WebAuthnWellKnownResponse(
+private data class WebAuthnWellKnownResponse(
     val origins: List<String>? = null,
 )
 
@@ -73,7 +73,7 @@ private suspend fun fetchWebauthnWellKnown(rpId: String): String =
     }
 
 // Main validation function
-suspend fun validateOrigin(
+internal suspend fun validateOrigin(
     callerOrigin: String,
     rpId: String,
     fetchWebauthnWellKnownFn: suspend (String) -> String = ::fetchWebauthnWellKnown,

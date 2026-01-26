@@ -44,7 +44,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 @Composable
-fun FidoClientUi(
+internal fun FidoClientUi(
     viewModel: MainViewModel,
     operation: FidoClientService.Operation,
     isNfcAvailable: Boolean,

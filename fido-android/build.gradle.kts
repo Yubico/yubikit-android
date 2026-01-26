@@ -53,6 +53,8 @@ android {
         compilerOptions {
             jvmTarget = JvmTarget.JVM_11
         }
+
+        explicitApi()
     }
 
     buildFeatures {

@@ -16,7 +16,7 @@
 
 package com.yubico.yubikit.fido.android.ui
 
-sealed class Error {
+internal sealed class Error {
     data object PinRequiredError : Error()
 
     data object PinComplexityError : Error()
