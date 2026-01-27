@@ -85,7 +85,8 @@ internal class YubiKitProviderSettingsActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun SettingsScreen() {
-    var prioritizePin by remember { mutableStateOf(false) }
+    var isPinPrioritized by remember { mutableStateOf(false) }
+    var isCustomThemeEnabled by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
     // Get version name
@@ -99,7 +100,8 @@ internal fun SettingsScreen() {
     LaunchedEffect(Unit) {
         (context as? androidx.lifecycle.LifecycleOwner)?.lifecycleScope?.launch {
             FidoConfigManager.configuration.collectLatest {
-                prioritizePin = it.prioritizePin
+                isPinPrioritized = it.isPinPrioritized
+                isCustomThemeEnabled = it.isCustomThemeEnabled
             }
         }
     }
@@ -132,12 +134,22 @@ internal fun SettingsScreen() {
             ) {
                 SettingSwitch(
                     title = stringResource(R.string.assume_pin_exists),
-                    checked = prioritizePin,
+                    checked = isPinPrioritized,
                     onCheckedChange = {
                         FidoConfigManager.setPrioritizePin(it)
                         ProviderServicePreferences.savePrioritizePin(context, it)
                     },
                 )
+                if (YubiKitProviderServiceThemeProvider.get() != null) {
+                    SettingSwitch(
+                        title = stringResource(R.string.use_custom_theme),
+                        checked = isCustomThemeEnabled,
+                        onCheckedChange = {
+                            FidoConfigManager.setUseCustomTheme(it)
+                            ProviderServicePreferences.saveUseCustomTheme(context, it)
+                        },
+                    )
+                }
                 // Spacer to push version to bottom
                 Spacer(modifier = Modifier.weight(1f))
                 Text(

@@ -24,6 +24,7 @@ import com.yubico.yubikit.fido.android.FidoConfig
 internal object ProviderServicePreferences {
     private const val PREFS_NAME = "fido_provider_service_prefs"
     private const val KEY_PRIORITIZE_PIN = "prioritize_pin"
+    private const val KEY_USE_CUSTOM_THEME = "use_custom_theme"
 
     private fun getPrefs(context: Context): SharedPreferences =
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -31,19 +32,26 @@ internal object ProviderServicePreferences {
     fun loadConfiguration(context: Context): FidoConfig {
         val prefs = getPrefs(context)
         return FidoConfig(
-            prioritizePin = prefs.getBoolean(KEY_PRIORITIZE_PIN, false),
+            isPinPrioritized = prefs.getBoolean(KEY_PRIORITIZE_PIN, false),
+            isCustomThemeEnabled = prefs.getBoolean(KEY_USE_CUSTOM_THEME, false),
         )
     }
 
     fun saveConfiguration(context: Context, config: FidoConfig) {
         val prefs = getPrefs(context)
         prefs.edit {
-            putBoolean(KEY_PRIORITIZE_PIN, config.prioritizePin)
+            putBoolean(KEY_PRIORITIZE_PIN, config.isPinPrioritized)
+            putBoolean(KEY_USE_CUSTOM_THEME, config.isCustomThemeEnabled)
         }
     }
 
     fun savePrioritizePin(context: Context, value: Boolean) {
         val prefs = getPrefs(context)
         prefs.edit { putBoolean(KEY_PRIORITIZE_PIN, value) }
+    }
+
+    fun saveUseCustomTheme(context: Context, value: Boolean) {
+        val prefs = getPrefs(context)
+        prefs.edit { putBoolean(KEY_USE_CUSTOM_THEME, value) }
     }
 }

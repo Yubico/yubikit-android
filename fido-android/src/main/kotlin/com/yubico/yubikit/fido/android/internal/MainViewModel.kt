@@ -71,7 +71,7 @@ internal open class MainViewModel(
 
     private val _state =
         MutableStateFlow<State>(
-            if (FidoConfigManager.current.prioritizePin) {
+            if (FidoConfigManager.current.isPinPrioritized) {
                 State.WaitingForPinEntry(null)
             } else {
                 State.WaitingForKey
@@ -191,7 +191,7 @@ internal open class MainViewModel(
         action: (WebAuthnClient) -> T,
     ): T =
         withContext(Dispatchers.IO) {
-            val extensions = FidoConfigManager.current.extensions
+            val extensions = FidoConfigManager.current.fidoExtensions
             WebAuthnClient.create(device, extensions).use { client ->
                 if (client is Ctap2Client) info = client.session.cachedInfo
                 action(client)
@@ -227,7 +227,7 @@ internal open class MainViewModel(
     }
 
     private fun signalRetry(forUsb: Boolean = true) {
-        if ((FidoConfigManager.current.prioritizePin && !isDeviceConnected) ||
+        if ((FidoConfigManager.current.isPinPrioritized && !isDeviceConnected) ||
             currentTransport == Transport.NFC
         ) {
             // we ask the user to tap the key again

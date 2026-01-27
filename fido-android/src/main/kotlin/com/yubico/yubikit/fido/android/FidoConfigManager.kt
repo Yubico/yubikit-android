@@ -27,25 +27,26 @@ import kotlinx.coroutines.flow.StateFlow
  * This data class holds all configurable settings that affect how the FIDO operations
  * are presented to the user. Use [FidoConfigManager] to modify the global configuration.
  *
- * @property prioritizePin When `true`, the PIN entry UI is shown before prompting for
+ * @property isPinPrioritized When `true`, the PIN entry UI is shown before prompting for
  *   security key interaction. When `false` (default), the user is prompted to touch
  *   their security key first. Set to `true` for workflows where PIN entry upfront
  *   provides a better user experience.
- * @property extensions List of FIDO extensions to enable for all operations, or `null`
+ * @property fidoExtensions List of FIDO extensions to enable for all operations, or `null`
  *   to use the default set of extensions provided by the underlying CTAP2 client.
  *   The default extensions include: CredBlob, CredProps, CredProtect, HmacSecret,
  *   LargeBlob, and MinPinLength. Provide an explicit list to override or disable
  *   specific extensions.
- * @property theme Optional Compose theme wrapper to apply to the FIDO UI screens.
+ * @property customTheme Optional Compose theme wrapper to apply to the FIDO UI screens.
  *   If `null`, the default theme is used. Provide a composable function that wraps
  *   the content with your app's theme for visual consistency.
  *
  * @see FidoConfigManager
  */
 public data class FidoConfig(
-    val prioritizePin: Boolean = false,
-    val extensions: List<Extension>? = null,
-    val theme: (@Composable (content: @Composable () -> Unit) -> Unit)? = null,
+    val isPinPrioritized: Boolean = false,
+    val isCustomThemeEnabled: Boolean = false,
+    val fidoExtensions: List<Extension>? = null,
+    val customTheme: (@Composable (content: @Composable () -> Unit) -> Unit)? = null,
 )
 
 /**
@@ -132,6 +133,14 @@ public object FidoConfigManager {
      */
     public fun setTheme(theme: (@Composable (content: @Composable () -> Unit) -> Unit)?): Unit =
         FidoConfigManagerImpl.setTheme(theme)
+
+    /**
+     * Sets whether to use a custom theme for the FIDO UI screens.
+     *
+     * @param value `true` to use custom theme, `false` to use default theme.
+     */
+    public fun setUseCustomTheme(value: Boolean): Unit =
+        FidoConfigManagerImpl.setUseCustomTheme(value)
 
     /**
      * Atomically updates the configuration using a transform function.

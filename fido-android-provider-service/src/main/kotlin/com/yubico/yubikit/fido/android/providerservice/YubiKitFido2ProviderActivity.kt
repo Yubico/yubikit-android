@@ -73,6 +73,10 @@ internal class YubiKitFido2ProviderActivity : ComponentActivity() {
         }
         super.onCreate(savedInstanceState)
 
+        YubiKitProviderServiceThemeProvider.get()?.let { theme ->
+            if (FidoConfigManager.current.isCustomThemeEnabled) FidoConfigManager.setTheme(theme)
+        }
+
         fidoClient = FidoClient(this, extensions = defaultExtensions)
 
         Security.removeProvider("BC")

@@ -34,15 +34,19 @@ internal object FidoConfigManagerImpl {
         get() = configuration.value
 
     fun setPrioritizePin(value: Boolean) {
-        update { it.copy(prioritizePin = value) }
+        update { it.copy(isPinPrioritized = value) }
     }
 
     fun setExtensions(extensions: List<Extension>?) {
-        update { it.copy(extensions = extensions) }
+        update { it.copy(fidoExtensions = extensions) }
     }
 
     fun setTheme(theme: (@Composable (content: @Composable () -> Unit) -> Unit)?) {
-        update { it.copy(theme = theme) }
+        update { it.copy(customTheme = theme) }
+    }
+
+    fun setUseCustomTheme(value: Boolean) {
+        update { it.copy(isCustomThemeEnabled = value) }
     }
 
     fun update(transform: (FidoConfig) -> FidoConfig) {

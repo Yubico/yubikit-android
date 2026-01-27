@@ -93,7 +93,7 @@ internal class YubiKitFidoActivity : ComponentActivity() {
 
         setContent {
             val config by FidoConfigManager.configuration.collectAsState()
-            val theme = config.theme ?: { content -> FidoAndroidTheme(content = content) }
+            val theme = config.customTheme ?: { content -> FidoAndroidTheme(content = content) }
             theme {
                 val uiState by viewModel.state.collectAsState()
                 val showAntennas =
