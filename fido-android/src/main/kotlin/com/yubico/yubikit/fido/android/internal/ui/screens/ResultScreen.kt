@@ -53,9 +53,9 @@ internal fun SuccessView(
         Text(
             text =
             if (operation == FidoClientService.Operation.MAKE_CREDENTIAL) {
-                stringResource(R.string.passkey_created)
+                stringResource(R.string.yk_fido_passkey_created)
             } else {
-                stringResource(R.string.login_successful)
+                stringResource(R.string.yk_fido_login_successful)
             },
             style = MaterialTheme.typography.bodyLarge,
             fontWeight = FontWeight.Bold,
@@ -63,7 +63,7 @@ internal fun SuccessView(
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = stringResource(R.string.remove_the_key),
+            text = stringResource(R.string.yk_fido_remove_the_key),
             style = MaterialTheme.typography.bodyMedium,
         )
     }
@@ -85,7 +85,7 @@ internal fun ErrorView(
     ) {
         Icon(
             imageVector = Icons.Default.Error,
-            contentDescription = stringResource(R.string.error),
+            contentDescription = stringResource(R.string.yk_fido_error),
             tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier.size(48.dp),
         )
@@ -104,47 +104,47 @@ internal fun ErrorView(
                                 when (ex.ctapError) {
                                     CtapException.ERR_NO_CREDENTIALS ->
                                         stringResource(
-                                            R.string.ctap_err_no_credentials,
+                                            R.string.yk_fido_ctap_err_no_credentials,
                                             origin,
                                         )
 
                                     CtapException.ERR_USER_ACTION_TIMEOUT ->
                                         stringResource(
-                                            R.string.ctap_err_user_action_timeout,
+                                            R.string.yk_fido_ctap_err_user_action_timeout,
                                         )
 
                                     CtapException.ERR_KEY_STORE_FULL ->
                                         stringResource(
-                                            R.string.ctap_err_key_store_full,
+                                            R.string.yk_fido_ctap_err_key_store_full,
                                         )
 
                                     CtapException.ERR_PUAT_REQUIRED ->
                                         stringResource(
-                                            R.string.ctap_err_puat_required,
+                                            R.string.yk_fido_ctap_err_puat_required,
                                         )
 
                                     CtapException.ERR_UV_INVALID ->
-                                        stringResource(R.string.ctap_err_uv_unknown)
+                                        stringResource(R.string.yk_fido_ctap_err_uv_unknown)
 
                                     CtapException.ERR_CREDENTIAL_EXCLUDED ->
                                         stringResource(
-                                            R.string.ctap_err_credential_excluded,
+                                            R.string.yk_fido_ctap_err_credential_excluded,
                                         )
 
-                                    else -> stringResource(R.string.unknown_error)
+                                    else -> stringResource(R.string.yk_fido_unknown_error)
                                 }
                             }
 
-                            else -> stringResource(R.string.unknown_error)
+                            else -> stringResource(R.string.yk_fido_unknown_error)
                         }
-                    } ?: stringResource(R.string.unknown_error)
+                    } ?: stringResource(R.string.yk_fido_unknown_error)
                 }
 
-                is Error.DeviceNotConfiguredError -> stringResource(R.string.device_not_configured)
+                is Error.DeviceNotConfiguredError -> stringResource(R.string.yk_fido_device_not_configured)
 
-                is Error.UnknownError -> error.message ?: stringResource(R.string.unknown_error)
+                is Error.UnknownError -> error.message ?: stringResource(R.string.yk_fido_unknown_error)
 
-                else -> stringResource(R.string.unknown_error)
+                else -> stringResource(R.string.yk_fido_unknown_error)
             },
         )
 
@@ -154,7 +154,7 @@ internal fun ErrorView(
             onClick = onRetry,
             modifier = Modifier.testTag("retry_button"),
         ) {
-            Text(stringResource(R.string.retry))
+            Text(stringResource(R.string.yk_fido_retry))
         }
     }
 }

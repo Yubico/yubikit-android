@@ -48,12 +48,12 @@ internal fun TapOrInsertSecurityKey(
     ) {
         Icon(
             painter = painterResource(R.drawable.ic_baseline_passkey_24),
-            contentDescription = stringResource(R.string.passkey_icon),
+            contentDescription = stringResource(R.string.yk_fido_passkey_icon),
             modifier = Modifier.size(64.dp),
             tint = MaterialTheme.colorScheme.primary,
         )
         Spacer(modifier = Modifier.height(16.dp))
-        Text(text = stringResource(R.string.tap_or_insert_key))
+        Text(text = stringResource(R.string.yk_fido_tap_or_insert_key))
         if (!isNfcAvailable) {
             Text(
                 text = "NFC not available",

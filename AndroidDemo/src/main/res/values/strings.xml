@@ -1,6 +1,6 @@
 <resources>
 
-    <string name="app_name">YubiKit Sample</string>
+    <string name="yk_fido_app_name">YubiKit Sample</string>
     <string name="nav_header_title">YubiKit Sample</string>
     <string name="nav_header_subtitle">YubiKit SDK demo application</string>
     <string name="nav_header_desc">Navigation header</string>
@@ -92,9 +92,9 @@
         \n\nFor the iOS version of YubiKit, visit https://github.com/Yubico/yubikit-ios
     </string>
     <string name="yubico">Yubico</string>
-    <string name="version">Version %s</string>
+    <string name="yk_provider_service_version_label">Version %s</string>
     <string name="copyright">Copyright © 2019–2020 Yubico.</string>
     <string name="img_passkey_icon">passkey icon</string>
 
-    <string name="provider_service_label">DemoApp SK Provider</string>
+    <string name="yk_provider_service_label">DemoApp SK Provider</string>
 </resources>

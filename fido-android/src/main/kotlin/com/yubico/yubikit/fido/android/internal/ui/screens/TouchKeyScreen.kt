@@ -48,6 +48,6 @@ internal fun TouchTheSecurityKey(
             contentDescription = "Touch the key",
         )
         Spacer(modifier = Modifier.height(16.dp))
-        Text(text = stringResource(R.string.touch_the_key))
+        Text(text = stringResource(R.string.yk_fido_touch_the_key))
     }
 }

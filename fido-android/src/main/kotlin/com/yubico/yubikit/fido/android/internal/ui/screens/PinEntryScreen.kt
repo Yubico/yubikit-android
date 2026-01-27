@@ -68,21 +68,21 @@ internal fun resolvePinEntryError(error: Error?): String? =
         is Error.IncorrectPinError -> {
             if (error.remainingAttempts != null) {
                 pluralStringResource(
-                    R.plurals.incorrect_pin_with_attempts,
+                    R.plurals.yk_fido_incorrect_pin_with_attempts,
                     count = error.remainingAttempts,
                     error.remainingAttempts,
                 )
             } else {
-                stringResource(R.string.incorrect_pin)
+                stringResource(R.string.yk_fido_incorrect_pin)
             }
         }
 
         is Error.PinBlockedError -> {
-            stringResource(R.string.pin_blocked)
+            stringResource(R.string.yk_fido_pin_blocked)
         }
 
         is Error.PinAuthBlockedError -> {
-            stringResource(R.string.pin_auth_blocked)
+            stringResource(R.string.yk_fido_pin_auth_blocked)
         }
 
         else -> null
@@ -155,13 +155,13 @@ internal fun EnterPin(
             },
             singleLine = true,
             isError = errorText != null,
-            label = { Text(text = stringResource(R.string.provide_pin)) },
+            label = { Text(text = stringResource(R.string.yk_fido_provide_pin)) },
             leadingIcon = {
                 Icon(
                     imageVector = Icons.Default.Password,
                     contentDescription =
                     stringResource(
-                        R.string.icon_content_description_password,
+                        R.string.yk_fido_icon_content_description_password,
                     ),
                     tint = MaterialTheme.colorScheme.onBackground,
                 )
@@ -206,7 +206,7 @@ internal fun EnterPin(
                 shapes = ButtonDefaults.shapes(),
                 modifier = Modifier.width(IntrinsicSize.Min).testTag("continue_button"),
             ) {
-                Text(text = stringResource(R.string.continue_operation), maxLines = 1)
+                Text(text = stringResource(R.string.yk_fido_continue_operation), maxLines = 1)
             }
         }
     }

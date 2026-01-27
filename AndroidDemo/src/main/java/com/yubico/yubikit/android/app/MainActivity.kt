@@ -137,7 +137,7 @@ class MainActivity : AppCompatActivity() {
                             binding.version.text =
                                 String.format(
                                     Locale.getDefault(),
-                                    getString(R.string.version),
+                                    getString(R.string.yk_provider_service_version_label),
                                     BuildConfig.VERSION_NAME,
                                 )
                         }

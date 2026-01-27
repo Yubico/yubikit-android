@@ -143,7 +143,7 @@ internal class YubiKitProviderService : CredentialProviderService() {
 
                 val label =
                     try {
-                        applicationContext.getString(R.string.get_credential)
+                        applicationContext.getString(R.string.yk_provider_service_get_credential_label)
                     } catch (e: Resources.NotFoundException) {
                         logger.error("Resource not found: get_credential", e)
                         "Credential" // Fallback label

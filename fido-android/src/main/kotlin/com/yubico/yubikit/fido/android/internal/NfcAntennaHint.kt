@@ -125,7 +125,7 @@ internal fun NfcAntennaHint(
                                     scaleY = scale,
                                     alpha = 0.5f,
                                 ),
-                            contentDescription = stringResource(R.string.content_description_nfc_antenna_location),
+                            contentDescription = stringResource(R.string.yk_fido_content_description_nfc_antenna_location),
                             tint = MaterialTheme.colorScheme.primaryContainer,
                         )
                         Icon(
@@ -139,7 +139,7 @@ internal fun NfcAntennaHint(
                                     scaleY = scale,
                                     alpha = 1.0f,
                                 ),
-                            contentDescription = stringResource(R.string.content_description_nfc_antenna_location),
+                            contentDescription = stringResource(R.string.yk_fido_content_description_nfc_antenna_location),
                             tint = Color.White,
                         )
                         Icon(
@@ -153,7 +153,7 @@ internal fun NfcAntennaHint(
                                     scaleY = scale,
                                     alpha = alpha,
                                 ),
-                            contentDescription = stringResource(R.string.content_description_nfc_antenna_location),
+                            contentDescription = stringResource(R.string.yk_fido_content_description_nfc_antenna_location),
                             tint = iconColor,
                         )
                     }

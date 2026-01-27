@@ -81,9 +81,9 @@ internal fun ContentWrapper(
             Text(
                 text =
                 if (operation == FidoClientService.Operation.MAKE_CREDENTIAL) {
-                    stringResource(R.string.create_passkey_for, origin)
+                    stringResource(R.string.yk_fido_create_passkey_for, origin)
                 } else {
-                    stringResource(R.string.login_with_passkey, origin)
+                    stringResource(R.string.yk_fido_login_with_passkey, origin)
                 },
                 style = MaterialTheme.typography.titleSmall,
             )

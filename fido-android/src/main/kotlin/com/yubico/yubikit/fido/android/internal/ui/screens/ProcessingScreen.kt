@@ -45,7 +45,7 @@ internal fun Processing(
     ) {
         LoadingIndicator(modifier = Modifier.size(64.dp, 64.dp))
         Spacer(modifier = Modifier.height(16.dp))
-        Text(text = stringResource(R.string.dont_remove_the_key))
+        Text(text = stringResource(R.string.yk_fido_dont_remove_the_key))
     }
 }
 

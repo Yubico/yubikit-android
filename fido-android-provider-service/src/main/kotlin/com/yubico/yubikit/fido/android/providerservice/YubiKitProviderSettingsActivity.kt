@@ -113,12 +113,12 @@ internal fun SettingsScreen() {
                     Column {
                         Text(
                             text = stringResource(
-                                id = R.string.settings_activity_name,
-                                stringResource(id = R.string.provider_service_label),
+                                id = R.string.yk_provider_service_settings_activity_name,
+                                stringResource(id = R.string.yk_provider_service_label),
                             ),
                         )
                         Text(
-                            text = stringResource(id = R.string.provider_service_settingsSubtitle),
+                            text = stringResource(id = R.string.yk_provider_service_settings_subtitle),
                             style = MaterialTheme.typography.bodySmall,
                         )
                     }
@@ -133,7 +133,7 @@ internal fun SettingsScreen() {
                     .verticalScroll(rememberScrollState()),
             ) {
                 SettingSwitch(
-                    title = stringResource(R.string.assume_pin_exists),
+                    title = stringResource(R.string.yk_provider_service_settings_prioritize_pin),
                     checked = isPinPrioritized,
                     onCheckedChange = {
                         FidoConfigManager.setPrioritizePin(it)
@@ -142,7 +142,7 @@ internal fun SettingsScreen() {
                 )
                 if (YubiKitProviderServiceThemeProvider.get() != null) {
                     SettingSwitch(
-                        title = stringResource(R.string.use_custom_theme),
+                        title = stringResource(R.string.yk_provider_service_settings_use_custom_theme),
                         checked = isCustomThemeEnabled,
                         onCheckedChange = {
                             FidoConfigManager.setUseCustomTheme(it)
@@ -153,7 +153,7 @@ internal fun SettingsScreen() {
                 // Spacer to push version to bottom
                 Spacer(modifier = Modifier.weight(1f))
                 Text(
-                    text = stringResource(R.string.version, versionName),
+                    text = stringResource(R.string.yk_provider_service_version_label, versionName),
                     modifier = Modifier
                         .align(Alignment.CenterHorizontally)
                         .padding(bottom = 16.dp),

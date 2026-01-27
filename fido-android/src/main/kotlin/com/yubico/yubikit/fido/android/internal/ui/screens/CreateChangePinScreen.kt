@@ -127,9 +127,9 @@ private fun CreateChangePinScreen(
     val newPinErrorText: String? =
         when {
             currentPinErrorText != null -> null
-            error is Error.PinComplexityError -> stringResource(R.string.pin_is_not_complex_enough)
+            error is Error.PinComplexityError -> stringResource(R.string.yk_fido_pin_is_not_complex_enough)
             error == null -> null
-            else -> stringResource(R.string.creating_pin_failed)
+            else -> stringResource(R.string.yk_fido_creating_pin_failed)
         }
 
     LaunchedEffect(Unit) {
@@ -151,9 +151,9 @@ private fun CreateChangePinScreen(
             text =
             stringResource(
                 if (forceChangePin) {
-                    R.string.info_force_change_pin
+                    R.string.yk_fido_info_force_change_pin
                 } else {
-                    R.string.info_no_pin_set
+                    R.string.yk_fido_info_no_pin_set
                 },
             ),
             style = MaterialTheme.typography.bodyLarge,
@@ -164,7 +164,7 @@ private fun CreateChangePinScreen(
             PinTextField(
                 value = currentPin,
                 onValueChange = { currentPin = it },
-                label = stringResource(R.string.current_pin),
+                label = stringResource(R.string.yk_fido_current_pin),
                 showPin = showCurrentPin,
                 onToggleShowPin = { showCurrentPin = !showCurrentPin },
                 modifier =
@@ -195,7 +195,7 @@ private fun CreateChangePinScreen(
         PinTextField(
             value = newPin,
             onValueChange = { newPin = it },
-            label = pluralStringResource(R.plurals.new_pin, count = minPinLen, minPinLen),
+            label = pluralStringResource(R.plurals.yk_fido_new_pin, count = minPinLen, minPinLen),
             showPin = showNewPin,
             onToggleShowPin = { showNewPin = !showNewPin },
             modifier =
@@ -215,7 +215,7 @@ private fun CreateChangePinScreen(
         PinTextField(
             value = repeatPin,
             onValueChange = { repeatPin = it },
-            label = stringResource(R.string.repeat_pin),
+            label = stringResource(R.string.yk_fido_repeat_pin),
             showPin = showRepeatPin,
             onToggleShowPin = { showRepeatPin = !showRepeatPin },
             modifier =
@@ -259,7 +259,7 @@ private fun CreateChangePinScreen(
                 onClick = onCloseButtonClick,
                 modifier = Modifier.padding(end = 8.dp),
             ) {
-                Text(stringResource(R.string.cancel))
+                Text(stringResource(R.string.yk_fido_cancel))
             }
             Button(
                 onClick = {
@@ -270,9 +270,9 @@ private fun CreateChangePinScreen(
             ) {
                 Text(
                     if (forceChangePin) {
-                        stringResource(R.string.change_pin)
+                        stringResource(R.string.yk_fido_change_pin)
                     } else {
-                        stringResource(R.string.create_pin)
+                        stringResource(R.string.yk_fido_create_pin)
                     },
                 )
             }
@@ -341,7 +341,7 @@ internal fun PinCreatedScreen(
         onCloseButtonClick = onCloseButtonClick,
     ) {
         Text(
-            text = stringResource(R.string.pin_successfully_created),
+            text = stringResource(R.string.yk_fido_pin_successfully_created),
             style = MaterialTheme.typography.bodyLarge,
             modifier = Modifier.padding(vertical = 24.dp),
         )
@@ -355,7 +355,7 @@ internal fun PinCreatedScreen(
             Button(
                 onClick = onContinue,
             ) {
-                Text(stringResource(R.string.continue_operation))
+                Text(stringResource(R.string.yk_fido_continue_operation))
             }
         }
     }
@@ -375,7 +375,7 @@ internal fun PinChangedScreen(
         onCloseButtonClick = onCloseButtonClick,
     ) {
         Text(
-            text = stringResource(R.string.pin_successfully_changed),
+            text = stringResource(R.string.yk_fido_pin_successfully_changed),
             style = MaterialTheme.typography.bodyLarge,
             modifier = Modifier.padding(vertical = 24.dp),
         )
@@ -389,7 +389,7 @@ internal fun PinChangedScreen(
             Button(
                 onClick = onContinue,
             ) {
-                Text(stringResource(R.string.continue_operation))
+                Text(stringResource(R.string.yk_fido_continue_operation))
             }
         }
     }

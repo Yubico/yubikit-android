@@ -65,7 +65,7 @@ internal fun MultipleAssertionsScreen(
         contentHeight = height,
     ) {
         Text(
-            text = stringResource(R.string.select_passkey, users.size),
+            text = stringResource(R.string.yk_fido_select_passkey, users.size),
             style = MaterialTheme.typography.titleMedium,
         )
         Spacer(modifier = Modifier.height(16.dp))

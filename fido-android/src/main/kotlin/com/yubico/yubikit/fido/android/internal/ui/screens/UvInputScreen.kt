@@ -54,14 +54,14 @@ internal fun MatchFingerprint(
             is Error.IncorrectUvError -> {
                 val attempts = error.remainingAttempts
                 if (attempts > 0) {
-                    pluralStringResource(R.plurals.ctap_err_uv_invalid, count = attempts, attempts)
+                    pluralStringResource(R.plurals.yk_fido_ctap_err_uv_invalid, count = attempts, attempts)
                 } else {
-                    stringResource(R.string.ctap_err_uv_invalid_use_pin)
+                    stringResource(R.string.yk_fido_ctap_err_uv_invalid_use_pin)
                 }
             }
 
-            null -> stringResource(R.string.touch_fingerprint)
-            else -> stringResource(R.string.ctap_err_uv_unknown)
+            null -> stringResource(R.string.yk_fido_touch_fingerprint)
+            else -> stringResource(R.string.yk_fido_ctap_err_uv_unknown)
         }
 
     ContentWrapper(
@@ -79,7 +79,7 @@ internal fun MatchFingerprint(
 
         Icon(
             imageVector = Icons.Filled.Fingerprint,
-            contentDescription = stringResource(R.string.fingerprint_icon),
+            contentDescription = stringResource(R.string.yk_fido_fingerprint_icon),
             modifier = Modifier.size(64.dp),
             tint = MaterialTheme.colorScheme.primary,
         )

@@ -5,7 +5,7 @@
         <activity
             android:name=".internal.YubiKitFidoActivity"
             android:exported="false"
-            android:label="@string/app_name"
+            android:label="@string/yk_fido_app_name"
             android:theme="@style/Theme.FidoAndroid"
             android:configChanges="keyboard|keyboardHidden|orientation|screenSize"/>
     </application>
