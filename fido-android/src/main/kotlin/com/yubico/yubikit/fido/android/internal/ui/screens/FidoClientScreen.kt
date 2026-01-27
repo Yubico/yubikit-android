@@ -170,6 +170,7 @@ internal fun FidoClientUi(
                         origin = origin.callingApp,
                         error = state.error,
                         minPinLen = viewModel.info?.minPinLength ?: DEFAULT_MIN_PIN_LENGTH,
+                        currentPin = viewModel.lastEnteredPin,
                         onCloseButtonClick = handleCloseButton,
                     ) { currentPin, newPin ->
                         viewModel.onChangePin(currentPin, newPin)

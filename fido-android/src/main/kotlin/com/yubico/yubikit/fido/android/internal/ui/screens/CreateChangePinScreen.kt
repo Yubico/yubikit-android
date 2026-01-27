@@ -86,6 +86,7 @@ internal fun ForceChangePinScreen(
     origin: String,
     error: Error? = null,
     minPinLen: Int = DEFAULT_MIN_PIN_LENGTH,
+    currentPin: CharArray? = null,
     onCloseButtonClick: () -> Unit,
     onChangePin: (currentPin: CharArray, newPin: CharArray) -> Unit,
 ) {
@@ -95,9 +96,10 @@ internal fun ForceChangePinScreen(
         error = error,
         minPinLen = minPinLen,
         forceChangePin = true,
+        currentPin = currentPin,
         onCloseButtonClick = onCloseButtonClick,
-    ) { newPin, currentPin ->
-        onChangePin(currentPin, newPin)
+    ) { newPin, enteredCurrentPin ->
+        onChangePin(enteredCurrentPin, newPin)
     }
 }
 
@@ -108,10 +110,11 @@ private fun CreateChangePinScreen(
     error: Error? = null,
     minPinLen: Int = DEFAULT_MIN_PIN_LENGTH,
     forceChangePin: Boolean = false,
+    currentPin: CharArray? = null,
     onCloseButtonClick: () -> Unit,
     onPinAction: (newPin: CharArray, currentPin: CharArray) -> Unit,
 ) {
-    var currentPin by remember { mutableStateOf(TextFieldValue("")) }
+    var currentPinState by remember { mutableStateOf(TextFieldValue(currentPin?.let { String(it) } ?: "")) }
     var newPin by remember { mutableStateOf(TextFieldValue("")) }
     var repeatPin by remember { mutableStateOf(TextFieldValue("")) }
     var showCurrentPin by remember { mutableStateOf(false) }
@@ -133,7 +136,7 @@ private fun CreateChangePinScreen(
         }
 
     LaunchedEffect(Unit) {
-        if (forceChangePin) {
+        if (forceChangePin && currentPin == null) {
             currentPinFocusRequester.requestFocus()
         } else {
             newPinFocusRequester.requestFocus()
@@ -162,8 +165,8 @@ private fun CreateChangePinScreen(
 
         if (forceChangePin) {
             PinTextField(
-                value = currentPin,
-                onValueChange = { currentPin = it },
+                value = currentPinState,
+                onValueChange = { currentPinState = it },
                 label = stringResource(R.string.yk_fido_current_pin),
                 showPin = showCurrentPin,
                 onToggleShowPin = { showCurrentPin = !showCurrentPin },
@@ -233,7 +236,7 @@ private fun CreateChangePinScreen(
             KeyboardActions(
                 onDone = {
                     if (isPinValid(newPin.text, repeatPin.text, minPinLen)) {
-                        onPinAction(newPin.text.toCharArray(), currentPin.text.toCharArray())
+                        onPinAction(newPin.text.toCharArray(), currentPinState.text.toCharArray())
                     }
                 },
             ),
@@ -263,7 +266,7 @@ private fun CreateChangePinScreen(
             }
             Button(
                 onClick = {
-                    onPinAction(newPin.text.toCharArray(), currentPin.text.toCharArray())
+                    onPinAction(newPin.text.toCharArray(), currentPinState.text.toCharArray())
                 },
                 enabled = isPinValid(newPin.text, repeatPin.text, minPinLen),
                 modifier = Modifier.testTag(if (forceChangePin) "change_pin_button" else "create_pin_button"),

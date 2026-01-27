@@ -344,8 +344,6 @@ internal open class MainViewModel(
                             ).also {
                                 newPinValue?.fill('\u0000')
                                 newPinValue = null
-                                pinValue?.fill('\u0000')
-                                pinValue = null
                             }
                     } else {
                         // create pin
@@ -504,6 +502,7 @@ internal open class MainViewModel(
         }
         newPinValue?.fill('\u0000')
         newPinValue = pin.clone()
+        setLastEnteredPin(pin)
         pin.fill('\u0000')
         // we don't setup USB because there is no
         // need for touch. The touch will be required after onPinCreatedConfirmation
@@ -517,6 +516,7 @@ internal open class MainViewModel(
     ) {
         newPinValue?.fill('\u0000')
         newPinValue = newPin.clone()
+        setLastEnteredPin(newPin)
         newPin.fill('\u0000')
         pinValue?.fill('\u0000')
         pinValue = currentPin.clone()
