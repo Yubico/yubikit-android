@@ -56,7 +56,7 @@ class MainViewModelTest {
 
     @Test
     fun `initial state is WaitingForKey when prioritizePin is false`() = runTest {
-        FidoConfigManager.setPrioritizePin(false)
+        FidoConfigManager.setIsPinPrioritized(false)
         val viewModel = MainViewModel()
 
         viewModel.state.test {
@@ -67,7 +67,7 @@ class MainViewModelTest {
 
     @Test
     fun `initial state is WaitingForPinEntry when prioritizePin is true`() = runTest {
-        FidoConfigManager.setPrioritizePin(true)
+        FidoConfigManager.setIsPinPrioritized(true)
         val viewModel = MainViewModel()
 
         viewModel.state.test {

@@ -113,7 +113,7 @@ public object FidoConfigManager {
      *
      * @param value `true` to show PIN entry first, `false` to prompt for key touch first.
      */
-    public fun setPrioritizePin(value: Boolean): Unit =
+    public fun setIsPinPrioritized(value: Boolean): Unit =
         FidoConfigManagerImpl.setPrioritizePin(value)
 
     /**
@@ -139,7 +139,7 @@ public object FidoConfigManager {
      *
      * @param value `true` to use custom theme, `false` to use default theme.
      */
-    public fun setUseCustomTheme(value: Boolean): Unit =
+    public fun setIsCustomThemeEnabled(value: Boolean): Unit =
         FidoConfigManagerImpl.setUseCustomTheme(value)
 
     /**

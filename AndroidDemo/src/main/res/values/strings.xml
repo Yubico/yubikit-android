@@ -96,5 +96,5 @@
     <string name="copyright">Copyright © 2019–2020 Yubico.</string>
     <string name="img_passkey_icon">passkey icon</string>
 
-    <string name="yk_provider_service_label">DemoApp SK Provider</string>
+    <string name="yk_provider_service_settings_label">DemoApp SK Provider</string>
 </resources>

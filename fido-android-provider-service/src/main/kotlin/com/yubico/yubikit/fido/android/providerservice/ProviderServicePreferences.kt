@@ -27,7 +27,7 @@ internal object ProviderServicePreferences {
     private const val KEY_USE_CUSTOM_THEME = "use_custom_theme"
 
     private fun getPrefs(context: Context): SharedPreferences =
-        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
     fun loadConfiguration(context: Context): FidoConfig {
         val prefs = getPrefs(context)
@@ -39,19 +39,19 @@ internal object ProviderServicePreferences {
 
     fun saveConfiguration(context: Context, config: FidoConfig) {
         val prefs = getPrefs(context)
-        prefs.edit {
+        prefs.edit(commit = true) {
             putBoolean(KEY_PRIORITIZE_PIN, config.isPinPrioritized)
             putBoolean(KEY_USE_CUSTOM_THEME, config.isCustomThemeEnabled)
         }
     }
 
-    fun savePrioritizePin(context: Context, value: Boolean) {
+    fun saveIsPinPrioritized(context: Context, value: Boolean) {
         val prefs = getPrefs(context)
-        prefs.edit { putBoolean(KEY_PRIORITIZE_PIN, value) }
+        prefs.edit(commit = true) { putBoolean(KEY_PRIORITIZE_PIN, value) }
     }
 
-    fun saveUseCustomTheme(context: Context, value: Boolean) {
+    fun saveIsCustomThemeEnabled(context: Context, value: Boolean) {
         val prefs = getPrefs(context)
-        prefs.edit { putBoolean(KEY_USE_CUSTOM_THEME, value) }
+        prefs.edit(commit = true) { putBoolean(KEY_USE_CUSTOM_THEME, value) }
     }
 }

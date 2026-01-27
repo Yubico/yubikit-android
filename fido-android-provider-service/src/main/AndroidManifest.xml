@@ -8,13 +8,14 @@
         <activity
             android:name=".YubiKitFido2ProviderActivity"
             android:configChanges="keyboardHidden|keyboard"
-            android:label="@string/yk_provider_service_provider_activity_name"
+            android:label="@string/yk_provider_service_settings_label"
             android:theme="@style/Theme.Transparent" />
 
         <activity
             android:name=".YubiKitProviderSettingsActivity"
             android:label="@string/yk_provider_service_settings_activity_name"
             android:theme="@style/Theme.AppCompat.DayNight.NoActionBar"
+            android:taskAffinity=""
             android:exported="false" />
 
         <service
@@ -22,7 +23,7 @@
             android:enabled="true"
             android:exported="true"
             android:icon="@mipmap/ic_service"
-            android:label="@string/yk_provider_service_label"
+            android:label="@string/yk_provider_service_settings_label"
             android:permission="android.permission.BIND_CREDENTIAL_PROVIDER_SERVICE"
             android:roundIcon="@mipmap/ic_service_round">
             <intent-filter>
