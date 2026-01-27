@@ -39,6 +39,7 @@ import androidx.credentials.provider.CredentialEntry
 import androidx.credentials.provider.CredentialProviderService
 import androidx.credentials.provider.ProviderClearCredentialStateRequest
 import androidx.credentials.provider.PublicKeyCredentialEntry
+import com.yubico.yubikit.fido.android.FidoConfigManager
 import org.json.JSONObject
 import org.slf4j.LoggerFactory
 
@@ -191,7 +192,7 @@ internal class YubiKitProviderService : CredentialProviderService() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         // Load config from preferences and update ClientConfiguration
         ProviderServicePreferences.loadConfiguration(this).also {
-            com.yubico.yubikit.fido.android.config.YubiKitFidoConfigManager.replace(it)
+            FidoConfigManager.replace(it)
         }
         return super.onStartCommand(intent, flags, startId)
     }

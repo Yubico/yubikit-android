@@ -18,9 +18,10 @@ package com.yubico.yubikit.fido.android.ui.screens
 
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
-import com.yubico.yubikit.fido.android.FidoClientService
-import com.yubico.yubikit.fido.android.ui.Error
-import com.yubico.yubikit.fido.android.ui.theme.FidoAndroidTheme
+import com.yubico.yubikit.fido.android.internal.FidoClientService
+import com.yubico.yubikit.fido.android.internal.ui.Error
+import com.yubico.yubikit.fido.android.internal.ui.screens.MatchFingerprint
+import com.yubico.yubikit.fido.android.internal.ui.theme.FidoAndroidTheme
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith

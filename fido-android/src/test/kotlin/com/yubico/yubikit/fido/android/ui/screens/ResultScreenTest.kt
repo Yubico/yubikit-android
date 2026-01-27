@@ -20,9 +20,11 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import com.yubico.yubikit.core.fido.CtapException
-import com.yubico.yubikit.fido.android.FidoClientService
-import com.yubico.yubikit.fido.android.ui.Error
-import com.yubico.yubikit.fido.android.ui.theme.FidoAndroidTheme
+import com.yubico.yubikit.fido.android.internal.FidoClientService
+import com.yubico.yubikit.fido.android.internal.ui.Error
+import com.yubico.yubikit.fido.android.internal.ui.screens.ErrorView
+import com.yubico.yubikit.fido.android.internal.ui.screens.SuccessView
+import com.yubico.yubikit.fido.android.internal.ui.theme.FidoAndroidTheme
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test

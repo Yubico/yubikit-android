@@ -30,9 +30,9 @@ import androidx.credentials.exceptions.GetCredentialCustomException
 import androidx.credentials.provider.CallingAppInfo
 import androidx.credentials.provider.PendingIntentHandler
 import androidx.lifecycle.coroutineScope
+import com.yubico.yubikit.fido.android.FidoClient
+import com.yubico.yubikit.fido.android.FidoConfigManager
 import com.yubico.yubikit.fido.android.Origin
-import com.yubico.yubikit.fido.android.YubiKitFidoClient
-import com.yubico.yubikit.fido.android.config.YubiKitFidoConfigManager
 import com.yubico.yubikit.fido.client.extensions.CredBlobExtension
 import com.yubico.yubikit.fido.client.extensions.CredPropsExtension
 import com.yubico.yubikit.fido.client.extensions.CredProtectExtension
@@ -50,7 +50,7 @@ import kotlin.coroutines.cancellation.CancellationException
 
 internal class YubiKitFido2ProviderActivity : ComponentActivity() {
 
-    private lateinit var yubiKitFidoClient: YubiKitFidoClient
+    private lateinit var fidoClient: FidoClient
 
     private val defaultExtensions: List<Extension> =
         listOf(
@@ -69,11 +69,11 @@ internal class YubiKitFido2ProviderActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         // Load config from preferences and update ClientConfiguration
         ProviderServicePreferences.loadConfiguration(this).also {
-            YubiKitFidoConfigManager.replace(it)
+            FidoConfigManager.replace(it)
         }
         super.onCreate(savedInstanceState)
 
-        yubiKitFidoClient = YubiKitFidoClient(this, extensions = defaultExtensions)
+        fidoClient = FidoClient(this, extensions = defaultExtensions)
 
         Security.removeProvider("BC")
         Security.insertProviderAt(BouncyCastleProvider(), 1)
@@ -96,7 +96,7 @@ internal class YubiKitFido2ProviderActivity : ComponentActivity() {
                         createPublicKeyCredentialRequest.requestJson,
                     ).getOrThrow()
                 val response =
-                    yubiKitFidoClient.makeCredential(
+                    fidoClient.makeCredential(
                         origin,
                         createPublicKeyCredentialRequest.requestJson,
                         createPublicKeyCredentialRequest.clientDataHash?.toHexString(),
@@ -133,7 +133,7 @@ internal class YubiKitFido2ProviderActivity : ComponentActivity() {
                         getPublicKeyCredentialOption.requestJson,
                     ).getOrThrow()
                 val response =
-                    yubiKitFidoClient.getAssertion(
+                    fidoClient.getAssertion(
                         origin,
                         getPublicKeyCredentialOption.requestJson,
                         getPublicKeyCredentialOption.clientDataHash?.toHexString(),

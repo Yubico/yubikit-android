@@ -19,7 +19,7 @@ package com.yubico.yubikit.fido.android.providerservice
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.core.content.edit
-import com.yubico.yubikit.fido.android.config.YubiKitFidoConfig
+import com.yubico.yubikit.fido.android.FidoConfig
 
 internal object ProviderServicePreferences {
     private const val PREFS_NAME = "fido_provider_service_prefs"
@@ -28,14 +28,14 @@ internal object ProviderServicePreferences {
     private fun getPrefs(context: Context): SharedPreferences =
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
-    fun loadConfiguration(context: Context): YubiKitFidoConfig {
+    fun loadConfiguration(context: Context): FidoConfig {
         val prefs = getPrefs(context)
-        return YubiKitFidoConfig(
+        return FidoConfig(
             prioritizePin = prefs.getBoolean(KEY_PRIORITIZE_PIN, false),
         )
     }
 
-    fun saveConfiguration(context: Context, config: YubiKitFidoConfig) {
+    fun saveConfiguration(context: Context, config: FidoConfig) {
         val prefs = getPrefs(context)
         prefs.edit {
             putBoolean(KEY_PRIORITIZE_PIN, config.prioritizePin)

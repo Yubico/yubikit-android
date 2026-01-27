@@ -3,7 +3,7 @@
 
     <application>
         <activity
-            android:name=".YubiKitFidoActivity"
+            android:name=".internal.YubiKitFidoActivity"
             android:exported="false"
             android:label="@string/app_name"
             android:theme="@style/Theme.FidoAndroid"

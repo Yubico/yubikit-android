@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2026 Yubico.
+ * Copyright (C) 2025-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,21 +14,14 @@
  * limitations under the License.
  */
 
-package com.yubico.yubikit.fido.android
+package com.yubico.yubikit.fido.android.internal.ui.theme
 
-/**
- * Represents the origin of a FIDO authentication request.
- *
- * @property callingApp The origin provided by the calling application.
- * @property resolved The resolved origin. Can be different from callingApp
- */
-public data class Origin(
-    val callingApp: String,
-    val resolved: String = callingApp,
-) {
-    /**
-     * Returns the effective domain of the origin.
-     */
-    val effectiveDomain: String
-        get() = resolved.removePrefix("https://")
-}
+import androidx.compose.ui.graphics.Color
+
+internal val Purple80 = Color(0xFFD0BCFF)
+internal val PurpleGrey80 = Color(0xFFCCC2DC)
+internal val Pink80 = Color(0xFFEFB8C8)
+
+internal val Purple40 = Color(0xFF6650a4)
+internal val PurpleGrey40 = Color(0xFF625b71)
+internal val Pink40 = Color(0xFF7D5260)

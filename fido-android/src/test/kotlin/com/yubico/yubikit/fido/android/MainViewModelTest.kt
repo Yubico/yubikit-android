@@ -17,9 +17,8 @@
 package com.yubico.yubikit.fido.android
 
 import app.cash.turbine.test
-import com.yubico.yubikit.fido.android.config.YubiKitFidoConfig
-import com.yubico.yubikit.fido.android.config.YubiKitFidoConfigManager
-import com.yubico.yubikit.fido.android.ui.State
+import com.yubico.yubikit.fido.android.internal.MainViewModel
+import com.yubico.yubikit.fido.android.internal.ui.State
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -46,7 +45,7 @@ class MainViewModelTest {
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
-        YubiKitFidoConfigManager.replace(YubiKitFidoConfig())
+        FidoConfigManager.replace(FidoConfig())
         viewModel = MainViewModel(testDispatcher)
     }
 
@@ -57,7 +56,7 @@ class MainViewModelTest {
 
     @Test
     fun `initial state is WaitingForKey when prioritizePin is false`() = runTest {
-        YubiKitFidoConfigManager.setPrioritizePin(false)
+        FidoConfigManager.setPrioritizePin(false)
         val viewModel = MainViewModel()
 
         viewModel.state.test {
@@ -68,7 +67,7 @@ class MainViewModelTest {
 
     @Test
     fun `initial state is WaitingForPinEntry when prioritizePin is true`() = runTest {
-        YubiKitFidoConfigManager.setPrioritizePin(true)
+        FidoConfigManager.setPrioritizePin(true)
         val viewModel = MainViewModel()
 
         viewModel.state.test {

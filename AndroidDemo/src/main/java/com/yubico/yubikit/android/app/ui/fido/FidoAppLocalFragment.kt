@@ -24,8 +24,8 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.yubico.yubikit.android.app.databinding.FragmentFidoAppLocalBinding
 import com.yubico.yubikit.core.internal.codec.Base64
+import com.yubico.yubikit.fido.android.FidoClient
 import com.yubico.yubikit.fido.android.Origin
-import com.yubico.yubikit.fido.android.YubiKitFidoClient
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import org.slf4j.LoggerFactory
@@ -35,14 +35,14 @@ class FidoAppLocalFragment : Fragment() {
     private val logger = LoggerFactory.getLogger(FidoAppLocalFragment::class.java)
     private var _binding: FragmentFidoAppLocalBinding? = null
     val binding get() = _binding!!
-    private lateinit var yubiKitFidoClient: YubiKitFidoClient
+    private lateinit var fidoClient: FidoClient
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?,
     ): View? {
-        yubiKitFidoClient = YubiKitFidoClient(this)
+        fidoClient = FidoClient(this)
         _binding = FragmentFidoAppLocalBinding.inflate(inflater, container, false)
         return binding.root
     }
@@ -89,7 +89,7 @@ class FidoAppLocalFragment : Fragment() {
                 val request = buildMcRequest("App test user")
                 logger.debug("Make credential request: {}", request)
 
-                yubiKitFidoClient.makeCredential(Origin(ORIGIN), request, null)
+                fidoClient.makeCredential(Origin(ORIGIN), request, null)
                     .onSuccess { logger.debug("Successful MC: {}", it) }
                     .onFailure { logger.error("Error during MC: ", it) }
             }
@@ -100,7 +100,7 @@ class FidoAppLocalFragment : Fragment() {
                 val request = buildGaRequest()
                 logger.debug("Get assertions request: {}", request)
 
-                yubiKitFidoClient.getAssertion(Origin(ORIGIN), request, null)
+                fidoClient.getAssertion(Origin(ORIGIN), request, null)
                     .onSuccess { logger.debug("Successful GA: {}", it) }
                     .onFailure { logger.error("Error during GA:", it) }
             }

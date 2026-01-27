@@ -26,8 +26,8 @@ import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.webkit.WebViewFeature
 import com.yubico.yubikit.android.app.databinding.FragmentFidoBinding
-import com.yubico.yubikit.fido.android.YubiKitFidoClient
-import com.yubico.yubikit.fido.android.withYubiKitWebauthn
+import com.yubico.yubikit.fido.android.FidoClient
+import com.yubico.yubikit.fido.android.enableFidoWebauthn
 import com.yubico.yubikit.fido.client.extensions.CredBlobExtension
 import com.yubico.yubikit.fido.client.extensions.CredPropsExtension
 import com.yubico.yubikit.fido.client.extensions.CredProtectExtension
@@ -42,7 +42,7 @@ class FidoFragment : Fragment() {
     private var _binding: FragmentFidoBinding? = null
     val binding get() = _binding!!
     private val logger = LoggerFactory.getLogger(FidoFragment::class.java)
-    private lateinit var yubiKitFidoClient: YubiKitFidoClient
+    private lateinit var fidoClient: FidoClient
 
     companion object {
         private val EXTENSIONS =
@@ -67,7 +67,7 @@ class FidoFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?,
     ): View {
-        yubiKitFidoClient = YubiKitFidoClient(this, EXTENSIONS)
+        fidoClient = FidoClient(this, EXTENSIONS)
         _binding = FragmentFidoBinding.inflate(inflater, container, false)
         return binding.root
     }
@@ -103,7 +103,7 @@ class FidoFragment : Fragment() {
     private fun setupWebView() {
         binding.webView.settings.domStorageEnabled = true
         if (WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)) {
-            binding.webView.withYubiKitWebauthn(lifecycleScope, yubiKitFidoClient)
+            binding.webView.enableFidoWebauthn(lifecycleScope, fidoClient)
         } else {
             logger.warn("Web Message Listener feature is not supported on this device.")
         }

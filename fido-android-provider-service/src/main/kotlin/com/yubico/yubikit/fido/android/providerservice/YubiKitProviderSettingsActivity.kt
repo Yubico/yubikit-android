@@ -48,7 +48,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
-import com.yubico.yubikit.fido.android.config.YubiKitFidoConfigManager
+import com.yubico.yubikit.fido.android.FidoConfigManager
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
@@ -57,7 +57,7 @@ internal class YubiKitProviderSettingsActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         // Load config from preferences and update ClientConfiguration
         val config = ProviderServicePreferences.loadConfiguration(this)
-        YubiKitFidoConfigManager.replace(config)
+        FidoConfigManager.replace(config)
         setContent {
             YubiKitProviderServiceTheme {
                 SettingsScreen()
@@ -98,7 +98,7 @@ internal fun SettingsScreen() {
 
     LaunchedEffect(Unit) {
         (context as? androidx.lifecycle.LifecycleOwner)?.lifecycleScope?.launch {
-            YubiKitFidoConfigManager.configuration.collectLatest {
+            FidoConfigManager.configuration.collectLatest {
                 prioritizePin = it.prioritizePin
             }
         }
@@ -134,7 +134,7 @@ internal fun SettingsScreen() {
                     title = stringResource(R.string.assume_pin_exists),
                     checked = prioritizePin,
                     onCheckedChange = {
-                        YubiKitFidoConfigManager.setPrioritizePin(it)
+                        FidoConfigManager.setPrioritizePin(it)
                         ProviderServicePreferences.savePrioritizePin(context, it)
                     },
                 )
