@@ -16,6 +16,7 @@
 
 package com.yubico.yubikit.fido.android.providerservice
 
+import com.yubico.yubikit.fido.android.providerservice.internal.util.validateOrigin
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.yubico.yubikit.fido.android.providerservice
+package com.yubico.yubikit.fido.android.providerservice.internal.util
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext

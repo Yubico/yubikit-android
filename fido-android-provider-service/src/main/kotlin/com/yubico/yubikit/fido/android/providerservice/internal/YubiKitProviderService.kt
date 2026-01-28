@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025-2026 Yubico.
+ * Copyright (C) 2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.yubico.yubikit.fido.android.providerservice
+package com.yubico.yubikit.fido.android.providerservice.internal
 
 import android.app.PendingIntent
 import android.content.Intent
@@ -40,6 +40,7 @@ import androidx.credentials.provider.CredentialProviderService
 import androidx.credentials.provider.ProviderClearCredentialStateRequest
 import androidx.credentials.provider.PublicKeyCredentialEntry
 import com.yubico.yubikit.fido.android.FidoConfigManager
+import com.yubico.yubikit.fido.android.providerservice.R
 import org.json.JSONObject
 import org.slf4j.LoggerFactory
 
@@ -85,7 +86,7 @@ internal class YubiKitProviderService : CredentialProviderService() {
             PendingIntent.getActivity(
                 applicationContext,
                 REQUEST_CODE,
-                Intent(applicationContext, YubiKitFido2ProviderActivity::class.java),
+                Intent(applicationContext, YubiKitProviderServiceActivity::class.java),
                 PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
             )
 
@@ -129,7 +130,7 @@ internal class YubiKitProviderService : CredentialProviderService() {
                     PendingIntent.getActivity(
                         applicationContext,
                         REQUEST_CODE,
-                        Intent(applicationContext, YubiKitFido2ProviderActivity::class.java),
+                        Intent(applicationContext, YubiKitProviderServiceActivity::class.java),
                         PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
                     )
 
@@ -191,7 +192,7 @@ internal class YubiKitProviderService : CredentialProviderService() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         // Load config from preferences and update ClientConfiguration
-        ProviderServicePreferences.loadConfiguration(this).also {
+        YubiKitProviderServicePreferences.loadConfiguration(this).also {
             FidoConfigManager.replace(it)
         }
         return super.onStartCommand(intent, flags, startId)

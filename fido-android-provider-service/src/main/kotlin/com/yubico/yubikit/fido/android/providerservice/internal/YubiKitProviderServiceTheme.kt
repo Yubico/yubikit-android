@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.yubico.yubikit.fido.android.providerservice
+package com.yubico.yubikit.fido.android.providerservice.internal
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi

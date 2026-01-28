@@ -1,3 +1,3 @@
--keep class com.yubico.yubikit.fido.android.providerservice.YubiKitFido2ProviderActivity { *; }
--keep class com.yubico.yubikit.fido.android.providerservice.YubiKitProviderSettingsActivity { *; }
--keep class com.yubico.yubikit.fido.android.providerservice.YubiKitProviderService { *; }
+-keep class com.yubico.yubikit.fido.android.providerservice.internal.YubiKitProviderServiceActivity { *; }
+-keep class com.yubico.yubikit.fido.android.providerservice.internal.YubiKitProviderSettingsActivity { *; }
+-keep class com.yubico.yubikit.fido.android.providerservice.internal.YubiKitProviderService { *; }

@@ -1,5 +1,22 @@
-package com.yubico.yubikit.fido.android.providerservice
+/*
+ * Copyright (C) 2026 Yubico.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
+package com.yubico.yubikit.fido.android.providerservice.internal
+
+import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -49,8 +66,11 @@ import androidx.compose.ui.semantics.toggleableState
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import com.yubico.yubikit.fido.android.FidoConfigManager
+import com.yubico.yubikit.fido.android.providerservice.R
+import com.yubico.yubikit.fido.android.providerservice.YubiKitProviderServiceThemeProvider
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
@@ -59,7 +79,7 @@ internal class YubiKitProviderSettingsActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        ProviderServicePreferences.loadConfiguration(this).also {
+        YubiKitProviderServicePreferences.loadConfiguration(this).also {
             FidoConfigManager.replace(it)
         }
 
@@ -85,7 +105,7 @@ private fun SettingsScreen(onNavigateBack: () -> Unit) {
     val versionName = try {
         val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
         packageInfo.versionName ?: ""
-    } catch (_: android.content.pm.PackageManager.NameNotFoundException) {
+    } catch (_: PackageManager.NameNotFoundException) {
         ""
     }
 
@@ -93,7 +113,7 @@ private fun SettingsScreen(onNavigateBack: () -> Unit) {
     val bottomCorner = if (hasCustomTheme) 4.dp else 28.dp
 
     LaunchedEffect(Unit) {
-        (context as? androidx.lifecycle.LifecycleOwner)?.lifecycleScope?.launch {
+        (context as? LifecycleOwner)?.lifecycleScope?.launch {
             FidoConfigManager.configuration.collectLatest {
                 isPinPrioritized = it.isPinPrioritized
                 isCustomThemeEnabled = it.isCustomThemeEnabled
@@ -189,7 +209,7 @@ private fun SettingsScreen(onNavigateBack: () -> Unit) {
                     checked = isPinPrioritized,
                     onCheckedChange = {
                         FidoConfigManager.setIsPinPrioritized(it)
-                        ProviderServicePreferences.saveIsPinPrioritized(context, it)
+                        YubiKitProviderServicePreferences.saveIsPinPrioritized(context, it)
                     },
                 )
             }
@@ -213,7 +233,7 @@ private fun SettingsScreen(onNavigateBack: () -> Unit) {
                         checked = isCustomThemeEnabled,
                         onCheckedChange = {
                             FidoConfigManager.setIsCustomThemeEnabled(it)
-                            ProviderServicePreferences.saveIsCustomThemeEnabled(context, it)
+                            YubiKitProviderServicePreferences.saveIsCustomThemeEnabled(context, it)
                         },
                     )
                 }

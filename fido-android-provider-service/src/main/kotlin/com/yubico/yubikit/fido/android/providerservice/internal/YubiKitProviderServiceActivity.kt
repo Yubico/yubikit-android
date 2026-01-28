@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025-2026 Yubico.
+ * Copyright (C) 2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.yubico.yubikit.fido.android.providerservice
+package com.yubico.yubikit.fido.android.providerservice.internal
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -33,6 +33,8 @@ import androidx.lifecycle.coroutineScope
 import com.yubico.yubikit.fido.android.FidoClient
 import com.yubico.yubikit.fido.android.FidoConfigManager
 import com.yubico.yubikit.fido.android.Origin
+import com.yubico.yubikit.fido.android.providerservice.YubiKitProviderServiceThemeProvider
+import com.yubico.yubikit.fido.android.providerservice.internal.util.validateOrigin
 import com.yubico.yubikit.fido.client.extensions.CredBlobExtension
 import com.yubico.yubikit.fido.client.extensions.CredPropsExtension
 import com.yubico.yubikit.fido.client.extensions.CredProtectExtension
@@ -48,7 +50,7 @@ import org.slf4j.LoggerFactory
 import java.security.Security
 import kotlin.coroutines.cancellation.CancellationException
 
-internal class YubiKitFido2ProviderActivity : ComponentActivity() {
+internal class YubiKitProviderServiceActivity : ComponentActivity() {
 
     private lateinit var fidoClient: FidoClient
 
@@ -64,11 +66,11 @@ internal class YubiKitFido2ProviderActivity : ComponentActivity() {
             SignExtension(),
         )
 
-    private val logger = LoggerFactory.getLogger(YubiKitFido2ProviderActivity::class.java)
+    private val logger = LoggerFactory.getLogger(YubiKitProviderServiceActivity::class.java)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // Load config from preferences and update ClientConfiguration
-        ProviderServicePreferences.loadConfiguration(this).also {
+        YubiKitProviderServicePreferences.loadConfiguration(this).also {
             FidoConfigManager.replace(it)
         }
         super.onCreate(savedInstanceState)
@@ -118,6 +120,9 @@ internal class YubiKitFido2ProviderActivity : ComponentActivity() {
                     CreateCredentialCancellationException(),
                 )
             },
+            onError = {
+                reportCreateCredentialError(it)
+            }
         )
         return true
     }
@@ -156,6 +161,9 @@ internal class YubiKitFido2ProviderActivity : ComponentActivity() {
                     GetCredentialCancellationException(),
                 )
             },
+            onError = {
+                reportGetCredentialError(it)
+            }
         )
         return true
     }
@@ -163,18 +171,21 @@ internal class YubiKitFido2ProviderActivity : ComponentActivity() {
     private fun launchCredentialFlow(
         action: suspend () -> Unit,
         onCancel: () -> Unit,
+        onError: (error: Throwable) -> Unit
     ) = lifecycle.coroutineScope.launch {
         try {
             action()
         } catch (_: CancellationException) {
             onCancel()
+        } catch (exception: Throwable) {
+            onError(exception)
         } finally {
             setResult(RESULT_OK, intent)
             finish()
         }
     }
 
-    private fun reportCreateCredentialError(error: Throwable): Boolean {
+    private fun reportCreateCredentialError(error: Throwable) {
         logger.error("CreateCredential failed: ", error)
         PendingIntentHandler.setCreateCredentialException(
             intent,
@@ -183,12 +194,9 @@ internal class YubiKitFido2ProviderActivity : ComponentActivity() {
                 "CreateCredential failed: ${error::class.simpleName}: ${error.message ?: "Unknown error"}",
             ),
         )
-        setResult(RESULT_OK, intent)
-        finish()
-        return false
     }
 
-    private fun reportGetCredentialError(error: Throwable): Boolean {
+    private fun reportGetCredentialError(error: Throwable) {
         logger.error("GetCredential failed: ", error)
         PendingIntentHandler.setGetCredentialException(
             intent,
@@ -197,9 +205,6 @@ internal class YubiKitFido2ProviderActivity : ComponentActivity() {
                 "GetCredential failed: ${error::class.simpleName}: ${error.message ?: "Unknown error"}",
             ),
         )
-        setResult(RESULT_OK, intent)
-        finish()
-        return false
     }
 
     private suspend fun extractOrigin(

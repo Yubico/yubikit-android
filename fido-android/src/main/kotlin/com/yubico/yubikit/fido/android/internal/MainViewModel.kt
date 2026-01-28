@@ -261,13 +261,6 @@ internal open class MainViewModel(
         clientDataHash: ByteArray?,
         onResult: (PublicKeyCredential) -> Unit,
     ) {
-        logger.trace(
-            "Start operation: {} on {}. Request: {}",
-            operation.name,
-            origin,
-            request,
-        )
-
         // Save parameters for retry
         lastFidoClientService = fidoClientService
         lastOperation = operation

@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package com.yubico.yubikit.fido.android.providerservice
+package com.yubico.yubikit.fido.android.providerservice.internal
 
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.core.content.edit
 import com.yubico.yubikit.fido.android.FidoConfig
 
-internal object ProviderServicePreferences {
+internal object YubiKitProviderServicePreferences {
     private const val PREFS_NAME = "fido_provider_service_prefs"
     private const val KEY_PRIORITIZE_PIN = "prioritize_pin"
     private const val KEY_USE_CUSTOM_THEME = "use_custom_theme"

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.yubico.yubikit.fido.android.providerservice
+package com.yubico.yubikit.fido.android.providerservice.internal
 
 /**
  * Google Password Manager allowlist from https://www.gstatic.com/gpm-passkeys-privileged-apps/apps.json

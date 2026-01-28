@@ -6,20 +6,20 @@
     <application android:supportsRtl="true">
 
         <activity
-            android:name=".YubiKitFido2ProviderActivity"
+            android:name=".internal.YubiKitProviderServiceActivity"
             android:configChanges="keyboardHidden|keyboard"
             android:label="@string/yk_provider_service_settings_label"
             android:theme="@style/Theme.Transparent" />
 
         <activity
-            android:name=".YubiKitProviderSettingsActivity"
+            android:name=".internal.YubiKitProviderSettingsActivity"
             android:label="@string/yk_provider_service_settings_activity_name"
             android:theme="@style/Theme.AppCompat.DayNight.NoActionBar"
             android:taskAffinity=""
             android:exported="false" />
 
         <service
-            android:name=".YubiKitProviderService"
+            android:name=".internal.YubiKitProviderService"
             android:enabled="true"
             android:exported="true"
             android:icon="@mipmap/ic_service"

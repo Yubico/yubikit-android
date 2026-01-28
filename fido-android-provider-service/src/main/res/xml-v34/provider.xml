@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <credential-provider xmlns:android="http://schemas.android.com/apk/res/android"
-    android:settingsActivity="com.yubico.yubikit.fido.android.providerservice.YubiKitProviderSettingsActivity"
+    android:settingsActivity="com.yubico.yubikit.fido.android.providerservice.internal.YubiKitProviderSettingsActivity"
     android:settingsSubtitle="@string/yk_provider_service_settings_subtitle">
     <capabilities>
         <capability name="androidx.credentials.TYPE_PUBLIC_KEY_CREDENTIAL" />
