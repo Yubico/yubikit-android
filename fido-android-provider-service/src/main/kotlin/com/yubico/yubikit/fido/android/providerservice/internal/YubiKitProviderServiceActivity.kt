@@ -122,7 +122,7 @@ internal class YubiKitProviderServiceActivity : ComponentActivity() {
             },
             onError = {
                 reportCreateCredentialError(it)
-            }
+            },
         )
         return true
     }
@@ -163,7 +163,7 @@ internal class YubiKitProviderServiceActivity : ComponentActivity() {
             },
             onError = {
                 reportGetCredentialError(it)
-            }
+            },
         )
         return true
     }
@@ -171,7 +171,7 @@ internal class YubiKitProviderServiceActivity : ComponentActivity() {
     private fun launchCredentialFlow(
         action: suspend () -> Unit,
         onCancel: () -> Unit,
-        onError: (error: Throwable) -> Unit
+        onError: (error: Throwable) -> Unit,
     ) = lifecycle.coroutineScope.launch {
         try {
             action()
