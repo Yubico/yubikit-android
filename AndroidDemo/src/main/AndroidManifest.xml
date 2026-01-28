@@ -1,12 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <uses-sdk
+        tools:overrideLibrary="com.yubico.yubikit.fido.android.providerservice, com.yubico.yubikit.fido.android,androidx.credentials,androidx.compose.material3,androidx.navigationevent.compose,androidx.navigationevent,androidx.activity,androidx.activity.ktx,androidx.activity.compose" />
 
     <application
         android:name="androidx.multidex.MultiDexApplication"
         android:allowBackup="true"
-        android:label="@string/app_name"
+        android:label="@string/yk_fido_app_name"
         android:supportsRtl="true"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"

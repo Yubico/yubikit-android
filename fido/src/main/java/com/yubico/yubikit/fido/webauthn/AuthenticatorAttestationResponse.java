@@ -91,6 +91,10 @@ public class AuthenticatorAttestationResponse extends AuthenticatorResponse {
       logger.info(
           "Platform does not support binary serialization of the given key"
               + " type, the 'publicKey' field will be null.");
+    } catch (IllegalArgumentException exception) {
+      // we currently do not support this public key format
+      logger.info(
+          "Platform does not support the public key type, the 'publicKey' field will be null.");
     }
     this.publicKey = resultPublicKey;
   }
@@ -121,7 +125,9 @@ public class AuthenticatorAttestationResponse extends AuthenticatorResponse {
   @Override
   public Map<String, ?> toMap(SerializationType serializationType) {
     Map<String, Object> map = new HashMap<>();
-    map.put(CLIENT_DATA_JSON, serializeBytes(getClientDataJson(), serializationType));
+    if (getClientDataJson().length > 0) {
+      map.put(CLIENT_DATA_JSON, serializeBytes(getClientDataJson(), serializationType));
+    }
     map.put(AUTHENTICATOR_DATA, serializeBytes(authenticatorData.getBytes(), serializationType));
     map.put(TRANSPORTS, transports);
     if (publicKey != null) {
