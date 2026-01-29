@@ -71,7 +71,7 @@ dependencies {
     implementation(project(":yubiotp"))
     implementation(project(":oath"))
     implementation(project(":piv"))
-    implementation(project(":fido-android"))
+    implementation(project(":fido-android-ui"))
     implementation(project(":support"))
 
     coreLibraryDesugaring(libs.desugar.jdk.libs)
