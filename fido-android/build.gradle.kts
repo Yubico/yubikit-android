@@ -140,15 +140,13 @@ dependencies {
     implementation(project(":android"))
     api(project(":fido"))
 
-
     implementation(libs.androidx.fragment.ktx)
     implementation(libs.androidx.webkit)
 
-    val composeBom = platform("androidx.compose:compose-bom:2025.09.01")
+    val composeBom = platform(libs.androidx.compose.bom)
     implementation(composeBom)
     androidTestImplementation(composeBom)
     testImplementation(composeBom)
-
 
     implementation(libs.kotlin.stdlib.jdk8)
     implementation(libs.androidx.material3)
@@ -189,7 +187,6 @@ dependencies {
     // Instrumented test dependencies
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.test.rules)
-
 }
 
 description = "This module provides user interface for YubiKit FIDO module."
