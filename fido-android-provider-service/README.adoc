@@ -1,2 +1,0 @@
-== YubiKit Android Provider Service Module
-This module implements CredentialProviderService
