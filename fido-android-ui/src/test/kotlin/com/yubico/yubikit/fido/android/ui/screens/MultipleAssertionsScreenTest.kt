@@ -19,9 +19,9 @@ package com.yubico.yubikit.fido.android.ui.screens
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
-import com.yubico.yubikit.fido.android.internal.FidoClientService
-import com.yubico.yubikit.fido.android.internal.ui.screens.MultipleAssertionsScreen
-import com.yubico.yubikit.fido.android.internal.ui.theme.FidoAndroidTheme
+import com.yubico.yubikit.fido.android.ui.internal.FidoClientService
+import com.yubico.yubikit.fido.android.ui.internal.ui.screens.MultipleAssertionsScreen
+import com.yubico.yubikit.fido.android.ui.internal.ui.theme.FidoAndroidTheme
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialUserEntity
 import org.junit.Assert.assertEquals
 import org.junit.Rule

@@ -26,8 +26,8 @@ import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.webkit.WebViewFeature
 import com.yubico.yubikit.android.app.databinding.FragmentFidoBinding
-import com.yubico.yubikit.fido.android.FidoClient
-import com.yubico.yubikit.fido.android.enableFidoWebauthn
+import com.yubico.yubikit.fido.android.ui.FidoClient
+import com.yubico.yubikit.fido.android.ui.enableFidoWebauthn
 import com.yubico.yubikit.fido.client.extensions.CredBlobExtension
 import com.yubico.yubikit.fido.client.extensions.CredPropsExtension
 import com.yubico.yubikit.fido.client.extensions.CredProtectExtension

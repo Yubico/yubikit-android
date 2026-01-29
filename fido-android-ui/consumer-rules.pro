@@ -1,4 +1,4 @@
--keep public class com.yubico.yubikit.fido.android.FidoWebViewSupportKt { *; }
--keep public class com.yubico.yubikit.fido.android.Origin { *; }
--keep public class com.yubico.yubikit.fido.android.FidoConfigManager { *; }
--keep public class com.yubico.yubikit.fido.android.FidoConfig { *; }
+-keep public class com.yubico.yubikit.fido.android.ui.FidoWebViewSupportKt { *; }
+-keep public class com.yubico.yubikit.fido.android.ui.Origin { *; }
+-keep public class com.yubico.yubikit.fido.android.ui.FidoConfigManager { *; }
+-keep public class com.yubico.yubikit.fido.android.ui.FidoConfig { *; }

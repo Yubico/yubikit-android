@@ -18,9 +18,9 @@ package com.yubico.yubikit.fido.android.ui.screens
 
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
-import com.yubico.yubikit.fido.android.internal.FidoClientService
-import com.yubico.yubikit.fido.android.internal.ui.screens.TapOrInsertSecurityKey
-import com.yubico.yubikit.fido.android.internal.ui.theme.FidoAndroidTheme
+import com.yubico.yubikit.fido.android.ui.internal.FidoClientService
+import com.yubico.yubikit.fido.android.ui.internal.ui.screens.TapOrInsertSecurityKey
+import com.yubico.yubikit.fido.android.ui.internal.ui.theme.FidoAndroidTheme
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith

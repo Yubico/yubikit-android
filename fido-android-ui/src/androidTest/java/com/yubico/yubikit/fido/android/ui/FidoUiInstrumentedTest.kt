@@ -21,11 +21,11 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.yubico.yubikit.fido.android.internal.FidoClientService
-import com.yubico.yubikit.fido.android.internal.ui.Error
-import com.yubico.yubikit.fido.android.internal.ui.screens.EnterPin
-import com.yubico.yubikit.fido.android.internal.ui.screens.TapOrInsertSecurityKey
-import com.yubico.yubikit.fido.android.internal.ui.theme.FidoAndroidTheme
+import com.yubico.yubikit.fido.android.ui.internal.FidoClientService
+import com.yubico.yubikit.fido.android.ui.internal.ui.Error
+import com.yubico.yubikit.fido.android.ui.internal.ui.screens.EnterPin
+import com.yubico.yubikit.fido.android.ui.internal.ui.screens.TapOrInsertSecurityKey
+import com.yubico.yubikit.fido.android.ui.internal.ui.theme.FidoAndroidTheme
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith

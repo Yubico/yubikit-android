@@ -24,8 +24,8 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.yubico.yubikit.android.app.databinding.FragmentFidoAppLocalBinding
 import com.yubico.yubikit.core.internal.codec.Base64
-import com.yubico.yubikit.fido.android.FidoClient
-import com.yubico.yubikit.fido.android.Origin
+import com.yubico.yubikit.fido.android.ui.FidoClient
+import com.yubico.yubikit.fido.android.ui.Origin
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import org.slf4j.LoggerFactory

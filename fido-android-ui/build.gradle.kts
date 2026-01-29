@@ -29,7 +29,7 @@ plugins {
 ext.set("customPom", true)
 
 android {
-    namespace = "com.yubico.yubikit.fido.android"
+    namespace = "com.yubico.yubikit.fido.android.ui"
     compileSdk = 36
 
     defaultConfig {
