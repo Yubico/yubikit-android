@@ -31,8 +31,8 @@ public class CompressionUtilsTest {
           "1f8b08000000000000008b2c4dcaf4ce2c5148cb2f5270cc4b29cacf4c5128492d2e5148492c49040003f7e"
               + "f7d1d000000");
 
-  // Net iD zlib format test data (same string as gzipTestData)
-  private static final byte[] netIdZlibTestData =
+  // Zlib with custom header format test data (same string as gzipTestData)
+  private static final byte[] zlibTestData =
       Codec.fromHex(
           "01001d00789c8b2c4dcaf4ce2c5148cb2f5270cc4b29cacf4c5128492d2e5148492c4904009f2e0aa4");
 
@@ -43,8 +43,8 @@ public class CompressionUtilsTest {
   }
 
   @Test
-  public void decompressCertificateNetIdZlib() throws Throwable {
-    String s = new String(decompressCertificate(netIdZlibTestData), StandardCharsets.ISO_8859_1);
+  public void decompressCertificateZlib() throws Throwable {
+    String s = new String(decompressCertificate(zlibTestData), StandardCharsets.ISO_8859_1);
     Assert.assertEquals("YubiKit for Android test data", s);
   }
 

@@ -33,8 +33,8 @@ public class ZlibUtilsTest {
   private static final Logger logger = LoggerFactory.getLogger(ZlibUtilsTest.class);
 
   /**
-   * Net iD zlib format: 0x01, 0x00, length (little-endian), zlib-compressed "YubiKit for Android
-   * test data"
+   * Zlib format with custom header: 0x01, 0x00, length (little-endian), zlib-compressed "YubiKit
+   * for Android test data"
    *
    * <p>Generated with:
    *
@@ -45,7 +45,7 @@ public class ZlibUtilsTest {
    * print((b'\x01\x00' + len(d).to_bytes(2,'little') + c).hex())
    * </pre>
    */
-  private static final byte[] netIdZlibTestData =
+  private static final byte[] zlibTestData =
       Codec.fromHex(
           "01001d00789c8b2c4dcaf4ce2c5148cb2f5270cc4b29cacf4c5128492d2e5148492c4904009f2e0aa4");
 
@@ -75,7 +75,7 @@ public class ZlibUtilsTest {
 
   @Test(expected = IOException.class)
   public void decompressLengthMismatch() throws Throwable {
-    byte[] compressed = netIdZlibTestData.clone();
+    byte[] compressed = zlibTestData.clone();
     // Modify the expected length in the header to be wrong
     compressed[2] = (byte) 0xFF;
     compressed[3] = (byte) 0x03;
@@ -89,8 +89,8 @@ public class ZlibUtilsTest {
   }
 
   @Test
-  public void decompressNetIdZlibData() throws Throwable {
-    String s = new String(decompress(netIdZlibTestData), StandardCharsets.ISO_8859_1);
+  public void decompressZlibData() throws Throwable {
+    String s = new String(decompress(zlibTestData), StandardCharsets.ISO_8859_1);
     Assert.assertEquals("YubiKit for Android test data", s);
   }
 

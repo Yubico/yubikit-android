@@ -27,10 +27,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Utilities for compressing and decompressing data in the Net iD zlib format.
+ * Utilities for compressing and decompressing data in a zlib format with a custom header.
  *
- * <p>This is <b>not</b> standard zlib. The Net iD format wraps zlib-compressed data with a 4-byte
- * header:
+ * <p>This is <b>not</b> standard zlib. This format wraps zlib-compressed data with a 4-byte header
+ * and is used by some smart cards, including Generic Identity Device Specification (GIDS) cards:
  *
  * <ul>
  *   <li>Bytes 0-1: Magic bytes (0x01, 0x00)
@@ -45,16 +45,16 @@ class ZlibUtils {
   private static final int MAX_INPUT_LENGTH = 0xFFFF; // 65535 bytes (16-bit length field)
 
   /**
-   * Compress data using Net iD zlib format.
+   * Compress data using zlib format with custom header.
    *
    * @param input byte array to be compressed (max 65535 bytes)
-   * @return byte array with Net iD zlib header and compressed data
+   * @return byte array with 4-byte header and compressed data
    * @throws IllegalArgumentException if input exceeds 65535 bytes
    */
   static byte[] compress(byte[] input) {
     if (input.length > MAX_INPUT_LENGTH) {
       throw new IllegalArgumentException(
-          "Input data too large for Net iD zlib format: "
+          "Input data too large for zlib format: "
               + input.length
               + " bytes (max "
               + MAX_INPUT_LENGTH
@@ -73,7 +73,7 @@ class ZlibUtils {
     deflater.end();
     byte[] compressed = outputStream.toByteArray();
 
-    // Build Net iD zlib format: 0x01, 0x00, length (little endian), compressed data
+    // Build zlib format with header: 0x01, 0x00, length (little endian), compressed data
     ByteBuffer result = ByteBuffer.allocate(4 + compressed.length);
     result.put((byte) 0x01);
     result.put((byte) 0x00);
@@ -85,16 +85,16 @@ class ZlibUtils {
   }
 
   /**
-   * Decompress data in Net iD zlib format.
+   * Decompress data in zlib format with custom header.
    *
-   * @param input byte array with Net iD zlib header and compressed data
+   * @param input byte array with 4-byte header and compressed data
    * @return decompressed data
    * @throws IOException if the decompression failed or length mismatch
    */
   static byte[] decompress(byte[] input) throws IOException {
     logger.debug("Decompressing {} bytes using zlib", input.length);
     if (input.length < 4) {
-      throw new IOException("Net iD zlib compressed data too short");
+      throw new IOException("Zlib compressed data too short");
     }
     int expectedLength =
         ByteBuffer.wrap(input, 2, 2).order(ByteOrder.LITTLE_ENDIAN).getShort() & 0xFFFF;

@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Facade for certificate compression/decompression using various methods.
  *
- * <p>Supports gzip (0x1F, 0x8B header) and Net iD zlib format (0x01, 0x00 header).
+ * <p>Supports gzip (0x1F, 0x8B header) and zlib with custom header (0x01, 0x00 header).
  */
 class CompressionUtils {
   private static final Logger logger = LoggerFactory.getLogger(CompressionUtils.class);
@@ -56,7 +56,7 @@ class CompressionUtils {
       return GzipUtils.decompress(certData);
     }
 
-    // Net iD zlib format
+    // Zlib with custom header format
     if (firstByte == 0x01 && secondByte == 0x00) {
       logger.debug("Decompressing certificate using zlib");
       return ZlibUtils.decompress(certData);
