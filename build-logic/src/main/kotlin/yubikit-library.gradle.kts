@@ -26,4 +26,5 @@ dependencies {
     testImplementation(project(":testing"))
     testImplementation(libs.findLibrary("junit-junit").get())
     testImplementation(libs.findLibrary("mockito").get())
+    testRuntimeOnly(libs.findLibrary("logback-classic").get())
 }

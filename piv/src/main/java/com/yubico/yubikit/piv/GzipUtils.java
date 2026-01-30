@@ -28,7 +28,10 @@ import org.slf4j.LoggerFactory;
  * Utilities for GZIP
  *
  * @see <a href="https://www.rfc-editor.org/rfc/rfc1952">RFC1952</a>
+ * @deprecated This class was unintentionally made public. It has no public API and will become
+ *     package-private in a future release. No action is required.
  */
+@Deprecated
 public class GzipUtils {
   private static final Logger logger = LoggerFactory.getLogger(GzipUtils.class);
 

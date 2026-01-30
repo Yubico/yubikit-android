@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Yubico.
+ * Copyright (C) 2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,29 +16,38 @@
 
 package com.yubico.yubikit.piv;
 
-import static com.yubico.yubikit.piv.GzipUtils.compress;
-import static com.yubico.yubikit.piv.GzipUtils.decompress;
+import static com.yubico.yubikit.piv.ZlibUtils.compress;
+import static com.yubico.yubikit.piv.ZlibUtils.decompress;
 
 import com.yubico.yubikit.Codec;
 import com.yubico.yubikit.core.util.StringUtils;
-import java.io.EOFException;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.zip.ZipException;
 import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-// TODO: remove @SuppressWarnings once GzipUtils is made package-private
-@SuppressWarnings("deprecation")
-public class GzipUtilsTest {
+public class ZlibUtilsTest {
 
-  private static final Logger logger = LoggerFactory.getLogger(GzipUtilsTest.class);
+  private static final Logger logger = LoggerFactory.getLogger(ZlibUtilsTest.class);
 
-  private final byte[] testData =
+  /**
+   * Net iD zlib format: 0x01, 0x00, length (little-endian), zlib-compressed "YubiKit for Android
+   * test data"
+   *
+   * <p>Generated with:
+   *
+   * <pre>
+   * import zlib
+   * d = b'YubiKit for Android test data'
+   * c = zlib.compress(d)
+   * print((b'\x01\x00' + len(d).to_bytes(2,'little') + c).hex())
+   * </pre>
+   */
+  private static final byte[] netIdZlibTestData =
       Codec.fromHex(
-          "1f8b08000000000000008b2c4dcaf4ce2c5148cb2f5270cc4b29cacf4c5128492d2e5148492c49040003f7e"
-              + "f7d1d000000");
+          "01001d00789c8b2c4dcaf4ce2c5148cb2f5270cc4b29cacf4c5128492d2e5148492c4904009f2e0aa4");
 
   @Test
   public void compressesEmptyData() throws Throwable {
@@ -52,27 +61,36 @@ public class GzipUtilsTest {
 
   @Test
   public void compressesBigData() throws Throwable {
-    byte[] data = new byte[128 * 1024]; // 128kB
-    for (int index = 0; index < 128 * 1024; index++) {
+    byte[] data = new byte[32 * 1024]; // 32kB (must fit in 16-bit length header)
+    for (int index = 0; index < data.length; index++) {
       data[index] = (byte) ((index & 0xff) - (byte) (index >> 8) * (index & 0xef));
     }
     compressAndDecompress(data);
   }
 
-  @Test(expected = EOFException.class)
-  public void decompressEmptyData() throws Throwable {
-    byte[] d = decompress(new byte[0]);
-    Assert.assertEquals(0, d.length);
+  @Test(expected = IOException.class)
+  public void decompressTooShort() throws Throwable {
+    decompress(new byte[] {0x01, 0x00, 0x01});
   }
 
-  @Test(expected = ZipException.class)
-  public void decompressInvalidData() throws Throwable {
-    decompress(new byte[] {1, 2, 3, 4});
+  @Test(expected = IOException.class)
+  public void decompressLengthMismatch() throws Throwable {
+    byte[] compressed = netIdZlibTestData.clone();
+    // Modify the expected length in the header to be wrong
+    compressed[2] = (byte) 0xFF;
+    compressed[3] = (byte) 0x03;
+    decompress(compressed);
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void compressInputTooLarge() {
+    byte[] data = new byte[65536]; // One byte over the 64KB limit
+    compress(data);
   }
 
   @Test
-  public void decompressGzipedData() throws Throwable {
-    String s = new String(decompress(testData), StandardCharsets.ISO_8859_1);
+  public void decompressNetIdZlibData() throws Throwable {
+    String s = new String(decompress(netIdZlibTestData), StandardCharsets.ISO_8859_1);
     Assert.assertEquals("YubiKit for Android test data", s);
   }
 
