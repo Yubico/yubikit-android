@@ -33,13 +33,19 @@ class ChallengeResponseFragment : Fragment() {
     private val viewModel: OtpViewModel by activityViewModels()
     private lateinit var binding: FragmentYubiotpChalrespBinding
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
-                              savedInstanceState: Bundle?): View {
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?,
+    ): View {
         binding = FragmentYubiotpChalrespBinding.inflate(inflater, container, false)
         return binding.root
     }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?,
+    ) {
         super.onViewCreated(view, savedInstanceState)
 
         binding.textLayoutKey.setEndIconOnClickListener {
@@ -56,11 +62,12 @@ class ChallengeResponseFragment : Fragment() {
             try {
                 val key = Hex.decode(binding.editTextKey.text.toString())
                 val touch = binding.switchRequireTouch.isChecked
-                val slot = when (binding.slotRadio.checkedRadioButtonId) {
-                    R.id.radio_slot_1 -> Slot.ONE
-                    R.id.radio_slot_2 -> Slot.TWO
-                    else -> throw IllegalStateException("No slot selected")
-                }
+                val slot =
+                    when (binding.slotRadio.checkedRadioButtonId) {
+                        R.id.radio_slot_1 -> Slot.ONE
+                        R.id.radio_slot_2 -> Slot.TWO
+                        else -> throw IllegalStateException("No slot selected")
+                    }
                 viewModel.pendingAction.value = {
                     putConfiguration(slot, HmacSha1SlotConfiguration(key).requireTouch(touch), null, null)
                     "Slot $slot programmed"
@@ -73,11 +80,12 @@ class ChallengeResponseFragment : Fragment() {
         binding.btnCalculateResponse.setOnClickListener {
             try {
                 val challenge = Hex.decode(binding.editTextChallenge.text.toString())
-                val slot = when (binding.slotCalculateRadio.checkedRadioButtonId) {
-                    R.id.radio_calculate_slot_1 -> Slot.ONE
-                    R.id.radio_calculate_slot_2 -> Slot.TWO
-                    else -> throw IllegalStateException("No slot selected")
-                }
+                val slot =
+                    when (binding.slotCalculateRadio.checkedRadioButtonId) {
+                        R.id.radio_calculate_slot_1 -> Slot.ONE
+                        R.id.radio_calculate_slot_2 -> Slot.TWO
+                        else -> throw IllegalStateException("No slot selected")
+                    }
 
                 viewModel.pendingAction.value = {
                     val response = calculateHmacSha1(slot, challenge, null)

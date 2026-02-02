@@ -39,7 +39,12 @@ class OathViewModel : YubiKeyViewModel<OathSession>() {
     var password: Pair<String, CharArray>? = null
 
     private var isNfc = false
-    override fun getSession(device: YubiKeyDevice, onError: (Throwable) -> Unit, callback: (OathSession) -> Unit) {
+
+    override fun getSession(
+        device: YubiKeyDevice,
+        onError: (Throwable) -> Unit,
+        callback: (OathSession) -> Unit,
+    ) {
         device.requestConnection(SmartCardConnection::class.java) {
             try {
                 val connection = it.value
@@ -60,19 +65,21 @@ class OathViewModel : YubiKeyViewModel<OathSession>() {
             }
         }
 
-        val codes = try {
-            calculateCodes()
-        } catch (e: ApduException) {
-            when (e.sw) {
-                SW.MEMORY_ERROR -> credentials.associateWith {
-                    when {
-                        isNfc && it.oathType == OathType.TOTP -> calculateCode(it)
-                        else -> null
-                    }
+        val codes =
+            try {
+                calculateCodes()
+            } catch (e: ApduException) {
+                when (e.sw) {
+                    SW.MEMORY_ERROR ->
+                        credentials.associateWith {
+                            when {
+                                isNfc && it.oathType == OathType.TOTP -> calculateCode(it)
+                                else -> null
+                            }
+                        }
+                    else -> throw e
                 }
-                else -> throw e
             }
-        }
         _credentials.postValue(codes)
     }
 }
