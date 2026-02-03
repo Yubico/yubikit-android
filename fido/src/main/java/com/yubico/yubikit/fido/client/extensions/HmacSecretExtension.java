@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2025 Yubico.
+ * Copyright (C) 2024-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@ import static com.yubico.yubikit.core.internal.codec.Base64.toUrlSafeString;
 
 import com.yubico.yubikit.core.application.CommandException;
 import com.yubico.yubikit.core.util.Pair;
-import com.yubico.yubikit.core.util.StringUtils;
 import com.yubico.yubikit.fido.ctap.ClientPin;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
@@ -219,11 +218,7 @@ public class HmacSecretExtension extends Extension {
                   ? Arrays.copyOfRange(decrypted, SALT_LEN, 2 * SALT_LEN)
                   : new byte[0];
 
-          logger.debug(
-              "Decrypted:  {}, o1: {}, o2: {}",
-              StringUtils.bytesToHex(decrypted),
-              StringUtils.bytesToHex(output1),
-              StringUtils.bytesToHex(output2));
+          logger.debug("PRF outputs decrypted successfully");
 
           Map<String, Object> results = new HashMap<>();
           if (inputs.prf != null) {
@@ -269,7 +264,7 @@ public class HmacSecretExtension extends Extension {
 
     Salts salts;
     if (inputs.prf != null) {
-      Map<String, Object> secrets = inputs.prf.eval;
+      Map<String, Object> prfValues = inputs.prf.eval;
       Map<String, Object> evalByCredential = inputs.prf.evalByCredential;
 
       if (evalByCredential != null) {
@@ -289,26 +284,26 @@ public class HmacSecretExtension extends Extension {
         if (selected != null) {
           String key = toUrlSafeString(selected.getId());
           if (evalByCredential.containsKey(key)) {
-            secrets = (Map<String, Object>) inputs.prf.evalByCredential.get(key);
+            prfValues = (Map<String, Object>) inputs.prf.evalByCredential.get(key);
           }
         }
       }
 
-      if (secrets == null) {
+      if (prfValues == null) {
         return null;
       }
 
-      logger.debug("PRF inputs: {}, {}", secrets.get(FIRST), secrets.get(SECOND));
+      logger.debug("Processing PRF inputs");
 
-      String firstInput = (String) secrets.get(FIRST);
+      String firstInput = (String) prfValues.get(FIRST);
       if (firstInput == null) {
         return null;
       }
 
       byte[] first = prfSalt(fromUrlSafeString(firstInput));
       byte[] second =
-          secrets.containsKey(SECOND)
-              ? prfSalt(fromUrlSafeString((String) secrets.get(SECOND)))
+          prfValues.containsKey(SECOND)
+              ? prfSalt(fromUrlSafeString((String) prfValues.get(SECOND)))
               : null;
 
       salts = new Salts(first, second);
@@ -317,10 +312,7 @@ public class HmacSecretExtension extends Extension {
         return null;
       }
 
-      logger.debug(
-          "hmacGetSecret inputs: {}, {}",
-          inputs.hmac.salt1 != null ? inputs.hmac.salt1 : "none",
-          inputs.hmac.salt2 != null ? inputs.hmac.salt2 : "none");
+      logger.debug("Processing hmacGetSecret inputs");
 
       if (inputs.hmac.salt1 == null) {
         return null;
@@ -333,8 +325,7 @@ public class HmacSecretExtension extends Extension {
       salts = new Salts(salt1, salt2);
     }
 
-    logger.debug(
-        "Salts: {}, {}", StringUtils.bytesToHex(salts.salt1), StringUtils.bytesToHex(salts.salt2));
+    logger.debug("Salts prepared");
     if (!(salts.salt1.length == SALT_LEN
         && (salts.salt2.length == 0 || salts.salt2.length == SALT_LEN))) {
       throw new IllegalArgumentException("Invalid salt length");
