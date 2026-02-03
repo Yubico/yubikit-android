@@ -455,8 +455,18 @@ public class DeviceUtil {
     final FormFactor formFactor = info.getFormFactor();
 
     final int supportedUsbCapabilities = info.getSupportedCapabilities(Transport.USB);
+
     final boolean isFidoOnly =
-        (supportedUsbCapabilities & ~(Capability.U2F.bit | Capability.FIDO2.bit)) == 0;
+        (supportedUsbCapabilities
+                    // Explicit list of non-FIDO capabilities, to prevent future capability
+                    // additions from breaking this check.
+                    & (Capability.OTP.bit
+                        | Capability.OATH.bit
+                        | Capability.PIV.bit
+                        | Capability.OPENPGP.bit
+                        | Capability.HSMAUTH.bit))
+                == 0
+            && (supportedUsbCapabilities & (Capability.U2F.bit | Capability.FIDO2.bit)) != 0;
 
     final YubiKeyType yubiKeyType =
         keyType != null

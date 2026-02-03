@@ -348,6 +348,27 @@ public class GetNameTest {
                 i -> {
                   i.formFactor(USB_A_BIO);
                   i.version(new Version(5, 6, 6));
+                  i.supportedCapabilities(bioCcidCapabilities);
+                }),
+            YubiKeyType.YK4));
+
+    assertEquals(
+        "YubiKey C Bio - FIDO Edition",
+        DeviceUtil.getName(
+            info(
+                i -> {
+                  i.formFactor(USB_C_BIO);
+                  i.version(new Version(5, 6, 6));
+                  i.supportedCapabilities(bioCcidCapabilities);
+                }),
+            YubiKeyType.YK4));
+    assertEquals(
+        "YubiKey Bio - FIDO Edition",
+        DeviceUtil.getName(
+            info(
+                i -> {
+                  i.formFactor(USB_A_BIO);
+                  i.version(new Version(5, 6, 6));
                   i.supportedCapabilities(bioCapabilities);
                 }),
             YubiKeyType.YK4));
@@ -388,42 +409,6 @@ public class GetNameTest {
                   i.version(new Version(5, 6, 6));
                   i.supportedCapabilities(bioMultiProtocolCapabilities);
                   i.serialNumber(12345);
-                }),
-            YubiKeyType.YK4));
-  }
-
-  @Test
-  public void testBioSeries() {
-    // these are neither Enterprise nor Multi-protocol Edition Bios
-    assertEquals(
-        "YubiKey Bio",
-        DeviceUtil.getName(
-            info(
-                i -> {
-                  i.formFactor(USB_A_BIO);
-                  i.version(new Version(5, 6, 6));
-                  i.supportedCapabilities(
-                      new HashMap<Transport, Integer>() {
-                        {
-                          put(Transport.USB, fidoBits | UsbInterface.CCID);
-                        }
-                      });
-                }),
-            YubiKeyType.YK4));
-
-    assertEquals(
-        "YubiKey C Bio",
-        DeviceUtil.getName(
-            info(
-                i -> {
-                  i.formFactor(USB_C_BIO);
-                  i.version(new Version(5, 6, 6));
-                  i.supportedCapabilities(
-                      new HashMap<Transport, Integer>() {
-                        {
-                          put(Transport.USB, fidoBits | UsbInterface.CCID);
-                        }
-                      });
                 }),
             YubiKeyType.YK4));
   }
@@ -620,6 +605,13 @@ public class GetNameTest {
       new HashMap<Transport, Integer>() {
         {
           put(Transport.USB, fidoBits);
+        }
+      };
+
+  static final HashMap<Transport, Integer> bioCcidCapabilities =
+      new HashMap<Transport, Integer>() {
+        {
+          put(Transport.USB, fidoBits | UsbInterface.CCID);
         }
       };
 
