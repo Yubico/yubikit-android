@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2022 Yubico.
+ * Copyright (C) 2019-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,6 +46,6 @@ public enum OathType {
     } else if ("totp".equalsIgnoreCase(value)) {
       return TOTP;
     }
-    throw new IllegalArgumentException("Not a valid OathType: " + value);
+    throw new IllegalArgumentException("Illegal OathType");
   }
 }
