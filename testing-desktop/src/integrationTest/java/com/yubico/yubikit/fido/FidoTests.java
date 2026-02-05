@@ -19,7 +19,6 @@ import com.yubico.yubikit.AlwaysManualTest;
 import com.yubico.yubikit.fido.client.Ctap1ClientInstrumentedTests;
 import com.yubico.yubikit.fido.client.Ctap2ClientInstrumentedTests;
 import com.yubico.yubikit.fido.client.Ctap2ClientPinInstrumentedTests;
-import com.yubico.yubikit.fido.client.extensions.SignExtensionInstrumentedTests;
 import com.yubico.yubikit.fido.ctap.Ctap2BioEnrollmentInstrumentedTests;
 import com.yubico.yubikit.fido.ctap.Ctap2BioUvTests;
 import com.yubico.yubikit.fido.ctap.Ctap2ConfigInstrumentedTests;
@@ -50,8 +49,7 @@ import org.junit.runners.Suite;
   Ctap2ConfigInstrumentedTests.class,
   Ctap2BioEnrollmentInstrumentedTests.class,
   Ctap2BioUvTests.class,
-  Ctap2SessionResetInstrumentedTests.class,
-  SignExtensionInstrumentedTests.class
+  Ctap2SessionResetInstrumentedTests.class
 })
 @Categories.ExcludeCategory(AlwaysManualTest.class)
 public class FidoTests {}

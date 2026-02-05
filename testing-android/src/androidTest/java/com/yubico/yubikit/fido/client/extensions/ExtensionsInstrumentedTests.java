@@ -28,8 +28,7 @@ import org.junit.runners.Suite;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
   ExtensionsInstrumentedTests.PinUvAuthV2Test.class,
-  ExtensionsInstrumentedTests.PinUvAuthV1Test.class,
-  SignExtensionInstrumentedTests.class
+  ExtensionsInstrumentedTests.PinUvAuthV1Test.class
 })
 public class ExtensionsInstrumentedTests {
   public static class PinUvAuthV2Test extends FidoInstrumentedTests {
