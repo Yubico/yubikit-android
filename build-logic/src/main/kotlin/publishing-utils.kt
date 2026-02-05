@@ -78,12 +78,24 @@ fun Project.applyPomConfiguration(): Action<MavenPom> {
 }
 
 fun Project.registerFinalizeCentralPublicationTask() {
-    tasks.register("finalizeCentralPublication") {
-        description = "Notifies Sonatype Central that a manual publication is complete."
-        group = "publishing"
+    // Register the task only once on the root project
+    val rootProject = this.rootProject
 
-        doLast {
-            finalizeSonatypeCentralPublication(project)
+    if (rootProject.tasks.findByName("finalizeCentralPublication") == null) {
+        rootProject.tasks.register("finalizeCentralPublication") {
+            description = "Notifies Sonatype Central that a manual publication is complete."
+            group = "publishing"
+
+            // Ensure this task runs after any publish task in the build
+            rootProject.subprojects {
+                tasks.matching { it.name == "publish" }.configureEach {
+                    this@register.mustRunAfter(this)
+                }
+            }
+
+            doLast {
+                finalizeSonatypeCentralPublication(rootProject)
+            }
         }
     }
 }
