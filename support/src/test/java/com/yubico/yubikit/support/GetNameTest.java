@@ -575,21 +575,10 @@ public class GetNameTest {
 
     assertEquals(
         "YubiKey (0.3.2)",
-        DeviceUtil.getName(
-            info(
-                i -> {
-                  i.version(new Version(0, 3, 2));
-                }),
-            YubiKeyType.YK4));
+        DeviceUtil.getName(info(i -> i.version(new Version(0, 3, 2))), YubiKeyType.YK4));
 
     assertEquals(
-        "YubiKey",
-        DeviceUtil.getName(
-            info(
-                i -> {
-                  i.version(new Version(3, 3, 2));
-                }),
-            YubiKeyType.YK4));
+        "YubiKey", DeviceUtil.getName(info(i -> i.version(new Version(3, 3, 2))), YubiKeyType.YK4));
   }
 
   static final int fidoBits = Capability.FIDO2.bit | Capability.U2F.bit;
