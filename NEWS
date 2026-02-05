@@ -1,4 +1,4 @@
-* Version 3.0.1 (released *)
+* Version 3.0.1 (released 2026-02-05)
  ** fixes & improvements:
   - piv: support for additional compressed certificate formats (zlib)
   - fido: fixed device naming for FIDO Edition devices
