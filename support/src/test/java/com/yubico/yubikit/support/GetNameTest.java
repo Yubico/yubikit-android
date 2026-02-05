@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2025 Yubico.
+ * Copyright (C) 2024-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -575,21 +575,10 @@ public class GetNameTest {
 
     assertEquals(
         "YubiKey (0.3.2)",
-        DeviceUtil.getName(
-            info(
-                i -> {
-                  i.version(new Version(0, 3, 2));
-                }),
-            YubiKeyType.YK4));
+        DeviceUtil.getName(info(i -> i.version(new Version(0, 3, 2))), YubiKeyType.YK4));
 
     assertEquals(
-        "YubiKey",
-        DeviceUtil.getName(
-            info(
-                i -> {
-                  i.version(new Version(3, 3, 2));
-                }),
-            YubiKeyType.YK4));
+        "YubiKey", DeviceUtil.getName(info(i -> i.version(new Version(3, 3, 2))), YubiKeyType.YK4));
   }
 
   static final int fidoBits = Capability.FIDO2.bit | Capability.U2F.bit;
