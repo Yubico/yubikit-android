@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Yubico.
+ * Copyright (C) 2025-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 plugins {
     java
-    id("yubikit-java-convention")
+    id("java-library")
     id("yubikit-common")
 }
 
@@ -45,11 +45,6 @@ dependencies {
 
     add("integrationTestImplementation", libs.junit.junit)
     add("integrationTestImplementation", libs.logback.classic)
-}
-
-java {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
 }
 
 tasks.register<Test>("integrationTest") {
