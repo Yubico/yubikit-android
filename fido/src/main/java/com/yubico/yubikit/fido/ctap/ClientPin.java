@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2025 Yubico.
+ * Copyright (C) 2020-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -183,9 +183,9 @@ public class ClientPin {
 
       byte[] pinTokenEnc = (byte[]) result.get(RESULT_PIN_UV_TOKEN);
       logger.debug(
-          "Got PIN token for permissions: {}, permissions rpID: {}",
+          "Got PIN token for permissions: {}, permissionsRpId provided: {}",
           permissions != null ? permissions : "none",
-          permissionsRpId != null ? permissionsRpId : "none");
+          permissionsRpId != null);
       return pinUvAuth.decrypt(pair.second, pinTokenEnc);
     } catch (NoSuchAlgorithmException e) {
       logger.error("Failure getting PIN token: ", e);
@@ -235,9 +235,9 @@ public class ClientPin {
     byte[] pinTokenEnc = (byte[]) result.get(RESULT_PIN_UV_TOKEN);
 
     logger.debug(
-        "Got UV token for permissions: {}, permissions rpID: {}",
+        "Got UV token for permissions: {}, permissionsRpId provided: {}",
         permissions != null ? permissions : "none",
-        permissionsRpId != null ? permissionsRpId : "none");
+        permissionsRpId != null);
 
     return pinUvAuth.decrypt(pair.second, pinTokenEnc);
   }

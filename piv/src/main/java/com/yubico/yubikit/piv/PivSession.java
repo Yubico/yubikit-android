@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2025 Yubico.
+ * Copyright (C) 2019-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -880,7 +880,8 @@ public class PivSession extends ApplicationSession<PivSession> {
    * @return certificate instance
    * @throws IOException in case of connection error
    * @throws ApduException in case of an error response from the YubiKey
-   * @throws BadResponseException in case of incorrect YubiKey response
+   * @throws BadResponseException in case of incorrect YubiKey response or if a compressed
+   *     certificate failed to decompress
    */
   public X509Certificate getCertificate(Slot slot)
       throws IOException, ApduException, BadResponseException {
@@ -894,7 +895,7 @@ public class PivSession extends ApplicationSession<PivSession> {
     boolean isCompressed = certInfo != null && certInfo.length > 0 && certInfo[0] != 0;
     if (isCompressed) {
       try {
-        cert = GzipUtils.decompress(cert);
+        cert = CompressionUtils.decompressCertificate(cert);
       } catch (IOException e) {
         throw new BadResponseException("Failed to decompress certificate", e);
       }
@@ -917,6 +918,8 @@ public class PivSession extends ApplicationSession<PivSession> {
    * @throws IOException in case of connection error
    * @throws ApduException in case of an error response from the YubiKey
    */
+  // TODO: remove @SuppressWarnings once GzipUtils is made package-private
+  @SuppressWarnings("deprecation")
   public void putCertificate(Slot slot, X509Certificate certificate, boolean compress)
       throws IOException, ApduException {
     byte[] certBytes;

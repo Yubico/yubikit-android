@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2025 Yubico.
+ * Copyright (C) 2020-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -79,16 +79,15 @@ public class CredentialData implements Serializable {
     for (String line : rawQuery.split("&")) {
       String[] parts = line.split("=", 2);
       if (parts.length != 2) {
-        throw new ParseUriException("Invalid query parameter: " + line);
+        throw new ParseUriException("Invalid query");
       }
       String decodedValue = parts[1];
       try {
         decodedValue = URLDecoder.decode(decodedValue, "UTF-8");
       } catch (IllegalArgumentException e) {
-        throw new ParseUriException("Invalid URL encoding in parameter value: " + decodedValue);
+        throw new ParseUriException("Failed to decode query parameter value");
       } catch (UnsupportedEncodingException e) {
-        throw new ParseUriException(
-            "UTF-8 encoding not supported while parsing value: " + decodedValue);
+        throw new ParseUriException("Unsupported encoding when decoding query parameter value");
       }
 
       params.put(parts[0], decodedValue);
