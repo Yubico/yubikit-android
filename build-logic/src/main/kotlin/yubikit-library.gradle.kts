@@ -20,7 +20,7 @@ plugins {
     id("yubikit-publishing")
 }
 
-val libs = extensions.getByType<VersionCatalogsExtension>().named("libs")
+val libs: VersionCatalog = extensions.getByType<VersionCatalogsExtension>().named("libs")
 
 dependencies {
     testImplementation(project(":testing"))

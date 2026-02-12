@@ -18,15 +18,16 @@ import com.android.build.api.dsl.ApplicationExtension
 import com.android.build.api.dsl.LibraryExtension
 
 plugins {
-    // no AGP9 support yet id("yubikit-spotbugs")
+    id("yubikit-spotbugs")
     id("yubikit-spotless")
     id("yubikit-logging")
     id("yubikit-jspecify")
 }
 
-val versionCatalog = extensions.getByType(VersionCatalogsExtension::class.java).named("libs")
-val javaVersionString = versionCatalog.findVersion("java").get().requiredVersion
-val javaVersion = JavaVersion.toVersion(javaVersionString)
+val versionCatalog: VersionCatalog =
+    extensions.getByType(VersionCatalogsExtension::class.java).named("libs")
+val javaVersionString: String = versionCatalog.findVersion("java").get().requiredVersion
+val javaVersion: JavaVersion = JavaVersion.toVersion(javaVersionString)
 
 // Apply to both Android and Java projects
 plugins.withId("com.android.library") {

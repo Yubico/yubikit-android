@@ -22,7 +22,7 @@ plugins {
     id("com.android.library")
 }
 
-val android = extensions.getByType(LibraryExtension::class.java)
+val android: LibraryExtension = extensions.getByType(LibraryExtension::class.java)
 
 android.publishing {
     singleVariant("release") {

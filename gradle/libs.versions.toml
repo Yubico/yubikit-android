@@ -51,6 +51,9 @@ material = { module = "com.google.android.material:material", version.ref = "mat
 moshi = { module = "com.squareup.moshi:moshi", version.ref = "moshi" }
 mockito = { module = "org.mockito:mockito-core", version.ref = "mockito" }
 jspecify = { module = "org.jspecify:jspecify", version.ref = "jspecify" }
+jsr250-api = { module = "javax.annotation:jsr250-api", version.ref = "jsr250-api" }
+jsr305 = { module = "com.google.code.findbugs:jsr305", version.ref = "jsr305" }
+slf4j-nop = { module = "org.slf4j:slf4j-nop", version.ref = "slf4j" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "android-gradle" }
@@ -59,6 +62,8 @@ android-library = { id = "com.android.library", version.ref = "android-gradle" }
 [versions]
 java = "11"
 android-gradle = "9.0.0"
+jsr250-api = "1.0"
+jsr305 = "3.0.2"
 spotbugs-plugin = "6.4.8"
 spotbugs-core = "4.9.8"
 findsecbugs = "1.14.0"
@@ -80,7 +85,7 @@ legacy-support-v4 = "1.0.0"
 lifecycle-extensions = "2.2.0"
 lifecycle-viewmodel-ktx = "2.10.0"
 logback-android = "3.0.0"
-logback-classic = "1.5.27"
+logback-classic = "1.5.29"
 material = "1.13.0"
 moshi = "1.15.2"
 navigation-fragment-ktx = "2.9.7"

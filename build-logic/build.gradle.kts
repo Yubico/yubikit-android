@@ -19,7 +19,6 @@ plugins {
 }
 
 dependencies {
-    implementation(libs.spotbugs.gradle.plugin)
     implementation(libs.android.gradle.plugin)
     implementation(libs.spotless.plugin.gradle)
 }
