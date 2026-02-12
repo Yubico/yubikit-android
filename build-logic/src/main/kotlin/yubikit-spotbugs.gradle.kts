@@ -273,3 +273,11 @@ if (!rootProject.tasks.names.contains("spotbugsSarif")) {
         dependsOn("spotbugsSarif", "spotbugsHtml")
     }
 }
+
+// Make spotbugs tasks depend on build
+afterEvaluate {
+    listOf("Main", "Release").forEach { variant ->
+        tasks.findByName("spotbugs${variant}Sarif")?.dependsOn("build")
+        tasks.findByName("spotbugs${variant}Html")?.dependsOn("build")
+    }
+}
