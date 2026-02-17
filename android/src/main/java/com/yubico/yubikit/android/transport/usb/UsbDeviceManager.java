@@ -69,11 +69,11 @@ final class UsbDeviceManager {
   private final WeakHashMap<UsbDevice, Set<PermissionResultListener>> contexts =
       new WeakHashMap<>();
   private final Set<UsbDevice> awaitingPermissions = new HashSet<>();
-  private UsbConfiguration usbConfiguration = new UsbConfiguration();
+  private volatile UsbConfiguration usbConfiguration = new UsbConfiguration();
 
   private UsbDeviceManager() {}
 
-  private synchronized UsbDeviceManager setUsbConfiguration(UsbConfiguration usbConfiguration) {
+  private UsbDeviceManager setUsbConfiguration(UsbConfiguration usbConfiguration) {
     this.usbConfiguration = new UsbConfiguration(usbConfiguration);
     return this;
   }
