@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2025 Yubico.
+ * Copyright (C) 2024-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,8 @@ import com.yubico.yubikit.oath.OathTests;
 import com.yubico.yubikit.openpgp.OpenPgpTests;
 import com.yubico.yubikit.piv.PivTests;
 import com.yubico.yubikit.sd.SecurityDomainTests;
+import com.yubico.yubikit.yubiotp.YubiOtpOverCcidTests;
+import com.yubico.yubikit.yubiotp.YubiOtpTests;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -42,6 +44,8 @@ import org.junit.runners.Suite;
   MultiProtocolResetTests.class,
   FidoTests.class,
   FidoOverCcidTests.class,
+  YubiOtpTests.class,
+  YubiOtpOverCcidTests.class,
   SmartCardProtocolTests.class
 })
 public class DeviceTests {}
