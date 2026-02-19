@@ -26,8 +26,6 @@ plugins {
     id("yubikit-common")
 }
 
-ext.set("customPom", true)
-
 android {
     namespace = "com.yubico.yubikit.fido.android.ui"
     compileSdk = 36
@@ -96,41 +94,6 @@ android {
 
         unitTests {
             isIncludeAndroidResources = true
-        }
-    }
-}
-
-afterEvaluate {
-    publishing {
-        publications {
-            named<MavenPublication>("maven") {
-                pom {
-                    name.set("Yubico YubiKit FIDO Android")
-                    description.set(project.description)
-                    url.set("https://github.com/Yubico/yubikit-android")
-
-                    licenses {
-                        license {
-                            name.set("The Apache License, Version 2.0")
-                            url.set("http://www.apache.org/licenses/LICENSE-2.0.txt")
-                        }
-                    }
-
-                    developers {
-                        developer {
-                            id.set("adamve")
-                            name.set("Adam Velebil")
-                            email.set("adam.velebil@yubico.com")
-                        }
-                    }
-
-                    scm {
-                        connection.set("scm:git:https://github.com/Yubico/yubikit-android.git")
-                        developerConnection.set("scm:git:ssh://github.com/Yubico/yubikit-android.git")
-                        url.set("https://github.com/Yubico/yubikit-android")
-                    }
-                }
-            }
         }
     }
 }
