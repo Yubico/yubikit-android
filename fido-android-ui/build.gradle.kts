@@ -153,3 +153,61 @@ dependencies {
 }
 
 description = "This module provides user interface for YubiKit FIDO module."
+
+val generateFidoJs by tasks.registering {
+    val jsSourceFile = layout.projectDirectory.file("js/fido.js")
+    val outputDir = layout.buildDirectory.dir("generated/source/fidojs")
+
+    inputs.file(jsSourceFile)
+    outputs.dir(outputDir)
+    outputs.upToDateWhen { false }
+
+    doLast {
+        val jsCode = jsSourceFile.asFile.readText()
+
+        // Strip block comments and leading/trailing whitespace per line,
+        // blank lines, and collapse runs. Line comments are left intact to
+        // avoid corrupting JS regex literals that contain '//'.
+        // TODO: replace with robust minification
+        val minified = jsCode
+            .replace(Regex("/\\*[\\s\\S]*?\\*/"), "")
+            .lines()
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .joinToString("\n")
+
+        // Escape for Kotlin raw string ($ must be escaped)
+        val kotlinSafe = minified.replace("$", "\${'$'}")
+
+        val kotlinSource = buildString {
+            appendLine("// Generated file — do not edit. Source: js/fido.js")
+            appendLine("package com.yubico.yubikit.fido.android.ui.internal")
+            appendLine()
+            appendLine("internal object FidoJs {")
+            appendLine("    const val BRIDGE_PLACEHOLDER = \"JAVASCRIPT_BRIDGE\"")
+            appendLine()
+            appendLine("    @Suppress(\"MaxLineLength\")")
+            appendLine("    const val CODE = \"\"\"")
+            appendLine(kotlinSafe)
+            appendLine("\"\"\"")
+            appendLine("}")
+        }
+
+        val outputFile = outputDir.get().file(
+            "com/yubico/yubikit/fido/android/ui/internal/FidoJs.kt"
+        ).asFile
+        outputFile.parentFile.mkdirs()
+        outputFile.writeText(kotlinSource)
+    }
+}
+
+android.sourceSets["main"].kotlin.srcDir(
+    generateFidoJs.map { it.outputs.files.singleFile }
+)
+
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+    dependsOn(generateFidoJs)
+}
+
+
+

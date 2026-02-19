@@ -30,8 +30,8 @@ import kotlinx.coroutines.CoroutineScope
  *
  * **Configuration performed:**
  * - Enables JavaScript execution on the WebView
- * - Injects a JavaScript polyfill that overrides `navigator.credentials` methods
- * - Registers a web message listener to handle WebAuthn requests from the page
+ * - Registers a JavaScript bridge via [android.webkit.WebView.addJavascriptInterface] to handle
+ *   WebAuthn requests from the page
  * - Sets a custom [android.webkit.WebViewClient] to inject the polyfill on each page load
  *
  * **Security requirements:**
