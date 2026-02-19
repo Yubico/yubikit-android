@@ -208,6 +208,3 @@ android.sourceSets["main"].kotlin.srcDir(
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
     dependsOn(generateFidoJs)
 }
-
-
-

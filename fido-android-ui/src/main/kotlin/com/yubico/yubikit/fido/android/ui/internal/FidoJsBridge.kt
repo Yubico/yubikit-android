@@ -168,5 +168,3 @@ internal class FidoJsBridge(
         }
     }
 }
-
-
