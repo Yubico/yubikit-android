@@ -92,7 +92,7 @@
         \n\nFor the iOS version of YubiKit, visit https://github.com/Yubico/yubikit-ios
     </string>
     <string name="yubico">Yubico</string>
-    <string name="yk_provider_service_version_label">Version %s</string>
-    <string name="copyright">Copyright © 2019–2020 Yubico.</string>
+    <string name="version">Version %s</string>
+    <string name="copyright">Copyright © 2019–2026 Yubico.</string>
     <string name="img_passkey_icon">passkey icon</string>
 </resources>
