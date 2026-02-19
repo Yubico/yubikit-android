@@ -1,5 +1,10 @@
 == FIDO Android UI module
 
+[WARNING]
+====
+**Experimental Module**: This module is still experimental. The public API may change between library releases without following semantic versioning conventions used by other yubikit-android modules. Use with caution in production environments.
+====
+
 The FIDO Android UI module provides a high-level FIDO2/WebAuthn client with built-in UI components for Android applications. This module simplifies the integration of hardware security key authentication by handling the complete user interaction flow, including NFC/USB communication, PIN entry, and user prompts.
 
 https://developers.yubico.com/yubikit-android/JavaDoc/fido-android-ui/latest/[JavaDoc API documentation]
