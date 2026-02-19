@@ -136,16 +136,19 @@ internal class FidoJsBridge(
         promiseUuid: String,
         result: String,
     ) {
+        val escaped = escapeForJsString(
+            JSONObject().apply {
+                put("promiseUuid", promiseUuid)
+                put("result", JSONObject(result))
+            }
+        )
         webView.post {
-            val escapedResult = result
-                .replace("\\", "\\\\")
-                .replace("'", "\\'")
-                .replace("\n", "\\n")
-                .replace("\r", "\\r")
             webView.evaluateJavascript(
                 """
-                var response = JSON.parse('$escapedResult')
-                ${BRIDGE_NAME}.__resolve__("$promiseUuid", response);
+                (function() {
+                    var data = JSON.parse('$escaped');
+                    ${BRIDGE_NAME}.__resolve__(data.promiseUuid, data.result);
+                })();
                 """.trimIndent(),
             ) {}
         }
@@ -155,16 +158,29 @@ internal class FidoJsBridge(
         promiseUuid: String,
         errorMessage: String,
     ) {
+        val escaped = escapeForJsString(
+            JSONObject().apply {
+                put("promiseUuid", promiseUuid)
+                put("message", errorMessage)
+            }
+        )
         webView.post {
-            val escapedMessage = errorMessage
-                .replace("\\", "\\\\")
-                .replace("'", "\\'")
-                .replace("\"", "\\\"")
-                .replace("\n", "\\n")
-                .replace("\r", "\\r")
             webView.evaluateJavascript(
-                """${BRIDGE_NAME}.__reject__("$promiseUuid", "$escapedMessage");""",
+                """
+                (function() {
+                    var error = JSON.parse('$escaped');
+                    ${BRIDGE_NAME}.__reject__(error.promiseUuid, error.message);
+                })();
+                """.trimIndent(),
             ) {}
         }
     }
+
+    /** Serializes a [JSONObject] and escapes it for safe embedding in a JS single-quoted string. */
+    private fun escapeForJsString(json: JSONObject): String =
+        json.toString()
+            .replace("\\", "\\\\")
+            .replace("'", "\\'")
+            .replace("\n", "\\n")
+            .replace("\r", "\\r")
 }
