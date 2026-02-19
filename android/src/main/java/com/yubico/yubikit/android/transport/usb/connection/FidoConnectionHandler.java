@@ -86,7 +86,7 @@ public class FidoConnectionHandler extends InterfaceConnectionHandler<UsbFidoCon
         int reportDescLength = DEFAULT_REPORT_DESC_SIZE;
         try {
           reportDescLength = getReportDescriptorLength(connection, interfaceId);
-        } catch (Exception ignore) {
+        } catch (Exception ignored) {
           logger.debug(
               "Failed to get HID Report Descriptor length, using default buffer size {}",
               DEFAULT_REPORT_DESC_SIZE);
