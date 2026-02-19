@@ -46,46 +46,40 @@ class OathFragment : YubiKeyFragment<OathSession, OathViewModel>() {
     private lateinit var listAdapter: OathListAdapter
 
     override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?,
+            inflater: LayoutInflater,
+            container: ViewGroup?,
+            savedInstanceState: Bundle?
     ): View {
         binding = FragmentOathBinding.inflate(inflater, container, false)
         return binding.root
     }
 
-    override fun onViewCreated(
-        view: View,
-        savedInstanceState: Bundle?,
-    ) {
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        listAdapter =
-            OathListAdapter(
-                object : OathListAdapter.ItemListener {
-                    override fun onDelete(credentialId: ByteArray) {
-                        lifecycleScope.launch(Dispatchers.Main) {
-                            AlertDialog.Builder(requireContext())
-                                .setTitle("Delete credential?")
-                                .setPositiveButton("Delete") { _, _ ->
-                                    viewModel.pendingAction.value = {
-                                        deleteCredential(credentialId)
-                                        "Credential deleted"
-                                    }
-                                }.setNegativeButton(android.R.string.cancel) { dialog, _ ->
-                                    dialog.cancel()
-                                }.show()
-                        }
-                    }
-                },
-            )
+        listAdapter = OathListAdapter(object : OathListAdapter.ItemListener {
+            override fun onDelete(credentialId: ByteArray) {
+                lifecycleScope.launch(Dispatchers.Main) {
+                    AlertDialog.Builder(requireContext())
+                            .setTitle("Delete credential?")
+                            .setPositiveButton("Delete") { _, _ ->
+                                viewModel.pendingAction.value = {
+                                    deleteCredential(credentialId)
+                                    "Credential deleted"
+                                }
+                            }.setNegativeButton(android.R.string.cancel) { dialog, _ ->
+                                dialog.cancel()
+                            }.show()
+                }
+            }
+        })
         with(binding.credentialList) {
             layoutManager = LinearLayoutManager(context)
             adapter = listAdapter
         }
 
         binding.swiperefresh.setOnRefreshListener {
-            viewModel.pendingAction.value = { null } // NOOP: Force credential refresh
+            viewModel.pendingAction.value = { null }  // NOOP: Force credential refresh
             binding.swiperefresh.isRefreshing = false
         }
 
@@ -97,7 +91,7 @@ class OathFragment : YubiKeyFragment<OathSession, OathViewModel>() {
                             getSecret(
                                 requireContext(),
                                 R.string.enter_password,
-                                R.string.password,
+                                R.string.password
                             )?.let {
                                 viewModel.password = Pair(deviceId, it.toCharArray())
                             }
@@ -125,10 +119,7 @@ class OathFragment : YubiKeyFragment<OathSession, OathViewModel>() {
                     binding.editTextIssuer.error = "Issuer must not be empty"
                 } else {
                     viewModel.pendingAction.value = {
-                        putCredential(
-                            CredentialData("user@example.com", OathType.TOTP, HashAlgorithm.SHA1, secret, 6, 30, 0, issuer),
-                            false,
-                        )
+                        putCredential(CredentialData("user@example.com", OathType.TOTP, HashAlgorithm.SHA1, secret, 6, 30, 0, issuer), false)
                         "Credential added"
                     }
                 }

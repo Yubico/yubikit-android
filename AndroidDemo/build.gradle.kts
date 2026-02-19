@@ -102,3 +102,9 @@ dependencies {
     androidTestImplementation(libs.androidx.espresso.core)
 }
 
+spotless {
+    // temporarily don't format kotlin in this project
+    kotlin {
+        targetExclude("src/**/*.kt", "src/**/*.kts")
+    }
+}

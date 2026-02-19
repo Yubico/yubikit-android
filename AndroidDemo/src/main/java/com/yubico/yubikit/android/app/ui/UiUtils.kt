@@ -28,17 +28,11 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
 @UiThread
-suspend fun getSecret(
-    context: Context,
-    @StringRes title: Int,
-    @StringRes hint: Int = R.string.pin,
-) = suspendCoroutine { cont ->
-    val view =
-        LayoutInflater.from(context).inflate(R.layout.dialog_pin, null).apply {
-            findViewById<TextInputLayout>(R.id.dialog_pin_textinputlayout).hint = context.getString(hint)
-        }
-    val dialog =
-        AlertDialog.Builder(context)
+suspend fun getSecret(context: Context, @StringRes title: Int, @StringRes hint: Int = R.string.pin) = suspendCoroutine { cont ->
+    val view = LayoutInflater.from(context).inflate(R.layout.dialog_pin, null).apply {
+        findViewById<TextInputLayout>(R.id.dialog_pin_textinputlayout).hint = context.getString(hint)
+    }
+    val dialog = AlertDialog.Builder(context)
             .setTitle(title)
             .setView(view)
             .setPositiveButton(android.R.string.ok) { _, _ ->

@@ -21,21 +21,27 @@ import android.os.Bundle
 import android.view.View
 import android.widget.TextView
 import android.widget.Toast
+
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
+
 import com.yubico.yubikit.android.app.MainViewModel
 import com.yubico.yubikit.android.app.R
 import com.yubico.yubikit.android.transport.nfc.NfcYubiKeyDevice
 import com.yubico.yubikit.core.YubiKeyDevice
 import com.yubico.yubikit.core.application.ApplicationNotAvailableException
+
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+
 import org.slf4j.LoggerFactory
+
 import java.io.Closeable
 
 abstract class YubiKeyFragment<App : Closeable, VM : YubiKeyViewModel<App>> : Fragment() {
+
     private val logger = LoggerFactory.getLogger(YubiKeyFragment::class.java)
 
     private val activityViewModel: MainViewModel by activityViewModels()
@@ -44,15 +50,11 @@ abstract class YubiKeyFragment<App : Closeable, VM : YubiKeyViewModel<App>> : Fr
     private lateinit var yubiKeyPrompt: AlertDialog
     private lateinit var emptyText: TextView
 
-    override fun onViewCreated(
-        view: View,
-        savedInstanceState: Bundle?,
-    ) {
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         emptyText = view.findViewById(R.id.empty_view)
         emptyText.visibility = View.VISIBLE
 
-        yubiKeyPrompt =
-            AlertDialog.Builder(context)
+        yubiKeyPrompt = AlertDialog.Builder(context)
                 .setTitle("Insert YubiKey")
                 .setMessage(R.string.need_yubikey)
                 .setOnCancelListener { viewModel.pendingAction.value = null }

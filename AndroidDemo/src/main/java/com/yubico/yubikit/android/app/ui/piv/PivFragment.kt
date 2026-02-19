@@ -39,13 +39,12 @@ import kotlinx.coroutines.launch
 import org.bouncycastle.util.encoders.Hex
 
 class PivFragment : YubiKeyFragment<PivSession, PivViewModel>() {
-    private val slots =
-        listOf(
-            PageProperties(Slot.AUTHENTICATION, R.string.piv_authentication),
-            PageProperties(Slot.SIGNATURE, R.string.piv_signature),
-            PageProperties(Slot.KEY_MANAGEMENT, R.string.piv_key_mgmt),
-            PageProperties(Slot.CARD_AUTH, R.string.piv_card_auth),
-        )
+    private val slots = listOf(
+        PageProperties(Slot.AUTHENTICATION, R.string.piv_authentication),
+        PageProperties(Slot.SIGNATURE, R.string.piv_signature),
+        PageProperties(Slot.KEY_MANAGEMENT, R.string.piv_key_mgmt),
+        PageProperties(Slot.CARD_AUTH, R.string.piv_card_auth)
+    )
 
     override val viewModel: PivViewModel by activityViewModels()
     private lateinit var binding: FragmentPivBinding
@@ -53,16 +52,13 @@ class PivFragment : YubiKeyFragment<PivSession, PivViewModel>() {
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
-        savedInstanceState: Bundle?,
+        savedInstanceState: Bundle?
     ): View {
         binding = FragmentPivBinding.inflate(inflater, container, false)
         return binding.root
     }
 
-    override fun onViewCreated(
-        view: View,
-        savedInstanceState: Bundle?,
-    ) {
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
         binding.pager.adapter = PagerAdapter(this)
@@ -82,19 +78,17 @@ class PivFragment : YubiKeyFragment<PivSession, PivViewModel>() {
             result.onFailure { e ->
                 when (e) {
                     is ApplicationNotAvailableException -> showCerts(false)
-                    is ApduException ->
-                        if (e.sw == SW.SECURITY_CONDITION_NOT_SATISFIED) {
-                            lifecycleScope.launch(Dispatchers.Main) {
-                                viewModel.mgmtKey =
-                                    Hex.decode(
-                                        getSecret(
-                                            requireContext(),
-                                            R.string.piv_enter_mgmt_key,
-                                            R.string.piv_mgmt_key_hint,
-                                        ),
-                                    )
-                            }
+                    is ApduException -> if (e.sw == SW.SECURITY_CONDITION_NOT_SATISFIED) {
+                        lifecycleScope.launch(Dispatchers.Main) {
+                            viewModel.mgmtKey = Hex.decode(
+                                getSecret(
+                                    requireContext(),
+                                    R.string.piv_enter_mgmt_key,
+                                    R.string.piv_mgmt_key_hint
+                                )
+                            )
                         }
+                    }
                 }
             }
         }
@@ -112,7 +106,7 @@ class PivFragment : YubiKeyFragment<PivSession, PivViewModel>() {
         override fun createFragment(position: Int): Fragment {
             return PivCertificateFragment.newInstance(
                 slots[position].slot,
-                slots[position].nameResId,
+                slots[position].nameResId
             )
         }
     }

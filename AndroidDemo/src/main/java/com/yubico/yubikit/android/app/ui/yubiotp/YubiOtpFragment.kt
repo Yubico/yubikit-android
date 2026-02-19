@@ -38,49 +38,32 @@ import org.bouncycastle.util.encoders.Hex
 
 class YubiOtpFragment : Fragment() {
     class OtpContract : ActivityResultContract<Unit, String?>() {
-        override fun createIntent(
-            context: Context,
-            input: Unit,
-        ): Intent = Intent(context, OtpActivity::class.java)
+        override fun createIntent(context: Context, input: Unit): Intent = Intent(context, OtpActivity::class.java)
 
-        override fun parseResult(
-            resultCode: Int,
-            intent: Intent?,
-        ): String? {
+        override fun parseResult(resultCode: Int, intent: Intent?): String? {
             return intent?.getStringExtra(OtpActivity.EXTRA_OTP)
         }
     }
 
-    private val requestOtp =
-        registerForActivityResult(OtpContract()) {
-            activityViewModel.setYubiKeyListenerEnabled(true)
-            viewModel.postResult(
-                Result.success(
-                    when (it) {
-                        null -> "Cancelled by user"
-                        else -> "Read OTP: $it"
-                    },
-                ),
-            )
-        }
+    private val requestOtp = registerForActivityResult(OtpContract()) {
+        activityViewModel.setYubiKeyListenerEnabled(true)
+        viewModel.postResult(Result.success(when (it) {
+            null -> "Cancelled by user"
+            else -> "Read OTP: $it"
+        }))
+    }
 
     private val activityViewModel: MainViewModel by activityViewModels()
     private val viewModel: OtpViewModel by activityViewModels()
     private lateinit var binding: FragmentYubiotpOtpBinding
 
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?,
-    ): View {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
+                              savedInstanceState: Bundle?): View {
         binding = FragmentYubiotpOtpBinding.inflate(inflater, container, false)
         return binding.root
     }
 
-    override fun onViewCreated(
-        view: View,
-        savedInstanceState: Bundle?,
-    ) {
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
         binding.textLayoutPublicId.setEndIconOnClickListener {
@@ -103,12 +86,11 @@ class YubiOtpFragment : Fragment() {
                 val publicId = Modhex.decode(binding.editTextPublicId.text.toString())
                 val privateId = Hex.decode(binding.editTextPrivateId.text.toString())
                 val key = Hex.decode(binding.editTextKey.text.toString())
-                val slot =
-                    when (binding.slotRadio.checkedRadioButtonId) {
-                        R.id.radio_slot_1 -> Slot.ONE
-                        R.id.radio_slot_2 -> Slot.TWO
-                        else -> throw IllegalStateException("No slot selected")
-                    }
+                val slot = when (binding.slotRadio.checkedRadioButtonId) {
+                    R.id.radio_slot_1 -> Slot.ONE
+                    R.id.radio_slot_2 -> Slot.TWO
+                    else -> throw IllegalStateException("No slot selected")
+                }
 
                 viewModel.pendingAction.value = {
                     putConfiguration(slot, YubiOtpSlotConfiguration(publicId, privateId, key), null, null)

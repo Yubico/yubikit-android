@@ -23,15 +23,12 @@ import com.yubico.yubikit.core.YubiKeyDevice
 import com.yubico.yubikit.yubiotp.ConfigurationState
 import com.yubico.yubikit.yubiotp.YubiOtpSession
 
-class OtpViewModel : YubiKeyViewModel<YubiOtpSession>() {
-    private val slotStatus = MutableLiveData<ConfigurationState?>()
-    val slotConfigurationState: LiveData<ConfigurationState?> = slotStatus
 
-    override fun getSession(
-        device: YubiKeyDevice,
-        onError: (Throwable) -> Unit,
-        callback: (YubiOtpSession) -> Unit,
-    ) {
+class OtpViewModel : YubiKeyViewModel<YubiOtpSession>() {
+    private val _slotStatus = MutableLiveData<ConfigurationState?>()
+    val slotConfigurationState: LiveData<ConfigurationState?> = _slotStatus
+
+    override fun getSession(device: YubiKeyDevice, onError: (Throwable) -> Unit, callback: (YubiOtpSession) -> Unit) {
         YubiOtpSession.create(device) {
             try {
                 callback(it.value)
@@ -42,6 +39,6 @@ class OtpViewModel : YubiKeyViewModel<YubiOtpSession>() {
     }
 
     override fun YubiOtpSession.updateState() {
-        slotStatus.postValue(configurationState)
+        _slotStatus.postValue(configurationState)
     }
 }
