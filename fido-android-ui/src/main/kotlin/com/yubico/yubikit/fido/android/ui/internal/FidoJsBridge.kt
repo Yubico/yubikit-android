@@ -140,7 +140,7 @@ internal class FidoJsBridge(
             JSONObject().apply {
                 put("promiseUuid", promiseUuid)
                 put("result", JSONObject(result))
-            }
+            },
         )
         webView.post {
             webView.evaluateJavascript(
@@ -162,7 +162,7 @@ internal class FidoJsBridge(
             JSONObject().apply {
                 put("promiseUuid", promiseUuid)
                 put("message", errorMessage)
-            }
+            },
         )
         webView.post {
             webView.evaluateJavascript(
