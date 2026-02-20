@@ -208,6 +208,7 @@ public class YubiKitManager {
             Arrays.asList(SmartCardConnection.class, FidoConnection.class, OtpConnection.class));
     Map<UsbPid, UsbPidGroup> groups = buildGroups(connectionTypes);
 
+    IOException lastException = null;
     for (UsbPidGroup group : groups.values()) {
       if (!group.supportsConnection(connectionType)) {
         continue;
@@ -222,7 +223,11 @@ public class YubiKitManager {
       } catch (IOException e) {
         logger.debug(
             "Selector {} not found in PID group {}: {}", selector, group.getPid(), e.getMessage());
+        lastException = e;
       }
+    }
+    if (lastException != null) {
+      throw lastException;
     }
     throw new IOException(
         "No device matching selector " + selector + " supports " + connectionType.getSimpleName());

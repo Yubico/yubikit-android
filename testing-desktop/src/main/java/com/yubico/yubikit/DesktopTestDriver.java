@@ -65,7 +65,18 @@ public class DesktopTestDriver {
   public YubiKeyDevice awaitSession() throws InterruptedException {
     String serialProperty = System.getProperty(SERIAL_PROPERTY);
     if (serialProperty != null) {
-      int serial = Integer.parseInt(serialProperty);
+      final int serial;
+      try {
+        serial = Integer.parseInt(serialProperty);
+      } catch (NumberFormatException e) {
+        throw new IllegalStateException(
+            "Invalid value for -D"
+                + SERIAL_PROPERTY
+                + ": '"
+                + serialProperty
+                + "'. Expected an integer YubiKey serial number.",
+            e);
+      }
       logger.info("Selecting device by serial number: {}", serial);
       DesktopDeviceSelector selector = DesktopDeviceSelector.forSerial(serial);
       Optional<DesktopDeviceRecord> record = yubikit.getDeviceBySelector(selector);
