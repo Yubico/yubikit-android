@@ -4,17 +4,13 @@
     <string name="yk_fido_login_with_passkey">Login with passkey to %1$s</string>
     <string name="yk_fido_tap_or_insert_key">Tap or insert your security key</string>
     <string name="yk_fido_tap_key_again">Tap your security key again</string>
-    <string name="yk_fido_passkey_icon">Passkey Icon</string>
+    <string name="yk_fido_passkey_icon">Passkey icon</string>
     <string name="yk_fido_continue_operation">Continue</string>
     <string name="yk_fido_provide_pin">PIN</string>
     <string name="yk_fido_icon_content_description_password">Password</string>
     <string name="yk_fido_passkey_created">Passkey successfully created</string>
     <plurals name="yk_fido_incorrect_pin_with_attempts">
-        <item quantity="one">Incorrect PIN. %d attempt remaining.</item>
-        <item quantity="other">Incorrect PIN. %d attempts remaining.</item>
-    </plurals>
-    <plurals name="yk_fido_incorrect_uv_with_attempts">
-        <item quantity="one">Incorrect PIN. %d attempt remaining.</item>
+        <item quantity="one">Incorrect PIN. %1$d attempt remaining.</item>
         <item quantity="other">Incorrect PIN. %1$d attempts remaining.</item>
     </plurals>
     <string name="yk_fido_incorrect_pin">Incorrect PIN.</string>
@@ -24,8 +20,7 @@
     <string name="yk_fido_pin_successfully_changed">PIN successfully changed</string>
     <string name="yk_fido_unknown_error">Unknown error</string>
     <string name="yk_fido_device_not_configured">The security key cannot be used, make sure PIN is set.</string>
-    <string name="yk_fido_select_passkey">"Select a passkey (%1$d available)"</string>
-    <string name="yk_fido_passkey_index">Passkey %1$d</string>
+    <string name="yk_fido_select_passkey">Select a passkey (%1$d available)</string>
     <string name="yk_fido_retry">Retry</string>
     <string name="yk_fido_error">Error</string>
     <string name="yk_fido_remove_the_key">Remove the key</string>
@@ -49,8 +44,8 @@
     <string name="yk_fido_ctap_err_key_store_full">There is no space free for passkeys on the security key. Please remove an existing passkey to create a new one.</string>
     <string name="yk_fido_ctap_err_puat_required">User verification is required for the operation, but the security key is not configured. Please configure the key by creating a PIN and try again.</string>
     <plurals name="yk_fido_ctap_err_uv_invalid">
-        <item quantity="one">Fingerprint not recognized. Try again.\n%d retry left.</item>
-        <item quantity="other">Fingerprint not recognized. Try again.\n%d retries left.</item>
+        <item quantity="one">Fingerprint not recognized. Try again.\n%1$d retry left.</item>
+        <item quantity="other">Fingerprint not recognized. Try again.\n%1$d retries left.</item>
     </plurals>
     <string name="yk_fido_ctap_err_credential_excluded">Cannot create this passkey (CREDENTIAL_EXCLUDED).</string>
     <string name="yk_fido_ctap_err_uv_invalid_use_pin">Fingerprint did not match, please use PIN.</string>
@@ -58,6 +53,6 @@
     <string name="yk_fido_creating_pin_failed">Creating PIN failed</string>
     <string name="yk_fido_info_no_pin_set">The Security Key does not have a PIN set. You need to create a PIN to continue.</string>
     <string name="yk_fido_info_force_change_pin">For security reasons, the current PIN has to be changed.</string>
-    <string name="yk_fido_fingerprint_icon">fingerprint icon</string>
-    <string name="yk_fido_content_description_nfc_antenna_location">NFC Antenna location</string>
+    <string name="yk_fido_fingerprint_icon">Fingerprint icon</string>
+    <string name="yk_fido_content_description_nfc_antenna_location">NFC antenna location</string>
 </resources>
