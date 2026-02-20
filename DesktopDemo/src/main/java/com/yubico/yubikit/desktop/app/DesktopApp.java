@@ -29,7 +29,7 @@ import org.jspecify.annotations.Nullable;
 
 public class DesktopApp {
 
-  private static final String APP_NAME = "desktopdemo";
+  private static final String APP_NAME = "DesktopApp";
 
   public static void main(String[] argv) {
     if (OperatingSystem.isMac()) {
