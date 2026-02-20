@@ -2,23 +2,95 @@
 
 WARNING: This demo uses experimental APIs from the desktop module. The underlying APIs are not stable and may change in future versions without notice.
 
-This is a demonstration application showing how to use the desktop module of our SDK.
-It provides examples of basic usage and common implementation patterns.
+A command-line application demonstrating the desktop module's device selection API.
+It can list connected YubiKeys and display device information, targeting a specific
+device by serial number or fingerprint when multiple keys are connected.
 
-== Overview
+== Commands
 
-The DesktopDemo is a simple application that demonstrates:
+`list`:: List all connected YubiKeys with serial number, fingerprint, firmware version, and form factor.
+`info`:: Show detailed device information for a single YubiKey. If multiple devices are connected, requires `--serial` or `--fingerprint`.
 
-* Basic setup of a desktop application
-* Implementation of core functionality
-* Common usage patterns
+== Options
 
-== Running the Demo
+`--serial <serial>`:: Select a device by its serial number.
+`--fingerprint <fingerprint>`:: Select a device by its fingerprint (HID path or PCSC terminal name).
+`-h, --help`:: Show the help message.
+
+== Running with Gradle
+
+Show help:
 
 [source,bash]
 ----
 ./gradlew :DesktopDemo:run
 ----
+
+List connected YubiKeys:
+
+[source,bash]
+----
+./gradlew :DesktopDemo:run --args="list"
+----
+
+Show info for a single connected YubiKey:
+
+[source,bash]
+----
+./gradlew :DesktopDemo:run --args="info"
+----
+
+Show info for a specific YubiKey by serial number:
+
+[source,bash]
+----
+./gradlew :DesktopDemo:run --args="--serial 12345678 info"
+----
+
+Show info for a specific YubiKey by fingerprint:
+
+[source,bash]
+----
+./gradlew :DesktopDemo:run --args='--fingerprint "Yubico YubiKey OTP+FIDO+CCID 00" info'
+----
+
+== Installing as a standalone application
+
+Build and install a runnable distribution:
+
+[source,bash]
+----
+./gradlew :DesktopDemo:installDist
+----
+
+This creates a distribution with start scripts at:
+
+----
+DesktopDemo/build/install/DesktopApp/
+├── bin/
+│   ├── DesktopApp        # Unix/macOS start script
+│   └── DesktopApp.bat    # Windows start script
+└── lib/
+    └── *.jar             # Application and dependency JARs
+----
+
+Run the installed application directly:
+
+[source,bash]
+----
+./DesktopDemo/build/install/DesktopApp/bin/DesktopApp list
+./DesktopDemo/build/install/DesktopApp/bin/DesktopApp --serial 12345678 info
+----
+
+To build a distributable archive (`.zip` or `.tar`):
+
+[source,bash]
+----
+./gradlew :DesktopDemo:distZip
+./gradlew :DesktopDemo:distTar
+----
+
+Archives are created at `DesktopDemo/build/distributions/`.
 
 == Note
 

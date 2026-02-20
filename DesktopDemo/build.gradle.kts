@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Yubico.
+ * Copyright (C) 2025-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,9 +22,6 @@ plugins {
 
 dependencies {
     implementation(project(":desktop"))
-    implementation(project(":oath"))
-    implementation(project(":fido"))
-    implementation(project(":yubiotp"))
 
     implementation(libs.logback.classic)
 }
