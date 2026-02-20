@@ -1,7 +1,7 @@
 [libraries]
 # Submodule: android
 androidx-annotation = { module = "androidx.annotation:annotation", version.ref = "androidx-annotation" }
-androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activity-ktx" }
+androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activity-compose" }
 androidx-activity-ktx = { module = "androidx.activity:activity-ktx", version.ref = "activity-ktx" }
 androidx-adaptive = { module = "androidx.compose.material3.adaptive:adaptive" }
 androidx-credentials = { module = "androidx.credentials:credentials", version.ref = "credentials" }
@@ -86,19 +86,20 @@ kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "ko
 kotlinx-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 
 [versions]
-activity-ktx = "1.12.2"
+activity-compose = "1.12.4"
+activity-ktx = "1.12.4"
 credentials = "1.6.0-rc01"
 kotlinx-coroutines-test = "1.10.2"
 lifecycle-viewmodel-compose = "2.10.0"
-material3 = "1.5.0-alpha12"
-mockito-kotlin = "6.2.1"
-runtime-livedata = "1.10.1"
+material3 = "1.5.0-alpha14"
+mockito-kotlin = "6.2.3"
+runtime-livedata = "1.10.3"
 android-gradle = "8.13.2"
 slf4j-api = "2.0.17"
-spotbugs-plugin = "6.4.7"
+spotbugs-plugin = "6.4.8"
 spotbugs-core = "4.9.8"
 findsecbugs = "1.14.0"
-spotless = "8.1.0"
+spotless = "8.2.1"
 appcompat = "1.7.1"
 bcpkix-jdk15to18 = "1.83"
 core-ktx = "1.17.0"
@@ -116,7 +117,7 @@ legacy-support-v4 = "1.0.0"
 lifecycle-extensions = "2.2.0"
 lifecycle-viewmodel-ktx = "2.10.0"
 logback-android = "3.0.0"
-logback-classic = "1.5.26"
+logback-classic = "1.5.32"
 material = "1.13.0"
 moshi = "1.15.2"
 multidex = "2.0.1"
@@ -131,4 +132,4 @@ turbine = "1.2.1"
 webkit = "1.15.0"
 kotlinx-serialization-json = "1.10.0"
 ksp = "2.2.21-2.0.4"
-compose-bom = "2025.09.01"
+compose-bom = "2026.02.00"
