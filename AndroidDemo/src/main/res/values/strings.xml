@@ -1,6 +1,6 @@
 <resources>
 
-    <string name="app_name">YubiKit Sample</string>
+    <string name="yk_fido_app_name">YubiKit Sample</string>
     <string name="nav_header_title">YubiKit Sample</string>
     <string name="nav_header_subtitle">YubiKit SDK demo application</string>
     <string name="nav_header_desc">Navigation header</string>
@@ -10,6 +10,8 @@
     <string name="menu_piv">PIV</string>
     <string name="menu_web">WebView</string>
     <string name="menu_oath">OATH</string>
+    <string name="menu_fido">FIDO</string>
+    <string name="menu_fido_app_local">FIDO (App)</string>
 
     <string name="need_yubikey">Plug in you YubiKey or tap over NFC reader</string>
     <string name="hold_key">Hold your key flat until operation is completed</string>
@@ -80,6 +82,9 @@
     <string name="oath_issuer">Credential issuer</string>
     <string name="oath_add">Add new credential</string>
 
+    <string name="fido_mc">Make credential</string>
+    <string name="fido_ga">Get assertions</string>
+
     <string name="about">About</string>
     <string name="about_app">YubiKit is a library provided by Yubico for interacting with YubiKeys.
         This demo app showcases some of the capabilities of the library.
@@ -88,6 +93,6 @@
     </string>
     <string name="yubico">Yubico</string>
     <string name="version">Version %s</string>
-    <string name="copyright">Copyright © 2019–2020 Yubico.</string>
-
+    <string name="copyright">Copyright © 2019–2026 Yubico.</string>
+    <string name="img_passkey_icon">passkey icon</string>
 </resources>

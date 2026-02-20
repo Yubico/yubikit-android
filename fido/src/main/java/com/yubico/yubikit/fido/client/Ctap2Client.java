@@ -393,6 +393,10 @@ public class Ctap2Client implements WebAuthnClient {
     try {
       clientPin.changePin(currentPin, newPin);
     } catch (CtapException e) {
+      if (e.getCtapError() == CtapException.ERR_PIN_INVALID) {
+        throw new AuthInvalidClientError(
+            e, AuthInvalidClientError.AuthType.PIN, clientPin.getPinRetries().getCount());
+      }
       throw ClientError.wrapCtapException(e);
     }
   }

@@ -36,4 +36,5 @@ include("core", "oath", "yubiotp", "management", "piv", "openpgp", "support", "f
 include("testing")
 include("android", "AndroidDemo", "testing-android")
 include("desktop", "DesktopDemo", "testing-desktop")
+include("fido-android-ui")
 
