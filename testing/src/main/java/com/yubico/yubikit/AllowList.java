@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Yubico.
+ * Copyright (C) 2025-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import com.yubico.yubikit.core.UsbPid;
 import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.fido.FidoConnection;
+import com.yubico.yubikit.core.otp.OtpConnection;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.management.DeviceInfo;
 import com.yubico.yubikit.support.DeviceUtil;
@@ -84,6 +85,14 @@ public class AllowList {
         return getDeviceSerialNumber(connection, pid);
       } catch (Exception e) {
         logger.error("Error opening SmartCard connection", e);
+      }
+    }
+
+    if (device.supportsConnection(OtpConnection.class)) {
+      try (OtpConnection connection = device.openConnection(OtpConnection.class)) {
+        return getDeviceSerialNumber(connection, pid);
+      } catch (Exception e) {
+        logger.error("Error opening OTP connection", e);
       }
     }
 
