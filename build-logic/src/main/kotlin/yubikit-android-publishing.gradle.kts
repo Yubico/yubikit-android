@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Yubico.
+ * Copyright (C) 2025-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import com.android.build.gradle.LibraryExtension
+import com.android.build.api.dsl.LibraryExtension
 
 plugins {
     `maven-publish`
@@ -22,7 +22,7 @@ plugins {
     id("com.android.library")
 }
 
-val android = extensions.getByType(LibraryExtension::class.java)
+val android: LibraryExtension = extensions.getByType(LibraryExtension::class.java)
 
 android.publishing {
     singleVariant("release") {

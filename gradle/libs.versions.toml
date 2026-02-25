@@ -33,7 +33,6 @@ hid4java = { module = "org.hid4java:hid4java", version.ref = "hid4java" }
 spotbugs-gradle-plugin = { module = "com.github.spotbugs.snom:spotbugs-gradle-plugin", version.ref = "spotbugs-plugin" }
 android-gradle-plugin = { module = "com.android.tools.build:gradle", version.ref = "android-gradle" }
 spotless-plugin-gradle = { module = "com.diffplug.spotless:spotless-plugin-gradle", version.ref = "spotless" }
-kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 
 # Build dependencies
 spotbugs = { module = "com.github.spotbugs:spotbugs", version.ref = "spotbugs-core" }
@@ -42,7 +41,6 @@ findsecbugs-plugin = { module = "com.h3xstream.findsecbugs:findsecbugs-plugin", 
 slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
 
 # Shared
-androidx-multidex = { module = "androidx.multidex:multidex", version.ref = "multidex" }
 androidx-junit = { module = "androidx.test.ext:junit", version.ref = "androidx-junit" }
 androidx-test-runner = { module = "androidx.test:runner", version.ref = "androidx-test" }
 bcpkix-jdk15to18 = { module = "org.bouncycastle:bcpkix-jdk15to18", version.ref = "bcpkix-jdk15to18" }
@@ -53,18 +51,23 @@ material = { module = "com.google.android.material:material", version.ref = "mat
 moshi = { module = "com.squareup.moshi:moshi", version.ref = "moshi" }
 mockito = { module = "org.mockito:mockito-core", version.ref = "mockito" }
 jspecify = { module = "org.jspecify:jspecify", version.ref = "jspecify" }
+jsr250-api = { module = "javax.annotation:jsr250-api", version.ref = "jsr250-api" }
+jsr305 = { module = "com.google.code.findbugs:jsr305", version.ref = "jsr305" }
+slf4j-nop = { module = "org.slf4j:slf4j-nop", version.ref = "slf4j" }
 
 [plugins]
-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 android-application = { id = "com.android.application", version.ref = "android-gradle" }
 android-library = { id = "com.android.library", version.ref = "android-gradle" }
 
 [versions]
-android-gradle = "8.13.1"
-spotbugs-plugin = "6.4.7"
+java = "11"
+android-gradle = "9.0.0"
+jsr250-api = "1.0"
+jsr305 = "3.0.2"
+spotbugs-plugin = "6.4.8"
 spotbugs-core = "4.9.8"
 findsecbugs = "1.14.0"
-spotless = "8.1.0"
+spotless = "8.2.1"
 slf4j = "2.0.17"
 appcompat = "1.7.1"
 bcpkix-jdk15to18 = "1.83"
@@ -77,20 +80,18 @@ hamcrest-library = "3.0"
 hid4java = "0.8.0"
 jspecify = "1.0.0"
 junit-version = "4.13.2"
-kotlin = "2.2.21"
 kotlinx-coroutines-android = "1.10.2"
 legacy-support-v4 = "1.0.0"
 lifecycle-extensions = "2.2.0"
 lifecycle-viewmodel-ktx = "2.10.0"
 logback-android = "3.0.0"
-logback-classic = "1.5.21"
+logback-classic = "1.5.29"
 material = "1.13.0"
 moshi = "1.15.2"
-multidex = "2.0.1"
-navigation-fragment-ktx = "2.9.6"
+navigation-fragment-ktx = "2.9.7"
 recyclerview = "1.4.0"
 androidx-annotation = "1.9.1"
 androidx-junit = "1.3.0"
-robolectric = "4.16"
+robolectric = "4.16.1"
 mockito = "5.21.0"
 androidx-test = "1.7.0"

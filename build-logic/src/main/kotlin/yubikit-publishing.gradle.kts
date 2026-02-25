@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Yubico.
+ * Copyright (C) 2025-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,8 +23,8 @@ extensions.getByType(JavaPluginExtension::class.java).apply {
     withSourcesJar()
 }
 
-val publishing = extensions.getByType(PublishingExtension::class.java)
-val signing = extensions.getByType(SigningExtension::class.java)
+val publishing: PublishingExtension = extensions.getByType(PublishingExtension::class.java)
+val signing: SigningExtension = extensions.getByType(SigningExtension::class.java)
 
 publishing.publications {
     create<MavenPublication>("maven") {

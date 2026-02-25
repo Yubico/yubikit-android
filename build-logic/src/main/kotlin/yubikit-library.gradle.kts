@@ -15,12 +15,12 @@
  */
 
 plugins {
-    id("yubikit-java-convention")
+    id("java-library")
     id("yubikit-common")
     id("yubikit-publishing")
 }
 
-val libs = extensions.getByType<VersionCatalogsExtension>().named("libs")
+val libs: VersionCatalog = extensions.getByType<VersionCatalogsExtension>().named("libs")
 
 dependencies {
     testImplementation(project(":testing"))
