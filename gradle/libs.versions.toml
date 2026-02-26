@@ -61,7 +61,7 @@ android-library = { id = "com.android.library", version.ref = "android-gradle" }
 
 [versions]
 java = "11"
-android-gradle = "9.0.0"
+android-gradle = "9.0.1"
 jsr250-api = "1.0"
 jsr305 = "3.0.2"
 spotbugs-plugin = "6.4.8"
