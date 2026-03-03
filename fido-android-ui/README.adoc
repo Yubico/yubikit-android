@@ -1,0 +1,262 @@
+== FIDO Android UI module
+
+[WARNING]
+====
+**Experimental Module**: This module is still experimental. The public API may change between library releases without following semantic versioning conventions used by other yubikit-android modules. Use with caution in production environments.
+====
+
+The FIDO Android UI module provides a high-level FIDO2/WebAuthn client with built-in UI components for Android applications. This module simplifies the integration of hardware security key authentication by handling the complete user interaction flow, including NFC/USB communication, PIN entry, and user prompts.
+
+https://developers.yubico.com/yubikit-android/JavaDoc/fido-android-ui/latest/[JavaDoc API documentation]
+
+=== Dependency
+
+To add the FIDO Android UI module as a dependency to your project, add the following to your gradle configuration:
+
+[source,groovy]
+----
+dependencies {
+  implementation 'com.yubico.yubikit:fido-android-ui:(insert version here)'
+}
+----
+
+This module depends on the link:../core/[core], link:../android/[android], and link:../fido/[fido] modules, which will automatically be added as transitive dependencies to your project.
+
+=== Features
+
+* **Complete FIDO2/WebAuthn client implementation** with built-in UI for user interactions
+* **WebView integration** for seamless passkey support in web applications
+* **Native app support** for direct FIDO operations without WebView
+* **Automatic device discovery** over NFC and USB
+* **PIN management UI** with configurable workflow (PIN-first or touch-first)
+* **Extension support** including CredBlob, CredProps, CredProtect, HmacSecret, LargeBlob, MinPinLength, and Sign
+* **Customizable theming** to match your app's design
+* **Jetpack Compose UI** with Material Design components
+
+=== FidoClient
+
+The `FidoClient` class is the primary API for performing FIDO operations. It handles credential creation (registration) and assertion (authentication) with automatic UI presentation.
+
+==== Creating a FidoClient
+
+Create an instance from a Fragment or Activity during initialization:
+
+[source,kotlin]
+----
+class MyFragment : Fragment() {
+    private lateinit var fidoClient: FidoClient
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        // Create client with default extensions
+        fidoClient = FidoClient(this)
+
+        // Or with custom extensions
+        fidoClient = FidoClient(
+            this,
+            listOf(
+                CredPropsExtension(),
+                HmacSecretExtension(),
+                LargeBlobExtension()
+            )
+        )
+    }
+}
+----
+
+==== Making Credentials (Registration)
+
+Use `makeCredential()` for user registration:
+
+[source,kotlin]
+----
+lifecycleScope.launch {
+    val origin = Origin("https://example.com")
+    val requestJson = """
+        {
+            "challenge": "...",
+            "rp": {"id": "example.com", "name": "Example"},
+            "user": {
+                "id": "...",
+                "name": "user@example.com",
+                "displayName": "User Name"
+            },
+            "pubKeyCredParams": [{"type": "public-key", "alg": -7}]
+        }
+    """
+
+    fidoClient.makeCredential(origin, requestJson, null)
+        .onSuccess { credentialJson ->
+            // credentialJson contains the PublicKeyCredential response
+            // Send to your server for validation
+            logger.info("Registration successful: $credentialJson")
+        }
+        .onFailure { error ->
+            logger.error("Registration failed", error)
+        }
+}
+----
+
+==== Getting Assertions (Authentication)
+
+Use `getAssertion()` for user authentication:
+
+[source,kotlin]
+----
+lifecycleScope.launch {
+    val origin = Origin("https://example.com")
+    val requestJson = """
+        {
+            "challenge": "...",
+            "rpId": "example.com",
+            "allowCredentials": [
+                {"type": "public-key", "id": "..."}
+            ]
+        }
+    """
+
+    fidoClient.getAssertion(origin, requestJson, null)
+        .onSuccess { assertionJson ->
+            // assertionJson contains the PublicKeyCredential response
+            // Send to your server for validation
+            logger.info("Authentication successful: $assertionJson")
+        }
+        .onFailure { error ->
+            logger.error("Authentication failed", error)
+        }
+}
+----
+
+=== WebView Integration
+
+For web applications, enable FIDO WebAuthn support in a WebView to allow web pages to use `navigator.credentials` APIs:
+
+[source,kotlin]
+----
+class FidoFragment : Fragment() {
+    private lateinit var fidoClient: FidoClient
+    private lateinit var webView: WebView
+
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
+        fidoClient = FidoClient(this)
+        val view = inflater.inflate(R.layout.fragment_fido, container, false)
+        webView = view.findViewById(R.id.webView)
+        return view
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        // Enable DOM storage for web apps
+        webView.settings.domStorageEnabled = true
+
+        // Enable FIDO WebAuthn support
+        if (WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)) {
+            webView.enableFidoWebauthn(lifecycleScope, fidoClient)
+        } else {
+            logger.warn("Web Message Listener not supported")
+        }
+
+        // Load a WebAuthn-enabled site
+        webView.loadUrl("https://passkey.org")
+    }
+}
+----
+
+The WebView integration automatically:
+
+* Intercepts `navigator.credentials.create()` and `navigator.credentials.get()` calls
+* Injects necessary JavaScript polyfills
+* Routes requests through the FidoClient
+* Handles HTTPS-only enforcement
+* Returns properly formatted responses to the web page
+
+=== Configuration
+
+Use `FidoConfigManager` to customize the FIDO UI behavior globally:
+
+[source,kotlin]
+----
+// Prioritize PIN entry before device interaction
+FidoConfigManager.setPrioritizePin(true)
+
+// Set custom extensions globally
+FidoConfigManager.setExtensions(
+    listOf(
+        LargeBlobExtension(),
+        HmacSecretExtension(),
+        SignExtension()
+    )
+)
+
+// Apply custom theme
+FidoConfigManager.setTheme { content ->
+    MyAppTheme {
+        content()
+    }
+}
+
+// Or update configuration atomically
+FidoConfigManager.update { config ->
+    config.copy(
+        isPinPrioritized = true,
+        fidoExtensions = listOf(...)
+    )
+}
+
+// Observe configuration changes
+lifecycleScope.launch {
+    FidoConfigManager.configuration.collect { config ->
+        logger.info("Config updated: $config")
+    }
+}
+----
+
+=== Complete Examples
+
+Complete working examples can be found in the AndroidDemo application:
+
+* **WebView integration**: link:../AndroidDemo/src/main/java/com/yubico/yubikit/android/app/ui/fido/FidoFragment.kt[FidoFragment.kt]
+** Demonstrates WebView setup with multiple test sites
+** Shows how to clear cookies and reload pages
+** Includes extension configuration
+
+* **Native app integration**: link:../AndroidDemo/src/main/java/com/yubico/yubikit/android/app/ui/fido/FidoAppLocalFragment.kt[FidoAppLocalFragment.kt]
+** Shows direct makeCredential/getAssertion usage
+** Demonstrates request building
+** Includes error handling patterns
+
+=== Security Considerations
+
+* **HTTPS Only**: All origins must use HTTPS. HTTP origins will be rejected.
+* **Origin Validation**: The module validates that the request origin matches expected patterns.
+* **PIN Protection**: PINs are handled securely and never logged or exposed in plain text.
+* **Single Request**: Only one FIDO operation can be in progress at a time.
+* **iframe Restrictions**: WebView integration does not support requests from iframes.
+
+=== Threading
+
+All `FidoClient` operations are suspending functions that must be called from a coroutine context. The module handles all necessary thread coordination internally, including:
+
+* UI interactions on the main thread
+* NFC/USB communication on background threads
+* Cryptographic operations
+* JSON serialization/deserialization
+
+=== Supported Extensions
+
+The module supports the following FIDO2 extensions:
+
+* **credBlob**: Store small amounts of data with credentials
+* **credProps**: Get credential properties (rk, authenticatorDisplayName)
+* **credProtect**: Configure user verification requirements
+* **hmacSecret** (PRF): Generate pseudo-random functions
+* **largeBlob**: Store larger data blobs
+* **minPinLength**: Query minimum PIN length requirements
+* **sign**: Create signature with exported public key
+
+Extensions can be configured per-client or globally via `FidoConfigManager`.

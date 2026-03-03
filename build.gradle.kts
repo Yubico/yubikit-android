@@ -17,6 +17,7 @@
 plugins {
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.android.library) apply false
+    alias(libs.plugins.spotless) apply false
 }
 
 fun VersionCatalog.javaVersion(): JavaVersion =
@@ -32,7 +33,7 @@ allprojects {
 }
 
 subprojects {
-    version = "3.0.2-SNAPSHOT"
+    version = "3.0.1_1-ui-SNAPSHOT"
     tasks.withType<Javadoc>().configureEach {
         (options as? StandardJavadocDocletOptions)?.addStringOption(
             "Xdoclint:all,-missing",

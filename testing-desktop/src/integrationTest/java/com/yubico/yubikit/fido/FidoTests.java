@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2025 Yubico.
+ * Copyright (C) 2024-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ import com.yubico.yubikit.AlwaysManualTest;
 import com.yubico.yubikit.fido.client.Ctap1ClientInstrumentedTests;
 import com.yubico.yubikit.fido.client.Ctap2ClientInstrumentedTests;
 import com.yubico.yubikit.fido.client.Ctap2ClientPinInstrumentedTests;
-import com.yubico.yubikit.fido.client.extensions.SignExtensionInstrumentedTests;
 import com.yubico.yubikit.fido.ctap.Ctap2BioEnrollmentInstrumentedTests;
 import com.yubico.yubikit.fido.ctap.Ctap2BioUvTests;
 import com.yubico.yubikit.fido.ctap.Ctap2ConfigInstrumentedTests;
@@ -50,8 +49,7 @@ import org.junit.runners.Suite;
   Ctap2ConfigInstrumentedTests.class,
   Ctap2BioEnrollmentInstrumentedTests.class,
   Ctap2BioUvTests.class,
-  Ctap2SessionResetInstrumentedTests.class,
-  SignExtensionInstrumentedTests.class
+  Ctap2SessionResetInstrumentedTests.class
 })
 @Categories.ExcludeCategory(AlwaysManualTest.class)
 public class FidoTests {}

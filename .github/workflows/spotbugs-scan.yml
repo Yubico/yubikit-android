@@ -66,6 +66,7 @@ jobs:
             "desktop",
             "DesktopDemo",
             "fido",
+            "fido-android-ui",
             "management",
             "oath",
             "openpgp",

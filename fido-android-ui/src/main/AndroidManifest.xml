@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <activity
+            android:name=".internal.YubiKitFidoActivity"
+            android:exported="false"
+            android:theme="@style/Theme.FidoAndroid"
+            android:configChanges="keyboard|keyboardHidden|orientation|screenSize"/>
+    </application>
+
+</manifest>
