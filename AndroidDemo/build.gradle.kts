@@ -1,3 +1,5 @@
+import com.diffplug.gradle.spotless.SpotlessExtension
+
 /*
  * Copyright (C) 2025-2026 Yubico.
  *
@@ -96,7 +98,7 @@ dependencies {
     androidTestImplementation(libs.androidx.espresso.core)
 }
 
-spotless {
+configure<SpotlessExtension> {
     // temporarily don't format kotlin in this project
     kotlin {
         targetExclude("src/**/*.kt", "src/**/*.kts")

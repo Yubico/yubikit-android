@@ -18,7 +18,7 @@ package com.yubico.yubikit.fido.android.ui.screens
 
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
@@ -33,8 +33,10 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
+@Config(sdk = [35]) // TODO sdk 36 needs Java 21
 class CreatePinScreenTest {
 
     @get:Rule
@@ -123,6 +125,7 @@ class CreatePinScreenTest {
 }
 
 @RunWith(RobolectricTestRunner::class)
+@Config(sdk = [35]) // TODO sdk 36 needs Java 21
 class ForceChangePinScreenTest {
 
     @get:Rule

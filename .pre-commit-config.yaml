@@ -4,5 +4,6 @@ repos:
       - id: spotless
         name: reformat sources
         language: script
-        entry: scripts/spotless.py --verbose
+        entry: scripts/spotless.py
+        pass_filenames: false
         always_run: true

@@ -1,3 +1,5 @@
+import com.diffplug.gradle.spotless.SpotlessExtension
+
 /*
  * Copyright (C) 2024-2025 Yubico.
  *
@@ -14,11 +16,12 @@
  * limitations under the License.
  */
 
-plugins {
-    id("com.diffplug.spotless")
-}
+// Applied imperatively to avoid classloader isolation issues with precompiled script plugins.
+// Using `plugins { id("com.diffplug.spotless") }` causes each sibling project to get its own
+// classloader for SpotlessTaskService, leading to build failures.
+apply(plugin = "com.diffplug.spotless")
 
-spotless {
+configure<SpotlessExtension> {
     java {
         target("src/*/java/**/*.java")
         googleJavaFormat("1.25.2")

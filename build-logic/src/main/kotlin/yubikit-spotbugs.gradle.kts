@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-import com.android.build.api.attributes.BuildTypeAttr
-import com.android.build.gradle.internal.attributes.VariantAttr
+import com.android.build.api.dsl.LibraryExtension
 import java.io.ByteArrayOutputStream
+import java.util.Properties
 
 plugins {
     `java-base`
@@ -27,13 +27,6 @@ val libs: VersionCatalog by lazy { the<VersionCatalogsExtension>().named("libs")
 
 // Create a separate configuration ONLY for running SpotBugs (not compile-time)
 val spotbugsRuntime: Configuration by configurations.creating {
-    isCanBeConsumed = false
-    isCanBeResolved = true
-    isTransitive = true
-}
-
-// Configuration for auxiliary classpath (dependencies needed for analysis)
-val spotbugsAuxClasspath: Configuration by configurations.creating {
     isCanBeConsumed = false
     isCanBeResolved = true
     isTransitive = true
@@ -61,9 +54,14 @@ fun findClassesDir(project: Project, isAndroid: Boolean): File? {
     val buildDir = project.layout.buildDirectory.asFile.get()
     return if (isAndroid) {
         listOf(
+            // Java classes (AGP)
             File("$buildDir/intermediates/javac/release/compileReleaseJavaWithJavac/classes"),
             File("$buildDir/intermediates/javac/release/classes"),
-            File("$buildDir/intermediates/classes/release")
+            File("$buildDir/intermediates/classes/release"),
+            // Kotlin classes (AGP 9.x)
+            File("$buildDir/intermediates/built_in_kotlinc/release/compileReleaseKotlin/classes"),
+            // Bundled classes JAR (fallback)
+            File("$buildDir/intermediates/compile_library_classes_jar/release/bundleLibCompileToJarRelease/classes.jar")
         ).firstOrNull { it.exists() }
     } else {
         File("$buildDir/classes/java/main").takeIf { it.exists() }
@@ -74,7 +72,7 @@ fun findClassesDir(project: Project, isAndroid: Boolean): File? {
 fun createSpotBugsTask(
     project: Project,
     spotbugsRuntime: Configuration,
-    spotbugsAuxClasspath: Configuration,
+    spotbugsAuxClasspath: FileCollection,
     isAndroid: Boolean,
     reportFormat: String = "html"
 ) {
@@ -105,7 +103,7 @@ fun createSpotBugsTask(
 
             if (classesDir == null || !classesDir.exists()) {
                 logger.warn("[${project.name}] Classes directory not found. Skipping analysis.")
-                return@doFirst
+                throw StopExecutionException("No classes directory found for ${project.name}")
             }
 
             val outputDir = if (reportFormat == "sarif") reportDir else htmlDir
@@ -177,57 +175,92 @@ afterEvaluate {
             // Android Library (not a test module)
             logger.lifecycle("Configuring SpotBugs for Android Library: ${project.name}")
 
-            spotbugsAuxClasspath.attributes {
-                attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage.JAVA_RUNTIME))
-                attribute(
-                    BuildTypeAttr.ATTRIBUTE,
-                    objects.named(BuildTypeAttr::class.java, "release")
-                )
-                attribute(
-                    VariantAttr.ATTRIBUTE,
-                    objects.named(VariantAttr::class.java, "release")
-                )
-            }
-
-            try {
-                val releaseRuntimeClasspath = configurations.getByName("releaseRuntimeClasspath")
-                spotbugsAuxClasspath.extendsFrom(releaseRuntimeClasspath)
+            // Use an ArtifactView on releaseRuntimeClasspath with artifactType filter
+            // to resolve the AGP 9.x variant ambiguity for project-to-project dependencies.
+            val depsClasspath: FileCollection = try {
+                val releaseClasspath = configurations.getByName("releaseRuntimeClasspath")
+                releaseClasspath.incoming.artifactView {
+                    attributes {
+                        attribute(
+                            ArtifactTypeDefinition.ARTIFACT_TYPE_ATTRIBUTE,
+                            "android-classes-jar"
+                        )
+                    }
+                    lenient(true)
+                }.files
             } catch (e: Exception) {
-                logger.debug("Could not add releaseRuntimeClasspath: ${e.message}")
+                logger.debug("Could not find releaseRuntimeClasspath: ${e.message}")
+                files()
             }
 
-            createSpotBugsTask(project, spotbugsRuntime, spotbugsAuxClasspath, true, "html")
-            createSpotBugsTask(project, spotbugsRuntime, spotbugsAuxClasspath, true, "sarif")
+            // Include Android SDK (android.jar) so SpotBugs can resolve android.* classes
+            val bootClasspath: FileCollection = try {
+                val androidExt = extensions.getByType(LibraryExtension::class.java)
+                val compileSdk = androidExt.compileSdk
+
+                // Resolve Android SDK path from ANDROID_HOME or local.properties
+                var sdkDir: File? = null
+                val envHome = System.getenv("ANDROID_HOME")
+                val envRoot = System.getenv("ANDROID_SDK_ROOT")
+                if (envHome != null) {
+                    sdkDir = File(envHome)
+                } else if (envRoot != null) {
+                    sdkDir = File(envRoot)
+                } else {
+                    val propsFile = project.rootDir.resolve("local.properties")
+                    if (propsFile.exists()) {
+                        val props = Properties()
+                        propsFile.inputStream().use { stream -> props.load(stream) }
+                        val sdkPath = props.getProperty("sdk.dir")
+                        if (sdkPath != null) {
+                            sdkDir = File(sdkPath)
+                        }
+                    }
+                }
+
+                val resolvedSdkDir = sdkDir
+                if (resolvedSdkDir != null && compileSdk != null) {
+                    val androidJar = File(resolvedSdkDir, "platforms/android-$compileSdk/android.jar")
+                    if (androidJar.exists()) files(androidJar) else {
+                        logger.debug("android.jar not found at: $androidJar")
+                        files()
+                    }
+                } else {
+                    logger.debug("Could not determine Android SDK directory or compileSdk")
+                    files()
+                }
+            } catch (e: Exception) {
+                logger.debug("Could not get Android bootClasspath: ${e.message}")
+                files()
+            }
+
+            val auxClasspathFiles = depsClasspath + bootClasspath
+
+            createSpotBugsTask(project, spotbugsRuntime, auxClasspathFiles, true, "html")
+            createSpotBugsTask(project, spotbugsRuntime, auxClasspathFiles, true, "sarif")
         }
 
         isAndroidApp || (isAndroidLibrary && project.name.contains("test", ignoreCase = true)) -> {
             // Android App or Test Module (skip aux classpath)
             logger.lifecycle("Configuring SpotBugs for Android App/Test: ${project.name}")
 
-            createSpotBugsTask(project, spotbugsRuntime, spotbugsAuxClasspath, true, "html")
-            createSpotBugsTask(project, spotbugsRuntime, spotbugsAuxClasspath, true, "sarif")
+            createSpotBugsTask(project, spotbugsRuntime, files(), true, "html")
+            createSpotBugsTask(project, spotbugsRuntime, files(), true, "sarif")
         }
 
         isJavaLibrary -> {
             // Java Library
             logger.lifecycle("Configuring SpotBugs for Java Library: ${project.name}")
 
-            try {
-                val compileClasspath = configurations.getByName("compileClasspath")
-                spotbugsAuxClasspath.extendsFrom(compileClasspath)
+            val auxClasspathFiles: FileCollection = try {
+                configurations.getByName("compileClasspath")
             } catch (e: Exception) {
-                logger.debug("Could not add compileClasspath: ${e.message}")
+                logger.debug("Could not find compileClasspath: ${e.message}")
+                files()
             }
 
-            try {
-                val apiConfig = configurations.getByName("api")
-                spotbugsAuxClasspath.extendsFrom(apiConfig)
-            } catch (e: Exception) {
-                logger.debug("Could not add api config: ${e.message}")
-            }
-
-            createSpotBugsTask(project, spotbugsRuntime, spotbugsAuxClasspath, false, "html")
-            createSpotBugsTask(project, spotbugsRuntime, spotbugsAuxClasspath, false, "sarif")
+            createSpotBugsTask(project, spotbugsRuntime, auxClasspathFiles, false, "html")
+            createSpotBugsTask(project, spotbugsRuntime, auxClasspathFiles, false, "sarif")
         }
 
         else -> {
