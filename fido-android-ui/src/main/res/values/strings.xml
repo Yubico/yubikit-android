@@ -1,5 +1,4 @@
 <resources>
-    <string name="yk_fido_app_name">Fido Android</string>
     <string name="yk_fido_create_passkey_for">Create passkey for %1$s</string>
     <string name="yk_fido_login_with_passkey">Login with passkey to %1$s</string>
     <string name="yk_fido_tap_or_insert_key">Tap or insert your security key</string>
