@@ -56,8 +56,6 @@ class FidoFragment : Fragment() {
         private const val URL_PASSKEY = "https://passkey.org"
         private const val URL_WEBAUTHN_IO = "https://webauthn.io"
         private const val URL_YUBICO_DEMO = "https://demo.yubico.com/webauthn-developers"
-        private const val URL_TLA_DEMO =
-            "https://demo-ngotxvzeyaxb.tla.appl3-default-us1.k8s.dev.yubico.org/webauthn-developers"
     }
 
     override fun onCreateView(
@@ -89,7 +87,6 @@ class FidoFragment : Fragment() {
         binding.btnWeb1.setOnClickListener { viewModel.setUrl(URL_PASSKEY) }
         binding.btnWeb2.setOnClickListener { viewModel.setUrl(URL_WEBAUTHN_IO) }
         binding.btnWeb3.setOnClickListener { viewModel.setUrl(URL_YUBICO_DEMO) }
-        binding.btnWeb4.setOnClickListener { viewModel.setUrl(URL_TLA_DEMO) }
         binding.btnClearCookies.setOnClickListener {
             CookieManager.getInstance().removeAllCookies {
                 logger.info("Cookies cleared")

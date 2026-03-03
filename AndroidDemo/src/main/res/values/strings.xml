@@ -95,4 +95,9 @@
     <string name="version">Version %s</string>
     <string name="copyright">Copyright © 2019–2026 Yubico.</string>
     <string name="img_passkey_icon">passkey icon</string>
+    <string name="btn_passkey_org">passkey.org</string>
+    <string name="btn_webauthn_io">webauthn.io</string>
+    <string name="btn_webauthn_developers">webauthn-developers</string>
+    <string name="btn_clear_cookies">Clear cookies</string>
+    <string name="label_demo_sites">Demo sites:</string>
 </resources>
