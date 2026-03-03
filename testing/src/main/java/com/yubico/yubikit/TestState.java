@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2025 Yubico.
+ * Copyright (C) 2024-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import com.yubico.yubikit.core.application.ApplicationNotAvailableException;
 import com.yubico.yubikit.core.application.ApplicationSession;
 import com.yubico.yubikit.core.application.CommandException;
 import com.yubico.yubikit.core.fido.FidoConnection;
+import com.yubico.yubikit.core.otp.OtpConnection;
 import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.smartcard.scp.ScpKeyParams;
@@ -33,6 +34,7 @@ import com.yubico.yubikit.management.Capability;
 import com.yubico.yubikit.management.DeviceInfo;
 import com.yubico.yubikit.management.ManagementSession;
 import com.yubico.yubikit.support.DeviceUtil;
+import com.yubico.yubikit.yubiotp.YubiOtpSession;
 import java.io.IOException;
 import java.security.Security;
 import java.util.List;
@@ -212,6 +214,24 @@ public class TestState {
     } catch (Exception e) {
       Assume.assumeNoException(
           "Application " + sessionFactory.getClass().getSimpleName() + " not supported", e);
+      //noinspection DataFlowIssue
+      return null; // not reachable
+    }
+  }
+
+  protected static YubiOtpSession getYubiOtpSession(
+      YubiKeyConnection connection, @Nullable ScpKeyParams scpKeyParams) {
+    try {
+      if (connection instanceof OtpConnection) {
+        return new YubiOtpSession((OtpConnection) connection);
+      } else {
+        Assume.assumeTrue(
+            "Expecting OTP or smartcard connection", connection instanceof SmartCardConnection);
+        return new YubiOtpSession((SmartCardConnection) connection, scpKeyParams);
+      }
+
+    } catch (Exception e) {
+      Assume.assumeNoException("OTP not available", e);
       //noinspection DataFlowIssue
       return null; // not reachable
     }

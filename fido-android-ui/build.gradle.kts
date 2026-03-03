@@ -18,10 +18,8 @@ import com.android.build.api.dsl.ManagedVirtualDevice
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.android.library)
-    alias(libs.plugins.ksp)
     id("yubikit-android-publishing")
     id("yubikit-common")
 }
@@ -111,7 +109,6 @@ dependencies {
     androidTestImplementation(composeBom)
     testImplementation(composeBom)
 
-    implementation(libs.kotlin.stdlib.jdk8)
     implementation(libs.androidx.material3)
 
     // Android Studio Preview support
@@ -154,21 +151,17 @@ dependencies {
 
 description = "This module provides user interface for YubiKit FIDO module."
 
-val generateFidoJs by tasks.registering {
-    val jsSourceFile = layout.projectDirectory.file("js/fido.js")
-    val outputDir = layout.buildDirectory.dir("generated/source/fidojs")
+abstract class GenerateFidoJsTask : DefaultTask() {
+    @get:InputFile
+    abstract val jsSourceFile: RegularFileProperty
 
-    inputs.file(jsSourceFile)
-    outputs.dir(outputDir)
-    outputs.upToDateWhen { false }
+    @get:OutputDirectory
+    abstract val outputDir: DirectoryProperty
 
-    doLast {
-        val jsCode = jsSourceFile.asFile.readText()
+    @TaskAction
+    fun generate() {
+        val jsCode = jsSourceFile.asFile.get().readText()
 
-        // Strip block comments and leading/trailing whitespace per line,
-        // blank lines, and collapse runs. Line comments are left intact to
-        // avoid corrupting JS regex literals that contain '//'.
-        // TODO: replace with robust minification
         val minified = jsCode
             .replace(Regex("/\\*[\\s\\S]*?\\*/"), "")
             .lines()
@@ -176,7 +169,6 @@ val generateFidoJs by tasks.registering {
             .filter { it.isNotEmpty() }
             .joinToString("\n")
 
-        // Escape for Kotlin raw string ($ must be escaped)
         val kotlinSafe = minified.replace("$", "\${'$'}")
 
         val kotlinSource = buildString {
@@ -201,12 +193,18 @@ val generateFidoJs by tasks.registering {
     }
 }
 
-android.sourceSets["main"].kotlin.srcDir(
-    generateFidoJs.map { it.outputs.files.singleFile }
-)
+val generateFidoJs by tasks.registering(GenerateFidoJsTask::class) {
+    jsSourceFile.set(layout.projectDirectory.file("js/fido.js"))
+    outputDir.set(layout.buildDirectory.dir("generated/source/fidojs"))
+}
 
-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
-    dependsOn(generateFidoJs)
+androidComponents {
+    onVariants { variant ->
+        variant.sources.kotlin?.addGeneratedSourceDirectory(
+            generateFidoJs,
+            GenerateFidoJsTask::outputDir
+        )
+    }
 }
 
 tasks.configureEach {
