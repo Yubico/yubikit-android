@@ -60,7 +60,7 @@ android-application = { id = "com.android.application", version.ref = "android-g
 android-library = { id = "com.android.library", version.ref = "android-gradle" }
 
 [versions]
-java = "11"
+java = "8"
 android-gradle = "9.0.0"
 jsr250-api = "1.0"
 jsr305 = "3.0.2"
