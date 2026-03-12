@@ -1088,8 +1088,7 @@ public class PivSession extends ApplicationSession<PivSession> {
    * YubiKey 4 or later. TouchPolicy.CACHED requires {@link #FEATURE_TOUCH_CACHED}, available on
    * YubiKey 4.3 or later.
    *
-   * <p>NOTE: YubiKey FIPS does not allow RSA1024 nor PinProtocol.NEVER. NOTE: This method will be
-   * renamed to generateKey in the next major version release of this library.
+   * <p>NOTE: YubiKey FIPS does not allow RSA1024 nor PinProtocol.NEVER.
    *
    * @param slot Key reference '9A', '9C', '9D', or '9E'. {@link Slot}.
    * @param keyType which algorithm is used for key generation {@link KeyType}
@@ -1100,7 +1099,7 @@ public class PivSession extends ApplicationSession<PivSession> {
    * @throws ApduException in case of an error response from the YubiKey
    * @throws BadResponseException in case of incorrect YubiKey response
    */
-  public PublicKeyValues generateKeyValues(
+  public PublicKeyValues generateKey(
       Slot slot, KeyType keyType, PinPolicy pinPolicy, TouchPolicy touchPolicy)
       throws IOException, ApduException, BadResponseException {
     checkKeySupport(keyType, pinPolicy, touchPolicy, true);
@@ -1126,6 +1125,27 @@ public class PivSession extends ApplicationSession<PivSession> {
     logger.info("Private key generated in slot {} of type {}", slot, keyType);
     // Tag '7F49' contains data objects for RSA or ECC
     return parsePublicKeyFromDevice(keyType, Tlvs.unpackValue(0x7F49, response));
+  }
+
+  /**
+   * Generates a new key pair within the YubiKey.
+   *
+   * @param slot Key reference '9A', '9C', '9D', or '9E'. {@link Slot}.
+   * @param keyType which algorithm is used for key generation {@link KeyType}
+   * @param pinPolicy the PIN policy for using the private key
+   * @param touchPolicy the touch policy for using the private key
+   * @return the public key of the generated key pair
+   * @throws IOException in case of connection error
+   * @throws ApduException in case of an error response from the YubiKey
+   * @throws BadResponseException in case of incorrect YubiKey response
+   * @deprecated Use {@link #generateKey(Slot, KeyType, PinPolicy, TouchPolicy)} instead. Deprecated
+   *     in version 3.1.0.
+   */
+  @Deprecated
+  public PublicKeyValues generateKeyValues(
+      Slot slot, KeyType keyType, PinPolicy pinPolicy, TouchPolicy touchPolicy)
+      throws IOException, ApduException, BadResponseException {
+    return generateKey(slot, keyType, pinPolicy, touchPolicy);
   }
 
   /**
