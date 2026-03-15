@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2025 Yubico.
+ * Copyright (C) 2022-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,26 @@ public class CompositeDevice implements YubiKeyDevice, Closeable {
   CompositeDevice(UsbPidGroup pidGroup, String key) {
     this.pidGroup = pidGroup;
     this.key = key;
+  }
+
+  /**
+   * Returns a fingerprint for this composite device derived from the underlying resolved {@link
+   * UsbYubiKeyDevice} instances.
+   *
+   * <p>The fingerprint is obtained from the first resolved underlying device node. It is
+   * <em>not</em> guaranteed to be stable across unplug/replug cycles or process restarts.
+   *
+   * @return the device fingerprint, or the internal key if no resolved device is available
+   */
+  public String getFingerprint() {
+    return pidGroup.getFingerprint(key);
+  }
+
+  /**
+   * Returns the internal resolution key for this composite device within its {@link UsbPidGroup}.
+   */
+  String getKey() {
+    return key;
   }
 
   @Override

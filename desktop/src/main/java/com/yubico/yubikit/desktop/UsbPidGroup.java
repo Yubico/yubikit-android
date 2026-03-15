@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2025 Yubico.
+ * Copyright (C) 2022-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ import com.yubico.yubikit.support.DeviceUtil;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.*;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -216,6 +217,158 @@ public class UsbPidGroup implements Closeable {
       devices.put(new CompositeDevice(this, entry.getKey()), entry.getValue());
     }
     return devices;
+  }
+
+  /**
+   * Returns a fingerprint for the device identified by the given internal key. The fingerprint is
+   * obtained from the first resolved underlying device node. If no resolved device exists, the
+   * internal key itself is returned as a fallback.
+   */
+  String getFingerprint(String key) {
+    Map<Integer, UsbYubiKeyDevice> interfaces = resolved.get(key);
+    if (interfaces != null) {
+      for (UsbYubiKeyDevice device : interfaces.values()) {
+        return device.getFingerprint();
+      }
+    }
+    return key;
+  }
+
+  /**
+   * Resolves the internal key that matches the given selector.
+   *
+   * @return the internal key, or {@code null} if no match is found
+   */
+  @Nullable String resolveKey(DesktopDeviceSelector selector) {
+    Integer serial = selector.getSerial();
+    if (serial != null) {
+      for (Map.Entry<String, DeviceInfo> entry : infos.entrySet()) {
+        if (serial.equals(entry.getValue().getSerialNumber())) {
+          return entry.getKey();
+        }
+      }
+      return null;
+    }
+
+    String fingerprint = selector.getFingerprint();
+    if (fingerprint != null) {
+      for (Map.Entry<String, Map<Integer, UsbYubiKeyDevice>> entry : resolved.entrySet()) {
+        for (UsbYubiKeyDevice device : entry.getValue().values()) {
+          if (fingerprint.equals(device.getFingerprint())) {
+            return entry.getKey();
+          }
+        }
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Opens a connection of the given type to the device identified by the selector.
+   *
+   * @param selector the selector identifying the target device
+   * @param connectionType the connection type to open
+   * @return an open connection
+   * @throws IOException if the device is not found or the connection cannot be opened
+   */
+  <T extends YubiKeyConnection> T openConnection(
+      DesktopDeviceSelector selector, Class<T> connectionType) throws IOException {
+    String key = resolveKey(selector);
+
+    if (key == null) {
+      // Try resolving from unresolved devices (e.g. serial not yet read, or fingerprint match)
+      Integer serial = selector.getSerial();
+      String fingerprint = selector.getFingerprint();
+      int usbInterface = getUsbInterface(connectionType);
+
+      if (fingerprint != null) {
+        // Direct fingerprint match against unresolved devices
+        List<UsbYubiKeyDevice> devices = unresolved.getOrDefault(usbInterface, new ArrayList<>());
+        for (UsbYubiKeyDevice device : devices) {
+          if (fingerprint.equals(device.getFingerprint())) {
+            return device.openConnection(connectionType);
+          }
+        }
+        // Also search other interfaces
+        for (Map.Entry<Integer, List<UsbYubiKeyDevice>> entry : unresolved.entrySet()) {
+          if (entry.getKey() == usbInterface) continue;
+          for (UsbYubiKeyDevice device : entry.getValue()) {
+            if (fingerprint.equals(device.getFingerprint())) {
+              throw new IOException(
+                  "Device with fingerprint '"
+                      + fingerprint
+                      + "' found but does not support "
+                      + connectionType.getSimpleName());
+            }
+          }
+        }
+      }
+
+      if (serial != null) {
+        // Attempt to resolve by reading info from unresolved candidates
+        List<UsbYubiKeyDevice> devices = unresolved.getOrDefault(usbInterface, new ArrayList<>());
+        List<UsbYubiKeyDevice> failed = new ArrayList<>();
+        try {
+          while (!devices.isEmpty()) {
+            UsbYubiKeyDevice candidate = devices.remove(0);
+            T connection = null;
+            try {
+              connection = candidate.openConnection(connectionType);
+              DeviceInfo info = DeviceUtil.readInfo(connection, pid);
+              String deviceKey = buildKey(info);
+              infos.put(deviceKey, info);
+              if (!resolved.containsKey(deviceKey)) {
+                resolved.put(deviceKey, new HashMap<>());
+              }
+              resolved.get(deviceKey).put(usbInterface, candidate);
+              if (serial.equals(info.getSerialNumber())) {
+                return connection;
+              }
+              connection.close();
+            } catch (IOException e) {
+              if (connection != null) {
+                connection.close();
+              }
+              failed.add(candidate);
+            } catch (Exception e) {
+              if (connection != null) {
+                connection.close();
+              }
+              throw e;
+            }
+          }
+        } finally {
+          devices.addAll(failed);
+        }
+      }
+
+      throw new IOException(
+          "No device matching selector " + selector + " found in PID group " + pid);
+    }
+
+    return openConnection(key, connectionType);
+  }
+
+  /**
+   * Requests a connection of the given type to the device identified by the selector.
+   *
+   * @param selector the selector identifying the target device
+   * @param connectionType the connection type to open
+   * @param callback the callback to invoke with the connection result
+   */
+  <T extends YubiKeyConnection> void requestConnection(
+      DesktopDeviceSelector selector,
+      Class<T> connectionType,
+      Callback<Result<T, IOException>> callback) {
+    String key = resolveKey(selector);
+    if (key != null) {
+      requestConnection(key, connectionType, callback);
+    } else {
+      callback.invoke(
+          Result.failure(
+              new IOException(
+                  "No device matching selector " + selector + " found in PID group " + pid)));
+    }
   }
 
   public UsbPid getPid() {

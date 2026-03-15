@@ -7,7 +7,7 @@ To protect your YubiKeys from accidental data changes during testing, you must s
 
 ==== Instructions
 1. Find the Serial Number: +
-   Connect your YubiKey and use the YubiKey Manager tool to find its serial number.
+   Connect your YubiKey and use the YubiKey Manager tool or the DesktopDemo app (see <<listing-connected-devices>>) to find its serial number.
 
 2. Create the Allow List File: +
    Create a new file at the following specific path in the project: +
@@ -28,13 +28,96 @@ Example `allowed_serials.csv` content:
 
 The test framework will now only run on the YubiKeys specified in this file.
 
+=== Device selection when multiple YubiKeys are connected
+
+When multiple YubiKeys are plugged in, the test framework requires you to specify which device to use.
+Set the `yubikit.serial` property to the serial number of the target YubiKey.
+
+If you run the tests without specifying a serial and multiple devices are connected, the test will fail with a message listing all connected devices and their selectors.
+
+==== Setting `yubikit.serial` in Android Studio / IntelliJ
+
+1. Open **Run** → **Edit Configurations...**
+2. Select your test run configuration (or create a new one).
+3. In the **VM options** field, add:
++
+----
+-Dyubikit.serial=36852057
+----
+4. Click **Apply** → **OK**, then run the test.
+
+TIP: You can also set this in the default JUnit template so it applies to all new test configurations: **Edit Configurations...** → **Edit configuration templates...** → **JUnit** → **VM options**.
+
+==== Setting `yubikit.serial` in `gradle.properties`
+
+Add the following line to the project root `gradle.properties` or to `~/.gradle/gradle.properties`:
+
+[source,properties]
+----
+yubikit.serial=36852057
+----
+
+This is picked up automatically by the `integrationTest` Gradle task.
+
+==== Setting `yubikit.serial` on the command line
+
+Pass it as a system property when invoking Gradle:
+
+[source,bash]
+----
+./gradlew :testing-desktop:integrationTest -Dyubikit.serial=36852057
+----
+
 === Running the tests
-1. Make sure that the YubiKey you are using is meant for testing. Don't proceed with the tests if unsure.
- Running the instrumented tests will: change PIN, PUK, management key and overwrite stored certificates in the PIV application
-2. Connect your device through wireless debugging and select it
-3. Right-click the `testing-desktop` project and select _Run 'All tests'_
 
-==== Running from commandline
-It is also possible to run the tests from commandline by executing following command after the device is connected through adb:
+WARNING: Running the instrumented tests will change PIN, PUK, management key and overwrite stored certificates in the PIV application. Make sure that the YubiKey you are using is designated for testing.
 
-  ./gradlew testing-desktop:test
+==== Running from Android Studio / IntelliJ
+
+1. Connect your YubiKey(s) via USB.
+2. If multiple YubiKeys are connected, configure `yubikit.serial` as described above.
+3. Right-click the `testing-desktop` project (or a specific test class) and select **Run 'All tests'** (or **Run '<TestName>'**).
+
+==== Running from the command line
+
+Single YubiKey connected:
+
+[source,bash]
+----
+./gradlew :testing-desktop:integrationTest
+----
+
+Multiple YubiKeys connected (specify serial):
+
+[source,bash]
+----
+./gradlew :testing-desktop:integrationTest -Dyubikit.serial=36852057
+----
+
+[[listing-connected-devices]]
+=== Listing connected devices
+
+To see which YubiKeys are connected and their serial numbers / fingerprints, use the DesktopDemo app:
+
+[source,bash]
+----
+./gradlew :DesktopDemo:run --args="list"
+----
+
+Example output:
+[literal]
+----
+Connected YubiKeys (2):
+
+Device #1:
+  Serial:      36852057
+  Fingerprint: (serial-based selector)
+  Version:     5.7.1
+  Form factor: USB_A_KEYCHAIN
+
+Device #2:
+  Serial:      (not available)
+  Fingerprint: DevSrvsID:4294980754
+  Version:     5.4.3
+  Form factor: USB_A_KEYCHAIN
+----
