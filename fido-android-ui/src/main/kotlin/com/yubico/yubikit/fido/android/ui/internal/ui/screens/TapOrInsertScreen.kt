@@ -56,7 +56,7 @@ internal fun TapOrInsertSecurityKey(
         Text(text = stringResource(R.string.yk_fido_tap_or_insert_key))
         if (!isNfcAvailable) {
             Text(
-                text = "NFC not available",
+                text = stringResource(R.string.yk_fido_nfc_not_available),
                 color = MaterialTheme.colorScheme.primary,
                 fontSize = MaterialTheme.typography.bodySmall.fontSize,
                 textDecoration = TextDecoration.Underline,

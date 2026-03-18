@@ -45,7 +45,7 @@ internal fun TouchTheSecurityKey(
         Icon(
             modifier = Modifier.size(64.dp, 64.dp),
             imageVector = Icons.Default.Flare,
-            contentDescription = "Touch the key",
+            contentDescription = stringResource(R.string.yk_fido_content_description_touch_the_key),
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(text = stringResource(R.string.yk_fido_touch_the_key))

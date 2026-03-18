@@ -54,4 +54,7 @@
     <string name="yk_fido_info_force_change_pin">For security reasons, the current PIN has to be changed.</string>
     <string name="yk_fido_fingerprint_icon">Fingerprint icon</string>
     <string name="yk_fido_content_description_nfc_antenna_location">NFC antenna location</string>
+    <string name="yk_fido_content_description_close">Close</string>
+    <string name="yk_fido_nfc_not_available">NFC not available</string>
+    <string name="yk_fido_content_description_touch_the_key">Touch the key</string>
 </resources>

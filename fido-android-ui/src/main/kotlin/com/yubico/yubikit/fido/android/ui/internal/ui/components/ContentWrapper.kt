@@ -67,7 +67,7 @@ internal fun ContentWrapper(
                 IconButton(onClick = onCloseButtonClick) {
                     Icon(
                         imageVector = Icons.Default.Close,
-                        contentDescription = "Close",
+                        contentDescription = stringResource(R.string.yk_fido_content_description_close),
                     )
                 }
             } else {
