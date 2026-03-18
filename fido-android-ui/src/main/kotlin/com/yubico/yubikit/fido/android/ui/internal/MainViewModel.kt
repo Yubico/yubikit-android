@@ -205,6 +205,26 @@ internal open class MainViewModel(
         _state.value = State.Success
         onResult(credential)
         result = null
+        clearSensitiveData()
+    }
+
+    private fun clearSensitiveData() {
+        clearLastEnteredPin()
+        pinValue?.fill('\u0000')
+        pinValue = null
+        newPinValue?.fill('\u0000')
+        newPinValue = null
+        lastClientDataHash?.fill(0)
+        lastClientDataHash = null
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        clearSensitiveData()
+        // Also clear retry state that may reference sensitive context
+        lastRequest = null
+        lastOnResult = null
+        lastFidoClientService = null
     }
 
     private fun showMultipleAssertions(
@@ -536,11 +556,13 @@ internal open class MainViewModel(
 
     // executed after the user taps the "Continue" button in PIN created screen
     fun onPinCreatedConfirmation() {
+        clearLastEnteredPin()
         signalRetry()
     }
 
     // executed after the user taps the "Continue" button in PIN changed screen
     fun onPinChangedConfirmation() {
+        clearLastEnteredPin()
         signalRetry()
     }
 
