@@ -29,7 +29,7 @@ This module depends on the link:../core/[core], link:../android/[android], and l
 * **Native app support** for direct FIDO operations without WebView
 * **Automatic device discovery** over NFC and USB
 * **PIN management UI** with configurable workflow (PIN-first or touch-first)
-* **Extension support** including CredBlob, CredProps, CredProtect, HmacSecret, LargeBlob, MinPinLength, and Sign
+* **Extension support** including CredBlob, CredProps, CredProtect, HmacSecret, LargeBlob, and MinPinLength
 * **Customizable theming** to match your app's design
 * **Jetpack Compose UI** with Material Design components
 
@@ -182,14 +182,13 @@ Use `FidoConfigManager` to customize the FIDO UI behavior globally:
 [source,kotlin]
 ----
 // Prioritize PIN entry before device interaction
-FidoConfigManager.setPrioritizePin(true)
+FidoConfigManager.setIsPinPrioritized(true)
 
 // Set custom extensions globally
 FidoConfigManager.setExtensions(
     listOf(
         LargeBlobExtension(),
-        HmacSecretExtension(),
-        SignExtension()
+        HmacSecretExtension()
     )
 )
 
@@ -257,6 +256,5 @@ The module supports the following FIDO2 extensions:
 * **hmacSecret** (PRF): Generate pseudo-random functions
 * **largeBlob**: Store larger data blobs
 * **minPinLength**: Query minimum PIN length requirements
-* **sign**: Create signature with exported public key
 
 Extensions can be configured per-client or globally via `FidoConfigManager`.

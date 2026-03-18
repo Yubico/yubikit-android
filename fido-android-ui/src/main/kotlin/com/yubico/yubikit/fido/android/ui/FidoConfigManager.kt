@@ -70,17 +70,17 @@ public data class FidoConfig(
  * **Modifying configuration:**
  * ```kotlin
  * // Set individual properties
- * FidoConfigManager.setPrioritizePin(true)
+ * FidoConfigManager.setIsPinPrioritized(true)
  * FidoConfigManager.setExtensions(listOf(LargeBlobExtension()))
  * FidoConfigManager.setTheme { content -> MyAppTheme { content() } }
  *
  * // Or update atomically
  * FidoConfigManager.update { config ->
- *     config.copy(prioritizePin = true, extensions = listOf(...))
+ *     config.copy(isPinPrioritized = true, fidoExtensions = listOf(...))
  * }
  *
  * // Or replace entirely
- * FidoConfigManager.replace(FidoConfig(prioritizePin = true))
+ * FidoConfigManager.replace(FidoConfig(isPinPrioritized = true))
  * ```
  *
  * **Thread safety:**
