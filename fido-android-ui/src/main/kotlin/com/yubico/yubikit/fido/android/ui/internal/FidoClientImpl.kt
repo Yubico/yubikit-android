@@ -100,9 +100,7 @@ internal class FidoClientImpl : FidoClient {
             currentContinuation = continuation
             launcher.launch(FidoRequest(type, origin, clientDataHash, request))
             continuation.invokeOnCancellation {
-                if (it is CancellationException) {
-                    currentContinuation = null
-                }
+                currentContinuation = null
             }
         }
     }
