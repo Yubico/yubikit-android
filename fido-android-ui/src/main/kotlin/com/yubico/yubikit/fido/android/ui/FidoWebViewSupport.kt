@@ -17,6 +17,7 @@
 package com.yubico.yubikit.fido.android.ui
 
 import android.webkit.WebView
+import android.webkit.WebViewClient
 import com.yubico.yubikit.fido.android.ui.internal.FidoWebViewSupportImpl
 import kotlinx.coroutines.CoroutineScope
 
@@ -47,10 +48,14 @@ import kotlinx.coroutines.CoroutineScope
  *   lifecycle of the hosting Activity or Fragment.
  * @param fidoClient The [FidoClient] instance used to perform credential creation
  *   ([FidoClient.makeCredential]) and assertion ([FidoClient.getAssertion]) operations.
+ * @param webViewClient An optional custom [WebViewClient] to be chained with the internal
+ *   WebViewClient that handles FIDO polyfill injection. If provided, both clients will be
+ *   invoked for WebView lifecycle callbacks. Defaults to a new [WebViewClient] instance.
  *
  * @see FidoClient
  */
 public fun WebView.enableFidoWebauthn(
     coroutineScope: CoroutineScope,
     fidoClient: FidoClient,
-): Unit = FidoWebViewSupportImpl.enable(this, coroutineScope, fidoClient)
+    webViewClient: WebViewClient = WebViewClient(),
+): Unit = FidoWebViewSupportImpl.enable(this, coroutineScope, fidoClient, webViewClient)
