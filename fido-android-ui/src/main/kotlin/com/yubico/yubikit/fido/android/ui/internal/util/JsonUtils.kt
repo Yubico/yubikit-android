@@ -22,17 +22,7 @@ import org.json.JSONObject
 internal fun JSONObject.toMap(): Map<String, *> =
     keys().asSequence().associateWith {
         when (val value = this[it]) {
-            is JSONArray -> {
-                val map =
-                    (0 until value.length()).associate { mapValue ->
-                        Pair(
-                            mapValue.toString(),
-                            value[mapValue],
-                        )
-                    }
-                JSONObject(map).toMap().values.toList()
-            }
-
+            is JSONArray -> (0 until value.length()).map { index -> value[index] }.toList()
             is JSONObject -> value.toMap()
             JSONObject.NULL -> null
             else -> value
