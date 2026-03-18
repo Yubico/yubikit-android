@@ -1,15 +1,60 @@
 /**
  * Script injected by the WebView to override navigator.credentials and call the
- * Android JavascriptInterface bridge instead.
+ * Android WebMessageListener bridge instead.
  *
- * JAVASCRIPT_BRIDGE is replaced at injection time with the actual bridge name.
+ * JAVASCRIPT_BRIDGE is replaced at injection time with the actual bridge name
+ * registered via WebViewCompat.addWebMessageListener().
+ *
+ * Communication uses postMessage() / onmessage instead of direct Java-object
+ * method invocation, ensuring that only the registered frame and origin can
+ * interact with the bridge.
  */
+
+// Defense-in-depth: refuse to run in sub-frames.
+// The primary enforcement is on the Java side (isMainFrame check in FidoMessageBridge),
+// but this prevents the polyfill from even overriding navigator.credentials in iframes.
+if (window !== window.top) {
+    console.debug('FIDO bridge: sub-frame detected, not injecting.')
+    throw new Error('FIDO WebAuthn bridge is not available in sub-frames')
+}
 
 // check if replaced in Android: if not defined, throws a 'ReferenceError'.
 JAVASCRIPT_BRIDGE
 
-JAVASCRIPT_BRIDGE.__injected__ = true
-JAVASCRIPT_BRIDGE.__promise_cache__ = {}
+var __fido_promise_cache__ = {}
+
+// Listen for responses from the Java bridge delivered via JavaScriptReplyProxy
+JAVASCRIPT_BRIDGE.onmessage = function(event) {
+    var data
+    try {
+        data = JSON.parse(event.data)
+    } catch(e) {
+        console.error('FIDO bridge: failed to parse response:', e)
+        return
+    }
+
+    var uuid = data.promiseUuid
+    if (!uuid || !(uuid in __fido_promise_cache__)) {
+        console.error('FIDO bridge: unknown or missing promiseUuid in response:', uuid)
+        return
+    }
+
+    var promise = __fido_promise_cache__[uuid]
+
+    delete __fido_promise_cache__[uuid]
+
+    if (data.type === 'resolve') {
+        console.log('Promise resolved:', promise.method, uuid)
+        var result = __decode__credentials(data.result)
+        promise.resolve(result)
+    } else if (data.type === 'reject') {
+        console.log('Promise rejected:', promise.method, uuid, data.message)
+        promise.reject(new DOMException(data.message, 'NotAllowedError'))
+    } else {
+        console.error('FIDO bridge: unknown response type:', data.type)
+        promise.reject(new DOMException('The operation failed', 'NotAllowedError'))
+    }
+}
 
 // override functions on navigator
 function overrideNavigatorCredentialsWithBridgeCall(method) {
@@ -17,7 +62,7 @@ function overrideNavigatorCredentialsWithBridgeCall(method) {
       var uuid = crypto.randomUUID()
 
       var promise = new Promise((resolve, reject) => {
-        JAVASCRIPT_BRIDGE.__promise_cache__[uuid] = {'resolve':resolve, 'reject':reject, 'method': method}
+        __fido_promise_cache__[uuid] = {'resolve':resolve, 'reject':reject, 'method': method}
 
         // Use a custom replacer to automatically base64url-encode any binary
         // values (Uint8Array / ArrayBuffer) during serialization. This avoids
@@ -32,7 +77,19 @@ function overrideNavigatorCredentialsWithBridgeCall(method) {
         }, 4)
 
         console.debug('options:', options_json)
-        JAVASCRIPT_BRIDGE[method](uuid, options_json)
+
+        // Send request to the Java bridge via postMessage
+        try {
+            JAVASCRIPT_BRIDGE.postMessage(JSON.stringify({
+                method: method,
+                promiseUuid: uuid,
+                options: options_json
+            }))
+        } catch(e) {
+            delete __fido_promise_cache__[uuid]
+            console.error('FIDO bridge: postMessage failed:', e)
+            reject(new DOMException('The operation failed', 'NotAllowedError'))
+        }
       })
 
       return promise
@@ -143,32 +200,6 @@ function __decode__credentials(result) {
     return result
 }
 
-JAVASCRIPT_BRIDGE.__resolve__ = (uuid, result) => {
-    if (uuid in JAVASCRIPT_BRIDGE.__promise_cache__) {
-        var promise = JAVASCRIPT_BRIDGE.__promise_cache__[uuid]
-        console.log("Promise resolved:", promise.method, uuid)
-
-        result = __decode__credentials(result)
-
-        JAVASCRIPT_BRIDGE.__promise_cache__[uuid].resolve(result)
-
-        delete JAVASCRIPT_BRIDGE.__promise_cache__[uuid]
-    } else {
-        console.error("Promise with id", uuid, "does not exist. Not resolving unknown promise.")
-    }
-}
-
-JAVASCRIPT_BRIDGE.__reject__ = (uuid, result) => {
-    if (uuid in JAVASCRIPT_BRIDGE.__promise_cache__) {
-        var promise = JAVASCRIPT_BRIDGE.__promise_cache__[uuid]
-        console.log("Rejected promise", JSON.stringify(promise), "with uuid", uuid, "and result", result)
-
-        JAVASCRIPT_BRIDGE.__promise_cache__[uuid].reject(new DOMException(result, 'NotAllowedError'))
-        delete JAVASCRIPT_BRIDGE.__promise_cache__[uuid]
-    } else {
-        console.error("Promise with id", uuid, "does not exist. Not rejecting unknown promise.")
-    }
-}
 
 overrideNavigatorCredentialsWithBridgeCall("create")
 overrideNavigatorCredentialsWithBridgeCall("get")

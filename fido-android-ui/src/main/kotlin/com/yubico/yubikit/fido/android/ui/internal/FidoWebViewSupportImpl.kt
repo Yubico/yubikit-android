@@ -22,6 +22,8 @@ import android.webkit.ConsoleMessage
 import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.webkit.WebViewCompat
+import androidx.webkit.WebViewFeature
 import com.yubico.yubikit.fido.android.ui.FidoClient
 import kotlinx.coroutines.CoroutineScope
 import org.slf4j.Logger
@@ -32,26 +34,52 @@ internal class FidoWebViewSupportImpl {
         private val logger: Logger = LoggerFactory.getLogger(FidoWebViewSupportImpl::class.java)
         private const val JS_SOURCE_TAG = "fido.js"
 
+        /**
+         * Enables the FIDO WebAuthn bridge on the given [WebView].
+         *
+         * Uses [WebViewCompat.addWebMessageListener] for per-message origin verification
+         * and frame isolation. If the WebView implementation does not support
+         * [WebViewFeature.WEB_MESSAGE_LISTENER], the bridge is **not** enabled and this
+         * method returns `false` (fail-closed).
+         *
+         * @return `true` if the bridge was successfully enabled, `false` if the required
+         *   WebView feature is not available.
+         */
         @JvmStatic
-        @SuppressLint("SetJavaScriptEnabled")
+        @SuppressLint("SetJavaScriptEnabled", "RequiresFeature")
         fun enable(
             webView: WebView,
             coroutineScope: CoroutineScope,
             fidoClient: FidoClient,
             webViewClient: WebViewClient,
-        ) {
+        ): Boolean {
+            if (!WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)) {
+                logger.warn(
+                    "WebView does not support WEB_MESSAGE_LISTENER; " +
+                        "FIDO WebAuthn bridge will not be enabled",
+                )
+                return false
+            }
+
             webView.settings.javaScriptEnabled = true
 
-            val bridge = FidoJsBridge(webView, coroutineScope, fidoClient)
+            val bridge = FidoMessageBridge(coroutineScope, fidoClient)
 
             val fidoJs = FidoJs.CODE.replace(
                 FidoJs.BRIDGE_PLACEHOLDER,
-                bridge.bridgeName,
+                FidoMessageBridge.JS_BRIDGE_NAME,
             )
 
-            webView.addJavascriptInterface(bridge, bridge.bridgeName)
+            // Use "*" to accept messages from any origin at the transport level.
+            // Per-message HTTPS and origin validation is enforced in FidoMessageBridge.onPostMessage().
+            WebViewCompat.addWebMessageListener(
+                webView,
+                FidoMessageBridge.JS_BRIDGE_NAME,
+                setOf("*"),
+                bridge,
+            )
 
-            val webViewClient =
+            val fidoWebViewClient =
                 object : FidoWebViewClient(webViewClient) {
                     override fun onPageStarted(
                         view: WebView?,
@@ -61,12 +89,11 @@ internal class FidoWebViewSupportImpl {
                         super.onPageStarted(view, url, favicon)
                         logger.trace("onPageStarted: {}", url)
                         logger.trace("userAgent: {}", view?.settings?.userAgentString)
-                        bridge.currentOrigin = url?.let { bridge.originFromUrl(it) }
                         webView.evaluateJavascript(fidoJs, null)
                     }
                 }
 
-            webView.webViewClient = webViewClient
+            webView.webViewClient = fidoWebViewClient
 
             webView.webChromeClient =
                 object : WebChromeClient() {
@@ -99,6 +126,8 @@ internal class FidoWebViewSupportImpl {
                         return true
                     }
                 }
+
+            return true
         }
     }
 }

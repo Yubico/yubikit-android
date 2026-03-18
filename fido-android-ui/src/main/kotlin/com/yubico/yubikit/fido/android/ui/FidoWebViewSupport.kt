@@ -31,14 +31,19 @@ import kotlinx.coroutines.CoroutineScope
  *
  * **Configuration performed:**
  * - Enables JavaScript execution on the WebView
- * - Registers a JavaScript bridge via [android.webkit.WebView.addJavascriptInterface] to handle
- *   WebAuthn requests from the page
+ * - Registers a [androidx.webkit.WebViewCompat.WebMessageListener] to handle WebAuthn requests
+ *   with per-message origin verification and frame isolation
  * - Sets a custom [android.webkit.WebViewClient] to inject the polyfill on each page load
  *
- * **Security requirements:**
- * - Only HTTPS origins are permitted; requests from non-HTTPS pages will fail
- * - Requests from subframes (iframes) are not supported
+ * **Security:**
+ * - Only HTTPS origins are permitted; requests from non-HTTPS pages are rejected
+ * - Requests from subframes (iframes) are rejected by the WebView message listener
+ * - Origin attribution uses the per-message `sourceOrigin` provided by the WebView,
+ *   not the top-level page URL
  * - Only one WebAuthn request can be in progress at a time
+ * - If the WebView implementation does not support
+ *   [androidx.webkit.WebViewFeature.WEB_MESSAGE_LISTENER], the bridge is **not** enabled
+ *   and this method returns `false` (fail-closed)
  *
  * **HTTP Authentication:**
  * The WebView will display a dialog for HTTP Basic authentication challenges.
@@ -52,10 +57,14 @@ import kotlinx.coroutines.CoroutineScope
  *   WebViewClient that handles FIDO polyfill injection. If provided, both clients will be
  *   invoked for WebView lifecycle callbacks. Defaults to a new [WebViewClient] instance.
  *
+ * @return `true` if the FIDO WebAuthn bridge was successfully enabled, `false` if the
+ *   required WebView feature ([androidx.webkit.WebViewFeature.WEB_MESSAGE_LISTENER]) is
+ *   not supported by the device's WebView implementation.
+ *
  * @see FidoClient
  */
 public fun WebView.enableFidoWebauthn(
     coroutineScope: CoroutineScope,
     fidoClient: FidoClient,
     webViewClient: WebViewClient = WebViewClient(),
-): Unit = FidoWebViewSupportImpl.enable(this, coroutineScope, fidoClient, webViewClient)
+): Boolean = FidoWebViewSupportImpl.enable(this, coroutineScope, fidoClient, webViewClient)

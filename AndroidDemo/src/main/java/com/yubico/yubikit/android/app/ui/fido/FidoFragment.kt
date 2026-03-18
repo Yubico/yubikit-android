@@ -24,7 +24,6 @@ import android.webkit.CookieManager
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
-import androidx.webkit.WebViewFeature
 import com.yubico.yubikit.android.app.databinding.FragmentFidoBinding
 import com.yubico.yubikit.fido.android.ui.FidoClient
 import com.yubico.yubikit.fido.android.ui.enableFidoWebauthn
@@ -97,10 +96,8 @@ class FidoFragment : Fragment() {
 
     private fun setupWebView() {
         binding.webView.settings.domStorageEnabled = true
-        if (WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)) {
-            binding.webView.enableFidoWebauthn(lifecycleScope, fidoClient)
-        } else {
-            logger.warn("Web Message Listener feature is not supported on this device.")
+        if (!binding.webView.enableFidoWebauthn(lifecycleScope, fidoClient)) {
+            logger.warn("FIDO WebAuthn bridge could not be enabled (WebView feature not supported)")
         }
         viewModel.setUrl(URL_PASSKEY) // Initial URL
     }
