@@ -113,9 +113,7 @@ internal class FidoClientService(private val viewModel: MainViewModel = MainView
             val requestJson = JSONObject(request).toMap()
 
             val publicKeyCredentialCreationOptions =
-                PublicKeyCredentialCreationOptions.fromMap(
-                    JSONObject(request).toMap(),
-                )
+                PublicKeyCredentialCreationOptions.fromMap(requestJson)
 
             val clientData =
                 clientDataHash?.let { ClientDataProvider.fromHash(it) }
@@ -170,9 +168,7 @@ internal class FidoClientService(private val viewModel: MainViewModel = MainView
                     )
 
             val publicKeyCredentialRequestOptions =
-                PublicKeyCredentialRequestOptions.fromMap(
-                    JSONObject(request).toMap(),
-                )
+                PublicKeyCredentialRequestOptions.fromMap(requestJson)
 
             client.getAssertion(
                 clientData,
