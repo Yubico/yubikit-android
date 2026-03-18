@@ -41,13 +41,6 @@ internal class FidoWebViewSupportImpl {
         private val logger: Logger = LoggerFactory.getLogger(FidoWebViewSupportImpl::class.java)
         private const val JS_SOURCE_TAG = "fido.js"
 
-        private val fidoJs: String by lazy {
-            FidoJs.CODE.replace(
-                FidoJs.BRIDGE_PLACEHOLDER,
-                FidoJsBridge.BRIDGE_NAME,
-            )
-        }
-
         @JvmStatic
         @SuppressLint("SetJavaScriptEnabled")
         fun enable(
@@ -58,7 +51,13 @@ internal class FidoWebViewSupportImpl {
             webView.settings.javaScriptEnabled = true
 
             val bridge = FidoJsBridge(webView, coroutineScope, fidoClient)
-            webView.addJavascriptInterface(bridge, FidoJsBridge.BRIDGE_NAME)
+
+            val fidoJs = FidoJs.CODE.replace(
+                FidoJs.BRIDGE_PLACEHOLDER,
+                bridge.bridgeName,
+            )
+
+            webView.addJavascriptInterface(bridge, bridge.bridgeName)
 
             val webViewClient =
                 object : WebViewClient() {

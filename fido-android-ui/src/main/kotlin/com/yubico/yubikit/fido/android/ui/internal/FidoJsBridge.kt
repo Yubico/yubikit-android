@@ -41,9 +41,12 @@ internal class FidoJsBridge(
     private val fidoClient: FidoClient,
 ) {
     companion object {
-        const val BRIDGE_NAME = "__yubikit_fido_bridge__"
         private val logger = LoggerFactory.getLogger(FidoJsBridge::class.java)
     }
+
+    /** Unique, unpredictable bridge name per instance */
+    internal val bridgeName: String =
+        "__ykfido_${java.util.UUID.randomUUID().toString().replace("-", "")}"
 
     /** Current page origin (scheme://host[:port]), updated on each page load. */
     @Volatile
@@ -147,7 +150,7 @@ internal class FidoJsBridge(
                 """
                 (function() {
                     var data = JSON.parse('$escaped');
-                    ${BRIDGE_NAME}.__resolve__(data.promiseUuid, data.result);
+                    $bridgeName.__resolve__(data.promiseUuid, data.result);
                 })();
                 """.trimIndent(),
             ) {}
@@ -169,7 +172,7 @@ internal class FidoJsBridge(
                 """
                 (function() {
                     var error = JSON.parse('$escaped');
-                    ${BRIDGE_NAME}.__reject__(error.promiseUuid, error.message);
+                    $bridgeName.__reject__(error.promiseUuid, error.message);
                 })();
                 """.trimIndent(),
             ) {}
@@ -185,5 +188,4 @@ internal class FidoJsBridge(
             .replace("\r", "\\r")
             .replace("\u2028", "\\u2028")
             .replace("\u2029", "\\u2029")
-
 }
