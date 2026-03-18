@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Yubico.
+ * Copyright (C) 2025-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,9 +22,19 @@ import org.json.JSONObject
 internal fun JSONObject.toMap(): Map<String, *> =
     keys().asSequence().associateWith {
         when (val value = this[it]) {
-            is JSONArray -> (0 until value.length()).map { index -> value[index] }.toList()
+            is JSONArray -> value.toList()
             is JSONObject -> value.toMap()
             JSONObject.NULL -> null
             else -> value
+        }
+    }
+
+private fun JSONArray.toList(): List<*> =
+    (0 until length()).map { index ->
+        when (val element = this[index]) {
+            is JSONArray -> element.toList()
+            is JSONObject -> element.toMap()
+            JSONObject.NULL -> null
+            else -> element
         }
     }
