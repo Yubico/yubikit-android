@@ -155,60 +155,90 @@ abstract class GenerateFidoJsTask : DefaultTask() {
     @get:InputFile
     abstract val jsSourceFile: RegularFileProperty
 
-    @get:OutputDirectory
-    abstract val outputDir: DirectoryProperty
+    @get:OutputFile
+    abstract val outputFile: RegularFileProperty
 
     @TaskAction
     fun generate() {
-        val jsCode = jsSourceFile.asFile.get().readText()
+        val kotlinSource = generateKotlinSource(jsSourceFile.asFile.get())
+        outputFile.asFile.get().writeText(kotlinSource)
+    }
 
-        val minified = jsCode
-            .replace(Regex("/\\*[\\s\\S]*?\\*/"), "")
-            .lines()
-            .map { it.trim() }
-            .filter { it.isNotEmpty() }
-            .joinToString("\n")
+    companion object {
+        /**
+         * Generates the Kotlin source for FidoJs from the given JS source file.
+         * Shared between [GenerateFidoJsTask] and [VerifyFidoJsTask].
+         */
+        fun generateKotlinSource(jsSourceFile: File): String {
+            val jsCode = jsSourceFile.readText()
 
-        val kotlinSafe = minified.replace("$", "\${'$'}")
+            val minified = jsCode
+                .replace(Regex("/\\*[\\s\\S]*?\\*/"), "")
+                .lines()
+                .map { it.trim() }
+                .filter { it.isNotEmpty() }
+                .joinToString("\n")
 
-        val kotlinSource = buildString {
-            appendLine("// Generated file — do not edit. Source: js/fido.js")
-            appendLine("package com.yubico.yubikit.fido.android.ui.internal")
-            appendLine()
-            appendLine("internal object FidoJs {")
-            appendLine("    const val BRIDGE_PLACEHOLDER = \"JAVASCRIPT_BRIDGE\"")
-            appendLine()
-            appendLine("    @Suppress(\"MaxLineLength\")")
-            appendLine("    const val CODE = \"\"\"")
-            appendLine(kotlinSafe)
-            appendLine("\"\"\"")
-            appendLine("}")
+            val kotlinSafe = minified.replace("$", "\${'$'}")
+
+            return buildString {
+                appendLine("// Generated file — do not edit manually. Source: js/fido.js")
+                appendLine("// Regenerate with: ./gradlew :fido-android-ui:generateFidoJs")
+                appendLine("package com.yubico.yubikit.fido.android.ui.internal")
+                appendLine()
+                appendLine("internal object FidoJs {")
+                appendLine("    const val BRIDGE_PLACEHOLDER = \"JAVASCRIPT_BRIDGE\"")
+                appendLine()
+                appendLine("    @Suppress(\"MaxLineLength\")")
+                appendLine("    const val CODE = \"\"\"")
+                appendLine(kotlinSafe)
+                appendLine("\"\"\"")
+                appendLine("}")
+            }
         }
-
-        val outputFile = outputDir.get().file(
-            "com/yubico/yubikit/fido/android/ui/internal/FidoJs.kt"
-        ).asFile
-        outputFile.parentFile.mkdirs()
-        outputFile.writeText(kotlinSource)
     }
 }
+
+abstract class VerifyFidoJsTask : DefaultTask() {
+    @get:InputFile
+    abstract val jsSourceFile: RegularFileProperty
+
+    @get:InputFile
+    abstract val committedFile: RegularFileProperty
+
+    @TaskAction
+    fun verify() {
+        val expected = GenerateFidoJsTask.generateKotlinSource(jsSourceFile.asFile.get())
+        val actual = committedFile.asFile.get().readText()
+
+        if (expected != actual) {
+            throw GradleException(
+                "FidoJs.kt is out of date with js/fido.js. " +
+                    "Regenerate with: ./gradlew :fido-android-ui:generateFidoJs"
+            )
+        }
+        logger.lifecycle("FidoJs.kt is up to date with js/fido.js")
+    }
+}
+
+val fidoJsKotlinFile: RegularFile? = layout.projectDirectory.file(
+    "src/main/kotlin/com/yubico/yubikit/fido/android/ui/internal/FidoJs.kt"
+)
 
 val generateFidoJs by tasks.registering(GenerateFidoJsTask::class) {
     jsSourceFile.set(layout.projectDirectory.file("js/fido.js"))
-    outputDir.set(layout.buildDirectory.dir("generated/source/fidojs"))
+    outputFile.set(fidoJsKotlinFile)
 }
 
-androidComponents {
-    onVariants { variant ->
-        variant.sources.kotlin?.addGeneratedSourceDirectory(
-            generateFidoJs,
-            GenerateFidoJsTask::outputDir
-        )
-    }
+val verifyFidoJs by tasks.registering(VerifyFidoJsTask::class) {
+    jsSourceFile.set(layout.projectDirectory.file("js/fido.js"))
+    committedFile.set(fidoJsKotlinFile)
 }
 
-tasks.configureEach {
-    if (name == "sourceReleaseJar") {
-        dependsOn(generateFidoJs)
-    }
+tasks.named("check") {
+    dependsOn(verifyFidoJs)
+}
+
+tasks.withType<Test>().configureEach {
+    dependsOn(verifyFidoJs)
 }
