@@ -67,10 +67,8 @@ internal class FidoClientImpl {
 
     private fun handleResult(result: Result<String>) {
         currentContinuation?.let { continuation ->
-            result
-                .onSuccess { continuation.resume(result) }
-                .onFailure { continuation.resumeWithException(it) }
             currentContinuation = null
+            continuation.resume(result)
         }
     }
 
