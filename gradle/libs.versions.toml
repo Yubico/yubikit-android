@@ -3,12 +3,12 @@
 # --- Build toolchain ---
 java = "8"
 kotlin = "2.3.10"
-android-gradle = "9.0.1"
+android-gradle = "9.1.0"
 
 # --- AndroidX core ---
 androidx-annotation = "1.9.1"
 appcompat = "1.7.1"
-core-ktx = "1.17.0"
+core-ktx = "1.18.0"
 credentials = "1.6.0-rc02"
 desugar_jdk_libs = "2.1.5"
 fragment-ktx = "1.8.9"
@@ -27,12 +27,12 @@ lifecycle-viewmodel-ktx = "2.10.0"
 navigation-fragment-ktx = "2.9.7"
 
 # --- Jetpack Compose ---
-activity-compose = "1.12.4"
-activity-ktx = "1.12.4"
-compose-bom = "2026.02.01"
+activity-compose = "1.13.0"
+activity-ktx = "1.13.0"
+compose-bom = "2026.03.00"
 ksp = "2.2.21-2.0.4"
 material3 = "1.5.0-alpha15"
-runtime-livedata = "1.10.4"
+runtime-livedata = "1.10.5"
 
 # --- Kotlin / KotlinX ---
 kotlinx-coroutines-android = "1.10.2"
@@ -66,7 +66,7 @@ hamcrest = "3.0"
 hamcrest-library = "3.0"
 junit-version = "4.13.2"
 kotlinx-coroutines-test = "1.10.2"
-mockito = "5.22.0"
+mockito = "5.23.0"
 mockito-kotlin = "6.2.3"
 robolectric = "4.16.1"
 turbine = "1.2.1"
