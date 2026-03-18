@@ -25,7 +25,7 @@ import com.yubico.yubikit.fido.client.extensions.Extension
 /**
  * A client for performing FIDO2/WebAuthn operations using a hardware security key.
  *
- * This class provides the primary API for creating and asserting WebAuthn credentials
+ * This interface provides the primary API for creating and asserting WebAuthn credentials
  * using a YubiKey or other FIDO2-compatible authenticator. It handles the full lifecycle
  * of FIDO operations including user interaction, PIN entry, and NFC/USB device communication.
  *
@@ -63,38 +63,7 @@ import com.yubico.yubikit.fido.client.extensions.Extension
  * @see FidoConfigManager
  * @see Origin
  */
-public class FidoClient private constructor(private val impl: FidoClientImpl) {
-    /**
-     * Creates a [FidoClient] bound to a [Fragment]'s lifecycle.
-     *
-     * The client registers an activity result launcher with the fragment to handle
-     * FIDO UI interactions. Must be called during fragment initialization (before `onStart()`).
-     *
-     * @param fragment The fragment that will host FIDO UI interactions.
-     * @param extensions Optional list of FIDO extensions to enable for all operations.
-     *   If provided, these extensions are registered globally via [FidoConfigManager].
-     */
-    @JvmOverloads
-    public constructor(
-        fragment: Fragment,
-        extensions: List<Extension>? = null,
-    ) : this(FidoClientImpl(fragment, extensions))
-
-    /**
-     * Creates a [FidoClient] bound to a [ComponentActivity]'s lifecycle.
-     *
-     * The client registers an activity result launcher with the activity to handle
-     * FIDO UI interactions. Must be called during activity initialization (before `onStart()`).
-     *
-     * @param activity The activity that will host FIDO UI interactions.
-     * @param extensions Optional list of FIDO extensions to enable for all operations.
-     *   If provided, these extensions are registered globally via [FidoConfigManager].
-     */
-    @JvmOverloads
-    public constructor(
-        activity: ComponentActivity,
-        extensions: List<Extension>? = null,
-    ) : this(FidoClientImpl(activity, extensions))
+public interface FidoClient {
 
     /**
      * Creates a new WebAuthn credential (registration).
@@ -119,7 +88,7 @@ public class FidoClient private constructor(private val impl: FidoClientImpl) {
         origin: Origin,
         request: String,
         clientDataHash: String?,
-    ): Result<String> = impl.makeCredential(origin, request, clientDataHash)
+    ): Result<String>
 
     /**
      * Asserts an existing WebAuthn credential (authentication).
@@ -144,5 +113,41 @@ public class FidoClient private constructor(private val impl: FidoClientImpl) {
         origin: Origin,
         request: String,
         clientDataHash: String?,
-    ): Result<String> = impl.getAssertion(origin, request, clientDataHash)
+    ): Result<String>
+
+    public companion object {
+        /**
+         * Creates a [FidoClient] bound to a [Fragment]'s lifecycle.
+         *
+         * The client registers an activity result launcher with the fragment to handle
+         * FIDO UI interactions. Must be called during fragment initialization (before `onStart()`).
+         *
+         * @param fragment The fragment that will host FIDO UI interactions.
+         * @param extensions Optional list of FIDO extensions to enable for all operations.
+         *   If provided, these extensions are registered globally via [FidoConfigManager].
+         */
+        @JvmStatic
+        @JvmOverloads
+        public operator fun invoke(
+            fragment: Fragment,
+            extensions: List<Extension>? = null,
+        ): FidoClient = FidoClientImpl(fragment, extensions)
+
+        /**
+         * Creates a [FidoClient] bound to a [ComponentActivity]'s lifecycle.
+         *
+         * The client registers an activity result launcher with the activity to handle
+         * FIDO UI interactions. Must be called during activity initialization (before `onStart()`).
+         *
+         * @param activity The activity that will host FIDO UI interactions.
+         * @param extensions Optional list of FIDO extensions to enable for all operations.
+         *   If provided, these extensions are registered globally via [FidoConfigManager].
+         */
+        @JvmStatic
+        @JvmOverloads
+        public operator fun invoke(
+            activity: ComponentActivity,
+            extensions: List<Extension>? = null,
+        ): FidoClient = FidoClientImpl(activity, extensions)
+    }
 }

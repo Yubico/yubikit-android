@@ -25,6 +25,7 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.annotation.MainThread
 import androidx.fragment.app.Fragment
+import com.yubico.yubikit.fido.android.ui.FidoClient
 import com.yubico.yubikit.fido.android.ui.FidoConfigManager
 import com.yubico.yubikit.fido.android.ui.Origin
 import com.yubico.yubikit.fido.client.extensions.Extension
@@ -34,7 +35,7 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
-internal class FidoClientImpl {
+internal class FidoClientImpl : FidoClient {
     private data class FidoRequest(
         val operation: FidoClientService.Operation,
         val origin: Origin,
@@ -106,7 +107,7 @@ internal class FidoClientImpl {
         }
     }
 
-    suspend fun makeCredential(
+    override suspend fun makeCredential(
         origin: Origin,
         request: String,
         clientDataHash: String?,
@@ -114,7 +115,7 @@ internal class FidoClientImpl {
         return execute(FidoClientService.Operation.MAKE_CREDENTIAL, origin, clientDataHash, request)
     }
 
-    suspend fun getAssertion(
+    override suspend fun getAssertion(
         origin: Origin,
         request: String,
         clientDataHash: String?,
