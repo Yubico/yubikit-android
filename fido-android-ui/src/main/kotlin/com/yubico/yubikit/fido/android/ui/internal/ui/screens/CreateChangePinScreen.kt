@@ -20,17 +20,20 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.input.TextFieldState
+import androidx.compose.foundation.text.input.TextObfuscationMode
+import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Password
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedSecureTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -47,9 +50,6 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.TextFieldValue
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.yubico.yubikit.fido.android.ui.R
 import com.yubico.yubikit.fido.android.ui.internal.FidoClientService
@@ -103,6 +103,7 @@ internal fun ForceChangePinScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun CreateChangePinScreen(
     operation: FidoClientService.Operation,
@@ -114,9 +115,9 @@ private fun CreateChangePinScreen(
     onCloseButtonClick: () -> Unit,
     onPinAction: (newPin: CharArray, currentPin: CharArray) -> Unit,
 ) {
-    var currentPinState by remember { mutableStateOf(TextFieldValue(currentPin?.let { String(it) } ?: "")) }
-    var newPin by remember { mutableStateOf(TextFieldValue("")) }
-    var repeatPin by remember { mutableStateOf(TextFieldValue("")) }
+    val currentPinState = rememberTextFieldState(initialText = currentPin?.let { String(it) } ?: "")
+    val newPinState = rememberTextFieldState()
+    val repeatPinState = rememberTextFieldState()
     var showCurrentPin by remember { mutableStateOf(false) }
     var showNewPin by remember { mutableStateOf(false) }
     var showRepeatPin by remember { mutableStateOf(false) }
@@ -134,6 +135,15 @@ private fun CreateChangePinScreen(
             error == null -> null
             else -> stringResource(R.string.yk_fido_creating_pin_failed)
         }
+
+    val submit: () -> Unit = {
+        if (isPinValid(newPinState.text.toString(), repeatPinState.text.toString(), minPinLen)) {
+            onPinAction(
+                newPinState.text.toString().toCharArray(),
+                currentPinState.text.toString().toCharArray(),
+            )
+        }
+    }
 
     LaunchedEffect(Unit) {
         if (forceChangePin && currentPin == null) {
@@ -160,13 +170,14 @@ private fun CreateChangePinScreen(
                 },
             ),
             style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.padding(vertical = 8.dp).testTag("pin_info_text"),
+            modifier = Modifier
+                .padding(vertical = 8.dp)
+                .testTag("pin_info_text"),
         )
 
         if (forceChangePin) {
             PinTextField(
-                value = currentPinState,
-                onValueChange = { currentPinState = it },
+                state = currentPinState,
                 label = stringResource(R.string.yk_fido_current_pin),
                 showPin = showCurrentPin,
                 onToggleShowPin = { showCurrentPin = !showCurrentPin },
@@ -182,7 +193,7 @@ private fun CreateChangePinScreen(
                     autoCorrectEnabled = false,
                     keyboardType = KeyboardType.Password,
                 ),
-                keyboardActions = KeyboardActions(onNext = { newPinFocusRequester.requestFocus() }),
+                onKeyboardAction = { newPinFocusRequester.requestFocus() },
             )
         }
 
@@ -191,13 +202,14 @@ private fun CreateChangePinScreen(
                 text = currentPinErrorText,
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.padding(top = 8.dp, bottom = 16.dp).testTag("pin_error_text"),
+                modifier = Modifier
+                    .padding(top = 8.dp, bottom = 16.dp)
+                    .testTag("pin_error_text"),
             )
         }
 
         PinTextField(
-            value = newPin,
-            onValueChange = { newPin = it },
+            state = newPinState,
             label = pluralStringResource(R.plurals.yk_fido_new_pin, count = minPinLen, minPinLen),
             showPin = showNewPin,
             onToggleShowPin = { showNewPin = !showNewPin },
@@ -212,12 +224,11 @@ private fun CreateChangePinScreen(
                 autoCorrectEnabled = false,
                 keyboardType = KeyboardType.Password,
             ),
-            keyboardActions = KeyboardActions(onNext = { repeatPinFocusRequester.requestFocus() }),
+            onKeyboardAction = { repeatPinFocusRequester.requestFocus() },
         )
 
         PinTextField(
-            value = repeatPin,
-            onValueChange = { repeatPin = it },
+            state = repeatPinState,
             label = stringResource(R.string.yk_fido_repeat_pin),
             showPin = showRepeatPin,
             onToggleShowPin = { showRepeatPin = !showRepeatPin },
@@ -232,14 +243,7 @@ private fun CreateChangePinScreen(
                 autoCorrectEnabled = false,
                 keyboardType = KeyboardType.Password,
             ),
-            keyboardActions =
-            KeyboardActions(
-                onDone = {
-                    if (isPinValid(newPin.text, repeatPin.text, minPinLen)) {
-                        onPinAction(newPin.text.toCharArray(), currentPinState.text.toCharArray())
-                    }
-                },
-            ),
+            onKeyboardAction = submit,
         )
 
         if (newPinErrorText != null) {
@@ -247,7 +251,9 @@ private fun CreateChangePinScreen(
                 text = newPinErrorText,
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(top = 8.dp).testTag("pin_error_text"),
+                modifier = Modifier
+                    .padding(top = 8.dp)
+                    .testTag("pin_error_text"),
             )
         }
 
@@ -265,10 +271,12 @@ private fun CreateChangePinScreen(
                 Text(stringResource(R.string.yk_fido_cancel))
             }
             Button(
-                onClick = {
-                    onPinAction(newPin.text.toCharArray(), currentPinState.text.toCharArray())
-                },
-                enabled = isPinValid(newPin.text, repeatPin.text, minPinLen),
+                onClick = submit,
+                enabled = isPinValid(
+                    newPinState.text.toString(),
+                    repeatPinState.text.toString(),
+                    minPinLen,
+                ),
                 modifier = Modifier.testTag(if (forceChangePin) "change_pin_button" else "create_pin_button"),
             ) {
                 Text(
@@ -292,20 +300,19 @@ private fun isPinValid(
     // Add more checks if needed (e.g., length, complexity)
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun PinTextField(
-    value: TextFieldValue,
-    onValueChange: (TextFieldValue) -> Unit,
+    state: TextFieldState,
     label: String,
     showPin: Boolean,
     onToggleShowPin: () -> Unit,
     modifier: Modifier = Modifier,
     keyboardOptions: KeyboardOptions,
-    keyboardActions: KeyboardActions,
+    onKeyboardAction: () -> Unit,
 ) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
+    OutlinedSecureTextField(
+        state = state,
         label = { Text(label) },
         leadingIcon = {
             Icon(
@@ -322,11 +329,15 @@ internal fun PinTextField(
                 )
             }
         },
-        singleLine = true,
-        visualTransformation = if (!showPin) PasswordVisualTransformation() else VisualTransformation.None,
+        textObfuscationMode =
+        if (showPin) {
+            TextObfuscationMode.Visible
+        } else {
+            TextObfuscationMode.Hidden
+        },
         modifier = modifier,
         keyboardOptions = keyboardOptions,
-        keyboardActions = keyboardActions,
+        onKeyboardAction = { onKeyboardAction() },
     )
 }
 

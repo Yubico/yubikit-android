@@ -497,12 +497,12 @@ internal open class MainViewModel(
         newPinValue = pin.clone()
         setLastEnteredPin(pin)
         pin.fill('\u0000')
-        // we don't setup USB because there is no
-        // need for touch. The touch will be required after onPinCreatedConfirmation
+        // we don't set up USB because there is no need for touch.
+        // The touch will be required after onPinCreatedConfirmation
         signalRetry(forUsb = false)
     }
 
-    // executed after the user taps the "Create PIN" button
+    // executed after the user taps the "Change PIN" button
     fun onChangePin(
         currentPin: CharArray,
         newPin: CharArray,
@@ -514,8 +514,7 @@ internal open class MainViewModel(
         pinValue?.fill('\u0000')
         pinValue = currentPin.clone()
         currentPin.fill('\u0000')
-        // we don't setup USB because there is no
-        // need for touch. The touch will be required after onPinCreatedConfirmation
+        // we don't set up USB because there is no need for touch.
         signalRetry(forUsb = false)
     }
 

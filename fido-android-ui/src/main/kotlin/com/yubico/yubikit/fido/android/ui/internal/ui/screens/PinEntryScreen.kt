@@ -22,8 +22,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.input.TextObfuscationMode
+import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Password
 import androidx.compose.material.icons.filled.Visibility
@@ -34,10 +35,11 @@ import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedSecureTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -52,9 +54,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.TextFieldValue
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.yubico.yubikit.fido.android.ui.R
 import com.yubico.yubikit.fido.android.ui.internal.FidoClientService
@@ -105,55 +104,39 @@ internal fun EnterPin(
         origin = origin,
         onCloseButtonClick = onCloseButtonClick,
     ) {
-        var text by remember {
-            mutableStateOf(
-                if (pin != null) {
-                    TextFieldValue(
-                        String(pin),
-                        selection = TextRange(0, pin.size),
-                    )
-                } else {
-                    TextFieldValue("")
-                },
-            )
-        }
+        val currentPinState = rememberTextFieldState(
+            initialText = if (pin != null) String(pin) else "",
+        )
         var showPassword by remember { mutableStateOf(false) }
         val focusRequester = remember { FocusRequester() }
         val keyboardController = LocalSoftwareKeyboardController.current
-        val isPinValid = text.text.length >= 4
+        val isPinValid by remember {
+            derivedStateOf { currentPinState.text.length >= 4 }
+        }
 
         val submit: () -> Unit = {
             if (isPinValid) {
-                onPinEntered.invoke(text.text.toCharArray())
+                onPinEntered.invoke(currentPinState.text.toString().toCharArray())
             }
         }
 
         LaunchedEffect(Unit) {
+            if (pin != null) {
+                currentPinState.edit {
+                    selection = TextRange(0, length)
+                }
+            }
             focusRequester.requestFocus()
             keyboardController?.show()
         }
 
-        OutlinedTextField(
+        OutlinedSecureTextField(
+            state = currentPinState,
             modifier =
             Modifier
                 .fillMaxWidth()
                 .focusRequester(focusRequester)
                 .testTag("pin_input_field"),
-            value = text,
-            trailingIcon = {
-                IconButton(onClick = { showPassword = !showPassword }) {
-                    Icon(
-                        imageVector =
-                        if (showPassword) {
-                            Icons.Default.VisibilityOff
-                        } else {
-                            Icons.Default.Visibility
-                        },
-                        contentDescription = "Show",
-                    )
-                }
-            },
-            singleLine = true,
             isError = errorText != null,
             label = { Text(text = stringResource(R.string.yk_fido_provide_pin)) },
             leadingIcon = {
@@ -166,31 +149,42 @@ internal fun EnterPin(
                     tint = MaterialTheme.colorScheme.onBackground,
                 )
             },
-            visualTransformation =
-            if (!showPassword) {
-                PasswordVisualTransformation()
-            } else {
-                VisualTransformation.None
+            trailingIcon = {
+                IconButton(onClick = { showPassword = !showPassword }) {
+                    Icon(
+                        imageVector =
+                        if (showPassword) {
+                            Icons.Default.VisibilityOff
+                        } else {
+                            Icons.Default.Visibility
+                        },
+                        contentDescription =
+                        stringResource(R.string.yk_fido_icon_content_description_password),
+                    )
+                }
             },
-            onValueChange = {
-                text = it
+            textObfuscationMode =
+            if (showPassword) {
+                TextObfuscationMode.Visible
+            } else {
+                TextObfuscationMode.Hidden
             },
             keyboardOptions = KeyboardOptions.Default.copy(
                 autoCorrectEnabled = false,
                 keyboardType = KeyboardType.Password,
                 imeAction = ImeAction.Done,
             ),
-            keyboardActions =
-            KeyboardActions(
-                onDone = { submit.invoke() },
-            ),
+            onKeyboardAction = { submit.invoke() },
         )
+
         if (errorText != null) {
             Text(
                 text = errorText,
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(top = 8.dp, bottom = 4.dp).testTag("pin_error_text"),
+                modifier = Modifier
+                    .padding(top = 8.dp, bottom = 4.dp)
+                    .testTag("pin_error_text"),
             )
         }
 
@@ -204,7 +198,9 @@ internal fun EnterPin(
                 onClick = submit,
                 enabled = isPinValid,
                 shapes = ButtonDefaults.shapes(),
-                modifier = Modifier.width(IntrinsicSize.Min).testTag("continue_button"),
+                modifier = Modifier
+                    .width(IntrinsicSize.Min)
+                    .testTag("continue_button"),
             ) {
                 Text(text = stringResource(R.string.yk_fido_continue_operation), maxLines = 1)
             }
