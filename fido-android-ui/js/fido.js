@@ -173,10 +173,33 @@ JAVASCRIPT_BRIDGE.__reject__ = (uuid, result) => {
 overrideNavigatorCredentialsWithBridgeCall("create")
 overrideNavigatorCredentialsWithBridgeCall("get")
 
+// Replace the browser's PublicKeyCredential with a bare constructor so we can
+// attach our own static feature-detection methods below.
 window.PublicKeyCredential = (function () { });
+
+// Returns false: this WebView bridge uses an external hardware authenticator
+// (e.g. YubiKey), not a built-in platform authenticator (Face ID, fingerprint, etc.).
+// Note: some relying parties misuse this check as a general "is WebAuthn available?"
+// gate and may fall back to passwords when it returns false.
 window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable =
     function () {
         return Promise.resolve(false);
+    };
+
+// Returns false: conditional mediation (passkey autofill UI) is not supported
+// in this WebView bridge. Without this override, calling the method would throw
+// a TypeError since the original PublicKeyCredential was replaced above.
+window.PublicKeyCredential.isConditionalMediationAvailable =
+    function () {
+        return Promise.resolve(false);
+    };
+
+// Returns true: this bridge exists specifically to support external CTAP2
+// security keys. Some Chromium-based sites check this non-standard method
+// for feature detection.
+window.PublicKeyCredential.isExternalCTAP2SecurityKeySupported =
+    function () {
+        return Promise.resolve(true);
     };
 
 console.debug('FIDO WebAuthn bridge injected!')
