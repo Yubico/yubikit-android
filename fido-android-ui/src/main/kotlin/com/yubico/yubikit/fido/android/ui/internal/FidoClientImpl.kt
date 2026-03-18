@@ -19,9 +19,11 @@ package com.yubico.yubikit.fido.android.ui.internal
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.os.Looper
 import androidx.activity.ComponentActivity
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContract
+import androidx.annotation.MainThread
 import androidx.fragment.app.Fragment
 import com.yubico.yubikit.fido.android.ui.FidoConfigManager
 import com.yubico.yubikit.fido.android.ui.Origin
@@ -65,20 +67,31 @@ internal class FidoClientImpl {
         extensions?.let { FidoConfigManager.setExtensions(it) }
     }
 
+    private fun checkMainThread() {
+        check(Looper.myLooper() == Looper.getMainLooper()) {
+            "FidoClient must be called from the main thread. " +
+                "Use Dispatchers.Main or lifecycleScope/viewLifecycleOwner.lifecycleScope."
+        }
+    }
+
+    @MainThread
     private fun handleResult(result: Result<String>) {
+        checkMainThread()
         currentContinuation?.let { continuation ->
             currentContinuation = null
             continuation.resume(result)
         }
     }
 
+    @MainThread
     private suspend fun execute(
         type: FidoClientService.Operation,
         origin: Origin,
         clientDataHash: String?,
         request: String,
-    ): Result<String> =
-        suspendCancellableCoroutine { continuation ->
+    ): Result<String> {
+        checkMainThread()
+        return suspendCancellableCoroutine { continuation ->
             if (currentContinuation != null) {
                 continuation.resumeWithException(IllegalStateException("A FIDO request is already in progress"))
                 return@suspendCancellableCoroutine
@@ -91,6 +104,7 @@ internal class FidoClientImpl {
                 }
             }
         }
+    }
 
     suspend fun makeCredential(
         origin: Origin,

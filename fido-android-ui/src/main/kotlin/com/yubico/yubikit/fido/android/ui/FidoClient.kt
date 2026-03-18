@@ -17,6 +17,7 @@
 package com.yubico.yubikit.fido.android.ui
 
 import androidx.activity.ComponentActivity
+import androidx.annotation.MainThread
 import androidx.fragment.app.Fragment
 import com.yubico.yubikit.fido.android.ui.internal.FidoClientImpl
 import com.yubico.yubikit.fido.client.extensions.Extension
@@ -44,7 +45,8 @@ import com.yubico.yubikit.fido.client.extensions.Extension
  *
  * **Threading:**
  *
- * All operations are suspending functions and should be called from a coroutine context.
+ * All operations are suspending functions and **must be called from the main thread**
+ * (e.g., using `Dispatchers.Main`, `lifecycleScope`, or `viewLifecycleOwner.lifecycleScope`).
  * Only one FIDO request can be in progress at a time; attempting to start a new request
  * while one is pending will throw an [IllegalStateException].
  *
@@ -112,6 +114,7 @@ public class FidoClient private constructor(private val impl: FidoClientImpl) {
      *     or the security key was removed
      *   - [IllegalStateException] if a FIDO request is already in progress
      */
+    @MainThread
     public suspend fun makeCredential(
         origin: Origin,
         request: String,
@@ -136,6 +139,7 @@ public class FidoClient private constructor(private val impl: FidoClientImpl) {
      *     or the security key was removed
      *   - [IllegalStateException] if a FIDO request is already in progress
      */
+    @MainThread
     public suspend fun getAssertion(
         origin: Origin,
         request: String,
