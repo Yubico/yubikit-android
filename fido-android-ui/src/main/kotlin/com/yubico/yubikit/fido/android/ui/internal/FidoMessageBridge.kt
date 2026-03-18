@@ -78,7 +78,7 @@ internal class FidoMessageBridge(
     ) {
         // Reject sub-frame requests — only the top-level page may use the bridge
         if (!isMainFrame) {
-            logger.warn("Rejected FIDO request from sub-frame (origin: {})", sourceOrigin)
+            logger.warn("Rejected FIDO request from sub-frame")
             replyProxy.postMessage(
                 errorResponseJson(
                     promiseUuid = null,
@@ -88,14 +88,26 @@ internal class FidoMessageBridge(
             return
         }
 
-        // Reject non-HTTPS origins
+        // Reject non-HTTPS origins or origins with missing/invalid host
         val scheme = sourceOrigin.scheme
         if (scheme == null || !scheme.equals("https", ignoreCase = true)) {
-            logger.warn("Rejected FIDO request from non-HTTPS origin: {}", sourceOrigin)
+            logger.warn("Rejected FIDO request from non-HTTPS origin (scheme: {})", scheme)
             replyProxy.postMessage(
                 errorResponseJson(
                     promiseUuid = null,
                     message = "WebAuthn requires an HTTPS origin",
+                ),
+            )
+            return
+        }
+
+        val host = sourceOrigin.host
+        if (host.isNullOrEmpty()) {
+            logger.warn("Rejected FIDO request with missing host")
+            replyProxy.postMessage(
+                errorResponseJson(
+                    promiseUuid = null,
+                    message = "WebAuthn requires an origin with a valid host",
                 ),
             )
             return
@@ -140,7 +152,7 @@ internal class FidoMessageBridge(
         // Build the origin string (scheme://host[:port]) from the verified sourceOrigin
         val origin = buildOriginString(sourceOrigin)
 
-        logger.trace("{}({}, ...) from origin {}", method, promiseUuid, origin)
+        logger.trace("{}({})", method, promiseUuid)
 
         coroutineScope.launch {
             try {
@@ -181,10 +193,13 @@ internal class FidoMessageBridge(
 
     /**
      * Builds an origin string (scheme://host[:port]) from a [Uri].
+     *
+     * Callers must ensure that [Uri.getScheme] and [Uri.getHost] are non-null
+     * before invoking this method (validated earlier in [onPostMessage]).
      */
     private fun buildOriginString(uri: Uri): String {
-        val scheme = uri.scheme
-        val host = uri.host
+        val scheme = requireNotNull(uri.scheme) { "scheme must not be null" }
+        val host = requireNotNull(uri.host) { "host must not be null" }
         val port = uri.port
         return if (port != -1) "$scheme://$host:$port" else "$scheme://$host"
     }
