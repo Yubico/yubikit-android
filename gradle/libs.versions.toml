@@ -1,7 +1,7 @@
 [versions]
 
 # --- Build toolchain ---
-java = "11"
+java = "8"
 kotlin = "2.3.10"
 android-gradle = "9.0.1"
 
