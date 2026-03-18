@@ -166,29 +166,13 @@ class ResultScreenTest {
     }
 
     @Test
-    fun `errorView shows custom message for UnknownError with message`() {
-        composeTestRule.setContent {
-            FidoAndroidTheme {
-                ErrorView(
-                    operation = FidoClientService.Operation.MAKE_CREDENTIAL,
-                    origin = testOrigin,
-                    error = Error.UnknownError("Custom error message"),
-                    onRetry = {},
-                )
-            }
-        }
-
-        composeTestRule.onNodeWithTag("error_message_text").assertExists()
-    }
-
-    @Test
     fun `errorView shows unknown error for UnknownError without message`() {
         composeTestRule.setContent {
             FidoAndroidTheme {
                 ErrorView(
                     operation = FidoClientService.Operation.MAKE_CREDENTIAL,
                     origin = testOrigin,
-                    error = Error.UnknownError(null),
+                    error = Error.UnknownError,
                     onRetry = {},
                 )
             }

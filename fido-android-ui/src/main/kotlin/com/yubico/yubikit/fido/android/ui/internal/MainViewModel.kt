@@ -323,13 +323,22 @@ internal open class MainViewModel(
                                                                         )
                                                                 }
 
-                                                            else -> Error.UnknownError("Changing pin Failed")
+                                                            else -> {
+                                                                logger.error("Changing PIN failed: ", it)
+                                                                Error.UnknownError
+                                                            }
                                                         }
 
-                                                    else -> Error.UnknownError("Changing pin Failed")
+                                                    else -> {
+                                                        logger.error("Changing PIN failed: ", it)
+                                                        Error.UnknownError
+                                                    }
                                                 }
 
-                                            else -> Error.UnknownError("Changing pin Failed")
+                                            else -> {
+                                                logger.error("Changing PIN failed: ", it)
+                                                Error.UnknownError
+                                            }
                                         }
                                     _state.value =
                                         State.ForcePinChangeError(forcePinChangeError)
@@ -350,7 +359,10 @@ internal open class MainViewModel(
                                     val createPinError =
                                         when (it) {
                                             is ClientError -> Error.PinComplexityError
-                                            else -> Error.UnknownError("Creating Pin Failed")
+                                            else -> {
+                                                logger.error("Creating PIN failed: ", it)
+                                                Error.UnknownError
+                                            }
                                         }
                                     _state.value = State.PinNotSetError(createPinError)
                                 },
@@ -444,7 +456,10 @@ internal open class MainViewModel(
                                     }
                                 }
 
-                                else -> Error.UnknownError(error.message)
+                                else -> {
+                                    logger.error("Unexpected error during FIDO operation: ", error)
+                                    Error.UnknownError
+                                }
                             }
                         // handle the error by advancing to the next UI state
                         _state.value =
@@ -468,7 +483,8 @@ internal open class MainViewModel(
                         return@launch
                     })
             } catch (e: Exception) {
-                _state.value = State.OperationError(Error.UnknownError(e.message))
+                logger.error("Unexpected exception during FIDO operation: ", e)
+                _state.value = State.OperationError(Error.UnknownError)
             }
         }
     }

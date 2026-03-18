@@ -142,7 +142,7 @@ internal fun ErrorView(
 
                 is Error.DeviceNotConfiguredError -> stringResource(R.string.yk_fido_device_not_configured)
 
-                is Error.UnknownError -> error.message ?: stringResource(R.string.yk_fido_unknown_error)
+                is Error.UnknownError -> stringResource(R.string.yk_fido_unknown_error)
 
                 else -> stringResource(R.string.yk_fido_unknown_error)
             },

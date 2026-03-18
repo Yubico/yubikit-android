@@ -39,5 +39,5 @@ internal sealed class Error {
 
     data class OperationError(val exception: Throwable?) : Error()
 
-    data class UnknownError(val message: String?) : Error()
+    data object UnknownError : Error()
 }
