@@ -73,13 +73,11 @@ internal class FidoClientService(private val viewModel: MainViewModel = MainView
         origin: String,
         challenge: String,
     ): ByteArray {
-        return """
-            {
-                "type": "$type",
-                "challenge": "$challenge",
-                "origin": "$origin"
-            }
-        """.trimIndent().toByteArray()
+        return JSONObject().apply {
+            put("type", type)
+            put("challenge", challenge)
+            put("origin", origin)
+        }.toString().toByteArray()
     }
 
     private suspend fun makeCredential(
