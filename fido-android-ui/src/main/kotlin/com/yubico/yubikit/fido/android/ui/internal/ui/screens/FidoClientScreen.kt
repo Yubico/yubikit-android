@@ -59,7 +59,11 @@ internal fun FidoClientUi(
         fidoClientService.cancelOngoingOperation()
         onCloseButtonClick()
     }
-    val logger: Logger = LoggerFactory.getLogger("FidoUiClient")
+    // Use a fully qualified name to place this logger under com.yubico.yubikit,
+    // so it respects the SDK log-level configuration.
+    val logger: Logger = LoggerFactory.getLogger(
+        "com.yubico.yubikit.fido.android.ui.internal.ui.screens.FidoUiClient",
+    )
 
     BackHandler {
         handleCloseButton()

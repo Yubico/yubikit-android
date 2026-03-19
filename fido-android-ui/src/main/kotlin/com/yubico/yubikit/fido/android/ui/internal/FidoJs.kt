@@ -11,7 +11,7 @@ internal object FidoJs {
 // The primary enforcement is on the Java side (isMainFrame check in FidoMessageBridge),
 // but this prevents the polyfill from even overriding navigator.credentials in iframes.
 if (window !== window.top) {
-console.debug('FIDO bridge: sub-frame detected, not injecting.')
+console.error('FIDO bridge: sub-frame detected, not injecting.')
 throw new Error('FIDO WebAuthn bridge is not available in sub-frames')
 }
 // check if replaced in Android: if not defined, throws a 'ReferenceError'.
@@ -23,7 +23,7 @@ var data
 try {
 data = JSON.parse(event.data)
 } catch(e) {
-console.error('FIDO bridge: failed to parse response:', e)
+console.error('FIDO bridge: failed to parse response: ', e.message)
 return
 }
 var uuid = data.promiseUuid
@@ -62,7 +62,7 @@ return __encode(new Uint8Array(value))
 }
 return value
 }, 4)
-console.debug('options:', options_json)
+console.log('options:', options_json)
 // Send request to the Java bridge via postMessage
 try {
 JAVASCRIPT_BRIDGE.postMessage(JSON.stringify({

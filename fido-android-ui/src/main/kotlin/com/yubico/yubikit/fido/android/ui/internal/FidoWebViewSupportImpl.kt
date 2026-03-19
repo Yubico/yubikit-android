@@ -101,26 +101,23 @@ internal class FidoWebViewSupportImpl {
                         consoleMessage?.let {
                             val sourceId = it.sourceId()
                             val isInjectedJs = sourceId.isNullOrEmpty()
-                            val msg =
-                                if (isInjectedJs) {
-                                    "$JS_SOURCE_TAG ${it.message()}"
-                                } else {
-                                    "$sourceId:${it.lineNumber()} ${it.message()}"
+
+                            if (isInjectedJs) {
+                                val msg = "$JS_SOURCE_TAG ${it.message()}"
+                                @Suppress("LoggingSimilarMessage")
+                                when (it.messageLevel()) {
+                                    ConsoleMessage.MessageLevel.ERROR -> logger.error(msg)
+                                    ConsoleMessage.MessageLevel.WARNING -> logger.warn(msg)
+                                    // In WebView: console.debug() → TIP, console.log() → LOG.
+                                    // For injected JS we use console.debug() for debug-level
+                                    // and console.log() for trace/verbose-level messages.
+                                    ConsoleMessage.MessageLevel.DEBUG -> logger.debug(msg)
+                                    ConsoleMessage.MessageLevel.TIP -> logger.debug(msg)
+                                    // includes ConsoleMessage.MessageLevel.LOG
+                                    else -> logger.trace(msg)
                                 }
-                            when (it.messageLevel()) {
-                                ConsoleMessage.MessageLevel.ERROR -> logger.error(msg)
-                                ConsoleMessage.MessageLevel.WARNING -> logger.warn(msg)
-                                ConsoleMessage.MessageLevel.DEBUG -> logger.debug(msg)
-                                // In WebView: console.debug() → TIP, console.log() → LOG.
-                                // For injected JS we use console.debug() for debug-level
-                                // and console.log() for trace/verbose-level messages.
-                                ConsoleMessage.MessageLevel.TIP ->
-                                    if (isInjectedJs) logger.debug(msg) else logger.debug(msg)
-
-                                ConsoleMessage.MessageLevel.LOG ->
-                                    if (isInjectedJs) logger.trace(msg) else logger.info(msg)
-
-                                else -> logger.info(msg)
+                            } else {
+                                logger.trace("$sourceId:${it.lineNumber()} ${it.message()}")
                             }
                         }
                         return true
