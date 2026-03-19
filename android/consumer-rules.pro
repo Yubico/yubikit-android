@@ -41,3 +41,8 @@
 # implementations, so no explicit -keep rule is needed. The META-INF/services
 # file is sufficient to prevent the class from being removed or obfuscated.
 
+# YubiKeyPromptActivity reflectively instantiates YubiKeyPromptAction subclasses
+# using getDeclaredConstructor().newInstance().
+-keep class * extends com.yubico.yubikit.android.ui.YubiKeyPromptAction {
+    public <init>();
+}
