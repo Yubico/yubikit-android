@@ -249,11 +249,11 @@ public class Ctap2Client implements WebAuthnClient {
     } catch (CtapException e) {
       if (e.getCtapError() == CtapException.ERR_PIN_INVALID) {
         throw new AuthInvalidClientError(
-            e, AuthInvalidClientError.AuthType.PIN, clientPin.getPinRetries().getCount());
+            e, AuthInvalidClientError.AuthType.PIN, getSafePinRetryCount());
       }
       if (e.getCtapError() == CtapException.ERR_UV_INVALID) {
         throw new AuthInvalidClientError(
-            e, AuthInvalidClientError.AuthType.UV, clientPin.getUvRetries());
+            e, AuthInvalidClientError.AuthType.UV, getSafeUvRetryCount());
       }
       throw ClientError.wrapCtapException(e);
     }
@@ -307,11 +307,11 @@ public class Ctap2Client implements WebAuthnClient {
     } catch (CtapException e) {
       if (e.getCtapError() == CtapException.ERR_PIN_INVALID) {
         throw new AuthInvalidClientError(
-            e, AuthInvalidClientError.AuthType.PIN, clientPin.getPinRetries().getCount());
+            e, AuthInvalidClientError.AuthType.PIN, getSafePinRetryCount());
       }
       if (e.getCtapError() == CtapException.ERR_UV_INVALID) {
         throw new AuthInvalidClientError(
-            e, AuthInvalidClientError.AuthType.UV, clientPin.getUvRetries());
+            e, AuthInvalidClientError.AuthType.UV, getSafeUvRetryCount());
       }
       throw ClientError.wrapCtapException(e);
     }
@@ -393,6 +393,10 @@ public class Ctap2Client implements WebAuthnClient {
     try {
       clientPin.changePin(currentPin, newPin);
     } catch (CtapException e) {
+      if (e.getCtapError() == CtapException.ERR_PIN_INVALID) {
+        throw new AuthInvalidClientError(
+            e, AuthInvalidClientError.AuthType.PIN, getSafePinRetryCount());
+      }
       throw ClientError.wrapCtapException(e);
     }
   }
@@ -685,11 +689,11 @@ public class Ctap2Client implements WebAuthnClient {
     } catch (CtapException e) {
       if (e.getCtapError() == CtapException.ERR_PIN_INVALID) {
         throw new AuthInvalidClientError(
-            e, AuthInvalidClientError.AuthType.PIN, clientPin.getPinRetries().getCount());
+            e, AuthInvalidClientError.AuthType.PIN, getSafePinRetryCount());
       }
       if (e.getCtapError() == CtapException.ERR_UV_INVALID) {
         throw new AuthInvalidClientError(
-            e, AuthInvalidClientError.AuthType.UV, clientPin.getUvRetries());
+            e, AuthInvalidClientError.AuthType.UV, getSafeUvRetryCount());
       }
       throw ClientError.wrapCtapException(e);
     }
@@ -813,6 +817,24 @@ public class Ctap2Client implements WebAuthnClient {
     }
 
     return new PinUvAuthDummyProtocol();
+  }
+
+  private int getSafePinRetryCount() {
+    try {
+      return clientPin.getPinRetries().getCount();
+    } catch (IOException | CommandException e) {
+      logger.warn("Failed to get PIN retries", e);
+      return -1;
+    }
+  }
+
+  private int getSafeUvRetryCount() {
+    try {
+      return clientPin.getUvRetries();
+    } catch (IOException | CommandException e) {
+      logger.warn("Failed to get UV retries", e);
+      return -1;
+    }
   }
 
   private static boolean isPublicKeyCredentialTypeSupported(String type) {

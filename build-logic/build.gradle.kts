@@ -20,5 +20,5 @@ plugins {
 
 dependencies {
     implementation(libs.android.gradle.plugin)
-    implementation(libs.spotless.plugin.gradle)
+    compileOnly(libs.spotless.plugin.gradle)
 }

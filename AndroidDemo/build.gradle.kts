@@ -1,3 +1,5 @@
+import com.diffplug.gradle.spotless.SpotlessExtension
+
 /*
  * Copyright (C) 2025-2026 Yubico.
  *
@@ -16,6 +18,7 @@
 
 plugins {
     alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlinx.serialization)
     id("yubikit-common")
 }
 
@@ -65,10 +68,12 @@ dependencies {
     implementation(project(":yubiotp"))
     implementation(project(":oath"))
     implementation(project(":piv"))
+    implementation(project(":fido-android-ui"))
     implementation(project(":support"))
 
     coreLibraryDesugaring(libs.desugar.jdk.libs)
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.kotlinx.serialization.json)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.fragment.ktx)
@@ -83,6 +88,7 @@ dependencies {
     implementation(libs.androidx.navigation.fragment.ktx)
     implementation(libs.androidx.navigation.ui.ktx)
     implementation(libs.androidx.navigation.dynamic.features.fragment)
+    implementation(libs.androidx.webkit)
 
     implementation(libs.bcpkix.jdk15to18)
     implementation(libs.logback.android)
@@ -92,3 +98,9 @@ dependencies {
     androidTestImplementation(libs.androidx.espresso.core)
 }
 
+configure<SpotlessExtension> {
+    // temporarily don't format kotlin in this project
+    kotlin {
+        targetExclude("src/**/*.kt", "src/**/*.kts")
+    }
+}
