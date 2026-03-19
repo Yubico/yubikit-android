@@ -128,9 +128,7 @@ dependencies {
     implementation(libs.androidx.activity.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
-    implementation(libs.androidx.runtime.livedata)
     implementation(libs.androidx.appcompat)
-    implementation(libs.kotlinx.serialization.json)
 
     // testing dependencies
     testImplementation(libs.junit.junit)
