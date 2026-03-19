@@ -41,10 +41,12 @@ import org.jspecify.annotations.Nullable;
 
 public class SignExtension extends Extension {
 
-  static final String SIGN = "sign";
+  static final String SIGN = "previewSign";
   static final String ALGORITHMS = "algorithms";
+  static final String KEY_HANDLE = "keyHandle";
   static final String TBS = "tbs";
-  static final String KEY_HANDLE_BY_CREDENTIAL = "keyHandleByCredential";
+  static final String ADDITIONAL_ARGS = "additionalArgs";
+  static final String SIGN_BY_CREDENTIAL = "signByCredential";
   static final String GENERATE_KEY = "generateKey";
   static final String GENERATED_KEY = "generatedKey";
   static final String SIGNATURE = "signature";
@@ -61,13 +63,13 @@ public class SignExtension extends Extension {
 
   private static class AuthenticationExtensionsSign {
     @Nullable final AuthenticationExtensionsSignGenerateKey generateKey;
-    @Nullable final AuthenticationExtensionsSignSign sign;
+    @Nullable final Map<String, AuthenticationExtensionsSignSign> signByCredential;
 
     private AuthenticationExtensionsSign(
         @Nullable AuthenticationExtensionsSignGenerateKey generateKey,
-        @Nullable AuthenticationExtensionsSignSign sign) {
+        @Nullable Map<String, AuthenticationExtensionsSignSign> signByCredential) {
       this.generateKey = generateKey;
-      this.sign = sign;
+      this.signByCredential = signByCredential;
     }
 
     @SuppressWarnings("unchecked")
@@ -80,49 +82,50 @@ public class SignExtension extends Extension {
       AuthenticationExtensionsSignGenerateKey signGenerateKey =
           AuthenticationExtensionsSignGenerateKey.fromMap(
               (Map<String, Object>) inputs.get(GENERATE_KEY));
-      AuthenticationExtensionsSignSign signSign =
-          AuthenticationExtensionsSignSign.fromMap((Map<String, Object>) inputs.get(SIGN));
 
-      return new AuthenticationExtensionsSign(signGenerateKey, signSign);
+      Map<String, Map<String, Object>> signByCredentialRaw =
+          (Map<String, Map<String, Object>>) inputs.get(SIGN_BY_CREDENTIAL);
+      Map<String, AuthenticationExtensionsSignSign> signByCredential = null;
+      if (signByCredentialRaw != null) {
+        signByCredential = new HashMap<>();
+        for (Map.Entry<String, Map<String, Object>> entry : signByCredentialRaw.entrySet()) {
+          signByCredential.put(
+              entry.getKey(), AuthenticationExtensionsSignSign.fromMap(entry.getValue()));
+        }
+      }
+
+      return new AuthenticationExtensionsSign(signGenerateKey, signByCredential);
     }
   }
 
   private static class AuthenticationExtensionsSignSign {
+    private final byte[] keyHandle;
     private final byte[] tbs;
-    private final Map<String, byte[]> keyHandleByCredential;
+    private final byte @Nullable [] additionalArgs;
 
     private AuthenticationExtensionsSignSign(
-        byte[] tbs, Map<String, byte[]> keyHandleByCredential) {
+        byte[] keyHandle, byte[] tbs, byte @Nullable [] additionalArgs) {
+      this.keyHandle = keyHandle;
       this.tbs = tbs;
-      this.keyHandleByCredential = keyHandleByCredential;
+      this.additionalArgs = additionalArgs;
     }
 
-    @SuppressWarnings("unchecked")
-    @Nullable
-    static AuthenticationExtensionsSignSign fromMap(@Nullable Map<String, Object> map) {
-      if (map == null) {
-        return null;
-      }
+    static AuthenticationExtensionsSignSign fromMap(Map<String, Object> map) {
+      byte[] keyHandle = fromUrlSafeString(Objects.requireNonNull((String) map.get(KEY_HANDLE)));
+      byte[] tbs = fromUrlSafeString(Objects.requireNonNull((String) map.get(TBS)));
+      String additionalArgsData = (String) map.get(ADDITIONAL_ARGS);
+      byte[] additionalArgs =
+          additionalArgsData != null ? fromUrlSafeString(additionalArgsData) : null;
 
-      String tbsData = Objects.requireNonNull((String) map.get(TBS));
-      Map<String, String> keyHandleByCredential =
-          Objects.requireNonNull((Map<String, String>) map.get(KEY_HANDLE_BY_CREDENTIAL));
-
-      return new AuthenticationExtensionsSignSign(
-          fromUrlSafeString(tbsData),
-          keyHandleByCredential.keySet().stream()
-              .collect(
-                  Collectors.toMap(k -> k, k -> fromUrlSafeString(keyHandleByCredential.get(k)))));
+      return new AuthenticationExtensionsSignSign(keyHandle, tbs, additionalArgs);
     }
   }
 
   private static class AuthenticationExtensionsSignGenerateKey {
     private final List<Integer> algorithms;
-    private final byte @Nullable [] tbs;
 
-    AuthenticationExtensionsSignGenerateKey(List<Integer> algorithms, byte @Nullable [] tbs) {
+    AuthenticationExtensionsSignGenerateKey(List<Integer> algorithms) {
       this.algorithms = algorithms;
-      this.tbs = tbs;
     }
 
     @SuppressWarnings("unchecked")
@@ -133,29 +136,20 @@ public class SignExtension extends Extension {
       }
 
       List<Integer> algorithms = Objects.requireNonNull((List<Integer>) map.get(ALGORITHMS));
-      String phData = (String) map.get(TBS);
 
-      return new AuthenticationExtensionsSignGenerateKey(
-          algorithms, phData != null ? fromUrlSafeString(phData) : null);
-    }
-
-    Map<String, Object> toMap() {
-      Map<String, Object> map = new HashMap<>();
-      map.put(ALGORITHMS, algorithms);
-      if (tbs != null) {
-        map.put(TBS, toUrlSafeString(tbs));
-      }
-      return map;
+      return new AuthenticationExtensionsSignGenerateKey(algorithms);
     }
   }
 
   private static class AuthenticationExtensionsSignGeneratedKey {
+    final byte[] keyHandle;
     final byte[] publicKey;
     final int algorithm;
     final byte[] attestationObject;
 
     private AuthenticationExtensionsSignGeneratedKey(
-        byte[] publicKey, int algorithm, byte[] attestationObject) {
+        byte[] keyHandle, byte[] publicKey, int algorithm, byte[] attestationObject) {
+      this.keyHandle = keyHandle;
       this.publicKey = publicKey;
       this.algorithm = algorithm;
       this.attestationObject = attestationObject;
@@ -163,6 +157,7 @@ public class SignExtension extends Extension {
 
     public Map<String, Object> toMap() {
       Map<String, Object> map = new HashMap<>();
+      map.put(KEY_HANDLE, toUrlSafeString(keyHandle));
       map.put(PUBLIC_KEY, toUrlSafeString(publicKey));
       map.put(ALGORITHM, algorithm);
       map.put(ATTESTATION_OBJECT, toUrlSafeString(attestationObject));
@@ -212,8 +207,8 @@ public class SignExtension extends Extension {
       return null;
     }
 
-    if (extSign.sign != null) {
-      throw new IllegalArgumentException("sign input not allowed");
+    if (extSign.signByCredential != null) {
+      throw new IllegalArgumentException("signByCredential input not allowed");
     }
 
     if (extSign.generateKey == null) {
@@ -223,9 +218,6 @@ public class SignExtension extends Extension {
     final RegistrationInput prepareInput =
         pinToken -> {
           Map<Integer, Object> map = new HashMap<>();
-          if (extSign.generateKey.tbs != null) {
-            map.put(6, extSign.generateKey.tbs); // tbs
-          }
           map.put(3, extSign.generateKey.algorithms); // alg
           map.put(4, getCreateFlags(options)); // flags
 
@@ -262,6 +254,7 @@ public class SignExtension extends Extension {
               }
 
               byte[] pkBytes = Cbor.encode(attestedCredentialData.getCosePublicKey()).clone();
+              byte[] keyHandle = attestedCredentialData.getCredentialId();
 
               Map<String, ?> authDataExtensions = authData.getExtensions();
               if (authDataExtensions == null) {
@@ -280,14 +273,14 @@ public class SignExtension extends Extension {
 
               AuthenticationExtensionsSignGeneratedKey generatedKey =
                   new AuthenticationExtensionsSignGeneratedKey(
+                      keyHandle,
                       pkBytes,
                       (int) authDataSign.get(3), // alg
                       Cbor.encode(newAttObj));
 
               return Collections.singletonMap(
                   SIGN,
-                  new SignExtension.AuthenticationExtensionsSignOutputs(
-                          generatedKey, (byte[]) authDataSign.get(6)) // sig
+                  new SignExtension.AuthenticationExtensionsSignOutputs(generatedKey, null)
                       .toMap());
             };
 
@@ -324,11 +317,11 @@ public class SignExtension extends Extension {
       return null;
     }
 
-    if (extSign.sign == null || extSign.generateKey != null) {
+    if (extSign.signByCredential == null || extSign.generateKey != null) {
       throw new IllegalArgumentException("Invalid inputs");
     }
 
-    Map<String, byte[]> byCreds = extSign.sign.keyHandleByCredential;
+    Map<String, AuthenticationExtensionsSignSign> byCreds = extSign.signByCredential;
     List<PublicKeyCredentialDescriptor> allowList = options.getAllowCredentials();
     if (allowList.isEmpty()) {
       throw new IllegalArgumentException("sign requires allow_list");
@@ -339,7 +332,7 @@ public class SignExtension extends Extension {
 
     ids.removeAll(byCreds.keySet());
     if (!ids.isEmpty()) {
-      throw new IllegalArgumentException("keyHandleByCredential not valid");
+      throw new IllegalArgumentException("signByCredential not valid");
     }
 
     final AuthenticationInput prepareInput =
@@ -348,10 +341,14 @@ public class SignExtension extends Extension {
             throw new IllegalArgumentException("Invalid allowList data");
           }
 
-          byte[] keyRefBytes = byCreds.get(toUrlSafeString(selected.getId()));
+          AuthenticationExtensionsSignSign credInputs =
+              byCreds.get(toUrlSafeString(selected.getId()));
           Map<Integer, Object> output = new HashMap<>();
-          output.put(6, extSign.sign.tbs); // tbs
-          output.put(5, keyRefBytes); // key-ref
+          output.put(2, credInputs.keyHandle); // key-handle
+          output.put(6, credInputs.tbs); // tbs
+          if (credInputs.additionalArgs != null) {
+            output.put(7, credInputs.additionalArgs); // additional-args
+          }
           return Collections.singletonMap(name, output);
         };
 

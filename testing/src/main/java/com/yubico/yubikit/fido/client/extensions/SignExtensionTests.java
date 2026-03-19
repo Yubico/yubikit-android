@@ -37,7 +37,7 @@ import org.junit.Assume;
 
 public class SignExtensionTests {
 
-  private static final String SIGN_EXT = "sign";
+  private static final String SIGN_EXT = "previewSign";
 
   private static final List<Extension> extensions = Collections.singletonList(new SignExtension());
 
@@ -75,7 +75,7 @@ public class SignExtensionTests {
             }
           });
 
-      // create credential
+      // create credential with generateKey
       state.withCtap2(
           session -> {
             PublicKeyCredential cred =
@@ -85,7 +85,7 @@ public class SignExtensionTests {
                             .residentKey(residentKey)
                             .extensions(
                                 JsonUtils.fromJson(
-                                    "{\"sign\": {"
+                                    "{\"previewSign\": {"
                                         + "    \"generateKey\": {"
                                         + "      \"algorithms\": ["
                                         + "          -65600,"
@@ -103,6 +103,7 @@ public class SignExtensionTests {
             Map<String, Object> generatedKey =
                 (Map<String, Object>) signCreateResult.get("generatedKey");
             Assert.assertNotNull(generatedKey);
+            Assert.assertTrue(generatedKey.containsKey("keyHandle"));
             Assert.assertTrue(generatedKey.containsKey("publicKey"));
             Assert.assertTrue(generatedKey.containsKey("algorithm"));
             Assert.assertTrue(generatedKey.containsKey("attestationObject"));
