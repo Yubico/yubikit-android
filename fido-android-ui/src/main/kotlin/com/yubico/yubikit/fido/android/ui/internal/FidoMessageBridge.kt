@@ -76,12 +76,23 @@ internal class FidoMessageBridge(
         isMainFrame: Boolean,
         replyProxy: JavaScriptReplyProxy,
     ) {
+        val data = message.data
+
+        // Best-effort parse so that early-rejection paths can echo back
+        // the promiseUuid and let the JS side reject the pending Promise.
+        val json = try {
+            if (!data.isNullOrEmpty()) JSONObject(data) else null
+        } catch (_: Exception) {
+            null
+        }
+        val earlyUuid = json?.optString(KEY_PROMISE_UUID, "")?.ifEmpty { null }
+
         // Reject sub-frame requests — only the top-level page may use the bridge
         if (!isMainFrame) {
             logger.warn("Rejected FIDO request from sub-frame")
             replyProxy.postMessage(
                 errorResponseJson(
-                    promiseUuid = null,
+                    promiseUuid = earlyUuid,
                     message = "WebAuthn is not supported in sub-frames",
                 ),
             )
@@ -94,7 +105,7 @@ internal class FidoMessageBridge(
             logger.warn("Rejected FIDO request from non-HTTPS origin (scheme: {})", scheme)
             replyProxy.postMessage(
                 errorResponseJson(
-                    promiseUuid = null,
+                    promiseUuid = earlyUuid,
                     message = "WebAuthn requires an HTTPS origin",
                 ),
             )
@@ -106,23 +117,20 @@ internal class FidoMessageBridge(
             logger.warn("Rejected FIDO request with missing host")
             replyProxy.postMessage(
                 errorResponseJson(
-                    promiseUuid = null,
+                    promiseUuid = earlyUuid,
                     message = "WebAuthn requires an origin with a valid host",
                 ),
             )
             return
         }
 
-        val data = message.data
         if (data.isNullOrEmpty()) {
             logger.warn("Received empty WebMessage, ignoring")
             return
         }
 
-        val json = try {
-            JSONObject(data)
-        } catch (e: Exception) {
-            logger.warn("Failed to parse WebMessage JSON", e)
+        if (json == null) {
+            logger.warn("Failed to parse WebMessage JSON")
             replyProxy.postMessage(
                 errorResponseJson(promiseUuid = null, message = "Invalid message format"),
             )
@@ -130,7 +138,7 @@ internal class FidoMessageBridge(
         }
 
         val method = json.optString(KEY_METHOD, "")
-        val promiseUuid = json.optString(KEY_PROMISE_UUID, "")
+        val promiseUuid = earlyUuid ?: ""
         val options = json.optString(KEY_OPTIONS, "")
 
         if (method.isEmpty() || promiseUuid.isEmpty() || options.isEmpty()) {
