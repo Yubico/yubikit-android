@@ -117,7 +117,7 @@ dependencies {
 
     // UI Tests
     androidTestImplementation(libs.androidx.ui.test.junit4)
-    implementation(libs.androidx.ui.test.manifest)
+    debugImplementation(libs.androidx.ui.test.manifest)
 
     implementation(libs.androidx.material.icons.core)
     implementation(libs.androidx.runtime.livedata)
