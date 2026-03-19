@@ -74,7 +74,7 @@ turbine = "1.2.1"
 # --- Static analysis ---
 findsecbugs = "1.14.0"
 spotbugs-core = "4.9.8"
-spotless = "8.2.1"
+spotless = "8.4.0"
 
 [libraries]
 
