@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2025 Yubico.
+ * Copyright (C) 2022-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,14 +63,13 @@ public class UsbPidGroup implements Closeable {
   int getUsbInterface(Class<? extends YubiKeyConnection> connectionType) {
     if (SmartCardConnection.class.isAssignableFrom(connectionType)) {
       return UsbInterface.CCID;
-    }
-    if (OtpConnection.class.isAssignableFrom(connectionType)) {
+    } else if (OtpConnection.class.isAssignableFrom(connectionType)) {
       return UsbInterface.OTP;
-    }
-    if (FidoConnection.class.isAssignableFrom(connectionType)) {
+    } else if (FidoConnection.class.isAssignableFrom(connectionType)) {
       return UsbInterface.FIDO;
+    } else {
+      throw new IllegalArgumentException();
     }
-    throw new IllegalArgumentException();
   }
 
   void add(

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2025 Yubico.
+ * Copyright (C) 2022-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -85,8 +85,9 @@ public class HidDevice implements UsbYubiKeyDevice, Closeable {
       return connectionType.cast(openOtpConnection());
     } else if (connectionType.isAssignableFrom(HidFidoConnection.class)) {
       return connectionType.cast(openFidoConnection());
+    } else {
+      throw new IllegalStateException("Unsupported connection type");
     }
-    throw new IllegalStateException("Unsupported connection type");
   }
 
   @Override
