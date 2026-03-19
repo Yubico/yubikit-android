@@ -317,7 +317,9 @@ internal fun PinTextField(
         leadingIcon = {
             Icon(
                 imageVector = Icons.Default.Password,
-                contentDescription = null,
+                contentDescription = stringResource(
+                    R.string.yk_fido_icon_content_description_pin,
+                ),
                 tint = MaterialTheme.colorScheme.onBackground,
             )
         },
@@ -325,7 +327,11 @@ internal fun PinTextField(
             IconButton(onClick = onToggleShowPin) {
                 Icon(
                     imageVector = if (showPin) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                    contentDescription = "Show",
+                    contentDescription = if (showPin) {
+                        stringResource(R.string.yk_fido_icon_content_description_hide_pin)
+                    } else {
+                        stringResource(R.string.yk_fido_icon_content_description_show_pin)
+                    },
                 )
             }
         },

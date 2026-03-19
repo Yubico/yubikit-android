@@ -6,7 +6,9 @@
     <string name="yk_fido_passkey_icon">Passkey icon</string>
     <string name="yk_fido_continue_operation">Continue</string>
     <string name="yk_fido_provide_pin">PIN</string>
-    <string name="yk_fido_icon_content_description_password">Password</string>
+    <string name="yk_fido_icon_content_description_pin">PIN</string>
+    <string name="yk_fido_icon_content_description_show_pin">Show PIN</string>
+    <string name="yk_fido_icon_content_description_hide_pin">Hide PIN</string>
     <string name="yk_fido_passkey_created">Passkey successfully created</string>
     <plurals name="yk_fido_incorrect_pin_with_attempts">
         <item quantity="one">Incorrect PIN. %1$d attempt remaining.</item>

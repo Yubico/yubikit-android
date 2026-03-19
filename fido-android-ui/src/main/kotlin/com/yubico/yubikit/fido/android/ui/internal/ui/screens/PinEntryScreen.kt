@@ -107,7 +107,7 @@ internal fun EnterPin(
         val currentPinState = rememberTextFieldState(
             initialText = if (pin != null) String(pin) else "",
         )
-        var showPassword by remember { mutableStateOf(false) }
+        var showPin by remember { mutableStateOf(false) }
         val focusRequester = remember { FocusRequester() }
         val keyboardController = LocalSoftwareKeyboardController.current
         val isPinValid by remember {
@@ -144,27 +144,32 @@ internal fun EnterPin(
                     imageVector = Icons.Default.Password,
                     contentDescription =
                     stringResource(
-                        R.string.yk_fido_icon_content_description_password,
+                        R.string.yk_fido_icon_content_description_pin,
                     ),
                     tint = MaterialTheme.colorScheme.onBackground,
                 )
             },
             trailingIcon = {
-                IconButton(onClick = { showPassword = !showPassword }) {
+                IconButton(onClick = { showPin = !showPin }) {
                     Icon(
                         imageVector =
-                        if (showPassword) {
+                        if (showPin) {
                             Icons.Default.VisibilityOff
                         } else {
                             Icons.Default.Visibility
                         },
                         contentDescription =
-                        stringResource(R.string.yk_fido_icon_content_description_password),
+                        if (showPin) {
+                            stringResource(R.string.yk_fido_icon_content_description_hide_pin)
+                        } else {
+                            stringResource(R.string.yk_fido_icon_content_description_show_pin)
+                        },
+
                     )
                 }
             },
             textObfuscationMode =
-            if (showPassword) {
+            if (showPin) {
                 TextObfuscationMode.Visible
             } else {
                 TextObfuscationMode.Hidden
