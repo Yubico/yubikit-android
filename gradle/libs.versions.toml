@@ -3,12 +3,12 @@
 # --- Build toolchain ---
 java = "8"
 kotlin = "2.3.10"
-android-gradle = "9.0.0"
+android-gradle = "9.1.0"
 
 # --- AndroidX core ---
 androidx-annotation = "1.9.1"
 appcompat = "1.7.1"
-core-ktx = "1.17.0"
+core-ktx = "1.18.0"
 credentials = "1.6.0-rc02"
 desugar_jdk_libs = "2.1.5"
 fragment-ktx = "1.8.9"
@@ -40,7 +40,7 @@ kotlinx-serialization-json = "1.10.0"
 
 # --- Logging ---
 logback-android = "3.0.0"
-logback-classic = "1.5.29"
+logback-classic = "1.5.32"
 slf4j-api = "2.0.17"
 slf4j-nop = "2.0.17"
 
@@ -66,7 +66,7 @@ hamcrest = "3.0"
 hamcrest-library = "3.0"
 junit-version = "4.13.2"
 kotlinx-coroutines-test = "1.10.2"
-mockito = "5.21.0"
+mockito = "5.23.0"
 mockito-kotlin = "6.2.3"
 robolectric = "4.16.1"
 turbine = "1.2.1"
@@ -74,7 +74,7 @@ turbine = "1.2.1"
 # --- Static analysis ---
 findsecbugs = "1.14.0"
 spotbugs-core = "4.9.8"
-spotless = "8.2.1"
+spotless = "8.4.0"
 
 [libraries]
 
