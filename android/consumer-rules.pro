@@ -44,5 +44,5 @@
 # YubiKeyPromptActivity reflectively instantiates YubiKeyPromptAction subclasses
 # using getDeclaredConstructor().newInstance().
 -keep class * extends com.yubico.yubikit.android.ui.YubiKeyPromptAction {
-    public <init>();
+    <init>();
 }
