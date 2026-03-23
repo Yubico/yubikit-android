@@ -33,6 +33,7 @@ import com.yubico.yubikit.fido.client.extensions.CredProtectExtension
 import com.yubico.yubikit.fido.client.extensions.HmacSecretExtension
 import com.yubico.yubikit.fido.client.extensions.LargeBlobExtension
 import com.yubico.yubikit.fido.client.extensions.MinPinLengthExtension
+import com.yubico.yubikit.fido.client.extensions.SignExtension
 import org.slf4j.LoggerFactory
 
 class FidoFragment : Fragment() {
@@ -50,7 +51,8 @@ class FidoFragment : Fragment() {
                 CredProtectExtension(),
                 HmacSecretExtension(),
                 MinPinLengthExtension(),
-                LargeBlobExtension()
+                LargeBlobExtension(),
+                SignExtension()
             )
         private const val URL_PASSKEY = "https://passkey.org"
         private const val URL_WEBAUTHN_IO = "https://webauthn.io"

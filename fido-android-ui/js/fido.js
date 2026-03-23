@@ -172,22 +172,26 @@ function __decode__credentials(result) {
             }
         }
 
-        // sign extension v3 https://yubicolabs.github.io/webauthn-sign-extension/3/#sctn-sign-extension
-        if (result.clientExtensionResults.hasOwnProperty('sign')) {
-            if (result.clientExtensionResults.sign.hasOwnProperty('generatedKey')) {
-                if (result.clientExtensionResults.sign.generatedKey.hasOwnProperty('publicKey')) {
-                    result.clientExtensionResults.sign.generatedKey.publicKey =
-                        __decode(result.clientExtensionResults.sign.generatedKey.publicKey);
+        // sign extension v4 https://yubicolabs.github.io/webauthn-sign-extension/4/#sctn-sign-extension
+        if (result.clientExtensionResults.hasOwnProperty('previewSign')) {
+            if (result.clientExtensionResults.previewSign.hasOwnProperty('generatedKey')) {
+                if (result.clientExtensionResults.previewSign.generatedKey.hasOwnProperty('keyHandle')) {
+                    result.clientExtensionResults.previewSign.generatedKey.keyHandle =
+                        __decode(result.clientExtensionResults.previewSign.generatedKey.keyHandle);
                 }
-                if (result.clientExtensionResults.sign.generatedKey.hasOwnProperty('attestationObject')) {
-                    result.clientExtensionResults.sign.generatedKey.attestationObject =
-                        __decode(result.clientExtensionResults.sign.generatedKey.attestationObject);
+                if (result.clientExtensionResults.previewSign.generatedKey.hasOwnProperty('publicKey')) {
+                    result.clientExtensionResults.previewSign.generatedKey.publicKey =
+                        __decode(result.clientExtensionResults.previewSign.generatedKey.publicKey);
+                }
+                if (result.clientExtensionResults.previewSign.generatedKey.hasOwnProperty('attestationObject')) {
+                    result.clientExtensionResults.previewSign.generatedKey.attestationObject =
+                        __decode(result.clientExtensionResults.previewSign.generatedKey.attestationObject);
                 }
             }
 
-            if (result.clientExtensionResults.sign.hasOwnProperty('signature')) {
-                result.clientExtensionResults.sign.signature = __decode(
-                    result.clientExtensionResults.sign.signature
+            if (result.clientExtensionResults.previewSign.hasOwnProperty('signature')) {
+                result.clientExtensionResults.previewSign.signature = __decode(
+                    result.clientExtensionResults.previewSign.signature
                 );
             }
         }
