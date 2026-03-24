@@ -3,12 +3,12 @@
 WARNING: This demo uses experimental APIs from the desktop module. The underlying APIs are not stable and may change in future versions without notice.
 
 A command-line application demonstrating the desktop module's device selection API.
-It can list connected YubiKeys and display device information, targeting a specific
+It can list connected YubiKeys (via USB or NFC readers) and display device information, targeting a specific
 device by serial number or fingerprint when multiple keys are connected.
 
 == Commands
 
-`list`:: List all connected YubiKeys with serial number, fingerprint, firmware version, and form factor.
+`list`:: List all connected YubiKeys with serial number, fingerprint, transport (USB/NFC), firmware version, and form factor.
 `info`:: Show detailed device information for a single YubiKey. If multiple devices are connected, requires `--serial` or `--fingerprint`.
 
 == Options
