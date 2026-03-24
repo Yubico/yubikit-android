@@ -30,7 +30,11 @@ import com.yubico.yubikit.management.DeviceInfo;
 import com.yubico.yubikit.support.DeviceUtil;
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -375,10 +379,18 @@ public class UsbPidGroup implements Closeable {
     if (key != null) {
       requestConnection(key, connectionType, callback);
     } else {
-      callback.invoke(
-          Result.failure(
-              new IOException(
-                  "No device matching selector " + selector + " found in PID group " + pid)));
+      // Fallback: use the same resolution logic as openConnection(selector, ...)
+      // for unresolved devices (e.g. serial not yet read, or fingerprint match).
+      new Thread(
+              () -> {
+                try {
+                  T connection = openConnection(selector, connectionType);
+                  callback.invoke(Result.success(connection));
+                } catch (IOException e) {
+                  callback.invoke(Result.failure(e));
+                }
+              })
+          .start();
     }
   }
 
