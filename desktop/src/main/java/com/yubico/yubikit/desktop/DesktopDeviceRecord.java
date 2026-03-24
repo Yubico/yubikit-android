@@ -25,10 +25,12 @@ import com.yubico.yubikit.management.DeviceInfo;
  * <p>The selector is automatically derived:
  *
  * <ul>
- *   <li>If the device has a serial number ({@link DeviceInfo#getSerialNumber()} is non-null), the
- *       selector is serial-based.
- *   <li>Otherwise, the selector falls back to the device's fingerprint (available from {@link
- *       UsbYubiKeyDevice#getFingerprint()} or {@link CompositeDevice#getFingerprint()}).
+ *   <li>If the device has both a serial number and a fingerprint, the selector contains both,
+ *       allowing lookup by either identifier.
+ *   <li>If only a serial number is available, the selector is serial-based.
+ *   <li>If only a fingerprint is available (e.g. devices that do not expose a serial number), the
+ *       selector is fingerprint-based (available from {@link UsbYubiKeyDevice#getFingerprint()} or
+ *       {@link CompositeDevice#getFingerprint()}).
  * </ul>
  *
  * <p><b>Usage example:</b>

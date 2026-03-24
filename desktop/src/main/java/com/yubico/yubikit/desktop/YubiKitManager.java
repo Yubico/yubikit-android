@@ -27,6 +27,7 @@ import com.yubico.yubikit.management.DeviceInfo;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -253,19 +254,30 @@ public class YubiKitManager {
 
   private static DesktopDeviceSelector buildSelector(YubiKeyDevice device, DeviceInfo info) {
     Integer serial = info.getSerialNumber();
+    String fingerprint = resolveFingerprint(device);
+
+    if (serial != null && fingerprint != null) {
+      return DesktopDeviceSelector.forSerialAndFingerprint(serial, fingerprint);
+    }
     if (serial != null) {
       return DesktopDeviceSelector.forSerial(serial);
     }
-    // Fallback to fingerprint
-    if (device instanceof CompositeDevice) {
-      return DesktopDeviceSelector.forFingerprint(((CompositeDevice) device).getFingerprint());
-    }
-    if (device instanceof UsbYubiKeyDevice) {
-      return DesktopDeviceSelector.forFingerprint(((UsbYubiKeyDevice) device).getFingerprint());
+    if (fingerprint != null) {
+      return DesktopDeviceSelector.forFingerprint(fingerprint);
     }
     // Last resort: use device class + hashCode as a pseudo-fingerprint
     return DesktopDeviceSelector.forFingerprint(
         device.getClass().getSimpleName() + "@" + Integer.toHexString(device.hashCode()));
+  }
+
+  private static @Nullable String resolveFingerprint(YubiKeyDevice device) {
+    if (device instanceof CompositeDevice) {
+      return ((CompositeDevice) device).getFingerprint();
+    }
+    if (device instanceof UsbYubiKeyDevice) {
+      return ((UsbYubiKeyDevice) device).getFingerprint();
+    }
+    return null;
   }
 
   private static boolean matchesSelector(

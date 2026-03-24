@@ -23,7 +23,9 @@ import org.jspecify.annotations.Nullable;
  *
  * <p>A selector can target a device either by its <strong>serial number</strong> (preferred when
  * available) or by its <strong>fingerprint</strong> (a fallback identifier derived from the
- * underlying USB device path or PCSC terminal name).
+ * underlying USB device path or PCSC terminal name). Selectors derived from device records (via
+ * {@link YubiKitManager#listDeviceRecords()}) may contain <em>both</em> identifiers, allowing
+ * lookup by either.
  *
  * <p><strong>Serial number selection</strong> is preferred because serial numbers are stable across
  * unplug/replug cycles and across processes. Use {@link #forSerial(int)} when the device serial is
@@ -74,7 +76,21 @@ public final class DesktopDeviceSelector {
   }
 
   /**
-   * Returns the serial number used for selection, or {@code null} if this selector uses a
+   * Creates a selector that stores both a serial number and a fingerprint.
+   *
+   * <p>This is used internally when building selectors for devices that have both a serial number
+   * and a fingerprint, allowing lookup by either identifier.
+   *
+   * @param serial the device serial number
+   * @param fingerprint the device fingerprint
+   * @return a selector with both identifiers
+   */
+  static DesktopDeviceSelector forSerialAndFingerprint(int serial, String fingerprint) {
+    return new DesktopDeviceSelector(serial, fingerprint);
+  }
+
+  /**
+   * Returns the serial number used for selection, or {@code null} if this selector uses only a
    * fingerprint.
    */
   public @Nullable Integer getSerial() {
@@ -82,8 +98,10 @@ public final class DesktopDeviceSelector {
   }
 
   /**
-   * Returns the fingerprint used for selection, or {@code null} if this selector uses a serial
-   * number.
+   * Returns the fingerprint used for selection, or {@code null} if unavailable.
+   *
+   * <p>When the selector was created via {@link #forSerial(int)}, the fingerprint is {@code null}.
+   * When derived from a device record, the fingerprint is always populated.
    */
   public @Nullable String getFingerprint() {
     return fingerprint;
@@ -107,6 +125,9 @@ public final class DesktopDeviceSelector {
 
   @Override
   public String toString() {
+    if (serial != null && fingerprint != null) {
+      return "DesktopDeviceSelector{serial=" + serial + ", fingerprint='" + fingerprint + "'}";
+    }
     if (serial != null) {
       return "DesktopDeviceSelector{serial=" + serial + "}";
     }
