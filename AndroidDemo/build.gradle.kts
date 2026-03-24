@@ -69,6 +69,26 @@ android {
     namespace = "com.yubico.yubikit.android.app"
 }
 
+if (System.getenv("YKDEMO_STORE_FILE") == null) {
+    androidComponents {
+        beforeVariants(selector().withBuildType("release")) { variantBuilder ->
+            variantBuilder.enable = false
+        }
+    }
+    tasks.register("assembleRelease") {
+        doFirst {
+            throw GradleException(
+                "AndroidDemo release variant is disabled: YKDEMO_STORE_FILE not set.\n" +
+                        "Please set all required environment variables:\n" +
+                        "  - YKDEMO_STORE_FILE\n" +
+                        "  - YKDEMO_STORE_PASSWORD\n" +
+                        "  - YKDEMO_KEY_ALIAS\n" +
+                        "  - YKDEMO_KEY_PASSWORD"
+            )
+        }
+    }
+}
+
 kotlin {
     compilerOptions {
         languageVersion = org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_2
@@ -116,22 +136,4 @@ configure<SpotlessExtension> {
     kotlin {
         targetExclude("src/**/*.kt", "src/**/*.kts")
     }
-}
-
-// Validate release signing configuration before building release variants
-tasks.register("validateReleaseSigningConfig") {
-    doLast {
-        System.getenv("YKDEMO_STORE_FILE") ?: throw IllegalStateException(
-            "Release signing setup is incomplete: YKDEMO_STORE_FILE environment variable not set.\n" +
-                    "Please set all required environment variables:\n" +
-                    "  - YKDEMO_STORE_FILE\n" +
-                    "  - YKDEMO_STORE_PASSWORD\n" +
-                    "  - YKDEMO_KEY_ALIAS\n" +
-                    "  - YKDEMO_KEY_PASSWORD"
-        )
-    }
-}
-
-tasks.matching { it.name.contains("Release") && it.name.startsWith("assemble") }.configureEach {
-    dependsOn("validateReleaseSigningConfig")
 }
