@@ -30,7 +30,7 @@ jobs:
         run: ./gradlew spotlessCheck
 
       - name: Build with Gradle
-        run: NO_GPG_SIGN=true ./gradlew --stacktrace check test build javadocJar publishToMavenLocal
+        run: NO_GPG_SIGN=true ./gradlew --stacktrace check test javadocJar publishToMavenLocal
 
       - name: Upload jars
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0

@@ -61,10 +61,8 @@ jobs:
         module:
           [
             "android",
-            "AndroidDemo",
             "core",
             "desktop",
-            "DesktopDemo",
             "fido",
             "fido-android-ui",
             "management",
