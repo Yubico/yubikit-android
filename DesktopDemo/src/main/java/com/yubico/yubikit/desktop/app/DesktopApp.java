@@ -144,6 +144,7 @@ public class DesktopApp {
               + (selector.getFingerprint() != null
                   ? selector.getFingerprint()
                   : "(serial-based selector)"));
+      System.out.println("  Transport:   " + record.getDevice().getTransport());
       System.out.println("  Version:     " + info.getVersion());
       System.out.println("  Form factor: " + info.getFormFactor());
       System.out.println();

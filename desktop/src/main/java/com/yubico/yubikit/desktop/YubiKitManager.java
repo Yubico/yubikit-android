@@ -24,6 +24,7 @@ import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.desktop.hid.HidManager;
 import com.yubico.yubikit.desktop.pcsc.PcscManager;
 import com.yubico.yubikit.management.DeviceInfo;
+import com.yubico.yubikit.support.DeviceUtil;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -66,6 +67,19 @@ public class YubiKitManager {
     for (UsbPidGroup group : groups.values()) {
       devices.putAll(group.getDevices());
     }
+
+    // NFC devices via PcscManager
+    if (connectionTypes.contains(SmartCardConnection.class)) {
+      for (NfcYubiKeyDevice nfcDevice : pcscManager.getNfcDevices()) {
+        try (SmartCardConnection conn = nfcDevice.openConnection(SmartCardConnection.class)) {
+          DeviceInfo info = DeviceUtil.readInfo(conn, null);
+          devices.put(nfcDevice, info);
+        } catch (Exception e) {
+          logger.debug("Failed to read NFC device: {}", e.getMessage());
+        }
+      }
+    }
+
     return devices;
   }
 
@@ -125,6 +139,19 @@ public class YubiKitManager {
         DeviceInfo info = entry.getValue();
         DesktopDeviceSelector selector = buildSelector(device, info);
         records.add(new DesktopDeviceRecord(device, info, selector));
+      }
+    }
+
+    // NFC devices via PcscManager
+    if (connectionTypes.contains(SmartCardConnection.class)) {
+      for (NfcYubiKeyDevice nfcDevice : pcscManager.getNfcDevices()) {
+        try (SmartCardConnection conn = nfcDevice.openConnection(SmartCardConnection.class)) {
+          DeviceInfo info = DeviceUtil.readInfo(conn, null);
+          DesktopDeviceSelector selector = buildSelector(nfcDevice, info);
+          records.add(new DesktopDeviceRecord(nfcDevice, info, selector));
+        } catch (Exception e) {
+          logger.debug("Failed to read NFC device: {}", e.getMessage());
+        }
       }
     }
 
@@ -210,6 +237,7 @@ public class YubiKitManager {
             Arrays.asList(SmartCardConnection.class, FidoConnection.class, OtpConnection.class));
     Map<UsbPid, UsbPidGroup> groups = buildGroups(connectionTypes);
 
+    // Try USB groups
     IOException lastException = null;
     for (UsbPidGroup group : groups.values()) {
       if (!group.supportsConnection(connectionType)) {
@@ -228,6 +256,36 @@ public class YubiKitManager {
         lastException = e;
       }
     }
+
+    // Try NFC devices
+    if (SmartCardConnection.class.isAssignableFrom(connectionType)) {
+      for (NfcYubiKeyDevice nfcDevice : pcscManager.getNfcDevices()) {
+        // Fingerprint match — no connection needed to verify
+        if (selector.getFingerprint() != null
+            && selector.getFingerprint().equals(nfcDevice.getFingerprint())) {
+          return nfcDevice.openConnection(connectionType);
+        }
+        // Serial match — must open connection, read info, and check
+        if (selector.getSerial() != null) {
+          try {
+            T conn = nfcDevice.openConnection(connectionType);
+            try {
+              DeviceInfo info = DeviceUtil.readInfo(conn, null);
+              if (selector.getSerial().equals(info.getSerialNumber())) {
+                return conn; // match — return the already-open connection
+              }
+              conn.close(); // no match — close and try next
+            } catch (Exception e) {
+              conn.close();
+              throw e;
+            }
+          } catch (IOException e) {
+            logger.debug("Failed to read NFC device for serial match: {}", e.getMessage());
+          }
+        }
+      }
+    }
+
     if (lastException != null) {
       throw lastException;
     }
@@ -276,6 +334,9 @@ public class YubiKitManager {
     }
     if (device instanceof UsbYubiKeyDevice) {
       return ((UsbYubiKeyDevice) device).getFingerprint();
+    }
+    if (device instanceof NfcYubiKeyDevice) {
+      return ((NfcYubiKeyDevice) device).getFingerprint();
     }
     return null;
   }
