@@ -58,10 +58,11 @@ tasks.register<Test>("integrationTest") {
     // Forward yubikit.serial to the test JVM for device selection
     // Can be set via: -Dyubikit.serial=SERIAL on the command line,
     // in gradle.properties, or in Android Studio Run Configuration VM options
+    // Apply project property first (default), then let command-line -D override it.
+    project.findProperty("yubikit.serial")?.let { systemProperty("yubikit.serial", it) }
     listOf("yubikit.serial").forEach { prop ->
         System.getProperty(prop)?.let { systemProperty(prop, it) }
     }
-    project.findProperty("yubikit.serial")?.let { systemProperty("yubikit.serial", it) }
 }
 
 description = "This module contains instrumented test framework and tests for yubikit-desktop."
