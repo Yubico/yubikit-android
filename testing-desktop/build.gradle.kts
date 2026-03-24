@@ -55,12 +55,12 @@ tasks.register<Test>("integrationTest") {
     mustRunAfter(tasks.named("test"))
     testLogging.showStandardStreams = true
 
-    // Forward yubikit.serial to the test JVM for device selection
-    // Can be set via: -Dyubikit.serial=SERIAL on the command line,
+    // Forward yubikit.testdevice to the test JVM for device selection
+    // Can be set via: -Dyubikit.testdevice=SERIAL_OR_FINGERPRINT on the command line,
     // in gradle.properties, or in Android Studio Run Configuration VM options
     // Apply project property first (default), then let command-line -D override it.
-    project.findProperty("yubikit.serial")?.let { systemProperty("yubikit.serial", it) }
-    listOf("yubikit.serial").forEach { prop ->
+    project.findProperty("yubikit.testdevice")?.let { systemProperty("yubikit.testdevice", it) }
+    listOf("yubikit.testdevice").forEach { prop ->
         System.getProperty(prop)?.let { systemProperty(prop, it) }
     }
 }

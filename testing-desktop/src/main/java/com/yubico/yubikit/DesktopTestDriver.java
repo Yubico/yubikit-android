@@ -32,10 +32,12 @@ public class DesktopTestDriver {
   private static final Logger logger = LoggerFactory.getLogger(DesktopTestDriver.class);
 
   /**
-   * System property to specify a YubiKey serial number for device selection. Set {@code
-   * -Dyubikit.serial=123456} to target a specific device when multiple YubiKeys are connected.
+   * System property to specify a YubiKey device for testing. Accepts either a serial number (e.g.
+   * {@code -Dyubikit.testdevice=123456}) or a fingerprint (e.g. {@code
+   * -Dyubikit.testdevice=DevSrvsID:4294988713}) to target a specific device when multiple YubiKeys
+   * are connected.
    */
-  public static final String SERIAL_PROPERTY = "yubikit.serial";
+  public static final String DEVICE_PROPERTY = "yubikit.testdevice";
 
   public DesktopTestDriver() {
     if (OperatingSystem.isMac()) {
@@ -52,8 +54,8 @@ public class DesktopTestDriver {
    * <p>Device selection behavior:
    *
    * <ul>
-   *   <li>If the system property {@value #SERIAL_PROPERTY} is set, selects the device with that
-   *       serial number.
+   *   <li>If the system property {@value #DEVICE_PROPERTY} is set, selects the device by serial
+   *       number (if the value is an integer) or by fingerprint (otherwise).
    *   <li>If exactly one device is connected, uses that device.
    *   <li>If multiple devices are connected and no serial is specified, throws {@link
    *       IllegalStateException} with instructions to set the system property.
@@ -63,28 +65,34 @@ public class DesktopTestDriver {
    * @throws InterruptedException if interrupted while waiting
    */
   public YubiKeyDevice awaitSession() throws InterruptedException {
-    String serialProperty = System.getProperty(SERIAL_PROPERTY);
-    if (serialProperty != null) {
-      final int serial;
+    String deviceProperty = System.getProperty(DEVICE_PROPERTY);
+    if (deviceProperty != null) {
+      DesktopDeviceSelector selector;
       try {
-        serial = Integer.parseInt(serialProperty);
+        int serial = Integer.parseInt(deviceProperty);
+        logger.info("Selecting device by serial number: {}", serial);
+        selector = DesktopDeviceSelector.forSerial(serial);
       } catch (NumberFormatException e) {
-        throw new IllegalStateException(
-            "Invalid value for -D"
-                + SERIAL_PROPERTY
-                + ": '"
-                + serialProperty
-                + "'. Expected an integer YubiKey serial number.",
-            e);
+        // Not a number — treat as fingerprint
+        logger.info("Selecting device by fingerprint: {}", deviceProperty);
+        selector = DesktopDeviceSelector.forFingerprint(deviceProperty);
       }
-      logger.info("Selecting device by serial number: {}", serial);
-      DesktopDeviceSelector selector = DesktopDeviceSelector.forSerial(serial);
       Optional<DesktopDeviceRecord> record = yubikit.getDeviceBySelector(selector);
       if (record.isPresent()) {
         return record.get().getDevice();
       }
-      throw new IllegalStateException(
-          "No YubiKey with serial " + serial + " found. Check -D" + SERIAL_PROPERTY + " value.");
+      // List connected devices to help diagnose (fingerprints change on reconnect)
+      List<DesktopDeviceRecord> connected = yubikit.listDeviceRecords();
+      StringBuilder sb = new StringBuilder();
+      sb.append("No YubiKey matching '").append(deviceProperty).append("' found. ");
+      sb.append("Check -D").append(DEVICE_PROPERTY).append(" value.");
+      if (!connected.isEmpty()) {
+        sb.append(" Connected devices: ");
+        for (DesktopDeviceRecord r : connected) {
+          sb.append(r.getSelector()).append(" ");
+        }
+      }
+      throw new IllegalStateException(sb.toString().trim());
     }
 
     List<DesktopDeviceRecord> records = yubikit.listDeviceRecords();
@@ -98,7 +106,7 @@ public class DesktopTestDriver {
     // Multiple devices connected — require explicit selection
     StringBuilder sb = new StringBuilder();
     sb.append("Multiple YubiKey devices connected (").append(records.size()).append("). ");
-    sb.append("Set -D").append(SERIAL_PROPERTY).append("=SERIAL to select one. ");
+    sb.append("Set -D").append(DEVICE_PROPERTY).append("=<SERIAL or FINGERPRINT> to select one. ");
     sb.append("Connected devices: ");
     for (DesktopDeviceRecord r : records) {
       sb.append(r.getSelector()).append(" ");
