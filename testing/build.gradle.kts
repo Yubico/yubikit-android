@@ -15,7 +15,7 @@
  */
 
 plugins {
-    id("yubikit-java-convention")
+    id("java-library")
     id("yubikit-common")
 }
 

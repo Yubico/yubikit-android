@@ -28,6 +28,10 @@ import java.util.Objects;
  *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#authenticatorBioEnrollment">authenticatorBioEnrollment</a>
  */
 public class BioEnrollment {
+  private static final String OPTION_BIO_ENROLLMENT = "bioEnroll";
+  private static final String OPTION_UV_MGMT_PREVIEW = "userVerificationMgmtPreview";
+  private static final String VERSION_FIDO_2_1_PRE = "FIDO_2_1_PRE";
+
   protected static final int RESULT_MODALITY = 0x01;
   protected static final int MODALITY_FINGERPRINT = 0x01;
 
@@ -49,11 +53,20 @@ public class BioEnrollment {
 
   public static boolean isSupported(Ctap2Session.InfoData info) {
     final Map<String, ?> options = info.getOptions();
-    if (options.containsKey("bioEnroll")) {
+    if (options.containsKey(OPTION_BIO_ENROLLMENT)) {
       return true;
     } else
-      return info.getVersions().contains("FIDO_2_1_PRE")
-          && options.containsKey("userVerificationMgmtPreview");
+      return info.getVersions().contains(VERSION_FIDO_2_1_PRE)
+          && options.containsKey(OPTION_UV_MGMT_PREVIEW);
+  }
+
+  public static boolean isConfigured(Ctap2Session.InfoData info) {
+    final Map<String, ?> options = info.getOptions();
+    if (Boolean.TRUE.equals(options.get(OPTION_BIO_ENROLLMENT))) {
+      return true;
+    } else
+      return info.getVersions().contains(VERSION_FIDO_2_1_PRE)
+          && (Boolean.TRUE.equals(options.get(OPTION_UV_MGMT_PREVIEW)));
   }
 
   /**

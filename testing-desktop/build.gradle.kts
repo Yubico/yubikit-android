@@ -16,7 +16,7 @@
 
 plugins {
     java
-    id("yubikit-java-convention")
+    id("java-library")
     id("yubikit-common")
 }
 
@@ -45,11 +45,6 @@ dependencies {
 
     add("integrationTestImplementation", libs.junit.junit)
     add("integrationTestImplementation", libs.logback.classic)
-}
-
-java {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
 }
 
 tasks.register<Test>("integrationTest") {

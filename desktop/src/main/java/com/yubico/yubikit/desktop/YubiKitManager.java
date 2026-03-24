@@ -52,8 +52,9 @@ public class YubiKitManager {
       return hidManager.getOtpDevices();
     } else if (FidoConnection.class.isAssignableFrom(connectionType)) {
       return hidManager.getFidoDevices();
+    } else {
+      throw new IllegalStateException("Unsupported connection type");
     }
-    throw new IllegalStateException("Unsupported connection type");
   }
 
   public Map<YubiKeyDevice, DeviceInfo> listAllDevices(

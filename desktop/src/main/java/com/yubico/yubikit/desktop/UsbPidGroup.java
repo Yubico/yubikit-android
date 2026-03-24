@@ -64,14 +64,13 @@ public class UsbPidGroup implements Closeable {
   int getUsbInterface(Class<? extends YubiKeyConnection> connectionType) {
     if (SmartCardConnection.class.isAssignableFrom(connectionType)) {
       return UsbInterface.CCID;
-    }
-    if (OtpConnection.class.isAssignableFrom(connectionType)) {
+    } else if (OtpConnection.class.isAssignableFrom(connectionType)) {
       return UsbInterface.OTP;
-    }
-    if (FidoConnection.class.isAssignableFrom(connectionType)) {
+    } else if (FidoConnection.class.isAssignableFrom(connectionType)) {
       return UsbInterface.FIDO;
+    } else {
+      throw new IllegalArgumentException();
     }
-    throw new IllegalArgumentException();
   }
 
   void add(

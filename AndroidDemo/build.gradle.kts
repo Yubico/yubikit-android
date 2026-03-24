@@ -1,5 +1,7 @@
+import com.diffplug.gradle.spotless.SpotlessExtension
+
 /*
- * Copyright (C) 2025 Yubico.
+ * Copyright (C) 2025-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,11 +16,9 @@
  * limitations under the License.
  */
 
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.kotlinx.serialization)
     id("yubikit-common")
 }
 
@@ -46,14 +46,6 @@ android {
 
     compileOptions {
         isCoreLibraryDesugaringEnabled = true
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
-    }
-
-    kotlin {
-        compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_1_8)
-        }
     }
 
     buildFeatures {
@@ -64,23 +56,30 @@ android {
     namespace = "com.yubico.yubikit.android.app"
 }
 
+kotlin {
+    compilerOptions {
+        languageVersion = org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_2
+    }
+}
+
 dependencies {
     implementation(project(":android"))
     implementation(project(":management"))
     implementation(project(":yubiotp"))
     implementation(project(":oath"))
     implementation(project(":piv"))
+    implementation(project(":fido-android-ui"))
     implementation(project(":support"))
 
     coreLibraryDesugaring(libs.desugar.jdk.libs)
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.kotlinx.serialization.json)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.fragment.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.legacy.support.v4)
     implementation(libs.androidx.recyclerview)
-    implementation(libs.androidx.multidex)
     implementation(libs.material)
 
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
@@ -89,6 +88,7 @@ dependencies {
     implementation(libs.androidx.navigation.fragment.ktx)
     implementation(libs.androidx.navigation.ui.ktx)
     implementation(libs.androidx.navigation.dynamic.features.fragment)
+    implementation(libs.androidx.webkit)
 
     implementation(libs.bcpkix.jdk15to18)
     implementation(libs.logback.android)
@@ -98,3 +98,9 @@ dependencies {
     androidTestImplementation(libs.androidx.espresso.core)
 }
 
+configure<SpotlessExtension> {
+    // temporarily don't format kotlin in this project
+    kotlin {
+        targetExclude("src/**/*.kt", "src/**/*.kts")
+    }
+}

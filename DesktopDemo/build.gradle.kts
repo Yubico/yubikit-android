@@ -30,9 +30,3 @@ application {
     mainClass.set("com.yubico.yubikit.desktop.app.DesktopApp")
     applicationName = "DesktopApp"
 }
-
-java {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
-}
-

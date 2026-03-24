@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2025 Yubico.
+ * Copyright (C) 2025 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,11 +14,17 @@
  * limitations under the License.
  */
 
-plugins {
-    id("java-library")
-}
+package com.yubico.yubikit.android.app.ui.fido
 
-java {
-    targetCompatibility = JavaVersion.VERSION_1_8
-    sourceCompatibility = JavaVersion.VERSION_1_8
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.ViewModel
+
+class FidoViewModel : ViewModel() {
+    private val _url = MutableLiveData<String?>()
+    val url: LiveData<String?> = _url
+
+    fun setUrl(newUrl: String?) {
+        _url.postValue(newUrl)
+    }
 }

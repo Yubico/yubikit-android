@@ -34,7 +34,8 @@ public class AuthInvalidClientError extends ClientError {
 
   /**
    * @param authType type of authentication (PIN or UV)
-   * @param retries number of retries left before the authenticator is blocked
+   * @param retries number of retries left before the authenticator is blocked, or -1 if the retry
+   *     count could not be determined
    */
   public AuthInvalidClientError(CtapException cause, AuthType authType, int retries) {
     super(Code.BAD_REQUEST, cause);

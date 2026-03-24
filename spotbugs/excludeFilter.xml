@@ -17,4 +17,10 @@
     <Match>
         <Bug code="EI, EI2, CT" />
     </Match>
+    <!-- Kotlin/Compose code triggers false NP warnings because SpotBugs doesn't understand
+         Kotlin nullable types (String?) or Compose compiler-generated parameters ($composer) -->
+    <Match>
+        <Class name="~com\.yubico\.yubikit\.fido\.android\.ui\..*" />
+        <Bug pattern="NP_NONNULL_PARAM_VIOLATION,NP_PARAMETER_MUST_BE_NONNULL_BUT_MARKED_AS_NULLABLE" />
+    </Match>
 </FindBugsFilter>

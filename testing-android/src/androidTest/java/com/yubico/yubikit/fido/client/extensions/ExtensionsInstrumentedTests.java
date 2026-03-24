@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2025 Yubico.
+ * Copyright (C) 2024-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,8 +28,7 @@ import org.junit.runners.Suite;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
   ExtensionsInstrumentedTests.PinUvAuthV2Test.class,
-  ExtensionsInstrumentedTests.PinUvAuthV1Test.class,
-  SignExtensionInstrumentedTests.class
+  ExtensionsInstrumentedTests.PinUvAuthV1Test.class
 })
 public class ExtensionsInstrumentedTests {
   public static class PinUvAuthV2Test extends FidoInstrumentedTests {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022 Yubico.
+ * Copyright (C) 2020-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,7 +64,7 @@ public class SlotMetadata {
     return generated;
   }
 
-  /** Returns the public key corresponding to the key in the slot. */
+  /** Returns the public key values corresponding to the key in the slot. */
   public PublicKeyValues getPublicKeyValues() {
     return PivSession.parsePublicKeyFromDevice(keyType, publicKeyEncoded);
   }

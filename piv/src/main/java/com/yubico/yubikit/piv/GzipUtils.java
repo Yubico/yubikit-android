@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
  *
  * @see <a href="https://www.rfc-editor.org/rfc/rfc1952">RFC1952</a>
  * @deprecated This class was unintentionally made public. It has no public API and will become
- *     package-private in a future release. No action is required.
+ *     package-private in a future release. No action is required. Deprecated in version 3.0.1.
  */
 @Deprecated
 public class GzipUtils {
