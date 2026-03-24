@@ -10,13 +10,18 @@ It enables building desktop applications using our SDK.
 The desktop module is part of our SDK's desktop support, introduced in version 2.8.0.
 It implements the core interfaces necessary for desktop application development.
 
+Supported transports:
+
+* **USB** — YubiKeys connected directly via USB (HID and PC/SC).
+* **NFC** — YubiKeys tapped on an external NFC reader (e.g., HID Global OMNIKEY) connected via PC/SC.
+
 == Multi-device support
 
-When multiple YubiKeys are connected, the module provides APIs to list, identify, and target a specific device.
+When multiple YubiKeys are connected (via USB, NFC, or both), the module provides APIs to list, identify, and target a specific device.
 
 === Listing devices
 
-`YubiKitManager.listDeviceRecords()` returns a list of `DesktopDeviceRecord` objects, each containing the device, its `DeviceInfo`, and a `DesktopDeviceSelector` that can be used to target that device.
+`YubiKitManager.listDeviceRecords()` returns a list of `DesktopDeviceRecord` objects, each containing the device, its `DeviceInfo`, and a `DesktopDeviceSelector` that can be used to target that device. Both USB and NFC devices are included.
 
 [source,java]
 ----
@@ -25,6 +30,7 @@ List<DesktopDeviceRecord> devices = mgr.listDeviceRecords();
 
 for (DesktopDeviceRecord record : devices) {
     System.out.println("Serial: " + record.getInfo().getSerialNumber());
+    System.out.println("Transport: " + record.getDevice().getTransport());
     System.out.println("Selector: " + record.getSelector());
 }
 ----
@@ -34,15 +40,18 @@ for (DesktopDeviceRecord record : devices) {
 Devices are identified by a `DesktopDeviceSelector`, which supports two modes:
 
 * **Serial number** (preferred) — stable across unplug/replug and process restarts.
-* **Fingerprint** (fallback) — derived from the OS-assigned device path; used when serial is unavailable (e.g. Security Key models). Not guaranteed stable across unplug/replug.
+* **Fingerprint** (fallback) — derived from the OS-assigned device path (USB) or PC/SC terminal name (NFC); used when serial is unavailable (e.g. Security Key models). Not guaranteed stable across unplug/replug.
 
 [source,java]
 ----
 // Select by serial number
 DesktopDeviceSelector selector = DesktopDeviceSelector.forSerial(36852057);
 
-// Select by fingerprint
+// Select by fingerprint (USB device)
 DesktopDeviceSelector selector = DesktopDeviceSelector.forFingerprint("DevSrvsID:4294980754");
+
+// Select by fingerprint (NFC reader)
+DesktopDeviceSelector selector = DesktopDeviceSelector.forFingerprint("HID Global OMNIKEY 5022 CL 00");
 ----
 
 === Opening a connection on a selected device
@@ -60,6 +69,16 @@ try (SmartCardConnection conn = mgr.openConnection(sel, SmartCardConnection.clas
 * `getDeviceBySerial(int serial)` — find a device by serial number.
 * `getDeviceBySelector(DesktopDeviceSelector selector)` — find a device by selector.
 * `requireSingleDevice()` — returns the single connected device, or throws if zero or more than one are connected.
+
+== NFC reader support
+
+External NFC readers are automatically detected via PC/SC. Any PC/SC terminal that does not contain "yubikey" in its name is treated as an NFC reader.
+
+When a YubiKey is tapped on an NFC reader:
+
+* The device appears in `listDeviceRecords()` with `Transport.NFC`.
+* The fingerprint is the PC/SC terminal name (e.g., `"HID Global OMNIKEY 5022 CL 00"`).
+* Only `SmartCardConnection` is supported over NFC.
 
 == Usage
 

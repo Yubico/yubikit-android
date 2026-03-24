@@ -29,8 +29,8 @@ import com.yubico.yubikit.management.DeviceInfo;
  *       allowing lookup by either identifier.
  *   <li>If only a serial number is available, the selector is serial-based.
  *   <li>If only a fingerprint is available (e.g. devices that do not expose a serial number), the
- *       selector is fingerprint-based (available from {@link UsbYubiKeyDevice#getFingerprint()} or
- *       {@link CompositeDevice#getFingerprint()}).
+ *       selector is fingerprint-based (available from {@link UsbYubiKeyDevice#getFingerprint()},
+ *       {@link CompositeDevice#getFingerprint()}, or {@link NfcYubiKeyDevice#getFingerprint()}).
  * </ul>
  *
  * <p><b>Usage example:</b>
