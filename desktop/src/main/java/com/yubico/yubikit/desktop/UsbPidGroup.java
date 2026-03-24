@@ -49,16 +49,28 @@ public class UsbPidGroup implements Closeable {
     this.pid = pid;
   }
 
-  private String buildKey(DeviceInfo info) {
-    return ""
-        + info.getSerialNumber()
-        + info.getVersion()
-        + info.getFormFactor()
-        + info.getSupportedCapabilities(Transport.USB)
-        + info.getConfig()
-        + info.isLocked()
-        + info.isFips()
-        + info.isSky();
+  /**
+   * Builds an internal key for grouping device interface nodes.
+   *
+   * <p>For devices with a serial number, the key is based on DeviceInfo fields alone (serial
+   * disambiguates). For no-serial devices (e.g., Security Keys, which are FIDO-only and have a
+   * single interface), the device fingerprint is appended to disambiguate identical models.
+   */
+  private String buildKey(DeviceInfo info, String deviceFingerprint) {
+    String key =
+        ""
+            + info.getSerialNumber()
+            + info.getVersion()
+            + info.getFormFactor()
+            + info.getSupportedCapabilities(Transport.USB)
+            + info.getConfig()
+            + info.isLocked()
+            + info.isFips()
+            + info.isSky();
+    if (info.getSerialNumber() == null) {
+      key += "|" + deviceFingerprint;
+    }
+    return key;
   }
 
   int getUsbInterface(Class<? extends YubiKeyConnection> connectionType) {
@@ -83,7 +95,7 @@ public class UsbPidGroup implements Closeable {
     if (forceResolve || resolved.size() < devCount.values().stream().reduce(0, Math::max)) {
       try (YubiKeyConnection connection = device.openConnection(connectionType)) {
         DeviceInfo info = DeviceUtil.readInfo(connection, pid);
-        String key = buildKey(info);
+        String key = buildKey(info, device.getFingerprint());
         infos.put(key, info);
         if (!resolved.containsKey(key)) {
           resolved.put(key, new HashMap<>());
@@ -127,7 +139,7 @@ public class UsbPidGroup implements Closeable {
         try {
           connection = device.openConnection(connectionType);
           DeviceInfo info = DeviceUtil.readInfo(connection, pid);
-          String deviceKey = buildKey(info);
+          String deviceKey = buildKey(info, device.getFingerprint());
           if (infos.containsKey(deviceKey)) {
             if (!resolved.containsKey(deviceKey)) {
               resolved.put(deviceKey, new HashMap<>());
@@ -180,7 +192,7 @@ public class UsbPidGroup implements Closeable {
           logger.debug("Candidate: {}", device);
           try (T connection = device.openConnection(connectionType)) {
             DeviceInfo info = DeviceUtil.readInfo(connection, pid);
-            String deviceKey = buildKey(info);
+            String deviceKey = buildKey(info, device.getFingerprint());
             if (infos.containsKey(deviceKey)) {
               if (!resolved.containsKey(deviceKey)) {
                 resolved.put(deviceKey, new HashMap<>());
@@ -314,7 +326,7 @@ public class UsbPidGroup implements Closeable {
             try {
               connection = candidate.openConnection(connectionType);
               DeviceInfo info = DeviceUtil.readInfo(connection, pid);
-              String deviceKey = buildKey(info);
+              String deviceKey = buildKey(info, candidate.getFingerprint());
               infos.put(deviceKey, info);
               if (!resolved.containsKey(deviceKey)) {
                 resolved.put(deviceKey, new HashMap<>());
