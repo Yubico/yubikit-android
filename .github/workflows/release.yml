@@ -1,0 +1,110 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+'
+      - '[0-9]+.[0-9]+.[0-9]+-RC[0-9]+'
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594 # v2.16.0
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up JDK
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Verify code format
+        run: ./gradlew spotlessCheck
+
+      - name: Build and publish to local Maven repo
+        run: ./gradlew --stacktrace check test build javadocJar publishToMavenLocal
+
+      - name: Upload unsigned artifacts
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: maven-repo
+          path: ~/.m2/repository/com/yubico/yubikit/
+          if-no-files-found: error
+
+  sign:
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Download unsigned artifacts
+        uses: actions/download-artifact@v7
+        with:
+          name: maven-repo
+          path: maven-repo
+
+      - name: Docker login
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ci@yubico.com
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Write service account credentials
+        env:
+          GAC: ${{ secrets.SCRIBE_SA }}
+        run: |
+          echo "${GAC}" > scribe_sa.json
+          echo "GOOGLE_APPLICATION_CREDENTIALS=/scribe/scribe_sa.json" >> $GITHUB_ENV
+
+      - name: Sign artifacts with Scribe (GPG)
+        run: >
+          docker run
+          --user $(id -u):$(id -g)
+          --volume $(pwd):/scribe
+          --env-file <(env)
+          ghcr.io/yubico/scribe-ci:v1
+          --project-id scribe-prod-987134
+          --bucket scribe-u-pub-yubikit-android-4qvtbt
+          --config /scribe/.github/scribe-sign-gpg.yml
+          submit .
+          --synchronous
+          --download-artifacts
+
+      - name: Place signatures alongside artifacts
+        run: |
+          mkdir -p signed
+          mv scribe-download/*/sign-source/1.zip signed/
+          rm -rf scribe-download
+          cd signed
+          unzip 1.zip || true
+          rm 1.zip
+          cd ..
+          # Copy .asc files next to their corresponding artifacts
+          find signed -name '*.asc' | while read asc; do
+            base=$(basename "$asc")
+            original=$(find maven-repo -name "${base%.asc}" | head -1)
+            if [ -n "$original" ]; then
+              cp "$asc" "$(dirname "$original")/"
+            fi
+          done
+
+      - name: Upload signed artifacts
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: maven-repo-signed
+          path: maven-repo/
+          if-no-files-found: error
+          compression-level: 0
+

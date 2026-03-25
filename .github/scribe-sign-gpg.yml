@@ -1,0 +1,14 @@
+stub: yubikit-android
+releaseType: public
+jobs:
+  - name: sign-source
+    platform: linux
+    steps:
+      - id: 1
+        action: gpg
+        files:
+          - maven-repo/**/*.jar
+          - maven-repo/**/*.aar
+          - maven-repo/**/*.pom
+          - maven-repo/**/*.module
+

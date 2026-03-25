@@ -18,7 +18,6 @@ import com.android.build.api.dsl.LibraryExtension
 
 plugins {
     `maven-publish`
-    signing
     id("com.android.library")
 }
 
@@ -33,7 +32,6 @@ android.publishing {
 
 afterEvaluate {
     val publishing = extensions.getByType(PublishingExtension::class.java)
-    val signing = extensions.getByType(SigningExtension::class.java)
 
     publishing.publications {
         if (findByName("maven") == null) {
@@ -48,6 +46,5 @@ afterEvaluate {
     }
 
     configureSonatypeRepository(publishing)
-    configureSigning(signing, publishing)
     registerFinalizeCentralPublicationTask()
 }

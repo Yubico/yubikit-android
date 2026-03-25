@@ -19,7 +19,6 @@ import org.gradle.api.GradleException
 import org.gradle.api.Project
 import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.publish.maven.MavenPom
-import org.gradle.plugins.signing.SigningExtension
 import java.net.HttpURLConnection
 import java.net.URI
 import java.util.Base64
@@ -38,18 +37,6 @@ fun Project.configureSonatypeRepository(publishing: PublishingExtension) {
     }
 }
 
-fun Project.configureSigning(signing: SigningExtension, publishing: PublishingExtension) {
-    val isReleaseVersion = !version.toString().endsWith("SNAPSHOT")
-
-    tasks.withType(org.gradle.plugins.signing.Sign::class.java).configureEach {
-        onlyIf { isReleaseVersion && System.getenv("NO_GPG_SIGN") != "true" }
-    }
-
-    signing.apply {
-        useGpgCmd()
-        publishing.publications.findByName("maven")?.let { pub -> sign(pub) }
-    }
-}
 
 fun Project.applyPomConfiguration(): Action<MavenPom> {
     return Action<MavenPom> {
