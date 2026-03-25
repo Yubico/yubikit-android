@@ -67,7 +67,7 @@ hamcrest-library = "3.0"
 junit-version = "4.13.2"
 kotlinx-coroutines-test = "1.10.2"
 mockito = "5.23.0"
-mockito-kotlin = "6.2.3"
+mockito-kotlin = "6.3.0"
 robolectric = "4.16.1"
 turbine = "1.2.1"
 
