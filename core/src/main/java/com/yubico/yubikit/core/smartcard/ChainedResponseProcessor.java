@@ -17,7 +17,7 @@
 package com.yubico.yubikit.core.smartcard;
 
 import com.yubico.yubikit.core.application.BadResponseException;
-import com.yubico.yubikit.core.util.SecureByteArrayOutputStream;
+import com.yubico.yubikit.core.util.ZeroingByteArrayOutputStream;
 import java.io.IOException;
 
 class ChainedResponseProcessor implements ApduProcessor {
@@ -35,7 +35,7 @@ class ChainedResponseProcessor implements ApduProcessor {
   public ApduResponse sendApdu(Apdu apdu) throws IOException, BadResponseException {
     ApduResponse response = delegate.sendApdu(apdu);
     // Read full response
-    try (SecureByteArrayOutputStream readBuffer = new SecureByteArrayOutputStream()) {
+    try (ZeroingByteArrayOutputStream readBuffer = new ZeroingByteArrayOutputStream()) {
       while (response.getSw() >> 8 == SW1_HAS_MORE_DATA) {
         readBuffer.write(response.getData());
         response = delegate.sendApdu(getData);

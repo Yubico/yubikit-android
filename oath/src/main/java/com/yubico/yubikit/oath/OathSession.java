@@ -31,9 +31,9 @@ import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.smartcard.SmartCardProtocol;
 import com.yubico.yubikit.core.smartcard.scp.ScpKeyParams;
 import com.yubico.yubikit.core.util.RandomUtils;
-import com.yubico.yubikit.core.util.SecureByteArrayOutputStream;
 import com.yubico.yubikit.core.util.Tlv;
 import com.yubico.yubikit.core.util.Tlvs;
+import com.yubico.yubikit.core.util.ZeroingByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.security.InvalidKeyException;
@@ -555,7 +555,7 @@ public class OathSession extends ApplicationSession<OathSession> {
     }
 
     byte[] key = credentialData.getHashAlgorithm().prepareKey(credentialData.getSecret());
-    try (SecureByteArrayOutputStream output = new SecureByteArrayOutputStream()) {
+    try (ZeroingByteArrayOutputStream output = new ZeroingByteArrayOutputStream()) {
       Map<Integer, byte[]> requestTlvs = new LinkedHashMap<>();
       requestTlvs.put(TAG_NAME, credentialData.getId());
 

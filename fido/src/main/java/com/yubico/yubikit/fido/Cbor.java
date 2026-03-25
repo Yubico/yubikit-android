@@ -16,7 +16,7 @@
 
 package com.yubico.yubikit.fido;
 
-import com.yubico.yubikit.core.util.SecureByteArrayOutputStream;
+import com.yubico.yubikit.core.util.ZeroingByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
@@ -46,7 +46,7 @@ public class Cbor {
    * @return CBOR encoded bytes.
    */
   public static byte[] encode(Object value) {
-    try (SecureByteArrayOutputStream baos = new SecureByteArrayOutputStream()) {
+    try (ZeroingByteArrayOutputStream baos = new ZeroingByteArrayOutputStream()) {
       encodeTo(baos, value);
       return baos.toByteArray();
     } catch (IOException e) {

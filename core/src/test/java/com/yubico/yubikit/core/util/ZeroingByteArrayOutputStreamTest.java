@@ -20,10 +20,10 @@ import java.io.IOException;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class SecureByteArrayOutputStreamTest {
+public class ZeroingByteArrayOutputStreamTest {
   @Test
   public void testWriteSingleByte() {
-    SecureByteArrayOutputStream out = new SecureByteArrayOutputStream();
+    ZeroingByteArrayOutputStream out = new ZeroingByteArrayOutputStream();
     out.write(0x42);
     Assert.assertEquals(1, out.size());
     Assert.assertArrayEquals(new byte[] {0x42}, out.toByteArray());
@@ -32,7 +32,7 @@ public class SecureByteArrayOutputStreamTest {
 
   @Test
   public void testWriteByteArray() {
-    SecureByteArrayOutputStream out = new SecureByteArrayOutputStream();
+    ZeroingByteArrayOutputStream out = new ZeroingByteArrayOutputStream();
     out.write(new byte[] {1, 2, 3, 4, 5}, 1, 3);
     Assert.assertEquals(3, out.size());
     Assert.assertArrayEquals(new byte[] {2, 3, 4}, out.toByteArray());
@@ -41,7 +41,7 @@ public class SecureByteArrayOutputStreamTest {
 
   @Test
   public void testToByteArrayReturnsCopy() {
-    SecureByteArrayOutputStream out = new SecureByteArrayOutputStream();
+    ZeroingByteArrayOutputStream out = new ZeroingByteArrayOutputStream();
     out.write(1);
     byte[] a = out.toByteArray();
     byte[] b = out.toByteArray();
@@ -52,7 +52,7 @@ public class SecureByteArrayOutputStreamTest {
 
   @Test
   public void testResetZerosAndResetsPosition() {
-    SecureByteArrayOutputStream out = new SecureByteArrayOutputStream(4);
+    ZeroingByteArrayOutputStream out = new ZeroingByteArrayOutputStream(4);
     out.write(new byte[] {1, 2, 3, 4}, 0, 4);
     byte[] before = out.toByteArray();
     Assert.assertArrayEquals(new byte[] {1, 2, 3, 4}, before);
@@ -64,7 +64,7 @@ public class SecureByteArrayOutputStreamTest {
 
   @Test
   public void testCloseZerosBuffer() {
-    SecureByteArrayOutputStream out = new SecureByteArrayOutputStream(4);
+    ZeroingByteArrayOutputStream out = new ZeroingByteArrayOutputStream(4);
     out.write(new byte[] {1, 2, 3, 4}, 0, 4);
     out.close();
     // count is still 4, but buf is zeroed — toByteArray returns zeroed copy
@@ -75,7 +75,7 @@ public class SecureByteArrayOutputStreamTest {
 
   @Test
   public void testDoubleCloseIsSafe() {
-    SecureByteArrayOutputStream out = new SecureByteArrayOutputStream();
+    ZeroingByteArrayOutputStream out = new ZeroingByteArrayOutputStream();
     out.write(42);
     out.close();
     out.close();
@@ -84,7 +84,7 @@ public class SecureByteArrayOutputStreamTest {
   @Test
   public void testBufferGrowthZerosOldBuffer() {
     // Start with small capacity to force growth
-    SecureByteArrayOutputStream out = new SecureByteArrayOutputStream(2);
+    ZeroingByteArrayOutputStream out = new ZeroingByteArrayOutputStream(2);
     out.write(new byte[] {1, 2, 3, 4, 5}, 0, 5);
     Assert.assertEquals(5, out.size());
     Assert.assertArrayEquals(new byte[] {1, 2, 3, 4, 5}, out.toByteArray());
@@ -93,7 +93,7 @@ public class SecureByteArrayOutputStreamTest {
 
   @Test
   public void testWriteTo() throws IOException {
-    SecureByteArrayOutputStream out = new SecureByteArrayOutputStream();
+    ZeroingByteArrayOutputStream out = new ZeroingByteArrayOutputStream();
     out.write(new byte[] {10, 20, 30}, 0, 3);
     ByteArrayOutputStream target = new ByteArrayOutputStream();
     out.writeTo(target);
@@ -103,7 +103,7 @@ public class SecureByteArrayOutputStreamTest {
 
   @Test
   public void testWriteFullByteArray() throws IOException {
-    SecureByteArrayOutputStream out = new SecureByteArrayOutputStream();
+    ZeroingByteArrayOutputStream out = new ZeroingByteArrayOutputStream();
     out.write(new byte[] {1, 2, 3});
     Assert.assertEquals(3, out.size());
     Assert.assertArrayEquals(new byte[] {1, 2, 3}, out.toByteArray());
@@ -112,7 +112,7 @@ public class SecureByteArrayOutputStreamTest {
 
   @Test
   public void testDefaultCapacity() {
-    SecureByteArrayOutputStream out = new SecureByteArrayOutputStream();
+    ZeroingByteArrayOutputStream out = new ZeroingByteArrayOutputStream();
     // Should be able to write at least 32 bytes without growth
     byte[] data = new byte[32];
     for (int i = 0; i < 32; i++) {

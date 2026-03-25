@@ -23,18 +23,18 @@ import java.util.Arrays;
  * A {@link java.io.ByteArrayOutputStream} replacement that zeros its internal buffer on {@link
  * #close()} and {@link #reset()}.
  */
-public final class SecureByteArrayOutputStream extends OutputStream {
+public final class ZeroingByteArrayOutputStream extends OutputStream {
   private byte[] buf;
   private int count;
   private boolean closed = false;
 
   /** Creates a new instance with the default initial capacity of 32 bytes. */
-  public SecureByteArrayOutputStream() {
+  public ZeroingByteArrayOutputStream() {
     this(32);
   }
 
   /** Creates a new instance with the specified initial capacity. */
-  public SecureByteArrayOutputStream(int initialCapacity) {
+  public ZeroingByteArrayOutputStream(int initialCapacity) {
     this.buf = new byte[initialCapacity];
     this.count = 0;
   }
