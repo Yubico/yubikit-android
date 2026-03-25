@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2025 Yubico.
+ * Copyright (C) 2020-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 package com.yubico.yubikit.fido;
 
-import java.io.ByteArrayOutputStream;
+import com.yubico.yubikit.core.util.SecureByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
@@ -46,13 +46,12 @@ public class Cbor {
    * @return CBOR encoded bytes.
    */
   public static byte[] encode(Object value) {
-    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    try {
+    try (SecureByteArrayOutputStream baos = new SecureByteArrayOutputStream()) {
       encodeTo(baos, value);
+      return baos.toByteArray();
     } catch (IOException e) {
       throw new RuntimeException(e); // Shouldn't happen
     }
-    return baos.toByteArray();
   }
 
   /**
