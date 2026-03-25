@@ -25,10 +25,11 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import javax.security.auth.Destroyable;
 import org.jspecify.annotations.Nullable;
 
 /** Data object holding all required information to add a new {@link Credential} to a YubiKey. */
-public class CredentialData implements Serializable {
+public class CredentialData implements Serializable, Destroyable {
   /** The default time period for TOTP Credentials. */
   public static final int DEFAULT_TOTP_PERIOD = 30;
 
@@ -234,10 +235,6 @@ public class CredentialData implements Serializable {
    * <p>After calling this method, {@link #getSecret()} will return a zeroed array and {@link
    * #isDestroyed()} will return {@code true}. This method is idempotent.
    *
-   * <p>This method serves the same purpose as {@link javax.security.auth.Destroyable#destroy()},
-   * but does not implement that interface because it is unavailable on Android API levels below 26,
-   * and this library supports Android API 21+.
-   *
    * <p>Example usage:
    *
    * <pre>{@code
@@ -249,6 +246,7 @@ public class CredentialData implements Serializable {
    * }
    * }</pre>
    */
+  @Override
   public void destroy() {
     if (!destroyed) {
       Arrays.fill(secret, (byte) 0);
@@ -261,6 +259,7 @@ public class CredentialData implements Serializable {
    *
    * @return {@code true} if the secret has been zeroed, {@code false} otherwise
    */
+  @Override
   public boolean isDestroyed() {
     return destroyed;
   }
