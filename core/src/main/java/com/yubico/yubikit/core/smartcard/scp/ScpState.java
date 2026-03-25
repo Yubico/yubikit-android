@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2025 Yubico.
+ * Copyright (C) 2024-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -336,40 +336,50 @@ public class ScpState {
           PublicKeyValues.Ec.fromEncodedPoint(epkOceEcka.getCurveParams(), epkSdEckaEncodedPoint)
               .toPublicKey(),
           true);
-      byte[] ka1 = keyAgreement.generateSecret();
 
-      keyAgreement.init(skOceEcka);
-      keyAgreement.doPhase(pk, true);
-      byte[] ka2 = keyAgreement.generateSecret();
+      byte[] ka1 = null;
+      byte[] ka2 = null;
+      byte[] keyMaterial = null;
+      try {
+        ka1 = keyAgreement.generateSecret();
 
-      byte[] keyMaterial = ByteBuffer.allocate(ka1.length + ka2.length).put(ka1).put(ka2).array();
+        keyAgreement.init(skOceEcka);
+        keyAgreement.doPhase(pk, true);
+        ka2 = keyAgreement.generateSecret();
 
-      List<SecretKey> keys = new ArrayList<>();
-      int counter = 1;
-      // We need 5 16-byte keys, which requires 3 iterations of SHA256
-      for (int i = 0; i < 3; i++) {
-        MessageDigest hash = MessageDigest.getInstance("SHA256");
-        hash.update(keyMaterial);
-        hash.update(ByteBuffer.allocate(4).putInt(counter++).array());
-        hash.update(sharedInfo);
-        // Each iteration gives us 2 keys
-        byte[] digest = hash.digest();
-        keys.add(new SecretKeySpec(digest, 0, 16, "AES"));
-        keys.add(new SecretKeySpec(digest, 16, 16, "AES"));
-        Arrays.fill(digest, (byte) 0);
+        keyMaterial = ByteBuffer.allocate(ka1.length + ka2.length).put(ka1).put(ka2).array();
+
+        List<SecretKey> keys = new ArrayList<>();
+        int counter = 1;
+        // We need 5 16-byte keys, which requires 3 iterations of SHA256
+        for (int i = 0; i < 3; i++) {
+          MessageDigest hash = MessageDigest.getInstance("SHA256");
+          hash.update(keyMaterial);
+          hash.update(ByteBuffer.allocate(4).putInt(counter++).array());
+          hash.update(sharedInfo);
+          // Each iteration gives us 2 keys
+          byte[] digest = hash.digest();
+          keys.add(new SecretKeySpec(digest, 0, 16, "AES"));
+          keys.add(new SecretKeySpec(digest, 16, 16, "AES"));
+          Arrays.fill(digest, (byte) 0);
+        }
+
+        // 6 keys were derived. one for verification of receipt, 4 keys to use, and 1 which is
+        // discarded
+        SecretKey key = keys.get(0);
+        Mac mac = Mac.getInstance("AESCMAC");
+        mac.init(key);
+        byte[] genReceipt = mac.doFinal(keyAgreementData);
+        if (!MessageDigest.isEqual(receipt, genReceipt)) {
+          throw new BadResponseException("Receipt does not match");
+        }
+        return new ScpState(
+            new SessionKeys(keys.get(1), keys.get(2), keys.get(3), keys.get(4)), receipt);
+      } finally {
+        if (ka1 != null) Arrays.fill(ka1, (byte) 0);
+        if (ka2 != null) Arrays.fill(ka2, (byte) 0);
+        if (keyMaterial != null) Arrays.fill(keyMaterial, (byte) 0);
       }
-
-      // 6 keys were derived. one for verification of receipt, 4 keys to use, and 1 which is
-      // discarded
-      SecretKey key = keys.get(0);
-      Mac mac = Mac.getInstance("AESCMAC");
-      mac.init(key);
-      byte[] genReceipt = mac.doFinal(keyAgreementData);
-      if (!MessageDigest.isEqual(receipt, genReceipt)) {
-        throw new BadResponseException("Receipt does not match");
-      }
-      return new ScpState(
-          new SessionKeys(keys.get(1), keys.get(2), keys.get(3), keys.get(4)), receipt);
     } catch (NoSuchAlgorithmException
         | InvalidKeySpecException
         | InvalidAlgorithmParameterException

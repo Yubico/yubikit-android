@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2025 Yubico.
+ * Copyright (C) 2023-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -208,26 +208,38 @@ public abstract class Kdf {
       byte[] saltAdmin = RandomUtils.getRandomBytes(8);
       byte[] defaultUserPinEncoded = pinBytes(Pw.DEFAULT_USER_PIN);
       byte[] defaultAdminPinEncoded = pinBytes(Pw.DEFAULT_ADMIN_PIN);
-      return new IterSaltedS2k(
-          hashAlgorithm,
-          iterationCount,
-          saltUser,
-          RandomUtils.getRandomBytes(8),
-          saltAdmin,
-          doProcess(
-              hashAlgorithm,
-              iterationCount,
-              ByteBuffer.allocate(8 + defaultUserPinEncoded.length)
-                  .put(saltUser)
-                  .put(defaultUserPinEncoded)
-                  .array()),
-          doProcess(
-              hashAlgorithm,
-              iterationCount,
-              ByteBuffer.allocate(8 + defaultAdminPinEncoded.length)
-                  .put(saltAdmin)
-                  .put(defaultAdminPinEncoded)
-                  .array()));
+      byte[] userData = null;
+      byte[] adminData = null;
+      try {
+        userData =
+            ByteBuffer.allocate(8 + defaultUserPinEncoded.length)
+                .put(saltUser)
+                .put(defaultUserPinEncoded)
+                .array();
+        adminData =
+            ByteBuffer.allocate(8 + defaultAdminPinEncoded.length)
+                .put(saltAdmin)
+                .put(defaultAdminPinEncoded)
+                .array();
+        return new IterSaltedS2k(
+            hashAlgorithm,
+            iterationCount,
+            saltUser,
+            RandomUtils.getRandomBytes(8),
+            saltAdmin,
+            doProcess(hashAlgorithm, iterationCount, userData),
+            doProcess(hashAlgorithm, iterationCount, adminData));
+      } finally {
+        Arrays.fill(defaultUserPinEncoded, (byte) 0);
+        Arrays.fill(defaultAdminPinEncoded, (byte) 0);
+        if (userData != null) {
+          Arrays.fill(userData, (byte) 0);
+        }
+
+        if (adminData != null) {
+          Arrays.fill(adminData, (byte) 0);
+        }
+      }
     }
   }
 

@@ -43,6 +43,7 @@ public class CredentialData implements Serializable {
   private final byte[] secret;
   private final int counter;
   private final int digits;
+  private boolean destroyed = false;
 
   // User-modifiable fields
   @Nullable private final String issuer;
@@ -59,7 +60,6 @@ public class CredentialData implements Serializable {
    * @param uri the otpauth:// URI to parse
    * @throws ParseUriException if the URI format is invalid
    */
-  @SuppressWarnings("SpellCheckingInspection")
   public static CredentialData parseUri(URI uri) throws ParseUriException {
     if (!"otpauth".equals(uri.getScheme())) {
       throw new ParseUriException("Uri scheme must be otpauth://");
@@ -226,6 +226,43 @@ public class CredentialData implements Serializable {
   /** Returns the initial counter value for a HOTP credential. */
   public int getCounter() {
     return counter;
+  }
+
+  /**
+   * Zeros the secret key material held by this instance.
+   *
+   * <p>After calling this method, {@link #getSecret()} will return a zeroed array and {@link
+   * #isDestroyed()} will return {@code true}. This method is idempotent.
+   *
+   * <p>This method serves the same purpose as {@link javax.security.auth.Destroyable#destroy()},
+   * but does not implement that interface because it is unavailable on Android API levels below 26,
+   * and this library supports Android API 21+.
+   *
+   * <p>Example usage:
+   *
+   * <pre>{@code
+   * CredentialData data = CredentialData.parseUri(uri);
+   * try {
+   *     oathSession.putCredential(data, false);
+   * } finally {
+   *     data.destroy();
+   * }
+   * }</pre>
+   */
+  public void destroy() {
+    if (!destroyed) {
+      Arrays.fill(secret, (byte) 0);
+      destroyed = true;
+    }
+  }
+
+  /**
+   * Returns {@code true} if {@link #destroy()} has been called on this instance.
+   *
+   * @return {@code true} if the secret has been zeroed, {@code false} otherwise
+   */
+  public boolean isDestroyed() {
+    return destroyed;
   }
 
   @Override
