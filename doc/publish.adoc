@@ -1,48 +1,69 @@
 == Instructions for library publishing
+
+Publishing uses a two-phase approach: artifacts are built and GPG-signed in CI via the Scribe service, then published to Sonatype Central locally.
+
+=== Prerequisites
 Make sure that you have permissions to publish in Yubico's Sonatype group. Generate User token at https://central.sonatype.com/account.
 
-Make sure that you put your credentials into:
+Make sure that you put your Sonatype credentials into:
 
   > ~/.gradle/gradle.properties
 
 Example gradle.properties:
 
-  signing.gnupg.executable=gpg
-  signing.gnupg.keyName=<your_gpg_key_id>
   sonatype.username=<your_username>
   sonatype.password=<your_password>
 
 Make sure that you have the desired library version values in the top level
 
-  > build.gradle
+  > build.gradle.kts
 
 example:
 
   subprojects {
-      version = '1.0.0-SNAPSHOT'
+      version = '1.0.0'
   }
 
-Suffix -SNAPSHOT allows you to deploy different version on top of what was already deployed.
+NOTE: The version must *not* end with `-SNAPSHOT` for a release build.
 
+=== Building and signing (CI)
 
-As a dry run, publish to your local Maven repository ($HOME/.m2/):
+Push a tag matching the release version (e.g. `3.0.2` or `3.0.2-RC1`) to trigger the `release.yml` workflow.
 
-  ./gradlew publishToMavenLocal
+The CI pipeline will:
 
+1. Build all modules and publish unsigned artifacts to the local Maven repository.
+2. Send the artifacts to the Scribe service for GPG signing.
+3. Upload the signed Maven repository (with `.asc` signature files) as the `maven-repo-signed` GitHub Actions artifact.
 
-Run this command in Terminal to push to Sonatype staging repository:
+=== Publishing to Sonatype Central (local)
+
+1. Download the `maven-repo-signed` artifact from the GitHub Actions run.
+
+2. Extract it into your local Maven repository:
+
+  rm -rf ~/.m2/repository/com/yubico/yubikit/
+  unzip maven-repo-signed.zip -d ~/.m2/repository/com/yubico/yubikit/
+
+3. Publish the signed artifacts to Sonatype staging:
 
   ./gradlew publish finalizeCentralPublication
 
-Publishing can also be done for a single module:
+  Publishing can also be done for a single module:
 
   ./gradlew modulename:publish finalizeCentralPublication
 
-Publish the deployment through https://central.sonatype.com/publishing.
+4. Verify the deployment through https://central.sonatype.com/publishing.
 
 For any OSSRH Staging API service issues visit https://ossrh-staging-api.central.sonatype.com/swagger-ui/#/ to review the repository.
 
-When building release, gradle will by default execute signing tasks. When this is not desired, for
-example during CI builds, it is possible to disable signing with `NO_GPG_SIGN` env variable set to `true`.
+=== Dry run
 
-  NO_GPG_SIGN=true ./gradlew publishToMaven
+As a dry run, publish to your local Maven repository (`$HOME/.m2/`):
+
+  ./gradlew publishToMavenLocal
+
+=== Future: fully automated publishing
+
+The local publish step exists because Sonatype credentials are personal — there is no service account yet. Once a service account is available, add `SONATYPE_USERNAME` and `SONATYPE_PASSWORD` as GitHub Actions secrets and add a `publish` job to `release.yml` that runs after the `sign` job.
+
