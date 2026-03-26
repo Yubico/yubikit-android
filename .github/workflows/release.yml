@@ -116,14 +116,19 @@ jobs:
           unzip 1.zip || true
           rm 1.zip
           cd ..
-          # Copy .asc files next to their corresponding artifacts
-          find signed -name '*.asc' | while read asc; do
-            base=$(basename "$asc")
-            original=$(find maven-repo -name "${base%.asc}" | head -1)
+          # Convert .sig files to .asc and place next to corresponding artifacts
+          find signed -name '*.sig' | while read sig; do
+            base=$(basename "$sig")
+            original_name="${base%.sig}"
+            original=$(find maven-repo -name "$original_name" | head -1)
             if [ -n "$original" ]; then
-              cp "$asc" "$(dirname "$original")/"
+              gpg --enarmor < "$sig" | sed 's/ARMORED FILE/SIGNATURE/' > "$(dirname "$original")/${original_name}.asc"
             fi
           done
+          echo "=== Signature files placed ==="
+          find maven-repo -name '*.asc' | sort
+          echo "=== Count ==="
+          find maven-repo -name '*.asc' | wc -l
 
       - name: Upload signed artifacts
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
