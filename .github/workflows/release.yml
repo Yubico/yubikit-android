@@ -61,6 +61,24 @@ jobs:
           echo "=== file count ==="
           find maven-repo -type f | wc -l
 
+      - name: Generate scribe config
+        run: |
+          SCRIBE_SIGN_GPG=.github/scribe-sign-gpg.yml
+          echo 'stub: yubikit-android' > $SCRIBE_SIGN_GPG
+          echo 'releaseType: public' >> $SCRIBE_SIGN_GPG
+          echo 'jobs:' >> $SCRIBE_SIGN_GPG
+          echo '  - name: sign-source' >> $SCRIBE_SIGN_GPG
+          echo '    platform: linux' >> $SCRIBE_SIGN_GPG
+          echo '    steps:' >> $SCRIBE_SIGN_GPG
+          echo '      - id: 1' >> $SCRIBE_SIGN_GPG
+          echo '        action: gpg' >> $SCRIBE_SIGN_GPG
+          echo '        files:' >> $SCRIBE_SIGN_GPG
+          find maven-repo -type f \( -name '*.jar' -o -name '*.aar' -o -name '*.pom' -o -name '*.module' \) | sort | while read f; do
+            echo "          - $f" >> $SCRIBE_SIGN_GPG
+          done
+          echo "=== Generated scribe config ==="
+          cat $SCRIBE_SIGN_GPG
+
       - name: Docker login
         uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 #v4.0.0
         with:
