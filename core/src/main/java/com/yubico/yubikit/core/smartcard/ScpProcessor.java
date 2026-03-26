@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2025 Yubico.
+ * Copyright (C) 2024-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,8 +67,13 @@ public class ScpProcessor implements ApduProcessor {
       respData = state.decrypt(respData);
     }
 
-    return new ApduResponse(
-        ByteBuffer.allocate(respData.length + 2).put(respData).putShort(resp.getSw()).array());
+    try {
+      return new ApduResponse(
+          ByteBuffer.allocate(respData.length + 2).put(respData).putShort(resp.getSw()).array());
+
+    } finally {
+      Arrays.fill(respData, (byte) 0);
+    }
   }
 
   private byte[] formatApduData(byte cla, Apdu apdu, byte[] macedData) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2025 Yubico.
+ * Copyright (C) 2024-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 package com.yubico.yubikit.core.smartcard;
 
 import com.yubico.yubikit.core.application.BadResponseException;
-import java.io.ByteArrayOutputStream;
+import com.yubico.yubikit.core.util.ZeroingByteArrayOutputStream;
 import java.io.IOException;
 
 class ChainedResponseProcessor implements ApduProcessor {
@@ -35,14 +35,15 @@ class ChainedResponseProcessor implements ApduProcessor {
   public ApduResponse sendApdu(Apdu apdu) throws IOException, BadResponseException {
     ApduResponse response = delegate.sendApdu(apdu);
     // Read full response
-    ByteArrayOutputStream readBuffer = new ByteArrayOutputStream();
-    while (response.getSw() >> 8 == SW1_HAS_MORE_DATA) {
+    try (ZeroingByteArrayOutputStream readBuffer = new ZeroingByteArrayOutputStream()) {
+      while (response.getSw() >> 8 == SW1_HAS_MORE_DATA) {
+        readBuffer.write(response.getData());
+        response = delegate.sendApdu(getData);
+      }
       readBuffer.write(response.getData());
-      response = delegate.sendApdu(getData);
+      readBuffer.write(response.getSw() >> 8);
+      readBuffer.write(response.getSw() & 0xff);
+      return new ApduResponse(readBuffer.toByteArray());
     }
-    readBuffer.write(response.getData());
-    readBuffer.write(response.getSw() >> 8);
-    readBuffer.write(response.getSw() & 0xff);
-    return new ApduResponse(readBuffer.toByteArray());
   }
 }
