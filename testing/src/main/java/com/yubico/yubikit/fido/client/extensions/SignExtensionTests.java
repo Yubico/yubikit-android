@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2025 Yubico.
+ * Copyright (C) 2024-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,7 +69,7 @@ public class SignExtensionTests {
             PublicKeyCredential cred =
                 new ClientHelper(session, extensions)
                     .makeCredential(new CreationOptionsBuilder().residentKey(residentKey).build());
-            Assert.assertNull(getSignResult(cred));
+            Assert.assertNull(getSignResult(cred, SerializationType.JSON));
             if (residentKey) {
               new ClientHelper(session, extensions).deleteCredentials(cred);
             }
@@ -97,16 +97,23 @@ public class SignExtensionTests {
                                         + "  }}"))
                             .build());
 
-            Map<String, Object> signCreateResult = getSignResult(cred);
-            Assert.assertNotNull(signCreateResult);
-            Assert.assertFalse(signCreateResult.containsKey("signature"));
-            Map<String, Object> generatedKey =
-                (Map<String, Object>) signCreateResult.get("generatedKey");
-            Assert.assertNotNull(generatedKey);
-            Assert.assertTrue(generatedKey.containsKey("keyHandle"));
-            Assert.assertTrue(generatedKey.containsKey("publicKey"));
-            Assert.assertTrue(generatedKey.containsKey("algorithm"));
-            Assert.assertTrue(generatedKey.containsKey("attestationObject"));
+            Map<String, Object> signCreateResultJson = getSignResult(cred, SerializationType.JSON);
+            Assert.assertNotNull(signCreateResultJson);
+            assertGeneratedKeyPresent(signCreateResultJson);
+            Map<String, Object> generatedKeyJson =
+                (Map<String, Object>) signCreateResultJson.get("generatedKey");
+            Assert.assertTrue(generatedKeyJson.get("keyHandle") instanceof String);
+            Assert.assertTrue(generatedKeyJson.get("publicKey") instanceof String);
+            Assert.assertTrue(generatedKeyJson.get("attestationObject") instanceof String);
+
+            Map<String, Object> signCreateResultCbor = getSignResult(cred, SerializationType.CBOR);
+            Assert.assertNotNull(signCreateResultCbor);
+            assertGeneratedKeyPresent(signCreateResultCbor);
+            Map<String, Object> generatedKeyCbor =
+                (Map<String, Object>) signCreateResultCbor.get("generatedKey");
+            Assert.assertTrue(generatedKeyCbor.get("keyHandle") instanceof byte[]);
+            Assert.assertTrue(generatedKeyCbor.get("publicKey") instanceof byte[]);
+            Assert.assertTrue(generatedKeyCbor.get("attestationObject") instanceof byte[]);
 
             if (residentKey) {
               new ClientHelper(session, extensions).deleteCredentials(cred);
@@ -126,17 +133,29 @@ public class SignExtensionTests {
                           .extensions(Collections.singletonMap(SIGN_EXT, Collections.emptyMap()))
                           .build());
 
-          Assert.assertNull(getSignResult(cred));
+          Assert.assertNull(getSignResult(cred, SerializationType.JSON));
         });
   }
 
   @SuppressWarnings("unchecked")
   @Nullable
-  private Map<String, Object> getSignResult(PublicKeyCredential credential) {
+  private Map<String, Object> getSignResult(
+      PublicKeyCredential credential, SerializationType serializationType) {
     ClientExtensionResults results = credential.getClientExtensionResults();
     Assert.assertNotNull(results);
-    Map<String, Object> resultsMap = results.toMap(SerializationType.JSON);
+    Map<String, Object> resultsMap = results.toMap(serializationType);
     return (Map<String, Object>) resultsMap.get(SIGN_EXT);
+  }
+
+  @SuppressWarnings("unchecked")
+  private void assertGeneratedKeyPresent(Map<String, Object> signResult) {
+    Assert.assertFalse(signResult.containsKey("signature"));
+    Map<String, Object> generatedKey = (Map<String, Object>) signResult.get("generatedKey");
+    Assert.assertNotNull(generatedKey);
+    Assert.assertTrue(generatedKey.containsKey("keyHandle"));
+    Assert.assertTrue(generatedKey.containsKey("publicKey"));
+    Assert.assertTrue(generatedKey.containsKey("algorithm"));
+    Assert.assertTrue(generatedKey.containsKey("attestationObject"));
   }
 
   static class JsonUtils {

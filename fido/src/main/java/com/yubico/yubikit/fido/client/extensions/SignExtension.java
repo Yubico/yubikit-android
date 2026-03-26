@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2025 Yubico.
+ * Copyright (C) 2024-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import com.yubico.yubikit.fido.webauthn.Extensions;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialCreationOptions;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialDescriptor;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialRequestOptions;
+import com.yubico.yubikit.fido.webauthn.SerializationType;
 import com.yubico.yubikit.fido.webauthn.UserVerificationRequirement;
 import java.nio.ByteBuffer;
 import java.util.Collections;
@@ -155,12 +156,12 @@ public class SignExtension extends Extension {
       this.attestationObject = attestationObject;
     }
 
-    public Map<String, Object> toMap() {
+    public Map<String, Object> toMap(SerializationType serializationType) {
       Map<String, Object> map = new HashMap<>();
-      map.put(KEY_HANDLE, toUrlSafeString(keyHandle));
-      map.put(PUBLIC_KEY, toUrlSafeString(publicKey));
+      map.put(KEY_HANDLE, serializeBytes(keyHandle, serializationType));
+      map.put(PUBLIC_KEY, serializeBytes(publicKey, serializationType));
       map.put(ALGORITHM, algorithm);
-      map.put(ATTESTATION_OBJECT, toUrlSafeString(attestationObject));
+      map.put(ATTESTATION_OBJECT, serializeBytes(attestationObject, serializationType));
       return map;
     }
   }
@@ -176,13 +177,13 @@ public class SignExtension extends Extension {
       this.signature = signature;
     }
 
-    public Map<String, Object> toMap() {
+    public Map<String, Object> toMap(SerializationType serializationType) {
       Map<String, Object> map = new HashMap<>();
       if (generatedKey != null) {
-        map.put(GENERATED_KEY, generatedKey.toMap());
+        map.put(GENERATED_KEY, generatedKey.toMap(serializationType));
       }
       if (signature != null) {
-        map.put(SIGNATURE, toUrlSafeString(signature));
+        map.put(SIGNATURE, serializeBytes(signature, serializationType));
       }
       return map;
     }
@@ -281,7 +282,7 @@ public class SignExtension extends Extension {
               return Collections.singletonMap(
                   SIGN,
                   new SignExtension.AuthenticationExtensionsSignOutputs(generatedKey, null)
-                      .toMap());
+                      .toMap(serializationType));
             };
 
     return new RegistrationProcessor(prepareInput, prepareOutput);
@@ -368,9 +369,13 @@ public class SignExtension extends Extension {
                   SIGN,
                   new SignExtension.AuthenticationExtensionsSignOutputs(
                           null, (byte[]) signResults.get(6)) // sig
-                      .toMap());
+                      .toMap(serializationType));
         };
 
     return new AuthenticationProcessor(prepareInput, prepareOutput);
+  }
+
+  private static Object serializeBytes(byte[] value, SerializationType serializationType) {
+    return serializationType == SerializationType.JSON ? toUrlSafeString(value) : value;
   }
 }
