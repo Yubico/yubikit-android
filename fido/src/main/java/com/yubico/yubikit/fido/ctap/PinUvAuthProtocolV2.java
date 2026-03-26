@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2025 Yubico.
+ * Copyright (C) 2023-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -116,14 +116,18 @@ public class PinUvAuthProtocolV2 extends PinUvAuthProtocolV1 {
   public byte[] authenticate(byte[] key, byte[] message) {
     final String MAC_ALG = "HmacSHA256";
     byte[] hmacKey = Arrays.copyOf(key, 32);
-    Mac mac;
     try {
-      mac = Mac.getInstance(MAC_ALG);
-      mac.init(new SecretKeySpec(hmacKey, MAC_ALG));
-    } catch (NoSuchAlgorithmException | InvalidKeyException e) {
-      throw new RuntimeException(e);
+      Mac mac;
+      try {
+        mac = Mac.getInstance(MAC_ALG);
+        mac.init(new SecretKeySpec(hmacKey, MAC_ALG));
+      } catch (NoSuchAlgorithmException | InvalidKeyException e) {
+        throw new RuntimeException(e);
+      }
+      return mac.doFinal(message);
+    } finally {
+      Arrays.fill(hmacKey, (byte) 0);
     }
-    return mac.doFinal(message);
   }
 
   @SuppressFBWarnings(

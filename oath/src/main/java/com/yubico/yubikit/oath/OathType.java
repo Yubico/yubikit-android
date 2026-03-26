@@ -45,7 +45,8 @@ public enum OathType {
       return HOTP;
     } else if ("totp".equalsIgnoreCase(value)) {
       return TOTP;
+    } else {
+      throw new IllegalArgumentException("Illegal OathType");
     }
-    throw new IllegalArgumentException("Illegal OathType");
   }
 }
