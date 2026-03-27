@@ -220,9 +220,9 @@ public class HmacSecretExtension extends Extension {
 
           logger.debug("PRF outputs decrypted successfully");
 
-          Map<String, Object> results = new HashMap<>();
           if (inputs.prf != null) {
             return serializationType -> {
+              Map<String, Object> results = new HashMap<>();
               results.put(
                   FIRST,
                   serializationType == SerializationType.JSON ? toUrlSafeString(output1) : output1);
@@ -237,6 +237,7 @@ public class HmacSecretExtension extends Extension {
             };
           } else {
             return serializationType -> {
+              Map<String, Object> results = new HashMap<>();
               results.put(
                   OUTPUT_1,
                   serializationType == SerializationType.JSON ? toUrlSafeString(output1) : output1);
