@@ -62,11 +62,15 @@ public class YubiKitManager {
       Set<Class<? extends YubiKeyConnection>> connectionTypes) {
     Map<UsbPid, UsbPidGroup> groups = buildGroups(connectionTypes);
 
-    Map<YubiKeyDevice, DeviceInfo> devices = new LinkedHashMap<>();
-    for (UsbPidGroup group : groups.values()) {
-      devices.putAll(group.getDevices());
+    try {
+      Map<YubiKeyDevice, DeviceInfo> devices = new LinkedHashMap<>();
+      for (UsbPidGroup group : groups.values()) {
+        devices.putAll(group.getDevices());
+      }
+      return devices;
+    } finally {
+      closeGroups(groups);
     }
-    return devices;
   }
 
   public Map<YubiKeyDevice, DeviceInfo> listAllDevices() {
@@ -117,27 +121,30 @@ public class YubiKitManager {
       Set<Class<? extends YubiKeyConnection>> connectionTypes) {
     Map<UsbPid, UsbPidGroup> groups = buildGroups(connectionTypes);
 
-    List<DesktopDeviceRecord> records = new ArrayList<>();
-    for (UsbPidGroup group : groups.values()) {
-      Map<YubiKeyDevice, DeviceInfo> devices = group.getDevices();
-      for (Map.Entry<YubiKeyDevice, DeviceInfo> entry : devices.entrySet()) {
-        YubiKeyDevice device = entry.getKey();
-        DeviceInfo info = entry.getValue();
-        DesktopDeviceSelector selector = buildSelector(device, info);
-        records.add(new DesktopDeviceRecord(device, info, selector));
+    try {
+      List<DesktopDeviceRecord> records = new ArrayList<>();
+      for (UsbPidGroup group : groups.values()) {
+        Map<YubiKeyDevice, DeviceInfo> devices = group.getDevices();
+        for (Map.Entry<YubiKeyDevice, DeviceInfo> entry : devices.entrySet()) {
+          YubiKeyDevice device = entry.getKey();
+          DeviceInfo info = entry.getValue();
+          DesktopDeviceSelector selector = buildSelector(device, info);
+          records.add(new DesktopDeviceRecord(device, info, selector));
+        }
       }
+      // Sort deterministically: serial (nulls last), then fingerprint
+      records.sort(
+          Comparator.<DesktopDeviceRecord, Integer>comparing(
+                  r ->
+                      r.getInfo().getSerialNumber() != null
+                          ? r.getInfo().getSerialNumber()
+                          : Integer.MAX_VALUE)
+              .thenComparing(r -> r.getSelector().toString()));
+
+      return records;
+    } finally {
+      closeGroups(groups);
     }
-
-    // Sort deterministically: serial (nulls last), then fingerprint
-    records.sort(
-        Comparator.<DesktopDeviceRecord, Integer>comparing(
-                r ->
-                    r.getInfo().getSerialNumber() != null
-                        ? r.getInfo().getSerialNumber()
-                        : Integer.MAX_VALUE)
-            .thenComparing(r -> r.getSelector().toString()));
-
-    return records;
   }
 
   /**
@@ -211,22 +218,30 @@ public class YubiKitManager {
     Map<UsbPid, UsbPidGroup> groups = buildGroups(connectionTypes);
 
     IOException lastException = null;
-    for (UsbPidGroup group : groups.values()) {
-      if (!group.supportsConnection(connectionType)) {
-        continue;
+    try {
+      // Try USB groups
+      for (UsbPidGroup group : groups.values()) {
+        if (!group.supportsConnection(connectionType)) {
+          continue;
+        }
+        String key = group.resolveKey(selector);
+        if (key != null) {
+          return group.openConnection(key, connectionType);
+        }
+        // Try unresolved devices within this group
+        try {
+          return group.openConnection(selector, connectionType);
+        } catch (IOException e) {
+          logger.debug(
+              "Selector {} not found in PID group {}: {}",
+              selector,
+              group.getPid(),
+              e.getMessage());
+          lastException = e;
+        }
       }
-      String key = group.resolveKey(selector);
-      if (key != null) {
-        return group.openConnection(key, connectionType);
-      }
-      // Try unresolved devices within this group
-      try {
-        return group.openConnection(selector, connectionType);
-      } catch (IOException e) {
-        logger.debug(
-            "Selector {} not found in PID group {}: {}", selector, group.getPid(), e.getMessage());
-        lastException = e;
-      }
+    } finally {
+      closeGroups(groups);
     }
     if (lastException != null) {
       throw lastException;
@@ -250,6 +265,16 @@ public class YubiKitManager {
       }
     }
     return groups;
+  }
+
+  private void closeGroups(Map<UsbPid, UsbPidGroup> groups) {
+    for (UsbPidGroup group : groups.values()) {
+      try {
+        group.close();
+      } catch (IOException e) {
+        logger.debug("Failed to close UsbPidGroup: {}", e.getMessage());
+      }
+    }
   }
 
   private static DesktopDeviceSelector buildSelector(YubiKeyDevice device, DeviceInfo info) {
