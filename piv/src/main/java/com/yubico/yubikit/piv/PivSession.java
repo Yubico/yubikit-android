@@ -36,7 +36,6 @@ import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.smartcard.SmartCardProtocol;
 import com.yubico.yubikit.core.smartcard.scp.ScpKeyParams;
 import com.yubico.yubikit.core.util.RandomUtils;
-import com.yubico.yubikit.core.util.StringUtils;
 import com.yubico.yubikit.core.util.Tlv;
 import com.yubico.yubikit.core.util.Tlvs;
 import java.io.ByteArrayInputStream;
@@ -366,10 +365,7 @@ public class PivSession extends ApplicationSession<PivSession> {
       cipher.init(Cipher.ENCRYPT_MODE, key);
       byte[] expectedData = cipher.doFinal(challenge);
       if (!MessageDigest.isEqual(encryptedData, expectedData)) {
-        logger.trace(
-            "Expected response: {} and actual response {}",
-            StringUtils.bytesToHex(expectedData),
-            StringUtils.bytesToHex(encryptedData));
+        logger.trace("Authentication response mismatch");
         throw new BadResponseException("Calculated response for challenge is incorrect");
       }
     } catch (NoSuchAlgorithmException
