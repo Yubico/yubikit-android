@@ -10,6 +10,57 @@ It enables building desktop applications using our SDK.
 The desktop module is part of our SDK's desktop support, introduced in version 2.8.0.
 It implements the core interfaces necessary for desktop application development.
 
+== Multi-device support
+
+When multiple YubiKeys are connected, the module provides APIs to list, identify, and target a specific device.
+
+=== Listing devices
+
+`YubiKitManager.listDeviceRecords()` returns a list of `DesktopDeviceRecord` objects, each containing the device, its `DeviceInfo`, and a `DesktopDeviceSelector` that can be used to target that device.
+
+[source,java]
+----
+YubiKitManager mgr = new YubiKitManager();
+List<DesktopDeviceRecord> devices = mgr.listDeviceRecords();
+
+for (DesktopDeviceRecord record : devices) {
+    System.out.println("Serial: " + record.getInfo().getSerialNumber());
+    System.out.println("Selector: " + record.getSelector());
+}
+----
+
+=== Device selection
+
+Devices are identified by a `DesktopDeviceSelector`, which supports two modes:
+
+* **Serial number** (preferred) — stable across unplug/replug and process restarts.
+* **Fingerprint** (fallback) — derived from the OS-assigned device path; used when serial is unavailable (e.g. Security Key models). Not guaranteed stable across unplug/replug.
+
+[source,java]
+----
+// Select by serial number
+DesktopDeviceSelector selector = DesktopDeviceSelector.forSerial(36852057);
+
+// Select by fingerprint
+DesktopDeviceSelector selector = DesktopDeviceSelector.forFingerprint("DevSrvsID:4294980754");
+----
+
+=== Opening a connection on a selected device
+
+[source,java]
+----
+DesktopDeviceSelector sel = devices.get(0).getSelector();
+try (SmartCardConnection conn = mgr.openConnection(sel, SmartCardConnection.class)) {
+    // run operations on the selected device
+}
+----
+
+=== Convenience methods
+
+* `getDeviceBySerial(int serial)` — find a device by serial number.
+* `getDeviceBySelector(DesktopDeviceSelector selector)` — find a device by selector.
+* `requireSingleDevice()` — returns the single connected device, or throws if zero or more than one are connected.
+
 == Usage
 
 See the DesktopDemo module for examples of how to use this implementation.
