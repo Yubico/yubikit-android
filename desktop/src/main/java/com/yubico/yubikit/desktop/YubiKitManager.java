@@ -274,13 +274,14 @@ public class YubiKitManager {
     // Try NFC devices
     if (SmartCardConnection.class.isAssignableFrom(connectionType)) {
       for (NfcYubiKeyDevice nfcDevice : pcscManager.getNfcDevices()) {
-        // Fingerprint match — no connection needed to verify
-        if (selector.getFingerprint() != null
-            && selector.getFingerprint().equals(nfcDevice.getFingerprint())) {
-          return nfcDevice.openConnection(connectionType);
-        }
+
         // Serial match — must open connection, read info, and check
         if (selector.getSerial() != null) {
+          // Skip readers that don't match the fingerprint hint
+          if (selector.getFingerprint() != null
+              && !selector.getFingerprint().equals(nfcDevice.getFingerprint())) {
+            continue;
+          }
           try {
             T conn = nfcDevice.openConnection(connectionType);
             try {
@@ -296,6 +297,10 @@ public class YubiKitManager {
           } catch (IOException e) {
             logger.debug("Failed to read NFC device for serial match: {}", e.getMessage());
           }
+        } else if (selector.getFingerprint() != null
+            && selector.getFingerprint().equals(nfcDevice.getFingerprint())) {
+          // Fingerprint match — no connection needed to verify
+          return nfcDevice.openConnection(connectionType);
         }
       }
     }
