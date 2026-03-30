@@ -25,6 +25,18 @@ plugins {
 android {
     compileSdk = 36
 
+    signingConfigs {
+        create("release") {
+            val keyStoreFile = System.getenv("YKDEMO_STORE_FILE")
+            if (keyStoreFile != null) {
+                storeFile = file(keyStoreFile)
+                storePassword = System.getenv("YKDEMO_STORE_PASSWORD")
+                keyAlias = System.getenv("YKDEMO_KEY_ALIAS")
+                keyPassword = System.getenv("YKDEMO_KEY_PASSWORD")
+            }
+        }
+    }
+
     defaultConfig {
         minSdk = 23
         targetSdk = 36
@@ -36,11 +48,12 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 
@@ -54,6 +67,26 @@ android {
     }
 
     namespace = "com.yubico.yubikit.android.app"
+}
+
+if (System.getenv("YKDEMO_STORE_FILE") == null) {
+    androidComponents {
+        beforeVariants(selector().withBuildType("release")) { variantBuilder ->
+            variantBuilder.enable = false
+        }
+    }
+    tasks.register("assembleRelease") {
+        doFirst {
+            throw GradleException(
+                "AndroidDemo release variant is disabled: YKDEMO_STORE_FILE not set.\n" +
+                        "Please set all required environment variables:\n" +
+                        "  - YKDEMO_STORE_FILE\n" +
+                        "  - YKDEMO_STORE_PASSWORD\n" +
+                        "  - YKDEMO_KEY_ALIAS\n" +
+                        "  - YKDEMO_KEY_PASSWORD"
+            )
+        }
+    }
 }
 
 kotlin {
