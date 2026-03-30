@@ -29,10 +29,10 @@ navigation-fragment-ktx = "2.9.7"
 # --- Jetpack Compose ---
 activity-compose = "1.13.0"
 activity-ktx = "1.13.0"
-compose-bom = "2026.03.00"
+compose-bom = "2026.03.01"
 ksp = "2.2.21-2.0.4"
-material3 = "1.5.0-alpha15"
-runtime-livedata = "1.10.5"
+material3 = "1.5.0-alpha16"
+runtime-livedata = "1.10.6"
 
 # --- Kotlin / KotlinX ---
 kotlinx-coroutines-android = "1.10.2"
@@ -67,7 +67,7 @@ hamcrest-library = "3.0"
 junit-version = "4.13.2"
 kotlinx-coroutines-test = "1.10.2"
 mockito = "5.23.0"
-mockito-kotlin = "6.2.3"
+mockito-kotlin = "6.3.0"
 robolectric = "4.16.1"
 turbine = "1.2.1"
 
