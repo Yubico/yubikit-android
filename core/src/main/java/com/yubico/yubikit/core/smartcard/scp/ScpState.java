@@ -25,6 +25,7 @@ import com.yubico.yubikit.core.smartcard.ApduResponse;
 import com.yubico.yubikit.core.smartcard.SW;
 import com.yubico.yubikit.core.util.Pair;
 import com.yubico.yubikit.core.util.RandomUtils;
+import com.yubico.yubikit.core.util.StringUtils;
 import com.yubico.yubikit.core.util.Tlv;
 import com.yubico.yubikit.core.util.Tlvs;
 import java.io.IOException;
@@ -78,7 +79,7 @@ public class ScpState {
 
   public byte[] encrypt(byte[] data) {
     // Pad the data
-    logger.trace("Encrypting {} bytes", data.length);
+    logger.trace("Plaintext data: {}", StringUtils.bytesToHex(data));
     int padLen = 16 - (data.length % 16);
     byte[] padded = Arrays.copyOf(data, data.length + padLen);
     padded[data.length] = (byte) 0x80;
@@ -123,7 +124,7 @@ public class ScpState {
       decrypted = cipher.doFinal(encrypted);
       for (int i = decrypted.length - 1; i > 0; i--) {
         if (decrypted[i] == (byte) 0x80) {
-          logger.trace("Decrypted {} bytes", decrypted.length);
+          logger.trace("Plaintext resp: {}", StringUtils.bytesToHex(decrypted));
           return Arrays.copyOf(decrypted, i);
         } else if (decrypted[i] != 0x00) {
           break;
