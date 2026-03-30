@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2025 Yubico.
+ * Copyright (C) 2022-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,13 +26,28 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import javax.smartcardio.CardException;
 import javax.smartcardio.CardTerminal;
+import org.jspecify.annotations.Nullable;
 
 abstract class PcscDevice implements YubiKeyDevice, Closeable {
-  private final ExecutorService executorService = Executors.newSingleThreadExecutor();
   private final CardTerminal terminal;
+  private volatile @Nullable ExecutorService executorService;
 
   public PcscDevice(CardTerminal terminal) {
     this.terminal = terminal;
+  }
+
+  private ExecutorService getExecutorService() {
+    ExecutorService executor = executorService;
+    if (executor == null) {
+      synchronized (this) {
+        executor = executorService;
+        if (executor == null) {
+          executor = Executors.newSingleThreadExecutor();
+          executorService = executor;
+        }
+      }
+    }
+    return executor;
   }
 
   public String getName() {
@@ -68,18 +83,22 @@ abstract class PcscDevice implements YubiKeyDevice, Closeable {
     if (!supportsConnection(connectionType)) {
       throw new IllegalStateException("Unsupported connection type");
     }
-    executorService.submit(
-        () -> {
-          try (T connection = openConnection(connectionType)) {
-            callback.invoke(Result.success(connection));
-          } catch (IOException e) {
-            callback.invoke(Result.failure(e));
-          }
-        });
+    getExecutorService()
+        .submit(
+            () -> {
+              try (T connection = openConnection(connectionType)) {
+                callback.invoke(Result.success(connection));
+              } catch (IOException e) {
+                callback.invoke(Result.failure(e));
+              }
+            });
   }
 
   @Override
   public void close() throws IOException {
-    executorService.shutdown();
+    ExecutorService executor = executorService;
+    if (executor != null) {
+      executor.shutdown();
+    }
   }
 }

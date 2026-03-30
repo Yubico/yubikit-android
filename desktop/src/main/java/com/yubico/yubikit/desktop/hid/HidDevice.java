@@ -25,15 +25,30 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import org.jspecify.annotations.Nullable;
 
 public class HidDevice implements UsbYubiKeyDevice, Closeable {
-  private final ExecutorService executorService = Executors.newSingleThreadExecutor();
   private final org.hid4java.HidDevice hidDevice;
   private final int usagePage;
+  private volatile @Nullable ExecutorService executorService;
 
   HidDevice(org.hid4java.HidDevice hidDevice) {
     this.hidDevice = hidDevice;
     usagePage = hidDevice.getUsagePage() & 0xffff;
+  }
+
+  private ExecutorService getExecutorService() {
+    ExecutorService executor = executorService;
+    if (executor == null) {
+      synchronized (this) {
+        executor = executorService;
+        if (executor == null) {
+          executor = Executors.newSingleThreadExecutor();
+          executorService = executor;
+        }
+      }
+    }
+    return executor;
   }
 
   public HidOtpConnection openOtpConnection() throws IOException {
@@ -68,14 +83,15 @@ public class HidDevice implements UsbYubiKeyDevice, Closeable {
     if (!supportsConnection(connectionType)) {
       throw new IllegalStateException("Unsupported connection type");
     }
-    executorService.submit(
-        () -> {
-          try (T connection = openConnection(connectionType)) {
-            callback.invoke(Result.success(connection));
-          } catch (IOException e) {
-            callback.invoke(Result.failure(e));
-          }
-        });
+    getExecutorService()
+        .submit(
+            () -> {
+              try (T connection = openConnection(connectionType)) {
+                callback.invoke(Result.success(connection));
+              } catch (IOException e) {
+                callback.invoke(Result.failure(e));
+              }
+            });
   }
 
   @Override
@@ -101,7 +117,10 @@ public class HidDevice implements UsbYubiKeyDevice, Closeable {
   }
 
   @Override
-  public void close() throws IOException {
-    executorService.shutdown();
+  public void close() {
+    ExecutorService executor = executorService;
+    if (executor != null) {
+      executor.shutdown();
+    }
   }
 }
