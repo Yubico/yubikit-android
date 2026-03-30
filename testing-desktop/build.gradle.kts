@@ -54,6 +54,15 @@ tasks.register<Test>("integrationTest") {
     classpath = integrationTest.runtimeClasspath
     mustRunAfter(tasks.named("test"))
     testLogging.showStandardStreams = true
+
+    // Forward yubikit.testdevice to the test JVM for device selection
+    // Can be set via: -Dyubikit.testdevice=SERIAL_OR_FINGERPRINT on the command line,
+    // in gradle.properties, or in Android Studio Run Configuration VM options
+    // Apply project property first (default), then let command-line -D override it.
+    project.findProperty("yubikit.testdevice")?.let { systemProperty("yubikit.testdevice", it) }
+    listOf("yubikit.testdevice").forEach { prop ->
+        System.getProperty(prop)?.let { systemProperty(prop, it) }
+    }
 }
 
 description = "This module contains instrumented test framework and tests for yubikit-desktop."
