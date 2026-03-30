@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 Yubico.
+ * Copyright (C) 2019-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,9 +55,13 @@ public class NfcSmartCardConnection implements SmartCardConnection {
 
   @Override
   public byte[] sendAndReceive(byte[] apdu) throws IOException {
-    logger.trace("sent: {}", StringUtils.bytesToHex(apdu));
+    logger.atTrace().setMessage("sent: {}").addArgument(() -> StringUtils.bytesToHex(apdu)).log();
     byte[] received = card.transceive(apdu);
-    logger.trace("received: {}", StringUtils.bytesToHex(received));
+    logger
+        .atTrace()
+        .setMessage("received: {}")
+        .addArgument(() -> StringUtils.bytesToHex(received))
+        .log();
     return received;
   }
 

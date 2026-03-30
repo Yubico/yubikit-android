@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2025 Yubico.
+ * Copyright (C) 2024-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -277,7 +277,12 @@ public class SecurityDomainSession extends ApplicationSession<SecurityDomainSess
    * @param ski the Subject Key Identifier to store
    */
   public void storeCaIssuer(KeyRef keyRef, byte[] ski) throws ApduException, IOException {
-    logger.debug("Storing CA issuer SKI for {}: {}", keyRef, StringUtils.bytesToHex(ski));
+    logger
+        .atDebug()
+        .setMessage("Storing CA issuer SKI for {}: {}")
+        .addArgument(keyRef)
+        .addArgument(() -> StringUtils.bytesToHex(ski))
+        .log();
     byte klcc = 0;
     switch (keyRef.getKid()) {
       case ScpKid.SCP11a:

@@ -158,9 +158,10 @@ public class ClientPin {
     Pair<Map<Integer, ?>, byte[]> pair = getSharedSecret();
     byte[] pinBytes = preparePin(pin, false);
     byte[] pinHash = null;
+    byte[] pinHashEnc = null;
     try {
       pinHash = Arrays.copyOf(MessageDigest.getInstance("SHA-256").digest(pinBytes), PIN_HASH_LEN);
-      byte[] pinHashEnc = pinUvAuth.encrypt(pair.second, pinHash);
+      pinHashEnc = pinUvAuth.encrypt(pair.second, pinHash);
 
       logger.debug("Getting PIN token");
 
@@ -195,6 +196,9 @@ public class ClientPin {
       }
       Arrays.fill(pair.second, (byte) 0);
       Arrays.fill(pinBytes, (byte) 0);
+      if (pinHashEnc != null) {
+        Arrays.fill(pinHashEnc, (byte) 0);
+      }
     }
   }
 
@@ -298,8 +302,9 @@ public class ClientPin {
 
     Pair<Map<Integer, ?>, byte[]> pair = getSharedSecret();
     byte[] pinBytes = preparePin(pin, true);
+    byte[] pinEnc = null;
     try {
-      byte[] pinEnc = pinUvAuth.encrypt(pair.second, pinBytes);
+      pinEnc = pinUvAuth.encrypt(pair.second, pinBytes);
       logger.debug("Setting PIN");
       ctap.clientPin(
           pinUvAuth.getVersion(),
@@ -315,6 +320,9 @@ public class ClientPin {
     } finally {
       Arrays.fill(pinBytes, (byte) 0);
       Arrays.fill(pair.second, (byte) 0);
+      if (pinEnc != null) {
+        Arrays.fill(pinEnc, (byte) 0);
+      }
     }
   }
 
@@ -337,15 +345,18 @@ public class ClientPin {
     Pair<Map<Integer, ?>, byte[]> pair = getSharedSecret();
 
     byte[] pinHash = null;
+    byte[] pinHashEnc = null;
+    byte[] newPinEnc = null;
+    byte[] pinUvAuthParam = null;
     try {
       pinHash =
           Arrays.copyOf(MessageDigest.getInstance("SHA-256").digest(currentPinBytes), PIN_HASH_LEN);
-      byte[] pinHashEnc = pinUvAuth.encrypt(pair.second, pinHash);
-      byte[] newPinEnc = pinUvAuth.encrypt(pair.second, newPinBytes);
+      pinHashEnc = pinUvAuth.encrypt(pair.second, pinHash);
+      newPinEnc = pinUvAuth.encrypt(pair.second, newPinBytes);
 
       logger.debug("Changing PIN");
 
-      byte[] pinUvAuthParam =
+      pinUvAuthParam =
           pinUvAuth.authenticate(
               pair.second,
               ByteBuffer.allocate(newPinEnc.length + pinHashEnc.length)
@@ -372,6 +383,15 @@ public class ClientPin {
       Arrays.fill(pair.second, (byte) 0);
       if (pinHash != null) {
         Arrays.fill(pinHash, (byte) 0);
+      }
+      if (pinHashEnc != null) {
+        Arrays.fill(pinHashEnc, (byte) 0);
+      }
+      if (newPinEnc != null) {
+        Arrays.fill(newPinEnc, (byte) 0);
+      }
+      if (pinUvAuthParam != null) {
+        Arrays.fill(pinUvAuthParam, (byte) 0);
       }
     }
   }

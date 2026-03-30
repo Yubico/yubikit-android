@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2025 Yubico.
+ * Copyright (C) 2022-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -75,13 +75,24 @@ public class PcscSmartCardConnection implements SmartCardConnection {
   @Override
   public byte[] sendAndReceive(byte[] apdu) throws IOException {
     try {
-      logger.trace("{} bytes sent over PCSC: {}", apdu.length, StringUtils.bytesToHex(apdu));
+      final byte[] sentApdu = apdu;
+      logger
+          .atTrace()
+          .setMessage("{} bytes sent over PCSC: {}")
+          .addArgument(sentApdu.length)
+          .addArgument(() -> StringUtils.bytesToHex(sentApdu))
+          .log();
       if (apdu.length < 5) {
         // CardChannel.transmit requires at least 5 bytes.
         apdu = Arrays.copyOf(apdu, 5);
       }
       byte[] response = cardChannel.transmit(new CommandAPDU(apdu)).getBytes();
-      logger.trace("{} bytes received: {}", response.length, StringUtils.bytesToHex(response));
+      logger
+          .atTrace()
+          .setMessage("{} bytes received over PCSC: {}")
+          .addArgument(response.length)
+          .addArgument(() -> StringUtils.bytesToHex(response))
+          .log();
       return response;
     } catch (CardException e) {
       throw new IOException(e);
