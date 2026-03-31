@@ -2,6 +2,10 @@
 *YubiKit* is an Android library provided by Yubico to enable YubiKey support in
 Android apps. Both USB and NFC-enabled YubiKeys are supported.
 
+NOTE: Version 3.1.0 adds the new experimental link:./fido-android-ui/[FIDO Android UI]
+module, which provides a high-level FIDO2/WebAuthn client with built-in UI
+components, WebView integration, and customizable theming.
+
 NOTE: Version 3.0 breaks compatibility with 2.0. See
 link:./doc/Migration_2.0-3.0.adoc[the migration guide] for some pointers on
 migrating.
@@ -42,6 +46,13 @@ various reusable UI elements.
 link:./fido/[Fido]::
 This module adds FIDO2 support. Current implementation supports Webauthn Level 2 and CTAP 2.3 for managing FIDO credentials on YubiKeys.
 
+link:./fido-android-ui/[FIDO Android UI] _(experimental)_::
+This module provides a high-level FIDO2/WebAuthn client with built-in UI
+components for Android applications. It handles the complete user interaction
+flow including NFC/USB communication, PIN entry, and user prompts. It also
+supports WebView integration for seamless passkey support in web applications.
+Requires Android API 23+.
+
 link:./management/[Management]::
 This module provides the ability to read out metadata from a YubiKey, such as
 its serial number, and firmware version. It also allows changing the
@@ -68,6 +79,12 @@ data objects such as X.509 certificates, and managing access (PIN, etc).
 link:./support/[Support]::
 This module contains helper functionality such as getting information about YubiKeys.
 
+link:./desktop/[Desktop] _(experimental)_::
+This module provides concrete implementations of the core interfaces for desktop
+Java applications, enabling YubiKey communication over USB and NFC (via external
+readers such as OMNIKEY). It also supports multi-device selection when several
+YubiKeys are connected.
+
 === Getting Started
 A good place to get started is to clone the repository and try out the included
 demo app. To integrate the SDK into your app, add the desired dependencies to
@@ -84,19 +101,22 @@ our team will be happy to assist you.
 
 WARNING: This is an experimental version and is not intended for production use.
 
-Since version 2.8.0, the SDK contains the desktop module, which provides concrete implementations
-of the core interfaces (USB and NFC connectivity) for building desktop Java applications.
+The link:./desktop/[Desktop] module provides concrete implementations
+of the core interfaces (USB and NFC connectivity) for building desktop Java
+applications. See the module listing above for details.
 
-There are two related modules:
+Related modules:
 
-* testing-desktop: SDK device test suite for desktop platforms
-* DesktopDemo: A sample application demonstrating basic usage
+* link:./testing-desktop/[testing-desktop]: SDK device test suite for desktop platforms
+* link:./DesktopDemo/[DesktopDemo]: A sample application demonstrating basic usage
 
 === FAQ
 
 ==== Q1. Does YubiKit work with all versions of Android?
-A1. All YubiKit modules should work on Android API 21+. Yubico typically tests
-and supports n-1 per https://en.wikipedia.org/wiki/Android_version_history.
+A1. All YubiKit modules should work on Android API 21+, except for the
+link:./fido-android-ui/[FIDO Android UI] module which requires API 23+.
+Yubico typically tests and supports n-1 per
+https://en.wikipedia.org/wiki/Android_version_history.
 
 ==== Q2. How can I debug my app on Android when a YubiKey takes up the USB port?
 A2. Set up Android Debug Bridge (adb) debugging over WiFi:
