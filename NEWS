@@ -1,3 +1,30 @@
+* Version 3.1.0 (released 2026-03-31)
+ ** new:
+  - fido: added fido-android-ui module with high-level Kotlin API for WebAuthn operations
+          using hardware security keys, including WebView integration and customizable UI;
+          AndroidDemo includes usage examples
+  - fido: support for WebAuthn previewSign extension v4
+  - desktop: added multi-device selection support (DesktopDeviceSelector, listDeviceRecords,
+             getDeviceBySerial, getDeviceBySelector, requireSingleDevice)
+  - desktop: added NFC reader support for external readers (e.g. OMNIKEY) alongside USB
+  - oath: added Destroyable interface to CredentialData for zeroing secret key material
+  - core: added ZeroingByteArrayOutputStream utility for secure memory handling
+  - piv: added generateKey() as replacement for deprecated generateKeyValues()
+  - testing: added YubiOtp device tests for Android and Desktop
+ ** fixes & improvements:
+  - security: zero sensitive cryptographic material (private keys, PINs, shared secrets,
+              ECDH outputs) after use across all modules
+  - security: switched to SLF4J fluent API for lazy log argument evaluation to prevent
+              sensitive data from being eagerly placed on the heap
+  - fido: fixed shared mutable state in HmacSecretExtension result lambda
+  - fido: improved USB device detection using HID report descriptor parsing for FIDO
+          Alliance usage page (0xF1D0)
+  - core: fixed thread safety in UsbDeviceManager with volatile keyword
+  - core: made DeviceFilter methods public to allow proper extension
+  - build: upgraded to AGP 9.1.0
+  - build: added consumer ProGuard rules for R8/ProGuard compatibility
+  - build: added release build support for AndroidDemo with signing and minification
+  - build: updated dependencies and GitHub Actions
 * Version 3.0.1 (released 2026-02-05)
  ** fixes & improvements:
   - piv: support for additional compressed certificate formats (zlib)
