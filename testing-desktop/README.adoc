@@ -1,6 +1,6 @@
 == Instrumented tests for YubiKit Desktop
 
-This module contains tests for execution on a physical device and with YubiKey connected via USB. The test runs need a presence of someone who can tap the key when needed and therefore are these tests suitable only for local execution.
+This module contains tests for execution on a physical device and with YubiKey connected via USB or tapped on an NFC reader. The test runs need a presence of someone who can tap the key when needed and therefore are these tests suitable only for local execution.
 
 === Managing YubiKeys for Testing
 To protect your YubiKeys from accidental data changes during testing, you must specify which devices the test suite is allowed to use. This is done by creating a local allow list file containing the serial numbers of your designated test YubiKeys.
@@ -119,12 +119,14 @@ Connected YubiKeys (2):
 Device #1:
   Serial:      36852057
   Fingerprint: (serial-based selector)
+  Transport:   USB
   Version:     5.7.1
   Form factor: USB_A_KEYCHAIN
 
 Device #2:
   Serial:      (not available)
   Fingerprint: DevSrvsID:4294980754
+  Transport:   USB
   Version:     5.4.3
   Form factor: USB_A_KEYCHAIN
 ----

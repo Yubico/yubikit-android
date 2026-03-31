@@ -24,6 +24,7 @@ import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.desktop.hid.HidManager;
 import com.yubico.yubikit.desktop.pcsc.PcscManager;
 import com.yubico.yubikit.management.DeviceInfo;
+import com.yubico.yubikit.support.DeviceUtil;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -67,6 +68,18 @@ public class YubiKitManager {
       for (UsbPidGroup group : groups.values()) {
         devices.putAll(group.getDevices());
       }
+
+      if (connectionTypes.contains(SmartCardConnection.class)) {
+        for (NfcYubiKeyDevice nfcDevice : pcscManager.getNfcDevices()) {
+          try (SmartCardConnection conn = nfcDevice.openConnection(SmartCardConnection.class)) {
+            DeviceInfo info = DeviceUtil.readInfo(conn, null);
+            devices.put(nfcDevice, info);
+          } catch (Exception e) {
+            logger.debug("Failed to read NFC device: {}", e.getMessage());
+          }
+        }
+      }
+
       return devices;
     } finally {
       closeGroups(groups);
@@ -132,6 +145,19 @@ public class YubiKitManager {
           records.add(new DesktopDeviceRecord(device, info, selector));
         }
       }
+
+      if (connectionTypes.contains(SmartCardConnection.class)) {
+        for (NfcYubiKeyDevice nfcDevice : pcscManager.getNfcDevices()) {
+          try (SmartCardConnection conn = nfcDevice.openConnection(SmartCardConnection.class)) {
+            DeviceInfo info = DeviceUtil.readInfo(conn, null);
+            DesktopDeviceSelector selector = buildSelector(nfcDevice, info);
+            records.add(new DesktopDeviceRecord(nfcDevice, info, selector));
+          } catch (Exception e) {
+            logger.debug("Failed to read NFC device: {}", e.getMessage());
+          }
+        }
+      }
+
       // Sort deterministically: serial (nulls last), then fingerprint
       records.sort(
           Comparator.<DesktopDeviceRecord, Integer>comparing(
@@ -217,6 +243,7 @@ public class YubiKitManager {
             Arrays.asList(SmartCardConnection.class, FidoConnection.class, OtpConnection.class));
     Map<UsbPid, UsbPidGroup> groups = buildGroups(connectionTypes);
 
+    // Try USB groups
     IOException lastException = null;
     try {
       // Try USB groups
@@ -243,6 +270,41 @@ public class YubiKitManager {
     } finally {
       closeGroups(groups);
     }
+
+    // Try NFC devices
+    if (SmartCardConnection.class.isAssignableFrom(connectionType)) {
+      for (NfcYubiKeyDevice nfcDevice : pcscManager.getNfcDevices()) {
+
+        // Serial match — must open connection, read info, and check
+        if (selector.getSerial() != null) {
+          // Skip readers that don't match the fingerprint hint
+          if (selector.getFingerprint() != null
+              && !selector.getFingerprint().equals(nfcDevice.getFingerprint())) {
+            continue;
+          }
+          try {
+            T conn = nfcDevice.openConnection(connectionType);
+            try {
+              DeviceInfo info = DeviceUtil.readInfo(conn, null);
+              if (selector.getSerial().equals(info.getSerialNumber())) {
+                return conn; // match — return the already-open connection
+              }
+              conn.close(); // no match — close and try next
+            } catch (Exception e) {
+              conn.close();
+              throw e;
+            }
+          } catch (IOException e) {
+            logger.debug("Failed to read NFC device for serial match: {}", e.getMessage());
+          }
+        } else if (selector.getFingerprint() != null
+            && selector.getFingerprint().equals(nfcDevice.getFingerprint())) {
+          // Fingerprint match — no connection needed to verify
+          return nfcDevice.openConnection(connectionType);
+        }
+      }
+    }
+
     if (lastException != null) {
       throw lastException;
     }
@@ -301,6 +363,9 @@ public class YubiKitManager {
     }
     if (device instanceof UsbYubiKeyDevice) {
       return ((UsbYubiKeyDevice) device).getFingerprint();
+    }
+    if (device instanceof NfcYubiKeyDevice) {
+      return ((NfcYubiKeyDevice) device).getFingerprint();
     }
     return null;
   }

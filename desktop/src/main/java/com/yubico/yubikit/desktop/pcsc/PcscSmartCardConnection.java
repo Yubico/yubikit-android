@@ -53,7 +53,7 @@ public class PcscSmartCardConnection implements SmartCardConnection {
 
   @Override
   public boolean isExtendedLengthApduSupported() {
-    return true;
+    return transport == Transport.USB;
   }
 
   @Override
