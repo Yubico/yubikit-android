@@ -18,29 +18,37 @@ package com.yubico.yubikit.fido.android.ui.internal.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.TextObfuscationMode
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Password
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.outlined.Pin
 import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedSecureTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -50,12 +58,17 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Devices
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.yubico.yubikit.fido.android.ui.R
 import com.yubico.yubikit.fido.android.ui.internal.FidoClientService
 import com.yubico.yubikit.fido.android.ui.internal.ui.Error
 import com.yubico.yubikit.fido.android.ui.internal.ui.components.ContentWrapper
 import com.yubico.yubikit.fido.android.ui.internal.ui.theme.DefaultPreview
+import com.yubico.yubikit.fido.android.ui.internal.ui.theme.FidoAndroidTheme
 
 internal const val DEFAULT_MIN_PIN_LENGTH: Int = 4
 
@@ -160,132 +173,236 @@ private fun CreateChangePinScreen(
         onCloseButtonClick = onCloseButtonClick,
         contentHeight = 320.dp,
     ) {
-        Text(
-            text =
-            stringResource(
-                if (forceChangePin) {
-                    R.string.yk_fido_info_force_change_pin
-                } else {
-                    R.string.yk_fido_info_no_pin_set
-                },
-            ),
-            style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier
-                .padding(vertical = 8.dp)
-                .testTag("pin_info_text"),
-        )
+        if (!forceChangePin) {
+            // Create PIN layout
+            Text(
+                text = stringResource(R.string.yk_fido_set_pin_title),
+                style = MaterialTheme.typography.headlineSmall,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("pin_info_text"),
+            )
+            Text(
+                text = stringResource(R.string.yk_fido_set_pin_description),
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Center,
+                minLines = 2,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+            )
 
-        if (forceChangePin) {
-            PinTextField(
+            PinTextFieldWithIcon(
+                state = newPinState,
+                label = pluralStringResource(R.plurals.yk_fido_new_pin, count = minPinLen, minPinLen),
+                showPin = showNewPin,
+                onToggleShowPin = { showNewPin = !showNewPin },
+                modifier = Modifier
+                    .padding(top = 16.dp, start = 16.dp, end = 16.dp)
+                    .focusRequester(newPinFocusRequester)
+                    .testTag("new_pin_input"),
+                keyboardOptions = KeyboardOptions.Default.copy(
+                    imeAction = ImeAction.Next,
+                    autoCorrectEnabled = false,
+                    keyboardType = KeyboardType.Password,
+                ),
+                onKeyboardAction = { repeatPinFocusRequester.requestFocus() },
+            )
+
+            if (newPinErrorText != null) {
+                Text(
+                    text = newPinErrorText,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                    minLines = 3,
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 4.dp, start = 52.dp, end = 16.dp)
+                        .testTag("pin_error_text"),
+                )
+            } else {
+                Text(
+                    text = stringResource(R.string.yk_fido_set_pin_requirements),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    minLines = 3,
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 4.dp, start = 52.dp, end = 16.dp),
+                )
+            }
+
+            PinTextFieldWithIcon(
+                state = repeatPinState,
+                label = stringResource(R.string.yk_fido_confirm_new_pin),
+                showPin = showRepeatPin,
+                onToggleShowPin = { showRepeatPin = !showRepeatPin },
+                modifier = Modifier
+                    .padding(top = 8.dp, start = 16.dp, end = 16.dp)
+                    .focusRequester(repeatPinFocusRequester)
+                    .testTag("repeat_pin_input"),
+                keyboardOptions = KeyboardOptions.Default.copy(
+                    imeAction = ImeAction.Done,
+                    autoCorrectEnabled = false,
+                    keyboardType = KeyboardType.Password,
+                ),
+                onKeyboardAction = submit,
+            )
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                Button(
+                    onClick = submit,
+                    enabled = isPinValid(
+                        newPinState.text.toString(),
+                        repeatPinState.text.toString(),
+                        minPinLen,
+                    ),
+                    modifier = Modifier.testTag("create_pin_button"),
+                ) {
+                    Text(stringResource(R.string.yk_fido_set_pin))
+                }
+            }
+        } else {
+            // Force change PIN layout
+            Text(
+                text = stringResource(R.string.yk_fido_change_pin_title),
+                style = MaterialTheme.typography.headlineSmall,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("pin_info_text"),
+            )
+            Text(
+                text = stringResource(R.string.yk_fido_info_force_change_pin),
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Center,
+                minLines = 2,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+            )
+
+            PinTextFieldWithIcon(
                 state = currentPinState,
                 label = stringResource(R.string.yk_fido_current_pin),
                 showPin = showCurrentPin,
                 onToggleShowPin = { showCurrentPin = !showCurrentPin },
-                modifier =
-                Modifier
-                    .padding(bottom = if (currentPinErrorText == null) 16.dp else 0.dp)
-                    .fillMaxWidth()
+                modifier = Modifier
+                    .padding(top = 16.dp, start = 16.dp, end = 16.dp)
                     .focusRequester(currentPinFocusRequester)
                     .testTag("current_pin_input"),
-                keyboardOptions =
-                KeyboardOptions.Default.copy(
+                keyboardOptions = KeyboardOptions.Default.copy(
                     imeAction = ImeAction.Next,
                     autoCorrectEnabled = false,
                     keyboardType = KeyboardType.Password,
                 ),
                 onKeyboardAction = { newPinFocusRequester.requestFocus() },
             )
-        }
 
-        if (currentPinErrorText != null) {
-            Text(
-                text = currentPinErrorText,
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier
-                    .padding(top = 8.dp, bottom = 16.dp)
-                    .testTag("pin_error_text"),
-            )
-        }
-
-        PinTextField(
-            state = newPinState,
-            label = pluralStringResource(R.plurals.yk_fido_new_pin, count = minPinLen, minPinLen),
-            showPin = showNewPin,
-            onToggleShowPin = { showNewPin = !showNewPin },
-            modifier =
-            Modifier
-                .fillMaxWidth()
-                .focusRequester(newPinFocusRequester)
-                .testTag("new_pin_input"),
-            keyboardOptions =
-            KeyboardOptions.Default.copy(
-                imeAction = ImeAction.Next,
-                autoCorrectEnabled = false,
-                keyboardType = KeyboardType.Password,
-            ),
-            onKeyboardAction = { repeatPinFocusRequester.requestFocus() },
-        )
-
-        PinTextField(
-            state = repeatPinState,
-            label = stringResource(R.string.yk_fido_repeat_pin),
-            showPin = showRepeatPin,
-            onToggleShowPin = { showRepeatPin = !showRepeatPin },
-            modifier =
-            Modifier
-                .fillMaxWidth()
-                .focusRequester(repeatPinFocusRequester)
-                .testTag("repeat_pin_input"),
-            keyboardOptions =
-            KeyboardOptions.Default.copy(
-                imeAction = ImeAction.Done,
-                autoCorrectEnabled = false,
-                keyboardType = KeyboardType.Password,
-            ),
-            onKeyboardAction = submit,
-        )
-
-        if (newPinErrorText != null) {
-            Text(
-                text = newPinErrorText,
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier
-                    .padding(top = 8.dp)
-                    .testTag("pin_error_text"),
-            )
-        }
-
-        Row(
-            modifier =
-            Modifier
-                .fillMaxWidth()
-                .padding(top = 8.dp),
-            horizontalArrangement = Arrangement.End,
-        ) {
-            Button(
-                onClick = onCloseButtonClick,
-                modifier = Modifier.padding(end = 8.dp),
-            ) {
-                Text(stringResource(R.string.yk_fido_cancel))
-            }
-            Button(
-                onClick = submit,
-                enabled = isPinValid(
-                    newPinState.text.toString(),
-                    repeatPinState.text.toString(),
-                    minPinLen,
-                ),
-                modifier = Modifier.testTag(if (forceChangePin) "change_pin_button" else "create_pin_button"),
-            ) {
+            if (currentPinErrorText != null) {
                 Text(
-                    if (forceChangePin) {
-                        stringResource(R.string.yk_fido_change_pin)
-                    } else {
-                        stringResource(R.string.yk_fido_create_pin)
-                    },
+                    text = currentPinErrorText,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 4.dp, start = 52.dp, end = 16.dp)
+                        .testTag("pin_error_text"),
                 )
+            }
+
+            PinTextFieldWithIcon(
+                state = newPinState,
+                label = pluralStringResource(R.plurals.yk_fido_new_pin, count = minPinLen, minPinLen),
+                showPin = showNewPin,
+                onToggleShowPin = { showNewPin = !showNewPin },
+                modifier = Modifier
+                    .padding(top = 8.dp, start = 16.dp, end = 16.dp)
+                    .focusRequester(newPinFocusRequester)
+                    .testTag("new_pin_input"),
+                keyboardOptions = KeyboardOptions.Default.copy(
+                    imeAction = ImeAction.Next,
+                    autoCorrectEnabled = false,
+                    keyboardType = KeyboardType.Password,
+                ),
+                onKeyboardAction = { repeatPinFocusRequester.requestFocus() },
+            )
+
+            if (newPinErrorText != null) {
+                Text(
+                    text = newPinErrorText,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                    minLines = 3,
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 4.dp, start = 52.dp, end = 16.dp)
+                        .testTag("pin_error_text"),
+                )
+            } else {
+                Text(
+                    text = stringResource(R.string.yk_fido_set_pin_requirements),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    minLines = 3,
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 4.dp, start = 52.dp, end = 16.dp),
+                )
+            }
+
+            PinTextFieldWithIcon(
+                state = repeatPinState,
+                label = stringResource(R.string.yk_fido_confirm_new_pin),
+                showPin = showRepeatPin,
+                onToggleShowPin = { showRepeatPin = !showRepeatPin },
+                modifier = Modifier
+                    .padding(top = 8.dp, start = 16.dp, end = 16.dp)
+                    .focusRequester(repeatPinFocusRequester)
+                    .testTag("repeat_pin_input"),
+                keyboardOptions = KeyboardOptions.Default.copy(
+                    imeAction = ImeAction.Done,
+                    autoCorrectEnabled = false,
+                    keyboardType = KeyboardType.Password,
+                ),
+                onKeyboardAction = submit,
+            )
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                Button(
+                    onClick = submit,
+                    enabled = isPinValid(
+                        newPinState.text.toString(),
+                        repeatPinState.text.toString(),
+                        minPinLen,
+                    ),
+                    modifier = Modifier.testTag("change_pin_button"),
+                ) {
+                    Text(stringResource(R.string.yk_fido_change_pin))
+                }
             }
         }
     }
@@ -302,7 +419,7 @@ private fun isPinValid(
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-internal fun PinTextField(
+private fun PinTextFieldWithIcon(
     state: TextFieldState,
     label: String,
     showPin: Boolean,
@@ -311,40 +428,38 @@ internal fun PinTextField(
     keyboardOptions: KeyboardOptions,
     onKeyboardAction: () -> Unit,
 ) {
-    OutlinedSecureTextField(
-        state = state,
-        label = { Text(label) },
-        leadingIcon = {
-            Icon(
-                imageVector = Icons.Default.Password,
-                contentDescription = stringResource(
-                    R.string.yk_fido_icon_content_description_pin,
-                ),
-                tint = MaterialTheme.colorScheme.onBackground,
-            )
-        },
-        trailingIcon = {
-            IconButton(onClick = onToggleShowPin) {
-                Icon(
-                    imageVector = if (showPin) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                    contentDescription = if (showPin) {
-                        stringResource(R.string.yk_fido_icon_content_description_hide_pin)
-                    } else {
-                        stringResource(R.string.yk_fido_icon_content_description_show_pin)
-                    },
-                )
-            }
-        },
-        textObfuscationMode =
-        if (showPin) {
-            TextObfuscationMode.Visible
-        } else {
-            TextObfuscationMode.Hidden
-        },
-        modifier = modifier,
-        keyboardOptions = keyboardOptions,
-        onKeyboardAction = { onKeyboardAction() },
-    )
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = Icons.Outlined.Pin,
+            contentDescription = stringResource(R.string.yk_fido_icon_content_description_pin),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(24.dp),
+        )
+        Spacer(modifier = Modifier.width(12.dp))
+        OutlinedSecureTextField(
+            state = state,
+            label = { Text(label) },
+            trailingIcon = {
+                IconButton(onClick = onToggleShowPin) {
+                    Icon(
+                        imageVector = if (showPin) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                        contentDescription = if (showPin) {
+                            stringResource(R.string.yk_fido_icon_content_description_hide_pin)
+                        } else {
+                            stringResource(R.string.yk_fido_icon_content_description_show_pin)
+                        },
+                    )
+                }
+            },
+            textObfuscationMode = if (showPin) TextObfuscationMode.Visible else TextObfuscationMode.Hidden,
+            modifier = Modifier.weight(1f),
+            keyboardOptions = keyboardOptions,
+            onKeyboardAction = { onKeyboardAction() },
+        )
+    }
 }
 
 @Composable
@@ -361,8 +476,8 @@ internal fun PinCreatedScreen(
         onCloseButtonClick = onCloseButtonClick,
     ) {
         Text(
-            text = stringResource(R.string.yk_fido_pin_successfully_created),
-            style = MaterialTheme.typography.bodyLarge,
+            text = stringResource(R.string.yk_fido_pin_successfully_set),
+            style = MaterialTheme.typography.headlineSmall,
             modifier = Modifier.padding(vertical = 24.dp),
         )
         Row(
@@ -396,7 +511,7 @@ internal fun PinChangedScreen(
     ) {
         Text(
             text = stringResource(R.string.yk_fido_pin_successfully_changed),
-            style = MaterialTheme.typography.bodyLarge,
+            style = MaterialTheme.typography.headlineSmall,
             modifier = Modifier.padding(vertical = 24.dp),
         )
         Row(
@@ -415,59 +530,112 @@ internal fun PinChangedScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Preview(showBackground = true, showSystemUi = true, device = Devices.PIXEL_4)
+@Composable
+private fun CreatePinInBottomSheetPreview() {
+    FidoAndroidTheme {
+        ModalBottomSheet(
+            contentWindowInsets = { WindowInsets(0) },
+            dragHandle = {},
+            sheetState = rememberModalBottomSheetState(),
+            onDismissRequest = {},
+        ) {
+            CreateChangePinScreen(
+                operation = FidoClientService.Operation.MAKE_CREDENTIAL,
+                origin = "example.com",
+                onPinAction = { _, _ -> },
+                onCloseButtonClick = {},
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Preview(showBackground = true, showSystemUi = true, device = Devices.PIXEL_4)
+@Composable
+private fun ChangePinInBottomSheetPreview() {
+    FidoAndroidTheme {
+        ModalBottomSheet(
+            contentWindowInsets = { WindowInsets(0) },
+            dragHandle = {},
+            sheetState = rememberModalBottomSheetState(),
+            onDismissRequest = {},
+        ) {
+            CreateChangePinScreen(
+                operation = FidoClientService.Operation.MAKE_CREDENTIAL,
+                forceChangePin = true,
+                origin = "example.com",
+                onPinAction = { _, _ -> },
+                onCloseButtonClick = {},
+            )
+        }
+    }
+}
+
 @DefaultPreview
 @Composable
 internal fun CreateChangePinPreview() {
-    CreateChangePinScreen(
-        operation = FidoClientService.Operation.MAKE_CREDENTIAL,
-        origin = "example.com",
-        onPinAction = { _, _ -> },
-        onCloseButtonClick = {},
-    )
+    FidoAndroidTheme {
+        CreateChangePinScreen(
+            operation = FidoClientService.Operation.MAKE_CREDENTIAL,
+            origin = "example.com",
+            onPinAction = { _, _ -> },
+            onCloseButtonClick = {},
+        )
+    }
 }
 
 @DefaultPreview
 @Composable
 internal fun ForceChangePinPreview() {
-    CreateChangePinScreen(
-        operation = FidoClientService.Operation.MAKE_CREDENTIAL,
-        origin = "example.com",
-        forceChangePin = true,
-        onPinAction = { _, _ -> },
-        onCloseButtonClick = {},
-    )
+    FidoAndroidTheme {
+        CreateChangePinScreen(
+            operation = FidoClientService.Operation.MAKE_CREDENTIAL,
+            origin = "example.com",
+            forceChangePin = true,
+            onPinAction = { _, _ -> },
+            onCloseButtonClick = {},
+        )
+    }
 }
 
 @DefaultPreview
 @Composable
 internal fun CreateChangePinErrorPreview() {
-    CreateChangePinScreen(
-        operation = FidoClientService.Operation.MAKE_CREDENTIAL,
-        origin = "example.com",
-        error = Error.PinComplexityError,
-        onPinAction = { _, _ -> },
-        onCloseButtonClick = {},
-    )
+    FidoAndroidTheme {
+        CreateChangePinScreen(
+            operation = FidoClientService.Operation.MAKE_CREDENTIAL,
+            origin = "example.com",
+            error = Error.PinComplexityError,
+            onPinAction = { _, _ -> },
+            onCloseButtonClick = {},
+        )
+    }
 }
 
 @DefaultPreview
 @Composable
 internal fun PinCreatedPreview() {
-    PinCreatedScreen(
-        operation = FidoClientService.Operation.MAKE_CREDENTIAL,
-        origin = "example.com",
-        onContinue = {},
-        onCloseButtonClick = {},
-    )
+    FidoAndroidTheme {
+        PinCreatedScreen(
+            operation = FidoClientService.Operation.MAKE_CREDENTIAL,
+            origin = "example.com",
+            onContinue = {},
+            onCloseButtonClick = {},
+        )
+    }
 }
 
 @DefaultPreview
 @Composable
 internal fun PinChangedPreview() {
-    PinChangedScreen(
-        operation = FidoClientService.Operation.MAKE_CREDENTIAL,
-        origin = "example.com",
-        onContinue = {},
-        onCloseButtonClick = {},
-    )
+    FidoAndroidTheme {
+        PinChangedScreen(
+            operation = FidoClientService.Operation.MAKE_CREDENTIAL,
+            origin = "example.com",
+            onContinue = {},
+            onCloseButtonClick = {},
+        )
+    }
 }

@@ -17,7 +17,7 @@
     <string name="yk_fido_incorrect_pin">Incorrect PIN.</string>
     <string name="yk_fido_pin_blocked">PIN is blocked. You have to reset the key.</string>
     <string name="yk_fido_pin_auth_blocked">PIN authentication is blocked. Reconnect the key.</string>
-    <string name="yk_fido_pin_successfully_created">PIN successfully created</string>
+    <string name="yk_fido_pin_successfully_set">PIN successfully set!</string>
     <string name="yk_fido_pin_successfully_changed">PIN successfully changed</string>
     <string name="yk_fido_unknown_error">Unknown error</string>
     <string name="yk_fido_device_not_configured">The security key cannot be used, make sure PIN is set.</string>
@@ -38,7 +38,7 @@
 
     <string name="yk_fido_current_pin">Current PIN</string>
     <string name="yk_fido_touch_fingerprint">Touch the fingerprint sensor to continue</string>
-    <string name="yk_fido_repeat_pin">Repeat PIN</string>
+    <string name="yk_fido_confirm_new_pin">Confirm PIN</string>
     <string name="yk_fido_pin_is_not_complex_enough">PIN is not complex enough.</string>
     <string name="yk_fido_ctap_err_no_credentials">No passkeys for %1$s exist on the security key.</string>
     <string name="yk_fido_ctap_err_user_action_timeout">The operation timed out. Please try again.</string>
@@ -53,7 +53,12 @@
     <string name="yk_fido_ctap_err_uv_unknown">There was an error when matching the fingerprint.</string>
     <string name="yk_fido_creating_pin_failed">Creating PIN failed</string>
     <string name="yk_fido_info_no_pin_set">The Security Key does not have a PIN set. You need to create a PIN to continue.</string>
-    <string name="yk_fido_info_force_change_pin">For security reasons, the current PIN has to be changed.</string>
+    <string name="yk_fido_set_pin_title">Set a PIN for your security key</string>
+    <string name="yk_fido_set_pin_description">Your security key requires a PIN.\nSet a PIN to continue.</string>
+    <string name="yk_fido_set_pin_requirements">A PIN must be 8–63 characters long, contain at least 2 unique characters, and not be a commonly used PIN, like \"123456\". It may contain letters, numbers, and special characters.</string>
+    <string name="yk_fido_set_pin">Set PIN</string>
+    <string name="yk_fido_info_force_change_pin">For security reasons, your current PIN\nneeds to be changed.</string>
+    <string name="yk_fido_change_pin_title">Change PIN</string>
     <string name="yk_fido_fingerprint_icon">Fingerprint icon</string>
     <string name="yk_fido_content_description_nfc_antenna_location">NFC antenna location</string>
     <string name="yk_fido_content_description_close">Close</string>

@@ -33,7 +33,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import com.yubico.yubikit.fido.android.ui.Origin
 import com.yubico.yubikit.fido.android.ui.internal.FidoClientService
 import com.yubico.yubikit.fido.android.ui.internal.MainViewModel
@@ -90,9 +89,6 @@ internal fun FidoClientUi(
         modifier =
         Modifier
             .padding(
-                top = 16.dp,
-                start = 16.dp,
-                end = 16.dp,
                 bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding(),
             ),
         horizontalAlignment = Alignment.CenterHorizontally,

@@ -16,10 +16,12 @@
 
 package com.yubico.yubikit.fido.android.ui.internal.ui.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -28,14 +30,20 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Devices
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.yubico.yubikit.fido.android.ui.R
@@ -53,18 +61,28 @@ internal fun ContentWrapper(
     Column(
         modifier =
         modifier
+            .padding(top = 8.dp, start = 8.dp, end = 8.dp)
             .fillMaxWidth()
-            .padding(top = 0.dp, start = 0.dp, end = 0.dp)
-            .wrapContentHeight(),
+            .wrapContentHeight()
+            .background(MaterialTheme.colorScheme.surfaceContainerLow),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top,
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End,
+            modifier = Modifier.fillMaxWidth().padding(0.dp),
         ) {
             if (onCloseButtonClick != null) {
-                IconButton(onClick = onCloseButtonClick) {
+                FilledIconButton(
+                    onClick = onCloseButtonClick,
+                    modifier = Modifier.padding(4.dp).width(40.dp).height(40.dp),
+                    colors = IconButtonDefaults.filledIconButtonColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    ),
+
+                ) {
                     Icon(
                         imageVector = Icons.Default.Close,
                         contentDescription = stringResource(R.string.yk_fido_content_description_close),
@@ -78,15 +96,6 @@ internal fun ContentWrapper(
                         .height(48.dp),
                 )
             }
-            Text(
-                text =
-                if (operation == FidoClientService.Operation.MAKE_CREDENTIAL) {
-                    stringResource(R.string.yk_fido_create_passkey_for, origin)
-                } else {
-                    stringResource(R.string.yk_fido_login_with_passkey, origin)
-                },
-                style = MaterialTheme.typography.titleSmall,
-            )
         }
         Column(
             modifier =
@@ -98,5 +107,77 @@ internal fun ContentWrapper(
         ) {
             content()
         }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Preview(showBackground = true, showSystemUi = true, device = Devices.PIXEL_4)
+@Composable
+private fun ContentWrapperInBottomSheetPreview() {
+    MaterialTheme {
+        ModalBottomSheet(
+            contentWindowInsets = { WindowInsets(0) },
+            dragHandle = {},
+            sheetState = rememberModalBottomSheetState(),
+            onDismissRequest = {},
+        ) {
+            ContentWrapper(
+                operation = FidoClientService.Operation.MAKE_CREDENTIAL,
+                origin = "example.com",
+                onCloseButtonClick = {},
+            ) {
+                PreviewContent()
+            }
+        }
+    }
+}
+
+@Composable
+private fun PreviewContent(height: Dp = 160.dp) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(height)
+            .background(MaterialTheme.colorScheme.surfaceContainerLow),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text("Content")
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun ContentWrapperWithCloseButtonPreview() {
+    ContentWrapper(
+        operation = FidoClientService.Operation.MAKE_CREDENTIAL,
+        origin = "example.com",
+        onCloseButtonClick = {},
+    ) {
+        PreviewContent()
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun ContentWrapperWithoutCloseButtonPreview() {
+    ContentWrapper(
+        operation = FidoClientService.Operation.MAKE_CREDENTIAL,
+        origin = "example.com",
+        onCloseButtonClick = null,
+    ) {
+        PreviewContent()
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun ContentWrapperHeight320Preview() {
+    ContentWrapper(
+        operation = FidoClientService.Operation.MAKE_CREDENTIAL,
+        origin = "example.com",
+        contentHeight = 320.dp,
+        onCloseButtonClick = {},
+    ) {
+        PreviewContent(height = 320.dp)
     }
 }
