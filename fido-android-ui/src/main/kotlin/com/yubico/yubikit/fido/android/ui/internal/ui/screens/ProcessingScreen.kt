@@ -21,15 +21,19 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.LoadingIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.yubico.yubikit.fido.android.ui.R
 import com.yubico.yubikit.fido.android.ui.internal.FidoClientService
 import com.yubico.yubikit.fido.android.ui.internal.ui.components.ContentWrapper
+import com.yubico.yubikit.fido.android.ui.internal.ui.components.OperationTitle
 import com.yubico.yubikit.fido.android.ui.internal.ui.theme.DefaultPreview
+import com.yubico.yubikit.fido.android.ui.internal.ui.theme.FidoAndroidTheme
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -43,18 +47,38 @@ internal fun Processing(
         origin = origin,
         onCloseButtonClick = onCloseButtonClick,
     ) {
-        LoadingIndicator(modifier = Modifier.size(64.dp, 64.dp))
+        OperationTitle(operation = operation, origin = origin)
+        Spacer(modifier = Modifier.height(24.dp))
+        LoadingIndicator(modifier = Modifier.size(80.dp, 80.dp))
         Spacer(modifier = Modifier.height(16.dp))
-        Text(text = stringResource(R.string.yk_fido_dont_remove_the_key))
+        Text(
+            text = stringResource(R.string.yk_fido_dont_remove_the_key),
+            style = MaterialTheme.typography.bodyMedium,
+            textAlign = TextAlign.Center,
+        )
     }
 }
 
 @DefaultPreview
 @Composable
 internal fun ProcessingPreview() {
-    Processing(
-        operation = FidoClientService.Operation.MAKE_CREDENTIAL,
-        origin = "example.com",
-        onCloseButtonClick = {},
-    )
+    FidoAndroidTheme {
+        Processing(
+            operation = FidoClientService.Operation.MAKE_CREDENTIAL,
+            origin = "example.com",
+            onCloseButtonClick = {},
+        )
+    }
+}
+
+@DefaultPreview
+@Composable
+internal fun ProcessingLoginPreview() {
+    FidoAndroidTheme {
+        Processing(
+            operation = FidoClientService.Operation.GET_ASSERTION,
+            origin = "example.com",
+            onCloseButtonClick = {},
+        )
+    }
 }

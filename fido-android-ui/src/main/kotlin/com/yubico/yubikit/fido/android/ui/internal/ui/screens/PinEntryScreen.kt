@@ -70,6 +70,7 @@ import com.yubico.yubikit.fido.android.ui.R
 import com.yubico.yubikit.fido.android.ui.internal.FidoClientService
 import com.yubico.yubikit.fido.android.ui.internal.ui.Error
 import com.yubico.yubikit.fido.android.ui.internal.ui.components.ContentWrapper
+import com.yubico.yubikit.fido.android.ui.internal.ui.components.OperationTitle
 import com.yubico.yubikit.fido.android.ui.internal.ui.theme.DefaultPreview
 import com.yubico.yubikit.fido.android.ui.internal.ui.theme.FidoAndroidTheme
 
@@ -142,17 +143,7 @@ internal fun EnterPin(
             keyboardController?.show()
         }
 
-        // Title
-        Text(
-            text = if (operation == FidoClientService.Operation.MAKE_CREDENTIAL) {
-                stringResource(R.string.yk_fido_create_passkey_for, origin)
-            } else {
-                stringResource(R.string.yk_fido_login_with_passkey, origin)
-            },
-            style = MaterialTheme.typography.headlineSmall,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth(),
-        )
+        OperationTitle(operation = operation, origin = origin)
 
         // Subtitle
         Text(
