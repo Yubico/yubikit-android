@@ -101,7 +101,8 @@ internal fun ContentWrapper(
             modifier =
             Modifier
                 .fillMaxWidth()
-                .defaultMinSize(minHeight = contentHeight),
+                .defaultMinSize(minHeight = contentHeight)
+                .padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {

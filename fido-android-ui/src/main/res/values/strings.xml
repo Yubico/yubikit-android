@@ -2,6 +2,8 @@
     <string name="yk_fido_create_passkey">Create passkey for</string>
     <string name="yk_fido_login_with_passkey">Login with passkey to</string>
     <string name="yk_fido_tap_or_insert_key">Tap or insert your security key</string>
+    <string name="yk_fido_connect_your_key_title">Connect your key</string>
+    <string name="yk_fido_connect_your_key_subtitle">Hold your security key against the back of your phone, or plug it in via USB.</string>
     <string name="yk_fido_tap_key_again">Tap your security key again</string>
     <string name="yk_fido_passkey_icon">Passkey icon</string>
     <string name="yk_fido_continue_operation">Continue</string>

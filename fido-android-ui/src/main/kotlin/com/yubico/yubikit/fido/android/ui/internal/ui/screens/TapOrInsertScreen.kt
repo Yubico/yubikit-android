@@ -16,23 +16,33 @@
 
 package com.yubico.yubikit.fido.android.ui.internal.ui.screens
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.yubico.yubikit.fido.android.ui.R
 import com.yubico.yubikit.fido.android.ui.internal.FidoClientService
 import com.yubico.yubikit.fido.android.ui.internal.ui.components.ContentWrapper
+import com.yubico.yubikit.fido.android.ui.internal.ui.components.OperationTitle
 import com.yubico.yubikit.fido.android.ui.internal.ui.theme.DefaultPreview
+import com.yubico.yubikit.fido.android.ui.internal.ui.theme.FidoAndroidTheme
 
 @Composable
 internal fun TapOrInsertSecurityKey(
@@ -46,15 +56,45 @@ internal fun TapOrInsertSecurityKey(
         origin = origin,
         onCloseButtonClick = onCloseButtonClick,
     ) {
-        Icon(
-            painter = painterResource(R.drawable.ic_baseline_passkey_24),
-            contentDescription = stringResource(R.string.yk_fido_passkey_icon),
-            modifier = Modifier.size(64.dp),
-            tint = MaterialTheme.colorScheme.primary,
+        OperationTitle(
+            operation = operation,
+            origin = "",
+            titleOverride = stringResource(R.string.yk_fido_connect_your_key_title),
         )
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(text = stringResource(R.string.yk_fido_tap_or_insert_key))
+
+        Text(
+            text = stringResource(R.string.yk_fido_connect_your_key_subtitle),
+            style = MaterialTheme.typography.bodyMedium,
+            textAlign = TextAlign.Center,
+            minLines = 2,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp),
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .size(100.dp)
+                .background(
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    shape = CircleShape,
+                ),
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.ic_baseline_passkey_24),
+                contentDescription = stringResource(R.string.yk_fido_passkey_icon),
+                modifier = Modifier.size(64.dp),
+                tint = MaterialTheme.colorScheme.primary,
+            )
+        }
+
         if (!isNfcAvailable) {
+            Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = stringResource(R.string.yk_fido_nfc_not_available),
                 color = MaterialTheme.colorScheme.primary,
@@ -69,19 +109,23 @@ internal fun TapOrInsertSecurityKey(
 @DefaultPreview
 @Composable
 internal fun TapOrInsertSecurityKeyForMakeCredentialPreview() {
-    TapOrInsertSecurityKey(
-        isNfcAvailable = false,
-        operation = FidoClientService.Operation.MAKE_CREDENTIAL,
-        origin = "www.example.com",
-    ) {}
+    FidoAndroidTheme {
+        TapOrInsertSecurityKey(
+            isNfcAvailable = false,
+            operation = FidoClientService.Operation.MAKE_CREDENTIAL,
+            origin = "www.example.com",
+        ) {}
+    }
 }
 
 @DefaultPreview
 @Composable
 internal fun TapOrInsertSecurityKeyForGetAssertionPreview() {
-    TapOrInsertSecurityKey(
-        isNfcAvailable = true,
-        operation = FidoClientService.Operation.GET_ASSERTION,
-        origin = "www.example.com",
-    ) {}
+    FidoAndroidTheme {
+        TapOrInsertSecurityKey(
+            isNfcAvailable = true,
+            operation = FidoClientService.Operation.GET_ASSERTION,
+            origin = "www.example.com",
+        ) {}
+    }
 }
