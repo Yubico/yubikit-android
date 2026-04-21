@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import com.yubico.yubikit.fido.android.ui.R
 import com.yubico.yubikit.fido.android.ui.internal.FidoClientService
 import com.yubico.yubikit.fido.android.ui.internal.ui.components.ContentWrapper
+import com.yubico.yubikit.fido.android.ui.internal.ui.theme.DefaultPreview
 
 @Composable
 internal fun TouchTheSecurityKey(
@@ -50,4 +51,13 @@ internal fun TouchTheSecurityKey(
         Spacer(modifier = Modifier.height(16.dp))
         Text(text = stringResource(R.string.yk_fido_touch_the_key))
     }
+}
+
+@DefaultPreview
+@Composable
+internal fun TouchTheSecurityKeyPreview() {
+    TouchTheSecurityKey(
+        operation = FidoClientService.Operation.GET_ASSERTION,
+        origin = "www.example.com",
+    ) {}
 }

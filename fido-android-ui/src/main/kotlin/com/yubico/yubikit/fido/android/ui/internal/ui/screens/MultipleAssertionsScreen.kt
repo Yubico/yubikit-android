@@ -45,6 +45,7 @@ import androidx.compose.ui.zIndex
 import com.yubico.yubikit.fido.android.ui.R
 import com.yubico.yubikit.fido.android.ui.internal.FidoClientService
 import com.yubico.yubikit.fido.android.ui.internal.ui.components.ContentWrapper
+import com.yubico.yubikit.fido.android.ui.internal.ui.theme.DefaultPreview
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialUserEntity
 
 @Composable
@@ -149,5 +150,41 @@ private fun BoxScope.FadeOverlay(
             .background(
                 brush = Brush.verticalGradient(colors = colors),
             ),
+    )
+}
+
+@DefaultPreview
+@Composable
+internal fun MultipleAssertionsScreenTwoUsersPreview() {
+    MultipleAssertionsScreen(
+        operation = FidoClientService.Operation.GET_ASSERTION,
+        origin = "example.com",
+        users = listOf(
+            PublicKeyCredentialUserEntity("User 1", byteArrayOf(0), "Very long display name"),
+            PublicKeyCredentialUserEntity("User 2", byteArrayOf(0), "User 2"),
+        ),
+        onSelect = {},
+        onCloseButtonClick = {},
+    )
+}
+
+@DefaultPreview
+@Composable
+internal fun MultipleAssertionsScreenManyUsersPreview() {
+    MultipleAssertionsScreen(
+        operation = FidoClientService.Operation.GET_ASSERTION,
+        origin = "example.com",
+        users = listOf(
+            PublicKeyCredentialUserEntity("User 1", byteArrayOf(0), "Longest ever user display name which does not fit"),
+            PublicKeyCredentialUserEntity("User 2", byteArrayOf(0), "User 2"),
+            PublicKeyCredentialUserEntity("User 2", byteArrayOf(0), "User 3"),
+            PublicKeyCredentialUserEntity("User 2", byteArrayOf(0), "User 4"),
+            PublicKeyCredentialUserEntity("User 2", byteArrayOf(0), "User 5"),
+            PublicKeyCredentialUserEntity("User 2", byteArrayOf(0), "User 6"),
+            PublicKeyCredentialUserEntity("User 2", byteArrayOf(0), "User 7"),
+            PublicKeyCredentialUserEntity("User 2", byteArrayOf(0), "User 8"),
+        ),
+        onSelect = {},
+        onCloseButtonClick = {},
     )
 }

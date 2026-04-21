@@ -39,6 +39,7 @@ import com.yubico.yubikit.fido.android.ui.R
 import com.yubico.yubikit.fido.android.ui.internal.FidoClientService
 import com.yubico.yubikit.fido.android.ui.internal.ui.Error
 import com.yubico.yubikit.fido.android.ui.internal.ui.components.ContentWrapper
+import com.yubico.yubikit.fido.android.ui.internal.ui.theme.DefaultPreview
 
 @Composable
 internal fun SuccessView(
@@ -157,4 +158,35 @@ internal fun ErrorView(
             Text(stringResource(R.string.yk_fido_retry))
         }
     }
+}
+
+@DefaultPreview
+@Composable
+internal fun SuccessViewPreview() {
+    SuccessView(
+        operation = FidoClientService.Operation.MAKE_CREDENTIAL,
+        origin = "example.com",
+    )
+}
+
+@DefaultPreview
+@Composable
+internal fun OperationErrorViewPreview() {
+    ErrorView(
+        operation = FidoClientService.Operation.GET_ASSERTION,
+        origin = "example.com",
+        error = Error.OperationError(CtapException(CtapException.ERR_KEY_STORE_FULL)),
+        onRetry = {},
+    )
+}
+
+@DefaultPreview
+@Composable
+internal fun DeviceNotConfiguredErrorViewPreview() {
+    ErrorView(
+        operation = FidoClientService.Operation.GET_ASSERTION,
+        origin = "example.com",
+        error = Error.DeviceNotConfiguredError,
+        onRetry = {},
+    )
 }

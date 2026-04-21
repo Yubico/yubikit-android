@@ -233,3 +233,14 @@ internal fun EnterPinWithErrorPreview() {
         onCloseButtonClick = {},
     ) {}
 }
+
+@DefaultPreview
+@Composable
+internal fun EnterPinFilledPreview() {
+    EnterPin(
+        operation = FidoClientService.Operation.GET_ASSERTION,
+        origin = "example.com",
+        pin = charArrayOf('0', '1', '2', '3', '4'),
+        onCloseButtonClick = {},
+    ) {}
+}
