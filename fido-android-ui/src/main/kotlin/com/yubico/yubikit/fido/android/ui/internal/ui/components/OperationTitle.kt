@@ -31,9 +31,10 @@ internal fun OperationTitle(
     operation: FidoClientService.Operation,
     origin: String,
     modifier: Modifier = Modifier,
+    titleOverride: String? = null,
 ) {
     Text(
-        text = if (operation == FidoClientService.Operation.MAKE_CREDENTIAL) {
+        text = titleOverride ?: if (operation == FidoClientService.Operation.MAKE_CREDENTIAL) {
             stringResource(R.string.yk_fido_create_passkey)
         } else {
             stringResource(R.string.yk_fido_login_with_passkey)
@@ -42,10 +43,12 @@ internal fun OperationTitle(
         textAlign = TextAlign.Center,
         modifier = modifier.fillMaxWidth(),
     )
-    Text(
-        text = origin,
-        style = MaterialTheme.typography.headlineSmall,
-        textAlign = TextAlign.Center,
-        modifier = Modifier.fillMaxWidth(),
-    )
+    if (origin.isNotEmpty()) {
+        Text(
+            text = origin,
+            style = MaterialTheme.typography.headlineSmall,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }
 }
