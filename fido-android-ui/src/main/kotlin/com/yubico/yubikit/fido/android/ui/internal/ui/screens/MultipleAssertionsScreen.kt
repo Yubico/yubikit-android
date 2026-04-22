@@ -126,7 +126,7 @@ internal fun MultipleAssertionsScreen(
                         horizontalArrangement = Arrangement.Start,
                     ) {
                         Icon(
-                            painter = painterResource(R.drawable.ic_baseline_passkey_24),
+                            painter = painterResource(R.drawable.passkey_24px),
                             contentDescription = null,
                             modifier = Modifier.size(24.dp),
                             tint = MaterialTheme.colorScheme.onSurface,

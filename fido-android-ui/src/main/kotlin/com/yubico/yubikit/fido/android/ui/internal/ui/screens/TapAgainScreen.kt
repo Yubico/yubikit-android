@@ -82,7 +82,7 @@ internal fun TapAgainSecurityKey(
                 ),
         ) {
             Icon(
-                painter = painterResource(R.drawable.ic_baseline_passkey_24),
+                painter = painterResource(R.drawable.security_key_24px),
                 contentDescription = stringResource(R.string.yk_fido_passkey_icon),
                 modifier = Modifier.size(64.dp),
                 tint = MaterialTheme.colorScheme.onSurface,
