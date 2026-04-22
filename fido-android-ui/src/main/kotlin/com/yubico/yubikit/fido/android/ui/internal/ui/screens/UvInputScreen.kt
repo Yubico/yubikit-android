@@ -95,7 +95,7 @@ internal fun MatchFingerprint(
             modifier = Modifier
                 .size(100.dp)
                 .background(
-                    color = MaterialTheme.colorScheme.primaryContainer,
+                    color = MaterialTheme.colorScheme.secondaryContainer,
                     shape = CircleShape,
                 ),
         ) {
@@ -103,7 +103,7 @@ internal fun MatchFingerprint(
                 imageVector = Icons.Filled.Fingerprint,
                 contentDescription = stringResource(R.string.yk_fido_fingerprint_icon),
                 modifier = Modifier.size(64.dp),
-                tint = MaterialTheme.colorScheme.primary,
+                tint = MaterialTheme.colorScheme.onSurface,
             )
         }
 

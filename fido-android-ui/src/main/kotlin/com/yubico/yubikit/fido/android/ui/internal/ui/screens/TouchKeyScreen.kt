@@ -75,7 +75,7 @@ internal fun TouchTheSecurityKey(
             modifier = Modifier
                 .size(100.dp)
                 .background(
-                    color = MaterialTheme.colorScheme.primaryContainer,
+                    color = MaterialTheme.colorScheme.secondaryContainer,
                     shape = CircleShape,
                 ),
         ) {
@@ -83,7 +83,7 @@ internal fun TouchTheSecurityKey(
                 imageVector = Icons.Default.Flare,
                 contentDescription = stringResource(R.string.yk_fido_content_description_touch_the_key),
                 modifier = Modifier.size(64.dp),
-                tint = MaterialTheme.colorScheme.primary,
+                tint = MaterialTheme.colorScheme.onSurface,
             )
         }
     }

@@ -78,8 +78,8 @@ internal fun ContentWrapper(
                     onClick = onCloseButtonClick,
                     modifier = Modifier.padding(4.dp).width(40.dp).height(40.dp),
                     colors = IconButtonDefaults.filledIconButtonColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
                     ),
 
                 ) {

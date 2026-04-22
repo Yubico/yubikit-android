@@ -78,14 +78,14 @@ internal fun SuccessView(
             modifier = Modifier
                 .size(100.dp)
                 .background(
-                    color = MaterialTheme.colorScheme.primaryContainer,
+                    color = MaterialTheme.colorScheme.secondaryContainer,
                     shape = CircleShape,
                 ),
         ) {
             Icon(
                 imageVector = Icons.Default.Check,
                 contentDescription = stringResource(R.string.yk_fido_passkey_created),
-                tint = MaterialTheme.colorScheme.primary,
+                tint = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.size(80.dp),
             )
         }
@@ -135,7 +135,7 @@ internal fun ErrorView(
             contentAlignment = Alignment.Center,
             modifier = Modifier.size(100.dp)
                 .background(
-                    color = MaterialTheme.colorScheme.primaryContainer,
+                    color = MaterialTheme.colorScheme.secondaryContainer,
                     shape = CircleShape,
                 ),
         ) {

@@ -229,7 +229,7 @@ private fun CreateChangePinScreen(
                 Text(
                     text = stringResource(R.string.yk_fido_set_pin_requirements),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = MaterialTheme.colorScheme.onSurface,
                     minLines = 3,
                     maxLines = 3,
                     overflow = TextOverflow.Ellipsis,
@@ -359,7 +359,7 @@ private fun CreateChangePinScreen(
                 Text(
                     text = stringResource(R.string.yk_fido_set_pin_requirements),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = MaterialTheme.colorScheme.onSurface,
                     minLines = 3,
                     maxLines = 3,
                     overflow = TextOverflow.Ellipsis,
@@ -435,7 +435,7 @@ private fun PinTextFieldWithIcon(
         Icon(
             imageVector = Icons.Outlined.Pin,
             contentDescription = stringResource(R.string.yk_fido_icon_content_description_pin),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            tint = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.size(24.dp),
         )
         Spacer(modifier = Modifier.width(12.dp))

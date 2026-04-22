@@ -168,7 +168,7 @@ internal fun EnterPin(
             Icon(
                 imageVector = Icons.Outlined.Pin,
                 contentDescription = stringResource(R.string.yk_fido_icon_content_description_pin),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                tint = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.size(24.dp),
             )
             Spacer(modifier = Modifier.width(12.dp))
