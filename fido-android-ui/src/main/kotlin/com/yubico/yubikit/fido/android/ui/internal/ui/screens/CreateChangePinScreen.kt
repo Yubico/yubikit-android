@@ -202,13 +202,13 @@ private fun CreateChangePinScreen(
                 onToggleShowPin = { showNewPin = !showNewPin },
                 modifier = Modifier
                     .padding(top = 16.dp, start = 16.dp, end = 16.dp)
-                    .focusRequester(newPinFocusRequester)
-                    .testTag("new_pin_input"),
+                    .focusRequester(newPinFocusRequester),
                 keyboardOptions = KeyboardOptions.Default.copy(
                     imeAction = ImeAction.Next,
                     autoCorrectEnabled = false,
                     keyboardType = KeyboardType.Password,
                 ),
+                testTag = "new_pin_input",
                 onKeyboardAction = { repeatPinFocusRequester.requestFocus() },
             )
 
@@ -246,13 +246,13 @@ private fun CreateChangePinScreen(
                 onToggleShowPin = { showRepeatPin = !showRepeatPin },
                 modifier = Modifier
                     .padding(top = 8.dp, start = 16.dp, end = 16.dp)
-                    .focusRequester(repeatPinFocusRequester)
-                    .testTag("repeat_pin_input"),
+                    .focusRequester(repeatPinFocusRequester),
                 keyboardOptions = KeyboardOptions.Default.copy(
                     imeAction = ImeAction.Done,
                     autoCorrectEnabled = false,
                     keyboardType = KeyboardType.Password,
                 ),
+                testTag = "repeat_pin_input",
                 onKeyboardAction = submit,
             )
 
@@ -303,13 +303,13 @@ private fun CreateChangePinScreen(
                 onToggleShowPin = { showCurrentPin = !showCurrentPin },
                 modifier = Modifier
                     .padding(top = 16.dp, start = 16.dp, end = 16.dp)
-                    .focusRequester(currentPinFocusRequester)
-                    .testTag("current_pin_input"),
+                    .focusRequester(currentPinFocusRequester),
                 keyboardOptions = KeyboardOptions.Default.copy(
                     imeAction = ImeAction.Next,
                     autoCorrectEnabled = false,
                     keyboardType = KeyboardType.Password,
                 ),
+                testTag = "current_pin_input",
                 onKeyboardAction = { newPinFocusRequester.requestFocus() },
             )
 
@@ -332,13 +332,13 @@ private fun CreateChangePinScreen(
                 onToggleShowPin = { showNewPin = !showNewPin },
                 modifier = Modifier
                     .padding(top = 8.dp, start = 16.dp, end = 16.dp)
-                    .focusRequester(newPinFocusRequester)
-                    .testTag("new_pin_input"),
+                    .focusRequester(newPinFocusRequester),
                 keyboardOptions = KeyboardOptions.Default.copy(
                     imeAction = ImeAction.Next,
                     autoCorrectEnabled = false,
                     keyboardType = KeyboardType.Password,
                 ),
+                testTag = "new_pin_input",
                 onKeyboardAction = { repeatPinFocusRequester.requestFocus() },
             )
 
@@ -376,13 +376,13 @@ private fun CreateChangePinScreen(
                 onToggleShowPin = { showRepeatPin = !showRepeatPin },
                 modifier = Modifier
                     .padding(top = 8.dp, start = 16.dp, end = 16.dp)
-                    .focusRequester(repeatPinFocusRequester)
-                    .testTag("repeat_pin_input"),
+                    .focusRequester(repeatPinFocusRequester),
                 keyboardOptions = KeyboardOptions.Default.copy(
                     imeAction = ImeAction.Done,
                     autoCorrectEnabled = false,
                     keyboardType = KeyboardType.Password,
                 ),
+                testTag = "repeat_pin_input",
                 onKeyboardAction = submit,
             )
 
@@ -427,6 +427,7 @@ private fun PinTextFieldWithIcon(
     modifier: Modifier = Modifier,
     keyboardOptions: KeyboardOptions,
     onKeyboardAction: () -> Unit,
+    testTag: String,
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
@@ -455,7 +456,7 @@ private fun PinTextFieldWithIcon(
                 }
             },
             textObfuscationMode = if (showPin) TextObfuscationMode.Visible else TextObfuscationMode.Hidden,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(1f).testTag(testTag),
             keyboardOptions = keyboardOptions,
             onKeyboardAction = { onKeyboardAction() },
         )
