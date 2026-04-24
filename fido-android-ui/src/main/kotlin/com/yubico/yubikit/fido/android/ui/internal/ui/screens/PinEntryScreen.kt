@@ -70,7 +70,6 @@ import com.yubico.yubikit.fido.android.ui.R
 import com.yubico.yubikit.fido.android.ui.internal.FidoClientService
 import com.yubico.yubikit.fido.android.ui.internal.ui.Error
 import com.yubico.yubikit.fido.android.ui.internal.ui.components.ContentWrapper
-import com.yubico.yubikit.fido.android.ui.internal.ui.components.OperationTitle
 import com.yubico.yubikit.fido.android.ui.internal.ui.theme.DefaultPreview
 import com.yubico.yubikit.fido.android.ui.internal.ui.theme.FidoAndroidTheme
 
@@ -143,14 +142,20 @@ internal fun EnterPin(
             keyboardController?.show()
         }
 
-        OperationTitle(operation = operation, origin = origin)
+        Text(
+            text = stringResource(R.string.yk_fido_enter_pin_title),
+            style = MaterialTheme.typography.headlineSmall,
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp),
+        )
 
         // Subtitle
         Text(
-            text = stringResource(R.string.yk_fido_enter_pin_subtitle),
+            text = stringResource(R.string.yk_fido_enter_pin_subtitle, origin),
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
-            minLines = 2,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier
@@ -162,7 +167,7 @@ internal fun EnterPin(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 16.dp, start = 16.dp, end = 16.dp),
+                .padding(top = 24.dp, start = 16.dp, end = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
@@ -228,7 +233,7 @@ internal fun EnterPin(
                     .width(IntrinsicSize.Min)
                     .testTag("continue_button"),
             ) {
-                Text(text = stringResource(R.string.yk_fido_continue_operation), maxLines = 1)
+                Text(text = stringResource(R.string.yk_fido_confirm), maxLines = 1)
             }
         }
     }

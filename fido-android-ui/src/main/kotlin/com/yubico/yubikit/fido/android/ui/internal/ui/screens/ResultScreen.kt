@@ -40,6 +40,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.yubico.yubikit.core.fido.CtapException
 import com.yubico.yubikit.fido.android.ui.R
@@ -114,7 +115,20 @@ internal fun ErrorView(
         origin = origin,
         onCloseButtonClick = null,
     ) {
-        OperationTitle(operation = operation, origin = origin)
+        Text(
+            text = if (operation == FidoClientService.Operation.MAKE_CREDENTIAL) {
+                stringResource(R.string.yk_fido_error_create_failed, origin)
+            } else {
+                stringResource(R.string.yk_fido_error_login_failed, origin)
+            },
+            style = MaterialTheme.typography.headlineSmall,
+            textAlign = TextAlign.Center,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp),
+        )
 
         Spacer(modifier = Modifier.height(16.dp))
 

@@ -38,7 +38,6 @@ import androidx.compose.ui.unit.dp
 import com.yubico.yubikit.fido.android.ui.R
 import com.yubico.yubikit.fido.android.ui.internal.FidoClientService
 import com.yubico.yubikit.fido.android.ui.internal.ui.components.ContentWrapper
-import com.yubico.yubikit.fido.android.ui.internal.ui.components.OperationTitle
 import com.yubico.yubikit.fido.android.ui.internal.ui.theme.DefaultPreview
 import com.yubico.yubikit.fido.android.ui.internal.ui.theme.FidoAndroidTheme
 
@@ -53,10 +52,17 @@ internal fun TouchTheSecurityKey(
         origin = origin,
         onCloseButtonClick = onCloseButtonClick,
     ) {
-        OperationTitle(operation = operation, origin = origin)
-
         Text(
             text = stringResource(R.string.yk_fido_touch_the_key),
+            style = MaterialTheme.typography.headlineSmall,
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp),
+        )
+
+        Text(
+            text = stringResource(R.string.yk_fido_touch_the_key_subtitle),
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
             minLines = 2,

@@ -52,7 +52,6 @@ import androidx.compose.ui.zIndex
 import com.yubico.yubikit.fido.android.ui.R
 import com.yubico.yubikit.fido.android.ui.internal.FidoClientService
 import com.yubico.yubikit.fido.android.ui.internal.ui.components.ContentWrapper
-import com.yubico.yubikit.fido.android.ui.internal.ui.components.OperationTitle
 import com.yubico.yubikit.fido.android.ui.internal.ui.theme.DefaultPreview
 import com.yubico.yubikit.fido.android.ui.internal.ui.theme.FidoAndroidTheme
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialUserEntity
@@ -77,7 +76,14 @@ internal fun MultipleAssertionsScreen(
         onCloseButtonClick = onCloseButtonClick,
         contentHeight = listHeight + 100.dp,
     ) {
-        OperationTitle(operation = operation, origin = origin)
+        Text(
+            text = stringResource(R.string.yk_fido_select_passkey_title),
+            style = MaterialTheme.typography.headlineSmall,
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp),
+        )
 
         Text(
             text = stringResource(R.string.yk_fido_select_passkey, users.size),
@@ -85,15 +91,14 @@ internal fun MultipleAssertionsScreen(
             textAlign = TextAlign.Center,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 8.dp),
+                .padding(top = 16.dp),
         )
-
-        Spacer(modifier = Modifier.height(16.dp))
 
         Box(
             modifier = Modifier
                 .height(listHeight)
-                .fillMaxWidth(),
+                .fillMaxWidth()
+                .padding(top = 40.dp),
         ) {
             val scrollState = rememberScrollState()
             val canScrollUp = scrollState.value > 0
