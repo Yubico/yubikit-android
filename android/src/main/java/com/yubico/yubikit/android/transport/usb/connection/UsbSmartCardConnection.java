@@ -22,7 +22,6 @@ import android.hardware.usb.UsbInterface;
 import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.util.StringUtils;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -264,9 +263,6 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
     private byte status;
     private byte error;
 
-    @SuppressFBWarnings("URF_UNREAD_FIELD")
-    private byte messageSpecificByte;
-
     private MessageHeader(byte[] buffer) {
       if (buffer.length > SIZE_OF_CCID_PREFIX) {
         ByteBuffer responseBuffer =
@@ -277,7 +273,7 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
         sequence = responseBuffer.get();
         status = responseBuffer.get();
         error = responseBuffer.get();
-        messageSpecificByte = responseBuffer.get();
+        responseBuffer.get(); /* unused messageSpecificByte */
       }
     }
 
