@@ -108,6 +108,7 @@ internal class YubiKitFidoActivity : ComponentActivity() {
                 val scope = rememberCoroutineScope()
                 var bottomSheetVisible by remember { mutableStateOf(true) }
                 var isFinishing by remember { mutableStateOf(false) }
+                var credentialDelivered by remember { mutableStateOf(false) }
 
                 val finishActivity: () -> Unit = {
                     if (!isFinishing) {
@@ -125,6 +126,7 @@ internal class YubiKitFidoActivity : ComponentActivity() {
                 }
 
                 val finishActivityWithCancel: () -> Unit = {
+                    logger.debug("FidoActivity finishWithCancel")
                     setResult(
                         RESULT_CANCELED,
                     )
@@ -132,10 +134,13 @@ internal class YubiKitFidoActivity : ComponentActivity() {
                 }
 
                 val finishActivityWithKeyRemoved: () -> Unit = {
-                    setResult(
-                        RESULT_KEY_REMOVED,
-                    )
-                    finishActivity()
+                    logger.debug("FidoActivity finishWithKeyRemoved credentialDelivered=$credentialDelivered")
+                    if (!credentialDelivered) {
+                        setResult(
+                            RESULT_KEY_REMOVED,
+                        )
+                        finishActivity()
+                    }
                 }
 
                 val finishActivityWithResult: (PublicKeyCredential) -> Unit = { result ->
@@ -148,11 +153,13 @@ internal class YubiKitFidoActivity : ComponentActivity() {
                                 JSONObject(result.toMap(SerializationType.JSON)).toString(),
                             ),
                         )
+                        credentialDelivered = true
                         finishActivity()
                     }
                 }
 
                 LaunchedEffect(device) {
+                    logger.debug("FidoActivity device changed: device=$device wasConnected=$wasConnected")
                     if (device != null) {
                         wasConnected = true
                     } else if (wasConnected) {
