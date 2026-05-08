@@ -26,7 +26,6 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.absoluteOffset
@@ -83,8 +82,7 @@ internal fun NfcAntennaHint(
     BoxWithConstraints(
         modifier =
         modifier
-            .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.35f)),
+            .fillMaxSize(),
     ) {
         if (!showAntennas) {
             return@BoxWithConstraints

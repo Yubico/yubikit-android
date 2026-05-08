@@ -27,6 +27,7 @@ import androidx.activity.viewModels
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -200,7 +201,7 @@ internal class YubiKitFidoActivity : ComponentActivity() {
                 }
 
                 NfcAntennaHint(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.35f)),
                     showAntennas = showAntennas,
                 )
             }
