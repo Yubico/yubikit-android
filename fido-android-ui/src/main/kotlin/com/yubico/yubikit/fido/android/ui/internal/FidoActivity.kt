@@ -28,10 +28,8 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -52,6 +50,7 @@ import com.yubico.yubikit.android.transport.usb.UsbConfiguration
 import com.yubico.yubikit.fido.android.ui.FidoConfigManager
 import com.yubico.yubikit.fido.android.ui.Origin
 import com.yubico.yubikit.fido.android.ui.internal.ui.State
+import com.yubico.yubikit.fido.android.ui.internal.ui.components.FidoUiHost
 import com.yubico.yubikit.fido.android.ui.internal.ui.screens.FidoClientUi
 import com.yubico.yubikit.fido.android.ui.internal.ui.theme.FidoAndroidTheme
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredential
@@ -174,12 +173,9 @@ internal class YubiKitFidoActivity : ComponentActivity() {
                     exit = fadeOut(),
                 ) {
                     if (bottomSheetVisible) {
-                        logger.trace("Showing bottom sheet")
-                        ModalBottomSheet(
-                            contentWindowInsets = { WindowInsets(0) },
-                            dragHandle = {},
+                        logger.trace("Showing FIDO UI host")
+                        FidoUiHost(
                             sheetState = sheetState,
-                            scrimColor = Color.Transparent,
                             onDismissRequest = finishActivityWithCancel,
                         ) {
                             FidoClientUi(

@@ -25,6 +25,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.TextObfuscationMode
 import androidx.compose.foundation.text.input.rememberTextFieldState
@@ -49,11 +51,13 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusEvent
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
@@ -72,6 +76,7 @@ import com.yubico.yubikit.fido.android.ui.internal.ui.Error
 import com.yubico.yubikit.fido.android.ui.internal.ui.components.ContentWrapper
 import com.yubico.yubikit.fido.android.ui.internal.ui.theme.DefaultPreview
 import com.yubico.yubikit.fido.android.ui.internal.ui.theme.FidoAndroidTheme
+import kotlinx.coroutines.launch
 
 @Composable
 internal fun resolvePinEntryError(error: Error?): String? =
@@ -121,6 +126,8 @@ internal fun EnterPin(
         )
         var showPin by remember { mutableStateOf(false) }
         val focusRequester = remember { FocusRequester() }
+        val bringIntoViewRequester = remember { BringIntoViewRequester() }
+        val scope = rememberCoroutineScope()
         val keyboardController = LocalSoftwareKeyboardController.current
         val isPinValid by remember {
             derivedStateOf { currentPinState.text.length >= 4 }
@@ -167,7 +174,8 @@ internal fun EnterPin(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 24.dp, start = 16.dp, end = 16.dp),
+                .padding(top = 24.dp, start = 16.dp, end = 16.dp)
+                .bringIntoViewRequester(bringIntoViewRequester),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
@@ -182,6 +190,11 @@ internal fun EnterPin(
                 modifier = Modifier
                     .weight(1f)
                     .focusRequester(focusRequester)
+                    .onFocusEvent { focusState ->
+                        if (focusState.isFocused) {
+                            scope.launch { bringIntoViewRequester.bringIntoView() }
+                        }
+                    }
                     .testTag("pin_input_field"),
                 isError = errorText != null,
                 label = { Text(text = stringResource(R.string.yk_fido_provide_pin)) },

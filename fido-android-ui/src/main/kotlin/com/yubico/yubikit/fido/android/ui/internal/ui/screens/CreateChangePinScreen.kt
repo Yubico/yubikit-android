@@ -24,6 +24,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.TextObfuscationMode
@@ -47,11 +49,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusEvent
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
@@ -69,6 +73,7 @@ import com.yubico.yubikit.fido.android.ui.internal.ui.Error
 import com.yubico.yubikit.fido.android.ui.internal.ui.components.ContentWrapper
 import com.yubico.yubikit.fido.android.ui.internal.ui.theme.DefaultPreview
 import com.yubico.yubikit.fido.android.ui.internal.ui.theme.FidoAndroidTheme
+import kotlinx.coroutines.launch
 
 internal const val DEFAULT_MIN_PIN_LENGTH: Int = 4
 
@@ -429,8 +434,12 @@ private fun PinTextFieldWithIcon(
     onKeyboardAction: () -> Unit,
     testTag: String,
 ) {
+    val bringIntoViewRequester = remember { BringIntoViewRequester() }
+    val scope = rememberCoroutineScope()
     Row(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .bringIntoViewRequester(bringIntoViewRequester),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(
@@ -456,7 +465,14 @@ private fun PinTextFieldWithIcon(
                 }
             },
             textObfuscationMode = if (showPin) TextObfuscationMode.Visible else TextObfuscationMode.Hidden,
-            modifier = Modifier.weight(1f).testTag(testTag),
+            modifier = Modifier
+                .weight(1f)
+                .testTag(testTag)
+                .onFocusEvent { focusState ->
+                    if (focusState.isFocused) {
+                        scope.launch { bringIntoViewRequester.bringIntoView() }
+                    }
+                },
             keyboardOptions = keyboardOptions,
             onKeyboardAction = { onKeyboardAction() },
         )

@@ -23,16 +23,11 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.navigationBars
-import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import com.yubico.yubikit.fido.android.ui.Origin
 import com.yubico.yubikit.fido.android.ui.internal.FidoClientService
 import com.yubico.yubikit.fido.android.ui.internal.MainViewModel
@@ -86,11 +81,6 @@ internal fun FidoClientUi(
     }
 
     Column(
-        modifier =
-        Modifier
-            .padding(
-                bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding(),
-            ),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
