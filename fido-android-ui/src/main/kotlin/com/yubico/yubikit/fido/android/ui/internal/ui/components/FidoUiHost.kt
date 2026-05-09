@@ -31,6 +31,13 @@ import androidx.compose.material3.SheetState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.ProvidableCompositionLocal
+import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.movableContentOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -38,6 +45,9 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.window.core.layout.WindowSizeClass
 
 internal enum class FidoPresentation { BottomSheet, Dialog, FullScreen }
+
+internal val LocalFidoPresentation: ProvidableCompositionLocal<FidoPresentation> =
+    compositionLocalOf { FidoPresentation.BottomSheet }
 
 @Composable
 internal fun rememberFidoPresentation(): FidoPresentation {
@@ -59,52 +69,58 @@ internal fun FidoUiHost(
     onDismissRequest: () -> Unit,
     content: @Composable () -> Unit,
 ) {
-    when (rememberFidoPresentation()) {
-        FidoPresentation.BottomSheet -> {
-            ModalBottomSheet(
-                contentWindowInsets = { WindowInsets(0) },
-                dragHandle = {},
-                sheetState = sheetState,
-                sheetMaxWidth = 480.dp,
-                scrimColor = Color.Transparent,
-                onDismissRequest = onDismissRequest,
-            ) {
-                Box(modifier = Modifier.imePadding()) {
-                    content()
+    val presentation = rememberFidoPresentation()
+    val currentContent by rememberUpdatedState(content)
+    val movableContent = remember { movableContentOf { currentContent() } }
+
+    CompositionLocalProvider(LocalFidoPresentation provides presentation) {
+        when (presentation) {
+            FidoPresentation.BottomSheet -> {
+                ModalBottomSheet(
+                    contentWindowInsets = { WindowInsets(0) },
+                    dragHandle = {},
+                    sheetState = sheetState,
+                    sheetMaxWidth = 480.dp,
+                    scrimColor = Color.Transparent,
+                    onDismissRequest = onDismissRequest,
+                ) {
+                    Box(modifier = Modifier.imePadding()) {
+                        movableContent()
+                    }
                 }
             }
-        }
 
-        FidoPresentation.Dialog -> {
-            BasicAlertDialog(
-                onDismissRequest = onDismissRequest,
-                properties = DialogProperties(
-                    usePlatformDefaultWidth = false,
-                    decorFitsSystemWindows = false,
-                ),
-            ) {
+            FidoPresentation.Dialog -> {
+                BasicAlertDialog(
+                    onDismissRequest = onDismissRequest,
+                    properties = DialogProperties(
+                        usePlatformDefaultWidth = false,
+                        decorFitsSystemWindows = false,
+                    ),
+                ) {
+                    Surface(
+                        modifier = Modifier
+                            .widthIn(max = 480.dp)
+                            .heightIn(max = 560.dp)
+                            .imePadding(),
+                        shape = MaterialTheme.shapes.extraLarge,
+                        color = MaterialTheme.colorScheme.surfaceContainerLow,
+                    ) {
+                        movableContent()
+                    }
+                }
+            }
+
+            FidoPresentation.FullScreen -> {
                 Surface(
                     modifier = Modifier
-                        .widthIn(max = 480.dp)
-                        .heightIn(max = 560.dp)
+                        .fillMaxSize()
+                        .safeDrawingPadding()
                         .imePadding(),
-                    shape = MaterialTheme.shapes.extraLarge,
                     color = MaterialTheme.colorScheme.surfaceContainerLow,
                 ) {
-                    content()
+                    movableContent()
                 }
-            }
-        }
-
-        FidoPresentation.FullScreen -> {
-            Surface(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .safeDrawingPadding()
-                    .imePadding(),
-                color = MaterialTheme.colorScheme.surfaceContainerLow,
-            ) {
-                content()
             }
         }
     }
