@@ -220,6 +220,7 @@ internal fun FidoClientUi(
                         operation = operation,
                         origin = origin.callingApp,
                         error = state.error,
+                        onCloseButtonClick = handleCloseButton,
                     ) {
                         viewModel.onErrorConfirmation()
                     }

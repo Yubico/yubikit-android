@@ -43,6 +43,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedSecureTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -174,7 +175,9 @@ private fun CreateChangePinScreen(
         keyboardController?.show()
     }
 
-    val isFullScreen = LocalFidoPresentation.current == FidoPresentation.FullScreen
+    val presentation = LocalFidoPresentation.current
+    val isFullScreen = presentation == FidoPresentation.FullScreen
+    val isDialog = presentation == FidoPresentation.Dialog
     ContentWrapper(
         operation = operation,
         origin = origin,
@@ -183,6 +186,7 @@ private fun CreateChangePinScreen(
         ),
         titleTestTag = "pin_info_text",
         onCloseButtonClick = onCloseButtonClick,
+        hasOwnDismiss = isDialog,
         contentHeight = 320.dp,
     ) {
         if (!forceChangePin) {
@@ -283,7 +287,17 @@ private fun CreateChangePinScreen(
                         .fillMaxWidth()
                         .padding(top = 16.dp),
                     horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
+                    if (isDialog) {
+                        TextButton(
+                            onClick = onCloseButtonClick,
+                            modifier = Modifier.testTag("cancel_button"),
+                        ) {
+                            Text(stringResource(R.string.yk_fido_cancel))
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                    }
                     Button(
                         onClick = submit,
                         enabled = isPinValid(
@@ -424,7 +438,17 @@ private fun CreateChangePinScreen(
                         .fillMaxWidth()
                         .padding(top = 16.dp),
                     horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
+                    if (isDialog) {
+                        TextButton(
+                            onClick = onCloseButtonClick,
+                            modifier = Modifier.testTag("cancel_button"),
+                        ) {
+                            Text(stringResource(R.string.yk_fido_cancel))
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                    }
                     Button(
                         onClick = submit,
                         enabled = isPinValid(
@@ -520,12 +544,14 @@ internal fun PinCreatedScreen(
     onCloseButtonClick: () -> Unit,
     onContinue: () -> Unit,
 ) {
+    val isDialog = LocalFidoPresentation.current == FidoPresentation.Dialog
     ContentWrapper(
         operation = operation,
         origin = origin,
         title = stringResource(R.string.yk_fido_pin_successfully_set),
         contentHeight = 200.dp,
         onCloseButtonClick = onCloseButtonClick,
+        hasOwnDismiss = isDialog,
     ) {
         Row(
             modifier =
@@ -533,7 +559,17 @@ internal fun PinCreatedScreen(
                 .fillMaxWidth()
                 .padding(top = 16.dp),
             horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
+            if (isDialog) {
+                TextButton(
+                    onClick = onCloseButtonClick,
+                    modifier = Modifier.testTag("cancel_button"),
+                ) {
+                    Text(stringResource(R.string.yk_fido_cancel))
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+            }
             Button(
                 onClick = onContinue,
             ) {
@@ -550,12 +586,14 @@ internal fun PinChangedScreen(
     onCloseButtonClick: () -> Unit,
     onContinue: () -> Unit,
 ) {
+    val isDialog = LocalFidoPresentation.current == FidoPresentation.Dialog
     ContentWrapper(
         operation = operation,
         origin = origin,
         title = stringResource(R.string.yk_fido_pin_successfully_changed),
         contentHeight = 200.dp,
         onCloseButtonClick = onCloseButtonClick,
+        hasOwnDismiss = isDialog,
     ) {
         Row(
             modifier =
@@ -563,7 +601,17 @@ internal fun PinChangedScreen(
                 .fillMaxWidth()
                 .padding(top = 16.dp),
             horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
+            if (isDialog) {
+                TextButton(
+                    onClick = onCloseButtonClick,
+                    modifier = Modifier.testTag("cancel_button"),
+                ) {
+                    Text(stringResource(R.string.yk_fido_cancel))
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+            }
             Button(
                 onClick = onContinue,
             ) {

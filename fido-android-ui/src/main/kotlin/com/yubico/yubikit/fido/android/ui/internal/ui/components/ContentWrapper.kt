@@ -66,10 +66,13 @@ internal fun ContentWrapper(
     title: String? = null,
     titleTestTag: String? = null,
     onCloseButtonClick: (() -> Unit)? = null,
+    hasOwnDismiss: Boolean = false,
     contentHeight: Dp = 160.dp,
     content: @Composable (() -> Unit),
 ) {
     val presentation = LocalFidoPresentation.current
+    val showCloseIcon = onCloseButtonClick != null &&
+        !(presentation == FidoPresentation.Dialog && hasOwnDismiss)
 
     if (presentation == FidoPresentation.FullScreen) {
         Column(
@@ -94,7 +97,7 @@ internal fun ContentWrapper(
                     }
                 },
                 navigationIcon = {
-                    if (onCloseButtonClick != null) {
+                    if (showCloseIcon && onCloseButtonClick != null) {
                         IconButton(onClick = onCloseButtonClick) {
                             Icon(
                                 imageVector = Icons.Default.Close,
@@ -123,10 +126,11 @@ internal fun ContentWrapper(
         return
     }
 
+    val outerBottomPadding = if (presentation == FidoPresentation.Dialog) 8.dp else 0.dp
     Column(
         modifier =
         modifier
-            .padding(top = 8.dp, start = 8.dp, end = 8.dp)
+            .padding(top = 8.dp, start = 8.dp, end = 8.dp, bottom = outerBottomPadding)
             .fillMaxWidth()
             .wrapContentHeight()
             .background(MaterialTheme.colorScheme.surfaceContainerLow),
@@ -138,7 +142,7 @@ internal fun ContentWrapper(
             horizontalArrangement = Arrangement.End,
             modifier = Modifier.fillMaxWidth().padding(0.dp),
         ) {
-            if (onCloseButtonClick != null) {
+            if (showCloseIcon && onCloseButtonClick != null) {
                 FilledIconButton(
                     onClick = onCloseButtonClick,
                     modifier = Modifier.padding(4.dp).width(40.dp).height(40.dp),

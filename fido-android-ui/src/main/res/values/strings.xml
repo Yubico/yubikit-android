@@ -7,6 +7,7 @@
     <string name="yk_fido_passkey_icon">Passkey icon</string>
     <string name="yk_fido_continue_operation">Continue</string>
     <string name="yk_fido_confirm">Confirm</string>
+    <string name="yk_fido_cancel">Cancel</string>
     <string name="yk_fido_provide_pin">PIN</string>
     <string name="yk_fido_enter_pin_title">Confirm with PIN</string>
     <string name="yk_fido_enter_pin_subtitle">%1$s needs to verify it\'s you</string>

@@ -44,6 +44,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedSecureTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -118,12 +119,15 @@ internal fun EnterPin(
 ) {
     val errorText = resolvePinEntryError(error)
 
-    val isFullScreen = LocalFidoPresentation.current == FidoPresentation.FullScreen
+    val presentation = LocalFidoPresentation.current
+    val isFullScreen = presentation == FidoPresentation.FullScreen
+    val isDialog = presentation == FidoPresentation.Dialog
     ContentWrapper(
         operation = operation,
         origin = origin,
         title = stringResource(R.string.yk_fido_enter_pin_title),
         onCloseButtonClick = onCloseButtonClick,
+        hasOwnDismiss = isDialog,
     ) {
         val currentPinState = rememberTextFieldState(
             initialText = if (pin != null) String(pin) else "",
@@ -246,7 +250,17 @@ internal fun EnterPin(
                     .fillMaxWidth()
                     .padding(top = 16.dp),
                 horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically,
             ) {
+                if (isDialog) {
+                    TextButton(
+                        onClick = onCloseButtonClick,
+                        modifier = Modifier.testTag("cancel_button"),
+                    ) {
+                        Text(text = stringResource(R.string.yk_fido_cancel), maxLines = 1)
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                }
                 Button(
                     onClick = submit,
                     enabled = isPinValid,

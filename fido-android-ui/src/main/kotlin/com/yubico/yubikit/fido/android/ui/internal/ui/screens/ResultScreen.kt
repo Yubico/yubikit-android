@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
@@ -34,6 +35,7 @@ import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -46,6 +48,8 @@ import com.yubico.yubikit.fido.android.ui.R
 import com.yubico.yubikit.fido.android.ui.internal.FidoClientService
 import com.yubico.yubikit.fido.android.ui.internal.ui.Error
 import com.yubico.yubikit.fido.android.ui.internal.ui.components.ContentWrapper
+import com.yubico.yubikit.fido.android.ui.internal.ui.components.FidoPresentation
+import com.yubico.yubikit.fido.android.ui.internal.ui.components.LocalFidoPresentation
 import com.yubico.yubikit.fido.android.ui.internal.ui.theme.DefaultPreview
 import com.yubico.yubikit.fido.android.ui.internal.ui.theme.FidoAndroidTheme
 
@@ -101,8 +105,10 @@ internal fun ErrorView(
     operation: FidoClientService.Operation,
     origin: String,
     error: Error? = null,
+    onCloseButtonClick: (() -> Unit)? = null,
     onRetry: () -> Unit,
 ) {
+    val isDialog = LocalFidoPresentation.current == FidoPresentation.Dialog
     ContentWrapper(
         operation = operation,
         origin = origin,
@@ -111,7 +117,8 @@ internal fun ErrorView(
         } else {
             stringResource(R.string.yk_fido_error_login_failed, origin)
         },
-        onCloseButtonClick = null,
+        onCloseButtonClick = onCloseButtonClick.takeIf { isDialog },
+        hasOwnDismiss = isDialog,
     ) {
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -149,7 +156,17 @@ internal fun ErrorView(
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
+            if (isDialog && onCloseButtonClick != null) {
+                TextButton(
+                    onClick = onCloseButtonClick,
+                    modifier = Modifier.testTag("cancel_button"),
+                ) {
+                    Text(stringResource(R.string.yk_fido_cancel))
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+            }
             Button(
                 onClick = onRetry,
                 modifier = Modifier.testTag("retry_button"),
