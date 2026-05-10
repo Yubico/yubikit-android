@@ -20,17 +20,22 @@ import android.content.Context
 import android.nfc.NfcAntennaInfo
 import android.nfc.NfcManager
 import android.os.Build
+import android.view.Surface
+import android.view.WindowManager
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.absoluteOffset
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Nfc
 import androidx.compose.material.icons.rounded.Circle
@@ -38,10 +43,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
@@ -54,6 +61,7 @@ internal fun NfcAntennaHint(
     modifier: Modifier = Modifier,
     iconSize: Dp = 64.dp,
     iconColor: Color = MaterialTheme.colorScheme.primary,
+    iconBorderColor: Color? = null,
     showAntennas: Boolean = true,
 ) {
     val context = LocalContext.current
@@ -97,11 +105,37 @@ internal fun NfcAntennaHint(
                 val deviceWidthMm = nfcAntennaInfo.deviceWidth
                 val deviceHeightMm = nfcAntennaInfo.deviceHeight
                 val antennas = nfcAntennaInfo.availableNfcAntennas
-                val mmToPxX = boxWidthPx / deviceWidthMm
-                val mmToPxY = boxHeightPx / deviceHeightMm
+
+                // NfcAntennaInfo coordinates are in the device's natural orientation.
+                // Re-key on configuration so rotation changes recompute the rotation value.
+                @Suppress("UNUSED_VARIABLE")
+                val configuration = LocalConfiguration.current
+                val rotation = remember(configuration) {
+                    val display = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                        context.display
+                    } else {
+                        @Suppress("DEPRECATION")
+                        (context.getSystemService(Context.WINDOW_SERVICE) as WindowManager)
+                            .defaultDisplay
+                    }
+                    display?.rotation ?: Surface.ROTATION_0
+                }
+                val isSideways = rotation == Surface.ROTATION_90 || rotation == Surface.ROTATION_270
+                val viewportWidthMm = if (isSideways) deviceHeightMm else deviceWidthMm
+                val viewportHeightMm = if (isSideways) deviceWidthMm else deviceHeightMm
+                val mmToPxX = boxWidthPx / viewportWidthMm
+                val mmToPxY = boxHeightPx / viewportHeightMm
                 antennas.forEach { antenna ->
-                    val xPx = antenna.locationX * mmToPxX
-                    val yPx = antenna.locationY * mmToPxY
+                    val devX = antenna.locationX
+                    val devY = antenna.locationY
+                    val (vpXmm, vpYmm) = when (rotation) {
+                        Surface.ROTATION_90 -> devY to (deviceWidthMm - devX)
+                        Surface.ROTATION_180 -> (deviceWidthMm - devX) to (deviceHeightMm - devY)
+                        Surface.ROTATION_270 -> (deviceHeightMm - devY) to devX
+                        else -> devX to devY
+                    }
+                    val xPx = vpXmm * mmToPxX
+                    val yPx = vpYmm * mmToPxY
 
                     Box(
                         modifier =
@@ -110,7 +144,17 @@ internal fun NfcAntennaHint(
                                 x = with(density) { xPx.toDp() - iconSize / 2 },
                                 y = with(density) { yPx.toDp() - iconSize / 2 },
                             )
-                            .size(iconSize),
+                            .size(iconSize)
+                            .then(
+                                if (iconBorderColor != null) {
+                                    Modifier.border(
+                                        BorderStroke(2.dp, iconBorderColor),
+                                        CircleShape,
+                                    )
+                                } else {
+                                    Modifier
+                                },
+                            ),
                     ) {
                         Icon(
                             imageVector = Icons.Rounded.Circle,

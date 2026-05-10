@@ -30,4 +30,9 @@ public fun NfcAntennaHint(
     iconSize: Dp = 64.dp,
     iconColor: Color = MaterialTheme.colorScheme.primary,
     showAntennas: Boolean = true,
-): Unit = InternalNfcAntennaHint(modifier, iconSize, iconColor, showAntennas)
+): Unit = InternalNfcAntennaHint(
+    modifier = modifier,
+    iconSize = iconSize,
+    iconColor = iconColor,
+    showAntennas = showAntennas,
+)

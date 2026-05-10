@@ -30,6 +30,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -50,7 +51,9 @@ import com.yubico.yubikit.android.transport.usb.UsbConfiguration
 import com.yubico.yubikit.fido.android.ui.FidoConfigManager
 import com.yubico.yubikit.fido.android.ui.Origin
 import com.yubico.yubikit.fido.android.ui.internal.ui.State
+import com.yubico.yubikit.fido.android.ui.internal.ui.components.FidoPresentation
 import com.yubico.yubikit.fido.android.ui.internal.ui.components.FidoUiHost
+import com.yubico.yubikit.fido.android.ui.internal.ui.components.rememberFidoPresentation
 import com.yubico.yubikit.fido.android.ui.internal.ui.screens.FidoClientUi
 import com.yubico.yubikit.fido.android.ui.internal.ui.theme.FidoAndroidTheme
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredential
@@ -196,8 +199,23 @@ internal class YubiKitFidoActivity : ComponentActivity() {
                     }
                 }
 
+                val presentation = rememberFidoPresentation()
+                val isFullScreen = presentation == FidoPresentation.FullScreen
                 NfcAntennaHint(
-                    modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.35f)),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .let {
+                            if (isFullScreen) {
+                                it
+                            } else {
+                                it.background(Color.Black.copy(alpha = 0.35f))
+                            }
+                        },
+                    iconBorderColor = if (isFullScreen) {
+                        MaterialTheme.colorScheme.outline
+                    } else {
+                        null
+                    },
                     showAntennas = showAntennas,
                 )
             }
