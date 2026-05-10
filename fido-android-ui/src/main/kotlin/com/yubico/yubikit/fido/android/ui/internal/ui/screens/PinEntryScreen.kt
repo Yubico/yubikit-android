@@ -119,6 +119,7 @@ internal fun EnterPin(
     ContentWrapper(
         operation = operation,
         origin = origin,
+        title = stringResource(R.string.yk_fido_enter_pin_title),
         onCloseButtonClick = onCloseButtonClick,
     ) {
         val currentPinState = rememberTextFieldState(
@@ -148,15 +149,6 @@ internal fun EnterPin(
             focusRequester.requestFocus()
             keyboardController?.show()
         }
-
-        Text(
-            text = stringResource(R.string.yk_fido_enter_pin_title),
-            style = MaterialTheme.typography.headlineSmall,
-            textAlign = TextAlign.Center,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 8.dp),
-        )
 
         // Subtitle
         Text(

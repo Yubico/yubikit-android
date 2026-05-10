@@ -175,19 +175,15 @@ private fun CreateChangePinScreen(
     ContentWrapper(
         operation = operation,
         origin = origin,
+        title = stringResource(
+            if (forceChangePin) R.string.yk_fido_change_pin_title else R.string.yk_fido_set_pin_title,
+        ),
+        titleTestTag = "pin_info_text",
         onCloseButtonClick = onCloseButtonClick,
         contentHeight = 320.dp,
     ) {
         if (!forceChangePin) {
             // Create PIN layout
-            Text(
-                text = stringResource(R.string.yk_fido_set_pin_title),
-                style = MaterialTheme.typography.headlineSmall,
-                textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("pin_info_text"),
-            )
             Text(
                 text = stringResource(R.string.yk_fido_set_pin_description),
                 style = MaterialTheme.typography.bodyMedium,
@@ -281,14 +277,6 @@ private fun CreateChangePinScreen(
             }
         } else {
             // Force change PIN layout
-            Text(
-                text = stringResource(R.string.yk_fido_change_pin_title),
-                style = MaterialTheme.typography.headlineSmall,
-                textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("pin_info_text"),
-            )
             Text(
                 text = stringResource(R.string.yk_fido_info_force_change_pin),
                 style = MaterialTheme.typography.bodyMedium,
@@ -489,14 +477,10 @@ internal fun PinCreatedScreen(
     ContentWrapper(
         operation = operation,
         origin = origin,
+        title = stringResource(R.string.yk_fido_pin_successfully_set),
         contentHeight = 200.dp,
         onCloseButtonClick = onCloseButtonClick,
     ) {
-        Text(
-            text = stringResource(R.string.yk_fido_pin_successfully_set),
-            style = MaterialTheme.typography.headlineSmall,
-            modifier = Modifier.padding(vertical = 24.dp),
-        )
         Row(
             modifier =
             Modifier
@@ -523,14 +507,10 @@ internal fun PinChangedScreen(
     ContentWrapper(
         operation = operation,
         origin = origin,
+        title = stringResource(R.string.yk_fido_pin_successfully_changed),
         contentHeight = 200.dp,
         onCloseButtonClick = onCloseButtonClick,
     ) {
-        Text(
-            text = stringResource(R.string.yk_fido_pin_successfully_changed),
-            style = MaterialTheme.typography.headlineSmall,
-            modifier = Modifier.padding(vertical = 24.dp),
-        )
         Row(
             modifier =
             Modifier

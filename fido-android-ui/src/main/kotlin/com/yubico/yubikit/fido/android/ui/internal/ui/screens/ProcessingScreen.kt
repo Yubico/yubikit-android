@@ -17,6 +17,7 @@
 package com.yubico.yubikit.fido.android.ui.internal.ui.screens
 
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -31,7 +32,6 @@ import androidx.compose.ui.unit.dp
 import com.yubico.yubikit.fido.android.ui.R
 import com.yubico.yubikit.fido.android.ui.internal.FidoClientService
 import com.yubico.yubikit.fido.android.ui.internal.ui.components.ContentWrapper
-import com.yubico.yubikit.fido.android.ui.internal.ui.components.OperationTitle
 import com.yubico.yubikit.fido.android.ui.internal.ui.theme.DefaultPreview
 import com.yubico.yubikit.fido.android.ui.internal.ui.theme.FidoAndroidTheme
 
@@ -45,9 +45,21 @@ internal fun Processing(
     ContentWrapper(
         operation = operation,
         origin = origin,
+        title = if (operation == FidoClientService.Operation.MAKE_CREDENTIAL) {
+            stringResource(R.string.yk_fido_create_passkey)
+        } else {
+            stringResource(R.string.yk_fido_login_with_passkey)
+        },
         onCloseButtonClick = onCloseButtonClick,
     ) {
-        OperationTitle(operation = operation, origin = origin)
+        if (origin.isNotEmpty()) {
+            Text(
+                text = origin,
+                style = MaterialTheme.typography.headlineSmall,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
         Spacer(modifier = Modifier.height(24.dp))
         LoadingIndicator(modifier = Modifier.size(80.dp, 80.dp))
         Spacer(modifier = Modifier.height(16.dp))

@@ -38,7 +38,6 @@ import androidx.compose.ui.unit.dp
 import com.yubico.yubikit.fido.android.ui.R
 import com.yubico.yubikit.fido.android.ui.internal.FidoClientService
 import com.yubico.yubikit.fido.android.ui.internal.ui.components.ContentWrapper
-import com.yubico.yubikit.fido.android.ui.internal.ui.components.OperationTitle
 import com.yubico.yubikit.fido.android.ui.internal.ui.theme.DefaultPreview
 
 @Composable
@@ -50,14 +49,9 @@ internal fun TapAgainSecurityKey(
     ContentWrapper(
         operation = operation,
         origin = origin,
+        title = stringResource(R.string.yk_fido_connect_your_key_title),
         onCloseButtonClick = onCloseButtonClick,
     ) {
-        OperationTitle(
-            operation = operation,
-            origin = "",
-            titleOverride = stringResource(R.string.yk_fido_connect_your_key_title),
-        )
-
         Text(
             text = stringResource(R.string.yk_fido_tap_key_again),
             style = MaterialTheme.typography.bodyMedium,

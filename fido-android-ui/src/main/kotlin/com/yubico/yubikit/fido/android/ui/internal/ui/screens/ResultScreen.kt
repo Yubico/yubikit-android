@@ -40,14 +40,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.yubico.yubikit.core.fido.CtapException
 import com.yubico.yubikit.fido.android.ui.R
 import com.yubico.yubikit.fido.android.ui.internal.FidoClientService
 import com.yubico.yubikit.fido.android.ui.internal.ui.Error
 import com.yubico.yubikit.fido.android.ui.internal.ui.components.ContentWrapper
-import com.yubico.yubikit.fido.android.ui.internal.ui.components.OperationTitle
 import com.yubico.yubikit.fido.android.ui.internal.ui.theme.DefaultPreview
 import com.yubico.yubikit.fido.android.ui.internal.ui.theme.FidoAndroidTheme
 
@@ -59,18 +57,13 @@ internal fun SuccessView(
     ContentWrapper(
         operation = operation,
         origin = origin,
+        title = if (operation == FidoClientService.Operation.MAKE_CREDENTIAL) {
+            stringResource(R.string.yk_fido_passkey_created)
+        } else {
+            stringResource(R.string.yk_fido_login_successful)
+        },
         onCloseButtonClick = null,
     ) {
-        OperationTitle(
-            operation = operation,
-            origin = "",
-            titleOverride = if (operation == FidoClientService.Operation.MAKE_CREDENTIAL) {
-                stringResource(R.string.yk_fido_passkey_created)
-            } else {
-                stringResource(R.string.yk_fido_login_successful)
-            },
-        )
-
         Spacer(modifier = Modifier.height(24.dp))
 
         // Success icon with background circle
@@ -113,23 +106,13 @@ internal fun ErrorView(
     ContentWrapper(
         operation = operation,
         origin = origin,
+        title = if (operation == FidoClientService.Operation.MAKE_CREDENTIAL) {
+            stringResource(R.string.yk_fido_error_create_failed, origin)
+        } else {
+            stringResource(R.string.yk_fido_error_login_failed, origin)
+        },
         onCloseButtonClick = null,
     ) {
-        Text(
-            text = if (operation == FidoClientService.Operation.MAKE_CREDENTIAL) {
-                stringResource(R.string.yk_fido_error_create_failed, origin)
-            } else {
-                stringResource(R.string.yk_fido_error_login_failed, origin)
-            },
-            style = MaterialTheme.typography.headlineSmall,
-            textAlign = TextAlign.Center,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 8.dp),
-        )
-
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(

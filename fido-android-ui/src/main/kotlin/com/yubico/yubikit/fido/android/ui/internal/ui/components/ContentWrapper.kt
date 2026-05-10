@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -35,15 +36,20 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
@@ -51,15 +57,72 @@ import androidx.compose.ui.unit.dp
 import com.yubico.yubikit.fido.android.ui.R
 import com.yubico.yubikit.fido.android.ui.internal.FidoClientService
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun ContentWrapper(
     modifier: Modifier = Modifier,
     operation: FidoClientService.Operation,
     origin: String,
+    title: String? = null,
+    titleTestTag: String? = null,
     onCloseButtonClick: (() -> Unit)? = null,
     contentHeight: Dp = 160.dp,
     content: @Composable (() -> Unit),
 ) {
+    val presentation = LocalFidoPresentation.current
+
+    if (presentation == FidoPresentation.FullScreen) {
+        Column(
+            modifier = modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.surfaceContainerLow),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            TopAppBar(
+                title = {
+                    if (title != null) {
+                        Text(
+                            text = title,
+                            style = MaterialTheme.typography.titleLarge,
+                            maxLines = 1,
+                            modifier = if (titleTestTag != null) {
+                                Modifier.testTag(titleTestTag)
+                            } else {
+                                Modifier
+                            },
+                        )
+                    }
+                },
+                navigationIcon = {
+                    if (onCloseButtonClick != null) {
+                        IconButton(onClick = onCloseButtonClick) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = stringResource(
+                                    R.string.yk_fido_content_description_close,
+                                ),
+                            )
+                        }
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                ),
+            )
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Top,
+            ) {
+                content()
+            }
+        }
+        return
+    }
+
     Column(
         modifier =
         modifier
@@ -109,6 +172,16 @@ internal fun ContentWrapper(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
+            if (title != null) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.headlineSmall,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .let { if (titleTestTag != null) it.testTag(titleTestTag) else it },
+                )
+            }
             content()
         }
     }

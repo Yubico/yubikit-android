@@ -50,17 +50,9 @@ internal fun TouchTheSecurityKey(
     ContentWrapper(
         operation = operation,
         origin = origin,
+        title = stringResource(R.string.yk_fido_touch_the_key),
         onCloseButtonClick = onCloseButtonClick,
     ) {
-        Text(
-            text = stringResource(R.string.yk_fido_touch_the_key),
-            style = MaterialTheme.typography.headlineSmall,
-            textAlign = TextAlign.Center,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 8.dp),
-        )
-
         Text(
             text = stringResource(R.string.yk_fido_touch_the_key_subtitle),
             style = MaterialTheme.typography.bodyMedium,

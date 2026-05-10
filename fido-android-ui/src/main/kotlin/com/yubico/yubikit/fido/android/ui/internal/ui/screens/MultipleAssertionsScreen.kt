@@ -73,18 +73,10 @@ internal fun MultipleAssertionsScreen(
     ContentWrapper(
         operation = operation,
         origin = origin,
+        title = stringResource(R.string.yk_fido_select_passkey_title),
         onCloseButtonClick = onCloseButtonClick,
         contentHeight = listHeight + 100.dp,
     ) {
-        Text(
-            text = stringResource(R.string.yk_fido_select_passkey_title),
-            style = MaterialTheme.typography.headlineSmall,
-            textAlign = TextAlign.Center,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 8.dp),
-        )
-
         Text(
             text = stringResource(R.string.yk_fido_select_passkey, users.size),
             style = MaterialTheme.typography.bodyMedium,
