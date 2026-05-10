@@ -71,6 +71,8 @@ import com.yubico.yubikit.fido.android.ui.R
 import com.yubico.yubikit.fido.android.ui.internal.FidoClientService
 import com.yubico.yubikit.fido.android.ui.internal.ui.Error
 import com.yubico.yubikit.fido.android.ui.internal.ui.components.ContentWrapper
+import com.yubico.yubikit.fido.android.ui.internal.ui.components.FidoPresentation
+import com.yubico.yubikit.fido.android.ui.internal.ui.components.LocalFidoPresentation
 import com.yubico.yubikit.fido.android.ui.internal.ui.theme.DefaultPreview
 import com.yubico.yubikit.fido.android.ui.internal.ui.theme.FidoAndroidTheme
 import kotlinx.coroutines.launch
@@ -172,6 +174,7 @@ private fun CreateChangePinScreen(
         keyboardController?.show()
     }
 
+    val isFullScreen = LocalFidoPresentation.current == FidoPresentation.FullScreen
     ContentWrapper(
         operation = operation,
         origin = origin,
@@ -255,24 +258,43 @@ private fun CreateChangePinScreen(
                 ),
                 testTag = "repeat_pin_input",
                 onKeyboardAction = submit,
+                trailingContent = if (isFullScreen) {
+                    {
+                        Button(
+                            onClick = submit,
+                            enabled = isPinValid(
+                                newPinState.text.toString(),
+                                repeatPinState.text.toString(),
+                                minPinLen,
+                            ),
+                            modifier = Modifier.testTag("create_pin_button"),
+                        ) {
+                            Text(stringResource(R.string.yk_fido_set_pin))
+                        }
+                    }
+                } else {
+                    null
+                },
             )
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 16.dp),
-                horizontalArrangement = Arrangement.End,
-            ) {
-                Button(
-                    onClick = submit,
-                    enabled = isPinValid(
-                        newPinState.text.toString(),
-                        repeatPinState.text.toString(),
-                        minPinLen,
-                    ),
-                    modifier = Modifier.testTag("create_pin_button"),
+            if (!isFullScreen) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 16.dp),
+                    horizontalArrangement = Arrangement.End,
                 ) {
-                    Text(stringResource(R.string.yk_fido_set_pin))
+                    Button(
+                        onClick = submit,
+                        enabled = isPinValid(
+                            newPinState.text.toString(),
+                            repeatPinState.text.toString(),
+                            minPinLen,
+                        ),
+                        modifier = Modifier.testTag("create_pin_button"),
+                    ) {
+                        Text(stringResource(R.string.yk_fido_set_pin))
+                    }
                 }
             }
         } else {
@@ -377,24 +399,43 @@ private fun CreateChangePinScreen(
                 ),
                 testTag = "repeat_pin_input",
                 onKeyboardAction = submit,
+                trailingContent = if (isFullScreen) {
+                    {
+                        Button(
+                            onClick = submit,
+                            enabled = isPinValid(
+                                newPinState.text.toString(),
+                                repeatPinState.text.toString(),
+                                minPinLen,
+                            ),
+                            modifier = Modifier.testTag("change_pin_button"),
+                        ) {
+                            Text(stringResource(R.string.yk_fido_change_pin))
+                        }
+                    }
+                } else {
+                    null
+                },
             )
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 16.dp),
-                horizontalArrangement = Arrangement.End,
-            ) {
-                Button(
-                    onClick = submit,
-                    enabled = isPinValid(
-                        newPinState.text.toString(),
-                        repeatPinState.text.toString(),
-                        minPinLen,
-                    ),
-                    modifier = Modifier.testTag("change_pin_button"),
+            if (!isFullScreen) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 16.dp),
+                    horizontalArrangement = Arrangement.End,
                 ) {
-                    Text(stringResource(R.string.yk_fido_change_pin))
+                    Button(
+                        onClick = submit,
+                        enabled = isPinValid(
+                            newPinState.text.toString(),
+                            repeatPinState.text.toString(),
+                            minPinLen,
+                        ),
+                        modifier = Modifier.testTag("change_pin_button"),
+                    ) {
+                        Text(stringResource(R.string.yk_fido_change_pin))
+                    }
                 }
             }
         }
@@ -421,6 +462,7 @@ private fun PinTextFieldWithIcon(
     keyboardOptions: KeyboardOptions,
     onKeyboardAction: () -> Unit,
     testTag: String,
+    trailingContent: (@Composable () -> Unit)? = null,
 ) {
     val bringIntoViewRequester = remember { BringIntoViewRequester() }
     val scope = rememberCoroutineScope()
@@ -464,6 +506,10 @@ private fun PinTextFieldWithIcon(
             keyboardOptions = keyboardOptions,
             onKeyboardAction = { onKeyboardAction() },
         )
+        if (trailingContent != null) {
+            Spacer(modifier = Modifier.width(8.dp))
+            trailingContent()
+        }
     }
 }
 

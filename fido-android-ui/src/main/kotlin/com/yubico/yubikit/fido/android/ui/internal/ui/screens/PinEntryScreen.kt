@@ -74,6 +74,8 @@ import com.yubico.yubikit.fido.android.ui.R
 import com.yubico.yubikit.fido.android.ui.internal.FidoClientService
 import com.yubico.yubikit.fido.android.ui.internal.ui.Error
 import com.yubico.yubikit.fido.android.ui.internal.ui.components.ContentWrapper
+import com.yubico.yubikit.fido.android.ui.internal.ui.components.FidoPresentation
+import com.yubico.yubikit.fido.android.ui.internal.ui.components.LocalFidoPresentation
 import com.yubico.yubikit.fido.android.ui.internal.ui.theme.DefaultPreview
 import com.yubico.yubikit.fido.android.ui.internal.ui.theme.FidoAndroidTheme
 import kotlinx.coroutines.launch
@@ -116,6 +118,7 @@ internal fun EnterPin(
 ) {
     val errorText = resolvePinEntryError(error)
 
+    val isFullScreen = LocalFidoPresentation.current == FidoPresentation.FullScreen
     ContentWrapper(
         operation = operation,
         origin = origin,
@@ -210,6 +213,19 @@ internal fun EnterPin(
                 ),
                 onKeyboardAction = { submit.invoke() },
             )
+            if (isFullScreen) {
+                Spacer(modifier = Modifier.width(8.dp))
+                Button(
+                    onClick = submit,
+                    enabled = isPinValid,
+                    shapes = ButtonDefaults.shapes(),
+                    modifier = Modifier
+                        .width(IntrinsicSize.Min)
+                        .testTag("continue_button"),
+                ) {
+                    Text(text = stringResource(R.string.yk_fido_confirm), maxLines = 1)
+                }
+            }
         }
 
         if (errorText != null) {
@@ -224,21 +240,23 @@ internal fun EnterPin(
             )
         }
 
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 16.dp),
-            horizontalArrangement = Arrangement.End,
-        ) {
-            Button(
-                onClick = submit,
-                enabled = isPinValid,
-                shapes = ButtonDefaults.shapes(),
+        if (!isFullScreen) {
+            Row(
                 modifier = Modifier
-                    .width(IntrinsicSize.Min)
-                    .testTag("continue_button"),
+                    .fillMaxWidth()
+                    .padding(top = 16.dp),
+                horizontalArrangement = Arrangement.End,
             ) {
-                Text(text = stringResource(R.string.yk_fido_confirm), maxLines = 1)
+                Button(
+                    onClick = submit,
+                    enabled = isPinValid,
+                    shapes = ButtonDefaults.shapes(),
+                    modifier = Modifier
+                        .width(IntrinsicSize.Min)
+                        .testTag("continue_button"),
+                ) {
+                    Text(text = stringResource(R.string.yk_fido_confirm), maxLines = 1)
+                }
             }
         }
     }
