@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
@@ -126,11 +127,72 @@ internal fun ContentWrapper(
         return
     }
 
-    val outerBottomPadding = if (presentation == FidoPresentation.Dialog) 8.dp else 0.dp
+    if (presentation == FidoPresentation.Dialog) {
+        Column(
+            modifier = modifier
+                .padding(top = 8.dp, start = 8.dp, end = 8.dp, bottom = 8.dp)
+                .fillMaxWidth()
+                .wrapContentHeight()
+                .background(MaterialTheme.colorScheme.surfaceContainerLow),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Top,
+        ) {
+            if (title != null || showCloseIcon) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    if (title != null) {
+                        Text(
+                            text = title,
+                            style = MaterialTheme.typography.titleLarge,
+                            maxLines = 1,
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(start = 16.dp)
+                                .let { if (titleTestTag != null) it.testTag(titleTestTag) else it },
+                        )
+                    } else {
+                        Spacer(modifier = Modifier.weight(1f))
+                    }
+                    if (showCloseIcon && onCloseButtonClick != null) {
+                        FilledIconButton(
+                            onClick = onCloseButtonClick,
+                            modifier = Modifier.padding(4.dp).width(40.dp).height(40.dp),
+                            colors = IconButtonDefaults.filledIconButtonColors(
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                            ),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = stringResource(
+                                    R.string.yk_fido_content_description_close,
+                                ),
+                            )
+                        }
+                    }
+                }
+            }
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .defaultMinSize(minHeight = contentHeight)
+                    .padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+            ) {
+                content()
+            }
+        }
+        return
+    }
+
     Column(
         modifier =
         modifier
-            .padding(top = 8.dp, start = 8.dp, end = 8.dp, bottom = outerBottomPadding)
+            .padding(top = 8.dp, start = 8.dp, end = 8.dp)
             .fillMaxWidth()
             .wrapContentHeight()
             .background(MaterialTheme.colorScheme.surfaceContainerLow),
