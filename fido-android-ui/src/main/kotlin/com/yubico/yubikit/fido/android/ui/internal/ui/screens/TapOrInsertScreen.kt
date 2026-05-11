@@ -30,11 +30,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.yubico.yubikit.fido.android.ui.R
@@ -57,7 +55,11 @@ internal fun TapOrInsertSecurityKey(
         onCloseButtonClick = onCloseButtonClick,
     ) {
         Text(
-            text = stringResource(R.string.yk_fido_connect_your_key_subtitle),
+            text = if (isNfcAvailable) {
+                stringResource(R.string.yk_fido_connect_your_key_subtitle)
+            } else {
+                stringResource(R.string.yk_fido_plug_your_key_subtitle)
+            },
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
             minLines = 2,
@@ -84,17 +86,6 @@ internal fun TapOrInsertSecurityKey(
                 contentDescription = stringResource(R.string.yk_fido_passkey_icon),
                 modifier = Modifier.size(64.dp),
                 tint = MaterialTheme.colorScheme.onSurface,
-            )
-        }
-
-        if (!isNfcAvailable) {
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = stringResource(R.string.yk_fido_nfc_not_available),
-                color = MaterialTheme.colorScheme.primary,
-                fontSize = MaterialTheme.typography.bodySmall.fontSize,
-                textDecoration = TextDecoration.Underline,
-                modifier = Modifier.testTag("nfc_not_available_text"),
             )
         }
     }
