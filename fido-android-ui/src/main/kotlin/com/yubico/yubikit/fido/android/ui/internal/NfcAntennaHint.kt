@@ -21,7 +21,6 @@ import android.nfc.NfcAntennaInfo
 import android.nfc.NfcManager
 import android.os.Build
 import android.view.Surface
-import android.view.WindowManager
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -55,6 +54,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.yubico.yubikit.fido.android.ui.R
+
+internal fun nfcAntennaInfo(context: Context): NfcAntennaInfo? {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) return null
+    val nfcManager = context.getSystemService(Context.NFC_SERVICE) as? NfcManager
+    return nfcManager?.defaultAdapter?.nfcAntennaInfo
+        ?.takeIf { it.availableNfcAntennas.isNotEmpty() }
+}
 
 @Composable
 internal fun NfcAntennaHint(
@@ -98,27 +104,18 @@ internal fun NfcAntennaHint(
         val boxWidthPx = with(density) { maxWidth.toPx() }
         val boxHeightPx = with(density) { maxHeight.toPx() }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            val nfcManager = context.getSystemService(Context.NFC_SERVICE) as? NfcManager
-            val nfcAdapter = nfcManager?.defaultAdapter
-            val nfcAntennaInfo: NfcAntennaInfo? = nfcAdapter?.nfcAntennaInfo
-            if (nfcAntennaInfo != null) {
-                val deviceWidthMm = nfcAntennaInfo.deviceWidth
-                val deviceHeightMm = nfcAntennaInfo.deviceHeight
-                val antennas = nfcAntennaInfo.availableNfcAntennas
+            val info = nfcAntennaInfo(context)
+            if (info != null) {
+                val deviceWidthMm = info.deviceWidth
+                val deviceHeightMm = info.deviceHeight
+                val antennas = info.availableNfcAntennas
 
                 // NfcAntennaInfo coordinates are in the device's natural orientation.
                 // Re-key on configuration so rotation changes recompute the rotation value.
                 @Suppress("UNUSED_VARIABLE")
                 val configuration = LocalConfiguration.current
                 val rotation = remember(configuration) {
-                    val display = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                        context.display
-                    } else {
-                        @Suppress("DEPRECATION")
-                        (context.getSystemService(Context.WINDOW_SERVICE) as WindowManager)
-                            .defaultDisplay
-                    }
-                    display?.rotation ?: Surface.ROTATION_0
+                    context.display.rotation
                 }
                 val isSideways = rotation == Surface.ROTATION_90 || rotation == Surface.ROTATION_270
                 val viewportWidthMm = if (isSideways) deviceHeightMm else deviceWidthMm

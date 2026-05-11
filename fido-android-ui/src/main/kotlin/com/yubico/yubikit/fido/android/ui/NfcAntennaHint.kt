@@ -16,14 +16,42 @@
 
 package com.yubico.yubikit.fido.android.ui
 
+import android.content.Context
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.yubico.yubikit.fido.android.ui.internal.nfcAntennaInfo
 import com.yubico.yubikit.fido.android.ui.internal.NfcAntennaHint as InternalNfcAntennaHint
 
+/**
+ * Returns true if the device reports NFC antenna positions that can be
+ * visualized by [NfcAntennaHint].
+ *
+ * Returns false on Android versions below API 34, when NFC is unavailable,
+ * or when the device does not expose antenna location data.
+ *
+ * @param context A context used to access the NFC system service.
+ */
+public fun supportsNfcAntennaHint(context: Context): Boolean =
+    nfcAntennaInfo(context) != null
+
+/**
+ * Displays animated NFC antenna location indicators on top of the current
+ * layout, positioned at the physical NFC antenna locations reported by the
+ * device.
+ *
+ * Has no visible effect on Android below API 34 or on devices that do not
+ * expose antenna location data. Use [supportsNfcAntennaHint] to check
+ * support before showing this composable.
+ *
+ * @param modifier Modifier applied to the full-size container.
+ * @param iconSize Size of each antenna indicator icon. Defaults to 64.dp.
+ * @param iconColor Color of the NFC icon. Defaults to the primary theme color.
+ * @param showAntennas Whether to show the antenna indicators. Defaults to true.
+ */
 @Composable
 public fun NfcAntennaHint(
     modifier: Modifier = Modifier,
