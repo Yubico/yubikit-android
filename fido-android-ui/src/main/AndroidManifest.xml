@@ -6,6 +6,7 @@
             android:name=".internal.YubiKitFidoActivity"
             android:exported="false"
             android:theme="@style/Theme.FidoAndroid"
+            android:screenOrientation="behind"
             android:configChanges="keyboard|keyboardHidden|orientation|screenSize"/>
     </application>
 

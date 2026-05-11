@@ -113,13 +113,17 @@ internal fun FidoUiHost(
 
             FidoPresentation.FullScreen -> {
                 Surface(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .safeDrawingPadding()
-                        .imePadding(),
+                    modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.surfaceContainerLow,
                 ) {
-                    movableContent()
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .safeDrawingPadding()
+                            .imePadding(),
+                    ) {
+                        movableContent()
+                    }
                 }
             }
         }

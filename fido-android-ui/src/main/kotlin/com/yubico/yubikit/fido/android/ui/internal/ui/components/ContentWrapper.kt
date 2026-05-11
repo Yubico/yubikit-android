@@ -72,8 +72,8 @@ internal fun ContentWrapper(
     content: @Composable (() -> Unit),
 ) {
     val presentation = LocalFidoPresentation.current
-    val showCloseIcon = onCloseButtonClick != null &&
-        !(presentation == FidoPresentation.Dialog && hasOwnDismiss)
+    val effectiveCloseAction: (() -> Unit)? =
+        onCloseButtonClick?.takeUnless { presentation == FidoPresentation.Dialog && hasOwnDismiss }
 
     if (presentation == FidoPresentation.FullScreen) {
         Column(
@@ -98,8 +98,8 @@ internal fun ContentWrapper(
                     }
                 },
                 navigationIcon = {
-                    if (showCloseIcon && onCloseButtonClick != null) {
-                        IconButton(onClick = onCloseButtonClick) {
+                    if (effectiveCloseAction != null) {
+                        IconButton(onClick = effectiveCloseAction) {
                             Icon(
                                 imageVector = Icons.Default.Close,
                                 contentDescription = stringResource(
@@ -137,7 +137,7 @@ internal fun ContentWrapper(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Top,
         ) {
-            if (title != null || showCloseIcon) {
+            if (title != null || effectiveCloseAction != null) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
@@ -155,9 +155,9 @@ internal fun ContentWrapper(
                     } else {
                         Spacer(modifier = Modifier.weight(1f))
                     }
-                    if (showCloseIcon && onCloseButtonClick != null) {
+                    if (effectiveCloseAction != null) {
                         FilledIconButton(
-                            onClick = onCloseButtonClick,
+                            onClick = effectiveCloseAction,
                             modifier = Modifier.padding(4.dp).width(40.dp).height(40.dp),
                             colors = IconButtonDefaults.filledIconButtonColors(
                                 containerColor = MaterialTheme.colorScheme.secondaryContainer,
@@ -204,9 +204,9 @@ internal fun ContentWrapper(
             horizontalArrangement = Arrangement.End,
             modifier = Modifier.fillMaxWidth().padding(0.dp),
         ) {
-            if (showCloseIcon && onCloseButtonClick != null) {
+            if (effectiveCloseAction != null) {
                 FilledIconButton(
-                    onClick = onCloseButtonClick,
+                    onClick = effectiveCloseAction,
                     modifier = Modifier.padding(4.dp).width(40.dp).height(40.dp),
                     colors = IconButtonDefaults.filledIconButtonColors(
                         containerColor = MaterialTheme.colorScheme.secondaryContainer,
