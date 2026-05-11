@@ -67,7 +67,7 @@ internal fun MultipleAssertionsScreen(
     onSelect: (Int) -> Unit,
     onCloseButtonClick: () -> Unit,
 ) {
-    val listHeight: Dp = if (users.size > 3) 255.dp else (users.size * 56 + (users.size - 1) * 2).dp
+    val listHeight: Dp = if (users.size == 2) 175.dp else 235.dp
     val scrollable = users.size > 3
 
     ContentWrapper(
@@ -192,6 +192,24 @@ internal fun MultipleAssertionsScreenTwoUsersPreview() {
             users = listOf(
                 PublicKeyCredentialUserEntity("User 1", byteArrayOf(0), "Very long display name"),
                 PublicKeyCredentialUserEntity("User 2", byteArrayOf(0), "User 2"),
+            ),
+            onSelect = {},
+            onCloseButtonClick = {},
+        )
+    }
+}
+
+@DefaultPreview
+@Composable
+internal fun MultipleAssertionsScreenThreeUsersPreview() {
+    FidoAndroidTheme {
+        MultipleAssertionsScreen(
+            operation = FidoClientService.Operation.GET_ASSERTION,
+            origin = "example.com",
+            users = listOf(
+                PublicKeyCredentialUserEntity("User 1", byteArrayOf(0), "Very long display name"),
+                PublicKeyCredentialUserEntity("User 2", byteArrayOf(0), "User 2"),
+                PublicKeyCredentialUserEntity("User 3", byteArrayOf(0), "User 3"),
             ),
             onSelect = {},
             onCloseButtonClick = {},
