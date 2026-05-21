@@ -134,28 +134,36 @@ public class UsbSmartCardConnectionTest {
   }
 
   /**
-   * A reader whose CCID class descriptor offers only the TPDU exchange level expects the host to
-   * frame T=1 blocks itself. Sending it APDU-level XfrBlocks produces confusing downstream
-   * failures, so the connection must refuse to open - before the power-on exchange, which is why no
-   * packet is queued here.
+   * ISO 7816-3 T=1 framing path. Triggered when the reader's CCID Class Descriptor advertises
+   * TPDU-level exchange (dwFeatures bit 16) without APDU-level exchange (bits 17/18) - e.g. the
+   * Identiv SCR3500 C with dwFeatures = 0x000100BA. In that mode the host has to wrap APDUs in T=1
+   * I-blocks (NAD/PCB/LEN/INF/LRC) and reassemble the response from one or more I-blocks returned
+   * by the card.
+   *
+   * <p>This test covers the single-block round-trip: send one I-block, receive one I-block with
+   * M-bit cleared, return its INF as the response.
    */
   @Test
-  public void testTpduOnlyReaderIsRejected() {
+  public void testTpduT1SingleBlock() throws IOException {
     setupDescriptor(FEATURES_TPDU, MIN_MAX_CCID_MESSAGE_LENGTH);
+    UsbSmartCardConnection connection = getConnection();
 
-    IOException e =
-        Assert.assertThrows(
-            IOException.class,
-            () ->
-                new UsbSmartCardConnection(
-                    usbDeviceConnection, usbInterface, usbEndpointIn, usbEndpointOut));
-    Assert.assertEquals(
-        "Reader does not support APDU-level exchange (dwFeatures=0x000100BA, exchange level: TPDU"
-            + " (host frames T=0/T=1))",
-        e.getMessage());
+    // Inbound: CCID DataBlock { dwLen=6 bSeq=1 bStatus=0 bError=0 bChain=0 } + T=1 I-block
+    // { NAD=00 PCB=00 (I-block N(S)=0 M=0) LEN=02 INF=9000 LRC=92 }
+    packetsIn.add("8006000000000100000000000290009200");
+
+    byte[] response = connection.sendAndReceive(Codec.fromHex("00A4040009A0000003080000100000"));
+
+    // Outbound: CCID XfrBlock { dwLen=0x13 (=19) bSeq=1 wLevel=0 } + T=1 I-block
+    // { NAD=00 PCB=00 LEN=0F INF=15-byte SELECT APDU LRC=1D }. LRC is the XOR of the prologue
+    // and INF: 00 ^ 00 ^ 0F ^ (00 ^ A4 ^ 04 ^ 00 ^ 09 ^ A0 ^ 00 ^ 00 ^ 03 ^ 08 ^ 00 ^ 00 ^ 10
+    // ^ 00 ^ 00) = 0x1D.
+    assertSent("6f130000000001000000" + "00000F00A4040009A00000030800001000001D");
+
+    Assert.assertArrayEquals(Codec.fromHex("9000"), response);
   }
 
-  /** A short-APDU reader is an APDU-level reader; only the TPDU-only case is refused. */
+  /** An APDU-level reader keeps the passthrough path; only a TPDU-only reader gets T=1 framing. */
   @Test
   public void testShortApduReaderIsAccepted() throws IOException {
     setupDescriptor(FEATURES_APDU_SHORT, MIN_MAX_CCID_MESSAGE_LENGTH);

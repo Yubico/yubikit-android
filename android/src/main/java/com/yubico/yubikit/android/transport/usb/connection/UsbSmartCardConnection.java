@@ -153,6 +153,16 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
   // without having to re-parse the response header.
   private byte lastResponseChainParameter = CHAIN_PARAMETER_RESPONSE_COMPLETE;
 
+  // True if the CCID Class Descriptor dwFeatures advertises TPDU-level
+  // exchange (bit 16) without APDU-level exchange (bits 17, 18). In
+  // that mode the host has to frame T=1 I-blocks itself; we route
+  // sendAndReceive through t1SendApdu() to do so.
+  private boolean tpduLevel = false;
+
+  // T=1 sender sequence number N(S) for I-blocks we transmit. Starts
+  // at 0, toggles after each successful exchange (ISO 7816-3 §11.6.2).
+  private byte t1OurSequence = 0;
+
   private static final Logger logger = LoggerFactory.getLogger(UsbSmartCardConnection.class);
 
   /**
@@ -175,6 +185,10 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
     this.connection = connection;
     this.endpointIn = endpointIn;
     this.endpointOut = endpointOut;
+    // Read the CCID Class Descriptor up front so we know whether the
+    // reader expects host-framed TPDUs or APDU-level passthrough.
+    // The result feeds tpduLevel, which routes sendAndReceive() at
+    // run time.
     parseCcidClassDescriptor();
     // PC_to_RDR_IccPowerOn command makes the slot "active" if it was "inactive"
     atr = transceive(POWER_ON_MESSAGE_TYPE, new byte[0], LEVEL_PARAMETER_SHORT_APDU);
@@ -185,13 +199,13 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
    * on: the exchange level it offers, and the largest CCID message it accepts.
    *
    * <p>A reader that only offers the TPDU exchange level expects the host to do T=1 block framing
-   * itself, which this class does not implement, so such a reader is rejected here rather than
-   * being sent APDU-level {@code XfrBlock}s it will not understand.
+   * itself, which {@link #t1SendApdu} does. A reader advertising both levels accepts either, and
+   * APDU-level passthrough is the simpler path, so it wins.
    *
    * <p>A descriptor that cannot be found is not an error: the fields keep their defaults and the
    * connection behaves as it did before the descriptor was read at all.
    */
-  private void parseCcidClassDescriptor() throws IOException {
+  private void parseCcidClassDescriptor() {
     byte[] raw = connection.getRawDescriptors();
     if (raw == null) {
       logger.debug("CCID descriptor: getRawDescriptors() returned null");
@@ -222,22 +236,15 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
         // The bLength check above guarantees both fields are present.
         this.maxCcidMessageLength =
             descriptors.getInt(i + OFFSET_DW_MAX_CCID_MESSAGE_LENGTH) & 0xFFFFFFFFL;
+        // Only enable our T=1 framing path when the TPDU bit is set AND
+        // neither APDU bit is set; if both are advertised the reader
+        // accepts either, and APDU-level passthrough is simpler.
+        this.tpduLevel = (dwFeatures & FEATURE_EXCHANGE_TPDU) != 0 && !apduLevel;
         logger.debug(
             "CCID descriptor: dwFeatures=0x{} exchangeLevel={} dwMaxCCIDMessageLength={}",
             String.format(Locale.ROOT, "%08X", dwFeatures),
             exchangeLevel,
             maxCcidMessageLength);
-        // A reader that advertises both TPDU and APDU accepts either,
-        // and APDU-level passthrough is what this class speaks. Only
-        // reject when APDU level is not on offer at all.
-        if (!apduLevel) {
-          throw new IOException(
-              "Reader does not support APDU-level exchange (dwFeatures=0x"
-                  + String.format(Locale.ROOT, "%08X", dwFeatures)
-                  + ", exchange level: "
-                  + exchangeLevel
-                  + ")");
-        }
         return;
       }
       i += bLength;
@@ -261,6 +268,17 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
 
   @Override
   public byte[] sendAndReceive(byte[] apdu) throws IOException {
+    if (tpduLevel) {
+      // TPDU-level reader (e.g. Identiv SCR3500 C). We have to frame
+      // the APDU as a T=1 I-block ourselves and reassemble the
+      // response from one or more I-blocks driven by R-block ACKs.
+      return t1SendApdu(apdu);
+    }
+
+    // APDU-level reader (YubiKey, most contactless CCID readers). The
+    // reader handles T=0/T=1 internally; we just put the APDU bytes
+    // in a CCID XfrBlock data field.
+    //
     // Send the command APDU, splitting it across several CCID frames if
     // it is larger than the reader will accept. For the common case -
     // an APDU that fits, answered in one frame - this is a single
@@ -370,6 +388,153 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
   @Override
   public byte[] getAtr() {
     return atr.clone();
+  }
+
+  // ---------------------------------------------------------------
+  // ISO 7816-3 T=1 framing for TPDU-level CCID readers
+  // ---------------------------------------------------------------
+
+  /**
+   * Send a command APDU over T=1 and return the response APDU.
+   *
+   * <p>Wraps {@code apdu} in a single I-block (no outbound command chaining), sends it via {@link
+   * #transceive}, and then drains the card's response into one or more inbound I-blocks. The card
+   * signals "more chunks follow" with the M-bit in PCB (bit 5); we acknowledge each non-final chunk
+   * with an R-block whose N(R) advances the expected sequence number. S-block requests from the
+   * card (waiting-time extension, IFS negotiation) are echoed back as S-block responses; we do not
+   * initiate S-block requests ourselves.
+   *
+   * <p>Outbound command chaining is intentionally not implemented — PIV commands are small (≤ ~90
+   * B) and SD33 cards advertise IFSC = 254 in TA3 of the ATR. If the APDU is too large we throw
+   * rather than silently truncate.
+   */
+  private byte[] t1SendApdu(byte[] apdu) throws IOException {
+    if (apdu.length > 254) {
+      throw new IOException(
+          "T=1 outbound chaining not implemented; APDU is "
+              + apdu.length
+              + " bytes, max single I-block payload is 254");
+    }
+
+    // Build and send the I-block. PCB high bit 0 (I-block), bit 6 =
+    // N(S), bit 5 = M (more); single-block command so M = 0.
+    byte pcb = (byte) ((t1OurSequence & 0x01) << 6);
+    byte[] block = buildT1Block((byte) 0x00, pcb, apdu);
+    byte[] reply = transceive(REQUEST_MESSAGE_TYPE, block, LEVEL_PARAMETER_SHORT_APDU);
+
+    ByteArrayOutputStream payload = new ByteArrayOutputStream();
+    while (true) {
+      ParsedT1Block r = parseT1Block(reply);
+
+      if ((r.pcb & 0x80) == 0) {
+        // Inbound I-block. Accumulate INF; if M-bit set, ACK with
+        // R-block and loop; otherwise we're done.
+        payload.write(r.inf, 0, r.inf.length);
+        int cardNs = (r.pcb >> 6) & 0x01;
+        boolean moreFollows = (r.pcb & 0x20) != 0;
+        if (!moreFollows) {
+          // End of response. Toggle our N(S) for the next sendApdu().
+          t1OurSequence ^= 0x01;
+          return payload.toByteArray();
+        }
+        // Card wants us to fetch the next chunk. R-block PCB layout:
+        // bit 7 = 1, bit 6 = 0, bit 4 = N(R) = 1 - cardNs (the N(S)
+        // we expect on the *next* chunk), bits 1-0 = error (0 = OK).
+        int nextExpected = 1 - cardNs;
+        byte rPcb = (byte) (0x80 | (nextExpected << 4));
+        reply =
+            transceive(
+                REQUEST_MESSAGE_TYPE,
+                buildT1Block((byte) 0x00, rPcb, new byte[0]),
+                LEVEL_PARAMETER_SHORT_APDU);
+        continue;
+      }
+
+      if ((r.pcb & 0xC0) == 0x80) {
+        // R-block from card. We sent an I-block, so a clean R-block
+        // here is unexpected; with an error bit set the card is
+        // asking us to retransmit, which we don't try to recover from
+        // automatically. Either way, surface it.
+        throw new IOException(
+            "T=1 R-block from card during response read: PCB=0x"
+                + String.format(Locale.ROOT, "%02X", r.pcb));
+      }
+
+      if ((r.pcb & 0xC0) == 0xC0) {
+        // S-block. Bit 5 = 0 means request from card, 1 means
+        // response. We echo any request back as a response with the
+        // same INF payload.
+        boolean isRequest = (r.pcb & 0x20) == 0;
+        int control = r.pcb & 0x1F;
+        if (isRequest && (control == 0x01 || control == 0x03)) {
+          // 0x01 = IFS request, 0x03 = WTX. Same response shape.
+          byte respPcb = (byte) (r.pcb | 0x20);
+          reply =
+              transceive(
+                  REQUEST_MESSAGE_TYPE,
+                  buildT1Block((byte) 0x00, respPcb, r.inf),
+                  LEVEL_PARAMETER_SHORT_APDU);
+          continue;
+        }
+        throw new IOException(
+            "Unhandled T=1 S-block from card: PCB=0x" + String.format(Locale.ROOT, "%02X", r.pcb));
+      }
+
+      throw new IOException(
+          "Unparseable T=1 block: PCB=0x" + String.format(Locale.ROOT, "%02X", r.pcb));
+    }
+  }
+
+  /** Build a single T=1 prologue+INF+LRC block. EDC is always LRC (1 byte) for our cards. */
+  private static byte[] buildT1Block(byte nad, byte pcb, byte[] inf) {
+    int len = inf.length;
+    byte[] block = new byte[3 + len + 1];
+    block[0] = nad;
+    block[1] = pcb;
+    block[2] = (byte) len;
+    System.arraycopy(inf, 0, block, 3, len);
+    byte lrc = 0;
+    for (int i = 0; i < 3 + len; i++) {
+      lrc ^= block[i];
+    }
+    block[3 + len] = lrc;
+    return block;
+  }
+
+  private static final class ParsedT1Block {
+    final byte nad;
+    final byte pcb;
+    final byte[] inf;
+
+    ParsedT1Block(byte nad, byte pcb, byte[] inf) {
+      this.nad = nad;
+      this.pcb = pcb;
+      this.inf = inf;
+    }
+  }
+
+  private static ParsedT1Block parseT1Block(byte[] b) throws IOException {
+    if (b.length < 4) {
+      throw new IOException("Truncated T=1 block (" + b.length + " bytes)");
+    }
+    int len = b[2] & 0xFF;
+    if (b.length < 3 + len + 1) {
+      throw new IOException(
+          "T=1 block claims LEN=" + len + " but only " + (b.length - 4) + " INF bytes available");
+    }
+    byte expectedLrc = 0;
+    for (int i = 0; i < 3 + len; i++) {
+      expectedLrc ^= b[i];
+    }
+    if (expectedLrc != b[3 + len]) {
+      throw new IOException(
+          "T=1 LRC mismatch: got 0x"
+              + String.format(Locale.ROOT, "%02X", b[3 + len])
+              + " expected 0x"
+              + String.format(Locale.ROOT, "%02X", expectedLrc));
+    }
+    byte[] inf = Arrays.copyOfRange(b, 3, 3 + len);
+    return new ParsedT1Block(b[0], b[1], inf);
   }
 
   /**
