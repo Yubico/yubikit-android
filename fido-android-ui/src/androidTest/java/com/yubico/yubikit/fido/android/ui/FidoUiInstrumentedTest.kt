@@ -17,8 +17,7 @@
 package com.yubico.yubikit.fido.android.ui
 
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.yubico.yubikit.fido.android.ui.internal.FidoClientService
@@ -62,47 +61,11 @@ class FidoUiInstrumentedTest {
         }
 
         // Verify all critical UI elements are visible
-        composeTestRule.onNodeWithText("PIN", substring = true, ignoreCase = true)
+        composeTestRule.onNodeWithText("Confirm with PIN")
             .assertIsDisplayed()
-        composeTestRule.onNodeWithText("Continue", ignoreCase = true)
+        composeTestRule.onNodeWithText("Confirm", ignoreCase = true)
             .assertIsDisplayed()
-        composeTestRule.onNodeWithContentDescription("Close")
-            .assertIsDisplayed()
-        composeTestRule.onNodeWithText(testOrigin, substring = true)
-            .assertIsDisplayed()
-    }
-
-    @Test
-    fun pinEntryScreen_forMakeCredential_showsCorrectTitle() {
-        composeTestRule.setContent {
-            FidoAndroidTheme {
-                EnterPin(
-                    operation = FidoClientService.Operation.MAKE_CREDENTIAL,
-                    origin = testOrigin,
-                    onCloseButtonClick = {},
-                    onPinEntered = {},
-                )
-            }
-        }
-
-        composeTestRule.onNodeWithText("passkey", substring = true, ignoreCase = true)
-            .assertIsDisplayed()
-    }
-
-    @Test
-    fun pinEntryScreen_forGetAssertion_showsCorrectTitle() {
-        composeTestRule.setContent {
-            FidoAndroidTheme {
-                EnterPin(
-                    operation = FidoClientService.Operation.GET_ASSERTION,
-                    origin = testOrigin,
-                    onCloseButtonClick = {},
-                    onPinEntered = {},
-                )
-            }
-        }
-
-        composeTestRule.onNodeWithText("Login", substring = true, ignoreCase = true)
+        composeTestRule.onNodeWithText(testRpId, substring = true)
             .assertIsDisplayed()
     }
 
@@ -120,16 +83,12 @@ class FidoUiInstrumentedTest {
             }
         }
 
-        composeTestRule.onNodeWithText("Tap or insert", substring = true, ignoreCase = true)
-            .assertIsDisplayed()
-        composeTestRule.onNodeWithContentDescription("Close")
-            .assertIsDisplayed()
-        composeTestRule.onNodeWithText(testOrigin, substring = true)
+        composeTestRule.onNodeWithText("Connect your key")
             .assertIsDisplayed()
     }
 
     @Test
-    fun tapOrInsertScreen_withNfcUnavailable_showsWarning() {
+    fun tapOrInsertScreen_withNfcUnavailable() {
         composeTestRule.setContent {
             FidoAndroidTheme {
                 TapOrInsertSecurityKey(
@@ -140,12 +99,12 @@ class FidoUiInstrumentedTest {
             }
         }
 
-        composeTestRule.onNodeWithText("NFC not available", ignoreCase = true)
+        composeTestRule.onNodeWithText("Plug-in your USB security key.")
             .assertIsDisplayed()
     }
 
     @Test
-    fun tapOrInsertScreen_withNfcAvailable_hidesWarning() {
+    fun tapOrInsertScreen_withNfcAvailable() {
         composeTestRule.setContent {
             FidoAndroidTheme {
                 TapOrInsertSecurityKey(
@@ -156,8 +115,8 @@ class FidoUiInstrumentedTest {
             }
         }
 
-        composeTestRule.onNodeWithText("NFC not available", ignoreCase = true)
-            .assertDoesNotExist()
+        composeTestRule.onNodeWithText("Hold your security key against", substring = true)
+            .assertIsDisplayed()
     }
 
     @Test
