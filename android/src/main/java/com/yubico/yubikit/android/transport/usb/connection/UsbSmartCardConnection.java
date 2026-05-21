@@ -69,11 +69,33 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
 
   private static final byte STATUS_TIME_EXTENSION = (byte) 0x80;
 
+  // CCID 1.10 §6.1.4 PC_to_RDR_XfrBlock wLevelParameter values. Used
+  // to request the next chunk of a response APDU when the reader has
+  // split it across multiple CCID frames (see bChainParameter below).
+  private static final short LEVEL_PARAMETER_SHORT_APDU = (short) 0x0000;
+  private static final short LEVEL_PARAMETER_GET_NEXT_RESPONSE_CHUNK = (short) 0x0010;
+
+  // CCID 1.10 §6.2.1 RDR_to_PC_DataBlock bChainParameter values. Many
+  // contactless CCID readers (e.g. HID OMNIKEY 5022-CL) return long
+  // response APDUs in pieces and signal continuation here; the host
+  // then has to fetch each subsequent chunk via PC_to_RDR_XfrBlock
+  // with wLevelParameter = 0x0010 until bChainParameter == 0x00 or
+  // 0x02.
+  private static final byte CHAIN_PARAMETER_RESPONSE_COMPLETE = (byte) 0x00;
+  private static final byte CHAIN_PARAMETER_RESPONSE_FIRST = (byte) 0x01;
+  private static final byte CHAIN_PARAMETER_RESPONSE_LAST = (byte) 0x02;
+  private static final byte CHAIN_PARAMETER_RESPONSE_MIDDLE = (byte) 0x03;
+
   private final UsbDeviceConnection connection;
   private final UsbEndpoint endpointOut, endpointIn;
   private final byte[] atr;
 
   private byte sequence = 0;
+
+  // bChainParameter of the most recent RDR_to_PC_DataBlock returned
+  // by transceive(), so sendAndReceive() can drive the chaining loop
+  // without having to re-parse the response header.
+  private byte lastResponseChainParameter = CHAIN_PARAMETER_RESPONSE_COMPLETE;
 
   private static final Logger logger = LoggerFactory.getLogger(UsbSmartCardConnection.class);
 
@@ -98,7 +120,7 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
     this.endpointIn = endpointIn;
     this.endpointOut = endpointOut;
     // PC_to_RDR_IccPowerOn command makes the slot "active" if it was "inactive"
-    atr = transceive(POWER_ON_MESSAGE_TYPE, new byte[0]);
+    atr = transceive(POWER_ON_MESSAGE_TYPE, new byte[0], LEVEL_PARAMETER_SHORT_APDU);
   }
 
   @Override
@@ -117,7 +139,26 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
 
   @Override
   public byte[] sendAndReceive(byte[] apdu) throws IOException {
-    return transceive(REQUEST_MESSAGE_TYPE, apdu);
+    // Send the command APDU as a single (short or extended) CCID frame.
+    // For responses that fit in one frame (the common YubiKey case) this
+    // single transceive is the whole exchange.
+    byte[] response = transceive(REQUEST_MESSAGE_TYPE, apdu, LEVEL_PARAMETER_SHORT_APDU);
+
+    // If the reader split the response across multiple CCID frames it
+    // signals so via bChainParameter (CCID 1.10 §6.2.1). Pull each
+    // subsequent chunk via an empty XfrBlock with
+    // wLevelParameter = 0x0010 until the reader reports either a
+    // complete (0x00) or last (0x02) chunk.
+    while (lastResponseChainParameter == CHAIN_PARAMETER_RESPONSE_FIRST
+        || lastResponseChainParameter == CHAIN_PARAMETER_RESPONSE_MIDDLE) {
+      byte[] next =
+          transceive(REQUEST_MESSAGE_TYPE, new byte[0], LEVEL_PARAMETER_GET_NEXT_RESPONSE_CHUNK);
+      byte[] joined = new byte[response.length + next.length];
+      System.arraycopy(response, 0, joined, 0, response.length);
+      System.arraycopy(next, 0, joined, response.length, next.length);
+      response = joined;
+    }
+    return response;
   }
 
   @Override
@@ -152,9 +193,9 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
    * @return received message-specific data from usb device
    * @throws IOException in case if there is communication error occurs or received data is invalid
    */
-  private byte[] transceive(byte type, byte[] data) throws IOException {
+  private byte[] transceive(byte type, byte[] data, short wLevelParameter) throws IOException {
     // 1. prepare data for sending
-    MessageHeader prefix = new MessageHeader(type, data.length, sequence++);
+    MessageHeader prefix = new MessageHeader(type, data.length, sequence++, wLevelParameter);
     ByteBuffer byteBuffer =
         ByteBuffer.allocate(prefix.size() + data.length)
             .order(ByteOrder.LITTLE_ENDIAN)
@@ -233,6 +274,16 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
     if (messageHeader == null || output.length < messageHeader.size()) {
       throw new IOException("Response is invalid");
     }
+    // Stash the chain parameter so sendAndReceive() knows whether to
+    // pull additional response chunks. For non-RDR_to_PC_DataBlock
+    // responses (e.g. the ATR from PowerOn) byte 9 is RFU and we
+    // leave the field at COMPLETE so the caller's loop, if any,
+    // terminates immediately.
+    if (messageHeader.type == RESPONSE_DATA_BLOCK) {
+      lastResponseChainParameter = messageHeader.chainParameter;
+    } else {
+      lastResponseChainParameter = CHAIN_PARAMETER_RESPONSE_COMPLETE;
+    }
     int dataLength = Math.min(output.length - messageHeader.size(), messageHeader.dataLength);
     return Arrays.copyOfRange(output, messageHeader.size(), messageHeader.size() + dataLength);
   }
@@ -248,7 +299,6 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
    */
   private static class MessageHeader {
     private static final int SIZE_OF_CCID_PREFIX = 10;
-    private static final byte[] MESSAGE_SPECIFIC_BYTES = new byte[] {0, 0, 0};
     private static final byte SLOT_NUMBER = 0;
 
     private byte type;
@@ -257,6 +307,15 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
     private byte sequence;
     private byte status;
     private byte error;
+
+    // For RDR_to_PC_DataBlock responses this is bChainParameter
+    // (CCID 1.10 §6.2.1); for PC_to_RDR_XfrBlock commands the same
+    // slot in the outbound header is wLevelParameter (LE short, §6.1.4).
+    private byte chainParameter;
+
+    // wLevelParameter to write into outbound XfrBlock headers
+    // (§6.1.4). Ignored on inbound parses.
+    private short wLevelParameter;
 
     private MessageHeader(byte[] buffer) {
       if (buffer.length > SIZE_OF_CCID_PREFIX) {
@@ -268,18 +327,22 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
         sequence = responseBuffer.get();
         status = responseBuffer.get();
         error = responseBuffer.get();
-        responseBuffer.get(); /* unused messageSpecificByte */
+        chainParameter = responseBuffer.get();
       }
     }
 
-    private MessageHeader(byte type, int length, byte sequence) {
+    private MessageHeader(byte type, int length, byte sequence, short wLevelParameter) {
       this.type = type;
       this.dataLength = length;
       this.slot = SLOT_NUMBER;
       this.sequence = sequence;
+      this.wLevelParameter = wLevelParameter;
     }
 
     private byte[] array() {
+      // Bytes 7-9 of an outbound XfrBlock are bBWI (always 0 = use
+      // default block waiting time) followed by wLevelParameter as a
+      // little-endian short.
       ByteBuffer byteBuffer =
           ByteBuffer.allocate(SIZE_OF_CCID_PREFIX)
               .order(ByteOrder.LITTLE_ENDIAN)
@@ -287,7 +350,8 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
               .putInt(dataLength)
               .put(slot)
               .put(sequence)
-              .put(MESSAGE_SPECIFIC_BYTES);
+              .put((byte) 0)
+              .putShort(wLevelParameter);
       return byteBuffer.array();
     }
 

@@ -133,4 +133,33 @@ public class UsbSmartCardConnectionTest {
             + "900010203040506070809000102030405060708");
     assertSent(""); // An empty packet must be sent when the last packet ends on a boundary
   }
+
+  /**
+   * CCID 1.10 §6.2.1 response chaining. Some contactless readers (notably the HID OMNIKEY 5022-CL
+   * family) split long response APDUs across multiple RDR_to_PC_DataBlock frames and signal
+   * continuation via bChainParameter. The host has to fetch each subsequent chunk via a
+   * PC_to_RDR_XfrBlock with wLevelParameter = 0x0010 and empty data field. This test exercises a
+   * three-frame chained response: first (0x01), middle (0x03), last (0x02).
+   */
+  @Test
+  public void testChainedResponse() throws IOException {
+    UsbSmartCardConnection connection = getConnection();
+
+    // First chunk: bChainParameter = 0x01 ("first part, more follows"), data = AABB.
+    packetsIn.add("800200000000010000" + "01" + "AABB");
+    // Middle chunk: bChainParameter = 0x03 ("middle part, more follows"), data = CCDD.
+    packetsIn.add("800200000000020000" + "03" + "CCDD");
+    // Last chunk: bChainParameter = 0x02 ("last part"), data = EE9000.
+    packetsIn.add("800300000000030000" + "02" + "EE9000");
+
+    byte[] response = connection.sendAndReceive(Codec.fromHex("0001020300"));
+
+    // Initial XfrBlock carries the APDU and wLevelParameter = 0x0000.
+    assertSent("6f0500000000010000000001020300");
+    // Two get-next-chunk XfrBlocks with empty data field and wLevelParameter = 0x0010 (LE: 1000).
+    assertSent("6f000000000002001000");
+    assertSent("6f000000000003001000");
+
+    Assert.assertArrayEquals(Codec.fromHex("AABBCCDDEE9000"), response);
+  }
 }
