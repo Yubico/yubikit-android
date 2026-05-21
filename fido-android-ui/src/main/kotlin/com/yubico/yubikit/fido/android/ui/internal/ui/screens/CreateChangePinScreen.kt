@@ -59,7 +59,6 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusEvent
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -204,7 +203,7 @@ private fun CreateChangePinScreen(
 
             PinTextFieldWithIcon(
                 state = newPinState,
-                label = pluralStringResource(R.plurals.yk_fido_new_pin, count = minPinLen, minPinLen),
+                label = stringResource(R.string.yk_fido_new_pin),
                 showPin = showNewPin,
                 onToggleShowPin = { showNewPin = !showNewPin },
                 modifier = Modifier
@@ -234,7 +233,7 @@ private fun CreateChangePinScreen(
                 )
             } else {
                 Text(
-                    text = stringResource(R.string.yk_fido_set_pin_requirements),
+                    text = stringResource(R.string.yk_fido_set_pin_requirements, minPinLen),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface,
                     minLines = 3,
@@ -355,7 +354,7 @@ private fun CreateChangePinScreen(
 
             PinTextFieldWithIcon(
                 state = newPinState,
-                label = pluralStringResource(R.plurals.yk_fido_new_pin, count = minPinLen, minPinLen),
+                label = stringResource(R.string.yk_fido_new_pin),
                 showPin = showNewPin,
                 onToggleShowPin = { showNewPin = !showNewPin },
                 modifier = Modifier
