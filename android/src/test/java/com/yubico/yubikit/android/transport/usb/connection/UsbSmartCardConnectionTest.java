@@ -145,20 +145,19 @@ public class UsbSmartCardConnectionTest {
    */
   @Test
   public void testTpduT1SingleBlock() throws IOException {
-    setupTpduDescriptor();
-    UsbSmartCardConnection connection = getConnection();
+    UsbSmartCardConnection connection = getTpduConnection();
 
-    // Inbound: CCID DataBlock { dwLen=6 bSeq=1 bStatus=0 bError=0 bChain=0 } + T=1 I-block
+    // Inbound: CCID DataBlock { dwLen=6 bSeq=2 bStatus=0 bError=0 bChain=0 } + T=1 I-block
     // { NAD=00 PCB=00 (I-block N(S)=0 M=0) LEN=02 INF=9000 LRC=92 }
-    packetsIn.add("8006000000000100000000000290009200");
+    packetsIn.add("8006000000000200000000000290009200");
 
     byte[] response = connection.sendAndReceive(Codec.fromHex("00A4040009A0000003080000100000"));
 
-    // Outbound: CCID XfrBlock { dwLen=0x13 (=19) bSeq=1 wLevel=0 } + T=1 I-block
+    // Outbound: CCID XfrBlock { dwLen=0x13 (=19) bSeq=2 wLevel=0 } + T=1 I-block
     // { NAD=00 PCB=00 LEN=0F INF=15-byte SELECT APDU LRC=1D }. LRC is the XOR of the prologue
     // and INF: 00 ^ 00 ^ 0F ^ (00 ^ A4 ^ 04 ^ 00 ^ 09 ^ A0 ^ 00 ^ 00 ^ 03 ^ 08 ^ 00 ^ 00 ^ 10
     // ^ 00 ^ 00) = 0x1D.
-    assertSent("6f130000000001000000" + "00000F00A4040009A00000030800001000001D");
+    assertSent("6f130000000002000000" + "00000F00A4040009A00000030800001000001D");
 
     Assert.assertArrayEquals(Codec.fromHex("9000"), response);
   }
@@ -706,16 +705,14 @@ public class UsbSmartCardConnectionTest {
   /** TPDU-level descriptor -&gt; isExtendedLengthApduSupported() returns false. */
   @Test
   public void testTpduExtendedApduNotSupported() throws IOException {
-    setupTpduDescriptor();
-    UsbSmartCardConnection connection = getConnection();
+    UsbSmartCardConnection connection = getTpduConnection();
     Assert.assertFalse(connection.isExtendedLengthApduSupported());
   }
 
   /** TPDU path rejects APDUs longer than 254 bytes (outbound chaining not implemented). */
   @Test(expected = IOException.class)
   public void testTpduApduTooLarge() throws IOException {
-    setupTpduDescriptor();
-    UsbSmartCardConnection connection = getConnection();
+    UsbSmartCardConnection connection = getTpduConnection();
     connection.sendAndReceive(new byte[255]);
   }
 
@@ -726,22 +723,21 @@ public class UsbSmartCardConnectionTest {
    */
   @Test
   public void testTpduT1MultiBlockResponse() throws IOException {
-    setupTpduDescriptor();
-    UsbSmartCardConnection connection = getConnection();
+    UsbSmartCardConnection connection = getTpduConnection();
 
     // First card I-block: PCB=0x20 (N(S)=0, M=1), INF=AABB (2 bytes)
     // LRC = 00^20^02^AA^BB = 0x33
-    packetsIn.add("80060000000001000000" + "002002AABB33");
+    packetsIn.add("80060000000002000000" + "002002AABB33");
     // Second card I-block: PCB=0x40 (N(S)=1, M=0), INF=9000 (2 bytes)
     // LRC = 00^40^02^90^00 = 0xD2
-    packetsIn.add("80060000000002000000" + "0040029000D2");
+    packetsIn.add("80060000000003000000" + "0040029000D2");
 
     byte[] response = connection.sendAndReceive(Codec.fromHex("00A4040009A0000003080000100000"));
 
-    // SELECT command I-block (bSeq=1, N(S)=0)
-    assertSent("6f130000000001000000" + "00000F00A4040009A00000030800001000001D");
-    // R-block ACK (bSeq=2): NAD=00 PCB=0x90 (N(R)=1) LEN=00 LRC=0x90
-    assertSent("6f040000000002000000" + "00900090");
+    // SELECT command I-block (bSeq=2, N(S)=0)
+    assertSent("6f130000000002000000" + "00000F00A4040009A00000030800001000001D");
+    // R-block ACK (bSeq=3): NAD=00 PCB=0x90 (N(R)=1) LEN=00 LRC=0x90
+    assertSent("6f040000000003000000" + "00900090");
 
     Assert.assertArrayEquals(Codec.fromHex("AABB9000"), response);
   }
@@ -752,23 +748,22 @@ public class UsbSmartCardConnectionTest {
    */
   @Test
   public void testTpduT1WtxSBlock() throws IOException {
-    setupTpduDescriptor();
-    UsbSmartCardConnection connection = getConnection();
+    UsbSmartCardConnection connection = getTpduConnection();
 
     // WTX request from card: PCB=0xC3 (S-block request, code=0x03), INF=0x01 (multiplier=1)
     // LRC = 00^C3^01^01 = 0xC3
-    packetsIn.add("80050000000001000000" + "00C30101C3");
+    packetsIn.add("80050000000002000000" + "00C30101C3");
     // Normal I-block response: PCB=0x00 (N(S)=0, M=0), INF=9000
     // LRC = 00^00^02^90^00 = 0x92
-    packetsIn.add("80060000000002000000" + "000002900092");
+    packetsIn.add("80060000000003000000" + "000002900092");
 
     byte[] response = connection.sendAndReceive(Codec.fromHex("00A4040009A0000003080000100000"));
 
-    // SELECT I-block (bSeq=1)
-    assertSent("6f130000000001000000" + "00000F00A4040009A00000030800001000001D");
-    // WTX S-block response (bSeq=2): PCB=0xE3 (S-block response, code=0x03), INF=0x01
+    // SELECT I-block (bSeq=2)
+    assertSent("6f130000000002000000" + "00000F00A4040009A00000030800001000001D");
+    // WTX S-block response (bSeq=3): PCB=0xE3 (S-block response, code=0x03), INF=0x01
     // LRC = 00^E3^01^01 = 0xE3
-    assertSent("6f050000000002000000" + "00E30101E3");
+    assertSent("6f050000000003000000" + "00E30101E3");
 
     Assert.assertArrayEquals(Codec.fromHex("9000"), response);
   }
@@ -779,21 +774,20 @@ public class UsbSmartCardConnectionTest {
    */
   @Test
   public void testTpduT1IfsSBlock() throws IOException {
-    setupTpduDescriptor();
-    UsbSmartCardConnection connection = getConnection();
+    UsbSmartCardConnection connection = getTpduConnection();
 
     // IFS request from card: PCB=0xC1 (S-block request, code=0x01), INF=0xFE (IFSC=254)
     // LRC = 00^C1^01^FE = 0x3E
-    packetsIn.add("80050000000001000000" + "00C101FE3E");
+    packetsIn.add("80050000000002000000" + "00C101FE3E");
     // Normal I-block response
-    packetsIn.add("80060000000002000000" + "000002900092");
+    packetsIn.add("80060000000003000000" + "000002900092");
 
     byte[] response = connection.sendAndReceive(Codec.fromHex("00A4040009A0000003080000100000"));
 
-    assertSent("6f130000000001000000" + "00000F00A4040009A00000030800001000001D");
-    // IFS S-block response (bSeq=2): PCB=0xE1 (S-block response, code=0x01), INF=0xFE
+    assertSent("6f130000000002000000" + "00000F00A4040009A00000030800001000001D");
+    // IFS S-block response (bSeq=3): PCB=0xE1 (S-block response, code=0x01), INF=0xFE
     // LRC = 00^E1^01^FE = 0x1E
-    assertSent("6f050000000002000000" + "00E101FE1E");
+    assertSent("6f050000000003000000" + "00E101FE1E");
 
     Assert.assertArrayEquals(Codec.fromHex("9000"), response);
   }
@@ -804,29 +798,27 @@ public class UsbSmartCardConnectionTest {
    */
   @Test
   public void testTpduT1SequenceToggle() throws IOException {
-    setupTpduDescriptor();
-    UsbSmartCardConnection connection = getConnection();
+    UsbSmartCardConnection connection = getTpduConnection();
 
     // First call
-    packetsIn.add("80060000000001000000" + "000002900092");
+    packetsIn.add("80060000000002000000" + "000002900092");
     connection.sendAndReceive(Codec.fromHex("00A4040009A0000003080000100000"));
-    assertSent("6f130000000001000000" + "00000F00A4040009A00000030800001000001D");
+    assertSent("6f130000000002000000" + "00000F00A4040009A00000030800001000001D");
 
     // Second call: PCB must be 0x40 (N(S)=1).
     // LRC for N(S)=1 block: 00^40^0F^[APDU XOR] = 00^40^0F^12 = 0x5D
-    packetsIn.add("80060000000002000000" + "000002900092");
+    packetsIn.add("80060000000003000000" + "000002900092");
     connection.sendAndReceive(Codec.fromHex("00A4040009A0000003080000100000"));
-    assertSent("6f130000000002000000" + "00400F00A4040009A00000030800001000005D");
+    assertSent("6f130000000003000000" + "00400F00A4040009A00000030800001000005D");
   }
 
   /** Inbound T=1 block with a wrong LRC must throw IOException. */
   @Test
   public void testTpduT1LrcMismatch() throws IOException {
-    setupTpduDescriptor();
-    UsbSmartCardConnection connection = getConnection();
+    UsbSmartCardConnection connection = getTpduConnection();
 
     // Correct LRC for this block would be 0x92; we send 0xFF instead.
-    packetsIn.add("80060000000001000000" + "0000029000FF");
+    packetsIn.add("80060000000002000000" + "0000029000FF");
     try {
       connection.sendAndReceive(Codec.fromHex("00A4040009A0000003080000100000"));
       Assert.fail("Expected IOException for LRC mismatch");
@@ -834,24 +826,23 @@ public class UsbSmartCardConnectionTest {
       // expected
     }
     // The SELECT I-block was sent before the error; drain it so teardown passes.
-    assertSent("6f130000000001000000" + "00000F00A4040009A00000030800001000001D");
+    assertSent("6f130000000002000000" + "00000F00A4040009A00000030800001000001D");
   }
 
   /** A T=1 block shorter than the minimum 4 bytes must throw IOException. */
   @Test
   public void testTpduT1TruncatedBlock() throws IOException {
-    setupTpduDescriptor();
-    UsbSmartCardConnection connection = getConnection();
+    UsbSmartCardConnection connection = getTpduConnection();
 
     // Only 2 bytes returned - below the NAD+PCB+LEN+LRC minimum.
-    packetsIn.add("800200000000010000000000");
+    packetsIn.add("800200000000020000000000");
     try {
       connection.sendAndReceive(Codec.fromHex("00A4040009A0000003080000100000"));
       Assert.fail("Expected IOException for truncated block");
     } catch (IOException expected) {
       // expected
     }
-    assertSent("6f130000000001000000" + "00000F00A4040009A00000030800001000001D");
+    assertSent("6f130000000002000000" + "00000F00A4040009A00000030800001000001D");
   }
 
   // ---------------------------------------------------------------
@@ -945,6 +936,36 @@ public class UsbSmartCardConnectionTest {
   /** The Identiv SCR3500 C shape: TPDU-level exchange only, so the host frames T=1 itself. */
   private void setupTpduDescriptor() {
     setupDescriptor(FEATURES_TPDU, MIN_MAX_CCID_MESSAGE_LENGTH);
+  }
+
+  /**
+   * Open a connection to a TPDU-level reader. On top of the power-on exchange the constructor
+   * pushes the card's ATR-derived T=1 parameters into the reader with PC_to_RDR_SetParameters, so
+   * that exchange has to be primed and drained before the test's own traffic. Callers' first
+   * XfrBlock is therefore bSeq=2, not bSeq=1.
+   */
+  private UsbSmartCardConnection getTpduConnection() throws IOException {
+    setupTpduDescriptor();
+    // ATR - response to power on. Walking its interface bytes: TS=3B
+    // T0=FD (Y1=F -> TA1/TB1/TC1/TD1 present, K=13) TA1=13 TB1=00
+    // TC1=00 TD1=81 (Y2=8 -> TD2 only; T=1) TD2=31 (Y3=3 -> TA3/TB3
+    // present; T=1) TA3=FE TB3=15.
+    packetsIn.add("801700000000000000003bfd1300008131fe158073c021c057597562694b657940");
+    // RDR_to_PC_Parameters (type 0x82, bSeq=1) echoing the 7-byte T=1 structure.
+    packetsIn.add("820700000000010000011310001500FE00");
+
+    UsbSmartCardConnection connection =
+        new UsbSmartCardConnection(
+            usbDeviceConnection, usbInterface, usbEndpointIn, usbEndpointOut);
+
+    assertSent("62000000000000000000"); // PC_to_RDR_IccPowerOn (bSeq=0)
+    // PC_to_RDR_SetParameters (bSeq=1), header { type=0x61 dwLen=7 bSlot=0
+    // bSeq=1 bProtocolNum=0x01 abRFU=0x0000 } then the 7-byte
+    // abProtocolDataStructure taken from the ATR above: Fi/Di=0x13 (TA1),
+    // TCCK=0x10, guard=0x00 (TC1), WI=0x15 (TB3), clockStop=0x00,
+    // IFSC=0xFE (TA3), NAD=0x00.
+    assertSent("61070000000001010000" + "1310001500FE00");
+    return connection;
   }
 
   private void setupDescriptor(int dwFeatures, int dwMaxCcidMessageLength) {

@@ -65,8 +65,11 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
    */
   private static final byte POWER_ON_MESSAGE_TYPE = (byte) 0x62;
 
+  private static final byte SET_PARAMETERS_MESSAGE_TYPE = (byte) 0x61;
+
   private static final byte REQUEST_MESSAGE_TYPE = (byte) 0x6f;
   private static final byte RESPONSE_DATA_BLOCK = (byte) 0x80;
+  private static final byte RESPONSE_PARAMETERS = (byte) 0x82;
 
   private static final byte STATUS_TIME_EXTENSION = (byte) 0x80;
 
@@ -192,6 +195,132 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
     parseCcidClassDescriptor();
     // PC_to_RDR_IccPowerOn command makes the slot "active" if it was "inactive"
     atr = transceive(POWER_ON_MESSAGE_TYPE, new byte[0], LEVEL_PARAMETER_SHORT_APDU);
+    if (tpduLevel) {
+      // For TPDU-level readers, push the bit-rate and T=1 parameters
+      // the card declared in its ATR — TA1 (Fi/Di), TC1 (extra guard
+      // time), TA3 (IFSC), TB3 (BWI/CWI) — into the reader via
+      // PC_to_RDR_SetParameters. Some readers (Identiv SCR3500 C
+      // observed) advertise auto-PPS in dwFeatures but stay at the
+      // default 9600-baud bus rate until told otherwise. Without this
+      // a 12 KB facial-image read takes ~16 s; with it ~1-2 s.
+      setT1ParametersFromAtr();
+    }
+  }
+
+  private void setT1ParametersFromAtr() {
+    AtrInterfaceBytes ifb = AtrInterfaceBytes.parse(atr);
+    // CCID 1.10 §6.3.6 abProtocolDataStructure for T=1, 7 bytes:
+    //   bmFindexDindex, bmTCCKST1, bGuardTimeT1, bWaitingIntegersT1,
+    //   bClockStop, bIFSC, bNadValue.
+    byte fidi = ifb.ta1 != null ? ifb.ta1 : (byte) 0x11; // 0x11 = default Fi/Di per ISO 7816-3
+    byte tcck = (byte) 0x10; // T=1, LRC checksum, direct convention
+    byte guard = ifb.tc1 != null ? ifb.tc1 : (byte) 0x00;
+    byte wi = ifb.tb3 != null ? ifb.tb3 : (byte) 0x4D; // default BWI=4 CWI=D
+    byte clockStop = (byte) 0x00;
+    byte ifsc = ifb.ta3 != null ? ifb.ta3 : (byte) 0x20; // default IFSC = 32
+    byte nad = (byte) 0x00;
+    byte[] paramData = new byte[] {fidi, tcck, guard, wi, clockStop, ifsc, nad};
+
+    // PC_to_RDR_SetParameters: 10-byte header where bytes 7-9 are
+    // (bProtocolNum=0x01 for T=1, abRFU, abRFU).
+    try {
+      byte[] reply =
+          transceive(
+              SET_PARAMETERS_MESSAGE_TYPE, paramData, new byte[] {0x01, 0, 0}, RESPONSE_PARAMETERS);
+      logger.debug(
+          "CCID SetParameters ok: sent Fi/Di=0x{} IFSC={}, echo={}",
+          String.format(Locale.ROOT, "%02X", fidi & 0xFF),
+          ifsc & 0xFF,
+          StringUtils.bytesToHex(reply));
+    } catch (IOException e) {
+      // Not fatal: the reader keeps whatever parameters it defaulted to,
+      // which is exactly the behaviour before this call existed.
+      logger.warn("CCID SetParameters failed, falling back to reader defaults", e);
+    }
+  }
+
+  /** Parsed view of the interface bytes in an ISO 7816-3 ATR. Only TA/TB/TC up to level 4. */
+  private static final class AtrInterfaceBytes {
+    Byte ta1, tb1, tc1;
+    Byte ta2, tb2, tc2;
+    Byte ta3, tb3, tc3;
+    Byte ta4, tb4, tc4;
+
+    static AtrInterfaceBytes parse(byte[] atr) {
+      AtrInterfaceBytes p = new AtrInterfaceBytes();
+      if (atr == null || atr.length < 2) return p;
+      int idx = 1; // skip TS
+      int t0 = atr[idx++] & 0xFF;
+      int y = (t0 >> 4) & 0x0F;
+      int n = 1;
+      while (y != 0 && n <= 4 && idx < atr.length) {
+        if ((y & 0x01) != 0 && idx < atr.length) {
+          byte v = atr[idx++];
+          switch (n) {
+            case 1:
+              p.ta1 = v;
+              break;
+            case 2:
+              p.ta2 = v;
+              break;
+            case 3:
+              p.ta3 = v;
+              break;
+            case 4:
+              p.ta4 = v;
+              break;
+            default:
+              break;
+          }
+        }
+        if ((y & 0x02) != 0 && idx < atr.length) {
+          byte v = atr[idx++];
+          switch (n) {
+            case 1:
+              p.tb1 = v;
+              break;
+            case 2:
+              p.tb2 = v;
+              break;
+            case 3:
+              p.tb3 = v;
+              break;
+            case 4:
+              p.tb4 = v;
+              break;
+            default:
+              break;
+          }
+        }
+        if ((y & 0x04) != 0 && idx < atr.length) {
+          byte v = atr[idx++];
+          switch (n) {
+            case 1:
+              p.tc1 = v;
+              break;
+            case 2:
+              p.tc2 = v;
+              break;
+            case 3:
+              p.tc3 = v;
+              break;
+            case 4:
+              p.tc4 = v;
+              break;
+            default:
+              break;
+          }
+        }
+        if ((y & 0x08) != 0 && idx < atr.length) {
+          byte td = atr[idx++];
+          y = (td >> 4) & 0x0F;
+          n++;
+        } else {
+          y = 0;
+        }
+      }
+      return p;
+    }
   }
 
   /**
@@ -565,8 +694,19 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
    * @throws IOException in case if there is communication error occurs or received data is invalid
    */
   private byte[] transceive(byte type, byte[] data, short wLevelParameter) throws IOException {
+    // For XfrBlock / PowerOn the message-specific bytes are bBWI (=0)
+    // and the wLevelParameter as an LE short.
+    return transceive(
+        type,
+        data,
+        new byte[] {0, (byte) (wLevelParameter & 0xFF), (byte) ((wLevelParameter >> 8) & 0xFF)},
+        RESPONSE_DATA_BLOCK);
+  }
+
+  private byte[] transceive(byte type, byte[] data, byte[] specific, byte expectedResponseType)
+      throws IOException {
     // 1. prepare data for sending
-    MessageHeader prefix = new MessageHeader(type, data.length, sequence++, wLevelParameter);
+    MessageHeader prefix = new MessageHeader(type, data.length, sequence++, specific);
     ByteBuffer byteBuffer =
         ByteBuffer.allocate(prefix.size() + data.length)
             .order(ByteOrder.LITTLE_ENDIAN)
@@ -622,7 +762,7 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
           messageHeader = new MessageHeader(bufferRead);
           responseRequiresTimeExtension =
               (messageHeader.status & STATUS_TIME_EXTENSION) == STATUS_TIME_EXTENSION;
-          if (messageHeader.verify((byte) (sequence - 1))) {
+          if (messageHeader.verify((byte) (sequence - 1), expectedResponseType)) {
             // if we received expected prefix we can save the rest of received data without
             // verification
             receivedExpectedPrefix = true;
@@ -684,9 +824,11 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
     // slot in the outbound header is wLevelParameter (LE short, §6.1.4).
     private byte chainParameter;
 
-    // wLevelParameter to write into outbound XfrBlock headers
-    // (§6.1.4). Ignored on inbound parses.
-    private short wLevelParameter;
+    // Raw bytes 7..9 of the outbound CCID header. Their meaning is
+    // command-specific: bBWI + wLevelParameter LE for XfrBlock,
+    // bProtocolNum + abRFU for SetParameters, bPowerSelect + abRFU
+    // for PowerOn, etc. Ignored on inbound parses.
+    private byte[] messageSpecificBytes = new byte[] {0, 0, 0};
 
     private MessageHeader(byte[] buffer) {
       if (buffer.length > SIZE_OF_CCID_PREFIX) {
@@ -702,18 +844,17 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
       }
     }
 
-    private MessageHeader(byte type, int length, byte sequence, short wLevelParameter) {
+    private MessageHeader(byte type, int length, byte sequence, byte[] specific) {
       this.type = type;
       this.dataLength = length;
       this.slot = SLOT_NUMBER;
       this.sequence = sequence;
-      this.wLevelParameter = wLevelParameter;
+      if (specific != null && specific.length == 3) {
+        this.messageSpecificBytes = new byte[] {specific[0], specific[1], specific[2]};
+      }
     }
 
     private byte[] array() {
-      // Bytes 7-9 of an outbound XfrBlock are bBWI (always 0 = use
-      // default block waiting time) followed by wLevelParameter as a
-      // little-endian short.
       ByteBuffer byteBuffer =
           ByteBuffer.allocate(SIZE_OF_CCID_PREFIX)
               .order(ByteOrder.LITTLE_ENDIAN)
@@ -721,8 +862,7 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
               .putInt(dataLength)
               .put(slot)
               .put(sequence)
-              .put((byte) 0)
-              .putShort(wLevelParameter);
+              .put(messageSpecificBytes);
       return byteBuffer.array();
     }
 
@@ -735,10 +875,12 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
      * number fields from the header that was contained in the Bulk-OUT command message.
      *
      * @param sequence Bulk-OUT message sequence
+     * @param expectedType bMessageType the caller expects — RDR_to_PC_DataBlock for the common
+     *     PowerOn/XfrBlock path; RDR_to_PC_Parameters for Set/GetParameters
      * @return true if prefix has expected format
      */
-    private boolean verify(byte sequence) {
-      if (this.type != RESPONSE_DATA_BLOCK) {
+    private boolean verify(byte sequence, byte expectedType) {
+      if (this.type != expectedType) {
         return false;
       }
       if (this.slot != SLOT_NUMBER) {
