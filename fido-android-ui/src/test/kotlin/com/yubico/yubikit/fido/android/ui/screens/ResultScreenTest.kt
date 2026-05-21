@@ -47,7 +47,6 @@ class ResultScreenTest {
             FidoAndroidTheme {
                 SuccessView(
                     operation = FidoClientService.Operation.MAKE_CREDENTIAL,
-                    origin = testOrigin,
                 )
             }
         }
@@ -61,7 +60,6 @@ class ResultScreenTest {
             FidoAndroidTheme {
                 SuccessView(
                     operation = FidoClientService.Operation.GET_ASSERTION,
-                    origin = testOrigin,
                 )
             }
         }
@@ -75,7 +73,7 @@ class ResultScreenTest {
             FidoAndroidTheme {
                 ErrorView(
                     operation = FidoClientService.Operation.GET_ASSERTION,
-                    origin = testOrigin,
+                    rpId = testOrigin,
                     error = Error.OperationError(CtapException(CtapException.ERR_NO_CREDENTIALS)),
                     onRetry = {},
                 )
@@ -91,7 +89,7 @@ class ResultScreenTest {
             FidoAndroidTheme {
                 ErrorView(
                     operation = FidoClientService.Operation.MAKE_CREDENTIAL,
-                    origin = testOrigin,
+                    rpId = testOrigin,
                     error = Error.OperationError(CtapException(CtapException.ERR_USER_ACTION_TIMEOUT)),
                     onRetry = {},
                 )
@@ -107,7 +105,7 @@ class ResultScreenTest {
             FidoAndroidTheme {
                 ErrorView(
                     operation = FidoClientService.Operation.MAKE_CREDENTIAL,
-                    origin = testOrigin,
+                    rpId = testOrigin,
                     error = Error.OperationError(CtapException(CtapException.ERR_KEY_STORE_FULL)),
                     onRetry = {},
                 )
@@ -123,7 +121,7 @@ class ResultScreenTest {
             FidoAndroidTheme {
                 ErrorView(
                     operation = FidoClientService.Operation.MAKE_CREDENTIAL,
-                    origin = testOrigin,
+                    rpId = testOrigin,
                     error = Error.OperationError(CtapException(CtapException.ERR_CREDENTIAL_EXCLUDED)),
                     onRetry = {},
                 )
@@ -139,7 +137,7 @@ class ResultScreenTest {
             FidoAndroidTheme {
                 ErrorView(
                     operation = FidoClientService.Operation.MAKE_CREDENTIAL,
-                    origin = testOrigin,
+                    rpId = testOrigin,
                     error = Error.OperationError(CtapException(CtapException.ERR_OTHER)),
                     onRetry = {},
                 )
@@ -155,7 +153,7 @@ class ResultScreenTest {
             FidoAndroidTheme {
                 ErrorView(
                     operation = FidoClientService.Operation.MAKE_CREDENTIAL,
-                    origin = testOrigin,
+                    rpId = testOrigin,
                     error = Error.DeviceNotConfiguredError,
                     onRetry = {},
                 )
@@ -171,7 +169,7 @@ class ResultScreenTest {
             FidoAndroidTheme {
                 ErrorView(
                     operation = FidoClientService.Operation.MAKE_CREDENTIAL,
-                    origin = testOrigin,
+                    rpId = testOrigin,
                     error = Error.UnknownError,
                     onRetry = {},
                 )
@@ -188,7 +186,7 @@ class ResultScreenTest {
             FidoAndroidTheme {
                 ErrorView(
                     operation = FidoClientService.Operation.MAKE_CREDENTIAL,
-                    origin = testOrigin,
+                    rpId = testOrigin,
                     error = Error.OperationError(RuntimeException()),
                     onRetry = { retryCalled = true },
                 )

@@ -111,7 +111,7 @@ internal fun resolvePinEntryError(error: Error?): String? =
 @Composable
 internal fun EnterPin(
     operation: FidoClientService.Operation,
-    origin: String,
+    rpId: String,
     error: Error? = null,
     onCloseButtonClick: () -> Unit,
     pin: CharArray? = null,
@@ -124,7 +124,6 @@ internal fun EnterPin(
     val isDialog = presentation == FidoPresentation.Dialog
     ContentWrapper(
         operation = operation,
-        origin = origin,
         title = stringResource(R.string.yk_fido_enter_pin_title),
         onCloseButtonClick = onCloseButtonClick,
         hasOwnDismiss = isDialog,
@@ -159,7 +158,7 @@ internal fun EnterPin(
 
         // Subtitle
         Text(
-            text = stringResource(R.string.yk_fido_enter_pin_subtitle, origin),
+            text = stringResource(R.string.yk_fido_enter_pin_subtitle, rpId),
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
             maxLines = 2,
@@ -289,7 +288,7 @@ private fun EnterPinInBottomSheetPreview() {
         ) {
             EnterPin(
                 operation = FidoClientService.Operation.GET_ASSERTION,
-                origin = "example.com",
+                rpId = "example.com",
                 onCloseButtonClick = {},
             ) {}
         }
@@ -309,7 +308,7 @@ private fun EnterPinWithErrorInBottomSheetPreview() {
         ) {
             EnterPin(
                 operation = FidoClientService.Operation.GET_ASSERTION,
-                origin = "example.com",
+                rpId = "example.com",
                 error = Error.IncorrectPinError(3),
                 onCloseButtonClick = {},
             ) {}
@@ -323,7 +322,7 @@ internal fun EnterPinPreview() {
     FidoAndroidTheme {
         EnterPin(
             operation = FidoClientService.Operation.MAKE_CREDENTIAL,
-            origin = "example.com",
+            rpId = "example.com",
             onCloseButtonClick = {},
         ) {}
     }
@@ -335,7 +334,7 @@ internal fun EnterPinWithErrorPreview() {
     FidoAndroidTheme {
         EnterPin(
             operation = FidoClientService.Operation.GET_ASSERTION,
-            origin = "example.com",
+            rpId = "example.com",
             error = Error.IncorrectPinError(3),
             onCloseButtonClick = {},
         ) {}
@@ -348,7 +347,7 @@ internal fun EnterPinFilledPreview() {
     FidoAndroidTheme {
         EnterPin(
             operation = FidoClientService.Operation.GET_ASSERTION,
-            origin = "example.com",
+            rpId = "example.com",
             pin = charArrayOf('0', '1', '2', '3', '4'),
             onCloseButtonClick = {},
         ) {}

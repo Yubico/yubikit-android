@@ -56,11 +56,9 @@ import com.yubico.yubikit.fido.android.ui.internal.ui.theme.FidoAndroidTheme
 @Composable
 internal fun SuccessView(
     operation: FidoClientService.Operation,
-    origin: String,
 ) {
     ContentWrapper(
         operation = operation,
-        origin = origin,
         title = if (operation == FidoClientService.Operation.MAKE_CREDENTIAL) {
             stringResource(R.string.yk_fido_passkey_created)
         } else {
@@ -103,7 +101,7 @@ internal fun SuccessView(
 @Composable
 internal fun ErrorView(
     operation: FidoClientService.Operation,
-    origin: String,
+    rpId: String,
     error: Error? = null,
     onCloseButtonClick: (() -> Unit)? = null,
     onRetry: () -> Unit,
@@ -111,11 +109,10 @@ internal fun ErrorView(
     val isDialog = LocalFidoPresentation.current == FidoPresentation.Dialog
     ContentWrapper(
         operation = operation,
-        origin = origin,
         title = if (operation == FidoClientService.Operation.MAKE_CREDENTIAL) {
-            stringResource(R.string.yk_fido_error_create_failed, origin)
+            stringResource(R.string.yk_fido_error_create_failed, rpId)
         } else {
-            stringResource(R.string.yk_fido_error_login_failed, origin)
+            stringResource(R.string.yk_fido_error_login_failed, rpId)
         },
         onCloseButtonClick = onCloseButtonClick.takeIf { isDialog },
         hasOwnDismiss = isDialog,
@@ -129,7 +126,7 @@ internal fun ErrorView(
                 .testTag("error_message_text"),
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
-            text = resolveErrorText(error, origin),
+            text = resolveErrorText(error, rpId),
         )
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -213,7 +210,6 @@ internal fun SuccessViewPreview() {
     FidoAndroidTheme {
         SuccessView(
             operation = FidoClientService.Operation.MAKE_CREDENTIAL,
-            origin = "example.com",
         )
     }
 }
@@ -224,7 +220,6 @@ internal fun SuccessLoginViewPreview() {
     FidoAndroidTheme {
         SuccessView(
             operation = FidoClientService.Operation.GET_ASSERTION,
-            origin = "example.com",
         )
     }
 }
@@ -235,7 +230,7 @@ internal fun OperationErrorViewPreview() {
     FidoAndroidTheme {
         ErrorView(
             operation = FidoClientService.Operation.GET_ASSERTION,
-            origin = "example.com",
+            rpId = "example.com",
             error = Error.OperationError(CtapException(CtapException.ERR_KEY_STORE_FULL)),
             onRetry = {},
         )
@@ -248,7 +243,7 @@ internal fun DeviceNotConfiguredErrorViewPreview() {
     FidoAndroidTheme {
         ErrorView(
             operation = FidoClientService.Operation.GET_ASSERTION,
-            origin = "example.com",
+            rpId = "example.com",
             error = Error.DeviceNotConfiguredError,
             onRetry = {},
         )

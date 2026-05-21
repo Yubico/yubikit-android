@@ -40,7 +40,7 @@ class UvInputScreenTest {
             FidoAndroidTheme {
                 MatchFingerprint(
                     operation = FidoClientService.Operation.GET_ASSERTION,
-                    origin = "example.com",
+                    rpId = "example.com",
                     error = error,
                     onCloseButtonClick = {},
                 )

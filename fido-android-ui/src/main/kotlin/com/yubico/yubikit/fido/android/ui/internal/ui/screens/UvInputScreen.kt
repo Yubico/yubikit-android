@@ -50,7 +50,7 @@ import com.yubico.yubikit.fido.android.ui.internal.ui.theme.FidoAndroidTheme
 @Composable
 internal fun MatchFingerprint(
     operation: FidoClientService.Operation,
-    origin: String,
+    rpId: String,
     error: Error? = null,
     onCloseButtonClick: () -> Unit,
 ) {
@@ -70,7 +70,6 @@ internal fun MatchFingerprint(
 
     ContentWrapper(
         operation = operation,
-        origin = origin,
         title = if (operation == FidoClientService.Operation.MAKE_CREDENTIAL) {
             stringResource(R.string.yk_fido_create_passkey)
         } else {
@@ -78,9 +77,9 @@ internal fun MatchFingerprint(
         },
         onCloseButtonClick = onCloseButtonClick,
     ) {
-        if (origin.isNotEmpty()) {
+        if (rpId.isNotEmpty()) {
             Text(
-                text = origin,
+                text = rpId,
                 style = MaterialTheme.typography.headlineSmall,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth(),
@@ -139,7 +138,7 @@ internal fun MatchFingerprintNewPreview() {
     FidoAndroidTheme {
         MatchFingerprint(
             operation = FidoClientService.Operation.MAKE_CREDENTIAL,
-            origin = "example.com",
+            rpId = "example.com",
             onCloseButtonClick = {},
         )
     }
@@ -151,7 +150,7 @@ internal fun MatchFingerprintNewWithErrorPreview() {
     FidoAndroidTheme {
         MatchFingerprint(
             operation = FidoClientService.Operation.GET_ASSERTION,
-            origin = "example.com",
+            rpId = "example.com",
             error = Error.IncorrectUvError(3),
             onCloseButtonClick = {},
         )

@@ -40,7 +40,6 @@ class TapOrInsertScreenTest {
     @get:Rule
     val composeTestRule = createComposeRule()
 
-    private val testOrigin = "example.com"
     private val context: Context = ApplicationProvider.getApplicationContext()
 
     @Test
@@ -50,7 +49,6 @@ class TapOrInsertScreenTest {
                 TapOrInsertSecurityKey(
                     operation = FidoClientService.Operation.MAKE_CREDENTIAL,
                     isNfcAvailable = false,
-                    origin = testOrigin,
                     onCloseButtonClick = {},
                 )
             }
@@ -68,7 +66,6 @@ class TapOrInsertScreenTest {
                 TapOrInsertSecurityKey(
                     operation = FidoClientService.Operation.MAKE_CREDENTIAL,
                     isNfcAvailable = true,
-                    origin = testOrigin,
                     onCloseButtonClick = {},
                 )
             }

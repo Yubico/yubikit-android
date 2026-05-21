@@ -62,7 +62,7 @@ private val itemSpacing = 2.dp
 @Composable
 internal fun MultipleAssertionsScreen(
     operation: FidoClientService.Operation,
-    origin: String,
+    rpId: String,
     users: List<PublicKeyCredentialUserEntity>,
     onSelect: (Int) -> Unit,
     onCloseButtonClick: () -> Unit,
@@ -72,7 +72,6 @@ internal fun MultipleAssertionsScreen(
 
     ContentWrapper(
         operation = operation,
-        origin = origin,
         title = stringResource(R.string.yk_fido_select_passkey_title),
         onCloseButtonClick = onCloseButtonClick,
         contentHeight = listHeight + 100.dp,
@@ -188,7 +187,7 @@ internal fun MultipleAssertionsScreenTwoUsersPreview() {
     FidoAndroidTheme {
         MultipleAssertionsScreen(
             operation = FidoClientService.Operation.GET_ASSERTION,
-            origin = "example.com",
+            rpId = "example.com",
             users = listOf(
                 PublicKeyCredentialUserEntity("User 1", byteArrayOf(0), "Very long display name"),
                 PublicKeyCredentialUserEntity("User 2", byteArrayOf(0), "User 2"),
@@ -205,7 +204,7 @@ internal fun MultipleAssertionsScreenThreeUsersPreview() {
     FidoAndroidTheme {
         MultipleAssertionsScreen(
             operation = FidoClientService.Operation.GET_ASSERTION,
-            origin = "example.com",
+            rpId = "example.com",
             users = listOf(
                 PublicKeyCredentialUserEntity("User 1", byteArrayOf(0), "Very long display name"),
                 PublicKeyCredentialUserEntity("User 2", byteArrayOf(0), "User 2"),
@@ -223,7 +222,7 @@ internal fun MultipleAssertionsScreenManyUsersPreview() {
     FidoAndroidTheme {
         MultipleAssertionsScreen(
             operation = FidoClientService.Operation.GET_ASSERTION,
-            origin = "example.com",
+            rpId = "example.com",
             users = listOf(
                 PublicKeyCredentialUserEntity("User 1", byteArrayOf(0), "Longest ever user display name which does not fit"),
                 PublicKeyCredentialUserEntity("User 2", byteArrayOf(0), "User 2"),

@@ -46,7 +46,7 @@ class FidoUiInstrumentedTest {
     @get:Rule
     val composeTestRule = createComposeRule()
 
-    private val testOrigin = "example.com"
+    private val testRpId = "example.com"
 
     @Test
     fun pinEntryScreen_displaysAllRequiredElements() {
@@ -54,7 +54,7 @@ class FidoUiInstrumentedTest {
             FidoAndroidTheme {
                 EnterPin(
                     operation = FidoClientService.Operation.MAKE_CREDENTIAL,
-                    origin = testOrigin,
+                    rpId = testRpId,
                     onCloseButtonClick = {},
                     onPinEntered = {},
                 )
@@ -115,7 +115,6 @@ class FidoUiInstrumentedTest {
                 TapOrInsertSecurityKey(
                     operation = FidoClientService.Operation.MAKE_CREDENTIAL,
                     isNfcAvailable = true,
-                    origin = testOrigin,
                     onCloseButtonClick = {},
                 )
             }
@@ -136,7 +135,6 @@ class FidoUiInstrumentedTest {
                 TapOrInsertSecurityKey(
                     operation = FidoClientService.Operation.MAKE_CREDENTIAL,
                     isNfcAvailable = false,
-                    origin = testOrigin,
                     onCloseButtonClick = {},
                 )
             }
@@ -153,7 +151,6 @@ class FidoUiInstrumentedTest {
                 TapOrInsertSecurityKey(
                     operation = FidoClientService.Operation.MAKE_CREDENTIAL,
                     isNfcAvailable = true,
-                    origin = testOrigin,
                     onCloseButtonClick = {},
                 )
             }
@@ -169,7 +166,7 @@ class FidoUiInstrumentedTest {
             FidoAndroidTheme {
                 EnterPin(
                     operation = FidoClientService.Operation.MAKE_CREDENTIAL,
-                    origin = testOrigin,
+                    rpId = testRpId,
                     error = Error.IncorrectPinError(remainingAttempts = 3),
                     onCloseButtonClick = {},
                     onPinEntered = {},
@@ -188,7 +185,7 @@ class FidoUiInstrumentedTest {
             FidoAndroidTheme {
                 EnterPin(
                     operation = FidoClientService.Operation.MAKE_CREDENTIAL,
-                    origin = testOrigin,
+                    rpId = testRpId,
                     error = Error.PinBlockedError,
                     onCloseButtonClick = {},
                     onPinEntered = {},

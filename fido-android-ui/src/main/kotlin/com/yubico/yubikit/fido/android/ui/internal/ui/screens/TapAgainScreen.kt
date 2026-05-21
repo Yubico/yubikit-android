@@ -43,12 +43,10 @@ import com.yubico.yubikit.fido.android.ui.internal.ui.theme.DefaultPreview
 @Composable
 internal fun TapAgainSecurityKey(
     operation: FidoClientService.Operation,
-    origin: String,
     onCloseButtonClick: () -> Unit,
 ) {
     ContentWrapper(
         operation = operation,
-        origin = origin,
         title = stringResource(R.string.yk_fido_connect_your_key_title),
         onCloseButtonClick = onCloseButtonClick,
     ) {
@@ -90,6 +88,5 @@ internal fun TapAgainSecurityKey(
 internal fun TapSecurityKeyAgainForGetAssertionPreview() {
     TapAgainSecurityKey(
         operation = FidoClientService.Operation.GET_ASSERTION,
-        origin = "www.example.com",
     ) {}
 }

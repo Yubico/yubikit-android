@@ -44,12 +44,10 @@ import com.yubico.yubikit.fido.android.ui.internal.ui.theme.FidoAndroidTheme
 @Composable
 internal fun TouchTheSecurityKey(
     operation: FidoClientService.Operation,
-    origin: String,
     onCloseButtonClick: () -> Unit,
 ) {
     ContentWrapper(
         operation = operation,
-        origin = origin,
         title = stringResource(R.string.yk_fido_touch_the_key),
         onCloseButtonClick = onCloseButtonClick,
     ) {
@@ -92,7 +90,6 @@ internal fun TouchTheSecurityKeyPreview() {
     FidoAndroidTheme {
         TouchTheSecurityKey(
             operation = FidoClientService.Operation.GET_ASSERTION,
-            origin = "www.example.com",
         ) {}
     }
 }

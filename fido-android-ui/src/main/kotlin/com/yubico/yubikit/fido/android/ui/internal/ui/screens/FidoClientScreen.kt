@@ -48,6 +48,7 @@ internal fun FidoClientUi(
     onResult: (PublicKeyCredential) -> Unit = {},
     onCloseButtonClick: () -> Unit,
 ) {
+    val rpId = origin.callingApp.removePrefix("https://")
     val uiState by viewModel.state.collectAsState()
     val handleCloseButton: () -> Unit = {
         fidoClientService.cancelOngoingOperation()
@@ -100,7 +101,6 @@ internal fun FidoClientUi(
                     TapOrInsertSecurityKey(
                         operation = operation,
                         isNfcAvailable = isNfcAvailable,
-                        origin = origin.callingApp,
                         onCloseButtonClick = handleCloseButton,
                     )
                 }
@@ -108,7 +108,6 @@ internal fun FidoClientUi(
                 is State.WaitingForKeyAgain -> {
                     TapAgainSecurityKey(
                         operation = operation,
-                        origin = origin.callingApp,
                         onCloseButtonClick = handleCloseButton,
                     )
                 }
@@ -116,7 +115,7 @@ internal fun FidoClientUi(
                 is State.WaitingForPinEntry -> {
                     EnterPin(
                         operation = operation,
-                        origin = origin.callingApp,
+                        rpId = rpId,
                         error = state.error,
                         pin = viewModel.lastEnteredPin,
                         onCloseButtonClick = handleCloseButton,
@@ -128,7 +127,7 @@ internal fun FidoClientUi(
                 is State.WaitingForUvEntry -> {
                     MatchFingerprint(
                         operation = operation,
-                        origin = origin.callingApp,
+                        rpId = rpId,
                         error = state.error,
                         onCloseButtonClick = handleCloseButton,
                     )
@@ -143,7 +142,7 @@ internal fun FidoClientUi(
                 is State.PinNotSetError -> {
                     CreatePinScreen(
                         operation = operation,
-                        origin = origin.callingApp,
+                        origin = rpId,
                         error = state.error,
                         minPinLen = viewModel.info?.minPinLength ?: DEFAULT_MIN_PIN_LENGTH,
                         onCloseButtonClick = handleCloseButton,
@@ -155,7 +154,7 @@ internal fun FidoClientUi(
                 is State.ForcePinChangeError -> {
                     ForceChangePinScreen(
                         operation = operation,
-                        origin = origin.callingApp,
+                        origin = rpId,
                         error = state.error,
                         minPinLen = viewModel.info?.minPinLength ?: DEFAULT_MIN_PIN_LENGTH,
                         currentPin = viewModel.lastEnteredPin,
@@ -168,7 +167,7 @@ internal fun FidoClientUi(
                 is State.PinCreated -> {
                     PinCreatedScreen(
                         operation = operation,
-                        origin = origin.callingApp,
+                        origin = rpId,
                         onCloseButtonClick = handleCloseButton,
                     ) {
                         viewModel.onPinCreatedConfirmation()
@@ -178,7 +177,7 @@ internal fun FidoClientUi(
                 is State.PinChanged -> {
                     PinChangedScreen(
                         operation = operation,
-                        origin = origin.callingApp,
+                        origin = rpId,
                         onCloseButtonClick = handleCloseButton,
                     ) {
                         viewModel.onPinChangedConfirmation()
@@ -188,7 +187,7 @@ internal fun FidoClientUi(
                 is State.Processing -> {
                     Processing(
                         operation = operation,
-                        origin = origin.callingApp,
+                        rpId = rpId,
                         onCloseButtonClick = handleCloseButton,
                     )
                 }
@@ -196,19 +195,18 @@ internal fun FidoClientUi(
                 is State.TouchKey -> {
                     TouchTheSecurityKey(
                         operation = operation,
-                        origin = origin.callingApp,
                         onCloseButtonClick = handleCloseButton,
                     )
                 }
 
                 is State.Success -> {
-                    SuccessView(operation = operation, origin = origin.callingApp)
+                    SuccessView(operation = operation)
                 }
 
                 is State.MultipleAssertions -> {
                     MultipleAssertionsScreen(
                         operation = operation,
-                        origin = origin.callingApp,
+                        rpId = rpId,
                         onCloseButtonClick = handleCloseButton,
                         users = state.users,
                         onSelect = state.onSelect,
@@ -218,7 +216,7 @@ internal fun FidoClientUi(
                 is State.OperationError -> {
                     ErrorView(
                         operation = operation,
-                        origin = origin.callingApp,
+                        rpId = rpId,
                         error = state.error,
                         onCloseButtonClick = handleCloseButton,
                     ) {

@@ -45,12 +45,10 @@ import com.yubico.yubikit.fido.android.ui.internal.ui.theme.FidoAndroidTheme
 internal fun TapOrInsertSecurityKey(
     operation: FidoClientService.Operation,
     isNfcAvailable: Boolean,
-    origin: String,
     onCloseButtonClick: () -> Unit,
 ) {
     ContentWrapper(
         operation = operation,
-        origin = origin,
         title = stringResource(R.string.yk_fido_connect_your_key_title),
         onCloseButtonClick = onCloseButtonClick,
     ) {
@@ -98,7 +96,6 @@ internal fun TapOrInsertSecurityKeyForMakeCredentialPreview() {
         TapOrInsertSecurityKey(
             isNfcAvailable = false,
             operation = FidoClientService.Operation.MAKE_CREDENTIAL,
-            origin = "www.example.com",
         ) {}
     }
 }
@@ -110,7 +107,7 @@ internal fun TapOrInsertSecurityKeyForGetAssertionPreview() {
         TapOrInsertSecurityKey(
             isNfcAvailable = true,
             operation = FidoClientService.Operation.GET_ASSERTION,
-            origin = "www.example.com",
+
         ) {}
     }
 }

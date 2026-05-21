@@ -180,7 +180,6 @@ private fun CreateChangePinScreen(
     val isDialog = presentation == FidoPresentation.Dialog
     ContentWrapper(
         operation = operation,
-        origin = origin,
         title = stringResource(
             if (forceChangePin) R.string.yk_fido_change_pin_title else R.string.yk_fido_set_pin_title,
         ),
@@ -547,7 +546,6 @@ internal fun PinCreatedScreen(
     val isDialog = LocalFidoPresentation.current == FidoPresentation.Dialog
     ContentWrapper(
         operation = operation,
-        origin = origin,
         title = stringResource(R.string.yk_fido_pin_successfully_set),
         contentHeight = 200.dp,
         onCloseButtonClick = onCloseButtonClick,
@@ -589,7 +587,6 @@ internal fun PinChangedScreen(
     val isDialog = LocalFidoPresentation.current == FidoPresentation.Dialog
     ContentWrapper(
         operation = operation,
-        origin = origin,
         title = stringResource(R.string.yk_fido_pin_successfully_changed),
         contentHeight = 200.dp,
         onCloseButtonClick = onCloseButtonClick,

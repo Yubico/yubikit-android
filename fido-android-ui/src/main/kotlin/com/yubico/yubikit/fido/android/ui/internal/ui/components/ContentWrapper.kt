@@ -63,7 +63,6 @@ import com.yubico.yubikit.fido.android.ui.internal.FidoClientService
 internal fun ContentWrapper(
     modifier: Modifier = Modifier,
     operation: FidoClientService.Operation,
-    origin: String,
     title: String? = null,
     titleTestTag: String? = null,
     onCloseButtonClick: (() -> Unit)? = null,
@@ -266,7 +265,6 @@ private fun ContentWrapperInBottomSheetPreview() {
         ) {
             ContentWrapper(
                 operation = FidoClientService.Operation.MAKE_CREDENTIAL,
-                origin = "example.com",
                 onCloseButtonClick = {},
             ) {
                 PreviewContent()
@@ -293,7 +291,6 @@ private fun PreviewContent(height: Dp = 160.dp) {
 private fun ContentWrapperWithCloseButtonPreview() {
     ContentWrapper(
         operation = FidoClientService.Operation.MAKE_CREDENTIAL,
-        origin = "example.com",
         onCloseButtonClick = {},
     ) {
         PreviewContent()
@@ -305,7 +302,6 @@ private fun ContentWrapperWithCloseButtonPreview() {
 private fun ContentWrapperWithoutCloseButtonPreview() {
     ContentWrapper(
         operation = FidoClientService.Operation.MAKE_CREDENTIAL,
-        origin = "example.com",
         onCloseButtonClick = null,
     ) {
         PreviewContent()
@@ -317,7 +313,6 @@ private fun ContentWrapperWithoutCloseButtonPreview() {
 private fun ContentWrapperHeight320Preview() {
     ContentWrapper(
         operation = FidoClientService.Operation.MAKE_CREDENTIAL,
-        origin = "example.com",
         contentHeight = 320.dp,
         onCloseButtonClick = {},
     ) {

@@ -39,12 +39,11 @@ import com.yubico.yubikit.fido.android.ui.internal.ui.theme.FidoAndroidTheme
 @Composable
 internal fun Processing(
     operation: FidoClientService.Operation,
-    origin: String,
+    rpId: String,
     onCloseButtonClick: () -> Unit,
 ) {
     ContentWrapper(
         operation = operation,
-        origin = origin,
         title = if (operation == FidoClientService.Operation.MAKE_CREDENTIAL) {
             stringResource(R.string.yk_fido_create_passkey)
         } else {
@@ -52,9 +51,9 @@ internal fun Processing(
         },
         onCloseButtonClick = onCloseButtonClick,
     ) {
-        if (origin.isNotEmpty()) {
+        if (rpId.isNotEmpty()) {
             Text(
-                text = origin,
+                text = rpId,
                 style = MaterialTheme.typography.headlineSmall,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth(),
@@ -77,7 +76,7 @@ internal fun ProcessingPreview() {
     FidoAndroidTheme {
         Processing(
             operation = FidoClientService.Operation.MAKE_CREDENTIAL,
-            origin = "example.com",
+            rpId = "example.com",
             onCloseButtonClick = {},
         )
     }
@@ -89,7 +88,7 @@ internal fun ProcessingLoginPreview() {
     FidoAndroidTheme {
         Processing(
             operation = FidoClientService.Operation.GET_ASSERTION,
-            origin = "example.com",
+            rpId = "example.com",
             onCloseButtonClick = {},
         )
     }

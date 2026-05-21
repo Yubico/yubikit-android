@@ -55,7 +55,7 @@ class MultipleAssertionsScreenTest {
             FidoAndroidTheme {
                 MultipleAssertionsScreen(
                     operation = FidoClientService.Operation.GET_ASSERTION,
-                    origin = "example.com",
+                    rpId = "example.com",
                     users = users,
                     onSelect = { selectedIndex = it },
                     onCloseButtonClick = {},
@@ -78,7 +78,7 @@ class MultipleAssertionsScreenTest {
             FidoAndroidTheme {
                 MultipleAssertionsScreen(
                     operation = FidoClientService.Operation.GET_ASSERTION,
-                    origin = "example.com",
+                    rpId = "example.com",
                     users = users,
                     onSelect = {},
                     onCloseButtonClick = {},
