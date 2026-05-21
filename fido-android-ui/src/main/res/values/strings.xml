@@ -4,7 +4,6 @@
     <string name="yk_fido_connect_your_key_title">Connect your key</string>
     <string name="yk_fido_connect_your_key_subtitle">Hold your security key against the back of your phone, or plug it in via USB.</string>
     <string name="yk_fido_plug_your_key_subtitle">Plug-in your USB security key.</string>
-    <string name="yk_fido_tap_key_again">Tap and hold your security key again</string>
     <string name="yk_fido_passkey_icon">Passkey icon</string>
     <string name="yk_fido_continue_operation">Continue</string>
     <string name="yk_fido_confirm">Confirm</string>

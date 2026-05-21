@@ -97,17 +97,12 @@ internal fun FidoClientUi(
             },
         ) { state ->
             when (state) {
-                is State.WaitingForKey -> {
+                is State.WaitingForKey,
+                is State.WaitingForKeyAgain,
+                -> {
                     TapOrInsertSecurityKey(
                         operation = operation,
                         isNfcAvailable = isNfcAvailable,
-                        onCloseButtonClick = handleCloseButton,
-                    )
-                }
-
-                is State.WaitingForKeyAgain -> {
-                    TapAgainSecurityKey(
-                        operation = operation,
                         onCloseButtonClick = handleCloseButton,
                     )
                 }
