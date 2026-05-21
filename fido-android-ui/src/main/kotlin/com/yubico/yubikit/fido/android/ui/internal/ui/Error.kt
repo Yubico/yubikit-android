@@ -39,5 +39,7 @@ internal sealed class Error {
 
     data class OperationError(val exception: Throwable?) : Error()
 
+    data object TagLostError : Error()
+
     data object UnknownError : Error()
 }

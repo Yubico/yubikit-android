@@ -200,6 +200,7 @@ private fun resolveErrorText(error: Error?, origin: String): String =
             } ?: stringResource(R.string.yk_fido_unknown_error)
         }
         is Error.DeviceNotConfiguredError -> stringResource(R.string.yk_fido_device_not_configured)
+        is Error.TagLostError -> stringResource(R.string.yk_fido_err_tag_lost)
         is Error.UnknownError -> stringResource(R.string.yk_fido_unknown_error)
         else -> stringResource(R.string.yk_fido_unknown_error)
     }

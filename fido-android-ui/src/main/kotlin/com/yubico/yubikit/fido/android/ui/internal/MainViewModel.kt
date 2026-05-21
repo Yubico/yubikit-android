@@ -16,6 +16,7 @@
 
 package com.yubico.yubikit.fido.android.ui.internal
 
+import android.nfc.TagLostException
 import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -474,6 +475,10 @@ internal open class MainViewModel(
                                                 else -> Error.OperationError(error.cause)
                                             }
                                     }
+                                }
+
+                                is TagLostException -> {
+                                    Error.TagLostError
                                 }
 
                                 else -> {

@@ -59,6 +59,7 @@
     <string name="yk_fido_ctap_err_credential_excluded">Cannot create this passkey (CREDENTIAL_EXCLUDED).</string>
     <string name="yk_fido_ctap_err_uv_invalid_use_pin">Fingerprint did not match, please use PIN.</string>
     <string name="yk_fido_ctap_err_uv_unknown">There was an error when matching the fingerprint.</string>
+    <string name="yk_fido_err_tag_lost">Connection interrupted. Please retry.</string>
     <string name="yk_fido_creating_pin_failed">Creating PIN failed</string>
     <string name="yk_fido_set_pin_title">Set a PIN for your security key</string>
     <string name="yk_fido_set_pin_description">Your security key requires a PIN.\nSet a PIN to continue.</string>
