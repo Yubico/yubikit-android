@@ -158,7 +158,7 @@ internal fun EnterPin(
 
         // Subtitle
         Text(
-            text = stringResource(R.string.yk_fido_enter_pin_subtitle, rpId),
+            text = rpIdSentence(R.string.yk_fido_enter_pin_subtitle, rpId),
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
             maxLines = 2,

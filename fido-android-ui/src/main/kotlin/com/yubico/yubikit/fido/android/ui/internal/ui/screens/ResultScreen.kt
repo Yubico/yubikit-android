@@ -41,6 +41,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.yubico.yubikit.core.fido.CtapException
@@ -119,6 +120,12 @@ internal fun ErrorView(
     ) {
         Spacer(modifier = Modifier.height(16.dp))
 
+        val errorText: AnnotatedString =
+            if (error.isMissingCredentials()) {
+                rpIdSentence(R.string.yk_fido_ctap_err_no_credentials, rpId)
+            } else {
+                AnnotatedString(resolveErrorText(error, rpId))
+            }
         Text(
             modifier = Modifier
                 .fillMaxWidth()
@@ -126,7 +133,7 @@ internal fun ErrorView(
                 .testTag("error_message_text"),
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
-            text = resolveErrorText(error, rpId),
+            text = errorText,
         )
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -204,6 +211,10 @@ private fun resolveErrorText(error: Error?, origin: String): String =
         is Error.UnknownError -> stringResource(R.string.yk_fido_unknown_error)
         else -> stringResource(R.string.yk_fido_unknown_error)
     }
+
+private fun Error?.isMissingCredentials(): Boolean =
+    this is Error.OperationError &&
+        (exception as? CtapException)?.ctapError == CtapException.ERR_NO_CREDENTIALS
 
 @DefaultPreview
 @Composable
