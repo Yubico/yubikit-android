@@ -203,6 +203,7 @@ internal class YubiKitFidoActivity : ComponentActivity() {
                                 params.request,
                                 params.clientDataHash?.toByteArray(),
                                 fidoClientService = fidoClientService,
+                                callerLabel = params.callerLabel,
                                 onResult = {
                                     finishActivityWithResult(it)
                                 },
@@ -279,6 +280,7 @@ internal class YubiKitFidoActivity : ComponentActivity() {
         val request: String,
         val clientDataHash: List<Byte>?,
         val operation: FidoClientService.Operation,
+        val callerLabel: String?,
     ) {
         internal companion object {
             fun fromIntent(intent: Intent): FidoActivityParameters {
@@ -302,6 +304,7 @@ internal class YubiKitFidoActivity : ComponentActivity() {
                     request = extras.getString("request")!!,
                     clientDataHash = extras.getString("clientDataHash")?.hexToByteArray()?.toList(),
                     operation = operation,
+                    callerLabel = extras.getString("callerLabel"),
                 )
             }
         }

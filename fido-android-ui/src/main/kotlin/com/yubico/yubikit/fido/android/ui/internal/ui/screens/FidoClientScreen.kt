@@ -45,10 +45,11 @@ internal fun FidoClientUi(
     request: String,
     clientDataHash: ByteArray?,
     fidoClientService: FidoClientService,
+    callerLabel: String? = null,
     onResult: (PublicKeyCredential) -> Unit = {},
     onCloseButtonClick: () -> Unit,
 ) {
-    val rpId = origin.callingApp.removePrefix("https://")
+    val rpId = callerLabel ?: origin.effectiveDomain
     val uiState by viewModel.state.collectAsState()
     val handleCloseButton: () -> Unit = {
         fidoClientService.cancelOngoingOperation()

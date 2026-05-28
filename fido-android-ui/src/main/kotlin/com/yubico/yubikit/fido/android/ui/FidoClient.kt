@@ -77,6 +77,9 @@ public interface FidoClient {
      *   as defined by the WebAuthn specification.
      * @param clientDataHash Optional pre-computed SHA-256 hash of the client data (hex-encoded).
      *   If `null`, the client data hash is computed internally from the request parameters.
+     * @param callerLabel Optional display name of the calling app (e.g. `"Teams"`).
+     *   Shown in the UI in place of the resolved domain. If `null`, the UI falls back to
+     *   the resolved domain.
      * @return A [Result] containing the JSON-encoded `PublicKeyCredential` on success,
      *   or an exception on failure. Possible failure causes include:
      *   - [kotlinx.coroutines.CancellationException] if the user cancelled the operation
@@ -88,6 +91,7 @@ public interface FidoClient {
         origin: Origin,
         request: String,
         clientDataHash: String?,
+        callerLabel: String? = null,
     ): Result<String>
 
     /**
@@ -102,6 +106,9 @@ public interface FidoClient {
      *   as defined by the WebAuthn specification.
      * @param clientDataHash Optional pre-computed SHA-256 hash of the client data (hex-encoded).
      *   If `null`, the client data hash is computed internally from the request parameters.
+     * @param callerLabel Optional display name of the calling app (e.g. `"Teams"`).
+     *   Shown in the UI in place of the resolved domain. If `null`, the UI falls back to
+     *   the resolved domain.
      * @return A [Result] containing the JSON-encoded `PublicKeyCredential` on success,
      *   or an exception on failure. Possible failure causes include:
      *   - [kotlinx.coroutines.CancellationException] if the user cancelled the operation
@@ -113,6 +120,7 @@ public interface FidoClient {
         origin: Origin,
         request: String,
         clientDataHash: String?,
+        callerLabel: String? = null,
     ): Result<String>
 
     public companion object {
