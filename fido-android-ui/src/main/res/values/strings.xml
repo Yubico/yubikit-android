@@ -1,7 +1,7 @@
 <resources>
     <string name="yk_fido_create_passkey">Create passkey for</string>
     <string name="yk_fido_login_with_passkey">Login with passkey to</string>
-    <string name="yk_fido_connect_your_key_title">Connect your key</string>
+    <string name="yk_fido_connect_your_key_title">Connect your security key</string>
     <string name="yk_fido_connect_your_key_subtitle">Hold your security key against the back of your phone, or plug it in via USB.</string>
     <string name="yk_fido_plug_your_key_subtitle">Plug-in your USB security key.</string>
     <string name="yk_fido_passkey_icon">Passkey icon</string>
@@ -20,8 +20,8 @@
         <item quantity="other">Incorrect PIN. %1$d attempts remaining.</item>
     </plurals>
     <string name="yk_fido_incorrect_pin">Incorrect PIN.</string>
-    <string name="yk_fido_pin_blocked">PIN is blocked. You have to reset the key.</string>
-    <string name="yk_fido_pin_auth_blocked">PIN authentication is blocked. Reconnect the key.</string>
+    <string name="yk_fido_pin_blocked">PIN is blocked. You have to reset the security key.</string>
+    <string name="yk_fido_pin_auth_blocked">PIN authentication is blocked. Reconnect the security key.</string>
     <string name="yk_fido_pin_successfully_set">PIN successfully set!</string>
     <string name="yk_fido_pin_successfully_changed">PIN successfully changed</string>
     <string name="yk_fido_unknown_error">Unknown error</string>
@@ -32,10 +32,10 @@
     <string name="yk_fido_error">Error</string>
     <string name="yk_fido_error_login_failed">Login with passkey to %1$s failed</string>
     <string name="yk_fido_error_create_failed">Create passkey for %1$s failed</string>
-    <string name="yk_fido_remove_the_key">Remove the key</string>
+    <string name="yk_fido_remove_the_key">Remove the security key</string>
     <string name="yk_fido_login_successful">Login with passkey was successful</string>
-    <string name="yk_fido_dont_remove_the_key">Don\'t remove the key</string>
-    <string name="yk_fido_touch_the_key">Touch your key</string>
+    <string name="yk_fido_dont_remove_the_key">Don\'t remove the security key</string>
+    <string name="yk_fido_touch_the_key">Touch your security key</string>
     <string name="yk_fido_touch_the_key_subtitle">Touch or press the button of your security key</string>
     <string name="yk_fido_change_pin">Change PIN</string>
     <string name="yk_fido_new_pin">New PIN</string>
@@ -65,5 +65,5 @@
     <string name="yk_fido_fingerprint_icon">Fingerprint icon</string>
     <string name="yk_fido_content_description_nfc_antenna_location">NFC antenna location</string>
     <string name="yk_fido_content_description_close">Close</string>
-    <string name="yk_fido_content_description_touch_the_key">Touch the key</string>
+    <string name="yk_fido_content_description_touch_the_key">Touch the security key</string>
 </resources>
