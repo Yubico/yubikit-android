@@ -100,7 +100,8 @@ internal class FidoClientService(private val viewModel: MainViewModel = MainView
                 }
 
                 if (isPinSupported && !isPinConfigured) {
-                    // there is not PIN set on the key, we deliberately don't allow this
+                    // passkeys created without a PIN are rejected for sign-in by desktop
+                    // browsers, so we always require PIN setup regardless of UV requirement
                     throw ClientError(
                         ClientError.Code.BAD_REQUEST,
                         CtapException(CtapException.ERR_PIN_NOT_SET),
