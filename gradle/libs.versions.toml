@@ -3,7 +3,7 @@
 # --- Build toolchain ---
 java = "8"
 kotlin = "2.3.10"
-android-gradle = "9.1.0"
+android-gradle = "9.2.1"
 
 # --- AndroidX core ---
 androidx-annotation = "1.9.1"
