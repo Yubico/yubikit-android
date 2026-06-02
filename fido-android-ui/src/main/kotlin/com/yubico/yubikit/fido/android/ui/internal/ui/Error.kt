@@ -31,6 +31,8 @@ internal sealed class Error {
 
     data object DeviceNotConfiguredError : Error()
 
+    data object DeviceIneligibleError : Error()
+
     data class IncorrectPinError(val remainingAttempts: Int?) : Error()
 
     data class ForcePinChangeError(val remainingAttempts: Int?) : Error()

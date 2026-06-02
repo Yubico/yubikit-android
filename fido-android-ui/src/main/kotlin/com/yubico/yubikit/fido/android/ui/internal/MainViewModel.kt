@@ -453,6 +453,11 @@ internal open class MainViewModel(
                                                         error.cause,
                                                     )
 
+                                                CtapException.ERR_UNSUPPORTED_EXTENSION,
+                                                CtapException.ERR_UNSUPPORTED_OPTION,
+                                                CtapException.ERR_UNSUPPORTED_ALGORITHM,
+                                                -> Error.DeviceIneligibleError
+
                                                 else -> Error.DeviceNotConfiguredError
                                             }
 
@@ -480,6 +485,18 @@ internal open class MainViewModel(
                                 is TagLostException -> {
                                     Error.TagLostError
                                 }
+
+                                is IllegalArgumentException ->
+                                    when (error.message) {
+                                        "No Credential Protection support",
+                                        "Authenticator does not support large blob storage",
+                                        -> Error.DeviceIneligibleError
+
+                                        else -> {
+                                            logger.error("Unexpected error during FIDO operation: ", error)
+                                            Error.UnknownError
+                                        }
+                                    }
 
                                 else -> {
                                     logger.error("Unexpected error during FIDO operation: ", error)

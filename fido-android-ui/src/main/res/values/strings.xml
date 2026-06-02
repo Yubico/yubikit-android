@@ -26,6 +26,7 @@
     <string name="yk_fido_pin_successfully_changed">PIN successfully changed</string>
     <string name="yk_fido_unknown_error">Unknown error</string>
     <string name="yk_fido_device_not_configured">Set a PIN on your security key to continue.</string>
+    <string name="yk_fido_device_ineligible">Your security key cannot be used for this site/app.</string>
     <string name="yk_fido_select_passkey_title">Select a passkey</string>
     <string name="yk_fido_select_passkey">Select a passkey to login (%1$d available)</string>
     <string name="yk_fido_retry">Retry</string>
