@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.BasicAlertDialog
@@ -85,7 +84,7 @@ internal fun FidoUiHost(
                     scrimColor = Color.Transparent,
                     onDismissRequest = onDismissRequest,
                 ) {
-                    Box(modifier = Modifier.navigationBarsPadding().imePadding()) {
+                    Box(modifier = Modifier.safeDrawingPadding().imePadding()) {
                         movableContent()
                     }
                 }

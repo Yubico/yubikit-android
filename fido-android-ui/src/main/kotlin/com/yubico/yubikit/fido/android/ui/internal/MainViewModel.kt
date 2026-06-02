@@ -550,7 +550,7 @@ internal open class MainViewModel(
     ) {
         newPinValue?.fill('\u0000')
         newPinValue = newPin.clone()
-        setLastEnteredPin(newPin)
+        setLastEnteredPin(currentPin)
         newPin.fill('\u0000')
         pinValue?.fill('\u0000')
         pinValue = currentPin.clone()

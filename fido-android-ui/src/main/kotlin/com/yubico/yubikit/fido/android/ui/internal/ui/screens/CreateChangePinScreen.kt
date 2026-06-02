@@ -47,6 +47,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -56,6 +57,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.focus.onFocusEvent
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
@@ -157,11 +159,27 @@ private fun CreateChangePinScreen(
         }
 
     val submit: () -> Unit = {
-        if (isPinValid(newPinState.text.toString(), repeatPinState.text.toString(), minPinLen)) {
+        if ((!forceChangePin || currentPinState.text.isNotEmpty()) &&
+            isPinValid(newPinState.text.toString(), repeatPinState.text.toString(), minPinLen)
+        ) {
             onPinAction(
                 newPinState.text.toString().toCharArray(),
                 currentPinState.text.toString().toCharArray(),
             )
+        }
+    }
+
+    val scope = rememberCoroutineScope()
+    // Ensures the submit button scrolls into view when the confirm-PIN field is focused,
+    // so it is not hidden behind the software keyboard.
+    val buttonRequester = remember { BringIntoViewRequester() }
+
+    val isFormValid by remember(forceChangePin, minPinLen) {
+        derivedStateOf {
+            val hasCurrentPin = !forceChangePin || currentPinState.text.isNotEmpty()
+            val newPin = newPinState.text.toString()
+            val repeatPin = repeatPinState.text.toString()
+            hasCurrentPin && isPinValid(newPin, repeatPin, minPinLen)
         }
     }
 
@@ -252,7 +270,10 @@ private fun CreateChangePinScreen(
                 onToggleShowPin = { showRepeatPin = !showRepeatPin },
                 modifier = Modifier
                     .padding(top = 8.dp, start = 16.dp, end = 16.dp)
-                    .focusRequester(repeatPinFocusRequester),
+                    .focusRequester(repeatPinFocusRequester)
+                    .onFocusChanged {
+                        if (it.hasFocus) scope.launch { buttonRequester.bringIntoView() }
+                    },
                 keyboardOptions = KeyboardOptions.Default.copy(
                     imeAction = ImeAction.Done,
                     autoCorrectEnabled = false,
@@ -264,11 +285,7 @@ private fun CreateChangePinScreen(
                     {
                         Button(
                             onClick = submit,
-                            enabled = isPinValid(
-                                newPinState.text.toString(),
-                                repeatPinState.text.toString(),
-                                minPinLen,
-                            ),
+                            enabled = isFormValid,
                             modifier = Modifier.testTag("create_pin_button"),
                         ) {
                             Text(stringResource(R.string.yk_fido_set_pin))
@@ -283,7 +300,8 @@ private fun CreateChangePinScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 16.dp),
+                        .padding(top = 16.dp)
+                        .bringIntoViewRequester(buttonRequester),
                     horizontalArrangement = Arrangement.End,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -298,11 +316,7 @@ private fun CreateChangePinScreen(
                     }
                     Button(
                         onClick = submit,
-                        enabled = isPinValid(
-                            newPinState.text.toString(),
-                            repeatPinState.text.toString(),
-                            minPinLen,
-                        ),
+                        enabled = isFormValid,
                         modifier = Modifier.testTag("create_pin_button"),
                     ) {
                         Text(stringResource(R.string.yk_fido_set_pin))
@@ -384,7 +398,7 @@ private fun CreateChangePinScreen(
                 )
             } else {
                 Text(
-                    text = stringResource(R.string.yk_fido_set_pin_requirements),
+                    text = stringResource(R.string.yk_fido_set_pin_requirements, minPinLen),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface,
                     minLines = 3,
@@ -403,7 +417,10 @@ private fun CreateChangePinScreen(
                 onToggleShowPin = { showRepeatPin = !showRepeatPin },
                 modifier = Modifier
                     .padding(top = 8.dp, start = 16.dp, end = 16.dp)
-                    .focusRequester(repeatPinFocusRequester),
+                    .focusRequester(repeatPinFocusRequester)
+                    .onFocusChanged {
+                        if (it.hasFocus) scope.launch { buttonRequester.bringIntoView() }
+                    },
                 keyboardOptions = KeyboardOptions.Default.copy(
                     imeAction = ImeAction.Done,
                     autoCorrectEnabled = false,
@@ -415,11 +432,7 @@ private fun CreateChangePinScreen(
                     {
                         Button(
                             onClick = submit,
-                            enabled = isPinValid(
-                                newPinState.text.toString(),
-                                repeatPinState.text.toString(),
-                                minPinLen,
-                            ),
+                            enabled = isFormValid,
                             modifier = Modifier.testTag("change_pin_button"),
                         ) {
                             Text(stringResource(R.string.yk_fido_change_pin))
@@ -434,7 +447,8 @@ private fun CreateChangePinScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 16.dp),
+                        .padding(top = 16.dp)
+                        .bringIntoViewRequester(buttonRequester),
                     horizontalArrangement = Arrangement.End,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -449,11 +463,7 @@ private fun CreateChangePinScreen(
                     }
                     Button(
                         onClick = submit,
-                        enabled = isPinValid(
-                            newPinState.text.toString(),
-                            repeatPinState.text.toString(),
-                            minPinLen,
-                        ),
+                        enabled = isFormValid,
                         modifier = Modifier.testTag("change_pin_button"),
                     ) {
                         Text(stringResource(R.string.yk_fido_change_pin))
