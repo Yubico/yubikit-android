@@ -98,7 +98,7 @@ internal class YubiKitFidoActivity : ComponentActivity() {
 
         enableEdgeToEdge()
 
-        if (applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE == 0) {
+        if ((applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) == 0) {
             window.setFlags(
                 WindowManager.LayoutParams.FLAG_SECURE,
                 WindowManager.LayoutParams.FLAG_SECURE,
