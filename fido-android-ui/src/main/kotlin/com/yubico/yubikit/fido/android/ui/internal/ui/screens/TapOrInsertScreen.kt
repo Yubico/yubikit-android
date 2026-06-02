@@ -32,6 +32,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -49,7 +50,7 @@ internal fun TapOrInsertSecurityKey(
 ) {
     ContentWrapper(
         operation = operation,
-        title = stringResource(R.string.yk_fido_connect_your_key_title),
+        title = AnnotatedString(stringResource(R.string.yk_fido_connect_your_key_title)),
         onCloseButtonClick = onCloseButtonClick,
     ) {
         Text(

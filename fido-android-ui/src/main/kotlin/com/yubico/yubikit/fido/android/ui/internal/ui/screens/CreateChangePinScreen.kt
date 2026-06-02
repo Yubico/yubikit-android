@@ -62,6 +62,7 @@ import androidx.compose.ui.focus.onFocusEvent
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -197,8 +198,10 @@ private fun CreateChangePinScreen(
     val isDialog = presentation == FidoPresentation.Dialog
     ContentWrapper(
         operation = operation,
-        title = stringResource(
-            if (forceChangePin) R.string.yk_fido_change_pin_title else R.string.yk_fido_set_pin_title,
+        title = AnnotatedString(
+            stringResource(
+                if (forceChangePin) R.string.yk_fido_change_pin_title else R.string.yk_fido_set_pin_title,
+            ),
         ),
         titleTestTag = "pin_info_text",
         onCloseButtonClick = onCloseButtonClick,
@@ -555,7 +558,7 @@ internal fun PinCreatedScreen(
     val isDialog = LocalFidoPresentation.current == FidoPresentation.Dialog
     ContentWrapper(
         operation = operation,
-        title = stringResource(R.string.yk_fido_pin_successfully_set),
+        title = AnnotatedString(stringResource(R.string.yk_fido_pin_successfully_set)),
         contentHeight = 200.dp,
         onCloseButtonClick = onCloseButtonClick,
         hasOwnDismiss = isDialog,
@@ -596,7 +599,7 @@ internal fun PinChangedScreen(
     val isDialog = LocalFidoPresentation.current == FidoPresentation.Dialog
     ContentWrapper(
         operation = operation,
-        title = stringResource(R.string.yk_fido_pin_successfully_changed),
+        title = AnnotatedString(stringResource(R.string.yk_fido_pin_successfully_changed)),
         contentHeight = 200.dp,
         onCloseButtonClick = onCloseButtonClick,
         hasOwnDismiss = isDialog,

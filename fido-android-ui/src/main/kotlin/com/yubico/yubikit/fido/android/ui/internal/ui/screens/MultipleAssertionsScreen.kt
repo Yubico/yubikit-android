@@ -44,6 +44,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -72,7 +73,7 @@ internal fun MultipleAssertionsScreen(
 
     ContentWrapper(
         operation = operation,
-        title = stringResource(R.string.yk_fido_select_passkey_title),
+        title = AnnotatedString(stringResource(R.string.yk_fido_select_passkey_title)),
         onCloseButtonClick = onCloseButtonClick,
         contentHeight = listHeight + 100.dp,
     ) {

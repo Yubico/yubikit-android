@@ -36,6 +36,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -71,11 +72,13 @@ internal fun MatchFingerprint(
 
     ContentWrapper(
         operation = operation,
-        title = if (operation == FidoClientService.Operation.MAKE_CREDENTIAL) {
-            stringResource(R.string.yk_fido_create_passkey)
-        } else {
-            stringResource(R.string.yk_fido_login_with_passkey)
-        },
+        title = AnnotatedString(
+            if (operation == FidoClientService.Operation.MAKE_CREDENTIAL) {
+                stringResource(R.string.yk_fido_create_passkey)
+            } else {
+                stringResource(R.string.yk_fido_login_with_passkey)
+            },
+        ),
         onCloseButtonClick = onCloseButtonClick,
     ) {
         if (rpId.isNotEmpty()) {

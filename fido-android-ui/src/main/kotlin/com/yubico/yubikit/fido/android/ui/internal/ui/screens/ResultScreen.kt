@@ -60,11 +60,13 @@ internal fun SuccessView(
 ) {
     ContentWrapper(
         operation = operation,
-        title = if (operation == FidoClientService.Operation.MAKE_CREDENTIAL) {
-            stringResource(R.string.yk_fido_passkey_created)
-        } else {
-            stringResource(R.string.yk_fido_login_successful)
-        },
+        title = AnnotatedString(
+            if (operation == FidoClientService.Operation.MAKE_CREDENTIAL) {
+                stringResource(R.string.yk_fido_passkey_created)
+            } else {
+                stringResource(R.string.yk_fido_login_successful)
+            },
+        ),
         onCloseButtonClick = null,
     ) {
         Spacer(modifier = Modifier.height(24.dp))
@@ -111,9 +113,9 @@ internal fun ErrorView(
     ContentWrapper(
         operation = operation,
         title = if (operation == FidoClientService.Operation.MAKE_CREDENTIAL) {
-            stringResource(R.string.yk_fido_error_create_failed, rpId)
+            rpIdSentence(R.string.yk_fido_error_create_failed, rpId)
         } else {
-            stringResource(R.string.yk_fido_error_login_failed, rpId)
+            rpIdSentence(R.string.yk_fido_error_login_failed, rpId)
         },
         onCloseButtonClick = onCloseButtonClick.takeIf { isDialog },
         hasOwnDismiss = isDialog,

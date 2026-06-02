@@ -63,6 +63,7 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -124,7 +125,7 @@ internal fun EnterPin(
     val isDialog = presentation == FidoPresentation.Dialog
     ContentWrapper(
         operation = operation,
-        title = stringResource(R.string.yk_fido_enter_pin_title),
+        title = AnnotatedString(stringResource(R.string.yk_fido_enter_pin_title)),
         onCloseButtonClick = onCloseButtonClick,
         hasOwnDismiss = isDialog,
     ) {

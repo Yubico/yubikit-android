@@ -50,6 +50,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
@@ -63,7 +64,7 @@ import com.yubico.yubikit.fido.android.ui.internal.FidoClientService
 internal fun ContentWrapper(
     modifier: Modifier = Modifier,
     operation: FidoClientService.Operation,
-    title: String? = null,
+    title: AnnotatedString? = null,
     titleTestTag: String? = null,
     onCloseButtonClick: (() -> Unit)? = null,
     hasOwnDismiss: Boolean = false,
