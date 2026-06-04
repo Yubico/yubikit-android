@@ -119,7 +119,9 @@ internal class FidoClientService(private val viewModel: MainViewModel = MainView
                     ?: ClientDataProvider.fromClientDataJson(
                         buildClientData(
                             "webauthn.create",
-                            origin.resolved,
+                            // WebAuthn origin (android:apk-key-hash:… for native callers);
+                            // resolved is only for rp.id/effectiveDomain derivation.
+                            origin.callingApp,
                             requestJson["challenge"] as String,
                         ),
                     )
@@ -161,7 +163,9 @@ internal class FidoClientService(private val viewModel: MainViewModel = MainView
                     ?: ClientDataProvider.fromClientDataJson(
                         buildClientData(
                             "webauthn.get",
-                            origin.resolved,
+                            // WebAuthn origin (android:apk-key-hash:… for native callers);
+                            // resolved is only for rp.id/effectiveDomain derivation.
+                            origin.callingApp,
                             requestJson["challenge"] as String,
                         ),
                     )
