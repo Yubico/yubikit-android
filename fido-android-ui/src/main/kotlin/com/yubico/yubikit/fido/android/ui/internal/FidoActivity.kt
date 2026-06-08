@@ -142,10 +142,15 @@ internal class YubiKitFidoActivity : ComponentActivity() {
                 }
 
                 val finishActivityWithCancel: () -> Unit = {
-                    logger.debug("FidoActivity finishWithCancel")
-                    setResult(
-                        RESULT_CANCELED,
-                    )
+                    // Don't set RESULT_CANCELED once a credential was delivered: the
+                    // success path hides the sheet, which fires onDismissRequest here
+                    // and would otherwise overwrite RESULT_OK.
+                    if (!isFinishing && !credentialDelivered) {
+                        logger.debug("FidoActivity finishWithCancel")
+                        setResult(
+                            RESULT_CANCELED,
+                        )
+                    }
                     finishActivity()
                 }
 
