@@ -47,7 +47,7 @@ android {
     }
 
     testOptions {
-        targetSdk = 36
+        targetSdk = 37
     }
 
     namespace = "com.yubico.yubikit.testing"

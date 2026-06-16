@@ -39,7 +39,7 @@ android {
 
     defaultConfig {
         minSdk = 23
-        targetSdk = 36
+        targetSdk = 37
         versionName = version.toString()
         versionCode = 1
         multiDexEnabled = true

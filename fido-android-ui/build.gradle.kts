@@ -61,6 +61,7 @@ android {
     testOptions {
         managedDevices {
             allDevices {
+                // apiLevel stays at 36 — API 37 aosp system images not yet available
                 create("smallPhone", ManagedVirtualDevice::class) {
                     device = "Pixel 4"
                     apiLevel = 36
