@@ -49,11 +49,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
 
 internal typealias YubiKeyAction = suspend (Result<YubiKeyDevice, Exception>) -> Unit
 
@@ -155,7 +155,7 @@ internal open class MainViewModel(
 
     suspend fun waitForKeyRemoval() {
         delay(250)
-        suspendCoroutine { continuation ->
+        suspendCancellableCoroutine { continuation ->
             when (val dev = _device.value) {
                 is NfcYubiKeyDevice ->
                     dev.remove {
@@ -181,7 +181,7 @@ internal open class MainViewModel(
         }
 
     private suspend fun awaitPendingYubiKeyDevice(): YubiKeyDevice =
-        suspendCoroutine { cont ->
+        suspendCancellableCoroutine { cont ->
             pendingYubiKeyAction.postValue { result ->
                 cont.resume(result.value)
             }
