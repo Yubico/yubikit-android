@@ -165,6 +165,11 @@ internal class YubiKitFidoActivity : ComponentActivity() {
                 }
 
                 val finishActivityWithResult: (PublicKeyCredential) -> Unit = { result ->
+                    // Mark the credential as delivered before suspending in
+                    // waitForKeyRemoval(): otherwise a key removal during that wait
+                    // (e.g. the user pulling a USB key) would race the result here and
+                    // overwrite RESULT_OK with RESULT_KEY_REMOVED.
+                    credentialDelivered = true
                     scope.launch {
                         viewModel.waitForKeyRemoval()
                         setResult(
@@ -174,7 +179,6 @@ internal class YubiKitFidoActivity : ComponentActivity() {
                                 JSONObject(result.toMap(SerializationType.JSON)).toString(),
                             ),
                         )
-                        credentialDelivered = true
                         finishActivity()
                     }
                 }
