@@ -54,6 +54,7 @@ import kotlinx.coroutines.withContext
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import kotlin.coroutines.resume
+import kotlin.time.Duration.Companion.milliseconds
 
 internal typealias YubiKeyAction = suspend (Result<YubiKeyDevice, Exception>) -> Unit
 
@@ -71,7 +72,7 @@ internal open class MainViewModel(
     private val pendingYubiKeyAction = MutableLiveData<YubiKeyAction?>()
 
     private val _state =
-        MutableStateFlow<State>(
+        MutableStateFlow(
             if (FidoConfigManager.current.isPinPrioritized) {
                 State.WaitingForPinEntry(null)
             } else {
@@ -154,7 +155,7 @@ internal open class MainViewModel(
     }
 
     suspend fun waitForKeyRemoval() {
-        delay(250)
+        delay(250.milliseconds)
         suspendCancellableCoroutine { continuation ->
             when (val dev = _device.value) {
                 is NfcYubiKeyDevice ->
