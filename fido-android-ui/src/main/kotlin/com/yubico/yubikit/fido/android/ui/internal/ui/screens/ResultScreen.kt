@@ -184,14 +184,14 @@ internal fun ErrorView(
 }
 
 @Composable
-private fun resolveErrorText(error: Error?, origin: String): String =
+private fun resolveErrorText(error: Error?, rpId: String): String =
     when (error) {
         is Error.OperationError -> {
             error.exception?.let { ex ->
                 when (ex) {
                     is CtapException -> when (ex.ctapError) {
                         CtapException.ERR_NO_CREDENTIALS ->
-                            stringResource(R.string.yk_fido_ctap_err_no_credentials, origin)
+                            stringResource(R.string.yk_fido_ctap_err_no_credentials, rpId)
                         CtapException.ERR_USER_ACTION_TIMEOUT ->
                             stringResource(R.string.yk_fido_ctap_err_user_action_timeout)
                         CtapException.ERR_KEY_STORE_FULL ->

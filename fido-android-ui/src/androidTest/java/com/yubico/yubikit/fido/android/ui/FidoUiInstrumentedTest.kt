@@ -83,7 +83,7 @@ class FidoUiInstrumentedTest {
             }
         }
 
-        composeTestRule.onNodeWithText("Connect your key")
+        composeTestRule.onNodeWithText("Connect your security key")
             .assertIsDisplayed()
     }
 
@@ -99,7 +99,7 @@ class FidoUiInstrumentedTest {
             }
         }
 
-        composeTestRule.onNodeWithText("Plug-in your USB security key.")
+        composeTestRule.onNodeWithText("Plug in your USB security key.")
             .assertIsDisplayed()
     }
 

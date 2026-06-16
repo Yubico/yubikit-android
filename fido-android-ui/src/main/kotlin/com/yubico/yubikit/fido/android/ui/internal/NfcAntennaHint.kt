@@ -53,6 +53,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import com.yubico.yubikit.fido.android.ui.R
 
 internal fun nfcAntennaInfo(context: Context): NfcAntennaInfo? {
@@ -114,8 +115,11 @@ internal fun NfcAntennaHint(
                 // Re-key on configuration so rotation changes recompute the rotation value.
                 @Suppress("UNUSED_VARIABLE")
                 val configuration = LocalConfiguration.current
+                // Context.getDisplay() throws UnsupportedOperationException when this
+                // composable is hosted in a non-visual context; getDisplayOrDefault falls
+                // back to the default display instead of crashing.
                 val rotation = remember(configuration) {
-                    context.display.rotation
+                    ContextCompat.getDisplayOrDefault(context).rotation
                 }
                 val isSideways = rotation == Surface.ROTATION_90 || rotation == Surface.ROTATION_270
                 val viewportWidthMm = if (isSideways) deviceHeightMm else deviceWidthMm

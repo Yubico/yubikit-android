@@ -104,7 +104,11 @@ internal class YubiKitFidoActivity : ComponentActivity() {
                 WindowManager.LayoutParams.FLAG_SECURE,
             )
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                window.setHideOverlayWindows(true)
+                try {
+                    window.setHideOverlayWindows(true)
+                } catch (e: SecurityException) {
+                    logger.warn("HIDE_OVERLAY_WINDOWS not granted; overlay protection disabled", e)
+                }
             }
         }
 
