@@ -160,7 +160,11 @@ internal open class MainViewModel(
             when (val dev = _device.value) {
                 is NfcYubiKeyDevice ->
                     dev.remove {
-                        continuation.resume(Unit)
+                        // The callback may fire after the coroutine was cancelled
+                        // (e.g. the activity finished); don't resume a dead continuation.
+                        if (continuation.isActive) {
+                            continuation.resume(Unit)
+                        }
                     }
 
                 else -> {
@@ -184,7 +188,14 @@ internal open class MainViewModel(
     private suspend fun awaitPendingYubiKeyDevice(): YubiKeyDevice =
         suspendCancellableCoroutine { cont ->
             pendingYubiKeyAction.postValue { result ->
-                cont.resume(result.value)
+                if (cont.isActive) {
+                    cont.resume(result.value)
+                }
+            }
+            // If the caller is cancelled before a device arrives, drop the pending
+            // action so a later provideYubiKey() doesn't invoke a dead continuation.
+            cont.invokeOnCancellation {
+                pendingYubiKeyAction.postValue(null)
             }
         }
 
