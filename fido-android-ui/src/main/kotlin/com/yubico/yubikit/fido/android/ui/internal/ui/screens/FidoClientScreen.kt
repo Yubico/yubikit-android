@@ -52,7 +52,7 @@ internal fun FidoClientUi(
     // effectiveDomain throws for non-HTTPS/hostless origins (e.g. native callers that
     // pass an android:apk-key-hash origin). Fall back to the raw calling origin for
     // display rather than crashing the UI during composition.
-    val rpId = callerLabel
+    val rpId = callerLabel?.takeIf { it.isNotBlank() }
         ?: runCatching { origin.effectiveDomain }.getOrNull()
         ?: origin.callingApp
     val uiState by viewModel.state.collectAsState()
