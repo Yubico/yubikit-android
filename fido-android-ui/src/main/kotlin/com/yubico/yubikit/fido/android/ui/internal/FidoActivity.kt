@@ -159,7 +159,10 @@ internal class YubiKitFidoActivity : ComponentActivity() {
                 }
 
                 val finishActivityWithKeyRemoved: () -> Unit = {
-                    logger.debug("FidoActivity finishWithKeyRemoved credentialDelivered=$credentialDelivered")
+                    logger.debug(
+                        "FidoActivity finishWithKeyRemoved credentialDelivered={}",
+                        credentialDelivered,
+                    )
                     if (!credentialDelivered) {
                         setResult(
                             RESULT_KEY_REMOVED,
@@ -188,7 +191,11 @@ internal class YubiKitFidoActivity : ComponentActivity() {
                 }
 
                 LaunchedEffect(device) {
-                    logger.debug("FidoActivity device changed: device=$device wasConnected=$wasConnected")
+                    logger.debug(
+                        "FidoActivity device changed: device={} wasConnected={}",
+                        device,
+                        wasConnected,
+                    )
                     if (device != null) {
                         wasConnected = true
                     } else if (wasConnected) {

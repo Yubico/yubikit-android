@@ -103,21 +103,29 @@ internal class FidoWebViewSupportImpl {
                             val isInjectedJs = sourceId.isNullOrEmpty()
 
                             if (isInjectedJs) {
-                                val msg = "$JS_SOURCE_TAG ${it.message()}"
                                 @Suppress("LoggingSimilarMessage")
                                 when (it.messageLevel()) {
-                                    ConsoleMessage.MessageLevel.ERROR -> logger.error(msg)
-                                    ConsoleMessage.MessageLevel.WARNING -> logger.warn(msg)
+                                    ConsoleMessage.MessageLevel.ERROR ->
+                                        logger.error("{} {}", JS_SOURCE_TAG, it.message())
+                                    ConsoleMessage.MessageLevel.WARNING ->
+                                        logger.warn("{} {}", JS_SOURCE_TAG, it.message())
                                     // In WebView: console.debug() → TIP, console.log() → LOG.
                                     // For injected JS we use console.debug() for debug-level
                                     // and console.log() for trace/verbose-level messages.
-                                    ConsoleMessage.MessageLevel.DEBUG -> logger.debug(msg)
-                                    ConsoleMessage.MessageLevel.TIP -> logger.debug(msg)
+                                    ConsoleMessage.MessageLevel.DEBUG ->
+                                        logger.debug("{} {}", JS_SOURCE_TAG, it.message())
+                                    ConsoleMessage.MessageLevel.TIP ->
+                                        logger.debug("{} {}", JS_SOURCE_TAG, it.message())
                                     // includes ConsoleMessage.MessageLevel.LOG
-                                    else -> logger.trace(msg)
+                                    else -> logger.trace("{} {}", JS_SOURCE_TAG, it.message())
                                 }
                             } else {
-                                logger.trace("$sourceId:${it.lineNumber()} ${it.message()}")
+                                logger.trace(
+                                    "{}:{} {}",
+                                    sourceId,
+                                    it.lineNumber(),
+                                    it.message(),
+                                )
                             }
                         }
                         return true
