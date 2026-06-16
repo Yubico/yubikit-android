@@ -35,9 +35,9 @@ class OtpFragment : YubiKeyFragment<YubiOtpSession, OtpViewModel>() {
     private lateinit var binding: FragmentYubiotpBinding
 
     override fun onCreateView(
-            inflater: LayoutInflater,
-            container: ViewGroup?,
-            savedInstanceState: Bundle?
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?,
     ): View {
         binding = FragmentYubiotpBinding.inflate(inflater, container, false)
         return binding.root
@@ -49,11 +49,13 @@ class OtpFragment : YubiKeyFragment<YubiOtpSession, OtpViewModel>() {
         binding.pager.adapter = ProgramModeAdapter(this)
 
         TabLayoutMediator(binding.tabLayout, binding.pager) { tab, position ->
-            tab.setText(when (position) {
-                0 -> R.string.otp_yubiotp
-                1 -> R.string.otp_chalresp
-                else -> throw IllegalStateException()
-            })
+            tab.setText(
+                when (position) {
+                    0 -> R.string.otp_yubiotp
+                    1 -> R.string.otp_chalresp
+                    else -> throw IllegalStateException()
+                },
+            )
         }.attach()
 
         viewModel.slotConfigurationState.observe(viewLifecycleOwner) {

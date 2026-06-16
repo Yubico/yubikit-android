@@ -52,7 +52,7 @@ class FidoFragment : Fragment() {
                 HmacSecretExtension(),
                 MinPinLengthExtension(),
                 LargeBlobExtension(),
-                SignExtension()
+                SignExtension(),
             )
         private const val URL_PASSKEY = "https://passkey.org"
         private const val URL_WEBAUTHN_IO = "https://webauthn.io"
