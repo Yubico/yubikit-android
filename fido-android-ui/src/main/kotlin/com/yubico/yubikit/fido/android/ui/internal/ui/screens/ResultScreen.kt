@@ -83,7 +83,7 @@ internal fun SuccessView(
         ) {
             Icon(
                 imageVector = Icons.Default.Check,
-                contentDescription = stringResource(R.string.yk_fido_passkey_created),
+                contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.size(80.dp),
             )

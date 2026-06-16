@@ -82,7 +82,7 @@ internal fun TapOrInsertSecurityKey(
         ) {
             Icon(
                 painter = painterResource(R.drawable.security_key_24px),
-                contentDescription = stringResource(R.string.yk_fido_passkey_icon),
+                contentDescription = null,
                 modifier = Modifier.size(64.dp),
                 tint = MaterialTheme.colorScheme.onSurface,
             )
