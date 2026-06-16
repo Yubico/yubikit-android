@@ -137,7 +137,7 @@ dependencies {
     testImplementation(libs.turbine)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.robolectric)
-    testImplementation(libs.ui.test.junit4)
+    testImplementation(libs.androidx.ui.test.junit4)
     testImplementation(libs.androidx.test.core)
     testImplementation(libs.slf4j.api)
     testRuntimeOnly(libs.logback.classic)
