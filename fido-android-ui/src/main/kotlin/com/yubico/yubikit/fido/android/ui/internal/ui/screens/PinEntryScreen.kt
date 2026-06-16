@@ -62,30 +62,29 @@ import com.yubico.yubikit.fido.android.ui.internal.ui.components.ContentWrapper
 import com.yubico.yubikit.fido.android.ui.internal.ui.theme.DefaultPreview
 
 @Composable
-internal fun resolvePinEntryError(error: Error?): String? =
-    when (error) {
-        is Error.IncorrectPinError -> {
-            if (error.remainingAttempts != null) {
-                pluralStringResource(
-                    R.plurals.yk_fido_incorrect_pin_with_attempts,
-                    count = error.remainingAttempts,
-                    error.remainingAttempts,
-                )
-            } else {
-                stringResource(R.string.yk_fido_incorrect_pin)
-            }
+internal fun resolvePinEntryError(error: Error?): String? = when (error) {
+    is Error.IncorrectPinError -> {
+        if (error.remainingAttempts != null) {
+            pluralStringResource(
+                R.plurals.yk_fido_incorrect_pin_with_attempts,
+                count = error.remainingAttempts,
+                error.remainingAttempts,
+            )
+        } else {
+            stringResource(R.string.yk_fido_incorrect_pin)
         }
-
-        is Error.PinBlockedError -> {
-            stringResource(R.string.yk_fido_pin_blocked)
-        }
-
-        is Error.PinAuthBlockedError -> {
-            stringResource(R.string.yk_fido_pin_auth_blocked)
-        }
-
-        else -> null
     }
+
+    is Error.PinBlockedError -> {
+        stringResource(R.string.yk_fido_pin_blocked)
+    }
+
+    is Error.PinAuthBlockedError -> {
+        stringResource(R.string.yk_fido_pin_auth_blocked)
+    }
+
+    else -> null
+}
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable

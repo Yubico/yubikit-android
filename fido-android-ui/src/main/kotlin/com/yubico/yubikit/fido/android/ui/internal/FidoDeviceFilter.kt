@@ -39,7 +39,5 @@ internal class FidoDeviceFilter : DeviceFilter() {
     override fun checkUsbDevice(
         manager: UsbManager,
         usbDevice: UsbDevice,
-    ): Boolean {
-        return true
-    }
+    ): Boolean = true
 }

@@ -93,8 +93,9 @@ internal class YubiKitFidoActivity : ComponentActivity() {
 
         setContent {
             val config by FidoConfigManager.configuration.collectAsState()
-            val theme = config.customTheme?.takeIf { config.isCustomThemeEnabled }
-                ?: { content -> FidoAndroidTheme(content = content) }
+            val theme =
+                config.customTheme?.takeIf { config.isCustomThemeEnabled }
+                    ?: { content -> FidoAndroidTheme(content = content) }
             theme {
                 val uiState by viewModel.state.collectAsState()
                 val showAntennas =
@@ -112,14 +113,15 @@ internal class YubiKitFidoActivity : ComponentActivity() {
                     if (!isFinishing) {
                         isFinishing = true
 
-                        scope.launch {
-                            sheetState.hide()
-                        }.invokeOnCompletion {
-                            if (!sheetState.isVisible) {
-                                bottomSheetVisible = false
-                                finish()
+                        scope
+                            .launch {
+                                sheetState.hide()
+                            }.invokeOnCompletion {
+                                if (!sheetState.isVisible) {
+                                    bottomSheetVisible = false
+                                    finish()
+                                }
                             }
-                        }
                     }
                 }
 
@@ -258,7 +260,8 @@ internal class YubiKitFidoActivity : ComponentActivity() {
                     } ?: throw IllegalArgumentException("Invalid operation type")
 
                 return FidoActivityParameters(
-                    origin = Origin(
+                    origin =
+                    Origin(
                         extras.getString("callingAppOrigin")!!,
                         extras.getString("resolvedOrigin")!!,
                     ),

@@ -38,7 +38,6 @@ import org.junit.Test
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class MainViewModelTest {
-
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var viewModel: MainViewModel
 

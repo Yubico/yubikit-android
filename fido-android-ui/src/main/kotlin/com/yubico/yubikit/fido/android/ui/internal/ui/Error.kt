@@ -31,13 +31,21 @@ internal sealed class Error {
 
     data object DeviceNotConfiguredError : Error()
 
-    data class IncorrectPinError(val remainingAttempts: Int?) : Error()
+    data class IncorrectPinError(
+        val remainingAttempts: Int?,
+    ) : Error()
 
-    data class ForcePinChangeError(val remainingAttempts: Int?) : Error()
+    data class ForcePinChangeError(
+        val remainingAttempts: Int?,
+    ) : Error()
 
-    data class IncorrectUvError(val remainingAttempts: Int) : Error()
+    data class IncorrectUvError(
+        val remainingAttempts: Int,
+    ) : Error()
 
-    data class OperationError(val exception: Throwable?) : Error()
+    data class OperationError(
+        val exception: Throwable?,
+    ) : Error()
 
     data object UnknownError : Error()
 }

@@ -65,10 +65,11 @@ internal class FidoWebViewSupportImpl {
 
             val bridge = FidoMessageBridge(coroutineScope, fidoClient)
 
-            val fidoJs = FidoJs.CODE.replace(
-                FidoJs.BRIDGE_PLACEHOLDER,
-                FidoMessageBridge.JS_BRIDGE_NAME,
-            )
+            val fidoJs =
+                FidoJs.CODE.replace(
+                    FidoJs.BRIDGE_PLACEHOLDER,
+                    FidoMessageBridge.JS_BRIDGE_NAME,
+                )
 
             // Use "*" to accept messages from any origin at the transport level.
             // Per-message HTTPS and origin validation is enforced in FidoMessageBridge.onPostMessage().
@@ -107,12 +108,16 @@ internal class FidoWebViewSupportImpl {
                                 @Suppress("LoggingSimilarMessage")
                                 when (it.messageLevel()) {
                                     ConsoleMessage.MessageLevel.ERROR -> logger.error(msg)
+
                                     ConsoleMessage.MessageLevel.WARNING -> logger.warn(msg)
+
                                     // In WebView: console.debug() → TIP, console.log() → LOG.
                                     // For injected JS we use console.debug() for debug-level
                                     // and console.log() for trace/verbose-level messages.
                                     ConsoleMessage.MessageLevel.DEBUG -> logger.debug(msg)
+
                                     ConsoleMessage.MessageLevel.TIP -> logger.debug(msg)
+
                                     // includes ConsoleMessage.MessageLevel.LOG
                                     else -> logger.trace(msg)
                                 }

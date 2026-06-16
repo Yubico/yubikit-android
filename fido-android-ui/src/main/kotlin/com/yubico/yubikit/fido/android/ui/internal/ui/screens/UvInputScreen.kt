@@ -57,6 +57,7 @@ internal fun MatchFingerprint(
             }
 
             null -> stringResource(R.string.yk_fido_touch_fingerprint)
+
             else -> stringResource(R.string.yk_fido_ctap_err_uv_unknown)
         }
 
