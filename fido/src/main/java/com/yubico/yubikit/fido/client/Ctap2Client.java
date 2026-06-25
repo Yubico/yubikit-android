@@ -493,7 +493,8 @@ public class Ctap2Client implements WebAuthnClient {
         ResidentKeyRequirement.REQUIRED.equals(selectionResidentKey)
             || (ResidentKeyRequirement.PREFERRED.equals(selectionResidentKey) && rkSupported);
 
-    final AuthParams authParams = getAuthParams(pin, userVerification, permissions, rpId, state);
+    final AuthParams authParams =
+        getAuthParams(pin, userVerification, permissions, rpId, rk, state);
 
     Map<String, Boolean> ctapOptions;
     if (!(rk || authParams.internalUv)) {
@@ -626,7 +627,10 @@ public class Ctap2Client implements WebAuthnClient {
     }
 
     final String userVerification = options.getUserVerification();
-    final AuthParams authParams = getAuthParams(pin, userVerification, permissions, rpId, state);
+    // An empty allowList is a usernameless (discoverable) assertion: UV is needed so the
+    // authenticator reveals user name/displayName for account selection.
+    final AuthParams authParams =
+        getAuthParams(pin, userVerification, permissions, rpId, allowCredentials.isEmpty(), state);
 
     PublicKeyCredentialDescriptor selectedCred =
         allowCredentials.isEmpty()
@@ -710,8 +714,16 @@ public class Ctap2Client implements WebAuthnClient {
    * @return true if user verification should be used, false otherwise.
    * @throws ClientError If user verification is required but not configured or supported.
    */
-  private boolean shouldUseUv(
-      Ctap2Session.InfoData info, @Nullable String userVerification, int permissions)
+  // Package-private (not private) so it can be unit-tested directly across the
+  // userVerification × makeCredential/getAssertion × discoverable × makeCredUvNotRqd matrix.
+  //
+  // discoverable means the operation involves discoverable (resident) credentials: for
+  // makeCredential it is rk=true; for getAssertion it is an empty allowList (usernameless).
+  boolean shouldUseUv(
+      Ctap2Session.InfoData info,
+      @Nullable String userVerification,
+      int permissions,
+      boolean discoverable)
       throws ClientError {
     Map<String, ?> options = info.getOptions();
 
@@ -728,7 +740,6 @@ public class Ctap2Client implements WebAuthnClient {
         || ((UserVerificationRequirement.PREFERRED.equals(userVerification)
                 || userVerification == null)
             && supportsUv)
-        || ((UserVerificationRequirement.DISCOURAGED.equals(userVerification)) && pinConfigured)
         || Boolean.TRUE.equals(options.get(OPTION_ALWAYS_UV))) {
       if (!hasUvConfigured) {
         throw new ClientError(
@@ -737,6 +748,15 @@ public class Ctap2Client implements WebAuthnClient {
       }
       return true;
     }
+    // Discoverable-credential operations need UV even when userVerification=discouraged:
+    //  - makeCredential rk=true: the authenticator rejects resident-key creation without UV
+    //    (CTAP2_ERR_PUAT_REQUIRED); makeCredUvNotRqd only exempts NON-discoverable creation.
+    //  - getAssertion with an empty allowList: without UV the authenticator omits user name and
+    //    displayName (single-factor privacy), leaving no way to present an account picker.
+    if (discoverable && hasUvConfigured) {
+      return true;
+    }
+    // Non-discoverable makeCredential needs UV unless makeCredUvNotRqd lets it skip.
     if (mc && hasUvConfigured && !Boolean.TRUE.equals(options.get(OPTION_MC_UV_NOT_RQD))) {
       return true;
     }
@@ -779,6 +799,7 @@ public class Ctap2Client implements WebAuthnClient {
       @Nullable String userVerification,
       int permissions,
       @Nullable String rpId,
+      boolean discoverable,
       @Nullable CommandState state)
       throws IOException, CommandException, ClientError {
     Ctap2Session.InfoData info = ctap.getCachedInfo();
@@ -786,7 +807,7 @@ public class Ctap2Client implements WebAuthnClient {
     byte[] pinToken = null;
     boolean internalUv = false;
 
-    if (shouldUseUv(info, userVerification, permissions)) {
+    if (shouldUseUv(info, userVerification, permissions, discoverable)) {
       boolean allowInternalUv =
           (permissions & ~(ClientPin.PIN_PERMISSION_MC | ClientPin.PIN_PERMISSION_GA)) == 0;
       pinToken = getToken(pin, permissions, rpId, allowInternalUv, state);
