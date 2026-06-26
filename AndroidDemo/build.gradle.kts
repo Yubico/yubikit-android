@@ -130,10 +130,3 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 }
-
-configure<SpotlessExtension> {
-    // temporarily don't format kotlin in this project
-    kotlin {
-        targetExclude("src/**/*.kt", "src/**/*.kts")
-    }
-}

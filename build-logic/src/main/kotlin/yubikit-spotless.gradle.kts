@@ -31,7 +31,7 @@ configure<SpotlessExtension> {
     kotlin {
         target("**/*.kt")
         targetExclude("${layout.buildDirectory.get()}/**/*.kt")
-        ktlint("1.2.1").editorConfigOverride(
+        ktlint("1.8.0").editorConfigOverride(
             mapOf(
                 "ktlint_function_naming_ignore_when_annotated_with" to "Composable"
             ),

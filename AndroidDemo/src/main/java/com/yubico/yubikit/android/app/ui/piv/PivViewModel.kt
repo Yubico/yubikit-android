@@ -31,6 +31,7 @@ import java.security.cert.X509Certificate
 
 class PivViewModel : YubiKeyViewModel<PivSession>() {
     private val logger = LoggerFactory.getLogger(PivViewModel::class.java)
+
     /**
      * List of slots that we will show on demo UI
      */
@@ -49,7 +50,7 @@ class PivViewModel : YubiKeyViewModel<PivSession>() {
     override fun getSession(
         device: YubiKeyDevice,
         onError: (Throwable) -> Unit,
-        callback: (PivSession) -> Unit
+        callback: (PivSession) -> Unit,
     ) {
         device.requestConnection(SmartCardConnection::class.java) {
             try {
@@ -61,17 +62,19 @@ class PivViewModel : YubiKeyViewModel<PivSession>() {
     }
 
     override fun PivSession.updateState() {
-        _certificates.postValue(SparseArray<X509Certificate>().apply {
-            slots.forEach {
-                try {
-                    put(it.value, getCertificate(it))
-                } catch (e: ApduException) {
-                    logger.debug("Missing certificate: {}", it)
-                } catch (e: BadResponseException) {
-                    // Malformed cert loaded? Ignore but log:
-                    logger.error("Failed getting certificate {}", it, e)
+        _certificates.postValue(
+            SparseArray<X509Certificate>().apply {
+                slots.forEach {
+                    try {
+                        put(it.value, getCertificate(it))
+                    } catch (e: ApduException) {
+                        logger.debug("Missing certificate: {}", it)
+                    } catch (e: BadResponseException) {
+                        // Malformed cert loaded? Ignore but log:
+                        logger.error("Failed getting certificate {}", it, e)
+                    }
                 }
-            }
-        })
+            },
+        )
     }
 }

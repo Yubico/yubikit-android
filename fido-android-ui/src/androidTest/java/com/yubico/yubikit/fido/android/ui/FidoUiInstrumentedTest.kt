@@ -42,7 +42,6 @@ import org.junit.runner.RunWith
  */
 @RunWith(AndroidJUnit4::class)
 class FidoUiInstrumentedTest {
-
     @get:Rule
     val composeTestRule = createComposeRule()
 
@@ -62,13 +61,17 @@ class FidoUiInstrumentedTest {
         }
 
         // Verify all critical UI elements are visible
-        composeTestRule.onNodeWithText("PIN", substring = true, ignoreCase = true)
+        composeTestRule
+            .onNodeWithText("PIN", substring = true, ignoreCase = true)
             .assertIsDisplayed()
-        composeTestRule.onNodeWithText("Continue", ignoreCase = true)
+        composeTestRule
+            .onNodeWithText("Continue", ignoreCase = true)
             .assertIsDisplayed()
-        composeTestRule.onNodeWithContentDescription("Close")
+        composeTestRule
+            .onNodeWithContentDescription("Close")
             .assertIsDisplayed()
-        composeTestRule.onNodeWithText(testOrigin, substring = true)
+        composeTestRule
+            .onNodeWithText(testOrigin, substring = true)
             .assertIsDisplayed()
     }
 
@@ -85,7 +88,8 @@ class FidoUiInstrumentedTest {
             }
         }
 
-        composeTestRule.onNodeWithText("passkey", substring = true, ignoreCase = true)
+        composeTestRule
+            .onNodeWithText("passkey", substring = true, ignoreCase = true)
             .assertIsDisplayed()
     }
 
@@ -102,7 +106,8 @@ class FidoUiInstrumentedTest {
             }
         }
 
-        composeTestRule.onNodeWithText("Login", substring = true, ignoreCase = true)
+        composeTestRule
+            .onNodeWithText("Login", substring = true, ignoreCase = true)
             .assertIsDisplayed()
     }
 
@@ -121,11 +126,14 @@ class FidoUiInstrumentedTest {
             }
         }
 
-        composeTestRule.onNodeWithText("Tap or insert", substring = true, ignoreCase = true)
+        composeTestRule
+            .onNodeWithText("Tap or insert", substring = true, ignoreCase = true)
             .assertIsDisplayed()
-        composeTestRule.onNodeWithContentDescription("Close")
+        composeTestRule
+            .onNodeWithContentDescription("Close")
             .assertIsDisplayed()
-        composeTestRule.onNodeWithText(testOrigin, substring = true)
+        composeTestRule
+            .onNodeWithText(testOrigin, substring = true)
             .assertIsDisplayed()
     }
 
@@ -142,7 +150,8 @@ class FidoUiInstrumentedTest {
             }
         }
 
-        composeTestRule.onNodeWithText("NFC not available", ignoreCase = true)
+        composeTestRule
+            .onNodeWithText("NFC not available", ignoreCase = true)
             .assertIsDisplayed()
     }
 
@@ -159,7 +168,8 @@ class FidoUiInstrumentedTest {
             }
         }
 
-        composeTestRule.onNodeWithText("NFC not available", ignoreCase = true)
+        composeTestRule
+            .onNodeWithText("NFC not available", ignoreCase = true)
             .assertDoesNotExist()
     }
 
@@ -178,7 +188,8 @@ class FidoUiInstrumentedTest {
         }
 
         // Error message with remaining attempts should be visible
-        composeTestRule.onNodeWithText("3", substring = true)
+        composeTestRule
+            .onNodeWithText("3", substring = true)
             .assertIsDisplayed()
     }
 
@@ -196,7 +207,8 @@ class FidoUiInstrumentedTest {
             }
         }
 
-        composeTestRule.onNodeWithText("blocked", substring = true, ignoreCase = true)
+        composeTestRule
+            .onNodeWithText("blocked", substring = true, ignoreCase = true)
             .assertIsDisplayed()
     }
 }

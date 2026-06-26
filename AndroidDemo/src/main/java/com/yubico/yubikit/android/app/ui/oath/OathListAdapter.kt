@@ -29,19 +29,16 @@ import com.yubico.yubikit.oath.Code
 import com.yubico.yubikit.oath.Credential
 import java.util.*
 
-class OathListAdapter(private val listener: ItemListener) : ListAdapter<Pair<Credential, Code?>, OathListAdapter.ViewHolder>(object : DiffUtil.ItemCallback<Pair<Credential, Code?>>() {
-    override fun areItemsTheSame(oldItem: Pair<Credential, Code?>, newItem: Pair<Credential, Code?>): Boolean {
-        return Arrays.equals(oldItem.first.id, newItem.first.id)
-    }
+class OathListAdapter(private val listener: ItemListener) :
+    ListAdapter<Pair<Credential, Code?>, OathListAdapter.ViewHolder>(object : DiffUtil.ItemCallback<Pair<Credential, Code?>>() {
+        override fun areItemsTheSame(oldItem: Pair<Credential, Code?>, newItem: Pair<Credential, Code?>): Boolean = Arrays.equals(oldItem.first.id, newItem.first.id)
 
-    override fun areContentsTheSame(oldItem: Pair<Credential, Code?>, newItem: Pair<Credential, Code?>): Boolean {
-        return oldItem.second?.value == newItem.second?.value
-    }
-}) {
+        override fun areContentsTheSame(oldItem: Pair<Credential, Code?>, newItem: Pair<Credential, Code?>): Boolean = oldItem.second?.value == newItem.second?.value
+    }) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val view = LayoutInflater.from(parent.context)
-                .inflate(R.layout.listitem_oath_entry, parent, false)
+            .inflate(R.layout.listitem_oath_entry, parent, false)
         return ViewHolder(view)
     }
 
@@ -49,7 +46,7 @@ class OathListAdapter(private val listener: ItemListener) : ListAdapter<Pair<Cre
         getItem(position).let { (credential, code) ->
             with(holder) {
                 idView.text = credential.issuer?.let { "$it (${credential.accountName})" }
-                        ?: credential.accountName
+                    ?: credential.accountName
                 contentView.text = code?.value ?: ""
                 deleteBtn.setOnClickListener {
                     listener.onDelete(credential.id)
