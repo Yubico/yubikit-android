@@ -20,8 +20,8 @@ webkit = "1.15.0" # needed for minSdk 23
 
 # --- AndroidX Lifecycle ---
 lifecycle-extensions = "2.2.0"
-lifecycle-viewmodel-compose = "2.10.0"
-lifecycle-viewmodel-ktx = "2.10.0"
+lifecycle-viewmodel-compose = "2.11.0"
+lifecycle-viewmodel-ktx = "2.11.0"
 
 # --- AndroidX Navigation ---
 navigation-fragment-ktx = "2.9.8"
@@ -29,9 +29,9 @@ navigation-fragment-ktx = "2.9.8"
 # --- Jetpack Compose ---
 activity-compose = "1.13.0"
 activity-ktx = "1.13.0"
-compose-bom = "2026.05.01"
-material3 = "1.5.0-alpha21"
-runtime-livedata = "1.11.2"
+compose-bom = "2026.06.00"
+material3 = "1.5.0-alpha22"
+runtime-livedata = "1.11.3"
 
 # --- Kotlin / KotlinX ---
 kotlinx-coroutines-android = "1.11.0"
@@ -39,7 +39,7 @@ kotlinx-serialization-json = "1.11.0"
 
 # --- Logging ---
 logback-android = "3.0.0"
-logback-classic = "1.5.34"
+logback-classic = "1.5.36"
 slf4j-api = "2.0.18"
 slf4j-nop = "2.0.18"
 
