@@ -26,7 +26,7 @@ plugins {
 
 android {
     namespace = "com.yubico.yubikit.fido.android.ui"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         minSdk = 23
@@ -61,6 +61,7 @@ android {
     testOptions {
         managedDevices {
             allDevices {
+                // apiLevel stays at 36 — API 37 aosp system images not yet available
                 create("smallPhone", ManagedVirtualDevice::class) {
                     device = "Pixel 4"
                     apiLevel = 36
@@ -137,7 +138,7 @@ dependencies {
     testImplementation(libs.turbine)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.robolectric)
-    testImplementation(libs.ui.test.junit4)
+    testImplementation(libs.androidx.ui.test.junit4)
     testImplementation(libs.androidx.test.core)
     testImplementation(libs.slf4j.api)
     testRuntimeOnly(libs.logback.classic)

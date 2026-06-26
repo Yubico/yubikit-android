@@ -20,7 +20,7 @@ plugins {
 }
 
 android {
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         minSdk = 21
@@ -47,7 +47,7 @@ android {
     }
 
     testOptions {
-        targetSdk = 36
+        targetSdk = 37
     }
 
     namespace = "com.yubico.yubikit.testing"
