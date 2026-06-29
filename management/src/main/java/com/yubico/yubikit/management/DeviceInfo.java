@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2025 Yubico.
+ * Copyright (C) 2020-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -435,7 +435,7 @@ public class DeviceInfo {
   }
 
   /** Reads an int from a variable length byte array. */
-  private static int readInt(byte @Nullable [] data) {
+  static int readInt(byte @Nullable [] data) {
     if (data == null || data.length == 0) {
       return 0;
     }
