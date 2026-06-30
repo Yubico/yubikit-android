@@ -94,7 +94,9 @@ public class ExtensionHardFailTest {
   }
 
   @Test
-  public void largeBlobReadWriteInMakeCredentialThrowsBadRequest() {
+  public void largeBlobReadInMakeCredentialThrowsConfigurationUnsupported() {
+    // Spec: read/write are authentication-only; their presence during registration is a
+    // NotSupportedError -> CONFIGURATION_UNSUPPORTED.
     Map<String, Object> largeBlob = new HashMap<>();
     largeBlob.put(LargeBlobExtension.ACTION_READ, true);
     Map<String, Object> ext = new HashMap<>();
@@ -107,6 +109,6 @@ public class ExtensionHardFailTest {
                 new LargeBlobExtension()
                     .makeCredential(
                         sessionWithout(), optionsWith(ext), mock(PinUvAuthProtocol.class)));
-    assertEquals(ClientError.Code.BAD_REQUEST, error.getCode());
+    assertEquals(ClientError.Code.CONFIGURATION_UNSUPPORTED, error.getCode());
   }
 }

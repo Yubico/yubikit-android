@@ -107,7 +107,14 @@ public class HmacSecretExtension extends Extension {
     }
 
     boolean prf = extensions.has(PRF);
-    boolean hmac = allowHmacSecret && Boolean.TRUE.equals(extensions.get(HMAC_CREATE_SECRET));
+    boolean hmac = false;
+    if (allowHmacSecret) {
+      Object hmacCreateSecret = extensions.get(HMAC_CREATE_SECRET);
+      if (hmacCreateSecret != null && !(hmacCreateSecret instanceof Boolean)) {
+        throw new IllegalArgumentException("hmacCreateSecret must be a boolean");
+      }
+      hmac = Boolean.TRUE.equals(hmacCreateSecret);
+    }
 
     if (!prf && !hmac) {
       return null;
@@ -117,11 +124,20 @@ public class HmacSecretExtension extends Extension {
     Map<String, Object> extensionInputs = new HashMap<>();
     extensionInputs.put(name, true);
 
+    Inputs inputs = Inputs.fromExtensions(extensions);
+
+    // WebAuthn prf client extension processing (registration): evalByCredential is only valid
+    // during authentication; its presence here is a NotSupportedError. This is checked
+    // unconditionally, independent of hmac-secret-mc support.
+    if (inputs != null && inputs.prf != null && inputs.prf.evalByCredential != null) {
+      throw new ExtensionConfigurationException(
+          "prf evalByCredential is not valid during registration");
+    }
+
     PinUvAuthHelper pinUvAuthHelper = new PinUvAuthHelper(ctap2, pinUvAuthProtocol);
 
     if (ctap2.getCachedInfo().getExtensions().contains(NAME_MC)
         && pinUvAuthHelper.keyAgreement != null) {
-      Inputs inputs = Inputs.fromExtensions(extensions);
       Salts salts = prepareSalts(null, null, inputs);
 
       if (salts != null) {
@@ -139,19 +155,36 @@ public class HmacSecretExtension extends Extension {
 
     return new RegistrationProcessor(
         pinToken -> extensionInputs,
-        (attestationObject, pinToken) ->
-            serializationType -> {
-              Map<String, ?> extResult =
-                  (attestationObject.getAuthenticatorData().getExtensions() != null)
-                      ? attestationObject.getAuthenticatorData().getExtensions()
-                      : Collections.emptyMap();
-              boolean enabled = Boolean.TRUE.equals(extResult.get(name));
-              return formatOutputs(
-                  serializationType,
-                  enabled,
-                  pinUvAuthHelper.decrypt((byte[]) extResult.get(NAME_MC)),
-                  prf);
-            });
+        (attestationObject, pinToken) -> {
+          // Read and decrypt the authenticator's hmac-secret-mc output here, in the synchronous
+          // phase, so the deferred provider returned below does only (non-throwing) formatting and
+          // cannot let an exception escape credential.toMap(). Malformed device output (undecodable
+          // ciphertext, a short decrypted result, or a wrong type) is omitted, not surfaced.
+          try {
+            Map<String, ?> extResult =
+                attestationObject.getAuthenticatorData().getExtensions() != null
+                    ? attestationObject.getAuthenticatorData().getExtensions()
+                    : Collections.emptyMap();
+            boolean enabled = Boolean.TRUE.equals(extResult.get(name));
+            Object mc = extResult.get(NAME_MC);
+            byte[] decrypted = pinUvAuthHelper.decrypt(mc instanceof byte[] ? (byte[]) mc : null);
+            // CTAP hmac-secret-mc output is exactly one or two 32-byte blocks; any other length is
+            // malformed, so the salt results are omitted (the enabled flag is still reported).
+            boolean validLength =
+                decrypted != null
+                    && (decrypted.length == SALT_LEN || decrypted.length == 2 * SALT_LEN);
+            byte[] output1 = validLength ? Arrays.copyOfRange(decrypted, 0, SALT_LEN) : null;
+            byte[] output2 =
+                validLength && decrypted.length == 2 * SALT_LEN
+                    ? Arrays.copyOfRange(decrypted, SALT_LEN, 2 * SALT_LEN)
+                    : null;
+            return serializationType ->
+                formatOutputs(serializationType, enabled, output1, output2, prf);
+          } catch (RuntimeException e) {
+            logger.debug("Ignoring malformed hmac-secret registration output", e);
+            return null;
+          }
+        });
   }
 
   @Override
@@ -194,71 +227,89 @@ public class HmacSecretExtension extends Extension {
 
     final AuthenticationOutput prepareOutput =
         (assertionData, pinToken) -> {
-          AuthenticatorData authenticatorData =
-              AuthenticatorData.parseFrom(ByteBuffer.wrap(assertionData.getAuthenticatorData()));
+          try {
+            AuthenticatorData authenticatorData =
+                AuthenticatorData.parseFrom(ByteBuffer.wrap(assertionData.getAuthenticatorData()));
 
-          Map<String, ?> extensionOutputs = authenticatorData.getExtensions();
-          if (extensionOutputs == null) {
-            return null;
-          }
+            Map<String, ?> extensionOutputs = authenticatorData.getExtensions();
+            if (extensionOutputs == null) {
+              return null;
+            }
 
-          byte[] value = (byte[]) extensionOutputs.get(name);
-          if (value == null) {
-            return null;
-          }
+            Object value = extensionOutputs.get(name);
+            if (!(value instanceof byte[])) {
+              return null;
+            }
 
-          byte[] decrypted = pinUvAuthHelper.decrypt(value);
-          if (decrypted == null) {
-            return null;
-          }
+            byte[] decrypted = pinUvAuthHelper.decrypt((byte[]) value);
+            // CTAP hmac-secret output is exactly one or two 32-byte blocks. Any other length is
+            // malformed authenticator output -> omit the result rather than zero-padding it into a
+            // wrong PRF value.
+            if (decrypted == null
+                || (decrypted.length != SALT_LEN && decrypted.length != 2 * SALT_LEN)) {
+              return null;
+            }
 
-          byte[] output1 = Arrays.copyOf(decrypted, SALT_LEN);
-          byte[] output2 =
-              decrypted.length > SALT_LEN
-                  ? Arrays.copyOfRange(decrypted, SALT_LEN, 2 * SALT_LEN)
-                  : new byte[0];
+            byte[] output1 = Arrays.copyOfRange(decrypted, 0, SALT_LEN);
+            byte[] output2 =
+                decrypted.length == 2 * SALT_LEN
+                    ? Arrays.copyOfRange(decrypted, SALT_LEN, 2 * SALT_LEN)
+                    : null;
 
-          logger.debug("PRF outputs decrypted successfully");
+            logger.debug("PRF outputs decrypted successfully");
 
-          if (inputs.prf != null) {
-            return serializationType -> {
-              Map<String, Object> results = new HashMap<>();
-              results.put(
-                  FIRST,
-                  serializationType == SerializationType.JSON ? toUrlSafeString(output1) : output1);
-              if (output2.length > 0) {
+            if (inputs.prf != null) {
+              return serializationType -> {
+                Map<String, Object> results = new HashMap<>();
                 results.put(
-                    SECOND,
+                    FIRST,
                     serializationType == SerializationType.JSON
-                        ? toUrlSafeString(output2)
-                        : output2);
-              }
-              return Collections.singletonMap(PRF, Collections.singletonMap(RESULTS, results));
-            };
-          } else {
-            return serializationType -> {
-              Map<String, Object> results = new HashMap<>();
-              results.put(
-                  OUTPUT_1,
-                  serializationType == SerializationType.JSON ? toUrlSafeString(output1) : output1);
-              if (output2.length > 0) {
+                        ? toUrlSafeString(output1)
+                        : output1);
+                if (output2 != null) {
+                  results.put(
+                      SECOND,
+                      serializationType == SerializationType.JSON
+                          ? toUrlSafeString(output2)
+                          : output2);
+                }
+                return Collections.singletonMap(PRF, Collections.singletonMap(RESULTS, results));
+              };
+            } else {
+              return serializationType -> {
+                Map<String, Object> results = new HashMap<>();
                 results.put(
-                    OUTPUT_2,
+                    OUTPUT_1,
                     serializationType == SerializationType.JSON
-                        ? toUrlSafeString(output2)
-                        : output2);
-              }
-              return Collections.singletonMap(HMAC_GET_SECRET, results);
-            };
+                        ? toUrlSafeString(output1)
+                        : output1);
+                if (output2 != null) {
+                  results.put(
+                      OUTPUT_2,
+                      serializationType == SerializationType.JSON
+                          ? toUrlSafeString(output2)
+                          : output2);
+                }
+                return Collections.singletonMap(HMAC_GET_SECRET, results);
+              };
+            }
+          } catch (RuntimeException e) {
+            // Authenticator returned malformed hmac-secret output (undecodable authData, wrong
+            // type, or a decrypt failure): omit the result rather than failing the assertion or
+            // misreporting the authenticator's fault as a relying-party error.
+            logger.debug("Ignoring malformed hmac-secret assertion output", e);
+            return null;
           }
         };
 
     return new AuthenticationProcessor(prepareInput, prepareOutput);
   }
 
+  // Package-private (not private) so it can be unit-tested directly: this is a pure function of its
+  // inputs (parsing + SHA-256 salt derivation) with no device I/O, unlike the surrounding
+  // key-agreement path which requires a real authenticator.
   @SuppressWarnings("unchecked")
-  @Nullable
-  private Salts prepareSalts(
+  @Nullable Salts prepareSalts(
       @Nullable List<PublicKeyCredentialDescriptor> allowCredentials,
       @Nullable PublicKeyCredentialDescriptor selected,
       Inputs inputs) {
@@ -268,10 +319,11 @@ public class HmacSecretExtension extends Extension {
       Map<String, Object> prfValues = inputs.prf.eval;
       Map<String, Object> evalByCredential = inputs.prf.evalByCredential;
 
-      if (evalByCredential != null) {
+      if (evalByCredential != null && !evalByCredential.isEmpty()) {
         if (allowCredentials == null || allowCredentials.isEmpty()) {
-          // Invalid input (evalByCredential without an allow list): ignore the extension.
-          return null;
+          // WebAuthn (prf client extension processing): evalByCredential non-empty with an empty
+          // allowCredentials is a NotSupportedError -> CONFIGURATION_UNSUPPORTED.
+          throw new ExtensionConfigurationException("prf evalByCredential requires an allow list");
         }
 
         Set<String> ids = new HashSet<>();
@@ -280,45 +332,50 @@ public class HmacSecretExtension extends Extension {
         }
 
         if (!ids.containsAll(evalByCredential.keySet())) {
-          // Invalid input (unknown credential id): ignore the extension.
-          return null;
+          // WebAuthn (prf): a key not matching an allowCredentials id is a SyntaxError ->
+          // BAD_REQUEST.
+          throw new IllegalArgumentException("prf evalByCredential contains an unknown credential");
         }
 
         if (selected != null) {
           String key = toUrlSafeString(selected.getId());
           if (evalByCredential.containsKey(key)) {
-            prfValues = (Map<String, Object>) inputs.prf.evalByCredential.get(key);
+            prfValues = asMap(inputs.prf.evalByCredential.get(key), "prf.evalByCredential entry");
           }
         }
       }
 
       if (prfValues == null) {
+        // No evaluation was requested for this credential: nothing to do (not an error).
         return null;
       }
 
       logger.debug("Processing PRF inputs");
 
-      String firstInput = (String) prfValues.get(FIRST);
+      String firstInput = asString(prfValues.get(FIRST), "prf eval 'first'");
       if (firstInput == null) {
-        return null;
+        // Malformed input: a prf eval block must contain "first".
+        throw new IllegalArgumentException("prf eval requires 'first'");
       }
 
       byte[] first = prfSalt(fromUrlSafeString(firstInput));
-      byte[] second =
-          prfValues.containsKey(SECOND)
-              ? prfSalt(fromUrlSafeString((String) prfValues.get(SECOND)))
-              : null;
+      // "second" is optional: an absent or null value means no second salt; a wrong-typed value is
+      // malformed input (asString throws IllegalArgumentException -> BAD_REQUEST).
+      String secondInput = asString(prfValues.get(SECOND), "prf eval 'second'");
+      byte[] second = secondInput != null ? prfSalt(fromUrlSafeString(secondInput)) : null;
 
       salts = new Salts(first, second);
     } else {
       if (inputs.hmac == null) {
+        // hmacGetSecret was not requested: nothing to do (not an error).
         return null;
       }
 
       logger.debug("Processing hmacGetSecret inputs");
 
       if (inputs.hmac.salt1 == null) {
-        return null;
+        // Malformed input: hmacGetSecret must contain salt1.
+        throw new IllegalArgumentException("hmacGetSecret requires salt1");
       }
 
       byte[] salt1 = prfSalt(fromUrlSafeString(inputs.hmac.salt1));
@@ -331,8 +388,7 @@ public class HmacSecretExtension extends Extension {
     logger.debug("Salts prepared");
     if (!(salts.salt1.length == SALT_LEN
         && (salts.salt2.length == 0 || salts.salt2.length == SALT_LEN))) {
-      // Invalid salt length: ignore the extension.
-      return null;
+      throw new IllegalArgumentException("Invalid salt length");
     }
 
     return salts;
@@ -341,12 +397,11 @@ public class HmacSecretExtension extends Extension {
   private Map<String, Object> formatOutputs(
       SerializationType serializationType,
       @Nullable Boolean enabled,
-      byte @Nullable [] decrypted,
+      byte @Nullable [] output1,
+      byte @Nullable [] output2,
       boolean prf) {
-    byte[] output1 = decrypted != null ? Arrays.copyOfRange(decrypted, 0, SALT_LEN) : null;
-    byte[] output2 =
-        decrypted != null ? Arrays.copyOfRange(decrypted, SALT_LEN, decrypted.length) : null;
-
+    // Pure formatting: callers slice the decrypted bytes into output1/output2 beforehand, so this
+    // only selects the wire encoding (raw bytes for CBOR, base64url for JSON) and cannot throw.
     Map<String, @Nullable Object> result = new HashMap<>();
     if (prf) {
       result.put(ENABLED, enabled);
@@ -388,7 +443,7 @@ public class HmacSecretExtension extends Extension {
     }
   }
 
-  private static class Salts {
+  static class Salts {
     byte[] salt1;
     byte[] salt2;
 
@@ -418,6 +473,39 @@ public class HmacSecretExtension extends Extension {
     }
   }
 
+  /**
+   * Returns {@code value} as a {@code Map} (a dictionary extension member). Absent values are
+   * ignored ({@code null}); a wrong-typed value is malformed structure and is surfaced as an {@link
+   * IllegalArgumentException} (mapped to {@code BAD_REQUEST}).
+   */
+  @SuppressWarnings("unchecked")
+  @Nullable
+  private static Map<String, Object> asMap(@Nullable Object value, String field) {
+    if (value == null) {
+      return null;
+    }
+    if (!(value instanceof Map)) {
+      throw new IllegalArgumentException(field + " must be an object");
+    }
+    return (Map<String, Object>) value;
+  }
+
+  /**
+   * Returns {@code value} as a {@code String} (a base64url BufferSource member). Absent values are
+   * ignored ({@code null}); a wrong-typed value is malformed structure and is surfaced as an {@link
+   * IllegalArgumentException} (mapped to {@code BAD_REQUEST}).
+   */
+  @Nullable
+  private static String asString(@Nullable Object value, String field) {
+    if (value == null) {
+      return null;
+    }
+    if (!(value instanceof String)) {
+      throw new IllegalArgumentException(field + " must be a string");
+    }
+    return (String) value;
+  }
+
   private static class PrfInputs {
     @Nullable final Map<String, Object> eval;
     @Nullable final Map<String, Object> evalByCredential;
@@ -427,7 +515,6 @@ public class HmacSecretExtension extends Extension {
       this.evalByCredential = evalByCredential;
     }
 
-    @SuppressWarnings("unchecked")
     @Nullable
     static PrfInputs fromMap(@Nullable Map<String, Object> map) {
       if (map == null) {
@@ -435,7 +522,8 @@ public class HmacSecretExtension extends Extension {
       }
 
       return new PrfInputs(
-          (Map<String, Object>) map.get(EVAL), (Map<String, Object>) map.get(EVAL_BY_CREDENTIAL));
+          asMap(map.get(EVAL), "prf.eval"),
+          asMap(map.get(EVAL_BY_CREDENTIAL), "prf.evalByCredential"));
     }
   }
 
@@ -454,12 +542,13 @@ public class HmacSecretExtension extends Extension {
         return null;
       }
 
-      return new HmacInputs((String) map.get(SALT_1), (String) map.get(SALT_2));
+      return new HmacInputs(
+          asString(map.get(SALT_1), "hmacGetSecret.salt1"),
+          asString(map.get(SALT_2), "hmacGetSecret.salt2"));
     }
   }
 
-  @SuppressWarnings("unchecked")
-  private static class Inputs {
+  static class Inputs {
     @Nullable final PrfInputs prf;
     @Nullable final HmacInputs hmac;
 
@@ -475,8 +564,7 @@ public class HmacSecretExtension extends Extension {
       }
 
       return new Inputs(
-          (Map<String, Object>) extensions.get(PRF),
-          (Map<String, Object>) extensions.get(HMAC_GET_SECRET));
+          asMap(extensions.get(PRF), PRF), asMap(extensions.get(HMAC_GET_SECRET), HMAC_GET_SECRET));
     }
   }
 

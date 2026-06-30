@@ -20,7 +20,6 @@ import static com.yubico.yubikit.core.internal.codec.Base64.fromUrlSafeString;
 import static com.yubico.yubikit.core.internal.codec.Base64.toUrlSafeString;
 
 import com.yubico.yubikit.core.application.CommandException;
-import com.yubico.yubikit.fido.client.ClientError;
 import com.yubico.yubikit.fido.ctap.ClientPin;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
@@ -56,6 +55,7 @@ public class LargeBlobExtension extends Extension {
   static final String SUPPORT = "support";
   static final String SUPPORTED = "supported";
   static final String REQUIRED = "required";
+  static final String PREFERRED = "preferred";
   static final String BLOB = "blob";
   static final Logger logger = LoggerFactory.getLogger(LargeBlobExtension.class);
 
@@ -77,9 +77,11 @@ public class LargeBlobExtension extends Extension {
       PinUvAuthProtocol pinUvAuthProtocol) {
     final Inputs inputs = Inputs.fromExtensions(options.getExtensions());
     if (inputs != null) {
+      // WebAuthn largeBlob client processing (registration): read/write are authentication-only;
+      // their presence here is a NotSupportedError.
       if (inputs.read != null || inputs.write != null) {
         throw new ExtensionConfigurationException(
-            ClientError.Code.BAD_REQUEST, "Invalid set of parameters");
+            "largeBlob read/write is not valid during registration");
       }
       if (REQUIRED.equals(inputs.support) && !isSupported(ctap)) {
         throw new ExtensionConfigurationException(
@@ -108,11 +110,25 @@ public class LargeBlobExtension extends Extension {
     if (inputs == null) {
       return null;
     }
+    // WebAuthn largeBlob client processing (authentication). Each condition below is a
+    // NotSupportedError in the spec.
+    if (inputs.support != null) {
+      throw new ExtensionConfigurationException(
+          "largeBlob support is not valid during authentication");
+    }
+    if (inputs.read != null && inputs.write != null) {
+      throw new ExtensionConfigurationException(
+          "largeBlob read and write must not both be present");
+    }
     if (Boolean.TRUE.equals(inputs.read)) {
       return new AuthenticationProcessor(
           (selected, pinToken) -> Collections.singletonMap(LARGE_BLOB_KEY, true),
           (assertionData, pinToken) -> read(assertionData, ctap));
     } else if (inputs.write != null) {
+      if (options.getAllowCredentials().size() != 1) {
+        throw new ExtensionConfigurationException(
+            "largeBlob write requires exactly one allowed credential");
+      }
       return new AuthenticationProcessor(
           (selected, pinToken) -> Collections.singletonMap(LARGE_BLOB_KEY, true),
           (assertionData, pinToken) ->
@@ -135,8 +151,18 @@ public class LargeBlobExtension extends Extension {
       return null;
     }
 
+    LargeBlobs largeBlobs;
     try {
-      LargeBlobs largeBlobs = new LargeBlobs(ctap);
+      largeBlobs = new LargeBlobs(ctap);
+    } catch (IllegalStateException e) {
+      // Authenticator returned a largeBlobKey but does not support the large blob array; this is an
+      // expected, ignorable condition (no blob to read), not a processing failure. Scope this catch
+      // to construction only, so an IllegalStateException from getBlob/serialization is not masked.
+      logger.debug("Large blob storage not supported; skipping largeBlob output", e);
+      return null;
+    }
+
+    try {
       byte[] blob = largeBlobs.getBlob(largeBlobKey);
       return serializationType ->
           Collections.singletonMap(
@@ -146,10 +172,6 @@ public class LargeBlobExtension extends Extension {
                       BLOB,
                       serializationType == SerializationType.JSON ? toUrlSafeString(blob) : blob)
                   : Collections.emptyMap());
-    } catch (IllegalStateException e) {
-      // Authenticator returned a largeBlobKey but does not support the large blob array; this is an
-      // expected, ignorable condition (no blob to read), not a processing failure.
-      logger.debug("Large blob storage not supported; skipping largeBlob output", e);
     } catch (IOException | CommandException e) {
       logger.error("LargeBlob processing failed: ", e);
     }
@@ -169,17 +191,23 @@ public class LargeBlobExtension extends Extension {
       return null;
     }
 
+    LargeBlobs largeBlobs;
     try {
-      LargeBlobs largeBlobs = new LargeBlobs(ctap, pinUvAuthProtocol, pinToken);
+      largeBlobs = new LargeBlobs(ctap, pinUvAuthProtocol, pinToken);
+    } catch (IllegalStateException e) {
+      // Authenticator returned a largeBlobKey but does not support the large blob array; this is an
+      // expected, ignorable condition (nothing to write), not a processing failure. Scope this
+      // catch to construction only, so an IllegalStateException from putBlob is not masked.
+      logger.debug("Large blob storage not supported; skipping largeBlob output", e);
+      return null;
+    }
+
+    try {
       largeBlobs.putBlob(largeBlobKey, bytes);
 
       return serializationType ->
           Collections.singletonMap(LARGE_BLOB, Collections.singletonMap(WRITTEN, true));
 
-    } catch (IllegalStateException e) {
-      // Authenticator returned a largeBlobKey but does not support the large blob array; this is an
-      // expected, ignorable condition (nothing to write), not a processing failure.
-      logger.debug("Large blob storage not supported; skipping largeBlob output", e);
     } catch (IOException | CommandException | GeneralSecurityException e) {
       logger.error("LargeBlob processing failed: ", e);
     }
@@ -204,19 +232,28 @@ public class LargeBlobExtension extends Extension {
         return null;
       }
 
-      // Treat malformed input (wrong types) as absent rather than throwing.
       Object data = extensions.get(LARGE_BLOB);
+      if (data == null) {
+        return null; // not requested
+      }
       if (!(data instanceof Map)) {
-        return null;
+        throw new IllegalArgumentException("largeBlob must be an object");
       }
       Map<?, ?> map = (Map<?, ?>) data;
       Object read = map.get(ACTION_READ);
       Object write = map.get(ACTION_WRITE);
       Object support = map.get(SUPPORT);
-      return new Inputs(
-          read instanceof Boolean ? (Boolean) read : null,
-          write instanceof String ? (String) write : null,
-          support instanceof String ? (String) support : null);
+      if (read != null && !(read instanceof Boolean)) {
+        throw new IllegalArgumentException("largeBlob.read must be a boolean");
+      }
+      if (write != null && !(write instanceof String)) {
+        throw new IllegalArgumentException("largeBlob.write must be a string");
+      }
+      if (support != null && !REQUIRED.equals(support) && !PREFERRED.equals(support)) {
+        throw new IllegalArgumentException(
+            "largeBlob.support must be \"required\" or \"preferred\"");
+      }
+      return new Inputs((Boolean) read, (String) write, (String) support);
     }
   }
 }

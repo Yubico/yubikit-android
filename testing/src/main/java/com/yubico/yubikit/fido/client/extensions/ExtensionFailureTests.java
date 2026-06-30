@@ -36,18 +36,18 @@ import org.jspecify.annotations.Nullable;
 import org.junit.Assert;
 
 /**
- * Device tests for how the WebAuthn client handles extension processing failures.
- *
- * <p>These exercise the loop logic in {@code Ctap2Client} directly by injecting fake extensions, so
- * they do not depend on any particular authenticator capability:
+ * Device tests for how the WebAuthn client handles extension processing failures. These inject fake
+ * extensions, so they do not depend on any particular authenticator capability:
  *
  * <ul>
- *   <li>an extension that fails in an ignorable way is skipped without aborting the ceremony or
- *       suppressing other extensions;
- *   <li>an extension that raises {@link ExtensionConfigurationException} aborts the ceremony with a
- *       {@link ClientError};
- *   <li>a relying-party misconfiguration ({@code largeBlob} read/write during registration) is
- *       reported as {@link ClientError.Code#BAD_REQUEST}.
+ *   <li>an extension that is not applicable (returns {@code null}) does not suppress other
+ *       extensions' results;
+ *   <li>malformed extension input (an {@link IllegalArgumentException}) aborts the ceremony as
+ *       {@link ClientError.Code#BAD_REQUEST};
+ *   <li>an {@link ExtensionConfigurationException} aborts with the carried {@link
+ *       ClientError.Code};
+ *   <li>a spec-named condition ({@code largeBlob} read during registration, a {@code
+ *       NotSupportedError}) is reported as {@link ClientError.Code#CONFIGURATION_UNSUPPORTED}.
  * </ul>
  */
 public class ExtensionFailureTests {
@@ -56,20 +56,22 @@ public class ExtensionFailureTests {
 
   public static void test(FidoTestState state) throws Throwable {
     ExtensionFailureTests extTest = new ExtensionFailureTests();
-    extTest.testIgnorableFailureDoesNotSuppressSiblings(state);
+    extTest.testNotApplicableExtensionDoesNotSuppressSiblings(state);
+    extTest.testMalformedInputIsBadRequest(state);
     extTest.testHardFailureAbortsWithClientError(state);
-    extTest.testLargeBlobReadWriteInMakeCredentialIsBadRequest(state);
+    extTest.testLargeBlobReadInMakeCredentialIsUnsupported(state);
   }
 
   private ExtensionFailureTests() {}
 
-  /** A failing extension must not prevent a sibling extension from producing its result. */
-  private void testIgnorableFailureDoesNotSuppressSiblings(FidoTestState state) throws Throwable {
+  /** A not-applicable extension (returns null) must not prevent a sibling from producing output. */
+  private void testNotApplicableExtensionDoesNotSuppressSiblings(FidoTestState state)
+      throws Throwable {
     state.withCtap2(
         session -> {
           ClientHelper client =
               new ClientHelper(
-                  session, Arrays.asList(new IgnorableFailingExtension(), new GoodExtension()));
+                  session, Arrays.asList(new NotApplicableExtension(), new GoodExtension()));
 
           PublicKeyCredential cred = client.makeCredential(new CreationOptionsBuilder().build());
 
@@ -77,9 +79,24 @@ public class ExtensionFailureTests {
           Assert.assertNotNull("Expected client extension results", results);
           Map<String, ?> resultMap = results.toMap(SerializationType.CBOR);
           Assert.assertEquals(
-              "Sibling extension result was suppressed by a failing extension",
+              "Sibling extension result was suppressed",
               Boolean.TRUE,
               resultMap.get(GOOD_RESULT_KEY));
+        });
+  }
+
+  /** Malformed extension input must abort the ceremony as a BAD_REQUEST ClientError. */
+  private void testMalformedInputIsBadRequest(FidoTestState state) throws Throwable {
+    state.withCtap2(
+        session -> {
+          ClientHelper client =
+              new ClientHelper(session, Collections.singletonList(new MalformedInputExtension()));
+
+          ClientError error =
+              assertThrows(
+                  ClientError.class,
+                  () -> client.makeCredential(new CreationOptionsBuilder().build()));
+          Assert.assertEquals(ClientError.Code.BAD_REQUEST, error.getErrorCode());
         });
   }
 
@@ -98,8 +115,8 @@ public class ExtensionFailureTests {
         });
   }
 
-  /** Requesting largeBlob read/write during registration is a malformed request. */
-  private void testLargeBlobReadWriteInMakeCredentialIsBadRequest(FidoTestState state)
+  /** Requesting largeBlob read during registration is a NotSupportedError. */
+  private void testLargeBlobReadInMakeCredentialIsUnsupported(FidoTestState state)
       throws Throwable {
     state.withCtap2(
         session -> {
@@ -115,14 +132,14 @@ public class ExtensionFailureTests {
                                   Collections.singletonMap(
                                       "largeBlob", Collections.singletonMap("read", true)))
                               .build()));
-          Assert.assertEquals(ClientError.Code.BAD_REQUEST, error.getErrorCode());
+          Assert.assertEquals(ClientError.Code.CONFIGURATION_UNSUPPORTED, error.getErrorCode());
         });
   }
 
-  /** Fails in an ignorable way during the build phase; the client should skip it. */
-  private static class IgnorableFailingExtension extends Extension {
-    IgnorableFailingExtension() {
-      super("test-ignorable-failing");
+  /** Not applicable for this request: returns null so the client skips it. */
+  private static class NotApplicableExtension extends Extension {
+    NotApplicableExtension() {
+      super("test-not-applicable");
     }
 
     @Nullable
@@ -131,7 +148,7 @@ public class ExtensionFailureTests {
         @NonNull Ctap2Session ctap,
         @NonNull PublicKeyCredentialCreationOptions options,
         @NonNull PinUvAuthProtocol pinUvAuthProtocol) {
-      throw new IllegalArgumentException("ignorable failure");
+      return null;
     }
   }
 
@@ -150,6 +167,22 @@ public class ExtensionFailureTests {
       return new RegistrationProcessor(
           (attestationObject, pinToken) ->
               serializationType -> Collections.singletonMap(GOOD_RESULT_KEY, true));
+    }
+  }
+
+  /** Simulates malformed relying-party input (raised by decode/validation helpers). */
+  private static class MalformedInputExtension extends Extension {
+    MalformedInputExtension() {
+      super("test-malformed-input");
+    }
+
+    @Nullable
+    @Override
+    public RegistrationProcessor makeCredential(
+        @NonNull Ctap2Session ctap,
+        @NonNull PublicKeyCredentialCreationOptions options,
+        @NonNull PinUvAuthProtocol pinUvAuthProtocol) {
+      throw new IllegalArgumentException("malformed input");
     }
   }
 

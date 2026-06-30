@@ -22,6 +22,7 @@ import static com.yubico.yubikit.fido.client.extensions.ExtensionTestHelper.sess
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
 import static org.mockito.Mockito.mock;
 
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
@@ -59,6 +60,42 @@ public class ThirdPartyPaymentExtensionTest {
   public void notSupportedReturnsNull() {
     assertNull(extension.makeCredential(session(), creation(paymentInput(true)), pinUvAuth));
     assertNull(extension.getAssertion(session(), request(paymentInput(true)), pinUvAuth));
+  }
+
+  @Test
+  public void malformedPaymentTypeThrows() {
+    // payment is a dictionary: a non-object value is malformed structure -> BAD_REQUEST.
+    assertThrows(
+        IllegalArgumentException.class,
+        () ->
+            extension.makeCredential(
+                session(NAME), creation(Collections.singletonMap("payment", "nope")), pinUvAuth));
+  }
+
+  @Test
+  public void nonBooleanIsPaymentThrows() {
+    // isPayment is a boolean request flag, so a non-boolean present value is malformed caller
+    // input -> BAD_REQUEST.
+    assertThrows(
+        IllegalArgumentException.class,
+        () ->
+            extension.makeCredential(
+                session(NAME),
+                creation(
+                    Collections.singletonMap("payment", Collections.singletonMap("isPayment", 1))),
+                pinUvAuth));
+  }
+
+  @Test
+  public void falseIsPaymentIsIgnored() {
+    // The boolean flag indicates whether the extension is requested: false means "not requested",
+    // so it is ignored (no authenticator input), not surfaced.
+    assertNull(
+        extension.makeCredential(
+            session(NAME),
+            creation(
+                Collections.singletonMap("payment", Collections.singletonMap("isPayment", false))),
+            pinUvAuth));
   }
 
   @Test

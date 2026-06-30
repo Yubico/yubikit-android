@@ -23,6 +23,7 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
 import static org.mockito.Mockito.mock;
 
 import com.yubico.yubikit.core.internal.codec.Base64;
@@ -61,6 +62,19 @@ public class CredBlobExtensionTest {
   }
 
   @Test
+  public void malformedCredBlobTypeThrows() {
+    // credBlob is a BufferSource: a non-string is malformed structure and is surfaced
+    // (BAD_REQUEST), not allowed to crash on the cast.
+    assertThrows(
+        IllegalArgumentException.class,
+        () ->
+            extension.makeCredential(
+                session(Collections.singletonList(NAME), Collections.emptyMap(), 32),
+                creation(Collections.singletonMap(NAME, 123)),
+                pinUvAuth));
+  }
+
+  @Test
   public void notSupportedReturnsNull() {
     assertNull(
         extension.makeCredential(
@@ -83,5 +97,23 @@ public class CredBlobExtensionTest {
   @Test
   public void getAssertionWithoutRequestReturnsNull() {
     assertNull(extension.getAssertion(session(NAME), request(Collections.emptyMap()), pinUvAuth));
+  }
+
+  @Test
+  public void getAssertionFalseGetCredBlobReturnsNull() {
+    // getCredBlob is a boolean request flag: false means "not requested" and is ignored.
+    assertNull(
+        extension.getAssertion(
+            session(NAME), request(Collections.singletonMap("getCredBlob", false)), pinUvAuth));
+  }
+
+  @Test
+  public void getAssertionNonBooleanGetCredBlobThrows() {
+    // A non-boolean getCredBlob is malformed caller input -> BAD_REQUEST.
+    assertThrows(
+        IllegalArgumentException.class,
+        () ->
+            extension.getAssertion(
+                session(NAME), request(Collections.singletonMap("getCredBlob", 1)), pinUvAuth));
   }
 }

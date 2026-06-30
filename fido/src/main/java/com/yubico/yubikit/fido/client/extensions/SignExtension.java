@@ -205,14 +205,13 @@ public class SignExtension extends Extension {
       return null;
     }
 
-    if (extSign.signByCredential != null) {
-      // signByCredential is not valid during registration: ignore the extension.
-      return null;
-    }
-
+    // WebAuthn previewSign client processing (registration); both are NotSupportedError.
     if (extSign.generateKey == null) {
-      // generateKey is required during registration: ignore the extension.
-      return null;
+      throw new ExtensionConfigurationException("generateKey is required during registration");
+    }
+    if (extSign.signByCredential != null) {
+      throw new ExtensionConfigurationException(
+          "signByCredential is not valid during registration");
     }
 
     final RegistrationInput prepareInput =
@@ -289,8 +288,11 @@ public class SignExtension extends Extension {
                     SIGN,
                     new SignExtension.AuthenticationExtensionsSignOutputs(generatedKey, null)
                         .toMap(serializationType));
-              } catch (ClassCastException e) {
-                // Authenticator returned sign output with unexpected CBOR types: omit the result.
+              } catch (RuntimeException e) {
+                // Authenticator returned malformed sign output (wrong CBOR types, or an
+                // undecodable att-obj/authData from Cbor.decode/parseFrom): omit the result rather
+                // than failing. This runs in the deferred provider, so an uncaught exception here
+                // would escape credential.toMap() entirely.
                 logger.debug("Ignoring malformed previewSign registration output", e);
                 return Collections.emptyMap();
               }
@@ -300,9 +302,10 @@ public class SignExtension extends Extension {
   }
 
   /**
-   * Safely parses the {@code previewSign} extension input. Malformed relying-party input (wrong
-   * types, missing keys, or invalid base64url) is treated as "not applicable" and yields {@code
-   * null} so the extension is ignored rather than aborting the ceremony.
+   * Parses the {@code previewSign} extension input. Returns {@code null} when the extension is not
+   * requested; throws {@link IllegalArgumentException} when it is present but malformed (wrong
+   * types, missing required keys, or invalid base64url) so the client reports it as a bad request
+   * rather than silently dropping it.
    */
   @SuppressWarnings("unchecked")
   @Nullable
@@ -311,14 +314,18 @@ public class SignExtension extends Extension {
       return null;
     }
     Object signInput = extensions.get(SIGN);
+    if (signInput == null) {
+      return null; // not requested
+    }
     if (!(signInput instanceof Map)) {
-      return null;
+      throw new IllegalArgumentException("previewSign must be an object");
     }
     try {
       return AuthenticationExtensionsSign.fromMap((Map<String, ?>) signInput);
     } catch (RuntimeException e) {
-      logger.debug("Ignoring malformed previewSign input", e);
-      return null;
+      // fromMap uses unchecked casts / requireNonNull; surface any malformed structure as bad
+      // input.
+      throw new IllegalArgumentException("Malformed previewSign input", e);
     }
   }
 
@@ -346,16 +353,21 @@ public class SignExtension extends Extension {
       return null;
     }
 
+    // WebAuthn previewSign client processing (authentication). The presence/empty/size conditions
+    // are NotSupportedError; a missing per-credential entry is a SyntaxError.
     if (extSign.signByCredential == null || extSign.generateKey != null) {
-      // Invalid input for authentication (expects signByCredential, not generateKey): ignore.
-      return null;
+      throw new ExtensionConfigurationException(
+          "authentication requires signByCredential and not generateKey");
     }
 
     Map<String, AuthenticationExtensionsSignSign> byCreds = extSign.signByCredential;
     List<PublicKeyCredentialDescriptor> allowList = options.getAllowCredentials();
     if (allowList.isEmpty()) {
-      // sign requires an allow list: ignore the extension.
-      return null;
+      throw new ExtensionConfigurationException("signByCredential requires an allow list");
+    }
+    if (byCreds.size() != allowList.size()) {
+      throw new ExtensionConfigurationException(
+          "signByCredential must have exactly one entry per allowed credential");
     }
 
     List<String> ids =
@@ -363,8 +375,9 @@ public class SignExtension extends Extension {
 
     ids.removeAll(byCreds.keySet());
     if (!ids.isEmpty()) {
-      // signByCredential references credentials outside the allow list: ignore the extension.
-      return null;
+      // SyntaxError: an allowed credential has no signByCredential entry.
+      throw new IllegalArgumentException(
+          "signByCredential is missing an entry for an allowed credential");
     }
 
     final AuthenticationInput prepareInput =
@@ -407,8 +420,10 @@ public class SignExtension extends Extension {
                     SIGN,
                     new SignExtension.AuthenticationExtensionsSignOutputs(null, sig)
                         .toMap(serializationType));
-          } catch (ClassCastException e) {
-            // Authenticator returned sign output with unexpected CBOR types: omit the result.
+          } catch (RuntimeException e) {
+            // Authenticator returned malformed sign output (wrong CBOR types, or an undecodable
+            // authData from parseFrom): omit the result rather than failing the assertion or
+            // misreporting the authenticator's fault as a relying-party error.
             logger.debug("Ignoring malformed previewSign assertion output", e);
             return null;
           }

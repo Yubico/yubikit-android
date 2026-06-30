@@ -22,14 +22,17 @@ import static com.yubico.yubikit.fido.client.extensions.ExtensionTestHelper.sess
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.yubico.yubikit.fido.client.ClientError;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
 import com.yubico.yubikit.fido.webauthn.SerializationType;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import org.junit.Test;
 
@@ -107,10 +110,116 @@ public class LargeBlobExtensionTest {
   }
 
   @Test
-  public void malformedLargeBlobTypeIsIgnored() {
-    // A non-Map largeBlob value must be treated as absent, not throw ClassCastException.
+  public void getAssertionSupportPresentThrows() {
+    // Spec: support is registration-only -> NotSupportedError during authentication.
+    Map<String, ?> ext =
+        Collections.singletonMap(LARGE_BLOB, Collections.singletonMap("support", "preferred"));
+    ExtensionConfigurationException e =
+        assertThrows(
+            ExtensionConfigurationException.class,
+            () -> extension.getAssertion(session(), request(ext), pinUvAuth));
+    assertEquals(ClientError.Code.CONFIGURATION_UNSUPPORTED, e.getCode());
+  }
+
+  @Test
+  public void getAssertionReadAndWriteThrows() {
+    // Spec: read and write must not both be present -> NotSupportedError.
+    Map<String, Object> largeBlob = new HashMap<>();
+    largeBlob.put("read", true);
+    largeBlob.put("write", "AQ");
+    Map<String, ?> ext = Collections.singletonMap(LARGE_BLOB, largeBlob);
+    ExtensionConfigurationException e =
+        assertThrows(
+            ExtensionConfigurationException.class,
+            () -> extension.getAssertion(session(), request(ext), pinUvAuth));
+    assertEquals(ClientError.Code.CONFIGURATION_UNSUPPORTED, e.getCode());
+  }
+
+  @Test
+  public void getAssertionReadFalseAndWriteThrows() {
+    // "Both present" is about member presence, not read's value: read:false + write still fails.
+    Map<String, Object> largeBlob = new HashMap<>();
+    largeBlob.put("read", false);
+    largeBlob.put("write", "AQ");
+    Map<String, ?> ext = Collections.singletonMap(LARGE_BLOB, largeBlob);
+    ExtensionConfigurationException e =
+        assertThrows(
+            ExtensionConfigurationException.class,
+            () -> extension.getAssertion(session(), request(ext), pinUvAuth));
+    assertEquals(ClientError.Code.CONFIGURATION_UNSUPPORTED, e.getCode());
+  }
+
+  @Test
+  public void getAssertionWriteRequiresExactlyOneAllowedCredential() {
+    // Spec: write requires allowCredentials to contain exactly one element -> NotSupportedError.
+    Map<String, ?> ext =
+        Collections.singletonMap(LARGE_BLOB, Collections.singletonMap("write", "AQ"));
+    ExtensionConfigurationException e =
+        assertThrows(
+            ExtensionConfigurationException.class,
+            () -> extension.getAssertion(session(), request(ext), pinUvAuth));
+    assertEquals(ClientError.Code.CONFIGURATION_UNSUPPORTED, e.getCode());
+  }
+
+  @Test
+  public void malformedLargeBlobTypeThrows() {
+    // A non-Map largeBlob value is malformed input and must be surfaced, not silently dropped.
     Map<String, ?> ext = Collections.singletonMap(LARGE_BLOB, "not-a-map");
-    assertNull(extension.makeCredential(session(), creation(ext), pinUvAuth));
-    assertNull(extension.getAssertion(session(), request(ext), pinUvAuth));
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> extension.makeCredential(session(), creation(ext), pinUvAuth));
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> extension.getAssertion(session(), request(ext), pinUvAuth));
+  }
+
+  @Test
+  public void malformedWriteTypeThrows() {
+    // write is a BufferSource: a non-string value is a wrong-type error (surfaced as BAD_REQUEST).
+    Map<String, ?> ext =
+        Collections.singletonMap(LARGE_BLOB, Collections.singletonMap("write", 123));
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> extension.getAssertion(session(), request(ext), pinUvAuth));
+  }
+
+  @Test
+  public void wrongTypedReadThrows() {
+    // read is a boolean member: a wrong-typed value is malformed caller input -> BAD_REQUEST.
+    Map<String, ?> ext =
+        Collections.singletonMap(LARGE_BLOB, Collections.singletonMap("read", "yes"));
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> extension.getAssertion(session(), request(ext), pinUvAuth));
+  }
+
+  @Test
+  public void wrongTypedSupportThrows() {
+    // support is an enum string: a wrong-typed value is malformed caller input -> BAD_REQUEST.
+    Map<String, ?> ext =
+        Collections.singletonMap(LARGE_BLOB, Collections.singletonMap("support", 1));
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> extension.getAssertion(session(), request(ext), pinUvAuth));
+  }
+
+  @Test
+  public void unknownSupportValueThrows() {
+    // support must be "required" or "preferred": an unrecognized value -> BAD_REQUEST.
+    Map<String, ?> ext =
+        Collections.singletonMap(LARGE_BLOB, Collections.singletonMap("support", "bogus"));
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> extension.makeCredential(session(), creation(ext), pinUvAuth));
+  }
+
+  @Test
+  public void wrongTypedSupportAtRegistrationThrows() {
+    // A wrong-typed support at registration is malformed caller input -> BAD_REQUEST.
+    Map<String, ?> ext =
+        Collections.singletonMap(LARGE_BLOB, Collections.singletonMap("support", 1));
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> extension.makeCredential(session(), creation(ext), pinUvAuth));
   }
 }

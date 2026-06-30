@@ -21,6 +21,7 @@ import static com.yubico.yubikit.fido.client.extensions.ExtensionTestHelper.sess
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
 import static org.mockito.Mockito.mock;
 
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
@@ -64,5 +65,25 @@ public class MinPinLengthExtensionTest {
     assertNull(extension.makeCredential(supportingSession(), creation(null), pinUvAuth));
     assertNull(
         extension.makeCredential(supportingSession(), creation(Collections.emptyMap()), pinUvAuth));
+  }
+
+  @Test
+  public void nonBooleanInputThrows() {
+    // minPinLength's client input is a boolean flag, so a non-boolean present value is malformed
+    // caller input -> BAD_REQUEST (not silently coerced).
+    assertThrows(
+        IllegalArgumentException.class,
+        () ->
+            extension.makeCredential(
+                supportingSession(), creation(Collections.singletonMap(NAME, 1)), pinUvAuth));
+  }
+
+  @Test
+  public void falseInputIsIgnored() {
+    // The boolean flag indicates whether the extension is requested: false means "not requested",
+    // so it is ignored (no authenticator input), not surfaced.
+    assertNull(
+        extension.makeCredential(
+            supportingSession(), creation(Collections.singletonMap(NAME, false)), pinUvAuth));
   }
 }

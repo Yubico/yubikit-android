@@ -19,11 +19,19 @@ package com.yubico.yubikit.fido.client.extensions;
 import static com.yubico.yubikit.fido.client.extensions.ExtensionTestHelper.creation;
 import static com.yubico.yubikit.fido.client.extensions.ExtensionTestHelper.request;
 import static com.yubico.yubikit.fido.client.extensions.ExtensionTestHelper.session;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
 import static org.mockito.Mockito.mock;
 
+import com.yubico.yubikit.fido.client.ClientError;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
+import com.yubico.yubikit.fido.webauthn.Extensions;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 import org.junit.Test;
 
 /**
@@ -55,11 +63,117 @@ public class HmacSecretExtensionTest {
   }
 
   @Test
+  public void makeCredentialNonBooleanHmacCreateSecretThrows() {
+    // When hmac-secret is allowed, hmacCreateSecret is a boolean flag: a non-boolean value is
+    // malformed caller input -> BAD_REQUEST.
+    HmacSecretExtension hmacAllowed = new HmacSecretExtension(true);
+    assertThrows(
+        IllegalArgumentException.class,
+        () ->
+            hmacAllowed.makeCredential(
+                session(NAME),
+                creation(Collections.singletonMap("hmacCreateSecret", "yes")),
+                pinUvAuth));
+  }
+
+  @Test
   public void getAssertionNotSupportedReturnsNull() {
     assertNull(
         extension.getAssertion(
             session(),
             request(Collections.singletonMap("prf", Collections.emptyMap())),
             pinUvAuth));
+  }
+
+  @Test
+  public void makeCredentialMalformedPrfThrows() {
+    // prf is a dictionary: a non-object value is malformed structure -> BAD_REQUEST.
+    assertThrows(
+        IllegalArgumentException.class,
+        () ->
+            extension.makeCredential(
+                session(NAME),
+                creation(Collections.singletonMap("prf", "not-an-object")),
+                pinUvAuth));
+  }
+
+  @Test
+  public void makeCredentialMalformedEvalThrows() {
+    // prf.eval is a dictionary: a non-object value is malformed structure -> BAD_REQUEST.
+    Map<String, Object> prf = Collections.singletonMap("eval", "not-an-object");
+    assertThrows(
+        IllegalArgumentException.class,
+        () ->
+            extension.makeCredential(
+                session(NAME), creation(Collections.singletonMap("prf", prf)), pinUvAuth));
+  }
+
+  @Test
+  public void makeCredentialEvalByCredentialThrows() {
+    // WebAuthn prf (registration): evalByCredential is authentication-only -> NotSupportedError.
+    Map<String, Object> prf =
+        Collections.singletonMap(
+            "evalByCredential",
+            Collections.singletonMap("AA", Collections.singletonMap("first", "AA")));
+    ExtensionConfigurationException e =
+        assertThrows(
+            ExtensionConfigurationException.class,
+            () ->
+                extension.makeCredential(
+                    session(NAME), creation(Collections.singletonMap("prf", prf)), pinUvAuth));
+    assertEquals(ClientError.Code.CONFIGURATION_UNSUPPORTED, e.getCode());
+  }
+
+  @Test
+  public void prepareSaltsIgnoresNullSecond() {
+    // Regression: an RP sending prf.eval with "second": null (key present, null value) must not
+    // crash the ceremony (previously an NPE from Base64.fromUrlSafeString(null)); the null second
+    // is treated as absent, yielding first-only salts.
+    Map<String, Object> eval = new HashMap<>();
+    eval.put("first", "abba");
+    eval.put("second", null);
+    HmacSecretExtension.Salts salts = extension.prepareSalts(null, null, prfEval(eval));
+    assertNotNull(salts);
+    assertEquals(32, salts.salt1.length);
+    assertEquals(0, salts.salt2.length);
+  }
+
+  @Test
+  public void prepareSaltsProcessesFirstAndSecond() {
+    Map<String, Object> eval = new HashMap<>();
+    eval.put("first", "abba");
+    eval.put("second", "bebe");
+    HmacSecretExtension.Salts salts = extension.prepareSalts(null, null, prfEval(eval));
+    assertNotNull(salts);
+    assertEquals(32, salts.salt1.length);
+    assertEquals(32, salts.salt2.length);
+  }
+
+  @Test
+  public void prepareSaltsRejectsWrongTypedSecond() {
+    // A non-string "second" is malformed input -> IllegalArgumentException (mapped to BAD_REQUEST),
+    // not a crash.
+    Map<String, Object> eval = new HashMap<>();
+    eval.put("first", "abba");
+    eval.put("second", 123);
+    assertThrows(
+        IllegalArgumentException.class, () -> extension.prepareSalts(null, null, prfEval(eval)));
+  }
+
+  @Test
+  public void prepareSaltsRequiresFirst() {
+    // A prf eval block missing "first" is malformed input -> IllegalArgumentException.
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> extension.prepareSalts(null, null, prfEval(new HashMap<>())));
+  }
+
+  /**
+   * Builds parsed extension {@link HmacSecretExtension.Inputs} for {@code prf: { eval: <eval> }}.
+   */
+  private static HmacSecretExtension.Inputs prfEval(Map<String, Object> eval) {
+    Extensions extensions =
+        Extensions.fromMap(Collections.singletonMap("prf", Collections.singletonMap("eval", eval)));
+    return Objects.requireNonNull(HmacSecretExtension.Inputs.fromExtensions(extensions));
   }
 }

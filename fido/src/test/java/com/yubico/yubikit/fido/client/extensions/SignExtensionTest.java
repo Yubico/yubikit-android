@@ -23,18 +23,21 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.yubico.yubikit.core.internal.codec.Base64;
 import com.yubico.yubikit.fido.Cbor;
+import com.yubico.yubikit.fido.client.ClientError;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialDescriptor;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialType;
 import com.yubico.yubikit.fido.webauthn.SerializationType;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -48,6 +51,25 @@ public class SignExtensionTest {
 
   private static Map<String, ?> signInput(Map<String, ?> value) {
     return Collections.singletonMap(NAME, value);
+  }
+
+  private static Map<String, Object> credEntry() {
+    Map<String, Object> entry = new HashMap<>();
+    entry.put("keyHandle", Base64.toUrlSafeString(new byte[] {1}));
+    entry.put("tbs", Base64.toUrlSafeString(new byte[] {2}));
+    return entry;
+  }
+
+  private static Map<String, ?> signByCredential(byte[]... ids) {
+    Map<String, Object> byCred = new HashMap<>();
+    for (byte[] id : ids) {
+      byCred.put(Base64.toUrlSafeString(id), credEntry());
+    }
+    return signInput(Collections.singletonMap("signByCredential", byCred));
+  }
+
+  private static PublicKeyCredentialDescriptor descriptor(byte[] id) {
+    return new PublicKeyCredentialDescriptor(PublicKeyCredentialType.PUBLIC_KEY, id);
   }
 
   @Test
@@ -67,17 +89,28 @@ public class SignExtensionTest {
   }
 
   @Test
-  public void makeCredentialSignByCredentialIsIgnored() {
-    Map<String, ?> input =
-        signInput(Collections.singletonMap("signByCredential", Collections.emptyMap()));
-    assertNull(extension.makeCredential(session(NAME), creation(input), pinUvAuth));
+  public void makeCredentialSignByCredentialThrows() {
+    Map<String, Object> withBoth = new HashMap<>();
+    withBoth.put(
+        "generateKey", Collections.singletonMap("algorithms", Collections.singletonList(-7)));
+    withBoth.put("signByCredential", Collections.emptyMap());
+    ExtensionConfigurationException e =
+        assertThrows(
+            ExtensionConfigurationException.class,
+            () ->
+                extension.makeCredential(session(NAME), creation(signInput(withBoth)), pinUvAuth));
+    assertEquals(ClientError.Code.CONFIGURATION_UNSUPPORTED, e.getCode());
   }
 
   @Test
-  public void makeCredentialWithoutGenerateKeyIsIgnored() {
-    assertNull(
-        extension.makeCredential(
-            session(NAME), creation(signInput(Collections.emptyMap())), pinUvAuth));
+  public void makeCredentialWithoutGenerateKeyThrows() {
+    ExtensionConfigurationException e =
+        assertThrows(
+            ExtensionConfigurationException.class,
+            () ->
+                extension.makeCredential(
+                    session(NAME), creation(signInput(Collections.emptyMap())), pinUvAuth));
+    assertEquals(ClientError.Code.CONFIGURATION_UNSUPPORTED, e.getCode());
   }
 
   @Test
@@ -118,13 +151,60 @@ public class SignExtensionTest {
   }
 
   @Test
-  public void getAssertionWithGenerateKeyIsIgnored() {
+  public void getAssertionWithGenerateKeyThrows() {
     Map<String, ?> input =
         signInput(
             Collections.singletonMap(
                 "generateKey",
                 Collections.singletonMap("algorithms", Collections.singletonList(-7))));
-    assertNull(extension.getAssertion(session(NAME), request(input), pinUvAuth));
+    ExtensionConfigurationException e =
+        assertThrows(
+            ExtensionConfigurationException.class,
+            () -> extension.getAssertion(session(NAME), request(input), pinUvAuth));
+    assertEquals(ClientError.Code.CONFIGURATION_UNSUPPORTED, e.getCode());
+  }
+
+  @Test
+  public void getAssertionEmptyAllowListThrows() {
+    // Spec: empty allowCredentials with signByCredential -> NotSupportedError.
+    ExtensionConfigurationException e =
+        assertThrows(
+            ExtensionConfigurationException.class,
+            () ->
+                extension.getAssertion(
+                    session(NAME), request(signByCredential(new byte[] {9})), pinUvAuth));
+    assertEquals(ClientError.Code.CONFIGURATION_UNSUPPORTED, e.getCode());
+  }
+
+  @Test
+  public void getAssertionSizeMismatchThrows() {
+    // Spec: signByCredential size must equal allowCredentials size -> NotSupportedError.
+    byte[] id1 = {1};
+    byte[] id2 = {2};
+    ExtensionConfigurationException e =
+        assertThrows(
+            ExtensionConfigurationException.class,
+            () ->
+                extension.getAssertion(
+                    session(NAME),
+                    request(signByCredential(id1), Arrays.asList(descriptor(id1), descriptor(id2))),
+                    pinUvAuth));
+    assertEquals(ClientError.Code.CONFIGURATION_UNSUPPORTED, e.getCode());
+  }
+
+  @Test
+  public void getAssertionMissingEntryThrows() {
+    // Spec: an allowed credential with no signByCredential entry -> SyntaxError (BAD_REQUEST).
+    byte[] withEntry = {1};
+    byte[] missing = {2};
+    assertThrows(
+        IllegalArgumentException.class,
+        () ->
+            extension.getAssertion(
+                session(NAME),
+                request(
+                    signByCredential(withEntry), Collections.singletonList(descriptor(missing))),
+                pinUvAuth));
   }
 
   /**
@@ -159,17 +239,45 @@ public class SignExtensionTest {
   }
 
   @Test
-  public void malformedSignInputIsIgnored() {
+  public void malformedSignInputThrows() {
     // previewSign value is not a map.
-    assertNull(
-        extension.makeCredential(
-            session(NAME), creation(Collections.singletonMap(NAME, "not-a-map")), pinUvAuth));
-    // Nested wrong type (algorithms is not a list) must be ignored, not abort.
+    assertThrows(
+        IllegalArgumentException.class,
+        () ->
+            extension.makeCredential(
+                session(NAME), creation(Collections.singletonMap(NAME, "not-a-map")), pinUvAuth));
+    // Nested wrong type (algorithms is not a list) must be surfaced, not silently dropped.
     Map<String, ?> badGenerateKey =
         signInput(
             Collections.singletonMap(
                 "generateKey", Collections.singletonMap("algorithms", "not-a-list")));
-    assertNull(extension.makeCredential(session(NAME), creation(badGenerateKey), pinUvAuth));
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> extension.makeCredential(session(NAME), creation(badGenerateKey), pinUvAuth));
+  }
+
+  /**
+   * When the authenticator returns malformed authenticatorData (here, the ED flag is set but no
+   * extensions bytes follow, so AuthenticatorData.parseFrom throws), the output processor must
+   * degrade to no result rather than letting the exception escape (and be misreported as a
+   * relying-party error).
+   */
+  @Test
+  public void getAssertionMalformedAuthOutputProducesNoResult() {
+    byte[] id = {9, 9};
+    Extension.AuthenticationProcessor processor =
+        extension.getAssertion(
+            session(NAME),
+            request(signByCredential(id), Collections.singletonList(descriptor(id))),
+            pinUvAuth);
+    assertNotNull(processor);
+
+    Ctap2Session.AssertionData assertionData = mock(Ctap2Session.AssertionData.class);
+    when(assertionData.getAuthenticatorData()).thenReturn(malformedAuthenticatorData());
+
+    Map<String, Object> output =
+        processor.getOutput(assertionData, null).getClientExtensionResult(SerializationType.CBOR);
+    assertTrue(output.isEmpty());
   }
 
   /** Minimal authenticator data: rpIdHash + ED flag + signCount + an empty CBOR extensions map. */
@@ -180,6 +288,15 @@ public class SignExtensionTest {
         .put((byte) 0x80) // ED flag (bit 7) set, AT clear
         .putInt(0) // signCount
         .put(extensions)
+        .array();
+  }
+
+  /** Malformed authenticator data: ED flag set but no extensions bytes -> parseFrom throws. */
+  private static byte[] malformedAuthenticatorData() {
+    return ByteBuffer.allocate(32 + 1 + 4)
+        .put(new byte[32]) // rpIdHash
+        .put((byte) 0x80) // ED flag set, but no extensions data follows
+        .putInt(0) // signCount
         .array();
   }
 }

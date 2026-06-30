@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2025 Yubico.
+ * Copyright (C) 2024-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,12 +55,18 @@ public class CredBlobExtension extends Extension {
       return null;
     }
 
-    String b64Blob = (String) extensions.get("credBlob");
-    if (b64Blob != null) {
-      byte[] blob = fromUrlSafeString(b64Blob);
-      if (blob.length <= ctap.getCachedInfo().getMaxCredBlobLength()) {
-        return new RegistrationProcessor(pinToken -> Collections.singletonMap(name, blob));
-      }
+    Object value = extensions.get("credBlob");
+    if (value == null) {
+      return null; // not requested
+    }
+    if (!(value instanceof String)) {
+      throw new IllegalArgumentException("credBlob must be a string");
+    }
+    byte[] blob = fromUrlSafeString((String) value);
+    // Per spec, the platform passes credBlob to the authenticator only when it fits within
+    // maxCredBlobLength; otherwise it is ignored.
+    if (blob.length <= ctap.getCachedInfo().getMaxCredBlobLength()) {
+      return new RegistrationProcessor(pinToken -> Collections.singletonMap(name, blob));
     }
 
     return null;
@@ -77,7 +83,11 @@ public class CredBlobExtension extends Extension {
     if (extensions == null) {
       return null;
     }
-    if (isSupported(ctap) && Boolean.TRUE.equals(extensions.get("getCredBlob"))) {
+    Object getCredBlob = extensions.get("getCredBlob");
+    if (getCredBlob != null && !(getCredBlob instanceof Boolean)) {
+      throw new IllegalArgumentException("getCredBlob must be a boolean");
+    }
+    if (isSupported(ctap) && Boolean.TRUE.equals(getCredBlob)) {
       return new AuthenticationProcessor(
           (AuthenticationInput) (selected, pinToken) -> Collections.singletonMap(name, true));
     }

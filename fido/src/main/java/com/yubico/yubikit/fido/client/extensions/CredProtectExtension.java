@@ -54,18 +54,22 @@ public class CredProtectExtension extends Extension {
       return null;
     }
 
-    // Treat malformed input (wrong type or unknown policy) as absent and ignore the extension.
     Object policyValue = extensions.get(POLICY);
-    if (!(policyValue instanceof String)) {
+    if (policyValue == null) {
       return null;
     }
-
-    Integer credProtect = credProtectValue((String) policyValue);
+    Integer credProtect =
+        policyValue instanceof String ? credProtectValue((String) policyValue) : null;
     if (credProtect == null) {
-      return null;
+      throw new IllegalArgumentException(
+          "credentialProtectionPolicy must be a recognized policy value");
     }
 
-    boolean enforce = Boolean.TRUE.equals(extensions.get(ENFORCE));
+    Object enforceValue = extensions.get(ENFORCE);
+    if (enforceValue != null && !(enforceValue instanceof Boolean)) {
+      throw new IllegalArgumentException("enforceCredentialProtectionPolicy must be a boolean");
+    }
+    boolean enforce = Boolean.TRUE.equals(enforceValue);
     if (enforce && !isSupported(ctap) && credProtect > 0x01) {
       throw new ExtensionConfigurationException("No Credential Protection support");
     }

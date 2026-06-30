@@ -61,6 +61,11 @@ final class ExtensionTestHelper {
     return session(Arrays.asList(extensions), Collections.emptyMap(), 32);
   }
 
+  /** A session whose authenticator advertises support for resident keys (the "rk" option). */
+  static Ctap2Session rkSession() {
+    return session(Collections.emptyList(), Collections.singletonMap("rk", true), 32);
+  }
+
   static PublicKeyCredentialCreationOptions creation(@Nullable Map<String, ?> extensions) {
     return creation(extensions, null);
   }
