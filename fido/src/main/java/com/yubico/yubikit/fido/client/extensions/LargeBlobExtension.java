@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2025 Yubico.
+ * Copyright (C) 2024-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import static com.yubico.yubikit.core.internal.codec.Base64.fromUrlSafeString;
 import static com.yubico.yubikit.core.internal.codec.Base64.toUrlSafeString;
 
 import com.yubico.yubikit.core.application.CommandException;
+import com.yubico.yubikit.fido.client.ClientError;
 import com.yubico.yubikit.fido.ctap.ClientPin;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
@@ -77,10 +78,12 @@ public class LargeBlobExtension extends Extension {
     final Inputs inputs = Inputs.fromExtensions(options.getExtensions());
     if (inputs != null) {
       if (inputs.read != null || inputs.write != null) {
-        throw new IllegalArgumentException("Invalid set of parameters");
+        throw new ExtensionConfigurationException(
+            ClientError.Code.BAD_REQUEST, "Invalid set of parameters");
       }
       if (REQUIRED.equals(inputs.support) && !isSupported(ctap)) {
-        throw new IllegalArgumentException("Authenticator does not support large blob storage");
+        throw new ExtensionConfigurationException(
+            "Authenticator does not support large blob storage");
       }
       return new RegistrationProcessor(
           pinToken -> Collections.singletonMap(LARGE_BLOB_KEY, true),
@@ -143,6 +146,10 @@ public class LargeBlobExtension extends Extension {
                       BLOB,
                       serializationType == SerializationType.JSON ? toUrlSafeString(blob) : blob)
                   : Collections.emptyMap());
+    } catch (IllegalStateException e) {
+      // Authenticator returned a largeBlobKey but does not support the large blob array; this is an
+      // expected, ignorable condition (no blob to read), not a processing failure.
+      logger.debug("Large blob storage not supported; skipping largeBlob output", e);
     } catch (IOException | CommandException e) {
       logger.error("LargeBlob processing failed: ", e);
     }
@@ -169,6 +176,10 @@ public class LargeBlobExtension extends Extension {
       return serializationType ->
           Collections.singletonMap(LARGE_BLOB, Collections.singletonMap(WRITTEN, true));
 
+    } catch (IllegalStateException e) {
+      // Authenticator returned a largeBlobKey but does not support the large blob array; this is an
+      // expected, ignorable condition (nothing to write), not a processing failure.
+      logger.debug("Large blob storage not supported; skipping largeBlob output", e);
     } catch (IOException | CommandException | GeneralSecurityException e) {
       logger.error("LargeBlob processing failed: ", e);
     }
@@ -187,21 +198,25 @@ public class LargeBlobExtension extends Extension {
       this.support = support;
     }
 
-    @SuppressWarnings("unchecked")
     @Nullable
     static Inputs fromExtensions(@Nullable Extensions extensions) {
       if (extensions == null) {
         return null;
       }
 
-      Map<String, Object> data = (Map<String, Object>) extensions.get(LARGE_BLOB);
-      if (data == null) {
+      // Treat malformed input (wrong types) as absent rather than throwing.
+      Object data = extensions.get(LARGE_BLOB);
+      if (!(data instanceof Map)) {
         return null;
       }
+      Map<?, ?> map = (Map<?, ?>) data;
+      Object read = map.get(ACTION_READ);
+      Object write = map.get(ACTION_WRITE);
+      Object support = map.get(SUPPORT);
       return new Inputs(
-          (Boolean) data.get(ACTION_READ),
-          (String) data.get(ACTION_WRITE),
-          (String) data.get(SUPPORT));
+          read instanceof Boolean ? (Boolean) read : null,
+          write instanceof String ? (String) write : null,
+          support instanceof String ? (String) support : null);
     }
   }
 }

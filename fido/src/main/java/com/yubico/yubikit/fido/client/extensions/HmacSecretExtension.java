@@ -270,7 +270,8 @@ public class HmacSecretExtension extends Extension {
 
       if (evalByCredential != null) {
         if (allowCredentials == null || allowCredentials.isEmpty()) {
-          throw new IllegalArgumentException("evalByCredential needs allow list");
+          // Invalid input (evalByCredential without an allow list): ignore the extension.
+          return null;
         }
 
         Set<String> ids = new HashSet<>();
@@ -279,7 +280,8 @@ public class HmacSecretExtension extends Extension {
         }
 
         if (!ids.containsAll(evalByCredential.keySet())) {
-          throw new IllegalArgumentException("evalByCredentials contains invalid key");
+          // Invalid input (unknown credential id): ignore the extension.
+          return null;
         }
 
         if (selected != null) {
@@ -329,7 +331,8 @@ public class HmacSecretExtension extends Extension {
     logger.debug("Salts prepared");
     if (!(salts.salt1.length == SALT_LEN
         && (salts.salt2.length == 0 || salts.salt2.length == SALT_LEN))) {
-      throw new IllegalArgumentException("Invalid salt length");
+      // Invalid salt length: ignore the extension.
+      return null;
     }
 
     return salts;

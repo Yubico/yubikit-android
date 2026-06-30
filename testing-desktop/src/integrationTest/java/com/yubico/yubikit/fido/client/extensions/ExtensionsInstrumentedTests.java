@@ -91,6 +91,11 @@ public class ExtensionsInstrumentedTests {
     public void testThirdPartyPaymentExtension() throws Throwable {
       withDevice(ThirdPartyPaymentExtensionTests::test);
     }
+
+    @Test
+    public void testExtensionFailureHandling() throws Throwable {
+      withDevice(ExtensionFailureTests::test);
+    }
   }
 
   @Category(PinUvAuthProtocolV1Test.class)

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2025 Yubico.
+ * Copyright (C) 2020-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import com.yubico.yubikit.fido.client.extensions.CredBlobExtension;
 import com.yubico.yubikit.fido.client.extensions.CredPropsExtension;
 import com.yubico.yubikit.fido.client.extensions.CredProtectExtension;
 import com.yubico.yubikit.fido.client.extensions.Extension;
+import com.yubico.yubikit.fido.client.extensions.ExtensionConfigurationException;
 import com.yubico.yubikit.fido.client.extensions.HmacSecretExtension;
 import com.yubico.yubikit.fido.client.extensions.LargeBlobExtension;
 import com.yubico.yubikit.fido.client.extensions.MinPinLengthExtension;
@@ -474,11 +475,15 @@ public class Ctap2Client implements WebAuthnClient {
             | (excludeCredentials.isEmpty() ? 0 : ClientPin.PIN_PERMISSION_GA);
     List<Extension.RegistrationProcessor> registrationProcessors = new ArrayList<>();
     for (Extension extension : extensions) {
-      Extension.RegistrationProcessor processor =
-          extension.makeCredential(ctap, options, clientPin.getPinUvAuth());
-      if (processor != null) {
-        registrationProcessors.add(processor);
-        permissions |= processor.getPermissions();
+      try {
+        Extension.RegistrationProcessor processor =
+            extension.makeCredential(ctap, options, clientPin.getPinUvAuth());
+        if (processor != null) {
+          registrationProcessors.add(processor);
+          permissions |= processor.getPermissions();
+        }
+      } catch (RuntimeException e) {
+        handleExtensionFailure(e);
       }
     }
 
@@ -518,7 +523,11 @@ public class Ctap2Client implements WebAuthnClient {
 
     HashMap<String, Object> authenticatorInputs = new HashMap<>();
     for (Extension.RegistrationProcessor processor : registrationProcessors) {
-      authenticatorInputs.putAll(processor.getInput(authParams.pinToken));
+      try {
+        authenticatorInputs.putAll(processor.getInput(authParams.pinToken));
+      } catch (RuntimeException e) {
+        handleExtensionFailure(e);
+      }
     }
 
     final PublicKeyCredentialDescriptor credToExclude =
@@ -574,9 +583,25 @@ public class Ctap2Client implements WebAuthnClient {
             state);
 
     ClientExtensionResults clientExtensionResults = new ClientExtensionResults();
-    for (Extension.RegistrationProcessor processor : registrationProcessors) {
-      AttestationObject attestationObject = AttestationObject.fromCredential(credentialData);
-      clientExtensionResults.add(processor.getOutput(attestationObject, authParams.pinToken));
+    // Parse the attestation once for extension-output processing and share it across all
+    // processors (the public makeCredential() parses it again to build the response). A failure
+    // here is not extension-specific (the authenticator's attestation could not be parsed); since
+    // the credential was already created, log it and return without extension outputs rather than
+    // failing the whole ceremony or reporting it as an extension error.
+    AttestationObject attestationObject = null;
+    try {
+      attestationObject = AttestationObject.fromCredential(credentialData);
+    } catch (RuntimeException e) {
+      logger.warn("Failed to parse attestation object; skipping extension outputs", e);
+    }
+    if (attestationObject != null) {
+      for (Extension.RegistrationProcessor processor : registrationProcessors) {
+        try {
+          clientExtensionResults.add(processor.getOutput(attestationObject, authParams.pinToken));
+        } catch (RuntimeException e) {
+          handleExtensionFailure(e);
+        }
+      }
     }
     return new Pair<>(credentialData, clientExtensionResults);
   }
@@ -621,11 +646,15 @@ public class Ctap2Client implements WebAuthnClient {
     int permissions = ClientPin.PIN_PERMISSION_GA;
     List<Extension.AuthenticationProcessor> authenticationProcessors = new ArrayList<>();
     for (Extension extension : extensions) {
-      Extension.AuthenticationProcessor processor =
-          extension.getAssertion(ctap, options, clientPin.getPinUvAuth());
-      if (processor != null) {
-        authenticationProcessors.add(processor);
-        permissions |= processor.getPermissions();
+      try {
+        Extension.AuthenticationProcessor processor =
+            extension.getAssertion(ctap, options, clientPin.getPinUvAuth());
+        if (processor != null) {
+          authenticationProcessors.add(processor);
+          permissions |= processor.getPermissions();
+        }
+      } catch (RuntimeException e) {
+        handleExtensionFailure(e);
       }
     }
 
@@ -648,7 +677,11 @@ public class Ctap2Client implements WebAuthnClient {
 
     HashMap<String, Object> authenticatorInputs = new HashMap<>();
     for (Extension.AuthenticationProcessor processor : authenticationProcessors) {
-      authenticatorInputs.putAll(processor.getInput(selectedCred, authParams.pinToken));
+      try {
+        authenticatorInputs.putAll(processor.getInput(selectedCred, authParams.pinToken));
+      } catch (RuntimeException e) {
+        handleExtensionFailure(e);
+      }
     }
 
     if (!allowCredentials.isEmpty() && selectedCred == null) {
@@ -687,7 +720,11 @@ public class Ctap2Client implements WebAuthnClient {
       for (final Ctap2Session.AssertionData assertionData : assertions) {
         ClientExtensionResults clientExtensionResults = new ClientExtensionResults();
         for (Extension.AuthenticationProcessor processor : authenticationProcessors) {
-          clientExtensionResults.add(processor.getOutput(assertionData, authParams.pinToken));
+          try {
+            clientExtensionResults.add(processor.getOutput(assertionData, authParams.pinToken));
+          } catch (RuntimeException e) {
+            handleExtensionFailure(e);
+          }
         }
         result.add(new Pair<>(assertionData, clientExtensionResults));
       }
@@ -842,6 +879,49 @@ public class Ctap2Client implements WebAuthnClient {
     }
 
     return new PinUvAuthDummyProtocol();
+  }
+
+  /**
+   * Handles a {@link RuntimeException} raised while processing a single client extension, applying
+   * the three-way policy that keeps one extension from breaking a whole ceremony:
+   *
+   * <ul>
+   *   <li><b>{@link ExtensionConfigurationException} — abort.</b> The relying party explicitly
+   *       requested a capability that cannot be satisfied (e.g. {@code credProtect} with {@code
+   *       enforceCredentialProtectionPolicy}, or {@code largeBlob} {@code support:"required"} on an
+   *       authenticator that does not support it). Surfaced as a {@link ClientError} that fails the
+   *       ceremony, carrying the {@link ClientError.Code} the extension chose.
+   *   <li><b>{@link IllegalArgumentException} — skip.</b> See the inline note below.
+   *   <li><b>Anything else — rethrow.</b> Any other unchecked exception (e.g. {@link
+   *       NullPointerException}, {@link ClassCastException}, {@link IllegalStateException}) is
+   *       treated as a genuine defect and propagated unchanged rather than silently swallowed.
+   * </ul>
+   */
+  private void handleExtensionFailure(RuntimeException e) throws ClientError {
+    if (e instanceof ExtensionConfigurationException) {
+      ExtensionConfigurationException configError = (ExtensionConfigurationException) e;
+      throw new ClientError(configError.getCode(), configError.getMessage(), configError);
+    }
+    if (e instanceof IllegalArgumentException) {
+      // An IllegalArgumentException here means an extension could not process its data; the failure
+      // is recoverable by dropping that one extension. It is raised by the decode/validation
+      // helpers an extension calls, not by our extensions signaling "not applicable" (that case
+      // returns null instead of throwing). Typical sources are malformed relying-party input (e.g.
+      // invalid base64url rejected by Base64.fromUrlSafeString while decoding prf/hmac-secret
+      // salts,
+      // a credBlob, sign keyHandle/tbs, or a largeBlob payload) and malformed authenticator output
+      // (e.g. AuthenticatorData.parseFrom or CBOR decoding).
+      //
+      // Per WebAuthn (https://www.w3.org/TR/webauthn-3/#sctn-extensions, section 9), "ignoring an
+      // extension is never considered a failure", so a malformed *optional* extension must not
+      // abort the whole registration/authentication. We log it and drop only this extension,
+      // letting the ceremony and the remaining extensions proceed. The catch is intentionally
+      // narrowed to IllegalArgumentException so that unrelated programming errors - handled by
+      // the final rethrow - are not masked.
+      logger.warn("Skipping extension that failed during processing", e);
+      return;
+    }
+    throw e;
   }
 
   private int getSafePinRetryCount() {

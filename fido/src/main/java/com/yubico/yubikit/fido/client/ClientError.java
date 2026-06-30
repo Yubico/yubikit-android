@@ -60,6 +60,11 @@ public class ClientError extends Exception {
     this.errorCode = errorCode;
   }
 
+  public ClientError(Code errorCode, String message, Throwable cause) {
+    super(errorCode + " - " + message, cause);
+    this.errorCode = errorCode;
+  }
+
   @SuppressWarnings("unused")
   public Code getErrorCode() {
     return errorCode;
