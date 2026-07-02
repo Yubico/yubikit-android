@@ -41,6 +41,7 @@ internal class FidoClientImpl : FidoClient {
         val origin: Origin,
         val clientDataHash: String?,
         val request: String,
+        val callerLabel: String?,
     )
 
     private var currentContinuation: CancellableContinuation<Result<String>>? = null
@@ -90,6 +91,7 @@ internal class FidoClientImpl : FidoClient {
         origin: Origin,
         clientDataHash: String?,
         request: String,
+        callerLabel: String?,
     ): Result<String> {
         checkMainThread()
         return suspendCancellableCoroutine { continuation ->
@@ -98,7 +100,7 @@ internal class FidoClientImpl : FidoClient {
                 return@suspendCancellableCoroutine
             }
             currentContinuation = continuation
-            launcher.launch(FidoRequest(type, origin, clientDataHash, request))
+            launcher.launch(FidoRequest(type, origin, clientDataHash, request, callerLabel))
             continuation.invokeOnCancellation {
                 currentContinuation = null
             }
@@ -109,13 +111,27 @@ internal class FidoClientImpl : FidoClient {
         origin: Origin,
         request: String,
         clientDataHash: String?,
-    ): Result<String> = execute(FidoClientService.Operation.MAKE_CREDENTIAL, origin, clientDataHash, request)
+        callerLabel: String?,
+    ): Result<String> = execute(
+        FidoClientService.Operation.MAKE_CREDENTIAL,
+        origin,
+        clientDataHash,
+        request,
+        callerLabel,
+    )
 
     override suspend fun getAssertion(
         origin: Origin,
         request: String,
         clientDataHash: String?,
-    ): Result<String> = execute(FidoClientService.Operation.GET_ASSERTION, origin, clientDataHash, request)
+        callerLabel: String?,
+    ): Result<String> = execute(
+        FidoClientService.Operation.GET_ASSERTION,
+        origin,
+        clientDataHash,
+        request,
+        callerLabel,
+    )
 
     private class FidoActivityResultContract : ActivityResultContract<FidoRequest, Result<String>>() {
         override fun createIntent(
@@ -127,6 +143,7 @@ internal class FidoClientImpl : FidoClient {
             putExtra("resolvedOrigin", input.origin.resolved)
             putExtra("clientDataHash", input.clientDataHash)
             putExtra("request", input.request)
+            putExtra("callerLabel", input.callerLabel)
         }
 
         @Suppress("IntroduceWhenSubject")

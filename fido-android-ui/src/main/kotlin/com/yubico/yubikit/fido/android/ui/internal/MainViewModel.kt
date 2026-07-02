@@ -16,6 +16,7 @@
 
 package com.yubico.yubikit.fido.android.ui.internal
 
+import android.nfc.TagLostException
 import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -48,11 +49,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
+import kotlin.time.Duration.Companion.milliseconds
 
 internal typealias YubiKeyAction = suspend (Result<YubiKeyDevice, Exception>) -> Unit
 
@@ -70,7 +72,7 @@ internal open class MainViewModel(
     private val pendingYubiKeyAction = MutableLiveData<YubiKeyAction?>()
 
     private val _state =
-        MutableStateFlow<State>(
+        MutableStateFlow(
             if (FidoConfigManager.current.isPinPrioritized) {
                 State.WaitingForPinEntry(null)
             } else {
@@ -153,12 +155,16 @@ internal open class MainViewModel(
     }
 
     suspend fun waitForKeyRemoval() {
-        delay(250)
-        suspendCoroutine { continuation ->
+        delay(250.milliseconds)
+        suspendCancellableCoroutine { continuation ->
             when (val dev = _device.value) {
                 is NfcYubiKeyDevice -> {
                     dev.remove {
-                        continuation.resume(Unit)
+                        // The callback may fire after the coroutine was cancelled
+                        // (e.g. the activity finished); don't resume a dead continuation.
+                        if (continuation.isActive) {
+                            continuation.resume(Unit)
+                        }
                     }
                 }
 
@@ -179,9 +185,16 @@ internal open class MainViewModel(
         withWebAuthnClient(device, action)
     }
 
-    private suspend fun awaitPendingYubiKeyDevice(): YubiKeyDevice = suspendCoroutine { cont ->
+    private suspend fun awaitPendingYubiKeyDevice(): YubiKeyDevice = suspendCancellableCoroutine { cont ->
         pendingYubiKeyAction.postValue { result ->
-            cont.resume(result.value)
+            if (cont.isActive) {
+                cont.resume(result.value)
+            }
+        }
+        // If the caller is cancelled before a device arrives, drop the pending
+        // action so a later provideYubiKey() doesn't invoke a dead continuation.
+        cont.invokeOnCancellation {
+            pendingYubiKeyAction.postValue(null)
         }
     }
 
@@ -481,9 +494,12 @@ internal open class MainViewModel(
                                                     )
                                                 }
 
-                                                else -> {
-                                                    Error.DeviceNotConfiguredError
-                                                }
+                                                CtapException.ERR_UNSUPPORTED_EXTENSION,
+                                                CtapException.ERR_UNSUPPORTED_OPTION,
+                                                CtapException.ERR_UNSUPPORTED_ALGORITHM,
+                                                -> Error.DeviceIneligibleError
+
+                                                else -> Error.DeviceNotConfiguredError
                                             }
                                         }
 
@@ -521,6 +537,22 @@ internal open class MainViewModel(
                                         }
                                     }
                                 }
+
+                                is TagLostException -> {
+                                    Error.TagLostError
+                                }
+
+                                is IllegalArgumentException ->
+                                    when (error.message) {
+                                        "No Credential Protection support",
+                                        "Authenticator does not support large blob storage",
+                                        -> Error.DeviceIneligibleError
+
+                                        else -> {
+                                            logger.error("Unexpected error during FIDO operation: ", error)
+                                            Error.UnknownError
+                                        }
+                                    }
 
                                 else -> {
                                     logger.error("Unexpected error during FIDO operation: ", error)
@@ -604,7 +636,7 @@ internal open class MainViewModel(
     ) {
         newPinValue?.fill('\u0000')
         newPinValue = newPin.clone()
-        setLastEnteredPin(newPin)
+        setLastEnteredPin(currentPin)
         newPin.fill('\u0000')
         pinValue?.fill('\u0000')
         pinValue = currentPin.clone()

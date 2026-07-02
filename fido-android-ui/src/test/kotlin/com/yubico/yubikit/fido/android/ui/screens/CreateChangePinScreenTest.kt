@@ -199,4 +199,84 @@ class ForceChangePinScreenTest {
             .onNodeWithTag("pin_error_text")
             .assertExists()
     }
+
+    @Test
+    fun `change button disabled when current PIN is empty`() {
+        setForceChangePinContent()
+
+        composeTestRule.onNodeWithTag("new_pin_input")
+            .performTextInput("123456")
+        composeTestRule.onNodeWithTag("repeat_pin_input")
+            .performTextInput("123456")
+
+        composeTestRule.onNodeWithTag("change_pin_button")
+            .assertIsNotEnabled()
+    }
+
+    @Test
+    fun `change button disabled when new PINs do not match`() {
+        setForceChangePinContent()
+
+        composeTestRule.onNodeWithTag("current_pin_input")
+            .performTextInput("current")
+        composeTestRule.onNodeWithTag("new_pin_input")
+            .performTextInput("1234")
+        composeTestRule.onNodeWithTag("repeat_pin_input")
+            .performTextInput("5678")
+
+        composeTestRule.onNodeWithTag("change_pin_button")
+            .assertIsNotEnabled()
+    }
+
+    @Test
+    fun `change button disabled when new PIN shorter than minimum length`() {
+        setForceChangePinContent(minPinLen = 6)
+
+        composeTestRule.onNodeWithTag("current_pin_input")
+            .performTextInput("current")
+        composeTestRule.onNodeWithTag("new_pin_input")
+            .performTextInput("1234")
+        composeTestRule.onNodeWithTag("repeat_pin_input")
+            .performTextInput("1234")
+
+        composeTestRule.onNodeWithTag("change_pin_button")
+            .assertIsNotEnabled()
+    }
+
+    @Test
+    fun `change button enabled when all fields are valid`() {
+        setForceChangePinContent(minPinLen = 4)
+
+        composeTestRule.onNodeWithTag("current_pin_input")
+            .performTextInput("current")
+        composeTestRule.onNodeWithTag("new_pin_input")
+            .performTextInput("123456")
+        composeTestRule.onNodeWithTag("repeat_pin_input")
+            .performTextInput("123456")
+
+        composeTestRule.onNodeWithTag("change_pin_button")
+            .assertIsEnabled()
+    }
+
+    @Test
+    fun `change button invokes callback with correct current and new PIN`() {
+        var capturedCurrentPin = ""
+        var capturedNewPin = ""
+        setForceChangePinContent(onChangePin = { current, new ->
+            capturedCurrentPin = String(current)
+            capturedNewPin = String(new)
+        })
+
+        composeTestRule.onNodeWithTag("current_pin_input")
+            .performTextInput("current")
+        composeTestRule.onNodeWithTag("new_pin_input")
+            .performTextInput("123456")
+        composeTestRule.onNodeWithTag("repeat_pin_input")
+            .performTextInput("123456")
+        composeTestRule.onNodeWithTag("change_pin_button")
+            .performClick()
+
+        assertEquals("current", capturedCurrentPin)
+        assertEquals("123456", capturedNewPin)
+    }
 }
