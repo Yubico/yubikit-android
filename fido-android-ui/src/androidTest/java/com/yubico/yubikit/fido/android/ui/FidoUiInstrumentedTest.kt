@@ -41,7 +41,6 @@ import org.junit.runner.RunWith
  */
 @RunWith(AndroidJUnit4::class)
 class FidoUiInstrumentedTest {
-
     @get:Rule
     val composeTestRule = createComposeRule()
 
@@ -134,7 +133,8 @@ class FidoUiInstrumentedTest {
         }
 
         // Error message with remaining attempts should be visible
-        composeTestRule.onNodeWithText("3", substring = true)
+        composeTestRule
+            .onNodeWithText("3", substring = true)
             .assertIsDisplayed()
     }
 
@@ -152,7 +152,8 @@ class FidoUiInstrumentedTest {
             }
         }
 
-        composeTestRule.onNodeWithText("blocked", substring = true, ignoreCase = true)
+        composeTestRule
+            .onNodeWithText("blocked", substring = true, ignoreCase = true)
             .assertIsDisplayed()
     }
 }

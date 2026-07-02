@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2025 Yubico.
+ * Copyright (C) 2024-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,22 +54,26 @@ public class CredProtectExtension extends Extension {
       return null;
     }
 
-    String credentialProtectionPolicy = (String) extensions.get(POLICY);
-    if (credentialProtectionPolicy == null) {
+    Object policyValue = extensions.get(POLICY);
+    if (policyValue == null) {
       return null;
     }
-
-    Integer credProtect = credProtectValue(credentialProtectionPolicy);
-    Boolean enforce = (Boolean) extensions.get(ENFORCE);
-    if (Boolean.TRUE.equals(enforce)
-        && !isSupported(ctap)
-        && credProtect != null
-        && credProtect > 0x01) {
-      throw new IllegalArgumentException("No Credential Protection support");
+    Integer credProtect =
+        policyValue instanceof String ? credProtectValue((String) policyValue) : null;
+    if (credProtect == null) {
+      throw new IllegalArgumentException(
+          "credentialProtectionPolicy must be a recognized policy value");
     }
-    return credProtect != null
-        ? new RegistrationProcessor(pinToken -> Collections.singletonMap(name, credProtect))
-        : null;
+
+    Object enforceValue = extensions.get(ENFORCE);
+    if (enforceValue != null && !(enforceValue instanceof Boolean)) {
+      throw new IllegalArgumentException("enforceCredentialProtectionPolicy must be a boolean");
+    }
+    boolean enforce = Boolean.TRUE.equals(enforceValue);
+    if (enforce && !isSupported(ctap) && credProtect > 0x01) {
+      throw new ExtensionConfigurationException("No Credential Protection support");
+    }
+    return new RegistrationProcessor(pinToken -> Collections.singletonMap(name, credProtect));
   }
 
   @Nullable

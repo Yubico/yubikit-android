@@ -1,5 +1,5 @@
 <!--
-  ~ Copyright (C) 2024 Yubico.
+  ~ Copyright (C) 2024-2026 Yubico.
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -16,6 +16,15 @@
 <FindBugsFilter>
     <Match>
         <Bug code="EI, EI2, CT" />
+    </Match>
+    <!-- Previously suppressed via @SuppressFBWarnings in source; moved here to avoid
+         leaking the SpotBugs annotation dependency into consumer builds -->
+    <Match>
+        <Or>
+            <Class name="com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV1" />
+            <Class name="com.yubico.yubikit.fido.ctap.PinUvAuthProtocolV2" />
+        </Or>
+        <Bug pattern="CIPHER_INTEGRITY,STATIC_IV" />
     </Match>
     <!-- Kotlin/Compose code triggers false NP warnings because SpotBugs doesn't understand
          Kotlin nullable types (String?) or Compose compiler-generated parameters ($composer) -->

@@ -19,22 +19,20 @@ package com.yubico.yubikit.fido.android.ui.internal.util
 import org.json.JSONArray
 import org.json.JSONObject
 
-internal fun JSONObject.toMap(): Map<String, *> =
-    keys().asSequence().associateWith {
-        when (val value = this[it]) {
-            is JSONArray -> value.toList()
-            is JSONObject -> value.toMap()
-            JSONObject.NULL -> null
-            else -> value
-        }
+internal fun JSONObject.toMap(): Map<String, *> = keys().asSequence().associateWith {
+    when (val value = this[it]) {
+        is JSONArray -> value.toList()
+        is JSONObject -> value.toMap()
+        JSONObject.NULL -> null
+        else -> value
     }
+}
 
-private fun JSONArray.toList(): List<*> =
-    (0 until length()).map { index ->
-        when (val element = this[index]) {
-            is JSONArray -> element.toList()
-            is JSONObject -> element.toMap()
-            JSONObject.NULL -> null
-            else -> element
-        }
+private fun JSONArray.toList(): List<*> = (0 until length()).map { index ->
+    when (val element = this[index]) {
+        is JSONArray -> element.toList()
+        is JSONObject -> element.toMap()
+        JSONObject.NULL -> null
+        else -> element
     }
+}

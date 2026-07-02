@@ -46,7 +46,6 @@ internal class FidoMessageBridge(
     private val coroutineScope: CoroutineScope,
     private val fidoClient: FidoClient,
 ) : WebViewCompat.WebMessageListener {
-
     companion object {
         private val logger = LoggerFactory.getLogger(FidoMessageBridge::class.java)
 
@@ -80,11 +79,12 @@ internal class FidoMessageBridge(
 
         // Best-effort parse so that early-rejection paths can echo back
         // the promiseUuid and let the JS side reject the pending Promise.
-        val json = try {
-            if (!data.isNullOrEmpty()) JSONObject(data) else null
-        } catch (_: Exception) {
-            null
-        }
+        val json =
+            try {
+                if (!data.isNullOrEmpty()) JSONObject(data) else null
+            } catch (_: Exception) {
+                null
+            }
         val earlyUuid = json?.optString(KEY_PROMISE_UUID, "")?.ifEmpty { null }
 
         // Reject sub-frame requests — only the top-level page may use the bridge
@@ -168,25 +168,30 @@ internal class FidoMessageBridge(
                 val publicKey = mappedOptions.optJSONObject(KEY_PUBLIC_KEY)
                 val requestJson = publicKey?.toString() ?: mappedOptions.toString()
 
-                val result = when (method) {
-                    METHOD_CREATE -> {
-                        fidoClient.makeCredential(
-                            Origin(origin),
-                            requestJson,
-                            null,
-                        ).getOrThrow()
-                    }
+                val result =
+                    when (method) {
+                        METHOD_CREATE -> {
+                            fidoClient
+                                .makeCredential(
+                                    Origin(origin),
+                                    requestJson,
+                                    null,
+                                ).getOrThrow()
+                        }
 
-                    METHOD_GET -> {
-                        fidoClient.getAssertion(
-                            Origin(origin),
-                            requestJson,
-                            null,
-                        ).getOrThrow()
-                    }
+                        METHOD_GET -> {
+                            fidoClient
+                                .getAssertion(
+                                    Origin(origin),
+                                    requestJson,
+                                    null,
+                                ).getOrThrow()
+                        }
 
-                    else -> throw IllegalArgumentException("Unknown method")
-                }
+                        else -> {
+                            throw IllegalArgumentException("Unknown method")
+                        }
+                    }
 
                 logger.debug("FIDO operation succeeded")
                 replyProxy.postMessage(successResponseJson(promiseUuid, result))
@@ -213,16 +218,22 @@ internal class FidoMessageBridge(
     }
 
     /** Creates a JSON success response string for delivery back to JavaScript. */
-    private fun successResponseJson(promiseUuid: String, result: String): String =
-        JSONObject().apply {
+    private fun successResponseJson(
+        promiseUuid: String,
+        result: String,
+    ): String = JSONObject()
+        .apply {
             put(KEY_TYPE, TYPE_RESOLVE)
             put(KEY_PROMISE_UUID, promiseUuid)
             put(KEY_RESULT, JSONObject(result))
         }.toString()
 
     /** Creates a JSON error response string for delivery back to JavaScript. */
-    private fun errorResponseJson(promiseUuid: String?, message: String): String =
-        JSONObject().apply {
+    private fun errorResponseJson(
+        promiseUuid: String?,
+        message: String,
+    ): String = JSONObject()
+        .apply {
             put(KEY_TYPE, TYPE_REJECT)
             if (promiseUuid != null) {
                 put(KEY_PROMISE_UUID, promiseUuid)

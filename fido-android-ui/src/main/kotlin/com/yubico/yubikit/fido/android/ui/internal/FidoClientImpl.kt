@@ -112,66 +112,63 @@ internal class FidoClientImpl : FidoClient {
         request: String,
         clientDataHash: String?,
         callerLabel: String?,
-    ): Result<String> {
-        return execute(
-            FidoClientService.Operation.MAKE_CREDENTIAL,
-            origin,
-            clientDataHash,
-            request,
-            callerLabel,
-        )
-    }
+    ): Result<String> = execute(
+        FidoClientService.Operation.MAKE_CREDENTIAL,
+        origin,
+        clientDataHash,
+        request,
+        callerLabel,
+    )
 
     override suspend fun getAssertion(
         origin: Origin,
         request: String,
         clientDataHash: String?,
         callerLabel: String?,
-    ): Result<String> {
-        return execute(
-            FidoClientService.Operation.GET_ASSERTION,
-            origin,
-            clientDataHash,
-            request,
-            callerLabel,
-        )
-    }
+    ): Result<String> = execute(
+        FidoClientService.Operation.GET_ASSERTION,
+        origin,
+        clientDataHash,
+        request,
+        callerLabel,
+    )
 
-    private class FidoActivityResultContract :
-        ActivityResultContract<FidoRequest, Result<String>>() {
+    private class FidoActivityResultContract : ActivityResultContract<FidoRequest, Result<String>>() {
         override fun createIntent(
             context: Context,
             input: FidoRequest,
-        ): Intent {
-            return Intent(context, YubiKitFidoActivity::class.java).apply {
-                putExtra("type", input.operation.ordinal)
-                putExtra("callingAppOrigin", input.origin.callingApp)
-                putExtra("resolvedOrigin", input.origin.resolved)
-                putExtra("clientDataHash", input.clientDataHash)
-                putExtra("request", input.request)
-                putExtra("callerLabel", input.callerLabel)
-            }
+        ): Intent = Intent(context, YubiKitFidoActivity::class.java).apply {
+            putExtra("type", input.operation.ordinal)
+            putExtra("callingAppOrigin", input.origin.callingApp)
+            putExtra("resolvedOrigin", input.origin.resolved)
+            putExtra("clientDataHash", input.clientDataHash)
+            putExtra("request", input.request)
+            putExtra("callerLabel", input.callerLabel)
         }
 
         @Suppress("IntroduceWhenSubject")
         override fun parseResult(
             resultCode: Int,
             intent: Intent?,
-        ): Result<String> =
-            when {
-                resultCode == Activity.RESULT_OK && intent != null ->
-                    intent.getStringExtra("credential")?.let { credentialJson ->
-                        Result.success(credentialJson)
-                    }
-                        ?: Result.failure(IllegalStateException("Credential missing in Intent result"))
-
-                resultCode == Activity.RESULT_CANCELED ->
-                    Result.failure(CancellationException("User cancelled FIDO operation"))
-
-                resultCode == RESULT_KEY_REMOVED ->
-                    Result.failure(CancellationException("Key was removed"))
-
-                else -> Result.failure(IllegalStateException("Unknown error occurred (resultCode: $resultCode)"))
+        ): Result<String> = when {
+            resultCode == Activity.RESULT_OK && intent != null -> {
+                intent.getStringExtra("credential")?.let { credentialJson ->
+                    Result.success(credentialJson)
+                }
+                    ?: Result.failure(IllegalStateException("Credential missing in Intent result"))
             }
+
+            resultCode == Activity.RESULT_CANCELED -> {
+                Result.failure(CancellationException("User cancelled FIDO operation"))
+            }
+
+            resultCode == RESULT_KEY_REMOVED -> {
+                Result.failure(CancellationException("Key was removed"))
+            }
+
+            else -> {
+                Result.failure(IllegalStateException("Unknown error occurred (resultCode: $resultCode)"))
+            }
+        }
     }
 }

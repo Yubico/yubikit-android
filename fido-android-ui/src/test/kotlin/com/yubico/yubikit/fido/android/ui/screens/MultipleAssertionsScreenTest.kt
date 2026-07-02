@@ -45,11 +45,12 @@ class MultipleAssertionsScreenTest {
     @Test
     fun `selecting a user invokes callback with correct index`() {
         var selectedIndex = -1
-        val users = listOf(
-            createUser("Alice"),
-            createUser("Bob"),
-            createUser("Charlie"),
-        )
+        val users =
+            listOf(
+                createUser("Alice"),
+                createUser("Bob"),
+                createUser("Charlie"),
+            )
 
         composeTestRule.setContent {
             FidoAndroidTheme {
@@ -69,10 +70,11 @@ class MultipleAssertionsScreenTest {
 
     @Test
     fun `displays all user options`() {
-        val users = listOf(
-            createUser("Alice"),
-            createUser("Bob"),
-        )
+        val users =
+            listOf(
+                createUser("Alice"),
+                createUser("Bob"),
+            )
 
         composeTestRule.setContent {
             FidoAndroidTheme {

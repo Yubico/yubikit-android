@@ -36,7 +36,6 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35]) // TODO sdk 36 needs Java 21
 class PinEntryScreenTest {
-
     @get:Rule
     val composeTestRule = createComposeRule()
 
@@ -66,17 +65,22 @@ class PinEntryScreenTest {
     fun `continue button enabled only when PIN has at least 4 characters`() {
         setEnterPinContent()
 
-        composeTestRule.onNodeWithTag("continue_button")
+        composeTestRule
+            .onNodeWithTag("continue_button")
             .assertIsNotEnabled()
 
-        composeTestRule.onNodeWithTag("pin_input_field")
+        composeTestRule
+            .onNodeWithTag("pin_input_field")
             .performTextInput("123")
-        composeTestRule.onNodeWithTag("continue_button")
+        composeTestRule
+            .onNodeWithTag("continue_button")
             .assertIsNotEnabled()
 
-        composeTestRule.onNodeWithTag("pin_input_field")
+        composeTestRule
+            .onNodeWithTag("pin_input_field")
             .performTextInput("4")
-        composeTestRule.onNodeWithTag("continue_button")
+        composeTestRule
+            .onNodeWithTag("continue_button")
             .assertIsEnabled()
     }
 
@@ -84,7 +88,8 @@ class PinEntryScreenTest {
     fun `continue button enabled when PIN is pre-filled`() {
         setEnterPinContent(pin = "123456".toCharArray())
 
-        composeTestRule.onNodeWithTag("continue_button")
+        composeTestRule
+            .onNodeWithTag("continue_button")
             .assertIsEnabled()
     }
 
@@ -93,9 +98,11 @@ class PinEntryScreenTest {
         var enteredPin = ""
         setEnterPinContent(onPinEntered = { enteredPin = String(it) })
 
-        composeTestRule.onNodeWithTag("pin_input_field")
+        composeTestRule
+            .onNodeWithTag("pin_input_field")
             .performTextInput("123456")
-        composeTestRule.onNodeWithTag("continue_button")
+        composeTestRule
+            .onNodeWithTag("continue_button")
             .performClick()
 
         assertEquals("123456", enteredPin)
@@ -105,7 +112,8 @@ class PinEntryScreenTest {
     fun `displays remaining attempts for incorrect PIN error`() {
         setEnterPinContent(error = Error.IncorrectPinError(remainingAttempts = 3))
 
-        composeTestRule.onNodeWithTag("pin_error_text")
+        composeTestRule
+            .onNodeWithTag("pin_error_text")
             .assertExists()
     }
 
@@ -113,7 +121,8 @@ class PinEntryScreenTest {
     fun `displays singular form for 1 remaining attempt`() {
         setEnterPinContent(error = Error.IncorrectPinError(remainingAttempts = 1))
 
-        composeTestRule.onNodeWithTag("pin_error_text")
+        composeTestRule
+            .onNodeWithTag("pin_error_text")
             .assertExists()
     }
 
@@ -121,7 +130,8 @@ class PinEntryScreenTest {
     fun `displays generic message when attempts count is null`() {
         setEnterPinContent(error = Error.IncorrectPinError(remainingAttempts = null))
 
-        composeTestRule.onNodeWithTag("pin_error_text")
+        composeTestRule
+            .onNodeWithTag("pin_error_text")
             .assertExists()
     }
 
@@ -129,7 +139,8 @@ class PinEntryScreenTest {
     fun `displays blocked message when PIN is blocked`() {
         setEnterPinContent(error = Error.PinBlockedError)
 
-        composeTestRule.onNodeWithTag("pin_error_text")
+        composeTestRule
+            .onNodeWithTag("pin_error_text")
             .assertExists()
     }
 
@@ -137,7 +148,8 @@ class PinEntryScreenTest {
     fun `displays reconnect message when PIN auth is blocked`() {
         setEnterPinContent(error = Error.PinAuthBlockedError)
 
-        composeTestRule.onNodeWithTag("pin_error_text")
+        composeTestRule
+            .onNodeWithTag("pin_error_text")
             .assertExists()
     }
 }

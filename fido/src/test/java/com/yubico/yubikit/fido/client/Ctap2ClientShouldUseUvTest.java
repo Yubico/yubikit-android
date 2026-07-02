@@ -47,8 +47,8 @@ public class Ctap2ClientShouldUseUvTest {
   /** Options for a modern PIN-configured key that supports makeCredUvNotRqd. */
   private static Map<String, Object> pinSetModern() {
     Map<String, Object> options = new HashMap<>();
-    options.put("clientPin", true);
-    options.put("makeCredUvNotRqd", true);
+    options.put(Ctap2Client.OPTION_CLIENT_PIN, true);
+    options.put(Ctap2Client.OPTION_MC_UV_NOT_RQD, true);
     return options;
   }
 
@@ -137,7 +137,7 @@ public class Ctap2ClientShouldUseUvTest {
   public void discouragedNonDiscoverableCreateUsesUvWithoutMakeCredUvNotRqd() throws Throwable {
     // Older key that does NOT advertise makeCredUvNotRqd: even non-discoverable creation needs UV.
     Map<String, Object> pinSetLegacy = new HashMap<>();
-    pinSetLegacy.put("clientPin", true);
+    pinSetLegacy.put(Ctap2Client.OPTION_CLIENT_PIN, true);
     assertShouldUseUv(
         pinSetLegacy, UserVerificationRequirement.DISCOURAGED, PIN_PERMISSION_MC, false, true);
   }
@@ -145,7 +145,7 @@ public class Ctap2ClientShouldUseUvTest {
   @Test
   public void alwaysUvForcesUvEvenForDiscouragedSignIn() throws Throwable {
     Map<String, Object> alwaysUv = pinSetModern();
-    alwaysUv.put("alwaysUv", true);
+    alwaysUv.put(Ctap2Client.OPTION_ALWAYS_UV, true);
     assertShouldUseUv(
         alwaysUv, UserVerificationRequirement.DISCOURAGED, PIN_PERMISSION_GA, false, true);
   }

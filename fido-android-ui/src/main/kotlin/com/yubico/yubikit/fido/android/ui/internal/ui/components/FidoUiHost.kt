@@ -55,8 +55,10 @@ internal fun rememberFidoPresentation(): FidoPresentation {
     return when {
         !sizeClass.isHeightAtLeastBreakpoint(WindowSizeClass.HEIGHT_DP_MEDIUM_LOWER_BOUND) ->
             FidoPresentation.FullScreen
+
         sizeClass.isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_MEDIUM_LOWER_BOUND) ->
             FidoPresentation.Dialog
+
         else ->
             FidoPresentation.BottomSheet
     }

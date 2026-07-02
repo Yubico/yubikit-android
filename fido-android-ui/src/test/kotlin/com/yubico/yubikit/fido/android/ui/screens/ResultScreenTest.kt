@@ -35,7 +35,6 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
 class ResultScreenTest {
-
     @get:Rule
     val composeTestRule = createComposeRule()
 

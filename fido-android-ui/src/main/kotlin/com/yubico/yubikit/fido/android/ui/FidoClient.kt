@@ -64,7 +64,6 @@ import com.yubico.yubikit.fido.client.extensions.Extension
  * @see Origin
  */
 public interface FidoClient {
-
     /**
      * Creates a new WebAuthn credential (registration).
      *

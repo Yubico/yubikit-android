@@ -28,8 +28,9 @@ import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialCreationOptions
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialRequestOptions
 import org.json.JSONObject
 
-internal class FidoClientService(private val viewModel: MainViewModel = MainViewModel()) {
-
+internal class FidoClientService(
+    private val viewModel: MainViewModel = MainViewModel(),
+) {
     internal enum class Operation {
         MAKE_CREDENTIAL,
         GET_ASSERTION,
@@ -46,25 +47,25 @@ internal class FidoClientService(private val viewModel: MainViewModel = MainView
         clientDataHash: ByteArray?,
         request: String,
         onConnection: () -> Unit,
-    ): Result<PublicKeyCredential> {
-        return when (operation) {
-            Operation.MAKE_CREDENTIAL ->
-                makeCredential(
-                    pin,
-                    origin,
-                    clientDataHash,
-                    request,
-                    onConnection,
-                )
+    ): Result<PublicKeyCredential> = when (operation) {
+        Operation.MAKE_CREDENTIAL -> {
+            makeCredential(
+                pin,
+                origin,
+                clientDataHash,
+                request,
+                onConnection,
+            )
+        }
 
-            Operation.GET_ASSERTION ->
-                getAssertion(
-                    pin,
-                    origin,
-                    clientDataHash,
-                    request,
-                    onConnection,
-                )
+        Operation.GET_ASSERTION -> {
+            getAssertion(
+                pin,
+                origin,
+                clientDataHash,
+                request,
+                onConnection,
+            )
         }
     }
 
@@ -72,13 +73,13 @@ internal class FidoClientService(private val viewModel: MainViewModel = MainView
         type: String,
         origin: String,
         challenge: String,
-    ): ByteArray {
-        return JSONObject().apply {
+    ): ByteArray = JSONObject()
+        .apply {
             put("type", type)
             put("challenge", challenge)
             put("origin", origin)
-        }.toString().toByteArray()
-    }
+        }.toString()
+        .toByteArray()
 
     private suspend fun makeCredential(
         pin: CharArray?,
@@ -86,55 +87,54 @@ internal class FidoClientService(private val viewModel: MainViewModel = MainView
         clientDataHash: ByteArray?,
         request: String,
         onConnection: () -> Unit,
-    ): Result<PublicKeyCredential> =
-        viewModel.useWebAuthn { client ->
-            onConnection()
+    ): Result<PublicKeyCredential> = viewModel.useWebAuthn { client ->
+        onConnection()
 
-            (client as? Ctap2Client)?.run {
-                if (this.session.cachedInfo.forcePinChange) {
-                    // there is PIN set, but it must be changed first
-                    throw ClientError(
-                        ClientError.Code.BAD_REQUEST,
-                        CtapException(CtapException.ERR_PIN_POLICY_VIOLATION),
-                    )
-                }
-
-                if (isPinSupported && !isPinConfigured) {
-                    // passkeys created without a PIN are rejected for sign-in by desktop
-                    // browsers, so we always require PIN setup regardless of UV requirement
-                    throw ClientError(
-                        ClientError.Code.BAD_REQUEST,
-                        CtapException(CtapException.ERR_PIN_NOT_SET),
-                    )
-                }
+        (client as? Ctap2Client)?.run {
+            if (this.session.cachedInfo.forcePinChange) {
+                // there is PIN set, but it must be changed first
+                throw ClientError(
+                    ClientError.Code.BAD_REQUEST,
+                    CtapException(CtapException.ERR_PIN_POLICY_VIOLATION),
+                )
             }
 
-            val requestJson = JSONObject(request).toMap()
-
-            val publicKeyCredentialCreationOptions =
-                PublicKeyCredentialCreationOptions.fromMap(requestJson)
-
-            val clientData =
-                clientDataHash?.let { ClientDataProvider.fromHash(it) }
-                    ?: ClientDataProvider.fromClientDataJson(
-                        buildClientData(
-                            "webauthn.create",
-                            // WebAuthn origin (android:apk-key-hash:… for native callers);
-                            // resolved is only for rp.id/effectiveDomain derivation.
-                            origin.callingApp,
-                            requestJson["challenge"] as String,
-                        ),
-                    )
-
-            client.makeCredential(
-                clientData,
-                publicKeyCredentialCreationOptions,
-                origin.effectiveDomain,
-                pin,
-                null,
-                commandState,
-            )
+            if (isPinSupported && !isPinConfigured) {
+                // passkeys created without a PIN are rejected for sign-in by desktop
+                // browsers, so we always require PIN setup regardless of UV requirement
+                throw ClientError(
+                    ClientError.Code.BAD_REQUEST,
+                    CtapException(CtapException.ERR_PIN_NOT_SET),
+                )
+            }
         }
+
+        val requestJson = JSONObject(request).toMap()
+
+        val publicKeyCredentialCreationOptions =
+            PublicKeyCredentialCreationOptions.fromMap(requestJson)
+
+        val clientData =
+            clientDataHash?.let { ClientDataProvider.fromHash(it) }
+                ?: ClientDataProvider.fromClientDataJson(
+                    buildClientData(
+                        "webauthn.create",
+                        // WebAuthn origin (android:apk-key-hash:… for native callers);
+                        // resolved is only for rp.id/effectiveDomain derivation.
+                        origin.callingApp,
+                        requestJson["challenge"] as String,
+                    ),
+                )
+
+        client.makeCredential(
+            clientData,
+            publicKeyCredentialCreationOptions,
+            origin.effectiveDomain,
+            pin,
+            null,
+            commandState,
+        )
+    }
 
     private suspend fun getAssertion(
         pin: CharArray?,
@@ -142,50 +142,47 @@ internal class FidoClientService(private val viewModel: MainViewModel = MainView
         clientDataHash: ByteArray?,
         request: String,
         onConnection: () -> Unit,
-    ): Result<PublicKeyCredential> =
-        viewModel.useWebAuthn { client ->
-            onConnection()
+    ): Result<PublicKeyCredential> = viewModel.useWebAuthn { client ->
+        onConnection()
 
-            (client as? Ctap2Client)?.run {
-                if (this.session.cachedInfo.forcePinChange) {
-                    // there is PIN set, but it must be changed first
-                    throw ClientError(
-                        ClientError.Code.BAD_REQUEST,
-                        CtapException(CtapException.ERR_PIN_POLICY_VIOLATION),
-                    )
-                }
+        (client as? Ctap2Client)?.run {
+            if (this.session.cachedInfo.forcePinChange) {
+                // there is PIN set, but it must be changed first
+                throw ClientError(
+                    ClientError.Code.BAD_REQUEST,
+                    CtapException(CtapException.ERR_PIN_POLICY_VIOLATION),
+                )
             }
-
-            val requestJson = JSONObject(request).toMap()
-
-            val clientData =
-                clientDataHash?.let { ClientDataProvider.fromHash(it) }
-                    ?: ClientDataProvider.fromClientDataJson(
-                        buildClientData(
-                            "webauthn.get",
-                            // WebAuthn origin (android:apk-key-hash:… for native callers);
-                            // resolved is only for rp.id/effectiveDomain derivation.
-                            origin.callingApp,
-                            requestJson["challenge"] as String,
-                        ),
-                    )
-
-            val publicKeyCredentialRequestOptions =
-                PublicKeyCredentialRequestOptions.fromMap(requestJson)
-
-            client.getAssertion(
-                clientData,
-                publicKeyCredentialRequestOptions,
-                origin.effectiveDomain,
-                pin,
-                commandState,
-            )
         }
+        val requestJson = JSONObject(request).toMap()
 
-    internal suspend fun createPin(pin: CharArray): Result<Unit> =
-        viewModel.useWebAuthn { client ->
-            (client as? Ctap2Client)?.setPin(pin)
-        }
+        val clientData =
+            clientDataHash?.let { ClientDataProvider.fromHash(it) }
+                ?: ClientDataProvider.fromClientDataJson(
+                    buildClientData(
+                        "webauthn.get",
+                        // WebAuthn origin (android:apk-key-hash:… for native callers);
+                        // resolved is only for rp.id/effectiveDomain derivation.
+                        origin.callingApp,
+                        requestJson["challenge"] as String,
+                    ),
+                )
+
+        val publicKeyCredentialRequestOptions =
+            PublicKeyCredentialRequestOptions.fromMap(requestJson)
+
+        client.getAssertion(
+            clientData,
+            publicKeyCredentialRequestOptions,
+            origin.effectiveDomain,
+            pin,
+            commandState,
+        )
+    }
+
+    internal suspend fun createPin(pin: CharArray): Result<Unit> = viewModel.useWebAuthn { client ->
+        (client as? Ctap2Client)?.setPin(pin)
+    }
 
     internal suspend fun changePin(
         currentPin: CharArray,

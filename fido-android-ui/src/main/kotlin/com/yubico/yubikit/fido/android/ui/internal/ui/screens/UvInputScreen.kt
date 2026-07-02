@@ -66,7 +66,9 @@ internal fun MatchFingerprint(
                     stringResource(R.string.yk_fido_ctap_err_uv_invalid_use_pin)
                 }
             }
+
             null -> null
+
             else -> stringResource(R.string.yk_fido_ctap_err_uv_unknown)
         }
 

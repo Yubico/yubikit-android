@@ -184,40 +184,50 @@ internal fun ErrorView(
 }
 
 @Composable
-private fun resolveErrorText(error: Error?, rpId: String): String =
-    when (error) {
-        is Error.OperationError -> {
-            error.exception?.let { ex ->
-                when (ex) {
-                    is CtapException -> when (ex.ctapError) {
-                        CtapException.ERR_NO_CREDENTIALS ->
-                            stringResource(R.string.yk_fido_ctap_err_no_credentials, rpId)
-                        CtapException.ERR_USER_ACTION_TIMEOUT ->
-                            stringResource(R.string.yk_fido_ctap_err_user_action_timeout)
-                        CtapException.ERR_KEY_STORE_FULL ->
-                            stringResource(R.string.yk_fido_ctap_err_key_store_full)
-                        CtapException.ERR_PUAT_REQUIRED ->
-                            stringResource(R.string.yk_fido_ctap_err_puat_required)
-                        CtapException.ERR_UV_INVALID ->
-                            stringResource(R.string.yk_fido_ctap_err_uv_unknown)
-                        CtapException.ERR_CREDENTIAL_EXCLUDED ->
-                            stringResource(R.string.yk_fido_ctap_err_credential_excluded)
-                        else -> stringResource(R.string.yk_fido_unknown_error)
-                    }
+private fun resolveErrorText(error: Error?, rpId: String): String = when (error) {
+    is Error.OperationError -> {
+        error.exception?.let { ex ->
+            when (ex) {
+                is CtapException -> when (ex.ctapError) {
+                    CtapException.ERR_NO_CREDENTIALS ->
+                        stringResource(R.string.yk_fido_ctap_err_no_credentials, rpId)
+
+                    CtapException.ERR_USER_ACTION_TIMEOUT ->
+                        stringResource(R.string.yk_fido_ctap_err_user_action_timeout)
+
+                    CtapException.ERR_KEY_STORE_FULL ->
+                        stringResource(R.string.yk_fido_ctap_err_key_store_full)
+
+                    CtapException.ERR_PUAT_REQUIRED ->
+                        stringResource(R.string.yk_fido_ctap_err_puat_required)
+
+                    CtapException.ERR_UV_INVALID ->
+                        stringResource(R.string.yk_fido_ctap_err_uv_unknown)
+
+                    CtapException.ERR_CREDENTIAL_EXCLUDED ->
+                        stringResource(R.string.yk_fido_ctap_err_credential_excluded)
+
                     else -> stringResource(R.string.yk_fido_unknown_error)
                 }
-            } ?: stringResource(R.string.yk_fido_unknown_error)
-        }
-        is Error.DeviceIneligibleError -> stringResource(R.string.yk_fido_device_ineligible)
-        is Error.DeviceNotConfiguredError -> stringResource(R.string.yk_fido_device_not_configured)
-        is Error.TagLostError -> stringResource(R.string.yk_fido_err_tag_lost)
-        is Error.UnknownError -> stringResource(R.string.yk_fido_unknown_error)
-        else -> stringResource(R.string.yk_fido_unknown_error)
+
+                else -> stringResource(R.string.yk_fido_unknown_error)
+            }
+        } ?: stringResource(R.string.yk_fido_unknown_error)
     }
 
-private fun Error?.isMissingCredentials(): Boolean =
-    this is Error.OperationError &&
-        (exception as? CtapException)?.ctapError == CtapException.ERR_NO_CREDENTIALS
+    is Error.DeviceIneligibleError -> stringResource(R.string.yk_fido_device_ineligible)
+
+    is Error.DeviceNotConfiguredError -> stringResource(R.string.yk_fido_device_not_configured)
+
+    is Error.TagLostError -> stringResource(R.string.yk_fido_err_tag_lost)
+
+    is Error.UnknownError -> stringResource(R.string.yk_fido_unknown_error)
+
+    else -> stringResource(R.string.yk_fido_unknown_error)
+}
+
+private fun Error?.isMissingCredentials(): Boolean = this is Error.OperationError &&
+    (exception as? CtapException)?.ctapError == CtapException.ERR_NO_CREDENTIALS
 
 @DefaultPreview
 @Composable

@@ -38,7 +38,6 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35]) // TODO sdk 36 needs Java 21
 class CreatePinScreenTest {
-
     @get:Rule
     val composeTestRule = createComposeRule()
 
@@ -65,12 +64,15 @@ class CreatePinScreenTest {
     fun `create button disabled when PINs do not match`() {
         setCreatePinContent()
 
-        composeTestRule.onNodeWithTag("new_pin_input")
+        composeTestRule
+            .onNodeWithTag("new_pin_input")
             .performTextInput("1234")
-        composeTestRule.onNodeWithTag("repeat_pin_input")
+        composeTestRule
+            .onNodeWithTag("repeat_pin_input")
             .performTextInput("5678")
 
-        composeTestRule.onNodeWithTag("create_pin_button")
+        composeTestRule
+            .onNodeWithTag("create_pin_button")
             .assertIsNotEnabled()
     }
 
@@ -78,12 +80,15 @@ class CreatePinScreenTest {
     fun `create button disabled when PIN shorter than minimum length`() {
         setCreatePinContent(minPinLen = 6)
 
-        composeTestRule.onNodeWithTag("new_pin_input")
+        composeTestRule
+            .onNodeWithTag("new_pin_input")
             .performTextInput("1234")
-        composeTestRule.onNodeWithTag("repeat_pin_input")
+        composeTestRule
+            .onNodeWithTag("repeat_pin_input")
             .performTextInput("1234")
 
-        composeTestRule.onNodeWithTag("create_pin_button")
+        composeTestRule
+            .onNodeWithTag("create_pin_button")
             .assertIsNotEnabled()
     }
 
@@ -91,12 +96,15 @@ class CreatePinScreenTest {
     fun `create button enabled when PINs match and meet minimum length`() {
         setCreatePinContent(minPinLen = 4)
 
-        composeTestRule.onNodeWithTag("new_pin_input")
+        composeTestRule
+            .onNodeWithTag("new_pin_input")
             .performTextInput("123456")
-        composeTestRule.onNodeWithTag("repeat_pin_input")
+        composeTestRule
+            .onNodeWithTag("repeat_pin_input")
             .performTextInput("123456")
 
-        composeTestRule.onNodeWithTag("create_pin_button")
+        composeTestRule
+            .onNodeWithTag("create_pin_button")
             .assertIsEnabled()
     }
 
@@ -105,11 +113,14 @@ class CreatePinScreenTest {
         var createdPin = ""
         setCreatePinContent(onCreatePin = { createdPin = String(it) })
 
-        composeTestRule.onNodeWithTag("new_pin_input")
+        composeTestRule
+            .onNodeWithTag("new_pin_input")
             .performTextInput("123456")
-        composeTestRule.onNodeWithTag("repeat_pin_input")
+        composeTestRule
+            .onNodeWithTag("repeat_pin_input")
             .performTextInput("123456")
-        composeTestRule.onNodeWithTag("create_pin_button")
+        composeTestRule
+            .onNodeWithTag("create_pin_button")
             .performClick()
 
         assertEquals("123456", createdPin)
@@ -119,7 +130,8 @@ class CreatePinScreenTest {
     fun `displays error for PIN complexity failure`() {
         setCreatePinContent(error = Error.PinComplexityError)
 
-        composeTestRule.onNodeWithTag("pin_error_text")
+        composeTestRule
+            .onNodeWithTag("pin_error_text")
             .assertExists()
     }
 }
@@ -127,7 +139,6 @@ class CreatePinScreenTest {
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35]) // TODO sdk 36 needs Java 21
 class ForceChangePinScreenTest {
-
     @get:Rule
     val composeTestRule = createComposeRule()
 
@@ -154,7 +165,8 @@ class ForceChangePinScreenTest {
     fun `shows info text explaining why PIN change is required`() {
         setForceChangePinContent()
 
-        composeTestRule.onNodeWithTag("pin_info_text")
+        composeTestRule
+            .onNodeWithTag("pin_info_text")
             .assertExists()
     }
 
@@ -162,9 +174,11 @@ class ForceChangePinScreenTest {
     fun `shows Change PIN button instead of Create PIN`() {
         setForceChangePinContent()
 
-        composeTestRule.onNodeWithTag("change_pin_button")
+        composeTestRule
+            .onNodeWithTag("change_pin_button")
             .assertExists()
-        composeTestRule.onNodeWithTag("create_pin_button")
+        composeTestRule
+            .onNodeWithTag("create_pin_button")
             .assertDoesNotExist()
     }
 
@@ -172,7 +186,8 @@ class ForceChangePinScreenTest {
     fun `displays error for incorrect current PIN`() {
         setForceChangePinContent(error = Error.IncorrectPinError(remainingAttempts = 3))
 
-        composeTestRule.onNodeWithTag("pin_error_text")
+        composeTestRule
+            .onNodeWithTag("pin_error_text")
             .assertExists()
     }
 
@@ -180,7 +195,8 @@ class ForceChangePinScreenTest {
     fun `displays error for PIN complexity failure in change flow`() {
         setForceChangePinContent(error = Error.PinComplexityError)
 
-        composeTestRule.onNodeWithTag("pin_error_text")
+        composeTestRule
+            .onNodeWithTag("pin_error_text")
             .assertExists()
     }
 

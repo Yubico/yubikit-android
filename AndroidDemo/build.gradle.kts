@@ -23,7 +23,7 @@ plugins {
 }
 
 android {
-    compileSdk = 36
+    compileSdk = 37
 
     signingConfigs {
         create("release") {
@@ -39,7 +39,7 @@ android {
 
     defaultConfig {
         minSdk = 23
-        targetSdk = 36
+        targetSdk = 37
         versionName = version.toString()
         versionCode = 1
         multiDexEnabled = true
@@ -129,11 +129,4 @@ dependencies {
     testImplementation(libs.junit.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
-}
-
-configure<SpotlessExtension> {
-    // temporarily don't format kotlin in this project
-    kotlin {
-        targetExclude("src/**/*.kt", "src/**/*.kts")
-    }
 }

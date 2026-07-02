@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2025 Yubico.
+ * Copyright (C) 2024-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,21 +50,29 @@ public class CredPropsExtension extends Extension {
       return null;
     }
 
-    if (extensions.has(name)) {
-      AuthenticatorSelectionCriteria authenticatorSelection = options.getAuthenticatorSelection();
-      String optionsRk =
-          authenticatorSelection != null ? authenticatorSelection.getResidentKey() : null;
-      Boolean authenticatorRk = (Boolean) ctap.getCachedInfo().getOptions().get("rk");
-      boolean rk =
-          (ResidentKeyRequirement.REQUIRED.equals(optionsRk)
-              || (ResidentKeyRequirement.PREFERRED.equals(optionsRk)
-                  && Boolean.TRUE.equals(authenticatorRk)));
-
-      return new RegistrationProcessor(
-          (attestationObject, pinToken) ->
-              serializationType ->
-                  Collections.singletonMap(name, Collections.singletonMap("rk", rk)));
+    Object value = extensions.get(name);
+    if (value == null) {
+      return null; // not requested
     }
-    return null;
+    if (!(value instanceof Boolean)) {
+      throw new IllegalArgumentException("credProps must be a boolean");
+    }
+    if (!(Boolean) value) {
+      return null; // false = not requested
+    }
+
+    AuthenticatorSelectionCriteria authenticatorSelection = options.getAuthenticatorSelection();
+    String optionsRk =
+        authenticatorSelection != null ? authenticatorSelection.getResidentKey() : null;
+    Boolean authenticatorRk = (Boolean) ctap.getCachedInfo().getOptions().get("rk");
+    boolean rk =
+        (ResidentKeyRequirement.REQUIRED.equals(optionsRk)
+                || ResidentKeyRequirement.PREFERRED.equals(optionsRk))
+            && Boolean.TRUE.equals(authenticatorRk);
+
+    return new RegistrationProcessor(
+        (attestationObject, pinToken) ->
+            serializationType ->
+                Collections.singletonMap(name, Collections.singletonMap("rk", rk)));
   }
 }

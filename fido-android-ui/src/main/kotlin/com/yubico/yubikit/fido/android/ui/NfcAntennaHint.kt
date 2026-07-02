@@ -35,8 +35,7 @@ import com.yubico.yubikit.fido.android.ui.internal.NfcAntennaHint as InternalNfc
  *
  * @param context A context used to access the NFC system service.
  */
-public fun supportsNfcAntennaHint(context: Context): Boolean =
-    nfcAntennaInfo(context) != null
+public fun supportsNfcAntennaHint(context: Context): Boolean = nfcAntennaInfo(context) != null
 
 /**
  * Displays animated NFC antenna location indicators on top of the current

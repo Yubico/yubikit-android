@@ -18,7 +18,6 @@ package com.yubico.yubikit.android.app.ui.management
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-
 import com.yubico.yubikit.android.app.ui.YubiKeyViewModel
 import com.yubico.yubikit.android.transport.usb.UsbYubiKeyDevice
 import com.yubico.yubikit.core.YubiKeyConnection
@@ -32,15 +31,13 @@ import com.yubico.yubikit.core.util.StringUtils
 import com.yubico.yubikit.management.DeviceInfo
 import com.yubico.yubikit.management.ManagementSession
 import com.yubico.yubikit.support.DeviceUtil
-
 import org.slf4j.LoggerFactory
-
 import java.io.IOException
 
 data class ConnectedDeviceInfo(
     val deviceInfo: DeviceInfo,
     val type: YubiKeyType?,
-    val atr: String
+    val atr: String,
 )
 
 class ManagementViewModel : YubiKeyViewModel<ManagementSession>() {
@@ -54,17 +51,18 @@ class ManagementViewModel : YubiKeyViewModel<ManagementSession>() {
     val errorInfo: LiveData<String?> = _errorInfo
 
     private fun readDeviceInfo(device: YubiKeyDevice) {
-
         val usbPid = if (device is UsbYubiKeyDevice) {
-                device.pid
-        } else null
+            device.pid
+        } else {
+            null
+        }
 
         val readInfo: (YubiKeyConnection) -> Unit = {
             try {
                 val atr = StringUtils.bytesToHex((it as? SmartCardConnection)?.atr ?: byteArrayOf())
 
                 _deviceInfo.postValue(
-                    ConnectedDeviceInfo(DeviceUtil.readInfo(it, usbPid), usbPid?.type, atr)
+                    ConnectedDeviceInfo(DeviceUtil.readInfo(it, usbPid), usbPid?.type, atr),
                 )
             } catch (illegalArgumentException: IllegalArgumentException) {
                 _errorInfo.postValue("Failed to identify device, is it a YubiKey?")
@@ -89,6 +87,7 @@ class ManagementViewModel : YubiKeyViewModel<ManagementSession>() {
                     }
                 }
             }
+
             device.supportsConnection(OtpConnection::class.java) -> {
                 device.requestConnection(OtpConnection::class.java) {
                     if (it.isSuccess) {
@@ -99,6 +98,7 @@ class ManagementViewModel : YubiKeyViewModel<ManagementSession>() {
                     }
                 }
             }
+
             device.supportsConnection(FidoConnection::class.java) -> {
                 device.requestConnection(FidoConnection::class.java) {
                     if (it.isSuccess) {
@@ -109,6 +109,7 @@ class ManagementViewModel : YubiKeyViewModel<ManagementSession>() {
                     }
                 }
             }
+
             else -> throw ApplicationNotAvailableException("Cannot read device info")
         }
     }
@@ -116,9 +117,8 @@ class ManagementViewModel : YubiKeyViewModel<ManagementSession>() {
     override fun getSession(
         device: YubiKeyDevice,
         onError: (Throwable) -> Unit,
-        callback: (ManagementSession) -> Unit
+        callback: (ManagementSession) -> Unit,
     ) {
-
         try {
             readDeviceInfo(device)
         } catch (ignored: ApplicationNotAvailableException) {
@@ -137,6 +137,5 @@ class ManagementViewModel : YubiKeyViewModel<ManagementSession>() {
     }
 
     override fun ManagementSession.updateState() {
-
     }
 }

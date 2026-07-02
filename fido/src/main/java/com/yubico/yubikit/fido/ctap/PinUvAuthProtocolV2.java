@@ -17,7 +17,6 @@
 package com.yubico.yubikit.fido.ctap;
 
 import com.yubico.yubikit.core.util.RandomUtils;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidAlgorithmParameterException;
@@ -130,12 +129,6 @@ public class PinUvAuthProtocolV2 extends PinUvAuthProtocolV1 {
     }
   }
 
-  @SuppressFBWarnings(
-      value = {"CIPHER_INTEGRITY", "STATIC_IV"},
-      justification =
-          "No padding is performed as the size of demPlaintext is required "
-              + "to be a multiple of the AES block length. The IV is randomly generated "
-              + "for every encrypt operation")
   private Cipher getCipher(int mode, byte[] secret, byte[] iv) {
     try {
       Cipher cipher = Cipher.getInstance("AES/CBC/NoPadding");

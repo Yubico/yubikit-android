@@ -21,23 +21,18 @@ import android.os.Bundle
 import android.view.View
 import android.widget.TextView
 import android.widget.Toast
-
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
-
 import com.yubico.yubikit.android.app.MainViewModel
 import com.yubico.yubikit.android.app.R
 import com.yubico.yubikit.android.transport.nfc.NfcYubiKeyDevice
 import com.yubico.yubikit.core.YubiKeyDevice
 import com.yubico.yubikit.core.application.ApplicationNotAvailableException
-
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-
 import org.slf4j.LoggerFactory
-
 import java.io.Closeable
 
 abstract class YubiKeyFragment<App : Closeable, VM : YubiKeyViewModel<App>> : Fragment() {
@@ -55,10 +50,10 @@ abstract class YubiKeyFragment<App : Closeable, VM : YubiKeyViewModel<App>> : Fr
         emptyText.visibility = View.VISIBLE
 
         yubiKeyPrompt = AlertDialog.Builder(context)
-                .setTitle("Insert YubiKey")
-                .setMessage(R.string.need_yubikey)
-                .setOnCancelListener { viewModel.pendingAction.value = null }
-                .create()
+            .setTitle("Insert YubiKey")
+            .setMessage(R.string.need_yubikey)
+            .setOnCancelListener { viewModel.pendingAction.value = null }
+            .create()
 
         activityViewModel.yubiKey.observe(viewLifecycleOwner) {
             if (it != null) {

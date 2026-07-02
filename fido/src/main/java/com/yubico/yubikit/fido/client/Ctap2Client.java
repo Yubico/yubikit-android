@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2025 Yubico.
+ * Copyright (C) 2020-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import com.yubico.yubikit.fido.client.extensions.CredBlobExtension;
 import com.yubico.yubikit.fido.client.extensions.CredPropsExtension;
 import com.yubico.yubikit.fido.client.extensions.CredProtectExtension;
 import com.yubico.yubikit.fido.client.extensions.Extension;
+import com.yubico.yubikit.fido.client.extensions.ExtensionConfigurationException;
 import com.yubico.yubikit.fido.client.extensions.HmacSecretExtension;
 import com.yubico.yubikit.fido.client.extensions.LargeBlobExtension;
 import com.yubico.yubikit.fido.client.extensions.MinPinLengthExtension;
@@ -474,11 +475,15 @@ public class Ctap2Client implements WebAuthnClient {
             | (excludeCredentials.isEmpty() ? 0 : ClientPin.PIN_PERMISSION_GA);
     List<Extension.RegistrationProcessor> registrationProcessors = new ArrayList<>();
     for (Extension extension : extensions) {
-      Extension.RegistrationProcessor processor =
-          extension.makeCredential(ctap, options, clientPin.getPinUvAuth());
-      if (processor != null) {
-        registrationProcessors.add(processor);
-        permissions |= processor.getPermissions();
+      try {
+        Extension.RegistrationProcessor processor =
+            extension.makeCredential(ctap, options, clientPin.getPinUvAuth());
+        if (processor != null) {
+          registrationProcessors.add(processor);
+          permissions |= processor.getPermissions();
+        }
+      } catch (RuntimeException e) {
+        handleExtensionFailure(e);
       }
     }
 
@@ -493,6 +498,13 @@ public class Ctap2Client implements WebAuthnClient {
         ResidentKeyRequirement.REQUIRED.equals(selectionResidentKey)
             || (ResidentKeyRequirement.PREFERRED.equals(selectionResidentKey) && rkSupported);
 
+    // Validate before getAuthParams (which may trigger user verification) so a required-but-
+    // unsupported resident key fails fast instead of prompting for a PIN and then erroring.
+    if (rk && !rkSupported) {
+      throw new ClientError(
+          ClientError.Code.CONFIGURATION_UNSUPPORTED, "Resident key not supported");
+    }
+
     final AuthParams authParams =
         getAuthParams(pin, userVerification, permissions, rpId, rk, state);
 
@@ -502,10 +514,6 @@ public class Ctap2Client implements WebAuthnClient {
     } else {
       ctapOptions = new HashMap<>();
       if (rk) {
-        if (!rkSupported) {
-          throw new ClientError(
-              ClientError.Code.CONFIGURATION_UNSUPPORTED, "Resident key not supported");
-        }
         ctapOptions.put(OPTION_RESIDENT_KEY, true);
       }
       if (authParams.internalUv) {
@@ -515,7 +523,11 @@ public class Ctap2Client implements WebAuthnClient {
 
     HashMap<String, Object> authenticatorInputs = new HashMap<>();
     for (Extension.RegistrationProcessor processor : registrationProcessors) {
-      authenticatorInputs.putAll(processor.getInput(authParams.pinToken));
+      try {
+        authenticatorInputs.putAll(processor.getInput(authParams.pinToken));
+      } catch (RuntimeException e) {
+        handleExtensionFailure(e);
+      }
     }
 
     final PublicKeyCredentialDescriptor credToExclude =
@@ -571,9 +583,25 @@ public class Ctap2Client implements WebAuthnClient {
             state);
 
     ClientExtensionResults clientExtensionResults = new ClientExtensionResults();
+    // Parse the attestation for extension-output processing. A parse failure is not
+    // extension-specific (the authenticator returned an unparseable attestation) and is not caller
+    // input, so it is surfaced as a typed ClientError rather than an untyped unchecked exception.
+    // The attestation is mandatory to build the response, so a parse failure must abort the
+    // ceremony;
+    // continuing without extension outputs would only defer the crash. The public makeCredential()
+    // parses it again to build the response; that re-parse cannot fail once this one succeeds.
+    final AttestationObject attestationObject;
+    try {
+      attestationObject = AttestationObject.fromCredential(credentialData);
+    } catch (RuntimeException e) {
+      throw new ClientError(ClientError.Code.OTHER_ERROR, "Failed to parse attestation object", e);
+    }
     for (Extension.RegistrationProcessor processor : registrationProcessors) {
-      AttestationObject attestationObject = AttestationObject.fromCredential(credentialData);
-      clientExtensionResults.add(processor.getOutput(attestationObject, authParams.pinToken));
+      try {
+        clientExtensionResults.add(processor.getOutput(attestationObject, authParams.pinToken));
+      } catch (RuntimeException e) {
+        handleExtensionFailure(e);
+      }
     }
     return new Pair<>(credentialData, clientExtensionResults);
   }
@@ -618,11 +646,15 @@ public class Ctap2Client implements WebAuthnClient {
     int permissions = ClientPin.PIN_PERMISSION_GA;
     List<Extension.AuthenticationProcessor> authenticationProcessors = new ArrayList<>();
     for (Extension extension : extensions) {
-      Extension.AuthenticationProcessor processor =
-          extension.getAssertion(ctap, options, clientPin.getPinUvAuth());
-      if (processor != null) {
-        authenticationProcessors.add(processor);
-        permissions |= processor.getPermissions();
+      try {
+        Extension.AuthenticationProcessor processor =
+            extension.getAssertion(ctap, options, clientPin.getPinUvAuth());
+        if (processor != null) {
+          authenticationProcessors.add(processor);
+          permissions |= processor.getPermissions();
+        }
+      } catch (RuntimeException e) {
+        handleExtensionFailure(e);
       }
     }
 
@@ -645,7 +677,11 @@ public class Ctap2Client implements WebAuthnClient {
 
     HashMap<String, Object> authenticatorInputs = new HashMap<>();
     for (Extension.AuthenticationProcessor processor : authenticationProcessors) {
-      authenticatorInputs.putAll(processor.getInput(selectedCred, authParams.pinToken));
+      try {
+        authenticatorInputs.putAll(processor.getInput(selectedCred, authParams.pinToken));
+      } catch (RuntimeException e) {
+        handleExtensionFailure(e);
+      }
     }
 
     if (!allowCredentials.isEmpty() && selectedCred == null) {
@@ -684,7 +720,11 @@ public class Ctap2Client implements WebAuthnClient {
       for (final Ctap2Session.AssertionData assertionData : assertions) {
         ClientExtensionResults clientExtensionResults = new ClientExtensionResults();
         for (Extension.AuthenticationProcessor processor : authenticationProcessors) {
-          clientExtensionResults.add(processor.getOutput(assertionData, authParams.pinToken));
+          try {
+            clientExtensionResults.add(processor.getOutput(assertionData, authParams.pinToken));
+          } catch (RuntimeException e) {
+            handleExtensionFailure(e);
+          }
         }
         result.add(new Pair<>(assertionData, clientExtensionResults));
       }
@@ -748,7 +788,8 @@ public class Ctap2Client implements WebAuthnClient {
       }
       return true;
     }
-    // Discoverable-credential operations need UV even when userVerification=discouraged:
+    // Discoverable-credential operations on a UV-configured authenticator need UV even when
+    // userVerification=discouraged:
     //  - makeCredential rk=true: the authenticator rejects resident-key creation without UV
     //    (CTAP2_ERR_PUAT_REQUIRED); makeCredUvNotRqd only exempts NON-discoverable creation.
     //  - getAssertion with an empty allowList: without UV the authenticator omits user name and
@@ -838,6 +879,112 @@ public class Ctap2Client implements WebAuthnClient {
     }
 
     return new PinUvAuthDummyProtocol();
+  }
+
+  /**
+   * Handles a {@link RuntimeException} raised while processing a single client extension.
+   *
+   * <h2>Extension input contract</h2>
+   *
+   * Client extensions communicate their outcome with exactly two signals, so that one extension can
+   * never silently corrupt or abort a ceremony it shouldn't:
+   *
+   * <ul>
+   *   <li><b>Return {@code null} — ignore.</b> The extension does not apply and is skipped; the
+   *       ceremony continues with the remaining extensions. This is the {@code SHOULD ignore} path
+   *       of <a href="https://www.w3.org/TR/webauthn-3/#sctn-extensions">WebAuthn §9</a> and
+   *       covers: not requested; not supported by the authenticator; nothing to evaluate; an
+   *       extension this client has no handler for (never dispatched, left ignorable for
+   *       forward-compatibility); and malformed <em>authenticator</em> output (the device's fault,
+   *       not the caller's). Note a recognized extension's unrecognized <em>value</em> (e.g. an
+   *       unknown {@code credProtect} policy or {@code largeBlob} support) is a caller error and is
+   *       surfaced, not ignored — see the enum-member rule below.
+   *   <li><b>Throw — abort.</b> The ceremony fails with a {@link ClientError}. Reserved for a
+   *       caller error or an explicitly-requested capability that cannot be satisfied (see below).
+   * </ul>
+   *
+   * <p>Whether malformed <em>client</em> input is an error or is ignored is decided per member
+   * kind, mirroring what a browser's WebIDL binding does before extension processing runs:
+   *
+   * <ul>
+   *   <li><b>Missing a required member → error.</b> A {@code required} member that is absent is a
+   *       {@code TypeError} at the binding (e.g. {@code prf.eval.first}, {@code
+   *       hmacGetSecret.salt1}).
+   *   <li><b>Wrong type on a dictionary or {@code BufferSource} member → error.</b> These
+   *       correspond to WebIDL conversions that throw {@code TypeError} (e.g. a non-object {@code
+   *       largeBlob}/{@code payment}/{@code prf}, or a non-string {@code credBlob}/{@code
+   *       largeBlob.write}/prf salt).
+   *   <li><b>Invalid encoding of a {@code BufferSource} member → error.</b> A well-typed string
+   *       that is not valid base64url is undecodable and can never be correct, so it is surfaced
+   *       (via {@link com.yubico.yubikit.core.internal.codec.Base64#fromUrlSafeString}) rather than
+   *       silently dropped. This is intentionally stricter than §9.3's {@code SHOULD ignore},
+   *       trading strict spec-leniency for SDK ergonomics (a bad value is a caller bug worth
+   *       reporting).
+   *   <li><b>Invalid value of an enum member → error.</b> {@code credProtect}'s {@code
+   *       credentialProtectionPolicy} (one of the three defined policy strings) and {@code
+   *       largeBlob}'s {@code support} ({@code "required"} or {@code "preferred"}) must be a
+   *       recognized value; an unrecognized string or a non-string is surfaced rather than silently
+   *       dropped. For {@code credProtect} the client maps the string to an integer, so silently
+   *       dropping it would mint a credential without the requested protection. An absent (or
+   *       {@code null}) member is "not requested" and ignored.
+   *   <li><b>Wrong type on a boolean member → error.</b> Every recognized boolean client-input
+   *       member is validated: a non-boolean value for {@code minPinLength}, {@code credProps},
+   *       {@code payment.isPayment}, {@code getCredBlob}, {@code largeBlob.read}, {@code
+   *       hmacCreateSecret}, or {@code enforceCredentialProtectionPolicy} is malformed caller input
+   *       and is surfaced (stricter than WebIDL {@code ToBoolean} coercion, matching this SDK's
+   *       strict-typing stance). The request flags treat {@code false} (and absent/{@code null}) as
+   *       "not requested" and ignore it — only {@code true} produces authenticator input; {@code
+   *       enforceCredentialProtectionPolicy} treats {@code false} as best-effort (its normal
+   *       meaning).
+   * </ul>
+   *
+   * <p><b>Invariant:</b> a throw only becomes a clean {@link ClientError} if it happens in the
+   * synchronous phase caught here. The deferred output providers ({@code serializationType -> ...}
+   * returned by {@code getOutput}) run later during response serialization, <em>outside</em> this
+   * handler, so they MUST NOT throw — any throwing work (parsing/decrypting/validating
+   * authenticator output) is done synchronously and yields {@code null} on failure, leaving the
+   * provider as pure formatting.
+   *
+   * <h2>Exception mapping</h2>
+   *
+   * <ul>
+   *   <li><b>{@link ExtensionConfigurationException} — abort.</b> The relying party explicitly
+   *       requested a capability that cannot be satisfied, or a spec-defined {@code
+   *       NotSupportedError} condition (e.g. {@code credProtect} with {@code
+   *       enforceCredentialProtectionPolicy}, {@code largeBlob} {@code support:"required"} on an
+   *       unsupported authenticator, or {@code prf} {@code evalByCredential} during registration).
+   *       Surfaced as a {@link ClientError} carrying the {@link ClientError.Code} the extension
+   *       chose (defaulting to {@link ClientError.Code#CONFIGURATION_UNSUPPORTED}).
+   *   <li><b>{@link IllegalArgumentException} — abort as {@link ClientError.Code#BAD_REQUEST}.</b>
+   *       Malformed caller input for a requested extension: a missing required member, a wrong type
+   *       on a dictionary/{@code BufferSource} member, an invalid base64url value, or a
+   *       spec-defined {@code SyntaxError} (e.g. a {@code prf} {@code evalByCredential} key that
+   *       does not match an allowed credential). This is surfaced regardless of whether the
+   *       authenticator supports the extension, since several extensions validate their input
+   *       before checking support (e.g. {@code largeBlob}, {@code previewSign}). Distinct from the
+   *       {@code null} "not applicable" path.
+   *   <li><b>Anything else — rethrow.</b> Any other unchecked exception (e.g. {@link
+   *       NullPointerException}, {@link ClassCastException}, {@link IllegalStateException}) is
+   *       treated as a genuine defect and propagated unchanged rather than silently swallowed.
+   * </ul>
+   */
+  private void handleExtensionFailure(RuntimeException e) throws ClientError {
+    if (e instanceof ExtensionConfigurationException) {
+      ExtensionConfigurationException configError = (ExtensionConfigurationException) e;
+      String message =
+          configError.getMessage() != null ? configError.getMessage() : configError.toString();
+      throw new ClientError(configError.getCode(), message, configError);
+    }
+    if (e instanceof IllegalArgumentException) {
+      // Malformed caller input for a requested extension (see the class of cases in the Javadoc
+      // contract above); surfaced regardless of authenticator support, since several extensions
+      // validate input before checking support. Surfaced as BAD_REQUEST rather than silently
+      // dropped, which would mask a relying-party bug. Genuine programming defects (other unchecked
+      // exceptions) are not masked: they fall through to the final rethrow.
+      String message = e.getMessage() != null ? e.getMessage() : e.toString();
+      throw new ClientError(ClientError.Code.BAD_REQUEST, message, e);
+    }
+    throw e;
   }
 
   private int getSafePinRetryCount() {

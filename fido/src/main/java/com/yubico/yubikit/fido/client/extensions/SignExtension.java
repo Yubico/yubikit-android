@@ -39,8 +39,12 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SignExtension extends Extension {
+
+  private static final Logger logger = LoggerFactory.getLogger(SignExtension.class);
 
   static final String SIGN = "previewSign";
   static final String ALGORITHMS = "algorithms";
@@ -196,24 +200,18 @@ public class SignExtension extends Extension {
       Ctap2Session ctap2,
       PublicKeyCredentialCreationOptions options,
       PinUvAuthProtocol pinUvAuthProtocol) {
-    Extensions extensions = options.getExtensions();
-    if (extensions == null) {
-      return null;
-    }
-
-    AuthenticationExtensionsSign extSign =
-        AuthenticationExtensionsSign.fromMap((Map<String, ?>) extensions.get(SIGN));
-
+    AuthenticationExtensionsSign extSign = parseSignInput(options.getExtensions());
     if (extSign == null || !isSupported(ctap2)) {
       return null;
     }
 
-    if (extSign.signByCredential != null) {
-      throw new IllegalArgumentException("signByCredential input not allowed");
-    }
-
+    // WebAuthn previewSign client processing (registration); both are NotSupportedError.
     if (extSign.generateKey == null) {
-      throw new IllegalArgumentException("generateKey input required");
+      throw new ExtensionConfigurationException("generateKey is required during registration");
+    }
+    if (extSign.signByCredential != null) {
+      throw new ExtensionConfigurationException(
+          "signByCredential is not valid during registration");
     }
 
     final RegistrationInput prepareInput =
@@ -228,64 +226,107 @@ public class SignExtension extends Extension {
     final RegistrationOutput prepareOutput =
         (attestationObject, pinToken) ->
             serializationType -> {
-              AuthenticatorData authData = attestationObject.getAuthenticatorData();
-              Map<String, ?> unsignedExtOutputs = attestationObject.getUnsignedExtensionOutputs();
-              if (unsignedExtOutputs == null) {
-                throw new IllegalArgumentException("Missing unsigned extension outputs");
+              try {
+                AuthenticatorData authData = attestationObject.getAuthenticatorData();
+                Map<String, ?> unsignedExtOutputs = attestationObject.getUnsignedExtensionOutputs();
+                if (unsignedExtOutputs == null) {
+                  // Authenticator returned no sign output: omit the extension result.
+                  return Collections.emptyMap();
+                }
+
+                Map<Integer, ?> unsignedSignExtData =
+                    (Map<Integer, ?>) unsignedExtOutputs.get(name);
+                if (unsignedSignExtData == null) {
+                  return Collections.emptyMap();
+                }
+
+                Object attObjData = unsignedSignExtData.get(7); // att-obj
+                if (!(attObjData instanceof byte[])) {
+                  return Collections.emptyMap();
+                }
+                Map<Integer, ?> origAttObj = (Map<Integer, ?>) Cbor.decode((byte[]) attObjData);
+                if (origAttObj == null) {
+                  return Collections.emptyMap();
+                }
+
+                Object innerAuthDataBytes = origAttObj.get(2); // authData
+                if (!(innerAuthDataBytes instanceof byte[])) {
+                  return Collections.emptyMap();
+                }
+                AuthenticatorData innerAuthData =
+                    AuthenticatorData.parseFrom(ByteBuffer.wrap((byte[]) innerAuthDataBytes));
+                AttestedCredentialData attestedCredentialData =
+                    innerAuthData.getAttestedCredentialData();
+                if (attestedCredentialData == null) {
+                  return Collections.emptyMap();
+                }
+
+                byte[] pkBytes = Cbor.encode(attestedCredentialData.getCosePublicKey()).clone();
+                byte[] keyHandle = attestedCredentialData.getCredentialId();
+
+                Map<String, ?> authDataExtensions = authData.getExtensions();
+                if (authDataExtensions == null) {
+                  return Collections.emptyMap();
+                }
+
+                Map<Integer, ?> authDataSign = (Map<Integer, ?>) authDataExtensions.get(name);
+                Object alg = authDataSign != null ? authDataSign.get(3) : null;
+                if (alg == null) {
+                  return Collections.emptyMap();
+                }
+
+                Map<String, Object> newAttObj = new HashMap<>();
+                newAttObj.put(FMT, origAttObj.get(1));
+                newAttObj.put(AUTH_DATA, origAttObj.get(2));
+                newAttObj.put(ATT_STMT, origAttObj.get(3));
+
+                AuthenticationExtensionsSignGeneratedKey generatedKey =
+                    new AuthenticationExtensionsSignGeneratedKey(
+                        keyHandle, pkBytes, (int) alg, Cbor.encode(newAttObj));
+
+                return Collections.singletonMap(
+                    SIGN,
+                    new SignExtension.AuthenticationExtensionsSignOutputs(generatedKey, null)
+                        .toMap(serializationType));
+              } catch (RuntimeException e) {
+                // Authenticator returned malformed sign output (wrong CBOR types, or an
+                // undecodable att-obj/authData from Cbor.decode/parseFrom): omit the result rather
+                // than failing. This runs in the deferred provider, so an uncaught exception here
+                // would escape credential.toMap() entirely.
+                logger.debug("Ignoring malformed previewSign registration output", e);
+                return Collections.emptyMap();
               }
-
-              Map<Integer, ?> unsignedSignExtData = (Map<Integer, ?>) unsignedExtOutputs.get(name);
-              if (unsignedSignExtData == null) {
-                throw new IllegalArgumentException("Missing sign unsigned extension outputs");
-              }
-
-              Map<Integer, ?> origAttObj =
-                  (Map<Integer, ?>) Cbor.decode((byte[]) unsignedSignExtData.get(7)); // att-obj
-              if (origAttObj == null) {
-                throw new IllegalArgumentException(
-                    "Missing sign unsigned extension attestation object");
-              }
-
-              AuthenticatorData innerAuthData =
-                  AuthenticatorData.parseFrom(ByteBuffer.wrap((byte[]) origAttObj.get(2)));
-              AttestedCredentialData attestedCredentialData =
-                  innerAuthData.getAttestedCredentialData();
-              if (attestedCredentialData == null) {
-                throw new IllegalArgumentException("Missing CredentialData");
-              }
-
-              byte[] pkBytes = Cbor.encode(attestedCredentialData.getCosePublicKey()).clone();
-              byte[] keyHandle = attestedCredentialData.getCredentialId();
-
-              Map<String, ?> authDataExtensions = authData.getExtensions();
-              if (authDataExtensions == null) {
-                throw new IllegalArgumentException("Missing extensions output");
-              }
-
-              Map<Integer, ?> authDataSign = (Map<Integer, ?>) authDataExtensions.get(name);
-              if (authDataSign == null) {
-                throw new IllegalArgumentException("Missing sign extension output");
-              }
-
-              Map<String, Object> newAttObj = new HashMap<>();
-              newAttObj.put(FMT, origAttObj.get(1));
-              newAttObj.put(AUTH_DATA, origAttObj.get(2));
-              newAttObj.put(ATT_STMT, origAttObj.get(3));
-
-              AuthenticationExtensionsSignGeneratedKey generatedKey =
-                  new AuthenticationExtensionsSignGeneratedKey(
-                      keyHandle,
-                      pkBytes,
-                      (int) authDataSign.get(3), // alg
-                      Cbor.encode(newAttObj));
-
-              return Collections.singletonMap(
-                  SIGN,
-                  new SignExtension.AuthenticationExtensionsSignOutputs(generatedKey, null)
-                      .toMap(serializationType));
             };
 
     return new RegistrationProcessor(prepareInput, prepareOutput);
+  }
+
+  /**
+   * Parses the {@code previewSign} extension input. Returns {@code null} when the extension is not
+   * requested; throws {@link IllegalArgumentException} when it is present but malformed (wrong
+   * types, missing required keys, or invalid base64url) so the client reports it as a bad request
+   * rather than silently dropping it.
+   */
+  @SuppressWarnings("unchecked")
+  @Nullable
+  private static AuthenticationExtensionsSign parseSignInput(@Nullable Extensions extensions) {
+    if (extensions == null) {
+      return null;
+    }
+    Object signInput = extensions.get(SIGN);
+    if (signInput == null) {
+      return null; // not requested
+    }
+    if (!(signInput instanceof Map)) {
+      throw new IllegalArgumentException("previewSign must be an object");
+    }
+    try {
+      return AuthenticationExtensionsSign.fromMap((Map<String, ?>) signInput);
+    } catch (RuntimeException e) {
+      // fromMap uses unchecked casts / requireNonNull; surface any malformed structure as bad
+      // input.
+      throw new IllegalArgumentException("Malformed previewSign input", e);
+    }
   }
 
   private int getCreateFlags(PublicKeyCredentialCreationOptions options) {
@@ -307,25 +348,26 @@ public class SignExtension extends Extension {
       PublicKeyCredentialRequestOptions options,
       PinUvAuthProtocol pinUvAuthProtocol) {
 
-    Extensions extensions = options.getExtensions();
-    if (extensions == null) {
-      return null;
-    }
-    Map<String, Object> inputs = (Map<String, Object>) extensions.get(SIGN);
-
-    AuthenticationExtensionsSign extSign = AuthenticationExtensionsSign.fromMap(inputs);
+    AuthenticationExtensionsSign extSign = parseSignInput(options.getExtensions());
     if (extSign == null || !isSupported(ctap)) {
       return null;
     }
 
+    // WebAuthn previewSign client processing (authentication). The presence/empty/size conditions
+    // are NotSupportedError; a missing per-credential entry is a SyntaxError.
     if (extSign.signByCredential == null || extSign.generateKey != null) {
-      throw new IllegalArgumentException("Invalid inputs");
+      throw new ExtensionConfigurationException(
+          "authentication requires signByCredential and not generateKey");
     }
 
     Map<String, AuthenticationExtensionsSignSign> byCreds = extSign.signByCredential;
     List<PublicKeyCredentialDescriptor> allowList = options.getAllowCredentials();
     if (allowList.isEmpty()) {
-      throw new IllegalArgumentException("sign requires allow_list");
+      throw new ExtensionConfigurationException("signByCredential requires an allow list");
+    }
+    if (byCreds.size() != allowList.size()) {
+      throw new ExtensionConfigurationException(
+          "signByCredential must have exactly one entry per allowed credential");
     }
 
     List<String> ids =
@@ -333,13 +375,16 @@ public class SignExtension extends Extension {
 
     ids.removeAll(byCreds.keySet());
     if (!ids.isEmpty()) {
-      throw new IllegalArgumentException("signByCredential not valid");
+      // SyntaxError: an allowed credential has no signByCredential entry.
+      throw new IllegalArgumentException(
+          "signByCredential is missing an entry for an allowed credential");
     }
 
     final AuthenticationInput prepareInput =
         (selected, pinToken) -> {
           if (selected == null) {
-            throw new IllegalArgumentException("Invalid allowList data");
+            // No credential was selected: nothing to sign.
+            return null;
           }
 
           AuthenticationExtensionsSignSign credInputs =
@@ -355,21 +400,33 @@ public class SignExtension extends Extension {
 
     final AuthenticationOutput prepareOutput =
         (assertionData, pinToken) -> {
-          AuthenticatorData authData =
-              AuthenticatorData.parseFrom(ByteBuffer.wrap(assertionData.getAuthenticatorData()));
+          try {
+            AuthenticatorData authData =
+                AuthenticatorData.parseFrom(ByteBuffer.wrap(assertionData.getAuthenticatorData()));
 
-          Map<String, ?> extensionResults = authData.getExtensions();
-          if (extensionResults == null) {
+            Map<String, ?> extensionResults = authData.getExtensions();
+            if (extensionResults == null) {
+              return null;
+            }
+
+            Map<Integer, Object> signResults = (Map<Integer, Object>) extensionResults.get(name);
+            Object signature = signResults != null ? signResults.get(6) : null; // sig
+            if (!(signature instanceof byte[])) {
+              return null;
+            }
+            byte[] sig = (byte[]) signature;
+            return serializationType ->
+                Collections.singletonMap(
+                    SIGN,
+                    new SignExtension.AuthenticationExtensionsSignOutputs(null, sig)
+                        .toMap(serializationType));
+          } catch (RuntimeException e) {
+            // Authenticator returned malformed sign output (wrong CBOR types, or an undecodable
+            // authData from parseFrom): omit the result rather than failing the assertion or
+            // misreporting the authenticator's fault as a relying-party error.
+            logger.debug("Ignoring malformed previewSign assertion output", e);
             return null;
           }
-
-          Map<Integer, Object> signResults = (Map<Integer, Object>) extensionResults.get(name);
-          return serializationType ->
-              Collections.singletonMap(
-                  SIGN,
-                  new SignExtension.AuthenticationExtensionsSignOutputs(
-                          null, (byte[]) signResults.get(6)) // sig
-                      .toMap(serializationType));
         };
 
     return new AuthenticationProcessor(prepareInput, prepareOutput);
