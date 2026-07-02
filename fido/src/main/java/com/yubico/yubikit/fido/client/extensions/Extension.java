@@ -31,7 +31,18 @@ import org.jspecify.annotations.Nullable;
 /**
  * Base class for FIDO2 extensions.
  *
- * @see <a href="https://www.w3.org/TR/webauthn-3/#sctn-extensions">Webauthn Extensions</a>
+ * <p>Extension processing methods communicate their outcome with two signals: <b>return {@code
+ * null}</b> when the extension does not apply (not requested, not supported, nothing to evaluate,
+ * an extension with no registered handler, or malformed authenticator output) so it is ignored and
+ * the ceremony continues; <b>throw</b> to abort the ceremony (an {@link
+ * ExtensionConfigurationException} for an unsatisfiable requested capability / spec {@code
+ * NotSupportedError}, or an {@link IllegalArgumentException} for malformed caller input / spec
+ * {@code SyntaxError}). The full error-vs-ignore contract — including how each member kind treats a
+ * wrong type or invalid value — is documented on {@code Ctap2Client#handleExtensionFailure}. Note
+ * that the deferred output providers returned by {@code getOutput} run outside that handler during
+ * serialization and MUST NOT throw.
+ *
+ * @see <a href="https://www.w3.org/TR/webauthn-3/#sctn-extensions">WebAuthn Extensions</a>
  */
 public abstract class Extension {
   protected final String name;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Yubico.
+ * Copyright (C) 2025-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -90,6 +90,11 @@ public class ExtensionsInstrumentedTests {
     @Test
     public void testThirdPartyPaymentExtension() throws Throwable {
       withDevice(ThirdPartyPaymentExtensionTests::test);
+    }
+
+    @Test
+    public void testExtensionFailureHandling() throws Throwable {
+      withDevice(ExtensionFailureTests::test);
     }
   }
 

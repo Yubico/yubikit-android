@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Yubico.
+ * Copyright (C) 2020-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,6 +57,11 @@ public class ClientError extends Exception {
 
   public ClientError(Code errorCode, Throwable cause) {
     super(errorCode.toString(), cause);
+    this.errorCode = errorCode;
+  }
+
+  public ClientError(Code errorCode, String message, Throwable cause) {
+    super(errorCode + " - " + message, cause);
     this.errorCode = errorCode;
   }
 
