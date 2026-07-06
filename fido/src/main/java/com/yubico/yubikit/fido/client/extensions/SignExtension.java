@@ -307,21 +307,17 @@ public class SignExtension extends Extension {
    * types, missing required keys, or invalid base64url) so the client reports it as a bad request
    * rather than silently dropping it.
    */
-  @SuppressWarnings("unchecked")
   @Nullable
   private static AuthenticationExtensionsSign parseSignInput(@Nullable Extensions extensions) {
     if (extensions == null) {
       return null;
     }
-    Object signInput = extensions.get(SIGN);
+    Map<String, Object> signInput = asMap(extensions.get(SIGN), "previewSign");
     if (signInput == null) {
       return null; // not requested
     }
-    if (!(signInput instanceof Map)) {
-      throw new IllegalArgumentException("previewSign must be an object");
-    }
     try {
-      return AuthenticationExtensionsSign.fromMap((Map<String, ?>) signInput);
+      return AuthenticationExtensionsSign.fromMap(signInput);
     } catch (RuntimeException e) {
       // fromMap uses unchecked casts / requireNonNull; surface any malformed structure as bad
       // input.

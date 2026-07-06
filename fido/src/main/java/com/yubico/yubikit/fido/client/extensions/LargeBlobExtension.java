@@ -232,28 +232,19 @@ public class LargeBlobExtension extends Extension {
         return null;
       }
 
-      Object data = extensions.get(LARGE_BLOB);
-      if (data == null) {
+      Map<String, Object> map = asMap(extensions.get(LARGE_BLOB), LARGE_BLOB);
+      if (map == null) {
         return null; // not requested
       }
-      if (!(data instanceof Map)) {
-        throw new IllegalArgumentException("largeBlob must be an object");
-      }
-      Map<?, ?> map = (Map<?, ?>) data;
-      Object read = map.get(ACTION_READ);
-      Object write = map.get(ACTION_WRITE);
-      Object support = map.get(SUPPORT);
-      if (read != null && !(read instanceof Boolean)) {
-        throw new IllegalArgumentException("largeBlob.read must be a boolean");
-      }
-      if (write != null && !(write instanceof String)) {
-        throw new IllegalArgumentException("largeBlob.write must be a string");
-      }
+      String support = asString(map.get(SUPPORT), "largeBlob.support");
       if (support != null && !REQUIRED.equals(support) && !PREFERRED.equals(support)) {
         throw new IllegalArgumentException(
             "largeBlob.support must be \"required\" or \"preferred\"");
       }
-      return new Inputs((Boolean) read, (String) write, (String) support);
+      return new Inputs(
+          asBoolean(map.get(ACTION_READ), "largeBlob.read"),
+          asString(map.get(ACTION_WRITE), "largeBlob.write"),
+          support);
     }
   }
 }

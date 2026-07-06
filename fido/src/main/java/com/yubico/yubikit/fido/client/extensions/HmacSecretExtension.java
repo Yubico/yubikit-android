@@ -109,11 +109,7 @@ public class HmacSecretExtension extends Extension {
     boolean prf = extensions.has(PRF);
     boolean hmac = false;
     if (allowHmacSecret) {
-      Object hmacCreateSecret = extensions.get(HMAC_CREATE_SECRET);
-      if (hmacCreateSecret != null && !(hmacCreateSecret instanceof Boolean)) {
-        throw new IllegalArgumentException("hmacCreateSecret must be a boolean");
-      }
-      hmac = Boolean.TRUE.equals(hmacCreateSecret);
+      hmac = Boolean.TRUE.equals(asBoolean(extensions.get(HMAC_CREATE_SECRET), HMAC_CREATE_SECRET));
     }
 
     if (!prf && !hmac) {
@@ -471,39 +467,6 @@ public class HmacSecretExtension extends Extension {
     } catch (NoSuchAlgorithmException e) {
       throw new RuntimeException("SHA-256 missing", e);
     }
-  }
-
-  /**
-   * Returns {@code value} as a {@code Map} (a dictionary extension member). Absent values are
-   * ignored ({@code null}); a wrong-typed value is malformed structure and is surfaced as an {@link
-   * IllegalArgumentException} (mapped to {@code BAD_REQUEST}).
-   */
-  @SuppressWarnings("unchecked")
-  @Nullable
-  private static Map<String, Object> asMap(@Nullable Object value, String field) {
-    if (value == null) {
-      return null;
-    }
-    if (!(value instanceof Map)) {
-      throw new IllegalArgumentException(field + " must be an object");
-    }
-    return (Map<String, Object>) value;
-  }
-
-  /**
-   * Returns {@code value} as a {@code String} (a base64url BufferSource member). Absent values are
-   * ignored ({@code null}); a wrong-typed value is malformed structure and is surfaced as an {@link
-   * IllegalArgumentException} (mapped to {@code BAD_REQUEST}).
-   */
-  @Nullable
-  private static String asString(@Nullable Object value, String field) {
-    if (value == null) {
-      return null;
-    }
-    if (!(value instanceof String)) {
-      throw new IllegalArgumentException(field + " must be a string");
-    }
-    return (String) value;
   }
 
   private static class PrfInputs {

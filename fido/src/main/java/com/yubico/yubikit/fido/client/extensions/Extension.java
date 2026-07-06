@@ -55,6 +55,56 @@ public abstract class Extension {
     return ctap.getCachedInfo().getExtensions().contains(name);
   }
 
+  /**
+   * Returns {@code value} as a {@code Boolean}, or {@code null} if the member is absent. A
+   * wrong-typed value is malformed caller input, surfaced as an {@link IllegalArgumentException}
+   * (spec {@code SyntaxError} / {@code BAD_REQUEST}); {@code field} names the offending member in
+   * the message.
+   */
+  @Nullable
+  protected static Boolean asBoolean(@Nullable Object value, String field) {
+    if (value == null) {
+      return null;
+    }
+    if (!(value instanceof Boolean)) {
+      throw new IllegalArgumentException(field + " must be a boolean");
+    }
+    return (Boolean) value;
+  }
+
+  /**
+   * Returns {@code value} as a {@code String}, or {@code null} if the member is absent. A
+   * wrong-typed value is surfaced as an {@link IllegalArgumentException}; see {@link
+   * #asBoolean(Object, String)}.
+   */
+  @Nullable
+  protected static String asString(@Nullable Object value, String field) {
+    if (value == null) {
+      return null;
+    }
+    if (!(value instanceof String)) {
+      throw new IllegalArgumentException(field + " must be a string");
+    }
+    return (String) value;
+  }
+
+  /**
+   * Returns {@code value} as a {@code Map}, or {@code null} if the member is absent. A wrong-typed
+   * value is surfaced as an {@link IllegalArgumentException}; see {@link #asBoolean(Object,
+   * String)}.
+   */
+  @SuppressWarnings("unchecked")
+  @Nullable
+  protected static Map<String, Object> asMap(@Nullable Object value, String field) {
+    if (value == null) {
+      return null;
+    }
+    if (!(value instanceof Map)) {
+      throw new IllegalArgumentException(field + " must be an object");
+    }
+    return (Map<String, Object>) value;
+  }
+
   @Nullable
   public RegistrationProcessor makeCredential(
       Ctap2Session ctap,
