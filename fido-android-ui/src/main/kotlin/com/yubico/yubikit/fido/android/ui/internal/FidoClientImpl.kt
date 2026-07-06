@@ -147,42 +147,52 @@ internal class FidoClientImpl : FidoClient {
             putExtra("callerLabel", input.callerLabel)
         }
 
-        @Suppress("IntroduceWhenSubject")
         override fun parseResult(
             resultCode: Int,
             intent: Intent?,
-        ): Result<String> = when {
-            resultCode == Activity.RESULT_OK && intent != null -> {
-                intent.getStringExtra("credential")?.let { credentialJson ->
-                    Result.success(credentialJson)
-                }
-                    ?: Result.failure(IllegalStateException("Credential missing in Intent result"))
-            }
+        ): Result<String> = parseFidoActivityResult(resultCode, intent)
+    }
+}
 
-            resultCode == Activity.RESULT_CANCELED -> {
-                Result.failure(CancellationException("User cancelled FIDO operation"))
-            }
-
-            resultCode == RESULT_KEY_REMOVED -> {
-                Result.failure(CancellationException("Key was removed"))
-            }
-
-            resultCode == RESULT_ERROR -> {
-                // A terminal, request-level failure: return the real error (with its WebAuthn
-                // DOMException name) rather than a cancellation, so the caller can react to it.
-                Result.failure(
-                    WebAuthnClientException(
-                        webAuthnError =
-                        intent?.getStringExtra(EXTRA_ERROR_NAME)
-                            ?: "NotSupportedError",
-                        message = intent?.getStringExtra(EXTRA_ERROR_MESSAGE),
-                    ),
-                )
-            }
-
-            else -> {
-                Result.failure(IllegalStateException("Unknown error occurred (resultCode: $resultCode)"))
-            }
+/**
+ * Maps a [YubiKitFidoActivity] result into the [Result] the FIDO API returns. Extracted from the
+ * [ActivityResultContract] so the mapping — in particular the terminal [RESULT_ERROR] path that
+ * carries a WebAuthn `DOMException` name — is unit-testable without an Activity.
+ */
+@Suppress("IntroduceWhenSubject")
+internal fun parseFidoActivityResult(
+    resultCode: Int,
+    intent: Intent?,
+): Result<String> = when {
+    resultCode == Activity.RESULT_OK && intent != null -> {
+        intent.getStringExtra("credential")?.let { credentialJson ->
+            Result.success(credentialJson)
         }
+            ?: Result.failure(IllegalStateException("Credential missing in Intent result"))
+    }
+
+    resultCode == Activity.RESULT_CANCELED -> {
+        Result.failure(CancellationException("User cancelled FIDO operation"))
+    }
+
+    resultCode == RESULT_KEY_REMOVED -> {
+        Result.failure(CancellationException("Key was removed"))
+    }
+
+    resultCode == RESULT_ERROR -> {
+        // A terminal, request-level failure: return the real error (with its WebAuthn
+        // DOMException name) rather than a cancellation, so the caller can react to it.
+        Result.failure(
+            WebAuthnClientException(
+                webAuthnError =
+                intent?.getStringExtra(EXTRA_ERROR_NAME)
+                    ?: "NotSupportedError",
+                message = intent?.getStringExtra(EXTRA_ERROR_MESSAGE),
+            ),
+        )
+    }
+
+    else -> {
+        Result.failure(IllegalStateException("Unknown error occurred (resultCode: $resultCode)"))
     }
 }

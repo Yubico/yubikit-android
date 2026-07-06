@@ -68,6 +68,27 @@ internal class FidoMessageBridge(
         private const val TYPE_REJECT = "reject"
         private const val METHOD_CREATE = "create"
         private const val METHOD_GET = "get"
+
+        /**
+         * Creates a JSON error response string for delivery back to JavaScript. When [errorName] is
+         * present the page rejects with a `DOMException` of that name (see fido.js); otherwise it
+         * falls back to the generic `NotAllowedError`.
+         */
+        internal fun errorResponseJson(
+            promiseUuid: String?,
+            message: String,
+            errorName: String? = null,
+        ): String = JSONObject()
+            .apply {
+                put(KEY_TYPE, TYPE_REJECT)
+                if (promiseUuid != null) {
+                    put(KEY_PROMISE_UUID, promiseUuid)
+                }
+                put(KEY_MESSAGE, message)
+                if (errorName != null) {
+                    put(KEY_ERROR_NAME, errorName)
+                }
+            }.toString()
     }
 
     override fun onPostMessage(
@@ -237,22 +258,5 @@ internal class FidoMessageBridge(
             put(KEY_TYPE, TYPE_RESOLVE)
             put(KEY_PROMISE_UUID, promiseUuid)
             put(KEY_RESULT, JSONObject(result))
-        }.toString()
-
-    /** Creates a JSON error response string for delivery back to JavaScript. */
-    private fun errorResponseJson(
-        promiseUuid: String?,
-        message: String,
-        errorName: String? = null,
-    ): String = JSONObject()
-        .apply {
-            put(KEY_TYPE, TYPE_REJECT)
-            if (promiseUuid != null) {
-                put(KEY_PROMISE_UUID, promiseUuid)
-            }
-            put(KEY_MESSAGE, message)
-            if (errorName != null) {
-                put(KEY_ERROR_NAME, errorName)
-            }
         }.toString()
 }
