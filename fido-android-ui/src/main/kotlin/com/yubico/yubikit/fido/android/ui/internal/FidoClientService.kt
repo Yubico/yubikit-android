@@ -18,6 +18,7 @@ package com.yubico.yubikit.fido.android.ui.internal
 
 import com.yubico.yubikit.core.application.CommandState
 import com.yubico.yubikit.core.fido.CtapException
+import com.yubico.yubikit.fido.android.ui.FidoConfigManager
 import com.yubico.yubikit.fido.android.ui.Origin
 import com.yubico.yubikit.fido.android.ui.internal.util.toMap
 import com.yubico.yubikit.fido.client.ClientError
@@ -39,6 +40,35 @@ internal class FidoClientService(
     private val commandState = CommandState()
 
     internal fun cancelOngoingOperation() = commandState.cancel()
+
+    /**
+     * Device-independent pre-validation of the request's extension inputs. Throws the same
+     * [ClientError] [performOperation] would for a request that can never succeed, but without a
+     * key — letting the caller fail fast before connecting/prompting. Only covers request-shape
+     * checks (see [Ctap2Client.validateExtensionInputs]); capability checks that need the key are
+     * not performed here.
+     */
+    // Single parse path for the request JSON, shared by pre-validation and the actual operation so
+    // the two cannot parse the request differently.
+    private fun parseRequest(request: String): Map<String, *> = JSONObject(request).toMap()
+
+    internal fun validateRequest(operation: Operation, request: String) {
+        val requestJson = parseRequest(request)
+        val extensions = FidoConfigManager.current.fidoExtensions
+        when (operation) {
+            Operation.MAKE_CREDENTIAL ->
+                Ctap2Client.validateExtensionInputs(
+                    PublicKeyCredentialCreationOptions.fromMap(requestJson),
+                    extensions,
+                )
+
+            Operation.GET_ASSERTION ->
+                Ctap2Client.validateExtensionInputs(
+                    PublicKeyCredentialRequestOptions.fromMap(requestJson),
+                    extensions,
+                )
+        }
+    }
 
     internal suspend fun performOperation(
         pin: CharArray?,
@@ -109,7 +139,7 @@ internal class FidoClientService(
             }
         }
 
-        val requestJson = JSONObject(request).toMap()
+        val requestJson = parseRequest(request)
 
         val publicKeyCredentialCreationOptions =
             PublicKeyCredentialCreationOptions.fromMap(requestJson)
@@ -154,7 +184,7 @@ internal class FidoClientService(
                 )
             }
         }
-        val requestJson = JSONObject(request).toMap()
+        val requestJson = parseRequest(request)
 
         val clientData =
             clientDataHash?.let { ClientDataProvider.fromHash(it) }

@@ -53,6 +53,7 @@ import com.yubico.yubikit.android.transport.nfc.NfcNotAvailable
 import com.yubico.yubikit.android.transport.usb.UsbConfiguration
 import com.yubico.yubikit.fido.android.ui.FidoConfigManager
 import com.yubico.yubikit.fido.android.ui.Origin
+import com.yubico.yubikit.fido.android.ui.internal.ui.Error
 import com.yubico.yubikit.fido.android.ui.internal.ui.State
 import com.yubico.yubikit.fido.android.ui.internal.ui.components.FidoPresentation
 import com.yubico.yubikit.fido.android.ui.internal.ui.components.FidoUiHost
@@ -67,6 +68,9 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 internal const val RESULT_KEY_REMOVED = 10000
+internal const val RESULT_ERROR = 10001
+internal const val EXTRA_ERROR_NAME = "errorName"
+internal const val EXTRA_ERROR_MESSAGE = "errorMessage"
 
 internal class YubiKitFidoActivity : ComponentActivity() {
     internal companion object {
@@ -152,10 +156,26 @@ internal class YubiKitFidoActivity : ComponentActivity() {
                     // success path hides the sheet, which fires onDismissRequest here
                     // and would otherwise overwrite RESULT_OK.
                     if (!isFinishing && !credentialDelivered) {
-                        logger.debug("FidoActivity finishWithCancel")
-                        setResult(
-                            RESULT_CANCELED,
-                        )
+                        // Dismissing a terminal error (a deterministic request-level failure)
+                        // returns the real error to the caller, not a cancellation — so the RP's
+                        // page rejects with the correct DOMException instead of "user cancelled".
+                        val terminal =
+                            (viewModel.state.value as? State.OperationError)
+                                ?.error as? Error.Terminal
+                        if (terminal != null) {
+                            logger.debug("FidoActivity finishWithError {}", terminal.webAuthnError)
+                            setResult(
+                                RESULT_ERROR,
+                                Intent()
+                                    .putExtra(EXTRA_ERROR_NAME, terminal.webAuthnError)
+                                    .putExtra(EXTRA_ERROR_MESSAGE, terminal.message),
+                            )
+                        } else {
+                            logger.debug("FidoActivity finishWithCancel")
+                            setResult(
+                                RESULT_CANCELED,
+                            )
+                        }
                     }
                     finishActivity()
                 }

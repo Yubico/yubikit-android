@@ -28,6 +28,7 @@ import androidx.fragment.app.Fragment
 import com.yubico.yubikit.fido.android.ui.FidoClient
 import com.yubico.yubikit.fido.android.ui.FidoConfigManager
 import com.yubico.yubikit.fido.android.ui.Origin
+import com.yubico.yubikit.fido.android.ui.WebAuthnClientException
 import com.yubico.yubikit.fido.client.extensions.Extension
 import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.CancellationException
@@ -164,6 +165,19 @@ internal class FidoClientImpl : FidoClient {
 
             resultCode == RESULT_KEY_REMOVED -> {
                 Result.failure(CancellationException("Key was removed"))
+            }
+
+            resultCode == RESULT_ERROR -> {
+                // A terminal, request-level failure: return the real error (with its WebAuthn
+                // DOMException name) rather than a cancellation, so the caller can react to it.
+                Result.failure(
+                    WebAuthnClientException(
+                        webAuthnError =
+                        intent?.getStringExtra(EXTRA_ERROR_NAME)
+                            ?: "NotSupportedError",
+                        message = intent?.getStringExtra(EXTRA_ERROR_MESSAGE),
+                    ),
+                )
             }
 
             else -> {

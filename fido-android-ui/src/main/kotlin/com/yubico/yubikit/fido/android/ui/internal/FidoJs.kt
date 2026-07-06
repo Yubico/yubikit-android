@@ -39,7 +39,7 @@ var result = __decode__credentials(data.result)
 promise.resolve(result)
 } else if (data.type === 'reject') {
 console.log('Promise rejected:', promise.method, uuid, data.message)
-promise.reject(new DOMException(data.message, 'NotAllowedError'))
+promise.reject(new DOMException(data.message, data.errorName || 'NotAllowedError'))
 } else {
 console.error('FIDO bridge: unknown response type:', data.type)
 promise.reject(new DOMException('The operation failed', 'NotAllowedError'))

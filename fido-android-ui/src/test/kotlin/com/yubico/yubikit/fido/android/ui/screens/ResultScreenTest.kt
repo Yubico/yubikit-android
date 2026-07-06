@@ -16,6 +16,7 @@
 
 package com.yubico.yubikit.fido.android.ui.screens
 
+import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
@@ -160,6 +161,47 @@ class ResultScreenTest {
         }
 
         composeTestRule.onNodeWithTag("error_message_text").assertExists()
+    }
+
+    @Test
+    fun `errorView shows request-not-supported message for ExtensionUnsupportedError`() {
+        composeTestRule.setContent {
+            FidoAndroidTheme {
+                ErrorView(
+                    operation = FidoClientService.Operation.GET_ASSERTION,
+                    rpId = testOrigin,
+                    error = Error.ExtensionUnsupportedError(
+                        "NotSupportedError",
+                        "largeBlob write requires exactly one allowed credential",
+                    ),
+                    onRetry = {},
+                )
+            }
+        }
+
+        // Renders the generic "request not supported" message, not the "Set a PIN" one, and does
+        // not blame the key.
+        composeTestRule
+            .onNodeWithTag("error_message_text")
+            .assertTextEquals("This request isn't supported.")
+    }
+
+    @Test
+    fun `errorView shows Close and not Retry for a terminal error`() {
+        composeTestRule.setContent {
+            FidoAndroidTheme {
+                ErrorView(
+                    operation = FidoClientService.Operation.GET_ASSERTION,
+                    rpId = testOrigin,
+                    error = Error.ExtensionUnsupportedError("NotSupportedError", "unsupported"),
+                    onCloseButtonClick = {},
+                    onRetry = {},
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithTag("close_button").assertExists()
+        composeTestRule.onNodeWithTag("retry_button").assertDoesNotExist()
     }
 
     @Test

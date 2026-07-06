@@ -164,20 +164,33 @@ internal fun ErrorView(
             horizontalArrangement = Arrangement.End,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            if (isDialog && onCloseButtonClick != null) {
-                TextButton(
+            if (error?.isTerminal() == true && onCloseButtonClick != null) {
+                // Retrying a request-level failure can never succeed; offer a single dismiss that
+                // returns the real error (not a cancellation) to the caller. Guarded on a non-null
+                // handler so the Close button is never rendered inert (production always supplies
+                // one; see FidoClientScreen).
+                Button(
                     onClick = onCloseButtonClick,
-                    modifier = Modifier.testTag("cancel_button"),
+                    modifier = Modifier.testTag("close_button"),
                 ) {
-                    Text(stringResource(R.string.yk_fido_cancel))
+                    Text(stringResource(R.string.yk_fido_close))
                 }
-                Spacer(modifier = Modifier.width(8.dp))
-            }
-            Button(
-                onClick = onRetry,
-                modifier = Modifier.testTag("retry_button"),
-            ) {
-                Text(stringResource(R.string.yk_fido_retry))
+            } else {
+                if (isDialog && onCloseButtonClick != null) {
+                    TextButton(
+                        onClick = onCloseButtonClick,
+                        modifier = Modifier.testTag("cancel_button"),
+                    ) {
+                        Text(stringResource(R.string.yk_fido_cancel))
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                }
+                Button(
+                    onClick = onRetry,
+                    modifier = Modifier.testTag("retry_button"),
+                ) {
+                    Text(stringResource(R.string.yk_fido_retry))
+                }
             }
         }
     }
@@ -216,6 +229,8 @@ private fun resolveErrorText(error: Error?, rpId: String): String = when (error)
     }
 
     is Error.DeviceIneligibleError -> stringResource(R.string.yk_fido_device_ineligible)
+
+    is Error.ExtensionUnsupportedError -> stringResource(R.string.yk_fido_request_not_supported)
 
     is Error.DeviceNotConfiguredError -> stringResource(R.string.yk_fido_device_not_configured)
 
@@ -257,6 +272,23 @@ internal fun OperationErrorViewPreview() {
             operation = FidoClientService.Operation.GET_ASSERTION,
             rpId = "example.com",
             error = Error.OperationError(CtapException(CtapException.ERR_KEY_STORE_FULL)),
+            onRetry = {},
+        )
+    }
+}
+
+@DefaultPreview
+@Composable
+internal fun ExtensionUnsupportedErrorViewPreview() {
+    FidoAndroidTheme {
+        ErrorView(
+            operation = FidoClientService.Operation.GET_ASSERTION,
+            rpId = "example.com",
+            error = Error.ExtensionUnsupportedError(
+                "NotSupportedError",
+                "largeBlob write requires exactly one allowed credential",
+            ),
+            onCloseButtonClick = {},
             onRetry = {},
         )
     }
