@@ -56,6 +56,31 @@ public abstract class Extension {
   }
 
   /**
+   * Device-independent validation of this extension's client inputs for a registration request — a
+   * pure function of {@code options}, with no authenticator interaction. Mirrors a browser's
+   * synchronous WebAuthn client-extension checks: it throws the same {@link
+   * ExtensionConfigurationException} / {@link IllegalArgumentException} that {@link
+   * #makeCredential} would for a request that can never succeed, letting a client fail fast before
+   * connecting to (or prompting for) a key.
+   *
+   * <p>Only checks that depend solely on the request belong here; capability checks that need the
+   * authenticator's {@code info} (e.g. {@code largeBlob} {@code support:"required"}, {@code
+   * credProtect} enforce) are <em>not</em> performed here and remain in {@link #makeCredential}. An
+   * implementation that overrides this should invoke it at the start of its own {@link
+   * #makeCredential} so pre-validation and the device path apply the same request-shape checks
+   * rather than diverging. Default: no-op.
+   */
+  public void validateCreateInputs(PublicKeyCredentialCreationOptions options) {}
+
+  /**
+   * Device-independent validation of this extension's client inputs for an authentication request.
+   * The authentication counterpart of {@link #validateCreateInputs}; an implementation that
+   * overrides this should invoke it at the start of its own {@link #getAssertion} so pre-validation
+   * and the device path stay in sync. Default: no-op.
+   */
+  public void validateGetInputs(PublicKeyCredentialRequestOptions options) {}
+
+  /**
    * Returns {@code value} as a {@code Boolean}, or {@code null} if the member is absent. A
    * wrong-typed value is malformed caller input, surfaced as an {@link IllegalArgumentException}
    * (spec {@code SyntaxError} / {@code BAD_REQUEST}); {@code field} names the offending member in

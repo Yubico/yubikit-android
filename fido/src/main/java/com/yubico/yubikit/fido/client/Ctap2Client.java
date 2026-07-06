@@ -1002,6 +1002,65 @@ public class Ctap2Client implements WebAuthnClient {
     throw e;
   }
 
+  /**
+   * Validate the device-independent client extension inputs of a registration request, without a
+   * key.
+   *
+   * <p>Runs each extension's {@link Extension#validateCreateInputs} and surfaces any failure as the
+   * same {@link ClientError} {@link #makeCredential} would throw for it. This lets a caller reject
+   * a request that can never succeed <em>before</em> connecting to (or prompting for) an
+   * authenticator — matching a browser's synchronous {@code NotSupportedError}/{@code SyntaxError}.
+   *
+   * <p>This is an optional fast-path: the same checks run inside {@link #makeCredential}, so a
+   * caller that skips this still gets identical errors, just later. It only covers request-shape
+   * checks; capability checks that need the authenticator's {@code info} (e.g. {@code largeBlob}
+   * {@code support:"required"}, {@code credProtect} enforce) are not performed here.
+   *
+   * <p>Coverage is per-extension: only extensions that override {@link
+   * Extension#validateCreateInputs}/{@link Extension#validateGetInputs} participate (currently
+   * {@code largeBlob}). An extension whose hard-failures are only raised once the authenticator's
+   * support is known (e.g. {@code prf}/{@code hmac-secret}, whose {@code evalByCredential} checks
+   * sit behind a support gate in {@link #makeCredential}/{@link #getAssertion}) is intentionally
+   * <em>not</em> pre-validated here — doing so would reject a request the device path would accept
+   * by ignoring the extension. Such requests still surface their error on the device path.
+   *
+   * @param options the registration request to validate
+   * @param extensions the extensions to check, or {@code null} for the default set
+   * @throws ClientError if a requested extension input cannot be satisfied
+   */
+  public static void validateExtensionInputs(
+      PublicKeyCredentialCreationOptions options, @Nullable List<Extension> extensions)
+      throws ClientError {
+    for (Extension extension : extensions != null ? extensions : defaultExtensions) {
+      try {
+        extension.validateCreateInputs(options);
+      } catch (RuntimeException e) {
+        handleExtensionFailure(e);
+      }
+    }
+  }
+
+  /**
+   * Validate the device-independent client extension inputs of an authentication request, without a
+   * key. The authentication counterpart of {@link #validateExtensionInputs(
+   * PublicKeyCredentialCreationOptions, List)}; see it for semantics.
+   *
+   * @param options the authentication request to validate
+   * @param extensions the extensions to check, or {@code null} for the default set
+   * @throws ClientError if a requested extension input cannot be satisfied
+   */
+  public static void validateExtensionInputs(
+      PublicKeyCredentialRequestOptions options, @Nullable List<Extension> extensions)
+      throws ClientError {
+    for (Extension extension : extensions != null ? extensions : defaultExtensions) {
+      try {
+        extension.validateGetInputs(options);
+      } catch (RuntimeException e) {
+        handleExtensionFailure(e);
+      }
+    }
+  }
+
   private int getSafePinRetryCount() {
     try {
       return clientPin.getPinRetries().getCount();

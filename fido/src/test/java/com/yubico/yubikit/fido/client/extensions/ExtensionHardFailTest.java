@@ -85,9 +85,10 @@ public class ExtensionHardFailTest {
     Map<String, Object> ext = new HashMap<>();
     ext.put(LargeBlobExtension.LARGE_BLOB, largeBlob);
 
-    ExtensionConfigurationException error =
+    // Capability the RP required is missing -> the ineligible subtype.
+    ExtensionNotSupportedException error =
         assertThrows(
-            ExtensionConfigurationException.class,
+            ExtensionNotSupportedException.class,
             () ->
                 new LargeBlobExtension()
                     .makeCredential(

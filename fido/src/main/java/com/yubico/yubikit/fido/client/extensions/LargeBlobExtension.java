@@ -26,11 +26,13 @@ import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
 import com.yubico.yubikit.fido.webauthn.ClientExtensionResultProvider;
 import com.yubico.yubikit.fido.webauthn.Extensions;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialCreationOptions;
+import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialDescriptor;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialRequestOptions;
 import com.yubico.yubikit.fido.webauthn.SerializationType;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -69,6 +71,48 @@ public class LargeBlobExtension extends Extension {
         && Boolean.TRUE.equals(ctap.getCachedInfo().getOptions().get(LARGE_BLOBS));
   }
 
+  @Override
+  public void validateCreateInputs(PublicKeyCredentialCreationOptions options) {
+    validateCreateInputs(Inputs.fromExtensions(options.getExtensions()));
+  }
+
+  private void validateCreateInputs(@Nullable Inputs inputs) {
+    // WebAuthn largeBlob client processing (registration): read/write are authentication-only;
+    // their presence here is a NotSupportedError. Device-independent; support:"required" needs the
+    // authenticator's info and is checked in makeCredential.
+    if (inputs != null && (inputs.read != null || inputs.write != null)) {
+      throw new ExtensionConfigurationException(
+          "largeBlob read/write is not valid during registration");
+    }
+  }
+
+  @Override
+  public void validateGetInputs(PublicKeyCredentialRequestOptions options) {
+    validateGetInputs(
+        Inputs.fromExtensions(options.getExtensions()), options.getAllowCredentials());
+  }
+
+  private void validateGetInputs(
+      @Nullable Inputs inputs, List<PublicKeyCredentialDescriptor> allowCredentials) {
+    // WebAuthn largeBlob client processing (authentication). Each condition is a NotSupportedError
+    // in the spec and depends only on the request (no authenticator info needed).
+    if (inputs == null) {
+      return;
+    }
+    if (inputs.support != null) {
+      throw new ExtensionConfigurationException(
+          "largeBlob support is not valid during authentication");
+    }
+    if (inputs.read != null && inputs.write != null) {
+      throw new ExtensionConfigurationException(
+          "largeBlob read and write must not both be present");
+    }
+    if (inputs.write != null && allowCredentials.size() != 1) {
+      throw new ExtensionConfigurationException(
+          "largeBlob write requires exactly one allowed credential");
+    }
+  }
+
   @Nullable
   @Override
   public RegistrationProcessor makeCredential(
@@ -76,15 +120,10 @@ public class LargeBlobExtension extends Extension {
       PublicKeyCredentialCreationOptions options,
       PinUvAuthProtocol pinUvAuthProtocol) {
     final Inputs inputs = Inputs.fromExtensions(options.getExtensions());
+    validateCreateInputs(inputs);
     if (inputs != null) {
-      // WebAuthn largeBlob client processing (registration): read/write are authentication-only;
-      // their presence here is a NotSupportedError.
-      if (inputs.read != null || inputs.write != null) {
-        throw new ExtensionConfigurationException(
-            "largeBlob read/write is not valid during registration");
-      }
       if (REQUIRED.equals(inputs.support) && !isSupported(ctap)) {
-        throw new ExtensionConfigurationException(
+        throw new ExtensionNotSupportedException(
             "Authenticator does not support large blob storage");
       }
       return new RegistrationProcessor(
@@ -107,28 +146,16 @@ public class LargeBlobExtension extends Extension {
       PinUvAuthProtocol pinUvAuthProtocol) {
 
     final Inputs inputs = Inputs.fromExtensions(options.getExtensions());
+    validateGetInputs(inputs, options.getAllowCredentials());
     if (inputs == null) {
       return null;
     }
-    // WebAuthn largeBlob client processing (authentication). Each condition below is a
-    // NotSupportedError in the spec.
-    if (inputs.support != null) {
-      throw new ExtensionConfigurationException(
-          "largeBlob support is not valid during authentication");
-    }
-    if (inputs.read != null && inputs.write != null) {
-      throw new ExtensionConfigurationException(
-          "largeBlob read and write must not both be present");
-    }
+    // Request shape already validated by validateGetInputs (support / read+write / write-count).
     if (Boolean.TRUE.equals(inputs.read)) {
       return new AuthenticationProcessor(
           (selected, pinToken) -> Collections.singletonMap(LARGE_BLOB_KEY, true),
           (assertionData, pinToken) -> read(assertionData, ctap));
     } else if (inputs.write != null) {
-      if (options.getAllowCredentials().size() != 1) {
-        throw new ExtensionConfigurationException(
-            "largeBlob write requires exactly one allowed credential");
-      }
       return new AuthenticationProcessor(
           (selected, pinToken) -> Collections.singletonMap(LARGE_BLOB_KEY, true),
           (assertionData, pinToken) ->
