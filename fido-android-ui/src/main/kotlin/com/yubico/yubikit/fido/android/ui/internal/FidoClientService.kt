@@ -100,7 +100,8 @@ internal class FidoClientService(
             }
 
             if (isPinSupported && !isPinConfigured) {
-                // there is not PIN set on the key, we deliberately don't allow this
+                // passkeys created without a PIN are rejected for sign-in by desktop
+                // browsers, so we always require PIN setup regardless of UV requirement
                 throw ClientError(
                     ClientError.Code.BAD_REQUEST,
                     CtapException(CtapException.ERR_PIN_NOT_SET),
@@ -118,7 +119,9 @@ internal class FidoClientService(
                 ?: ClientDataProvider.fromClientDataJson(
                     buildClientData(
                         "webauthn.create",
-                        origin.resolved,
+                        // WebAuthn origin (android:apk-key-hash:… for native callers);
+                        // resolved is only for rp.id/effectiveDomain derivation.
+                        origin.callingApp,
                         requestJson["challenge"] as String,
                     ),
                 )
@@ -151,7 +154,6 @@ internal class FidoClientService(
                 )
             }
         }
-
         val requestJson = JSONObject(request).toMap()
 
         val clientData =
@@ -159,7 +161,9 @@ internal class FidoClientService(
                 ?: ClientDataProvider.fromClientDataJson(
                     buildClientData(
                         "webauthn.get",
-                        origin.resolved,
+                        // WebAuthn origin (android:apk-key-hash:… for native callers);
+                        // resolved is only for rp.id/effectiveDomain derivation.
+                        origin.callingApp,
                         requestJson["challenge"] as String,
                     ),
                 )

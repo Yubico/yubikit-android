@@ -16,8 +16,11 @@
 
 package com.yubico.yubikit.fido.android.ui.screens
 
+import android.content.Context
 import androidx.compose.ui.test.junit4.v2.createComposeRule
-import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
+import androidx.test.core.app.ApplicationProvider
+import com.yubico.yubikit.fido.android.ui.R
 import com.yubico.yubikit.fido.android.ui.internal.FidoClientService
 import com.yubico.yubikit.fido.android.ui.internal.ui.screens.TapOrInsertSecurityKey
 import com.yubico.yubikit.fido.android.ui.internal.ui.theme.FidoAndroidTheme
@@ -36,37 +39,39 @@ class TapOrInsertScreenTest {
     @get:Rule
     val composeTestRule = createComposeRule()
 
-    private val testOrigin = "example.com"
+    private val context: Context = ApplicationProvider.getApplicationContext()
 
     @Test
-    fun `nfc unavailable shows warning message`() {
+    fun `nfc unavailable shows usb subtitle`() {
         composeTestRule.setContent {
             FidoAndroidTheme {
                 TapOrInsertSecurityKey(
                     operation = FidoClientService.Operation.MAKE_CREDENTIAL,
                     isNfcAvailable = false,
-                    origin = testOrigin,
                     onCloseButtonClick = {},
                 )
             }
         }
 
-        composeTestRule.onNodeWithTag("nfc_not_available_text").assertExists()
+        composeTestRule.onNodeWithText(
+            context.getString(R.string.yk_fido_plug_your_key_subtitle),
+        ).assertExists()
     }
 
     @Test
-    fun `nfc available hides warning message`() {
+    fun `nfc available shows nfc subtitle`() {
         composeTestRule.setContent {
             FidoAndroidTheme {
                 TapOrInsertSecurityKey(
                     operation = FidoClientService.Operation.MAKE_CREDENTIAL,
                     isNfcAvailable = true,
-                    origin = testOrigin,
                     onCloseButtonClick = {},
                 )
             }
         }
 
-        composeTestRule.onNodeWithTag("nfc_not_available_text").assertDoesNotExist()
+        composeTestRule.onNodeWithText(
+            context.getString(R.string.yk_fido_connect_your_key_subtitle),
+        ).assertExists()
     }
 }

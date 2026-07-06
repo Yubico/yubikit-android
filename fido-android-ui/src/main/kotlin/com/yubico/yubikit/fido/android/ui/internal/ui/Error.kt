@@ -31,9 +31,9 @@ internal sealed class Error {
 
     data object DeviceNotConfiguredError : Error()
 
-    data class IncorrectPinError(
-        val remainingAttempts: Int?,
-    ) : Error()
+    data object DeviceIneligibleError : Error()
+
+    data class IncorrectPinError(val remainingAttempts: Int?) : Error()
 
     data class ForcePinChangeError(
         val remainingAttempts: Int?,
@@ -46,6 +46,8 @@ internal sealed class Error {
     data class OperationError(
         val exception: Throwable?,
     ) : Error()
+
+    data object TagLostError : Error()
 
     data object UnknownError : Error()
 }

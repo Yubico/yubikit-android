@@ -51,7 +51,7 @@ class PinEntryScreenTest {
             FidoAndroidTheme {
                 EnterPin(
                     operation = operation,
-                    origin = origin,
+                    rpId = origin,
                     pin = pin,
                     error = error,
                     onCloseButtonClick = onCloseButtonClick,
