@@ -125,6 +125,21 @@ public class HmacSecretExtensionTest {
   }
 
   @Test
+  public void prepareSaltsEvalByCredentialWithoutAllowListThrows() {
+    // WebAuthn prf (authentication): evalByCredential with an empty allowCredentials ->
+    // NotSupportedError, carrying PRF_EVAL_BY_CREDENTIAL_REQUIRES_ALLOWLIST.
+    Map<String, Object> prf =
+        Collections.singletonMap(
+            "evalByCredential",
+            Collections.singletonMap("AA", Collections.singletonMap("first", "AA")));
+    ExtensionConfigurationException e =
+        assertThrows(
+            ExtensionConfigurationException.class,
+            () -> extension.prepareSalts(null, null, prfInputs(prf)));
+    assertEquals(ClientError.Code.CONFIGURATION_UNSUPPORTED, e.getCode());
+  }
+
+  @Test
   public void prepareSaltsIgnoresNullSecond() {
     // Regression: an RP sending prf.eval with "second": null (key present, null value) must not
     // crash the ceremony (previously an NPE from Base64.fromUrlSafeString(null)); the null second
@@ -174,6 +189,12 @@ public class HmacSecretExtensionTest {
   private static HmacSecretExtension.Inputs prfEval(Map<String, Object> eval) {
     Extensions extensions =
         Extensions.fromMap(Collections.singletonMap("prf", Collections.singletonMap("eval", eval)));
+    return Objects.requireNonNull(HmacSecretExtension.Inputs.fromExtensions(extensions));
+  }
+
+  /** Builds parsed extension {@link HmacSecretExtension.Inputs} for {@code prf: <prf>}. */
+  private static HmacSecretExtension.Inputs prfInputs(Map<String, Object> prf) {
+    Extensions extensions = Extensions.fromMap(Collections.singletonMap("prf", prf));
     return Objects.requireNonNull(HmacSecretExtension.Inputs.fromExtensions(extensions));
   }
 }

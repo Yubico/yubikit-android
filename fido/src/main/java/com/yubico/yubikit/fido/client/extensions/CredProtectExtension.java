@@ -67,7 +67,7 @@ public class CredProtectExtension extends Extension {
 
     boolean enforce = Boolean.TRUE.equals(asBoolean(extensions.get(ENFORCE), ENFORCE));
     if (enforce && !isSupported(ctap) && credProtect > 0x01) {
-      throw new ExtensionConfigurationException("No Credential Protection support");
+      throw new ExtensionNotSupportedException("No Credential Protection support");
     }
     return new RegistrationProcessor(pinToken -> Collections.singletonMap(name, credProtect));
   }

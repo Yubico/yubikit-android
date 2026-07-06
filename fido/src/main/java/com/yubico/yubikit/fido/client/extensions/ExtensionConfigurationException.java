@@ -19,18 +19,27 @@ package com.yubico.yubikit.fido.client.extensions;
 import com.yubico.yubikit.fido.client.ClientError;
 
 /**
- * Thrown by an {@link Extension} when the relying party has explicitly requested a capability that
- * cannot be satisfied (for example {@code enforceCredentialProtectionPolicy} or {@code largeBlob}
- * {@code support: "required"} on an authenticator that does not support it).
+ * Thrown by an {@link Extension} when a relying-party extension request cannot be processed and the
+ * WebAuthn ceremony must be aborted — for example an unsatisfiable request shape ({@code largeBlob}
+ * {@code write} with more than one allowed credential) or malformed extension input.
  *
  * <p>Unlike conditions that merely cause an extension to be ignored — which are signalled by
- * returning {@code null} from the extension's processing methods — this is a <em>hard failure</em>
- * that must abort the WebAuthn ceremony. The client catches it and surfaces it as a {@link
- * ClientError} with the carried {@link ClientError.Code}.
+ * returning {@code null} from the extension's processing methods — this is a <em>hard failure</em>.
+ * The client catches it and surfaces it as a {@link ClientError} carrying {@link #getCode()}, with
+ * this exception preserved as the {@code ClientError} cause.
+ *
+ * <p>This is the common supertype for every extension hard failure, so a caller can test for "an
+ * extension request failed" with a single {@code instanceof} check. The one case that needs to be
+ * distinguished — the authenticator lacking a capability the relying party explicitly required — is
+ * the subtype {@link ExtensionNotSupportedException}; everything else (request-shape and malformed
+ * input, told apart by {@link #getCode()}: {@link ClientError.Code#CONFIGURATION_UNSUPPORTED} ≙
+ * {@code NotSupportedError}, {@link ClientError.Code#BAD_REQUEST} ≙ {@code SyntaxError}) carries
+ * its human-readable detail in the message.
  *
  * <p>It is unchecked so it can be raised from the extension processing lambdas (whose functional
  * interfaces do not declare checked exceptions) without changing the {@link Extension} API.
  *
+ * @see ExtensionNotSupportedException
  * @see <a href="https://www.w3.org/TR/webauthn-3/#sctn-extensions">WebAuthn Extensions</a>
  */
 public class ExtensionConfigurationException extends RuntimeException {
@@ -47,8 +56,24 @@ public class ExtensionConfigurationException extends RuntimeException {
     this.code = code;
   }
 
+  public ExtensionConfigurationException(ClientError.Code code, String message, Throwable cause) {
+    super(message, cause);
+    this.code = code;
+  }
+
   /** The {@link ClientError.Code} the client should report when aborting the ceremony. */
   public ClientError.Code getCode() {
     return code;
+  }
+
+  /**
+   * The WebAuthn {@code DOMException} name a client should reject the ceremony with for this
+   * failure: {@code "SyntaxError"} for {@link ClientError.Code#BAD_REQUEST} (malformed input),
+   * {@code "NotSupportedError"} otherwise (an unsatisfiable/unsupported request). Kept here, next
+   * to {@link #getCode()}, so the {@code Code}-to-spec-name mapping lives in one place rather than
+   * being re-derived by each caller.
+   */
+  public String getWebAuthnErrorName() {
+    return code == ClientError.Code.BAD_REQUEST ? "SyntaxError" : "NotSupportedError";
   }
 }

@@ -17,6 +17,7 @@
 package com.yubico.yubikit.fido.client.extensions;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThrows;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -66,9 +67,10 @@ public class ExtensionHardFailTest {
     ext.put(CredProtectExtension.POLICY, CredProtectExtension.REQUIRED);
     ext.put(CredProtectExtension.ENFORCE, true);
 
-    ExtensionConfigurationException error =
+    // Capability the RP required is missing -> the ineligible subtype.
+    ExtensionNotSupportedException error =
         assertThrows(
-            ExtensionConfigurationException.class,
+            ExtensionNotSupportedException.class,
             () ->
                 new CredProtectExtension()
                     .makeCredential(
@@ -110,5 +112,7 @@ public class ExtensionHardFailTest {
                     .makeCredential(
                         sessionWithout(), optionsWith(ext), mock(PinUvAuthProtocol.class)));
     assertEquals(ClientError.Code.CONFIGURATION_UNSUPPORTED, error.getCode());
+    // A malformed request shape is the base type, not the ineligible subtype.
+    assertFalse(error instanceof ExtensionNotSupportedException);
   }
 }
