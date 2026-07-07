@@ -1,3 +1,29 @@
+* Version 3.2.0 (released 2026-07-07)
+ ** new:
+  - fido-ui: new UI host with support for adaptive layouts, adjusting across phone
+             portrait, landscape and full-screen presentations; screens now show the
+             requesting app label and emphasize the RP name / rpId, with refreshed
+             titles, subtitles and PIN forms
+  - fido-ui: surface terminal extension errors in the UI
+  - fido-ui: added public NfcAntennaHint API and supportsNfcAntennaHint() to detect
+             and hint antenna location
+  - fido-ui: apply FLAG_SECURE in non-debug builds and HIDE_OVERLAY_WINDOWS on the
+             FIDO UI activity
+  - fido: pre-validate WebAuthn extension inputs
+  - management: read DeviceInfo pages by TAG_MORE_DATA count
+ ** fixes & improvements:
+  - fido: aligned WebAuthn extension errors to the spec, classify hard failures and
+          isolate client extension failures
+  - fido: respect uv=discouraged for non-discoverable / non-resident-key credentials
+  - fido: use callingApp origin in native clientData
+  - fido-ui: hardened UI lifecycle — keep result on late key removal, prevent
+             result-delivery races, guard continuation resume on cancel, handle NFC
+             tag-lost, and preserve PIN input across rotation
+  - fido-ui: consistent "security key" terminology, clarified PIN-required policy,
+             and landscape insets / orientation handling
+  - core: use getProductId in USB device filter
+  - build: upgraded to AGP 9.2.1, compileSdk/targetSdk 37, ktlint 1.8.0
+  - build: updated dependencies and pinned GitHub Actions to latest versions
 * Version 3.1.0 (released 2026-03-31)
  ** new:
   - fido: added fido-android-ui module with high-level Kotlin API for WebAuthn operations
