@@ -29,9 +29,9 @@ navigation-fragment-ktx = "2.9.8"
 # --- Jetpack Compose ---
 activity-compose = "1.13.0"
 activity-ktx = "1.13.0"
-compose-bom = "2026.06.00"
-material3 = "1.5.0-alpha22"
-runtime-livedata = "1.11.3"
+compose-bom = "2026.06.01"
+material3 = "1.5.0-alpha23"
+runtime-livedata = "1.11.4"
 
 # --- Kotlin / KotlinX ---
 kotlinx-coroutines-android = "1.11.0"
@@ -39,7 +39,7 @@ kotlinx-serialization-json = "1.11.0"
 
 # --- Logging ---
 logback-android = "3.0.0"
-logback-classic = "1.5.36"
+logback-classic = "1.5.37"
 slf4j-api = "2.0.18"
 slf4j-nop = "2.0.18"
 
@@ -73,7 +73,7 @@ turbine = "1.2.1"
 # --- Static analysis ---
 findsecbugs = "1.14.0"
 spotbugs-core = "4.10.2"
-spotless = "8.7.0"
+spotless = "8.8.0"
 
 [libraries]
 
