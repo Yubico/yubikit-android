@@ -58,15 +58,8 @@ public class MinPinLengthExtension extends Extension {
       return null;
     }
 
-    Object input = extensions.get(name);
-    if (input == null) {
-      return null;
-    }
-    if (!(input instanceof Boolean)) {
-      throw new IllegalArgumentException("minPinLength must be a boolean");
-    }
-    if (!(Boolean) input) {
-      return null;
+    if (!Boolean.TRUE.equals(asBoolean(extensions.get(name), "minPinLength"))) {
+      return null; // not requested, or explicitly false
     }
     return new RegistrationProcessor(pinToken -> Collections.singletonMap(name, true));
   }

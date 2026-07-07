@@ -65,13 +65,9 @@ public class CredProtectExtension extends Extension {
           "credentialProtectionPolicy must be a recognized policy value");
     }
 
-    Object enforceValue = extensions.get(ENFORCE);
-    if (enforceValue != null && !(enforceValue instanceof Boolean)) {
-      throw new IllegalArgumentException("enforceCredentialProtectionPolicy must be a boolean");
-    }
-    boolean enforce = Boolean.TRUE.equals(enforceValue);
+    boolean enforce = Boolean.TRUE.equals(asBoolean(extensions.get(ENFORCE), ENFORCE));
     if (enforce && !isSupported(ctap) && credProtect > 0x01) {
-      throw new ExtensionConfigurationException("No Credential Protection support");
+      throw new ExtensionNotSupportedException("No Credential Protection support");
     }
     return new RegistrationProcessor(pinToken -> Collections.singletonMap(name, credProtect));
   }

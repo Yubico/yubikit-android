@@ -38,6 +38,8 @@ import com.yubico.yubikit.fido.client.Ctap2Client
 import com.yubico.yubikit.fido.client.MultipleAssertionsAvailable
 import com.yubico.yubikit.fido.client.PinRequiredClientError
 import com.yubico.yubikit.fido.client.WebAuthnClient
+import com.yubico.yubikit.fido.client.extensions.ExtensionConfigurationException
+import com.yubico.yubikit.fido.client.extensions.ExtensionNotSupportedException
 import com.yubico.yubikit.fido.ctap.BioEnrollment
 import com.yubico.yubikit.fido.ctap.Ctap2Session
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredential
@@ -284,6 +286,84 @@ internal open class MainViewModel(
         )
     }
 
+    /**
+     * Maps a FIDO operation failure to a UI [Error]. Extracted so the same mapping serves both the
+     * post-connection failure path and device-free pre-validation.
+     */
+    private fun mapError(error: Throwable): Error = when (error) {
+        is PinRequiredClientError -> Error.PinRequiredError
+
+        is AuthInvalidClientError -> {
+            when (error.authType) {
+                AuthInvalidClientError.AuthType.PIN -> Error.IncorrectPinError(error.retries)
+                AuthInvalidClientError.AuthType.UV -> Error.IncorrectUvError(error.retries)
+            }
+        }
+
+        is ClientError -> {
+            // Extension-request failures (hard-config or malformed input) always arrive with an
+            // ExtensionConfigurationException cause. Intercept them first, so they never fall
+            // into the "Set a PIN" (DeviceNotConfigured) path below and we never match
+            // human-readable messages. The one distinction that changes the outcome is carried
+            // by the type: ExtensionNotSupportedException means the key lacks a required
+            // capability (ineligible); anything else is an unsupported/malformed request.
+            val extensionCause = error.cause as? ExtensionConfigurationException
+            val ctapError = (error.cause as? CtapException)?.ctapError
+            when {
+                extensionCause is ExtensionNotSupportedException -> Error.DeviceIneligibleError
+
+                extensionCause != null ->
+                    Error.ExtensionUnsupportedError(
+                        webAuthnError = extensionCause.webAuthnErrorName,
+                        message = extensionCause.message,
+                    )
+
+                error.errorCode == ClientError.Code.CONFIGURATION_UNSUPPORTED -> {
+                    when (ctapError) {
+                        CtapException.ERR_KEY_STORE_FULL -> Error.OperationError(error.cause)
+
+                        CtapException.ERR_UNSUPPORTED_EXTENSION,
+                        CtapException.ERR_UNSUPPORTED_OPTION,
+                        CtapException.ERR_UNSUPPORTED_ALGORITHM,
+                        -> Error.DeviceIneligibleError
+
+                        else -> Error.DeviceNotConfiguredError
+                    }
+                }
+
+                else -> {
+                    when (ctapError) {
+                        CtapException.ERR_PIN_BLOCKED -> Error.PinBlockedError
+
+                        CtapException.ERR_PIN_AUTH_BLOCKED -> Error.PinAuthBlockedError
+
+                        CtapException.ERR_PIN_NOT_SET -> Error.PinNotSetError
+
+                        CtapException.ERR_PIN_POLICY_VIOLATION -> {
+                            when (info?.forcePinChange) {
+                                true -> Error.ForcePinChangeError(null)
+                                else -> Error.IncorrectPinError(null)
+                            }
+                        }
+
+                        CtapException.ERR_UV_BLOCKED,
+                        CtapException.ERR_PUAT_REQUIRED,
+                        -> Error.UvBlockedError
+
+                        else -> Error.OperationError(error.cause)
+                    }
+                }
+            }
+        }
+
+        is TagLostException -> Error.TagLostError
+
+        else -> {
+            logger.error("Unexpected error during FIDO operation: ", error)
+            Error.UnknownError
+        }
+    }
+
     fun startFidoOperation(
         fidoClientService: FidoClientService,
         operation: FidoClientService.Operation,
@@ -302,6 +382,21 @@ internal open class MainViewModel(
 
         viewModelScope.launch {
             try {
+                // Device-free fail-fast: reject a request whose extension inputs can never be
+                // satisfied before connecting to / prompting for a key (matching a browser's
+                // synchronous NotSupportedError). Only short-circuit on ClientError — the exact
+                // errors this is meant to catch; any other throw is ignored so the normal path
+                // still surfaces it with full context. The same checks also run inside
+                // performOperation, so skipping this changes nothing but the timing.
+                val prevalidationError =
+                    runCatching { fidoClientService.validateRequest(operation, request) }
+                        .exceptionOrNull()
+                if (prevalidationError is ClientError) {
+                    cancelUiStateTimer()
+                    _state.value = State.OperationError(mapError(prevalidationError))
+                    return@launch
+                }
+
                 result?.let {
                     deliverResult(it, onResult)
                     return@launch
@@ -462,103 +557,7 @@ internal open class MainViewModel(
                             return@launch
                         }
 
-                        val errorState =
-                            when (error) {
-                                is PinRequiredClientError -> {
-                                    Error.PinRequiredError
-                                }
-
-                                is AuthInvalidClientError -> {
-                                    when (error.authType) {
-                                        AuthInvalidClientError.AuthType.PIN -> {
-                                            Error.IncorrectPinError(
-                                                error.retries,
-                                            )
-                                        }
-
-                                        AuthInvalidClientError.AuthType.UV -> {
-                                            Error.IncorrectUvError(
-                                                error.retries,
-                                            )
-                                        }
-                                    }
-                                }
-
-                                is ClientError -> {
-                                    when (error.errorCode) {
-                                        ClientError.Code.CONFIGURATION_UNSUPPORTED -> {
-                                            when ((error.cause as? CtapException)?.ctapError) {
-                                                CtapException.ERR_KEY_STORE_FULL -> {
-                                                    Error.OperationError(
-                                                        error.cause,
-                                                    )
-                                                }
-
-                                                CtapException.ERR_UNSUPPORTED_EXTENSION,
-                                                CtapException.ERR_UNSUPPORTED_OPTION,
-                                                CtapException.ERR_UNSUPPORTED_ALGORITHM,
-                                                -> Error.DeviceIneligibleError
-
-                                                else -> Error.DeviceNotConfiguredError
-                                            }
-                                        }
-
-                                        else -> {
-                                            when ((error.cause as? CtapException)?.ctapError) {
-                                                CtapException.ERR_PIN_BLOCKED -> {
-                                                    Error.PinBlockedError
-                                                }
-
-                                                CtapException.ERR_PIN_AUTH_BLOCKED -> {
-                                                    Error.PinAuthBlockedError
-                                                }
-
-                                                CtapException.ERR_PIN_NOT_SET -> {
-                                                    Error.PinNotSetError
-                                                }
-
-                                                CtapException.ERR_PIN_POLICY_VIOLATION -> {
-                                                    when (info?.forcePinChange) {
-                                                        true -> Error.ForcePinChangeError(null)
-                                                        else -> Error.IncorrectPinError(null)
-                                                    }
-                                                }
-
-                                                CtapException.ERR_UV_BLOCKED,
-                                                CtapException.ERR_PUAT_REQUIRED,
-                                                -> {
-                                                    Error.UvBlockedError
-                                                }
-
-                                                else -> {
-                                                    Error.OperationError(error.cause)
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-
-                                is TagLostException -> {
-                                    Error.TagLostError
-                                }
-
-                                is IllegalArgumentException ->
-                                    when (error.message) {
-                                        "No Credential Protection support",
-                                        "Authenticator does not support large blob storage",
-                                        -> Error.DeviceIneligibleError
-
-                                        else -> {
-                                            logger.error("Unexpected error during FIDO operation: ", error)
-                                            Error.UnknownError
-                                        }
-                                    }
-
-                                else -> {
-                                    logger.error("Unexpected error during FIDO operation: ", error)
-                                    Error.UnknownError
-                                }
-                            }
+                        val errorState = mapError(error)
                         // handle the error by advancing to the next UI state
                         _state.value =
                             when (errorState) {

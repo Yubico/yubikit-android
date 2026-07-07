@@ -28,6 +28,7 @@ import com.yubico.yubikit.fido.client.extensions.CredPropsExtension;
 import com.yubico.yubikit.fido.client.extensions.CredProtectExtension;
 import com.yubico.yubikit.fido.client.extensions.Extension;
 import com.yubico.yubikit.fido.client.extensions.ExtensionConfigurationException;
+import com.yubico.yubikit.fido.client.extensions.ExtensionNotSupportedException;
 import com.yubico.yubikit.fido.client.extensions.HmacSecretExtension;
 import com.yubico.yubikit.fido.client.extensions.LargeBlobExtension;
 import com.yubico.yubikit.fido.client.extensions.MinPinLengthExtension;
@@ -954,7 +955,10 @@ public class Ctap2Client implements WebAuthnClient {
    *       enforceCredentialProtectionPolicy}, {@code largeBlob} {@code support:"required"} on an
    *       unsupported authenticator, or {@code prf} {@code evalByCredential} during registration).
    *       Surfaced as a {@link ClientError} carrying the {@link ClientError.Code} the extension
-   *       chose (defaulting to {@link ClientError.Code#CONFIGURATION_UNSUPPORTED}).
+   *       chose (defaulting to {@link ClientError.Code#CONFIGURATION_UNSUPPORTED}) with the
+   *       exception itself as the {@code ClientError} cause. When the authenticator lacks a
+   *       required capability the exception is the subtype {@link ExtensionNotSupportedException},
+   *       which a caller can test for with {@code instanceof}.
    *   <li><b>{@link IllegalArgumentException} — abort as {@link ClientError.Code#BAD_REQUEST}.</b>
    *       Malformed caller input for a requested extension: a missing required member, a wrong type
    *       on a dictionary/{@code BufferSource} member, an invalid base64url value, or a
@@ -962,13 +966,16 @@ public class Ctap2Client implements WebAuthnClient {
    *       does not match an allowed credential). This is surfaced regardless of whether the
    *       authenticator supports the extension, since several extensions validate their input
    *       before checking support (e.g. {@code largeBlob}, {@code previewSign}). Distinct from the
-   *       {@code null} "not applicable" path.
+   *       {@code null} "not applicable" path. Wrapped into an {@link
+   *       ExtensionConfigurationException} (original exception preserved as its cause) so the
+   *       {@code ClientError} cause is always an {@code ExtensionConfigurationException} for any
+   *       extension failure.
    *   <li><b>Anything else — rethrow.</b> Any other unchecked exception (e.g. {@link
    *       NullPointerException}, {@link ClassCastException}, {@link IllegalStateException}) is
    *       treated as a genuine defect and propagated unchanged rather than silently swallowed.
    * </ul>
    */
-  private void handleExtensionFailure(RuntimeException e) throws ClientError {
+  private static void handleExtensionFailure(RuntimeException e) throws ClientError {
     if (e instanceof ExtensionConfigurationException) {
       ExtensionConfigurationException configError = (ExtensionConfigurationException) e;
       String message =
@@ -981,10 +988,77 @@ public class Ctap2Client implements WebAuthnClient {
       // validate input before checking support. Surfaced as BAD_REQUEST rather than silently
       // dropped, which would mask a relying-party bug. Genuine programming defects (other unchecked
       // exceptions) are not masked: they fall through to the final rethrow.
+      //
+      // Wrapped into an ExtensionConfigurationException carrier so the ClientError cause is always
+      // an ExtensionConfigurationException for any extension failure (hard-config or malformed
+      // input): a caller can test for "an extension request failed" with a single instanceof rather
+      // than guessing from the shared BAD_REQUEST code. The original IllegalArgumentException is
+      // preserved as the carrier's cause.
       String message = e.getMessage() != null ? e.getMessage() : e.toString();
-      throw new ClientError(ClientError.Code.BAD_REQUEST, message, e);
+      ExtensionConfigurationException carrier =
+          new ExtensionConfigurationException(ClientError.Code.BAD_REQUEST, message, e);
+      throw new ClientError(ClientError.Code.BAD_REQUEST, message, carrier);
     }
     throw e;
+  }
+
+  /**
+   * Validate the device-independent client extension inputs of a registration request, without a
+   * key.
+   *
+   * <p>Runs each extension's {@link Extension#validateCreateInputs} and surfaces any failure as the
+   * same {@link ClientError} {@link #makeCredential} would throw for it. This lets a caller reject
+   * a request that can never succeed <em>before</em> connecting to (or prompting for) an
+   * authenticator — matching a browser's synchronous {@code NotSupportedError}/{@code SyntaxError}.
+   *
+   * <p>This is an optional fast-path: the same checks run inside {@link #makeCredential}, so a
+   * caller that skips this still gets identical errors, just later. It only covers request-shape
+   * checks; capability checks that need the authenticator's {@code info} (e.g. {@code largeBlob}
+   * {@code support:"required"}, {@code credProtect} enforce) are not performed here.
+   *
+   * <p>Coverage is per-extension: only extensions that override {@link
+   * Extension#validateCreateInputs}/{@link Extension#validateGetInputs} participate (currently
+   * {@code largeBlob}). An extension whose hard-failures are only raised once the authenticator's
+   * support is known (e.g. {@code prf}/{@code hmac-secret}, whose {@code evalByCredential} checks
+   * sit behind a support gate in {@link #makeCredential}/{@link #getAssertion}) is intentionally
+   * <em>not</em> pre-validated here — doing so would reject a request the device path would accept
+   * by ignoring the extension. Such requests still surface their error on the device path.
+   *
+   * @param options the registration request to validate
+   * @param extensions the extensions to check, or {@code null} for the default set
+   * @throws ClientError if a requested extension input cannot be satisfied
+   */
+  public static void validateExtensionInputs(
+      PublicKeyCredentialCreationOptions options, @Nullable List<Extension> extensions)
+      throws ClientError {
+    for (Extension extension : extensions != null ? extensions : defaultExtensions) {
+      try {
+        extension.validateCreateInputs(options);
+      } catch (RuntimeException e) {
+        handleExtensionFailure(e);
+      }
+    }
+  }
+
+  /**
+   * Validate the device-independent client extension inputs of an authentication request, without a
+   * key. The authentication counterpart of {@link #validateExtensionInputs(
+   * PublicKeyCredentialCreationOptions, List)}; see it for semantics.
+   *
+   * @param options the authentication request to validate
+   * @param extensions the extensions to check, or {@code null} for the default set
+   * @throws ClientError if a requested extension input cannot be satisfied
+   */
+  public static void validateExtensionInputs(
+      PublicKeyCredentialRequestOptions options, @Nullable List<Extension> extensions)
+      throws ClientError {
+    for (Extension extension : extensions != null ? extensions : defaultExtensions) {
+      try {
+        extension.validateGetInputs(options);
+      } catch (RuntimeException e) {
+        handleExtensionFailure(e);
+      }
+    }
   }
 
   private int getSafePinRetryCount() {

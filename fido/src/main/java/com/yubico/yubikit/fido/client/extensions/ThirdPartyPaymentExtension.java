@@ -99,22 +99,12 @@ public class ThirdPartyPaymentExtension extends Extension {
       return null;
     }
 
-    Object paymentValue = extensions.get(PAYMENT);
-    if (paymentValue == null) {
+    Map<String, Object> payment = asMap(extensions.get(PAYMENT), "payment");
+    if (payment == null) {
       return null;
-    }
-    if (!(paymentValue instanceof Map)) {
-      throw new IllegalArgumentException("payment must be an object");
     }
     // CTAP leaves the client input platform-defined; this SDK uses payment.isPayment as the flag.
-    Object isPayment = ((Map<?, ?>) paymentValue).get(IS_PAYMENT);
-    if (isPayment == null) {
-      return null;
-    }
-    if (!(isPayment instanceof Boolean)) {
-      throw new IllegalArgumentException("payment.isPayment must be a boolean");
-    }
-    if (!(Boolean) isPayment) {
+    if (!Boolean.TRUE.equals(asBoolean(payment.get(IS_PAYMENT), "payment.isPayment"))) {
       return null;
     }
     return Boolean.TRUE;

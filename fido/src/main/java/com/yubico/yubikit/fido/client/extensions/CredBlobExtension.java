@@ -55,14 +55,11 @@ public class CredBlobExtension extends Extension {
       return null;
     }
 
-    Object value = extensions.get("credBlob");
+    String value = asString(extensions.get("credBlob"), "credBlob");
     if (value == null) {
       return null; // not requested
     }
-    if (!(value instanceof String)) {
-      throw new IllegalArgumentException("credBlob must be a string");
-    }
-    byte[] blob = fromUrlSafeString((String) value);
+    byte[] blob = fromUrlSafeString(value);
     // Per spec, the platform passes credBlob to the authenticator only when it fits within
     // maxCredBlobLength; otherwise it is ignored.
     if (blob.length <= ctap.getCachedInfo().getMaxCredBlobLength()) {
@@ -83,10 +80,7 @@ public class CredBlobExtension extends Extension {
     if (extensions == null) {
       return null;
     }
-    Object getCredBlob = extensions.get("getCredBlob");
-    if (getCredBlob != null && !(getCredBlob instanceof Boolean)) {
-      throw new IllegalArgumentException("getCredBlob must be a boolean");
-    }
+    Boolean getCredBlob = asBoolean(extensions.get("getCredBlob"), "getCredBlob");
     if (isSupported(ctap) && Boolean.TRUE.equals(getCredBlob)) {
       return new AuthenticationProcessor(
           (AuthenticationInput) (selected, pinToken) -> Collections.singletonMap(name, true));

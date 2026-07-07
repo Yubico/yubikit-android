@@ -50,15 +50,8 @@ public class CredPropsExtension extends Extension {
       return null;
     }
 
-    Object value = extensions.get(name);
-    if (value == null) {
-      return null; // not requested
-    }
-    if (!(value instanceof Boolean)) {
-      throw new IllegalArgumentException("credProps must be a boolean");
-    }
-    if (!(Boolean) value) {
-      return null; // false = not requested
+    if (!Boolean.TRUE.equals(asBoolean(extensions.get(name), "credProps"))) {
+      return null; // not requested, or explicitly false
     }
 
     AuthenticatorSelectionCriteria authenticatorSelection = options.getAuthenticatorSelection();
