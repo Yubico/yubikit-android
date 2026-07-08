@@ -28,6 +28,7 @@ This module depends on the link:../core/[core], link:../android/[android], and l
 * **WebView integration** for seamless passkey support in web applications
 * **Native app support** for direct FIDO operations without WebView
 * **Automatic device discovery** over NFC and USB
+* **NFC antenna hints** overlay showing the device's physical NFC antenna locations (API 34+)
 * **PIN management UI** with configurable workflow (PIN-first or touch-first)
 * **Extension support** including CredBlob, CredProps, CredProtect, HmacSecret, LargeBlob, and MinPinLength
 * **Customizable theming** to match your app's design
@@ -215,6 +216,29 @@ lifecycleScope.launch {
 }
 ----
 
+=== NFC Antenna Hints
+
+On supported devices (Android API 34+), the module can overlay animated indicators at the
+device's physical NFC antenna locations to help users position their security key. The built-in
+UI shows these automatically; you can also display them in your own composables.
+
+Check support before showing the overlay, then place `NfcAntennaHint` on top of your layout:
+
+[source,kotlin]
+----
+if (supportsNfcAntennaHint(context)) {
+    NfcAntennaHint(
+        iconSize = 64.dp,
+        iconColor = MaterialTheme.colorScheme.primary,
+        showAntennas = true,
+    )
+}
+----
+
+`supportsNfcAntennaHint()` returns `false` on Android below API 34, when NFC is unavailable, or
+when the device does not expose antenna location data — in which case `NfcAntennaHint` has no
+visible effect.
+
 === Complete Examples
 
 Complete working examples can be found in the AndroidDemo application:
@@ -236,6 +260,7 @@ Complete working examples can be found in the AndroidDemo application:
 * **PIN Protection**: PINs are handled securely and never logged or exposed in plain text.
 * **Single Request**: Only one FIDO operation can be in progress at a time.
 * **iframe Restrictions**: WebView integration does not support requests from iframes.
+* **Screen Capture Protection**: In non-debug builds the FIDO UI applies `FLAG_SECURE` (blocking screenshots and screen recording) and hides overlay windows while an operation is in progress.
 
 === Threading
 
