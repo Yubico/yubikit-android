@@ -39,7 +39,7 @@ kotlinx-serialization-json = "1.11.0"
 
 # --- Logging ---
 logback-android = "3.0.0"
-logback-classic = "1.5.37"
+logback-classic = "1.5.38"
 slf4j-api = "2.0.18"
 slf4j-nop = "2.0.18"
 
