@@ -44,7 +44,7 @@ slf4j-api = "2.0.18"
 slf4j-nop = "2.0.18"
 
 # --- Cryptography ---
-bcpkix-jdk15to18 = "1.84"
+bcpkix-jdk15to18 = "1.85"
 
 # --- Serialization / Data ---
 moshi = "1.15.2"
