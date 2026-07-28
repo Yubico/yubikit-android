@@ -45,6 +45,5 @@ afterEvaluate {
         }
     }
 
-    configureSonatypeRepository(publishing)
-    registerFinalizeCentralPublicationTask()
+    registerCentralPortalPublishTask()
 }

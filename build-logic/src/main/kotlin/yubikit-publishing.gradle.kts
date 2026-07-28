@@ -33,5 +33,4 @@ publishing.publications {
     }
 }
 
-configureSonatypeRepository(publishing)
-registerFinalizeCentralPublicationTask()
+registerCentralPortalPublishTask()
