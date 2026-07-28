@@ -138,3 +138,40 @@ jobs:
           if-no-files-found: error
           compression-level: 0
 
+  publish:
+    needs: [sign]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594 # v2.16.0
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up JDK
+        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      # The signed artifact contains the tree below com/yubico/yubikit/, so it is
+      # extracted back under that prefix to reconstruct the Maven repository layout.
+      - name: Download signed artifacts
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: maven-repo-signed
+          path: maven-repo/com/yubico/yubikit
+
+      - name: Publish to Sonatype Central Portal
+        env:
+          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+        run: >
+          ./gradlew publishToCentralPortal
+          -PcentralPortal.repoDir="${{ github.workspace }}/maven-repo"
+          -PcentralPortal.deploymentName="yubikit-android ${{ github.ref_name }}"
+          -Psonatype.username="$SONATYPE_USERNAME"
+          -Psonatype.password="$SONATYPE_PASSWORD"
+
