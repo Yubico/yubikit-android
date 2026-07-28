@@ -29,6 +29,9 @@ jobs:
       - name: Verify code format
         run: ./gradlew spotlessCheck
 
+      - name: Test build-logic
+        run: ./gradlew -p build-logic test
+
       - name: Build with Gradle
         run: ./gradlew --stacktrace check test build javadocJar publishToMavenLocal
 
