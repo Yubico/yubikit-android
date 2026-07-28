@@ -1,69 +1,85 @@
 == Instructions for library publishing
 
-Publishing uses a two-phase approach: artifacts are built and GPG-signed in CI via the Scribe service, then published to Sonatype Central locally.
+A release is fully automated in CI: pushing a release tag builds the artifacts, GPG-signs them via
+the Scribe service, and uploads them to the https://central.sonatype.com[Central Publisher Portal].
+Nothing needs to be run on a developer's machine.
 
 === Prerequisites
-Make sure that you have permissions to publish in Yubico's Sonatype group. Generate User token at https://central.sonatype.com/account.
 
-Make sure that you put your Sonatype credentials into:
+*Repository secrets (one-time setup).* The `publish` job authenticates to the Central Publisher
+Portal with a User token (generated at https://central.sonatype.com/account by an account that has
+publish permission in Yubico's `com.yubico` namespace). Store the token as GitHub Actions repository
+secrets:
 
-  > ~/.gradle/gradle.properties
+  SONATYPE_USERNAME=<token username>
+  SONATYPE_PASSWORD=<token password>
 
-Example gradle.properties:
-
-  sonatype.username=<your_username>
-  sonatype.password=<your_password>
-
-Make sure that you have the desired library version values in the top level
+*Release version.* Set the desired library version (without the `-SNAPSHOT` suffix) in the top-level
 
   > build.gradle.kts
 
 example:
 
   subprojects {
-      version = '1.0.0'
+      version = '3.0.2'
   }
 
 NOTE: The version must *not* end with `-SNAPSHOT` for a release build.
 
-=== Building and signing (CI)
+=== Releasing (CI)
 
-Push a tag matching the release version (e.g. `3.0.2` or `3.0.2-RC1`) to trigger the `release.yml` workflow.
+Push a tag matching the release version (e.g. `3.0.2` or `3.0.2-RC1`) to trigger the `release.yml`
+workflow. The pipeline runs three jobs in sequence:
 
-The CI pipeline will:
+1. *build* — builds all modules and publishes unsigned artifacts to the local Maven repository.
+2. *sign* — sends the artifacts to the Scribe service for GPG signing and republishes the signed
+   Maven repository (with `.asc` signature files) as the `maven-repo-signed` artifact.
+3. *publish* — downloads `maven-repo-signed` and runs `publishToCentralPortal`, which uploads the
+   signed tree to the Central Publisher Portal.
 
-1. Build all modules and publish unsigned artifacts to the local Maven repository.
-2. Send the artifacts to the Scribe service for GPG signing.
-3. Upload the signed Maven repository (with `.asc` signature files) as the `maven-repo-signed` GitHub Actions artifact.
+The upload is created as a `USER_MANAGED` deployment: the portal validates it but does *not* release
+it automatically. Finish the release by verifying and pressing *Publish* at
+https://central.sonatype.com/publishing/deployments.
 
-=== Publishing to Sonatype Central (local)
+=== How the upload preserves signatures
 
-1. Download the `maven-repo-signed` artifact from the GitHub Actions run.
+The artifacts are uploaded as a single deployment "bundle" (a zip of the signed Maven repository
+tree). The whole tree — including the `.asc` signatures produced by Scribe and freshly generated
+`md5`/`sha1` checksums — is uploaded verbatim, so the signatures are preserved. This replaces the
+`maven-publish` plugin's upload, which ignored the externally produced signatures.
 
-2. Extract it into your local Maven repository:
+=== Publishing from a local machine (fallback)
+
+If you need to publish outside CI (e.g. re-uploading a signed build), put your Central Portal User
+token in `~/.gradle/gradle.properties`:
+
+  sonatype.username=<token username>
+  sonatype.password=<token password>
+
+Then download the `maven-repo-signed` artifact from the GitHub Actions run and extract it into your
+local Maven repository:
 
   rm -rf ~/.m2/repository/com/yubico/yubikit/
   unzip maven-repo-signed.zip -d ~/.m2/repository/com/yubico/yubikit/
 
-3. Publish the signed artifacts to Sonatype staging:
+Upload the signed artifacts to the Central Publisher Portal:
 
-  ./gradlew publish finalizeCentralPublication
+  ./gradlew publishToCentralPortal
 
-  Publishing can also be done for a single module:
+The task reads from `~/.m2/repository` by default. Override the source repository, deployment name,
+or publishing type with Gradle properties if needed:
 
-  ./gradlew modulename:publish finalizeCentralPublication
+  ./gradlew publishToCentralPortal \
+      -PcentralPortal.repoDir=/path/to/maven/repo \
+      -PcentralPortal.deploymentName="yubikit-android 3.0.2" \
+      -PcentralPortal.publishingType=USER_MANAGED
 
-4. Verify the deployment through https://central.sonatype.com/publishing.
-
-For any OSSRH Staging API service issues visit https://ossrh-staging-api.central.sonatype.com/swagger-ui/#/ to review the repository.
+`publishingType` defaults to `USER_MANAGED` (validated but not released until you press *Publish* in
+the portal). Use `AUTOMATIC` to publish immediately after validation passes.
 
 === Dry run
 
 As a dry run, publish to your local Maven repository (`$HOME/.m2/`):
 
   ./gradlew publishToMavenLocal
-
-=== Future: fully automated publishing
-
-The local publish step exists because Sonatype credentials are personal — there is no service account yet. Once a service account is available, add `SONATYPE_USERNAME` and `SONATYPE_PASSWORD` as GitHub Actions secrets and add a `publish` job to `release.yml` that runs after the `sign` job.
 
