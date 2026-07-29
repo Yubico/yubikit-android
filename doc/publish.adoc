@@ -41,6 +41,16 @@ The upload is created as a `USER_MANAGED` deployment: the portal validates it bu
 it automatically. Finish the release by verifying and pressing *Publish* at
 https://central.sonatype.com/publishing/deployments.
 
+=== How signing places signatures
+
+The *sign* job enumerates the artifacts (`*.jar`, `*.aar`, `*.pom`, `*.module`) under the downloaded
+`maven-repo/` tree, generates the Scribe config from that file list, and submits it. Scribe returns a
+detached binary signature (`.sig`) for each file, preserving its repository-relative path. The job
+then converts every `.sig` to an armored `.asc` and writes it next to its artifact, recovering the
+target from the signature's *full relative path* (not just its filename) so artifacts that share a
+name across modules cannot be mismatched. The `publish` job uploads the whole tree, `.asc` files
+included.
+
 === How the upload preserves signatures
 
 The artifacts are uploaded as a single deployment "bundle" (a zip of the signed Maven repository
