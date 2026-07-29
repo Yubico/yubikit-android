@@ -971,7 +971,8 @@ public class Ctap2Session extends Ctap1Session {
      *
      * @return the firmware version
      */
-    @Nullable Integer getFirmwareVersion() {
+    @Nullable
+    public Integer getFirmwareVersion() {
       return firmwareVersion;
     }
 
