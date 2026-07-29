@@ -89,17 +89,18 @@ class CentralPortalUploaderTest {
         assertNotNull("jar signature must be preserved", entries["$base.jar.asc"])
         assertNotNull("pom signature must be preserved", entries["$base.pom.asc"])
 
-        // Missing checksums are generated for artifacts...
-        assertNotNull(entries["$base.jar.sha1"])
-        assertNotNull(entries["$base.pom.md5"])
-        assertNotNull(entries["$base.pom.sha1"])
-        assertNotNull(entries["$base.module.md5"])
-        assertNotNull(entries["$base.module.sha1"])
-
-        // ...but not for signatures or existing checksums.
-        assertNull(entries["$base.jar.asc.md5"])
-        assertNull(entries["$base.jar.asc.sha1"])
+        // Missing checksums are generated for artifacts in all four algorithms, and for the
+        // .asc signatures too.
+        for (ext in CHECKSUM_EXTENSIONS) {
+            assertNotNull("jar.$ext", entries["$base.jar.$ext"])
+            assertNotNull("pom.$ext", entries["$base.pom.$ext"])
+            assertNotNull("module.$ext", entries["$base.module.$ext"])
+            assertNotNull("jar.asc.$ext", entries["$base.jar.asc.$ext"])
+            assertNotNull("pom.asc.$ext", entries["$base.pom.asc.$ext"])
+        }
+        // ...but checksum files are never themselves checksummed.
         assertNull(entries["$base.jar.md5.md5"])
+        assertNull(entries["$base.jar.md5.sha256"])
 
         ZipFile(bundle).use { zip ->
             // Pre-existing checksum is kept as-is (appears once, unchanged).
@@ -107,10 +108,14 @@ class CentralPortalUploaderTest {
                 "preexisting-md5",
                 zip.getInputStream(entries["$base.jar.md5"]).bufferedReader().readText(),
             )
-            // Generated checksum matches an independently computed digest of the artifact.
+            // Generated checksums match independently computed digests of the artifact.
             assertEquals(
-                sha1Hex(jar.readBytes()),
+                hex("SHA-1", jar.readBytes()),
                 zip.getInputStream(entries["$base.jar.sha1"]).bufferedReader().readText(),
+            )
+            assertEquals(
+                hex("SHA-256", jar.readBytes()),
+                zip.getInputStream(entries["$base.jar.sha256"]).bufferedReader().readText(),
             )
         }
     }
@@ -183,7 +188,7 @@ class CentralPortalUploaderTest {
     }
 
     @Test
-    fun createBundle_omitsChecksumForSignatureFiles() {
+    fun createBundle_checksumsSignaturesButNotChecksumFiles() {
         val repoRoot = File(tmp.root, "repo")
         val dir = artifactDir()
         File(dir, "core-1.0.0.jar").writeText("jar")
@@ -193,10 +198,19 @@ class CentralPortalUploaderTest {
         CentralPortalUploader().createBundle(repoRoot, groupPath, bundle)
 
         val names = ZipFile(bundle).use { zip -> zip.entries().toList().map { it.name }.toSet() }
+        // The signature is present and gets a checksum in every algorithm...
         assertTrue(names.any { it.endsWith(".jar.asc") })
-        assertFalse(names.any { it.endsWith(".asc.md5") || it.endsWith(".asc.sha1") })
+        for (ext in CHECKSUM_EXTENSIONS) {
+            assertTrue(".jar.asc.$ext", names.any { it.endsWith(".jar.asc.$ext") })
+        }
+        // ...but a checksum file is never itself checksummed.
+        assertFalse(names.any { CHECKSUM_EXTENSIONS.any { ext -> it.endsWith(".md5.$ext") } })
     }
 
-    private fun sha1Hex(bytes: ByteArray): String =
-        MessageDigest.getInstance("SHA-1").digest(bytes).joinToString("") { "%02x".format(it) }
+    private fun hex(algorithm: String, bytes: ByteArray): String =
+        MessageDigest.getInstance(algorithm).digest(bytes).joinToString("") { "%02x".format(it) }
+
+    private companion object {
+        val CHECKSUM_EXTENSIONS = listOf("md5", "sha1", "sha256", "sha512")
+    }
 }

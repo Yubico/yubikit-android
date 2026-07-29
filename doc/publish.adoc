@@ -45,7 +45,8 @@ https://central.sonatype.com/publishing/deployments.
 
 The artifacts are uploaded as a single deployment "bundle" (a zip of the signed Maven repository
 tree). The whole tree — including the `.asc` signatures produced by Scribe and freshly generated
-`md5`/`sha1` checksums — is uploaded verbatim, so the signatures are preserved. This replaces the
+`md5`/`sha1`/`sha256`/`sha512` checksums — is uploaded verbatim, so the signatures are preserved.
+This replaces the
 `maven-publish` plugin's upload, which ignored the externally produced signatures.
 
 === Publishing from a local machine (fallback)

@@ -29,8 +29,8 @@ import java.util.zip.ZipOutputStream
  *
  * The Scribe signing step produces a directory in Maven repository layout containing the
  * artifacts (jar/aar/pom/module + sources/javadoc) alongside their GPG `.asc` signatures. This
- * uploader zips that tree into a deployment "bundle" (generating the md5/sha1 checksums that the
- * portal requires and that `publishToMavenLocal` does not emit) and POSTs it to the portal's
+ * uploader zips that tree into a deployment "bundle" (generating the md5/sha1/sha256/sha512
+ * checksums that `publishToMavenLocal` does not emit) and POSTs it to the portal's
  * bundle-upload API. Because the whole tree is uploaded verbatim, the `.asc` signatures are
  * preserved — unlike the `maven-publish` plugin, which ignores externally produced signatures.
  *
@@ -44,7 +44,8 @@ class CentralPortalUploader(
     /**
      * Zips the artifacts under [groupPath] (relative to [repoRoot], e.g. `com/yubico/yubikit`) into
      * [bundleFile], preserving the Maven repository layout. Every regular file is added verbatim
-     * (including `.asc` signatures); missing md5/sha1 checksums are generated for each artifact.
+     * (including `.asc` signatures); missing md5/sha1/sha256/sha512 checksums are generated for
+     * each file, signatures included.
      *
      * `maven-metadata*` files are skipped: `publishToMavenLocal` writes them at the artifact-id
      * level (above any version directory), where they have no accompanying `.pom`, and the Central
@@ -71,7 +72,9 @@ class CentralPortalUploader(
                 val entryPath = file.relativeTo(repoRoot).invariantSeparatorsPath
                 zip.writeEntry(entryPath, file.readBytes())
 
-                if (file.isChecksumOrSignature()) continue
+                // Checksums are generated for every file (artifacts and their .asc signatures);
+                // only the checksum files themselves are never checksummed.
+                if (file.isChecksum()) continue
                 for ((suffix, algorithm) in CHECKSUM_ALGORITHMS) {
                     val checksum = File("${file.path}.$suffix")
                     if (checksum.invariantPath() in existing) continue
@@ -119,8 +122,14 @@ class CentralPortalUploader(
     }
 
     private companion object {
-        // Maven's "SHA-1"/"MD5" digest names mapped to the checksum file suffixes Central expects.
-        val CHECKSUM_ALGORITHMS = listOf("md5" to "MD5", "sha1" to "SHA-1")
+        // Checksum file suffix mapped to its MessageDigest algorithm name. md5/sha1 are required by
+        // the Central Portal; sha256/sha512 match what a Maven Central release publishes.
+        val CHECKSUM_ALGORITHMS = listOf(
+            "md5" to "MD5",
+            "sha1" to "SHA-1",
+            "sha256" to "SHA-256",
+            "sha512" to "SHA-512",
+        )
     }
 }
 
@@ -184,8 +193,11 @@ class HttpUrlConnectionTransport : CentralPortalTransport {
 
 private fun File.invariantPath(): String = path.replace(File.separatorChar, '/')
 
-private fun File.isChecksumOrSignature(): Boolean =
-    name.endsWith(".asc") || name.endsWith(".md5") || name.endsWith(".sha1")
+private fun File.isChecksum(): Boolean =
+    name.endsWith(".md5") ||
+        name.endsWith(".sha1") ||
+        name.endsWith(".sha256") ||
+        name.endsWith(".sha512")
 
 // e.g. maven-metadata-local.xml (and its checksums); the Central Portal generates its own.
 private fun File.isMavenMetadata(): Boolean = name.startsWith("maven-metadata")
