@@ -96,13 +96,18 @@ jobs:
           echo "${GAC}" > scribe_sa.json
           # Credentials must not be world-readable to other processes on the runner.
           chmod 600 scribe_sa.json
+          echo "GOOGLE_APPLICATION_CREDENTIALS=/scribe/scribe_sa.json" >> $GITHUB_ENV
 
       - name: Sign artifacts with Scribe (GPG)
+        # Forward the full runner environment: scribe-ci auto-detects that it runs in CI
+        # and derives the submission reference from the GITHUB_*/CI variables. On a
+        # GitHub-hosted runner this environment carries no secrets (GITHUB_TOKEN and
+        # secrets.* are never exported as env vars here), so nothing sensitive is passed.
         run: >
           docker run
           --user $(id -u):$(id -g)
           --volume $(pwd):/scribe
-          --env GOOGLE_APPLICATION_CREDENTIALS=/scribe/scribe_sa.json
+          --env-file <(env)
           ghcr.io/yubico/scribe-ci:v1
           --project-id scribe-prod-987134
           --bucket scribe-u-pub-yubikit-android-4qvtbt
