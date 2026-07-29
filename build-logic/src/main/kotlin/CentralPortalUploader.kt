@@ -46,6 +46,10 @@ class CentralPortalUploader(
      * [bundleFile], preserving the Maven repository layout. Every regular file is added verbatim
      * (including `.asc` signatures); missing md5/sha1 checksums are generated for each artifact.
      *
+     * `maven-metadata*` files are skipped: `publishToMavenLocal` writes them at the artifact-id
+     * level (above any version directory), where they have no accompanying `.pom`, and the Central
+     * Portal rejects such content and generates its own metadata anyway.
+     *
      * @return [bundleFile]
      */
     fun createBundle(repoRoot: File, groupPath: String, bundleFile: File): File {
@@ -54,7 +58,10 @@ class CentralPortalUploader(
             "No artifacts found to publish at ${groupDir.absolutePath}"
         }
 
-        val files = groupDir.walkTopDown().filter { it.isFile }.sortedBy { it.invariantPath() }.toList()
+        val files = groupDir.walkTopDown()
+            .filter { it.isFile && !it.isMavenMetadata() }
+            .sortedBy { it.invariantPath() }
+            .toList()
         require(files.isNotEmpty()) { "No files found to publish under ${groupDir.absolutePath}" }
         val existing = files.mapTo(HashSet()) { it.invariantPath() }
 
@@ -179,6 +186,9 @@ private fun File.invariantPath(): String = path.replace(File.separatorChar, '/')
 
 private fun File.isChecksumOrSignature(): Boolean =
     name.endsWith(".asc") || name.endsWith(".md5") || name.endsWith(".sha1")
+
+// e.g. maven-metadata-local.xml (and its checksums); the Central Portal generates its own.
+private fun File.isMavenMetadata(): Boolean = name.startsWith("maven-metadata")
 
 private fun File.digestHex(algorithm: String): String {
     val digest = MessageDigest.getInstance(algorithm)

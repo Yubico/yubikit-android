@@ -164,6 +164,25 @@ class CentralPortalUploaderTest {
     }
 
     @Test
+    fun createBundle_excludesMavenMetadata() {
+        val repoRoot = File(tmp.root, "repo")
+        val dir = artifactDir()
+        File(dir, "core-1.0.0.jar").writeText("jar")
+        File(dir, "core-1.0.0.pom").writeText("<project/>")
+        // publishToMavenLocal writes these at the artifact-id level; Central rejects them.
+        val artifactIdDir = dir.parentFile
+        File(artifactIdDir, "maven-metadata-local.xml").writeText("<metadata/>")
+        File(artifactIdDir, "maven-metadata-local.xml.sha1").writeText("abc")
+
+        val bundle = File(tmp.root, "bundle.zip")
+        CentralPortalUploader().createBundle(repoRoot, groupPath, bundle)
+
+        val names = ZipFile(bundle).use { zip -> zip.entries().toList().map { it.name }.toSet() }
+        assertTrue(names.any { it.endsWith("core-1.0.0.jar") })
+        assertFalse(names.any { it.contains("maven-metadata") })
+    }
+
+    @Test
     fun createBundle_omitsChecksumForSignatureFiles() {
         val repoRoot = File(tmp.root, "repo")
         val dir = artifactDir()
