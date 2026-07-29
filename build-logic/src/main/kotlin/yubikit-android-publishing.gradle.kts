@@ -45,5 +45,7 @@ afterEvaluate {
         }
     }
 
+    configureLocalGpgSigning(publishing)
+
     registerCentralPortalPublishTask()
 }

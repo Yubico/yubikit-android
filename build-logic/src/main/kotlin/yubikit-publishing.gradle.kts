@@ -33,4 +33,6 @@ publishing.publications {
     }
 }
 
+configureLocalGpgSigning(publishing)
+
 registerCentralPortalPublishTask()

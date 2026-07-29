@@ -77,6 +77,23 @@ or publishing type with Gradle properties if needed:
 `publishingType` defaults to `USER_MANAGED` (validated but not released until you press *Publish* in
 the portal). Use `AUTOMATIC` to publish immediately after validation passes.
 
+=== Emergency signing on a local machine
+
+If the Scribe service is unavailable and you must sign a release yourself, set the
+`localSigning.gpgKey` property to your GPG key id when publishing to the local Maven repository. The
+`signing` plugin then signs the artifacts with your local `gpg`, producing the `.asc` files that
+`publishToCentralPortal` uploads:
+
+  ./gradlew publishToMavenLocal -PlocalSigning.gpgKey=0x1234ABCD
+  ./gradlew publishToCentralPortal
+
+An empty value (`-PlocalSigning.gpgKey`) signs with gpg's default key. Without the property,
+signing is left to Scribe and nothing changes.
+
+NOTE: The Central Portal only accepts a signature whose matching public key is discoverable on a
+public keyserver (e.g. keys.openpgp.org). Publish your public key there before using this fallback
+for a real release.
+
 === Dry run
 
 As a dry run, publish to your local Maven repository (`$HOME/.m2/`):

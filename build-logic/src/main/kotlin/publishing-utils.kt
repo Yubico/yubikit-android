@@ -17,7 +17,10 @@
 import org.gradle.api.Action
 import org.gradle.api.GradleException
 import org.gradle.api.Project
+import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.publish.maven.MavenPom
+import org.gradle.api.publish.maven.MavenPublication
+import org.gradle.plugins.signing.SigningExtension
 import java.io.File
 
 fun Project.applyPomConfiguration(): Action<MavenPom> {
@@ -44,6 +47,29 @@ fun Project.applyPomConfiguration(): Action<MavenPom> {
             url.set("https://github.com/Yubico/yubikit-android")
         }
     }
+}
+
+/**
+ * Emergency local signing fallback for when the Scribe CI service is unavailable.
+ *
+ * When the `localSigning.gpgKey` project property is set (e.g.
+ * `-PlocalSigning.gpgKey=0x1234ABCD`), the Gradle `signing` plugin is applied and the `maven`
+ * publication is signed with the local `gpg` command, so `publishToMavenLocal` emits `.asc` files
+ * that [registerCentralPortalPublishTask] then uploads. An empty value signs with gpg's default
+ * key. Without the property nothing changes and signing is left to Scribe.
+ *
+ * Note: the Central Portal only validates a signature whose matching public key is discoverable on
+ * a public keyserver (e.g. keys.openpgp.org).
+ */
+fun Project.configureLocalGpgSigning(publishing: PublishingExtension) {
+    val gpgKey = findProperty("localSigning.gpgKey") as String? ?: return
+    pluginManager.apply("signing")
+    val signing = extensions.getByType(SigningExtension::class.java)
+    signing.useGpgCmd()
+    if (gpgKey.isNotBlank()) {
+        extensions.extraProperties["signing.gnupg.keyName"] = gpgKey
+    }
+    (publishing.publications.findByName("maven") as? MavenPublication)?.let { signing.sign(it) }
 }
 
 /**
