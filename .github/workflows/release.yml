@@ -64,20 +64,23 @@ jobs:
       - name: Generate scribe config
         run: |
           SCRIBE_SIGN_GPG=.github/scribe-sign-gpg.yml
-          echo 'stub: yubikit-android' > $SCRIBE_SIGN_GPG
-          echo 'releaseType: public' >> $SCRIBE_SIGN_GPG
-          echo 'jobs:' >> $SCRIBE_SIGN_GPG
-          echo '  - name: sign-source' >> $SCRIBE_SIGN_GPG
-          echo '    platform: linux' >> $SCRIBE_SIGN_GPG
-          echo '    steps:' >> $SCRIBE_SIGN_GPG
-          echo '      - id: 1' >> $SCRIBE_SIGN_GPG
-          echo '        action: gpg' >> $SCRIBE_SIGN_GPG
-          echo '        files:' >> $SCRIBE_SIGN_GPG
-          find maven-repo -type f \( -name '*.jar' -o -name '*.aar' -o -name '*.pom' -o -name '*.module' \) | sort | while read f; do
-            echo "          - $f" >> $SCRIBE_SIGN_GPG
-          done
+          {
+            echo 'stub: yubikit-android'
+            echo 'releaseType: public'
+            echo 'jobs:'
+            echo '  - name: sign-source'
+            echo '    platform: linux'
+            echo '    steps:'
+            echo '      - id: 1'
+            echo '        action: gpg'
+            echo '        files:'
+            find maven-repo -type f \( -name '*.jar' -o -name '*.aar' -o -name '*.pom' -o -name '*.module' \) | sort | while read -r f; do
+              # Quote the path as a YAML scalar so special characters cannot break the config.
+              echo "          - \"$f\""
+            done
+          } > "$SCRIBE_SIGN_GPG"
           echo "=== Generated scribe config ==="
-          cat $SCRIBE_SIGN_GPG
+          cat "$SCRIBE_SIGN_GPG"
 
       - name: Docker login
         uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 #v4.0.0
@@ -91,14 +94,15 @@ jobs:
           GAC: ${{ secrets.SCRIBE_SA }}
         run: |
           echo "${GAC}" > scribe_sa.json
-          echo "GOOGLE_APPLICATION_CREDENTIALS=/scribe/scribe_sa.json" >> $GITHUB_ENV
+          # Credentials must not be world-readable to other processes on the runner.
+          chmod 600 scribe_sa.json
 
       - name: Sign artifacts with Scribe (GPG)
         run: >
           docker run
           --user $(id -u):$(id -g)
           --volume $(pwd):/scribe
-          --env-file <(env)
+          --env GOOGLE_APPLICATION_CREDENTIALS=/scribe/scribe_sa.json
           ghcr.io/yubico/scribe-ci:v1
           --project-id scribe-prod-987134
           --bucket scribe-u-pub-yubikit-android-4qvtbt
@@ -116,15 +120,20 @@ jobs:
           unzip 1.zip || true
           rm 1.zip
           cd ..
-          # Convert .sig files to .asc and place next to corresponding artifacts
-          find signed -name '*.sig' | while read sig; do
-            base=$(basename "$sig")
-            original_name="${base%.sig}"
-            original=$(find maven-repo -name "$original_name" | head -1)
-            if [ -n "$original" ]; then
-              gpg --enarmor < "$sig" | sed 's/ARMORED FILE/SIGNATURE/' > "$(dirname "$original")/${original_name}.asc"
+          # Convert each .sig to an armored .asc placed next to its artifact. The signature
+          # path mirrors the tree submitted to Scribe (…/maven-repo/…), so the target is
+          # recovered from the full relative path — not the bare filename, which would be
+          # ambiguous if two modules ever shared an artifact name.
+          while IFS= read -r sig; do
+            rel="${sig#*maven-repo/}"   # com/yubico/yubikit/.../foo.jar.sig
+            rel="${rel%.sig}"           # com/yubico/yubikit/.../foo.jar
+            target="maven-repo/$rel"
+            if [ ! -f "$target" ]; then
+              echo "ERROR: no artifact found for signature $sig (expected $target)" >&2
+              exit 1
             fi
-          done
+            gpg --enarmor < "$sig" | sed 's/ARMORED FILE/SIGNATURE/' > "${target}.asc"
+          done < <(find signed -type f -name '*.sig')
           echo "=== Signature files placed ==="
           find maven-repo -name '*.asc' | sort
           echo "=== Count ==="
