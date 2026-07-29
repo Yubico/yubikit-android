@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2025 Yubico.
+ * Copyright (C) 2020-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -102,7 +102,12 @@ public class FidoProtocol implements Closeable {
     do {
       toSend.get(buffer, packet.position(), Math.min(toSend.remaining(), packet.remaining()));
       connection.send(buffer);
-      logger.trace("{} bytes sent over fido: {}", buffer.length, StringUtils.bytesToHex(buffer));
+      logger
+          .atTrace()
+          .setMessage("{} bytes sent over fido: {}")
+          .addArgument(buffer.length)
+          .addArgument(() -> StringUtils.bytesToHex(buffer))
+          .log();
       Arrays.fill(buffer, (byte) 0);
       packet.clear();
       packet.putInt(channelId).put((byte) (0x7f & seq++));
@@ -118,12 +123,20 @@ public class FidoProtocol implements Closeable {
         Arrays.fill(buffer, (byte) 0);
         packet.putInt(channelId).put(CTAPHID_CANCEL);
         connection.send(buffer);
-        logger.trace("Sent over fido: {}", StringUtils.bytesToHex(buffer));
+        logger
+            .atTrace()
+            .setMessage("Sent over fido: {}")
+            .addArgument(() -> StringUtils.bytesToHex(buffer))
+            .log();
         packet.clear();
       }
 
       connection.receive(buffer);
-      logger.trace("Received over fido: {}", StringUtils.bytesToHex(buffer));
+      logger
+          .atTrace()
+          .setMessage("Received over fido: {}")
+          .addArgument(() -> StringUtils.bytesToHex(buffer))
+          .log();
       int responseChannel = packet.getInt();
       if (responseChannel != channelId) {
         throw new IOException(

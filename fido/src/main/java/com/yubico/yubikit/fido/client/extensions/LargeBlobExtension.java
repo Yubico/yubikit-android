@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2025 Yubico.
+ * Copyright (C) 2024-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,11 +26,13 @@ import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
 import com.yubico.yubikit.fido.webauthn.ClientExtensionResultProvider;
 import com.yubico.yubikit.fido.webauthn.Extensions;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialCreationOptions;
+import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialDescriptor;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialRequestOptions;
 import com.yubico.yubikit.fido.webauthn.SerializationType;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -55,6 +57,7 @@ public class LargeBlobExtension extends Extension {
   static final String SUPPORT = "support";
   static final String SUPPORTED = "supported";
   static final String REQUIRED = "required";
+  static final String PREFERRED = "preferred";
   static final String BLOB = "blob";
   static final Logger logger = LoggerFactory.getLogger(LargeBlobExtension.class);
 
@@ -68,6 +71,48 @@ public class LargeBlobExtension extends Extension {
         && Boolean.TRUE.equals(ctap.getCachedInfo().getOptions().get(LARGE_BLOBS));
   }
 
+  @Override
+  public void validateCreateInputs(PublicKeyCredentialCreationOptions options) {
+    validateCreateInputs(Inputs.fromExtensions(options.getExtensions()));
+  }
+
+  private void validateCreateInputs(@Nullable Inputs inputs) {
+    // WebAuthn largeBlob client processing (registration): read/write are authentication-only;
+    // their presence here is a NotSupportedError. Device-independent; support:"required" needs the
+    // authenticator's info and is checked in makeCredential.
+    if (inputs != null && (inputs.read != null || inputs.write != null)) {
+      throw new ExtensionConfigurationException(
+          "largeBlob read/write is not valid during registration");
+    }
+  }
+
+  @Override
+  public void validateGetInputs(PublicKeyCredentialRequestOptions options) {
+    validateGetInputs(
+        Inputs.fromExtensions(options.getExtensions()), options.getAllowCredentials());
+  }
+
+  private void validateGetInputs(
+      @Nullable Inputs inputs, List<PublicKeyCredentialDescriptor> allowCredentials) {
+    // WebAuthn largeBlob client processing (authentication). Each condition is a NotSupportedError
+    // in the spec and depends only on the request (no authenticator info needed).
+    if (inputs == null) {
+      return;
+    }
+    if (inputs.support != null) {
+      throw new ExtensionConfigurationException(
+          "largeBlob support is not valid during authentication");
+    }
+    if (inputs.read != null && inputs.write != null) {
+      throw new ExtensionConfigurationException(
+          "largeBlob read and write must not both be present");
+    }
+    if (inputs.write != null && allowCredentials.size() != 1) {
+      throw new ExtensionConfigurationException(
+          "largeBlob write requires exactly one allowed credential");
+    }
+  }
+
   @Nullable
   @Override
   public RegistrationProcessor makeCredential(
@@ -75,12 +120,11 @@ public class LargeBlobExtension extends Extension {
       PublicKeyCredentialCreationOptions options,
       PinUvAuthProtocol pinUvAuthProtocol) {
     final Inputs inputs = Inputs.fromExtensions(options.getExtensions());
+    validateCreateInputs(inputs);
     if (inputs != null) {
-      if (inputs.read != null || inputs.write != null) {
-        throw new IllegalArgumentException("Invalid set of parameters");
-      }
       if (REQUIRED.equals(inputs.support) && !isSupported(ctap)) {
-        throw new IllegalArgumentException("Authenticator does not support large blob storage");
+        throw new ExtensionNotSupportedException(
+            "Authenticator does not support large blob storage");
       }
       return new RegistrationProcessor(
           pinToken -> Collections.singletonMap(LARGE_BLOB_KEY, true),
@@ -102,9 +146,11 @@ public class LargeBlobExtension extends Extension {
       PinUvAuthProtocol pinUvAuthProtocol) {
 
     final Inputs inputs = Inputs.fromExtensions(options.getExtensions());
+    validateGetInputs(inputs, options.getAllowCredentials());
     if (inputs == null) {
       return null;
     }
+    // Request shape already validated by validateGetInputs (support / read+write / write-count).
     if (Boolean.TRUE.equals(inputs.read)) {
       return new AuthenticationProcessor(
           (selected, pinToken) -> Collections.singletonMap(LARGE_BLOB_KEY, true),
@@ -132,8 +178,18 @@ public class LargeBlobExtension extends Extension {
       return null;
     }
 
+    LargeBlobs largeBlobs;
     try {
-      LargeBlobs largeBlobs = new LargeBlobs(ctap);
+      largeBlobs = new LargeBlobs(ctap);
+    } catch (IllegalStateException e) {
+      // Authenticator returned a largeBlobKey but does not support the large blob array; this is an
+      // expected, ignorable condition (no blob to read), not a processing failure. Scope this catch
+      // to construction only, so an IllegalStateException from getBlob/serialization is not masked.
+      logger.debug("Large blob storage not supported; skipping largeBlob output", e);
+      return null;
+    }
+
+    try {
       byte[] blob = largeBlobs.getBlob(largeBlobKey);
       return serializationType ->
           Collections.singletonMap(
@@ -162,8 +218,18 @@ public class LargeBlobExtension extends Extension {
       return null;
     }
 
+    LargeBlobs largeBlobs;
     try {
-      LargeBlobs largeBlobs = new LargeBlobs(ctap, pinUvAuthProtocol, pinToken);
+      largeBlobs = new LargeBlobs(ctap, pinUvAuthProtocol, pinToken);
+    } catch (IllegalStateException e) {
+      // Authenticator returned a largeBlobKey but does not support the large blob array; this is an
+      // expected, ignorable condition (nothing to write), not a processing failure. Scope this
+      // catch to construction only, so an IllegalStateException from putBlob is not masked.
+      logger.debug("Large blob storage not supported; skipping largeBlob output", e);
+      return null;
+    }
+
+    try {
       largeBlobs.putBlob(largeBlobKey, bytes);
 
       return serializationType ->
@@ -187,21 +253,25 @@ public class LargeBlobExtension extends Extension {
       this.support = support;
     }
 
-    @SuppressWarnings("unchecked")
     @Nullable
     static Inputs fromExtensions(@Nullable Extensions extensions) {
       if (extensions == null) {
         return null;
       }
 
-      Map<String, Object> data = (Map<String, Object>) extensions.get(LARGE_BLOB);
-      if (data == null) {
-        return null;
+      Map<String, Object> map = asMap(extensions.get(LARGE_BLOB), LARGE_BLOB);
+      if (map == null) {
+        return null; // not requested
+      }
+      String support = asString(map.get(SUPPORT), "largeBlob.support");
+      if (support != null && !REQUIRED.equals(support) && !PREFERRED.equals(support)) {
+        throw new IllegalArgumentException(
+            "largeBlob.support must be \"required\" or \"preferred\"");
       }
       return new Inputs(
-          (Boolean) data.get(ACTION_READ),
-          (String) data.get(ACTION_WRITE),
-          (String) data.get(SUPPORT));
+          asBoolean(map.get(ACTION_READ), "largeBlob.read"),
+          asString(map.get(ACTION_WRITE), "largeBlob.write"),
+          support);
     }
   }
 }

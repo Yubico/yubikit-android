@@ -58,6 +58,7 @@ internal fun FidoAndroidTheme(
             }
 
             darkTheme -> DarkColorScheme
+
             else -> LightColorScheme
         }
 

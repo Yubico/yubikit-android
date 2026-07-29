@@ -28,7 +28,8 @@ import org.junit.runners.Suite;
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
   ExtensionsInstrumentedTests.PinUvAuthV2Test.class,
-  ExtensionsInstrumentedTests.PinUvAuthV1Test.class
+  ExtensionsInstrumentedTests.PinUvAuthV1Test.class,
+  SignExtensionInstrumentedTests.class
 })
 public class ExtensionsInstrumentedTests {
   public static class PinUvAuthV2Test extends FidoInstrumentedTests {
@@ -90,6 +91,11 @@ public class ExtensionsInstrumentedTests {
     @Test
     public void testThirdPartyPaymentExtension() throws Throwable {
       withDevice(ThirdPartyPaymentExtensionTests::test);
+    }
+
+    @Test
+    public void testExtensionFailureHandling() throws Throwable {
+      withDevice(ExtensionFailureTests::test);
     }
   }
 

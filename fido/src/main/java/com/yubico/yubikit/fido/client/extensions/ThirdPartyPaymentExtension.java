@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Yubico.
+ * Copyright (C) 2025-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -93,18 +93,20 @@ public class ThirdPartyPaymentExtension extends Extension {
     return new AuthenticationProcessor(prepareInput);
   }
 
-  @SuppressWarnings("unchecked")
   @Nullable
   private Boolean getIsPayment(@Nullable Extensions extensions) {
     if (extensions == null) {
       return null;
     }
 
-    Map<String, ?> payment = (Map<String, ?>) extensions.get(PAYMENT);
+    Map<String, Object> payment = asMap(extensions.get(PAYMENT), "payment");
     if (payment == null) {
       return null;
     }
-
-    return (Boolean) payment.get(IS_PAYMENT);
+    // CTAP leaves the client input platform-defined; this SDK uses payment.isPayment as the flag.
+    if (!Boolean.TRUE.equals(asBoolean(payment.get(IS_PAYMENT), "payment.isPayment"))) {
+      return null;
+    }
+    return Boolean.TRUE;
   }
 }

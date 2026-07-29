@@ -33,17 +33,17 @@ suspend fun getSecret(context: Context, @StringRes title: Int, @StringRes hint: 
         findViewById<TextInputLayout>(R.id.dialog_pin_textinputlayout).hint = context.getString(hint)
     }
     val dialog = AlertDialog.Builder(context)
-            .setTitle(title)
-            .setView(view)
-            .setPositiveButton(android.R.string.ok) { _, _ ->
-                cont.resume(view.findViewById<EditText>(R.id.dialog_pin_edittext).text.toString())
-            }
-            .setNeutralButton(android.R.string.cancel) { dialog, _ ->
-                dialog.cancel()
-            }
-            .setOnCancelListener {
-                cont.resume(null)
-            }
-            .create()
+        .setTitle(title)
+        .setView(view)
+        .setPositiveButton(android.R.string.ok) { _, _ ->
+            cont.resume(view.findViewById<EditText>(R.id.dialog_pin_edittext).text.toString())
+        }
+        .setNeutralButton(android.R.string.cancel) { dialog, _ ->
+            dialog.cancel()
+        }
+        .setOnCancelListener {
+            cont.resume(null)
+        }
+        .create()
     dialog.show()
 }

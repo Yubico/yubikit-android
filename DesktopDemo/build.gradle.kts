@@ -22,9 +22,6 @@ plugins {
 
 dependencies {
     implementation(project(":desktop"))
-    implementation(project(":oath"))
-    implementation(project(":fido"))
-    implementation(project(":yubiotp"))
 
     implementation(libs.logback.classic)
 }

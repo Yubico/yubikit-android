@@ -46,9 +46,9 @@ class OathFragment : YubiKeyFragment<OathSession, OathViewModel>() {
     private lateinit var listAdapter: OathListAdapter
 
     override fun onCreateView(
-            inflater: LayoutInflater,
-            container: ViewGroup?,
-            savedInstanceState: Bundle?
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?,
     ): View {
         binding = FragmentOathBinding.inflate(inflater, container, false)
         return binding.root
@@ -61,15 +61,15 @@ class OathFragment : YubiKeyFragment<OathSession, OathViewModel>() {
             override fun onDelete(credentialId: ByteArray) {
                 lifecycleScope.launch(Dispatchers.Main) {
                     AlertDialog.Builder(requireContext())
-                            .setTitle("Delete credential?")
-                            .setPositiveButton("Delete") { _, _ ->
-                                viewModel.pendingAction.value = {
-                                    deleteCredential(credentialId)
-                                    "Credential deleted"
-                                }
-                            }.setNegativeButton(android.R.string.cancel) { dialog, _ ->
-                                dialog.cancel()
-                            }.show()
+                        .setTitle("Delete credential?")
+                        .setPositiveButton("Delete") { _, _ ->
+                            viewModel.pendingAction.value = {
+                                deleteCredential(credentialId)
+                                "Credential deleted"
+                            }
+                        }.setNegativeButton(android.R.string.cancel) { dialog, _ ->
+                            dialog.cancel()
+                        }.show()
                 }
             }
         })
@@ -79,7 +79,7 @@ class OathFragment : YubiKeyFragment<OathSession, OathViewModel>() {
         }
 
         binding.swiperefresh.setOnRefreshListener {
-            viewModel.pendingAction.value = { null }  // NOOP: Force credential refresh
+            viewModel.pendingAction.value = { null } // NOOP: Force credential refresh
             binding.swiperefresh.isRefreshing = false
         }
 
@@ -91,7 +91,7 @@ class OathFragment : YubiKeyFragment<OathSession, OathViewModel>() {
                             getSecret(
                                 requireContext(),
                                 R.string.enter_password,
-                                R.string.password
+                                R.string.password,
                             )?.let {
                                 viewModel.password = Pair(deviceId, it.toCharArray())
                             }

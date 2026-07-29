@@ -1,21 +1,24 @@
-# Add project specific ProGuard rules here.
-# You can control the set of applied configuration files using the
-# proguardFiles setting in build.gradle.
-#
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
+# This ProGuard configuration uses minimal rules — the goal is to rely on the
+# consumer-rules.pro files provided by the :android and :fido-android-ui modules
+# to verify that those are set up correctly.
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
+# This file is only used when building the release version of AndroidDemo:
+# ./gradlew :AndroidDemo:assembleRelease
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+# For correct building of the app in release mode, the following env vars need to be set:
+# YKDEMO_STORE_FILE, YKDEMO_STORE_PASSWORD, YKDEMO_KEY_ALIAS, YKDEMO_KEY_PASSWORD
 
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+# The following rules are here to support app-specific protections.
+
+
+# BouncyCastle JCA provider: The demo app registers BouncyCastleProvider via
+# Security.addProvider() in MainActivity. BouncyCastle's Provider.Service entries
+# reference algorithm implementation classes by name strings, which R8 cannot
+# trace. Without these rules, R8 strips the implementation classes, causing
+# TLS handshake failures (ERR_CERT_AUTHORITY_INVALID) in WebView and any other
+# component that performs SSL connections through the JCA framework.
+-keep class org.bouncycastle.jcajce.provider.** { *; }
+-keep class org.bouncycastle.jce.provider.** { *; }
+
+# BouncyCastle references javax.naming classes which are not available on Android.
+-dontwarn javax.naming.**

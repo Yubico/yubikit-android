@@ -28,6 +28,7 @@ import androidx.fragment.app.Fragment
 import com.yubico.yubikit.fido.android.ui.FidoClient
 import com.yubico.yubikit.fido.android.ui.FidoConfigManager
 import com.yubico.yubikit.fido.android.ui.Origin
+import com.yubico.yubikit.fido.android.ui.WebAuthnClientException
 import com.yubico.yubikit.fido.client.extensions.Extension
 import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.CancellationException
@@ -41,6 +42,7 @@ internal class FidoClientImpl : FidoClient {
         val origin: Origin,
         val clientDataHash: String?,
         val request: String,
+        val callerLabel: String?,
     )
 
     private var currentContinuation: CancellableContinuation<Result<String>>? = null
@@ -90,6 +92,7 @@ internal class FidoClientImpl : FidoClient {
         origin: Origin,
         clientDataHash: String?,
         request: String,
+        callerLabel: String?,
     ): Result<String> {
         checkMainThread()
         return suspendCancellableCoroutine { continuation ->
@@ -98,7 +101,7 @@ internal class FidoClientImpl : FidoClient {
                 return@suspendCancellableCoroutine
             }
             currentContinuation = continuation
-            launcher.launch(FidoRequest(type, origin, clientDataHash, request))
+            launcher.launch(FidoRequest(type, origin, clientDataHash, request, callerLabel))
             continuation.invokeOnCancellation {
                 currentContinuation = null
             }
@@ -109,52 +112,87 @@ internal class FidoClientImpl : FidoClient {
         origin: Origin,
         request: String,
         clientDataHash: String?,
-    ): Result<String> {
-        return execute(FidoClientService.Operation.MAKE_CREDENTIAL, origin, clientDataHash, request)
-    }
+        callerLabel: String?,
+    ): Result<String> = execute(
+        FidoClientService.Operation.MAKE_CREDENTIAL,
+        origin,
+        clientDataHash,
+        request,
+        callerLabel,
+    )
 
     override suspend fun getAssertion(
         origin: Origin,
         request: String,
         clientDataHash: String?,
-    ): Result<String> {
-        return execute(FidoClientService.Operation.GET_ASSERTION, origin, clientDataHash, request)
-    }
+        callerLabel: String?,
+    ): Result<String> = execute(
+        FidoClientService.Operation.GET_ASSERTION,
+        origin,
+        clientDataHash,
+        request,
+        callerLabel,
+    )
 
-    private class FidoActivityResultContract :
-        ActivityResultContract<FidoRequest, Result<String>>() {
+    private class FidoActivityResultContract : ActivityResultContract<FidoRequest, Result<String>>() {
         override fun createIntent(
             context: Context,
             input: FidoRequest,
-        ): Intent {
-            return Intent(context, YubiKitFidoActivity::class.java).apply {
-                putExtra("type", input.operation.ordinal)
-                putExtra("callingAppOrigin", input.origin.callingApp)
-                putExtra("resolvedOrigin", input.origin.resolved)
-                putExtra("clientDataHash", input.clientDataHash)
-                putExtra("request", input.request)
-            }
+        ): Intent = Intent(context, YubiKitFidoActivity::class.java).apply {
+            putExtra("type", input.operation.ordinal)
+            putExtra("callingAppOrigin", input.origin.callingApp)
+            putExtra("resolvedOrigin", input.origin.resolved)
+            putExtra("clientDataHash", input.clientDataHash)
+            putExtra("request", input.request)
+            putExtra("callerLabel", input.callerLabel)
         }
 
-        @Suppress("IntroduceWhenSubject")
         override fun parseResult(
             resultCode: Int,
             intent: Intent?,
-        ): Result<String> =
-            when {
-                resultCode == Activity.RESULT_OK && intent != null ->
-                    intent.getStringExtra("credential")?.let { credentialJson ->
-                        Result.success(credentialJson)
-                    }
-                        ?: Result.failure(IllegalStateException("Credential missing in Intent result"))
+        ): Result<String> = parseFidoActivityResult(resultCode, intent)
+    }
+}
 
-                resultCode == Activity.RESULT_CANCELED ->
-                    Result.failure(CancellationException("User cancelled FIDO operation"))
+/**
+ * Maps a [YubiKitFidoActivity] result into the [Result] the FIDO API returns. Extracted from the
+ * [ActivityResultContract] so the mapping — in particular the terminal [RESULT_ERROR] path that
+ * carries a WebAuthn `DOMException` name — is unit-testable without an Activity.
+ */
+@Suppress("IntroduceWhenSubject")
+internal fun parseFidoActivityResult(
+    resultCode: Int,
+    intent: Intent?,
+): Result<String> = when {
+    resultCode == Activity.RESULT_OK && intent != null -> {
+        intent.getStringExtra("credential")?.let { credentialJson ->
+            Result.success(credentialJson)
+        }
+            ?: Result.failure(IllegalStateException("Credential missing in Intent result"))
+    }
 
-                resultCode == RESULT_KEY_REMOVED ->
-                    Result.failure(CancellationException("Key was removed"))
+    resultCode == Activity.RESULT_CANCELED -> {
+        Result.failure(CancellationException("User cancelled FIDO operation"))
+    }
 
-                else -> Result.failure(IllegalStateException("Unknown error occurred (resultCode: $resultCode)"))
-            }
+    resultCode == RESULT_KEY_REMOVED -> {
+        Result.failure(CancellationException("Key was removed"))
+    }
+
+    resultCode == RESULT_ERROR -> {
+        // A terminal, request-level failure: return the real error (with its WebAuthn
+        // DOMException name) rather than a cancellation, so the caller can react to it.
+        Result.failure(
+            WebAuthnClientException(
+                webAuthnError =
+                intent?.getStringExtra(EXTRA_ERROR_NAME)
+                    ?: "NotSupportedError",
+                message = intent?.getStringExtra(EXTRA_ERROR_MESSAGE),
+            ),
+        )
+    }
+
+    else -> {
+        Result.failure(IllegalStateException("Unknown error occurred (resultCode: $resultCode)"))
     }
 }

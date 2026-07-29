@@ -31,7 +31,18 @@ import org.jspecify.annotations.Nullable;
 /**
  * Base class for FIDO2 extensions.
  *
- * @see <a href="https://www.w3.org/TR/webauthn-3/#sctn-extensions">Webauthn Extensions</a>
+ * <p>Extension processing methods communicate their outcome with two signals: <b>return {@code
+ * null}</b> when the extension does not apply (not requested, not supported, nothing to evaluate,
+ * an extension with no registered handler, or malformed authenticator output) so it is ignored and
+ * the ceremony continues; <b>throw</b> to abort the ceremony (an {@link
+ * ExtensionConfigurationException} for an unsatisfiable requested capability / spec {@code
+ * NotSupportedError}, or an {@link IllegalArgumentException} for malformed caller input / spec
+ * {@code SyntaxError}). The full error-vs-ignore contract — including how each member kind treats a
+ * wrong type or invalid value — is documented on {@code Ctap2Client#handleExtensionFailure}. Note
+ * that the deferred output providers returned by {@code getOutput} run outside that handler during
+ * serialization and MUST NOT throw.
+ *
+ * @see <a href="https://www.w3.org/TR/webauthn-3/#sctn-extensions">WebAuthn Extensions</a>
  */
 public abstract class Extension {
   protected final String name;
@@ -42,6 +53,81 @@ public abstract class Extension {
 
   protected boolean isSupported(Ctap2Session ctap) {
     return ctap.getCachedInfo().getExtensions().contains(name);
+  }
+
+  /**
+   * Device-independent validation of this extension's client inputs for a registration request — a
+   * pure function of {@code options}, with no authenticator interaction. Mirrors a browser's
+   * synchronous WebAuthn client-extension checks: it throws the same {@link
+   * ExtensionConfigurationException} / {@link IllegalArgumentException} that {@link
+   * #makeCredential} would for a request that can never succeed, letting a client fail fast before
+   * connecting to (or prompting for) a key.
+   *
+   * <p>Only checks that depend solely on the request belong here; capability checks that need the
+   * authenticator's {@code info} (e.g. {@code largeBlob} {@code support:"required"}, {@code
+   * credProtect} enforce) are <em>not</em> performed here and remain in {@link #makeCredential}. An
+   * implementation that overrides this should invoke it at the start of its own {@link
+   * #makeCredential} so pre-validation and the device path apply the same request-shape checks
+   * rather than diverging. Default: no-op.
+   */
+  public void validateCreateInputs(PublicKeyCredentialCreationOptions options) {}
+
+  /**
+   * Device-independent validation of this extension's client inputs for an authentication request.
+   * The authentication counterpart of {@link #validateCreateInputs}; an implementation that
+   * overrides this should invoke it at the start of its own {@link #getAssertion} so pre-validation
+   * and the device path stay in sync. Default: no-op.
+   */
+  public void validateGetInputs(PublicKeyCredentialRequestOptions options) {}
+
+  /**
+   * Returns {@code value} as a {@code Boolean}, or {@code null} if the member is absent. A
+   * wrong-typed value is malformed caller input, surfaced as an {@link IllegalArgumentException}
+   * (spec {@code SyntaxError} / {@code BAD_REQUEST}); {@code field} names the offending member in
+   * the message.
+   */
+  @Nullable
+  protected static Boolean asBoolean(@Nullable Object value, String field) {
+    if (value == null) {
+      return null;
+    }
+    if (!(value instanceof Boolean)) {
+      throw new IllegalArgumentException(field + " must be a boolean");
+    }
+    return (Boolean) value;
+  }
+
+  /**
+   * Returns {@code value} as a {@code String}, or {@code null} if the member is absent. A
+   * wrong-typed value is surfaced as an {@link IllegalArgumentException}; see {@link
+   * #asBoolean(Object, String)}.
+   */
+  @Nullable
+  protected static String asString(@Nullable Object value, String field) {
+    if (value == null) {
+      return null;
+    }
+    if (!(value instanceof String)) {
+      throw new IllegalArgumentException(field + " must be a string");
+    }
+    return (String) value;
+  }
+
+  /**
+   * Returns {@code value} as a {@code Map}, or {@code null} if the member is absent. A wrong-typed
+   * value is surfaced as an {@link IllegalArgumentException}; see {@link #asBoolean(Object,
+   * String)}.
+   */
+  @SuppressWarnings("unchecked")
+  @Nullable
+  protected static Map<String, Object> asMap(@Nullable Object value, String field) {
+    if (value == null) {
+      return null;
+    }
+    if (!(value instanceof Map)) {
+      throw new IllegalArgumentException(field + " must be an object");
+    }
+    return (Map<String, Object>) value;
   }
 
   @Nullable

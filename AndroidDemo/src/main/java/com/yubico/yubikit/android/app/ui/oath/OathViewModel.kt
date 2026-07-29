@@ -70,6 +70,7 @@ class OathViewModel : YubiKeyViewModel<OathSession>() {
                         else -> null
                     }
                 }
+
                 else -> throw e
             }
         }

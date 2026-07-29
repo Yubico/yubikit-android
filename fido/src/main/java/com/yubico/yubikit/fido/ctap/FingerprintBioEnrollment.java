@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2025 Yubico.
+ * Copyright (C) 2024-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -443,7 +443,12 @@ public class FingerprintBioEnrollment extends BioEnrollment {
    *     FriendlyName</a>
    */
   public void setName(byte[] templateId, String name) throws IOException, CommandException {
-    logger.debug("Changing name of template: {} {}", Base64.toUrlSafeString(templateId), name);
+    logger
+        .atDebug()
+        .setMessage("Changing name of template: {} {}")
+        .addArgument(() -> Base64.toUrlSafeString(templateId))
+        .addArgument(name)
+        .log();
 
     Map<Integer, Object> parameters = new HashMap<>();
     parameters.put(PARAM_TEMPLATE_ID, templateId);
@@ -464,7 +469,11 @@ public class FingerprintBioEnrollment extends BioEnrollment {
    *     enrollment</a>
    */
   public void removeEnrollment(byte[] templateId) throws IOException, CommandException {
-    logger.debug("Deleting template: {}", Base64.toUrlSafeString(templateId));
+    logger
+        .atDebug()
+        .setMessage("Deleting template: {}")
+        .addArgument(() -> Base64.toUrlSafeString(templateId))
+        .log();
 
     Map<Integer, Object> parameters = new HashMap<>();
     parameters.put(PARAM_TEMPLATE_ID, templateId);

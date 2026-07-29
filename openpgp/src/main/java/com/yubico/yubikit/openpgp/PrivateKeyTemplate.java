@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2025 Yubico.
+ * Copyright (C) 2023-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,12 +63,28 @@ abstract class PrivateKeyTemplate implements Destroyable {
     byte[] valuesBytes = new byte[values.remaining()];
     values.get(valuesBytes);
 
-    byte[] tlvBytes =
-        Tlvs.encodeList(Arrays.asList(new Tlv(0x7f48, headersBytes), new Tlv(0x5f48, valuesBytes)));
+    byte[] tlvBytes = null;
+    byte[] combined = null;
 
-    return new Tlv(
-            0x4d, ByteBuffer.allocate(crt.length + tlvBytes.length).put(crt).put(tlvBytes).array())
-        .getBytes();
+    try {
+      tlvBytes =
+          Tlvs.encodeList(
+              Arrays.asList(new Tlv(0x7f48, headersBytes), new Tlv(0x5f48, valuesBytes)));
+      combined = ByteBuffer.allocate(crt.length + tlvBytes.length).put(crt).put(tlvBytes).array();
+
+      return new Tlv(0x4d, combined).getBytes();
+    } finally {
+      Arrays.fill(headers.array(), (byte) 0);
+      Arrays.fill(values.array(), (byte) 0);
+      Arrays.fill(headersBytes, (byte) 0);
+      Arrays.fill(valuesBytes, (byte) 0);
+      if (tlvBytes != null) {
+        Arrays.fill(tlvBytes, (byte) 0);
+      }
+      if (combined != null) {
+        Arrays.fill(combined, (byte) 0);
+      }
+    }
   }
 
   static class Rsa extends PrivateKeyTemplate {

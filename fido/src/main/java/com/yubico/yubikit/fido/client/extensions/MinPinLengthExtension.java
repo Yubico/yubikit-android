@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2025 Yubico.
+ * Copyright (C) 2024-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,11 +58,9 @@ public class MinPinLengthExtension extends Extension {
       return null;
     }
 
-    Boolean input = (Boolean) extensions.get(name);
-    if (input == null) {
-      return null;
+    if (!Boolean.TRUE.equals(asBoolean(extensions.get(name), "minPinLength"))) {
+      return null; // not requested, or explicitly false
     }
-    return new RegistrationProcessor(
-        pinToken -> Collections.singletonMap(name, Boolean.TRUE.equals(input)));
+    return new RegistrationProcessor(pinToken -> Collections.singletonMap(name, true));
   }
 }

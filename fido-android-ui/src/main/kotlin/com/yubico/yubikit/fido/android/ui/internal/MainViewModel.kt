@@ -16,6 +16,7 @@
 
 package com.yubico.yubikit.fido.android.ui.internal
 
+import android.nfc.TagLostException
 import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -37,6 +38,8 @@ import com.yubico.yubikit.fido.client.Ctap2Client
 import com.yubico.yubikit.fido.client.MultipleAssertionsAvailable
 import com.yubico.yubikit.fido.client.PinRequiredClientError
 import com.yubico.yubikit.fido.client.WebAuthnClient
+import com.yubico.yubikit.fido.client.extensions.ExtensionConfigurationException
+import com.yubico.yubikit.fido.client.extensions.ExtensionNotSupportedException
 import com.yubico.yubikit.fido.ctap.BioEnrollment
 import com.yubico.yubikit.fido.ctap.Ctap2Session
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredential
@@ -48,11 +51,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
+import kotlin.time.Duration.Companion.milliseconds
 
 internal typealias YubiKeyAction = suspend (Result<YubiKeyDevice, Exception>) -> Unit
 
@@ -70,7 +74,7 @@ internal open class MainViewModel(
     private val pendingYubiKeyAction = MutableLiveData<YubiKeyAction?>()
 
     private val _state =
-        MutableStateFlow<State>(
+        MutableStateFlow(
             if (FidoConfigManager.current.isPinPrioritized) {
                 State.WaitingForPinEntry(null)
             } else {
@@ -153,13 +157,18 @@ internal open class MainViewModel(
     }
 
     suspend fun waitForKeyRemoval() {
-        delay(250)
-        suspendCoroutine { continuation ->
+        delay(250.milliseconds)
+        suspendCancellableCoroutine { continuation ->
             when (val dev = _device.value) {
-                is NfcYubiKeyDevice ->
+                is NfcYubiKeyDevice -> {
                     dev.remove {
-                        continuation.resume(Unit)
+                        // The callback may fire after the coroutine was cancelled
+                        // (e.g. the activity finished); don't resume a dead continuation.
+                        if (continuation.isActive) {
+                            continuation.resume(Unit)
+                        }
                     }
+                }
 
                 else -> {
                     continuation.resume(Unit)
@@ -171,32 +180,36 @@ internal open class MainViewModel(
     /**
      * Requests a WebAuthn client, and uses it to produce some result
      */
-    suspend fun <T> useWebAuthn(action: (WebAuthnClient) -> T): kotlin.Result<T> =
-        runCatching {
-            val device =
-                (_device.value as? UsbYubiKeyDevice)
-                    ?: awaitPendingYubiKeyDevice()
-            withWebAuthnClient(device, action)
-        }
+    suspend fun <T> useWebAuthn(action: (WebAuthnClient) -> T): kotlin.Result<T> = runCatching {
+        val device =
+            (_device.value as? UsbYubiKeyDevice)
+                ?: awaitPendingYubiKeyDevice()
+        withWebAuthnClient(device, action)
+    }
 
-    private suspend fun awaitPendingYubiKeyDevice(): YubiKeyDevice =
-        suspendCoroutine { cont ->
-            pendingYubiKeyAction.postValue { result ->
+    private suspend fun awaitPendingYubiKeyDevice(): YubiKeyDevice = suspendCancellableCoroutine { cont ->
+        pendingYubiKeyAction.postValue { result ->
+            if (cont.isActive) {
                 cont.resume(result.value)
             }
         }
+        // If the caller is cancelled before a device arrives, drop the pending
+        // action so a later provideYubiKey() doesn't invoke a dead continuation.
+        cont.invokeOnCancellation {
+            pendingYubiKeyAction.postValue(null)
+        }
+    }
 
     private suspend fun <T> withWebAuthnClient(
         device: YubiKeyDevice,
         action: (WebAuthnClient) -> T,
-    ): T =
-        withContext(Dispatchers.IO) {
-            val extensions = FidoConfigManager.current.fidoExtensions
-            WebAuthnClient.create(device, extensions).use { client ->
-                if (client is Ctap2Client) info = client.session.cachedInfo
-                action(client)
-            }
+    ): T = withContext(Dispatchers.IO) {
+        val extensions = FidoConfigManager.current.fidoExtensions
+        WebAuthnClient.create(device, extensions).use { client ->
+            if (client is Ctap2Client) info = client.session.cachedInfo
+            action(client)
         }
+    }
 
     private fun deliverResult(
         credential: PublicKeyCredential,
@@ -273,6 +286,84 @@ internal open class MainViewModel(
         )
     }
 
+    /**
+     * Maps a FIDO operation failure to a UI [Error]. Extracted so the same mapping serves both the
+     * post-connection failure path and device-free pre-validation.
+     */
+    private fun mapError(error: Throwable): Error = when (error) {
+        is PinRequiredClientError -> Error.PinRequiredError
+
+        is AuthInvalidClientError -> {
+            when (error.authType) {
+                AuthInvalidClientError.AuthType.PIN -> Error.IncorrectPinError(error.retries)
+                AuthInvalidClientError.AuthType.UV -> Error.IncorrectUvError(error.retries)
+            }
+        }
+
+        is ClientError -> {
+            // Extension-request failures (hard-config or malformed input) always arrive with an
+            // ExtensionConfigurationException cause. Intercept them first, so they never fall
+            // into the "Set a PIN" (DeviceNotConfigured) path below and we never match
+            // human-readable messages. The one distinction that changes the outcome is carried
+            // by the type: ExtensionNotSupportedException means the key lacks a required
+            // capability (ineligible); anything else is an unsupported/malformed request.
+            val extensionCause = error.cause as? ExtensionConfigurationException
+            val ctapError = (error.cause as? CtapException)?.ctapError
+            when {
+                extensionCause is ExtensionNotSupportedException -> Error.DeviceIneligibleError
+
+                extensionCause != null ->
+                    Error.ExtensionUnsupportedError(
+                        webAuthnError = extensionCause.webAuthnErrorName,
+                        message = extensionCause.message,
+                    )
+
+                error.errorCode == ClientError.Code.CONFIGURATION_UNSUPPORTED -> {
+                    when (ctapError) {
+                        CtapException.ERR_KEY_STORE_FULL -> Error.OperationError(error.cause)
+
+                        CtapException.ERR_UNSUPPORTED_EXTENSION,
+                        CtapException.ERR_UNSUPPORTED_OPTION,
+                        CtapException.ERR_UNSUPPORTED_ALGORITHM,
+                        -> Error.DeviceIneligibleError
+
+                        else -> Error.DeviceNotConfiguredError
+                    }
+                }
+
+                else -> {
+                    when (ctapError) {
+                        CtapException.ERR_PIN_BLOCKED -> Error.PinBlockedError
+
+                        CtapException.ERR_PIN_AUTH_BLOCKED -> Error.PinAuthBlockedError
+
+                        CtapException.ERR_PIN_NOT_SET -> Error.PinNotSetError
+
+                        CtapException.ERR_PIN_POLICY_VIOLATION -> {
+                            when (info?.forcePinChange) {
+                                true -> Error.ForcePinChangeError(null)
+                                else -> Error.IncorrectPinError(null)
+                            }
+                        }
+
+                        CtapException.ERR_UV_BLOCKED,
+                        CtapException.ERR_PUAT_REQUIRED,
+                        -> Error.UvBlockedError
+
+                        else -> Error.OperationError(error.cause)
+                    }
+                }
+            }
+        }
+
+        is TagLostException -> Error.TagLostError
+
+        else -> {
+            logger.error("Unexpected error during FIDO operation: ", error)
+            Error.UnknownError
+        }
+    }
+
     fun startFidoOperation(
         fidoClientService: FidoClientService,
         operation: FidoClientService.Operation,
@@ -291,6 +382,21 @@ internal open class MainViewModel(
 
         viewModelScope.launch {
             try {
+                // Device-free fail-fast: reject a request whose extension inputs can never be
+                // satisfied before connecting to / prompting for a key (matching a browser's
+                // synchronous NotSupportedError). Only short-circuit on ClientError — the exact
+                // errors this is meant to catch; any other throw is ignored so the normal path
+                // still surfaces it with full context. The same checks also run inside
+                // performOperation, so skipping this changes nothing but the timing.
+                val prevalidationError =
+                    runCatching { fidoClientService.validateRequest(operation, request) }
+                        .exceptionOrNull()
+                if (prevalidationError is ClientError) {
+                    cancelUiStateTimer()
+                    _state.value = State.OperationError(mapError(prevalidationError))
+                    return@launch
+                }
+
                 result?.let {
                     deliverResult(it, onResult)
                     return@launch
@@ -304,7 +410,8 @@ internal open class MainViewModel(
                     val currentPinValue = pinValue?.clone()
                     if (currentPinValue != null) {
                         // change pin
-                        fidoClientService.changePin(currentPinValue, newPin)
+                        fidoClientService
+                            .changePin(currentPinValue, newPin)
                             .fold(
                                 {
                                     pinValue = newPin.clone()
@@ -314,46 +421,65 @@ internal open class MainViewModel(
                                     val forcePinChangeError =
                                         when (it) {
                                             // there can be various errors during force change pin
-                                            is AuthInvalidClientError ->
+                                            is AuthInvalidClientError -> {
                                                 when (it.authType) {
-                                                    AuthInvalidClientError.AuthType.PIN ->
+                                                    AuthInvalidClientError.AuthType.PIN -> {
                                                         Error.IncorrectPinError(
                                                             it.retries,
                                                         )
+                                                    }
 
-                                                    AuthInvalidClientError.AuthType.UV ->
+                                                    AuthInvalidClientError.AuthType.UV -> {
                                                         Error.IncorrectUvError(
                                                             it.retries,
                                                         )
+                                                    }
                                                 }
+                                            }
 
-                                            is ClientError ->
+                                            is ClientError -> {
                                                 when (it.errorCode) {
-                                                    ClientError.Code.BAD_REQUEST ->
+                                                    ClientError.Code.BAD_REQUEST -> {
                                                         when ((it.cause as? CtapException)?.ctapError) {
-                                                            CtapException.ERR_PIN_BLOCKED -> Error.PinBlockedError
-                                                            CtapException.ERR_PIN_AUTH_BLOCKED -> Error.PinAuthBlockedError
-                                                            CtapException.ERR_PIN_NOT_SET -> Error.PinNotSetError
-                                                            CtapException.ERR_PIN_POLICY_VIOLATION ->
+                                                            CtapException.ERR_PIN_BLOCKED -> {
+                                                                Error.PinBlockedError
+                                                            }
+
+                                                            CtapException.ERR_PIN_AUTH_BLOCKED -> {
+                                                                Error.PinAuthBlockedError
+                                                            }
+
+                                                            CtapException.ERR_PIN_NOT_SET -> {
+                                                                Error.PinNotSetError
+                                                            }
+
+                                                            CtapException.ERR_PIN_POLICY_VIOLATION -> {
                                                                 when (info?.forcePinChange) {
-                                                                    true -> Error.PinComplexityError
-                                                                    else ->
+                                                                    true -> {
+                                                                        Error.PinComplexityError
+                                                                    }
+
+                                                                    else -> {
                                                                         Error.IncorrectPinError(
                                                                             null,
                                                                         )
+                                                                    }
                                                                 }
+                                                            }
 
                                                             else -> {
                                                                 logger.error("Changing PIN failed: ", it)
                                                                 Error.UnknownError
                                                             }
                                                         }
+                                                    }
 
                                                     else -> {
                                                         logger.error("Changing PIN failed: ", it)
                                                         Error.UnknownError
                                                     }
                                                 }
+                                            }
 
                                             else -> {
                                                 logger.error("Changing PIN failed: ", it)
@@ -369,7 +495,8 @@ internal open class MainViewModel(
                             }
                     } else {
                         // create pin
-                        fidoClientService.createPin(newPin)
+                        fidoClientService
+                            .createPin(newPin)
                             .fold(
                                 {
                                     pinValue = newPin.clone()
@@ -378,7 +505,10 @@ internal open class MainViewModel(
                                 {
                                     val createPinError =
                                         when (it) {
-                                            is ClientError -> Error.PinComplexityError
+                                            is ClientError -> {
+                                                Error.PinComplexityError
+                                            }
+
                                             else -> {
                                                 logger.error("Creating PIN failed: ", it)
                                                 Error.UnknownError
@@ -394,30 +524,30 @@ internal open class MainViewModel(
                     return@launch
                 }
 
-                fidoClientService.performOperation(
-                    pinValue,
-                    operation,
-                    origin,
-                    clientDataHash,
-                    request,
-                ) {
-                    // onConnection
-                    // executed after USB key is connected, or NFC key is tapped
-                    _state.value = info?.let {
-                        val bioEnrollmentConfigured = BioEnrollment.isConfigured(it)
-                        val isUsb = currentTransport == Transport.USB
-                        if (bioEnrollmentConfigured && !uvFallback) {
-                            State.WaitingForUvEntry(
-                                (_state.value as? State.WaitingForUvEntry)?.error,
-                            )
-                        } else if (isUsb) {
-                            State.TouchKey
-                        } else {
-                            State.Processing
-                        }
-                    } ?: State.WaitingForKey
-                }
-                    .fold(onSuccess = {
+                fidoClientService
+                    .performOperation(
+                        pinValue,
+                        operation,
+                        origin,
+                        clientDataHash,
+                        request,
+                    ) {
+                        // onConnection
+                        // executed after USB key is connected, or NFC key is tapped
+                        _state.value = info?.let {
+                            val bioEnrollmentConfigured = BioEnrollment.isConfigured(it)
+                            val isUsb = currentTransport == Transport.USB
+                            if (bioEnrollmentConfigured && !uvFallback) {
+                                State.WaitingForUvEntry(
+                                    (_state.value as? State.WaitingForUvEntry)?.error,
+                                )
+                            } else if (isUsb) {
+                                State.TouchKey
+                            } else {
+                                State.Processing
+                            }
+                        } ?: State.WaitingForKey
+                    }.fold(onSuccess = {
                         result = it
                         deliverResult(it, onResult)
                     }, onFailure = { error ->
@@ -427,60 +557,7 @@ internal open class MainViewModel(
                             return@launch
                         }
 
-                        val errorState =
-                            when (error) {
-                                is PinRequiredClientError -> Error.PinRequiredError
-                                is AuthInvalidClientError ->
-                                    when (error.authType) {
-                                        AuthInvalidClientError.AuthType.PIN ->
-                                            Error.IncorrectPinError(
-                                                error.retries,
-                                            )
-
-                                        AuthInvalidClientError.AuthType.UV ->
-                                            Error.IncorrectUvError(
-                                                error.retries,
-                                            )
-                                    }
-
-                                is ClientError -> {
-                                    when (error.errorCode) {
-                                        ClientError.Code.CONFIGURATION_UNSUPPORTED ->
-                                            when ((error.cause as? CtapException)?.ctapError) {
-                                                CtapException.ERR_KEY_STORE_FULL ->
-                                                    Error.OperationError(
-                                                        error.cause,
-                                                    )
-
-                                                else -> Error.DeviceNotConfiguredError
-                                            }
-
-                                        else ->
-                                            when ((error.cause as? CtapException)?.ctapError) {
-                                                CtapException.ERR_PIN_BLOCKED -> Error.PinBlockedError
-                                                CtapException.ERR_PIN_AUTH_BLOCKED -> Error.PinAuthBlockedError
-
-                                                CtapException.ERR_PIN_NOT_SET -> Error.PinNotSetError
-                                                CtapException.ERR_PIN_POLICY_VIOLATION ->
-                                                    when (info?.forcePinChange) {
-                                                        true -> Error.ForcePinChangeError(null)
-                                                        else -> Error.IncorrectPinError(null)
-                                                    }
-
-                                                CtapException.ERR_UV_BLOCKED,
-                                                CtapException.ERR_PUAT_REQUIRED,
-                                                -> Error.UvBlockedError
-
-                                                else -> Error.OperationError(error.cause)
-                                            }
-                                    }
-                                }
-
-                                else -> {
-                                    logger.error("Unexpected error during FIDO operation: ", error)
-                                    Error.UnknownError
-                                }
-                            }
+                        val errorState = mapError(error)
                         // handle the error by advancing to the next UI state
                         _state.value =
                             when (errorState) {
@@ -488,17 +565,30 @@ internal open class MainViewModel(
                                 is Error.PinBlockedError,
                                 is Error.PinAuthBlockedError,
                                 is Error.IncorrectPinError,
-                                -> State.WaitingForPinEntry(errorState)
+                                -> {
+                                    State.WaitingForPinEntry(errorState)
+                                }
 
                                 is Error.UvBlockedError -> {
                                     uvFallback = true
                                     State.WaitingForPinEntry(errorState)
                                 }
 
-                                is Error.IncorrectUvError -> State.WaitingForUvEntry(errorState)
-                                is Error.PinNotSetError -> State.PinNotSetError()
-                                is Error.ForcePinChangeError -> State.ForcePinChangeError()
-                                else -> State.OperationError(errorState)
+                                is Error.IncorrectUvError -> {
+                                    State.WaitingForUvEntry(errorState)
+                                }
+
+                                is Error.PinNotSetError -> {
+                                    State.PinNotSetError()
+                                }
+
+                                is Error.ForcePinChangeError -> {
+                                    State.ForcePinChangeError()
+                                }
+
+                                else -> {
+                                    State.OperationError(errorState)
+                                }
                             }
                         return@launch
                     })
@@ -545,7 +635,7 @@ internal open class MainViewModel(
     ) {
         newPinValue?.fill('\u0000')
         newPinValue = newPin.clone()
-        setLastEnteredPin(newPin)
+        setLastEnteredPin(currentPin)
         newPin.fill('\u0000')
         pinValue?.fill('\u0000')
         pinValue = currentPin.clone()

@@ -137,7 +137,7 @@ public class ClientPin {
   }
 
   /**
-   * Get a pinToken from the YubiKey which can be use to authenticate commands for the given
+   * Get a pinToken from the YubiKey which can be used to authenticate commands for the given
    * session.
    *
    * @param pin The FIDO PIN set for the YubiKey.
@@ -156,12 +156,12 @@ public class ClientPin {
     }
 
     Pair<Map<Integer, ?>, byte[]> pair = getSharedSecret();
+    byte[] pinBytes = preparePin(pin, false);
     byte[] pinHash = null;
+    byte[] pinHashEnc = null;
     try {
-      pinHash =
-          Arrays.copyOf(
-              MessageDigest.getInstance("SHA-256").digest(preparePin(pin, false)), PIN_HASH_LEN);
-      byte[] pinHashEnc = pinUvAuth.encrypt(pair.second, pinHash);
+      pinHash = Arrays.copyOf(MessageDigest.getInstance("SHA-256").digest(pinBytes), PIN_HASH_LEN);
+      pinHashEnc = pinUvAuth.encrypt(pair.second, pinHash);
 
       logger.debug("Getting PIN token");
 
@@ -194,11 +194,16 @@ public class ClientPin {
       if (pinHash != null) {
         Arrays.fill(pinHash, (byte) 0);
       }
+      Arrays.fill(pair.second, (byte) 0);
+      Arrays.fill(pinBytes, (byte) 0);
+      if (pinHashEnc != null) {
+        Arrays.fill(pinHashEnc, (byte) 0);
+      }
     }
   }
 
   /**
-   * Get a UV Token from the YubiKey which can be use to authenticate commands for the given
+   * Get a UV Token from the YubiKey which can be used to authenticate commands for the given
    * session.
    *
    * @param permissions requested permissions
@@ -218,28 +223,32 @@ public class ClientPin {
 
     Pair<Map<Integer, ?>, byte[]> pair = getSharedSecret();
 
-    logger.debug("Getting UV token");
+    try {
+      logger.debug("Getting UV token");
 
-    Map<Integer, ?> result =
-        ctap.clientPin(
-            pinUvAuth.getVersion(),
-            CMD_GET_PIN_TOKEN_USING_UV_WITH_PERMISSIONS,
-            pair.first,
-            null,
-            null,
-            null,
-            permissions,
-            permissionsRpId,
-            state);
+      Map<Integer, ?> result =
+          ctap.clientPin(
+              pinUvAuth.getVersion(),
+              CMD_GET_PIN_TOKEN_USING_UV_WITH_PERMISSIONS,
+              pair.first,
+              null,
+              null,
+              null,
+              permissions,
+              permissionsRpId,
+              state);
 
-    byte[] pinTokenEnc = (byte[]) result.get(RESULT_PIN_UV_TOKEN);
+      byte[] pinTokenEnc = (byte[]) result.get(RESULT_PIN_UV_TOKEN);
 
-    logger.debug(
-        "Got UV token for permissions: {}, permissionsRpId provided: {}",
-        permissions != null ? permissions : "none",
-        permissionsRpId != null);
+      logger.debug(
+          "Got UV token for permissions: {}, permissionsRpId provided: {}",
+          permissions != null ? permissions : "none",
+          permissionsRpId != null);
 
-    return pinUvAuth.decrypt(pair.second, pinTokenEnc);
+      return pinUvAuth.decrypt(pair.second, pinTokenEnc);
+    } finally {
+      Arrays.fill(pair.second, (byte) 0);
+    }
   }
 
   /**
@@ -292,20 +301,29 @@ public class ClientPin {
     }
 
     Pair<Map<Integer, ?>, byte[]> pair = getSharedSecret();
-
-    byte[] pinEnc = pinUvAuth.encrypt(pair.second, preparePin(pin, true));
-    logger.debug("Setting PIN");
-    ctap.clientPin(
-        pinUvAuth.getVersion(),
-        CMD_SET_PIN,
-        pair.first,
-        pinUvAuth.authenticate(pair.second, pinEnc),
-        pinEnc,
-        null,
-        null,
-        null,
-        null);
-    logger.info("PIN set");
+    byte[] pinBytes = preparePin(pin, true);
+    byte[] pinEnc = null;
+    try {
+      pinEnc = pinUvAuth.encrypt(pair.second, pinBytes);
+      logger.debug("Setting PIN");
+      ctap.clientPin(
+          pinUvAuth.getVersion(),
+          CMD_SET_PIN,
+          pair.first,
+          pinUvAuth.authenticate(pair.second, pinEnc),
+          pinEnc,
+          null,
+          null,
+          null,
+          null);
+      logger.info("PIN set");
+    } finally {
+      Arrays.fill(pinBytes, (byte) 0);
+      Arrays.fill(pair.second, (byte) 0);
+      if (pinEnc != null) {
+        Arrays.fill(pinEnc, (byte) 0);
+      }
+    }
   }
 
   /**
@@ -323,20 +341,22 @@ public class ClientPin {
     }
 
     byte[] newPinBytes = preparePin(newPin, true);
+    byte[] currentPinBytes = preparePin(currentPin, false);
     Pair<Map<Integer, ?>, byte[]> pair = getSharedSecret();
 
     byte[] pinHash = null;
+    byte[] pinHashEnc = null;
+    byte[] newPinEnc = null;
+    byte[] pinUvAuthParam = null;
     try {
       pinHash =
-          Arrays.copyOf(
-              MessageDigest.getInstance("SHA-256").digest(preparePin(currentPin, false)),
-              PIN_HASH_LEN);
-      byte[] pinHashEnc = pinUvAuth.encrypt(pair.second, pinHash);
-      byte[] newPinEnc = pinUvAuth.encrypt(pair.second, newPinBytes);
+          Arrays.copyOf(MessageDigest.getInstance("SHA-256").digest(currentPinBytes), PIN_HASH_LEN);
+      pinHashEnc = pinUvAuth.encrypt(pair.second, pinHash);
+      newPinEnc = pinUvAuth.encrypt(pair.second, newPinBytes);
 
       logger.debug("Changing PIN");
 
-      byte[] pinUvAuthParam =
+      pinUvAuthParam =
           pinUvAuth.authenticate(
               pair.second,
               ByteBuffer.allocate(newPinEnc.length + pinHashEnc.length)
@@ -358,8 +378,20 @@ public class ClientPin {
       logger.error("Failure changing PIN: ", e);
       throw new IllegalStateException(e);
     } finally {
+      Arrays.fill(newPinBytes, (byte) 0);
+      Arrays.fill(currentPinBytes, (byte) 0);
+      Arrays.fill(pair.second, (byte) 0);
       if (pinHash != null) {
         Arrays.fill(pinHash, (byte) 0);
+      }
+      if (pinHashEnc != null) {
+        Arrays.fill(pinHashEnc, (byte) 0);
+      }
+      if (newPinEnc != null) {
+        Arrays.fill(newPinEnc, (byte) 0);
+      }
+      if (pinUvAuthParam != null) {
+        Arrays.fill(pinUvAuthParam, (byte) 0);
       }
     }
   }

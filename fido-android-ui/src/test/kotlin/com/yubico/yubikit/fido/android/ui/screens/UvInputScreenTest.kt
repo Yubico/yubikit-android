@@ -31,7 +31,6 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35]) // TODO sdk 36 needs Java 21
 class UvInputScreenTest {
-
     @get:Rule
     val composeTestRule = createComposeRule()
 
@@ -40,7 +39,7 @@ class UvInputScreenTest {
             FidoAndroidTheme {
                 MatchFingerprint(
                     operation = FidoClientService.Operation.GET_ASSERTION,
-                    origin = "example.com",
+                    rpId = "example.com",
                     error = error,
                     onCloseButtonClick = {},
                 )

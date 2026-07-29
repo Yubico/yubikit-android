@@ -40,25 +40,30 @@ class YubiOtpFragment : Fragment() {
     class OtpContract : ActivityResultContract<Unit, String?>() {
         override fun createIntent(context: Context, input: Unit): Intent = Intent(context, OtpActivity::class.java)
 
-        override fun parseResult(resultCode: Int, intent: Intent?): String? {
-            return intent?.getStringExtra(OtpActivity.EXTRA_OTP)
-        }
+        override fun parseResult(resultCode: Int, intent: Intent?): String? = intent?.getStringExtra(OtpActivity.EXTRA_OTP)
     }
 
     private val requestOtp = registerForActivityResult(OtpContract()) {
         activityViewModel.setYubiKeyListenerEnabled(true)
-        viewModel.postResult(Result.success(when (it) {
-            null -> "Cancelled by user"
-            else -> "Read OTP: $it"
-        }))
+        viewModel.postResult(
+            Result.success(
+                when (it) {
+                    null -> "Cancelled by user"
+                    else -> "Read OTP: $it"
+                },
+            ),
+        )
     }
 
     private val activityViewModel: MainViewModel by activityViewModels()
     private val viewModel: OtpViewModel by activityViewModels()
     private lateinit var binding: FragmentYubiotpOtpBinding
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
-                              savedInstanceState: Bundle?): View {
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?,
+    ): View {
         binding = FragmentYubiotpOtpBinding.inflate(inflater, container, false)
         return binding.root
     }

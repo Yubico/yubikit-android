@@ -18,8 +18,11 @@ package com.yubico.yubikit.fido.android.ui.internal
 
 import android.annotation.SuppressLint
 import android.content.Intent
+import android.content.pm.ApplicationInfo
 import android.content.res.Configuration
+import android.os.Build
 import android.os.Bundle
+import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -27,9 +30,10 @@ import androidx.activity.viewModels
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -49,7 +53,11 @@ import com.yubico.yubikit.android.transport.nfc.NfcNotAvailable
 import com.yubico.yubikit.android.transport.usb.UsbConfiguration
 import com.yubico.yubikit.fido.android.ui.FidoConfigManager
 import com.yubico.yubikit.fido.android.ui.Origin
+import com.yubico.yubikit.fido.android.ui.internal.ui.Error
 import com.yubico.yubikit.fido.android.ui.internal.ui.State
+import com.yubico.yubikit.fido.android.ui.internal.ui.components.FidoPresentation
+import com.yubico.yubikit.fido.android.ui.internal.ui.components.FidoUiHost
+import com.yubico.yubikit.fido.android.ui.internal.ui.components.rememberFidoPresentation
 import com.yubico.yubikit.fido.android.ui.internal.ui.screens.FidoClientUi
 import com.yubico.yubikit.fido.android.ui.internal.ui.theme.FidoAndroidTheme
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredential
@@ -60,6 +68,9 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 internal const val RESULT_KEY_REMOVED = 10000
+internal const val RESULT_ERROR = 10001
+internal const val EXTRA_ERROR_NAME = "errorName"
+internal const val EXTRA_ERROR_MESSAGE = "errorMessage"
 
 internal class YubiKitFidoActivity : ComponentActivity() {
     internal companion object {
@@ -91,10 +102,25 @@ internal class YubiKitFidoActivity : ComponentActivity() {
 
         enableEdgeToEdge()
 
+        if ((applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) == 0) {
+            window.setFlags(
+                WindowManager.LayoutParams.FLAG_SECURE,
+                WindowManager.LayoutParams.FLAG_SECURE,
+            )
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                try {
+                    window.setHideOverlayWindows(true)
+                } catch (e: SecurityException) {
+                    logger.warn("HIDE_OVERLAY_WINDOWS not granted; overlay protection disabled", e)
+                }
+            }
+        }
+
         setContent {
             val config by FidoConfigManager.configuration.collectAsState()
-            val theme = config.customTheme?.takeIf { config.isCustomThemeEnabled }
-                ?: { content -> FidoAndroidTheme(content = content) }
+            val theme =
+                config.customTheme?.takeIf { config.isCustomThemeEnabled }
+                    ?: { content -> FidoAndroidTheme(content = content) }
             theme {
                 val uiState by viewModel.state.collectAsState()
                 val showAntennas =
@@ -107,37 +133,72 @@ internal class YubiKitFidoActivity : ComponentActivity() {
                 val scope = rememberCoroutineScope()
                 var bottomSheetVisible by remember { mutableStateOf(true) }
                 var isFinishing by remember { mutableStateOf(false) }
+                var credentialDelivered by remember { mutableStateOf(false) }
 
                 val finishActivity: () -> Unit = {
                     if (!isFinishing) {
                         isFinishing = true
 
-                        scope.launch {
-                            sheetState.hide()
-                        }.invokeOnCompletion {
-                            if (!sheetState.isVisible) {
-                                bottomSheetVisible = false
-                                finish()
+                        scope
+                            .launch {
+                                sheetState.hide()
+                            }.invokeOnCompletion {
+                                if (!sheetState.isVisible) {
+                                    bottomSheetVisible = false
+                                    finish()
+                                }
                             }
-                        }
                     }
                 }
 
                 val finishActivityWithCancel: () -> Unit = {
-                    setResult(
-                        RESULT_CANCELED,
-                    )
+                    // Don't set RESULT_CANCELED once a credential was delivered: the
+                    // success path hides the sheet, which fires onDismissRequest here
+                    // and would otherwise overwrite RESULT_OK.
+                    if (!isFinishing && !credentialDelivered) {
+                        // Dismissing a terminal error (a deterministic request-level failure)
+                        // returns the real error to the caller, not a cancellation — so the RP's
+                        // page rejects with the correct DOMException instead of "user cancelled".
+                        val terminal =
+                            (viewModel.state.value as? State.OperationError)
+                                ?.error as? Error.Terminal
+                        if (terminal != null) {
+                            logger.debug("FidoActivity finishWithError {}", terminal.webAuthnError)
+                            setResult(
+                                RESULT_ERROR,
+                                Intent()
+                                    .putExtra(EXTRA_ERROR_NAME, terminal.webAuthnError)
+                                    .putExtra(EXTRA_ERROR_MESSAGE, terminal.message),
+                            )
+                        } else {
+                            logger.debug("FidoActivity finishWithCancel")
+                            setResult(
+                                RESULT_CANCELED,
+                            )
+                        }
+                    }
                     finishActivity()
                 }
 
                 val finishActivityWithKeyRemoved: () -> Unit = {
-                    setResult(
-                        RESULT_KEY_REMOVED,
+                    logger.debug(
+                        "FidoActivity finishWithKeyRemoved credentialDelivered={}",
+                        credentialDelivered,
                     )
-                    finishActivity()
+                    if (!credentialDelivered) {
+                        setResult(
+                            RESULT_KEY_REMOVED,
+                        )
+                        finishActivity()
+                    }
                 }
 
                 val finishActivityWithResult: (PublicKeyCredential) -> Unit = { result ->
+                    // Mark the credential as delivered before suspending in
+                    // waitForKeyRemoval(): otherwise a key removal during that wait
+                    // (e.g. the user pulling a USB key) would race the result here and
+                    // overwrite RESULT_OK with RESULT_KEY_REMOVED.
+                    credentialDelivered = true
                     scope.launch {
                         viewModel.waitForKeyRemoval()
                         setResult(
@@ -152,6 +213,11 @@ internal class YubiKitFidoActivity : ComponentActivity() {
                 }
 
                 LaunchedEffect(device) {
+                    logger.debug(
+                        "FidoActivity device changed: device={} wasConnected={}",
+                        device,
+                        wasConnected,
+                    )
                     if (device != null) {
                         wasConnected = true
                     } else if (wasConnected) {
@@ -165,11 +231,9 @@ internal class YubiKitFidoActivity : ComponentActivity() {
                     exit = fadeOut(),
                 ) {
                     if (bottomSheetVisible) {
-                        logger.trace("Showing bottom sheet")
-                        ModalBottomSheet(
-                            dragHandle = {},
+                        logger.trace("Showing FIDO UI host")
+                        FidoUiHost(
                             sheetState = sheetState,
-                            scrimColor = Color.Transparent,
                             onDismissRequest = finishActivityWithCancel,
                         ) {
                             FidoClientUi(
@@ -181,6 +245,7 @@ internal class YubiKitFidoActivity : ComponentActivity() {
                                 params.request,
                                 params.clientDataHash?.toByteArray(),
                                 fidoClientService = fidoClientService,
+                                callerLabel = params.callerLabel,
                                 onResult = {
                                     finishActivityWithResult(it)
                                 },
@@ -190,8 +255,23 @@ internal class YubiKitFidoActivity : ComponentActivity() {
                     }
                 }
 
+                val presentation = rememberFidoPresentation()
+                val isFullScreen = presentation == FidoPresentation.FullScreen
                 NfcAntennaHint(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .let {
+                            if (isFullScreen) {
+                                it
+                            } else {
+                                it.background(Color.Black.copy(alpha = 0.35f))
+                            }
+                        },
+                    iconBorderColor = if (isFullScreen) {
+                        MaterialTheme.colorScheme.outline
+                    } else {
+                        null
+                    },
                     showAntennas = showAntennas,
                 )
             }
@@ -242,6 +322,7 @@ internal class YubiKitFidoActivity : ComponentActivity() {
         val request: String,
         val clientDataHash: List<Byte>?,
         val operation: FidoClientService.Operation,
+        val callerLabel: String?,
     ) {
         internal companion object {
             fun fromIntent(intent: Intent): FidoActivityParameters {
@@ -258,13 +339,15 @@ internal class YubiKitFidoActivity : ComponentActivity() {
                     } ?: throw IllegalArgumentException("Invalid operation type")
 
                 return FidoActivityParameters(
-                    origin = Origin(
+                    origin =
+                    Origin(
                         extras.getString("callingAppOrigin")!!,
                         extras.getString("resolvedOrigin")!!,
                     ),
                     request = extras.getString("request")!!,
                     clientDataHash = extras.getString("clientDataHash")?.hexToByteArray()?.toList(),
                     operation = operation,
+                    callerLabel = extras.getString("callerLabel"),
                 )
             }
         }

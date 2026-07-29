@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Yubico.
+ * Copyright (C) 2023-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,7 +66,11 @@ public class Cose {
         throw new IllegalArgumentException("Unsupported key type: " + kty);
     }
 
-    logger.debug("publicKey: {}", Base64.toUrlSafeString(publicKey.getEncoded()));
+    logger
+        .atDebug()
+        .setMessage("publicKey: {}")
+        .addArgument(() -> Base64.toUrlSafeString(publicKey.getEncoded()))
+        .log();
 
     return publicKey;
   }
@@ -84,7 +88,7 @@ public class Cose {
   private static PublicKey importCoseEd25519PublicKey(Map<Integer, ?> cosePublicKey)
       throws InvalidKeySpecException, NoSuchAlgorithmException {
     final byte[] rawKey = (byte[]) Objects.requireNonNull(cosePublicKey.get(-2));
-    logger.debug("raw: {}", Base64.toUrlSafeString(rawKey));
+    logger.atDebug().setMessage("raw: {}").addArgument(() -> Base64.toUrlSafeString(rawKey)).log();
     return new Cv25519(EllipticCurveValues.Ed25519, rawKey).toPublicKey();
   }
 
@@ -95,8 +99,8 @@ public class Cose {
     final byte[] y = (byte[]) Objects.requireNonNull(cosePublicKey.get(-3));
 
     logger.debug("crv: {}", crv);
-    logger.debug("x: {}", Base64.toUrlSafeString(x));
-    logger.debug("y: {}", Base64.toUrlSafeString(y));
+    logger.atDebug().setMessage("x: {}").addArgument(() -> Base64.toUrlSafeString(x)).log();
+    logger.atDebug().setMessage("y: {}").addArgument(() -> Base64.toUrlSafeString(y)).log();
 
     EllipticCurveValues ellipticCurveValues;
 
@@ -124,8 +128,8 @@ public class Cose {
       throws NoSuchAlgorithmException, InvalidKeySpecException {
     byte[] n = (byte[]) Objects.requireNonNull(cosePublicKey.get(-1));
     byte[] e = (byte[]) Objects.requireNonNull(cosePublicKey.get(-2));
-    logger.debug("n: {}", Base64.toUrlSafeString(n));
-    logger.debug("e: {}", Base64.toUrlSafeString(e));
+    logger.atDebug().setMessage("n: {}").addArgument(() -> Base64.toUrlSafeString(n)).log();
+    logger.atDebug().setMessage("e: {}").addArgument(() -> Base64.toUrlSafeString(e)).log();
     return new Rsa(new BigInteger(1, n), new BigInteger(1, e)).toPublicKey();
   }
 }

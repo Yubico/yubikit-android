@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2025 Yubico.
+ * Copyright (C) 2023-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -636,20 +636,26 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
     logger.debug("Resetting User PIN");
     byte p1 = 2;
     Kdf kdf = getKdf();
-    byte[] data = kdf.process(Pw.USER, newPin);
-    if (resetCode != null) {
-      logger.debug("Using Reset Code");
-      byte[] resetCodeBytes = kdf.process(Pw.RESET, resetCode);
-      data =
-          ByteBuffer.allocate(resetCodeBytes.length + data.length)
-              .put(resetCodeBytes)
-              .put(data)
-              .array();
-      p1 = 0;
-    }
-
+    byte[] data = null;
+    byte[] resetCodeBytes = null;
+    byte[] combined = null;
     try {
-      protocol.sendAndReceive(new Apdu(0, INS_RESET_RETRY_COUNTER, p1, Pw.USER.getValue(), data));
+      data = kdf.process(Pw.USER, newPin);
+      byte[] apduData = data;
+      if (resetCode != null) {
+        logger.debug("Using Reset Code");
+        resetCodeBytes = kdf.process(Pw.RESET, resetCode);
+        combined =
+            ByteBuffer.allocate(resetCodeBytes.length + data.length)
+                .put(resetCodeBytes)
+                .put(data)
+                .array();
+        p1 = 0;
+        apduData = combined;
+      }
+
+      protocol.sendAndReceive(
+          new Apdu(0, INS_RESET_RETRY_COUNTER, p1, Pw.USER.getValue(), apduData));
     } catch (ApduException e) {
       if (e.getSw() == SW.SECURITY_CONDITION_NOT_SATISFIED && resetCode != null) {
         int resetRemaining = getPinStatus().getAttemptsReset();
@@ -657,7 +663,18 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
             resetRemaining, "Invalid Reset Code, " + resetRemaining + " tries remaining");
       }
       throw e;
+    } finally {
+      if (data != null) {
+        Arrays.fill(data, (byte) 0);
+      }
+      if (resetCodeBytes != null) {
+        Arrays.fill(resetCodeBytes, (byte) 0);
+      }
+      if (combined != null) {
+        Arrays.fill(combined, (byte) 0);
+      }
     }
+
     logger.info("New User PIN has been set");
   }
 

@@ -33,15 +33,25 @@ internal sealed class State {
 
     data object PinChanged : State()
 
-    data class PinNotSetError(val error: Error? = null) : State()
+    data class PinNotSetError(
+        val error: Error? = null,
+    ) : State()
 
-    data class ForcePinChangeError(val error: Error? = null) : State()
+    data class ForcePinChangeError(
+        val error: Error? = null,
+    ) : State()
 
-    data class OperationError(val error: Error) : State()
+    data class OperationError(
+        val error: Error,
+    ) : State()
 
-    data class WaitingForPinEntry(val error: Error?) : State()
+    data class WaitingForPinEntry(
+        val error: Error?,
+    ) : State()
 
-    data class WaitingForUvEntry(val error: Error?) : State()
+    data class WaitingForUvEntry(
+        val error: Error?,
+    ) : State()
 
     data class MultipleAssertions(
         val users: List<PublicKeyCredentialUserEntity>,

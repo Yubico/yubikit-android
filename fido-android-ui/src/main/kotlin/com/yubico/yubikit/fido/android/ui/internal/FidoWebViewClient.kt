@@ -36,7 +36,6 @@ import androidx.annotation.RequiresApi
 internal open class FidoWebViewClient(
     private val delegate: WebViewClient,
 ) : WebViewClient() {
-
     override fun doUpdateVisitedHistory(
         view: WebView?,
         url: String?,
@@ -53,11 +52,17 @@ internal open class FidoWebViewClient(
         delegate.onFormResubmission(view, dontResend, resend)
     }
 
-    override fun onLoadResource(view: WebView?, url: String?) {
+    override fun onLoadResource(
+        view: WebView?,
+        url: String?,
+    ) {
         delegate.onLoadResource(view, url)
     }
 
-    override fun onPageCommitVisible(view: WebView?, url: String?) {
+    override fun onPageCommitVisible(
+        view: WebView?,
+        url: String?,
+    ) {
         delegate.onPageCommitVisible(view, url)
     }
 
@@ -133,9 +138,7 @@ internal open class FidoWebViewClient(
     override fun onRenderProcessGone(
         view: WebView?,
         detail: RenderProcessGoneDetail?,
-    ): Boolean {
-        return delegate.onRenderProcessGone(view, detail)
-    }
+    ): Boolean = delegate.onRenderProcessGone(view, detail)
 
     @RequiresApi(Build.VERSION_CODES.O_MR1)
     override fun onSafeBrowsingHit(
@@ -165,51 +168,47 @@ internal open class FidoWebViewClient(
         delegate.onTooManyRedirects(view, cancelMsg, continueMsg)
     }
 
-    override fun onUnhandledKeyEvent(view: WebView?, event: KeyEvent?) {
+    override fun onUnhandledKeyEvent(
+        view: WebView?,
+        event: KeyEvent?,
+    ) {
         delegate.onUnhandledKeyEvent(view, event)
     }
 
     override fun shouldInterceptRequest(
         view: WebView?,
         request: WebResourceRequest?,
-    ): WebResourceResponse? {
-        return delegate.shouldInterceptRequest(view, request)
-    }
+    ): WebResourceResponse? = delegate.shouldInterceptRequest(view, request)
 
     @Suppress("DEPRECATION")
     @Deprecated("Deprecated in Java")
     override fun shouldInterceptRequest(
         view: WebView?,
         url: String?,
-    ): WebResourceResponse? {
-        return delegate.shouldInterceptRequest(view, url)
-    }
+    ): WebResourceResponse? = delegate.shouldInterceptRequest(view, url)
 
     override fun shouldOverrideKeyEvent(
         view: WebView?,
         event: KeyEvent?,
-    ): Boolean {
-        return delegate.shouldOverrideKeyEvent(view, event)
-    }
+    ): Boolean = delegate.shouldOverrideKeyEvent(view, event)
 
     @RequiresApi(Build.VERSION_CODES.N)
     override fun shouldOverrideUrlLoading(
         view: WebView?,
         request: WebResourceRequest?,
-    ): Boolean {
-        return delegate.shouldOverrideUrlLoading(view, request)
-    }
+    ): Boolean = delegate.shouldOverrideUrlLoading(view, request)
 
     @Suppress("DEPRECATION")
     @Deprecated("Deprecated in Java")
     override fun shouldOverrideUrlLoading(
         view: WebView?,
         url: String?,
-    ): Boolean {
-        return delegate.shouldOverrideUrlLoading(view, url)
-    }
+    ): Boolean = delegate.shouldOverrideUrlLoading(view, url)
 
-    override fun onPageFinished(view: WebView?, url: String?) {
+    override fun onPageFinished(
+        view: WebView?,
+        url: String?,
+    ) {
         delegate.onPageFinished(view, url)
     }
 }

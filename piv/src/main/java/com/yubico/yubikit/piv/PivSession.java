@@ -36,7 +36,6 @@ import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.smartcard.SmartCardProtocol;
 import com.yubico.yubikit.core.smartcard.scp.ScpKeyParams;
 import com.yubico.yubikit.core.util.RandomUtils;
-import com.yubico.yubikit.core.util.StringUtils;
 import com.yubico.yubikit.core.util.Tlv;
 import com.yubico.yubikit.core.util.Tlvs;
 import java.io.ByteArrayInputStream;
@@ -366,10 +365,7 @@ public class PivSession extends ApplicationSession<PivSession> {
       cipher.init(Cipher.ENCRYPT_MODE, key);
       byte[] expectedData = cipher.doFinal(challenge);
       if (!MessageDigest.isEqual(encryptedData, expectedData)) {
-        logger.trace(
-            "Expected response: {} and actual response {}",
-            StringUtils.bytesToHex(expectedData),
-            StringUtils.bytesToHex(encryptedData));
+        logger.trace("Authentication response mismatch");
         throw new BadResponseException("Calculated response for challenge is incorrect");
       }
     } catch (NoSuchAlgorithmException
@@ -1206,10 +1202,19 @@ public class PivSession extends ApplicationSession<PivSession> {
     }
 
     logger.debug("Importing key with pin_policy={}, touch_policy={}", pinPolicy, touchPolicy);
-    protocol.sendAndReceive(
-        new Apdu(0, INS_IMPORT_KEY, keyType.value, slot.value, Tlvs.encodeMap(tlvs)));
-    logger.info("Private key imported in slot {} of type {}", slot, keyType);
-    return keyType;
+    byte[] encodedTlvs = Tlvs.encodeMap(tlvs);
+    try {
+      protocol.sendAndReceive(new Apdu(0, INS_IMPORT_KEY, keyType.value, slot.value, encodedTlvs));
+      logger.info("Private key imported in slot {} of type {}", slot, keyType);
+      return keyType;
+    } finally {
+      for (byte[] value : tlvs.values()) {
+        if (value != null) {
+          Arrays.fill(value, (byte) 0);
+        }
+      }
+      Arrays.fill(encodedTlvs, (byte) 0);
+    }
   }
 
   /**
@@ -1358,15 +1363,13 @@ public class PivSession extends ApplicationSession<PivSession> {
   }
 
   private static byte[] pinBytes(char[] pin1, char[] pin2) {
-    ByteArrayOutputStream stream = new ByteArrayOutputStream();
     byte[] pinBytes1 = pinBytes(pin1);
     byte[] pinBytes2 = pinBytes(pin2);
     try {
-      stream.write(pinBytes1);
-      stream.write(pinBytes2);
-      return stream.toByteArray();
-    } catch (IOException e) {
-      throw new RuntimeException(e); // This shouldn't happen
+      return ByteBuffer.allocate(pinBytes1.length + pinBytes2.length)
+          .put(pinBytes1)
+          .put(pinBytes2)
+          .array();
     } finally {
       Arrays.fill(pinBytes1, (byte) 0); // clear sensitive data
       Arrays.fill(pinBytes2, (byte) 0); // clear sensitive data

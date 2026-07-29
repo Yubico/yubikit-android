@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2025 Yubico.
+ * Copyright (C) 2019-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -87,6 +87,9 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
   static final byte INS_SET_MODE = 0x16;
   static final byte INS_DEVICE_RESET = 0x1f;
   static final byte P1_DEVICE_CONFIG = 0x11;
+
+  // DeviceInfo TLV tags
+  static final int TAG_MORE_DATA = 0x10; // YK_MORE_DEVICE_INFO
 
   // OTP command constants
   static final byte CMD_DEVICE_CONFIG = 0x11;
@@ -372,17 +375,36 @@ public class ManagementSession extends ApplicationSession<ManagementSession> {
    */
   private DeviceInfo readDeviceInfo() throws IOException, CommandException {
     final Map<Integer, byte[]> tlvs = new HashMap<>();
-    boolean hasMoreData = true;
+    // TAG_MORE_DATA declares the number of pages available after the current one. We start with 1
+    // so that the first page is always read, and decrement before each read. Older firmware sends a
+    // value of 1 to indicate a single additional page, which this logic handles identically.
+    int moreData = 1;
     int page = 0;
 
-    while (hasMoreData) {
+    while (moreData > 0) {
+      moreData--;
       final byte[] encoded = backend.readConfig(page);
-      if (encoded.length - 1 != encoded[0]) {
+      // The leading length byte is an unsigned protocol value (0-255); mask before comparing.
+      if (encoded.length == 0 || encoded.length - 1 != (encoded[0] & 0xff)) {
         throw new BadResponseException("Invalid length");
       }
       Map<Integer, byte[]> decoded = Tlvs.decodeMap(Arrays.copyOfRange(encoded, 1, encoded.length));
-      byte[] moreData = decoded.get(0x10); // YK_MORE_DEVICE_INFO
-      hasMoreData = moreData != null && moreData.length == 1 && moreData[0] == (byte) 1;
+      byte[] moreDataValue = decoded.remove(TAG_MORE_DATA);
+      if (moreDataValue != null) {
+        // TAG_MORE_DATA is the number of pages following this one. readInt is signed, so an
+        // over-long or high-bit value could wrap negative and silently stop paging; and a count
+        // reaching past the single-byte page index space (0-255) must be rejected up front rather
+        // than after many reads or by overflowing the page index when building the request.
+        if (moreDataValue.length > 4) {
+          throw new BadResponseException("Invalid TAG_MORE_DATA length: " + moreDataValue.length);
+        }
+        int declared = DeviceInfo.readInt(moreDataValue);
+        if (declared < 0 || declared > 0xff - page) {
+          throw new BadResponseException("Invalid TAG_MORE_DATA page count: " + declared);
+        }
+        moreData = declared;
+      }
+      logger.debug("Read DeviceInfo page {}, {} more page(s) to read", page, moreData);
       tlvs.putAll(decoded);
       page++;
     }

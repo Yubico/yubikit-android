@@ -85,6 +85,7 @@ public class HmacSecretExtensionTests {
 
   private HmacSecretExtensionTests() {}
 
+  @SuppressWarnings("unchecked")
   private void runHmacSecretTest(FidoTestState state, boolean rk) throws Throwable {
 
     // no output when no input
@@ -173,8 +174,42 @@ public class HmacSecretExtensionTests {
                       .extensions(Collections.singletonMap(KEY_HMAC_GET_SECRET, salts))
                       .build());
 
-          Assert.assertNotNull(getGetResultsValue(cred, KEY_OUTPUT1));
-          Assert.assertNotNull(getGetResultsValue(cred, KEY_OUTPUT2));
+          final ClientExtensionResults clientExtensionResults = cred.getClientExtensionResults();
+          Assert.assertNotNull(clientExtensionResults);
+          Map<String, Object> mapWithJson = clientExtensionResults.toMap(SerializationType.JSON);
+          Map<String, Object> hmacResultJson =
+              (Map<String, Object>) mapWithJson.get(KEY_HMAC_GET_SECRET);
+          Assert.assertNotNull(hmacResultJson);
+          Object output1JsonValue = hmacResultJson.get(KEY_OUTPUT1);
+          Object output2JsonValue = hmacResultJson.get(KEY_OUTPUT2);
+          Assert.assertNotNull(output1JsonValue);
+          Assert.assertNotNull(output2JsonValue);
+          Assert.assertTrue(output1JsonValue instanceof String);
+          Assert.assertTrue(output2JsonValue instanceof String);
+
+          Map<String, Object> mapWithCbor = clientExtensionResults.toMap(SerializationType.CBOR);
+          Map<String, Object> hmacResultCbor =
+              (Map<String, Object>) mapWithCbor.get(KEY_HMAC_GET_SECRET);
+          Assert.assertNotNull(hmacResultCbor);
+          Object output1CborValue = hmacResultCbor.get(KEY_OUTPUT1);
+          Object output2CborValue = hmacResultCbor.get(KEY_OUTPUT2);
+          Assert.assertNotNull(output1CborValue);
+          Assert.assertNotNull(output2CborValue);
+          Assert.assertTrue(output1CborValue instanceof byte[]);
+          Assert.assertTrue(output2CborValue instanceof byte[]);
+
+          // Verify the JSON result was NOT mutated by the subsequent CBOR call.
+          Assert.assertTrue(
+              "JSON result was mutated by subsequent CBOR serialization",
+              hmacResultJson.get(KEY_OUTPUT1) instanceof String);
+
+          Assert.assertTrue(
+              "JSON result was mutated by subsequent CBOR serialization",
+              hmacResultJson.get(KEY_OUTPUT2) instanceof String);
+
+          // Also verify the maps are distinct object references
+          Assert.assertNotSame(
+              "JSON and CBOR results should use independent maps", hmacResultJson, hmacResultCbor);
 
           if (rk) {
             client.deleteCredentials(cred);

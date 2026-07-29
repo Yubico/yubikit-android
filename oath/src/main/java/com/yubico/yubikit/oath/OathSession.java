@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2025 Yubico.
+ * Copyright (C) 2019-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ import com.yubico.yubikit.core.smartcard.scp.ScpKeyParams;
 import com.yubico.yubikit.core.util.RandomUtils;
 import com.yubico.yubikit.core.util.Tlv;
 import com.yubico.yubikit.core.util.Tlvs;
-import java.io.ByteArrayOutputStream;
+import com.yubico.yubikit.core.util.ZeroingByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.security.InvalidKeyException;
@@ -169,6 +169,10 @@ public class OathSession extends ApplicationSession<OathSession> {
 
   @Override
   public void close() throws IOException {
+    Arrays.fill(salt, (byte) 0);
+    if (challenge != null) {
+      Arrays.fill(challenge, (byte) 0);
+    }
     protocol.close();
   }
 
@@ -314,8 +318,8 @@ public class OathSession extends ApplicationSession<OathSession> {
   /**
    * Sets an access key. Once an access key is set, any usage of the credentials stored will require
    * the application to be unlocked via one of the validate methods, which requires knowledge of the
-   * access key. Typically this key is derived from a password (see {@link #deriveAccessKey}) and is
-   * set by instead using the {@link #setPassword} method. This method sets the raw 16 byte key.
+   * access key. Typically, this key is derived from a password (see {@link #deriveAccessKey}) and
+   * is set by instead using the {@link #setPassword} method. This method sets the raw 16 byte key.
    *
    * @param key the shared secret key used to unlock access to the application
    * @throws IOException in case of connection error
@@ -551,48 +555,52 @@ public class OathSession extends ApplicationSession<OathSession> {
     }
 
     byte[] key = credentialData.getHashAlgorithm().prepareKey(credentialData.getSecret());
-    Map<Integer, byte[]> requestTlvs = new LinkedHashMap<>();
-    requestTlvs.put(TAG_NAME, credentialData.getId());
+    try (ZeroingByteArrayOutputStream output = new ZeroingByteArrayOutputStream()) {
+      Map<Integer, byte[]> requestTlvs = new LinkedHashMap<>();
+      requestTlvs.put(TAG_NAME, credentialData.getId());
 
-    requestTlvs.put(
-        TAG_KEY,
-        ByteBuffer.allocate(2 + key.length)
-            .put(
-                (byte)
-                    (credentialData.getOathType().value | credentialData.getHashAlgorithm().value))
-            .put((byte) credentialData.getDigits())
-            .put(key)
-            .array());
+      requestTlvs.put(
+          TAG_KEY,
+          ByteBuffer.allocate(2 + key.length)
+              .put(
+                  (byte)
+                      (credentialData.getOathType().value
+                          | credentialData.getHashAlgorithm().value))
+              .put((byte) credentialData.getDigits())
+              .put(key)
+              .array());
 
-    ByteArrayOutputStream output = new ByteArrayOutputStream();
-    output.write(Tlvs.encodeMap(requestTlvs));
+      output.write(Tlvs.encodeMap(requestTlvs));
 
-    if (requireTouch) {
-      require(FEATURE_TOUCH);
-      output.write(TAG_PROPERTY);
-      output.write(PROPERTY_REQUIRE_TOUCH);
+      if (requireTouch) {
+        require(FEATURE_TOUCH);
+        output.write(TAG_PROPERTY);
+        output.write(PROPERTY_REQUIRE_TOUCH);
+      }
+
+      if (credentialData.getOathType() == OathType.HOTP && credentialData.getCounter() > 0) {
+        output.write(TAG_IMF);
+        output.write(4);
+        output.write(ByteBuffer.allocate(4).putInt(credentialData.getCounter()).array());
+      }
+
+      logger.debug(
+          "Importing credential (type={}, hash={}, digits={}, "
+              + "period={}, imf={}, touch_required={})",
+          credentialData.getOathType(),
+          credentialData.getHashAlgorithm(),
+          credentialData.getDigits(),
+          credentialData.getPeriod(),
+          credentialData.getCounter(),
+          requireTouch);
+
+      protocol.sendAndReceive(new Apdu(0x00, INS_PUT, 0, 0, output.toByteArray()));
+      logger.info("Credential imported");
+      return new Credential(
+          deviceId, credentialData.getId(), credentialData.getOathType(), requireTouch);
+    } finally {
+      Arrays.fill(key, (byte) 0);
     }
-
-    if (credentialData.getOathType() == OathType.HOTP && credentialData.getCounter() > 0) {
-      output.write(TAG_IMF);
-      output.write(4);
-      output.write(ByteBuffer.allocate(4).putInt(credentialData.getCounter()).array());
-    }
-
-    logger.debug(
-        "Importing credential (type={}, hash={}, digits={}, "
-            + "period={}, imf={}, touch_required={})",
-        credentialData.getOathType(),
-        credentialData.getHashAlgorithm(),
-        credentialData.getDigits(),
-        credentialData.getPeriod(),
-        credentialData.getCounter(),
-        requireTouch);
-
-    protocol.sendAndReceive(new Apdu(0x00, INS_PUT, 0, 0, output.toByteArray()));
-    logger.info("Credential imported");
-    return new Credential(
-        deviceId, credentialData.getId(), credentialData.getOathType(), requireTouch);
   }
 
   /**

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 Yubico.
+ * Copyright (C) 2019-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@ import android.hardware.usb.UsbInterface;
 import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.util.StringUtils;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -171,10 +170,14 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
           connection.bulkTransfer(
               endpointOut, bufferOut, bytesSent, bufferOut.length - bytesSent, TIMEOUT);
       if (bytesSentPackage > 0) {
-        logger.trace(
-            "{} bytes sent over ccid: {}",
-            bytesSentPackage,
-            StringUtils.bytesToHex(bufferOut, bytesSent, bytesSentPackage));
+        final int sentOffset = bytesSent;
+        final int sentLength = bytesSentPackage;
+        logger
+            .atTrace()
+            .setMessage("{} bytes sent over ccid: {}")
+            .addArgument(bytesSentPackage)
+            .addArgument(() -> StringUtils.bytesToHex(bufferOut, sentOffset, sentLength))
+            .log();
         bytesSent += bytesSentPackage;
       } else if (bytesSentPackage < 0) {
         throw new IOException("Failed to send " + (bufferOut.length - bytesSent) + " bytes");
@@ -197,8 +200,13 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
     do {
       bytesRead = connection.bulkTransfer(endpointIn, bufferRead, bufferRead.length, TIMEOUT);
       if (bytesRead > 0) {
-        logger.trace(
-            "{} bytes received: {}", bytesRead, StringUtils.bytesToHex(bufferRead, 0, bytesRead));
+        final int readLength = bytesRead;
+        logger
+            .atTrace()
+            .setMessage("{} bytes received: {}")
+            .addArgument(bytesRead)
+            .addArgument(() -> StringUtils.bytesToHex(bufferRead, 0, readLength))
+            .log();
 
         if (receivedExpectedPrefix) {
           stream.write(bufferRead, 0, bytesRead);
@@ -255,9 +263,6 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
     private byte status;
     private byte error;
 
-    @SuppressFBWarnings("URF_UNREAD_FIELD")
-    private byte messageSpecificByte;
-
     private MessageHeader(byte[] buffer) {
       if (buffer.length > SIZE_OF_CCID_PREFIX) {
         ByteBuffer responseBuffer =
@@ -268,7 +273,7 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
         sequence = responseBuffer.get();
         status = responseBuffer.get();
         error = responseBuffer.get();
-        messageSpecificByte = responseBuffer.get();
+        responseBuffer.get(); /* unused messageSpecificByte */
       }
     }
 

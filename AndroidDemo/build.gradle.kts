@@ -23,11 +23,23 @@ plugins {
 }
 
 android {
-    compileSdk = 36
+    compileSdk = 37
+
+    signingConfigs {
+        create("release") {
+            val keyStoreFile = System.getenv("YKDEMO_STORE_FILE")
+            if (keyStoreFile != null) {
+                storeFile = file(keyStoreFile)
+                storePassword = System.getenv("YKDEMO_STORE_PASSWORD")
+                keyAlias = System.getenv("YKDEMO_KEY_ALIAS")
+                keyPassword = System.getenv("YKDEMO_KEY_PASSWORD")
+            }
+        }
+    }
 
     defaultConfig {
         minSdk = 23
-        targetSdk = 36
+        targetSdk = 37
         versionName = version.toString()
         versionCode = 1
         multiDexEnabled = true
@@ -36,11 +48,12 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 
@@ -54,6 +67,26 @@ android {
     }
 
     namespace = "com.yubico.yubikit.android.app"
+}
+
+if (System.getenv("YKDEMO_STORE_FILE") == null) {
+    androidComponents {
+        beforeVariants(selector().withBuildType("release")) { variantBuilder ->
+            variantBuilder.enable = false
+        }
+    }
+    tasks.register("assembleRelease") {
+        doFirst {
+            throw GradleException(
+                "AndroidDemo release variant is disabled: YKDEMO_STORE_FILE not set.\n" +
+                        "Please set all required environment variables:\n" +
+                        "  - YKDEMO_STORE_FILE\n" +
+                        "  - YKDEMO_STORE_PASSWORD\n" +
+                        "  - YKDEMO_KEY_ALIAS\n" +
+                        "  - YKDEMO_KEY_PASSWORD"
+            )
+        }
+    }
 }
 
 kotlin {
@@ -96,11 +129,4 @@ dependencies {
     testImplementation(libs.junit.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
-}
-
-configure<SpotlessExtension> {
-    // temporarily don't format kotlin in this project
-    kotlin {
-        targetExclude("src/**/*.kt", "src/**/*.kts")
-    }
 }

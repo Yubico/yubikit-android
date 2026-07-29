@@ -43,9 +43,6 @@ afterEvaluate {
         spotbugsRuntime(libs.findLibrary("jsr250-api").get())
 
         spotbugsRuntime(libs.findLibrary("slf4j-nop").get())
-
-        // Add compile-time annotations
-        add("compileOnly", libs.findLibrary("spotbugs-annotations").get())
     }
 }
 

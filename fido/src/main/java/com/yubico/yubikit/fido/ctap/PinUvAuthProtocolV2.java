@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2025 Yubico.
+ * Copyright (C) 2023-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 package com.yubico.yubikit.fido.ctap;
 
 import com.yubico.yubikit.core.util.RandomUtils;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidAlgorithmParameterException;
@@ -116,22 +115,20 @@ public class PinUvAuthProtocolV2 extends PinUvAuthProtocolV1 {
   public byte[] authenticate(byte[] key, byte[] message) {
     final String MAC_ALG = "HmacSHA256";
     byte[] hmacKey = Arrays.copyOf(key, 32);
-    Mac mac;
     try {
-      mac = Mac.getInstance(MAC_ALG);
-      mac.init(new SecretKeySpec(hmacKey, MAC_ALG));
-    } catch (NoSuchAlgorithmException | InvalidKeyException e) {
-      throw new RuntimeException(e);
+      Mac mac;
+      try {
+        mac = Mac.getInstance(MAC_ALG);
+        mac.init(new SecretKeySpec(hmacKey, MAC_ALG));
+      } catch (NoSuchAlgorithmException | InvalidKeyException e) {
+        throw new RuntimeException(e);
+      }
+      return mac.doFinal(message);
+    } finally {
+      Arrays.fill(hmacKey, (byte) 0);
     }
-    return mac.doFinal(message);
   }
 
-  @SuppressFBWarnings(
-      value = {"CIPHER_INTEGRITY", "STATIC_IV"},
-      justification =
-          "No padding is performed as the size of demPlaintext is required "
-              + "to be a multiple of the AES block length. The IV is randomly generated "
-              + "for every encrypt operation")
   private Cipher getCipher(int mode, byte[] secret, byte[] iv) {
     try {
       Cipher cipher = Cipher.getInstance("AES/CBC/NoPadding");

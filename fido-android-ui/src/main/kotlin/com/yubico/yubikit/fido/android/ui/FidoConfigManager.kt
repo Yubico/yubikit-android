@@ -113,8 +113,7 @@ public object FidoConfigManager {
      *
      * @param value `true` to show PIN entry first, `false` to prompt for key touch first.
      */
-    public fun setIsPinPrioritized(value: Boolean): Unit =
-        FidoConfigManagerImpl.setPrioritizePin(value)
+    public fun setIsPinPrioritized(value: Boolean): Unit = FidoConfigManagerImpl.setPrioritizePin(value)
 
     /**
      * Sets the FIDO extensions to enable for all operations.
@@ -122,8 +121,7 @@ public object FidoConfigManager {
      * @param extensions List of [Extension] instances to enable, or `null` to use
      *   the default set of extensions provided by the CTAP2 client.
      */
-    public fun setExtensions(extensions: List<Extension>?): Unit =
-        FidoConfigManagerImpl.setExtensions(extensions)
+    public fun setExtensions(extensions: List<Extension>?): Unit = FidoConfigManagerImpl.setExtensions(extensions)
 
     /**
      * Sets a custom Compose theme for the FIDO UI screens.
@@ -131,16 +129,14 @@ public object FidoConfigManager {
      * @param theme A composable function that wraps content with your theme,
      *   or `null` to use the default theme.
      */
-    public fun setTheme(theme: (@Composable (content: @Composable () -> Unit) -> Unit)?): Unit =
-        FidoConfigManagerImpl.setTheme(theme)
+    public fun setTheme(theme: (@Composable (content: @Composable () -> Unit) -> Unit)?): Unit = FidoConfigManagerImpl.setTheme(theme)
 
     /**
      * Sets whether to use a custom theme for the FIDO UI screens.
      *
      * @param value `true` to use custom theme, `false` to use default theme.
      */
-    public fun setIsCustomThemeEnabled(value: Boolean): Unit =
-        FidoConfigManagerImpl.setUseCustomTheme(value)
+    public fun setIsCustomThemeEnabled(value: Boolean): Unit = FidoConfigManagerImpl.setUseCustomTheme(value)
 
     /**
      * Atomically updates the configuration using a transform function.
@@ -150,14 +146,12 @@ public object FidoConfigManager {
      *
      * @param transform A function that receives the current config and returns the new config.
      */
-    public fun update(transform: (FidoConfig) -> FidoConfig): Unit =
-        FidoConfigManagerImpl.update(transform)
+    public fun update(transform: (FidoConfig) -> FidoConfig): Unit = FidoConfigManagerImpl.update(transform)
 
     /**
      * Replaces the entire configuration with a new value.
      *
      * @param configuration The new [FidoConfig] to set.
      */
-    public fun replace(configuration: FidoConfig): Unit =
-        FidoConfigManagerImpl.replace(configuration)
+    public fun replace(configuration: FidoConfig): Unit = FidoConfigManagerImpl.replace(configuration)
 }

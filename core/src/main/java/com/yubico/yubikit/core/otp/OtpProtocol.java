@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2025 Yubico.
+ * Copyright (C) 2020-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -127,13 +127,21 @@ public class OtpProtocol implements Closeable {
   private byte[] readFeatureReport() throws IOException {
     byte[] bufferRead = new byte[FEATURE_RPT_SIZE];
     connection.receive(bufferRead);
-    logger.trace("Read feature report: {}", StringUtils.bytesToHex(bufferRead));
+    logger
+        .atTrace()
+        .setMessage("Read feature report: {}")
+        .addArgument(() -> StringUtils.bytesToHex(bufferRead))
+        .log();
     return bufferRead;
   }
 
   /* Write a single 8 byte feature report */
   private void writeFeatureReport(byte[] buffer) throws IOException {
-    logger.trace("Write feature report: {}", StringUtils.bytesToHex(buffer));
+    logger
+        .atTrace()
+        .setMessage("Write feature report: {}")
+        .addArgument(() -> StringUtils.bytesToHex(buffer))
+        .log();
     connection.send(buffer);
   }
 
@@ -167,10 +175,12 @@ public class OtpProtocol implements Closeable {
 
   /* Packs and sends one 70 byte frame */
   private int sendFrame(byte slot, byte[] payload) throws IOException {
-    logger.trace(
-        "Sending payload over HID to slot {}: {}",
-        String.format("0x%02x", 0xff & slot),
-        StringUtils.bytesToHex(payload));
+    logger
+        .atTrace()
+        .setMessage("Sending payload over HID to slot {}: {}")
+        .addArgument(() -> String.format("0x%02x", 0xff & slot))
+        .addArgument(() -> StringUtils.bytesToHex(payload))
+        .log();
 
     // Format Frame
     ByteBuffer buf =
@@ -217,8 +227,12 @@ public class OtpProtocol implements Closeable {
           // Transmission complete
           resetState();
           byte[] response = stream.toByteArray();
-          logger.trace(
-              "{} bytes read over HID: {}", response.length, StringUtils.bytesToHex(response));
+          logger
+              .atTrace()
+              .setMessage("{} bytes read over HID: {}")
+              .addArgument(response.length)
+              .addArgument(() -> StringUtils.bytesToHex(response))
+              .log();
           return response;
         }
       } else if (statusByte == 0) { // Status response
@@ -233,8 +247,11 @@ public class OtpProtocol implements Closeable {
           // Note that when deleting the "last" slot so no slots are valid, the programming sequence
           // is set to 0.
           byte[] status = Arrays.copyOfRange(report, 1, 7); // Skip first and last bytes
-          logger.trace(
-              "HID programming sequence updated. New status: {}", StringUtils.bytesToHex(status));
+          logger
+              .atTrace()
+              .setMessage("HID programming sequence updated. New status: {}")
+              .addArgument(() -> StringUtils.bytesToHex(status))
+              .log();
           return status;
         } else if (needsTouch) {
           throw new TimeoutException("Timed out waiting for touch");
