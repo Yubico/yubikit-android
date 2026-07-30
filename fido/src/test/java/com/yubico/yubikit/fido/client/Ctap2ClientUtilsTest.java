@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2025 Yubico.
+ * Copyright (C) 2024-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -70,7 +70,8 @@ public class Ctap2ClientUtilsTest {
               Collections.emptyList(),
               RP_EXAMPLE,
               null,
-              null));
+              null,
+              false));
 
       assertNull(
           Ctap2Client.Utils.filterCreds(
@@ -79,7 +80,8 @@ public class Ctap2ClientUtilsTest {
               Collections.emptyList(),
               RP_EXAMPLE,
               null,
-              null));
+              null,
+              false));
     }
 
     @Test
@@ -104,7 +106,8 @@ public class Ctap2ClientUtilsTest {
               descriptors,
               RP_EXAMPLE,
               null,
-              null));
+              null,
+              false));
 
       // cred1 will be found in test.com
       PublicKeyCredentialDescriptor desc =
@@ -117,7 +120,8 @@ public class Ctap2ClientUtilsTest {
               descriptors,
               "test.com",
               null,
-              null);
+              null,
+              false);
       assertNotNull(desc);
       assertArrayEquals(cred1, desc.getId());
     }
@@ -143,7 +147,7 @@ public class Ctap2ClientUtilsTest {
 
       assertNotNull(
           Ctap2Client.Utils.filterCreds(
-              ctap, RP_EXAMPLE, descriptors, RP_EXAMPLE, mockPinUvAuthProtocol, null));
+              ctap, RP_EXAMPLE, descriptors, RP_EXAMPLE, mockPinUvAuthProtocol, null, false));
 
       // no authenticate is called
       verify(mockPinUvAuthProtocol, never()).authenticate(any(), any());
@@ -153,7 +157,7 @@ public class Ctap2ClientUtilsTest {
 
       assertNotNull(
           Ctap2Client.Utils.filterCreds(
-              ctap, RP_EXAMPLE, descriptors, RP_EXAMPLE, null, pinUvAuthToken));
+              ctap, RP_EXAMPLE, descriptors, RP_EXAMPLE, null, pinUvAuthToken, false));
 
       // check that null pinUv params are passed to getAssertions
       verify(ctap, atLeastOnce())
@@ -161,7 +165,13 @@ public class Ctap2ClientUtilsTest {
 
       assertNotNull(
           Ctap2Client.Utils.filterCreds(
-              ctap, RP_EXAMPLE, descriptors, RP_EXAMPLE, mockPinUvAuthProtocol, pinUvAuthToken));
+              ctap,
+              RP_EXAMPLE,
+              descriptors,
+              RP_EXAMPLE,
+              mockPinUvAuthProtocol,
+              pinUvAuthToken,
+              false));
 
       // authenticate is called
       verify(mockPinUvAuthProtocol, times(1)).authenticate(any(), any());
@@ -215,7 +225,8 @@ public class Ctap2ClientUtilsTest {
               descriptors,
               RP_EXAMPLE,
               null,
-              null);
+              null,
+              false);
       assertNotNull(cred);
       assertArrayEquals(target, cred.getId());
 
@@ -226,7 +237,8 @@ public class Ctap2ClientUtilsTest {
               descriptors,
               RP_EXAMPLE,
               null,
-              null);
+              null,
+              false);
       assertNotNull(cred);
       assertArrayEquals(target, cred.getId());
 
@@ -237,7 +249,8 @@ public class Ctap2ClientUtilsTest {
               descriptors,
               RP_EXAMPLE,
               null,
-              null));
+              null,
+              false));
 
       // try smaller chunks
       cred =
@@ -250,7 +263,8 @@ public class Ctap2ClientUtilsTest {
               descriptors,
               RP_EXAMPLE,
               null,
-              null);
+              null,
+              false);
       assertNotNull(cred);
       assertArrayEquals(target, cred.getId());
     }
@@ -265,7 +279,8 @@ public class Ctap2ClientUtilsTest {
                 new PublicKeyCredentialDescriptor(PUBLIC_KEY, credId("TEST"))),
             RP_EXAMPLE,
             null,
-            null);
+            null,
+            false);
       } catch (Exception e) {
         assertTrue(e instanceof CtapException);
       }
@@ -277,7 +292,8 @@ public class Ctap2ClientUtilsTest {
             Collections.emptyList(),
             RP_EXAMPLE,
             null,
-            null);
+            null,
+            false);
       } catch (Exception e) {
         assertTrue(e instanceof ClientError);
       }
@@ -289,7 +305,8 @@ public class Ctap2ClientUtilsTest {
             Collections.emptyList(),
             "." + RP_EXAMPLE,
             null,
-            null);
+            null,
+            false);
       } catch (Exception e) {
         assertTrue(e instanceof ClientError);
       }
@@ -325,7 +342,7 @@ public class Ctap2ClientUtilsTest {
           .thenReturn(Collections.singletonList(mockAssertion));
 
       PublicKeyCredentialDescriptor result =
-          Ctap2Client.Utils.filterCreds(ctap, null, descriptors, RP_EXAMPLE, null, null);
+          Ctap2Client.Utils.filterCreds(ctap, null, descriptors, RP_EXAMPLE, null, null, false);
 
       assertNotNull(result);
       assertArrayEquals(target, result.getId());
@@ -366,7 +383,7 @@ public class Ctap2ClientUtilsTest {
           .thenReturn(Collections.singletonList(mockAssertion));
 
       PublicKeyCredentialDescriptor result =
-          Ctap2Client.Utils.filterCreds(ctap, null, descriptors, RP_EXAMPLE, null, null);
+          Ctap2Client.Utils.filterCreds(ctap, null, descriptors, RP_EXAMPLE, null, null, false);
 
       assertNotNull(result);
       assertArrayEquals(target, result.getId());
@@ -393,7 +410,7 @@ public class Ctap2ClientUtilsTest {
           .thenThrow(new CtapException(CtapException.ERR_REQUEST_TOO_LARGE));
 
       try {
-        Ctap2Client.Utils.filterCreds(ctap, null, descriptors, RP_EXAMPLE, null, null);
+        Ctap2Client.Utils.filterCreds(ctap, null, descriptors, RP_EXAMPLE, null, null, false);
         fail("Expected CtapException to be thrown");
       } catch (CtapException e) {
         assertEquals(CtapException.ERR_REQUEST_TOO_LARGE, e.getCtapError());
@@ -439,7 +456,7 @@ public class Ctap2ClientUtilsTest {
           .thenReturn(Collections.singletonList(mockAssertion));
 
       PublicKeyCredentialDescriptor result =
-          Ctap2Client.Utils.filterCreds(ctap, null, descriptors, RP_EXAMPLE, null, null);
+          Ctap2Client.Utils.filterCreds(ctap, null, descriptors, RP_EXAMPLE, null, null, false);
 
       assertNotNull(result);
       assertArrayEquals(target, result.getId());

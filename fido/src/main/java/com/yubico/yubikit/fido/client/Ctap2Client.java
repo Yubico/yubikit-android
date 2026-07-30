@@ -23,6 +23,9 @@ import com.yubico.yubikit.core.application.CommandState;
 import com.yubico.yubikit.core.fido.CtapException;
 import com.yubico.yubikit.core.util.Pair;
 import com.yubico.yubikit.fido.client.clientdata.ClientDataProvider;
+import com.yubico.yubikit.fido.client.extensions.AppIdExcludeExtension;
+import com.yubico.yubikit.fido.client.extensions.AppIdExtension;
+import com.yubico.yubikit.fido.client.extensions.AppIdFacetVerifier;
 import com.yubico.yubikit.fido.client.extensions.CredBlobExtension;
 import com.yubico.yubikit.fido.client.extensions.CredPropsExtension;
 import com.yubico.yubikit.fido.client.extensions.CredProtectExtension;
@@ -32,6 +35,7 @@ import com.yubico.yubikit.fido.client.extensions.ExtensionNotSupportedException;
 import com.yubico.yubikit.fido.client.extensions.HmacSecretExtension;
 import com.yubico.yubikit.fido.client.extensions.LargeBlobExtension;
 import com.yubico.yubikit.fido.client.extensions.MinPinLengthExtension;
+import com.yubico.yubikit.fido.client.extensions.TrustedFacetsAppIdVerifier;
 import com.yubico.yubikit.fido.ctap.ClientPin;
 import com.yubico.yubikit.fido.ctap.CredentialManagement;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
@@ -115,9 +119,32 @@ public class Ctap2Client implements WebAuthnClient {
 
   public static class UserAgentConfiguration {
     private List<String> epSupportedRpIds = new ArrayList<>();
+    private @Nullable String appIdFacetId;
+
+    // Default to the standardized trusted-facets verifier so the legacy U2F appid/appidExclude
+    // extensions work out of the box once a FacetID is supplied. They stay inert until a FacetID is
+    // set (which needs app context, e.g. FacetId.forSelf(context) from the android module), so this
+    // default does not change behavior for callers that never set one.
+    private @Nullable AppIdFacetVerifier appIdFacetVerifier = new TrustedFacetsAppIdVerifier();
 
     public void setEpSupportedRpIds(List<String> epSupportedRpIds) {
       this.epSupportedRpIds = epSupportedRpIds;
+    }
+
+    public void setAppIdFacetId(@Nullable String appIdFacetId) {
+      this.appIdFacetId = appIdFacetId;
+    }
+
+    public void setAppIdFacetVerifier(@Nullable AppIdFacetVerifier appIdFacetVerifier) {
+      this.appIdFacetVerifier = appIdFacetVerifier;
+    }
+
+    @Nullable String getAppIdFacetId() {
+      return appIdFacetId;
+    }
+
+    @Nullable AppIdFacetVerifier getAppIdFacetVerifier() {
+      return appIdFacetVerifier;
     }
 
     boolean supportsEpForRpId(@Nullable String rpId) {
@@ -531,16 +558,56 @@ public class Ctap2Client implements WebAuthnClient {
       }
     }
 
-    final PublicKeyCredentialDescriptor credToExclude =
-        excludeCredentials.isEmpty()
-            ? null
-            : Utils.filterCreds(
-                ctap,
-                rpId,
-                excludeCredentials,
-                effectiveDomain,
-                clientPin.getPinUvAuth(),
-                authParams.pinToken);
+    // Handle appidExclude extension (client extension for legacy U2F)
+    final String appIdExclude =
+        AppIdExcludeExtension.getAppIdExclude(
+            options,
+            userAgentConfiguration.getAppIdFacetId(),
+            userAgentConfiguration.getAppIdFacetVerifier());
+    PublicKeyCredentialDescriptor credToExclude = null;
+
+    if (!excludeCredentials.isEmpty()) {
+      // First try with normal rpId
+      credToExclude =
+          Utils.filterCreds(
+              ctap,
+              rpId,
+              excludeCredentials,
+              effectiveDomain,
+              clientPin.getPinUvAuth(),
+              authParams.pinToken,
+              false);
+
+      // If appidExclude is present and no match found, try with appId as rpId
+      if (credToExclude == null && appIdExclude != null) {
+        try {
+          PublicKeyCredentialDescriptor appIdExcludedCred =
+              Utils.filterCreds(
+                  ctap,
+                  appIdExclude,
+                  excludeCredentials,
+                  effectiveDomain,
+                  clientPin.getPinUvAuth(),
+                  authParams.pinToken,
+                  true);
+
+          // If we found a credential using appIdExclude, fail immediately
+          // The credential exists on the authenticator (under the legacy AppID),
+          // so we must prevent re-registration
+          if (appIdExcludedCred != null) {
+            throw new ClientError(
+                ClientError.Code.DEVICE_INELIGIBLE,
+                "Credential excluded via appidExclude extension");
+          }
+        } catch (ClientError e) {
+          // Re-throw ClientError (including our DEVICE_INELIGIBLE error)
+          throw e;
+        } catch (Exception e) {
+          logger.debug("appidExclude check failed", e);
+          // Ignore other errors in appidExclude processing, continue with normal flow
+        }
+      }
+    }
 
     final Map<String, ?> user = options.getUser().toMap(serializationType);
 
@@ -674,7 +741,8 @@ public class Ctap2Client implements WebAuthnClient {
                 allowCredentials,
                 effectiveDomain,
                 clientPin.getPinUvAuth(),
-                authParams.pinToken);
+                authParams.pinToken,
+                false);
 
     HashMap<String, Object> authenticatorInputs = new HashMap<>();
     for (Extension.AuthenticationProcessor processor : authenticationProcessors) {
@@ -694,6 +762,14 @@ public class Ctap2Client implements WebAuthnClient {
 
     Map<String, Boolean> ctapOptions =
         authParams.internalUv ? Collections.singletonMap(OPTION_USER_VERIFICATION, true) : null;
+
+    // Handle appid extension (client extension for legacy U2F)
+    final String appId =
+        AppIdExtension.getAppId(
+            options,
+            userAgentConfiguration.getAppIdFacetId(),
+            userAgentConfiguration.getAppIdFacetVerifier());
+    boolean usedAppId = false;
 
     try {
 
@@ -717,21 +793,74 @@ public class Ctap2Client implements WebAuthnClient {
               pinUvAuthProtocolVersion,
               state);
 
-      List<Pair<Ctap2Session.AssertionData, ClientExtensionResults>> result = new ArrayList<>();
-      for (final Ctap2Session.AssertionData assertionData : assertions) {
-        ClientExtensionResults clientExtensionResults = new ClientExtensionResults();
-        for (Extension.AuthenticationProcessor processor : authenticationProcessors) {
-          try {
-            clientExtensionResults.add(processor.getOutput(assertionData, authParams.pinToken));
-          } catch (RuntimeException e) {
-            handleExtensionFailure(e);
-          }
-        }
-        result.add(new Pair<>(assertionData, clientExtensionResults));
-      }
-      return result;
+      // Success with normal rpId - build results with usedAppId = false
+      return buildAssertionResults(
+          assertions, authenticationProcessors, authParams.pinToken, usedAppId);
 
     } catch (CtapException e) {
+      // Check if we should retry with appId
+      if (e.getCtapError() == CtapException.ERR_NO_CREDENTIALS && appId != null) {
+        logger.debug("ERR_NO_CREDENTIALS with normal rpId, retrying with appId: {}", appId);
+
+        try {
+          // Re-filter credentials with appId as rpId
+          PublicKeyCredentialDescriptor appIdSelectedCred =
+              allowCredentials.isEmpty()
+                  ? null
+                  : Utils.filterCreds(
+                      ctap,
+                      appId,
+                      allowCredentials,
+                      effectiveDomain,
+                      clientPin.getPinUvAuth(),
+                      authParams.pinToken,
+                      true);
+
+          // Use dummy credential if needed
+          if (!allowCredentials.isEmpty() && appIdSelectedCred == null) {
+            appIdSelectedCred =
+                new PublicKeyCredentialDescriptor(
+                    allowCredentials.get(0).getType(), new byte[] {0x00});
+          }
+
+          // Prepare auth parameters again
+          byte[] pinUvAuthParam =
+              authParams.pinToken != null
+                  ? clientPin.getPinUvAuth().authenticate(authParams.pinToken, clientDataHash)
+                  : null;
+          Integer pinUvAuthProtocolVersion =
+              authParams.pinToken != null ? clientPin.getPinUvAuth().getVersion() : null;
+
+          // Retry with appId as rpId
+          List<Ctap2Session.AssertionData> assertions =
+              ctap.getAssertions(
+                  appId,
+                  clientDataHash,
+                  appIdSelectedCred != null
+                      ? Utils.getCredentialList(Collections.singletonList(appIdSelectedCred))
+                      : null,
+                  authenticatorInputs,
+                  ctapOptions,
+                  pinUvAuthParam,
+                  pinUvAuthProtocolVersion,
+                  state);
+
+          // Success with appId - build results with usedAppId = true
+          usedAppId = true;
+          return buildAssertionResults(
+              assertions, authenticationProcessors, authParams.pinToken, usedAppId);
+
+        } catch (CtapException retryException) {
+          // Retry failed, throw original exception
+          throw e;
+        } catch (Exception retryException) {
+          // Unexpected error during retry, throw original exception
+          logger.debug("appId retry failed with unexpected error", retryException);
+          throw e;
+        }
+      }
+
+      // Handle other CTAP exceptions normally
       if (e.getCtapError() == CtapException.ERR_PIN_INVALID) {
         throw new AuthInvalidClientError(
             e, AuthInvalidClientError.AuthType.PIN, getSafePinRetryCount());
@@ -742,6 +871,45 @@ public class Ctap2Client implements WebAuthnClient {
       }
       throw ClientError.wrapCtapException(e);
     }
+  }
+
+  /**
+   * Helper method to build assertion results from assertions and extension outputs.
+   *
+   * @param assertions list of assertion data from the authenticator
+   * @param authenticationProcessors list of authentication processors from extensions
+   * @param pinToken PIN token for extension processing
+   * @param usedAppId whether the appId was used for the assertion (for appid extension output)
+   * @return list of pairs containing assertion data and client extension results
+   */
+  private List<Pair<Ctap2Session.AssertionData, ClientExtensionResults>> buildAssertionResults(
+      List<Ctap2Session.AssertionData> assertions,
+      List<Extension.AuthenticationProcessor> authenticationProcessors,
+      byte @Nullable [] pinToken,
+      boolean usedAppId)
+      throws ClientError {
+
+    List<Pair<Ctap2Session.AssertionData, ClientExtensionResults>> result = new ArrayList<>();
+    for (final Ctap2Session.AssertionData assertionData : assertions) {
+      ClientExtensionResults clientExtensionResults = new ClientExtensionResults();
+
+      // Process all extension outputs
+      for (Extension.AuthenticationProcessor processor : authenticationProcessors) {
+        try {
+          clientExtensionResults.add(processor.getOutput(assertionData, pinToken));
+        } catch (RuntimeException e) {
+          handleExtensionFailure(e);
+        }
+      }
+
+      // Override appid extension output if appId was actually used
+      if (usedAppId) {
+        clientExtensionResults.add(serializationType -> Collections.singletonMap("appid", true));
+      }
+
+      result.add(new Pair<>(assertionData, clientExtensionResults));
+    }
+    return result;
   }
 
   /**
@@ -1090,7 +1258,9 @@ public class Ctap2Client implements WebAuthnClient {
           new CredProtectExtension(),
           new HmacSecretExtension(),
           new MinPinLengthExtension(),
-          new LargeBlobExtension());
+          new LargeBlobExtension(),
+          new AppIdExtension(),
+          new AppIdExcludeExtension());
 
   static class Utils {
 
@@ -1105,11 +1275,13 @@ public class Ctap2Client implements WebAuthnClient {
         List<PublicKeyCredentialDescriptor> descriptors,
         String effectiveDomain,
         @Nullable PinUvAuthProtocol pinUvAuthProtocol,
-        byte @Nullable [] pinUvAuthToken)
+        byte @Nullable [] pinUvAuthToken,
+        boolean skipRpIdValidation)
         throws IOException, CommandException, ClientError {
       if (rpId == null) {
         rpId = effectiveDomain;
-      } else if (!(effectiveDomain.equals(rpId) || effectiveDomain.endsWith("." + rpId))) {
+      } else if (!skipRpIdValidation
+          && !(effectiveDomain.equals(rpId) || effectiveDomain.endsWith("." + rpId))) {
         throw new ClientError(
             ClientError.Code.BAD_REQUEST, "RP ID is not valid for effective domain");
       }
