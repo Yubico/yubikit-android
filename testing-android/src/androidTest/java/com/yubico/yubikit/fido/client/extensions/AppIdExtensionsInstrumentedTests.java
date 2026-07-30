@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025-2026 Yubico.
+ * Copyright (C) 2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,76 +27,11 @@ import org.junit.runners.Suite;
 
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-  ExtensionsInstrumentedTests.PinUvAuthV2Test.class,
-  ExtensionsInstrumentedTests.PinUvAuthV1Test.class,
+  AppIdExtensionsInstrumentedTests.PinUvAuthV2Test.class,
+  AppIdExtensionsInstrumentedTests.PinUvAuthV1Test.class
 })
-public class ExtensionsInstrumentedTests {
+public class AppIdExtensionsInstrumentedTests {
   public static class PinUvAuthV2Test extends FidoInstrumentedTests {
-    @Test
-    public void testCredPropsExtension() throws Throwable {
-      withDevice(CredPropsExtensionTests::test);
-    }
-
-    @Test
-    public void testPrfExtension() throws Throwable {
-      withDevice(PrfExtensionTests::testPrf);
-    }
-
-    @Test
-    public void testPrfHmacSecretMcExtension() throws Throwable {
-      withDevice(PrfExtensionTests::testPrfHmacSecretMc);
-    }
-
-    @Test
-    public void testPrfExtensionNoSupport() throws Throwable {
-      withDevice(PrfExtensionTests::testNoExtensionSupport);
-    }
-
-    @Test
-    public void testHmacSecretExtension() throws Throwable {
-      withDevice(HmacSecretExtensionTests::testHmacSecret);
-    }
-
-    @Test
-    public void testHmacSecretMcExtension() throws Throwable {
-      withDevice(HmacSecretExtensionTests::testHmacSecretMc);
-    }
-
-    @Test
-    public void testHmacSecretExtensionNoSupport() throws Throwable {
-      withDevice(HmacSecretExtensionTests::testNoExtensionSupport);
-    }
-
-    @Test
-    public void testLargeBlobExtension() throws Throwable {
-      withDevice(LargeBlobExtensionTests::test);
-    }
-
-    @Test
-    public void testCredBlobExtension() throws Throwable {
-      withDevice(CredBlobExtensionTests::test);
-    }
-
-    @Test
-    public void testCredProtectExtension() throws Throwable {
-      withDevice(CredProtectExtensionTests::test);
-    }
-
-    @Test
-    public void testMinPinLengthExtension() throws Throwable {
-      withDevice(MinPinLengthExtensionTests::test);
-    }
-
-    @Test
-    public void testThirdPartyPaymentExtension() throws Throwable {
-      withDevice(ThirdPartyPaymentExtensionTests::test);
-    }
-
-    @Test
-    public void testExtensionFailureHandling() throws Throwable {
-      withDevice(ExtensionFailureTests::test);
-    }
-
     @Test
     public void testCtap1RoundTrip() throws Throwable {
       withDevice(AppIdExtensionTests::testCtap1RoundTrip);
