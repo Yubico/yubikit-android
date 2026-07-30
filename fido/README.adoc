@@ -39,3 +39,43 @@ PublicKeyCredential credential = client.makeCredential(params);
 String response = JSONObject(credential.toMap()).toString();
 ----
 
+==== Legacy U2F extensions: `appid` and `appidExclude`
+
+The client supports the WebAuthn `appid` and `appidExclude` extensions, which let users authenticate with (or avoid re-registering) credentials that were originally created through the legacy FIDO U2F API.
+
+Both extensions require the client to decide whether the _calling application_, identified by its FacetID, is authorized to use the supplied AppID.
+Per the https://fidoalliance.org/specs/fido-uaf-v1.1-id-20170202/fido-appid-and-facets-v1.1-id-20170202.html[FIDO AppID and Facets] specification this means fetching the trusted-facets list published at the AppID URL and checking the FacetID against it.
+
+The SDK ships the standardized parts so this works out of the box:
+
+* `TrustedFacetsAppIdVerifier` (in the `fido` module) fetches the trusted-facets JSON over HTTPS, parses it, matches the FacetID, and caches the result. It is the *default* `AppIdFacetVerifier`, so you do not have to implement it.
+* `FacetId` (in the `android` module) computes the caller's FacetID from its signing certificate: `FacetId.forSelf(context)` for your own app, or `FacetId.forCallingApp(context, packageName)` when servicing another app's request.
+
+For the common self-relying-party case, setting the FacetID is all that is required:
+
+[source,java]
+----
+Ctap2Client client = new Ctap2Client(session);
+
+// Enables appid/appidExclude; the default TrustedFacetsAppIdVerifier does the rest.
+client.getUserAgentConfiguration().setAppIdFacetId(FacetId.forSelf(context));
+----
+
+Advanced integrators (for example a credential provider that must honor same-site /
+registrable-domain-suffix rules using a Public Suffix List) can override the verifier:
+
+[source,java]
+----
+client.getUserAgentConfiguration().setAppIdFacetId(FacetId.forCallingApp(context, callerPackage));
+client.getUserAgentConfiguration().setAppIdFacetVerifier((appId, facetId) -> {
+  // Your own trusted-facets evaluation (I/O + JSON + PSL/asset-links as needed).
+  return isAuthorized(appId, facetId);
+});
+----
+
+Notes:
+
+* The FacetID is the single opt-in. Until `setAppIdFacetId(...)` is called the extensions stay inert: `appid` is skipped with a warning (it is best-effort — the only consequence is that legacy U2F credentials are not found), while `appidExclude` fails closed with `ClientError.Code.BAD_REQUEST` (silently ignoring it would allow re-registering an excluded credential).
+* The verifier is invoked on the same background thread as the credential operation, so a blocking network call is acceptable; do not call it on the main thread.
+* The default verifier caches results per AppID for its lifetime and treats a missing document (HTTP 404) as "no trusted facets". A transport error propagates and is not cached, so the ceremony fails rather than silently authorizing.
+
