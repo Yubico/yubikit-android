@@ -101,6 +101,11 @@ public class AppIdExtensionsInstrumentedTests {
     public void testAppIdExcludeFailsForUnauthorizedFacet() throws Throwable {
       withDevice(AppIdExtensionTests::testAppIdExcludeFailsForUnauthorizedFacet);
     }
+
+    @Test
+    public void testAppIdAndAppIdExcludeEndToEnd() throws Throwable {
+      withDevice(AppIdExtensionTests::testAppIdAndAppIdExcludeEndToEnd);
+    }
   }
 
   @Category(PinUvAuthProtocolV1Test.class)

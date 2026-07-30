@@ -17,6 +17,7 @@ package com.yubico.yubikit.fido.client.extensions;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 
 import com.yubico.yubikit.fido.FidoTestState;
 import com.yubico.yubikit.fido.client.ClientError;
@@ -765,6 +766,123 @@ public class AppIdExtensionTests {
           } catch (ClientError e) {
             if (e.getErrorCode() != ClientError.Code.BAD_REQUEST) {
               fail("Expected BAD_REQUEST, got: " + e.getErrorCode());
+            }
+          }
+        });
+  }
+
+  // ── Step 6: Consolidated end-to-end (appid + appidExclude on one credential) ──
+
+  /**
+   * Consolidated end-to-end test: registers a <em>single</em> legacy U2F credential and then proves
+   * both extensions against that same credential in sequence.
+   *
+   * <p>Requires a key that supports <em>both</em> U2F (CTAP1) and FIDO2 (CTAP2). Some newer keys no
+   * longer implement U2F; without a U2F-bound credential there is nothing to exercise, so on such a
+   * key this test is skipped (via a JUnit assumption) rather than failed.
+   *
+   * <ol>
+   *   <li>Skip unless the CTAP2 {@code getInfo} versions list reports both {@code U2F_V2} and a
+   *       {@code FIDO_2_*} version.
+   *   <li>Register one credential via raw CTAP1, bound to {@code SHA-256(LEGACY_APP_ID)}.
+   *   <li>{@code appid}: a CTAP2 getAssertion for the real RP ID finds that credential and reports
+   *       {@code appid: true}.
+   *   <li>{@code appidExclude}: a CTAP2 makeCredential listing the same key handle is blocked with
+   *       {@link ClientError.Code#DEVICE_INELIGIBLE}.
+   * </ol>
+   */
+  public static void testAppIdAndAppIdExcludeEndToEnd(FidoTestState state) throws Throwable {
+
+    // Guard: require both U2F and FIDO2. A single CTAP2 getInfo reports both capabilities.
+    state.withCtap2(
+        (session, fidoState) -> {
+          List<String> versions = session.getCachedInfo().getVersions();
+          assumeTrue(
+              "Key does not support U2F (CTAP1); appid/appidExclude need a legacy U2F credential",
+              versions.contains("U2F_V2"));
+          assumeTrue(
+              "Key does not support FIDO2 (CTAP2)",
+              versions.contains("FIDO_2_0")
+                  || versions.contains("FIDO_2_1")
+                  || versions.contains("FIDO_2_3"));
+        });
+
+    // Step 1: create ONE legacy U2F credential via raw CTAP1.
+    byte[] keyHandle = state.withCtap1(AppIdExtensionTests::registerViaCtap1);
+
+    // Step 2: appid — authenticate with that credential and confirm the output is true.
+    state.withCtap2(
+        (session, fidoState) -> {
+          List<Extension> extensions = Collections.singletonList(new AppIdExtension());
+          Ctap2Client client = createClientWithFacet(session, extensions);
+
+          Map<String, Object> extMap = new HashMap<>();
+          extMap.put("appid", LEGACY_APP_ID);
+
+          PublicKeyCredentialRequestOptions options =
+              new PublicKeyCredentialRequestOptions(
+                  TestData.CHALLENGE,
+                  (long) 90000,
+                  TestData.RP_ID,
+                  Collections.singletonList(
+                      new PublicKeyCredentialDescriptor(
+                          PublicKeyCredential.PUBLIC_KEY_CREDENTIAL_TYPE, keyHandle)),
+                  null,
+                  Extensions.fromMap(extMap));
+
+          PublicKeyCredential assertion =
+              client.getAssertion(
+                  TestData.CLIENT_DATA_JSON_GET_PROVIDER,
+                  options,
+                  TestData.RP_ID,
+                  TestData.PIN,
+                  null);
+
+          assertNotNull("appid assertion must succeed for the U2F credential", assertion);
+          Object appidResult =
+              assertion.getClientExtensionResults().toMap(SerializationType.JSON).get("appid");
+          if (!Boolean.TRUE.equals(appidResult)) {
+            fail("appid extension output should be true, got: " + appidResult);
+          }
+        });
+
+    // Step 3: appidExclude — the same credential must block a new registration.
+    state.withCtap2(
+        (session, fidoState) -> {
+          List<Extension> extensions = Collections.singletonList(new AppIdExcludeExtension());
+          Ctap2Client client = createClientWithFacet(session, extensions);
+
+          Map<String, Object> extMap = new HashMap<>();
+          extMap.put("appidExclude", LEGACY_APP_ID);
+
+          PublicKeyCredentialCreationOptions options =
+              new PublicKeyCredentialCreationOptions(
+                  TestData.RP,
+                  new PublicKeyCredentialUserEntity(
+                      "appide2e", "appide2e".getBytes(StandardCharsets.UTF_8), "AppId E2E User"),
+                  TestData.CHALLENGE,
+                  Collections.singletonList(TestData.PUB_KEY_CRED_PARAMS_ES256),
+                  (long) 90000,
+                  Collections.singletonList(
+                      new PublicKeyCredentialDescriptor(
+                          PublicKeyCredential.PUBLIC_KEY_CREDENTIAL_TYPE, keyHandle)),
+                  new AuthenticatorSelectionCriteria(
+                      null, ResidentKeyRequirement.DISCOURAGED, null),
+                  null,
+                  Extensions.fromMap(extMap));
+
+          try {
+            client.makeCredential(
+                TestData.CLIENT_DATA_JSON_CREATE_PROVIDER,
+                options,
+                Objects.requireNonNull(options.getRp().getId()),
+                TestData.PIN,
+                null,
+                null);
+            fail("appidExclude should block re-registering the excluded U2F credential");
+          } catch (ClientError e) {
+            if (e.getErrorCode() != ClientError.Code.DEVICE_INELIGIBLE) {
+              fail("Expected DEVICE_INELIGIBLE, got: " + e.getErrorCode());
             }
           }
         });
