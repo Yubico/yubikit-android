@@ -72,13 +72,6 @@ jobs:
           name: maven-repo
           path: maven-repo
 
-      - name: Debug - list downloaded files
-        run: |
-          echo "=== maven-repo contents ==="
-          find maven-repo -type f | head -200
-          echo "=== file count ==="
-          find maven-repo -type f | wc -l
-
       - name: Generate scribe config
         run: |
           SCRIBE_SIGN_GPG=.github/scribe-sign-gpg.yml
