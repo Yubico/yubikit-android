@@ -20,11 +20,32 @@ secrets:
 
 example:
 
-  subprojects {
-      version = '3.0.2'
-  }
+  val libraryVersion = "3.0.2"
 
-NOTE: The version must *not* end with `-SNAPSHOT` for a release build.
+`libraryVersion` is the single source of truth: every subproject takes its version from it, and the
+`printVersion` task reports it to CI.
+
+NOTE: The version must *not* end with `-SNAPSHOT` for a release build. The *build* job checks this
+and fails before building.
+
+=== Release checklist
+
+1. *Create a `release/X.Y.Z` branch* off the latest `main`. The release is cut from this branch, not
+   from `main`.
+2. *Update `NEWS`* with the changes for the version being released.
+3. *Set `libraryVersion`* in the top-level `build.gradle.kts` to the release version, dropping the
+   `-SNAPSHOT` suffix, and commit it together with the `NEWS` update.
+4. *Tag the release commit* `X.Y.Z-rc.1` on the release branch and push the tag. This triggers
+   `release.yml`, described in the next section.
+5. *Iterate if needed.* If a candidate is bad, fix it on the release branch and push `-rc.2`,
+   `-rc.3`, … Leave `libraryVersion` alone; only the candidate number changes.
+6. *Publish the good deployment* at https://central.sonatype.com/publishing/deployments and drop the
+   superseded ones.
+7. *Tag the released commit* `X.Y.Z`. This is the git release marker only — plain `X.Y.Z` tags do
+   *not* trigger the workflow, so it cannot start a second release.
+8. *Merge the release branch back into `main`.*
+9. *Bump `libraryVersion`* on `main` to the next `-SNAPSHOT` (e.g. `3.0.3-SNAPSHOT`) and commit, so
+   `main` is never left on a release version.
 
 === Releasing (CI)
 
