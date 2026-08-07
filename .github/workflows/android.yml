@@ -29,8 +29,11 @@ jobs:
       - name: Verify code format
         run: ./gradlew spotlessCheck
 
+      - name: Test build-logic
+        run: ./gradlew -p build-logic test
+
       - name: Build with Gradle
-        run: NO_GPG_SIGN=true ./gradlew --stacktrace check test javadocJar publishToMavenLocal
+        run: ./gradlew --stacktrace check test build javadocJar publishToMavenLocal
 
       - name: Upload jars
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

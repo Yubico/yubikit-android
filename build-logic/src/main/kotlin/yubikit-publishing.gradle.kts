@@ -15,7 +15,6 @@
  */
 plugins {
     `maven-publish`
-    signing
 }
 
 extensions.getByType(JavaPluginExtension::class.java).apply {
@@ -24,7 +23,6 @@ extensions.getByType(JavaPluginExtension::class.java).apply {
 }
 
 val publishing: PublishingExtension = extensions.getByType(PublishingExtension::class.java)
-val signing: SigningExtension = extensions.getByType(SigningExtension::class.java)
 
 publishing.publications {
     create<MavenPublication>("maven") {
@@ -35,6 +33,6 @@ publishing.publications {
     }
 }
 
-configureSonatypeRepository(publishing)
-configureSigning(signing, publishing)
-registerFinalizeCentralPublicationTask()
+configureLocalGpgSigning(publishing)
+
+registerCentralPortalPublishTask()

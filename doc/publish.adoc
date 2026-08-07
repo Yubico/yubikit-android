@@ -1,48 +1,150 @@
 == Instructions for library publishing
-Make sure that you have permissions to publish in Yubico's Sonatype group. Generate User token at https://central.sonatype.com/account.
 
-Make sure that you put your credentials into:
+A release is fully automated in CI: pushing a release tag builds the artifacts, GPG-signs them via
+the Scribe service, and uploads them to the https://central.sonatype.com[Central Publisher Portal].
+Nothing needs to be run on a developer's machine.
 
-  > ~/.gradle/gradle.properties
+=== Prerequisites
 
-Example gradle.properties:
+*Repository secrets (one-time setup).* The `publish` job authenticates to the Central Publisher
+Portal with a User token (generated at https://central.sonatype.com/account by an account that has
+publish permission in Yubico's `com.yubico` namespace). Store the token as GitHub Actions repository
+secrets:
 
-  signing.gnupg.executable=gpg
-  signing.gnupg.keyName=<your_gpg_key_id>
-  sonatype.username=<your_username>
-  sonatype.password=<your_password>
+  SONATYPE_USERNAME=<token username>
+  SONATYPE_PASSWORD=<token password>
 
-Make sure that you have the desired library version values in the top level
+*Release version.* Set the desired library version (without the `-SNAPSHOT` suffix) in the top-level
 
-  > build.gradle
+  > build.gradle.kts
 
 example:
 
-  subprojects {
-      version = '1.0.0-SNAPSHOT'
-  }
+  val libraryVersion = "3.0.2"
 
-Suffix -SNAPSHOT allows you to deploy different version on top of what was already deployed.
+`libraryVersion` is the single source of truth: every subproject takes its version from it, and the
+`printVersion` task reports it to CI.
 
+NOTE: The version must *not* end with `-SNAPSHOT` for a release build. The *build* job checks this
+and fails before building.
 
-As a dry run, publish to your local Maven repository ($HOME/.m2/):
+=== Release checklist
+
+1. *Create a `release/X.Y.Z` branch* off the latest `main`. The release is cut from this branch, not
+   from `main`.
+2. *Update `NEWS`* with the changes for the version being released.
+3. *Set `libraryVersion`* in the top-level `build.gradle.kts` to the release version, dropping the
+   `-SNAPSHOT` suffix, and commit it together with the `NEWS` update.
+4. *Tag the release commit* `X.Y.Z-rc.1` on the release branch and push the tag. This triggers
+   `release.yml`, described in the next section.
+5. *Iterate if needed.* If a candidate is bad, fix it on the release branch and push `-rc.2`,
+   `-rc.3`, … Leave `libraryVersion` alone; only the candidate number changes.
+6. *Publish the good deployment* at https://central.sonatype.com/publishing/deployments and drop the
+   superseded ones.
+7. *Tag the released commit* `X.Y.Z`. This is the git release marker only — plain `X.Y.Z` tags do
+   *not* trigger the workflow, so it cannot start a second release.
+8. *Merge the release branch back into `main`.*
+9. *Bump `libraryVersion`* on `main` to the next `-SNAPSHOT` (e.g. `3.0.3-SNAPSHOT`) and commit, so
+   `main` is never left on a release version.
+
+=== Releasing (CI)
+
+Push a release-candidate tag — the release version plus an `-rc.<n>` suffix, e.g. `3.0.2-rc.1` for
+version `3.0.2` — to trigger the `release.yml` workflow. Only `-rc.<n>` tags trigger it.
+
+IMPORTANT: The published version is taken from `build.gradle.kts`, *not* from the tag. Tagging
+`3.0.2-rc.1` publishes version `3.0.2`; the `-rc.<n>` suffix only identifies the attempt.
+
+The *build* job enforces this: it compares the tag's base version against `printVersion` and fails
+before building if they differ. Tagging `3.0.2-rc.1` while `build.gradle.kts` still says
+`3.0.1` — or still carries a `-SNAPSHOT` suffix — stops the release immediately instead of
+silently republishing the wrong version.
+
+The pipeline runs three jobs in sequence:
+
+1. *build* — builds all modules and publishes unsigned artifacts to the local Maven repository.
+2. *sign* — sends the artifacts to the Scribe service for GPG signing and republishes the signed
+   Maven repository (with `.asc` signature files) as the `maven-repo-signed` artifact.
+3. *publish* — downloads `maven-repo-signed` and runs `publishToCentralPortal`, which uploads the
+   signed tree to the Central Publisher Portal.
+
+The upload is created as a `USER_MANAGED` deployment: the portal validates it but does *not* release
+it automatically. Finish the release by verifying and pressing *Publish* at
+https://central.sonatype.com/publishing/deployments.
+
+If a candidate is not good, fix it and push the next tag (`3.0.2-rc.2`, `3.0.2-rc.3`, …) without
+touching the version in `build.gradle.kts`. Each candidate uploads as its own deployment, labelled
+with the tag it was built from. Drop the superseded deployments in the portal and publish the one
+you are happy with. Once a version is published to Central it cannot be re-uploaded, so re-tagging
+after a successful publish requires a new version.
+
+=== How signing places signatures
+
+The *sign* job enumerates the artifacts (`*.jar`, `*.aar`, `*.pom`, `*.module`) under the downloaded
+`maven-repo/` tree, generates the Scribe config from that file list, and submits it. Scribe returns a
+detached binary signature (`.sig`) for each file, preserving its repository-relative path. The job
+then converts every `.sig` to an armored `.asc` and writes it next to its artifact, recovering the
+target from the signature's *full relative path* (not just its filename) so artifacts that share a
+name across modules cannot be mismatched. The `publish` job uploads the whole tree, `.asc` files
+included.
+
+=== How the upload preserves signatures
+
+The artifacts are uploaded as a single deployment "bundle" (a zip of the signed Maven repository
+tree). The whole tree — including the `.asc` signatures produced by Scribe and freshly generated
+`md5`/`sha1`/`sha256`/`sha512` checksums — is uploaded verbatim, so the signatures are preserved.
+This replaces the
+`maven-publish` plugin's upload, which ignored the externally produced signatures.
+
+=== Publishing from a local machine (fallback)
+
+If you need to publish outside CI (e.g. re-uploading a signed build), put your Central Portal User
+token in `~/.gradle/gradle.properties`:
+
+  sonatype.username=<token username>
+  sonatype.password=<token password>
+
+Then download the `maven-repo-signed` artifact from the GitHub Actions run and extract it into your
+local Maven repository:
+
+  rm -rf ~/.m2/repository/com/yubico/yubikit/
+  unzip maven-repo-signed.zip -d ~/.m2/repository/com/yubico/yubikit/
+
+Upload the signed artifacts to the Central Publisher Portal:
+
+  ./gradlew publishToCentralPortal
+
+The task reads from `~/.m2/repository` by default. Override the source repository, deployment name,
+or publishing type with Gradle properties if needed:
+
+  ./gradlew publishToCentralPortal \
+      -PcentralPortal.repoDir=/path/to/maven/repo \
+      -PcentralPortal.deploymentName="yubikit-android 3.0.2" \
+      -PcentralPortal.publishingType=USER_MANAGED
+
+`publishingType` defaults to `USER_MANAGED` (validated but not released until you press *Publish* in
+the portal). Use `AUTOMATIC` to publish immediately after validation passes.
+
+=== Emergency signing on a local machine
+
+If the Scribe service is unavailable and you must sign a release yourself, set the
+`localSigning.gpgKey` property to your GPG key id when publishing to the local Maven repository. The
+`signing` plugin then signs the artifacts with your local `gpg`, producing the `.asc` files that
+`publishToCentralPortal` uploads:
+
+  ./gradlew publishToMavenLocal -PlocalSigning.gpgKey=0x1234ABCD
+  ./gradlew publishToCentralPortal
+
+An empty value (`-PlocalSigning.gpgKey`) signs with gpg's default key. Without the property,
+signing is left to Scribe and nothing changes.
+
+NOTE: The Central Portal only accepts a signature whose matching public key is discoverable on a
+public keyserver (e.g. keys.openpgp.org). Publish your public key there before using this fallback
+for a real release.
+
+=== Dry run
+
+As a dry run, publish to your local Maven repository (`$HOME/.m2/`):
 
   ./gradlew publishToMavenLocal
 
-
-Run this command in Terminal to push to Sonatype staging repository:
-
-  ./gradlew publish finalizeCentralPublication
-
-Publishing can also be done for a single module:
-
-  ./gradlew modulename:publish finalizeCentralPublication
-
-Publish the deployment through https://central.sonatype.com/publishing.
-
-For any OSSRH Staging API service issues visit https://ossrh-staging-api.central.sonatype.com/swagger-ui/#/ to review the repository.
-
-When building release, gradle will by default execute signing tasks. When this is not desired, for
-example during CI builds, it is possible to disable signing with `NO_GPG_SIGN` env variable set to `true`.
-
-  NO_GPG_SIGN=true ./gradlew publishToMaven

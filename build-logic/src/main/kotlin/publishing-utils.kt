@@ -19,37 +19,9 @@ import org.gradle.api.GradleException
 import org.gradle.api.Project
 import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.publish.maven.MavenPom
+import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.plugins.signing.SigningExtension
-import java.net.HttpURLConnection
-import java.net.URI
-import java.util.Base64
-
-fun Project.configureSonatypeRepository(publishing: PublishingExtension) {
-    publishing.repositories {
-        maven {
-            name = "sonatype"
-            url =
-                uri("https://ossrh-staging-api.central.sonatype.com/service/local/staging/deploy/maven2/")
-            credentials {
-                username = findProperty("sonatype.username")?.toString()
-                password = findProperty("sonatype.password")?.toString()
-            }
-        }
-    }
-}
-
-fun Project.configureSigning(signing: SigningExtension, publishing: PublishingExtension) {
-    val isReleaseVersion = !version.toString().endsWith("SNAPSHOT")
-
-    tasks.withType(org.gradle.plugins.signing.Sign::class.java).configureEach {
-        onlyIf { isReleaseVersion && System.getenv("NO_GPG_SIGN") != "true" }
-    }
-
-    signing.apply {
-        useGpgCmd()
-        publishing.publications.findByName("maven")?.let { pub -> sign(pub) }
-    }
-}
+import java.io.File
 
 fun Project.applyPomConfiguration(): Action<MavenPom> {
     return Action<MavenPom> {
@@ -77,54 +49,74 @@ fun Project.applyPomConfiguration(): Action<MavenPom> {
     }
 }
 
-fun Project.registerFinalizeCentralPublicationTask() {
-    // Register the task only once on the root project
-    val rootProject = this.rootProject
-
-    if (rootProject.tasks.findByName("finalizeCentralPublication") == null) {
-        rootProject.tasks.register("finalizeCentralPublication") {
-            description = "Notifies Sonatype Central that a manual publication is complete."
-            group = "publishing"
-
-            // Ensure this task runs after any publish task in the build
-            rootProject.subprojects {
-                tasks.matching { it.name == "publish" }.configureEach {
-                    this@register.mustRunAfter(this)
-                }
-            }
-
-            doLast {
-                finalizeSonatypeCentralPublication(rootProject)
-            }
-        }
+/**
+ * Emergency local signing fallback for when the Scribe CI service is unavailable.
+ *
+ * When the `localSigning.gpgKey` project property is set (e.g.
+ * `-PlocalSigning.gpgKey=0x1234ABCD`), the Gradle `signing` plugin is applied and the `maven`
+ * publication is signed with the local `gpg` command, so `publishToMavenLocal` emits `.asc` files
+ * that [registerCentralPortalPublishTask] then uploads. An empty value signs with gpg's default
+ * key. Without the property nothing changes and signing is left to Scribe.
+ *
+ * Note: the Central Portal only validates a signature whose matching public key is discoverable on
+ * a public keyserver (e.g. keys.openpgp.org).
+ */
+fun Project.configureLocalGpgSigning(publishing: PublishingExtension) {
+    val gpgKey = findProperty("localSigning.gpgKey") as String? ?: return
+    pluginManager.apply("signing")
+    val signing = extensions.getByType(SigningExtension::class.java)
+    signing.useGpgCmd()
+    if (gpgKey.isNotBlank()) {
+        extensions.extraProperties["signing.gnupg.keyName"] = gpgKey
     }
+    (publishing.publications.findByName("maven") as? MavenPublication)?.let { signing.sign(it) }
 }
 
-private fun finalizeSonatypeCentralPublication(project: Project) {
-    val sonatypeNamespace = "com.yubico"
-    val sonatypeUserName = project.findProperty("sonatype.username") as String?
-    val sonatypePassword = project.findProperty("sonatype.password") as String?
-    val sonatypeBearerToken = "$sonatypeUserName:$sonatypePassword"
-        .toByteArray()
-        .let { Base64.getEncoder().encodeToString(it) }
+/**
+ * Registers the root `publishToCentralPortal` task, which uploads the Scribe-signed artifacts from
+ * a local Maven repository to the Sonatype Central Publisher Portal.
+ *
+ * Unlike the `maven-publish` plugin (which ignores externally produced `.asc` signatures), this
+ * bundles the whole signed repository tree — signatures included — and uploads it in a single
+ * request, so the signatures reach Central.
+ */
+fun Project.registerCentralPortalPublishTask() {
+    val rootProject = this.rootProject
+    if (rootProject.tasks.findByName("publishToCentralPortal") != null) return
 
-    val url =
-        URI("https://ossrh-staging-api.central.sonatype.com/manual/upload/defaultRepository/$sonatypeNamespace").toURL()
+    rootProject.tasks.register("publishToCentralPortal") {
+        description = "Uploads Scribe-signed artifacts from a local Maven repo to Sonatype Central."
+        group = "publishing"
 
-    project.logger.lifecycle("Finalizing publication by sending POST to $url")
+        doLast {
+            val username = rootProject.findProperty("sonatype.username") as String?
+                ?: throw GradleException("Missing 'sonatype.username' (see doc/publish.adoc)")
+            val password = rootProject.findProperty("sonatype.password") as String?
+                ?: throw GradleException("Missing 'sonatype.password' (see doc/publish.adoc)")
 
-    val connection = (url.openConnection() as HttpURLConnection).apply {
-        requestMethod = "POST"
-        setRequestProperty("Authorization", "Bearer $sonatypeBearerToken")
-        setRequestProperty("User-Agent", "Gradle/${project.gradle.gradleVersion}")
-        doOutput = true
-    }
+            val repoRoot = File(
+                (rootProject.findProperty("centralPortal.repoDir") as String?)
+                    ?: "${System.getProperty("user.home")}/.m2/repository"
+            )
+            val groupPath = rootProject.group.toString().replace('.', '/')
+            val publishingType =
+                (rootProject.findProperty("centralPortal.publishingType") as String?) ?: "USER_MANAGED"
+            val deploymentName = (rootProject.findProperty("centralPortal.deploymentName") as String?)
+                ?: "${rootProject.group} (manual upload)"
 
-    val responseCode = connection.responseCode
-    project.logger.lifecycle("Sonatype Central response: $responseCode ${connection.responseMessage}")
+            val bundle = rootProject.layout.buildDirectory
+                .file("central-portal/bundle.zip").get().asFile
 
-    if (responseCode !in 200..299) {
-        val errorStream = connection.errorStream?.bufferedReader()?.readText()
-        throw GradleException("Failed to finalize publication on Sonatype Central. Response: $responseCode. Body: $errorStream")
+            val uploader = CentralPortalUploader()
+            uploader.createBundle(repoRoot, groupPath, bundle)
+            rootProject.logger.lifecycle(
+                "Uploading ${bundle.length()} byte bundle from ${repoRoot.resolve(groupPath)} to Central Portal"
+            )
+            val deploymentId = uploader.upload(bundle, username, password, deploymentName, publishingType)
+            rootProject.logger.lifecycle("Central Portal deployment created: $deploymentId")
+            rootProject.logger.lifecycle(
+                "Track and publish it at https://central.sonatype.com/publishing/deployments"
+            )
+        }
     }
 }
