@@ -3,8 +3,11 @@ name: Release
 on:
   push:
     tags:
-      - '[0-9]+.[0-9]+.[0-9]+'
-      - '[0-9]+.[0-9]+.[0-9]+-RC[0-9]+'
+      # Release candidates only. The published version comes from the `version`
+      # property in build.gradle.kts, not from the tag -- the tag just marks which
+      # attempt to build. Re-tag as -rc.2, -rc.3, ... until a candidate is good,
+      # then release that deployment from the Central Portal.
+      - '[0-9]+.[0-9]+.[0-9]+-rc.[0-9]+'
 
 permissions:
   contents: read
@@ -27,6 +30,21 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
+
+      # The published version comes from build.gradle.kts, not from the tag, so a stale
+      # version would silently republish the previous release under a new tag. Fail here,
+      # before anything is built or signed.
+      - name: Verify tag matches project version
+        run: |
+          # pipefail so a Gradle failure surfaces as itself, not as a bogus version mismatch.
+          set -o pipefail
+          tag_version="${GITHUB_REF_NAME%-rc.*}"
+          project_version="$(./gradlew -q printVersion | tail -n 1)"
+          if [ "$tag_version" != "$project_version" ]; then
+            echo "::error::Tag ${GITHUB_REF_NAME} builds version '${tag_version}', but build.gradle.kts declares '${project_version}'. Set the version in build.gradle.kts to '${tag_version}' (without -SNAPSHOT), or retag."
+            exit 1
+          fi
+          echo "Tag ${GITHUB_REF_NAME} matches project version ${project_version}"
 
       - name: Verify code format
         run: ./gradlew spotlessCheck

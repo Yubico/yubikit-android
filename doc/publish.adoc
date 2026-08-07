@@ -28,8 +28,18 @@ NOTE: The version must *not* end with `-SNAPSHOT` for a release build.
 
 === Releasing (CI)
 
-Push a tag matching the release version (e.g. `3.0.2` or `3.0.2-RC1`) to trigger the `release.yml`
-workflow. The pipeline runs three jobs in sequence:
+Push a release-candidate tag — the release version plus an `-rc.<n>` suffix, e.g. `3.0.2-rc.1` for
+version `3.0.2` — to trigger the `release.yml` workflow. Only `-rc.<n>` tags trigger it.
+
+IMPORTANT: The published version is taken from `build.gradle.kts`, *not* from the tag. Tagging
+`3.0.2-rc.1` publishes version `3.0.2`; the `-rc.<n>` suffix only identifies the attempt.
+
+The *build* job enforces this: it compares the tag's base version against `printVersion` and fails
+before building if they differ. Tagging `3.0.2-rc.1` while `build.gradle.kts` still says
+`3.0.1` — or still carries a `-SNAPSHOT` suffix — stops the release immediately instead of
+silently republishing the wrong version.
+
+The pipeline runs three jobs in sequence:
 
 1. *build* — builds all modules and publishes unsigned artifacts to the local Maven repository.
 2. *sign* — sends the artifacts to the Scribe service for GPG signing and republishes the signed
@@ -40,6 +50,12 @@ workflow. The pipeline runs three jobs in sequence:
 The upload is created as a `USER_MANAGED` deployment: the portal validates it but does *not* release
 it automatically. Finish the release by verifying and pressing *Publish* at
 https://central.sonatype.com/publishing/deployments.
+
+If a candidate is not good, fix it and push the next tag (`3.0.2-rc.2`, `3.0.2-rc.3`, …) without
+touching the version in `build.gradle.kts`. Each candidate uploads as its own deployment, labelled
+with the tag it was built from. Drop the superseded deployments in the portal and publish the one
+you are happy with. Once a version is published to Central it cannot be re-uploaded, so re-tagging
+after a successful publish requires a new version.
 
 === How signing places signatures
 

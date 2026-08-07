@@ -32,12 +32,25 @@ allprojects {
     group = "com.yubico.yubikit"
 }
 
+// Single source of truth for the published library version. The release workflow
+// cross-checks this against the release-candidate tag that triggered it, so the
+// two cannot drift apart.
+val libraryVersion = "3.2.1-SNAPSHOT"
+
 subprojects {
-    version = "3.2.1-SNAPSHOT"
+    version = libraryVersion
     tasks.withType<Javadoc>().configureEach {
         (options as? StandardJavadocDocletOptions)?.addStringOption(
             "Xdoclint:all,-missing",
             "-quiet"
         )
     }
+}
+
+// Consumed by the release workflow to verify the tag against the version being built.
+tasks.register("printVersion") {
+    group = "help"
+    description = "Prints the library version to stdout."
+    val libVersion = libraryVersion
+    doLast { println(libVersion) }
 }
