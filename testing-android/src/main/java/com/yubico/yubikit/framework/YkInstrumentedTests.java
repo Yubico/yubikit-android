@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2025 Yubico.
+ * Copyright (C) 2022-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,17 +24,37 @@ import com.yubico.yubikit.core.UsbPid;
 import com.yubico.yubikit.core.YubiKeyDevice;
 import org.jspecify.annotations.Nullable;
 import org.junit.After;
+import org.junit.AssumptionViolatedException;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.TestName;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class YkInstrumentedTests {
+
+  private static final Logger logger = LoggerFactory.getLogger(YkInstrumentedTests.class);
 
   private @Nullable TestActivity activity;
   protected @Nullable YubiKeyDevice device = null;
   protected @Nullable UsbPid usbPid = null;
 
   @Rule public final TestName name = new TestName();
+
+  /**
+   * Logs why a test was skipped; AGP reports an assumption failure as a bare {@code <skipped/>}
+   * with no message, so a whole suite skipping reads like a suite that ran.
+   */
+  @Rule
+  public final TestWatcher skipReasonLogger =
+      new TestWatcher() {
+        @Override
+        protected void skipped(AssumptionViolatedException e, Description description) {
+          logger.error("SKIPPED {}: {}", description.getMethodName(), e.getMessage());
+        }
+      };
 
   @Rule
   public final ActivityScenarioRule<TestActivity> scenarioRule =

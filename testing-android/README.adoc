@@ -3,7 +3,7 @@
 This module contains tests for execution on a physical device and with YubiKey connected via USB or NFC. The test runs need a presence of someone who can tap the key when needed and therefore are these tests suitable only for local execution.
 
 === Recommended setup
-1. A physical Android device running API 19+
+1. A physical Android device running API 21+
 2. YubiKey
 3. (optional) OTG cable for connecting a YubiKey
 ** modern devices with USB-C connector will work with USB-C YubiKeys directly
