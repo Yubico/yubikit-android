@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Yubico.
+ * Copyright (C) 2023-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -192,5 +192,38 @@ public class CoseTest {
     PublicKey publicKey = Cose.getPublicKey(EDDSA);
     Assert.assertNotNull(publicKey);
     Assert.assertEquals(EDDSA_PUB, encode(publicKey.getEncoded()));
+  }
+
+  /*
+   * Regression coverage for signed decoding of EC2 coordinates. The vectors and the round-trip
+   * assertion live in CoseTestVectors so that this test and the Android instrumented test in
+   * :testing-android share one source of truth; see that class for why these coordinates matter.
+   *
+   * The plain high-bit case (negative, but no truncation) is already covered by getPublicKeyES256,
+   * whose x starts 0xC1.
+   */
+
+  @Test
+  public void getPublicKeyES256TruncatingX()
+      throws InvalidKeySpecException, NoSuchAlgorithmException {
+    CoseTestVectors.assertRoundTrip(CoseTestVectors.ES256_TRUNCATING_X);
+  }
+
+  @Test
+  public void getPublicKeyES256TruncatingY()
+      throws InvalidKeySpecException, NoSuchAlgorithmException {
+    CoseTestVectors.assertRoundTrip(CoseTestVectors.ES256_TRUNCATING_Y);
+  }
+
+  @Test
+  public void getPublicKeyES384TruncatingX()
+      throws InvalidKeySpecException, NoSuchAlgorithmException {
+    CoseTestVectors.assertRoundTrip(CoseTestVectors.ES384_TRUNCATING_X);
+  }
+
+  @Test
+  public void getPublicKeyES256LeadingFf()
+      throws InvalidKeySpecException, NoSuchAlgorithmException {
+    CoseTestVectors.assertRoundTrip(CoseTestVectors.ES256_LEADING_FF);
   }
 }
