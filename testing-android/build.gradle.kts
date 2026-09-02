@@ -61,12 +61,12 @@ dependencies {
 
     coreLibraryDesugaring(libs.desugar.jdk.libs)
 
+    implementation(libs.androidx.appcompat)
+
     implementation(libs.androidx.junit)
     implementation(libs.androidx.test.core)
     implementation(libs.androidx.test.rules)
     implementation(libs.androidx.test.runner)
-
-    implementation(libs.material)
 
     implementation(libs.logback.android)
 }
