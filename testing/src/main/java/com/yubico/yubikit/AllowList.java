@@ -63,8 +63,11 @@ public class AllowList {
   public void verify(YubiKeyDevice connectedDevice, @Nullable UsbPid pid) {
     Integer serialNumber = getDeviceSerialNumber(connectedDevice, pid);
     if (pid != UsbPid.OTHER && !isDeviceAllowed(serialNumber)) {
-      logger.error("{}", allowListProvider.onNotAllowedErrorMessage(serialNumber));
-      System.exit(-1);
+      String message = allowListProvider.onNotAllowedErrorMessage(serialNumber);
+      logger.error("{}", message);
+      // Throw rather than System.exit: an exit kills the process, so the run emits no report at
+      // all. Safe either way - verify() runs before any session is opened on the key.
+      throw new AssertionError(message);
     }
   }
 
