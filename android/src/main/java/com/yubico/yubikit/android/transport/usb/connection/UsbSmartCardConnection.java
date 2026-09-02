@@ -170,14 +170,12 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
           connection.bulkTransfer(
               endpointOut, bufferOut, bytesSent, bufferOut.length - bytesSent, TIMEOUT);
       if (bytesSentPackage > 0) {
-        final int sentOffset = bytesSent;
-        final int sentLength = bytesSentPackage;
-        logger
-            .atTrace()
-            .setMessage("{} bytes sent over ccid: {}")
-            .addArgument(bytesSentPackage)
-            .addArgument(() -> StringUtils.bytesToHex(bufferOut, sentOffset, sentLength))
-            .log();
+        if (logger.isTraceEnabled()) {
+          logger.trace(
+              "{} bytes sent over ccid: {}",
+              bytesSentPackage,
+              StringUtils.bytesToHex(bufferOut, bytesSent, bytesSentPackage));
+        }
         bytesSent += bytesSentPackage;
       } else if (bytesSentPackage < 0) {
         throw new IOException("Failed to send " + (bufferOut.length - bytesSent) + " bytes");
@@ -200,13 +198,10 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
     do {
       bytesRead = connection.bulkTransfer(endpointIn, bufferRead, bufferRead.length, TIMEOUT);
       if (bytesRead > 0) {
-        final int readLength = bytesRead;
-        logger
-            .atTrace()
-            .setMessage("{} bytes received: {}")
-            .addArgument(bytesRead)
-            .addArgument(() -> StringUtils.bytesToHex(bufferRead, 0, readLength))
-            .log();
+        if (logger.isTraceEnabled()) {
+          logger.trace(
+              "{} bytes received: {}", bytesRead, StringUtils.bytesToHex(bufferRead, 0, bytesRead));
+        }
 
         if (receivedExpectedPrefix) {
           stream.write(bufferRead, 0, bytesRead);

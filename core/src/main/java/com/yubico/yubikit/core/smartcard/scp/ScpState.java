@@ -79,11 +79,9 @@ public class ScpState {
 
   public byte[] encrypt(byte[] data) {
     // Pad the data
-    logger
-        .atTrace()
-        .setMessage("Plaintext data: {}")
-        .addArgument(() -> StringUtils.bytesToHex(data))
-        .log();
+    if (logger.isTraceEnabled()) {
+      logger.trace("Plaintext data: {}", StringUtils.bytesToHex(data));
+    }
     int padLen = 16 - (data.length % 16);
     byte[] padded = Arrays.copyOf(data, data.length + padLen);
     padded[data.length] = (byte) 0x80;
@@ -128,12 +126,9 @@ public class ScpState {
       decrypted = cipher.doFinal(encrypted);
       for (int i = decrypted.length - 1; i > 0; i--) {
         if (decrypted[i] == (byte) 0x80) {
-          final byte[] result = decrypted;
-          logger
-              .atTrace()
-              .setMessage("Plaintext resp: {}")
-              .addArgument(() -> StringUtils.bytesToHex(result))
-              .log();
+          if (logger.isTraceEnabled()) {
+            logger.trace("Plaintext resp: {}", StringUtils.bytesToHex(decrypted));
+          }
           return Arrays.copyOf(decrypted, i);
         } else if (decrypted[i] != 0x00) {
           break;
