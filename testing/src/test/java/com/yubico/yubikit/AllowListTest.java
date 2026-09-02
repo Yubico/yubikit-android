@@ -23,6 +23,7 @@ import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.UsbPid;
 import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.YubiKeyDevice;
+import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.util.Callback;
 import com.yubico.yubikit.core.util.Result;
 import java.io.IOException;
@@ -59,6 +60,60 @@ public class AllowListTest {
     @Override
     public String onNotAllowedErrorMessage(Integer serialNumber) {
       return "not allowed: " + serialNumber;
+    }
+  }
+
+  /**
+   * Answers "file not found" to every APDU, so no applet can be selected. That is how a FIDO-only
+   * Security Key presents over NFC, and it makes readInfo give up with an IllegalArgumentException,
+   * which AllowList maps to serial number 0.
+   */
+  private static class SerialLessNfcConnection implements SmartCardConnection {
+    @Override
+    public byte[] sendAndReceive(byte[] apdu) {
+      return new byte[] {0x6a, (byte) 0x82}; // SW_FILE_NOT_FOUND
+    }
+
+    @Override
+    public Transport getTransport() {
+      return Transport.NFC;
+    }
+
+    @Override
+    public boolean isExtendedLengthApduSupported() {
+      return false;
+    }
+
+    @Override
+    public byte[] getAtr() {
+      return new byte[0];
+    }
+
+    @Override
+    public void close() {}
+  }
+
+  /** A key with no serial number, reachable only over NFC. */
+  private static class SerialLessDevice implements YubiKeyDevice {
+    @Override
+    public Transport getTransport() {
+      return Transport.NFC;
+    }
+
+    @Override
+    public boolean supportsConnection(Class<? extends YubiKeyConnection> connectionType) {
+      return connectionType.isAssignableFrom(SmartCardConnection.class);
+    }
+
+    @Override
+    public <T extends YubiKeyConnection> void requestConnection(
+        Class<T> connectionType, Callback<Result<T, IOException>> callback) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public <T extends YubiKeyConnection> T openConnection(Class<T> connectionType) {
+      return connectionType.cast(new SerialLessNfcConnection());
     }
   }
 
@@ -123,9 +178,28 @@ public class AllowListTest {
     assertEquals(NO_LIST, error.getMessage());
   }
 
-  /** An unreadable serial must fail closed, not be waved through. */
+  /**
+   * A key with no serial number resolves to 0, so 0 is what admits Security Keys. Distinct from a
+   * serial that could not be read at all, which resolves to null - see {@link
+   * #unreadableSerialIsRejected()}.
+   */
   @Test
-  public void unknownSerialIsRejected() {
+  public void serialLessKeyIsAllowedByZeroEntry() {
+    allowListOf(0).verify(new SerialLessDevice(), null);
+  }
+
+  @Test
+  public void serialLessKeyIsRejectedWithoutZeroEntry() {
+    AssertionError error =
+        assertThrows(
+            AssertionError.class, () -> allowListOf(1234567).verify(new SerialLessDevice(), null));
+
+    assertEquals("not allowed: 0", error.getMessage());
+  }
+
+  /** A serial that could not be read at all must fail closed, not be waved through. */
+  @Test
+  public void unreadableSerialIsRejected() {
     AssertionError error =
         assertThrows(
             AssertionError.class,
