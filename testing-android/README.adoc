@@ -49,3 +49,11 @@ If the file is missing, or the connected key is not listed, each test that needs
 It is also possible to run the tests from commandline by executing following command after the device is connected through adb:
 
   ./gradlew testing-android:connectedAndroidTest
+
+=== Tests that need no YubiKey
+A few instrumented tests exercise the harness itself rather than a key, and are collected in the `KeylessDeviceTests` suite. They need an Android device but no YubiKey and no `allowed_serials.csv`, so they run unattended:
+
+  ./gradlew testing-android:connectedAndroidTest \
+    -Pandroid.testInstrumentationRunnerArguments.class=com.yubico.yubikit.KeylessDeviceTests
+
+The suite is deliberately separate from `DeviceTests`, whose members all block waiting for a key. Add a test to it only if it needs no YubiKey.

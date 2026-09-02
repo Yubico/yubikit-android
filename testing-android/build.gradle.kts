@@ -54,20 +54,27 @@ android {
 }
 
 dependencies {
+    // The SDK modules under test.
     api(project(":android"))
     api(project(":fido"))
     api(project(":piv"))
     api(project(":testing"))
 
+    // Backports the java.* APIs logback-android needs at minSdk 21; required by
+    // isCoreLibraryDesugaringEnabled above.
     coreLibraryDesugaring(libs.desugar.jdk.libs)
 
+    // Theme parent, and TestActivity extends AppCompatActivity. Deliberately not
+    // Material: its FocusRingDrawable aborts dex2oat on ART 5.0, so the test APK
+    // will not install on API 21.
+    implementation(libs.androidx.appcompat)
+
+    // Instrumentation harness: AndroidJUnit4, ActivityScenario, the test runner.
     implementation(libs.androidx.junit)
     implementation(libs.androidx.test.core)
-    implementation(libs.androidx.test.rules)
     implementation(libs.androidx.test.runner)
 
-    implementation(libs.material)
-
+    // SLF4J binding. The SDK modules expose slf4j-api only, so tests pick one.
     implementation(libs.logback.android)
 }
 
