@@ -36,6 +36,8 @@ Example `allowed_serials.csv` content:
 
 The test framework will now only run on the YubiKeys specified in this file.
 
+If the file is missing, or the connected key is not listed, each test that needs a YubiKey fails with an assertion naming the reason and the run still produces a report. Tests that need no YubiKey are unaffected.
+
 === Running the tests
 1. Make sure that the YubiKey you are using is meant for testing. Don't proceed with the tests if unsure.
  Running the instrumented tests will: change PIN, PUK, management key and overwrite stored certificates in the PIV application

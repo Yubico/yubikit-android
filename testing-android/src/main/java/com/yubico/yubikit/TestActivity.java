@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2025 Yubico.
+ * Copyright (C) 2022-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,7 +53,10 @@ public class TestActivity extends AppCompatActivity {
 
   private static final Logger logger = LoggerFactory.getLogger(TestActivity.class);
 
-  private static final AllowList allowList = new AllowList(new AndroidAllowListProvider());
+  /** Built on first use, so launching the activity does not read allowed_serials.csv. */
+  private static final class AllowListHolder {
+    static final AllowList INSTANCE = new AllowList(new AndroidAllowListProvider());
+  }
 
   @Override
   protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -138,7 +141,7 @@ public class TestActivity extends AppCompatActivity {
             ? ((UsbYubiKeyDevice) connectedDevice).getPid()
             : null;
 
-    allowList.verify(connectedDevice, pid);
+    AllowListHolder.INSTANCE.verify(connectedDevice, pid);
 
     runOnUiThread(
         () -> {
