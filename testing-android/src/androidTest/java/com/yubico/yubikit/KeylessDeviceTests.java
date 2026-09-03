@@ -16,6 +16,7 @@
 
 package com.yubico.yubikit;
 
+import com.yubico.yubikit.fido.CoseInstrumentedTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -34,6 +35,7 @@ import org.junit.runners.Suite;
 @Suite.SuiteClasses({
   ThemeInflationTests.class,
   LoggingSmokeTests.class,
-  GuardedLoggingCallSitesTest.class
+  GuardedLoggingCallSitesTest.class,
+  CoseInstrumentedTest.class
 })
 public class KeylessDeviceTests {}

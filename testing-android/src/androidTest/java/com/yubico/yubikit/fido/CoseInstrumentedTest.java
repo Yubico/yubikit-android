@@ -33,13 +33,13 @@ import org.junit.runner.RunWith;
  * silently wrong key, Conscrypt throws {@link InvalidKeySpecException}. Both are failures and
  * {@link CoseTestVectors#assertRoundTrip} catches either.
  *
- * <p>Needs no YubiKey, so it is deliberately not a member of any of the hardware test suites. Run
- * it with:
+ * <p>Needs no YubiKey, so it belongs to {@code KeylessDeviceTests} rather than {@code DeviceTests}
+ * and runs unattended:
  *
  * <pre>
  * ./gradlew :testing-android:connectedDebugAndroidTest \
  *     -Pandroid.testInstrumentationRunnerArguments.class=\
- * com.yubico.yubikit.fido.CoseInstrumentedTest
+ * com.yubico.yubikit.KeylessDeviceTests
  * </pre>
  */
 @RunWith(AndroidJUnit4.class)
