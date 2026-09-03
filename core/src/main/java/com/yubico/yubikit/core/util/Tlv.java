@@ -18,6 +18,7 @@ package com.yubico.yubikit.core.util;
 
 import java.io.ByteArrayOutputStream;
 import java.math.BigInteger;
+import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Locale;
@@ -29,6 +30,12 @@ import org.jspecify.annotations.Nullable;
  * <p>This class handles BER-TLV encoded data with determinate length.
  */
 public class Tlv {
+  /** Maximum number of bytes in a tag, bounded by the int the tag is decoded into. */
+  private static final int MAX_TAG_BYTES = 4;
+
+  /** Maximum number of bytes in a long form length, bounded by the int it is decoded into. */
+  private static final int MAX_LENGTH_BYTES = 4;
+
   private final int tag;
   private final int length;
   private final byte[] bytes;
@@ -117,8 +124,15 @@ public class Tlv {
     int tag = buffer.get() & 0xFF;
     if ((tag & 0x1F) == 0x1F) { // Long form tag
       tag = (tag << 8) | (buffer.get() & 0xFF);
+      int tagBytes = 2;
       while ((tag & 0x80) == 0x80) {
+        // Without this the shift below silently overflows the int and misparses the tag.
+        if (tagBytes == MAX_TAG_BYTES) {
+          throw new IllegalArgumentException(
+              String.format(Locale.ROOT, "Tag exceeds %d bytes", MAX_TAG_BYTES));
+        }
         tag = (tag << 8) | (buffer.get() & 0xFF);
+        tagBytes++;
       }
     }
 
@@ -127,10 +141,26 @@ public class Tlv {
       throw new IllegalArgumentException("Indefinite length not supported");
     } else if (length > 0x80) {
       int lengthLn = length - 0x80;
+      // A long form length may declare up to 127 bytes; anything past 4 overflows the int below,
+      // which would silently wrap to a plausible looking (and wrong) length.
+      if (lengthLn > MAX_LENGTH_BYTES) {
+        throw new IllegalArgumentException(
+            String.format(Locale.ROOT, "Length exceeds %d bytes", MAX_LENGTH_BYTES));
+      }
       length = 0;
       for (int i = 0; i < lengthLn; i++) {
         length = (length << 8) | (buffer.get() & 0xff);
       }
+      if (length < 0) {
+        throw new IllegalArgumentException("Length exceeds Integer.MAX_VALUE");
+      }
+    }
+
+    // Check the declared length against what is actually available before allocating. Allocating
+    // first lets a malformed length of e.g. 0x7FFFFFFF raise an OutOfMemoryError, which is an
+    // Error rather than the BufferUnderflowException callers expect from a truncated response.
+    if (length > buffer.remaining()) {
+      throw new BufferUnderflowException();
     }
 
     byte[] value = new byte[length];

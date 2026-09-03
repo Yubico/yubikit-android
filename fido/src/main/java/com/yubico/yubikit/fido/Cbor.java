@@ -19,6 +19,7 @@ package com.yubico.yubikit.fido;
 import com.yubico.yubikit.core.util.ZeroingByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -39,6 +40,12 @@ import org.jspecify.annotations.Nullable;
  * when encoding to send to a device, but any response will have ints for keys.
  */
 public class Cbor {
+  /**
+   * Maximum nesting depth of a decoded structure. CTAP2 structures nest only a few levels deep;
+   * this bound keeps a run of nested list or map headers from recursing into a StackOverflowError.
+   */
+  private static final int MAX_DEPTH = 32;
+
   /**
    * Encodes an object into canonical CBOR.
    *
@@ -115,8 +122,18 @@ public class Cbor {
    *
    * @param buf the ByteBuffer from where the Object should be decoded.
    * @return The decoded object.
+   * @throws IllegalArgumentException if the data is malformed, or nests deeper than {@link
+   *     #MAX_DEPTH}.
    */
   public static @Nullable Object decodeFrom(ByteBuffer buf) {
+    return decodeFrom(buf, 0);
+  }
+
+  private static @Nullable Object decodeFrom(ByteBuffer buf, int depth) {
+    if (depth > MAX_DEPTH) {
+      throw new IllegalArgumentException(
+          String.format(Locale.ROOT, "Nesting depth exceeds %d", MAX_DEPTH));
+    }
     int head = 0xff & buf.get();
     byte additionalInfo = (byte) (head & 0b11111);
     switch (head >> 5) {
@@ -129,9 +146,9 @@ public class Cbor {
       case 3:
         return loadString(additionalInfo, buf);
       case 4:
-        return loadList(additionalInfo, buf);
+        return loadList(additionalInfo, buf, depth);
       case 5:
-        return loadMap(additionalInfo, buf);
+        return loadMap(additionalInfo, buf, depth);
       case 7:
         return loadSimple(additionalInfo);
     }
@@ -253,7 +270,14 @@ public class Cbor {
   }
 
   private static byte[] loadBytes(byte additionalInfo, ByteBuffer buf) {
-    byte[] value = new byte[(int) loadInt(additionalInfo, buf)];
+    int length = loadInt(additionalInfo, buf);
+    // Check the declared length against what is actually available before allocating. Allocating
+    // first lets a length of e.g. 0x7FFFFFFF raise an OutOfMemoryError, which is an Error rather
+    // than the BufferUnderflowException callers expect from a truncated response.
+    if (length > buf.remaining()) {
+      throw new BufferUnderflowException();
+    }
+    byte[] value = new byte[length];
     buf.get(value);
     return value;
   }
@@ -262,18 +286,30 @@ public class Cbor {
     return new String(loadBytes(additionalInfo, buf), StandardCharsets.UTF_8);
   }
 
-  private static List<?> loadList(byte additionalInfo, ByteBuffer buf) {
+  /**
+   * Rejects an item count that the remaining bytes cannot possibly satisfy, since every item costs
+   * at least one byte. Without this the count is only bounded once decoding runs off the buffer.
+   */
+  private static int loadCount(byte additionalInfo, ByteBuffer buf) {
+    int count = loadInt(additionalInfo, buf);
+    if (count > buf.remaining()) {
+      throw new BufferUnderflowException();
+    }
+    return count;
+  }
+
+  private static List<?> loadList(byte additionalInfo, ByteBuffer buf, int depth) {
     List<@Nullable Object> list = new ArrayList<>();
-    for (int i = loadInt(additionalInfo, buf); i > 0; i--) {
-      list.add(decodeFrom(buf));
+    for (int i = loadCount(additionalInfo, buf); i > 0; i--) {
+      list.add(decodeFrom(buf, depth + 1));
     }
     return list;
   }
 
-  private static Map<?, ?> loadMap(byte additionalInfo, ByteBuffer buf) {
+  private static Map<?, ?> loadMap(byte additionalInfo, ByteBuffer buf, int depth) {
     Map<@Nullable Object, @Nullable Object> map = new HashMap<>();
-    for (int i = loadInt(additionalInfo, buf); i > 0; i--) {
-      map.put(decodeFrom(buf), decodeFrom(buf));
+    for (int i = loadCount(additionalInfo, buf); i > 0; i--) {
+      map.put(decodeFrom(buf, depth + 1), decodeFrom(buf, depth + 1));
     }
     return map;
   }
