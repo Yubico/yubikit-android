@@ -102,12 +102,9 @@ public class FidoProtocol implements Closeable {
     do {
       toSend.get(buffer, packet.position(), Math.min(toSend.remaining(), packet.remaining()));
       connection.send(buffer);
-      logger
-          .atTrace()
-          .setMessage("{} bytes sent over fido: {}")
-          .addArgument(buffer.length)
-          .addArgument(() -> StringUtils.bytesToHex(buffer))
-          .log();
+      if (logger.isTraceEnabled()) {
+        logger.trace("{} bytes sent over fido: {}", buffer.length, StringUtils.bytesToHex(buffer));
+      }
       Arrays.fill(buffer, (byte) 0);
       packet.clear();
       packet.putInt(channelId).put((byte) (0x7f & seq++));
@@ -123,20 +120,16 @@ public class FidoProtocol implements Closeable {
         Arrays.fill(buffer, (byte) 0);
         packet.putInt(channelId).put(CTAPHID_CANCEL);
         connection.send(buffer);
-        logger
-            .atTrace()
-            .setMessage("Sent over fido: {}")
-            .addArgument(() -> StringUtils.bytesToHex(buffer))
-            .log();
+        if (logger.isTraceEnabled()) {
+          logger.trace("Sent over fido: {}", StringUtils.bytesToHex(buffer));
+        }
         packet.clear();
       }
 
       connection.receive(buffer);
-      logger
-          .atTrace()
-          .setMessage("Received over fido: {}")
-          .addArgument(() -> StringUtils.bytesToHex(buffer))
-          .log();
+      if (logger.isTraceEnabled()) {
+        logger.trace("Received over fido: {}", StringUtils.bytesToHex(buffer));
+      }
       int responseChannel = packet.getInt();
       if (responseChannel != channelId) {
         throw new IOException(

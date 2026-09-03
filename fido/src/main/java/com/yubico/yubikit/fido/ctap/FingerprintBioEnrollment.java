@@ -443,12 +443,9 @@ public class FingerprintBioEnrollment extends BioEnrollment {
    *     FriendlyName</a>
    */
   public void setName(byte[] templateId, String name) throws IOException, CommandException {
-    logger
-        .atDebug()
-        .setMessage("Changing name of template: {} {}")
-        .addArgument(() -> Base64.toUrlSafeString(templateId))
-        .addArgument(name)
-        .log();
+    if (logger.isDebugEnabled()) {
+      logger.debug("Changing name of template: {} {}", Base64.toUrlSafeString(templateId), name);
+    }
 
     Map<Integer, Object> parameters = new HashMap<>();
     parameters.put(PARAM_TEMPLATE_ID, templateId);
@@ -469,11 +466,9 @@ public class FingerprintBioEnrollment extends BioEnrollment {
    *     enrollment</a>
    */
   public void removeEnrollment(byte[] templateId) throws IOException, CommandException {
-    logger
-        .atDebug()
-        .setMessage("Deleting template: {}")
-        .addArgument(() -> Base64.toUrlSafeString(templateId))
-        .log();
+    if (logger.isDebugEnabled()) {
+      logger.debug("Deleting template: {}", Base64.toUrlSafeString(templateId));
+    }
 
     Map<Integer, Object> parameters = new HashMap<>();
     parameters.put(PARAM_TEMPLATE_ID, templateId);

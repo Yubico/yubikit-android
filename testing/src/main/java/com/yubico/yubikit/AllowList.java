@@ -50,21 +50,26 @@ public class AllowList {
     String onNotAllowedErrorMessage(Integer serialNumber);
   }
 
+  // An empty list is not fatal here; only verify() needs the serials.
   public AllowList(AllowListProvider allowListProvider) {
     this.allowListProvider = allowListProvider;
     this.allowedSerials = allowListProvider.getList();
-    if (allowedSerials.isEmpty()) {
-      logger.error("{}", allowListProvider.onInvalidInputErrorMessage());
-      System.exit(-1);
-    }
   }
 
   // verify that the device is in the allow-list
   public void verify(YubiKeyDevice connectedDevice, @Nullable UsbPid pid) {
+    // Throw, never System.exit: an exit kills the process and the run emits no report.
+    if (allowedSerials.isEmpty()) {
+      String message = allowListProvider.onInvalidInputErrorMessage();
+      logger.error("{}", message);
+      throw new AssertionError(message);
+    }
+
     Integer serialNumber = getDeviceSerialNumber(connectedDevice, pid);
     if (pid != UsbPid.OTHER && !isDeviceAllowed(serialNumber)) {
-      logger.error("{}", allowListProvider.onNotAllowedErrorMessage(serialNumber));
-      System.exit(-1);
+      String message = allowListProvider.onNotAllowedErrorMessage(serialNumber);
+      logger.error("{}", message);
+      throw new AssertionError(message);
     }
   }
 

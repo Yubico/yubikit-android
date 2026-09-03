@@ -3,7 +3,7 @@
 This module contains tests for execution on a physical device and with YubiKey connected via USB or NFC. The test runs need a presence of someone who can tap the key when needed and therefore are these tests suitable only for local execution.
 
 === Recommended setup
-1. A physical Android device running API 19+
+1. A physical Android device running API 21+
 2. YubiKey
 3. (optional) OTG cable for connecting a YubiKey
 ** modern devices with USB-C connector will work with USB-C YubiKeys directly
@@ -36,6 +36,8 @@ Example `allowed_serials.csv` content:
 
 The test framework will now only run on the YubiKeys specified in this file.
 
+If the file is missing, or the connected key is not listed, each test that needs a YubiKey fails with an assertion naming the reason and the run still produces a report. Tests that need no YubiKey are unaffected.
+
 === Running the tests
 1. Make sure that the YubiKey you are using is meant for testing. Don't proceed with the tests if unsure.
  Running the instrumented tests will: change PIN, PUK, management key and overwrite stored certificates in the PIV application
@@ -47,3 +49,11 @@ The test framework will now only run on the YubiKeys specified in this file.
 It is also possible to run the tests from commandline by executing following command after the device is connected through adb:
 
   ./gradlew testing-android:connectedAndroidTest
+
+=== Tests that need no YubiKey
+A few instrumented tests exercise the harness itself rather than a key, and are collected in the `KeylessDeviceTests` suite. They need an Android device but no YubiKey and no `allowed_serials.csv`, so they run unattended:
+
+  ./gradlew testing-android:connectedAndroidTest \
+    -Pandroid.testInstrumentationRunnerArguments.class=com.yubico.yubikit.KeylessDeviceTests
+
+The suite is deliberately separate from `DeviceTests`, whose members all block waiting for a key. Add a test to it only if it needs no YubiKey.
