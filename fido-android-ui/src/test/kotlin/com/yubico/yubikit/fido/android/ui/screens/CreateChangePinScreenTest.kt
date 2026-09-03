@@ -21,6 +21,7 @@ import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performImeAction
 import androidx.compose.ui.test.performTextInput
 import com.yubico.yubikit.fido.android.ui.internal.FidoClientService
 import com.yubico.yubikit.fido.android.ui.internal.ui.Error
@@ -29,6 +30,7 @@ import com.yubico.yubikit.fido.android.ui.internal.ui.screens.DEFAULT_MIN_PIN_LE
 import com.yubico.yubikit.fido.android.ui.internal.ui.screens.ForceChangePinScreen
 import com.yubico.yubikit.fido.android.ui.internal.ui.theme.FidoAndroidTheme
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -122,6 +124,42 @@ class CreatePinScreenTest {
         composeTestRule
             .onNodeWithTag("create_pin_button")
             .performClick()
+
+        assertEquals("123456", createdPin)
+    }
+
+    @Test
+    fun `keyboard action does not submit when PINs do not match`() {
+        var invoked = false
+        setCreatePinContent(onCreatePin = { invoked = true })
+
+        composeTestRule
+            .onNodeWithTag("new_pin_input")
+            .performTextInput("123456")
+        composeTestRule
+            .onNodeWithTag("repeat_pin_input")
+            .performTextInput("654321")
+        composeTestRule
+            .onNodeWithTag("repeat_pin_input")
+            .performImeAction()
+
+        assertFalse(invoked)
+    }
+
+    @Test
+    fun `keyboard action submits when PINs are valid`() {
+        var createdPin = ""
+        setCreatePinContent(onCreatePin = { createdPin = String(it) })
+
+        composeTestRule
+            .onNodeWithTag("new_pin_input")
+            .performTextInput("123456")
+        composeTestRule
+            .onNodeWithTag("repeat_pin_input")
+            .performTextInput("123456")
+        composeTestRule
+            .onNodeWithTag("repeat_pin_input")
+            .performImeAction()
 
         assertEquals("123456", createdPin)
     }
@@ -278,5 +316,20 @@ class ForceChangePinScreenTest {
 
         assertEquals("current", capturedCurrentPin)
         assertEquals("123456", capturedNewPin)
+    }
+
+    @Test
+    fun `keyboard action does not submit when current PIN is empty`() {
+        var invoked = false
+        setForceChangePinContent(onChangePin = { _, _ -> invoked = true })
+
+        composeTestRule.onNodeWithTag("new_pin_input")
+            .performTextInput("123456")
+        composeTestRule.onNodeWithTag("repeat_pin_input")
+            .performTextInput("123456")
+        composeTestRule.onNodeWithTag("repeat_pin_input")
+            .performImeAction()
+
+        assertFalse(invoked)
     }
 }

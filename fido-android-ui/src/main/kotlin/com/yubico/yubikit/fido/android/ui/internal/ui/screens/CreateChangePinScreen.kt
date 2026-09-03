@@ -159,10 +159,19 @@ private fun CreateChangePinScreen(
             else -> stringResource(R.string.yk_fido_creating_pin_failed)
         }
 
+    val isFormValid by remember(forceChangePin, minPinLen) {
+        derivedStateOf {
+            val hasCurrentPin = !forceChangePin || currentPinState.text.isNotEmpty()
+            val newPin = newPinState.text.toString()
+            val repeatPin = repeatPinState.text.toString()
+            hasCurrentPin && isPinValid(newPin, repeatPin, minPinLen)
+        }
+    }
+
+    // Guarded by the same condition that enables the submit buttons, so that the keyboard
+    // Done action cannot trigger an action the buttons would have refused.
     val submit: () -> Unit = {
-        if ((!forceChangePin || currentPinState.text.isNotEmpty()) &&
-            isPinValid(newPinState.text.toString(), repeatPinState.text.toString(), minPinLen)
-        ) {
+        if (isFormValid) {
             onPinAction(
                 newPinState.text.toString().toCharArray(),
                 currentPinState.text.toString().toCharArray(),
@@ -174,15 +183,6 @@ private fun CreateChangePinScreen(
     // Ensures the submit button scrolls into view when the confirm-PIN field is focused,
     // so it is not hidden behind the software keyboard.
     val buttonRequester = remember { BringIntoViewRequester() }
-
-    val isFormValid by remember(forceChangePin, minPinLen) {
-        derivedStateOf {
-            val hasCurrentPin = !forceChangePin || currentPinState.text.isNotEmpty()
-            val newPin = newPinState.text.toString()
-            val repeatPin = repeatPinState.text.toString()
-            hasCurrentPin && isPinValid(newPin, repeatPin, minPinLen)
-        }
-    }
 
     LaunchedEffect(Unit) {
         if (forceChangePin && currentPin == null) {
