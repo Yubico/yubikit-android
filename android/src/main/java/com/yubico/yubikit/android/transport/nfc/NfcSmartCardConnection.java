@@ -55,13 +55,13 @@ public class NfcSmartCardConnection implements SmartCardConnection {
 
   @Override
   public byte[] sendAndReceive(byte[] apdu) throws IOException {
-    logger.atTrace().setMessage("sent: {}").addArgument(() -> StringUtils.bytesToHex(apdu)).log();
+    if (logger.isTraceEnabled()) {
+      logger.trace("sent: {}", StringUtils.bytesToHex(apdu));
+    }
     byte[] received = card.transceive(apdu);
-    logger
-        .atTrace()
-        .setMessage("received: {}")
-        .addArgument(() -> StringUtils.bytesToHex(received))
-        .log();
+    if (logger.isTraceEnabled()) {
+      logger.trace("received: {}", StringUtils.bytesToHex(received));
+    }
     return received;
   }
 

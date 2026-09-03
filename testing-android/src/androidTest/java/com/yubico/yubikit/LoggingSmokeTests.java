@@ -39,6 +39,10 @@ import org.slf4j.spi.LoggingEventBuilder;
  *
  * <p><b>The fluent tests are opt-in and will kill the test process on API &lt; 24.</b> See {@link
  * #requireFluentApiOptIn()}.
+ *
+ * <p>SLF4J-FLUENT-ALLOWED - exempt from the checkNoFluentSlf4j build check. Calling the fluent API
+ * is the point of this file: it demonstrates that the calls still crash. Production code gets the
+ * isXEnabled() guard instead, never this marker.
  */
 @RunWith(AndroidJUnit4.class)
 public class LoggingSmokeTests {

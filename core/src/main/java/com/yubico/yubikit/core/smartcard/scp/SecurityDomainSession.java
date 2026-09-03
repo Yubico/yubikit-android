@@ -277,12 +277,9 @@ public class SecurityDomainSession extends ApplicationSession<SecurityDomainSess
    * @param ski the Subject Key Identifier to store
    */
   public void storeCaIssuer(KeyRef keyRef, byte[] ski) throws ApduException, IOException {
-    logger
-        .atDebug()
-        .setMessage("Storing CA issuer SKI for {}: {}")
-        .addArgument(keyRef)
-        .addArgument(() -> StringUtils.bytesToHex(ski))
-        .log();
+    if (logger.isDebugEnabled()) {
+      logger.debug("Storing CA issuer SKI for {}: {}", keyRef, StringUtils.bytesToHex(ski));
+    }
     byte klcc = 0;
     switch (keyRef.getKid()) {
       case ScpKid.SCP11a:

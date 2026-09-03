@@ -31,5 +31,9 @@ import org.junit.runners.Suite;
  * reports zero tests and still passes, which is the silent success this harness exists to avoid.
  */
 @RunWith(Suite.class)
-@Suite.SuiteClasses({ThemeInflationTests.class})
+@Suite.SuiteClasses({
+  ThemeInflationTests.class,
+  LoggingSmokeTests.class,
+  GuardedLoggingCallSitesTest.class
+})
 public class KeylessDeviceTests {}
