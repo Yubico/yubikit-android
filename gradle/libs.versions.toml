@@ -2,16 +2,16 @@
 
 # --- Build toolchain ---
 java = "8"
-kotlin = "2.4.0"
-android-gradle = "9.2.1"
+kotlin = "2.4.10"
+android-gradle = "9.4.0"
 
 # --- AndroidX core ---
 androidx-annotation = "1.10.0"
-appcompat = "1.7.1"
+appcompat = "1.8.0"
 core-ktx = "1.19.0"
 credentials = "1.6.0"
 desugar_jdk_libs = "2.1.5"
-fragment-ktx = "1.8.9"
+fragment-ktx = "1.8.9" # 1.9.0+ is compiled for JVM target 11
 legacy-support-v4 = "1.0.0"
 material = "1.14.0"
 multidex = "2.0.1"
@@ -24,14 +24,14 @@ lifecycle-viewmodel-compose = "2.11.0"
 lifecycle-viewmodel-ktx = "2.11.0"
 
 # --- AndroidX Navigation ---
-navigation-fragment-ktx = "2.9.8"
+navigation-fragment-ktx = "2.9.8" # 2.10.0+ requires minSdk 24
 
 # --- Jetpack Compose ---
 activity-compose = "1.13.0"
 activity-ktx = "1.13.0"
-compose-bom = "2026.06.01"
+compose-bom = "2026.08.00"
 material3 = "1.5.0-alpha23"
-runtime-livedata = "1.11.4"
+runtime-livedata = "1.12.0"
 
 # --- Kotlin / KotlinX ---
 kotlinx-coroutines-android = "1.11.0"
@@ -39,18 +39,18 @@ kotlinx-serialization-json = "1.11.0"
 
 # --- Logging ---
 logback-android = "3.0.0"
-logback-classic = "1.5.37"
+logback-classic = "1.5.38"
 slf4j-api = "2.0.18"
 slf4j-nop = "2.0.18"
 
 # --- Cryptography ---
-bcpkix-jdk15to18 = "1.84"
+bcpkix-jdk15to18 = "1.84" # 1.85 duplicates asn1.iana in bcprov+bcutil
 
 # --- Serialization / Data ---
 moshi = "1.15.2"
 
 # --- Nullability annotations ---
-jspecify = "1.0.0"
+jspecify = "1.0.1"
 jsr250-api = "1.0"
 jsr305 = "3.0.2"
 
@@ -72,8 +72,8 @@ turbine = "1.2.1"
 
 # --- Static analysis ---
 findsecbugs = "1.14.0"
-spotbugs-core = "4.10.2"
-spotless = "8.8.0"
+spotbugs-core = "4.10.4"
+spotless = "8.10.1"
 
 [libraries]
 
