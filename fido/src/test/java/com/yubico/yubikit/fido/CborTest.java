@@ -19,6 +19,7 @@ package com.yubico.yubikit.fido;
 import static com.yubico.yubikit.fido.TestUtils.decodeHex;
 import static com.yubico.yubikit.fido.TestUtils.encodeHex;
 
+import java.nio.BufferUnderflowException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -231,6 +232,67 @@ public class CborTest {
     @Test(expected = IllegalArgumentException.class)
     public void testDecodeIntOutOfRange() {
       Cbor.decode(decodeHex("1a80000000"));
+    }
+  }
+
+  /**
+   * A malfunctioning or hostile authenticator can declare sizes far larger than the response it
+   * actually sent. Decoding must fail with an exception rather than an {@link Error}, which would
+   * escape the {@code catch (RuntimeException)} handlers callers use.
+   */
+  public static class MalformedInputTest {
+    /** Byte string declaring 0x7FFFFFFF bytes, in a 5 byte response. */
+    @Test(expected = BufferUnderflowException.class)
+    public void testOversizedByteString() {
+      Cbor.decode(decodeHex("5a7fffffff"));
+    }
+
+    /** Text string declaring 0x7FFFFFFF bytes, in a 5 byte response. */
+    @Test(expected = BufferUnderflowException.class)
+    public void testOversizedTextString() {
+      Cbor.decode(decodeHex("7a7fffffff"));
+    }
+
+    /** Byte string declaring one more byte than was sent. */
+    @Test(expected = BufferUnderflowException.class)
+    public void testTruncatedByteString() {
+      Cbor.decode(decodeHex("430102"));
+    }
+
+    /** Array declaring 0x7FFFFFFF elements, with none present. */
+    @Test(expected = BufferUnderflowException.class)
+    public void testOversizedListCount() {
+      Cbor.decode(decodeHex("9a7fffffff"));
+    }
+
+    /** Map declaring 0x7FFFFFFF entries, with none present. */
+    @Test(expected = BufferUnderflowException.class)
+    public void testOversizedMapCount() {
+      Cbor.decode(decodeHex("ba7fffffff"));
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testExcessiveNestingIsRejected() {
+      Cbor.decode(nestedLists(33));
+    }
+
+    /** Nesting up to the limit must still decode, so the bound cannot break real responses. */
+    @Test
+    public void testNestingAtLimitIsAccepted() {
+      Object decoded = Cbor.decode(nestedLists(32));
+      for (int i = 0; i < 32; i++) {
+        Assert.assertTrue("Expected a list at depth " + i, decoded instanceof List);
+        decoded = ((List<?>) decoded).get(0);
+      }
+      Assert.assertEquals(0, decoded);
+    }
+
+    /** {@code depth} nested single element arrays wrapping the integer 0. */
+    private static byte[] nestedLists(int depth) {
+      byte[] data = new byte[depth + 1];
+      Arrays.fill(data, (byte) 0x81);
+      data[depth] = 0x00;
+      return data;
     }
   }
 

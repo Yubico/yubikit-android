@@ -16,6 +16,7 @@
 package com.yubico.yubikit.core.util;
 
 import com.yubico.yubikit.core.application.BadResponseException;
+import java.nio.BufferUnderflowException;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -49,5 +50,64 @@ public class TlvsTest {
 
     byte[] value = Tlvs.unpackValue(0x7F49, new byte[] {0x7F, 0x49, 3, 1, 2, 3});
     Assert.assertArrayEquals(new byte[] {1, 2, 3}, value);
+  }
+
+  /**
+   * A declared length larger than the data actually present must report a truncated response rather
+   * than allocating first. Allocating first raises an OutOfMemoryError, which is an {@link Error}
+   * and so escapes callers that recover from BufferUnderflowException.
+   */
+  @Test(expected = BufferUnderflowException.class)
+  public void testOversizedLengthDoesNotAllocate() {
+    // Long form length of 0x7FFFFFFF in a six byte buffer.
+    Tlv.parse(new byte[] {0x01, (byte) 0x84, 0x7F, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF});
+  }
+
+  @Test(expected = BufferUnderflowException.class)
+  public void testShortFormLengthPastEndOfBuffer() {
+    Tlv.parse(new byte[] {0x01, 0x10, 0x00});
+  }
+
+  /**
+   * Five length bytes overflow the int the length is accumulated into. Before this was rejected the
+   * value below wrapped to zero and parsed as an empty, valid looking Tlv.
+   */
+  @Test(expected = IllegalArgumentException.class)
+  public void testLengthWithTooManyBytes() {
+    Tlv.parse(new byte[] {0x01, (byte) 0x85, 0x01, 0x00, 0x00, 0x00, 0x00});
+  }
+
+  /** A length above Integer.MAX_VALUE previously reached {@code new byte[-1]}. */
+  @Test(expected = IllegalArgumentException.class)
+  public void testLengthAboveIntegerMaxValue() {
+    Tlv.parse(new byte[] {0x01, (byte) 0x84, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF, (byte) 0xFF});
+  }
+
+  /** A long form tag whose continuation bit never clears would silently overflow the tag int. */
+  @Test(expected = IllegalArgumentException.class)
+  public void testUnterminatedLongFormTag() {
+    Tlv.parse(new byte[] {0x1F, (byte) 0x81, (byte) 0x81, (byte) 0x81, (byte) 0x81, 0x00});
+  }
+
+  /** Four byte tags are still in range, so the bound cannot break real responses. */
+  @Test
+  public void testMaxLengthTagIsAccepted() {
+    Tlv tlv = Tlv.parse(new byte[] {0x1F, (byte) 0x81, (byte) 0x81, 0x01, 0x00});
+    Assert.assertEquals(0x1F818101, tlv.getTag());
+    Assert.assertEquals(0, tlv.getLength());
+  }
+
+  /** Four length bytes are the widest a valid length can be, and must still parse. */
+  @Test
+  public void testFourByteLengthIsAccepted() {
+    Tlv tlv = Tlv.parse(new byte[] {0x01, (byte) 0x84, 0x00, 0x00, 0x00, 0x03, 1, 2, 3});
+    Assert.assertEquals(3, tlv.getLength());
+    Assert.assertArrayEquals(new byte[] {1, 2, 3}, tlv.getValue());
+  }
+
+  /** Truncation partway through a sequence must not yield a silently short list. */
+  @Test(expected = BufferUnderflowException.class)
+  public void testTruncatedListEntry() {
+    Tlvs.decodeList(new byte[] {0x01, 0x01, (byte) 0xAA, 0x02, 0x04, 0x01, 0x02});
   }
 }
