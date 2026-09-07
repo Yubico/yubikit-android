@@ -24,7 +24,7 @@ lifecycle-viewmodel-compose = "2.11.0"
 lifecycle-viewmodel-ktx = "2.11.0"
 
 # --- AndroidX Navigation ---
-navigation-fragment-ktx = "2.9.8" # 2.10.0+ requires minSdk 24
+navigation-fragment-ktx = "2.10.0" # 2.10.0+ requires minSdk 24
 
 # --- Jetpack Compose ---
 activity-compose = "1.13.0"
