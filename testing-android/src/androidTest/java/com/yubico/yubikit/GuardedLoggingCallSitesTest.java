@@ -21,11 +21,9 @@ import static org.junit.Assert.assertNotNull;
 
 import android.util.Log;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
-import com.yubico.yubikit.core.internal.codec.Base64;
 import com.yubico.yubikit.fido.Cose;
+import com.yubico.yubikit.fido.CoseTestVectors;
 import java.security.PublicKey;
-import java.util.HashMap;
-import java.util.Map;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -52,57 +50,10 @@ public class GuardedLoggingCallSitesTest {
 
   private static final String TAG = "GuardedLoggingCallSites";
 
-  @SuppressWarnings("SpellCheckingInspection")
-  private static final String ES256_X = "wYXQNcHYEQHhLWssYM3Wxh59Glcd27iQRAbH7g73zEc";
-
-  @SuppressWarnings("SpellCheckingInspection")
-  private static final String ES256_Y = "8N523zR8MPQ3VGVV0Qm1hE1f0BEG9z4mQISHWpo6XXw";
-
-  @SuppressWarnings("SpellCheckingInspection")
-  private static final String RS256_N =
-      "0KeO-wuDQK18v9WwN5hFe6G_1TM4Ra8alOFa8cyN9xfqaLK1TvYVQHZfOcVvgM5XztCEOPNcQ5AWMJmTOESwvjuHkj5"
-          + "ulGt2jCVJUWKxPX-KYq0UFlb5jr305D66p5vRKb7zBterpDJSOxwLKr7g9jVhgpM2mgVjrRnQPMUAfvt8q9QM"
-          + "UWy1eIgIxnABi9b28cZ6WBDi42LMYiHz8mfUWi_ga9TASAwTqYZmGFUr7Z71ZuPKxuOxsgTxUksqKEmJw8iWc"
-          + "CgTC6-O8sMe-aZ3gqcwDEk9kRKZQJKlxtyYuArn2zDKfaAHJ1A2wLwjtq8m_TsiOEdW3289Fe_F4gSA_w";
-
-  @SuppressWarnings("SpellCheckingInspection")
-  private static final String RS256_E = "AAEAAQ";
-
-  @SuppressWarnings("SpellCheckingInspection")
-  private static final String EDDSA_RAW_KEY = "3wIKsJK63Ctb-nLkcwG8fJOp2vZxz8lmhv3BcFI-ves";
-
-  private static Map<Integer, Object> es256() {
-    Map<Integer, Object> key = new HashMap<>();
-    key.put(1, 2); // kty
-    key.put(3, -7); // alg
-    key.put(-1, 1); // crv
-    key.put(-2, Base64.fromUrlSafeString(ES256_X));
-    key.put(-3, Base64.fromUrlSafeString(ES256_Y));
-    return key;
-  }
-
-  private static Map<Integer, Object> rs256() {
-    Map<Integer, Object> key = new HashMap<>();
-    key.put(1, 3); // kty
-    key.put(3, -257); // alg
-    key.put(-1, Base64.fromUrlSafeString(RS256_N));
-    key.put(-2, Base64.fromUrlSafeString(RS256_E));
-    return key;
-  }
-
-  private static Map<Integer, Object> eddsa() {
-    Map<Integer, Object> key = new HashMap<>();
-    key.put(1, 1); // kty
-    key.put(3, -8); // alg
-    key.put(-1, 6); // crv
-    key.put(-2, Base64.fromUrlSafeString(EDDSA_RAW_KEY));
-    return key;
-  }
-
   /** Exercises the {@code x}/{@code y} sites plus the shared {@code publicKey} site. */
   @Test
   public void ec2CallSites() throws Exception {
-    PublicKey publicKey = Cose.getPublicKey(es256());
+    PublicKey publicKey = Cose.getPublicKey(CoseTestVectors.es256());
 
     assertNotNull("EC2 key did not decode", publicKey);
     assertEquals("EC", publicKey.getAlgorithm());
@@ -112,7 +63,7 @@ public class GuardedLoggingCallSitesTest {
   /** Exercises the {@code n}/{@code e} sites plus the shared {@code publicKey} site. */
   @Test
   public void rsaCallSites() throws Exception {
-    PublicKey publicKey = Cose.getPublicKey(rs256());
+    PublicKey publicKey = Cose.getPublicKey(CoseTestVectors.rs256());
 
     assertNotNull("RSA key did not decode", publicKey);
     assertEquals("RSA", publicKey.getAlgorithm());
@@ -130,7 +81,7 @@ public class GuardedLoggingCallSitesTest {
   @Test
   public void ed25519CallSite() {
     try {
-      PublicKey publicKey = Cose.getPublicKey(eddsa());
+      PublicKey publicKey = Cose.getPublicKey(CoseTestVectors.eddsa());
       Log.i(TAG, "Ed25519 call site OK, key decoded: " + publicKey);
     } catch (Exception e) {
       Log.i(TAG, "Ed25519 call site OK, no provider on this device: " + e);
@@ -140,8 +91,8 @@ public class GuardedLoggingCallSitesTest {
   /** The plain, never-converted call in {@code getAlgorithm}, as a control. */
   @Test
   public void plainCallSiteControl() {
-    assertEquals(Integer.valueOf(-7), Cose.getAlgorithm(es256()));
-    assertEquals(Integer.valueOf(-257), Cose.getAlgorithm(rs256()));
+    assertEquals(Integer.valueOf(-7), Cose.getAlgorithm(CoseTestVectors.es256()));
+    assertEquals(Integer.valueOf(-257), Cose.getAlgorithm(CoseTestVectors.rs256()));
     Log.i(TAG, "plain control OK");
   }
 }

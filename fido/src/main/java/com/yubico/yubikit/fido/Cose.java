@@ -123,7 +123,9 @@ public class Cose {
         throw new IllegalArgumentException("Unknown COSE EC2 curve: " + crv);
     }
 
-    return new Ec(ellipticCurveValues, new BigInteger(x), new BigInteger(y)).toPublicKey();
+    // Parse coordinates as unsigned big-endian integers (RFC 9053 7.1.1) to avoid sign-extension
+    // byte truncation.
+    return new Ec(ellipticCurveValues, new BigInteger(1, x), new BigInteger(1, y)).toPublicKey();
   }
 
   private static PublicKey importCoseRsaPublicKey(Map<Integer, ?> cosePublicKey)
