@@ -79,15 +79,7 @@ public class CoseTest {
     assertDecodesTo(CoseTestVectors.eddsa(), CoseTestVectors.EDDSA_SPKI);
   }
 
-  /*
-   * Regression coverage for signed decoding of EC2 coordinates. The vectors and the round-trip
-   * assertion live in CoseTestVectors so that this test and the Android instrumented test in
-   * :testing-android share one source of truth; see that class for why these coordinates matter.
-   *
-   * The plain high-bit case (negative, but no truncation) is already covered by getPublicKeyES256,
-   * whose x starts 0xC1.
-   */
-
+  // Regression coverage for signed EC2 coordinate decoding (shared in CoseTestVectors).
   @Test
   public void getPublicKeyES256TruncatingX()
       throws InvalidKeySpecException, NoSuchAlgorithmException {

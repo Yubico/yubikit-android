@@ -123,10 +123,8 @@ public class Cose {
         throw new IllegalArgumentException("Unknown COSE EC2 curve: " + crv);
     }
 
-    // COSE EC2 coordinates are fixed-width unsigned big-endian integers (RFC 9053 7.1.1), so they
-    // must be read with the unsigned BigInteger constructor. The signed one makes any coordinate
-    // with the high bit set negative, and when the leading 0xFF is redundant the minimal two's
-    // complement form loses a byte, which the re-encoder then left-pads with 0x00.
+    // Parse coordinates as unsigned big-endian integers (RFC 9053 7.1.1) to avoid sign-extension
+    // byte truncation.
     return new Ec(ellipticCurveValues, new BigInteger(1, x), new BigInteger(1, y)).toPublicKey();
   }
 

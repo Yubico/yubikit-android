@@ -23,24 +23,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 /**
- * Device-side counterpart to {@code CoseTest} in the fido module, sharing its vectors via {@link
- * CoseTestVectors}.
- *
- * <p>The JVM unit test exercises {@link Cose#getPublicKey} against the JDK's SunEC provider. This
- * one runs the same vectors against whatever {@code KeyFactory.getInstance("EC")} resolves to on a
- * real device (Conscrypt / BoringSSL), which is the provider that actually decodes credential
- * public keys in production. The two disagree on an off-curve point: SunEC accepts it and returns a
- * silently wrong key, Conscrypt throws {@link InvalidKeySpecException}. Both are failures and
- * {@link CoseTestVectors#assertRoundTrip} catches either.
- *
- * <p>Needs no YubiKey, so it belongs to {@code KeylessDeviceTests} rather than {@code DeviceTests}
- * and runs unattended:
- *
- * <pre>
- * ./gradlew :testing-android:connectedDebugAndroidTest \
- *     -Pandroid.testInstrumentationRunnerArguments.class=\
- * com.yubico.yubikit.KeylessDeviceTests
- * </pre>
+ * Runs COSE test vectors against the device's native provider (Conscrypt/BoringSSL) to catch
+ * provider-specific off-curve point handling.
  */
 @RunWith(AndroidJUnit4.class)
 public class CoseInstrumentedTest {
