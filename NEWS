@@ -1,3 +1,13 @@
+* Version 3.2.1 (released 2026-09-08)
+ ** fixes & improvements:
+  - fido: decode COSE EC2 coordinates as unsigned
+  - fido: made Ctap2Session.InfoData.getFirmwareVersion() public
+  - core: bound TLV and CBOR parsing before allocating
+  - core: replaced the SLF4J fluent API with isXEnabled()-guarded calls
+  - piv: fix key params on Java 24+
+  - fido-ui: reuse isFormValid in the PIN submit guard
+  - testing: instrumented test APK installs on API 21 again
+  - build: updated dependencies and pinned GitHub Actions to full commit SHAs
 * Version 3.2.0 (released 2026-07-07)
  ** new:
   - fido-ui: new UI host with support for adaptive layouts, adjusting across phone
