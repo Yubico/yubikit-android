@@ -35,7 +35,7 @@ allprojects {
 // Single source of truth for the published library version. The release workflow
 // cross-checks this against the release-candidate tag that triggered it, so the
 // two cannot drift apart.
-val libraryVersion = "3.2.1-SNAPSHOT"
+val libraryVersion = "3.2.1"
 
 subprojects {
     version = libraryVersion
