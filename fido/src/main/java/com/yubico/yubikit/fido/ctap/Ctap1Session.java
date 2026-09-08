@@ -516,14 +516,16 @@ public class Ctap1Session extends CtapSession {
       byte[] credentialDataBytes = credentialData.getBytes();
 
       // Build AuthenticatorData
+      // NB: rewind() doesn't return a ByteBuffer before Java 9.
       AuthenticatorData authData =
           AuthenticatorData.parseFrom(
-              ByteBuffer.allocate(32 + 1 + 4 + credentialDataBytes.length)
-                  .put(appParam)
-                  .put(flags)
-                  .putInt(signCount)
-                  .put(credentialDataBytes)
-                  .rewind());
+              ByteBuffer.wrap(
+                  ByteBuffer.allocate(32 + 1 + 4 + credentialDataBytes.length)
+                      .put(appParam)
+                      .put(flags)
+                      .putInt(signCount)
+                      .put(credentialDataBytes)
+                      .array()));
 
       // Build attestation statement
       Map<String, Object> attStmt = new HashMap<>();
