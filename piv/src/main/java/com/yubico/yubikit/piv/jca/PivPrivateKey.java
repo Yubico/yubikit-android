@@ -31,6 +31,7 @@ import java.security.interfaces.ECKey;
 import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAKey;
 import java.security.interfaces.RSAPublicKey;
+import java.security.spec.AlgorithmParameterSpec;
 import java.security.spec.ECParameterSpec;
 import java.util.Arrays;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -157,6 +158,17 @@ public abstract class PivPrivateKey implements PrivateKey, Destroyable {
 
   @Override
   public byte @Nullable [] getEncoded() {
+    return null;
+  }
+
+  /**
+   * Get the parameters associated with this key, or null if the key has none.
+   *
+   * <p>Declared here because on Java 24+ the defaults on {@code AsymmetricKey} and {@code RSAKey}
+   * conflict, which a class method resolves.
+   */
+  @Nullable
+  public AlgorithmParameterSpec getParams() {
     return null;
   }
 
