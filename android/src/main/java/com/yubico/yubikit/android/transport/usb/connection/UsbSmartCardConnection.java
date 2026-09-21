@@ -258,12 +258,12 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
   }
 
   /**
-   * This connection generally supports Extended length APDUs. This can be limited by firmware
-   * version of connected YubiKey.
+   * Extended length APDUs are supported for APDU-level readers. TPDU-level readers use T=1 framing
+   * with a single-block limit of 254 bytes; outbound chaining is not implemented.
    */
   @Override
   public boolean isExtendedLengthApduSupported() {
-    return true;
+    return !tpduLevel;
   }
 
   @Override
