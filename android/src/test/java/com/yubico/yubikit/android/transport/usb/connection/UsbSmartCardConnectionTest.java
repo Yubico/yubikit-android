@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -44,6 +45,19 @@ public class UsbSmartCardConnectionTest {
    * the read loop's chunking, which those tests are not exercising.
    */
   private static final int OVERSIZED_MAX_PACKET_SIZE = 65536;
+
+  // dwFeatures values taken from readers we have on the bench.
+  private static final int FEATURES_TPDU = 0x000100BA; // Identiv SCR3500 C
+  private static final int FEATURES_APDU_EXTENDED = 0x000404BA; // HID OMNIKEY 5022-CL
+  private static final int FEATURES_APDU_SHORT = 0x00020000;
+
+  /**
+   * Smallest dwMaxCCIDMessageLength the host treats as usable: CCID 1.10 §5.1 requires at least the
+   * 10-byte header plus a 261-byte short APDU. Anything below this is out of spec and ignored.
+   * Using exactly the floor caps a command frame at 261 payload bytes, which keeps the chaining
+   * tests' APDUs small enough to read.
+   */
+  private static final int MIN_MAX_CCID_MESSAGE_LENGTH = 271;
 
   private final UsbDeviceConnection usbDeviceConnection = mock(UsbDeviceConnection.class);
   private final UsbInterface usbInterface = mock(UsbInterface.class);
@@ -98,6 +112,89 @@ public class UsbSmartCardConnectionTest {
             usbDeviceConnection, usbInterface, usbEndpointIn, usbEndpointOut);
     assertSent("62000000000000000000"); // Power on command
     return connection;
+  }
+
+  /**
+   * A reader whose CCID class descriptor offers only the TPDU exchange level expects the host to
+   * frame T=1 blocks itself. Sending it APDU-level XfrBlocks produces confusing downstream
+   * failures, so the connection must refuse to open - before the power-on exchange, which is why no
+   * packet is queued here.
+   */
+  @Test
+  public void testTpduOnlyReaderIsRejected() {
+    setupDescriptor(FEATURES_TPDU, MIN_MAX_CCID_MESSAGE_LENGTH);
+
+    IOException e =
+        Assert.assertThrows(
+            IOException.class,
+            () ->
+                new UsbSmartCardConnection(
+                    usbDeviceConnection, usbInterface, usbEndpointIn, usbEndpointOut));
+    Assert.assertEquals(
+        "Reader does not support APDU-level exchange (dwFeatures=0x000100BA, exchange level: TPDU"
+            + " (host frames T=0/T=1))",
+        e.getMessage());
+  }
+
+  /** A short-APDU reader is an APDU-level reader; only the TPDU-only case is refused. */
+  @Test
+  public void testShortApduReaderIsAccepted() throws IOException {
+    setupDescriptor(FEATURES_APDU_SHORT, MIN_MAX_CCID_MESSAGE_LENGTH);
+    UsbSmartCardConnection connection = getConnection();
+
+    packetsIn.add("800500000000010000000102039000");
+    byte[] response = connection.sendAndReceive(Codec.fromHex("0001020300"));
+    assertSent("6f0500000000010000000001020300");
+
+    Assert.assertArrayEquals(Codec.fromHex("0102039000"), response);
+  }
+
+  /** The OMNIKEY 5022-CL's dwFeatures: APDU level with extended length. */
+  @Test
+  public void testExtendedApduReaderIsAccepted() throws IOException {
+    setupDescriptor(FEATURES_APDU_EXTENDED, MIN_MAX_CCID_MESSAGE_LENGTH);
+    UsbSmartCardConnection connection = getConnection();
+
+    Assert.assertTrue(connection.isExtendedLengthApduSupported());
+
+    packetsIn.add("800500000000010000000102039000");
+    byte[] response = connection.sendAndReceive(Codec.fromHex("0001020300"));
+    assertSent("6f0500000000010000000001020300");
+
+    Assert.assertArrayEquals(Codec.fromHex("0102039000"), response);
+  }
+
+  /**
+   * getRawDescriptors() returning null (its documented failure mode, and Mockito's default here)
+   * leaves the descriptor unread. That is not an error: the connection opens and behaves as it did
+   * before the descriptor was consulted at all.
+   */
+  @Test
+  public void testNullDescriptorOpensNormally() throws IOException {
+    UsbSmartCardConnection connection = getConnection();
+
+    packetsIn.add("800500000000010000000102039000");
+    byte[] response = connection.sendAndReceive(Codec.fromHex("0001020300"));
+    assertSent("6f0500000000010000000001020300");
+
+    Assert.assertArrayEquals(Codec.fromHex("0102039000"), response);
+  }
+
+  /**
+   * Descriptor bytes that contain no class-specific (0x21) entry - here a lone interface descriptor
+   * - must be walked to the end and then ignored, not misread as one.
+   */
+  @Test
+  public void testDescriptorWithoutCcidEntryOpensNormally() throws IOException {
+    when(usbDeviceConnection.getRawDescriptors())
+        .thenReturn(Codec.fromHex("090400000204000000")); // bLength=9, bDescriptorType=0x04
+    UsbSmartCardConnection connection = getConnection();
+
+    packetsIn.add("800500000000010000000102039000");
+    byte[] response = connection.sendAndReceive(Codec.fromHex("0001020300"));
+    assertSent("6f0500000000010000000001020300");
+
+    Assert.assertArrayEquals(Codec.fromHex("0102039000"), response);
   }
 
   @Test
@@ -295,6 +392,48 @@ public class UsbSmartCardConnectionTest {
 
     assertSent("6f0500000000010000000001020300");
     assertSent("6f000000000002001000");
+  }
+
+  private void setupDescriptor(int dwFeatures, int dwMaxCcidMessageLength) {
+    when(usbDeviceConnection.getRawDescriptors())
+        .thenReturn(Codec.fromHex(descriptorHex(dwFeatures, dwMaxCcidMessageLength)));
+  }
+
+  /**
+   * A 54-byte CCID class descriptor (bLength=0x36, bDescriptorType=0x21). Only dwFeatures at offset
+   * 40 and dwMaxCCIDMessageLength at offset 44 are read by the code under test; every other field
+   * is a plausible-but-irrelevant constant.
+   */
+  private static String descriptorHex(int dwFeatures, int dwMaxCcidMessageLength) {
+    return "36211001" // bLength, bDescriptorType, bcdCCID
+        + "0001" // bMaxSlotIndex, bVoltageSupport
+        + "02000000" // dwProtocols
+        + "A00F0000" // dwDefaultClock
+        + "A00F0000" // dwMaximumClock
+        + "00" // bNumClockSupported
+        + "80250000" // dwDataRate
+        + "80250000" // dwMaxDataRate
+        + "00" // bNumDataRatesSupported
+        + "FE000000" // dwMaxIFSD
+        + "00000000" // dwSynchProtocols
+        + "00000000" // dwMechanical
+        + le32(dwFeatures)
+        + le32(dwMaxCcidMessageLength)
+        + "FFFF" // bClassGetResponse, bClassEnvelope
+        + "0000" // wLcdLayout
+        + "0001"; // bPINSupport, bMaxCCIDBusySlots
+  }
+
+  private static String u8(int value) {
+    return String.format(Locale.ROOT, "%02x", value & 0xFF);
+  }
+
+  private static String le16(int value) {
+    return u8(value) + u8(value >> 8);
+  }
+
+  private static String le32(int value) {
+    return le16(value) + le16(value >> 16);
   }
 
   private static String repeatHex(String byteHex, int count) {

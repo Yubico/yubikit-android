@@ -94,9 +94,37 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
   // process runs out of memory.
   private static final int MAX_CHAINED_RESPONSE_LENGTH = 65536 + 2;
 
+  // bDescriptorType of the CCID class-specific descriptor (CCID 1.10
+  // §5.1). Class-specific descriptor types are numbered per class, so
+  // this 0x21 is unrelated to FidoConnectionHandler.HID_DESCRIPTOR_TYPE
+  // despite the shared value - only bytes claimed by a CCID interface
+  // may be read with the offsets below.
+  private static final int CCID_DESCRIPTOR_TYPE = 0x21;
+
+  // bLength of that descriptor: 0x36. Treated as a minimum rather than
+  // an equality so a reader that appends vendor fields still parses,
+  // and so the fixed offsets read below are known to be present.
+  private static final int CCID_DESCRIPTOR_MIN_LENGTH = 54;
+
+  // Offsets into the CCID class descriptor of the two fields this
+  // class acts on, both little-endian uint32 (CCID 1.10 §5.1).
+  private static final int OFFSET_DW_FEATURES = 40;
+  private static final int OFFSET_DW_MAX_CCID_MESSAGE_LENGTH = 44;
+
+  // dwFeatures exchange-level bits (CCID 1.10 §5.1 table 5.1-1).
+  private static final int FEATURE_EXCHANGE_TPDU = 0x00010000; // bit 16
+  private static final int FEATURE_EXCHANGE_APDU_SHORT = 0x00020000; // bit 17
+  private static final int FEATURE_EXCHANGE_APDU_EXTENDED = 0x00040000; // bit 18
+
   private final UsbDeviceConnection connection;
   private final UsbEndpoint endpointOut, endpointIn;
   private final byte[] atr;
+
+  // dwMaxCCIDMessageLength from the CCID Class Descriptor: the largest
+  // CCID message, 10-byte header included, that the reader will accept.
+  // 0 when no descriptor was found, in which case we assume any APDU
+  // fits - which is what this class did unconditionally before.
+  private long maxCcidMessageLength = 0;
 
   private byte sequence = 0;
 
@@ -127,8 +155,74 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
     this.connection = connection;
     this.endpointIn = endpointIn;
     this.endpointOut = endpointOut;
+    parseCcidClassDescriptor();
     // PC_to_RDR_IccPowerOn command makes the slot "active" if it was "inactive"
     atr = transceive(POWER_ON_MESSAGE_TYPE, new byte[0], LEVEL_PARAMETER_SHORT_APDU);
+  }
+
+  /**
+   * Read the reader's CCID Class Descriptor (CCID 1.10 §5.1) for the two properties this class acts
+   * on: the exchange level it offers, and the largest CCID message it accepts.
+   *
+   * <p>A reader that only offers the TPDU exchange level expects the host to do T=1 block framing
+   * itself, which this class does not implement, so such a reader is rejected here rather than
+   * being sent APDU-level {@code XfrBlock}s it will not understand.
+   *
+   * <p>A descriptor that cannot be found is not an error: the fields keep their defaults and the
+   * connection behaves as it did before the descriptor was read at all.
+   */
+  private void parseCcidClassDescriptor() throws IOException {
+    byte[] raw = connection.getRawDescriptors();
+    if (raw == null) {
+      logger.debug("CCID descriptor: getRawDescriptors() returned null");
+      return;
+    }
+    ByteBuffer descriptors = ByteBuffer.wrap(raw).order(ByteOrder.LITTLE_ENDIAN);
+    // Walk the descriptor list (USB 2.0 §9.5): each entry is bLength,
+    // bDescriptorType, plus bLength-2 type-specific bytes.
+    int i = 0;
+    while (i + 1 < raw.length) {
+      int bLength = raw[i] & 0xFF;
+      int bDescriptorType = raw[i + 1] & 0xFF;
+      if (bLength == 0 || i + bLength > raw.length) break;
+      if (bDescriptorType == CCID_DESCRIPTOR_TYPE && bLength >= CCID_DESCRIPTOR_MIN_LENGTH) {
+        int dwFeatures = descriptors.getInt(i + OFFSET_DW_FEATURES);
+        String exchangeLevel;
+        boolean apduLevel =
+            (dwFeatures & (FEATURE_EXCHANGE_APDU_SHORT | FEATURE_EXCHANGE_APDU_EXTENDED)) != 0;
+        if ((dwFeatures & FEATURE_EXCHANGE_APDU_EXTENDED) != 0) {
+          exchangeLevel = "APDU (short+extended)";
+        } else if ((dwFeatures & FEATURE_EXCHANGE_APDU_SHORT) != 0) {
+          exchangeLevel = "APDU (short only)";
+        } else if ((dwFeatures & FEATURE_EXCHANGE_TPDU) != 0) {
+          exchangeLevel = "TPDU (host frames T=0/T=1)";
+        } else {
+          exchangeLevel = "character-level (raw)";
+        }
+        // The bLength check above guarantees both fields are present.
+        this.maxCcidMessageLength =
+            descriptors.getInt(i + OFFSET_DW_MAX_CCID_MESSAGE_LENGTH) & 0xFFFFFFFFL;
+        logger.debug(
+            "CCID descriptor: dwFeatures=0x{} exchangeLevel={} dwMaxCCIDMessageLength={}",
+            String.format(Locale.ROOT, "%08X", dwFeatures),
+            exchangeLevel,
+            maxCcidMessageLength);
+        // A reader that advertises both TPDU and APDU accepts either,
+        // and APDU-level passthrough is what this class speaks. Only
+        // reject when APDU level is not on offer at all.
+        if (!apduLevel) {
+          throw new IOException(
+              "Reader does not support APDU-level exchange (dwFeatures=0x"
+                  + String.format(Locale.ROOT, "%08X", dwFeatures)
+                  + ", exchange level: "
+                  + exchangeLevel
+                  + ")");
+        }
+        return;
+      }
+      i += bLength;
+    }
+    logger.debug("CCID descriptor: class-specific descriptor (0x21) not found");
   }
 
   @Override
