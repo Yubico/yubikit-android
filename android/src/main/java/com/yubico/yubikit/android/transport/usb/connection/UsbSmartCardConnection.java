@@ -76,6 +76,12 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
   private static final short LEVEL_PARAMETER_SHORT_APDU = (short) 0x0000;
   private static final short LEVEL_PARAMETER_GET_NEXT_RESPONSE_CHUNK = (short) 0x0010;
 
+  // The same field also chains a command APDU that is larger than the
+  // reader's dwMaxCCIDMessageLength across several XfrBlock messages.
+  private static final short LEVEL_PARAMETER_COMMAND_FIRST = (short) 0x0001;
+  private static final short LEVEL_PARAMETER_COMMAND_LAST = (short) 0x0002;
+  private static final short LEVEL_PARAMETER_COMMAND_MIDDLE = (short) 0x0003;
+
   // CCID 1.10 §6.2.1 RDR_to_PC_DataBlock bChainParameter values. Many
   // contactless CCID readers (e.g. HID OMNIKEY 5022-CL) return long
   // response APDUs in pieces and signal continuation here; the host
@@ -87,12 +93,26 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
   private static final byte CHAIN_PARAMETER_RESPONSE_LAST = (byte) 0x02;
   private static final byte CHAIN_PARAMETER_RESPONSE_MIDDLE = (byte) 0x03;
 
+  // The reader acknowledges every non-final chunk of a chained command
+  // APDU with an empty abData and this value, meaning "continuation of
+  // the command APDU is expected". Note it is deliberately outside the
+  // 0x00-0x03 range above, so responseIsChained() reports false for an
+  // acknowledgement and the two chaining loops cannot interfere.
+  private static final byte CHAIN_PARAMETER_COMMAND_CONTINUE = (byte) 0x10;
+
   // Upper bound on a reassembled chained response: the largest response
   // APDU ISO 7816-4 can express is 65536 data bytes plus SW1SW2. The
   // reader decides how many chunks to send, so without this bound a
   // reader that never signals "last" would grow the buffer until the
   // process runs out of memory.
   private static final int MAX_CHAINED_RESPONSE_LENGTH = 65536 + 2;
+
+  // CCID 1.10 §5.1 requires dwMaxCCIDMessageLength to be at least the
+  // 10-byte header plus a 261-byte short APDU. A reader advertising less
+  // than that is out of spec, and chunking by a bogus (or zero) value
+  // would divide by nothing or emit a frame per byte, so we ignore it
+  // and send one frame as before.
+  private static final int MIN_MAX_CCID_MESSAGE_LENGTH = 10 + 261;
 
   // bDescriptorType of the CCID class-specific descriptor (CCID 1.10
   // §5.1). Class-specific descriptor types are numbered per class, so
@@ -241,10 +261,11 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
 
   @Override
   public byte[] sendAndReceive(byte[] apdu) throws IOException {
-    // Send the command APDU as a single (short or extended) CCID frame.
-    // For responses that fit in one frame (the common YubiKey case) this
-    // single transceive is the whole exchange.
-    byte[] response = transceive(REQUEST_MESSAGE_TYPE, apdu, LEVEL_PARAMETER_SHORT_APDU);
+    // Send the command APDU, splitting it across several CCID frames if
+    // it is larger than the reader will accept. For the common case -
+    // an APDU that fits, answered in one frame - this is a single
+    // transceive and the whole exchange.
+    byte[] response = sendCommand(apdu);
     if (!responseIsChained()) {
       return response;
     }
@@ -272,6 +293,72 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
       }
       return stream.toByteArray();
     }
+  }
+
+  /**
+   * Send a command APDU and return the reader's reply to its final frame.
+   *
+   * <p>A reader advertises the largest CCID message it accepts in {@code dwMaxCCIDMessageLength}.
+   * An APDU that does not fit has to be split across several {@code PC_to_RDR_XfrBlock} messages
+   * chained via {@code wLevelParameter} (CCID 1.10 §6.1.4): {@code 0x0001} for the first chunk,
+   * {@code 0x0003} for each middle one and {@code 0x0002} for the last. Only the reply to the last
+   * chunk carries the response APDU.
+   *
+   * <p>Skipping the split is not a loud failure. The HID OMNIKEY 5022-CL, which advertises 520
+   * bytes, keeps the whole USB packets that fit and silently drops the overflow, so the card sees
+   * an APDU whose {@code Lc} overstates the data present and answers with stale buffer contents
+   * under SW {@code 9000}.
+   */
+  private byte[] sendCommand(byte[] apdu) throws IOException {
+    int maxPayload = maxCommandPayloadPerFrame();
+    if (maxPayload <= 0 || apdu.length <= maxPayload) {
+      return transceive(REQUEST_MESSAGE_TYPE, apdu, LEVEL_PARAMETER_SHORT_APDU);
+    }
+
+    byte[] reply = new byte[0];
+    int offset = 0;
+    while (offset < apdu.length) {
+      int chunkLength = Math.min(maxPayload, apdu.length - offset);
+      boolean isLast = offset + chunkLength == apdu.length;
+      short levelParameter;
+      if (offset == 0) {
+        levelParameter = LEVEL_PARAMETER_COMMAND_FIRST;
+      } else if (isLast) {
+        levelParameter = LEVEL_PARAMETER_COMMAND_LAST;
+      } else {
+        levelParameter = LEVEL_PARAMETER_COMMAND_MIDDLE;
+      }
+
+      reply =
+          transceive(
+              REQUEST_MESSAGE_TYPE,
+              Arrays.copyOfRange(apdu, offset, offset + chunkLength),
+              levelParameter);
+      offset += chunkLength;
+
+      // Every chunk but the last must be acknowledged with "continuation
+      // expected". Anything else means the reader believes the command is
+      // complete, so the bytes we have not sent yet would be lost.
+      if (!isLast && lastResponseChainParameter != CHAIN_PARAMETER_COMMAND_CONTINUE) {
+        throw new IOException(
+            "Reader did not acknowledge chained command chunk: bChainParameter=0x"
+                + String.format(Locale.ROOT, "%02X", lastResponseChainParameter));
+      }
+    }
+    return reply;
+  }
+
+  /**
+   * Bytes of a command APDU that fit in one CCID message, or 0 when the reader did not advertise a
+   * usable {@code dwMaxCCIDMessageLength} and we have to assume any APDU fits — the behaviour of
+   * this class before chaining existed.
+   */
+  private int maxCommandPayloadPerFrame() {
+    if (maxCcidMessageLength < MIN_MAX_CCID_MESSAGE_LENGTH) {
+      return 0;
+    }
+    return (int)
+        Math.min(maxCcidMessageLength - MessageHeader.SIZE_OF_CCID_PREFIX, Integer.MAX_VALUE);
   }
 
   /** True while the reader has announced further chunks of the current response APDU. */
