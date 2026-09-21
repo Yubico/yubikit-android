@@ -22,6 +22,7 @@ import android.hardware.usb.UsbInterface;
 import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.core.util.StringUtils;
+import com.yubico.yubikit.core.util.ZeroingByteArrayOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -86,6 +87,13 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
   private static final byte CHAIN_PARAMETER_RESPONSE_LAST = (byte) 0x02;
   private static final byte CHAIN_PARAMETER_RESPONSE_MIDDLE = (byte) 0x03;
 
+  // Upper bound on a reassembled chained response: the largest response
+  // APDU ISO 7816-4 can express is 65536 data bytes plus SW1SW2. The
+  // reader decides how many chunks to send, so without this bound a
+  // reader that never signals "last" would grow the buffer until the
+  // process runs out of memory.
+  private static final int MAX_CHAINED_RESPONSE_LENGTH = 65536 + 2;
+
   private final UsbDeviceConnection connection;
   private final UsbEndpoint endpointOut, endpointIn;
   private final byte[] atr;
@@ -143,22 +151,39 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
     // For responses that fit in one frame (the common YubiKey case) this
     // single transceive is the whole exchange.
     byte[] response = transceive(REQUEST_MESSAGE_TYPE, apdu, LEVEL_PARAMETER_SHORT_APDU);
+    if (!responseIsChained()) {
+      return response;
+    }
 
     // If the reader split the response across multiple CCID frames it
     // signals so via bChainParameter (CCID 1.10 §6.2.1). Pull each
     // subsequent chunk via an empty XfrBlock with
     // wLevelParameter = 0x0010 until the reader reports either a
     // complete (0x00) or last (0x02) chunk.
-    while (lastResponseChainParameter == CHAIN_PARAMETER_RESPONSE_FIRST
-        || lastResponseChainParameter == CHAIN_PARAMETER_RESPONSE_MIDDLE) {
-      byte[] next =
-          transceive(REQUEST_MESSAGE_TYPE, new byte[0], LEVEL_PARAMETER_GET_NEXT_RESPONSE_CHUNK);
-      byte[] joined = new byte[response.length + next.length];
-      System.arraycopy(response, 0, joined, 0, response.length);
-      System.arraycopy(next, 0, joined, response.length, next.length);
-      response = joined;
+    try (ZeroingByteArrayOutputStream stream = new ZeroingByteArrayOutputStream()) {
+      stream.write(response, 0, response.length);
+      while (responseIsChained()) {
+        byte[] next =
+            transceive(REQUEST_MESSAGE_TYPE, new byte[0], LEVEL_PARAMETER_GET_NEXT_RESPONSE_CHUNK);
+        // A chunk that says "more follows" but carries no data makes no
+        // progress, so accepting it would loop forever.
+        if (next.length == 0) {
+          throw new IOException("Empty continuation chunk in chained response");
+        }
+        if (stream.size() + next.length > MAX_CHAINED_RESPONSE_LENGTH) {
+          throw new IOException(
+              "Chained response exceeds " + MAX_CHAINED_RESPONSE_LENGTH + " bytes");
+        }
+        stream.write(next, 0, next.length);
+      }
+      return stream.toByteArray();
     }
-    return response;
+  }
+
+  /** True while the reader has announced further chunks of the current response APDU. */
+  private boolean responseIsChained() {
+    return lastResponseChainParameter == CHAIN_PARAMETER_RESPONSE_FIRST
+        || lastResponseChainParameter == CHAIN_PARAMETER_RESPONSE_MIDDLE;
   }
 
   @Override
