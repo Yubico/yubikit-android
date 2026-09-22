@@ -140,8 +140,11 @@ public class UsbSmartCardConnectionTest {
    * I-blocks (NAD/PCB/LEN/INF/LRC) and reassemble the response from one or more I-blocks returned
    * by the card.
    *
-   * <p>This test covers the single-block round-trip: send one I-block, receive one I-block with
-   * M-bit cleared, return its INF as the response.
+   * <p>This test covers the single-block round-trip end to end: send one I-block, receive one
+   * I-block with the M-bit cleared, return its INF as the response. The framing itself is {@link
+   * T1BlockTest}'s and {@link T1ProtocolTest}'s subject; what is asserted here is that each T=1
+   * block becomes its own CCID XfrBlock with the sequence number that follows the power-on and
+   * SetParameters exchanges.
    */
   @Test
   public void testTpduT1SingleBlock() throws IOException {
@@ -709,13 +712,6 @@ public class UsbSmartCardConnectionTest {
     Assert.assertFalse(connection.isExtendedLengthApduSupported());
   }
 
-  /** TPDU path rejects APDUs longer than 254 bytes (outbound chaining not implemented). */
-  @Test(expected = IOException.class)
-  public void testTpduApduTooLarge() throws IOException {
-    UsbSmartCardConnection connection = getTpduConnection();
-    connection.sendAndReceive(new byte[255]);
-  }
-
   /**
    * Multi-block response: card sends first I-block with M=1 (NAD=00 PCB=0x20 N(S)=0), host ACKs
    * with R-block (N(R)=1 -&gt; PCB=0x90), card sends second I-block with M=0. Reassembled INF from
@@ -740,109 +736,6 @@ public class UsbSmartCardConnectionTest {
     assertSent("6f040000000003000000" + "00900090");
 
     Assert.assertArrayEquals(Codec.fromHex("AABB9000"), response);
-  }
-
-  /**
-   * Card sends a WTX S-block request (PCB=0xC3, code=0x03) before its I-block response. Host must
-   * echo it back as an S-block response (PCB=0xE3) and then read the I-block.
-   */
-  @Test
-  public void testTpduT1WtxSBlock() throws IOException {
-    UsbSmartCardConnection connection = getTpduConnection();
-
-    // WTX request from card: PCB=0xC3 (S-block request, code=0x03), INF=0x01 (multiplier=1)
-    // LRC = 00^C3^01^01 = 0xC3
-    packetsIn.add("80050000000002000000" + "00C30101C3");
-    // Normal I-block response: PCB=0x00 (N(S)=0, M=0), INF=9000
-    // LRC = 00^00^02^90^00 = 0x92
-    packetsIn.add("80060000000003000000" + "000002900092");
-
-    byte[] response = connection.sendAndReceive(Codec.fromHex("00A4040009A0000003080000100000"));
-
-    // SELECT I-block (bSeq=2)
-    assertSent("6f130000000002000000" + "00000F00A4040009A00000030800001000001D");
-    // WTX S-block response (bSeq=3): PCB=0xE3 (S-block response, code=0x03), INF=0x01
-    // LRC = 00^E3^01^01 = 0xE3
-    assertSent("6f050000000003000000" + "00E30101E3");
-
-    Assert.assertArrayEquals(Codec.fromHex("9000"), response);
-  }
-
-  /**
-   * Card sends an IFS S-block request (PCB=0xC1, code=0x01) before its I-block response. Host
-   * echoes it back as an S-block response (PCB=0xE1) with the same INF.
-   */
-  @Test
-  public void testTpduT1IfsSBlock() throws IOException {
-    UsbSmartCardConnection connection = getTpduConnection();
-
-    // IFS request from card: PCB=0xC1 (S-block request, code=0x01), INF=0xFE (IFSC=254)
-    // LRC = 00^C1^01^FE = 0x3E
-    packetsIn.add("80050000000002000000" + "00C101FE3E");
-    // Normal I-block response
-    packetsIn.add("80060000000003000000" + "000002900092");
-
-    byte[] response = connection.sendAndReceive(Codec.fromHex("00A4040009A0000003080000100000"));
-
-    assertSent("6f130000000002000000" + "00000F00A4040009A00000030800001000001D");
-    // IFS S-block response (bSeq=3): PCB=0xE1 (S-block response, code=0x01), INF=0xFE
-    // LRC = 00^E1^01^FE = 0x1E
-    assertSent("6f050000000003000000" + "00E101FE1E");
-
-    Assert.assertArrayEquals(Codec.fromHex("9000"), response);
-  }
-
-  /**
-   * N(S) must toggle between consecutive sendAndReceive calls (ISO 7816-3 §11.6.2). First call
-   * sends PCB=0x00 (N(S)=0); second call must send PCB=0x40 (N(S)=1).
-   */
-  @Test
-  public void testTpduT1SequenceToggle() throws IOException {
-    UsbSmartCardConnection connection = getTpduConnection();
-
-    // First call
-    packetsIn.add("80060000000002000000" + "000002900092");
-    connection.sendAndReceive(Codec.fromHex("00A4040009A0000003080000100000"));
-    assertSent("6f130000000002000000" + "00000F00A4040009A00000030800001000001D");
-
-    // Second call: PCB must be 0x40 (N(S)=1).
-    // LRC for N(S)=1 block: 00^40^0F^[APDU XOR] = 00^40^0F^12 = 0x5D
-    packetsIn.add("80060000000003000000" + "000002900092");
-    connection.sendAndReceive(Codec.fromHex("00A4040009A0000003080000100000"));
-    assertSent("6f130000000003000000" + "00400F00A4040009A00000030800001000005D");
-  }
-
-  /** Inbound T=1 block with a wrong LRC must throw IOException. */
-  @Test
-  public void testTpduT1LrcMismatch() throws IOException {
-    UsbSmartCardConnection connection = getTpduConnection();
-
-    // Correct LRC for this block would be 0x92; we send 0xFF instead.
-    packetsIn.add("80060000000002000000" + "0000029000FF");
-    try {
-      connection.sendAndReceive(Codec.fromHex("00A4040009A0000003080000100000"));
-      Assert.fail("Expected IOException for LRC mismatch");
-    } catch (IOException expected) {
-      // expected
-    }
-    // The SELECT I-block was sent before the error; drain it so teardown passes.
-    assertSent("6f130000000002000000" + "00000F00A4040009A00000030800001000001D");
-  }
-
-  /** A T=1 block shorter than the minimum 4 bytes must throw IOException. */
-  @Test
-  public void testTpduT1TruncatedBlock() throws IOException {
-    UsbSmartCardConnection connection = getTpduConnection();
-
-    // Only 2 bytes returned - below the NAD+PCB+LEN+LRC minimum.
-    packetsIn.add("800200000000020000000000");
-    try {
-      connection.sendAndReceive(Codec.fromHex("00A4040009A0000003080000100000"));
-      Assert.fail("Expected IOException for truncated block");
-    } catch (IOException expected) {
-      // expected
-    }
-    assertSent("6f130000000002000000" + "00000F00A4040009A00000030800001000001D");
   }
 
   // ---------------------------------------------------------------
