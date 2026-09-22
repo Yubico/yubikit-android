@@ -29,6 +29,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.Locale;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,8 +66,11 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
    */
   private static final byte POWER_ON_MESSAGE_TYPE = (byte) 0x62;
 
+  private static final byte SET_PARAMETERS_MESSAGE_TYPE = (byte) 0x61;
+
   private static final byte REQUEST_MESSAGE_TYPE = (byte) 0x6f;
   private static final byte RESPONSE_DATA_BLOCK = (byte) 0x80;
+  private static final byte RESPONSE_PARAMETERS = (byte) 0x82;
 
   private static final byte STATUS_TIME_EXTENSION = (byte) 0x80;
 
@@ -153,6 +157,16 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
   // without having to re-parse the response header.
   private byte lastResponseChainParameter = CHAIN_PARAMETER_RESPONSE_COMPLETE;
 
+  // True if the CCID Class Descriptor dwFeatures advertises TPDU-level
+  // exchange (bit 16) without APDU-level exchange (bits 17, 18). In
+  // that mode the host has to frame T=1 blocks itself, which is what
+  // the T1Protocol below is for.
+  private boolean tpduLevel = false;
+
+  // Host-side T=1 framing, non-null exactly when tpduLevel is set. It
+  // holds the N(S) sequence state for the life of the connection.
+  private final @Nullable T1Protocol t1Protocol;
+
   private static final Logger logger = LoggerFactory.getLogger(UsbSmartCardConnection.class);
 
   /**
@@ -175,9 +189,51 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
     this.connection = connection;
     this.endpointIn = endpointIn;
     this.endpointOut = endpointOut;
+    // Read the CCID Class Descriptor up front so we know whether the
+    // reader expects host-framed TPDUs or APDU-level passthrough.
+    // The result feeds tpduLevel, which routes sendAndReceive() at
+    // run time.
     parseCcidClassDescriptor();
     // PC_to_RDR_IccPowerOn command makes the slot "active" if it was "inactive"
     atr = transceive(POWER_ON_MESSAGE_TYPE, new byte[0], LEVEL_PARAMETER_SHORT_APDU);
+    if (tpduLevel) {
+      T1Parameters parameters = T1Parameters.fromAtr(atr);
+      t1Protocol =
+          new T1Protocol(
+              block -> transceive(REQUEST_MESSAGE_TYPE, block, LEVEL_PARAMETER_SHORT_APDU),
+              parameters.ifsc());
+      // For TPDU-level readers, push the bit-rate and T=1 parameters
+      // the card declared in its ATR into the reader via
+      // PC_to_RDR_SetParameters. Some readers (Identiv SCR3500 C
+      // observed) advertise auto-PPS in dwFeatures but stay at the
+      // default 9600-baud bus rate until told otherwise. Without this
+      // a 12 KB facial-image read takes ~16 s; with it ~1-2 s.
+      setT1Parameters(parameters);
+    } else {
+      t1Protocol = null;
+    }
+  }
+
+  private void setT1Parameters(T1Parameters parameters) {
+    // PC_to_RDR_SetParameters: 10-byte header where bytes 7-9 are
+    // (bProtocolNum, abRFU, abRFU).
+    try {
+      byte[] reply =
+          transceive(
+              SET_PARAMETERS_MESSAGE_TYPE,
+              parameters.toBytes(),
+              new byte[] {T1Parameters.PROTOCOL_NUM_T1, 0, 0},
+              RESPONSE_PARAMETERS);
+      logger.debug(
+          "CCID SetParameters ok: sent Fi/Di=0x{} IFSC={}, echo={}",
+          String.format(Locale.ROOT, "%02X", parameters.findexDindex()),
+          parameters.ifsc(),
+          StringUtils.bytesToHex(reply));
+    } catch (IOException e) {
+      // Not fatal: the reader keeps whatever parameters it defaulted to,
+      // which is exactly the behaviour before this call existed.
+      logger.warn("CCID SetParameters failed, falling back to reader defaults", e);
+    }
   }
 
   /**
@@ -185,13 +241,13 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
    * on: the exchange level it offers, and the largest CCID message it accepts.
    *
    * <p>A reader that only offers the TPDU exchange level expects the host to do T=1 block framing
-   * itself, which this class does not implement, so such a reader is rejected here rather than
-   * being sent APDU-level {@code XfrBlock}s it will not understand.
+   * itself, which {@link T1Protocol} does. A reader advertising both levels accepts either, and
+   * APDU-level passthrough is the simpler path, so it wins.
    *
    * <p>A descriptor that cannot be found is not an error: the fields keep their defaults and the
    * connection behaves as it did before the descriptor was read at all.
    */
-  private void parseCcidClassDescriptor() throws IOException {
+  private void parseCcidClassDescriptor() {
     byte[] raw = connection.getRawDescriptors();
     if (raw == null) {
       logger.debug("CCID descriptor: getRawDescriptors() returned null");
@@ -222,22 +278,15 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
         // The bLength check above guarantees both fields are present.
         this.maxCcidMessageLength =
             descriptors.getInt(i + OFFSET_DW_MAX_CCID_MESSAGE_LENGTH) & 0xFFFFFFFFL;
+        // Only enable our T=1 framing path when the TPDU bit is set AND
+        // neither APDU bit is set; if both are advertised the reader
+        // accepts either, and APDU-level passthrough is simpler.
+        this.tpduLevel = (dwFeatures & FEATURE_EXCHANGE_TPDU) != 0 && !apduLevel;
         logger.debug(
             "CCID descriptor: dwFeatures=0x{} exchangeLevel={} dwMaxCCIDMessageLength={}",
             String.format(Locale.ROOT, "%08X", dwFeatures),
             exchangeLevel,
             maxCcidMessageLength);
-        // A reader that advertises both TPDU and APDU accepts either,
-        // and APDU-level passthrough is what this class speaks. Only
-        // reject when APDU level is not on offer at all.
-        if (!apduLevel) {
-          throw new IOException(
-              "Reader does not support APDU-level exchange (dwFeatures=0x"
-                  + String.format(Locale.ROOT, "%08X", dwFeatures)
-                  + ", exchange level: "
-                  + exchangeLevel
-                  + ")");
-        }
         return;
       }
       i += bLength;
@@ -251,16 +300,32 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
   }
 
   /**
-   * This connection generally supports Extended length APDUs. This can be limited by firmware
-   * version of connected YubiKey.
+   * Extended length APDUs are reported only for APDU-level readers, where the reader itself
+   * promises to frame them.
+   *
+   * <p>A TPDU-level reader passes blocks through untouched, so what matters is what the card
+   * accepts - and nothing we read from it says whether that includes extended length. {@link
+   * T1Protocol} chains blocks in both directions, so the limit is no longer the 254 bytes a single
+   * block holds, but short APDUs remain the only path we can prove.
    */
   @Override
   public boolean isExtendedLengthApduSupported() {
-    return true;
+    return !tpduLevel;
   }
 
   @Override
   public byte[] sendAndReceive(byte[] apdu) throws IOException {
+    if (t1Protocol != null) {
+      // TPDU-level reader (e.g. Identiv SCR3500 C). We have to frame
+      // the APDU as a T=1 I-block ourselves and reassemble the
+      // response from one or more I-blocks driven by R-block ACKs.
+      return t1Protocol.sendApdu(apdu);
+    }
+
+    // APDU-level reader (YubiKey, most contactless CCID readers). The
+    // reader handles T=0/T=1 internally; we just put the APDU bytes
+    // in a CCID XfrBlock data field.
+    //
     // Send the command APDU, splitting it across several CCID frames if
     // it is larger than the reader will accept. For the common case -
     // an APDU that fits, answered in one frame - this is a single
@@ -400,8 +465,19 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
    * @throws IOException in case if there is communication error occurs or received data is invalid
    */
   private byte[] transceive(byte type, byte[] data, short wLevelParameter) throws IOException {
+    // For XfrBlock / PowerOn the message-specific bytes are bBWI (=0)
+    // and the wLevelParameter as an LE short.
+    return transceive(
+        type,
+        data,
+        new byte[] {0, (byte) (wLevelParameter & 0xFF), (byte) ((wLevelParameter >> 8) & 0xFF)},
+        RESPONSE_DATA_BLOCK);
+  }
+
+  private byte[] transceive(byte type, byte[] data, byte[] specific, byte expectedResponseType)
+      throws IOException {
     // 1. prepare data for sending
-    MessageHeader prefix = new MessageHeader(type, data.length, sequence++, wLevelParameter);
+    MessageHeader prefix = new MessageHeader(type, data.length, sequence++, specific);
     ByteBuffer byteBuffer =
         ByteBuffer.allocate(prefix.size() + data.length)
             .order(ByteOrder.LITTLE_ENDIAN)
@@ -457,7 +533,7 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
           messageHeader = new MessageHeader(bufferRead);
           responseRequiresTimeExtension =
               (messageHeader.status & STATUS_TIME_EXTENSION) == STATUS_TIME_EXTENSION;
-          if (messageHeader.verify((byte) (sequence - 1))) {
+          if (messageHeader.verify((byte) (sequence - 1), expectedResponseType)) {
             // if we received expected prefix we can save the rest of received data without
             // verification
             receivedExpectedPrefix = true;
@@ -519,9 +595,11 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
     // slot in the outbound header is wLevelParameter (LE short, §6.1.4).
     private byte chainParameter;
 
-    // wLevelParameter to write into outbound XfrBlock headers
-    // (§6.1.4). Ignored on inbound parses.
-    private short wLevelParameter;
+    // Raw bytes 7..9 of the outbound CCID header. Their meaning is
+    // command-specific: bBWI + wLevelParameter LE for XfrBlock,
+    // bProtocolNum + abRFU for SetParameters, bPowerSelect + abRFU
+    // for PowerOn, etc. Ignored on inbound parses.
+    private byte[] messageSpecificBytes = new byte[] {0, 0, 0};
 
     private MessageHeader(byte[] buffer) {
       if (buffer.length > SIZE_OF_CCID_PREFIX) {
@@ -537,18 +615,17 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
       }
     }
 
-    private MessageHeader(byte type, int length, byte sequence, short wLevelParameter) {
+    private MessageHeader(byte type, int length, byte sequence, byte[] specific) {
       this.type = type;
       this.dataLength = length;
       this.slot = SLOT_NUMBER;
       this.sequence = sequence;
-      this.wLevelParameter = wLevelParameter;
+      if (specific != null && specific.length == 3) {
+        this.messageSpecificBytes = new byte[] {specific[0], specific[1], specific[2]};
+      }
     }
 
     private byte[] array() {
-      // Bytes 7-9 of an outbound XfrBlock are bBWI (always 0 = use
-      // default block waiting time) followed by wLevelParameter as a
-      // little-endian short.
       ByteBuffer byteBuffer =
           ByteBuffer.allocate(SIZE_OF_CCID_PREFIX)
               .order(ByteOrder.LITTLE_ENDIAN)
@@ -556,8 +633,7 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
               .putInt(dataLength)
               .put(slot)
               .put(sequence)
-              .put((byte) 0)
-              .putShort(wLevelParameter);
+              .put(messageSpecificBytes);
       return byteBuffer.array();
     }
 
@@ -570,10 +646,12 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
      * number fields from the header that was contained in the Bulk-OUT command message.
      *
      * @param sequence Bulk-OUT message sequence
+     * @param expectedType bMessageType the caller expects — RDR_to_PC_DataBlock for the common
+     *     PowerOn/XfrBlock path; RDR_to_PC_Parameters for Set/GetParameters
      * @return true if prefix has expected format
      */
-    private boolean verify(byte sequence) {
-      if (this.type != RESPONSE_DATA_BLOCK) {
+    private boolean verify(byte sequence, byte expectedType) {
+      if (this.type != expectedType) {
         return false;
       }
       if (this.slot != SLOT_NUMBER) {

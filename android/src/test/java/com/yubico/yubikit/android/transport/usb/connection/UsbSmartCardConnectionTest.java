@@ -134,28 +134,38 @@ public class UsbSmartCardConnectionTest {
   }
 
   /**
-   * A reader whose CCID class descriptor offers only the TPDU exchange level expects the host to
-   * frame T=1 blocks itself. Sending it APDU-level XfrBlocks produces confusing downstream
-   * failures, so the connection must refuse to open - before the power-on exchange, which is why no
-   * packet is queued here.
+   * ISO 7816-3 T=1 framing path. Triggered when the reader's CCID Class Descriptor advertises
+   * TPDU-level exchange (dwFeatures bit 16) without APDU-level exchange (bits 17/18) - e.g. the
+   * Identiv SCR3500 C with dwFeatures = 0x000100BA. In that mode the host has to wrap APDUs in T=1
+   * I-blocks (NAD/PCB/LEN/INF/LRC) and reassemble the response from one or more I-blocks returned
+   * by the card.
+   *
+   * <p>This test covers the single-block round-trip end to end: send one I-block, receive one
+   * I-block with the M-bit cleared, return its INF as the response. The framing itself is {@link
+   * T1BlockTest}'s and {@link T1ProtocolTest}'s subject; what is asserted here is that each T=1
+   * block becomes its own CCID XfrBlock with the sequence number that follows the power-on and
+   * SetParameters exchanges.
    */
   @Test
-  public void testTpduOnlyReaderIsRejected() {
-    setupDescriptor(FEATURES_TPDU, MIN_MAX_CCID_MESSAGE_LENGTH);
+  public void testTpduT1SingleBlock() throws IOException {
+    UsbSmartCardConnection connection = getTpduConnection();
 
-    IOException e =
-        Assert.assertThrows(
-            IOException.class,
-            () ->
-                new UsbSmartCardConnection(
-                    usbDeviceConnection, usbInterface, usbEndpointIn, usbEndpointOut));
-    Assert.assertEquals(
-        "Reader does not support APDU-level exchange (dwFeatures=0x000100BA, exchange level: TPDU"
-            + " (host frames T=0/T=1))",
-        e.getMessage());
+    // Inbound: CCID DataBlock { dwLen=6 bSeq=2 bStatus=0 bError=0 bChain=0 } + T=1 I-block
+    // { NAD=00 PCB=00 (I-block N(S)=0 M=0) LEN=02 INF=9000 LRC=92 }
+    packetsIn.add("8006000000000200000000000290009200");
+
+    byte[] response = connection.sendAndReceive(Codec.fromHex("00A4040009A0000003080000100000"));
+
+    // Outbound: CCID XfrBlock { dwLen=0x13 (=19) bSeq=2 wLevel=0 } + T=1 I-block
+    // { NAD=00 PCB=00 LEN=0F INF=15-byte SELECT APDU LRC=1D }. LRC is the XOR of the prologue
+    // and INF: 00 ^ 00 ^ 0F ^ (00 ^ A4 ^ 04 ^ 00 ^ 09 ^ A0 ^ 00 ^ 00 ^ 03 ^ 08 ^ 00 ^ 00 ^ 10
+    // ^ 00 ^ 00) = 0x1D.
+    assertSent("6f130000000002000000" + "00000F00A4040009A00000030800001000001D");
+
+    Assert.assertArrayEquals(Codec.fromHex("9000"), response);
   }
 
-  /** A short-APDU reader is an APDU-level reader; only the TPDU-only case is refused. */
+  /** An APDU-level reader keeps the passthrough path; only a TPDU-only reader gets T=1 framing. */
   @Test
   public void testShortApduReaderIsAccepted() throws IOException {
     setupDescriptor(FEATURES_APDU_SHORT, MIN_MAX_CCID_MESSAGE_LENGTH);
@@ -695,6 +705,39 @@ public class UsbSmartCardConnectionTest {
     Assert.assertArrayEquals(Codec.fromHex("9000"), response);
   }
 
+  /** TPDU-level descriptor -&gt; isExtendedLengthApduSupported() returns false. */
+  @Test
+  public void testTpduExtendedApduNotSupported() throws IOException {
+    UsbSmartCardConnection connection = getTpduConnection();
+    Assert.assertFalse(connection.isExtendedLengthApduSupported());
+  }
+
+  /**
+   * Multi-block response: card sends first I-block with M=1 (NAD=00 PCB=0x20 N(S)=0), host ACKs
+   * with R-block (N(R)=1 -&gt; PCB=0x90), card sends second I-block with M=0. Reassembled INF from
+   * both blocks is returned.
+   */
+  @Test
+  public void testTpduT1MultiBlockResponse() throws IOException {
+    UsbSmartCardConnection connection = getTpduConnection();
+
+    // First card I-block: PCB=0x20 (N(S)=0, M=1), INF=AABB (2 bytes)
+    // LRC = 00^20^02^AA^BB = 0x33
+    packetsIn.add("80060000000002000000" + "002002AABB33");
+    // Second card I-block: PCB=0x40 (N(S)=1, M=0), INF=9000 (2 bytes)
+    // LRC = 00^40^02^90^00 = 0xD2
+    packetsIn.add("80060000000003000000" + "0040029000D2");
+
+    byte[] response = connection.sendAndReceive(Codec.fromHex("00A4040009A0000003080000100000"));
+
+    // SELECT command I-block (bSeq=2, N(S)=0)
+    assertSent("6f130000000002000000" + "00000F00A4040009A00000030800001000001D");
+    // R-block ACK (bSeq=3): NAD=00 PCB=0x90 (N(R)=1) LEN=00 LRC=0x90
+    assertSent("6f040000000003000000" + "00900090");
+
+    Assert.assertArrayEquals(Codec.fromHex("AABB9000"), response);
+  }
+
   // ---------------------------------------------------------------
   // Helpers
   // ---------------------------------------------------------------
@@ -781,6 +824,41 @@ public class UsbSmartCardConnectionTest {
         + "00" // bError
         + u8(chainParameter)
         + toHex(data);
+  }
+
+  /** The Identiv SCR3500 C shape: TPDU-level exchange only, so the host frames T=1 itself. */
+  private void setupTpduDescriptor() {
+    setupDescriptor(FEATURES_TPDU, MIN_MAX_CCID_MESSAGE_LENGTH);
+  }
+
+  /**
+   * Open a connection to a TPDU-level reader. On top of the power-on exchange the constructor
+   * pushes the card's ATR-derived T=1 parameters into the reader with PC_to_RDR_SetParameters, so
+   * that exchange has to be primed and drained before the test's own traffic. Callers' first
+   * XfrBlock is therefore bSeq=2, not bSeq=1.
+   */
+  private UsbSmartCardConnection getTpduConnection() throws IOException {
+    setupTpduDescriptor();
+    // ATR - response to power on. Walking its interface bytes: TS=3B
+    // T0=FD (Y1=F -> TA1/TB1/TC1/TD1 present, K=13) TA1=13 TB1=00
+    // TC1=00 TD1=81 (Y2=8 -> TD2 only; T=1) TD2=31 (Y3=3 -> TA3/TB3
+    // present; T=1) TA3=FE TB3=15.
+    packetsIn.add("801700000000000000003bfd1300008131fe158073c021c057597562694b657940");
+    // RDR_to_PC_Parameters (type 0x82, bSeq=1) echoing the 7-byte T=1 structure.
+    packetsIn.add("820700000000010000011310001500FE00");
+
+    UsbSmartCardConnection connection =
+        new UsbSmartCardConnection(
+            usbDeviceConnection, usbInterface, usbEndpointIn, usbEndpointOut);
+
+    assertSent("62000000000000000000"); // PC_to_RDR_IccPowerOn (bSeq=0)
+    // PC_to_RDR_SetParameters (bSeq=1), header { type=0x61 dwLen=7 bSlot=0
+    // bSeq=1 bProtocolNum=0x01 abRFU=0x0000 } then the 7-byte
+    // abProtocolDataStructure taken from the ATR above: Fi/Di=0x13 (TA1),
+    // TCCK=0x10, guard=0x00 (TC1), WI=0x15 (TB3), clockStop=0x00,
+    // IFSC=0xFE (TA3), NAD=0x00.
+    assertSent("61070000000001010000" + "1310001500FE00");
+    return connection;
   }
 
   private void setupDescriptor(int dwFeatures, int dwMaxCcidMessageLength) {
