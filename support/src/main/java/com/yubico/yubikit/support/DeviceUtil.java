@@ -362,6 +362,7 @@ public class DeviceUtil {
       if ((interfaces & UsbInterface.CCID) == 0) {
         usbEnabled &=
             ~(UsbInterface.CCID
+                | Capability.FIDO_CCID.bit
                 | Capability.OATH.bit
                 | Capability.OPENPGP.bit
                 | Capability.PIV.bit);

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2025 Yubico.
+ * Copyright (C) 2024-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,12 +15,20 @@
  */
 package com.yubico.yubikit.management;
 
+import com.yubico.yubikit.SmokeTest;
 import com.yubico.yubikit.framework.ManagementInstrumentedTests;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 public class ManagementTests extends ManagementInstrumentedTests {
   @Test
   public void testNfcRestricted() throws Throwable {
     withManagementSession(ManagementDeviceTests::testNfcRestricted);
+  }
+
+  @Test
+  @Category(SmokeTest.class)
+  public void testFidoCcidCapability() throws Throwable {
+    withManagementSession(ManagementDeviceTests::testFidoCcidCapability);
   }
 }

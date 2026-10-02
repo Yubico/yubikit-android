@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2025 Yubico.
+ * Copyright (C) 2024-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package com.yubico.yubikit.management;
 
+import com.yubico.yubikit.core.Transport;
 import org.junit.Assert;
 import org.junit.Assume;
 
@@ -27,5 +28,12 @@ public class ManagementDeviceTests {
 
     Assert.assertEquals(
         Boolean.TRUE, managementSession.getDeviceInfo().getConfig().getNfcRestricted());
+  }
+
+  public static void testFidoCcidCapability(ManagementSession managementSession) throws Exception {
+    Assume.assumeTrue(managementSession.getVersion().isAtLeast(5, 8, 0));
+
+    int usbCapabilities = managementSession.getDeviceInfo().getSupportedCapabilities(Transport.USB);
+    Assert.assertTrue((usbCapabilities & Capability.FIDO_CCID.bit) == Capability.FIDO_CCID.bit);
   }
 }
