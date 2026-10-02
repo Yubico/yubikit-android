@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2025 Yubico.
+ * Copyright (C) 2024-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import com.yubico.yubikit.core.Transport;
 import com.yubico.yubikit.core.UsbInterface;
 import com.yubico.yubikit.core.Version;
 import com.yubico.yubikit.core.YubiKeyType;
+import com.yubico.yubikit.management.Capability;
 import com.yubico.yubikit.management.DeviceInfo;
 import com.yubico.yubikit.management.FormFactor;
 import java.util.ArrayList;
@@ -406,6 +407,40 @@ public class AdjustDeviceInfoTest {
     assertEquals(Integer.valueOf(0x202), info.getConfig().getEnabledCapabilities(Transport.USB));
 
     assertEquals(0x23A, info.getSupportedCapabilities(Transport.USB));
+  }
+
+  @Test
+  public void testFidoCcidDisabledWithoutCcidInterface() {
+    int fido = Capability.FIDO2.bit | Capability.U2F.bit;
+    int ccid =
+        Capability.FIDO_CCID.bit
+            | Capability.OATH.bit
+            | Capability.OPENPGP.bit
+            | Capability.PIV.bit;
+    Map<Transport, Integer> supportedCapabilities = new HashMap<>();
+    supportedCapabilities.put(Transport.USB, fido | ccid | Capability.OTP.bit);
+
+    // without CCID interface, FIDO_CCID is dropped along with the other CCID capabilities
+    DeviceInfo info =
+        adjustedInfo(
+            i -> i.supportedCapabilities(supportedCapabilities),
+            null,
+            UsbInterface.OTP | UsbInterface.FIDO);
+
+    assertEquals(
+        Integer.valueOf(fido | Capability.OTP.bit),
+        info.getConfig().getEnabledCapabilities(Transport.USB));
+
+    // with CCID interface, FIDO_CCID stays enabled
+    info =
+        adjustedInfo(
+            i -> i.supportedCapabilities(supportedCapabilities),
+            null,
+            UsbInterface.OTP | UsbInterface.FIDO | UsbInterface.CCID);
+
+    assertEquals(
+        Integer.valueOf(fido | ccid | Capability.OTP.bit),
+        info.getConfig().getEnabledCapabilities(Transport.USB));
   }
 
   DeviceInfo adjustedInfo(TestUtil.DeviceInfoBuilder infoBuilder) {
