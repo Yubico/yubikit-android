@@ -2,7 +2,8 @@
  ** fixes & improvements:
   - android: reassemble CCID responses split across frames (bChainParameter)
   - android: split command APDUs exceeding the reader's dwMaxCCIDMessageLength
-  - android: reject USB readers that only offer TPDU-level exchange
+  - android: support TPDU-level USB readers with host-side T=1 framing
+  - android: set a TPDU-level reader's T=1 parameters from the card's ATR
 * Version 3.2.1 (released 2026-09-08)
  ** fixes & improvements:
   - fido: decode COSE EC2 coordinates as unsigned
