@@ -16,6 +16,8 @@
 
 package com.yubico.yubikit;
 
+import android.content.Context;
+import android.hardware.usb.UsbManager;
 import android.os.Bundle;
 import android.view.View;
 import android.view.WindowManager;
@@ -72,8 +74,13 @@ public class TestActivity extends AppCompatActivity {
 
     yubiKitManager = new YubiKitManager(this);
 
+    // A CCID-aware filter instead of the default Yubico-vendor one, so a
+    // third-party smart card reader can be driven by ExternalReaderTests.
+    // YubiKeys are still admitted unchanged.
     yubiKitManager.startUsbDiscovery(
-        new UsbConfiguration(),
+        new UsbConfiguration()
+            .setDeviceFilter(
+                new CcidReaderFilter((UsbManager) getSystemService(Context.USB_SERVICE))),
         device -> {
           bottomText.setVisibility(View.VISIBLE);
           bottomText.setText(R.string.touch);
