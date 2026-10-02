@@ -40,6 +40,20 @@ import org.junit.Test;
 
 public class GetNameTest {
 
+  // ---- firmware version constants ----
+
+  /** Generic YubiKey 5 firmware, used for the standard 5/5C/Nano/Ci naming tests. */
+  static final Version YK_5_4_3 = new Version(5, 4, 3);
+
+  /** Firmware used for the YubiKey Bio - FIDO Edition naming tests. */
+  static final Version YK_5_6_6 = new Version(5, 6, 6);
+
+  /** First firmware with the FIDO_CCID capability (0x1000). */
+  static final Version YK_5_8_0 = new Version(5, 8, 0);
+
+  /** YubiKey 4 era firmware, used for the YubiKey 4 and Edge naming tests. */
+  static final Version YK_4_0_0 = new Version(4, 0, 0);
+
   // ---- assertion helpers ----
 
   private static void assertName(
@@ -109,31 +123,31 @@ public class GetNameTest {
 
   @Test
   public void testYubiKeyUnknownFormFactor() {
-    assertName("YubiKey 5", UNKNOWN, new Version(5, 4, 3), yk5UsbOnlyCapabilities);
-    assertName("YubiKey 5 NFC", UNKNOWN, new Version(5, 4, 3), yk5Capabilities);
+    assertName("YubiKey 5", UNKNOWN, YK_5_4_3, yk5UsbOnlyCapabilities);
+    assertName("YubiKey 5 NFC", UNKNOWN, YK_5_4_3, yk5Capabilities);
   }
 
   @Test
   public void testYubiKey5() {
-    assertName("YubiKey 5A", USB_A_KEYCHAIN, new Version(5, 4, 3), yk5UsbOnlyCapabilities);
-    assertName("YubiKey 5C", USB_C_KEYCHAIN, new Version(5, 4, 3), yk5UsbOnlyCapabilities);
+    assertName("YubiKey 5A", USB_A_KEYCHAIN, YK_5_4_3, yk5UsbOnlyCapabilities);
+    assertName("YubiKey 5C", USB_C_KEYCHAIN, YK_5_4_3, yk5UsbOnlyCapabilities);
   }
 
   @Test
   public void testYubiKey5Nfc() {
-    assertName("YubiKey 5 NFC", USB_A_KEYCHAIN, new Version(5, 4, 3), yk5Capabilities);
-    assertName("YubiKey 5C NFC", USB_C_KEYCHAIN, new Version(5, 4, 3), yk5Capabilities);
+    assertName("YubiKey 5 NFC", USB_A_KEYCHAIN, YK_5_4_3, yk5Capabilities);
+    assertName("YubiKey 5C NFC", USB_C_KEYCHAIN, YK_5_4_3, yk5Capabilities);
   }
 
   @Test
   public void testYubiKey5Nano() {
-    assertName("YubiKey 5 Nano", USB_A_NANO, new Version(5, 4, 3), yk5UsbOnlyCapabilities);
-    assertName("YubiKey 5C Nano", USB_C_NANO, new Version(5, 4, 3), yk5UsbOnlyCapabilities);
+    assertName("YubiKey 5 Nano", USB_A_NANO, YK_5_4_3, yk5UsbOnlyCapabilities);
+    assertName("YubiKey 5C Nano", USB_C_NANO, YK_5_4_3, yk5UsbOnlyCapabilities);
   }
 
   @Test
   public void testYubiKey5Lightning() {
-    assertName("YubiKey 5Ci", USB_C_LIGHTNING, new Version(5, 4, 3), yk5UsbOnlyCapabilities);
+    assertName("YubiKey 5Ci", USB_C_LIGHTNING, YK_5_4_3, yk5UsbOnlyCapabilities);
   }
 
   @Test
@@ -242,7 +256,7 @@ public class GetNameTest {
                 i -> {
                   i.isFips(true);
                   i.formFactor(USB_A_KEYCHAIN);
-                  i.version(new Version(4, 0, 0));
+                  i.version(YK_4_0_0);
                   i.supportedCapabilities(yk4Capabilities);
                 }),
             YubiKeyType.YK4));
@@ -250,12 +264,12 @@ public class GetNameTest {
 
   @Test
   public void testYubiKeyEdge() {
-    assertName("YubiKey Edge", USB_A_KEYCHAIN, new Version(4, 0, 0), edgeCapabilities);
+    assertName("YubiKey Edge", USB_A_KEYCHAIN, YK_4_0_0, edgeCapabilities);
   }
 
   @Test
   public void testYubiKey4() {
-    assertName("YubiKey 4", USB_A_KEYCHAIN, new Version(4, 0, 0), yk4Capabilities);
+    assertName("YubiKey 4", USB_A_KEYCHAIN, YK_4_0_0, yk4Capabilities);
 
     assertEquals(
         "YubiKey 4",
@@ -270,11 +284,10 @@ public class GetNameTest {
 
   @Test
   public void testBioSeriesFidoEdition() {
-    assertName("YubiKey Bio - FIDO Edition", USB_A_BIO, new Version(5, 6, 6), bioCcidCapabilities);
-    assertName(
-        "YubiKey C Bio - FIDO Edition", USB_C_BIO, new Version(5, 6, 6), bioCcidCapabilities);
-    assertName("YubiKey Bio - FIDO Edition", USB_A_BIO, new Version(5, 6, 6), bioCapabilities);
-    assertName("YubiKey C Bio - FIDO Edition", USB_C_BIO, new Version(5, 6, 6), bioCapabilities);
+    assertName("YubiKey Bio - FIDO Edition", USB_A_BIO, YK_5_6_6, bioCcidCapabilities);
+    assertName("YubiKey C Bio - FIDO Edition", USB_C_BIO, YK_5_6_6, bioCcidCapabilities);
+    assertName("YubiKey Bio - FIDO Edition", USB_A_BIO, YK_5_6_6, bioCapabilities);
+    assertName("YubiKey C Bio - FIDO Edition", USB_C_BIO, YK_5_6_6, bioCapabilities);
   }
 
   @Test
@@ -286,7 +299,7 @@ public class GetNameTest {
             info(
                 i -> {
                   i.formFactor(USB_A_BIO);
-                  i.version(new Version(5, 6, 6));
+                  i.version(YK_5_6_6);
                   i.supportedCapabilities(bioMultiProtocolCapabilities);
                   i.serialNumber(12345);
                 }),
@@ -298,7 +311,7 @@ public class GetNameTest {
             info(
                 i -> {
                   i.formFactor(USB_C_BIO);
-                  i.version(new Version(5, 6, 6));
+                  i.version(YK_5_6_6);
                   i.supportedCapabilities(bioMultiProtocolCapabilities);
                   i.serialNumber(12345);
                 }),
@@ -313,7 +326,7 @@ public class GetNameTest {
             info(
                 i -> {
                   i.formFactor(USB_A_KEYCHAIN);
-                  i.version(new Version(5, 4, 3));
+                  i.version(YK_5_4_3);
                   i.isSky(true);
                   i.supportedCapabilities(fidoCapabilities);
                   i.serialNumber(65454545);
@@ -326,7 +339,7 @@ public class GetNameTest {
             info(
                 i -> {
                   i.formFactor(USB_C_KEYCHAIN);
-                  i.version(new Version(5, 4, 3));
+                  i.version(YK_5_4_3);
                   i.isSky(true);
                   i.supportedCapabilities(fidoCapabilities);
                   i.serialNumber(65454545);
@@ -342,7 +355,7 @@ public class GetNameTest {
             info(
                 i -> {
                   i.formFactor(USB_A_KEYCHAIN);
-                  i.version(new Version(5, 4, 3));
+                  i.version(YK_5_4_3);
                   i.pinComplexity(true);
                   i.supportedCapabilities(fidoCapabilities);
                   i.serialNumber(65454545);
@@ -355,7 +368,7 @@ public class GetNameTest {
             info(
                 i -> {
                   i.formFactor(USB_C_KEYCHAIN);
-                  i.version(new Version(5, 4, 3));
+                  i.version(YK_5_4_3);
                   i.pinComplexity(true);
                   i.supportedCapabilities(fidoCapabilities);
                   i.serialNumber(65454545);
@@ -435,27 +448,17 @@ public class GetNameTest {
     int yk5UsbBitsWithFidoCcid = yk5UsbBits | Capability.FIDO_CCID.bit;
     int fidoBitsWithFidoCcid = fidoBits | Capability.FIDO_CCID.bit;
 
-    assertName("YubiKey 5A", USB_A_KEYCHAIN, new Version(5, 8, 0), usbOnly(yk5UsbBitsWithFidoCcid));
-    assertName("YubiKey 5C", USB_C_KEYCHAIN, new Version(5, 8, 0), usbOnly(yk5UsbBitsWithFidoCcid));
-    assertName(
-        "YubiKey 5 NFC", USB_A_KEYCHAIN, new Version(5, 8, 0), usbAndNfc(yk5UsbBitsWithFidoCcid));
-    assertName(
-        "YubiKey 5C NFC", USB_C_KEYCHAIN, new Version(5, 8, 0), usbAndNfc(yk5UsbBitsWithFidoCcid));
+    assertName("YubiKey 5A", USB_A_KEYCHAIN, YK_5_8_0, usbOnly(yk5UsbBitsWithFidoCcid));
+    assertName("YubiKey 5C", USB_C_KEYCHAIN, YK_5_8_0, usbOnly(yk5UsbBitsWithFidoCcid));
+    assertName("YubiKey 5 NFC", USB_A_KEYCHAIN, YK_5_8_0, usbAndNfc(yk5UsbBitsWithFidoCcid));
+    assertName("YubiKey 5C NFC", USB_C_KEYCHAIN, YK_5_8_0, usbAndNfc(yk5UsbBitsWithFidoCcid));
 
     // Security Key variants
     assertName(
         "Security Key NFC", USB_A_KEYCHAIN, null, usbAndNfc(fidoBitsWithFidoCcid), YubiKeyType.SKY);
 
     // Bio FIDO Edition
-    assertName(
-        "YubiKey Bio - FIDO Edition",
-        USB_A_BIO,
-        new Version(5, 8, 0),
-        usbOnly(fidoBitsWithFidoCcid));
-    assertName(
-        "YubiKey C Bio - FIDO Edition",
-        USB_C_BIO,
-        new Version(5, 8, 0),
-        usbOnly(fidoBitsWithFidoCcid));
+    assertName("YubiKey Bio - FIDO Edition", USB_A_BIO, YK_5_8_0, usbOnly(fidoBitsWithFidoCcid));
+    assertName("YubiKey C Bio - FIDO Edition", USB_C_BIO, YK_5_8_0, usbOnly(fidoBitsWithFidoCcid));
   }
 }
