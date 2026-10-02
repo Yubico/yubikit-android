@@ -54,6 +54,7 @@ public class UsbSmartCardConnectionTest {
   private static final int FEATURES_TPDU = 0x000100BA; // Identiv SCR3500 C
   private static final int FEATURES_APDU_EXTENDED = 0x000404BA; // HID OMNIKEY 5022-CL
   private static final int FEATURES_APDU_SHORT = 0x00020000;
+  private static final int FEATURES_CHARACTER = 0x000000BA; // no exchange-level bit set
 
   /**
    * Smallest dwMaxCCIDMessageLength the host treats as usable: CCID 1.10 §5.1 requires at least the
@@ -703,6 +704,26 @@ public class UsbSmartCardConnectionTest {
 
     assertSentFrame(xfrBlock(1, LEVEL_SINGLE, apdu));
     Assert.assertArrayEquals(Codec.fromHex("9000"), response);
+  }
+
+  /**
+   * A reader with neither the TPDU nor an APDU exchange bit is character-level. Neither the
+   * passthrough nor the T=1 path can drive it, so opening it must fail before anything is sent
+   * rather than send it XfrBlocks it will not understand.
+   */
+  @Test
+  public void testCharacterLevelReaderIsRejected() {
+    setupDescriptor(FEATURES_CHARACTER, MIN_MAX_CCID_MESSAGE_LENGTH);
+
+    IOException e =
+        Assert.assertThrows(
+            IOException.class,
+            () ->
+                new UsbSmartCardConnection(
+                    usbDeviceConnection, usbInterface, usbEndpointIn, usbEndpointOut));
+
+    Assert.assertTrue(e.getMessage(), e.getMessage().contains("dwFeatures=0x000000BA"));
+    Assert.assertTrue(e.getMessage(), e.getMessage().contains("character-level"));
   }
 
   /** TPDU-level descriptor -&gt; isExtendedLengthApduSupported() returns false. */

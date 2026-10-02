@@ -242,12 +242,15 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
    *
    * <p>A reader that only offers the TPDU exchange level expects the host to do T=1 block framing
    * itself, which {@link T1Protocol} does. A reader advertising both levels accepts either, and
-   * APDU-level passthrough is the simpler path, so it wins.
+   * APDU-level passthrough is the simpler path, so it wins. A reader offering neither, which is
+   * character-level, is rejected.
    *
    * <p>A descriptor that cannot be found is not an error: the fields keep their defaults and the
    * connection behaves as it did before the descriptor was read at all.
+   *
+   * @throws IOException if the reader offers neither APDU- nor TPDU-level exchange
    */
-  private void parseCcidClassDescriptor() {
+  private void parseCcidClassDescriptor() throws IOException {
     byte[] raw = connection.getRawDescriptors();
     if (raw == null) {
       logger.debug("CCID descriptor: getRawDescriptors() returned null");
@@ -274,6 +277,17 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
           exchangeLevel = "TPDU (host frames T=0/T=1)";
         } else {
           exchangeLevel = "character-level (raw)";
+        }
+        // A character-level reader needs the host to drive the card byte by
+        // byte, which neither path here does. Sending it XfrBlocks would
+        // fail in ways that do not point at the cause, so reject it.
+        if (!apduLevel && (dwFeatures & FEATURE_EXCHANGE_TPDU) == 0) {
+          throw new IOException(
+              "Reader offers neither APDU- nor TPDU-level exchange (dwFeatures=0x"
+                  + String.format(Locale.ROOT, "%08X", dwFeatures)
+                  + ", exchange level: "
+                  + exchangeLevel
+                  + ")");
         }
         // The bLength check above guarantees both fields are present.
         this.maxCcidMessageLength =
