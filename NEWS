@@ -1,9 +1,15 @@
-* Next version (unreleased)
+* Version 3.3.0 (unreleased)
+ ** new:
+  - management: added Capability.FIDO_CCID (0x1000), reported by firmware 5.8+ when
+                FIDO is accessible over the CCID interface
+  - android: support TPDU-level USB readers, with host-side T=1 framing and the
+             reader's T=1 parameters set from the card's ATR
  ** fixes & improvements:
-  - android: reassemble CCID responses split across frames (bChainParameter)
-  - android: split command APDUs exceeding the reader's dwMaxCCIDMessageLength
-  - android: support TPDU-level USB readers with host-side T=1 framing
-  - android: set a TPDU-level reader's T=1 parameters from the card's ATR
+  - android: CCID command chaining and response reassembly (bChainParameter) for
+             APDUs beyond the reader's dwMaxCCIDMessageLength; chained responses are
+             bounded to the ISO 7816-4 maximum
+  - testing: fido-ui instrumented tests run on Android 16
+  - build: updated dependencies, GitHub Actions and the Gradle wrapper (9.7.1)
 * Version 3.2.1 (released 2026-09-08)
  ** fixes & improvements:
   - fido: decode COSE EC2 coordinates as unsigned
