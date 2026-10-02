@@ -147,6 +147,7 @@ dependencies {
     // Instrumented test dependencies
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.test.rules)
+    androidTestImplementation(libs.androidx.espresso.core)
 }
 
 description = "This module provides user interface for YubiKit FIDO module."
