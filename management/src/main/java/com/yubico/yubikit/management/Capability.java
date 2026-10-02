@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2022,2024 Yubico.
+ * Copyright (C) 2020-2022,2024,2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,12 @@ public enum Capability {
   /** Identifies the HSMAUTH application. */
   HSMAUTH(0x0100),
   /** Identifies the FIDO2 (CTAP2) portion of the FIDO application. */
-  FIDO2(0x0200);
+  FIDO2(0x0200),
+  /**
+   * Indicates that the FIDO application is accessible over the CCID (smart card) USB interface in
+   * addition to the dedicated FIDO HID interface. Supported from firmware 5.8.
+   */
+  FIDO_CCID(0x1000);
 
   public final int bit;
 

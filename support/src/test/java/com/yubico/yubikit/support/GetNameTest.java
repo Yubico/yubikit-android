@@ -33,171 +33,133 @@ import com.yubico.yubikit.core.UsbInterface;
 import com.yubico.yubikit.core.Version;
 import com.yubico.yubikit.core.YubiKeyType;
 import com.yubico.yubikit.management.Capability;
-import java.util.HashMap;
+import com.yubico.yubikit.management.FormFactor;
+import java.util.EnumMap;
+import java.util.Map;
 import org.junit.Test;
 
 public class GetNameTest {
+
+  // ---- firmware version constants ----
+
+  /** Generic YubiKey 5 firmware, used for the standard 5/5C/Nano/Ci naming tests. */
+  static final Version YK_5_4_3 = new Version(5, 4, 3);
+
+  /** Firmware used for the YubiKey Bio - FIDO Edition naming tests. */
+  static final Version YK_5_6_6 = new Version(5, 6, 6);
+
+  /** First firmware with the FIDO_CCID capability (0x1000). */
+  static final Version YK_5_8_0 = new Version(5, 8, 0);
+
+  /** YubiKey 4 era firmware, used for the YubiKey 4 and Edge naming tests. */
+  static final Version YK_4_0_0 = new Version(4, 0, 0);
+
+  // ---- assertion helpers ----
+
+  private static void assertName(
+      String expected, FormFactor ff, Version v, Map<Transport, Integer> caps, YubiKeyType type) {
+    assertEquals(
+        expected,
+        DeviceUtil.getName(
+            info(
+                i -> {
+                  i.formFactor(ff);
+                  if (v != null) i.version(v);
+                  i.supportedCapabilities(caps);
+                }),
+            type));
+  }
+
+  private static void assertName(
+      String expected, FormFactor ff, Version v, Map<Transport, Integer> caps) {
+    assertName(expected, ff, v, caps, YubiKeyType.YK4);
+  }
+
+  // ---- capability map helpers ----
+
+  static Map<Transport, Integer> usbOnly(int bits) {
+    Map<Transport, Integer> m = new EnumMap<>(Transport.class);
+    m.put(Transport.USB, bits);
+    return m;
+  }
+
+  static Map<Transport, Integer> usbAndNfc(int bits) {
+    Map<Transport, Integer> m = new EnumMap<>(Transport.class);
+    m.put(Transport.USB, bits);
+    m.put(Transport.NFC, bits);
+    return m;
+  }
+
+  // ---- capability bit constants ----
+
+  static final int fidoBits = Capability.FIDO2.bit | Capability.U2F.bit;
+  static final int yk5UsbBits =
+      fidoBits
+          | Capability.OATH.bit
+          | Capability.PIV.bit
+          | Capability.OPENPGP.bit
+          | Capability.OTP.bit;
+  static final int yk4Bits =
+      Capability.U2F.bit
+          | Capability.OATH.bit
+          | Capability.PIV.bit
+          | Capability.OPENPGP.bit
+          | Capability.OTP.bit;
+
+  // ---- pre-built capability maps ----
+
+  static final Map<Transport, Integer> fidoCapabilities = usbAndNfc(fidoBits);
+  static final Map<Transport, Integer> bioCapabilities = usbOnly(fidoBits);
+  static final Map<Transport, Integer> bioCcidCapabilities = usbOnly(fidoBits | UsbInterface.CCID);
+  static final Map<Transport, Integer> bioMultiProtocolCapabilities =
+      usbOnly(fidoBits | Capability.PIV.bit);
+  static final Map<Transport, Integer> yk5UsbOnlyCapabilities = usbOnly(yk5UsbBits);
+  static final Map<Transport, Integer> yk5Capabilities = usbAndNfc(yk5UsbBits);
+  static final Map<Transport, Integer> yk4Capabilities = usbAndNfc(yk4Bits);
+  static final Map<Transport, Integer> edgeCapabilities =
+      usbOnly(Capability.U2F.bit | Capability.OTP.bit);
+
+  // ---- tests ----
+
   @Test
   public void testYubiKeyUnknownFormFactor() {
-    assertEquals(
-        "YubiKey 5",
-        DeviceUtil.getName(
-            info(
-                i -> {
-                  i.formFactor(UNKNOWN);
-                  i.version(new Version(5, 4, 3));
-                  i.supportedCapabilities(yk5UsbOnlyCapabilities);
-                }),
-            YubiKeyType.YK4));
-
-    assertEquals(
-        "YubiKey 5 NFC",
-        DeviceUtil.getName(
-            info(
-                i -> {
-                  i.formFactor(UNKNOWN);
-                  i.version(new Version(5, 4, 3));
-                  i.supportedCapabilities(yk5Capabilities);
-                }),
-            YubiKeyType.YK4));
+    assertName("YubiKey 5", UNKNOWN, YK_5_4_3, yk5UsbOnlyCapabilities);
+    assertName("YubiKey 5 NFC", UNKNOWN, YK_5_4_3, yk5Capabilities);
   }
 
   @Test
   public void testYubiKey5() {
-    assertEquals(
-        "YubiKey 5A",
-        DeviceUtil.getName(
-            info(
-                i -> {
-                  i.formFactor(USB_A_KEYCHAIN);
-                  i.version(new Version(5, 4, 3));
-                  i.supportedCapabilities(yk5UsbOnlyCapabilities);
-                }),
-            YubiKeyType.YK4));
-
-    assertEquals(
-        "YubiKey 5C",
-        DeviceUtil.getName(
-            info(
-                i -> {
-                  i.formFactor(USB_C_KEYCHAIN);
-                  i.version(new Version(5, 4, 3));
-                  i.supportedCapabilities(yk5UsbOnlyCapabilities);
-                }),
-            YubiKeyType.YK4));
+    assertName("YubiKey 5A", USB_A_KEYCHAIN, YK_5_4_3, yk5UsbOnlyCapabilities);
+    assertName("YubiKey 5C", USB_C_KEYCHAIN, YK_5_4_3, yk5UsbOnlyCapabilities);
   }
 
   @Test
   public void testYubiKey5Nfc() {
-    assertEquals(
-        "YubiKey 5 NFC",
-        DeviceUtil.getName(
-            info(
-                i -> {
-                  i.formFactor(USB_A_KEYCHAIN);
-                  i.version(new Version(5, 4, 3));
-                  i.supportedCapabilities(yk5Capabilities);
-                }),
-            YubiKeyType.YK4));
-
-    assertEquals(
-        "YubiKey 5C NFC",
-        DeviceUtil.getName(
-            info(
-                i -> {
-                  i.formFactor(USB_C_KEYCHAIN);
-                  i.version(new Version(5, 4, 3));
-                  i.supportedCapabilities(yk5Capabilities);
-                }),
-            YubiKeyType.YK4));
+    assertName("YubiKey 5 NFC", USB_A_KEYCHAIN, YK_5_4_3, yk5Capabilities);
+    assertName("YubiKey 5C NFC", USB_C_KEYCHAIN, YK_5_4_3, yk5Capabilities);
   }
 
   @Test
   public void testYubiKey5Nano() {
-    assertEquals(
-        "YubiKey 5 Nano",
-        DeviceUtil.getName(
-            info(
-                i -> {
-                  i.formFactor(USB_A_NANO);
-                  i.version(new Version(5, 4, 3));
-                  i.supportedCapabilities(yk5UsbOnlyCapabilities);
-                }),
-            YubiKeyType.YK4));
-
-    assertEquals(
-        "YubiKey 5C Nano",
-        DeviceUtil.getName(
-            info(
-                i -> {
-                  i.formFactor(USB_C_NANO);
-                  i.version(new Version(5, 4, 3));
-                  i.supportedCapabilities(yk5UsbOnlyCapabilities);
-                }),
-            YubiKeyType.YK4));
+    assertName("YubiKey 5 Nano", USB_A_NANO, YK_5_4_3, yk5UsbOnlyCapabilities);
+    assertName("YubiKey 5C Nano", USB_C_NANO, YK_5_4_3, yk5UsbOnlyCapabilities);
   }
 
   @Test
   public void testYubiKey5Lightning() {
-    assertEquals(
-        "YubiKey 5Ci",
-        DeviceUtil.getName(
-            info(
-                i -> {
-                  i.formFactor(USB_C_LIGHTNING);
-                  i.version(new Version(5, 4, 3));
-                  i.supportedCapabilities(yk5UsbOnlyCapabilities);
-                }),
-            YubiKeyType.YK4));
+    assertName("YubiKey 5Ci", USB_C_LIGHTNING, YK_5_4_3, yk5UsbOnlyCapabilities);
   }
 
   @Test
   public void testSecurityKey() {
-
-    assertEquals(
-        "FIDO U2F Security Key",
-        DeviceUtil.getName(
-            info(
-                i -> {
-                  i.formFactor(USB_A_KEYCHAIN);
-                  i.supportedCapabilities(
-                      new HashMap<Transport, Integer>() {
-                        {
-                          put(Transport.USB, fidoBits);
-                        }
-                      });
-                }),
-            YubiKeyType.SKY));
-
-    assertEquals(
+    assertName("FIDO U2F Security Key", USB_A_KEYCHAIN, null, usbOnly(fidoBits), YubiKeyType.SKY);
+    assertName(
         "Security Key by Yubico",
-        DeviceUtil.getName(
-            info(
-                i -> {
-                  i.formFactor(USB_A_KEYCHAIN);
-                  i.supportedCapabilities(
-                      new HashMap<Transport, Integer>() {
-                        {
-                          put(Transport.USB, Capability.U2F.bit);
-                        }
-                      });
-                }),
-            YubiKeyType.SKY));
-
-    assertEquals(
-        "Security Key NFC",
-        DeviceUtil.getName(
-            info(
-                i -> {
-                  i.formFactor(USB_A_KEYCHAIN);
-                  i.supportedCapabilities(
-                      new HashMap<Transport, Integer>() {
-                        {
-                          put(Transport.NFC, fidoBits);
-                        }
-                      });
-                }),
-            YubiKeyType.SKY));
+        USB_A_KEYCHAIN,
+        null,
+        usbOnly(Capability.U2F.bit),
+        YubiKeyType.SKY);
+    assertName("Security Key NFC", USB_A_KEYCHAIN, null, usbAndNfc(fidoBits), YubiKeyType.SKY);
 
     assertEquals(
         "Security Key NFC",
@@ -236,7 +198,6 @@ public class GetNameTest {
 
   @Test
   public void testFips() {
-
     assertEquals(
         "YubiKey 5 NFC FIPS",
         DeviceUtil.getName(
@@ -295,7 +256,7 @@ public class GetNameTest {
                 i -> {
                   i.isFips(true);
                   i.formFactor(USB_A_KEYCHAIN);
-                  i.version(new Version(4, 0, 0));
+                  i.version(YK_4_0_0);
                   i.supportedCapabilities(yk4Capabilities);
                 }),
             YubiKeyType.YK4));
@@ -303,30 +264,12 @@ public class GetNameTest {
 
   @Test
   public void testYubiKeyEdge() {
-    assertEquals(
-        "YubiKey Edge",
-        DeviceUtil.getName(
-            info(
-                i -> {
-                  i.formFactor(USB_A_KEYCHAIN);
-                  i.version(new Version(4, 0, 0));
-                  i.supportedCapabilities(edgeCapabilities);
-                }),
-            YubiKeyType.YK4));
+    assertName("YubiKey Edge", USB_A_KEYCHAIN, YK_4_0_0, edgeCapabilities);
   }
 
   @Test
   public void testYubiKey4() {
-    assertEquals(
-        "YubiKey 4",
-        DeviceUtil.getName(
-            info(
-                i -> {
-                  i.formFactor(USB_A_KEYCHAIN);
-                  i.version(new Version(4, 0, 0));
-                  i.supportedCapabilities(yk4Capabilities);
-                }),
-            YubiKeyType.YK4));
+    assertName("YubiKey 4", USB_A_KEYCHAIN, YK_4_0_0, yk4Capabilities);
 
     assertEquals(
         "YubiKey 4",
@@ -341,48 +284,10 @@ public class GetNameTest {
 
   @Test
   public void testBioSeriesFidoEdition() {
-    assertEquals(
-        "YubiKey Bio - FIDO Edition",
-        DeviceUtil.getName(
-            info(
-                i -> {
-                  i.formFactor(USB_A_BIO);
-                  i.version(new Version(5, 6, 6));
-                  i.supportedCapabilities(bioCcidCapabilities);
-                }),
-            YubiKeyType.YK4));
-
-    assertEquals(
-        "YubiKey C Bio - FIDO Edition",
-        DeviceUtil.getName(
-            info(
-                i -> {
-                  i.formFactor(USB_C_BIO);
-                  i.version(new Version(5, 6, 6));
-                  i.supportedCapabilities(bioCcidCapabilities);
-                }),
-            YubiKeyType.YK4));
-    assertEquals(
-        "YubiKey Bio - FIDO Edition",
-        DeviceUtil.getName(
-            info(
-                i -> {
-                  i.formFactor(USB_A_BIO);
-                  i.version(new Version(5, 6, 6));
-                  i.supportedCapabilities(bioCapabilities);
-                }),
-            YubiKeyType.YK4));
-
-    assertEquals(
-        "YubiKey C Bio - FIDO Edition",
-        DeviceUtil.getName(
-            info(
-                i -> {
-                  i.formFactor(USB_C_BIO);
-                  i.version(new Version(5, 6, 6));
-                  i.supportedCapabilities(bioCapabilities);
-                }),
-            YubiKeyType.YK4));
+    assertName("YubiKey Bio - FIDO Edition", USB_A_BIO, YK_5_6_6, bioCcidCapabilities);
+    assertName("YubiKey C Bio - FIDO Edition", USB_C_BIO, YK_5_6_6, bioCcidCapabilities);
+    assertName("YubiKey Bio - FIDO Edition", USB_A_BIO, YK_5_6_6, bioCapabilities);
+    assertName("YubiKey C Bio - FIDO Edition", USB_C_BIO, YK_5_6_6, bioCapabilities);
   }
 
   @Test
@@ -394,7 +299,7 @@ public class GetNameTest {
             info(
                 i -> {
                   i.formFactor(USB_A_BIO);
-                  i.version(new Version(5, 6, 6));
+                  i.version(YK_5_6_6);
                   i.supportedCapabilities(bioMultiProtocolCapabilities);
                   i.serialNumber(12345);
                 }),
@@ -406,7 +311,7 @@ public class GetNameTest {
             info(
                 i -> {
                   i.formFactor(USB_C_BIO);
-                  i.version(new Version(5, 6, 6));
+                  i.version(YK_5_6_6);
                   i.supportedCapabilities(bioMultiProtocolCapabilities);
                   i.serialNumber(12345);
                 }),
@@ -421,7 +326,7 @@ public class GetNameTest {
             info(
                 i -> {
                   i.formFactor(USB_A_KEYCHAIN);
-                  i.version(new Version(5, 4, 3));
+                  i.version(YK_5_4_3);
                   i.isSky(true);
                   i.supportedCapabilities(fidoCapabilities);
                   i.serialNumber(65454545);
@@ -434,7 +339,7 @@ public class GetNameTest {
             info(
                 i -> {
                   i.formFactor(USB_C_KEYCHAIN);
-                  i.version(new Version(5, 4, 3));
+                  i.version(YK_5_4_3);
                   i.isSky(true);
                   i.supportedCapabilities(fidoCapabilities);
                   i.serialNumber(65454545);
@@ -450,7 +355,7 @@ public class GetNameTest {
             info(
                 i -> {
                   i.formFactor(USB_A_KEYCHAIN);
-                  i.version(new Version(5, 4, 3));
+                  i.version(YK_5_4_3);
                   i.pinComplexity(true);
                   i.supportedCapabilities(fidoCapabilities);
                   i.serialNumber(65454545);
@@ -463,7 +368,7 @@ public class GetNameTest {
             info(
                 i -> {
                   i.formFactor(USB_C_KEYCHAIN);
-                  i.version(new Version(5, 4, 3));
+                  i.version(YK_5_4_3);
                   i.pinComplexity(true);
                   i.supportedCapabilities(fidoCapabilities);
                   i.serialNumber(65454545);
@@ -473,28 +378,8 @@ public class GetNameTest {
 
   @Test
   public void testYubiKeyPreview() {
-    assertEquals(
-        "YubiKey Preview",
-        DeviceUtil.getName(
-            info(
-                i -> {
-                  i.formFactor(USB_A_KEYCHAIN);
-                  i.version(new Version(5, 0, 0));
-                  i.supportedCapabilities(yk5UsbOnlyCapabilities);
-                }),
-            YubiKeyType.YK4));
-
-    assertEquals(
-        "YubiKey Preview",
-        DeviceUtil.getName(
-            info(
-                i -> {
-                  i.formFactor(USB_A_KEYCHAIN);
-                  i.version(new Version(5, 0, 10));
-                  i.supportedCapabilities(yk5UsbOnlyCapabilities);
-                }),
-            YubiKeyType.YK4));
-
+    assertName("YubiKey Preview", USB_A_KEYCHAIN, new Version(5, 0, 0), yk5UsbOnlyCapabilities);
+    assertName("YubiKey Preview", USB_A_KEYCHAIN, new Version(5, 0, 10), yk5UsbOnlyCapabilities);
     assertNotEquals(
         "YubiKey Preview",
         DeviceUtil.getName(
@@ -506,17 +391,7 @@ public class GetNameTest {
                 }),
             YubiKeyType.YK4));
 
-    assertEquals(
-        "YubiKey Preview",
-        DeviceUtil.getName(
-            info(
-                i -> {
-                  i.formFactor(USB_A_KEYCHAIN);
-                  i.version(new Version(5, 2, 2));
-                  i.supportedCapabilities(yk5UsbOnlyCapabilities);
-                }),
-            YubiKeyType.YK4));
-
+    assertName("YubiKey Preview", USB_A_KEYCHAIN, new Version(5, 2, 2), yk5UsbOnlyCapabilities);
     assertNotEquals(
         "YubiKey Preview",
         DeviceUtil.getName(
@@ -528,17 +403,7 @@ public class GetNameTest {
                 }),
             YubiKeyType.YK4));
 
-    assertEquals(
-        "YubiKey Preview",
-        DeviceUtil.getName(
-            info(
-                i -> {
-                  i.formFactor(USB_A_KEYCHAIN);
-                  i.version(new Version(5, 5, 1));
-                  i.supportedCapabilities(yk5UsbOnlyCapabilities);
-                }),
-            YubiKeyType.YK4));
-
+    assertName("YubiKey Preview", USB_A_KEYCHAIN, new Version(5, 5, 1), yk5UsbOnlyCapabilities);
     assertNotEquals(
         "YubiKey Preview",
         DeviceUtil.getName(
@@ -555,7 +420,6 @@ public class GetNameTest {
   public void testYubiKeyNeo() {
     assertEquals("YubiKey NEO", DeviceUtil.getName(info(i -> {}), YubiKeyType.NEO));
 
-    // NEO always has a serial number
     assertEquals(
         "YubiKey NEO",
         DeviceUtil.getName(
@@ -570,93 +434,31 @@ public class GetNameTest {
   @Test
   public void testLegacyKeys() {
     assertEquals("YubiKey Standard", DeviceUtil.getName(info(i -> {}), YubiKeyType.YKS));
-
     assertEquals("YubiKey Plus", DeviceUtil.getName(info(i -> {}), YubiKeyType.YKP));
-
     assertEquals(
         "YubiKey (0.3.2)",
         DeviceUtil.getName(info(i -> i.version(new Version(0, 3, 2))), YubiKeyType.YK4));
-
     assertEquals(
         "YubiKey", DeviceUtil.getName(info(i -> i.version(new Version(3, 3, 2))), YubiKeyType.YK4));
   }
 
-  static final int fidoBits = Capability.FIDO2.bit | Capability.U2F.bit;
-  static final HashMap<Transport, Integer> fidoCapabilities =
-      new HashMap<Transport, Integer>() {
-        {
-          put(Transport.USB, fidoBits);
-          put(Transport.NFC, fidoBits);
-        }
-      };
+  @Test
+  public void testFidoCcid() {
+    // FIDO_CCID is a transport flag (firmware 5.8+) and must not affect the product name.
+    int yk5UsbBitsWithFidoCcid = yk5UsbBits | Capability.FIDO_CCID.bit;
+    int fidoBitsWithFidoCcid = fidoBits | Capability.FIDO_CCID.bit;
 
-  static final HashMap<Transport, Integer> bioCapabilities =
-      new HashMap<Transport, Integer>() {
-        {
-          put(Transport.USB, fidoBits);
-        }
-      };
+    assertName("YubiKey 5A", USB_A_KEYCHAIN, YK_5_8_0, usbOnly(yk5UsbBitsWithFidoCcid));
+    assertName("YubiKey 5C", USB_C_KEYCHAIN, YK_5_8_0, usbOnly(yk5UsbBitsWithFidoCcid));
+    assertName("YubiKey 5 NFC", USB_A_KEYCHAIN, YK_5_8_0, usbAndNfc(yk5UsbBitsWithFidoCcid));
+    assertName("YubiKey 5C NFC", USB_C_KEYCHAIN, YK_5_8_0, usbAndNfc(yk5UsbBitsWithFidoCcid));
 
-  static final HashMap<Transport, Integer> bioCcidCapabilities =
-      new HashMap<Transport, Integer>() {
-        {
-          put(Transport.USB, fidoBits | UsbInterface.CCID);
-        }
-      };
+    // Security Key variants
+    assertName(
+        "Security Key NFC", USB_A_KEYCHAIN, null, usbAndNfc(fidoBitsWithFidoCcid), YubiKeyType.SKY);
 
-  static final HashMap<Transport, Integer> bioMultiProtocolCapabilities =
-      new HashMap<Transport, Integer>() {
-        {
-          put(Transport.USB, fidoBits | Capability.PIV.bit);
-        }
-      };
-
-  static final HashMap<Transport, Integer> yk5UsbOnlyCapabilities =
-      new HashMap<Transport, Integer>() {
-        {
-          put(
-              Transport.USB,
-              fidoBits
-                  | Capability.OATH.bit
-                  | Capability.PIV.bit
-                  | Capability.OPENPGP.bit
-                  | Capability.OTP.bit);
-        }
-      };
-
-  static final HashMap<Transport, Integer> yk5Capabilities =
-      new HashMap<Transport, Integer>() {
-        {
-          int capabilities =
-              fidoBits
-                  | Capability.OATH.bit
-                  | Capability.PIV.bit
-                  | Capability.OPENPGP.bit
-                  | Capability.OTP.bit;
-          put(Transport.USB, capabilities);
-          put(Transport.NFC, capabilities);
-        }
-      };
-
-  static final HashMap<Transport, Integer> yk4Capabilities =
-      new HashMap<Transport, Integer>() {
-        {
-          int capabilities =
-              Capability.U2F.bit
-                  | Capability.OATH.bit
-                  | Capability.PIV.bit
-                  | Capability.OPENPGP.bit
-                  | Capability.OTP.bit;
-          put(Transport.USB, capabilities);
-          put(Transport.NFC, capabilities);
-        }
-      };
-
-  static final HashMap<Transport, Integer> edgeCapabilities =
-      new HashMap<Transport, Integer>() {
-        {
-          int capabilities = Capability.U2F.bit | Capability.OTP.bit;
-          put(Transport.USB, capabilities);
-        }
-      };
+    // Bio FIDO Edition
+    assertName("YubiKey Bio - FIDO Edition", USB_A_BIO, YK_5_8_0, usbOnly(fidoBitsWithFidoCcid));
+    assertName("YubiKey C Bio - FIDO Edition", USB_C_BIO, YK_5_8_0, usbOnly(fidoBitsWithFidoCcid));
+  }
 }
