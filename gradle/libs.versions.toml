@@ -31,7 +31,7 @@ navigation-fragment-ktx = "2.9.8" # 2.10.0+ requires minSdk 24
 activity-compose = "1.13.0"
 activity-ktx = "1.13.0"
 compose-bom = "2026.09.00"
-material3 = "1.5.0-alpha25" # 1.5.0-alpha26+ requires minSdk 24 (material3-ripple)
+material3 = "1.5.0-alpha29" # 1.5.0-alpha26+ requires minSdk 24 (material3-ripple)
 runtime-livedata = "1.12.1"
 
 # --- Kotlin / KotlinX ---
