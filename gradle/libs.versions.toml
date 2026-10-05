@@ -3,7 +3,7 @@
 # --- Build toolchain ---
 java = "8"
 kotlin = "2.4.20"
-android-gradle = "9.3.3" # 9.4.0-alpha07 to 9.4.1 file instrumented assumption failures as <failure>; fixed in 9.5.0-alpha08
+android-gradle = "9.4.1" # 9.4.0-alpha07 to 9.4.1 file instrumented assumption failures as <failure>; fixed in 9.5.0-alpha08
 
 # --- AndroidX core ---
 androidx-annotation = "1.11.0"
