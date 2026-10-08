@@ -4,6 +4,9 @@
   - android: split command APDUs exceeding the reader's dwMaxCCIDMessageLength
   - android: support TPDU-level USB readers with host-side T=1 framing
   - android: set a TPDU-level reader's T=1 parameters from the card's ATR
+  - fido: NFCCTAP_GETRESPONSE polls no longer re-send the request, which cost an extra
+          round trip per poll for chained requests. Fixes user presence commands failing
+          with OPERATION_DENIED when APDUs are relayed over a slow network.
 * Version 3.2.1 (released 2026-09-08)
  ** fixes & improvements:
   - fido: decode COSE EC2 coordinates as unsigned

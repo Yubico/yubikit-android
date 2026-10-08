@@ -1604,13 +1604,14 @@ public class Ctap2Session extends Ctap1Session {
 
       int ins = NFCCTAP_MSG;
       int p1 = P1_GET_RESPONSE;
+      byte[] apduData = data;
       int lastKeepAliveStatus = 0;
 
       state = state != null ? state : defaultState;
 
       while (true) {
         try {
-          return delegate.sendAndReceive(new Apdu(0x80, ins, p1, 0x00, data));
+          return delegate.sendAndReceive(new Apdu(0x80, ins, p1, 0x00, apduData));
         } catch (ApduException apduException) {
           if (SW_GETRESPONSE_OK != apduException.getSw()) {
             throw apduException;
@@ -1619,6 +1620,8 @@ public class Ctap2Session extends Ctap1Session {
           // Handle SW_GETRESPONSE_OK (0x9100)
           ins = NFCCTAP_GETRESPONSE;
           p1 = P1_KEEP_ALIVE;
+          // Polls carry no data, only the first message carries the request
+          apduData = new byte[0];
           final byte keepAliveStatus = apduException.getData()[0];
 
           // check for cancellations
