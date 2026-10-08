@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2025 Yubico.
+ * Copyright (C) 2020-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -610,6 +610,35 @@ public class Ctap2Session extends Ctap1Session {
 
   public InfoData getCachedInfo() {
     return info;
+  }
+
+  /**
+   * Returns whether NFCCTAP_GETRESPONSE polling is enabled. Always true over a {@link
+   * FidoConnection}.
+   *
+   * @see #setPollingEnabled(boolean)
+   */
+  public boolean isPollingEnabled() {
+    return backend.isPollingEnabled();
+  }
+
+  /**
+   * Enables or disables NFCCTAP_GETRESPONSE polling over a {@link SmartCardConnection}.
+   *
+   * <p>With polling (the default) the YubiKey may abort a command waiting for user presence if a
+   * poll takes more than 500 ms to reach it, for example when APDUs are relayed over a slow
+   * network. Without polling the YubiKey returns when done and the transport keeps the exchange
+   * alive, but no keep-alive status is reported and the command can not be cancelled.
+   *
+   * <p>No effect over a {@link FidoConnection}.
+   *
+   * @param enabled false to disable polling.
+   * @see <a
+   *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#nfc-commands">NFCCTAP_MSG
+   *     and NFCCTAP_GETRESPONSE</a>
+   */
+  public void setPollingEnabled(boolean enabled) {
+    backend.setPollingEnabled(enabled);
   }
 
   /**
@@ -1582,13 +1611,33 @@ public class Ctap2Session extends Ctap1Session {
 
     abstract byte[] sendCbor(byte[] data, @Nullable CommandState state)
         throws IOException, CommandException;
+
+    /** Backends with nothing to poll report true, and ignore the setting. */
+    boolean isPollingEnabled() {
+      return true;
+    }
+
+    void setPollingEnabled(boolean enabled) {
+      // no-op
+    }
   }
 
   static class SmartCardBackend extends Backend<SmartCardProtocol, Ctap1Session.SmartCardBackend> {
     private final CommandState defaultState = new CommandState();
+    private volatile boolean pollingEnabled = true;
 
     protected SmartCardBackend(SmartCardProtocol delegate, Ctap1Session.SmartCardBackend b) {
       super(delegate, b);
+    }
+
+    @Override
+    boolean isPollingEnabled() {
+      return pollingEnabled;
+    }
+
+    @Override
+    void setPollingEnabled(boolean enabled) {
+      pollingEnabled = enabled;
     }
 
     @Override
@@ -1601,6 +1650,11 @@ public class Ctap2Session extends Ctap1Session {
       final short SW_GETRESPONSE_OK = (short) 0x9100;
       final byte P1_KEEP_ALIVE = 0x00;
       final byte P1_CANCEL_KEEP_ALIVE = 0x11;
+
+      if (!pollingEnabled) {
+        // P1=0x00: the YubiKey must not reply 0x9100, it returns when done
+        return delegate.sendAndReceive(new Apdu(0x80, NFCCTAP_MSG, 0x00, 0x00, data));
+      }
 
       int ins = NFCCTAP_MSG;
       int p1 = P1_GET_RESPONSE;
