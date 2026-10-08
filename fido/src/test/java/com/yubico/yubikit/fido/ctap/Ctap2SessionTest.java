@@ -18,6 +18,9 @@ package com.yubico.yubikit.fido.ctap;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -48,6 +51,15 @@ public class Ctap2SessionTest {
     when(infoData.getVersions()).thenReturn(Collections.singletonList("FIDO_2_1"));
     when(infoData.getMaxMsgSize()).thenReturn(1024);
     return infoData;
+  }
+
+  @Test
+  public void pollingIsEnabledByDefault() throws Exception {
+    SmartCardProtocol protocol = mock(SmartCardProtocol.class);
+    try (Ctap2Session session =
+        new Ctap2Session(new Version(5, 7, 0), protocol, null, infoData())) {
+      assertTrue(session.isPollingEnabled());
+    }
   }
 
   @Test(timeout = 10_000)
@@ -92,6 +104,71 @@ public class Ctap2SessionTest {
     for (Apdu poll : sent.subList(1, sent.size())) {
       assertEquals(NFCCTAP_GETRESPONSE, poll.getIns());
       assertEquals(0, poll.getData().length);
+    }
+  }
+
+  @Test
+  public void sendsSingleMessageWithoutGetResponseSupportWhenPollingIsDisabled() throws Exception {
+    SmartCardProtocol protocol = mock(SmartCardProtocol.class);
+    when(protocol.sendAndReceive(any(Apdu.class))).thenReturn(new byte[] {CTAP_OK});
+
+    try (Ctap2Session session =
+        new Ctap2Session(new Version(5, 7, 0), protocol, null, infoData())) {
+      session.setPollingEnabled(false);
+      assertFalse(session.isPollingEnabled());
+      session.reset(null);
+    }
+
+    ArgumentCaptor<Apdu> apdus = ArgumentCaptor.forClass(Apdu.class);
+    verify(protocol, times(1)).sendAndReceive(apdus.capture());
+    Apdu sent = apdus.getValue();
+    assertEquals(0x80, sent.getCla() & 0xFF);
+    assertEquals(NFCCTAP_MSG, sent.getIns());
+    assertEquals(0x00, sent.getP1());
+  }
+
+  @Test(timeout = 10_000)
+  public void doesNotPollWhenPollingIsDisabledEvenIfTheYubiKeyAsksToBePolled() throws Exception {
+    SmartCardProtocol protocol = mock(SmartCardProtocol.class);
+    when(protocol.sendAndReceive(any(Apdu.class)))
+        .thenThrow(new ApduException(new byte[] {STATUS_UPNEEDED}, SW_GETRESPONSE));
+
+    try (Ctap2Session session =
+        new Ctap2Session(new Version(5, 7, 0), protocol, null, infoData())) {
+      session.setPollingEnabled(false);
+      ApduException e = assertThrows(ApduException.class, () -> session.reset(null));
+      assertEquals(SW_GETRESPONSE, e.getSw());
+    }
+
+    verify(protocol, times(1)).sendAndReceive(any(Apdu.class));
+  }
+
+  @Test
+  public void pollingCanBeEnabledAgain() throws Exception {
+    SmartCardProtocol protocol = mock(SmartCardProtocol.class);
+    when(protocol.sendAndReceive(any(Apdu.class))).thenReturn(new byte[] {CTAP_OK});
+
+    try (Ctap2Session session =
+        new Ctap2Session(new Version(5, 7, 0), protocol, null, infoData())) {
+      session.setPollingEnabled(false);
+      session.reset(null);
+      session.setPollingEnabled(true);
+      session.reset(null);
+    }
+
+    ArgumentCaptor<Apdu> apdus = ArgumentCaptor.forClass(Apdu.class);
+    verify(protocol, times(2)).sendAndReceive(apdus.capture());
+    assertEquals(0x00, apdus.getAllValues().get(0).getP1());
+    assertEquals(P1_GET_RESPONSE_SUPPORTED, apdus.getAllValues().get(1).getP1());
+  }
+
+  @Test
+  public void pollingSettingHasNoEffectOverFido() throws Exception {
+    FidoProtocol protocol = mock(FidoProtocol.class);
+    when(protocol.getVersion()).thenReturn(Version.fromBytes(new byte[] {1, 2, 3}));
+    try (Ctap2Session session = new Ctap2Session(protocol, infoData())) {
+      session.setPollingEnabled(false);
+      assertTrue(session.isPollingEnabled());
     }
   }
 

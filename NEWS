@@ -1,4 +1,9 @@
 * Next version (unreleased)
+ ** new:
+  - fido: Ctap2Session.setPollingEnabled(false) turns off NFCCTAP_GETRESPONSE polling for
+          FIDO over SmartCardConnection (default: on). Fixes user presence commands failing
+          with OPERATION_DENIED when APDUs are relayed over a slow network, as the YubiKey
+          may abort if a poll takes more than 500 ms.
  ** fixes & improvements:
   - android: reassemble CCID responses split across frames (bChainParameter)
   - android: split command APDUs exceeding the reader's dwMaxCCIDMessageLength
