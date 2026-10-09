@@ -1,0 +1,135 @@
+name: Publish branch build
+
+# Publishes a build of the branch it is run on to a private Maven repository, under a four-part
+# version such as 3.2.1.1. Run it manually from the Actions tab, choosing the branch and version.
+#
+# - Separate from release.yml: no tags, no signing, no Maven Central.
+# - A version that is already published is never overwritten; the run does nothing.
+# - Every module that has a Maven publication is published, found by the init script.
+#
+# Repository (or organization) secrets, nothing is hard-coded here:
+#   PUBLISH_IDENTITY_PROVIDER  identity provider used to authenticate
+#   PUBLISH_SERVICE_ACCOUNT    service account allowed to upload
+#   PUBLISH_MAVEN_URL          URL of the Maven repository
+#
+# To publish from a local checkout instead (JDK 17 and the Android SDK; unlike this workflow it does
+# not check first whether the version is already published, and runs no format check or tests):
+#   export PUBLISH_VERSION=3.2.1.1
+#   export PUBLISH_MAVEN_URL=<URL of the Maven repository>
+#   export PUBLISH_TOKEN=<access token with permission to upload>
+#   NO_GPG_SIGN=true ./gradlew -I .github/publish-branch-build.init.gradle \
+#     publishMavenPublicationToTargetRepository
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to publish, four numbers (e.g. 3.2.1.1)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-branch-build-${{ inputs.version }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      # Releases have three numbers, so a four-part version never collides with one.
+      - name: Verify version
+        run: |
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Version '$VERSION' must be four numbers, e.g. 3.2.1.1"
+            exit 1
+          fi
+        env:
+          VERSION: ${{ inputs.version }}
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up JDK
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      # Every module that publishes, so new modules are covered without editing this workflow
+      - name: List published artifacts
+        run: |
+          ./gradlew -q -I .github/publish-branch-build.init.gradle printPublishedArtifacts \
+            | grep -E '^[a-z0-9-]+$' | sort -u > "$RUNNER_TEMP/artifacts.txt"
+          if ! [ -s "$RUNNER_TEMP/artifacts.txt" ]; then
+            echo "::error::No artifacts found to publish"
+            exit 1
+          fi
+          cat "$RUNNER_TEMP/artifacts.txt"
+        env:
+          PUBLISH_VERSION: ${{ inputs.version }}
+
+      - name: Authenticate
+        id: auth
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          workload_identity_provider: ${{ secrets.PUBLISH_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.PUBLISH_SERVICE_ACCOUNT }}
+          token_format: 'access_token'
+
+      - name: Check if the version is published
+        id: published
+        run: |
+          found=0
+          missing=0
+          while read -r m; do
+            pom="com/yubico/yubikit/$m/$VERSION/$m-$VERSION.pom"
+            code=$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $PUBLISH_TOKEN" "${PUBLISH_MAVEN_URL%/}/$pom")
+            case "$code" in
+              200) found=$((found + 1)) ;;
+              404) missing=$((missing + 1)) ;;
+              *) echo "::error::Unexpected HTTP $code checking $pom"; exit 1 ;;
+            esac
+          done < "$RUNNER_TEMP/artifacts.txt"
+          if [ "$found" -eq 0 ]; then
+            echo "published=false" >> "$GITHUB_OUTPUT"
+          elif [ "$missing" -eq 0 ]; then
+            echo "published=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::error::$VERSION is only partly published ($found found, $missing missing)"
+            exit 1
+          fi
+        env:
+          VERSION: ${{ inputs.version }}
+          PUBLISH_MAVEN_URL: ${{ secrets.PUBLISH_MAVEN_URL }}
+          PUBLISH_TOKEN: ${{ steps.auth.outputs.access_token }}
+
+      - name: Skip, already published
+        if: steps.published.outputs.published == 'true'
+        run: echo "::notice::$VERSION is already published, nothing to do"
+        env:
+          VERSION: ${{ inputs.version }}
+
+      - name: Verify code format
+        if: steps.published.outputs.published == 'false'
+        run: ./gradlew spotlessCheck
+
+      - name: Test
+        if: steps.published.outputs.published == 'false'
+        run: ./gradlew --stacktrace check
+
+      - name: Publish
+        if: steps.published.outputs.published == 'false'
+        run: ./gradlew -I .github/publish-branch-build.init.gradle publishMavenPublicationToTargetRepository
+        env:
+          NO_GPG_SIGN: true
+          PUBLISH_VERSION: ${{ inputs.version }}
+          PUBLISH_MAVEN_URL: ${{ secrets.PUBLISH_MAVEN_URL }}
+          PUBLISH_TOKEN: ${{ steps.auth.outputs.access_token }}
