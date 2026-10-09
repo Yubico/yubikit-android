@@ -7,10 +7,10 @@ name: Publish branch build
 # - A version that is already published is never overwritten; the run does nothing.
 # - Every module that has a Maven publication is published, found by the init script.
 #
-# Repository (or organization) secrets, nothing is hard-coded here:
-#   PUBLISH_IDENTITY_PROVIDER  identity provider used to authenticate
-#   PUBLISH_SERVICE_ACCOUNT    service account allowed to upload
-#   PUBLISH_MAVEN_URL          URL of the Maven repository
+# Repository (or organization) variables, nothing is hard-coded here:
+#   GLOBAL_GCP_WORKLOAD_IDENTITY_PROVIDER  identity provider used to authenticate
+#   PUBLISH_SERVICE_ACCOUNT                service account allowed to upload
+#   PUBLISH_MAVEN_URL                      URL of the Maven repository
 #
 # To publish from a local checkout instead (JDK 17 and the Android SDK; unlike this workflow it does
 # not check first whether the version is already published, and runs no format check or tests):
@@ -80,8 +80,8 @@ jobs:
         id: auth
         uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
         with:
-          workload_identity_provider: ${{ secrets.PUBLISH_IDENTITY_PROVIDER }}
-          service_account: ${{ secrets.PUBLISH_SERVICE_ACCOUNT }}
+          workload_identity_provider: ${{ vars.GLOBAL_GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.PUBLISH_SERVICE_ACCOUNT }}
           token_format: 'access_token'
 
       - name: Check if the version is published
@@ -108,7 +108,7 @@ jobs:
           fi
         env:
           VERSION: ${{ inputs.version }}
-          PUBLISH_MAVEN_URL: ${{ secrets.PUBLISH_MAVEN_URL }}
+          PUBLISH_MAVEN_URL: ${{ vars.PUBLISH_MAVEN_URL }}
           PUBLISH_TOKEN: ${{ steps.auth.outputs.access_token }}
 
       - name: Skip, already published
@@ -131,5 +131,5 @@ jobs:
         env:
           NO_GPG_SIGN: true
           PUBLISH_VERSION: ${{ inputs.version }}
-          PUBLISH_MAVEN_URL: ${{ secrets.PUBLISH_MAVEN_URL }}
+          PUBLISH_MAVEN_URL: ${{ vars.PUBLISH_MAVEN_URL }}
           PUBLISH_TOKEN: ${{ steps.auth.outputs.access_token }}
