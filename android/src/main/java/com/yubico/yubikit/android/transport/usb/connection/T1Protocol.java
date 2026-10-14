@@ -46,8 +46,16 @@ final class T1Protocol {
 
   /** Sends one T=1 block to the card and returns the block it answered with. */
   interface BlockTransport {
-    byte[] exchange(byte[] block) throws IOException;
+    /**
+     * @param waitingMultiplier how many block waiting times the card may now take to answer: 1
+     *     normally, and the multiplier the card asked for when {@code block} grants an S(WTX)
+     *     request
+     */
+    byte[] exchange(byte[] block, int waitingMultiplier) throws IOException;
   }
+
+  /** The multiplier of an exchange that has not been extended. */
+  private static final int NO_EXTENSION = 1;
 
   private final BlockTransport transport;
 
@@ -100,7 +108,8 @@ final class T1Protocol {
       byte[] chunk = Arrays.copyOfRange(apdu, offset, offset + length);
 
       byte[] reply =
-          transport.exchange(T1Block.iBlock(sequenceNumber, chunk, moreFollows).toBytes());
+          transport.exchange(
+              T1Block.iBlock(sequenceNumber, chunk, moreFollows).toBytes(), NO_EXTENSION);
       sequenceNumber ^= 0x01;
       offset += length;
 
@@ -145,7 +154,8 @@ final class T1Protocol {
                     + expectedReceiveSequence);
           }
           // A retransmission of a block already taken. Drop it and ask again for the next one.
-          reply = transport.exchange(T1Block.rBlock(expectedReceiveSequence).toBytes());
+          reply =
+              transport.exchange(T1Block.rBlock(expectedReceiveSequence).toBytes(), NO_EXTENSION);
           continue;
         }
         receivedIBlock = true;
@@ -156,7 +166,7 @@ final class T1Protocol {
           return payload.toByteArray();
         }
         // Acknowledge, naming the sequence number we expect next.
-        reply = transport.exchange(T1Block.rBlock(expectedReceiveSequence).toBytes());
+        reply = transport.exchange(T1Block.rBlock(expectedReceiveSequence).toBytes(), NO_EXTENSION);
       }
       throw new IOException(
           "T=1 response did not terminate within " + MAX_BLOCKS_PER_RESPONSE + " blocks");
@@ -186,10 +196,25 @@ final class T1Protocol {
         informationFieldSize = clampInformationFieldSize(received.inf[0] & 0xFF);
       }
       reply =
-          transport.exchange(T1Block.sBlock(received.sBlockResponsePcb(), received.inf).toBytes());
+          transport.exchange(
+              T1Block.sBlock(received.sBlockResponsePcb(), received.inf).toBytes(),
+              control == T1Block.S_CONTROL_WTX ? waitingMultiplier(received) : NO_EXTENSION);
     }
     throw new IOException(
         "T=1 exchange made no progress within " + MAX_BLOCKS_PER_RESPONSE + " S-blocks");
+  }
+
+  /**
+   * The multiplier in an S(WTX) request: its single INF byte, which is how many block waiting times
+   * the card wants for the work it is doing. Anything else is read as 1, so the card is still
+   * answered.
+   */
+  private static int waitingMultiplier(T1Block wtxRequest) {
+    if (wtxRequest.inf.length != 1) {
+      return NO_EXTENSION;
+    }
+    int multiplier = wtxRequest.inf[0] & 0xFF;
+    return multiplier == 0 ? NO_EXTENSION : multiplier;
   }
 
   /**

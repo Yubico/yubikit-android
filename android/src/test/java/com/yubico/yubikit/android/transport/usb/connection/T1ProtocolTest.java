@@ -52,6 +52,7 @@ public class T1ProtocolTest {
   private static final class ScriptedCard implements T1Protocol.BlockTransport {
     private final Deque<byte[]> answers = new ArrayDeque<>();
     private final List<byte[]> sent = new ArrayList<>();
+    private final List<Integer> multipliers = new ArrayList<>();
 
     ScriptedCard(String... answerHex) {
       for (String hex : answerHex) {
@@ -60,8 +61,9 @@ public class T1ProtocolTest {
     }
 
     @Override
-    public byte[] exchange(byte[] block) throws IOException {
+    public byte[] exchange(byte[] block, int waitingMultiplier) throws IOException {
       sent.add(block);
+      multipliers.add(waitingMultiplier);
       if (answers.isEmpty()) {
         throw new IOException("Card was asked for more blocks than the script provides");
       }
@@ -458,5 +460,122 @@ public class T1ProtocolTest {
     } catch (IOException e) {
       Assert.assertEquals("T=1 response did not terminate within 256 blocks", e.getMessage());
     }
+  }
+
+  /** The card may ask for more time between the blocks of its own chained response, too. */
+  @Test
+  public void testWtxRequestDuringResponseChain() throws IOException {
+    ScriptedCard card =
+        new ScriptedCard(
+            "002001AA8B", // N(S)=0, M=1, INF=AA
+            "00C30101C3", // S(WTX request) instead of the next block
+            "0040029000D2"); // N(S)=1, M=0, INF=9000
+
+    byte[] response = new T1Protocol(card, IFSC_254).sendApdu(Codec.fromHex(SELECT_APDU));
+
+    // The R-block acknowledging the first block, then the WTX grant. The chain resumes after it.
+    card.assertSent(SELECT_I_BLOCK_NS0, "00900090", "00E30101E3");
+    Assert.assertArrayEquals(Codec.fromHex("AA9000"), response);
+  }
+
+  /** A card that needs several extensions in a row is granted every one of them. */
+  @Test
+  public void testRepeatedWtxRequestsAreEachGranted() throws IOException {
+    ScriptedCard card = new ScriptedCard("00C30101C3", "00C30101C3", "00C30101C3", OK_I_BLOCK);
+
+    byte[] response = new T1Protocol(card, IFSC_254).sendApdu(Codec.fromHex(SELECT_APDU));
+
+    card.assertSent(SELECT_I_BLOCK_NS0, "00E30101E3", "00E30101E3", "00E30101E3");
+    Assert.assertArrayEquals(Codec.fromHex("9000"), response);
+  }
+
+  /**
+   * An S(IFS) request with no INF names no size. It is still answered, so the card is not left
+   * waiting, but it must not change the block size we chunk later commands at.
+   */
+  @Test
+  public void testEmptyIfsRequestKeepsTheNegotiatedSize() throws IOException {
+    // The empty S(IFS) request, then a 300-byte command acknowledged chunk by chunk.
+    ScriptedCard card = new ScriptedCard("00C100C1", OK_I_BLOCK, "00800080", OK_I_BLOCK_NS1);
+    T1Protocol protocol = new T1Protocol(card, IFSC_254);
+
+    protocol.sendApdu(Codec.fromHex(SELECT_APDU));
+    Assert.assertArrayEquals(Codec.fromHex("00E100E1"), card.sent.get(1));
+
+    protocol.sendApdu(counting(300));
+
+    // A first chunk of the full 254 bytes, then the remaining 46: the size was not touched.
+    Assert.assertEquals(4, card.sent.size());
+    Assert.assertEquals((byte) 0xFE, card.sent.get(2)[2]);
+    Assert.assertEquals((byte) 46, card.sent.get(3)[2]);
+  }
+
+  /** Blocks that are not an answer to a waiting-time request are never given extra time. */
+  @Test
+  public void testOrdinaryBlocksAreNotExtended() throws IOException {
+    ScriptedCard card = new ScriptedCard("002001AA8B", "0040029000D2");
+
+    new T1Protocol(card, IFSC_254).sendApdu(Codec.fromHex(SELECT_APDU));
+
+    Assert.assertEquals(Arrays.asList(1, 1), card.multipliers);
+  }
+
+  /**
+   * The multiplier the card asked for travels with the block that grants it, so the transport can
+   * tell the reader and wait that many block waiting times for the answer.
+   */
+  @Test
+  public void testWtxMultiplierIsPassedToTheTransport() throws IOException {
+    // S(WTX request) with INF=05, then a normal answer.
+    ScriptedCard card = new ScriptedCard("00C30105C7", OK_I_BLOCK);
+
+    new T1Protocol(card, IFSC_254).sendApdu(Codec.fromHex(SELECT_APDU));
+
+    card.assertSent(SELECT_I_BLOCK_NS0, "00E30105E7");
+    Assert.assertEquals(Arrays.asList(1, 5), card.multipliers);
+  }
+
+  /** Each request is granted its own multiplier, not the largest or the last. */
+  @Test
+  public void testEachWtxRequestKeepsItsOwnMultiplier() throws IOException {
+    // INF=02 and INF=0A (10) in turn.
+    ScriptedCard card = new ScriptedCard("00C30102C0", "00C3010AC8", OK_I_BLOCK);
+
+    new T1Protocol(card, IFSC_254).sendApdu(Codec.fromHex(SELECT_APDU));
+
+    Assert.assertEquals(Arrays.asList(1, 2, 10), card.multipliers);
+  }
+
+  /** The largest multiplier a single byte can carry is passed on unchanged. */
+  @Test
+  public void testLargestWtxMultiplier() throws IOException {
+    // INF=FF: 00 ^ C3 ^ 01 ^ FF = 3D.
+    ScriptedCard card = new ScriptedCard("00C301FF3D", OK_I_BLOCK);
+
+    new T1Protocol(card, IFSC_254).sendApdu(Codec.fromHex(SELECT_APDU));
+
+    Assert.assertEquals(Arrays.asList(1, 255), card.multipliers);
+  }
+
+  /** A zero or missing multiplier is not a request for no time at all; it is read as one. */
+  @Test
+  public void testZeroOrMissingWtxMultiplierIsReadAsOne() throws IOException {
+    // S(WTX request) with INF=00, then one with no INF.
+    ScriptedCard card = new ScriptedCard("00C30100C2", "00C300C3", OK_I_BLOCK);
+
+    new T1Protocol(card, IFSC_254).sendApdu(Codec.fromHex(SELECT_APDU));
+
+    card.assertSent(SELECT_I_BLOCK_NS0, "00E30100E2", "00E300E3");
+    Assert.assertEquals(Arrays.asList(1, 1, 1), card.multipliers);
+  }
+
+  /** An IFS answer is not an extension, whatever its INF holds. */
+  @Test
+  public void testIfsAnswerIsNotExtended() throws IOException {
+    ScriptedCard card = new ScriptedCard("00C101FE3E", OK_I_BLOCK);
+
+    new T1Protocol(card, IFSC_254).sendApdu(Codec.fromHex(SELECT_APDU));
+
+    Assert.assertEquals(Arrays.asList(1, 1), card.multipliers);
   }
 }

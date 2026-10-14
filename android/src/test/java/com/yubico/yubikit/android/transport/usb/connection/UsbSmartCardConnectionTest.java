@@ -20,6 +20,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import android.hardware.usb.UsbDeviceConnection;
@@ -63,6 +65,9 @@ public class UsbSmartCardConnectionTest {
    * tests' APDUs small enough to read.
    */
   private static final int MIN_MAX_CCID_MESSAGE_LENGTH = 271;
+
+  /** The card clock the test descriptor reports, in kHz. */
+  private static final int DEFAULT_CLOCK_KHZ = 4000;
 
   /** Bytes of a command APDU that fit in one frame at {@link #MIN_MAX_CCID_MESSAGE_LENGTH}. */
   private static final int MAX_COMMAND_PAYLOAD = MIN_MAX_CCID_MESSAGE_LENGTH - 10;
@@ -166,6 +171,81 @@ public class UsbSmartCardConnectionTest {
     Assert.assertArrayEquals(Codec.fromHex("9000"), response);
   }
 
+  /**
+   * A TPDU reader's card gets its block waiting time on the host's read. The SCR3500 card in the
+   * test ATR announces BWI=1 and the test descriptor a 4 MHz clock, so BWT is 180 ms and every read
+   * waits that plus a second of slack instead of the flat second the other paths use.
+   */
+  @Test
+  public void testTpduReadWaitsForTheBlockWaitingTime() throws IOException {
+    UsbSmartCardConnection connection = getTpduConnection();
+    packetsIn.add("8006000000000200000000000290009200");
+
+    connection.sendAndReceive(Codec.fromHex("00A4040009A0000003080000100000"));
+    assertSent("6f130000000002000000" + "00000F00A4040009A00000030800001000001D");
+
+    verify(usbDeviceConnection, times(1))
+        .bulkTransfer(eq(usbEndpointIn), any(), anyInt(), eq(1180));
+  }
+
+  /**
+   * Granting a waiting-time request tells the reader the multiplier in bBWI and waits that many
+   * block waiting times for the card: here 5 x 180 ms plus the second of slack. The block that
+   * asked for the time and every block around it keep bBWI at 0 and the shorter wait.
+   */
+  @Test
+  public void testTpduWtxExtendsTheReadAndTellsTheReader() throws IOException {
+    UsbSmartCardConnection connection = getTpduConnection();
+    // The card answers the SELECT with S(WTX request, multiplier 5) ...
+    packetsIn.add(dataBlock(2, 0, Codec.fromHex("00C30105C7")));
+    // ... and, once that is granted, with the real answer.
+    packetsIn.add(dataBlock(3, 0, Codec.fromHex("000002900092")));
+
+    byte[] response = connection.sendAndReceive(Codec.fromHex("00A4040009A0000003080000100000"));
+
+    assertSent("6f130000000002000000" + "00000F00A4040009A00000030800001000001D");
+    // The grant: S(WTX response) with bBWI=05.
+    assertSent("6f050000000003050000" + "00E30105E7");
+    Assert.assertArrayEquals(Codec.fromHex("9000"), response);
+
+    verify(usbDeviceConnection, times(1))
+        .bulkTransfer(eq(usbEndpointIn), any(), anyInt(), eq(1180));
+    verify(usbDeviceConnection, times(1))
+        .bulkTransfer(eq(usbEndpointIn), any(), anyInt(), eq(1900));
+  }
+
+  /**
+   * The wait is capped at five minutes however the card and reader make it come out. A 1 kHz clock
+   * stretches the 1931-etu BWT to 718 s, far past the cap, and a hung reader must not hold the
+   * caller that long.
+   */
+  @Test
+  public void testTpduWaitIsCapped() throws IOException {
+    UsbSmartCardConnection connection = getTpduConnection(1);
+
+    packetsIn.add("8006000000000200000000000290009200");
+    connection.sendAndReceive(Codec.fromHex("00A4040009A0000003080000100000"));
+    assertSent("6f130000000002000000" + "00000F00A4040009A00000030800001000001D");
+
+    verify(usbDeviceConnection, times(1))
+        .bulkTransfer(eq(usbEndpointIn), any(), anyInt(), eq(300000));
+  }
+
+  /** An APDU-level reader answers within the flat second it always had. */
+  @Test
+  public void testApduReaderKeepsTheFlatReadTimeout() throws IOException {
+    setupDescriptor(FEATURES_APDU_SHORT, MIN_MAX_CCID_MESSAGE_LENGTH);
+    UsbSmartCardConnection connection = getConnection();
+
+    packetsIn.add("800500000000010000000102039000");
+    connection.sendAndReceive(Codec.fromHex("0001020300"));
+    assertSent("6f0500000000010000000001020300");
+
+    // Power-on and the exchange: both read with the one-second timeout.
+    verify(usbDeviceConnection, times(2))
+        .bulkTransfer(eq(usbEndpointIn), any(), anyInt(), eq(1000));
+  }
+
   /** An APDU-level reader keeps the passthrough path; only a TPDU-only reader gets T=1 framing. */
   @Test
   public void testShortApduReaderIsAccepted() throws IOException {
@@ -234,14 +314,16 @@ public class UsbSmartCardConnectionTest {
    */
   @Test
   public void testForeignClassDescriptorBeforeCcidInterfaceIsSkipped() throws IOException {
-    String foreign = interfaceDescriptorHex(1, 0) + descriptorHex(FEATURES_APDU_SHORT, 0x10);
+    String foreign =
+        interfaceDescriptorHex(1, 0) + descriptorHex(FEATURES_APDU_SHORT, 0x10, DEFAULT_CLOCK_KHZ);
     when(usbInterface.getId()).thenReturn(2);
     when(usbDeviceConnection.getRawDescriptors())
         .thenReturn(
             Codec.fromHex(
                 foreign
                     + interfaceDescriptorHex(2, 0)
-                    + descriptorHex(FEATURES_TPDU, MIN_MAX_CCID_MESSAGE_LENGTH)));
+                    + descriptorHex(
+                        FEATURES_TPDU, MIN_MAX_CCID_MESSAGE_LENGTH, DEFAULT_CLOCK_KHZ)));
     UsbSmartCardConnection connection = openTpduConnection();
     Assert.assertFalse(connection.isExtendedLengthApduSupported());
   }
@@ -252,7 +334,9 @@ public class UsbSmartCardConnectionTest {
     when(usbInterface.getId()).thenReturn(2);
     when(usbDeviceConnection.getRawDescriptors())
         .thenReturn(
-            Codec.fromHex(interfaceDescriptorHex(1, 0) + descriptorHex(FEATURES_TPDU, 0x10)));
+            Codec.fromHex(
+                interfaceDescriptorHex(1, 0)
+                    + descriptorHex(FEATURES_TPDU, 0x10, DEFAULT_CLOCK_KHZ)));
     // Nothing for interface 2 was found, so the reader is treated as APDU level
     getConnection();
   }
@@ -877,19 +961,19 @@ public class UsbSmartCardConnectionTest {
         + toHex(data);
   }
 
-  /** The Identiv SCR3500 C shape: TPDU-level exchange only, so the host frames T=1 itself. */
-  private void setupTpduDescriptor() {
-    setupDescriptor(FEATURES_TPDU, MIN_MAX_CCID_MESSAGE_LENGTH);
-  }
-
   /**
-   * Open a connection to a TPDU-level reader. On top of the power-on exchange the constructor
-   * pushes the card's ATR-derived T=1 parameters into the reader with PC_to_RDR_SetParameters, so
-   * that exchange has to be primed and drained before the test's own traffic. Callers' first
-   * XfrBlock is therefore bSeq=2, not bSeq=1.
+   * Open a connection to the Identiv SCR3500 C shape: a TPDU-level reader, so the host frames T=1
+   * itself. On top of the power-on exchange the constructor pushes the card's ATR-derived T=1
+   * parameters into the reader with PC_to_RDR_SetParameters, so that exchange has to be primed and
+   * drained before the test's own traffic. Callers' first XfrBlock is therefore bSeq=2, not bSeq=1.
    */
   private UsbSmartCardConnection getTpduConnection() throws IOException {
-    setupTpduDescriptor();
+    return getTpduConnection(DEFAULT_CLOCK_KHZ);
+  }
+
+  /** As {@link #getTpduConnection()} for a reader whose descriptor reports {@code clockKhz}. */
+  private UsbSmartCardConnection getTpduConnection(int clockKhz) throws IOException {
+    setupDescriptor(FEATURES_TPDU, MIN_MAX_CCID_MESSAGE_LENGTH, clockKhz);
     return openTpduConnection();
   }
 
@@ -918,10 +1002,15 @@ public class UsbSmartCardConnectionTest {
   }
 
   private void setupDescriptor(int dwFeatures, int dwMaxCcidMessageLength) {
+    setupDescriptor(dwFeatures, dwMaxCcidMessageLength, DEFAULT_CLOCK_KHZ);
+  }
+
+  private void setupDescriptor(int dwFeatures, int dwMaxCcidMessageLength, int clockKhz) {
     when(usbDeviceConnection.getRawDescriptors())
         .thenReturn(
             Codec.fromHex(
-                interfaceDescriptorHex(0, 0) + descriptorHex(dwFeatures, dwMaxCcidMessageLength)));
+                interfaceDescriptorHex(0, 0)
+                    + descriptorHex(dwFeatures, dwMaxCcidMessageLength, clockKhz)));
   }
 
   /** A 9-byte interface descriptor (USB 2.0 §9.6.5) for the smart card class (0x0B). */
@@ -935,12 +1024,12 @@ public class UsbSmartCardConnectionTest {
    * 40 and dwMaxCCIDMessageLength at offset 44 are read by the code under test; every other field
    * is a plausible-but-irrelevant constant.
    */
-  private static String descriptorHex(int dwFeatures, int dwMaxCcidMessageLength) {
+  private static String descriptorHex(int dwFeatures, int dwMaxCcidMessageLength, int clockKhz) {
     return "36211001" // bLength, bDescriptorType, bcdCCID
         + "0001" // bMaxSlotIndex, bVoltageSupport
         + "02000000" // dwProtocols
-        + "A00F0000" // dwDefaultClock
-        + "A00F0000" // dwMaximumClock
+        + le32(clockKhz) // dwDefaultClock
+        + le32(clockKhz) // dwMaximumClock
         + "00" // bNumClockSupported
         + "80250000" // dwDataRate
         + "80250000" // dwMaxDataRate

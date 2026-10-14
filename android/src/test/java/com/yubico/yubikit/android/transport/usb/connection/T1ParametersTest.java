@@ -75,4 +75,71 @@ public class T1ParametersTest {
     Assert.assertEquals(0x13, parameters.findexDindex());
     Assert.assertEquals(0xFE, parameters.ifsc());
   }
+
+  /**
+   * The SCR3500 card announces BWI=1: 11 + 2 x 960 = 1931 etu. At the 4 MHz the test descriptor
+   * gives and the default 372 clocks per etu that is 1931 x 372 / 4000 = 179.6 ms, rounded up.
+   */
+  @Test
+  public void testBlockWaitingTimeFromAtr() {
+    T1Parameters parameters = T1Parameters.fromAtr(Codec.fromHex(SCR3500_ATR));
+
+    Assert.assertEquals(1, parameters.bwi());
+    Assert.assertEquals(180, parameters.blockWaitingTimeMillis(4000));
+  }
+
+  /** An ATR that omits TB3 gets the default BWI of 4: 11 + 16 x 960 = 15371 etu. */
+  @Test
+  public void testBlockWaitingTimeOfDefaults() {
+    T1Parameters parameters = T1Parameters.fromAtr(Codec.fromHex("3B00"));
+
+    Assert.assertEquals(4, parameters.bwi());
+    // 15371 x 372 / 4000 = 1429.5 ms
+    Assert.assertEquals(1430, parameters.blockWaitingTimeMillis(4000));
+  }
+
+  /**
+   * A card whose Fi is above the default can be running a longer etu than 372 clocks, so the bound
+   * follows it: TA1=D1 is Fi=2048.
+   */
+  @Test
+  public void testLargeFiLengthensTheBound() {
+    // TS=3B T0=D0 (TA1/TC1/TD1) TA1=D1 TC1=FF TD1=81 TD2=B1 TA3=80 TB3=45 TD3=00
+    T1Parameters parameters = T1Parameters.fromAtr(Codec.fromHex("3BD0D1FF81B1804500"));
+
+    // 15371 x 2048 / 4000 = 7870 ms
+    Assert.assertEquals(7870, parameters.blockWaitingTimeMillis(4000));
+  }
+
+  /**
+   * A card asking for a faster rate does not shorten the bound: whether the reader got there is not
+   * ours to know, and a bound that assumed it would fire early if it had not. TA1=96 is Fi=512,
+   * Di=32; the bound uses Fi with Di=1.
+   */
+  @Test
+  public void testFasterRateIsNotAssumed() {
+    T1Parameters parameters = T1Parameters.fromAtr(Codec.fromHex("3BD096FF81B1804500"));
+
+    // 15371 x 512 / 4000 = 1967.5 ms
+    Assert.assertEquals(1968, parameters.blockWaitingTimeMillis(4000));
+  }
+
+  /** BWI above 9 is reserved, so a card that sends it is held to the largest defined value. */
+  @Test
+  public void testReservedBwiIsClamped() {
+    Assert.assertEquals(
+        T1Parameters.blockWaitingTimeMillis(9, 372, 4000),
+        T1Parameters.blockWaitingTimeMillis(15, 372, 4000));
+  }
+
+  /** A reader that gives no clock leaves a 3.57 MHz assumption rather than a division by zero. */
+  @Test
+  public void testMissingClockFallsBack() {
+    T1Parameters parameters = T1Parameters.fromAtr(Codec.fromHex("3B00"));
+
+    // 15371 x 372 / 3571 = 1601.2 ms
+    Assert.assertEquals(1602, parameters.blockWaitingTimeMillis(0));
+    Assert.assertEquals(
+        parameters.blockWaitingTimeMillis(0), parameters.blockWaitingTimeMillis(3571));
+  }
 }
