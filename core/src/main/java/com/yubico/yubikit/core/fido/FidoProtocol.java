@@ -65,6 +65,16 @@ public class FidoProtocol implements Closeable {
 
   private static final Logger logger = LoggerFactory.getLogger(FidoProtocol.class);
 
+  /** The length of a message is a 16-bit field. */
+  private static final int MAX_MESSAGE_LENGTH = 0xFFFF;
+
+  /**
+   * Continuation packets are numbered from 0 in seven bits, which ends a message at 128 of them,
+   * 7,609 bytes. An authenticator that sends a longer message wraps the number to 0 after 127, so
+   * both directions count modulo 128.
+   */
+  private static final int SEQUENCE_MASK = 0x7f;
+
   public FidoProtocol(FidoConnection connection) throws IOException {
     this.connection = connection;
 
@@ -92,10 +102,17 @@ public class FidoProtocol implements Closeable {
       throws IOException {
     state = state != null ? state : defaultState;
 
+    if (payload.length > MAX_MESSAGE_LENGTH) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Payload of %d bytes does not fit in a CTAPHID message (maximum %d)",
+              payload.length, MAX_MESSAGE_LENGTH));
+    }
+
     ByteBuffer toSend = ByteBuffer.wrap(payload);
     byte[] buffer = new byte[FidoConnection.PACKET_SIZE];
     ByteBuffer packet = ByteBuffer.wrap(buffer);
-    byte seq = 0;
+    int seq = 0;
 
     // Send request
     packet.putInt(channelId).put(cmd).putShort((short) toSend.remaining());
@@ -107,7 +124,7 @@ public class FidoProtocol implements Closeable {
       }
       Arrays.fill(buffer, (byte) 0);
       packet.clear();
-      packet.putInt(channelId).put((byte) (0x7f & seq++));
+      packet.putInt(channelId).put((byte) (seq++ & SEQUENCE_MASK));
     } while (toSend.hasRemaining());
 
     // Read response
@@ -138,7 +155,7 @@ public class FidoProtocol implements Closeable {
       if (response == null) {
         byte responseCmd = packet.get();
         if (responseCmd == cmd) {
-          response = ByteBuffer.allocate(packet.getShort());
+          response = ByteBuffer.allocate(packet.getShort() & 0xFFFF);
         } else if (responseCmd == CTAPHID_KEEPALIVE) {
           state.onKeepAliveStatus(packet.get());
           continue;
@@ -149,10 +166,12 @@ public class FidoProtocol implements Closeable {
               String.format("Wrong response command. Expecting: %x, Got: %x", cmd, responseCmd));
         }
       } else {
-        byte responseSeq = packet.get();
-        if (responseSeq != seq++) {
+        int responseSeq = packet.get() & 0xFF;
+        int expectedSeq = seq++ & SEQUENCE_MASK;
+        if (responseSeq != expectedSeq) {
           throw new IOException(
-              String.format("Wrong sequence number. Expecting %d, Got: %d", seq - 1, responseSeq));
+              String.format(
+                  "Wrong sequence number. Expecting %d, Got: %d", expectedSeq, responseSeq));
         }
       }
       response.put(buffer, packet.position(), Math.min(packet.remaining(), response.remaining()));

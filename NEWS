@@ -1,5 +1,6 @@
 * Next version (unreleased)
  ** fixes & improvements:
+  - core: reassemble FIDO HID messages longer than 7609 bytes (sequence wraps at 128)
   - android: reassemble CCID responses split across frames (bChainParameter)
   - android: split command APDUs exceeding the reader's dwMaxCCIDMessageLength
   - android: support TPDU-level USB readers with host-side T=1 framing
