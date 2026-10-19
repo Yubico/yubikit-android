@@ -677,7 +677,7 @@ public class Ctap2Session extends Ctap1Session {
     private final int uvModality;
     private final Map<String, Object> certifications;
     @Nullable private final Integer remainingDiscoverableCredentials;
-    @Nullable private final List<Integer> vendorPrototypeConfigCommands;
+    @Nullable private final List<Long> vendorPrototypeConfigCommands;
     private final List<String> attestationFormats;
     @Nullable private final Integer uvCountSinceLastPinEntry;
     private final boolean longTouchForReset;
@@ -710,7 +710,7 @@ public class Ctap2Session extends Ctap1Session {
         int uvModality,
         Map<String, Object> certifications,
         @Nullable Integer remainingDiscoverableCredentials,
-        @Nullable List<Integer> vendorPrototypeConfigCommands,
+        @Nullable List<Long> vendorPrototypeConfigCommands,
         List<String> attestationFormats,
         @Nullable Integer uvCountSinceLastPinEntry,
         boolean longTouchForReset,
@@ -752,6 +752,27 @@ public class Ctap2Session extends Ctap1Session {
       this.maxPinLength = maxPinLength;
       this.encCredStoreState = encCredStoreState;
       this.authenticatorConfigCommands = authenticatorConfigCommands;
+    }
+
+    /**
+     * Reads an unsigned integer of up to 64 bits as a long holding its bits. CBOR decoding yields
+     * an Integer, Long or, above {@link Long#MAX_VALUE}, a BigInteger.
+     */
+    @Nullable
+    private static Long toLong(@Nullable Object value) {
+      return value == null ? null : ((Number) value).longValue();
+    }
+
+    @Nullable
+    private static List<Long> toLongList(@Nullable Object values) {
+      if (values == null) {
+        return null;
+      }
+      List<Long> result = new ArrayList<>();
+      for (Object value : (List<?>) values) {
+        result.add(toLong(value));
+      }
+      return result;
     }
 
     @SuppressWarnings("unchecked")
@@ -799,7 +820,7 @@ public class Ctap2Session extends Ctap1Session {
               ? (Map<String, Object>) data.get(RESULT_CERTIFICATIONS)
               : Collections.emptyMap(),
           (Integer) data.get(RESULT_REMAINING_DISCOVERABLE_CREDENTIALS),
-          (List<Integer>) data.get(RESULT_VENDOR_PROTOTYPE_CONFIG_COMMANDS),
+          toLongList(data.get(RESULT_VENDOR_PROTOTYPE_CONFIG_COMMANDS)),
           data.containsKey(RESULT_ATTESTATION_FORMATS)
               ? (List<String>) data.get(RESULT_ATTESTATION_FORMATS)
               : Collections.emptyList(),
@@ -1058,14 +1079,46 @@ public class Ctap2Session extends Ctap1Session {
     /**
      * List of authenticatorConfig vendorCommandId values supported.
      *
+     * <p>Command ids are unsigned 64-bit integers; values above {@link Long#MAX_VALUE} appear as
+     * negative numbers, see {@link Long#toUnsignedString(long)}.
+     *
+     * <p>In the next major version this method will be removed, and {@link
+     * #getVendorPrototypeConfigCommands()} will return this value and type instead.
+     *
      * @return list of vendor command id's
      * @see <a
      *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#getinfo-vendorprototypeconfigcommands">Vendor
      *     prototype config commands</a>
      */
     @Nullable
-    public List<Integer> getVendorPrototypeConfigCommands() {
+    public List<Long> getVendorPrototypeConfigCommandIds() {
       return vendorPrototypeConfigCommands;
+    }
+
+    /**
+     * List of authenticatorConfig vendorCommandId values supported.
+     *
+     * @return list of vendor command id's
+     * @throws IllegalArgumentException if a command id does not fit in an int
+     * @deprecated Use {@link #getVendorPrototypeConfigCommandIds()}, which holds any unsigned
+     *     64-bit value. In the next major version this method will be replaced by {@link
+     *     #getVendorPrototypeConfigCommandIds()}: it will return the same value and type, and
+     *     {@link #getVendorPrototypeConfigCommandIds()} will be removed.
+     */
+    @Deprecated
+    @Nullable
+    public List<Integer> getVendorPrototypeConfigCommands() {
+      if (vendorPrototypeConfigCommands == null) {
+        return null;
+      }
+      List<Integer> ids = new ArrayList<>();
+      for (long id : vendorPrototypeConfigCommands) {
+        if (id < 0 || id > Integer.MAX_VALUE) {
+          throw new IllegalArgumentException("Vendor command id does not fit in an int");
+        }
+        ids.add((int) id);
+      }
+      return ids;
     }
 
     /**

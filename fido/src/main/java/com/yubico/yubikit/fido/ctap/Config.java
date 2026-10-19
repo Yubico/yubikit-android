@@ -83,7 +83,7 @@ public class Config {
   }
 
   public static boolean supportsVendorPrototypeConfigCommands(Ctap2Session.InfoData infoData) {
-    return infoData.getVendorPrototypeConfigCommands() != null;
+    return infoData.getVendorPrototypeConfigCommandIds() != null;
   }
 
   private Map<Integer, ?> call(byte subCommand, @Nullable Map<?, ?> subCommandParams)

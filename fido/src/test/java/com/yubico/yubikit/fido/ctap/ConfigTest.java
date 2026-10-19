@@ -20,7 +20,10 @@ import static com.yubico.yubikit.fido.TestUtils.decodeHex;
 import static com.yubico.yubikit.fido.TestUtils.encodeHex;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
@@ -69,6 +72,63 @@ public class ConfigTest {
     java.lang.reflect.Field field = Ctap2Session.class.getDeclaredField("backend");
     field.setAccessible(true);
     return (Ctap2Session.Backend<?, ?>) field.get(session);
+  }
+
+  @Test
+  public void getInfoKeepsLargeVendorCommandIds() throws Exception {
+    // 0x15: vendorPrototypeConfigCommands [id, 5]
+    Ctap2Session session = session(info("15" + "82" + "1b4e5a15aa89d2b8b6" + "05", 1));
+    assertEquals(
+        Arrays.asList(0x4e5a15aa89d2b8b6L, 5L),
+        session.getCachedInfo().getVendorPrototypeConfigCommandIds());
+  }
+
+  @Test
+  public void getInfoKeepsVendorCommandIdsAboveSignedRangeAsBits() throws Exception {
+    Ctap2Session session = session(info("15" + "81" + "1bffffffffffffffff", 1));
+    assertEquals(
+        Collections.singletonList(-1L),
+        session.getCachedInfo().getVendorPrototypeConfigCommandIds());
+  }
+
+  @Test
+  @SuppressWarnings("deprecation")
+  public void deprecatedVendorCommandsReturnIdsThatFitInInt() throws Exception {
+    Ctap2Session session = session(info("15" + "81" + "05", 1));
+    assertEquals(
+        Collections.singletonList(5), session.getCachedInfo().getVendorPrototypeConfigCommands());
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  @SuppressWarnings("deprecation")
+  public void deprecatedVendorCommandsRejectIdsThatDoNotFitInInt() throws Exception {
+    Ctap2Session session = session(info("15" + "82" + "1b4e5a15aa89d2b8b6" + "05", 1));
+    session.getCachedInfo().getVendorPrototypeConfigCommands();
+  }
+
+  @Test
+  public void absentVendorCommandsStayNull() throws Exception {
+    assertNull(session(info("", 0)).getCachedInfo().getVendorPrototypeConfigCommandIds());
+  }
+
+  @Test
+  public void supportsVendorPrototypeWhenVendorCommandsArePresent() throws Exception {
+    // the member may be empty; its presence is what signals support
+    assertTrue(
+        Config.supportsVendorPrototypeConfigCommands(
+            session(info("15" + "80", 1)).getCachedInfo()));
+    assertTrue(
+        Config.supportsVendorPrototypeConfigCommands(
+            session(info("15" + "81" + "1b4e5a15aa89d2b8b6", 1)).getCachedInfo()));
+  }
+
+  @Test
+  public void vendorPrototypeNotSupportedWithoutVendorCommands() throws Exception {
+    assertFalse(Config.supportsVendorPrototypeConfigCommands(session(info("", 0)).getCachedInfo()));
+    // listing 0xFF in authenticatorConfigCommands alone does not mean the command is implemented
+    assertFalse(
+        Config.supportsVendorPrototypeConfigCommands(
+            session(info("181f" + "81" + "18ff", 1)).getCachedInfo()));
   }
 
   @Test

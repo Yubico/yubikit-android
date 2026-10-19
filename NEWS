@@ -9,6 +9,9 @@
            Long.MAX_VALUE) instead of truncating or rejecting them
   - fido: Config.vendorPrototype(long, Map) sends an unsigned 64-bit vendorCommandId and
           vendor-defined parameters; vendorPrototype(Integer) is deprecated
+  - fido: InfoData parses vendorPrototypeConfigCommands as unsigned 64-bit values and adds
+          getVendorPrototypeConfigCommandIds(); getVendorPrototypeConfigCommands() is
+          deprecated
 * Version 3.2.1 (released 2026-09-08)
  ** fixes & improvements:
   - fido: decode COSE EC2 coordinates as unsigned
