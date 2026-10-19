@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2025 Yubico.
+ * Copyright (C) 2020-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -591,7 +591,8 @@ public class Ctap2Session extends Ctap1Session {
     return sendCbor(
         CMD_CONFIG,
         args(
-            subCommand,
+            // A byte is signed; 0xFF (vendor prototype) must be sent as 255, not -1
+            subCommand & 0xff,
             subCommandParams,
             pinUvAuthParam != null ? pinUvAuthProtocol : null,
             pinUvAuthParam),
