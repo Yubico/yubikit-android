@@ -125,6 +125,14 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
   // may be read with the offsets below.
   private static final int CCID_DESCRIPTOR_TYPE = 0x21;
 
+  // USB 2.0 §9.6.3 / §9.6.5: the configuration and interface descriptors that delimit which
+  // interface the class-specific descriptors following them belong to.
+  private static final int USB_DESCRIPTOR_TYPE_CONFIGURATION = 0x02;
+  private static final int USB_DESCRIPTOR_TYPE_INTERFACE = 0x04;
+  private static final int USB_INTERFACE_DESCRIPTOR_MIN_LENGTH = 9;
+  private static final int OFFSET_B_INTERFACE_NUMBER = 2;
+  private static final int OFFSET_B_ALTERNATE_SETTING = 3;
+
   // bLength of that descriptor: 0x36. Treated as a minimum rather than
   // an equality so a reader that appends vendor fields still parses,
   // and so the fixed offsets read below are known to be present.
@@ -193,7 +201,7 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
     // reader expects host-framed TPDUs or APDU-level passthrough.
     // The result feeds tpduLevel, which routes sendAndReceive() at
     // run time.
-    parseCcidClassDescriptor();
+    parseCcidClassDescriptor(ccidInterface);
     // PC_to_RDR_IccPowerOn command makes the slot "active" if it was "inactive"
     atr = transceive(POWER_ON_MESSAGE_TYPE, new byte[0], LEVEL_PARAMETER_SHORT_APDU);
     if (tpduLevel) {
@@ -245,12 +253,16 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
    * APDU-level passthrough is the simpler path, so it wins. A reader offering neither, which is
    * character-level, is rejected.
    *
+   * <p>The raw descriptors cover the whole device, so a class-specific descriptor is only taken
+   * from the interface (and alternate setting) that was claimed; another interface's descriptor of
+   * the same type says nothing about this reader.
+   *
    * <p>A descriptor that cannot be found is not an error: the fields keep their defaults and the
    * connection behaves as it did before the descriptor was read at all.
    *
    * @throws IOException if the reader offers neither APDU- nor TPDU-level exchange
    */
-  private void parseCcidClassDescriptor() throws IOException {
+  private void parseCcidClassDescriptor(UsbInterface ccidInterface) throws IOException {
     byte[] raw = connection.getRawDescriptors();
     if (raw == null) {
       logger.debug("CCID descriptor: getRawDescriptors() returned null");
@@ -260,11 +272,23 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
     // Walk the descriptor list (USB 2.0 §9.5): each entry is bLength,
     // bDescriptorType, plus bLength-2 type-specific bytes.
     int i = 0;
+    boolean inClaimedInterface = false;
     while (i + 1 < raw.length) {
       int bLength = raw[i] & 0xFF;
       int bDescriptorType = raw[i + 1] & 0xFF;
       if (bLength == 0 || i + bLength > raw.length) break;
-      if (bDescriptorType == CCID_DESCRIPTOR_TYPE && bLength >= CCID_DESCRIPTOR_MIN_LENGTH) {
+      if (bDescriptorType == USB_DESCRIPTOR_TYPE_CONFIGURATION) {
+        inClaimedInterface = false;
+      } else if (bDescriptorType == USB_DESCRIPTOR_TYPE_INTERFACE
+          && bLength >= USB_INTERFACE_DESCRIPTOR_MIN_LENGTH) {
+        inClaimedInterface =
+            (raw[i + OFFSET_B_INTERFACE_NUMBER] & 0xFF) == ccidInterface.getId()
+                && (raw[i + OFFSET_B_ALTERNATE_SETTING] & 0xFF)
+                    == ccidInterface.getAlternateSetting();
+      }
+      if (inClaimedInterface
+          && bDescriptorType == CCID_DESCRIPTOR_TYPE
+          && bLength >= CCID_DESCRIPTOR_MIN_LENGTH) {
         int dwFeatures = descriptors.getInt(i + OFFSET_DW_FEATURES);
         String exchangeLevel;
         boolean apduLevel =

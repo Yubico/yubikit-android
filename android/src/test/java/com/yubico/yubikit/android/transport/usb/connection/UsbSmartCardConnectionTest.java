@@ -227,6 +227,36 @@ public class UsbSmartCardConnectionTest {
     Assert.assertArrayEquals(Codec.fromHex("0102039000"), response);
   }
 
+  /**
+   * A foreign interface's long 0x21 descriptor sits in front of the CCID interface. The class
+   * descriptor that counts is the one inside the claimed interface (here number 0), not the first
+   * of its type, so a TPDU reader announced later is still recognised as TPDU.
+   */
+  @Test
+  public void testForeignClassDescriptorBeforeCcidInterfaceIsSkipped() throws IOException {
+    String foreign = interfaceDescriptorHex(1, 0) + descriptorHex(FEATURES_APDU_SHORT, 0x10);
+    when(usbInterface.getId()).thenReturn(2);
+    when(usbDeviceConnection.getRawDescriptors())
+        .thenReturn(
+            Codec.fromHex(
+                foreign
+                    + interfaceDescriptorHex(2, 0)
+                    + descriptorHex(FEATURES_TPDU, MIN_MAX_CCID_MESSAGE_LENGTH)));
+    UsbSmartCardConnection connection = openTpduConnection();
+    Assert.assertFalse(connection.isExtendedLengthApduSupported());
+  }
+
+  /** A class descriptor that only exists under another interface is ignored, not adopted. */
+  @Test
+  public void testClassDescriptorOfAnotherInterfaceIsIgnored() throws IOException {
+    when(usbInterface.getId()).thenReturn(2);
+    when(usbDeviceConnection.getRawDescriptors())
+        .thenReturn(
+            Codec.fromHex(interfaceDescriptorHex(1, 0) + descriptorHex(FEATURES_TPDU, 0x10)));
+    // Nothing for interface 2 was found, so the reader is treated as APDU level
+    getConnection();
+  }
+
   @Test
   public void testSendAndReceive() throws IOException {
     UsbSmartCardConnection connection = getConnection();
@@ -860,6 +890,11 @@ public class UsbSmartCardConnectionTest {
    */
   private UsbSmartCardConnection getTpduConnection() throws IOException {
     setupTpduDescriptor();
+    return openTpduConnection();
+  }
+
+  /** As {@link #getTpduConnection()}, for a test that has set up the descriptors itself. */
+  private UsbSmartCardConnection openTpduConnection() throws IOException {
     // ATR - response to power on. Walking its interface bytes: TS=3B
     // T0=FD (Y1=F -> TA1/TB1/TC1/TD1 present, K=13) TA1=13 TB1=00
     // TC1=00 TD1=81 (Y2=8 -> TD2 only; T=1) TD2=31 (Y3=3 -> TA3/TB3
@@ -884,7 +919,15 @@ public class UsbSmartCardConnectionTest {
 
   private void setupDescriptor(int dwFeatures, int dwMaxCcidMessageLength) {
     when(usbDeviceConnection.getRawDescriptors())
-        .thenReturn(Codec.fromHex(descriptorHex(dwFeatures, dwMaxCcidMessageLength)));
+        .thenReturn(
+            Codec.fromHex(
+                interfaceDescriptorHex(0, 0) + descriptorHex(dwFeatures, dwMaxCcidMessageLength)));
+  }
+
+  /** A 9-byte interface descriptor (USB 2.0 §9.6.5) for the smart card class (0x0B). */
+  private static String interfaceDescriptorHex(int interfaceNumber, int alternateSetting) {
+    return String.format(
+        Locale.ROOT, "0904%02X%02X03" + "0B000000", interfaceNumber, alternateSetting);
   }
 
   /**
