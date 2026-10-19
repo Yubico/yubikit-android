@@ -207,6 +207,9 @@ public class Ctap2Session extends Ctap1Session {
     }
 
     byte[] response = backend.sendCbor(data, state);
+    if (response.length == 0) {
+      throw new BadResponseException("Response is missing the CTAP status byte");
+    }
     byte status = response[0];
     if (status != 0x00) {
       throw new CtapException(status);
@@ -1730,6 +1733,9 @@ public class Ctap2Session extends Ctap1Session {
           p1 = P1_KEEP_ALIVE;
           // Polls carry no data, only the first message carries the request
           apduData = new byte[0];
+          if (apduException.getData().length < 1) {
+            throw new BadResponseException("Keepalive response is missing the status byte");
+          }
           final byte keepAliveStatus = apduException.getData()[0];
 
           // check for cancellations

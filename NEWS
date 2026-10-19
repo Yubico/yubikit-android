@@ -46,6 +46,8 @@
   - fido: Ctap1Client.getAssertion rejects userVerification "required" with
           CONFIGURATION_UNSUPPORTED instead of returning an assertion without user
           verification, as makeCredential already does
+  - fido: report an empty CTAP response, or an empty NFC keepalive, as BadResponseException
+          instead of ArrayIndexOutOfBoundsException
   - testing: fido-ui instrumented tests run on Android 16
   - build: updated dependencies, GitHub Actions and the Gradle wrapper (9.7.1)
 * Version 3.2.1 (released 2026-09-08)
