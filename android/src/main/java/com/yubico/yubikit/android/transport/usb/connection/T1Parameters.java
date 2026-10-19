@@ -137,14 +137,25 @@ final class T1Parameters {
 
   /**
    * Take the four interface bytes this structure has a home for - TA1 (Fi/Di), TC1 (extra guard
-   * time), TA3 (IFSC) and TB3 (BWI/CWI) - out of an ATR, defaulting whichever the card omitted.
+   * time), TA3 (IFSC) and TB3 (BWI/CWI) - out of an ATR, defaulting whichever the card omitted. TA3
+   * and TB3 only count where the ATR assigns them to T=1.
    */
   static T1Parameters fromAtr(byte @Nullable [] atr) {
     AtrInterfaceBytes interfaceBytes = AtrInterfaceBytes.parse(atr);
     Byte ta1 = interfaceBytes.ta(1);
     Byte tc1 = interfaceBytes.tc(1);
-    Byte tb3 = interfaceBytes.tb(3);
-    Byte ta3 = interfaceBytes.ta(3);
+    // IFSC and BWI/CWI sit in the first level from the third on that the ATR assigns to T=1;
+    // at a level assigned to T=15 the same positions hold global data instead.
+    Byte tb3 = null;
+    Byte ta3 = null;
+    for (int level = 3; level <= 4; level++) {
+      Integer protocol = interfaceBytes.protocol(level);
+      if (protocol != null && protocol == 1) {
+        ta3 = interfaceBytes.ta(level);
+        tb3 = interfaceBytes.tb(level);
+        break;
+      }
+    }
     return new T1Parameters(
         ta1 != null ? ta1 : DEFAULT_FINDEX_DINDEX,
         tc1 != null ? tc1 : DEFAULT_GUARD_TIME,

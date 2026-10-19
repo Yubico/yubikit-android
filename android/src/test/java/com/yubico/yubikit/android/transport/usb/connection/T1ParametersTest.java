@@ -142,4 +142,26 @@ public class T1ParametersTest {
     Assert.assertEquals(
         parameters.blockWaitingTimeMillis(0), parameters.blockWaitingTimeMillis(3571));
   }
+
+  /**
+   * TD2 announces T=15, so TA3=C7 is global data and the IFSC stays at its default of 32. TS=3B
+   * T0=80 TD1=81 (T=1) TD2=1F (Y3=1, T=15) TA3=C7.
+   */
+  @Test
+  public void testGlobalTa3IsNotTakenAsIfsc() {
+    T1Parameters parameters = T1Parameters.fromAtr(Codec.fromHex("3B80811FC7D9"));
+
+    //         Fi/Di TCCK guard  WI  stop IFSC NAD
+    Assert.assertArrayEquals(Codec.fromHex("1110004D002000"), parameters.toBytes());
+  }
+
+  /** T=15 before T=1 is malformed, but the T=1 parameters are still found at the T=1 level. */
+  @Test
+  public void testT1ParametersAfterT15AreFound() {
+    // TD2=9F (Y3=9: TA3, TD3; T=15) TA3=C7 TD3=31 (Y4=3: TA4, TB4; T=1) TA4=20 TB4=15
+    T1Parameters parameters = T1Parameters.fromAtr(Codec.fromHex("3B80819FC7312015"));
+
+    //         Fi/Di TCCK guard  WI  stop IFSC NAD
+    Assert.assertArrayEquals(Codec.fromHex("1110001500200" + "0"), parameters.toBytes());
+  }
 }
