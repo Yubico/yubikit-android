@@ -25,15 +25,19 @@ import static org.mockito.Mockito.when;
 import com.yubico.yubikit.core.Version;
 import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.application.CommandState;
+import com.yubico.yubikit.core.smartcard.Apdu;
 import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.core.smartcard.SmartCardProtocol;
 import com.yubico.yubikit.fido.Cbor;
 import java.io.ByteArrayOutputStream;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
 
 public class Ctap2SessionNfcResponseTest {
   private static final short SW_KEEPALIVE = (short) 0x9100;
@@ -124,5 +128,30 @@ public class Ctap2SessionNfcResponseTest {
     try (Ctap2Session session = open()) {
       assertEquals(1, getAssertions(session, null).size());
     }
+  }
+
+  @Test
+  public void nextAssertionUsesCallersState() throws Exception {
+    final List<Byte> keepAlives = new ArrayList<>();
+    CommandState state =
+        new CommandState() {
+          @Override
+          public void onKeepAliveStatus(byte status) {
+            keepAlives.add(status);
+          }
+        };
+    when(protocol.sendAndReceive(any()))
+        .thenReturn(assertion(2))
+        .thenThrow(new ApduException(new byte[] {2}, SW_KEEPALIVE))
+        .thenReturn(assertion(0));
+    try (Ctap2Session session = open()) {
+      state.cancel();
+      assertEquals(2, getAssertions(session, state).size());
+    }
+    ArgumentCaptor<Apdu> apdus = ArgumentCaptor.forClass(Apdu.class);
+    Mockito.verify(protocol, Mockito.times(3)).sendAndReceive(apdus.capture());
+    // GET_NEXT_ASSERTION polls with NFCCTAP_GETRESPONSE and, as the caller cancelled, P1=0x11.
+    assertEquals(0x11, apdus.getAllValues().get(2).getP1());
+    assertEquals(Collections.singletonList((byte) 2), keepAlives);
   }
 }

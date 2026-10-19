@@ -48,6 +48,9 @@
           verification, as makeCredential already does
   - fido: report an empty CTAP response, or an empty NFC keepalive, as BadResponseException
           instead of ArrayIndexOutOfBoundsException
+  - fido: getAssertions passes the caller's CommandState to the follow-up
+          authenticatorGetNextAssertion calls, so cancellation and keepalive callbacks also apply
+          after the first assertion
   - testing: fido-ui instrumented tests run on Android 16
   - build: updated dependencies, GitHub Actions and the Gradle wrapper (9.7.1)
 * Version 3.2.1 (released 2026-09-08)

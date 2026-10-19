@@ -361,7 +361,7 @@ public class Ctap2Session extends Ctap1Session {
     for (int i = credentialCount; i > 1; i--) {
       assertions.add(
           AssertionData.fromData(
-              Objects.requireNonNull(sendCbor(CMD_GET_NEXT_ASSERTION, null, null))));
+              Objects.requireNonNull(sendCbor(CMD_GET_NEXT_ASSERTION, null, state))));
     }
     logger.info("Authenticator returned {} assertions.", credentialCount);
     return assertions;
