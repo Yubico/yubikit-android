@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Yubico.
+ * Copyright (C) 2020-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 
 package com.yubico.yubikit.fido.webauthn;
+
+import static com.yubico.yubikit.fido.webauthn.SerializationUtils.deserializeInt;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -50,8 +52,7 @@ public class PublicKeyCredentialParameters {
   public static PublicKeyCredentialParameters fromMap(
       Map<String, ?> map, @SuppressWarnings("unused") SerializationType serializationType) {
     return new PublicKeyCredentialParameters(
-        Objects.requireNonNull((String) map.get(TYPE)),
-        Objects.requireNonNull((Integer) map.get(ALG)));
+        Objects.requireNonNull((String) map.get(TYPE)), deserializeInt(map.get(ALG)));
   }
 
   @Override
