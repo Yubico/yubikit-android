@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2025 Yubico.
+ * Copyright (C) 2023-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,9 +20,9 @@ import com.yubico.yubikit.core.application.CommandException;
 import com.yubico.yubikit.core.util.Pair;
 import com.yubico.yubikit.fido.Cbor;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -48,6 +48,8 @@ public class Config {
   static final byte PARAM_FORCE_CHANGE_PIN = 0x03;
 
   static final byte PARAM_VENDOR_CMD_ID = 0x01;
+  // Boxed as the Integer that decoded keys use, so a duplicate key is detected
+  private static final Integer PARAM_VENDOR_CMD_ID_KEY = (int) PARAM_VENDOR_CMD_ID;
 
   private final Ctap2Session ctap;
   @Nullable private final Pair<PinUvAuthProtocol, byte[]> pinUv;
@@ -179,19 +181,69 @@ public class Config {
   /**
    * Allows vendors to test authenticator configuration features.
    *
-   * @param vendorCommandId Vendor-assigned command ID.
+   * @param vendorCommandId Vendor-assigned command ID, an unsigned 64-bit integer. Values above
+   *     {@link Long#MAX_VALUE} are given as negative numbers.
+   * @param vendorParams Additional vendor-defined parameters, keyed by parameter id. Must not
+   *     contain the vendorCommandId key (1). May be null.
+   * @return The response from the authenticator.
    * @throws IOException A communication error in the transport layer.
    * @throws CommandException A communication in the protocol layer.
    * @see <a
    *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#vendorPrototype">Vendor
    *     Prototype Command</a>
    */
-  public Map<Integer, ?> vendorPrototype(Integer vendorCommandId)
+  public Map<Integer, ?> vendorPrototype(
+      long vendorCommandId, @Nullable Map<Integer, ?> vendorParams)
       throws IOException, CommandException {
     logger.debug("Call vendor prototype command");
-    final Map<Integer, ?> response =
-        call(CMD_VENDOR_PROTOTYPE, Collections.singletonMap(PARAM_VENDOR_CMD_ID, vendorCommandId));
+    Map<Object, Object> params = new HashMap<>();
+    if (vendorParams != null) {
+      params.putAll(vendorParams);
+    }
+    if (params.containsKey(PARAM_VENDOR_CMD_ID_KEY)) {
+      throw new IllegalArgumentException("vendorParams must not contain the vendorCommandId key");
+    }
+    params.put(PARAM_VENDOR_CMD_ID_KEY, toUnsigned(vendorCommandId));
+    final Map<Integer, ?> response = call(CMD_VENDOR_PROTOTYPE, params);
     logger.info("Vendor prototype command executed");
     return response;
+  }
+
+  /**
+   * Allows vendors to test authenticator configuration features.
+   *
+   * @param vendorCommandId Vendor-assigned command ID, an unsigned 64-bit integer. Values above
+   *     {@link Long#MAX_VALUE} are given as negative numbers.
+   * @return The response from the authenticator.
+   * @throws IOException A communication error in the transport layer.
+   * @throws CommandException A communication in the protocol layer.
+   * @see <a
+   *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#vendorPrototype">Vendor
+   *     Prototype Command</a>
+   */
+  public Map<Integer, ?> vendorPrototype(long vendorCommandId)
+      throws IOException, CommandException {
+    return vendorPrototype(vendorCommandId, null);
+  }
+
+  /**
+   * Allows vendors to test authenticator configuration features.
+   *
+   * @param vendorCommandId Vendor-assigned command ID.
+   * @throws IOException A communication error in the transport layer.
+   * @throws CommandException A communication in the protocol layer.
+   * @deprecated Use {@link #vendorPrototype(long)}, which accepts any unsigned 64-bit command ID.
+   *     This method will be removed in the next major version, leaving {@link
+   *     #vendorPrototype(long)}.
+   */
+  @Deprecated
+  public Map<Integer, ?> vendorPrototype(Integer vendorCommandId)
+      throws IOException, CommandException {
+    return vendorPrototype(vendorCommandId.longValue(), null);
+  }
+
+  /** The bits of {@code value} as an unsigned 64-bit integer. */
+  private static BigInteger toUnsigned(long value) {
+    return new BigInteger(Long.toUnsignedString(value));
   }
 }

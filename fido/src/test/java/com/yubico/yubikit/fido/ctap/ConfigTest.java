@@ -29,6 +29,7 @@ import static org.mockito.Mockito.when;
 
 import com.yubico.yubikit.core.Version;
 import java.util.Arrays;
+import java.util.Collections;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -77,6 +78,46 @@ public class ConfigTest {
 
     // authenticatorConfig (0x0d) {1: 0xff, 2: {1: 7}}
     assertEquals("0da20118ff02a10107", sentConfig(session));
+  }
+
+  @Test
+  public void vendorPrototypeSendsIdAs64BitUnsigned() throws Exception {
+    Ctap2Session session = session(info("", 0));
+    new Config(session, null, null).vendorPrototype(0x4e5a15aa89d2b8b6L);
+
+    // authenticatorConfig (0x0d) {1: 0xff, 2: {1: id}}
+    assertEquals("0da201" + "18ff" + "02a1011b4e5a15aa89d2b8b6", sentConfig(session));
+  }
+
+  @Test
+  public void vendorPrototypeSendsIdAboveSignedRangeAsUnsigned() throws Exception {
+    Ctap2Session session = session(info("", 0));
+    new Config(session, null, null).vendorPrototype(-1L);
+
+    assertEquals("0da20118ff02a1011bffffffffffffffff", sentConfig(session));
+  }
+
+  @Test
+  public void vendorPrototypeSendsSmallIdCanonically() throws Exception {
+    Ctap2Session session = session(info("", 0));
+    new Config(session, null, null).vendorPrototype(7L);
+
+    assertEquals("0da20118ff02a10107", sentConfig(session));
+  }
+
+  @Test
+  public void vendorPrototypeSendsExtraParams() throws Exception {
+    Ctap2Session session = session(info("", 0));
+    new Config(session, null, null)
+        .vendorPrototype(7L, Collections.singletonMap(2, new byte[] {1, 2}));
+
+    assertEquals("0da20118ff02a2010702420102", sentConfig(session));
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void vendorPrototypeRejectsExtraParamsWithCommandIdKey() throws Exception {
+    Ctap2Session session = session(info("", 0));
+    new Config(session, null, null).vendorPrototype(7L, Collections.singletonMap(1, 8));
   }
 
   /** Hex of the last request sent to the authenticator. */

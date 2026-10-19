@@ -7,6 +7,8 @@
   - fido: authenticatorConfig sends subcommand 0xFF as 255 instead of -1
   - fido: Cbor encodes and decodes integers up to 64 bits (Long, or BigInteger above
            Long.MAX_VALUE) instead of truncating or rejecting them
+  - fido: Config.vendorPrototype(long, Map) sends an unsigned 64-bit vendorCommandId and
+          vendor-defined parameters; vendorPrototype(Integer) is deprecated
 * Version 3.2.1 (released 2026-09-08)
  ** fixes & improvements:
   - fido: decode COSE EC2 coordinates as unsigned
