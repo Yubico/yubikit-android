@@ -24,6 +24,7 @@ import com.yubico.yubikit.core.fido.FidoConnection;
 import com.yubico.yubikit.core.otp.OtpConnection;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.management.DeviceInfo;
+import com.yubico.yubikit.management.ManagementSession;
 import com.yubico.yubikit.support.DeviceUtil;
 import java.io.IOException;
 import java.util.List;
@@ -66,7 +67,7 @@ public class AllowList {
     }
 
     Integer serialNumber = getDeviceSerialNumber(connectedDevice, pid);
-    if (pid != UsbPid.OTHER && !isDeviceAllowed(serialNumber)) {
+    if (!isDeviceAllowed(serialNumber)) {
       String message = allowListProvider.onNotAllowedErrorMessage(serialNumber);
       logger.error("{}", message);
       throw new AssertionError(message);
@@ -114,6 +115,13 @@ public class AllowList {
 
   @Nullable
   private Integer getDeviceSerialNumber(YubiKeyConnection connection, @Nullable UsbPid pid) {
+    if (pid == UsbPid.OTHER) {
+      // The PID is the reader's, not the card's, and says nothing about what is inserted. Ask the
+      // card itself; anything that is not a YubiKey with a serial number stays unidentified.
+      return connection instanceof SmartCardConnection
+          ? getSerialNumberFromManagement((SmartCardConnection) connection)
+          : null;
+    }
     try {
       DeviceInfo deviceInfo = DeviceUtil.readInfo(connection, pid);
       Integer serial = deviceInfo.getSerialNumber();
@@ -129,6 +137,16 @@ public class AllowList {
       return null;
     } catch (IOException e) {
       logger.error("Error reading device info", e);
+      return null;
+    }
+  }
+
+  @Nullable
+  private Integer getSerialNumberFromManagement(SmartCardConnection connection) {
+    try {
+      return new ManagementSession(connection).getDeviceInfo().getSerialNumber();
+    } catch (Exception e) {
+      logger.error("Error reading device info through the Management application", e);
       return null;
     }
   }
