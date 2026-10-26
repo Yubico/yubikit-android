@@ -14,6 +14,14 @@
           round trip per poll for chained requests. Fixes user presence commands failing
           with OPERATION_DENIED when APDUs are relayed over a slow network.
   - fido: accept COSE algorithm identifiers sent as floating point numbers (-7.0)
+  - fido: authenticatorConfig sends subcommand 0xFF as 255 instead of -1
+  - fido: Cbor encodes and decodes integers up to 64 bits (Long, or BigInteger above
+           Long.MAX_VALUE) instead of truncating or rejecting them
+  - fido: Config.vendorPrototype(long, Map) sends an unsigned 64-bit vendorCommandId and
+          vendor-defined parameters; vendorPrototype(Integer) is deprecated
+  - fido: InfoData parses vendorPrototypeConfigCommands as unsigned 64-bit values and adds
+          getVendorPrototypeConfigCommandIds(); getVendorPrototypeConfigCommands() is
+          deprecated
 * Version 3.2.1 (released 2026-09-08)
  ** fixes & improvements:
   - fido: decode COSE EC2 coordinates as unsigned

@@ -19,6 +19,7 @@ package com.yubico.yubikit.fido;
 import com.yubico.yubikit.core.util.ZeroingByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.math.BigInteger;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -35,9 +36,12 @@ import org.jspecify.annotations.Nullable;
  *
  * <p>Only a small subset of CBOR is implemented, sufficient for CTAP2 functionality.
  *
- * <p>Note that while any integer type can be encoded into canonical CBOR, but all CBOR integers
- * will decode to an int. Thus, numeric map keys can use any integer type (byte, short, int, long)
- * when encoding to send to a device, but any response will have ints for keys.
+ * <p>Any integer type (byte, short, int, long, {@link BigInteger}) can be encoded into canonical
+ * CBOR. A {@link BigInteger} is needed for unsigned 64-bit values above {@link Long#MAX_VALUE}.
+ *
+ * <p>CBOR integers decode to the smallest of {@link Integer}, {@link Long} and {@link BigInteger}
+ * that holds the value. Values that fit in an int, which includes all map keys used by CTAP2, are
+ * always ints. Use {@link Number} to read fields that may be larger.
  */
 public class Cbor {
   /**
@@ -72,7 +76,7 @@ public class Cbor {
     if (value == null) {
       dumpSimple(stream, null);
     } else if (value instanceof Number) {
-      dumpInt(stream, ((Number) value).intValue(), 0);
+      dumpNumber(stream, (Number) value);
     } else if (value instanceof Boolean) {
       dumpSimple(stream, (Boolean) value);
     } else if (value instanceof List) {
@@ -155,14 +159,35 @@ public class Cbor {
     throw new IllegalArgumentException("Unsupported major type");
   }
 
-  private static void dumpInt(OutputStream stream, int value, int majorType) throws IOException {
+  private static void dumpNumber(OutputStream stream, Number value) throws IOException {
+    if (value instanceof BigInteger) {
+      BigInteger bigInt = (BigInteger) value;
+      int majorType = bigInt.signum() < 0 ? 1 : 0;
+      BigInteger magnitude = majorType == 1 ? bigInt.not() : bigInt;
+      if (magnitude.bitLength() > 64) {
+        throw new IllegalArgumentException("Integer out of range for CBOR");
+      }
+      dumpHead(stream, majorType, magnitude.longValue());
+    } else {
+      dumpInt(stream, value.longValue(), 0);
+    }
+  }
+
+  private static void dumpInt(OutputStream stream, long value, int majorType) throws IOException {
     if (value < 0) {
       majorType = 1;
       value = -1 - value;
     }
+    dumpHead(stream, majorType, value);
+  }
 
+  /** Writes a head with the argument given as the bits of an unsigned 64-bit value. */
+  private static void dumpHead(OutputStream stream, int majorType, long value) throws IOException {
     byte head = (byte) (majorType << 5);
-    if (value <= 23) {
+    if (value < 0) {
+      stream.write((byte) (head | 27));
+      stream.write(ByteBuffer.allocate(8).putLong(value).array());
+    } else if (value <= 23) {
       stream.write((byte) (head | value));
     } else if (value <= 0xff) {
       stream.write((byte) (head | 24));
@@ -170,9 +195,12 @@ public class Cbor {
     } else if (value <= 0xffff) {
       stream.write((byte) (head | 25));
       stream.write(ByteBuffer.allocate(2).putShort((short) value).array());
-    } else {
+    } else if (value <= 0xffffffffL) {
       stream.write((byte) (head | 26));
-      stream.write(ByteBuffer.allocate(4).putInt(value).array());
+      stream.write(ByteBuffer.allocate(4).putInt((int) value).array());
+    } else {
+      stream.write((byte) (head | 27));
+      stream.write(ByteBuffer.allocate(8).putLong(value).array());
     }
   }
 
@@ -233,7 +261,8 @@ public class Cbor {
     stream.write(data);
   }
 
-  private static int loadInt(byte additionalInfo, ByteBuffer buf) {
+  /** Reads an argument as the bits of an unsigned 64-bit value. */
+  private static long loadArgument(byte additionalInfo, ByteBuffer buf) {
     if (additionalInfo < 24) {
       return 0xff & additionalInfo;
     } else if (additionalInfo == 24) {
@@ -241,17 +270,46 @@ public class Cbor {
     } else if (additionalInfo == 25) {
       return 0xffff & buf.getShort();
     } else if (additionalInfo == 26) {
-      int value = buf.getInt();
-      if (value < 0) {
-        throw new IllegalArgumentException("Unsupported integer size");
-      }
-      return value;
+      return 0xffffffffL & buf.getInt();
+    } else if (additionalInfo == 27) {
+      return buf.getLong();
     }
     throw new IllegalArgumentException("Unable to load integer");
   }
 
-  private static int loadNint(byte additionalInfo, ByteBuffer buf) {
-    return -1 - loadInt(additionalInfo, buf);
+  private static BigInteger unsigned(long bits) {
+    BigInteger value = BigInteger.valueOf(bits);
+    return bits < 0 ? value.add(BigInteger.ONE.shiftLeft(64)) : value;
+  }
+
+  private static Number narrow(long value) {
+    if (value >= Integer.MIN_VALUE && value <= Integer.MAX_VALUE) {
+      return (int) value;
+    }
+    return value;
+  }
+
+  private static Number loadInt(byte additionalInfo, ByteBuffer buf) {
+    long bits = loadArgument(additionalInfo, buf);
+    return bits < 0 ? unsigned(bits) : narrow(bits);
+  }
+
+  private static Number loadNint(byte additionalInfo, ByteBuffer buf) {
+    long bits = loadArgument(additionalInfo, buf);
+    // -1 - n, where n is unsigned and can be up to 2^64 - 1
+    return bits < 0 ? BigInteger.ONE.negate().subtract(unsigned(bits)) : narrow(-1 - bits);
+  }
+
+  /** Reads a length or item count, rejecting any that the remaining bytes cannot satisfy. */
+  private static int loadLength(byte additionalInfo, ByteBuffer buf) {
+    long length = loadArgument(additionalInfo, buf);
+    // Check the declared length against what is actually available before allocating. Allocating
+    // first lets a length of e.g. 0x7FFFFFFF raise an OutOfMemoryError, which is an Error rather
+    // than the BufferUnderflowException callers expect from a truncated response.
+    if (length < 0 || length > buf.remaining()) {
+      throw new BufferUnderflowException();
+    }
+    return (int) length;
   }
 
   @Nullable
@@ -270,13 +328,7 @@ public class Cbor {
   }
 
   private static byte[] loadBytes(byte additionalInfo, ByteBuffer buf) {
-    int length = loadInt(additionalInfo, buf);
-    // Check the declared length against what is actually available before allocating. Allocating
-    // first lets a length of e.g. 0x7FFFFFFF raise an OutOfMemoryError, which is an Error rather
-    // than the BufferUnderflowException callers expect from a truncated response.
-    if (length > buf.remaining()) {
-      throw new BufferUnderflowException();
-    }
+    int length = loadLength(additionalInfo, buf);
     byte[] value = new byte[length];
     buf.get(value);
     return value;
@@ -286,21 +338,9 @@ public class Cbor {
     return new String(loadBytes(additionalInfo, buf), StandardCharsets.UTF_8);
   }
 
-  /**
-   * Rejects an item count that the remaining bytes cannot possibly satisfy, since every item costs
-   * at least one byte. Without this the count is only bounded once decoding runs off the buffer.
-   */
-  private static int loadCount(byte additionalInfo, ByteBuffer buf) {
-    int count = loadInt(additionalInfo, buf);
-    if (count > buf.remaining()) {
-      throw new BufferUnderflowException();
-    }
-    return count;
-  }
-
   private static List<?> loadList(byte additionalInfo, ByteBuffer buf, int depth) {
     List<@Nullable Object> list = new ArrayList<>();
-    for (int i = loadCount(additionalInfo, buf); i > 0; i--) {
+    for (int i = loadLength(additionalInfo, buf); i > 0; i--) {
       list.add(decodeFrom(buf, depth + 1));
     }
     return list;
@@ -308,7 +348,7 @@ public class Cbor {
 
   private static Map<?, ?> loadMap(byte additionalInfo, ByteBuffer buf, int depth) {
     Map<@Nullable Object, @Nullable Object> map = new HashMap<>();
-    for (int i = loadCount(additionalInfo, buf); i > 0; i--) {
+    for (int i = loadLength(additionalInfo, buf); i > 0; i--) {
       map.put(decodeFrom(buf, depth + 1), decodeFrom(buf, depth + 1));
     }
     return map;
