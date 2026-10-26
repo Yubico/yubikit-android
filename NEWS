@@ -14,6 +14,8 @@
   - openpgp: reject an invalid KDF iteration count with IllegalArgumentException (zero,
              not encoded in 4 bytes, or above Integer.MAX_VALUE) and always hash at least
              the whole salt and PIN, as RFC 4880 requires; documented on getKdf()
+  - fido: bound large blob array reads by the advertised capacity and treat malformed
+          fragments as a failed largeBlob extension instead of throwing unchecked exceptions
   - testing: fido-ui instrumented tests run on Android 16
   - build: updated dependencies, GitHub Actions and the Gradle wrapper (9.7.1)
 * Version 3.2.1 (released 2026-09-08)
