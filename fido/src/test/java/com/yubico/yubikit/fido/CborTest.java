@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Yubico.
+ * Copyright (C) 2020-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package com.yubico.yubikit.fido;
 import static com.yubico.yubikit.fido.TestUtils.decodeHex;
 import static com.yubico.yubikit.fido.TestUtils.encodeHex;
 
+import java.math.BigInteger;
 import java.nio.BufferUnderflowException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -80,6 +81,18 @@ public class CborTest {
             {"3863", -100},
             {"3903e7", -1000},
             {"3a7fffffff", Integer.MIN_VALUE},
+            {"1a80000000", 0x80000000L},
+            {"1affffffff", 0xffffffffL},
+            {"1b0000000100000000", 0x100000000L},
+            {"1b4e5a15aa89d2b8b6", 0x4e5a15aa89d2b8b6L},
+            {"1b7fffffffffffffff", Long.MAX_VALUE},
+            {"1b8000000000000000", new BigInteger("9223372036854775808")},
+            {"1b8000000000000001", new BigInteger("9223372036854775809")},
+            {"1bffffffffffffffff", new BigInteger("18446744073709551615")},
+            {"3a80000000", -0x80000001L},
+            {"3b7fffffffffffffff", Long.MIN_VALUE},
+            {"3b8000000000000000", new BigInteger("-9223372036854775809")},
+            {"3bffffffffffffffff", new BigInteger("-18446744073709551616")},
           });
     }
 
@@ -229,9 +242,34 @@ public class CborTest {
   }
 
   public static class OtherTests {
+    @Test
+    public void testDecodeIntWiderThanIntIsLong() {
+      Assert.assertEquals(0x80000000L, Cbor.decode(decodeHex("1a80000000")));
+    }
+
+    @Test
+    public void testDecodeIntInIntRangeIsInteger() {
+      Assert.assertEquals(Integer.MAX_VALUE, Cbor.decode(decodeHex("1b000000007fffffff")));
+    }
+
+    @Test
+    public void testEncodeUsesFullWidthOfLong() {
+      assertCborEncode("1b4e5a15aa89d2b8b6", 0x4e5a15aa89d2b8b6L);
+    }
+
+    @Test
+    public void testEncodeSmallLongIsCanonical() {
+      assertCborEncode("1864", 100L);
+    }
+
     @Test(expected = IllegalArgumentException.class)
-    public void testDecodeIntOutOfRange() {
-      Cbor.decode(decodeHex("1a80000000"));
+    public void testEncodeBigIntegerTooLarge() {
+      Cbor.encode(BigInteger.ONE.shiftLeft(64));
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testEncodeBigIntegerTooSmall() {
+      Cbor.encode(BigInteger.ONE.shiftLeft(64).negate().subtract(BigInteger.ONE));
     }
   }
 
@@ -251,6 +289,12 @@ public class CborTest {
     @Test(expected = BufferUnderflowException.class)
     public void testOversizedTextString() {
       Cbor.decode(decodeHex("7a7fffffff"));
+    }
+
+    /** Byte string declaring a 64-bit length. */
+    @Test(expected = BufferUnderflowException.class)
+    public void testByteStringWith64BitLength() {
+      Cbor.decode(decodeHex("5bffffffffffffffff"));
     }
 
     /** Byte string declaring one more byte than was sent. */
@@ -298,7 +342,7 @@ public class CborTest {
 
   // helper methods
   private static Object wrapInt(Object value) {
-    if (value instanceof Number) {
+    if (value instanceof Byte || value instanceof Short) {
       return ((Number) value).intValue();
     }
     return value;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2025 Yubico.
+ * Copyright (C) 2020-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package com.yubico.yubikit.fido.webauthn;
 
 import static com.yubico.yubikit.fido.webauthn.SerializationUtils.deserializeBytes;
+import static com.yubico.yubikit.fido.webauthn.SerializationUtils.deserializeInt;
 import static com.yubico.yubikit.fido.webauthn.SerializationUtils.serializeBytes;
 
 import com.yubico.yubikit.fido.Cose;
@@ -148,7 +149,7 @@ public class AuthenticatorAttestationResponse extends AuthenticatorResponse {
             ByteBuffer.wrap(deserializeBytes(map.get(AUTHENTICATOR_DATA), serializationType))),
         (List<String>) Objects.requireNonNull(map.get(TRANSPORTS)),
         publicKey == null ? null : deserializeBytes(publicKey, serializationType),
-        (Integer) map.get(PUBLIC_KEY_ALGORITHM),
+        deserializeInt(map.get(PUBLIC_KEY_ALGORITHM)),
         deserializeBytes(Objects.requireNonNull(map.get(ATTESTATION_OBJECT)), serializationType));
   }
 

@@ -4,10 +4,27 @@
                 FIDO is accessible over the CCID interface
   - android: support TPDU-level USB readers, with host-side T=1 framing and the
              reader's T=1 parameters set from the card's ATR
+  - fido: Ctap2Session.setPollingEnabled(false) turns off NFCCTAP_GETRESPONSE polling for
+          FIDO over SmartCardConnection (default: on). Fixes user presence commands failing
+          with OPERATION_DENIED when APDUs are relayed over a slow network, as the YubiKey
+          may abort if a poll takes more than 500 ms.
  ** fixes & improvements:
+  - core: reassemble FIDO HID messages longer than 7609 bytes (sequence wraps at 128)
   - android: CCID command chaining and response reassembly (bChainParameter) for
              APDUs beyond the reader's dwMaxCCIDMessageLength; chained responses are
              bounded to the ISO 7816-4 maximum
+  - fido: NFCCTAP_GETRESPONSE polls no longer re-send the request, which cost an extra
+          round trip per poll for chained requests. Fixes user presence commands failing
+          with OPERATION_DENIED when APDUs are relayed over a slow network.
+  - fido: accept COSE algorithm identifiers sent as floating point numbers (-7.0)
+  - fido: authenticatorConfig sends subcommand 0xFF as 255 instead of -1
+  - fido: Cbor encodes and decodes integers up to 64 bits (Long, or BigInteger above
+           Long.MAX_VALUE) instead of truncating or rejecting them
+  - fido: Config.vendorPrototype(long, Map) sends an unsigned 64-bit vendorCommandId and
+          vendor-defined parameters; vendorPrototype(Integer) is deprecated
+  - fido: InfoData parses vendorPrototypeConfigCommands as unsigned 64-bit values and adds
+          getVendorPrototypeConfigCommandIds(); getVendorPrototypeConfigCommands() is
+          deprecated
   - testing: fido-ui instrumented tests run on Android 16
   - build: updated dependencies, GitHub Actions and the Gradle wrapper (9.7.1)
 * Version 3.2.1 (released 2026-09-08)
