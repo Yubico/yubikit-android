@@ -29,6 +29,14 @@ class CompressionUtils {
   private static final Logger logger = LoggerFactory.getLogger(CompressionUtils.class);
 
   /**
+   * Largest decompressed certificate accepted. A YubiKey stores at most about 3 KB per PIV object,
+   * so even a post-quantum certificate stays far below this. It is also the largest length the zlib
+   * header can declare. Without a limit, a small gzip stream could expand until the host runs out
+   * of memory.
+   */
+  static final int MAX_DECOMPRESSED_LENGTH = 0xFFFF;
+
+  /**
    * Decompress a compressed certificate using various methods.
    *
    * <p>Detects the compression format based on the header bytes and delegates to the appropriate

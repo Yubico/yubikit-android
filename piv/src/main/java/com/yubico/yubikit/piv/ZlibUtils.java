@@ -99,16 +99,25 @@ class ZlibUtils {
     int expectedLength =
         ByteBuffer.wrap(input, 2, 2).order(ByteOrder.LITTLE_ENDIAN).getShort() & 0xFFFF;
 
+    Inflater inflater = new Inflater();
     try {
-      Inflater inflater = new Inflater();
       inflater.setInput(input, 4, input.length - 4);
       ByteArrayOutputStream outputStream = new ByteArrayOutputStream(expectedLength);
       byte[] buffer = new byte[512];
       while (!inflater.finished()) {
         int count = inflater.inflate(buffer);
+        if (count == 0 && !inflater.finished()) {
+          // No output and no end of stream means no progress can be made
+          throw new IOException(
+              inflater.needsDictionary()
+                  ? "Zlib data requires a preset dictionary"
+                  : "Zlib data is truncated");
+        }
+        if (outputStream.size() + count > expectedLength) {
+          throw new IOException("Decompressed length exceeds expected length");
+        }
         outputStream.write(buffer, 0, count);
       }
-      inflater.end();
       byte[] decompressed = outputStream.toByteArray();
 
       if (decompressed.length != expectedLength) {
@@ -123,6 +132,8 @@ class ZlibUtils {
       return decompressed;
     } catch (DataFormatException e) {
       throw new IOException("Failed to decompress zlib data", e);
+    } finally {
+      inflater.end();
     }
   }
 }
