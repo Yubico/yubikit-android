@@ -303,6 +303,9 @@ public class OpenPgpSession extends ApplicationSession<OpenPgpSession> {
    * @return a Kdf object, capable of deriving a key from a PIN
    * @throws ApduException in case of an error response from the YubiKey
    * @throws IOException in case of connection error
+   * @throws IllegalArgumentException if the KDF data stored on the YubiKey is malformed or not
+   *     supported, for example an unknown hash algorithm or an iteration count that is not encoded
+   *     in 4 bytes, is zero or is larger than {@link Integer#MAX_VALUE}
    */
   public Kdf getKdf() throws ApduException, IOException {
     ExtendedCapabilities capabilities = getExtendedCapabilities();
