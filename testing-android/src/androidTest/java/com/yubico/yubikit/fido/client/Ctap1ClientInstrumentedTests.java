@@ -41,6 +41,11 @@ public class Ctap1ClientInstrumentedTests {
     }
 
     @Test
+    public void testAttestationConveyance() throws Throwable {
+      withDevice(AttestationConveyanceTests::testCtap1, true);
+    }
+
+    @Test
     public void testCancellation() throws Throwable {
       withCtap1Session(Ctap1ClientTests::testCancellationImmediate);
     }

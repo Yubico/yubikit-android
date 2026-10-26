@@ -166,7 +166,8 @@ public class Ctap1Client implements WebAuthnClient {
         throw new IOException(e);
       }
 
-      AttestationObject attestationObject = regData.getAttestation(appParam);
+      AttestationObject attestationObject =
+          AttestationConveyance.apply(regData.getAttestation(appParam), options.getAttestation());
       AuthenticatorAttestationResponse response =
           new AuthenticatorAttestationResponse(
               clientData.getClientDataJson(), Collections.emptyList(), attestationObject);

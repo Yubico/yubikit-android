@@ -234,7 +234,9 @@ public class Ctap2Client implements WebAuthnClient {
       final Ctap2Session.CredentialData credential = result.first;
       final ClientExtensionResults clientExtensionResults = result.second;
 
-      final AttestationObject attestationObject = AttestationObject.fromCredential(credential);
+      final AttestationObject attestationObject =
+          AttestationConveyance.apply(
+              AttestationObject.fromCredential(credential), options.getAttestation());
 
       AuthenticatorAttestationResponse response =
           new AuthenticatorAttestationResponse(
