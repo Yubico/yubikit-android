@@ -19,6 +19,8 @@
   - piv: bound certificate decompression: zlib streams that are truncated, need a
          dictionary or exceed their declared length are rejected instead of looping or
          expanding, and gzip certificates larger than 64 KiB are rejected
+  - openpgp: initialize a session with a card that advertises no extended capabilities or
+             general features, instead of failing with IllegalArgumentException
   - testing: fido-ui instrumented tests run on Android 16
   - build: updated dependencies, GitHub Actions and the Gradle wrapper (9.7.1)
 * Version 3.2.1 (released 2026-09-08)
