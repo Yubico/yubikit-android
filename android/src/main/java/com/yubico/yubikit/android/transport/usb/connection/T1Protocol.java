@@ -31,8 +31,8 @@ import java.util.Locale;
  * reassembled here. Without the outbound half a full-size short APDU - 261 bytes with Lc = 255 -
  * would not fit the 254-byte ceiling on a single block.
  *
- * <p>Instances are stateful: they carry N(S) and the currently agreed IFSC across calls, so one
- * instance belongs to one connection.
+ * <p>Instances are stateful: they carry N(S), the N(S) expected from the card and the currently
+ * agreed IFSC across calls, so one instance belongs to one connection.
  */
 final class T1Protocol {
 
@@ -62,6 +62,16 @@ final class T1Protocol {
    * rather than per command (§11.6.2.2).
    */
   private int sequenceNumber = 0;
+
+  /**
+   * N(S) the card's next new I-block carries. It toggles per accepted I-block and, like our own
+   * N(S), continues across commands. A block carrying the other value is a retransmission of the
+   * previous one (§11.6.2.2).
+   */
+  private int expectedReceiveSequence = 0;
+
+  /** Whether any I-block has been accepted yet, which is what a retransmission would repeat. */
+  private boolean receivedIBlock = false;
 
   T1Protocol(BlockTransport transport, int informationFieldSize) {
     this.transport = transport;
@@ -126,12 +136,27 @@ final class T1Protocol {
           throw new IOException(unexpectedBlockMessage(received));
         }
 
+        if (received.sequenceNumber() != expectedReceiveSequence) {
+          if (!receivedIBlock) {
+            throw new IOException(
+                "T=1 I-block carries N(S)="
+                    + received.sequenceNumber()
+                    + " but the card's first block must carry N(S)="
+                    + expectedReceiveSequence);
+          }
+          // A retransmission of a block already taken. Drop it and ask again for the next one.
+          reply = transport.exchange(T1Block.rBlock(expectedReceiveSequence).toBytes());
+          continue;
+        }
+        receivedIBlock = true;
+        expectedReceiveSequence ^= 0x01;
+
         payload.write(received.inf, 0, received.inf.length);
         if (!received.moreFollows()) {
           return payload.toByteArray();
         }
         // Acknowledge, naming the sequence number we expect next.
-        reply = transport.exchange(T1Block.rBlock(1 - received.sequenceNumber()).toBytes());
+        reply = transport.exchange(T1Block.rBlock(expectedReceiveSequence).toBytes());
       }
       throw new IOException(
           "T=1 response did not terminate within " + MAX_BLOCKS_PER_RESPONSE + " blocks");

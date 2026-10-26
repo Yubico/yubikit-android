@@ -21,6 +21,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Deque;
 import java.util.List;
 import org.junit.Assert;
@@ -43,6 +44,9 @@ public class T1ProtocolTest {
 
   /** Card I-block { PCB=00 (N(S)=0, M=0) LEN=02 INF=9000 LRC=92 }. */
   private static final String OK_I_BLOCK = "000002900092";
+
+  /** Card I-block { PCB=40 (N(S)=1, M=0) LEN=02 INF=9000 LRC=D2 }, the card's next block. */
+  private static final String OK_I_BLOCK_NS1 = "0040029000D2";
 
   /** Replays a fixed list of card answers and records what was sent to get them. */
   private static final class ScriptedCard implements T1Protocol.BlockTransport {
@@ -170,7 +174,7 @@ public class T1ProtocolTest {
   /** N(S) advances once per completed exchange, not once per block (§11.6.2.2). */
   @Test
   public void testSequenceNumberTogglesBetweenExchanges() throws IOException {
-    ScriptedCard card = new ScriptedCard(OK_I_BLOCK, OK_I_BLOCK, OK_I_BLOCK);
+    ScriptedCard card = new ScriptedCard(OK_I_BLOCK, OK_I_BLOCK_NS1, OK_I_BLOCK);
     T1Protocol protocol = new T1Protocol(card, IFSC_254);
 
     protocol.sendApdu(Codec.fromHex(SELECT_APDU));
@@ -190,6 +194,64 @@ public class T1ProtocolTest {
     protocol.sendApdu(Codec.fromHex(SELECT_APDU));
 
     card.assertSent(SELECT_I_BLOCK_NS0, "00900090", SELECT_I_BLOCK_NS1);
+  }
+
+  /**
+   * The card retransmits a block because it did not see our acknowledgement. The copy carries the
+   * N(S) already taken, so it is dropped and acknowledged again instead of being appended twice.
+   */
+  @Test
+  public void testRetransmittedResponseBlockIsNotAppendedTwice() throws IOException {
+    ScriptedCard card =
+        new ScriptedCard(
+            "002002AABB33", // N(S)=0, M=1, INF=AABB
+            "002002AABB33", // the same block again
+            "0040029000D2"); // N(S)=1, M=0, INF=9000
+
+    byte[] response = new T1Protocol(card, IFSC_254).sendApdu(Codec.fromHex(SELECT_APDU));
+
+    card.assertSent(SELECT_I_BLOCK_NS0, "00900090", "00900090");
+    Assert.assertArrayEquals(Codec.fromHex("AABB9000"), response);
+  }
+
+  /** A stale copy of the previous exchange's last block does not become this one's response. */
+  @Test
+  public void testStaleFirstBlockIsDiscarded() throws IOException {
+    ScriptedCard card = new ScriptedCard(OK_I_BLOCK, OK_I_BLOCK, OK_I_BLOCK_NS1);
+    T1Protocol protocol = new T1Protocol(card, IFSC_254);
+
+    Assert.assertArrayEquals(Codec.fromHex("9000"), protocol.sendApdu(Codec.fromHex(SELECT_APDU)));
+    Assert.assertArrayEquals(Codec.fromHex("9000"), protocol.sendApdu(Codec.fromHex(SELECT_APDU)));
+
+    card.assertSent(SELECT_I_BLOCK_NS0, SELECT_I_BLOCK_NS1, "00900090");
+  }
+
+  /** Nothing has been received yet, so a block with N(S)=1 cannot be a retransmission. */
+  @Test
+  public void testWrongFirstSequenceNumberIsRejected() {
+    ScriptedCard card = new ScriptedCard(OK_I_BLOCK_NS1);
+
+    try {
+      new T1Protocol(card, IFSC_254).sendApdu(Codec.fromHex(SELECT_APDU));
+      Assert.fail("Expected IOException for the out of sequence block");
+    } catch (IOException e) {
+      Assert.assertTrue(e.getMessage(), e.getMessage().contains("N(S)=1"));
+    }
+  }
+
+  /** A card that only ever repeats one block still hits the block budget. */
+  @Test
+  public void testEndlessRetransmissionTerminates() {
+    String[] blocks = new String[512];
+    Arrays.fill(blocks, "002001AA8B"); // N(S)=0, M=1
+    ScriptedCard card = new ScriptedCard(blocks);
+
+    try {
+      new T1Protocol(card, IFSC_254).sendApdu(Codec.fromHex(SELECT_APDU));
+      Assert.fail("Expected IOException once the block budget is spent");
+    } catch (IOException e) {
+      Assert.assertEquals("T=1 response did not terminate within 256 blocks", e.getMessage());
+    }
   }
 
   /** 254 INF bytes is the ceiling, and it has to be reachable rather than off by one. */
@@ -264,7 +326,7 @@ public class T1ProtocolTest {
     // The card answers the first command with an IFS request for 32 bytes
     // and then normally; the second command must respect the new size.
     ScriptedCard card =
-        new ScriptedCard("00C10120E0", OK_I_BLOCK, "00800080", "00900090", OK_I_BLOCK);
+        new ScriptedCard("00C10120E0", OK_I_BLOCK, "00800080", "00900090", OK_I_BLOCK_NS1);
     T1Protocol protocol = new T1Protocol(card, IFSC_254);
 
     protocol.sendApdu(Codec.fromHex(SELECT_APDU));
