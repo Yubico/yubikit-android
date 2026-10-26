@@ -17,8 +17,10 @@
 package com.yubico.yubikit.framework;
 
 import com.yubico.yubikit.core.YubiKeyDevice;
+import com.yubico.yubikit.core.fido.FidoConnection;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.management.ManagementSession;
+import org.junit.Assume;
 
 public class ManagementInstrumentedTests extends YkInstrumentedTests {
 
@@ -31,8 +33,18 @@ public class ManagementInstrumentedTests extends YkInstrumentedTests {
     if (currentDevice == null) {
       throw new IllegalStateException("Device not available");
     }
-    try (SmartCardConnection connection = currentDevice.openConnection(SmartCardConnection.class)) {
-      callback.invoke(new ManagementSession(connection));
+    // Not every admitted key exposes CCID (it may be disabled), so fall back to FIDO.
+    if (currentDevice.supportsConnection(SmartCardConnection.class)) {
+      try (SmartCardConnection connection =
+          currentDevice.openConnection(SmartCardConnection.class)) {
+        callback.invoke(new ManagementSession(connection));
+      }
+    } else if (currentDevice.supportsConnection(FidoConnection.class)) {
+      try (FidoConnection connection = currentDevice.openConnection(FidoConnection.class)) {
+        callback.invoke(new ManagementSession(connection));
+      }
+    } else {
+      Assume.assumeTrue("No connection type usable by ManagementSession", false);
     }
   }
 }
