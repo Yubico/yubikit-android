@@ -32,12 +32,12 @@ import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialRequestOptions;
 import com.yubico.yubikit.fido.webauthn.SerializationType;
 import com.yubico.yubikit.fido.webauthn.UserVerificationRequirement;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -366,8 +366,11 @@ public class SignExtension extends Extension {
           "signByCredential must have exactly one entry per allowed credential");
     }
 
-    List<String> ids =
-        allowList.stream().map(desc -> toUrlSafeString(desc.getId())).collect(Collectors.toList());
+    // No streams: Collection.stream() needs API 24 and the library supports API 21
+    List<String> ids = new ArrayList<>();
+    for (PublicKeyCredentialDescriptor desc : allowList) {
+      ids.add(toUrlSafeString(desc.getId()));
+    }
 
     ids.removeAll(byCreds.keySet());
     if (!ids.isEmpty()) {

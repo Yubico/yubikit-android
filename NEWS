@@ -21,6 +21,9 @@
          expanding, and gzip certificates larger than 64 KiB are rejected
   - openpgp: initialize a session with a card that advertises no extended capabilities or
              general features, instead of failing with IllegalArgumentException
+  - fido, openpgp: avoid Map.getOrDefault and Collection.stream(), which need API 24, so
+                   OpenPGP PIN commands, credential lists and the sign extension no longer
+                   fail with NoSuchMethodError on API 21-23 without desugaring
   - testing: fido-ui instrumented tests run on Android 16
   - build: updated dependencies, GitHub Actions and the Gradle wrapper (9.7.1)
 * Version 3.2.1 (released 2026-09-08)

@@ -56,7 +56,8 @@ public abstract class Kdf {
    */
   public static Kdf parse(byte[] encoded) {
     Map<Integer, byte[]> data = Tlvs.decodeMap(encoded);
-    byte algorithm = data.getOrDefault(0x81, new byte[] {0})[0];
+    byte[] algorithmValue = data.get(0x81);
+    byte algorithm = algorithmValue != null ? algorithmValue[0] : 0;
     if (algorithm == 3) {
       return IterSaltedS2k.parseData(data);
     }
