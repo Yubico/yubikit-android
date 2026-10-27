@@ -1,0 +1,31 @@
+// Used by publish-branch-build.yml.
+// - Sets the version from PUBLISH_VERSION.
+// - Adds the Maven repository from PUBLISH_MAVEN_URL (token in PUBLISH_TOKEN) as a publishing target.
+// - printPublishedArtifacts lists the artifacts a publish would upload.
+allprojects {
+    afterEvaluate { p ->
+        p.version = System.getenv('PUBLISH_VERSION')
+        p.plugins.withId('maven-publish') {
+            if (System.getenv('PUBLISH_MAVEN_URL')) {
+                p.publishing.repositories {
+                    maven {
+                        name = 'Target'
+                        url = uri(System.getenv('PUBLISH_MAVEN_URL'))
+                        authentication {
+                            header(HttpHeaderAuthentication)
+                        }
+                        credentials(HttpHeaderCredentials) {
+                            name = 'Authorization'
+                            value = "Bearer ${System.getenv('PUBLISH_TOKEN')}"
+                        }
+                    }
+                }
+            }
+            p.tasks.register('printPublishedArtifacts') {
+                doLast {
+                    p.publishing.publications.withType(MavenPublication).each { println it.artifactId }
+                }
+            }
+        }
+    }
+}
