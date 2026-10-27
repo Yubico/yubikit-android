@@ -26,6 +26,9 @@
                    fail with NoSuchMethodError on API 21-23 without desugaring
   - oath: report malformed CALCULATE and CALCULATE_ALL responses as BadResponseException (or
           IOException from calculateCode) instead of unchecked exceptions
+  - fido: Ctap1Client.getAssertion rejects userVerification "required" with
+          CONFIGURATION_UNSUPPORTED instead of returning an assertion without user
+          verification, as makeCredential already does
   - testing: fido-ui instrumented tests run on Android 16
   - build: updated dependencies, GitHub Actions and the Gradle wrapper (9.7.1)
 * Version 3.2.1 (released 2026-09-08)

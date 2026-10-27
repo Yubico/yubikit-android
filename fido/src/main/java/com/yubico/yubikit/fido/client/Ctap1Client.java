@@ -206,6 +206,10 @@ public class Ctap1Client implements WebAuthnClient {
         throw new ClientError(
             ClientError.Code.BAD_REQUEST, "RP ID is not valid for effective domain");
       }
+      if (UserVerificationRequirement.REQUIRED.equals(options.getUserVerification())) {
+        throw new ClientError(
+            ClientError.Code.CONFIGURATION_UNSUPPORTED, "User verification not supported by CTAP1");
+      }
       List<PublicKeyCredentialDescriptor> allowCredentials = options.getAllowCredentials();
       if (allowCredentials.isEmpty()) {
         throw new ClientError(
