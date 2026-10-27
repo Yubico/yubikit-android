@@ -43,9 +43,20 @@ public class AllowListTest {
 
   private static class FakeProvider implements AllowList.AllowListProvider {
     private final List<Integer> serials;
+    private final boolean allowExternalCards;
 
     FakeProvider(List<Integer> serials) {
+      this(serials, false);
+    }
+
+    FakeProvider(List<Integer> serials, boolean allowExternalCards) {
       this.serials = serials;
+      this.allowExternalCards = allowExternalCards;
+    }
+
+    @Override
+    public boolean allowExternalCards() {
+      return allowExternalCards;
     }
 
     @Override
@@ -146,6 +157,10 @@ public class AllowListTest {
     return new AllowList(new FakeProvider(Arrays.asList(serials)));
   }
 
+  private static AllowList allowListWithExternalCards(Integer... serials) {
+    return new AllowList(new FakeProvider(Arrays.asList(serials), true));
+  }
+
   private static AllowList emptyAllowList() {
     return new AllowList(new FakeProvider(Collections.emptyList()));
   }
@@ -216,9 +231,19 @@ public class AllowListTest {
    */
   private static class ReaderDevice implements YubiKeyDevice {
     private final @Nullable Integer serial;
+    private final boolean answersSelect;
 
     ReaderDevice(@Nullable Integer serial) {
+      this(serial, false);
+    }
+
+    /**
+     * @param answersSelect for a card without a serial number, whether it still answers the SELECT
+     *     of the YubiKey applications, as a YubiKey that hides its serial number would
+     */
+    ReaderDevice(@Nullable Integer serial, boolean answersSelect) {
       this.serial = serial;
+      this.answersSelect = answersSelect;
     }
 
     @Override
@@ -244,6 +269,9 @@ public class AllowListTest {
             @Override
             public byte[] sendAndReceive(byte[] apdu) {
               if (serial == null) {
+                if (answersSelect && apdu[1] == (byte) 0xa4) {
+                  return Codec.fromHex("352e372e30" + "9000");
+                }
                 return new byte[] {0x6a, (byte) 0x82};
               }
               switch (apdu[1]) {
@@ -318,5 +346,74 @@ public class AllowListTest {
     assertThrows(
         AssertionError.class,
         () -> allowListOf(1234567).verify(new UnreadableDevice(), UsbPid.OTHER));
+  }
+
+  /** The opt-in admits a card that is positively not a YubiKey behind an external reader. */
+  @Test
+  public void externalCardIsAllowedWhenOptedIn() {
+    allowListWithExternalCards(33712337).verify(new ReaderDevice(null), UsbPid.OTHER);
+  }
+
+  /** Without the opt-in the same card is still rejected. */
+  @Test
+  public void externalCardIsRejectedWithoutOptIn() {
+    assertThrows(
+        AssertionError.class,
+        () -> allowListOf(33712337).verify(new ReaderDevice(null), UsbPid.OTHER));
+  }
+
+  /**
+   * A YubiKey that hides its serial number still answers SELECT, so the opt-in does not admit it.
+   */
+  @Test
+  public void yubiKeyWithoutSerialIsRejectedEvenWhenOptedIn() {
+    assertThrows(
+        AssertionError.class,
+        () ->
+            allowListWithExternalCards(33712337)
+                .verify(new ReaderDevice(null, true), UsbPid.OTHER));
+  }
+
+  /** The opt-in does not touch YubiKeys: one that is not on the list is rejected. */
+  @Test
+  public void excludedYubiKeyIsRejectedEvenWhenOptedIn() {
+    AssertionError error =
+        assertThrows(
+            AssertionError.class,
+            () ->
+                allowListWithExternalCards(33712337)
+                    .verify(new ReaderDevice(33712336), UsbPid.OTHER));
+
+    assertEquals("not allowed: 33712336", error.getMessage());
+  }
+
+  @Test
+  public void listedYubiKeyIsAllowedWhenOptedIn() {
+    allowListWithExternalCards(33712337).verify(new ReaderDevice(33712337), UsbPid.OTHER);
+  }
+
+  /**
+   * The opt-in is for external readers only; an unreadable device is rejected for any other PID.
+   */
+  @Test
+  public void optInDoesNotApplyToOtherPids() {
+    assertThrows(
+        AssertionError.class,
+        () ->
+            allowListWithExternalCards(33712337)
+                .verify(new UnreadableDevice(), UsbPid.YK4_OTP_FIDO_CCID));
+  }
+
+  /** An empty list is a missing configuration whatever the opt-in says. */
+  @Test
+  public void emptyListIsRejectedEvenWhenOptedIn() {
+    AssertionError error =
+        assertThrows(
+            AssertionError.class,
+            () ->
+                new AllowList(new FakeProvider(Collections.emptyList(), true))
+                    .verify(new ReaderDevice(null), UsbPid.OTHER));
+
+    assertEquals(NO_LIST, error.getMessage());
   }
 }

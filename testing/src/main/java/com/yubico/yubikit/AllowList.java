@@ -22,6 +22,7 @@ import com.yubico.yubikit.core.YubiKeyConnection;
 import com.yubico.yubikit.core.YubiKeyDevice;
 import com.yubico.yubikit.core.fido.FidoConnection;
 import com.yubico.yubikit.core.otp.OtpConnection;
+import com.yubico.yubikit.core.smartcard.AppId;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.management.DeviceInfo;
 import com.yubico.yubikit.management.ManagementSession;
@@ -46,6 +47,18 @@ public class AllowList {
      */
     List<Integer> getList();
 
+    /**
+     * Whether a card behind an external reader may be used when it is positively identified as not
+     * being a YubiKey. Off by default, and only ever opted into for a single run by the person
+     * running the tests: a YubiKey is never admitted this way and still needs its serial number in
+     * the list.
+     *
+     * @return true to admit cards that are not YubiKeys
+     */
+    default boolean allowExternalCards() {
+      return false;
+    }
+
     String onInvalidInputErrorMessage();
 
     String onNotAllowedErrorMessage(Integer serialNumber);
@@ -67,6 +80,13 @@ public class AllowList {
     }
 
     Integer serialNumber = getDeviceSerialNumber(connectedDevice, pid);
+    if (serialNumber == null
+        && pid == UsbPid.OTHER
+        && allowListProvider.allowExternalCards()
+        && isNotYubiKey(connectedDevice)) {
+      logger.warn("Using a card that is not a YubiKey behind an external reader");
+      return;
+    }
     if (!isDeviceAllowed(serialNumber)) {
       String message = allowListProvider.onNotAllowedErrorMessage(serialNumber);
       logger.error("{}", message);
@@ -149,5 +169,37 @@ public class AllowList {
       logger.error("Error reading device info through the Management application", e);
       return null;
     }
+  }
+
+  /**
+   * Positively identify a card as not being a YubiKey: it has to answer neither the Management nor
+   * the OTP application SELECT, which every YubiKey does. Anything that cannot be established, such
+   * as a connection that cannot be opened, counts as "might be a YubiKey".
+   */
+  private boolean isNotYubiKey(YubiKeyDevice device) {
+    if (!device.supportsConnection(SmartCardConnection.class)) {
+      return false;
+    }
+    try (SmartCardConnection connection = device.openConnection(SmartCardConnection.class)) {
+      return !answersSelect(connection, AppId.MANAGEMENT) && !answersSelect(connection, AppId.OTP);
+    } catch (Exception e) {
+      logger.error("Could not establish that the card is not a YubiKey", e);
+      return false;
+    }
+  }
+
+  private static boolean answersSelect(SmartCardConnection connection, byte[] aid)
+      throws IOException {
+    byte[] apdu = new byte[5 + aid.length];
+    apdu[1] = (byte) 0xa4; // INS SELECT
+    apdu[2] = 0x04; // P1: by name
+    apdu[4] = (byte) aid.length;
+    System.arraycopy(aid, 0, apdu, 5, aid.length);
+    byte[] response = connection.sendAndReceive(apdu);
+    if (response.length < 2) {
+      throw new IOException("Response too short");
+    }
+    int sw1 = response[response.length - 2] & 0xff;
+    return sw1 == 0x90 || sw1 == 0x61;
   }
 }

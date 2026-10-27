@@ -38,6 +38,17 @@ The test framework will now only run on the YubiKeys specified in this file.
 
 If the file is missing, or the connected key is not listed, each test that needs a YubiKey fails with an assertion naming the reason and the run still produces a report. Tests that need no YubiKey are unaffected.
 
+=== Cards that are not YubiKeys
+A YubiKey behind a third-party USB reader (an OMNIKEY 5022, an SCR3500) is checked against the allow list like any other: its serial number is read through the Management application, and a key that is not listed is refused.
+
+A card that is not a YubiKey has no serial number, so it is refused too. A few manual tests are written for such cards, for example `PivRawApduReaderTests`, which uses raw PIV APDUs. Opt in for one run by adding the argument below to the command line:
+
+  ./gradlew :testing-android:connectedDebugAndroidTest \
+    -Pandroid.testInstrumentationRunnerArguments.class=com.yubico.yubikit.piv.PivRawApduReaderTests \
+    -Pandroid.testInstrumentationRunnerArguments.allowExternalCards=true
+
+The argument only admits a card behind an external reader that answers neither the Management nor the OTP application SELECT, which every YubiKey does. A YubiKey, including one that hides its serial number, is still refused unless its serial number is listed in `allowed_serials.csv`. Do not set it in a run configuration or `gradle.properties`, and run only the test written for the card with it. Most tests read the device information of the key, which a plain card cannot provide, so they fail on one whatever the argument says.
+
 === Running the tests
 1. Make sure that the YubiKey you are using is meant for testing. Don't proceed with the tests if unsure.
  Running the instrumented tests will: change PIN, PUK, management key and overwrite stored certificates in the PIV application
