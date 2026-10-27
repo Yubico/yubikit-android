@@ -42,6 +42,9 @@ final class AtrInterfaceBytes {
   private final @Nullable Byte[] tb = new Byte[MAX_LEVEL];
   private final @Nullable Byte[] tc = new Byte[MAX_LEVEL];
 
+  /** The protocol T each TD announced for the level after it, indexed by the TD's own level. */
+  private final @Nullable Integer[] tdProtocol = new Integer[MAX_LEVEL];
+
   private AtrInterfaceBytes() {}
 
   /** TA at {@code level} (1-based), or null if the card did not send it. */
@@ -57,6 +60,17 @@ final class AtrInterfaceBytes {
   /** TC at {@code level} (1-based), or null if the card did not send it. */
   @Nullable Byte tc(int level) {
     return at(tc, level);
+  }
+
+  /**
+   * The protocol that governs the bytes at {@code level} (1-based): the low nibble of the TD one
+   * level up. Null for level 1, whose bytes are global, and for any level no TD announced.
+   *
+   * <p>Level 3 onwards is where the meaning of TA/TB/TC depends on this: they are T=1 parameters
+   * (IFSC, BWI/CWI, EDC) only when the protocol is 1, and global data when it is 15.
+   */
+  @Nullable Integer protocol(int level) {
+    return level >= 2 && level <= MAX_LEVEL ? tdProtocol[level - 2] : null;
   }
 
   private static @Nullable Byte at(@Nullable Byte[] bytes, int level) {
@@ -88,6 +102,7 @@ final class AtrInterfaceBytes {
       }
       if ((y & Y_TD) != 0 && index < atr.length) {
         // TD announces the level after this one and we move on to it.
+        parsed.tdProtocol[level - 1] = atr[index] & 0x0F;
         y = (atr[index++] & 0xF0) >> 4;
         level++;
       } else {

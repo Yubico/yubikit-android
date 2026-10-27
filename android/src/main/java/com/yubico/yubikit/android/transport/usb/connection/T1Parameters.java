@@ -52,6 +52,23 @@ final class T1Parameters {
   /** Default IFSC of 32 bytes when the ATR omits TA3 (ISO 7816-3 §11.4.2). */
   private static final byte DEFAULT_IFSC = 0x20;
 
+  /** Clocks per etu before any speed-up: Fi=372, Di=1 (ISO 7816-3 §8.3). */
+  private static final int DEFAULT_ETU_CLOCKS = 372;
+
+  /**
+   * Fi by the upper nibble of TA1 (ISO 7816-3 Table 7). Reserved indexes read as the default, which
+   * is what a card that sends one is held to.
+   */
+  private static final int[] FI_BY_INDEX = {
+    372, 372, 558, 744, 1116, 1488, 1860, 372, 372, 512, 768, 1024, 1536, 2048, 372, 372,
+  };
+
+  /** BWI is only defined up to 9; anything above is reserved (ISO 7816-3 §11.4.3). */
+  private static final int MAX_BWI = 9;
+
+  /** Card clock assumed when the reader's descriptor does not give one: 3.57 MHz. */
+  private static final long FALLBACK_CLOCK_KHZ = 3571;
+
   private final byte findexDindex;
   private final byte guardTime;
   private final byte waitingIntegers;
@@ -74,6 +91,34 @@ final class T1Parameters {
     return ifsc & 0xFF;
   }
 
+  /** BWI, the upper nibble of TB3: the card's block waiting time exponent. */
+  int bwi() {
+    return (waitingIntegers >> 4) & 0x0F;
+  }
+
+  /**
+   * How long the card may take to start answering a block, in milliseconds, at the slowest bus rate
+   * the reader can be running.
+   *
+   * <p>BWT = 11 etu + 2^BWI x 960 etu (ISO 7816-3 §11.4.3). The length of an etu depends on a rate
+   * the reader negotiates for itself, so this takes the slowest it could be using: Fi/Di=372/1, or
+   * the card's own Fi if that is larger, with Di=1. A faster rate only shortens the real wait, so
+   * the result is an upper bound and a timeout built on it never fires early.
+   *
+   * @param clockKhz the card clock, from the reader's {@code dwDefaultClock}; 0 if it gave none
+   */
+  long blockWaitingTimeMillis(long clockKhz) {
+    int fi = FI_BY_INDEX[(findexDindex >> 4) & 0x0F];
+    return blockWaitingTimeMillis(bwi(), Math.max(DEFAULT_ETU_CLOCKS, fi), clockKhz);
+  }
+
+  static long blockWaitingTimeMillis(int bwi, int etuClocks, long clockKhz) {
+    long etus = 11 + (1L << Math.min(bwi, MAX_BWI)) * 960;
+    long clock = clockKhz > 0 ? clockKhz : FALLBACK_CLOCK_KHZ;
+    // clocks / (clock in kHz) is milliseconds, rounded up.
+    return (etus * etuClocks + clock - 1) / clock;
+  }
+
   /**
    * The structure in wire order: bmFindexDindex, bmTCCKST1, bGuardTimeT1, bWaitingIntegersT1,
    * bClockStop, bIFSC, bNadValue.
@@ -92,14 +137,25 @@ final class T1Parameters {
 
   /**
    * Take the four interface bytes this structure has a home for - TA1 (Fi/Di), TC1 (extra guard
-   * time), TA3 (IFSC) and TB3 (BWI/CWI) - out of an ATR, defaulting whichever the card omitted.
+   * time), TA3 (IFSC) and TB3 (BWI/CWI) - out of an ATR, defaulting whichever the card omitted. TA3
+   * and TB3 only count where the ATR assigns them to T=1.
    */
   static T1Parameters fromAtr(byte @Nullable [] atr) {
     AtrInterfaceBytes interfaceBytes = AtrInterfaceBytes.parse(atr);
     Byte ta1 = interfaceBytes.ta(1);
     Byte tc1 = interfaceBytes.tc(1);
-    Byte tb3 = interfaceBytes.tb(3);
-    Byte ta3 = interfaceBytes.ta(3);
+    // IFSC and BWI/CWI sit in the first level from the third on that the ATR assigns to T=1;
+    // at a level assigned to T=15 the same positions hold global data instead.
+    Byte tb3 = null;
+    Byte ta3 = null;
+    for (int level = 3; level <= 4; level++) {
+      Integer protocol = interfaceBytes.protocol(level);
+      if (protocol != null && protocol == 1) {
+        ta3 = interfaceBytes.ta(level);
+        tb3 = interfaceBytes.tb(level);
+        break;
+      }
+    }
     return new T1Parameters(
         ta1 != null ? ta1 : DEFAULT_FINDEX_DINDEX,
         tc1 != null ? tc1 : DEFAULT_GUARD_TIME,

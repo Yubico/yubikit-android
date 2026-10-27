@@ -35,9 +35,13 @@ public class Ctap1ClientInstrumentedTests {
   public static class PinUvAuthV2Test extends FidoInstrumentedTests {
 
     @Test
-    @Category(SmokeTest.class)
     public void testMakeCredentialGetAssertion() throws Throwable {
       withDevice(Ctap1ClientTests::testMakeCredentialGetAssertion);
+    }
+
+    @Test
+    public void testAttestationConveyance() throws Throwable {
+      withDevice(AttestationConveyanceTests::testCtap1);
     }
 
     @Test

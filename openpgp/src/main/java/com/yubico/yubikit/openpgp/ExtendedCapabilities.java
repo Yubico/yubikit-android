@@ -18,8 +18,6 @@ package com.yubico.yubikit.openpgp;
 
 import java.nio.ByteBuffer;
 import java.util.EnumSet;
-import java.util.HashSet;
-import java.util.Set;
 
 public class ExtendedCapabilities {
   private final EnumSet<ExtendedCapabilityFlag> flags;
@@ -78,14 +76,14 @@ public class ExtendedCapabilities {
   static ExtendedCapabilities parse(byte[] encoded) {
     ByteBuffer buf = ByteBuffer.wrap(encoded);
     byte flags = buf.get();
-    Set<ExtendedCapabilityFlag> flagSet = new HashSet<>();
+    EnumSet<ExtendedCapabilityFlag> flagSet = EnumSet.noneOf(ExtendedCapabilityFlag.class);
     for (ExtendedCapabilityFlag flag : ExtendedCapabilityFlag.values()) {
       if ((flag.value & flags) != 0) {
         flagSet.add(flag);
       }
     }
     return new ExtendedCapabilities(
-        EnumSet.copyOf(flagSet),
+        flagSet,
         0xffff & buf.get(),
         0xffff & buf.getShort(),
         0xffff & buf.getShort(),

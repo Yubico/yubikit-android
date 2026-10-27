@@ -48,6 +48,11 @@ public class Ctap2ClientInstrumentedTests {
     }
 
     @Test
+    public void testAttestationConveyance() throws Throwable {
+      withDevice(AttestationConveyanceTests::testCtap2);
+    }
+
+    @Test
     public void testMakeCredentialGetAssertionTokenUvOnly() throws Throwable {
       withDevice(Ctap2ClientTests::testMakeCredentialGetAssertionTokenUvOnly);
     }

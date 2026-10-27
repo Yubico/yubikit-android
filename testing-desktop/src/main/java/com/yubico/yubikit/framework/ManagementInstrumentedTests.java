@@ -15,8 +15,10 @@
  */
 package com.yubico.yubikit.framework;
 
+import com.yubico.yubikit.core.fido.FidoConnection;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.management.ManagementSession;
+import org.junit.Assume;
 
 public class ManagementInstrumentedTests extends YkInstrumentedTests {
 
@@ -25,8 +27,17 @@ public class ManagementInstrumentedTests extends YkInstrumentedTests {
   }
 
   protected void withManagementSession(Callback callback) throws Throwable {
-    try (SmartCardConnection connection = device.openConnection(SmartCardConnection.class)) {
-      callback.invoke(new ManagementSession(connection));
+    // Not every admitted key exposes CCID (it may be disabled), so fall back to FIDO.
+    if (device.supportsConnection(SmartCardConnection.class)) {
+      try (SmartCardConnection connection = device.openConnection(SmartCardConnection.class)) {
+        callback.invoke(new ManagementSession(connection));
+      }
+    } else if (device.supportsConnection(FidoConnection.class)) {
+      try (FidoConnection connection = device.openConnection(FidoConnection.class)) {
+        callback.invoke(new ManagementSession(connection));
+      }
+    } else {
+      Assume.assumeTrue("No connection type usable by ManagementSession", false);
     }
   }
 }

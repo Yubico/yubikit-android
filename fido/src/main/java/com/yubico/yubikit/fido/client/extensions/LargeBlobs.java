@@ -16,6 +16,7 @@
 
 package com.yubico.yubikit.fido.client.extensions;
 
+import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.application.CommandException;
 import com.yubico.yubikit.core.util.RandomUtils;
 import com.yubico.yubikit.fido.Cbor;
@@ -47,9 +48,12 @@ import javax.crypto.spec.SecretKeySpec;
 import org.jspecify.annotations.Nullable;
 
 public class LargeBlobs {
+  private static final int MIN_ARRAY_LEN = 1024;
+  private static final int TRAILER_LEN = 16;
 
   private final Ctap2Session session;
   private final int maxFragmentLen;
+  private final int maxArrayLen;
 
   @Nullable final PinUvAuthProtocol pinUvAuthProtocol;
   final byte @Nullable [] pinUvAuthToken;
@@ -71,6 +75,8 @@ public class LargeBlobs {
 
     this.session = session;
     this.maxFragmentLen = info.getMaxMsgSize() - 64;
+    // The specification requires authenticators to support at least 1024 bytes
+    this.maxArrayLen = Math.max(info.getMaxSerializedLargeBlobArray(), MIN_ARRAY_LEN);
 
     if (pinUvAuthToken != null && pinUvAuthProtocol != null) {
       this.pinUvAuthProtocol = pinUvAuthProtocol;
@@ -94,7 +100,17 @@ public class LargeBlobs {
         return LargeBlobArray.empty();
       }
 
-      byte[] fragment = (byte[]) map.get(1);
+      Object value = map.get(1);
+      if (!(value instanceof byte[])) {
+        throw new BadResponseException("Unexpected large blob fragment type");
+      }
+      byte[] fragment = (byte[]) value;
+      if (fragment.length > maxFragmentLen) {
+        throw new BadResponseException("Large blob fragment exceeds requested length");
+      }
+      if (os.size() + fragment.length > maxArrayLen) {
+        throw new BadResponseException("Large blob array exceeds advertised capacity");
+      }
       os.write(fragment);
 
       if (fragment.length < maxFragmentLen) {
@@ -103,7 +119,11 @@ public class LargeBlobs {
       offset += fragment.length;
     }
     byte[] buffer = os.toByteArray();
-    byte[] data = Arrays.copyOf(buffer, buffer.length - 16);
+    if (buffer.length < TRAILER_LEN) {
+      // Too short to hold the digest, which makes it an invalid array
+      return LargeBlobArray.empty();
+    }
+    byte[] data = Arrays.copyOf(buffer, buffer.length - TRAILER_LEN);
     byte[] digest = hash(data);
     if (!Arrays.equals(
         Arrays.copyOfRange(buffer, buffer.length - 16, buffer.length),

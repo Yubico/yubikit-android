@@ -30,6 +30,7 @@ import com.yubico.yubikit.core.util.Tlvs;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
 import org.junit.Test;
 
 public class OpenPgpSessionTest {
@@ -57,13 +58,17 @@ public class OpenPgpSessionTest {
     verify(protocolMock).close();
   }
 
-  private static byte[] mockApplicationRelatedData() {
+  static byte[] mockApplicationRelatedData() {
+    return mockApplicationRelatedData(ExtendedCapabilityFlag.KDF.value, null);
+  }
+
+  static byte[] mockApplicationRelatedData(byte extendedCapabilityFlags, @Nullable Byte gfmFlags) {
     Map<Integer, byte[]> data = new HashMap<>();
     Map<Integer, byte[]> discretionary = new HashMap<>();
     discretionary.put(
         DiscretionaryDataObjects.TAG_EXTENDED_CAPABILITIES,
         ByteBuffer.allocate(10)
-            .put(ExtendedCapabilityFlag.KDF.value)
+            .put(extendedCapabilityFlags)
             .put((byte) 0)
             .putShort((short) 0)
             .putShort((short) 0)
@@ -99,6 +104,9 @@ public class OpenPgpSessionTest {
     discretionary.put(DiscretionaryDataObjects.TAG_FINGERPRINTS, new byte[0]);
     discretionary.put(DiscretionaryDataObjects.TAG_CA_FINGERPRINTS, new byte[0]);
     discretionary.put(DiscretionaryDataObjects.TAG_GENERATION_TIMES, new byte[0]);
+    if (gfmFlags != null) {
+      data.put(Do.GENERAL_FEATURE_MANAGEMENT, new Tlv(0x81, new byte[] {gfmFlags}).getBytes());
+    }
     data.put(ApplicationRelatedData.TAG_DISCRETIONARY, Tlvs.encodeMap(discretionary));
     Tlv applicationRelatedData = new Tlv(Do.APPLICATION_RELATED_DATA, Tlvs.encodeMap(data));
     return applicationRelatedData.getBytes();

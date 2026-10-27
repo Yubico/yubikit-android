@@ -112,4 +112,24 @@ public class AtrInterfaceBytesTest {
     Assert.assertNull(bytes.ta(0));
     Assert.assertNull(bytes.ta(5));
   }
+
+  /** Each TD's low nibble names the protocol of the level after it. */
+  @Test
+  public void testProtocolFollowsTheTdOneLevelUp() {
+    AtrInterfaceBytes bytes = AtrInterfaceBytes.parse(Codec.fromHex(SCR3500_ATR));
+
+    Assert.assertNull(bytes.protocol(1));
+    Assert.assertEquals(Integer.valueOf(1), bytes.protocol(2));
+    Assert.assertEquals(Integer.valueOf(1), bytes.protocol(3));
+    Assert.assertNull(bytes.protocol(4));
+  }
+
+  /** TD2=1F assigns level 3 to T=15, so TA3 there is global data. */
+  @Test
+  public void testGlobalProtocolIsReported() {
+    AtrInterfaceBytes bytes = AtrInterfaceBytes.parse(Codec.fromHex("3B80811FC7D9"));
+
+    Assert.assertEquals(Byte.valueOf((byte) 0xC7), bytes.ta(3));
+    Assert.assertEquals(Integer.valueOf(15), bytes.protocol(3));
+  }
 }

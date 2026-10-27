@@ -21,6 +21,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Deque;
 import java.util.List;
 import org.junit.Assert;
@@ -44,10 +45,14 @@ public class T1ProtocolTest {
   /** Card I-block { PCB=00 (N(S)=0, M=0) LEN=02 INF=9000 LRC=92 }. */
   private static final String OK_I_BLOCK = "000002900092";
 
+  /** Card I-block { PCB=40 (N(S)=1, M=0) LEN=02 INF=9000 LRC=D2 }, the card's next block. */
+  private static final String OK_I_BLOCK_NS1 = "0040029000D2";
+
   /** Replays a fixed list of card answers and records what was sent to get them. */
   private static final class ScriptedCard implements T1Protocol.BlockTransport {
     private final Deque<byte[]> answers = new ArrayDeque<>();
     private final List<byte[]> sent = new ArrayList<>();
+    private final List<Integer> multipliers = new ArrayList<>();
 
     ScriptedCard(String... answerHex) {
       for (String hex : answerHex) {
@@ -55,9 +60,14 @@ public class T1ProtocolTest {
       }
     }
 
+    ScriptedCard(List<byte[]> blocks) {
+      answers.addAll(blocks);
+    }
+
     @Override
-    public byte[] exchange(byte[] block) throws IOException {
+    public byte[] exchange(byte[] block, int waitingMultiplier) throws IOException {
       sent.add(block);
+      multipliers.add(waitingMultiplier);
       if (answers.isEmpty()) {
         throw new IOException("Card was asked for more blocks than the script provides");
       }
@@ -71,6 +81,28 @@ public class T1ProtocolTest {
             "Block " + i + " differs", Codec.fromHex(expectedHex[i]), sent.get(i));
       }
     }
+  }
+
+  /**
+   * The I-blocks of one chained response from the card, one per entry of {@code lengths}: N(S)
+   * alternates from 0, and every block but the last has the M-bit set.
+   */
+  private static List<byte[]> chain(int... lengths) {
+    List<byte[]> blocks = new ArrayList<>();
+    for (int i = 0; i < lengths.length; i++) {
+      boolean more = i < lengths.length - 1;
+      blocks.add(T1Block.iBlock(i % 2, new byte[lengths[i]], more).toBytes());
+    }
+    return blocks;
+  }
+
+  /** {@code count} chained I-blocks of {@code length} bytes each that never end the chain. */
+  private static List<byte[]> endlessChain(int count, int length) {
+    List<byte[]> blocks = new ArrayList<>();
+    for (int i = 0; i < count; i++) {
+      blocks.add(T1Block.iBlock(i % 2, new byte[length], true).toBytes());
+    }
+    return blocks;
   }
 
   /** An APDU of {@code length} bytes, distinguishable byte by byte once it is reassembled. */
@@ -170,7 +202,7 @@ public class T1ProtocolTest {
   /** N(S) advances once per completed exchange, not once per block (§11.6.2.2). */
   @Test
   public void testSequenceNumberTogglesBetweenExchanges() throws IOException {
-    ScriptedCard card = new ScriptedCard(OK_I_BLOCK, OK_I_BLOCK, OK_I_BLOCK);
+    ScriptedCard card = new ScriptedCard(OK_I_BLOCK, OK_I_BLOCK_NS1, OK_I_BLOCK);
     T1Protocol protocol = new T1Protocol(card, IFSC_254);
 
     protocol.sendApdu(Codec.fromHex(SELECT_APDU));
@@ -190,6 +222,64 @@ public class T1ProtocolTest {
     protocol.sendApdu(Codec.fromHex(SELECT_APDU));
 
     card.assertSent(SELECT_I_BLOCK_NS0, "00900090", SELECT_I_BLOCK_NS1);
+  }
+
+  /**
+   * The card retransmits a block because it did not see our acknowledgement. The copy carries the
+   * N(S) already taken, so it is dropped and acknowledged again instead of being appended twice.
+   */
+  @Test
+  public void testRetransmittedResponseBlockIsNotAppendedTwice() throws IOException {
+    ScriptedCard card =
+        new ScriptedCard(
+            "002002AABB33", // N(S)=0, M=1, INF=AABB
+            "002002AABB33", // the same block again
+            "0040029000D2"); // N(S)=1, M=0, INF=9000
+
+    byte[] response = new T1Protocol(card, IFSC_254).sendApdu(Codec.fromHex(SELECT_APDU));
+
+    card.assertSent(SELECT_I_BLOCK_NS0, "00900090", "00900090");
+    Assert.assertArrayEquals(Codec.fromHex("AABB9000"), response);
+  }
+
+  /** A stale copy of the previous exchange's last block does not become this one's response. */
+  @Test
+  public void testStaleFirstBlockIsDiscarded() throws IOException {
+    ScriptedCard card = new ScriptedCard(OK_I_BLOCK, OK_I_BLOCK, OK_I_BLOCK_NS1);
+    T1Protocol protocol = new T1Protocol(card, IFSC_254);
+
+    Assert.assertArrayEquals(Codec.fromHex("9000"), protocol.sendApdu(Codec.fromHex(SELECT_APDU)));
+    Assert.assertArrayEquals(Codec.fromHex("9000"), protocol.sendApdu(Codec.fromHex(SELECT_APDU)));
+
+    card.assertSent(SELECT_I_BLOCK_NS0, SELECT_I_BLOCK_NS1, "00900090");
+  }
+
+  /** Nothing has been received yet, so a block with N(S)=1 cannot be a retransmission. */
+  @Test
+  public void testWrongFirstSequenceNumberIsRejected() {
+    ScriptedCard card = new ScriptedCard(OK_I_BLOCK_NS1);
+
+    try {
+      new T1Protocol(card, IFSC_254).sendApdu(Codec.fromHex(SELECT_APDU));
+      Assert.fail("Expected IOException for the out of sequence block");
+    } catch (IOException e) {
+      Assert.assertTrue(e.getMessage(), e.getMessage().contains("N(S)=1"));
+    }
+  }
+
+  /** A card that only ever repeats one block adds no data, so it is given up on. */
+  @Test
+  public void testEndlessRetransmissionTerminates() {
+    String[] blocks = new String[512];
+    Arrays.fill(blocks, "002001AA8B"); // N(S)=0, M=1
+    ScriptedCard card = new ScriptedCard(blocks);
+
+    try {
+      new T1Protocol(card, IFSC_254).sendApdu(Codec.fromHex(SELECT_APDU));
+      Assert.fail("Expected IOException once the card stops making progress");
+    } catch (IOException e) {
+      Assert.assertEquals("T=1 response made no progress within 16 blocks", e.getMessage());
+    }
   }
 
   /** 254 INF bytes is the ceiling, and it has to be reachable rather than off by one. */
@@ -264,7 +354,7 @@ public class T1ProtocolTest {
     // The card answers the first command with an IFS request for 32 bytes
     // and then normally; the second command must respect the new size.
     ScriptedCard card =
-        new ScriptedCard("00C10120E0", OK_I_BLOCK, "00800080", "00900090", OK_I_BLOCK);
+        new ScriptedCard("00C10120E0", OK_I_BLOCK, "00800080", "00900090", OK_I_BLOCK_NS1);
     T1Protocol protocol = new T1Protocol(card, IFSC_254);
 
     protocol.sendApdu(Codec.fromHex(SELECT_APDU));
@@ -377,24 +467,219 @@ public class T1ProtocolTest {
   }
 
   /**
-   * A card that keeps setting the M-bit would otherwise hold the loop open forever, so the
-   * reassembly is bounded and gives up with a diagnosable error.
+   * A card that keeps setting the M-bit would otherwise hold the loop open forever. The response is
+   * limited to the longest response APDU, whatever size the blocks are.
    */
   @Test
   public void testEndlessChainTerminates() {
-    String[] endlessChain = new String[512];
-    for (int i = 0; i < endlessChain.length; i++) {
-      // Alternate N(S) so every block is the one our R-block asked for:
-      // PCB=20 is N(S)=0 with M set, PCB=60 is N(S)=1 with M set.
-      endlessChain[i] = i % 2 == 0 ? "002001AA8B" : "006001AACB";
-    }
-    ScriptedCard card = new ScriptedCard(endlessChain);
+    ScriptedCard card = new ScriptedCard(endlessChain(300, T1Block.MAX_INF_LENGTH));
 
     try {
       new T1Protocol(card, IFSC_254).sendApdu(Codec.fromHex(SELECT_APDU));
-      Assert.fail("Expected IOException once the block budget is spent");
+      Assert.fail("Expected IOException once the response is longer than any APDU");
     } catch (IOException e) {
-      Assert.assertEquals("T=1 response did not terminate within 256 blocks", e.getMessage());
+      Assert.assertEquals("T=1 response exceeds 65538 bytes", e.getMessage());
     }
+  }
+
+  /**
+   * The longest response APDU of a short command is 256 data bytes plus SW1-SW2, however small the
+   * card's blocks are: with an IFSC of 1 that is 258 blocks, more than the old count limit of 256.
+   */
+  @Test
+  public void testResponsesOfSmallBlocksAreAcceptedUpToTheMaximum() throws IOException {
+    for (int blocks : new int[] {255, 256, 257, 258}) {
+      int[] lengths = new int[blocks];
+      Arrays.fill(lengths, 1);
+      ScriptedCard card = new ScriptedCard(chain(lengths));
+
+      // A single byte command, so that it fits one block of the card's size
+      byte[] response = new T1Protocol(card, 1).sendApdu(new byte[] {0x00});
+
+      Assert.assertEquals(blocks, response.length);
+    }
+  }
+
+  /** A response of exactly the longest APDU, 65,536 data bytes and the status word, is accepted. */
+  @Test
+  public void testResponseOfTheMaximumLengthIsAccepted() throws IOException {
+    int[] lengths = new int[259];
+    Arrays.fill(lengths, T1Block.MAX_INF_LENGTH);
+    lengths[258] = 6; // 258 x 254 + 6 = 65,538
+    ScriptedCard card = new ScriptedCard(chain(lengths));
+
+    byte[] response = new T1Protocol(card, IFSC_254).sendApdu(Codec.fromHex(SELECT_APDU));
+
+    Assert.assertEquals(65538, response.length);
+  }
+
+  /** One byte more than the longest APDU is refused. */
+  @Test
+  public void testResponseOneByteOverTheMaximumIsRejected() {
+    int[] lengths = new int[259];
+    Arrays.fill(lengths, T1Block.MAX_INF_LENGTH);
+    lengths[258] = 7; // 65,539
+    ScriptedCard card = new ScriptedCard(chain(lengths));
+
+    try {
+      new T1Protocol(card, IFSC_254).sendApdu(Codec.fromHex(SELECT_APDU));
+      Assert.fail("Expected IOException for a response one byte over the maximum");
+    } catch (IOException e) {
+      Assert.assertEquals("T=1 response exceeds 65538 bytes", e.getMessage());
+    }
+  }
+
+  /** A chain may contain empty I-blocks (ISO/IEC 7816-3 11.6.2.2), a few of them are fine. */
+  @Test
+  public void testEmptyBlocksInsideAChainAreAccepted() throws IOException {
+    ScriptedCard card = new ScriptedCard(chain(1, 0, 0, 1));
+
+    byte[] response = new T1Protocol(card, IFSC_254).sendApdu(Codec.fromHex(SELECT_APDU));
+
+    Assert.assertEquals(2, response.length);
+  }
+
+  /** Empty blocks add no data, so a card that only sends them cannot hold the chain open. */
+  @Test
+  public void testEndlessEmptyBlocksTerminate() {
+    ScriptedCard card = new ScriptedCard(endlessChain(100, 0));
+
+    try {
+      new T1Protocol(card, IFSC_254).sendApdu(Codec.fromHex(SELECT_APDU));
+      Assert.fail("Expected IOException once the card only sends empty blocks");
+    } catch (IOException e) {
+      Assert.assertEquals("T=1 response made no progress within 16 blocks", e.getMessage());
+    }
+  }
+
+  /** A block with data starts the count again, so empty blocks spread through a chain are fine. */
+  @Test
+  public void testEmptyBlocksBetweenDataBlocksDoNotAddUp() throws IOException {
+    int[] lengths = new int[60];
+    for (int i = 0; i < lengths.length; i++) {
+      lengths[i] = i % 10 == 9 ? 1 : 0; // nine empty blocks, then one with a byte
+    }
+    ScriptedCard card = new ScriptedCard(chain(lengths));
+
+    byte[] response = new T1Protocol(card, IFSC_254).sendApdu(Codec.fromHex(SELECT_APDU));
+
+    Assert.assertEquals(6, response.length);
+  }
+
+  /** The card may ask for more time between the blocks of its own chained response, too. */
+  @Test
+  public void testWtxRequestDuringResponseChain() throws IOException {
+    ScriptedCard card =
+        new ScriptedCard(
+            "002001AA8B", // N(S)=0, M=1, INF=AA
+            "00C30101C3", // S(WTX request) instead of the next block
+            "0040029000D2"); // N(S)=1, M=0, INF=9000
+
+    byte[] response = new T1Protocol(card, IFSC_254).sendApdu(Codec.fromHex(SELECT_APDU));
+
+    // The R-block acknowledging the first block, then the WTX grant. The chain resumes after it.
+    card.assertSent(SELECT_I_BLOCK_NS0, "00900090", "00E30101E3");
+    Assert.assertArrayEquals(Codec.fromHex("AA9000"), response);
+  }
+
+  /** A card that needs several extensions in a row is granted every one of them. */
+  @Test
+  public void testRepeatedWtxRequestsAreEachGranted() throws IOException {
+    ScriptedCard card = new ScriptedCard("00C30101C3", "00C30101C3", "00C30101C3", OK_I_BLOCK);
+
+    byte[] response = new T1Protocol(card, IFSC_254).sendApdu(Codec.fromHex(SELECT_APDU));
+
+    card.assertSent(SELECT_I_BLOCK_NS0, "00E30101E3", "00E30101E3", "00E30101E3");
+    Assert.assertArrayEquals(Codec.fromHex("9000"), response);
+  }
+
+  /**
+   * An S(IFS) request with no INF names no size. It is still answered, so the card is not left
+   * waiting, but it must not change the block size we chunk later commands at.
+   */
+  @Test
+  public void testEmptyIfsRequestKeepsTheNegotiatedSize() throws IOException {
+    // The empty S(IFS) request, then a 300-byte command acknowledged chunk by chunk.
+    ScriptedCard card = new ScriptedCard("00C100C1", OK_I_BLOCK, "00800080", OK_I_BLOCK_NS1);
+    T1Protocol protocol = new T1Protocol(card, IFSC_254);
+
+    protocol.sendApdu(Codec.fromHex(SELECT_APDU));
+    Assert.assertArrayEquals(Codec.fromHex("00E100E1"), card.sent.get(1));
+
+    protocol.sendApdu(counting(300));
+
+    // A first chunk of the full 254 bytes, then the remaining 46: the size was not touched.
+    Assert.assertEquals(4, card.sent.size());
+    Assert.assertEquals((byte) 0xFE, card.sent.get(2)[2]);
+    Assert.assertEquals((byte) 46, card.sent.get(3)[2]);
+  }
+
+  /** Blocks that are not an answer to a waiting-time request are never given extra time. */
+  @Test
+  public void testOrdinaryBlocksAreNotExtended() throws IOException {
+    ScriptedCard card = new ScriptedCard("002001AA8B", "0040029000D2");
+
+    new T1Protocol(card, IFSC_254).sendApdu(Codec.fromHex(SELECT_APDU));
+
+    Assert.assertEquals(Arrays.asList(1, 1), card.multipliers);
+  }
+
+  /**
+   * The multiplier the card asked for travels with the block that grants it, so the transport can
+   * tell the reader and wait that many block waiting times for the answer.
+   */
+  @Test
+  public void testWtxMultiplierIsPassedToTheTransport() throws IOException {
+    // S(WTX request) with INF=05, then a normal answer.
+    ScriptedCard card = new ScriptedCard("00C30105C7", OK_I_BLOCK);
+
+    new T1Protocol(card, IFSC_254).sendApdu(Codec.fromHex(SELECT_APDU));
+
+    card.assertSent(SELECT_I_BLOCK_NS0, "00E30105E7");
+    Assert.assertEquals(Arrays.asList(1, 5), card.multipliers);
+  }
+
+  /** Each request is granted its own multiplier, not the largest or the last. */
+  @Test
+  public void testEachWtxRequestKeepsItsOwnMultiplier() throws IOException {
+    // INF=02 and INF=0A (10) in turn.
+    ScriptedCard card = new ScriptedCard("00C30102C0", "00C3010AC8", OK_I_BLOCK);
+
+    new T1Protocol(card, IFSC_254).sendApdu(Codec.fromHex(SELECT_APDU));
+
+    Assert.assertEquals(Arrays.asList(1, 2, 10), card.multipliers);
+  }
+
+  /** The largest multiplier a single byte can carry is passed on unchanged. */
+  @Test
+  public void testLargestWtxMultiplier() throws IOException {
+    // INF=FF: 00 ^ C3 ^ 01 ^ FF = 3D.
+    ScriptedCard card = new ScriptedCard("00C301FF3D", OK_I_BLOCK);
+
+    new T1Protocol(card, IFSC_254).sendApdu(Codec.fromHex(SELECT_APDU));
+
+    Assert.assertEquals(Arrays.asList(1, 255), card.multipliers);
+  }
+
+  /** A zero or missing multiplier is not a request for no time at all; it is read as one. */
+  @Test
+  public void testZeroOrMissingWtxMultiplierIsReadAsOne() throws IOException {
+    // S(WTX request) with INF=00, then one with no INF.
+    ScriptedCard card = new ScriptedCard("00C30100C2", "00C300C3", OK_I_BLOCK);
+
+    new T1Protocol(card, IFSC_254).sendApdu(Codec.fromHex(SELECT_APDU));
+
+    card.assertSent(SELECT_I_BLOCK_NS0, "00E30100E2", "00E300E3");
+    Assert.assertEquals(Arrays.asList(1, 1, 1), card.multipliers);
+  }
+
+  /** An IFS answer is not an extension, whatever its INF holds. */
+  @Test
+  public void testIfsAnswerIsNotExtended() throws IOException {
+    ScriptedCard card = new ScriptedCard("00C101FE3E", OK_I_BLOCK);
+
+    new T1Protocol(card, IFSC_254).sendApdu(Codec.fromHex(SELECT_APDU));
+
+    Assert.assertEquals(Arrays.asList(1, 1), card.multipliers);
   }
 }

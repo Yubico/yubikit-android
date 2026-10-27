@@ -25,6 +25,35 @@
   - fido: InfoData parses vendorPrototypeConfigCommands as unsigned 64-bit values and adds
           getVendorPrototypeConfigCommandIds(); getVendorPrototypeConfigCommands() is
           deprecated
+  - fido: makeCredential no longer returns the authenticator's attestation statement unless
+          direct, indirect or enterprise attestation was requested; the default and "none"
+          now return fmt "none" with an empty attStmt, as WebAuthn requires
+  - openpgp: reject an invalid KDF iteration count with IllegalArgumentException (zero,
+             not encoded in 4 bytes, or above Integer.MAX_VALUE) and always hash at least
+             the whole salt and PIN, as RFC 4880 requires; documented on getKdf()
+  - fido: bound large blob array reads by the advertised capacity and treat malformed
+          fragments as a failed largeBlob extension instead of throwing unchecked exceptions
+  - piv: bound certificate decompression: zlib streams that are truncated, need a
+         dictionary or exceed their declared length are rejected instead of looping or
+         expanding, and gzip certificates larger than 64 KiB are rejected
+  - openpgp: initialize a session with a card that advertises no extended capabilities or
+             general features, instead of failing with IllegalArgumentException
+  - fido, openpgp: avoid Map.getOrDefault and Collection.stream(), which need API 24, so
+                   OpenPGP PIN commands, credential lists and the sign extension no longer
+                   fail with NoSuchMethodError on API 21-23 without desugaring
+  - oath: report malformed CALCULATE and CALCULATE_ALL responses as BadResponseException (or
+          IOException from calculateCode) instead of unchecked exceptions
+  - fido: Ctap1Client.getAssertion rejects userVerification "required" with
+          CONFIGURATION_UNSUPPORTED instead of returning an assertion without user
+          verification, as makeCredential already does
+  - fido: report an empty CTAP response, or an empty NFC keepalive, as BadResponseException
+          instead of ArrayIndexOutOfBoundsException
+  - fido: getAssertions passes the caller's CommandState to the follow-up
+          authenticatorGetNextAssertion calls, so cancellation and keepalive callbacks also apply
+          after the first assertion
+  - core: SmartCardProtocol bounds a response that the card delivers in pieces (SW1 = 61) to
+          1 MiB and to 16 pieces in a row without data, and reports a card that goes past
+          either as an IOException instead of reading forever
   - testing: fido-ui instrumented tests run on Android 16
   - build: updated dependencies, GitHub Actions and the Gradle wrapper (9.7.1)
 * Version 3.2.1 (released 2026-09-08)
