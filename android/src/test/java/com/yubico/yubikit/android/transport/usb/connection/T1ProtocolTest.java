@@ -60,6 +60,10 @@ public class T1ProtocolTest {
       }
     }
 
+    ScriptedCard(List<byte[]> blocks) {
+      answers.addAll(blocks);
+    }
+
     @Override
     public byte[] exchange(byte[] block, int waitingMultiplier) throws IOException {
       sent.add(block);
@@ -77,6 +81,28 @@ public class T1ProtocolTest {
             "Block " + i + " differs", Codec.fromHex(expectedHex[i]), sent.get(i));
       }
     }
+  }
+
+  /**
+   * The I-blocks of one chained response from the card, one per entry of {@code lengths}: N(S)
+   * alternates from 0, and every block but the last has the M-bit set.
+   */
+  private static List<byte[]> chain(int... lengths) {
+    List<byte[]> blocks = new ArrayList<>();
+    for (int i = 0; i < lengths.length; i++) {
+      boolean more = i < lengths.length - 1;
+      blocks.add(T1Block.iBlock(i % 2, new byte[lengths[i]], more).toBytes());
+    }
+    return blocks;
+  }
+
+  /** {@code count} chained I-blocks of {@code length} bytes each that never end the chain. */
+  private static List<byte[]> endlessChain(int count, int length) {
+    List<byte[]> blocks = new ArrayList<>();
+    for (int i = 0; i < count; i++) {
+      blocks.add(T1Block.iBlock(i % 2, new byte[length], true).toBytes());
+    }
+    return blocks;
   }
 
   /** An APDU of {@code length} bytes, distinguishable byte by byte once it is reassembled. */
@@ -241,7 +267,7 @@ public class T1ProtocolTest {
     }
   }
 
-  /** A card that only ever repeats one block still hits the block budget. */
+  /** A card that only ever repeats one block adds no data, so it is given up on. */
   @Test
   public void testEndlessRetransmissionTerminates() {
     String[] blocks = new String[512];
@@ -250,9 +276,9 @@ public class T1ProtocolTest {
 
     try {
       new T1Protocol(card, IFSC_254).sendApdu(Codec.fromHex(SELECT_APDU));
-      Assert.fail("Expected IOException once the block budget is spent");
+      Assert.fail("Expected IOException once the card stops making progress");
     } catch (IOException e) {
-      Assert.assertEquals("T=1 response did not terminate within 256 blocks", e.getMessage());
+      Assert.assertEquals("T=1 response made no progress within 16 blocks", e.getMessage());
     }
   }
 
@@ -441,25 +467,103 @@ public class T1ProtocolTest {
   }
 
   /**
-   * A card that keeps setting the M-bit would otherwise hold the loop open forever, so the
-   * reassembly is bounded and gives up with a diagnosable error.
+   * A card that keeps setting the M-bit would otherwise hold the loop open forever. The response is
+   * limited to the longest response APDU, whatever size the blocks are.
    */
   @Test
   public void testEndlessChainTerminates() {
-    String[] endlessChain = new String[512];
-    for (int i = 0; i < endlessChain.length; i++) {
-      // Alternate N(S) so every block is the one our R-block asked for:
-      // PCB=20 is N(S)=0 with M set, PCB=60 is N(S)=1 with M set.
-      endlessChain[i] = i % 2 == 0 ? "002001AA8B" : "006001AACB";
-    }
-    ScriptedCard card = new ScriptedCard(endlessChain);
+    ScriptedCard card = new ScriptedCard(endlessChain(300, T1Block.MAX_INF_LENGTH));
 
     try {
       new T1Protocol(card, IFSC_254).sendApdu(Codec.fromHex(SELECT_APDU));
-      Assert.fail("Expected IOException once the block budget is spent");
+      Assert.fail("Expected IOException once the response is longer than any APDU");
     } catch (IOException e) {
-      Assert.assertEquals("T=1 response did not terminate within 256 blocks", e.getMessage());
+      Assert.assertEquals("T=1 response exceeds 65538 bytes", e.getMessage());
     }
+  }
+
+  /**
+   * The longest response APDU of a short command is 256 data bytes plus SW1-SW2, however small the
+   * card's blocks are: with an IFSC of 1 that is 258 blocks, more than the old count limit of 256.
+   */
+  @Test
+  public void testResponsesOfSmallBlocksAreAcceptedUpToTheMaximum() throws IOException {
+    for (int blocks : new int[] {255, 256, 257, 258}) {
+      int[] lengths = new int[blocks];
+      Arrays.fill(lengths, 1);
+      ScriptedCard card = new ScriptedCard(chain(lengths));
+
+      // A single byte command, so that it fits one block of the card's size
+      byte[] response = new T1Protocol(card, 1).sendApdu(new byte[] {0x00});
+
+      Assert.assertEquals(blocks, response.length);
+    }
+  }
+
+  /** A response of exactly the longest APDU, 65,536 data bytes and the status word, is accepted. */
+  @Test
+  public void testResponseOfTheMaximumLengthIsAccepted() throws IOException {
+    int[] lengths = new int[259];
+    Arrays.fill(lengths, T1Block.MAX_INF_LENGTH);
+    lengths[258] = 6; // 258 x 254 + 6 = 65,538
+    ScriptedCard card = new ScriptedCard(chain(lengths));
+
+    byte[] response = new T1Protocol(card, IFSC_254).sendApdu(Codec.fromHex(SELECT_APDU));
+
+    Assert.assertEquals(65538, response.length);
+  }
+
+  /** One byte more than the longest APDU is refused. */
+  @Test
+  public void testResponseOneByteOverTheMaximumIsRejected() {
+    int[] lengths = new int[259];
+    Arrays.fill(lengths, T1Block.MAX_INF_LENGTH);
+    lengths[258] = 7; // 65,539
+    ScriptedCard card = new ScriptedCard(chain(lengths));
+
+    try {
+      new T1Protocol(card, IFSC_254).sendApdu(Codec.fromHex(SELECT_APDU));
+      Assert.fail("Expected IOException for a response one byte over the maximum");
+    } catch (IOException e) {
+      Assert.assertEquals("T=1 response exceeds 65538 bytes", e.getMessage());
+    }
+  }
+
+  /** A chain may contain empty I-blocks (ISO/IEC 7816-3 11.6.2.2), a few of them are fine. */
+  @Test
+  public void testEmptyBlocksInsideAChainAreAccepted() throws IOException {
+    ScriptedCard card = new ScriptedCard(chain(1, 0, 0, 1));
+
+    byte[] response = new T1Protocol(card, IFSC_254).sendApdu(Codec.fromHex(SELECT_APDU));
+
+    Assert.assertEquals(2, response.length);
+  }
+
+  /** Empty blocks add no data, so a card that only sends them cannot hold the chain open. */
+  @Test
+  public void testEndlessEmptyBlocksTerminate() {
+    ScriptedCard card = new ScriptedCard(endlessChain(100, 0));
+
+    try {
+      new T1Protocol(card, IFSC_254).sendApdu(Codec.fromHex(SELECT_APDU));
+      Assert.fail("Expected IOException once the card only sends empty blocks");
+    } catch (IOException e) {
+      Assert.assertEquals("T=1 response made no progress within 16 blocks", e.getMessage());
+    }
+  }
+
+  /** A block with data starts the count again, so empty blocks spread through a chain are fine. */
+  @Test
+  public void testEmptyBlocksBetweenDataBlocksDoNotAddUp() throws IOException {
+    int[] lengths = new int[60];
+    for (int i = 0; i < lengths.length; i++) {
+      lengths[i] = i % 10 == 9 ? 1 : 0; // nine empty blocks, then one with a byte
+    }
+    ScriptedCard card = new ScriptedCard(chain(lengths));
+
+    byte[] response = new T1Protocol(card, IFSC_254).sendApdu(Codec.fromHex(SELECT_APDU));
+
+    Assert.assertEquals(6, response.length);
   }
 
   /** The card may ask for more time between the blocks of its own chained response, too. */
