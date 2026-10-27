@@ -191,12 +191,15 @@ public class SmartCardProtocol implements Closeable {
    * Sends APDU command and receives byte array from connection
    *
    * <p>In case if output has status code that it has remaining info sends another APDU command to
-   * receive what's remaining
+   * receive what's remaining. The reassembled response is limited to 1 MiB, and the card may not
+   * answer more than 16 times in a row without delivering data. A card that goes past either limit
+   * causes an {@link IOException}.
    *
    * @param command well structured command that needs to be send
    * @return data blob concatenated from all APDU commands that were sent *set of output commands
    *     and send remaining commands)
-   * @throws IOException in case of connection and communication error
+   * @throws IOException in case of connection and communication error, or if the card's response
+   *     chain is longer than 1 MiB or makes no progress
    * @throws ApduException in case if received error in APDU response
    */
   public byte[] sendAndReceive(Apdu command) throws IOException, ApduException {
