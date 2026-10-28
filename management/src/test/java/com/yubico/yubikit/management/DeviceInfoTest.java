@@ -34,6 +34,7 @@ import com.yubico.yubikit.core.Version;
 import com.yubico.yubikit.core.YubiKeyType;
 import com.yubico.yubikit.core.util.Tlvs;
 import com.yubico.yubikit.support.DeviceUtil;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import org.jspecify.annotations.Nullable;
@@ -130,6 +131,41 @@ public class DeviceInfoTest {
     assertNull(infoOf(0x13, fromHex("f0288cbc")).getPartNumber());
     assertNull(infoOf(0x13, fromHex("f09028bc")).getPartNumber());
     assertNull(infoOf(0x13, fromHex("f0288c28")).getPartNumber());
+  }
+
+  @Test
+  public void testParseName() {
+    assertNull(defaultInfo().getName());
+    assertEquals("YubiKey", infoOf(0x1B, "YubiKey".getBytes(StandardCharsets.UTF_8)).getName());
+    assertEquals("Ключ 😀", infoOf(0x1B, "Ключ 😀".getBytes(StandardCharsets.UTF_8)).getName());
+
+    // an empty name means the device does not report one
+    assertNull(infoOf(0x1B, new byte[0]).getName());
+
+    // invalid UTF-8
+    assertNull(infoOf(0x1B, fromHex("c328")).getName());
+    assertNull(infoOf(0x1B, fromHex("a0a1")).getName());
+    assertNull(infoOf(0x1B, fromHex("f0288cbc")).getName());
+  }
+
+  @Test
+  public void testParseNameFromEncodedTlvs() {
+    // tag 0x1B, length 11, "Example Key" as received from the device
+    Map<Integer, byte[]> data = Tlvs.decodeMap(fromHex("1b0b4578616d706c65204b6579"));
+    assertEquals("Example Key", DeviceInfo.parseTlvs(data, defaultVersion).getName());
+  }
+
+  @Test
+  public void testNameDoesNotAffectOtherFields() {
+    Map<Integer, byte[]> data = new HashMap<>();
+    data.put(0x02, fromHex("075BCD15"));
+    data.put(0x13, "0123456789ABCDEF".getBytes(StandardCharsets.UTF_8));
+    data.put(0x1B, "YubiKey".getBytes(StandardCharsets.UTF_8));
+    DeviceInfo info = DeviceInfo.parseTlvs(data, defaultVersion);
+
+    assertEquals("YubiKey", info.getName());
+    assertEquals(Integer.valueOf(123456789), info.getSerialNumber());
+    assertEquals("0123456789ABCDEF", info.getPartNumber());
   }
 
   @Test

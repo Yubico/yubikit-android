@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2024 Yubico.
+ * Copyright (C) 2020-2024,2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,12 +15,16 @@
  */
 package com.yubico.yubikit.piv;
 
+import com.yubico.yubikit.core.keys.PrivateKeyValues;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.security.spec.ECGenParameterSpec;
+import java.util.Arrays;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
 import org.junit.BeforeClass;
@@ -104,5 +108,64 @@ public class KeyTypeTest {
         KeyType.fromKey(rsa4096.getPrivate()), CoreMatchers.is(KeyType.RSA4096));
     MatcherAssert.assertThat(
         KeyType.fromKey(rsa4096.getPublic()), CoreMatchers.is(KeyType.RSA4096));
+  }
+
+  @Test
+  public void testFromValueAcceptsBytesAndUnsignedValues() {
+    for (KeyType keyType : KeyType.values()) {
+      MatcherAssert.assertThat(KeyType.fromValue(keyType.value), CoreMatchers.is(keyType));
+      MatcherAssert.assertThat(KeyType.fromValue(keyType.value & 0xFF), CoreMatchers.is(keyType));
+    }
+    MatcherAssert.assertThat(KeyType.fromValue(0xE0), CoreMatchers.is(KeyType.ED25519));
+    MatcherAssert.assertThat(KeyType.fromValue(0xE1), CoreMatchers.is(KeyType.X25519));
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void testFromValueRejectsUnknownValues() {
+    KeyType.fromValue(0xE8);
+  }
+
+  @Test
+  public void testPostQuantumFromValue() {
+    MatcherAssert.assertThat(KeyType.fromValue(0xE2), CoreMatchers.is(KeyType.MLDSA44));
+    MatcherAssert.assertThat(KeyType.fromValue(0xE3), CoreMatchers.is(KeyType.MLDSA65));
+    MatcherAssert.assertThat(KeyType.fromValue(0xE4), CoreMatchers.is(KeyType.MLDSA87));
+    MatcherAssert.assertThat(KeyType.fromValue(0xE5), CoreMatchers.is(KeyType.MLKEM512));
+    MatcherAssert.assertThat(KeyType.fromValue(0xE6), CoreMatchers.is(KeyType.MLKEM768));
+    MatcherAssert.assertThat(KeyType.fromValue(0xE7), CoreMatchers.is(KeyType.MLKEM1024));
+  }
+
+  @Test
+  public void testPostQuantumParams() {
+    for (KeyType keyType : PostQuantumTestKeys.ML_DSA_KEY_TYPES) {
+      MatcherAssert.assertThat(keyType.params.algorithm, CoreMatchers.is(KeyType.Algorithm.MLDSA));
+    }
+    for (KeyType keyType : PostQuantumTestKeys.ML_KEM_KEY_TYPES) {
+      MatcherAssert.assertThat(keyType.params.algorithm, CoreMatchers.is(KeyType.Algorithm.MLKEM));
+    }
+  }
+
+  @Test
+  public void testFromPostQuantumKeys() {
+    for (KeyType expected :
+        Arrays.asList(
+            KeyType.MLDSA44,
+            KeyType.MLDSA65,
+            KeyType.MLDSA87,
+            KeyType.MLKEM512,
+            KeyType.MLKEM768,
+            KeyType.MLKEM1024)) {
+      PublicKey pub =
+          PostQuantumTestKeys.publicKey(
+              expected, PostQuantumTestKeys.publicKeyBytes(expected, 0x42));
+      MatcherAssert.assertThat(KeyType.fromKey(pub), CoreMatchers.is(expected));
+
+      byte[] seed = new byte[PostQuantumTestKeys.seedLength(expected)];
+      Arrays.fill(seed, (byte) 0x11);
+      PrivateKey priv = PostQuantumTestKeys.privateKey(expected, seed);
+      MatcherAssert.assertThat(KeyType.fromKey(priv), CoreMatchers.is(expected));
+      PrivateKeyValues values = PrivateKeyValues.fromPrivateKey(priv);
+      MatcherAssert.assertThat(KeyType.fromKeyParams(values), CoreMatchers.is(expected));
+    }
   }
 }

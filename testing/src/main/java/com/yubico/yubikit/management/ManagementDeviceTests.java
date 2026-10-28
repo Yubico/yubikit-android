@@ -17,6 +17,7 @@
 package com.yubico.yubikit.management;
 
 import com.yubico.yubikit.core.Transport;
+import com.yubico.yubikit.support.DeviceUtil;
 import org.junit.Assert;
 import org.junit.Assume;
 
@@ -35,5 +36,16 @@ public class ManagementDeviceTests {
 
     int usbCapabilities = managementSession.getDeviceInfo().getSupportedCapabilities(Transport.USB);
     Assert.assertTrue((usbCapabilities & Capability.FIDO_CCID.bit) == Capability.FIDO_CCID.bit);
+  }
+
+  public static void testReportedName(ManagementSession managementSession) throws Exception {
+    Assume.assumeTrue(managementSession.getVersion().isAtLeast(6, 0, 0));
+
+    DeviceInfo info = managementSession.getDeviceInfo();
+    String name = info.getName();
+
+    Assert.assertNotNull("The device does not report a name", name);
+    Assert.assertFalse(name.isEmpty());
+    Assert.assertEquals(name, DeviceUtil.getName(info, null));
   }
 }

@@ -25,7 +25,9 @@ import com.yubico.yubikit.core.smartcard.scp.ScpState;
 import com.yubico.yubikit.core.smartcard.scp.SessionKeys;
 import java.nio.ByteBuffer;
 import java.security.Security;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import javax.crypto.Mac;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
@@ -33,9 +35,16 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-/** GPC Amd D (SCP03) v1.2 §6.2.5: success and warning responses carry an R-MAC, even when empty. */
+/**
+ * Secure messaging of the commands sent, and of the responses to them.
+ *
+ * <p>GPC Amd D (SCP03) v1.2 §6.2.5: success and warning responses carry an R-MAC, even when empty.
+ */
 public class ScpProcessorTest {
   private static final int INS_EXTERNAL_AUTHENTICATE = 0x82;
+  private static final int SECURE_MESSAGING_FLAG = 0x04;
+  private static final int MAC_LENGTH = 8;
+  private static final int CIPHER_BLOCK_LENGTH = 16;
   private static final SecretKey KEY = new SecretKeySpec(new byte[16], "AES");
 
   @BeforeClass
@@ -50,6 +59,50 @@ public class ScpProcessorTest {
 
   private static ApduProcessor reply(int sw) {
     return apdu -> new ApduResponse(new byte[] {(byte) (sw >> 8), (byte) sw});
+  }
+
+  /** A card which records the commands, and answers with an error, which carries no R-MAC. */
+  private static class RecordingCard implements ApduProcessor {
+    final List<Apdu> sent = new ArrayList<>();
+
+    @Override
+    public ApduResponse sendApdu(Apdu apdu) {
+      sent.add(apdu);
+      return new ApduResponse(new byte[] {0x6A, (byte) 0x88});
+    }
+  }
+
+  /** The length of data once padded for encryption, which always adds at least one byte. */
+  private static int paddedLength(int length) {
+    return (length / CIPHER_BLOCK_LENGTH + 1) * CIPHER_BLOCK_LENGTH;
+  }
+
+  @Test
+  public void commandIsMarkedAsSecureMessagingEncryptedAndMaced() throws Exception {
+    RecordingCard card = new RecordingCard();
+
+    processor(card).sendApdu(new Apdu(0, 0x01, 0x02, 0x03, new byte[100]));
+
+    assertEquals(1, card.sent.size());
+    Apdu apdu = card.sent.get(0);
+    assertEquals(SECURE_MESSAGING_FLAG, apdu.getCla() & SECURE_MESSAGING_FLAG);
+    assertEquals(0x01, apdu.getIns());
+    assertEquals(0x02, apdu.getP1());
+    assertEquals(0x03, apdu.getP2());
+    // padded to the cipher block size, and followed by the MAC
+    assertEquals(paddedLength(100) + MAC_LENGTH, apdu.getData().length);
+  }
+
+  @Test
+  public void commandLargerThanASingleApduIsPassedOn() throws Exception {
+    // The MAC covers the whole command. How it is split into APDUs is up to the delegate, so the
+    // limit of a single extended APDU must not stop the command from being MACed.
+    RecordingCard card = new RecordingCard();
+
+    processor(card).sendApdu(new Apdu(0, 0x01, 0, 0, new byte[10_000]));
+
+    assertEquals(1, card.sent.size());
+    assertEquals(paddedLength(10_000) + MAC_LENGTH, card.sent.get(0).getData().length);
   }
 
   @Test

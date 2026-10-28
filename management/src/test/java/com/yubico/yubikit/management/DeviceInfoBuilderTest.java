@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2025 Yubico.
+ * Copyright (C) 2024-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package com.yubico.yubikit.management;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
@@ -83,6 +84,23 @@ public class DeviceInfoBuilderTest {
     assertEquals(
         "0123456789ABCDEF",
         new DeviceInfo.Builder().partNumber("0123456789ABCDEF").build().getPartNumber());
+  }
+
+  @Test
+  public void testName() {
+    assertNull(defaultInfo().getName());
+    assertEquals("YubiKey", new DeviceInfo.Builder().name("YubiKey").build().getName());
+    assertNull(new DeviceInfo.Builder().name("YubiKey").name(null).build().getName());
+  }
+
+  @Test
+  public void testNameIsPartOfEquality() {
+    DeviceInfo named = new DeviceInfo.Builder().name("YubiKey").build();
+    DeviceInfo sameName = new DeviceInfo.Builder().name("YubiKey").build();
+    assertEquals(named, sameName);
+    assertEquals(named.hashCode(), sameName.hashCode());
+    assertNotEquals(named, new DeviceInfo.Builder().name("Other").build());
+    assertNotEquals(named, defaultInfo());
   }
 
   @Test

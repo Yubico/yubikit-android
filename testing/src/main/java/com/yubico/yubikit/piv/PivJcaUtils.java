@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2025 Yubico.
+ * Copyright (C) 2022-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,9 @@ public class PivJcaUtils {
   public static void setupJca(PivSession piv) {
     Security.removeProvider("BC");
     Security.addProvider(new BouncyCastleProvider());
+    // A provider left by a test which failed would otherwise stay in place of this one, as a
+    // provider is not added if there already is one with its name.
+    Security.removeProvider("YKPiv");
     Security.insertProviderAt(new PivProvider(piv), 1);
     listJcaProviders();
   }

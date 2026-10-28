@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2025 Yubico.
+ * Copyright (C) 2022-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,6 +49,36 @@ public class PivTests {
     @Test
     public void testManagementKey() throws Throwable {
       withPivSession(PivDeviceTests::testManagementKey);
+    }
+
+    @Test
+    public void testLargeObject() throws Throwable {
+      withPivSession(PivDeviceTests::testLargeObject);
+    }
+
+    @Test
+    public void testMlDsaSignWithContext() throws Throwable {
+      withPivSession(PivPostQuantumDeviceTests::testMlDsaSignWithContext);
+    }
+
+    @Test
+    public void testMlDsaSignExternalMu() throws Throwable {
+      withPivSession(PivPostQuantumDeviceTests::testMlDsaSignExternalMu);
+    }
+
+    @Test
+    public void testMlKemDecapsulate() throws Throwable {
+      withPivSession(PivPostQuantumDeviceTests::testMlKemDecapsulate);
+    }
+
+    @Test
+    public void testMlKemImport() throws Throwable {
+      withPivSession(PivPostQuantumDeviceTests::testMlKemImport);
+    }
+
+    @Test
+    public void testObjectBeyondApduLimit() throws Throwable {
+      withPivSession(PivDeviceTests::testObjectBeyondApduLimit);
     }
 
     @Test

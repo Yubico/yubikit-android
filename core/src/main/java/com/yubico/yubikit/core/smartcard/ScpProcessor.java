@@ -28,7 +28,9 @@ public class ScpProcessor implements ApduProcessor {
   private final ApduProcessor delegate;
   private final ApduFormatter formatter;
   final ScpState state;
-  private final ApduFormatter extendedFormatter = new ExtendedApduFormatter(MaxApduSize.YK4_3);
+  // The MAC covers the whole command, which may be sent as several chained APDUs. The size limit of
+  // a single APDU does not apply to it.
+  private final ApduFormatter extendedFormatter = new ExtendedApduFormatter(Integer.MAX_VALUE);
 
   ScpProcessor(ApduProcessor delegate, ApduFormatter formatter, ScpState state) {
     this.delegate = delegate;
