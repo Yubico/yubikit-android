@@ -187,6 +187,13 @@ public class AdjustDeviceInfoTest {
   }
 
   @Test
+  public void testName() {
+    assertNull(adjustedInfo(i -> {}).getName());
+
+    assertEquals("YubiKey", adjustedInfo(i -> i.name("YubiKey")).getName());
+  }
+
+  @Test
   public void testPinComplexity() {
     assertFalse(adjustedInfo(i -> {}).getPinComplexity());
 
