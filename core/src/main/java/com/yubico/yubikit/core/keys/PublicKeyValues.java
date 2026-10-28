@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Yubico.
+ * Copyright (C) 2023,2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -91,6 +91,16 @@ public abstract class PublicKeyValues {
             return new Cv25519(curve, encodedKey);
           }
         }
+        for (MlDsaParameterValues params : MlDsaParameterValues.values()) {
+          if (Arrays.equals(params.getOid(), algorithm)) {
+            return new MlDsa(params, encodedKey);
+          }
+        }
+        for (MlKemParameterValues params : MlKemParameterValues.values()) {
+          if (Arrays.equals(params.getOid(), algorithm)) {
+            return new MlKem(params, encodedKey);
+          }
+        }
       }
     } catch (BadResponseException e) {
       throw new RuntimeException(e);
@@ -151,6 +161,108 @@ public abstract class PublicKeyValues {
           + bitLength
           + '}';
     }
+  }
+
+  public static class MlDsa extends PublicKeyValues {
+    private final MlDsaParameterValues parameterValues;
+    private final byte[] publicKey;
+
+    public MlDsa(MlDsaParameterValues parameterValues, byte[] publicKey) {
+      super(parameterValues.getSecurityStrength());
+      if (publicKey.length != parameterValues.getPublicKeyLength()) {
+        throw new IllegalArgumentException("Public key has wrong length: " + publicKey.length);
+      }
+      this.parameterValues = parameterValues;
+      this.publicKey = Arrays.copyOf(publicKey, publicKey.length);
+    }
+
+    public MlDsaParameterValues getParameterValues() {
+      return parameterValues;
+    }
+
+    public byte[] getBytes() {
+      return Arrays.copyOf(publicKey, publicKey.length);
+    }
+
+    @Override
+    public byte[] getEncoded() {
+      return encodeSubjectPublicKeyInfo(parameterValues.getOid(), publicKey);
+    }
+
+    @Override
+    public PublicKey toPublicKey() throws NoSuchAlgorithmException, InvalidKeySpecException {
+      KeyFactory keyFactory = KeyFactory.getInstance("ML-DSA");
+      return keyFactory.generatePublic(new X509EncodedKeySpec(getEncoded()));
+    }
+
+    @Override
+    public String toString() {
+      return "PublicKeyValues.MlDsa{"
+          + "params="
+          + parameterValues.name()
+          + ", bitLength="
+          + bitLength
+          + '}';
+    }
+  }
+
+  public static class MlKem extends PublicKeyValues {
+    private final MlKemParameterValues parameterValues;
+    private final byte[] publicKey;
+
+    public MlKem(MlKemParameterValues parameterValues, byte[] publicKey) {
+      super(parameterValues.getSecurityStrength());
+      if (publicKey.length != parameterValues.getPublicKeyLength()) {
+        throw new IllegalArgumentException("Public key has wrong length: " + publicKey.length);
+      }
+      this.parameterValues = parameterValues;
+      this.publicKey = Arrays.copyOf(publicKey, publicKey.length);
+    }
+
+    public MlKemParameterValues getParameterValues() {
+      return parameterValues;
+    }
+
+    public byte[] getBytes() {
+      return Arrays.copyOf(publicKey, publicKey.length);
+    }
+
+    @Override
+    public byte[] getEncoded() {
+      return encodeSubjectPublicKeyInfo(parameterValues.getOid(), publicKey);
+    }
+
+    @Override
+    public PublicKey toPublicKey() throws NoSuchAlgorithmException, InvalidKeySpecException {
+      KeyFactory keyFactory = KeyFactory.getInstance("ML-KEM");
+      return keyFactory.generatePublic(new X509EncodedKeySpec(getEncoded()));
+    }
+
+    @Override
+    public String toString() {
+      return "PublicKeyValues.MlKem{"
+          + "params="
+          + parameterValues.name()
+          + ", bitLength="
+          + bitLength
+          + '}';
+    }
+  }
+
+  /** Encodes a key which has no algorithm parameters as a SubjectPublicKeyInfo. */
+  private static byte[] encodeSubjectPublicKeyInfo(byte[] algorithmOid, byte[] publicKey) {
+    return new Tlv(
+            0x30,
+            Tlvs.encodeList(
+                Arrays.asList(
+                    new Tlv(0x30, new Tlv(0x06, algorithmOid).getBytes()),
+                    new Tlv(
+                        0x03,
+                        ByteBuffer.allocate(1 + publicKey.length)
+                            .put((byte) 0)
+                            .put(publicKey)
+                            .array()))))
+        .getBytes();
   }
 
   public static class Ec extends PublicKeyValues {

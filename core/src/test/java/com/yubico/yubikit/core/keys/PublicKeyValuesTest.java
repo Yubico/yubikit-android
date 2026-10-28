@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Yubico.
+ * Copyright (C) 2023,2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,11 +17,14 @@
 package com.yubico.yubikit.core.keys;
 
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertArrayEquals;
 
 import com.yubico.yubikit.Codec;
 import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
 import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
@@ -92,5 +95,91 @@ public class PublicKeyValuesTest {
     assertThat(key.getModulus(), equalTo(modulus));
     assertThat(key.getPublicExponent(), equalTo(exponent));
     assertThat(key.getModulus().bitLength(), equalTo(2048));
+  }
+
+  private static byte[] sequence(int length) {
+    byte[] data = new byte[length];
+    for (int i = 0; i < length; i++) {
+      data[i] = (byte) i;
+    }
+    return data;
+  }
+
+  @Test
+  public void testMlDsaEncodeAndParse() {
+    for (MlDsaParameterValues params : MlDsaParameterValues.values()) {
+      byte[] publicKey = sequence(params.getPublicKeyLength());
+      PublicKeyValues.MlDsa values = new PublicKeyValues.MlDsa(params, publicKey);
+      assertThat(values.getBitLength(), equalTo(params.getSecurityStrength()));
+      assertArrayEquals(publicKey, values.getBytes());
+
+      PublicKeyValues parsed =
+          PublicKeyValues.fromPublicKey(new StubPublicKey(values.getEncoded()));
+      assertThat(parsed instanceof PublicKeyValues.MlDsa, is(true));
+      PublicKeyValues.MlDsa mlDsa = (PublicKeyValues.MlDsa) parsed;
+      assertThat(mlDsa.getParameterValues(), equalTo(params));
+      assertArrayEquals(publicKey, mlDsa.getBytes());
+    }
+  }
+
+  @Test
+  public void testMlKemEncodeAndParse() {
+    for (MlKemParameterValues params : MlKemParameterValues.values()) {
+      byte[] publicKey = sequence(params.getPublicKeyLength());
+      PublicKeyValues.MlKem values = new PublicKeyValues.MlKem(params, publicKey);
+      assertThat(values.getBitLength(), equalTo(params.getSecurityStrength()));
+      assertArrayEquals(publicKey, values.getBytes());
+
+      PublicKeyValues parsed =
+          PublicKeyValues.fromPublicKey(new StubPublicKey(values.getEncoded()));
+      assertThat(parsed instanceof PublicKeyValues.MlKem, is(true));
+      PublicKeyValues.MlKem mlKem = (PublicKeyValues.MlKem) parsed;
+      assertThat(mlKem.getParameterValues(), equalTo(params));
+      assertArrayEquals(publicKey, mlKem.getBytes());
+    }
+  }
+
+  @Test
+  public void testMlKemAndMlDsaEncodingsAreDistinct() {
+    // the same key bytes are told apart by the algorithm identifier
+    byte[] publicKey = sequence(MlKemParameterValues.MLKEM_768.getPublicKeyLength());
+    byte[] encoded =
+        new PublicKeyValues.MlKem(MlKemParameterValues.MLKEM_768, publicKey).getEncoded();
+    assertThat(
+        PublicKeyValues.fromPublicKey(new StubPublicKey(encoded)) instanceof PublicKeyValues.MlDsa,
+        is(false));
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void testMlDsaWrongPublicKeyLength() {
+    new PublicKeyValues.MlDsa(MlDsaParameterValues.MLDSA_65, new byte[32]);
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void testMlKemWrongPublicKeyLength() {
+    new PublicKeyValues.MlKem(MlKemParameterValues.MLKEM_768, new byte[32]);
+  }
+
+  private static class StubPublicKey implements PublicKey {
+    private final byte[] encoded;
+
+    StubPublicKey(byte[] encoded) {
+      this.encoded = encoded.clone();
+    }
+
+    @Override
+    public String getAlgorithm() {
+      return "ML-DSA";
+    }
+
+    @Override
+    public String getFormat() {
+      return "X.509";
+    }
+
+    @Override
+    public byte[] getEncoded() {
+      return encoded.clone();
+    }
   }
 }

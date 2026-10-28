@@ -11,6 +11,9 @@
           setManagementKey() throw UnsupportedOperationException, see FEATURE_RSA1024 and
           FEATURE_TDES_KEY.
   - core: SmartCardProtocol allows larger extended length APDUs on devices which support them.
+  - core: PublicKeyValues and PrivateKeyValues have variants for additional key types, a
+          signature algorithm and a key-encapsulation mechanism. A private key is
+          represented by its seed.
  ** fixes & improvements:
   - core: data which does not fit in a single extended length APDU is now sent with command
           chaining of short APDUs, also with secure messaging, instead of failing with
