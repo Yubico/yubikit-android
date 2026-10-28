@@ -110,7 +110,6 @@ public class PublicKeyValuesTest {
     for (MlDsaParameterValues params : MlDsaParameterValues.values()) {
       byte[] publicKey = sequence(params.getPublicKeyLength());
       PublicKeyValues.MlDsa values = new PublicKeyValues.MlDsa(params, publicKey);
-      assertThat(values.getBitLength(), equalTo(params.getSecurityStrength()));
       assertArrayEquals(publicKey, values.getBytes());
 
       PublicKeyValues parsed =
@@ -127,7 +126,6 @@ public class PublicKeyValuesTest {
     for (MlKemParameterValues params : MlKemParameterValues.values()) {
       byte[] publicKey = sequence(params.getPublicKeyLength());
       PublicKeyValues.MlKem values = new PublicKeyValues.MlKem(params, publicKey);
-      assertThat(values.getBitLength(), equalTo(params.getSecurityStrength()));
       assertArrayEquals(publicKey, values.getBytes());
 
       PublicKeyValues parsed =

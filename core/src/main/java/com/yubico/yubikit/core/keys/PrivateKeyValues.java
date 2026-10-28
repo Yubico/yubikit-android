@@ -42,6 +42,10 @@ import org.jspecify.annotations.Nullable;
 public abstract class PrivateKeyValues implements Destroyable {
   private static final byte[] OID_ECDSA =
       new byte[] {0x2a, (byte) 0x86, 0x48, (byte) 0xce, 0x3d, 0x02, 0x01};
+
+  /** The bit length of keys which are not measured in bits, such as ML-DSA and ML-KEM keys. */
+  private static final int NO_BIT_LENGTH = 0;
+
   final int bitLength;
   private boolean destroyed = false;
 
@@ -49,6 +53,7 @@ public abstract class PrivateKeyValues implements Destroyable {
     this.bitLength = bitLength;
   }
 
+  /** Returns the bit length of the key, which is {@code 0} for keys which have none. */
   public final int getBitLength() {
     return bitLength;
   }
@@ -163,7 +168,7 @@ public abstract class PrivateKeyValues implements Destroyable {
     private final byte[] seed;
 
     protected MlDsa(MlDsaParameterValues parameterValues, byte[] seed) {
-      super(parameterValues.getSecurityStrength());
+      super(NO_BIT_LENGTH);
       if (seed.length != parameterValues.getSeedLength()) {
         throw new IllegalArgumentException("ML-DSA seed has wrong length: " + seed.length);
       }
@@ -190,8 +195,6 @@ public abstract class PrivateKeyValues implements Destroyable {
       return "PrivateKeyValues.MlDsa{"
           + "params="
           + parameterValues.name()
-          + ", bitLength="
-          + bitLength
           + ", destroyed="
           + isDestroyed()
           + '}';
@@ -203,7 +206,7 @@ public abstract class PrivateKeyValues implements Destroyable {
     private final byte[] seed;
 
     protected MlKem(MlKemParameterValues parameterValues, byte[] seed) {
-      super(parameterValues.getSecurityStrength());
+      super(NO_BIT_LENGTH);
       if (seed.length != parameterValues.getSeedLength()) {
         throw new IllegalArgumentException("ML-KEM seed has wrong length: " + seed.length);
       }
@@ -230,8 +233,6 @@ public abstract class PrivateKeyValues implements Destroyable {
       return "PrivateKeyValues.MlKem{"
           + "params="
           + parameterValues.name()
-          + ", bitLength="
-          + bitLength
           + ", destroyed="
           + isDestroyed()
           + '}';

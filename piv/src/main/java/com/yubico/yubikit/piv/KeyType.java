@@ -61,6 +61,8 @@ public enum KeyType {
   /** Module-Lattice-Based Key-Encapsulation Mechanism (ML-KEM) key, parameter set 1024. */
   MLKEM1024((byte) 0xE7, new MlKemKeyParams(MlKemParameterValues.MLKEM_1024));
 
+  private static final int NO_BIT_LENGTH = 0;
+
   public final byte value;
   public final KeyParams params;
 
@@ -172,7 +174,7 @@ public enum KeyType {
   /**
    * Algorithm parameters used by a KeyType.
    *
-   * <p>The bit length of a ML-DSA or ML-KEM key is the security strength of its parameter set.
+   * <p>The bit length is 0 for ML-DSA and ML-KEM keys, which are not measured in bits.
    */
   public abstract static class KeyParams {
     public final Algorithm algorithm;
@@ -210,7 +212,7 @@ public enum KeyType {
     private final MlDsaParameterValues parameterValues;
 
     private MlDsaKeyParams(MlDsaParameterValues parameterValues) {
-      super(Algorithm.MLDSA, parameterValues.getSecurityStrength());
+      super(Algorithm.MLDSA, NO_BIT_LENGTH);
       this.parameterValues = parameterValues;
     }
 
@@ -224,7 +226,7 @@ public enum KeyType {
     private final MlKemParameterValues parameterValues;
 
     private MlKemKeyParams(MlKemParameterValues parameterValues) {
-      super(Algorithm.MLKEM, parameterValues.getSecurityStrength());
+      super(Algorithm.MLKEM, NO_BIT_LENGTH);
       this.parameterValues = parameterValues;
     }
 

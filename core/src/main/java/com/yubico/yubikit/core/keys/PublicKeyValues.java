@@ -43,12 +43,16 @@ public abstract class PublicKeyValues {
   private static final byte[] OID_RSA_ENCRYPTION =
       new byte[] {0x2a, (byte) 0x86, 0x48, (byte) 0x86, (byte) 0xf7, 0x0d, 0x01, 0x01, 0x01};
 
+  /** The bit length of keys which are not measured in bits, such as ML-DSA and ML-KEM keys. */
+  private static final int NO_BIT_LENGTH = 0;
+
   protected final int bitLength;
 
   protected PublicKeyValues(int bitLength) {
     this.bitLength = bitLength;
   }
 
+  /** Returns the bit length of the key, which is {@code 0} for keys which have none. */
   public final int getBitLength() {
     return bitLength;
   }
@@ -168,7 +172,7 @@ public abstract class PublicKeyValues {
     private final byte[] publicKey;
 
     public MlDsa(MlDsaParameterValues parameterValues, byte[] publicKey) {
-      super(parameterValues.getSecurityStrength());
+      super(NO_BIT_LENGTH);
       if (publicKey.length != parameterValues.getPublicKeyLength()) {
         throw new IllegalArgumentException("Public key has wrong length: " + publicKey.length);
       }
@@ -197,12 +201,7 @@ public abstract class PublicKeyValues {
 
     @Override
     public String toString() {
-      return "PublicKeyValues.MlDsa{"
-          + "params="
-          + parameterValues.name()
-          + ", bitLength="
-          + bitLength
-          + '}';
+      return "PublicKeyValues.MlDsa{" + "params=" + parameterValues.name() + '}';
     }
   }
 
@@ -211,7 +210,7 @@ public abstract class PublicKeyValues {
     private final byte[] publicKey;
 
     public MlKem(MlKemParameterValues parameterValues, byte[] publicKey) {
-      super(parameterValues.getSecurityStrength());
+      super(NO_BIT_LENGTH);
       if (publicKey.length != parameterValues.getPublicKeyLength()) {
         throw new IllegalArgumentException("Public key has wrong length: " + publicKey.length);
       }
@@ -240,12 +239,7 @@ public abstract class PublicKeyValues {
 
     @Override
     public String toString() {
-      return "PublicKeyValues.MlKem{"
-          + "params="
-          + parameterValues.name()
-          + ", bitLength="
-          + bitLength
-          + '}';
+      return "PublicKeyValues.MlKem{" + "params=" + parameterValues.name() + '}';
     }
   }
 

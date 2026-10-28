@@ -22,23 +22,11 @@ import java.util.Arrays;
 /** Parameter sets for the ML-KEM key encapsulation mechanism (FIPS 203). */
 public enum MlKemParameterValues {
   MLKEM_512(
-      128,
-      800,
-      768,
-      1632,
-      new byte[] {0x60, (byte) 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x04, 0x01}),
+      800, 768, 1632, new byte[] {0x60, (byte) 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x04, 0x01}),
   MLKEM_768(
-      192,
-      1184,
-      1088,
-      2400,
-      new byte[] {0x60, (byte) 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x04, 0x02}),
+      1184, 1088, 2400, new byte[] {0x60, (byte) 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x04, 0x02}),
   MLKEM_1024(
-      256,
-      1568,
-      1568,
-      3168,
-      new byte[] {0x60, (byte) 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x04, 0x03});
+      1568, 1568, 3168, new byte[] {0x60, (byte) 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x04, 0x03});
 
   /** The seed length (in bytes) is the same for all ML-KEM parameter sets. */
   public static final int SEED_LEN = 64;
@@ -46,28 +34,17 @@ public enum MlKemParameterValues {
   /** The shared secret length (in bytes) is the same for all ML-KEM parameter sets. */
   public static final int SHARED_SECRET_LEN = 32;
 
-  private final int securityStrength;
   private final int publicKeyBytes;
   private final int ciphertextBytes;
   private final int expandedPrivateKeyBytes;
   private final byte[] oid;
 
   MlKemParameterValues(
-      int securityStrength,
-      int publicKeyBytes,
-      int ciphertextBytes,
-      int expandedPrivateKeyBytes,
-      byte[] oid) {
-    this.securityStrength = securityStrength;
+      int publicKeyBytes, int ciphertextBytes, int expandedPrivateKeyBytes, byte[] oid) {
     this.publicKeyBytes = publicKeyBytes;
     this.ciphertextBytes = ciphertextBytes;
     this.expandedPrivateKeyBytes = expandedPrivateKeyBytes;
     this.oid = oid;
-  }
-
-  /** Returns the NIST security strength (in bits) claimed by this parameter set. */
-  public int getSecurityStrength() {
-    return securityStrength;
   }
 
   /** Returns the length (in bytes) of an encoded ML-KEM public key for this parameter set. */
@@ -99,8 +76,6 @@ public enum MlKemParameterValues {
     return "MlKemParameterValues{"
         + "name="
         + name()
-        + ", securityStrength="
-        + securityStrength
         + ", oid="
         + StringUtils.bytesToHex(oid)
         + '}';

@@ -143,13 +143,6 @@ public class KeyTypeTest {
     for (KeyType keyType : PostQuantumTestKeys.ML_KEM_KEY_TYPES) {
       MatcherAssert.assertThat(keyType.params.algorithm, CoreMatchers.is(KeyType.Algorithm.MLKEM));
     }
-    // the bit length of these keys is the security strength of the parameter set
-    MatcherAssert.assertThat(KeyType.MLDSA44.params.bitLength, CoreMatchers.is(128));
-    MatcherAssert.assertThat(KeyType.MLDSA65.params.bitLength, CoreMatchers.is(192));
-    MatcherAssert.assertThat(KeyType.MLDSA87.params.bitLength, CoreMatchers.is(256));
-    MatcherAssert.assertThat(KeyType.MLKEM512.params.bitLength, CoreMatchers.is(128));
-    MatcherAssert.assertThat(KeyType.MLKEM768.params.bitLength, CoreMatchers.is(192));
-    MatcherAssert.assertThat(KeyType.MLKEM1024.params.bitLength, CoreMatchers.is(256));
   }
 
   @Test
