@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2022,2024 Yubico.
+ * Copyright (C) 2019-2022,2024,2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@
 package com.yubico.yubikit.piv;
 
 import com.yubico.yubikit.core.keys.EllipticCurveValues;
+import com.yubico.yubikit.core.keys.MlDsaParameterValues;
+import com.yubico.yubikit.core.keys.MlKemParameterValues;
 import com.yubico.yubikit.core.keys.PrivateKeyValues;
 import com.yubico.yubikit.core.keys.PublicKeyValues;
 import java.security.Key;
@@ -45,7 +47,19 @@ public enum KeyType {
   /** Edwards Digital Signature Algorithm (EdDSA) key, using Curve25519. */
   ED25519((byte) 0xE0, new EcKeyParams(EllipticCurveValues.Ed25519)),
   /** Elliptic-Curve Diffie-Hellman (ECDH) protocol key, using Curve25519. */
-  X25519((byte) 0xE1, new EcKeyParams(EllipticCurveValues.X25519));
+  X25519((byte) 0xE1, new EcKeyParams(EllipticCurveValues.X25519)),
+  /** Module-Lattice-Based Digital Signature Algorithm (ML-DSA) key, parameter set 44. */
+  MLDSA44((byte) 0xE2, new MlDsaKeyParams(MlDsaParameterValues.MLDSA_44)),
+  /** Module-Lattice-Based Digital Signature Algorithm (ML-DSA) key, parameter set 65. */
+  MLDSA65((byte) 0xE3, new MlDsaKeyParams(MlDsaParameterValues.MLDSA_65)),
+  /** Module-Lattice-Based Digital Signature Algorithm (ML-DSA) key, parameter set 87. */
+  MLDSA87((byte) 0xE4, new MlDsaKeyParams(MlDsaParameterValues.MLDSA_87)),
+  /** Module-Lattice-Based Key-Encapsulation Mechanism (ML-KEM) key, parameter set 512. */
+  MLKEM512((byte) 0xE5, new MlKemKeyParams(MlKemParameterValues.MLKEM_512)),
+  /** Module-Lattice-Based Key-Encapsulation Mechanism (ML-KEM) key, parameter set 768. */
+  MLKEM768((byte) 0xE6, new MlKemKeyParams(MlKemParameterValues.MLKEM_768)),
+  /** Module-Lattice-Based Key-Encapsulation Mechanism (ML-KEM) key, parameter set 1024. */
+  MLKEM1024((byte) 0xE7, new MlKemKeyParams(MlKemParameterValues.MLKEM_1024));
 
   public final byte value;
   public final KeyParams params;
@@ -55,10 +69,13 @@ public enum KeyType {
     this.params = params;
   }
 
-  /** Returns the key type corresponding to the given PIV algorithm constant. */
+  /**
+   * Returns the key type corresponding to the given PIV algorithm constant, given either as a byte
+   * or as an unsigned value.
+   */
   public static KeyType fromValue(int value) {
     for (KeyType type : KeyType.values()) {
-      if (type.value == value) {
+      if ((type.value & 0xFF) == (value & 0xFF)) {
         return type;
       }
     }
@@ -75,14 +92,11 @@ public enum KeyType {
         }
       }
     } else if (keyValues instanceof PrivateKeyValues.Ec) {
-      for (KeyType keyType : values()) {
-        if (keyType.params instanceof KeyType.EcKeyParams) {
-          if (((PrivateKeyValues.Ec) keyValues).getCurveParams()
-              == ((EcKeyParams) keyType.params).ellipticCurveValues) {
-            return keyType;
-          }
-        }
-      }
+      return fromEllipticCurveValues(((PrivateKeyValues.Ec) keyValues).getCurveParams());
+    } else if (keyValues instanceof PrivateKeyValues.MlDsa) {
+      return fromMlDsaParameterValues(((PrivateKeyValues.MlDsa) keyValues).getParameterValues());
+    } else if (keyValues instanceof PrivateKeyValues.MlKem) {
+      return fromMlKemParameterValues(((PrivateKeyValues.MlKem) keyValues).getParameterValues());
     }
     throw new IllegalArgumentException("Unsupported key type");
   }
@@ -96,30 +110,52 @@ public enum KeyType {
           return keyType;
         }
       }
-    } else {
-      EllipticCurveValues ellipticCurveValues;
-      if (key instanceof PublicKey) {
-        PublicKeyValues publicKeyValues = PublicKeyValues.fromPublicKey((PublicKey) key);
-        if (publicKeyValues instanceof PublicKeyValues.Ec) {
-          ellipticCurveValues = ((PublicKeyValues.Ec) publicKeyValues).getCurveParams();
-        } else if (publicKeyValues instanceof PublicKeyValues.Cv25519) {
-          ellipticCurveValues = ((PublicKeyValues.Cv25519) publicKeyValues).getCurveParams();
-        } else {
-          throw new IllegalArgumentException("Unsupported public key type");
-        }
-      } else if (key instanceof PrivateKey) {
-        ellipticCurveValues =
-            ((PrivateKeyValues.Ec) PrivateKeyValues.fromPrivateKey((PrivateKey) key))
-                .getCurveParams();
-      } else {
-        throw new IllegalArgumentException("Unsupported key type");
+    } else if (key instanceof PublicKey) {
+      PublicKeyValues publicKeyValues = PublicKeyValues.fromPublicKey((PublicKey) key);
+      if (publicKeyValues instanceof PublicKeyValues.Ec) {
+        return fromEllipticCurveValues(((PublicKeyValues.Ec) publicKeyValues).getCurveParams());
+      } else if (publicKeyValues instanceof PublicKeyValues.Cv25519) {
+        return fromEllipticCurveValues(
+            ((PublicKeyValues.Cv25519) publicKeyValues).getCurveParams());
+      } else if (publicKeyValues instanceof PublicKeyValues.MlDsa) {
+        return fromMlDsaParameterValues(
+            ((PublicKeyValues.MlDsa) publicKeyValues).getParameterValues());
+      } else if (publicKeyValues instanceof PublicKeyValues.MlKem) {
+        return fromMlKemParameterValues(
+            ((PublicKeyValues.MlKem) publicKeyValues).getParameterValues());
       }
+      throw new IllegalArgumentException("Unsupported public key type");
+    } else if (key instanceof PrivateKey) {
+      return fromKeyParams(PrivateKeyValues.fromPrivateKey((PrivateKey) key));
+    }
+    throw new IllegalArgumentException("Unsupported key type");
+  }
 
-      for (KeyType keyType : values()) {
-        if (keyType.params instanceof KeyType.EcKeyParams
-            && ((EcKeyParams) keyType.params).ellipticCurveValues == ellipticCurveValues) {
-          return keyType;
-        }
+  private static KeyType fromEllipticCurveValues(EllipticCurveValues ellipticCurveValues) {
+    for (KeyType keyType : values()) {
+      if (keyType.params instanceof KeyType.EcKeyParams
+          && ((EcKeyParams) keyType.params).ellipticCurveValues == ellipticCurveValues) {
+        return keyType;
+      }
+    }
+    throw new IllegalArgumentException("Unsupported key type");
+  }
+
+  private static KeyType fromMlDsaParameterValues(MlDsaParameterValues parameterValues) {
+    for (KeyType keyType : values()) {
+      if (keyType.params instanceof MlDsaKeyParams
+          && ((MlDsaKeyParams) keyType.params).parameterValues == parameterValues) {
+        return keyType;
+      }
+    }
+    throw new IllegalArgumentException("Unsupported key type");
+  }
+
+  private static KeyType fromMlKemParameterValues(MlKemParameterValues parameterValues) {
+    for (KeyType keyType : values()) {
+      if (keyType.params instanceof MlKemKeyParams
+          && ((MlKemKeyParams) keyType.params).parameterValues == parameterValues) {
+        return keyType;
       }
     }
     throw new IllegalArgumentException("Unsupported key type");
@@ -128,10 +164,16 @@ public enum KeyType {
   /** Key algorithm identifier. */
   public enum Algorithm {
     RSA,
-    EC
+    EC,
+    MLDSA,
+    MLKEM
   }
 
-  /** Algorithm parameters used by a KeyType. */
+  /**
+   * Algorithm parameters used by a KeyType.
+   *
+   * <p>The bit length of a ML-DSA or ML-KEM key is the security strength of its parameter set.
+   */
   public abstract static class KeyParams {
     public final Algorithm algorithm;
     public final int bitLength;
@@ -160,6 +202,34 @@ public enum KeyType {
 
     EllipticCurveValues getCurveParams() {
       return ellipticCurveValues;
+    }
+  }
+
+  /** Algorithm parameters for ML-DSA keys. */
+  public static final class MlDsaKeyParams extends KeyParams {
+    private final MlDsaParameterValues parameterValues;
+
+    private MlDsaKeyParams(MlDsaParameterValues parameterValues) {
+      super(Algorithm.MLDSA, parameterValues.getSecurityStrength());
+      this.parameterValues = parameterValues;
+    }
+
+    MlDsaParameterValues getParameterValues() {
+      return parameterValues;
+    }
+  }
+
+  /** Algorithm parameters for ML-KEM keys. */
+  public static final class MlKemKeyParams extends KeyParams {
+    private final MlKemParameterValues parameterValues;
+
+    private MlKemKeyParams(MlKemParameterValues parameterValues) {
+      super(Algorithm.MLKEM, parameterValues.getSecurityStrength());
+      this.parameterValues = parameterValues;
+    }
+
+    MlKemParameterValues getParameterValues() {
+      return parameterValues;
     }
   }
 }

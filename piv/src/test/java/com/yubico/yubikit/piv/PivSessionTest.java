@@ -115,11 +115,11 @@ public class PivSessionTest {
     return apdu != null && apdu.getIns() == PivSession.INS_SET_MGMKEY;
   }
 
-  private static SmartCardProtocol mockProtocol(int major, int minor, int micro) throws Exception {
+  static SmartCardProtocol mockProtocol(int major, int minor, int micro) throws Exception {
     return mockProtocol(new Version(major, minor, micro));
   }
 
-  private static SmartCardProtocol mockProtocol(Version version) throws Exception {
+  static SmartCardProtocol mockProtocol(Version version) throws Exception {
     SmartCardProtocol protocolMock = mock(SmartCardProtocol.class);
     when(protocolMock.sendAndReceive(
             argThat(apdu -> apdu != null && apdu.getIns() == PivSession.INS_GET_VERSION)))
@@ -130,7 +130,7 @@ public class PivSessionTest {
     return protocolMock;
   }
 
-  private static PivSession openSession(SmartCardProtocol protocol) throws Exception {
+  static PivSession openSession(SmartCardProtocol protocol) throws Exception {
     return new PivSession(protocol, null);
   }
 }

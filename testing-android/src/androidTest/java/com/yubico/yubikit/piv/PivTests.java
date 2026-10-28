@@ -57,6 +57,26 @@ public class PivTests {
     }
 
     @Test
+    public void testMlDsaSignWithContext() throws Throwable {
+      withPivSession(PivPostQuantumDeviceTests::testMlDsaSignWithContext);
+    }
+
+    @Test
+    public void testMlDsaSignExternalMu() throws Throwable {
+      withPivSession(PivPostQuantumDeviceTests::testMlDsaSignExternalMu);
+    }
+
+    @Test
+    public void testMlKemDecapsulate() throws Throwable {
+      withPivSession(PivPostQuantumDeviceTests::testMlKemDecapsulate);
+    }
+
+    @Test
+    public void testMlKemImport() throws Throwable {
+      withPivSession(PivPostQuantumDeviceTests::testMlKemImport);
+    }
+
+    @Test
     public void testObjectBeyondApduLimit() throws Throwable {
       withPivSession(PivDeviceTests::testObjectBeyondApduLimit);
     }

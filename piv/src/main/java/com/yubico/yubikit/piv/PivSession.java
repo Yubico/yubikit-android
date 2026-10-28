@@ -54,6 +54,7 @@ import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -144,6 +145,17 @@ public class PivSession extends ApplicationSession<PivSession> {
     };
   }
 
+  /** Support for ML-DSA (post-quantum) signature keys. */
+  public static final Feature<PivSession> FEATURE_MLDSA =
+      new Feature.Versioned<>("ML-DSA keys", YK6.major, YK6.minor, YK6.micro);
+
+  /** Support for ML-KEM (post-quantum) key encapsulation keys. */
+  public static final Feature<PivSession> FEATURE_MLKEM =
+      new Feature.Versioned<>("ML-KEM keys", YK6.major, YK6.minor, YK6.micro);
+
+  private static final int ML_DSA_MAX_CONTEXT_LENGTH = 255;
+  private static final int ML_DSA_MU_LENGTH = 64;
+
   private static final int PIN_LEN = 8;
   private static final int TEMPORARY_PIN_LEN = 16;
 
@@ -176,6 +188,12 @@ public class PivSession extends ApplicationSession<PivSession> {
   static final int TAG_AUTH_CHALLENGE = 0x81;
   static final int TAG_AUTH_RESPONSE = 0x82;
   static final int TAG_AUTH_EXPONENTIATION = 0x85;
+  static final int TAG_AUTH_KEM = 0x86;
+  static final int TAG_AUTH_CONTEXT = 0x87;
+  static final int TAG_AUTH_MU = 0x88;
+  // Tags of the public key in the data returned from a YubiKey
+  static final int TAG_PUBLIC_KEY_MLDSA = 0x87;
+  static final int TAG_PUBLIC_KEY_MLKEM = 0x88;
   static final int TAG_GEN_ALGORITHM = 0x80;
   static final int TAG_OBJ_DATA = 0x53;
   static final int TAG_OBJ_ID = 0x5c;
@@ -412,9 +430,15 @@ public class PivSession extends ApplicationSession<PivSession> {
    */
   public byte[] rawSignOrDecrypt(Slot slot, KeyType keyType, byte[] payload)
       throws IOException, ApduException, BadResponseException {
+    if (keyType.params.algorithm == KeyType.Algorithm.MLKEM) {
+      throw new IllegalArgumentException("ML-KEM keys are used through decapsulate");
+    }
     int byteLength = keyType.params.bitLength / 8;
     byte[] padded;
-    if (keyType == KeyType.ED25519 || keyType == KeyType.X25519) {
+    if (keyType == KeyType.ED25519
+        || keyType == KeyType.X25519
+        || keyType.params.algorithm == KeyType.Algorithm.MLDSA) {
+      // The payload is used as-is, the card performs any hashing internally.
       padded = payload;
     } else if (payload.length > byteLength) {
       if (keyType.params.algorithm == KeyType.Algorithm.EC) {
@@ -431,7 +455,95 @@ public class PivSession extends ApplicationSession<PivSession> {
       padded = payload;
     }
     logger.debug("Decrypting data with key in slot {} of type {}", slot, keyType);
-    return usePrivateKey(slot, keyType, padded, false);
+    return usePrivateKey(slot, keyType, TAG_AUTH_CHALLENGE, padded);
+  }
+
+  /**
+   * Signs a message with an ML-DSA key, using a context string (FIPS 204). An empty context is the
+   * same as {@link #rawSignOrDecrypt}.
+   *
+   * <p>The message is signed as-is, any pre-hashing is up to the caller.
+   *
+   * @param slot the slot containing the private key to use
+   * @param keyType the type of the key stored in the slot, which must be an ML-DSA key type
+   * @param message the message to sign
+   * @param context the context string, at most 255 bytes
+   * @return the signature
+   * @throws IOException in case of connection error
+   * @throws ApduException in case of an error response from the YubiKey
+   * @throws BadResponseException in case of incorrect YubiKey response
+   */
+  public byte[] rawSignWithContext(Slot slot, KeyType keyType, byte[] message, byte[] context)
+      throws IOException, ApduException, BadResponseException {
+    requireMlDsa(keyType);
+    if (context.length > ML_DSA_MAX_CONTEXT_LENGTH) {
+      throw new IllegalArgumentException(
+          String.format(
+              Locale.ROOT, "ML-DSA context must be at most %d bytes", ML_DSA_MAX_CONTEXT_LENGTH));
+    }
+    Map<Integer, byte[]> operands = new LinkedHashMap<>();
+    if (context.length > 0) {
+      operands.put(TAG_AUTH_CONTEXT, context);
+    }
+    operands.put(TAG_AUTH_CHALLENGE, message);
+    logger.debug("Signing data with context using key in slot {} of type {}", slot, keyType);
+    return usePrivateKey(slot, keyType, operands);
+  }
+
+  /**
+   * Signs an externally computed ML-DSA message representative, μ (FIPS 204 "external μ"). The
+   * signature verifies against the message and context that μ was computed from.
+   *
+   * @param slot the slot containing the private key to use
+   * @param keyType the type of the key stored in the slot, which must be an ML-DSA key type
+   * @param mu the message representative, 64 bytes
+   * @return the signature
+   * @throws IOException in case of connection error
+   * @throws ApduException in case of an error response from the YubiKey
+   * @throws BadResponseException in case of incorrect YubiKey response
+   */
+  public byte[] rawSignExternalMu(Slot slot, KeyType keyType, byte[] mu)
+      throws IOException, ApduException, BadResponseException {
+    requireMlDsa(keyType);
+    if (mu.length != ML_DSA_MU_LENGTH) {
+      throw new IllegalArgumentException(
+          String.format(Locale.ROOT, "ML-DSA mu must be exactly %d bytes", ML_DSA_MU_LENGTH));
+    }
+    logger.debug("Signing external mu using key in slot {} of type {}", slot, keyType);
+    return usePrivateKey(slot, keyType, TAG_AUTH_MU, mu);
+  }
+
+  /**
+   * Performs ML-KEM decapsulation, recovering the shared secret from a ciphertext which was
+   * encapsulated to the public key of the key in the slot.
+   *
+   * @param slot the slot containing the private ML-KEM key
+   * @param keyType the type of the key stored in the slot, which must be an ML-KEM key type
+   * @param ciphertext the ciphertext to decapsulate
+   * @return the shared secret
+   * @throws IOException in case of connection error
+   * @throws ApduException in case of an error response from the YubiKey
+   * @throws BadResponseException in case of incorrect YubiKey response
+   */
+  public byte[] decapsulate(Slot slot, KeyType keyType, byte[] ciphertext)
+      throws IOException, ApduException, BadResponseException {
+    if (keyType.params.algorithm != KeyType.Algorithm.MLKEM) {
+      throw new IllegalArgumentException("Decapsulation is only supported for ML-KEM keys");
+    }
+    int expectedLength =
+        ((KeyType.MlKemKeyParams) keyType.params).getParameterValues().getCiphertextLength();
+    if (ciphertext.length != expectedLength) {
+      throw new IllegalArgumentException(
+          String.format(Locale.ROOT, "ML-KEM ciphertext must be %d bytes", expectedLength));
+    }
+    logger.debug("Decapsulating with key in slot {} of type {}", slot, keyType);
+    return usePrivateKey(slot, keyType, TAG_AUTH_KEM, ciphertext);
+  }
+
+  private static void requireMlDsa(KeyType keyType) {
+    if (keyType.params.algorithm != KeyType.Algorithm.MLDSA) {
+      throw new IllegalArgumentException("Only supported for ML-DSA keys");
+    }
   }
 
   /**
@@ -456,25 +568,31 @@ public class PivSession extends ApplicationSession<PivSession> {
         throw new NoSuchAlgorithmException("Illegal public key");
       }
       logger.debug("Performing key agreement with key in slot {} of type {}", slot, keyType);
-      return usePrivateKey(slot, keyType, publicKeyValues.getBytes(), true);
+      return usePrivateKey(slot, keyType, TAG_AUTH_EXPONENTIATION, publicKeyValues.getBytes());
     } else if (peerPublicKeyValues instanceof PublicKeyValues.Ec) {
       PublicKeyValues.Ec publicKeyValues = (PublicKeyValues.Ec) peerPublicKeyValues;
       EllipticCurveValues ellipticCurveValues = publicKeyValues.getCurveParams();
       KeyType keyType =
           ellipticCurveValues.getBitLength() > 256 ? KeyType.ECCP384 : KeyType.ECCP256;
       logger.debug("Performing key agreement with key in slot {} of type {}", slot, keyType);
-      return usePrivateKey(slot, keyType, publicKeyValues.getEncodedPoint(), true);
+      return usePrivateKey(
+          slot, keyType, TAG_AUTH_EXPONENTIATION, publicKeyValues.getEncodedPoint());
     } else {
       throw new NoSuchAlgorithmException("Illegal public key");
     }
   }
 
-  private byte[] usePrivateKey(Slot slot, KeyType keyType, byte[] message, boolean exponentiation)
+  private byte[] usePrivateKey(Slot slot, KeyType keyType, int tag, byte[] message)
+      throws IOException, ApduException, BadResponseException {
+    return usePrivateKey(slot, keyType, Collections.singletonMap(tag, message));
+  }
+
+  private byte[] usePrivateKey(Slot slot, KeyType keyType, Map<Integer, byte[]> operands)
       throws IOException, ApduException, BadResponseException {
     // using generic authentication for sign requests
     Map<Integer, byte[]> dataTlvs = new LinkedHashMap<>();
     dataTlvs.put(TAG_AUTH_RESPONSE, null);
-    dataTlvs.put(exponentiation ? TAG_AUTH_EXPONENTIATION : TAG_AUTH_CHALLENGE, message);
+    dataTlvs.putAll(operands);
     byte[] request = new Tlv(TAG_DYN_AUTH, Tlvs.encodeMap(dataTlvs)).getBytes();
 
     try {
@@ -1039,6 +1157,14 @@ public class PivSession extends ApplicationSession<PivSession> {
       BigInteger modulus = new BigInteger(1, dataObjects.get(0x81));
       BigInteger exponent = new BigInteger(1, dataObjects.get(0x82));
       return new PublicKeyValues.Rsa(modulus, exponent);
+    } else if (keyType.params.algorithm == KeyType.Algorithm.MLDSA) {
+      return new PublicKeyValues.MlDsa(
+          ((KeyType.MlDsaKeyParams) keyType.params).getParameterValues(),
+          Objects.requireNonNull(dataObjects.get(TAG_PUBLIC_KEY_MLDSA), "Missing ML-DSA key"));
+    } else if (keyType.params.algorithm == KeyType.Algorithm.MLKEM) {
+      return new PublicKeyValues.MlKem(
+          ((KeyType.MlKemKeyParams) keyType.params).getParameterValues(),
+          Objects.requireNonNull(dataObjects.get(TAG_PUBLIC_KEY_MLKEM), "Missing ML-KEM key"));
     } else {
       if (keyType == KeyType.ED25519 || keyType == KeyType.X25519) {
         return new PublicKeyValues.Cv25519(
@@ -1068,6 +1194,12 @@ public class PivSession extends ApplicationSession<PivSession> {
     }
     if (keyType == KeyType.ED25519 || keyType == KeyType.X25519) {
       require(FEATURE_CV25519);
+    }
+    if (keyType.params.algorithm == KeyType.Algorithm.MLDSA) {
+      require(FEATURE_MLDSA);
+    }
+    if (keyType.params.algorithm == KeyType.Algorithm.MLKEM) {
+      require(FEATURE_MLKEM);
     }
     if (keyType == KeyType.ECCP384) {
       require(FEATURE_P384);
@@ -1217,6 +1349,12 @@ public class PivSession extends ApplicationSession<PivSession> {
         tlvs.put(
             keyType == KeyType.ED25519 ? 0x07 : keyType == KeyType.X25519 ? 0x08 : 0x06,
             ecPrivateKey.getSecret()); // s
+        break;
+      case MLDSA:
+        tlvs.put(0x09, ((PrivateKeyValues.MlDsa) key).getSeed()); // seed
+        break;
+      case MLKEM:
+        tlvs.put(0x0A, ((PrivateKeyValues.MlKem) key).getSeed()); // seed
         break;
     }
 

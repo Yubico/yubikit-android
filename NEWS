@@ -14,7 +14,15 @@
   - core: PublicKeyValues and PrivateKeyValues have variants for additional key types, a
           signature algorithm and a key-encapsulation mechanism. A private key is
           represented by its seed.
+  - piv: support for additional key types, a signature algorithm and a key-encapsulation
+          mechanism, on devices which support them. See the new PivSession.FEATURE_*
+          constants. The keys can be generated and imported. Signature keys sign with
+          rawSignOrDecrypt(), with a context using rawSignWithContext() or a precomputed
+          digest using rawSignExternalMu(), and through JCA. Key-encapsulation keys
+          decapsulate with decapsulate().
  ** fixes & improvements:
+  - piv: KeyType.fromValue() finds the key types with a value above 0x7F, such as ED25519,
+          also when it is given an unsigned value.
   - core: data which does not fit in a single extended length APDU is now sent with command
           chaining of short APDUs, also with secure messaging, instead of failing with
           UnsupportedOperationException
