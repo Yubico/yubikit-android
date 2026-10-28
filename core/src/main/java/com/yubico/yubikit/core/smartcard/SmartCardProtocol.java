@@ -95,8 +95,9 @@ public class SmartCardProtocol implements Closeable {
     ApduProcessor result;
     ApduFormatter formatter;
     if (extendedApdus) {
-      formatter = new ExtendedApduFormatter(maxApduSize);
-      result = new ApduFormatProcessor(connection, formatter);
+      ExtendedApduFormatter extendedFormatter = new ExtendedApduFormatter(maxApduSize);
+      formatter = extendedFormatter;
+      result = new ExtendedApduProcessor(connection, extendedFormatter);
     } else {
       formatter = new ShortApduFormatter();
       // Short APDUs need command chaining

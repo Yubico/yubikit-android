@@ -57,6 +57,11 @@ public class PivTests {
     }
 
     @Test
+    public void testObjectBeyondApduLimit() throws Throwable {
+      withPivSession(PivDeviceTests::testObjectBeyondApduLimit);
+    }
+
+    @Test
     public void testManagementKeyType() throws Throwable {
       withPivSession(PivDeviceTests::testManagementKeyType);
     }

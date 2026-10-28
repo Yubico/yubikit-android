@@ -105,6 +105,32 @@ public class PivDeviceTests {
     Assert.assertArrayEquals(data, piv.getObject(ObjectId.RETIRED1));
   }
 
+  /**
+   * Stores and reads back an object which does not fit in a single extended APDU, so that it has to
+   * be sent with command chaining.
+   */
+  public static void testObjectBeyondApduLimit(PivSession piv, PivTestState state)
+      throws BadResponseException, IOException, ApduException {
+    boolean largerCommands = piv.getVersion().isAtLeast(6, 0, 0);
+    // Earlier firmware accepts commands of about 3 KB in total, however they are chained. The
+    // overhead of secure messaging then takes the largest object beyond that.
+    Assume.assumeTrue(
+        "Secure messaging overhead exceeds the largest command",
+        largerCommands || !state.usesSecureMessaging());
+    piv.authenticate(state.managementKey);
+
+    // The largest object is 3052 bytes on earlier firmware, which together with the object
+    // identifier and TLV headers is just beyond what fits in a single extended APDU.
+    int size = largerCommands ? 6_000 : 3_052;
+    byte[] data = new byte[size];
+    for (int i = 0; i < data.length; i++) {
+      data[i] = (byte) (i * 7);
+    }
+
+    piv.putObject(ObjectId.RETIRED1, data);
+    Assert.assertArrayEquals(data, piv.getObject(ObjectId.RETIRED1));
+  }
+
   public static void testPin(PivSession piv, PivTestState state)
       throws ApduException, InvalidPinException, IOException, BadResponseException {
     // Ensure we only try this if the default management key is set.

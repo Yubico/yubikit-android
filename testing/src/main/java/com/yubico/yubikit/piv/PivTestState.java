@@ -131,6 +131,10 @@ public class PivTestState extends TestState {
     }
   }
 
+  boolean usesSecureMessaging() {
+    return scpParameters.getKid() != null;
+  }
+
   boolean isInvalidKeyType(KeyType keyType) {
     if (keyType == KeyType.RSA1024 && !isRsa1024Supported) {
       return true;
