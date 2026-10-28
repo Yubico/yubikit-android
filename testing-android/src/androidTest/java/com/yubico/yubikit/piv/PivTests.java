@@ -52,6 +52,11 @@ public class PivTests {
     }
 
     @Test
+    public void testLargeObject() throws Throwable {
+      withPivSession(PivDeviceTests::testLargeObject);
+    }
+
+    @Test
     public void testManagementKeyType() throws Throwable {
       withPivSession(PivDeviceTests::testManagementKeyType);
     }

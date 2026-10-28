@@ -89,6 +89,22 @@ public class PivDeviceTests {
     piv.setManagementKey(managementKeyType, state.managementKey, false);
   }
 
+  public static void testLargeObject(PivSession piv, PivTestState state)
+      throws BadResponseException, IOException, ApduException {
+    Assume.assumeTrue("No larger APDU support", piv.getVersion().isAtLeast(6, 0, 0));
+    piv.authenticate(state.managementKey);
+
+    // larger than the APDU limit of earlier firmware, so it has to be sent in one large APDU
+    byte[] data = new byte[4_000];
+    for (int i = 0; i < data.length; i++) {
+      data[i] = (byte) (i * 7);
+    }
+
+    // a certificate object, which can be read without verifying the PIN
+    piv.putObject(ObjectId.RETIRED1, data);
+    Assert.assertArrayEquals(data, piv.getObject(ObjectId.RETIRED1));
+  }
+
   public static void testPin(PivSession piv, PivTestState state)
       throws ApduException, InvalidPinException, IOException, BadResponseException {
     // Ensure we only try this if the default management key is set.

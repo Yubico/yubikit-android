@@ -10,6 +10,7 @@
           are rejected on devices that do not support them: PivSession.checkKeySupport() and
           setManagementKey() throw UnsupportedOperationException, see FEATURE_RSA1024 and
           FEATURE_TDES_KEY.
+  - core: SmartCardProtocol allows larger extended length APDUs on devices which support them.
  ** fixes & improvements:
   - core: reassemble FIDO HID messages longer than 7609 bytes (sequence wraps at 128)
   - android: reassemble CCID responses split across frames (bChainParameter)

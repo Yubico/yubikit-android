@@ -20,6 +20,7 @@ final class MaxApduSize {
   static final int NEO = 1390;
   static final int YK4 = 2038;
   static final int YK4_3 = 3062;
+  static final int YK6 = 4918;
 
   private MaxApduSize() {
     throw new IllegalStateException();

@@ -121,6 +121,13 @@ public class SmartCardProtocol implements Closeable {
     processor = newProcessor;
   }
 
+  private static int maxApduSizeFor(Version firmwareVersion) {
+    if (firmwareVersion.isAtLeast(6, 0, 0)) {
+      return MaxApduSize.YK6;
+    }
+    return firmwareVersion.isAtLeast(4, 3, 0) ? MaxApduSize.YK4_3 : MaxApduSize.YK4;
+  }
+
   @Override
   public void close() throws IOException {
     connection.close();
@@ -150,7 +157,7 @@ public class SmartCardProtocol implements Closeable {
       processor = new TouchWorkaroundProcessor(buildBaseProcessor().first);
     } else if (firmwareVersion.isAtLeast(4, 0, 0)) {
       extendedApdus = !configuration.forceShortApdus && connection.isExtendedLengthApduSupported();
-      maxApduSize = firmwareVersion.isAtLeast(4, 3, 0) ? MaxApduSize.YK4_3 : MaxApduSize.YK4;
+      maxApduSize = maxApduSizeFor(firmwareVersion);
       reconfigureProcessor();
     }
   }
