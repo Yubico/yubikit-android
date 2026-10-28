@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2025 Yubico.
+ * Copyright (C) 2022-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package com.yubico.yubikit.piv;
 import static com.yubico.yubikit.piv.PivJcaUtils.setupJca;
 import static com.yubico.yubikit.piv.PivJcaUtils.tearDownJca;
 import static com.yubico.yubikit.piv.PivSession.FEATURE_CV25519;
+import static com.yubico.yubikit.piv.PivSession.FEATURE_MLDSA;
 import static com.yubico.yubikit.piv.PivSession.FEATURE_P384;
 import static com.yubico.yubikit.piv.PivSession.FEATURE_RSA3072_RSA4096;
 
@@ -29,16 +30,21 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
+import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.security.Provider;
+import java.security.PublicKey;
 import java.security.Security;
 import java.security.Signature;
 import java.security.SignatureException;
 import java.security.spec.AlgorithmParameterSpec;
+import java.security.spec.InvalidKeySpecException;
 import java.security.spec.MGF1ParameterSpec;
 import java.security.spec.PSSParameterSpec;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.HashSet;
 import java.util.Set;
 import org.junit.Assert;
@@ -48,6 +54,8 @@ import org.slf4j.LoggerFactory;
 public class PivJcaSigningTests {
 
   private static final Logger logger = LoggerFactory.getLogger(PivJcaSigningTests.class);
+
+  private static final String ML_DSA = "ML-DSA";
 
   private static Set<String> signatureAlgorithmsWithPss = new HashSet<>();
 
@@ -87,6 +95,15 @@ public class PivJcaSigningTests {
       return;
     }
 
+    if (!piv.supports(FEATURE_MLDSA) && keyType.params.algorithm == KeyType.Algorithm.MLDSA) {
+      return;
+    }
+
+    if (keyType.params.algorithm == KeyType.Algorithm.MLKEM) {
+      logger.debug("Ignoring keyType: {}, it can not sign", keyType);
+      return;
+    }
+
     if (state.isInvalidKeyType(keyType)) {
       return;
     }
@@ -117,6 +134,9 @@ public class PivJcaSigningTests {
         } else {
           testSign(keyPair, "ED25519", null);
         }
+        break;
+      case MLDSA:
+        testSign(keyPair, ML_DSA, null);
         break;
       case RSA:
         testSign(keyPair, "SHA1withRSA", null);
@@ -250,8 +270,8 @@ public class PivJcaSigningTests {
     byte[] signature = signer.sign();
 
     try {
-      Signature verifier = Signature.getInstance(signatureAlgorithm);
-      verifier.initVerify(keyPair.getPublic());
+      Signature verifier = verifierFor(signatureAlgorithm);
+      verifier.initVerify(verificationKey(signatureAlgorithm, keyPair.getPublic()));
       if (param != null) verifier.setParameter(param);
       verifier.update(message);
       Assert.assertTrue("Verify signature", verifier.verify(signature));
@@ -259,6 +279,34 @@ public class PivJcaSigningTests {
       return signature;
     } catch (InvalidKeyException | SignatureException e) {
       throw new RuntimeException(e);
+    }
+  }
+
+  // The platform may offer ML-DSA for fewer parameter sets than BouncyCastle does, so signatures
+  // are verified by BouncyCastle.
+  private static Signature verifierFor(String signatureAlgorithm) throws NoSuchAlgorithmException {
+    if (!ML_DSA.equals(signatureAlgorithm)) {
+      return Signature.getInstance(signatureAlgorithm);
+    }
+    try {
+      return Signature.getInstance(ML_DSA, "BC");
+    } catch (NoSuchProviderException e) {
+      throw new IllegalStateException(e);
+    }
+  }
+
+  private static PublicKey verificationKey(String signatureAlgorithm, PublicKey publicKey)
+      throws NoSuchAlgorithmException, InvalidKeyException {
+    if (!ML_DSA.equals(signatureAlgorithm)) {
+      return publicKey;
+    }
+    try {
+      return KeyFactory.getInstance(ML_DSA, "BC")
+          .generatePublic(new X509EncodedKeySpec(publicKey.getEncoded()));
+    } catch (NoSuchProviderException e) {
+      throw new IllegalStateException(e);
+    } catch (InvalidKeySpecException e) {
+      throw new InvalidKeyException(e);
     }
   }
 

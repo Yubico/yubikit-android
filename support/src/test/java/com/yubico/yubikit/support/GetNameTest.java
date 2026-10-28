@@ -443,6 +443,31 @@ public class GetNameTest {
   }
 
   @Test
+  public void testReportedNameTakesPrecedence() {
+    // The name reported by the device is used as-is, whatever the capabilities, form factor and
+    // key type would otherwise map to.
+    assertEquals(
+        "Reported Name",
+        DeviceUtil.getName(
+            info(
+                i -> {
+                  i.name("Reported Name");
+                  i.formFactor(USB_C_KEYCHAIN);
+                  i.version(YK_5_4_3);
+                  i.supportedCapabilities(usbOnly(yk5UsbBits));
+                }),
+            YubiKeyType.YK4));
+    assertEquals(
+        "Reported Name", DeviceUtil.getName(info(i -> i.name("Reported Name")), YubiKeyType.NEO));
+    assertEquals("Reported Name", DeviceUtil.getName(info(i -> i.name("Reported Name")), null));
+  }
+
+  @Test
+  public void testNoReportedNameFallsBackToDerivedName() {
+    assertName("YubiKey 5C", USB_C_KEYCHAIN, YK_5_4_3, usbOnly(yk5UsbBits));
+  }
+
+  @Test
   public void testFidoCcid() {
     // FIDO_CCID is a transport flag (firmware 5.8+) and must not affect the product name.
     int yk5UsbBitsWithFidoCcid = yk5UsbBits | Capability.FIDO_CCID.bit;

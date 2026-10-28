@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2025 Yubico.
+ * Copyright (C) 2019-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -95,8 +95,9 @@ public class SmartCardProtocol implements Closeable {
     ApduProcessor result;
     ApduFormatter formatter;
     if (extendedApdus) {
-      formatter = new ExtendedApduFormatter(maxApduSize);
-      result = new ApduFormatProcessor(connection, formatter);
+      ExtendedApduFormatter extendedFormatter = new ExtendedApduFormatter(maxApduSize);
+      formatter = extendedFormatter;
+      result = new ExtendedApduProcessor(connection, extendedFormatter);
     } else {
       formatter = new ShortApduFormatter();
       // Short APDUs need command chaining
@@ -119,6 +120,13 @@ public class SmartCardProtocol implements Closeable {
     }
 
     processor = newProcessor;
+  }
+
+  private static int maxApduSizeFor(Version firmwareVersion) {
+    if (firmwareVersion.isAtLeast(6, 0, 0)) {
+      return MaxApduSize.YK6;
+    }
+    return firmwareVersion.isAtLeast(4, 3, 0) ? MaxApduSize.YK4_3 : MaxApduSize.YK4;
   }
 
   @Override
@@ -150,7 +158,7 @@ public class SmartCardProtocol implements Closeable {
       processor = new TouchWorkaroundProcessor(buildBaseProcessor().first);
     } else if (firmwareVersion.isAtLeast(4, 0, 0)) {
       extendedApdus = !configuration.forceShortApdus && connection.isExtendedLengthApduSupported();
-      maxApduSize = firmwareVersion.isAtLeast(4, 3, 0) ? MaxApduSize.YK4_3 : MaxApduSize.YK4;
+      maxApduSize = maxApduSizeFor(firmwareVersion);
       reconfigureProcessor();
     }
   }

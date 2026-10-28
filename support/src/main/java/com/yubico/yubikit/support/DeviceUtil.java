@@ -446,11 +446,20 @@ public class DeviceUtil {
         .resetBlocked(info.getResetBlocked())
         .fpsVersion(info.getFpsVersion())
         .stmVersion(info.getStmVersion())
+        .name(info.getName())
         .build();
   }
 
-  /** Determine the product name of a YubiKey */
+  /**
+   * Determine the product name of a YubiKey. A name reported by the device itself takes precedence
+   * over one derived from its capabilities.
+   */
   public static String getName(DeviceInfo info, @Nullable YubiKeyType keyType) {
+
+    final String reportedName = info.getName();
+    if (reportedName != null) {
+      return reportedName;
+    }
 
     final Version version = info.getVersion();
     final FormFactor formFactor = info.getFormFactor();

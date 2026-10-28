@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2025 Yubico.
+ * Copyright (C) 2022-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,6 +61,10 @@ public abstract class PivPrivateKey implements PrivateKey, Destroyable {
       return new PivPrivateKey.Ed25519Key(slot, keyType, pinPolicy, touchPolicy, pin);
     } else if (keyType == KeyType.X25519) {
       return new PivPrivateKey.X25519Key(slot, keyType, pinPolicy, touchPolicy, pin);
+    } else if (keyType.params.algorithm == KeyType.Algorithm.MLDSA) {
+      return new PivPrivateKey.MlDsaKey(slot, keyType, pinPolicy, touchPolicy, pin);
+    } else if (keyType.params.algorithm == KeyType.Algorithm.MLKEM) {
+      return new PivPrivateKey.MlKemKey(slot, keyType, pinPolicy, touchPolicy, pin);
     } else {
       return new PivPrivateKey.EcKey(
           slot, keyType, pinPolicy, touchPolicy, ((ECPublicKey) publicKey).getParams(), pin);
@@ -233,6 +237,28 @@ public abstract class PivPrivateKey implements PrivateKey, Destroyable {
 
   static class Ed25519Key extends PivPrivateKey implements PrivateKey {
     private Ed25519Key(
+        Slot slot,
+        KeyType keyType,
+        @Nullable PinPolicy pinPolicy,
+        @Nullable TouchPolicy touchPolicy,
+        char @Nullable [] pin) {
+      super(slot, keyType, pinPolicy, touchPolicy, pin);
+    }
+  }
+
+  static class MlDsaKey extends PivPrivateKey implements PrivateKey {
+    private MlDsaKey(
+        Slot slot,
+        KeyType keyType,
+        @Nullable PinPolicy pinPolicy,
+        @Nullable TouchPolicy touchPolicy,
+        char @Nullable [] pin) {
+      super(slot, keyType, pinPolicy, touchPolicy, pin);
+    }
+  }
+
+  static class MlKemKey extends PivPrivateKey implements PrivateKey {
+    private MlKemKey(
         Slot slot,
         KeyType keyType,
         @Nullable PinPolicy pinPolicy,

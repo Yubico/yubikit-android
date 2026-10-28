@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2025 Yubico.
+ * Copyright (C) 2022-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,6 +44,8 @@ public class PivProvider extends Provider {
       Collections.singletonMap("SupportedKeyClasses", PivPrivateKey.Ed25519Key.class.getName());
   private static final Map<String, String> x25519Attributes =
       Collections.singletonMap("SupportedKeyClasses", PivPrivateKey.X25519Key.class.getName());
+  private static final Map<String, String> mlDsaAttributes =
+      Collections.singletonMap("SupportedKeyClasses", PivPrivateKey.MlDsaKey.class.getName());
 
   private final Callback<Callback<Result<PivSession, Exception>>> sessionRequester;
   private final Map<KeyType, KeyPair> rsaDummyKeys = new HashMap<>();
@@ -101,6 +103,20 @@ public class PivProvider extends Provider {
           @Override
           public Object newInstance(Object constructorParameter) {
             return new PivEcSignatureSpi.Prehashed(sessionRequester);
+          }
+        });
+
+    putService(
+        new Service(
+            this,
+            "Signature",
+            "ML-DSA",
+            PivMlDsaSignatureSpi.class.getName(),
+            Collections.singletonList("MLDSA"),
+            mlDsaAttributes) {
+          @Override
+          public Object newInstance(Object constructorParameter) {
+            return new PivMlDsaSignatureSpi(sessionRequester);
           }
         });
 
@@ -182,6 +198,32 @@ public class PivProvider extends Provider {
           @Override
           public Object newInstance(Object constructorParameter) {
             return new PivKeyPairGeneratorSpi.Ec(sessionRequester);
+          }
+        });
+    putService(
+        new Service(
+            this,
+            "KeyPairGenerator",
+            "YKPivMLDSA",
+            PivKeyPairGeneratorSpi.MlDsa.class.getName(),
+            null,
+            null) {
+          @Override
+          public Object newInstance(Object constructorParameter) {
+            return new PivKeyPairGeneratorSpi.MlDsa(sessionRequester);
+          }
+        });
+    putService(
+        new Service(
+            this,
+            "KeyPairGenerator",
+            "YKPivMLKEM",
+            PivKeyPairGeneratorSpi.MlKem.class.getName(),
+            null,
+            null) {
+          @Override
+          public Object newInstance(Object constructorParameter) {
+            return new PivKeyPairGeneratorSpi.MlKem(sessionRequester);
           }
         });
 

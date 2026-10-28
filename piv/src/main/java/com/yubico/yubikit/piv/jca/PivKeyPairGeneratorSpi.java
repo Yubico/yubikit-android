@@ -102,4 +102,16 @@ abstract class PivKeyPairGeneratorSpi extends KeyPairGeneratorSpi {
       super(provider, KeyType.Algorithm.EC);
     }
   }
+
+  public static class MlDsa extends PivKeyPairGeneratorSpi {
+    MlDsa(Callback<Callback<Result<PivSession, Exception>>> provider) {
+      super(provider, KeyType.Algorithm.MLDSA);
+    }
+  }
+
+  public static class MlKem extends PivKeyPairGeneratorSpi {
+    MlKem(Callback<Callback<Result<PivSession, Exception>>> provider) {
+      super(provider, KeyType.Algorithm.MLKEM);
+    }
+  }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2022,2024 Yubico.
+ * Copyright (C) 2019-2022,2024,2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -231,7 +231,13 @@ class PivCertificateFragment : Fragment() {
                         val keyType = KeyType.fromKey(publicKey)
                         val algorithm = when (keyType.params.algorithm) {
                             KeyType.Algorithm.RSA -> "SHA256withRSA"
+
                             KeyType.Algorithm.EC -> if (keyType == KeyType.ED25519) "Ed25519" else "SHA256withECDSA"
+
+                            KeyType.Algorithm.MLDSA -> "ML-DSA"
+
+                            KeyType.Algorithm.MLKEM ->
+                                throw UnsupportedOperationException("ML-KEM keys can not sign")
                         }
 
                         // Create signature
@@ -267,6 +273,8 @@ class PivCertificateFragment : Fragment() {
 
     private fun keyPairGen(keyType: KeyType): String = when (keyType) {
         KeyType.ECCP256, KeyType.ECCP384, KeyType.ED25519, KeyType.X25519 -> "YKPivEC"
+        KeyType.MLDSA44, KeyType.MLDSA65, KeyType.MLDSA87 -> "YKPivMLDSA"
+        KeyType.MLKEM512, KeyType.MLKEM768, KeyType.MLKEM1024 -> "YKPivMLKEM"
         else -> "YkPivRSA"
     }
 

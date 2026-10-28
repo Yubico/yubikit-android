@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024 Yubico.
+ * Copyright (C) 2024,2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ final class MaxApduSize {
   static final int NEO = 1390;
   static final int YK4 = 2038;
   static final int YK4_3 = 3062;
+  static final int YK6 = 4918;
 
   private MaxApduSize() {
     throw new IllegalStateException();

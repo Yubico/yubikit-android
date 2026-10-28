@@ -163,6 +163,9 @@ public class ScpState {
   }
 
   public byte[] unmac(byte[] data, short sw) throws BadResponseException {
+    if (data.length < 8) {
+      throw new BadResponseException("Response too short to carry an R-MAC");
+    }
     byte[] msg =
         ByteBuffer.allocate(data.length - 8 + 2).put(data, 0, data.length - 8).putShort(sw).array();
 

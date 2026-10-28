@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Yubico.
+ * Copyright (C) 2025-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,11 +25,20 @@ class ExtendedApduFormatter implements ApduFormatter {
     this.maxApduSize = maxApduSize;
   }
 
+  private static int apduLength(int dataLength, int le) {
+    return 5 + (dataLength > 0 ? 2 : 0) + dataLength + (le > 0 ? 2 : 0);
+  }
+
+  /** Returns whether an APDU with the given length of data and Le is within the maximum size. */
+  boolean fits(int dataLength, int le) {
+    return apduLength(dataLength, le) <= maxApduSize;
+  }
+
   @Override
   public byte[] formatApdu(
       byte cla, byte ins, byte p1, byte p2, byte[] data, int offset, int length, int le) {
     ByteBuffer buf =
-        ByteBuffer.allocate(5 + (data.length > 0 ? 2 : 0) + data.length + (le > 0 ? 2 : 0))
+        ByteBuffer.allocate(apduLength(data.length, le))
             .put(cla)
             .put(ins)
             .put(p1)

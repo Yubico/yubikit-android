@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2025 Yubico.
+ * Copyright (C) 2024-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,6 +51,7 @@ public class PivTestState extends TestState {
       };
 
   public final boolean isFipsApproved;
+  public final boolean isRsa1024Supported;
   public char[] pin;
   public char[] puk;
   public byte[] managementKey;
@@ -119,6 +120,8 @@ public class PivTestState extends TestState {
 
     deviceInfo = getDeviceInfo();
     isFipsApproved = isFipsApproved(deviceInfo, Capability.PIV);
+    isRsa1024Supported =
+        deviceInfo == null || PivSession.FEATURE_RSA1024.isSupportedBy(deviceInfo.getVersion());
 
     // after changing PIN, PUK and management key, we expect a FIPS capable device
     // to be FIPS approved
@@ -128,7 +131,14 @@ public class PivTestState extends TestState {
     }
   }
 
+  boolean usesSecureMessaging() {
+    return scpParameters.getKid() != null;
+  }
+
   boolean isInvalidKeyType(KeyType keyType) {
+    if (keyType == KeyType.RSA1024 && !isRsa1024Supported) {
+      return true;
+    }
     return isFipsApproved && (keyType == KeyType.RSA1024 || keyType == KeyType.X25519);
   }
 

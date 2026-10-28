@@ -20,6 +20,7 @@ import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.util.Tlv;
 import com.yubico.yubikit.core.util.Tlvs;
 import java.math.BigInteger;
+import java.nio.BufferUnderflowException;
 import java.security.PrivateKey;
 import java.security.interfaces.RSAPrivateCrtKey;
 import java.security.interfaces.RSAPrivateKey;
@@ -41,6 +42,10 @@ import org.jspecify.annotations.Nullable;
 public abstract class PrivateKeyValues implements Destroyable {
   private static final byte[] OID_ECDSA =
       new byte[] {0x2a, (byte) 0x86, 0x48, (byte) 0xce, 0x3d, 0x02, 0x01};
+
+  /** The bit length of keys which are not measured in bits, such as ML-DSA and ML-KEM keys. */
+  private static final int NO_BIT_LENGTH = 0;
+
   final int bitLength;
   private boolean destroyed = false;
 
@@ -48,6 +53,7 @@ public abstract class PrivateKeyValues implements Destroyable {
     this.bitLength = bitLength;
   }
 
+  /** Returns the bit length of the key, which is {@code 0} for keys which have none. */
   public final int getBitLength() {
     return bitLength;
   }
@@ -87,6 +93,26 @@ public abstract class PrivateKeyValues implements Destroyable {
               Arrays.asList(EllipticCurveValues.Ed25519, EllipticCurveValues.X25519)) {
             if (Arrays.equals(curve.getOid(), algorithm)) {
               return new Ec(curve, Tlvs.unpackValue(0x04, tlvs.get(0x04)));
+            }
+          }
+          for (MlDsaParameterValues params : MlDsaParameterValues.values()) {
+            if (Arrays.equals(params.getOid(), algorithm)) {
+              return new MlDsa(
+                  params,
+                  parseSeed(
+                      tlvs.get(0x04),
+                      params.getSeedLength(),
+                      params.getExpandedPrivateKeyLength()));
+            }
+          }
+          for (MlKemParameterValues params : MlKemParameterValues.values()) {
+            if (Arrays.equals(params.getOid(), algorithm)) {
+              return new MlKem(
+                  params,
+                  parseSeed(
+                      tlvs.get(0x04),
+                      params.getSeedLength(),
+                      params.getExpandedPrivateKeyLength()));
             }
           }
         }
@@ -135,6 +161,120 @@ public abstract class PrivateKeyValues implements Destroyable {
           + isDestroyed()
           + '}';
     }
+  }
+
+  public static class MlDsa extends PrivateKeyValues {
+    private final MlDsaParameterValues parameterValues;
+    private final byte[] seed;
+
+    protected MlDsa(MlDsaParameterValues parameterValues, byte[] seed) {
+      super(NO_BIT_LENGTH);
+      if (seed.length != parameterValues.getSeedLength()) {
+        throw new IllegalArgumentException("ML-DSA seed has wrong length: " + seed.length);
+      }
+      this.parameterValues = parameterValues;
+      this.seed = Arrays.copyOf(seed, seed.length);
+    }
+
+    public MlDsaParameterValues getParameterValues() {
+      return parameterValues;
+    }
+
+    public byte[] getSeed() {
+      return Arrays.copyOf(seed, seed.length);
+    }
+
+    @Override
+    public void destroy() throws DestroyFailedException {
+      Arrays.fill(seed, (byte) 0);
+      super.destroy();
+    }
+
+    @Override
+    public String toString() {
+      return "PrivateKeyValues.MlDsa{"
+          + "params="
+          + parameterValues.name()
+          + ", destroyed="
+          + isDestroyed()
+          + '}';
+    }
+  }
+
+  public static class MlKem extends PrivateKeyValues {
+    private final MlKemParameterValues parameterValues;
+    private final byte[] seed;
+
+    protected MlKem(MlKemParameterValues parameterValues, byte[] seed) {
+      super(NO_BIT_LENGTH);
+      if (seed.length != parameterValues.getSeedLength()) {
+        throw new IllegalArgumentException("ML-KEM seed has wrong length: " + seed.length);
+      }
+      this.parameterValues = parameterValues;
+      this.seed = Arrays.copyOf(seed, seed.length);
+    }
+
+    public MlKemParameterValues getParameterValues() {
+      return parameterValues;
+    }
+
+    public byte[] getSeed() {
+      return Arrays.copyOf(seed, seed.length);
+    }
+
+    @Override
+    public void destroy() throws DestroyFailedException {
+      Arrays.fill(seed, (byte) 0);
+      super.destroy();
+    }
+
+    @Override
+    public String toString() {
+      return "PrivateKeyValues.MlKem{"
+          + "params="
+          + parameterValues.name()
+          + ", destroyed="
+          + isDestroyed()
+          + '}';
+    }
+  }
+
+  /**
+   * Extracts the seed from the privateKey field of a PKCS#8 PrivateKeyInfo for an ML-DSA or ML-KEM
+   * key. The seed is what is imported, so the field must hold it: either on its own, as an OCTET
+   * STRING or an implicit context specific one, or together with the expanded key in a SEQUENCE. An
+   * encoding without the seed is rejected.
+   */
+  private static byte[] parseSeed(byte[] encoded, int seedLength, int expandedLength) {
+    return parseSeed(encoded, seedLength, expandedLength, true);
+  }
+
+  private static byte[] parseSeed(
+      byte[] encoded, int seedLength, int expandedLength, boolean allowWrapped) {
+    try {
+      Tlv tlv = Tlv.parse(encoded);
+      byte[] value = tlv.getValue();
+      if ((tlv.getTag() == 0x80 || tlv.getTag() == 0x04) && value.length == seedLength) {
+        return value;
+      }
+      if (tlv.getTag() == 0x04 && allowWrapped) {
+        // Some encoders wrap the encoding above in a further OCTET STRING.
+        return parseSeed(value, seedLength, expandedLength, false);
+      }
+      if (tlv.getTag() == 0x30) {
+        List<Tlv> fields = Tlvs.decodeList(value);
+        if (fields.size() == 2
+            && fields.get(0).getTag() == 0x04
+            && fields.get(0).getLength() == seedLength
+            && fields.get(1).getTag() == 0x04
+            && fields.get(1).getLength() == expandedLength) {
+          return fields.get(0).getValue();
+        }
+      }
+    } catch (IllegalArgumentException | BufferUnderflowException e) {
+      // ignore, fall through to exception
+    }
+    throw new IllegalArgumentException("Invalid ML-DSA or ML-KEM private key encoding");
   }
 
   public static class Rsa extends PrivateKeyValues {

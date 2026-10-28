@@ -50,6 +50,7 @@ public class DeviceInfo {
   private static final int TAG_VERSION_QUALIFIER = 0x19;
   private static final int TAG_FPS_VERSION = 0x20;
   private static final int TAG_STM_VERSION = 0x21;
+  private static final int TAG_NAME = 0x1B;
   private static final Logger logger = LoggerFactory.getLogger(DeviceInfo.class);
 
   private final DeviceConfig config;
@@ -68,6 +69,7 @@ public class DeviceInfo {
   private final int resetBlocked;
   @Nullable private final Version fpsVersion;
   @Nullable private final Version stmVersion;
+  @Nullable private final String name;
 
   private DeviceInfo(Builder builder) {
     this.config = builder.config;
@@ -86,6 +88,7 @@ public class DeviceInfo {
     this.resetBlocked = builder.resetBlocked;
     this.fpsVersion = builder.fpsVersion;
     this.stmVersion = builder.stmVersion;
+    this.name = builder.name;
   }
 
   /** Returns the current Device configuration of the YubiKey. */
@@ -193,6 +196,14 @@ public class DeviceInfo {
     return versionQualifier;
   }
 
+  /**
+   * Returns the device name reported by the YubiKey, or null if the firmware does not report one.
+   */
+  @Nullable
+  public String getName() {
+    return name;
+  }
+
   static DeviceInfo parseTlvs(Map<Integer, byte[]> data, Version defaultVersion) {
     boolean isLocked = readInt(data.get(TAG_CONFIG_LOCKED)) == 1;
     int serialNumber = readInt(data.get(TAG_SERIAL_NUMBER));
@@ -264,15 +275,13 @@ public class DeviceInfo {
     }
 
     if (data.containsKey(TAG_PART_NUMBER)) {
-      try {
-        partNumber =
-            StandardCharsets.UTF_8
-                .newDecoder()
-                .decode(ByteBuffer.wrap(data.get(TAG_PART_NUMBER)))
-                .toString();
-      } catch (IllegalStateException | CharacterCodingException e) {
-        // ignored
-      }
+      partNumber = decodeUtf8(data.get(TAG_PART_NUMBER));
+    }
+
+    String name = null;
+    if (data.containsKey(TAG_NAME)) {
+      String decoded = decodeUtf8(data.get(TAG_NAME));
+      name = decoded == null || decoded.isEmpty() ? null : decoded;
     }
 
     DeviceConfig.Builder deviceConfigBuilder =
@@ -305,7 +314,18 @@ public class DeviceInfo {
         .fpsVersion(fpsVersion)
         .stmVersion(stmVersion)
         .versionQualifier(versionQualifier)
+        .name(name)
         .build();
+  }
+
+  /** Decodes strict UTF-8, returning null if the data is not valid. */
+  @Nullable
+  private static String decodeUtf8(byte[] data) {
+    try {
+      return StandardCharsets.UTF_8.newDecoder().decode(ByteBuffer.wrap(data)).toString();
+    } catch (IllegalStateException | CharacterCodingException e) {
+      return null;
+    }
   }
 
   public static class Builder {
@@ -324,6 +344,7 @@ public class DeviceInfo {
     private int resetBlocked = 0;
     @Nullable private Version fpsVersion = null;
     @Nullable private Version stmVersion = null;
+    @Nullable private String name = null;
     private VersionQualifier versionQualifier =
         new VersionQualifier(version, VersionQualifier.Type.FINAL, 0);
 
@@ -410,6 +431,11 @@ public class DeviceInfo {
       this.versionQualifier = versionQualifier;
       return this;
     }
+
+    public Builder name(@Nullable String name) {
+      this.name = name;
+      return this;
+    }
   }
 
   /** Convert value to use bits of the {@link Capability} enum */
@@ -490,7 +516,8 @@ public class DeviceInfo {
         && Objects.equals(partNumber, that.partNumber)
         && Objects.equals(fpsVersion, that.fpsVersion)
         && Objects.equals(stmVersion, that.stmVersion)
-        && Objects.equals(versionQualifier, that.versionQualifier);
+        && Objects.equals(versionQualifier, that.versionQualifier)
+        && Objects.equals(name, that.name);
   }
 
   @Override
@@ -511,7 +538,8 @@ public class DeviceInfo {
         resetBlocked,
         fpsVersion,
         stmVersion,
-        versionQualifier);
+        versionQualifier,
+        name);
   }
 
   @Override
@@ -549,6 +577,8 @@ public class DeviceInfo {
         + stmVersion
         + ", versionQualifier="
         + versionQualifier
+        + ", name="
+        + name
         + '}';
   }
 }

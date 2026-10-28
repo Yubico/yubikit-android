@@ -8,8 +8,33 @@
           FIDO over SmartCardConnection (default: on). Fixes user presence commands failing
           with OPERATION_DENIED when APDUs are relayed over a slow network, as the YubiKey
           may abort if a poll takes more than 500 ms.
+  - management: DeviceInfo.getName() returns the device name reported by the firmware, if any.
+          DeviceUtil.getName() uses it in preference to the name derived from capabilities.
+  - piv: key support follows what the device supports. RSA1024 keys and TDES management keys
+          are rejected on devices that do not support them: PivSession.checkKeySupport() and
+          setManagementKey() throw UnsupportedOperationException, see FEATURE_RSA1024 and
+          FEATURE_TDES_KEY.
+  - core: SmartCardProtocol allows larger extended length APDUs on devices which support them.
+  - core: PublicKeyValues and PrivateKeyValues have variants for additional key types, a
+          signature algorithm and a key-encapsulation mechanism. A private key is
+          represented by its seed.
+  - piv: support for additional key types, a signature algorithm and a key-encapsulation
+          mechanism, on devices which support them. See the new PivSession.FEATURE_*
+          constants. The keys can be generated and imported. Signature keys sign with
+          rawSignOrDecrypt(), with a context using rawSignWithContext() or a precomputed
+          digest using rawSignExternalMu(), and through JCA. Key-encapsulation keys
+          decapsulate with decapsulate().
  ** fixes & improvements:
+  - piv: KeyType.fromValue() finds the key types with a value above 0x7F, such as ED25519,
+          also when it is given an unsigned value.
+  - core: data which does not fit in a single extended length APDU is now sent with command
+          chaining of short APDUs, also with secure messaging, instead of failing with
+          UnsupportedOperationException
   - core: reassemble FIDO HID messages longer than 7609 bytes (sequence wraps at 128)
+  - core: under secure messaging (SCP03, SCP11) a success or warning response without an
+          R-MAC is refused, the same way as a response with a wrong R-MAC, as is a response
+          too short to hold one. Before, only responses with a data field were authenticated,
+          so a bare 9000 was accepted.
   - android: CCID command chaining and response reassembly (bChainParameter) for
              APDUs beyond the reader's dwMaxCCIDMessageLength; chained responses are
              bounded to the ISO 7816-4 maximum

@@ -20,3 +20,6 @@ plugins {
 
 description = "The core module is the base library, with common interfaces and utilities used throughout the rest of the modules."
 
+dependencies {
+    testImplementation(libs.bcpkix.jdk15to18)
+}
