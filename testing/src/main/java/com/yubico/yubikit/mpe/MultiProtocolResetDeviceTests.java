@@ -46,7 +46,9 @@ public class MultiProtocolResetDeviceTests {
 
   public static void testPivOperationBlocksFidoReset(PivSession piv, MpeTestState state)
       throws IOException, CommandException {
-    KeyPair rsaKeyPair = PivTestUtils.loadKey(KeyType.RSA1024);
+    KeyPair rsaKeyPair =
+        PivTestUtils.loadKey(
+            piv.supports(PivSession.FEATURE_RSA1024) ? KeyType.RSA1024 : KeyType.RSA2048);
     piv.authenticate(Hex.decode("010203040506070801020304050607080102030405060708"));
     piv.putKey(
         Slot.RETIRED1,

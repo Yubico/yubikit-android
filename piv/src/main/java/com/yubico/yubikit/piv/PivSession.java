@@ -126,6 +126,24 @@ public class PivSession extends ApplicationSession<PivSession> {
   public static final Feature<PivSession> FEATURE_RSA3072_RSA4096 =
       new Feature.Versioned<>("RSA3072 and RSA4096 keys", 5, 7, 0);
 
+  // First firmware version which no longer supports RSA1024 keys or TDES management keys.
+  private static final Version YK6 = new Version(6, 0, 0);
+
+  /** Support for RSA1024 keys. Not available on newer devices. */
+  public static final Feature<PivSession> FEATURE_RSA1024 = removedInYk6("RSA1024 keys");
+
+  /** Support for TDES management keys. Not available on newer devices. */
+  public static final Feature<PivSession> FEATURE_TDES_KEY = removedInYk6("TDES Management Key");
+
+  private static Feature<PivSession> removedInYk6(String featureName) {
+    return new Feature<PivSession>(featureName) {
+      @Override
+      public boolean isSupportedBy(Version version) {
+        return version.isLessThan(YK6.major, YK6.minor, YK6.micro);
+      }
+    };
+  }
+
   private static final int PIN_LEN = 8;
   private static final int TEMPORARY_PIN_LEN = 16;
 
@@ -486,6 +504,9 @@ public class PivSession extends ApplicationSession<PivSession> {
    * <p>Thi setting requireTouch=true requires support for {@link #FEATURE_USAGE_POLICY}, available
    * on YubiKey 4 or later.
    *
+   * <p>AES key types require {@link #FEATURE_AES_KEY}, available on YubiKey 5.4 or later. The TDES
+   * key type requires {@link #FEATURE_TDES_KEY}, which newer devices do not support.
+   *
    * @param managementKey new value of management key
    * @param requireTouch true to require touch for authentication
    * @throws IOException in case of connection error
@@ -495,7 +516,9 @@ public class PivSession extends ApplicationSession<PivSession> {
       ManagementKeyType keyType, byte[] managementKey, boolean requireTouch)
       throws IOException, ApduException {
     logger.debug("Setting management key of type: {}", keyType);
-    if (keyType != ManagementKeyType.TDES) {
+    if (keyType == ManagementKeyType.TDES) {
+      require(FEATURE_TDES_KEY);
+    } else {
       require(FEATURE_AES_KEY);
     }
     if (requireTouch) {
@@ -1040,6 +1063,9 @@ public class PivSession extends ApplicationSession<PivSession> {
       return;
     }
 
+    if (keyType == KeyType.RSA1024) {
+      require(FEATURE_RSA1024);
+    }
     if (keyType == KeyType.ED25519 || keyType == KeyType.X25519) {
       require(FEATURE_CV25519);
     }

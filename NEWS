@@ -6,6 +6,10 @@
           may abort if a poll takes more than 500 ms.
   - management: DeviceInfo.getName() returns the device name reported by the firmware, if any.
           DeviceUtil.getName() uses it in preference to the name derived from capabilities.
+  - piv: key support follows what the device supports. RSA1024 keys and TDES management keys
+          are rejected on devices that do not support them: PivSession.checkKeySupport() and
+          setManagementKey() throw UnsupportedOperationException, see FEATURE_RSA1024 and
+          FEATURE_TDES_KEY.
  ** fixes & improvements:
   - core: reassemble FIDO HID messages longer than 7609 bytes (sequence wraps at 128)
   - android: reassemble CCID responses split across frames (bChainParameter)
