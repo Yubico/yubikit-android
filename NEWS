@@ -27,6 +27,10 @@
           chaining of short APDUs, also with secure messaging, instead of failing with
           UnsupportedOperationException
   - core: reassemble FIDO HID messages longer than 7609 bytes (sequence wraps at 128)
+  - core: under secure messaging (SCP03, SCP11) a success or warning response without an
+          R-MAC is refused, the same way as a response with a wrong R-MAC, as is a response
+          too short to hold one. Before, only responses with a data field were authenticated,
+          so a bare 9000 was accepted.
   - android: reassemble CCID responses split across frames (bChainParameter)
   - android: split command APDUs exceeding the reader's dwMaxCCIDMessageLength
   - android: support TPDU-level USB readers with host-side T=1 framing

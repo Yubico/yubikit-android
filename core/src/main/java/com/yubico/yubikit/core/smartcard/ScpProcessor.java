@@ -23,6 +23,8 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 public class ScpProcessor implements ApduProcessor {
+  private static final byte INS_EXTERNAL_AUTHENTICATE = (byte) 0x82;
+
   private final ApduProcessor delegate;
   private final ApduFormatter formatter;
   final ScpState state;
@@ -59,23 +61,38 @@ public class ScpProcessor implements ApduProcessor {
     ApduResponse resp =
         delegate.sendApdu(
             new Apdu(cla, apdu.getIns(), apdu.getP1(), apdu.getP2(), macedData, apdu.getLe()));
-    byte[] respData = resp.getData();
+    short sw = resp.getSw();
+    byte[] wireData = resp.getData();
+
+    if (wireData.length == 0) {
+      // GPC Amd D (SCP03) v1.2 §6.2.5: every success or warning response carries an R-MAC, even
+      // without data. EXTERNAL AUTHENTICATE precedes the R-MAC session and is the only exception.
+      if (isSuccessOrWarning(sw) && apdu.getIns() != INS_EXTERNAL_AUTHENTICATE) {
+        throw new BadResponseException(
+            String.format("Response with status 0x%04X carries no R-MAC", sw & 0xFFFF));
+      }
+      return resp;
+    }
 
     // Un-MAC and decrypt, if needed
-    if (respData.length > 0) {
-      respData = state.unmac(respData, resp.getSw());
-    }
+    byte[] respData = state.unmac(wireData, sw);
     if (respData.length > 0) {
       respData = state.decrypt(respData);
     }
 
     try {
       return new ApduResponse(
-          ByteBuffer.allocate(respData.length + 2).put(respData).putShort(resp.getSw()).array());
+          ByteBuffer.allocate(respData.length + 2).put(respData).putShort(sw).array());
 
     } finally {
       Arrays.fill(respData, (byte) 0);
     }
+  }
+
+  /** 9000, 62xx and 63xx; every other status word is an error, which carries no R-MAC. */
+  private static boolean isSuccessOrWarning(short sw) {
+    int hi = (sw & 0xFF00);
+    return sw == SW.OK || hi == 0x6200 || hi == 0x6300;
   }
 
   private byte[] formatApduData(byte cla, Apdu apdu, byte[] macedData) {
