@@ -54,7 +54,8 @@ public class GzipUtils {
   /**
    * @param input byte array of gzip data to be uncompressed
    * @return uncompressed data
-   * @throws IOException if the decompression failed
+   * @throws IOException if the decompression failed or the result is larger than {@link
+   *     CompressionUtils#MAX_DECOMPRESSED_LENGTH}
    */
   static byte[] decompress(byte[] input) throws IOException {
     logger.debug("Decompressing {} bytes", input.length);
@@ -66,6 +67,10 @@ public class GzipUtils {
         GZIPInputStream gzipInputStream = new GZIPInputStream(byteArrayInputStream)) {
 
       while ((bytesRead = gzipInputStream.read(buffer, 0, BUFFER_SIZE)) != -1) {
+        if (byteArrayOutputStream.size() + bytesRead > CompressionUtils.MAX_DECOMPRESSED_LENGTH) {
+          throw new IOException(
+              "Decompressed data exceeds " + CompressionUtils.MAX_DECOMPRESSED_LENGTH + " bytes");
+        }
         byteArrayOutputStream.write(buffer, 0, bytesRead);
       }
 

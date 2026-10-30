@@ -23,6 +23,7 @@ import com.yubico.yubikit.Codec;
 import com.yubico.yubikit.core.util.StringUtils;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.zip.Deflater;
 import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -86,6 +87,39 @@ public class ZlibUtilsTest {
   public void compressInputTooLarge() {
     byte[] data = new byte[65536]; // One byte over the 64KB limit
     compress(data);
+  }
+
+  @Test(expected = IOException.class, timeout = 5000)
+  public void decompressTruncatedStream() throws Throwable {
+    // Header followed by only the first two bytes of a zlib stream
+    decompress(Codec.fromHex("01000100789C"));
+  }
+
+  @Test(expected = IOException.class, timeout = 5000)
+  public void decompressNeedsDictionary() throws Throwable {
+    // zlib header with FDICT set and a dictionary id, but no dictionary available
+    decompress(Codec.fromHex("0100010078BB00000001" + "0300"));
+  }
+
+  @Test(expected = IOException.class, timeout = 5000)
+  public void decompressStopsAtDeclaredLength() throws Throwable {
+    byte[] zeros = new byte[1024 * 1024];
+    Deflater deflater = new Deflater();
+    deflater.setInput(zeros);
+    deflater.finish();
+    byte[] buffer = new byte[4096];
+    int count = deflater.deflate(buffer);
+    deflater.end();
+    byte[] input = new byte[4 + count];
+    input[0] = 0x01;
+    input[2] = 0x01; // declares 1 byte
+    System.arraycopy(buffer, 0, input, 4, count);
+    decompress(input);
+  }
+
+  @Test
+  public void decompressesMaxDeclaredLength() throws Throwable {
+    compressAndDecompress(new byte[65535]);
   }
 
   @Test

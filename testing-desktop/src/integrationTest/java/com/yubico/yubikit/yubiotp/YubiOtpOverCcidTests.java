@@ -16,14 +16,12 @@
 
 package com.yubico.yubikit.yubiotp;
 
-import com.yubico.yubikit.SmokeTest;
 import com.yubico.yubikit.core.otp.OtpConnection;
 import com.yubico.yubikit.core.smartcard.SmartCardConnection;
 import com.yubico.yubikit.framework.YubiOtpInstrumentedTests;
 import java.util.Collections;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
 
 public class YubiOtpOverCcidTests extends YubiOtpInstrumentedTests {
 
@@ -42,7 +40,6 @@ public class YubiOtpOverCcidTests extends YubiOtpInstrumentedTests {
   }
 
   @Test
-  @Category(SmokeTest.class)
   public void testSwitchTransports() throws Throwable {
     withYubiOtpSession(YubiOtpDeviceTests::testSlotConfigured);
     connectionTypes = Collections.singletonList(OtpConnection.class);

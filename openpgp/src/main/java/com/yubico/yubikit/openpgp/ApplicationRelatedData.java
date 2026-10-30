@@ -20,9 +20,7 @@ import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.util.Tlvs;
 import java.util.Arrays;
 import java.util.EnumSet;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import org.jspecify.annotations.Nullable;
 
 public class ApplicationRelatedData {
@@ -75,13 +73,13 @@ public class ApplicationRelatedData {
       EnumSet<GeneralFeatureManagement> generalFeatureManagement = null;
       if (data.containsKey(Do.GENERAL_FEATURE_MANAGEMENT)) {
         byte flags = Tlvs.unpackValue(0x81, data.get(Do.GENERAL_FEATURE_MANAGEMENT))[0];
-        Set<GeneralFeatureManagement> flagSet = new HashSet<>();
+        EnumSet<GeneralFeatureManagement> flagSet = EnumSet.noneOf(GeneralFeatureManagement.class);
         for (GeneralFeatureManagement flag : GeneralFeatureManagement.values()) {
           if ((flag.value & flags) != 0) {
             flagSet.add(flag);
           }
         }
-        generalFeatureManagement = EnumSet.copyOf(flagSet);
+        generalFeatureManagement = flagSet;
       }
       byte[] discretionary = data.get(TAG_DISCRETIONARY);
       return new ApplicationRelatedData(

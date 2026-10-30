@@ -1,52 +1,41 @@
-* Next version (unreleased)
+* Version 3.3.0 (released 2026-10-29)
  ** new:
-  - fido: Ctap2Session.setPollingEnabled(false) turns off NFCCTAP_GETRESPONSE polling for
-          FIDO over SmartCardConnection (default: on). Fixes user presence commands failing
-          with OPERATION_DENIED when APDUs are relayed over a slow network, as the YubiKey
-          may abort if a poll takes more than 500 ms.
-  - management: DeviceInfo.getName() returns the device name reported by the firmware, if any.
-          DeviceUtil.getName() uses it in preference to the name derived from capabilities.
-  - piv: key support follows what the device supports. RSA1024 keys and TDES management keys
-          are rejected on devices that do not support them: PivSession.checkKeySupport() and
-          setManagementKey() throw UnsupportedOperationException, see FEATURE_RSA1024 and
-          FEATURE_TDES_KEY.
-  - core: SmartCardProtocol allows larger extended length APDUs on devices which support them.
-  - core: PublicKeyValues and PrivateKeyValues have variants for additional key types, a
-          signature algorithm and a key-encapsulation mechanism. A private key is
-          represented by its seed.
+  - core: PublicKeyValues and PrivateKeyValues variants for the additional key types
+  - core: larger extended length APDUs on supporting devices; larger data is sent with
+          command chaining instead of failing
+  - android: support for TPDU-level USB readers (host-side T=1 framing)
+  - android: CCID command chaining and response reassembly for large APDUs
+  - fido: Ctap2Session.setPollingEnabled(false) turns off NFC polling, fixing
+          OPERATION_DENIED when APDUs are relayed over a slow network
   - piv: support for additional key types, a signature algorithm and a key-encapsulation
-          mechanism, on devices which support them. See the new PivSession.FEATURE_*
-          constants. The keys can be generated and imported. Signature keys sign with
-          rawSignOrDecrypt(), with a context using rawSignWithContext() or a precomputed
-          digest using rawSignExternalMu(), and through JCA. Key-encapsulation keys
-          decapsulate with decapsulate().
+         mechanism on devices which support them (see PivSession.FEATURE_*)
+  - piv: RSA1024 and TDES management keys are rejected on devices that do not support them
+  - management: added Capability.FIDO_CCID (0x1000), reported by firmware 5.8+
+  - management: DeviceInfo.getName() returns the device name reported by the firmware
  ** fixes & improvements:
-  - piv: KeyType.fromValue() finds the key types with a value above 0x7F, such as ED25519,
-          also when it is given an unsigned value.
-  - core: data which does not fit in a single extended length APDU is now sent with command
-          chaining of short APDUs, also with secure messaging, instead of failing with
-          UnsupportedOperationException
-  - core: reassemble FIDO HID messages longer than 7609 bytes (sequence wraps at 128)
-  - core: under secure messaging (SCP03, SCP11) a success or warning response without an
-          R-MAC is refused, the same way as a response with a wrong R-MAC, as is a response
-          too short to hold one. Before, only responses with a data field were authenticated,
-          so a bare 9000 was accepted.
-  - android: reassemble CCID responses split across frames (bChainParameter)
-  - android: split command APDUs exceeding the reader's dwMaxCCIDMessageLength
-  - android: support TPDU-level USB readers with host-side T=1 framing
-  - android: set a TPDU-level reader's T=1 parameters from the card's ATR
-  - fido: NFCCTAP_GETRESPONSE polls no longer re-send the request, which cost an extra
-          round trip per poll for chained requests. Fixes user presence commands failing
-          with OPERATION_DENIED when APDUs are relayed over a slow network.
-  - fido: accept COSE algorithm identifiers sent as floating point numbers (-7.0)
-  - fido: authenticatorConfig sends subcommand 0xFF as 255 instead of -1
-  - fido: Cbor encodes and decodes integers up to 64 bits (Long, or BigInteger above
-           Long.MAX_VALUE) instead of truncating or rejecting them
-  - fido: Config.vendorPrototype(long, Map) sends an unsigned 64-bit vendorCommandId and
-          vendor-defined parameters; vendorPrototype(Integer) is deprecated
-  - fido: InfoData parses vendorPrototypeConfigCommands as unsigned 64-bit values and adds
-          getVendorPrototypeConfigCommandIds(); getVendorPrototypeConfigCommands() is
-          deprecated
+  - core: under SCP03/SCP11 a response without a valid R-MAC is refused (a bare 9000 was
+          accepted before)
+  - core, fido, oath: malformed or endless card and key responses now fail with
+          an exception instead of an unchecked error or an endless read
+  - core: reassemble FIDO HID messages longer than 7609 bytes
+  - fido: makeCredential returns fmt "none" with an empty attStmt unless attestation was
+          requested, as WebAuthn requires
+  - fido: Ctap1Client.getAssertion rejects userVerification "required"
+  - fido: unsigned 64-bit integers in Cbor, vendorPrototype and InfoData;
+          vendorPrototype(Integer) and getVendorPrototypeConfigCommands() are deprecated
+  - fido, openpgp: no longer use API 24 methods (NoSuchMethodError on API 21-23)
+  - fido: getAssertions passes the caller's CommandState to follow-up assertions
+  - fido: accept COSE algorithm identifiers sent as floats; send config subcommand 0xFF
+          as 255
+  - fido: NFCCTAP_GETRESPONSE polls no longer re-send the request
+  - piv: certificate decompression is bounded (gzip certificates over 64 KiB are rejected)
+  - piv: KeyType.fromValue() finds key types above 0x7F, such as ED25519
+  - openpgp: an invalid KDF iteration count is rejected with IllegalArgumentException, and
+             the whole salt and PIN is always hashed
+  - openpgp: initialize a session with a card that advertises no extended capabilities
+             or general features, instead of failing with IllegalArgumentException
+  - testing: fido-ui instrumented tests run on Android 16
+  - build: updated dependencies, GitHub Actions and the Gradle wrapper (9.7.1)
 * Version 3.2.1 (released 2026-09-08)
  ** fixes & improvements:
   - fido: decode COSE EC2 coordinates as unsigned

@@ -63,6 +63,16 @@ class AndroidAllowListProvider implements AllowList.AllowListProvider {
     return allowedSerials;
   }
 
+  /**
+   * Opt in with {@code -Pandroid.testInstrumentationRunnerArguments.allowExternalCards=true} to run
+   * on a card behind an external reader that is not a YubiKey. Off unless given.
+   */
+  @Override
+  public boolean allowExternalCards() {
+    return "true"
+        .equalsIgnoreCase(InstrumentationRegistry.getArguments().getString("allowExternalCards"));
+  }
+
   @Override
   public String onInvalidInputErrorMessage() {
     return "For running the integrations tests, create testing-android/src/main/assets/"

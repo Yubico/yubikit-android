@@ -84,10 +84,16 @@ public class OathSession extends ApplicationSession<OathSession> {
   static final int TAG_NAME = 0x71;
   static final int TAG_KEY = 0x73;
   static final int TAG_RESPONSE = 0x75;
+  static final int TAG_RESPONSE_TRUNCATED = 0x76;
+  static final int TAG_RESPONSE_HOTP = 0x77;
+  static final int TAG_RESPONSE_TOUCH = 0x7c;
   static final int TAG_PROPERTY = 0x78;
   static final int TAG_IMF = 0x7a;
   static final int TAG_CHALLENGE = 0x74;
   static final int TAG_VERSION = 0x79;
+
+  // Largest number of digits a truncated (32 bit) response can be formatted to
+  private static final int MAX_DIGITS = 10;
 
   // Instruction bytes for APDU commands
   static final byte INS_LIST = (byte) 0xa1;
@@ -427,6 +433,9 @@ public class OathSession extends ApplicationSession<OathSession> {
         throw new BadResponseException(String.format("Unexpected tag: %02x", nameTlv.getTag()));
       }
       byte[] credentialId = nameTlv.getValue();
+      if (!responseTlvs.hasNext()) {
+        throw new BadResponseException("Missing response for credential");
+      }
       CalculateResponse response = new CalculateResponse(responseTlvs.next());
 
       // parse credential properties
@@ -520,7 +529,16 @@ public class OathSession extends ApplicationSession<OathSession> {
     requestTlv.put(TAG_CHALLENGE, challenge);
     byte[] data =
         protocol.sendAndReceive(new Apdu(0, INS_CALCULATE, 0, 1, Tlvs.encodeMap(requestTlv)));
-    String value = formatTruncated(new CalculateResponse(Tlv.parse(data)));
+    String value;
+    try {
+      CalculateResponse response = new CalculateResponse(Tlv.parse(data));
+      if (response.response.length != 4) {
+        throw new BadResponseException("Unexpected response length: " + response.response.length);
+      }
+      value = formatTruncated(response);
+    } catch (BadResponseException e) {
+      throw new IOException("Malformed CALCULATE response", e);
+    }
 
     switch (credential.getOathType()) {
       case TOTP:
@@ -781,10 +799,23 @@ public class OathSession extends ApplicationSession<OathSession> {
     final int digits;
     final byte[] response;
 
-    private CalculateResponse(Tlv tlv) {
-      responseType = (byte) tlv.getTag();
+    private CalculateResponse(Tlv tlv) throws BadResponseException {
+      int tag = tlv.getTag();
+      if (tag != TAG_RESPONSE_TRUNCATED && tag != TAG_RESPONSE_HOTP && tag != TAG_RESPONSE_TOUCH) {
+        throw new BadResponseException(String.format("Unexpected tag: %02x", tag));
+      }
+      responseType = (byte) tag;
       byte[] value = tlv.getValue();
-      digits = value[0];
+      if (value.length < 1) {
+        throw new BadResponseException("Response is missing the number of digits");
+      }
+      digits = 0xff & value[0];
+      if (digits < 1 || digits > MAX_DIGITS) {
+        throw new BadResponseException("Unsupported number of digits: " + digits);
+      }
+      if (value.length != 1 && value.length != 5) {
+        throw new BadResponseException("Unexpected response length: " + (value.length - 1));
+      }
       response = Arrays.copyOfRange(value, 1, value.length);
     }
   }

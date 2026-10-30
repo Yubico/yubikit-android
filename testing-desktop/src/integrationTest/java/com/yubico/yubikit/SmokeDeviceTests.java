@@ -19,10 +19,22 @@ import org.junit.experimental.categories.Categories;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
-/** Quick, randomly selected tests for different applications. */
+/**
+ * A quick check that every application and transport still works, about a minute of test time over
+ * USB. One or two tests per application (management, PIV, OATH, OpenPGP, YubiOTP, Security Domain,
+ * FIDO over HID/NFC and over CCID), APDU framing, and cancellation for CTAP1 and CTAP2.
+ *
+ * <p>Excluded are the {@link PinUvAuthProtocolV1Test} variants, which repeat the PIN/UV protocol 2
+ * tests, {@link SlowTest} and {@link AlwaysManualTest}. No test waits for a touch, so the set also
+ * runs over NFC, where the cancellation tests skip.
+ *
+ * <p>The YubiKey applications will be modified: PINs, management keys, credentials and Security
+ * Domain keys are changed. Use a designated test key.
+ *
+ * <p>More thorough sets are {@link FastDeviceTests} and {@link DeviceTests}.
+ */
 @RunWith(Categories.class)
-@Categories.IncludeCategory({
-  SmokeTest.class,
-})
+@Categories.IncludeCategory(SmokeTest.class)
+@Categories.ExcludeCategory({PinUvAuthProtocolV1Test.class, SlowTest.class, AlwaysManualTest.class})
 @Suite.SuiteClasses(DeviceTests.class)
 public class SmokeDeviceTests {}

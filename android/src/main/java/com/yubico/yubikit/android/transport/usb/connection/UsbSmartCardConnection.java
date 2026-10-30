@@ -44,6 +44,18 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
   private static final int TIMEOUT = 1000;
 
   /**
+   * Slack on top of the card's block waiting time for the reader and USB to hand its answer over:
+   * the card is allowed the whole of BWT, so a timeout of exactly BWT would race it.
+   */
+  private static final long BLOCK_TIMEOUT_MARGIN_MILLIS = 1000;
+
+  /**
+   * Longest the host will wait on one block, however large the card's BWI and WTX multiplier make
+   * the computed time. A card can ask for hours; a hung reader should not hold a call that long.
+   */
+  private static final long MAX_BLOCK_TIMEOUT_MILLIS = 5 * 60 * 1000;
+
+  /**
    * Command Pipe, Bulk-OUT Messages
    *
    * <table>
@@ -125,13 +137,22 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
   // may be read with the offsets below.
   private static final int CCID_DESCRIPTOR_TYPE = 0x21;
 
+  // USB 2.0 §9.6.3 / §9.6.5: the configuration and interface descriptors that delimit which
+  // interface the class-specific descriptors following them belong to.
+  private static final int USB_DESCRIPTOR_TYPE_CONFIGURATION = 0x02;
+  private static final int USB_DESCRIPTOR_TYPE_INTERFACE = 0x04;
+  private static final int USB_INTERFACE_DESCRIPTOR_MIN_LENGTH = 9;
+  private static final int OFFSET_B_INTERFACE_NUMBER = 2;
+  private static final int OFFSET_B_ALTERNATE_SETTING = 3;
+
   // bLength of that descriptor: 0x36. Treated as a minimum rather than
   // an equality so a reader that appends vendor fields still parses,
   // and so the fixed offsets read below are known to be present.
   private static final int CCID_DESCRIPTOR_MIN_LENGTH = 54;
 
-  // Offsets into the CCID class descriptor of the two fields this
-  // class acts on, both little-endian uint32 (CCID 1.10 §5.1).
+  // Offsets into the CCID class descriptor of the three fields this
+  // class acts on, all little-endian uint32 (CCID 1.10 §5.1).
+  private static final int OFFSET_DW_DEFAULT_CLOCK = 10;
   private static final int OFFSET_DW_FEATURES = 40;
   private static final int OFFSET_DW_MAX_CCID_MESSAGE_LENGTH = 44;
 
@@ -163,6 +184,15 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
   // the T1Protocol below is for.
   private boolean tpduLevel = false;
 
+  // dwDefaultClock from the CCID Class Descriptor, in kHz: the card clock
+  // the reader starts at. 0 when no descriptor was found. Needed to turn
+  // the card's block waiting time from etus into milliseconds.
+  private long defaultClockKhz = 0;
+
+  // How long the card may take to start answering a T=1 block, in
+  // milliseconds. Only meaningful when tpduLevel is set.
+  private long blockWaitingTimeMillis = TIMEOUT;
+
   // Host-side T=1 framing, non-null exactly when tpduLevel is set. It
   // holds the N(S) sequence state for the life of the connection.
   private final @Nullable T1Protocol t1Protocol;
@@ -193,15 +223,18 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
     // reader expects host-framed TPDUs or APDU-level passthrough.
     // The result feeds tpduLevel, which routes sendAndReceive() at
     // run time.
-    parseCcidClassDescriptor();
+    parseCcidClassDescriptor(ccidInterface);
     // PC_to_RDR_IccPowerOn command makes the slot "active" if it was "inactive"
     atr = transceive(POWER_ON_MESSAGE_TYPE, new byte[0], LEVEL_PARAMETER_SHORT_APDU);
     if (tpduLevel) {
       T1Parameters parameters = T1Parameters.fromAtr(atr);
-      t1Protocol =
-          new T1Protocol(
-              block -> transceive(REQUEST_MESSAGE_TYPE, block, LEVEL_PARAMETER_SHORT_APDU),
-              parameters.ifsc());
+      blockWaitingTimeMillis = parameters.blockWaitingTimeMillis(defaultClockKhz);
+      logger.debug(
+          "T=1 block waiting time: BWI={} at {} kHz, up to {} ms",
+          parameters.bwi(),
+          defaultClockKhz,
+          blockWaitingTimeMillis);
+      t1Protocol = new T1Protocol(this::exchangeT1Block, parameters.ifsc());
       // For TPDU-level readers, push the bit-rate and T=1 parameters
       // the card declared in its ATR into the reader via
       // PC_to_RDR_SetParameters. Some readers (Identiv SCR3500 C
@@ -212,6 +245,31 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
     } else {
       t1Protocol = null;
     }
+  }
+
+  /**
+   * Carry one T=1 block to the card and back, allowing the card the waiting time it is entitled to.
+   *
+   * <p>The card may take one block waiting time to answer, or {@code waitingMultiplier} of them
+   * once the host has granted a waiting-time extension. The reader enforces that limit itself and
+   * is told the multiplier in bBWI (CCID 1.10 §6.1.4); the host's own read has to outlast it, or a
+   * card doing a long operation is cut off after one second however politely it keeps asking.
+   */
+  private byte[] exchangeT1Block(byte[] block, int waitingMultiplier) throws IOException {
+    int multiplier = Math.max(1, Math.min(waitingMultiplier, 0xFF));
+    long timeout = blockWaitingTimeMillis * multiplier + BLOCK_TIMEOUT_MARGIN_MILLIS;
+    timeout = Math.max(TIMEOUT, Math.min(timeout, MAX_BLOCK_TIMEOUT_MILLIS));
+    return transceive(
+        REQUEST_MESSAGE_TYPE,
+        block,
+        new byte[] {
+          // bBWI: 0 leaves the reader's own limit alone.
+          multiplier > 1 ? (byte) multiplier : 0,
+          (byte) (LEVEL_PARAMETER_SHORT_APDU & 0xFF),
+          (byte) ((LEVEL_PARAMETER_SHORT_APDU >> 8) & 0xFF)
+        },
+        RESPONSE_DATA_BLOCK,
+        (int) timeout);
   }
 
   private void setT1Parameters(T1Parameters parameters) {
@@ -245,12 +303,16 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
    * APDU-level passthrough is the simpler path, so it wins. A reader offering neither, which is
    * character-level, is rejected.
    *
+   * <p>The raw descriptors cover the whole device, so a class-specific descriptor is only taken
+   * from the interface (and alternate setting) that was claimed; another interface's descriptor of
+   * the same type says nothing about this reader.
+   *
    * <p>A descriptor that cannot be found is not an error: the fields keep their defaults and the
    * connection behaves as it did before the descriptor was read at all.
    *
    * @throws IOException if the reader offers neither APDU- nor TPDU-level exchange
    */
-  private void parseCcidClassDescriptor() throws IOException {
+  private void parseCcidClassDescriptor(UsbInterface ccidInterface) throws IOException {
     byte[] raw = connection.getRawDescriptors();
     if (raw == null) {
       logger.debug("CCID descriptor: getRawDescriptors() returned null");
@@ -260,11 +322,23 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
     // Walk the descriptor list (USB 2.0 §9.5): each entry is bLength,
     // bDescriptorType, plus bLength-2 type-specific bytes.
     int i = 0;
+    boolean inClaimedInterface = false;
     while (i + 1 < raw.length) {
       int bLength = raw[i] & 0xFF;
       int bDescriptorType = raw[i + 1] & 0xFF;
       if (bLength == 0 || i + bLength > raw.length) break;
-      if (bDescriptorType == CCID_DESCRIPTOR_TYPE && bLength >= CCID_DESCRIPTOR_MIN_LENGTH) {
+      if (bDescriptorType == USB_DESCRIPTOR_TYPE_CONFIGURATION) {
+        inClaimedInterface = false;
+      } else if (bDescriptorType == USB_DESCRIPTOR_TYPE_INTERFACE
+          && bLength >= USB_INTERFACE_DESCRIPTOR_MIN_LENGTH) {
+        inClaimedInterface =
+            (raw[i + OFFSET_B_INTERFACE_NUMBER] & 0xFF) == ccidInterface.getId()
+                && (raw[i + OFFSET_B_ALTERNATE_SETTING] & 0xFF)
+                    == ccidInterface.getAlternateSetting();
+      }
+      if (inClaimedInterface
+          && bDescriptorType == CCID_DESCRIPTOR_TYPE
+          && bLength >= CCID_DESCRIPTOR_MIN_LENGTH) {
         int dwFeatures = descriptors.getInt(i + OFFSET_DW_FEATURES);
         String exchangeLevel;
         boolean apduLevel =
@@ -289,7 +363,8 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
                   + exchangeLevel
                   + ")");
         }
-        // The bLength check above guarantees both fields are present.
+        // The bLength check above guarantees these fields are present.
+        this.defaultClockKhz = descriptors.getInt(i + OFFSET_DW_DEFAULT_CLOCK) & 0xFFFFFFFFL;
         this.maxCcidMessageLength =
             descriptors.getInt(i + OFFSET_DW_MAX_CCID_MESSAGE_LENGTH) & 0xFFFFFFFFL;
         // Only enable our T=1 framing path when the TPDU bit is set AND
@@ -490,6 +565,12 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
 
   private byte[] transceive(byte type, byte[] data, byte[] specific, byte expectedResponseType)
       throws IOException {
+    return transceive(type, data, specific, expectedResponseType, TIMEOUT);
+  }
+
+  private byte[] transceive(
+      byte type, byte[] data, byte[] specific, byte expectedResponseType, int readTimeoutMillis)
+      throws IOException {
     // 1. prepare data for sending
     MessageHeader prefix = new MessageHeader(type, data.length, sequence++, specific);
     ByteBuffer byteBuffer =
@@ -533,7 +614,8 @@ public class UsbSmartCardConnection extends UsbYubiKeyConnection implements Smar
     byte[] bufferRead = new byte[endpointIn.getMaxPacketSize()];
     boolean responseRequiresTimeExtension = false;
     do {
-      bytesRead = connection.bulkTransfer(endpointIn, bufferRead, bufferRead.length, TIMEOUT);
+      bytesRead =
+          connection.bulkTransfer(endpointIn, bufferRead, bufferRead.length, readTimeoutMillis);
       if (bytesRead > 0) {
         if (logger.isTraceEnabled()) {
           logger.trace(

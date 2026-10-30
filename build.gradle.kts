@@ -32,10 +32,10 @@ allprojects {
     group = "com.yubico.yubikit"
 }
 
-// Single source of truth for the published library version. The release workflow
-// cross-checks this against the release-candidate tag that triggered it, so the
-// two cannot drift apart.
-val libraryVersion = "3.2.2-SNAPSHOT"
+// The published library version lives in gradle/libs.versions.toml. The release workflow
+// cross-checks it against the release-candidate tag that triggered it, so the two
+// cannot drift apart.
+val libraryVersion = libs.versions.yubikit.get()
 
 subprojects {
     version = libraryVersion

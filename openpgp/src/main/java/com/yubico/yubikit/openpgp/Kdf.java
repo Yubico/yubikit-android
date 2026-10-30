@@ -19,7 +19,6 @@ package com.yubico.yubikit.openpgp;
 import com.yubico.yubikit.core.util.RandomUtils;
 import com.yubico.yubikit.core.util.Tlv;
 import com.yubico.yubikit.core.util.Tlvs;
-import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.StandardCharsets;
@@ -46,9 +45,19 @@ public abstract class Kdf {
 
   abstract byte[] getBytes();
 
+  /**
+   * Parse the KDF data object as stored on the YubiKey.
+   *
+   * @param encoded the encoded KDF data object
+   * @return the KDF described by the data
+   * @throws IllegalArgumentException if the data is malformed or not supported, for example an
+   *     unknown hash algorithm or an iteration count that is not encoded in 4 bytes, is zero or is
+   *     larger than {@link Integer#MAX_VALUE}
+   */
   public static Kdf parse(byte[] encoded) {
     Map<Integer, byte[]> data = Tlvs.decodeMap(encoded);
-    byte algorithm = data.getOrDefault(0x81, new byte[] {0})[0];
+    byte[] algorithmValue = data.get(0x81);
+    byte algorithm = algorithmValue != null ? algorithmValue[0] : 0;
     if (algorithm == 3) {
       return IterSaltedS2k.parseData(data);
     }
@@ -107,6 +116,19 @@ public abstract class Kdf {
     private final byte @Nullable [] initialHashUser;
     private final byte @Nullable [] initialHashAdmin;
 
+    /**
+     * Create an iterated and salted S2K.
+     *
+     * @param hashAlgorithm the hash algorithm
+     * @param iterationCount the number of bytes to hash, at least the whole salt and PIN is always
+     *     hashed
+     * @param saltUser salt for the User PIN
+     * @param saltReset salt for the Reset Code, or null to use the User PIN salt
+     * @param saltAdmin salt for the Admin PIN, or null to use the User PIN salt
+     * @param initialHashUser hash of the default User PIN, or null
+     * @param initialHashAdmin hash of the default Admin PIN, or null
+     * @throws IllegalArgumentException if iterationCount is not positive
+     */
     public IterSaltedS2k(
         HashAlgorithm hashAlgorithm,
         int iterationCount,
@@ -116,6 +138,9 @@ public abstract class Kdf {
         byte @Nullable [] initialHashUser,
         byte @Nullable [] initialHashAdmin) {
       super((byte) 3);
+      if (iterationCount <= 0) {
+        throw new IllegalArgumentException("Iteration count must be positive");
+      }
       this.hashAlgorithm = hashAlgorithm;
       this.iterationCount = iterationCount;
       this.saltUser = saltUser;
@@ -126,9 +151,15 @@ public abstract class Kdf {
     }
 
     static IterSaltedS2k parseData(Map<Integer, byte[]> data) {
+      byte[] count = data.get(0x83);
+      if (count == null || count.length != 4) {
+        throw new IllegalArgumentException("Iteration count must be encoded in 4 bytes");
+      }
+      // Counts above Integer.MAX_VALUE are not supported
+      int iterationCount = ByteBuffer.wrap(count).getInt();
       return new IterSaltedS2k(
           HashAlgorithm.forValue(data.get(0x82)[0]),
-          new BigInteger(1, data.get(0x83)).intValue(),
+          iterationCount,
           data.get(0x84),
           data.get(0x85),
           data.get(0x86),
@@ -150,9 +181,11 @@ public abstract class Kdf {
     }
 
     private static byte[] doProcess(HashAlgorithm hashAlgorithm, int iterationCount, byte[] data) {
-      // "iterationCount" is actually the total number of bytes to pass to the digest.
-      int dataCount = iterationCount / data.length;
-      int trailingBytes = iterationCount % data.length;
+      // "iterationCount" is actually the total number of bytes to pass to the digest, but the
+      // whole salt and PIN is always hashed at least once (RFC 4880 section 3.7.1.3).
+      int total = Math.max(iterationCount, data.length);
+      int dataCount = total / data.length;
+      int trailingBytes = total % data.length;
       MessageDigest md = hashAlgorithm.getMessageDigest();
       for (int i = 0; i < dataCount; i++) {
         md.update(data);

@@ -51,7 +51,6 @@ public class FidoOverCcidTests {
     }
 
     @Test
-    @Category(SmokeTest.class)
     public void testCancelMakeCredential() throws Throwable {
       withDevice(Ctap2ClientTests::testCancelMakeCredential);
     }

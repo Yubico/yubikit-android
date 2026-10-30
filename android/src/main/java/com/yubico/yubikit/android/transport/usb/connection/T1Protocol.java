@@ -31,23 +31,45 @@ import java.util.Locale;
  * reassembled here. Without the outbound half a full-size short APDU - 261 bytes with Lc = 255 -
  * would not fit the 254-byte ceiling on a single block.
  *
- * <p>Instances are stateful: they carry N(S) and the currently agreed IFSC across calls, so one
- * instance belongs to one connection.
+ * <p>Instances are stateful: they carry N(S), the N(S) expected from the card and the currently
+ * agreed IFSC across calls, so one instance belongs to one connection.
  */
 final class T1Protocol {
 
   /**
-   * How many blocks either side may send within a single command/response before we give up. A card
-   * that keeps setting the M-bit, or keeps asking for a waiting-time extension, would otherwise
-   * spin here forever; 256 is far above any real exchange (254 INF bytes each, so ~64 KiB) and
-   * still terminates.
+   * The longest response APDU: 65,536 data bytes, the most an extended Le can ask for, plus SW1-SW2
+   * (ISO/IEC 7816-4 §5.1). ISO/IEC 7816-3 sets no limit on how many blocks a chain may have, so
+   * this is the bound that stops a card that never ends its chain; a short APDU's response is
+   * smaller still, but the block size says nothing about that.
    */
-  private static final int MAX_BLOCKS_PER_RESPONSE = 256;
+  private static final int MAX_RESPONSE_LENGTH = 65536 + 2;
+
+  /**
+   * How many blocks in a row may add no response data before we give up: empty I-blocks, which a
+   * chain may contain (ISO/IEC 7816-3 §11.6.2.2), and retransmissions of a block already taken. A
+   * card can keep a chain open with them without ever adding a byte, so the byte limit alone does
+   * not end it.
+   */
+  private static final int MAX_BLOCKS_WITHOUT_DATA = 16;
+
+  /**
+   * How many S-blocks in a row the card may send before the next I-block or R-block. A card that
+   * keeps asking for a waiting-time extension would otherwise hold us here forever.
+   */
+  private static final int MAX_CONSECUTIVE_S_BLOCKS = 256;
 
   /** Sends one T=1 block to the card and returns the block it answered with. */
   interface BlockTransport {
-    byte[] exchange(byte[] block) throws IOException;
+    /**
+     * @param waitingMultiplier how many block waiting times the card may now take to answer: 1
+     *     normally, and the multiplier the card asked for when {@code block} grants an S(WTX)
+     *     request
+     */
+    byte[] exchange(byte[] block, int waitingMultiplier) throws IOException;
   }
+
+  /** The multiplier of an exchange that has not been extended. */
+  private static final int NO_EXTENSION = 1;
 
   private final BlockTransport transport;
 
@@ -62,6 +84,16 @@ final class T1Protocol {
    * rather than per command (§11.6.2.2).
    */
   private int sequenceNumber = 0;
+
+  /**
+   * N(S) the card's next new I-block carries. It toggles per accepted I-block and, like our own
+   * N(S), continues across commands. A block carrying the other value is a retransmission of the
+   * previous one (§11.6.2.2).
+   */
+  private int expectedReceiveSequence = 0;
+
+  /** Whether any I-block has been accepted yet, which is what a retransmission would repeat. */
+  private boolean receivedIBlock = false;
 
   T1Protocol(BlockTransport transport, int informationFieldSize) {
     this.transport = transport;
@@ -90,7 +122,8 @@ final class T1Protocol {
       byte[] chunk = Arrays.copyOfRange(apdu, offset, offset + length);
 
       byte[] reply =
-          transport.exchange(T1Block.iBlock(sequenceNumber, chunk, moreFollows).toBytes());
+          transport.exchange(
+              T1Block.iBlock(sequenceNumber, chunk, moreFollows).toBytes(), NO_EXTENSION);
       sequenceNumber ^= 0x01;
       offset += length;
 
@@ -119,23 +152,57 @@ final class T1Protocol {
   /** Reassemble the response APDU out of the card's I-blocks, starting from {@code reply}. */
   private byte[] readResponse(byte[] reply) throws IOException {
     try (ZeroingByteArrayOutputStream payload = new ZeroingByteArrayOutputStream()) {
-      for (int block = 0; block < MAX_BLOCKS_PER_RESPONSE; block++) {
+      int blocksWithoutData = 0;
+      while (true) {
         T1Block received = serviceSBlockRequests(reply);
 
         if (!received.isIBlock()) {
           throw new IOException(unexpectedBlockMessage(received));
         }
 
-        payload.write(received.inf, 0, received.inf.length);
+        if (received.sequenceNumber() != expectedReceiveSequence) {
+          if (!receivedIBlock) {
+            throw new IOException(
+                "T=1 I-block carries N(S)="
+                    + received.sequenceNumber()
+                    + " but the card's first block must carry N(S)="
+                    + expectedReceiveSequence);
+          }
+          // A retransmission of a block already taken. Drop it and ask again for the next one.
+          if (++blocksWithoutData > MAX_BLOCKS_WITHOUT_DATA) {
+            throw noProgress();
+          }
+          reply =
+              transport.exchange(T1Block.rBlock(expectedReceiveSequence).toBytes(), NO_EXTENSION);
+          continue;
+        }
+        receivedIBlock = true;
+        expectedReceiveSequence ^= 0x01;
+
+        int length = received.inf.length;
+        if (payload.size() + length > MAX_RESPONSE_LENGTH) {
+          throw new IOException("T=1 response exceeds " + MAX_RESPONSE_LENGTH + " bytes");
+        }
+        payload.write(received.inf, 0, length);
         if (!received.moreFollows()) {
           return payload.toByteArray();
         }
+        if (length == 0) {
+          if (++blocksWithoutData > MAX_BLOCKS_WITHOUT_DATA) {
+            throw noProgress();
+          }
+        } else {
+          blocksWithoutData = 0;
+        }
         // Acknowledge, naming the sequence number we expect next.
-        reply = transport.exchange(T1Block.rBlock(1 - received.sequenceNumber()).toBytes());
+        reply = transport.exchange(T1Block.rBlock(expectedReceiveSequence).toBytes(), NO_EXTENSION);
       }
-      throw new IOException(
-          "T=1 response did not terminate within " + MAX_BLOCKS_PER_RESPONSE + " blocks");
     }
+  }
+
+  private static IOException noProgress() {
+    return new IOException(
+        "T=1 response made no progress within " + MAX_BLOCKS_WITHOUT_DATA + " blocks");
   }
 
   /**
@@ -145,7 +212,7 @@ final class T1Protocol {
    * agreeing to the proposed IFS, or granting the requested waiting-time extension.
    */
   private T1Block serviceSBlockRequests(byte[] reply) throws IOException {
-    for (int block = 0; block < MAX_BLOCKS_PER_RESPONSE; block++) {
+    for (int block = 0; block < MAX_CONSECUTIVE_S_BLOCKS; block++) {
       T1Block received = T1Block.parse(reply);
       if (!received.isSBlock() || !received.isSBlockRequest()) {
         return received;
@@ -161,10 +228,25 @@ final class T1Protocol {
         informationFieldSize = clampInformationFieldSize(received.inf[0] & 0xFF);
       }
       reply =
-          transport.exchange(T1Block.sBlock(received.sBlockResponsePcb(), received.inf).toBytes());
+          transport.exchange(
+              T1Block.sBlock(received.sBlockResponsePcb(), received.inf).toBytes(),
+              control == T1Block.S_CONTROL_WTX ? waitingMultiplier(received) : NO_EXTENSION);
     }
     throw new IOException(
-        "T=1 exchange made no progress within " + MAX_BLOCKS_PER_RESPONSE + " S-blocks");
+        "T=1 exchange made no progress within " + MAX_CONSECUTIVE_S_BLOCKS + " S-blocks");
+  }
+
+  /**
+   * The multiplier in an S(WTX) request: its single INF byte, which is how many block waiting times
+   * the card wants for the work it is doing. Anything else is read as 1, so the card is still
+   * answered.
+   */
+  private static int waitingMultiplier(T1Block wtxRequest) {
+    if (wtxRequest.inf.length != 1) {
+      return NO_EXTENSION;
+    }
+    int multiplier = wtxRequest.inf[0] & 0xFF;
+    return multiplier == 0 ? NO_EXTENSION : multiplier;
   }
 
   /**

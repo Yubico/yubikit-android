@@ -32,7 +32,6 @@ import org.junit.runners.Suite;
 public class OathTests {
   public static class NoScpTests extends OathInstrumentedTests {
     @Test
-    @Category(SmokeTest.class)
     public void testChangePassword() throws Throwable {
       withDevice(OathDeviceTests::testChangePassword);
     }
@@ -43,6 +42,7 @@ public class OathTests {
     }
 
     @Test
+    @Category(SmokeTest.class)
     public void testAccountManagement() throws Throwable {
       withOathSession(OathDeviceTests::testAccountManagement);
     }

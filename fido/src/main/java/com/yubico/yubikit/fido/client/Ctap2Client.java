@@ -60,7 +60,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -234,7 +233,9 @@ public class Ctap2Client implements WebAuthnClient {
       final Ctap2Session.CredentialData credential = result.first;
       final ClientExtensionResults clientExtensionResults = result.second;
 
-      final AttestationObject attestationObject = AttestationObject.fromCredential(credential);
+      final AttestationObject attestationObject =
+          AttestationConveyance.apply(
+              AttestationObject.fromCredential(credential), options.getAttestation());
 
       AuthenticatorAttestationResponse response =
           new AuthenticatorAttestationResponse(
@@ -1200,11 +1201,15 @@ public class Ctap2Client implements WebAuthnClient {
       if (descriptors.isEmpty()) {
         return descriptors;
       }
-      return descriptors.stream()
-          .filter(c -> isPublicKeyCredentialTypeSupported(c.getType()))
-          .filter(c -> maxCredIdLength == null || c.getId().length <= maxCredIdLength)
-          .map(c -> new PublicKeyCredentialDescriptor(c.getType(), c.getId()))
-          .collect(Collectors.toList());
+      // No streams: Collection.stream() needs API 24 and the library supports API 21
+      List<PublicKeyCredentialDescriptor> result = new ArrayList<>();
+      for (PublicKeyCredentialDescriptor c : descriptors) {
+        if (isPublicKeyCredentialTypeSupported(c.getType())
+            && (maxCredIdLength == null || c.getId().length <= maxCredIdLength)) {
+          result.add(new PublicKeyCredentialDescriptor(c.getType(), c.getId()));
+        }
+      }
+      return result;
     }
 
     /**

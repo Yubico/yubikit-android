@@ -42,10 +42,11 @@ import java.util.Date;
 import java.util.Objects;
 import javax.crypto.Cipher;
 import javax.crypto.KeyAgreement;
+import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.ASN1Sequence;
+import org.bouncycastle.asn1.DEROctetString;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
-import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.X509v3CertificateBuilder;
 import org.bouncycastle.jcajce.spec.MLDSAParameterSpec;
 import org.bouncycastle.operator.ContentSigner;
@@ -647,18 +648,67 @@ public class PivTestUtils {
     throw new IllegalArgumentException("Unknown algorithm");
   }
 
+  /**
+   * A DER encoded certificate for {@code subjectKey} signed by {@code issuer}. For a subject key
+   * whose private half cannot sign, such as one generated on a card behind a PIN.
+   */
+  public static byte[] createCertificate(PublicKey subjectKey, KeyPair issuer) throws Exception {
+    return createCertificate(subjectKey, issuer, new byte[0]);
+  }
+
+  /**
+   * As {@link #createCertificate(PublicKey, KeyPair)}, with {@code padding} carried in a
+   * non-critical extension so a test can make the certificate as large as it needs. The padding is
+   * covered by the signature, so any byte altered on the way to and from a card breaks it.
+   */
+  public static byte[] createCertificate(PublicKey subjectKey, KeyPair issuer, byte[] padding)
+      throws Exception {
+    Date from = new Date();
+    Date until = new Date(from.getTime() + 24L * 60 * 60 * 1000);
+    X509v3CertificateBuilder builder =
+        certificateBuilder(
+            new X500Name("CN=Throwaway test issuer"),
+            BigInteger.valueOf(System.currentTimeMillis()),
+            from,
+            until,
+            new X500Name("CN=Reader chaining test"),
+            subjectKey);
+    if (padding.length > 0) {
+      builder.addExtension(
+          new ASN1ObjectIdentifier("1.3.6.1.4.1.99999.1"), false, new DEROctetString(padding));
+    }
+    return signAndEncode(builder, "SHA384withECDSA", issuer.getPrivate());
+  }
+
+  private static X509v3CertificateBuilder certificateBuilder(
+      X500Name issuer,
+      BigInteger serial,
+      Date notBefore,
+      Date notAfter,
+      X500Name subject,
+      PublicKey subjectKey) {
+    return new X509v3CertificateBuilder(
+        issuer,
+        serial,
+        notBefore,
+        notAfter,
+        subject,
+        SubjectPublicKeyInfo.getInstance(ASN1Sequence.getInstance(subjectKey.getEncoded())));
+  }
+
+  private static byte[] signAndEncode(
+      X509v3CertificateBuilder builder, String algorithm, PrivateKey signingKey)
+      throws OperatorCreationException, IOException {
+    ContentSigner signer = new JcaContentSignerBuilder(algorithm).build(signingKey);
+    return builder.build(signer).getEncoded();
+  }
+
   public static X509Certificate createCertificate(KeyPair keyPair)
       throws IOException, CertificateException {
     X500Name name = new X500Name("CN=Example");
     X509v3CertificateBuilder serverCertGen =
-        new X509v3CertificateBuilder(
-            name,
-            new BigInteger("123456789"),
-            new Date(),
-            new Date(),
-            name,
-            SubjectPublicKeyInfo.getInstance(
-                ASN1Sequence.getInstance(keyPair.getPublic().getEncoded())));
+        certificateBuilder(
+            name, new BigInteger("123456789"), new Date(), new Date(), name, keyPair.getPublic());
 
     String algorithm;
     KeyType keyType = KeyType.fromKey(keyPair.getPrivate());
@@ -693,10 +743,7 @@ public class PivTestUtils {
         pk = keyPair.getPrivate();
       }
 
-      ContentSigner contentSigner = new JcaContentSignerBuilder(algorithm).build(pk);
-      X509CertificateHolder holder = serverCertGen.build(contentSigner);
-
-      InputStream stream = new ByteArrayInputStream(holder.getEncoded());
+      InputStream stream = new ByteArrayInputStream(signAndEncode(serverCertGen, algorithm, pk));
       CertificateFactory cf = CertificateFactory.getInstance("X.509");
       return (X509Certificate) cf.generateCertificate(stream);
     } catch (OperatorCreationException e) {

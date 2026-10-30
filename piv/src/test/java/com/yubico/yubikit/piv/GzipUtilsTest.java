@@ -22,6 +22,7 @@ import static com.yubico.yubikit.piv.GzipUtils.decompress;
 import com.yubico.yubikit.Codec;
 import com.yubico.yubikit.core.util.StringUtils;
 import java.io.EOFException;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.zip.ZipException;
 import org.junit.Assert;
@@ -52,11 +53,22 @@ public class GzipUtilsTest {
 
   @Test
   public void compressesBigData() throws Throwable {
-    byte[] data = new byte[128 * 1024]; // 128kB
-    for (int index = 0; index < 128 * 1024; index++) {
+    byte[] data = new byte[CompressionUtils.MAX_DECOMPRESSED_LENGTH]; // the largest accepted
+    for (int index = 0; index < data.length; index++) {
       data[index] = (byte) ((index & 0xff) - (byte) (index >> 8) * (index & 0xef));
     }
     compressAndDecompress(data);
+  }
+
+  @Test(expected = IOException.class)
+  public void decompressRejectsOutputOverLimit() throws Throwable {
+    decompress(compress(new byte[CompressionUtils.MAX_DECOMPRESSED_LENGTH + 1]));
+  }
+
+  /** A few KB of gzip that would expand to 64 MiB must be refused, not inflated. */
+  @Test(expected = IOException.class, timeout = 5000)
+  public void decompressRejectsExpansionBomb() throws Throwable {
+    decompress(compress(new byte[64 * 1024 * 1024]));
   }
 
   @Test(expected = EOFException.class)

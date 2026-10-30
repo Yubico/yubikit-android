@@ -14,16 +14,17 @@ secrets:
   SONATYPE_USERNAME=<token username>
   SONATYPE_PASSWORD=<token password>
 
-*Release version.* Set the desired library version (without the `-SNAPSHOT` suffix) in the top-level
+*Release version.* Set the desired library version (without the `-SNAPSHOT` suffix) as `yubikit` in
 
-  > build.gradle.kts
+  > gradle/libs.versions.toml
 
 example:
 
-  val libraryVersion = "3.0.2"
+  yubikit = "3.0.2"
 
-`libraryVersion` is the single source of truth: every subproject takes its version from it, and the
-`printVersion` task reports it to CI.
+`yubikit` is the single source of truth: the top-level `build.gradle.kts` reads it as
+`libraryVersion`, every subproject takes its version from that, and the `printVersion` task reports
+it to CI.
 
 NOTE: The version must *not* end with `-SNAPSHOT` for a release build. The *build* job checks this
 and fails before building.
@@ -33,30 +34,30 @@ and fails before building.
 1. *Create a `release/X.Y.Z` branch* off the latest `main`. The release is cut from this branch, not
    from `main`.
 2. *Update `NEWS`* with the changes for the version being released.
-3. *Set `libraryVersion`* in the top-level `build.gradle.kts` to the release version, dropping the
+3. *Set `yubikit`* in `gradle/libs.versions.toml` to the release version, dropping the
    `-SNAPSHOT` suffix, and commit it together with the `NEWS` update.
 4. *Tag the release commit* `X.Y.Z-rc.1` on the release branch and push the tag. This triggers
    `release.yml`, described in the next section.
 5. *Iterate if needed.* If a candidate is bad, fix it on the release branch and push `-rc.2`,
-   `-rc.3`, … Leave `libraryVersion` alone; only the candidate number changes.
+   `-rc.3`, … Leave `yubikit` alone; only the candidate number changes.
 6. *Publish the good deployment* at https://central.sonatype.com/publishing/deployments and drop the
    superseded ones.
 7. *Tag the released commit* `X.Y.Z`. This is the git release marker only — plain `X.Y.Z` tags do
    *not* trigger the workflow, so it cannot start a second release.
 8. *Merge the release branch back into `main`.*
-9. *Bump `libraryVersion`* on `main` to the next `-SNAPSHOT` (e.g. `3.0.3-SNAPSHOT`) and commit, so
-   `main` is never left on a release version.
+9. *Bump `yubikit`* in `gradle/libs.versions.toml` on `main` to the next `-SNAPSHOT` (e.g.
+   `3.0.3-SNAPSHOT`) and commit, so `main` is never left on a release version.
 
 === Releasing (CI)
 
 Push a release-candidate tag — the release version plus an `-rc.<n>` suffix, e.g. `3.0.2-rc.1` for
 version `3.0.2` — to trigger the `release.yml` workflow. Only `-rc.<n>` tags trigger it.
 
-IMPORTANT: The published version is taken from `build.gradle.kts`, *not* from the tag. Tagging
-`3.0.2-rc.1` publishes version `3.0.2`; the `-rc.<n>` suffix only identifies the attempt.
+IMPORTANT: The published version is taken from `gradle/libs.versions.toml`, *not* from the tag.
+Tagging `3.0.2-rc.1` publishes version `3.0.2`; the `-rc.<n>` suffix only identifies the attempt.
 
 The *build* job enforces this: it compares the tag's base version against `printVersion` and fails
-before building if they differ. Tagging `3.0.2-rc.1` while `build.gradle.kts` still says
+before building if they differ. Tagging `3.0.2-rc.1` while `gradle/libs.versions.toml` still says
 `3.0.1` — or still carries a `-SNAPSHOT` suffix — stops the release immediately instead of
 silently republishing the wrong version.
 
@@ -73,7 +74,7 @@ it automatically. Finish the release by verifying and pressing *Publish* at
 https://central.sonatype.com/publishing/deployments.
 
 If a candidate is not good, fix it and push the next tag (`3.0.2-rc.2`, `3.0.2-rc.3`, …) without
-touching the version in `build.gradle.kts`. Each candidate uploads as its own deployment, labelled
+touching the version in `gradle/libs.versions.toml`. Each candidate uploads as its own deployment, labelled
 with the tag it was built from. Drop the superseded deployments in the portal and publish the one
 you are happy with. Once a version is published to Central it cannot be re-uploaded, so re-tagging
 after a successful publish requires a new version.
