@@ -21,7 +21,6 @@ plugins {
 dependencies {
     api(project(":core"))
     testImplementation(libs.mockito)
-    implementation(libs.moshi)
 }
 
 description = "This module provides FIDO support for the YubiKit SDK."
