@@ -51,9 +51,6 @@ slf4j-nop = "2.0.20"
 # --- Cryptography ---
 bcpkix-jdk15to18 = "1.86" # 1.85 duplicates asn1.iana in bcprov+bcutil
 
-# --- Serialization / Data ---
-moshi = "1.15.2"
-
 # --- Nullability annotations ---
 jspecify = "1.0.1"
 jsr250-api = "1.0"
@@ -128,9 +125,6 @@ slf4j-nop = { module = "org.slf4j:slf4j-nop", version.ref = "slf4j-nop" }
 
 # --- Cryptography ---
 bcpkix-jdk15to18 = { module = "org.bouncycastle:bcpkix-jdk15to18", version.ref = "bcpkix-jdk15to18" }
-
-# --- Serialization / Data ---
-moshi = { module = "com.squareup.moshi:moshi", version.ref = "moshi" }
 
 # --- Nullability annotations ---
 jspecify = { module = "org.jspecify:jspecify", version.ref = "jspecify" }

@@ -16,21 +16,15 @@
 
 package com.yubico.yubikit.fido.client.extensions;
 
-import com.squareup.moshi.JsonReader;
 import com.yubico.yubikit.fido.FidoTestState;
 import com.yubico.yubikit.fido.utils.ClientHelper;
 import com.yubico.yubikit.fido.utils.CreationOptionsBuilder;
 import com.yubico.yubikit.fido.webauthn.ClientExtensionResults;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredential;
 import com.yubico.yubikit.fido.webauthn.SerializationType;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import okio.Buffer;
 import org.jspecify.annotations.Nullable;
 import org.junit.Assert;
 import org.junit.Assume;
@@ -84,17 +78,12 @@ public class SignExtensionTests {
                         new CreationOptionsBuilder()
                             .residentKey(residentKey)
                             .extensions(
-                                JsonUtils.fromJson(
-                                    "{\"previewSign\": {"
-                                        + "    \"generateKey\": {"
-                                        + "      \"algorithms\": ["
-                                        + "          -65600,"
-                                        + "          -65539,"
-                                        + "          -9,"
-                                        + "          -7"
-                                        + "      ]"
-                                        + "    }"
-                                        + "  }}"))
+                                Collections.singletonMap(
+                                    SIGN_EXT,
+                                    Collections.singletonMap(
+                                        "generateKey",
+                                        Collections.singletonMap(
+                                            "algorithms", Arrays.asList(-65600, -65539, -9, -7)))))
                             .build());
 
             Map<String, Object> signCreateResultJson = getSignResult(cred, SerializationType.JSON);
@@ -156,79 +145,5 @@ public class SignExtensionTests {
     Assert.assertTrue(generatedKey.containsKey("publicKey"));
     Assert.assertTrue(generatedKey.containsKey("algorithm"));
     Assert.assertTrue(generatedKey.containsKey("attestationObject"));
-  }
-
-  static class JsonUtils {
-
-    @Nullable
-    public static Map<String, Object> fromJson(@Nullable String json) throws IOException {
-      if (json == null) {
-        return null;
-      }
-
-      Buffer b = new Buffer();
-      b.write(json.getBytes(StandardCharsets.UTF_8));
-
-      try (JsonReader jsonReader = JsonReader.of(b)) {
-        return readObject(jsonReader);
-      }
-    }
-
-    @Nullable
-    private static Object readValue(JsonReader reader) throws IOException {
-      switch (reader.peek()) {
-        case BEGIN_ARRAY:
-          return readArray(reader);
-        case BEGIN_OBJECT:
-          return readObject(reader);
-        case STRING:
-          return reader.nextString();
-        case NUMBER:
-          String str = reader.nextString();
-          try {
-            return Integer.parseInt(str);
-          } catch (NumberFormatException intParseException) {
-            try {
-              return Long.parseLong(str);
-            } catch (NumberFormatException longParseException) {
-              try {
-                return Double.parseDouble(str);
-              } catch (NumberFormatException ignoredException) {
-
-              }
-            }
-          }
-          return str;
-        case BOOLEAN:
-          return reader.nextBoolean();
-        case NULL:
-          return reader.nextNull();
-        default:
-          return null;
-      }
-    }
-
-    private static List<Object> readArray(JsonReader reader) throws IOException {
-      List<Object> list = new ArrayList<>();
-      reader.beginArray();
-      while (reader.hasNext()) {
-        list.add(readValue(reader));
-      }
-      reader.endArray();
-      return list;
-    }
-
-    private static Map<String, Object> readObject(JsonReader reader) throws IOException {
-      Map<String, Object> map = new HashMap<>();
-      reader.beginObject();
-      while (reader.hasNext()) {
-        if (reader.peek() == JsonReader.Token.NAME) {
-          map.put(reader.nextName(), readValue(reader));
-        }
-      }
-      reader.endObject();
-
-      return map;
-    }
   }
 }
