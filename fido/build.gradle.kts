@@ -21,6 +21,7 @@ plugins {
 dependencies {
     api(project(":core"))
     testImplementation(libs.mockito)
+    testImplementation(libs.bcpkix.jdk15to18)
 }
 
 description = "This module provides FIDO support for the YubiKit SDK."

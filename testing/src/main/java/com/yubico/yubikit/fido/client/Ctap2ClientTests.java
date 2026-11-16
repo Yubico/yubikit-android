@@ -33,6 +33,8 @@ import static org.junit.Assume.assumeTrue;
 import com.yubico.yubikit.core.application.CommandException;
 import com.yubico.yubikit.core.application.CommandState;
 import com.yubico.yubikit.core.fido.CtapException;
+import com.yubico.yubikit.core.keys.MlDsaParameterValues;
+import com.yubico.yubikit.core.keys.PublicKeyValues;
 import com.yubico.yubikit.fido.Cbor;
 import com.yubico.yubikit.fido.FidoTestState;
 import com.yubico.yubikit.fido.ctap.ClientPin;
@@ -783,6 +785,60 @@ public class Ctap2ClientTests {
                           .get("keyAlgo"));
           assertEquals(credParams.get(0).getAlg(), alg);
         });
+  }
+
+  public static void testMakeCredentialMlDsaKeyAlgorithms(FidoTestState state) throws Throwable {
+    Map<Integer, MlDsaParameterValues> mlDsaAlgorithms = new HashMap<>();
+    mlDsaAlgorithms.put(
+        TestData.PUB_KEY_CRED_PARAMS_MLDSA44.getAlg(), MlDsaParameterValues.MLDSA_44);
+    mlDsaAlgorithms.put(
+        TestData.PUB_KEY_CRED_PARAMS_MLDSA65.getAlg(), MlDsaParameterValues.MLDSA_65);
+    mlDsaAlgorithms.put(
+        TestData.PUB_KEY_CRED_PARAMS_MLDSA87.getAlg(), MlDsaParameterValues.MLDSA_87);
+
+    List<PublicKeyCredentialParameters> supported = new ArrayList<>();
+    state.withCtap2(
+        session -> {
+          for (PublicKeyCredentialParameters param : session.getCachedInfo().getAlgorithms()) {
+            if (mlDsaAlgorithms.containsKey(param.getAlg())) {
+              supported.add(param);
+            }
+          }
+        });
+    assumeFalse("ML-DSA not supported", supported.isEmpty());
+
+    for (PublicKeyCredentialParameters param : supported) {
+      state.withCtap2(
+          session -> {
+            Ctap2Client webauthn = new Ctap2Client(session);
+
+            PublicKeyCredentialCreationOptions creationOptions =
+                getCreateOptions(null, false, Collections.singletonList(param), null);
+            PublicKeyCredential credential =
+                webauthn.makeCredential(
+                    TestData.CLIENT_DATA_JSON_CREATE_PROVIDER,
+                    creationOptions,
+                    Objects.requireNonNull(creationOptions.getRp().getId()),
+                    TestData.PIN,
+                    null,
+                    null);
+            AuthenticatorAttestationResponse attestation =
+                (AuthenticatorAttestationResponse) credential.getResponse();
+            assertEquals(Integer.valueOf(param.getAlg()), attestation.getPublicKeyAlgorithm());
+
+            Map<Integer, ?> cosePublicKey =
+                Objects.requireNonNull(
+                        attestation.getAuthenticatorData().getAttestedCredentialData())
+                    .getCosePublicKey();
+            assertEquals(7, cosePublicKey.get(1)); // kty: AKP
+            byte[] expected =
+                new PublicKeyValues.MlDsa(
+                        Objects.requireNonNull(mlDsaAlgorithms.get(param.getAlg())),
+                        (byte[]) Objects.requireNonNull(cosePublicKey.get(-1)))
+                    .getEncoded();
+            assertArrayEquals(expected, attestation.getPublicKey());
+          });
+    }
   }
 
   public static void testClientPinManagement(FidoTestState state) throws Throwable {

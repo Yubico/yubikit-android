@@ -96,6 +96,11 @@ public class Ctap2ClientInstrumentedTests {
     }
 
     @Test
+    public void testMakeCredentialMlDsaKeyAlgorithms() throws Throwable {
+      withDevice(Ctap2ClientTests::testMakeCredentialMlDsaKeyAlgorithms);
+    }
+
+    @Test
     public void testClientPinManagement() throws Throwable {
       withDevice(Ctap2ClientTests::testClientPinManagement);
     }

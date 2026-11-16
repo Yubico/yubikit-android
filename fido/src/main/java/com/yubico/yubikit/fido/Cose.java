@@ -18,8 +18,10 @@ package com.yubico.yubikit.fido;
 
 import com.yubico.yubikit.core.internal.codec.Base64;
 import com.yubico.yubikit.core.keys.EllipticCurveValues;
+import com.yubico.yubikit.core.keys.MlDsaParameterValues;
 import com.yubico.yubikit.core.keys.PublicKeyValues.Cv25519;
 import com.yubico.yubikit.core.keys.PublicKeyValues.Ec;
+import com.yubico.yubikit.core.keys.PublicKeyValues.MlDsa;
 import com.yubico.yubikit.core.keys.PublicKeyValues.Rsa;
 import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
@@ -61,6 +63,9 @@ public class Cose {
         break;
       case 3:
         publicKey = importCoseRsaPublicKey(cosePublicKey);
+        break;
+      case 7:
+        publicKey = importCoseAkpPublicKey(cosePublicKey);
         break;
       default:
         throw new IllegalArgumentException("Unsupported key type: " + kty);
@@ -137,5 +142,32 @@ public class Cose {
       logger.debug("e: {}", Base64.toUrlSafeString(e));
     }
     return new Rsa(new BigInteger(1, n), new BigInteger(1, e)).toPublicKey();
+  }
+
+  private static PublicKey importCoseAkpPublicKey(Map<Integer, ?> cosePublicKey)
+      throws NoSuchAlgorithmException, InvalidKeySpecException {
+    final Integer alg = (Integer) Objects.requireNonNull(cosePublicKey.get(3));
+    final byte[] pub = (byte[]) Objects.requireNonNull(cosePublicKey.get(-1));
+    logger.debug("alg: {}", alg);
+    if (logger.isDebugEnabled()) {
+      logger.debug("pub: {}", Base64.toUrlSafeString(pub));
+    }
+
+    MlDsaParameterValues parameterValues;
+    switch (alg) {
+      case -48:
+        parameterValues = MlDsaParameterValues.MLDSA_44;
+        break;
+      case -49:
+        parameterValues = MlDsaParameterValues.MLDSA_65;
+        break;
+      case -50:
+        parameterValues = MlDsaParameterValues.MLDSA_87;
+        break;
+      default:
+        throw new IllegalArgumentException("Unsupported AKP algorithm: " + alg);
+    }
+
+    return new MlDsa(parameterValues, pub).toPublicKey();
   }
 }

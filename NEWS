@@ -26,6 +26,8 @@
   - fido: makeCredential rejects a user id that is not 1 to 64 bytes long
   - fido: AuthenticatorAttestationResponse.getTransports() is unique and in
           lexicographical order
+  - fido: AuthenticatorAttestationResponse.getPublicKey() returns the public key of
+          ML-DSA credentials (COSE key type AKP) when the platform supports ML-DSA
 * Version 3.3.0 (released 2026-10-29)
  ** new:
   - core: PublicKeyValues and PrivateKeyValues variants for the additional key types
