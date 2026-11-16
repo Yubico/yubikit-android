@@ -30,6 +30,8 @@
           of BufferUnderflowException or NegativeArraySizeException
   - android: OtpActivity returns RESULT_ERROR for an invalid NDEF record instead of
              crashing
+  - yubiotp: calculateHmacSha1 accepts an empty challenge, uses the first 64 bytes of a
+             longer one, and rejects null with IllegalArgumentException
 * Version 3.3.0 (released 2026-10-29)
  ** new:
   - core: PublicKeyValues and PrivateKeyValues variants for the additional key types

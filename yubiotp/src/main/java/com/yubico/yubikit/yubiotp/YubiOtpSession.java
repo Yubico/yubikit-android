@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2025 Yubico.
+ * Copyright (C) 2019-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -438,21 +438,28 @@ public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
    * YubiKey 2.2 or later.
    *
    * @param slot the slot on YubiKey that configured with challenge response secret
-   * @param challenge generated challenge that will be sent
+   * @param challenge generated challenge that will be sent; only the first 64 bytes are used
    * @param state if false, the command will be aborted in case the credential requires user touch
    * @return response on challenge returned from YubiKey
+   * @throws IllegalArgumentException if the challenge is null
    * @throws IOException in case of communication error, or no key configured in slot
    * @throws CommandException in case of an error response from the YubiKey
    */
   public byte[] calculateHmacSha1(Slot slot, byte[] challenge, @Nullable CommandState state)
       throws IOException, CommandException {
-    logger.debug("Calculating response for slog {}", slot);
+    if (challenge == null) {
+      throw new IllegalArgumentException("Challenge must not be null");
+    }
+    logger.debug("Calculating response for slot {}", slot);
     require(FEATURE_CHALLENGE_RESPONSE);
 
-    // Pad challenge with byte different from last.
+    // Use at most 64 bytes, as yubikit (Rust) does, and pad with a byte different from the last.
+    int length = Math.min(challenge.length, HMAC_CHALLENGE_SIZE);
     byte[] padded = new byte[HMAC_CHALLENGE_SIZE];
-    Arrays.fill(padded, (byte) (challenge[challenge.length - 1] == 0 ? 1 : 0));
-    System.arraycopy(challenge, 0, padded, 0, challenge.length);
+    if (length > 0 && challenge[length - 1] == 0) {
+      Arrays.fill(padded, (byte) 1);
+    }
+    System.arraycopy(challenge, 0, padded, 0, length);
 
     // response for HMAC-SHA1 challenge response is always 20 bytes
     return backend.sendAndReceive(
