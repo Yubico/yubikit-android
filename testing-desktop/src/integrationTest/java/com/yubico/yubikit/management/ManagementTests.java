@@ -31,4 +31,9 @@ public class ManagementTests extends ManagementInstrumentedTests {
   public void testFidoCcidCapability() throws Throwable {
     withManagementSession(ManagementDeviceTests::testFidoCcidCapability);
   }
+
+  @Test
+  public void testStorageInfo() throws Throwable {
+    withManagementSession(ManagementDeviceTests::testStorageInfo);
+  }
 }

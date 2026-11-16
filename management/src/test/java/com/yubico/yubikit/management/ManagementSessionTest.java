@@ -16,9 +16,15 @@
 
 package com.yubico.yubikit.management;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyByte;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -28,7 +34,9 @@ import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.fido.FidoProtocol;
 import com.yubico.yubikit.core.otp.OtpProtocol;
 import com.yubico.yubikit.core.smartcard.Apdu;
+import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.core.smartcard.AppId;
+import com.yubico.yubikit.core.smartcard.SW;
 import com.yubico.yubikit.core.smartcard.SmartCardProtocol;
 import com.yubico.yubikit.core.util.Tlv;
 import com.yubico.yubikit.core.util.Tlvs;
@@ -224,5 +232,97 @@ public class ManagementSessionTest {
     try (ManagementSession session = smartCardSession(protocolMock)) {
       session.getDeviceInfo();
     }
+  }
+
+  private static ManagementSession smartCardSession(SmartCardProtocol protocolMock, String version)
+      throws Exception {
+    when(protocolMock.select(any(byte[].class)))
+        .thenReturn(version.getBytes(StandardCharsets.UTF_8));
+    return new ManagementSession(protocolMock, null);
+  }
+
+  @Test
+  public void readsStorageInfo() throws Exception {
+    SmartCardProtocol protocolMock = mock(SmartCardProtocol.class);
+    when(protocolMock.sendAndReceive(any(Apdu.class))).thenReturn(StorageInfoTest.STORAGE_RESPONSE);
+
+    try (ManagementSession session = smartCardSession(protocolMock, "6.0.0")) {
+      assertEquals(StorageInfoTest.STORAGE_INFO, session.readStorageInfo());
+    }
+
+    ArgumentCaptor<Apdu> captor = ArgumentCaptor.forClass(Apdu.class);
+    verify(protocolMock).sendAndReceive(captor.capture());
+    Apdu apdu = captor.getValue();
+    assertEquals(0, apdu.getCla());
+    assertEquals(0x30, apdu.getIns());
+    assertEquals(0, apdu.getP1());
+    assertEquals(0, apdu.getP2());
+    assertArrayEquals(new byte[0], apdu.getData());
+  }
+
+  @Test
+  public void readStorageInfoThrowsOnMalformedResponse() throws Exception {
+    SmartCardProtocol protocolMock = mock(SmartCardProtocol.class);
+    when(protocolMock.sendAndReceive(any(Apdu.class))).thenReturn(new byte[] {0x02, 0x00});
+
+    try (ManagementSession session = smartCardSession(protocolMock, "6.0.0")) {
+      assertThrows(BadResponseException.class, session::readStorageInfo);
+    }
+  }
+
+  @Test
+  public void readStorageInfoPropagatesApduError() throws Exception {
+    SmartCardProtocol protocolMock = mock(SmartCardProtocol.class);
+    when(protocolMock.sendAndReceive(any(Apdu.class)))
+        .thenThrow(new ApduException(new byte[0], SW.INVALID_INSTRUCTION));
+
+    try (ManagementSession session = smartCardSession(protocolMock, "6.0.0")) {
+      ApduException e = assertThrows(ApduException.class, session::readStorageInfo);
+      assertEquals(SW.INVALID_INSTRUCTION, e.getSw());
+    }
+  }
+
+  @Test
+  public void readStorageInfoRejectsOlderFirmwareWithoutSending() throws Exception {
+    for (String version : new String[] {"4.4.5", "5.7.2"}) {
+      SmartCardProtocol protocolMock = mock(SmartCardProtocol.class);
+
+      try (ManagementSession session = smartCardSession(protocolMock, version)) {
+        assertFalse(session.supports(ManagementSession.FEATURE_STORAGE_INFO));
+        UnsupportedOperationException e =
+            assertThrows(UnsupportedOperationException.class, session::readStorageInfo);
+        assertTrue(e.getMessage(), e.getMessage().contains("6.0.0"));
+      }
+
+      verify(protocolMock, never()).sendAndReceive(any(Apdu.class));
+    }
+  }
+
+  @Test
+  public void readStorageInfoRejectsFidoWithoutSending() throws Exception {
+    FidoProtocol protocolMock = mock(FidoProtocol.class);
+    when(protocolMock.getVersion()).thenReturn(new Version(6, 0, 0));
+
+    try (ManagementSession session = new ManagementSession(protocolMock)) {
+      UnsupportedOperationException e =
+          assertThrows(UnsupportedOperationException.class, session::readStorageInfo);
+      assertTrue(e.getMessage(), e.getMessage().contains("CCID"));
+    }
+
+    verify(protocolMock, never()).sendAndReceive(anyByte(), any(), any());
+  }
+
+  @Test
+  public void readStorageInfoRejectsOtpWithoutSending() throws Exception {
+    OtpProtocol protocolMock = mock(OtpProtocol.class);
+    when(protocolMock.readStatus()).thenReturn(new byte[] {6, 0, 0});
+
+    try (ManagementSession session = new ManagementSession(protocolMock)) {
+      UnsupportedOperationException e =
+          assertThrows(UnsupportedOperationException.class, session::readStorageInfo);
+      assertTrue(e.getMessage(), e.getMessage().contains("CCID"));
+    }
+
+    verify(protocolMock, never()).sendAndReceive(anyByte(), any(), any());
   }
 }

@@ -6,6 +6,8 @@
           state flags
   - fido: makeCredential sends attestationFormats as attestationFormatsPreference to
           authenticators that report their attestation formats
+  - management: ManagementSession.readStorageInfo() returns the storage information
+                reported by the YubiKey (firmware 6.0.0+, SmartCard connection only)
  ** fixes & improvements:
   - core: over USB, the CTAPHID keepalive status and error code are read from the
           data byte instead of the length field, so a key waiting for touch is reported
