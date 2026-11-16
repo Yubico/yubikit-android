@@ -32,6 +32,11 @@
              crashing
   - yubiotp: calculateHmacSha1 accepts an empty challenge, uses the first 64 bytes of a
              longer one, and rejects null with IllegalArgumentException
+  - fido: a truncated or malformed CTAP1 registration response fails with
+          IllegalArgumentException, or from register() with an IOException caused by
+          BadResponseException, instead of an unchecked buffer or index error
+  - piv: getBioMetadata() fails with an IOException caused by BadResponseException when
+         the retries are missing; a missing configured or temporary PIN flag reads as false
 * Version 3.3.0 (released 2026-10-29)
  ** new:
   - core: PublicKeyValues and PrivateKeyValues variants for the additional key types

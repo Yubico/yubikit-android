@@ -23,9 +23,14 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.yubico.yubikit.core.Version;
+import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.smartcard.Apdu;
 import com.yubico.yubikit.core.smartcard.AppId;
 import com.yubico.yubikit.core.smartcard.SmartCardProtocol;
+import com.yubico.yubikit.core.util.Tlv;
+import com.yubico.yubikit.core.util.Tlvs;
+import java.io.IOException;
+import java.util.Arrays;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -110,6 +115,87 @@ public class PivSessionTest {
       Assert.assertFalse(session.supports(PivSession.FEATURE_TDES_KEY));
     }
   }
+
+  @Test
+  public void readsBioMetadata() throws Exception {
+    try (PivSession session = openSession(mockBioMetadata(bioMetadata(1, 3, 1)))) {
+      BioMetadata metadata = session.getBioMetadata();
+      Assert.assertTrue(metadata.isConfigured());
+      Assert.assertEquals(3, metadata.getAttemptsRemaining());
+      Assert.assertTrue(metadata.hasTemporaryPin());
+    }
+  }
+
+  @Test
+  public void rejectsBioMetadataWithoutRetries() throws Exception {
+    byte[][] responses = {
+      Tlvs.encodeList(
+          Arrays.asList(
+              new Tlv(PivSession.TAG_METADATA_BIO_CONFIGURED, new byte[] {1}),
+              new Tlv(PivSession.TAG_METADATA_TEMPORARY_PIN, new byte[] {0}))),
+      Tlvs.encodeList(
+          Arrays.asList(
+              new Tlv(PivSession.TAG_METADATA_BIO_CONFIGURED, new byte[] {1}),
+              new Tlv(PivSession.TAG_METADATA_RETRIES, new byte[0]),
+              new Tlv(PivSession.TAG_METADATA_TEMPORARY_PIN, new byte[] {0}))),
+      new byte[0],
+    };
+    for (byte[] response : responses) {
+      try (PivSession session = openSession(mockBioMetadata(response))) {
+        IOException e = Assert.assertThrows(IOException.class, session::getBioMetadata);
+        Assert.assertTrue(e.getCause() instanceof BadResponseException);
+      }
+    }
+  }
+
+  @Test
+  public void readsMissingOrEmptyBioFlagsAsFalse() throws Exception {
+    byte[][] responses = {
+      new Tlv(PivSession.TAG_METADATA_RETRIES, new byte[] {3}).getBytes(),
+      Tlvs.encodeList(
+          Arrays.asList(
+              new Tlv(PivSession.TAG_METADATA_BIO_CONFIGURED, new byte[0]),
+              new Tlv(PivSession.TAG_METADATA_RETRIES, new byte[] {3}),
+              new Tlv(PivSession.TAG_METADATA_TEMPORARY_PIN, new byte[0]))),
+    };
+    for (byte[] response : responses) {
+      try (PivSession session = openSession(mockBioMetadata(response))) {
+        BioMetadata metadata = session.getBioMetadata();
+        Assert.assertFalse(metadata.isConfigured());
+        Assert.assertEquals(3, metadata.getAttemptsRemaining());
+        Assert.assertFalse(metadata.hasTemporaryPin());
+      }
+    }
+  }
+
+  private static byte[] bioMetadata(int configured, int retries, int temporaryPin) {
+    return Tlvs.encodeList(
+        Arrays.asList(
+            new Tlv(PivSession.TAG_METADATA_BIO_CONFIGURED, new byte[] {(byte) configured}),
+            new Tlv(PivSession.TAG_METADATA_RETRIES, new byte[] {(byte) retries}),
+            new Tlv(PivSession.TAG_METADATA_TEMPORARY_PIN, new byte[] {(byte) temporaryPin})));
+  }
+
+  /** A 5.7.2 device answering bio metadata with the response, and no other metadata. */
+  private static SmartCardProtocol mockBioMetadata(byte[] response) throws Exception {
+    SmartCardProtocol protocolMock = mock(SmartCardProtocol.class);
+    when(protocolMock.sendAndReceive(
+            argThat(apdu -> apdu != null && apdu.getIns() == PivSession.INS_GET_VERSION)))
+        .thenReturn(new byte[] {5, 7, 2});
+    when(protocolMock.sendAndReceive(
+            argThat(apdu -> apdu != null && apdu.getIns() == PivSession.INS_GET_METADATA)))
+        .thenAnswer(
+            invocation -> {
+              Apdu apdu = invocation.getArgument(0);
+              if ((apdu.getP2() & 0xFF) == BIO_SLOT) {
+                return response;
+              }
+              throw new UnsupportedOperationException();
+            });
+    return protocolMock;
+  }
+
+  private static final int BIO_SLOT = 0x96;
 
   private static boolean isSetManagementKey(Apdu apdu) {
     return apdu != null && apdu.getIns() == PivSession.INS_SET_MGMKEY;

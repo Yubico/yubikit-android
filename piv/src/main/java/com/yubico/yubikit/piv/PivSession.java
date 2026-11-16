@@ -689,7 +689,8 @@ public class PivSession extends ApplicationSession<PivSession> {
    * Reads metadata specific to YubiKey Bio multi-protocol.
    *
    * @return metadata about a slot
-   * @throws IOException in case of connection error
+   * @throws IOException in case of connection error, or if the response is missing the retries
+   *     (caused by a {@link BadResponseException})
    * @throws ApduException in case of an error response from the YubiKey
    * @throws UnsupportedOperationException in case the metadata cannot be retrieved
    */
@@ -699,10 +700,16 @@ public class PivSession extends ApplicationSession<PivSession> {
       Map<Integer, byte[]> data =
           Tlvs.decodeMap(
               protocol.sendAndReceive(new Apdu(0, INS_GET_METADATA, 0, SLOT_OCC_AUTH, null)));
+      byte[] retries = data.get(TAG_METADATA_RETRIES);
+      if (retries == null || retries.length < 1) {
+        // Wrapped in IOException to keep the signature, as SmartCardProtocol does
+        throw new IOException(new BadResponseException("Bio metadata is missing the retries"));
+      }
+      // A missing flag reads as false, as in yubikit (Rust)
       return new BioMetadata(
-          data.get(TAG_METADATA_BIO_CONFIGURED)[0] == 1,
-          data.get(TAG_METADATA_RETRIES)[0],
-          data.get(TAG_METADATA_TEMPORARY_PIN)[0] == 1);
+          isFlagSet(data.get(TAG_METADATA_BIO_CONFIGURED)),
+          retries[0],
+          isFlagSet(data.get(TAG_METADATA_TEMPORARY_PIN)));
     } catch (ApduException apduException) {
       short sw = apduException.getSw();
       if (sw == SW.REFERENCED_DATA_NOT_FOUND || sw == SW.INVALID_INSTRUCTION) {
@@ -711,6 +718,10 @@ public class PivSession extends ApplicationSession<PivSession> {
       }
       throw apduException;
     }
+  }
+
+  private static boolean isFlagSet(byte @Nullable [] value) {
+    return value != null && value.length > 0 && value[0] == 1;
   }
 
   /**
