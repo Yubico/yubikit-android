@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2022 Yubico.
+ * Copyright (C) 2019-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,12 +38,18 @@ public class NdefUtils {
   /**
    * Returns the byte payload portion (static password scan codes, for example) of a YubiKey's NDEF
    * data.
+   *
+   * @throws IllegalArgumentException if the data is not a well-formed YubiKey NDEF record
    */
   public static byte[] getNdefPayloadBytes(byte[] ndefData) {
     ByteBuffer data = ByteBuffer.wrap(ndefData);
+    // record header, type length, payload length, record type, URI identifier code
+    if (data.remaining() < 5) {
+      throw new IllegalArgumentException("NDEF record too short");
+    }
     byte record = data.get();
     byte typeLength = data.get();
-    int dataLength = 0xff & data.get() - typeLength;
+    int dataLength = (0xff & data.get()) - typeLength;
     byte recordType = data.get();
     byte protocol = data.get();
 
@@ -52,6 +58,10 @@ public class NdefUtils {
         || recordType != URL_TYPE
         || protocol != HTTPS_PROTOCOL) {
       throw new IllegalArgumentException("Not a HTTPS URL NDEF record");
+    }
+
+    if (dataLength < DOMAIN.length || data.remaining() < dataLength) {
+      throw new IllegalArgumentException("Invalid NDEF payload length");
     }
 
     byte[] domain = new byte[DOMAIN.length];

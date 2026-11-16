@@ -26,6 +26,10 @@
   - fido: makeCredential rejects a user id that is not 1 to 64 bytes long
   - fido: AuthenticatorAttestationResponse.getTransports() is unique and in
           lexicographical order
+  - core: NdefUtils rejects malformed NDEF records with IllegalArgumentException instead
+          of BufferUnderflowException or NegativeArraySizeException
+  - android: OtpActivity returns RESULT_ERROR for an invalid NDEF record instead of
+             crashing
 * Version 3.3.0 (released 2026-10-29)
  ** new:
   - core: PublicKeyValues and PrivateKeyValues variants for the additional key types
