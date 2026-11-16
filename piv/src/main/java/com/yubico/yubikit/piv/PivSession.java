@@ -76,6 +76,10 @@ import org.slf4j.LoggerFactory;
  *
  * <p>This enables you to perform RSA or ECC sign/decrypt operations using a private key stored on
  * the smart card, through common transports like PKCS#11.
+ *
+ * <p>Instances are not thread-safe. Use an instance from one thread at a time, such as the thread
+ * running a {@link com.yubico.yubikit.core.YubiKeyDevice#requestConnection} callback, or serialize
+ * access to it externally.
  */
 public class PivSession extends ApplicationSession<PivSession> {
   // Features

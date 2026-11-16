@@ -64,6 +64,10 @@ import org.slf4j.LoggerFactory;
  * <p>This class provides methods for U2F registration and authentication operations using the
  * legacy CTAP1 protocol, also known as FIDO U2F.
  *
+ * <p>Instances are not thread-safe. Use an instance from one thread at a time, such as the thread
+ * running a {@link com.yubico.yubikit.core.YubiKeyDevice#requestConnection} callback, or serialize
+ * access to it externally.
+ *
  * @see <a
  *     href="https://fidoalliance.org/specs/fido-u2f-v1.2-ps-20170411/fido-u2f-raw-message-formats-v1.2-ps-20170411.html">FIDO
  *     U2F Raw Message Formats</a>

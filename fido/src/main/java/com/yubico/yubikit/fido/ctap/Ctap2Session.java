@@ -56,6 +56,10 @@ import org.slf4j.LoggerFactory;
 /**
  * Implements CTAP 2.3
  *
+ * <p>Instances are not thread-safe. Use an instance from one thread at a time, such as the thread
+ * running a {@link com.yubico.yubikit.core.YubiKeyDevice#requestConnection} callback, or serialize
+ * access to it externally.
+ *
  * @see <a
  *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html">Client
  *     to Authenticator Protocol (CTAP)</a>

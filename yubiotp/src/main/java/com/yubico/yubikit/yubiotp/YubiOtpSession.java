@@ -62,6 +62,10 @@ import org.slf4j.LoggerFactory;
  *
  * <p>Additionally for NFC enabled YubiKeys, one slot can be configured to be output over NDEF as
  * part of a URL payload.
+ *
+ * <p>Instances are not thread-safe. Use an instance from one thread at a time, such as the thread
+ * running a {@link com.yubico.yubikit.core.YubiKeyDevice#requestConnection} callback, or serialize
+ * access to it externally.
  */
 public class YubiOtpSession extends ApplicationSession<YubiOtpSession> {
   public static final String DEFAULT_NDEF_URI = "https://my.yubico.com/yk/#";

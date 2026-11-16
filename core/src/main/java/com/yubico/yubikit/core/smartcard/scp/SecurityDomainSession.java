@@ -54,6 +54,14 @@ import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Communicates with the Security Domain application on a YubiKey, which manages the keys used for
+ * Secure Channel Protocol (SCP03 and SCP11).
+ *
+ * <p>Instances are not thread-safe. Use an instance from one thread at a time, such as the thread
+ * running a {@link com.yubico.yubikit.core.YubiKeyDevice#requestConnection} callback, or serialize
+ * access to it externally.
+ */
 public class SecurityDomainSession extends ApplicationSession<SecurityDomainSession> {
   static final byte[] DEFAULT_KCV_IV = new byte[] {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
 

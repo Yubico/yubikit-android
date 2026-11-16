@@ -34,6 +34,10 @@ import org.jspecify.annotations.Nullable;
  * Support class for communication over a SmartCardConnection.
  *
  * <p>This class handles APDU encoding and chaining, and implements workarounds for known issues.
+ *
+ * <p>Instances are not thread-safe. Use an instance from one thread at a time, such as the thread
+ * running a {@link com.yubico.yubikit.core.YubiKeyDevice#requestConnection} callback, or serialize
+ * access to it externally.
  */
 public class SmartCardProtocol implements Closeable {
   static final byte INS_SELECT = (byte) 0xa4;

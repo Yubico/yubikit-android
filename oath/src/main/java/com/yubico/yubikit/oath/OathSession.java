@@ -62,6 +62,10 @@ import org.slf4j.LoggerFactory;
  * This application may optionally have an Access Key set, in which case most commands will be
  * locked until {@link #unlock} has been invoked. Note that {@link #reset()} can always be called,
  * regardless of if an Access Key is set or not.
+ *
+ * <p>Instances are not thread-safe. Use an instance from one thread at a time, such as the thread
+ * running a {@link com.yubico.yubikit.core.YubiKeyDevice#requestConnection} callback, or serialize
+ * access to it externally.
  */
 public class OathSession extends ApplicationSession<OathSession> {
   // Features
