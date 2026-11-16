@@ -50,6 +50,8 @@ public fun supportsNfcAntennaHint(context: Context): Boolean = nfcAntennaInfo(co
  * @param iconSize Size of each antenna indicator icon. Defaults to 64.dp.
  * @param iconColor Color of the NFC icon. Defaults to the primary theme color.
  * @param showAntennas Whether to show the antenna indicators. Defaults to true.
+ * @param iconBorderColor Color of a 2.dp circular border drawn around each
+ * antenna indicator, or null for no border. Defaults to null.
  */
 @Composable
 public fun NfcAntennaHint(
@@ -57,7 +59,24 @@ public fun NfcAntennaHint(
     iconSize: Dp = 64.dp,
     iconColor: Color = MaterialTheme.colorScheme.primary,
     showAntennas: Boolean = true,
+    iconBorderColor: Color? = null,
 ): Unit = InternalNfcAntennaHint(
+    modifier = modifier,
+    iconSize = iconSize,
+    iconColor = iconColor,
+    iconBorderColor = iconBorderColor,
+    showAntennas = showAntennas,
+)
+
+/** Binary-compatible overload kept for callers compiled against 3.3 and earlier. */
+@Deprecated("Kept for binary compatibility.", level = DeprecationLevel.HIDDEN)
+@Composable
+public fun NfcAntennaHint(
+    modifier: Modifier = Modifier,
+    iconSize: Dp = 64.dp,
+    iconColor: Color = MaterialTheme.colorScheme.primary,
+    showAntennas: Boolean = true,
+): Unit = NfcAntennaHint(
     modifier = modifier,
     iconSize = iconSize,
     iconColor = iconColor,
