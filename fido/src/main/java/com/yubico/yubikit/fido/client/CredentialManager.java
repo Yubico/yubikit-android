@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2025 Yubico.
+ * Copyright (C) 2020-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -107,7 +107,7 @@ public class CredentialManager {
         credentials.put(
             PublicKeyCredentialDescriptor.fromMap(
                 credData.getCredentialId(), SerializationType.CBOR),
-            PublicKeyCredentialUserEntity.fromMap(credData.getUser(), SerializationType.CBOR));
+            Utils.userEntityFromCtap(credData.getUser()));
       }
 
       return credentials;
