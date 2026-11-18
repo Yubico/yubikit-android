@@ -244,10 +244,17 @@ internal open class MainViewModel(
         assertions: MultipleAssertionsAvailable,
         onResult: (PublicKeyCredential) -> Unit,
     ) {
-        multipleAssertions = assertions
         val users =
             runCatching { assertions.getUsers() }
-                .getOrElse { emptyList() }
+                .getOrElse { error ->
+                    // Never present an empty picker ("0 available") for assertions the key did
+                    // return: surface the failure instead so it is visible and reportable.
+                    logger.error("Could not read users from multiple assertions: ", error)
+                    multipleAssertions = null
+                    _state.value = State.OperationError(mapError(error))
+                    return
+                }
+        multipleAssertions = assertions
 
         _state.value =
             State.MultipleAssertions(users) { user ->
