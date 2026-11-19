@@ -1,4 +1,7 @@
 * Next version (unreleased)
+ ** new:
+  - fido: hints on creation and request options, and attestationFormats on creation
+          options (WebAuthn Level 3)
  ** fixes & improvements:
   - fido: PublicKeyCredentialUserEntity.fromMap() accepts a missing name or displayName,
           which CTAP leaves optional, and returns it as an empty string instead of
