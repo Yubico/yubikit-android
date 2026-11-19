@@ -14,6 +14,8 @@
   - fido-ui: the account picker labels a passkey by name, then displayName, then
              "Passkey N", and shows an error instead of "0 available" when user
              information cannot be read
+  - fido: an empty pubKeyCredParams list now requests ES256 and RS256, as WebAuthn
+          requires, instead of being sent empty or rejected over CTAP1
 * Version 3.3.0 (released 2026-10-29)
  ** new:
   - core: PublicKeyValues and PrivateKeyValues variants for the additional key types

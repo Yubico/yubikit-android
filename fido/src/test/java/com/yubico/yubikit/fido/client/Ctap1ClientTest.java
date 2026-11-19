@@ -29,10 +29,14 @@ import static org.mockito.Mockito.when;
 import com.yubico.yubikit.fido.client.clientdata.ClientDataProvider;
 import com.yubico.yubikit.fido.ctap.Ctap1Session;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredential;
+import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialCreationOptions;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialDescriptor;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialRequestOptions;
+import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialRpEntity;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialType;
+import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialUserEntity;
 import com.yubico.yubikit.fido.webauthn.UserVerificationRequirement;
+import java.io.IOException;
 import java.util.Collections;
 import org.junit.Test;
 
@@ -79,5 +83,27 @@ public class Ctap1ClientTest {
         }) {
       assertArrayEquals(CREDENTIAL_ID, getAssertion(uv).getRawId());
     }
+  }
+
+  @Test
+  public void emptyPubKeyCredParamsDefaultToEs256AndRegister() throws Exception {
+    when(clientData.getHash()).thenReturn(new byte[32]);
+    when(session.register(any(), any())).thenThrow(new IOException("register reached"));
+    PublicKeyCredentialCreationOptions options =
+        new PublicKeyCredentialCreationOptions(
+            new PublicKeyCredentialRpEntity("Example", "example.com"),
+            new PublicKeyCredentialUserEntity("user", new byte[] {1}, "A User"),
+            new byte[32],
+            Collections.emptyList(),
+            null,
+            null,
+            null,
+            null,
+            null);
+
+    assertThrows(
+        IOException.class,
+        () -> client.makeCredential(clientData, options, "example.com", null, null, null));
+    verify(session).register(any(), any());
   }
 }

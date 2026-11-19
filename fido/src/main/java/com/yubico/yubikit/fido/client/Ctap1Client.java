@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Yubico.
+ * Copyright (C) 2025-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -104,8 +104,8 @@ public class Ctap1Client implements WebAuthnClient {
 
       // Check for ES256 support
       boolean hasEs256 = false;
-      for (PublicKeyCredentialParameters param : options.getPubKeyCredParams()) {
-        if (param.getAlg() == -7) { // ES256
+      for (PublicKeyCredentialParameters param : Utils.getPubKeyCredParams(options)) {
+        if (param.getAlg() == Utils.ALG_ES256) {
           hasEs256 = true;
           break;
         }
