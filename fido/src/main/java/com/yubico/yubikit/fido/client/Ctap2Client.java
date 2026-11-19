@@ -546,7 +546,8 @@ public class Ctap2Client implements WebAuthnClient {
     final Map<String, ?> user = options.getUser().toMap(serializationType);
 
     List<Map<String, ?>> pubKeyCredParams = new ArrayList<>();
-    for (PublicKeyCredentialParameters param : options.getPubKeyCredParams()) {
+    for (PublicKeyCredentialParameters param :
+        com.yubico.yubikit.fido.client.Utils.getPubKeyCredParams(options)) {
       if (isPublicKeyCredentialTypeSupported(param.getType())) {
         pubKeyCredParams.add(param.toMap(serializationType));
       }

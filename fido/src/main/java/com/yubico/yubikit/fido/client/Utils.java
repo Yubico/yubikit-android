@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Yubico.
+ * Copyright (C) 2025-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,9 +25,13 @@ import com.yubico.yubikit.core.smartcard.scp.ScpKeyParams;
 import com.yubico.yubikit.fido.client.extensions.Extension;
 import com.yubico.yubikit.fido.ctap.Ctap1Session;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
+import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialCreationOptions;
+import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialParameters;
+import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialType;
 import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -37,7 +41,25 @@ public class Utils {
 
   private static final Logger logger = LoggerFactory.getLogger(Utils.class);
 
+  static final int ALG_ES256 = -7;
+  static final int ALG_RS256 = -257;
+
   private Utils() {}
+
+  /**
+   * Returns the credential parameters to request, defaulting to ES256 and RS256 when the RP passed
+   * an empty list, as WebAuthn requires.
+   */
+  static List<PublicKeyCredentialParameters> getPubKeyCredParams(
+      PublicKeyCredentialCreationOptions options) {
+    List<PublicKeyCredentialParameters> params = options.getPubKeyCredParams();
+    if (!params.isEmpty()) {
+      return params;
+    }
+    return Arrays.asList(
+        new PublicKeyCredentialParameters(PublicKeyCredentialType.PUBLIC_KEY, ALG_ES256),
+        new PublicKeyCredentialParameters(PublicKeyCredentialType.PUBLIC_KEY, ALG_RS256));
+  }
 
   /**
    * Return SHA-256 hash of the provided input

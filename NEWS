@@ -4,6 +4,9 @@
           options (WebAuthn Level 3)
   - fido: AuthenticatorData.isBe() and isBs() expose the backup eligibility and backup
           state flags
+ ** fixes & improvements:
+  - fido: an empty pubKeyCredParams list now requests ES256 and RS256, as WebAuthn
+          requires, instead of being sent empty or rejected over CTAP1
 
 * Version 3.3.0 (released 2026-10-29)
  ** new:
