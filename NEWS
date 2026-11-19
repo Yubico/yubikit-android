@@ -2,6 +2,8 @@
  ** new:
   - fido: hints on creation and request options, and attestationFormats on creation
           options (WebAuthn Level 3)
+  - fido: AuthenticatorData.isBe() and isBs() expose the backup eligibility and backup
+          state flags
 
 * Version 3.3.0 (released 2026-10-29)
  ** new:
