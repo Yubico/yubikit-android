@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2025 Yubico.
+ * Copyright (C) 2020-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,8 @@ public class PublicKeyCredentialCreationOptions {
   private static final String AUTHENTICATOR_SELECTION = "authenticatorSelection";
   private static final String ATTESTATION = "attestation";
   private static final String EXTENSIONS = "extensions";
+  private static final String HINTS = "hints";
+  private static final String ATTESTATION_FORMATS = "attestationFormats";
 
   private final PublicKeyCredentialRpEntity rp;
   private final PublicKeyCredentialUserEntity user;
@@ -47,6 +49,8 @@ public class PublicKeyCredentialCreationOptions {
   @Nullable private final AuthenticatorSelectionCriteria authenticatorSelection;
   private final String attestation;
   @Nullable private final Extensions extensions;
+  private final List<String> hints;
+  private final List<String> attestationFormats;
 
   public PublicKeyCredentialCreationOptions(
       PublicKeyCredentialRpEntity rp,
@@ -58,6 +62,36 @@ public class PublicKeyCredentialCreationOptions {
       @Nullable AuthenticatorSelectionCriteria authenticatorSelection,
       @Nullable String attestation,
       @Nullable Extensions extensions) {
+    this(
+        rp,
+        user,
+        challenge,
+        pubKeyCredParams,
+        timeout,
+        excludeCredentials,
+        authenticatorSelection,
+        attestation,
+        extensions,
+        null,
+        null);
+  }
+
+  /**
+   * @param hints values from {@link PublicKeyCredentialHint}, most preferred first
+   * @param attestationFormats attestation statement formats, most preferred first
+   */
+  public PublicKeyCredentialCreationOptions(
+      PublicKeyCredentialRpEntity rp,
+      PublicKeyCredentialUserEntity user,
+      byte[] challenge,
+      List<PublicKeyCredentialParameters> pubKeyCredParams,
+      @Nullable Long timeout,
+      @Nullable List<PublicKeyCredentialDescriptor> excludeCredentials,
+      @Nullable AuthenticatorSelectionCriteria authenticatorSelection,
+      @Nullable String attestation,
+      @Nullable Extensions extensions,
+      @Nullable List<String> hints,
+      @Nullable List<String> attestationFormats) {
     this.rp = rp;
     this.user = user;
     this.challenge = challenge;
@@ -68,6 +102,9 @@ public class PublicKeyCredentialCreationOptions {
     this.authenticatorSelection = authenticatorSelection;
     this.attestation = attestation != null ? attestation : AttestationConveyancePreference.NONE;
     this.extensions = extensions;
+    this.hints = hints != null ? hints : Collections.emptyList();
+    this.attestationFormats =
+        attestationFormats != null ? attestationFormats : Collections.emptyList();
   }
 
   public PublicKeyCredentialRpEntity getRp() {
@@ -109,6 +146,14 @@ public class PublicKeyCredentialCreationOptions {
     return extensions;
   }
 
+  public List<String> getHints() {
+    return hints;
+  }
+
+  public List<String> getAttestationFormats() {
+    return attestationFormats;
+  }
+
   public Map<String, ?> toMap(SerializationType serializationType) {
     Map<String, Object> map = new HashMap<>();
     map.put(RP, rp.toMap(serializationType));
@@ -135,6 +180,12 @@ public class PublicKeyCredentialCreationOptions {
     map.put(ATTESTATION, attestation);
     if (extensions != null) {
       map.put(EXTENSIONS, extensions);
+    }
+    if (!hints.isEmpty()) {
+      map.put(HINTS, hints);
+    }
+    if (!attestationFormats.isEmpty()) {
+      map.put(ATTESTATION_FORMATS, attestationFormats);
     }
     return map;
   }
@@ -173,7 +224,9 @@ public class PublicKeyCredentialCreationOptions {
             ? null
             : AuthenticatorSelectionCriteria.fromMap(authenticatorSelection, serializationType),
         (String) map.get(ATTESTATION),
-        Extensions.fromMap((Map<String, ?>) map.get(EXTENSIONS)));
+        Extensions.fromMap((Map<String, ?>) map.get(EXTENSIONS)),
+        (List<String>) map.get(HINTS),
+        (List<String>) map.get(ATTESTATION_FORMATS));
   }
 
   public static PublicKeyCredentialCreationOptions fromMap(Map<String, ?> map) {

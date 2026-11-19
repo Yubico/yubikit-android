@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2025 Yubico.
+ * Copyright (C) 2020-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,8 @@ import java.nio.ByteBuffer;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.jspecify.annotations.Nullable;
@@ -153,6 +155,8 @@ public class SerializationTest {
     Assert.assertEquals(a.getAuthenticatorSelection(), b.getAuthenticatorSelection());
     Assert.assertEquals(a.getAttestation(), b.getAttestation());
     Assert.assertEquals(a.getExtensions(), b.getExtensions());
+    Assert.assertEquals(a.getHints(), b.getHints());
+    Assert.assertEquals(a.getAttestationFormats(), b.getAttestationFormats());
   }
 
   void testCreationOptions(@Nullable Long timeout) {
@@ -183,7 +187,9 @@ public class SerializationTest {
             excludeCredentials,
             new AuthenticatorSelectionCriteria(null, ResidentKeyRequirement.REQUIRED, null),
             AttestationConveyancePreference.INDIRECT,
-            null);
+            null,
+            Arrays.asList(PublicKeyCredentialHint.SECURITY_KEY, "unknown hint"),
+            Arrays.asList("packed", "none"));
 
     compareCreationOptions(
         options,
@@ -220,7 +226,8 @@ public class SerializationTest {
                     new PublicKeyCredentialDescriptor(
                         "unknown public key type", credentialId, null))),
             UserVerificationRequirement.REQUIRED,
-            null);
+            null,
+            Arrays.asList(PublicKeyCredentialHint.SECURITY_KEY, PublicKeyCredentialHint.HYBRID));
 
     Assert.assertEquals(
         options,
@@ -237,6 +244,61 @@ public class SerializationTest {
   public void testRequestOptions() {
     testRequestOptions((long) random.nextInt(Integer.MAX_VALUE));
     testRequestOptions(null);
+  }
+
+  @Test
+  public void testHintsAndAttestationFormatsAreParsedFromJson() {
+    Map<String, Object> rp = new HashMap<>();
+    rp.put("id", "example.com");
+    rp.put("name", "Example");
+    Map<String, Object> user = new HashMap<>();
+    user.put("id", "AQID");
+    user.put("name", "user");
+    user.put("displayName", "A User");
+    Map<String, Object> creation = new HashMap<>();
+    creation.put("rp", rp);
+    creation.put("user", user);
+    creation.put("challenge", "AAAA");
+    creation.put("pubKeyCredParams", Collections.emptyList());
+    creation.put("hints", Collections.singletonList("security-key"));
+    creation.put("attestationFormats", Arrays.asList("packed", "tpm"));
+
+    PublicKeyCredentialCreationOptions creationOptions =
+        PublicKeyCredentialCreationOptions.fromMap(creation);
+    Assert.assertEquals(Collections.singletonList("security-key"), creationOptions.getHints());
+    Assert.assertEquals(Arrays.asList("packed", "tpm"), creationOptions.getAttestationFormats());
+
+    Map<String, Object> request = new HashMap<>();
+    request.put("challenge", "AAAA");
+    request.put("hints", Arrays.asList("client-device", "hybrid"));
+    Assert.assertEquals(
+        Arrays.asList("client-device", "hybrid"),
+        PublicKeyCredentialRequestOptions.fromMap(request).getHints());
+  }
+
+  @Test
+  public void testEmptyHintsAndAttestationFormatsAreOmitted() {
+    PublicKeyCredentialCreationOptions creationOptions =
+        new PublicKeyCredentialCreationOptions(
+            new PublicKeyCredentialRpEntity("Example", "example.com"),
+            new PublicKeyCredentialUserEntity("user", new byte[] {1}, "A User"),
+            new byte[32],
+            Collections.emptyList(),
+            null,
+            null,
+            null,
+            null,
+            null);
+    Assert.assertTrue(creationOptions.getHints().isEmpty());
+    Assert.assertTrue(creationOptions.getAttestationFormats().isEmpty());
+    Map<String, ?> creationMap = creationOptions.toMap(SerializationType.JSON);
+    Assert.assertFalse(creationMap.containsKey("hints"));
+    Assert.assertFalse(creationMap.containsKey("attestationFormats"));
+
+    PublicKeyCredentialRequestOptions requestOptions =
+        new PublicKeyCredentialRequestOptions(new byte[32], null, null, null, null, null);
+    Assert.assertTrue(requestOptions.getHints().isEmpty());
+    Assert.assertFalse(requestOptions.toMap(SerializationType.JSON).containsKey("hints"));
   }
 
   private AuthenticatorAssertionResponse randomAuthenticatorAssertionResponse() {
