@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Yubico.
+ * Copyright (C) 2020-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,6 @@ import com.yubico.yubikit.fido.webauthn.ClientExtensionResults;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredential;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialDescriptor;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialUserEntity;
-import com.yubico.yubikit.fido.webauthn.SerializationType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -73,7 +72,7 @@ public class MultipleAssertionsAvailable extends Throwable {
         throw new UserInformationNotAvailableError();
       }
 
-      users.add(PublicKeyCredentialUserEntity.fromMap(user, SerializationType.CBOR));
+      users.add(Utils.userEntityFromCtap(user));
     }
     return users;
   }

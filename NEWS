@@ -1,3 +1,10 @@
+* Version 3.3.1 (unreleased)
+ ** fixes & improvements:
+  - fido: MultipleAssertionsAvailable.getUsers() and CredentialManager.getCredentials()
+          accept user entities without name or displayName, which CTAP leaves optional;
+          displayName falls back to name instead of throwing NullPointerException
+  - fido-ui: the account picker shows an error instead of "0 available" when user
+             information cannot be read
 * Version 3.3.0 (released 2026-10-29)
  ** new:
   - core: PublicKeyValues and PrivateKeyValues variants for the additional key types
