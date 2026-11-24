@@ -35,6 +35,5 @@ dependencies {
     implementation(libs.bcpkix.jdk15to18)
     implementation(libs.hamcrest.hamcrest)
     implementation(libs.hamcrest.library)
-    implementation(libs.moshi)
 }
 
