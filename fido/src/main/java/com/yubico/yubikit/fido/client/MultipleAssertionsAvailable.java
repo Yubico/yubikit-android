@@ -23,6 +23,7 @@ import com.yubico.yubikit.fido.webauthn.ClientExtensionResults;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredential;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialDescriptor;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialUserEntity;
+import com.yubico.yubikit.fido.webauthn.SerializationType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -72,7 +73,7 @@ public class MultipleAssertionsAvailable extends Throwable {
         throw new UserInformationNotAvailableError();
       }
 
-      users.add(Utils.userEntityFromCtap(user));
+      users.add(PublicKeyCredentialUserEntity.fromMap(user, SerializationType.CBOR));
     }
     return users;
   }

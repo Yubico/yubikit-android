@@ -107,7 +107,7 @@ public class CredentialManager {
         credentials.put(
             PublicKeyCredentialDescriptor.fromMap(
                 credData.getCredentialId(), SerializationType.CBOR),
-            Utils.userEntityFromCtap(credData.getUser()));
+            PublicKeyCredentialUserEntity.fromMap(credData.getUser(), SerializationType.CBOR));
       }
 
       return credentials;

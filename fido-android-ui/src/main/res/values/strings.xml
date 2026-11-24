@@ -30,6 +30,7 @@
     <string name="yk_fido_close">Close</string>
     <string name="yk_fido_select_passkey_title">Select a passkey</string>
     <string name="yk_fido_select_passkey">Select a passkey to login (%1$d available)</string>
+    <string name="yk_fido_passkey_unnamed">Passkey %1$d</string>
     <string name="yk_fido_retry">Retry</string>
     <string name="yk_fido_error">Error</string>
     <string name="yk_fido_error_login_failed">Login with passkey to %1$s failed</string>

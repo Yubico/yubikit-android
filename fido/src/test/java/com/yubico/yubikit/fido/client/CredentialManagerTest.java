@@ -25,23 +25,19 @@ import com.yubico.yubikit.fido.ctap.CredentialManagement;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialDescriptor;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialUserEntity;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import org.jspecify.annotations.Nullable;
 import org.junit.Test;
 
 public class CredentialManagerTest {
 
-  private static CredentialManagement.CredentialData credential(
-      byte[] credId, byte[] userId, @Nullable String name, @Nullable String displayName) {
+  private static CredentialManagement.CredentialData credential(byte[] credId, byte[] userId) {
     Map<String, Object> credentialId = new HashMap<>();
     credentialId.put(PublicKeyCredentialDescriptor.TYPE, "public-key");
     credentialId.put(PublicKeyCredentialDescriptor.ID, credId);
 
-    Map<String, Object> user = new HashMap<>();
-    user.put(PublicKeyCredentialUserEntity.ID, userId);
-    if (name != null) user.put(PublicKeyCredentialUserEntity.NAME, name);
-    if (displayName != null) user.put(PublicKeyCredentialUserEntity.DISPLAY_NAME, displayName);
+    Map<String, ?> user = Collections.singletonMap(PublicKeyCredentialUserEntity.ID, userId);
 
     CredentialManagement.CredentialData data = mock(CredentialManagement.CredentialData.class);
     when(data.getCredentialId()).thenAnswer(invocation -> credentialId);
@@ -62,29 +58,9 @@ public class CredentialManagerTest {
   }
 
   @Test
-  public void getCredentialsWithAllFields() throws Throwable {
-    Map<PublicKeyCredentialDescriptor, PublicKeyCredentialUserEntity> credentials =
-        list(credential(new byte[] {1}, new byte[] {11}, "alice", "Alice A."));
-    assertEquals(1, credentials.size());
-    assertEquals("alice", userFor(credentials, (byte) 1).getName());
-    assertEquals("Alice A.", userFor(credentials, (byte) 1).getDisplayName());
-  }
-
-  @Test
-  public void getCredentialsWithoutDisplayNameFallsBackToName() throws Throwable {
-    Map<PublicKeyCredentialDescriptor, PublicKeyCredentialUserEntity> credentials =
-        list(
-            credential(new byte[] {1}, new byte[] {11}, "fridolin", null),
-            credential(new byte[] {2}, new byte[] {12}, "admin", null));
-    assertEquals(2, credentials.size());
-    assertEquals("fridolin", userFor(credentials, (byte) 1).getDisplayName());
-    assertEquals("admin", userFor(credentials, (byte) 2).getDisplayName());
-  }
-
-  @Test
   public void getCredentialsWithIdOnly() throws Throwable {
     Map<PublicKeyCredentialDescriptor, PublicKeyCredentialUserEntity> credentials =
-        list(credential(new byte[] {1}, new byte[] {11}, null, null));
+        list(credential(new byte[] {1}, new byte[] {11}));
     assertEquals("", userFor(credentials, (byte) 1).getName());
     assertEquals("", userFor(credentials, (byte) 1).getDisplayName());
   }

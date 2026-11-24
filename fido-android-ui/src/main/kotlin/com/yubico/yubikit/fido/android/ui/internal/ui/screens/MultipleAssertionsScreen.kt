@@ -130,7 +130,9 @@ internal fun MultipleAssertionsScreen(
                         )
                         Spacer(modifier = Modifier.width(12.dp))
                         Text(
-                            text = user.displayName,
+                            text = user.displayName.ifBlank { user.name }.ifBlank {
+                                stringResource(R.string.yk_fido_passkey_unnamed, idx + 1)
+                            },
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurface,
                             maxLines = 1,
