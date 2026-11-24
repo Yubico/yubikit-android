@@ -94,10 +94,11 @@ class MultipleAssertionsScreenTest {
     }
 
     @Test
-    fun `labels users without displayName by name, then by position`() {
+    fun `labels users by name, then displayName, then position`() {
         val users =
             listOf(
-                PublicKeyCredentialUserEntity("alice", ByteArray(16), " "),
+                PublicKeyCredentialUserEntity("alice", ByteArray(16), "Alice"),
+                PublicKeyCredentialUserEntity(" ", ByteArray(16), "Bob"),
                 PublicKeyCredentialUserEntity(" ", ByteArray(16), ""),
             )
 
@@ -114,6 +115,8 @@ class MultipleAssertionsScreenTest {
         }
 
         composeTestRule.onNodeWithText("alice").assertExists()
-        composeTestRule.onNodeWithText("Passkey 2").assertExists()
+        composeTestRule.onNodeWithText("Alice").assertDoesNotExist()
+        composeTestRule.onNodeWithText("Bob").assertExists()
+        composeTestRule.onNodeWithText("Passkey 3").assertExists()
     }
 }
