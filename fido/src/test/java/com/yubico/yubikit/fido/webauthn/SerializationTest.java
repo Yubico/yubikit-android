@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2025 Yubico.
+ * Copyright (C) 2020-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,8 @@ import java.nio.ByteBuffer;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.jspecify.annotations.Nullable;
@@ -200,6 +202,39 @@ public class SerializationTest {
   public void testCreationOptions() {
     testCreationOptions((long) random.nextInt(Integer.MAX_VALUE));
     testCreationOptions(null);
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  public void testCreationOptionsUserNames() {
+    PublicKeyCredentialCreationOptions options =
+        new PublicKeyCredentialCreationOptions(
+            new PublicKeyCredentialRpEntity("Example", "example.com"),
+            new PublicKeyCredentialUserEntity("user", new byte[] {1}, ""),
+            new byte[32],
+            Collections.singletonList(
+                new PublicKeyCredentialParameters(PublicKeyCredentialType.PUBLIC_KEY, -7)),
+            null,
+            null,
+            null,
+            null,
+            null);
+    Map<String, Object> map = new HashMap<>(options.toMap(SerializationType.JSON));
+
+    // an empty displayName is valid WebAuthn
+    Assert.assertEquals(
+        "",
+        PublicKeyCredentialCreationOptions.fromMap(map, SerializationType.JSON)
+            .getUser()
+            .getDisplayName());
+
+    // a missing one is not
+    Map<String, Object> user = new HashMap<>((Map<String, ?>) map.get("user"));
+    user.remove("displayName");
+    map.put("user", user);
+    Assert.assertThrows(
+        IllegalArgumentException.class,
+        () -> PublicKeyCredentialCreationOptions.fromMap(map, SerializationType.JSON));
   }
 
   public void testRequestOptions(@Nullable Long timeout) {

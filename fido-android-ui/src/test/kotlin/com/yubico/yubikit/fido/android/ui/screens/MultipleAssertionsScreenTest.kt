@@ -18,6 +18,7 @@ package com.yubico.yubikit.fido.android.ui.screens
 
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.yubico.yubikit.fido.android.ui.internal.FidoClientService
 import com.yubico.yubikit.fido.android.ui.internal.ui.screens.MultipleAssertionsScreen
@@ -90,5 +91,32 @@ class MultipleAssertionsScreenTest {
 
         composeTestRule.onNodeWithTag("user_button_Alice").assertExists()
         composeTestRule.onNodeWithTag("user_button_Bob").assertExists()
+    }
+
+    @Test
+    fun `labels users by name, then displayName, then position`() {
+        val users =
+            listOf(
+                PublicKeyCredentialUserEntity("alice", ByteArray(16), "Alice"),
+                PublicKeyCredentialUserEntity(" ", ByteArray(16), "Bob"),
+                PublicKeyCredentialUserEntity(" ", ByteArray(16), ""),
+            )
+
+        composeTestRule.setContent {
+            FidoAndroidTheme {
+                MultipleAssertionsScreen(
+                    operation = FidoClientService.Operation.GET_ASSERTION,
+                    rpId = "example.com",
+                    users = users,
+                    onSelect = {},
+                    onCloseButtonClick = {},
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithText("alice").assertExists()
+        composeTestRule.onNodeWithText("Alice").assertDoesNotExist()
+        composeTestRule.onNodeWithText("Bob").assertExists()
+        composeTestRule.onNodeWithText("Passkey 3").assertExists()
     }
 }

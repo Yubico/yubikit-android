@@ -49,6 +49,7 @@ import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialCreationOptions;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialDescriptor;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialParameters;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialRequestOptions;
+import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialUserEntity;
 import com.yubico.yubikit.fido.webauthn.ResidentKeyRequirement;
 import com.yubico.yubikit.fido.webauthn.SerializationType;
 import com.yubico.yubikit.fido.webauthn.UserVerificationRequirement;
@@ -543,7 +544,7 @@ public class Ctap2Client implements WebAuthnClient {
                 clientPin.getPinUvAuth(),
                 authParams.pinToken);
 
-    final Map<String, ?> user = options.getUser().toMap(serializationType);
+    final Map<String, ?> user = Utils.userForCtap(options.getUser());
 
     List<Map<String, ?>> pubKeyCredParams = new ArrayList<>();
     for (PublicKeyCredentialParameters param : options.getPubKeyCredParams()) {
@@ -1210,6 +1211,21 @@ public class Ctap2Client implements WebAuthnClient {
         }
       }
       return result;
+    }
+
+    /**
+     * Returns the user entity to send to the authenticator, without an empty name or displayName.
+     * Both are optional in CTAP, and an authenticator may reject an empty string.
+     */
+    static Map<String, ?> userForCtap(PublicKeyCredentialUserEntity user) {
+      Map<String, Object> map = new HashMap<>(user.toMap(SerializationType.CBOR));
+      if (user.getName().isEmpty()) {
+        map.remove(PublicKeyCredentialUserEntity.NAME);
+      }
+      if (user.getDisplayName().isEmpty()) {
+        map.remove(PublicKeyCredentialUserEntity.DISPLAY_NAME);
+      }
+      return map;
     }
 
     /**

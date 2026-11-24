@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2023 Yubico.
+ * Copyright (C) 2020-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,12 +53,18 @@ public class PublicKeyCredentialUserEntity extends PublicKeyCredentialEntity {
     return map;
   }
 
+  /**
+   * Parses a user entity. Only {@code id} is required: CTAP lets authenticators omit {@code name}
+   * and {@code displayName}, and a missing value is returned as an empty string.
+   */
   public static PublicKeyCredentialUserEntity fromMap(
       Map<String, ?> map, SerializationType serializationType) {
+    String name = (String) map.get(NAME);
+    String displayName = (String) map.get(DISPLAY_NAME);
     return new PublicKeyCredentialUserEntity(
-        Objects.requireNonNull((String) map.get(NAME)),
+        name != null ? name : "",
         deserializeBytes(Objects.requireNonNull(map.get(ID)), serializationType),
-        Objects.requireNonNull((String) map.get(DISPLAY_NAME)));
+        displayName != null ? displayName : "");
   }
 
   @Override

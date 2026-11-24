@@ -130,7 +130,11 @@ internal fun MultipleAssertionsScreen(
                         )
                         Spacer(modifier = Modifier.width(12.dp))
                         Text(
-                            text = user.displayName,
+                            // name is "the primary value displayed to users by Clients":
+                            // https://www.w3.org/TR/webauthn-3/#dom-publickeycredentialentity-name
+                            text = user.name.ifBlank { user.displayName }.ifBlank {
+                                stringResource(R.string.yk_fido_passkey_unnamed, idx + 1)
+                            },
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurface,
                             maxLines = 1,
