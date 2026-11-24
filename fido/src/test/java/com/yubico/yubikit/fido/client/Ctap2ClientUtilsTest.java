@@ -19,6 +19,7 @@ package com.yubico.yubikit.fido.client;
 import static com.yubico.yubikit.fido.webauthn.PublicKeyCredentialType.PUBLIC_KEY;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -41,8 +42,10 @@ import com.yubico.yubikit.core.fido.CtapException;
 import com.yubico.yubikit.core.util.RandomUtils;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
+import com.yubico.yubikit.fido.webauthn.AuthenticatorSelectionCriteria;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialDescriptor;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialUserEntity;
+import com.yubico.yubikit.fido.webauthn.ResidentKeyRequirement;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -757,6 +760,26 @@ public class Ctap2ClientUtilsTest {
               });
 
       return ctapMock;
+    }
+  }
+
+  public static class MakeCredentialRequestTests {
+    @Test
+    public void testIsResidentKey() {
+      // without authenticatorSelection the default is a non-discoverable credential
+      assertFalse(Ctap2Client.Utils.isResidentKey(null, true));
+      assertTrue(
+          Ctap2Client.Utils.isResidentKey(selection(ResidentKeyRequirement.PREFERRED), true));
+      assertFalse(
+          Ctap2Client.Utils.isResidentKey(selection(ResidentKeyRequirement.PREFERRED), false));
+      assertTrue(
+          Ctap2Client.Utils.isResidentKey(selection(ResidentKeyRequirement.REQUIRED), false));
+      assertFalse(
+          Ctap2Client.Utils.isResidentKey(selection(ResidentKeyRequirement.DISCOURAGED), true));
+    }
+
+    private static AuthenticatorSelectionCriteria selection(String residentKey) {
+      return new AuthenticatorSelectionCriteria(null, residentKey, null);
     }
   }
 }

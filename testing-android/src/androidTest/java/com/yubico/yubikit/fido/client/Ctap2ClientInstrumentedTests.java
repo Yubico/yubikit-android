@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2025 Yubico.
+ * Copyright (C) 2022-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,6 +50,11 @@ public class Ctap2ClientInstrumentedTests {
     @Test
     public void testAttestationConveyance() throws Throwable {
       withDevice(AttestationConveyanceTests::testCtap2);
+    }
+
+    @Test
+    public void testMakeCredentialWithoutAuthenticatorSelection() throws Throwable {
+      withDevice(Ctap2ClientTests::testMakeCredentialWithoutAuthenticatorSelection);
     }
 
     @Test

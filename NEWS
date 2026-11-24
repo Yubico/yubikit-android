@@ -16,6 +16,8 @@
              information cannot be read
   - fido: an empty pubKeyCredParams list now requests ES256 and RS256, as WebAuthn
           requires, instead of being sent empty or rejected over CTAP1
+  - fido: without authenticatorSelection, makeCredential creates a non-discoverable
+          credential, as WebAuthn requires, instead of a discoverable one
 * Version 3.3.0 (released 2026-10-29)
  ** new:
   - core: PublicKeyValues and PrivateKeyValues variants for the additional key types

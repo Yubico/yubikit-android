@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2025 Yubico.
+ * Copyright (C) 2020-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -922,5 +922,51 @@ public class Ctap2ClientTests {
       credentialManager.deleteCredential(
           new PublicKeyCredentialDescriptor(PublicKeyCredentialType.PUBLIC_KEY, credId, null));
     }
+  }
+
+  /** Without authenticatorSelection, makeCredential creates a non-discoverable credential. */
+  public static void testMakeCredentialWithoutAuthenticatorSelection(FidoTestState state)
+      throws Throwable {
+    // a dedicated RP ID, so no discoverable credential from another test can answer
+    String rpId = "rk-default." + TestData.RP_ID;
+    state.withCtap2(
+        session -> {
+          Ctap2Client webauthn = new Ctap2Client(session);
+          PublicKeyCredentialCreationOptions options =
+              new PublicKeyCredentialCreationOptions(
+                  new PublicKeyCredentialRpEntity(TestData.RP_NAME, rpId),
+                  TestData.USER,
+                  TestData.CHALLENGE,
+                  Collections.singletonList(TestData.PUB_KEY_CRED_PARAMS_ES256),
+                  (long) 90000,
+                  null,
+                  null,
+                  null,
+                  null);
+          webauthn.makeCredential(
+              TestData.CLIENT_DATA_JSON_CREATE_PROVIDER, options, rpId, TestData.PIN, null, null);
+        });
+
+    state.withCtap2(
+        session -> {
+          Ctap2Client webauthn = new Ctap2Client(session);
+          PublicKeyCredentialRequestOptions request =
+              new PublicKeyCredentialRequestOptions(
+                  TestData.CHALLENGE, (long) 90000, rpId, null, null, null);
+          ClientError clientError =
+              assertThrows(
+                  ClientError.class,
+                  () ->
+                      webauthn.getAssertion(
+                          TestData.CLIENT_DATA_JSON_GET_PROVIDER,
+                          request,
+                          rpId,
+                          TestData.PIN,
+                          null));
+          assertThat(clientError.getCause(), instanceOf(CtapException.class));
+          assertEquals(
+              CtapException.ERR_NO_CREDENTIALS,
+              ((CtapException) clientError.getCause()).getCtapError());
+        });
   }
 }

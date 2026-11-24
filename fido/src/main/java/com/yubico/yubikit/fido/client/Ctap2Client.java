@@ -493,13 +493,7 @@ public class Ctap2Client implements WebAuthnClient {
     AuthenticatorSelectionCriteria authenticatorSelection = options.getAuthenticatorSelection();
     String userVerification =
         authenticatorSelection != null ? authenticatorSelection.getUserVerification() : null;
-    String selectionResidentKey =
-        authenticatorSelection != null
-            ? authenticatorSelection.getResidentKey()
-            : ResidentKeyRequirement.PREFERRED;
-    boolean rk =
-        ResidentKeyRequirement.REQUIRED.equals(selectionResidentKey)
-            || (ResidentKeyRequirement.PREFERRED.equals(selectionResidentKey) && rkSupported);
+    boolean rk = Utils.isResidentKey(authenticatorSelection, rkSupported);
 
     // Validate before getAuthParams (which may trigger user verification) so a required-but-
     // unsupported resident key fails fast instead of prompting for a PIN and then erroring.
@@ -1212,6 +1206,24 @@ public class Ctap2Client implements WebAuthnClient {
         }
       }
       return result;
+    }
+
+    /**
+     * Returns whether to create a discoverable credential. Without authenticatorSelection the
+     * effective requirement is requireResidentKey's default, false.
+     *
+     * @see <a
+     *     href="https://www.w3.org/TR/2026/REC-webauthn-3-20260825/#effective-resident-key-requirement-for-credential-creation">effective
+     *     resident key requirement for credential creation</a>
+     */
+    static boolean isResidentKey(
+        @Nullable AuthenticatorSelectionCriteria selection, boolean rkSupported) {
+      if (selection == null) {
+        return false;
+      }
+      String residentKey = selection.getResidentKey();
+      return ResidentKeyRequirement.REQUIRED.equals(residentKey)
+          || (ResidentKeyRequirement.PREFERRED.equals(residentKey) && rkSupported);
     }
 
     /**
