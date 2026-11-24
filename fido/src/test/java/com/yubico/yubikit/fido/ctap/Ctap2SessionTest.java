@@ -28,13 +28,16 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.yubico.yubikit.core.Version;
+import com.yubico.yubikit.core.fido.CtapException;
 import com.yubico.yubikit.core.fido.FidoProtocol;
 import com.yubico.yubikit.core.smartcard.Apdu;
 import com.yubico.yubikit.core.smartcard.ApduException;
 import com.yubico.yubikit.core.smartcard.AppId;
 import com.yubico.yubikit.core.smartcard.SmartCardProtocol;
+import com.yubico.yubikit.fido.Cbor;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -105,6 +108,41 @@ public class Ctap2SessionTest {
       assertEquals(NFCCTAP_GETRESPONSE, poll.getIns());
       assertEquals(0, poll.getData().length);
     }
+  }
+
+  @Test
+  public void makeCredentialSendsAttestationFormatsPreference() throws Exception {
+    SmartCardProtocol protocol = mock(SmartCardProtocol.class);
+    // CTAP1_ERR_INVALID_COMMAND: only the encoded request matters here
+    when(protocol.sendAndReceive(any(Apdu.class))).thenReturn(new byte[] {0x01});
+    List<String> formats = Collections.singletonList("packed");
+
+    try (Ctap2Session session =
+        new Ctap2Session(new Version(5, 7, 0), protocol, null, infoData())) {
+      session.setPollingEnabled(false);
+      assertThrows(
+          CtapException.class,
+          () ->
+              session.makeCredential(
+                  new byte[32],
+                  Collections.singletonMap("id", "example.com"),
+                  Collections.singletonMap("id", new byte[] {1}),
+                  Collections.emptyList(),
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  null,
+                  formats,
+                  null));
+    }
+
+    ArgumentCaptor<Apdu> apdus = ArgumentCaptor.forClass(Apdu.class);
+    verify(protocol).sendAndReceive(apdus.capture());
+    byte[] request = apdus.getValue().getData();
+    Map<?, ?> args = (Map<?, ?>) Cbor.decode(request, 1, request.length - 1);
+    assertEquals(formats, args.get(0x0B)); // attestationFormatsPreference
   }
 
   @Test

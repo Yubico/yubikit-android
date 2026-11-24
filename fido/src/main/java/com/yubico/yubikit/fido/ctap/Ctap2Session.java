@@ -261,10 +261,7 @@ public class Ctap2Session extends Ctap1Session {
       @Nullable Integer enterpriseAttestation,
       @Nullable CommandState state)
       throws IOException, CommandException {
-    logger.debug(
-        "makeCredential for clientDataHash={},rp={},user={},"
-            + "pubKeyCredParams={},excludeList={},extensions={},options={},"
-            + "pinUvAuthParam={},pinUvAuthProtocol={},enterpriseAttestation={},state={}",
+    return makeCredential(
         clientDataHash,
         rp,
         user,
@@ -275,6 +272,49 @@ public class Ctap2Session extends Ctap1Session {
         pinUvAuthParam,
         pinUvAuthProtocol,
         enterpriseAttestation,
+        null,
+        state);
+  }
+
+  /**
+   * Same as {@link #makeCredential(byte[], Map, Map, List, List, Map, Map, byte[], Integer,
+   * Integer, CommandState)}, with a list of preferred attestation statement formats.
+   *
+   * @param attestationFormatsPreference attestation statement format identifiers, most preferred
+   *     first
+   * @see <a
+   *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#authenticatorMakeCredential">authenticatorMakeCredential</a>
+   */
+  public CredentialData makeCredential(
+      byte[] clientDataHash,
+      Map<String, ?> rp,
+      Map<String, ?> user,
+      List<Map<String, ?>> pubKeyCredParams,
+      @Nullable List<Map<String, ?>> excludeList,
+      @Nullable Map<String, ?> extensions,
+      @Nullable Map<String, ?> options,
+      byte @Nullable [] pinUvAuthParam,
+      @Nullable Integer pinUvAuthProtocol,
+      @Nullable Integer enterpriseAttestation,
+      @Nullable List<String> attestationFormatsPreference,
+      @Nullable CommandState state)
+      throws IOException, CommandException {
+    logger.debug(
+        "makeCredential for clientDataHash={},rp={},user={},"
+            + "pubKeyCredParams={},excludeList={},extensions={},options={},"
+            + "pinUvAuthParam={},pinUvAuthProtocol={},enterpriseAttestation={},"
+            + "attestationFormatsPreference={},state={}",
+        clientDataHash,
+        rp,
+        user,
+        pubKeyCredParams,
+        excludeList,
+        extensions,
+        options,
+        pinUvAuthParam,
+        pinUvAuthProtocol,
+        enterpriseAttestation,
+        attestationFormatsPreference,
         state);
 
     final Map<Integer, ?> data =
@@ -290,7 +330,8 @@ public class Ctap2Session extends Ctap1Session {
                 options,
                 pinUvAuthParam,
                 pinUvAuthProtocol,
-                enterpriseAttestation),
+                enterpriseAttestation,
+                attestationFormatsPreference),
             state);
 
     CredentialData credentialData = CredentialData.fromData(data);

@@ -40,6 +40,7 @@ import com.yubico.yubikit.fido.ctap.CredentialManagement;
 import com.yubico.yubikit.fido.utils.ClientHelper;
 import com.yubico.yubikit.fido.utils.CreationOptionsBuilder;
 import com.yubico.yubikit.fido.utils.TestData;
+import com.yubico.yubikit.fido.webauthn.AttestationConveyancePreference;
 import com.yubico.yubikit.fido.webauthn.AuthenticatorAssertionResponse;
 import com.yubico.yubikit.fido.webauthn.AuthenticatorAttestationResponse;
 import com.yubico.yubikit.fido.webauthn.AuthenticatorSelectionCriteria;
@@ -993,6 +994,47 @@ public class Ctap2ClientTests {
           assertEquals(new ArrayList<>(new TreeSet<>(transports)), transports);
           assertEquals(
               new TreeSet<>(session.getCachedInfo().getTransports()), new TreeSet<>(transports));
+        });
+  }
+
+  /** An authenticator that reports attestation formats uses the one the RP prefers. */
+  @SuppressWarnings("unchecked")
+  public static void testMakeCredentialAttestationFormats(FidoTestState state) throws Throwable {
+    state.withCtap2(
+        session -> {
+          List<String> formats = session.getCachedInfo().getAttestationFormats();
+          assumeFalse("Authenticator does not report attestation formats", formats.isEmpty());
+          String preferred = formats.get(formats.size() - 1);
+
+          Ctap2Client webauthn = new Ctap2Client(session);
+          PublicKeyCredentialCreationOptions options =
+              new PublicKeyCredentialCreationOptions(
+                  TestData.RP,
+                  TestData.USER,
+                  TestData.CHALLENGE,
+                  Collections.singletonList(TestData.PUB_KEY_CRED_PARAMS_ES256),
+                  (long) 90000,
+                  null,
+                  new AuthenticatorSelectionCriteria(
+                      null, ResidentKeyRequirement.DISCOURAGED, null),
+                  AttestationConveyancePreference.DIRECT,
+                  null,
+                  null,
+                  Collections.singletonList(preferred));
+          PublicKeyCredential credential =
+              webauthn.makeCredential(
+                  TestData.CLIENT_DATA_JSON_CREATE_PROVIDER,
+                  options,
+                  TestData.RP_ID,
+                  TestData.PIN,
+                  null,
+                  null);
+          Map<String, ?> attestationObject =
+              (Map<String, ?>)
+                  Cbor.decode(
+                      ((AuthenticatorAttestationResponse) credential.getResponse())
+                          .getAttestationObject());
+          assertEquals(preferred, attestationObject.get("fmt"));
         });
   }
 }

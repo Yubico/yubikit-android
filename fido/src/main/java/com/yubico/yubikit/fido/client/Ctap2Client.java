@@ -583,6 +583,7 @@ public class Ctap2Client implements WebAuthnClient {
             pinUvAuthParam,
             pinUvAuthProtocolVersion,
             validatedEnterpriseAttestation,
+            Utils.attestationFormatsPreference(options, ctap.getCachedInfo()),
             state);
 
     ClientExtensionResults clientExtensionResults = new ClientExtensionResults();
@@ -1211,6 +1212,20 @@ public class Ctap2Client implements WebAuthnClient {
         }
       }
       return result;
+    }
+
+    /**
+     * Returns the RP's attestation statement formats to send as attestationFormatsPreference, or
+     * null if there are none or the authenticator does not report its supported formats.
+     *
+     * @see <a
+     *     href="https://www.w3.org/TR/2026/REC-webauthn-3-20260825/#dom-publickeycredentialcreationoptions-attestationformats">attestationFormats</a>
+     */
+    @Nullable
+    static List<String> attestationFormatsPreference(
+        PublicKeyCredentialCreationOptions options, Ctap2Session.InfoData info) {
+      List<String> formats = options.getAttestationFormats();
+      return formats.isEmpty() || info.getAttestationFormats().isEmpty() ? null : formats;
     }
 
     /**

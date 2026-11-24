@@ -42,8 +42,11 @@ import com.yubico.yubikit.core.fido.CtapException;
 import com.yubico.yubikit.core.util.RandomUtils;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
+import com.yubico.yubikit.fido.webauthn.AttestationConveyancePreference;
 import com.yubico.yubikit.fido.webauthn.AuthenticatorSelectionCriteria;
+import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialCreationOptions;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialDescriptor;
+import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialRpEntity;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialUserEntity;
 import com.yubico.yubikit.fido.webauthn.ResidentKeyRequirement;
 import java.nio.charset.StandardCharsets;
@@ -780,6 +783,38 @@ public class Ctap2ClientUtilsTest {
 
     private static AuthenticatorSelectionCriteria selection(String residentKey) {
       return new AuthenticatorSelectionCriteria(null, residentKey, null);
+    }
+
+    @Test
+    public void testAttestationFormatsPreference() {
+      List<String> packed = Collections.singletonList("packed");
+      Ctap2Session.InfoData reportsFormats = mock(Ctap2Session.InfoData.class);
+      when(reportsFormats.getAttestationFormats()).thenReturn(packed);
+      Ctap2Session.InfoData reportsNone = mock(Ctap2Session.InfoData.class);
+      when(reportsNone.getAttestationFormats()).thenReturn(Collections.emptyList());
+
+      assertEquals(
+          packed,
+          Ctap2Client.Utils.attestationFormatsPreference(withFormats(packed), reportsFormats));
+      assertNull(Ctap2Client.Utils.attestationFormatsPreference(withFormats(packed), reportsNone));
+      assertNull(
+          Ctap2Client.Utils.attestationFormatsPreference(
+              withFormats(Collections.emptyList()), reportsFormats));
+    }
+
+    private static PublicKeyCredentialCreationOptions withFormats(List<String> formats) {
+      return new PublicKeyCredentialCreationOptions(
+          new PublicKeyCredentialRpEntity("Example", "example.com"),
+          new PublicKeyCredentialUserEntity("user", new byte[] {1}, "A User"),
+          new byte[32],
+          Collections.emptyList(),
+          null,
+          null,
+          null,
+          AttestationConveyancePreference.DIRECT,
+          null,
+          null,
+          formats);
     }
   }
 }
