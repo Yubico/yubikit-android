@@ -24,6 +24,7 @@ import com.yubico.yubikit.fido.webauthn.PublicKeyCredential;
 import com.yubico.yubikit.fido.webauthn.SerializationType;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import org.jspecify.annotations.Nullable;
 import org.junit.Assert;
