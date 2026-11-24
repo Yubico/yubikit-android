@@ -1,9 +1,12 @@
-* Version 3.3.1 (unreleased)
+* Next version (unreleased)
  ** fixes & improvements:
-  - fido: MultipleAssertionsAvailable.getUsers() and CredentialManager.getCredentials()
-          accept user entities without name or displayName, which CTAP leaves optional;
-          displayName falls back to name instead of throwing NullPointerException
-  - fido-ui: the account picker shows an error instead of "0 available" when user
+  - fido: PublicKeyCredentialUserEntity.fromMap() accepts a missing name or displayName,
+          which CTAP leaves optional, and returns it as an empty string instead of
+          throwing; PublicKeyCredentialCreationOptions.fromMap() still requires both
+  - fido: makeCredential no longer sends an empty user name or displayName to the
+          authenticator, which some keys rejected with INVALID_LENGTH
+  - fido-ui: the account picker labels a passkey by name, then displayName, then
+             "Passkey N", and shows an error instead of "0 available" when user
              information cannot be read
 * Version 3.3.0 (released 2026-10-29)
  ** new:

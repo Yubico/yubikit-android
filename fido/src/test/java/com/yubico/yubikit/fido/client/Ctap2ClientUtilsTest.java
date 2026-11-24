@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2024-2025 Yubico.
+ * Copyright (C) 2024-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,6 +42,7 @@ import com.yubico.yubikit.core.util.RandomUtils;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
 import com.yubico.yubikit.fido.ctap.PinUvAuthProtocol;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialDescriptor;
+import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialUserEntity;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -496,6 +497,19 @@ public class Ctap2ClientUtilsTest {
       result = Ctap2Client.Utils.preprocessCredentialList(descriptors, 128);
 
       assertTrue(result.isEmpty());
+    }
+
+    @Test
+    public void testUserForCtapOmitsEmptyNames() {
+      byte[] id = credId(16);
+
+      Map<String, ?> user =
+          Ctap2Client.Utils.userForCtap(new PublicKeyCredentialUserEntity("", id, ""));
+      assertEquals(Collections.singleton(PublicKeyCredentialUserEntity.ID), user.keySet());
+
+      user = Ctap2Client.Utils.userForCtap(new PublicKeyCredentialUserEntity("alice", id, "Alice"));
+      assertEquals("alice", user.get(PublicKeyCredentialUserEntity.NAME));
+      assertEquals("Alice", user.get(PublicKeyCredentialUserEntity.DISPLAY_NAME));
     }
 
     @Test

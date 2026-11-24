@@ -25,13 +25,10 @@ import com.yubico.yubikit.core.smartcard.scp.ScpKeyParams;
 import com.yubico.yubikit.fido.client.extensions.Extension;
 import com.yubico.yubikit.fido.ctap.Ctap1Session;
 import com.yubico.yubikit.fido.ctap.Ctap2Session;
-import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialUserEntity;
 import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -114,33 +111,5 @@ public class Utils {
               + connection.getClass().getName()
               + ". Expected FidoConnection or SmartCardConnection.");
     }
-  }
-
-  /**
-   * Builds a user entity from a {@code user} map returned by the authenticator, either in an
-   * authenticatorGetAssertion response or by credential management enumeration.
-   *
-   * <p>CTAP 2.1 only guarantees {@code id} here: authenticators omit {@code name} and {@code
-   * displayName} when they were empty at registration or are not stored at all (some authenticators
-   * never return {@code displayName}). Missing values are therefore not an error; {@code name}
-   * defaults to the empty string and {@code displayName} falls back to {@code name}, so callers
-   * always have something to show in an account picker or credential list.
-   *
-   * <p>Do not use this for RP-supplied user entities (e.g. in creation options), where {@code name}
-   * and {@code displayName} are mandatory; use {@link PublicKeyCredentialUserEntity#fromMap}.
-   */
-  static PublicKeyCredentialUserEntity userEntityFromCtap(Map<String, ?> user) {
-    byte[] id =
-        Objects.requireNonNull(
-            (byte[]) user.get(PublicKeyCredentialUserEntity.ID),
-            "user.id missing in authenticator response");
-    Object nameValue = user.get(PublicKeyCredentialUserEntity.NAME);
-    String name = nameValue instanceof String ? (String) nameValue : "";
-    Object displayNameValue = user.get(PublicKeyCredentialUserEntity.DISPLAY_NAME);
-    String displayName =
-        displayNameValue instanceof String && !((String) displayNameValue).isEmpty()
-            ? (String) displayNameValue
-            : name;
-    return new PublicKeyCredentialUserEntity(name, id, displayName);
   }
 }

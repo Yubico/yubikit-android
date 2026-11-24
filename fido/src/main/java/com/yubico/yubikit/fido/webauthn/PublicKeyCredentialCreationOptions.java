@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2025 Yubico.
+ * Copyright (C) 2020-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -160,11 +160,17 @@ public class PublicKeyCredentialCreationOptions {
     Map<String, ?> authenticatorSelection = (Map<String, ?>) map.get(AUTHENTICATOR_SELECTION);
     Number timeout = (Number) map.get(TIMEOUT);
 
+    // WebAuthn requires name and displayName here (they may be empty strings), unlike CTAP
+    Map<String, ?> user = Objects.requireNonNull((Map<String, ?>) map.get(USER));
+    if (!user.containsKey(PublicKeyCredentialEntity.NAME)
+        || !user.containsKey(PublicKeyCredentialUserEntity.DISPLAY_NAME)) {
+      throw new IllegalArgumentException("user.name and user.displayName are required");
+    }
+
     return new PublicKeyCredentialCreationOptions(
         PublicKeyCredentialRpEntity.fromMap(
             Objects.requireNonNull((Map<String, ?>) map.get(RP)), serializationType),
-        PublicKeyCredentialUserEntity.fromMap(
-            Objects.requireNonNull((Map<String, ?>) map.get(USER)), serializationType),
+        PublicKeyCredentialUserEntity.fromMap(user, serializationType),
         deserializeBytes(Objects.requireNonNull(map.get(CHALLENGE)), serializationType),
         pubKeyCredParams,
         timeout == null ? null : timeout.longValue(),
