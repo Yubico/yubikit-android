@@ -63,6 +63,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.TreeSet;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -967,6 +968,31 @@ public class Ctap2ClientTests {
           assertEquals(
               CtapException.ERR_NO_CREDENTIALS,
               ((CtapException) clientError.getCause()).getCtapError());
+        });
+  }
+
+  /** The response lists the authenticator's transports once each, in lexicographical order. */
+  public static void testMakeCredentialTransportsAreSortedAndUnique(FidoTestState state)
+      throws Throwable {
+    state.withCtap2(
+        session -> {
+          Ctap2Client webauthn = new Ctap2Client(session);
+          PublicKeyCredentialCreationOptions options =
+              getCreateOptions(
+                  null, false, Collections.singletonList(TestData.PUB_KEY_CRED_PARAMS_ES256), null);
+          PublicKeyCredential credential =
+              webauthn.makeCredential(
+                  TestData.CLIENT_DATA_JSON_CREATE_PROVIDER,
+                  options,
+                  TestData.RP_ID,
+                  TestData.PIN,
+                  null,
+                  null);
+          List<String> transports =
+              ((AuthenticatorAttestationResponse) credential.getResponse()).getTransports();
+          assertEquals(new ArrayList<>(new TreeSet<>(transports)), transports);
+          assertEquals(
+              new TreeSet<>(session.getCachedInfo().getTransports()), new TreeSet<>(transports));
         });
   }
 }

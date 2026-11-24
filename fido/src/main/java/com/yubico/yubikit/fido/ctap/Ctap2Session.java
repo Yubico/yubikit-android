@@ -807,6 +807,19 @@ public class Ctap2Session extends Ctap1Session {
       return result;
     }
 
+    /** Returns the text string entries of a CBOR array, dropping entries of any other type. */
+    private static List<String> toStringList(@Nullable Object values) {
+      List<String> result = new ArrayList<>();
+      if (values instanceof List) {
+        for (Object value : (List<?>) values) {
+          if (value instanceof String) {
+            result.add((String) value);
+          }
+        }
+      }
+      return result;
+    }
+
     @SuppressWarnings("unchecked")
     private static InfoData fromData(Map<Integer, ?> data) {
       return new InfoData(
@@ -824,9 +837,7 @@ public class Ctap2Session extends Ctap1Session {
               : Collections.emptyList(),
           (Integer) data.get(RESULT_MAX_CREDS_IN_LIST),
           (Integer) data.get(RESULT_MAX_CRED_ID_LENGTH),
-          data.containsKey(RESULT_TRANSPORTS)
-              ? (List<String>) data.get(RESULT_TRANSPORTS)
-              : Collections.emptyList(),
+          toStringList(data.get(RESULT_TRANSPORTS)),
           data.containsKey(RESULT_ALGORITHMS)
               ? (List<PublicKeyCredentialParameters>) data.get(RESULT_ALGORITHMS)
               : Collections.emptyList(),
@@ -861,9 +872,7 @@ public class Ctap2Session extends Ctap1Session {
               ? (Boolean) data.get(RESULT_LONG_TOUCH_FOR_RESET)
               : false,
           (byte[]) data.get(RESULT_ENC_IDENTIFIER),
-          data.containsKey(RESULT_TRANSPORTS_FOR_RESET)
-              ? (List<String>) data.get(RESULT_TRANSPORTS_FOR_RESET)
-              : Collections.emptyList(),
+          toStringList(data.get(RESULT_TRANSPORTS_FOR_RESET)),
           (Boolean) data.get(RESULT_PIN_COMPLEXITY_POLICY),
           (byte[]) data.get(RESULT_PIN_COMPLEXITY_POLICY_URL),
           data.containsKey(RESULT_MAX_PIN_LENGTH) ? (Integer) data.get(RESULT_MAX_PIN_LENGTH) : 63,

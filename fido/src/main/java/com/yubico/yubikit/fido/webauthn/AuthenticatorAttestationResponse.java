@@ -25,11 +25,13 @@ import java.nio.ByteBuffer;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.TreeSet;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,7 +60,7 @@ public class AuthenticatorAttestationResponse extends AuthenticatorResponse {
       int publicKeyAlgorithm,
       byte[] attestationObject) {
     super(clientDataJson);
-    this.transports = transports;
+    this.transports = sortedUnique(transports);
     this.attestationObject = attestationObject;
 
     this.authenticatorData = authenticatorData;
@@ -70,7 +72,7 @@ public class AuthenticatorAttestationResponse extends AuthenticatorResponse {
       byte[] clientDataJson, List<String> transports, AttestationObject attestationObject) {
     super(clientDataJson);
     this.authenticatorData = attestationObject.getAuthenticatorData();
-    this.transports = transports;
+    this.transports = sortedUnique(transports);
     this.attestationObject = attestationObject.toBytes();
 
     if (!authenticatorData.isAt()) {
@@ -105,8 +107,19 @@ public class AuthenticatorAttestationResponse extends AuthenticatorResponse {
     return authenticatorData;
   }
 
+  /**
+   * Returns the transports the authenticator is believed to support, unique and in lexicographical
+   * order.
+   *
+   * @see <a
+   *     href="https://www.w3.org/TR/2026/REC-webauthn-3-20260825/#dom-authenticatorattestationresponse-transports-slot">[[transports]]</a>
+   */
   public List<String> getTransports() {
     return transports;
+  }
+
+  private static List<String> sortedUnique(List<String> transports) {
+    return new ArrayList<>(new TreeSet<>(transports));
   }
 
   @SuppressWarnings("unused")

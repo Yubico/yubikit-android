@@ -53,6 +53,11 @@ public class Ctap2ClientInstrumentedTests {
     }
 
     @Test
+    public void testMakeCredentialTransportsAreSortedAndUnique() throws Throwable {
+      withDevice(Ctap2ClientTests::testMakeCredentialTransportsAreSortedAndUnique);
+    }
+
+    @Test
     public void testMakeCredentialWithoutAuthenticatorSelection() throws Throwable {
       withDevice(Ctap2ClientTests::testMakeCredentialWithoutAuthenticatorSelection);
     }

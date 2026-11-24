@@ -92,6 +92,15 @@ public class ConfigTest {
   }
 
   @Test
+  public void getInfoKeepsOnlyTextTransports() throws Exception {
+    // 0x09 transports and 0x1A transportsForReset: ["usb", 1, null, "nfc"]
+    String transports = "84" + "63757362" + "01" + "f6" + "636e6663";
+    Ctap2Session session = session(info("09" + transports + "181a" + transports, 2));
+    assertEquals(Arrays.asList("usb", "nfc"), session.getCachedInfo().getTransports());
+    assertEquals(Arrays.asList("usb", "nfc"), session.getCachedInfo().getTransportsForReset());
+  }
+
+  @Test
   @SuppressWarnings("deprecation")
   public void deprecatedVendorCommandsReturnIdsThatFitInInt() throws Exception {
     Ctap2Session session = session(info("15" + "81" + "05", 1));

@@ -369,7 +369,7 @@ public class SerializationTest {
     random.nextBytes(attestationObject);
     byte[] clientDataJson = new byte[64 + random.nextInt(64)];
     random.nextBytes(clientDataJson);
-    List<String> transports = Arrays.asList("nfc", "usb");
+    List<String> transports = Arrays.asList("usb", "nfc", "usb");
 
     @SuppressWarnings("SpellCheckingInspection")
     AuthenticatorData authenticatorData =
@@ -388,6 +388,8 @@ public class SerializationTest {
   @Test
   public void testAttestationResponse() {
     AuthenticatorAttestationResponse response = randomAuthenticatorAttestationResponse();
+    // transports are unique and in lexicographical order
+    Assert.assertEquals(Arrays.asList("nfc", "usb"), response.getTransports());
     Assert.assertEquals(
         response,
         AuthenticatorAttestationResponse.fromMap(
