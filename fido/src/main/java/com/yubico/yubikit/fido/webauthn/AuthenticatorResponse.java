@@ -18,6 +18,10 @@ package com.yubico.yubikit.fido.webauthn;
 
 import java.util.Map;
 
+/**
+ * @see <a
+ *     href="https://www.w3.org/TR/2026/REC-webauthn-3-20260825/#iface-authenticatorresponse">AuthenticatorResponse</a>
+ */
 public abstract class AuthenticatorResponse {
   static final String CLIENT_DATA_JSON = "clientDataJSON";
 

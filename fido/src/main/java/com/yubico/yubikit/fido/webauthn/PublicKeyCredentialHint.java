@@ -21,7 +21,8 @@ package com.yubico.yubikit.fido.webauthn;
  *
  * <p>Hints are advisory: a client may ignore them, and must ignore values it does not recognize.
  *
- * @see <a href="https://www.w3.org/TR/webauthn-3/#enum-hints">PublicKeyCredentialHint</a>
+ * @see <a
+ *     href="https://www.w3.org/TR/2026/REC-webauthn-3-20260825/#enum-hints">PublicKeyCredentialHint</a>
  */
 @SuppressWarnings("unused")
 public class PublicKeyCredentialHint {

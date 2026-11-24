@@ -36,6 +36,10 @@ import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * @see <a
+ *     href="https://www.w3.org/TR/2026/REC-webauthn-3-20260825/#iface-authenticatorattestationresponse">AuthenticatorAttestationResponse</a>
+ */
 public class AuthenticatorAttestationResponse extends AuthenticatorResponse {
   public static final String ATTESTATION_OBJECT = "attestationObject";
   public static final String TRANSPORTS = "transports";

@@ -27,6 +27,10 @@ import java.util.Map;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 
+/**
+ * @see <a
+ *     href="https://www.w3.org/TR/2026/REC-webauthn-3-20260825/#dictdef-publickeycredentialcreationoptions">PublicKeyCredentialCreationOptions</a>
+ */
 public class PublicKeyCredentialCreationOptions {
   private static final String RP = "rp";
   private static final String USER = "user";

@@ -21,6 +21,10 @@ import java.util.Map;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 
+/**
+ * @see <a
+ *     href="https://www.w3.org/TR/2026/REC-webauthn-3-20260825/#dictdef-authenticatorselectioncriteria">AuthenticatorSelectionCriteria</a>
+ */
 public class AuthenticatorSelectionCriteria {
   private static final String AUTHENTICATOR_ATTACHMENT = "authenticatorAttachment";
   private static final String RESIDENT_KEY = "residentKey";

@@ -968,7 +968,7 @@ public class Ctap2Session extends Ctap1Session {
      *
      * @return list of supported transports
      * @see <a
-     *     href="https://www.w3.org/TR/webauthn/#enumdef-authenticatortransport">AuthenticatorTransport
+     *     href="https://www.w3.org/TR/2026/REC-webauthn-3-20260825/#enumdef-authenticatortransport">AuthenticatorTransport
      *     enum</a>
      */
     public List<String> getTransports() {
@@ -1216,7 +1216,8 @@ public class Ctap2Session extends Ctap1Session {
      *     for reset</a>
      * @see <a
      *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#authenticatorReset">authenticatorReset</a>
-     * @see <a href="https://www.w3.org/TR/webauthn/#enumdef-authenticatortransport">WebAuthn
+     * @see <a
+     *     href="https://www.w3.org/TR/2026/REC-webauthn-3-20260825/#enumdef-authenticatortransport">WebAuthn
      *     Authenticator Transport Enumeration</a>
      */
     public List<String> getTransportsForReset() {
@@ -1432,7 +1433,8 @@ public class Ctap2Session extends Ctap1Session {
      * The AuthenticatorData object.
      *
      * @return the AuthenticatorData
-     * @see <a href="https://www.w3.org/TR/webauthn/#authenticator-data">authenticator-data</a>
+     * @see <a
+     *     href="https://www.w3.org/TR/2026/REC-webauthn-3-20260825/#authenticator-data">authenticator-data</a>
      */
     public byte[] getAuthenticatorData() {
       return authenticatorData;
@@ -1575,7 +1577,8 @@ public class Ctap2Session extends Ctap1Session {
      * The AuthenticatorData object.
      *
      * @return the AuthenticatorData
-     * @see <a href="https://www.w3.org/TR/webauthn/#authenticator-data">authenticator-data</a>
+     * @see <a
+     *     href="https://www.w3.org/TR/2026/REC-webauthn-3-20260825/#authenticator-data">authenticator-data</a>
      */
     public byte[] getAuthenticatorData() {
       return authenticatorData;

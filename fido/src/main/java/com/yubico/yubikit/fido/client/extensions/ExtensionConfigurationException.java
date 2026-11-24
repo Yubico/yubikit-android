@@ -40,7 +40,8 @@ import com.yubico.yubikit.fido.client.ClientError;
  * interfaces do not declare checked exceptions) without changing the {@link Extension} API.
  *
  * @see ExtensionNotSupportedException
- * @see <a href="https://www.w3.org/TR/webauthn-3/#sctn-extensions">WebAuthn Extensions</a>
+ * @see <a href="https://www.w3.org/TR/2026/REC-webauthn-3-20260825/#sctn-extensions">WebAuthn
+ *     Extensions</a>
  */
 public class ExtensionConfigurationException extends RuntimeException {
   private static final long serialVersionUID = 1L;

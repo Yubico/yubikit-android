@@ -42,7 +42,8 @@ import org.jspecify.annotations.Nullable;
  * that the deferred output providers returned by {@code getOutput} run outside that handler during
  * serialization and MUST NOT throw.
  *
- * @see <a href="https://www.w3.org/TR/webauthn-3/#sctn-extensions">WebAuthn Extensions</a>
+ * @see <a href="https://www.w3.org/TR/2026/REC-webauthn-3-20260825/#sctn-extensions">WebAuthn
+ *     Extensions</a>
  */
 public abstract class Extension {
   protected final String name;

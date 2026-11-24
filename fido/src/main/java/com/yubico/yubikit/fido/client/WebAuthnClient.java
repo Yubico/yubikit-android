@@ -38,7 +38,7 @@ import org.jspecify.annotations.Nullable;
  * CTAP2/WebAuthn). Use {@link #create(YubiKeyDevice, List)} or {@link #create(YubiKeyConnection,
  * List, ScpKeyParams)} to obtain the correct implementation for a given session.
  *
- * @see <a href="https://www.w3.org/TR/webauthn-3/">WebAuthn</a>
+ * @see <a href="https://www.w3.org/TR/2026/REC-webauthn-3-20260825/">WebAuthn</a>
  * @see Ctap1Client
  * @see Ctap2Client
  */

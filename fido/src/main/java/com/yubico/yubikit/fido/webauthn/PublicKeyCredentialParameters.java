@@ -22,6 +22,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
+/**
+ * @see <a
+ *     href="https://www.w3.org/TR/2026/REC-webauthn-3-20260825/#dictdef-publickeycredentialparameters">PublicKeyCredentialParameters</a>
+ */
 public class PublicKeyCredentialParameters {
   private static final String TYPE = "type";
   private static final String ALG = "alg";

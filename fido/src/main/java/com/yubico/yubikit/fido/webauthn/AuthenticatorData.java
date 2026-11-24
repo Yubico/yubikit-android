@@ -27,8 +27,9 @@ import org.jspecify.annotations.Nullable;
 /**
  * Webauthn AuthenticatorData class
  *
- * @see <a href="https://www.w3.org/TR/webauthn-3/#sctn-authenticator-data">WebAuthn Authenticator
- *     Data</a>
+ * @see <a
+ *     href="https://www.w3.org/TR/2026/REC-webauthn-3-20260825/#sctn-authenticator-data">WebAuthn
+ *     Authenticator Data</a>
  */
 public class AuthenticatorData {
   @SuppressWarnings("unused")

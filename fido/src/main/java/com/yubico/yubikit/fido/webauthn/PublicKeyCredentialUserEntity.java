@@ -24,6 +24,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
+/**
+ * @see <a
+ *     href="https://www.w3.org/TR/2026/REC-webauthn-3-20260825/#dictdef-publickeycredentialuserentity">PublicKeyCredentialUserEntity</a>
+ */
 public class PublicKeyCredentialUserEntity extends PublicKeyCredentialEntity {
   public static final String ID = "id";
   public static final String DISPLAY_NAME = "displayName";

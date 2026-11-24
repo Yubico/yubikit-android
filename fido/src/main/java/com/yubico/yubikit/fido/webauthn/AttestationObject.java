@@ -28,7 +28,8 @@ import org.jspecify.annotations.Nullable;
 /**
  * Webauthn AttestationObject which exposes attestation authenticator data.
  *
- * @see <a href="https://www.w3.org/TR/webauthn-3/#sctn-attestation">WebAuthn Attestation</a>
+ * @see <a href="https://www.w3.org/TR/2026/REC-webauthn-3-20260825/#sctn-attestation">WebAuthn
+ *     Attestation</a>
  */
 public class AttestationObject {
   public static final String KEY_FORMAT = "fmt";
