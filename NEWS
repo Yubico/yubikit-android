@@ -5,6 +5,7 @@
           throwing; PublicKeyCredentialCreationOptions.fromMap() still requires both
   - fido: makeCredential no longer sends an empty user name or displayName to the
           authenticator, which some keys rejected with INVALID_LENGTH
+  - fido: no longer depends on Moshi
   - fido-ui: the account picker labels a passkey by name, then displayName, then
              "Passkey N", and shows an error instead of "0 available" when user
              information cannot be read
