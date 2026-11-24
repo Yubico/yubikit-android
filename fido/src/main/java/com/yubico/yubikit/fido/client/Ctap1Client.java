@@ -86,6 +86,7 @@ public class Ctap1Client implements WebAuthnClient {
         throw new ClientError(
             ClientError.Code.BAD_REQUEST, "RP ID is not valid for effective domain");
       }
+      Utils.checkUserId(options);
 
       // Check for unsupported features
       if (options.getAuthenticatorSelection() != null) {

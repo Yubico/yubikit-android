@@ -18,6 +18,7 @@ package com.yubico.yubikit.fido.client;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThrows;
 
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialCreationOptions;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialParameters;
@@ -32,9 +33,14 @@ public class UtilsTest {
 
   private static PublicKeyCredentialCreationOptions options(
       List<PublicKeyCredentialParameters> params) {
+    return options(new byte[] {1}, params);
+  }
+
+  private static PublicKeyCredentialCreationOptions options(
+      byte[] userId, List<PublicKeyCredentialParameters> params) {
     return new PublicKeyCredentialCreationOptions(
         new PublicKeyCredentialRpEntity("Example", "example.com"),
-        new PublicKeyCredentialUserEntity("user", new byte[] {1}, "A User"),
+        new PublicKeyCredentialUserEntity("user", userId, "A User"),
         new byte[32],
         params,
         null,
@@ -63,5 +69,15 @@ public class UtilsTest {
             new PublicKeyCredentialParameters(PublicKeyCredentialType.PUBLIC_KEY, -8));
 
     assertSame(requested, Utils.getPubKeyCredParams(options(requested)));
+  }
+
+  @Test
+  public void userIdMustBe1To64Bytes() throws ClientError {
+    Utils.checkUserId(options(new byte[1], Collections.emptyList()));
+    Utils.checkUserId(options(new byte[64], Collections.emptyList()));
+    assertThrows(
+        ClientError.class, () -> Utils.checkUserId(options(new byte[0], Collections.emptyList())));
+    assertThrows(
+        ClientError.class, () -> Utils.checkUserId(options(new byte[65], Collections.emptyList())));
   }
 }

@@ -18,6 +18,7 @@
           requires, instead of being sent empty or rejected over CTAP1
   - fido: without authenticatorSelection, makeCredential creates a non-discoverable
           credential, as WebAuthn requires, instead of a discoverable one
+  - fido: makeCredential rejects a user id that is not 1 to 64 bytes long
 * Version 3.3.0 (released 2026-10-29)
  ** new:
   - core: PublicKeyValues and PrivateKeyValues variants for the additional key types

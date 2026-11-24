@@ -47,6 +47,19 @@ public class Utils {
   private Utils() {}
 
   /**
+   * Rejects a user id that is not 1 to 64 bytes long, as WebAuthn requires.
+   *
+   * @see <a href="https://www.w3.org/TR/2026/REC-webauthn-3-20260825/#sctn-createCredential">Create
+   *     a New Credential</a>
+   */
+  static void checkUserId(PublicKeyCredentialCreationOptions options) throws ClientError {
+    int length = options.getUser().getId().length;
+    if (length < 1 || length > 64) {
+      throw new ClientError(ClientError.Code.BAD_REQUEST, "user.id must be 1 to 64 bytes long");
+    }
+  }
+
+  /**
    * Returns the credential parameters to request, defaulting to ES256 and RS256 when the RP passed
    * an empty list, as WebAuthn requires.
    */

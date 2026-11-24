@@ -470,6 +470,7 @@ public class Ctap2Client implements WebAuthnClient {
       throw new ClientError(
           ClientError.Code.BAD_REQUEST, "RP ID is not valid for effective domain");
     }
+    com.yubico.yubikit.fido.client.Utils.checkUserId(options);
 
     final List<PublicKeyCredentialDescriptor> excludeCredentials = options.getExcludeCredentials();
 
