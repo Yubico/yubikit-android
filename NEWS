@@ -10,6 +10,8 @@
   - core: over USB, the CTAPHID keepalive status and error code are read from the
           data byte instead of the length field, so a key waiting for touch is reported
           and errors show their real code
+  - core: CTAPHID ignores packets for other channels instead of failing, and rejects a
+          truncated INIT response with an IOException
   - fido: PublicKeyCredentialUserEntity.fromMap() accepts a missing name or displayName,
           which CTAP leaves optional, and returns it as an empty string instead of
           throwing; PublicKeyCredentialCreationOptions.fromMap() still requires both
