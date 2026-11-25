@@ -43,6 +43,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
+import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.StandardCharsets;
@@ -689,8 +690,8 @@ public class PivSession extends ApplicationSession<PivSession> {
    * Reads metadata specific to YubiKey Bio multi-protocol.
    *
    * @return metadata about a slot
-   * @throws IOException in case of connection error, or if the response is missing the retries
-   *     (caused by a {@link BadResponseException})
+   * @throws IOException in case of connection error, or if the response is malformed (caused by a
+   *     {@link BadResponseException})
    * @throws ApduException in case of an error response from the YubiKey
    * @throws UnsupportedOperationException in case the metadata cannot be retrieved
    */
@@ -698,13 +699,9 @@ public class PivSession extends ApplicationSession<PivSession> {
     logger.debug("Getting bio metadata");
     try {
       Map<Integer, byte[]> data =
-          Tlvs.decodeMap(
+          decodeMetadata(
               protocol.sendAndReceive(new Apdu(0, INS_GET_METADATA, 0, SLOT_OCC_AUTH, null)));
-      byte[] retries = data.get(TAG_METADATA_RETRIES);
-      if (retries == null || retries.length < 1) {
-        // Wrapped in IOException to keep the signature, as SmartCardProtocol does
-        throw new IOException(new BadResponseException("Bio metadata is missing the retries"));
-      }
+      byte[] retries = requireMetadata(data, TAG_METADATA_RETRIES, 1, "retries");
       // A missing flag reads as false, as in yubikit (Rust)
       return new BioMetadata(
           isFlagSet(data.get(TAG_METADATA_BIO_CONFIGURED)),
@@ -722,6 +719,33 @@ public class PivSession extends ApplicationSession<PivSession> {
 
   private static boolean isFlagSet(byte @Nullable [] value) {
     return value != null && value.length > 0 && value[0] == 1;
+  }
+
+  /** Decodes a GET METADATA response, reporting malformed TLVs as a bad response. */
+  private static Map<Integer, byte[]> decodeMetadata(byte[] response) throws IOException {
+    try {
+      return Tlvs.decodeMap(response);
+    } catch (BufferUnderflowException | IllegalArgumentException e) {
+      throw badMetadata("Malformed metadata", e);
+    }
+  }
+
+  /** Returns the value of a metadata tag, which must be present with at least minLength bytes. */
+  private static byte[] requireMetadata(
+      Map<Integer, byte[]> data, int tag, int minLength, String name) throws IOException {
+    byte[] value = data.get(tag);
+    if (value == null || value.length < minLength) {
+      throw badMetadata("Metadata is missing the " + name, null);
+    }
+    return value;
+  }
+
+  private static IOException badMetadata(String message, @Nullable Exception cause) {
+    // Wrapped in IOException to keep the signatures, as SmartCardProtocol does
+    return new IOException(
+        cause == null
+            ? new BadResponseException(message)
+            : new BadResponseException(message, cause));
   }
 
   /**
@@ -931,7 +955,8 @@ public class PivSession extends ApplicationSession<PivSession> {
    * or later.
    *
    * @return metadata about the PIN
-   * @throws IOException in case of connection error
+   * @throws IOException in case of connection error, or if the response is malformed (caused by a
+   *     {@link BadResponseException})
    * @throws ApduException in case of an error response from the YubiKey
    */
   public PinMetadata getPinMetadata() throws IOException, ApduException {
@@ -947,7 +972,8 @@ public class PivSession extends ApplicationSession<PivSession> {
    * or later.
    *
    * @return metadata about the PUK
-   * @throws IOException in case of connection error
+   * @throws IOException in case of connection error, or if the response is malformed (caused by a
+   *     {@link BadResponseException})
    * @throws ApduException in case of an error response from the YubiKey
    */
   public PinMetadata getPukMetadata() throws IOException, ApduException {
@@ -958,10 +984,10 @@ public class PivSession extends ApplicationSession<PivSession> {
   private PinMetadata getPinPukMetadata(byte p2) throws IOException, ApduException {
     require(FEATURE_METADATA);
     Map<Integer, byte[]> data =
-        Tlvs.decodeMap(protocol.sendAndReceive(new Apdu(0, INS_GET_METADATA, 0, p2, null)));
-    byte[] retries = data.get(TAG_METADATA_RETRIES);
+        decodeMetadata(protocol.sendAndReceive(new Apdu(0, INS_GET_METADATA, 0, p2, null)));
+    byte[] retries = requireMetadata(data, TAG_METADATA_RETRIES, 2, "retries");
     return new PinMetadata(
-        data.get(TAG_METADATA_IS_DEFAULT)[0] != 0,
+        requireMetadata(data, TAG_METADATA_IS_DEFAULT, 1, "default flag")[0] != 0,
         retries[INDEX_RETRIES_TOTAL],
         retries[INDEX_RETRIES_REMAINING]);
   }
@@ -974,21 +1000,29 @@ public class PivSession extends ApplicationSession<PivSession> {
    *
    * @return metadata about the card management key, such as the Touch policy and if the default
    *     value has been changed
-   * @throws IOException in case of connection error
+   * @throws IOException in case of connection error, or if the response is malformed (caused by a
+   *     {@link BadResponseException})
    * @throws ApduException in case of an error response from the YubiKey
    */
   public ManagementKeyMetadata getManagementKeyMetadata() throws IOException, ApduException {
     logger.debug("Getting management key metadata");
     require(FEATURE_METADATA);
     Map<Integer, byte[]> data =
-        Tlvs.decodeMap(
+        decodeMetadata(
             protocol.sendAndReceive(new Apdu(0, INS_GET_METADATA, 0, SLOT_CARD_MANAGEMENT, null)));
-    return new ManagementKeyMetadata(
-        data.containsKey(TAG_METADATA_ALGO)
-            ? ManagementKeyType.fromValue(data.get(TAG_METADATA_ALGO)[0])
-            : ManagementKeyType.TDES,
-        data.get(TAG_METADATA_IS_DEFAULT)[0] != 0,
-        TouchPolicy.fromValue(data.get(TAG_METADATA_POLICY)[INDEX_TOUCH_POLICY]));
+    boolean isDefault = requireMetadata(data, TAG_METADATA_IS_DEFAULT, 1, "default flag")[0] != 0;
+    byte[] policy = requireMetadata(data, TAG_METADATA_POLICY, 2, "policy");
+    try {
+      return new ManagementKeyMetadata(
+          data.containsKey(TAG_METADATA_ALGO)
+              ? ManagementKeyType.fromValue(
+                  requireMetadata(data, TAG_METADATA_ALGO, 1, "algorithm")[0])
+              : ManagementKeyType.TDES,
+          isDefault,
+          TouchPolicy.fromValue(policy[INDEX_TOUCH_POLICY]));
+    } catch (IllegalArgumentException e) {
+      throw badMetadata("Unknown value in management key metadata", e);
+    }
   }
 
   /** Get card management key type. */
@@ -1004,21 +1038,30 @@ public class PivSession extends ApplicationSession<PivSession> {
    *
    * @param slot the slot to read metadata about
    * @return metadata about a slot
-   * @throws IOException in case of connection error
+   * @throws IOException in case of connection error, or if the response is malformed (caused by a
+   *     {@link BadResponseException})
    * @throws ApduException in case of an error response from the YubiKey
    */
   public SlotMetadata getSlotMetadata(Slot slot) throws IOException, ApduException {
     logger.debug("Getting metadata for slot {}", slot);
     require(FEATURE_METADATA);
     Map<Integer, byte[]> data =
-        Tlvs.decodeMap(protocol.sendAndReceive(new Apdu(0, INS_GET_METADATA, 0, slot.value, null)));
-    byte[] policy = data.get(TAG_METADATA_POLICY);
-    return new SlotMetadata(
-        KeyType.fromValue(data.get(TAG_METADATA_ALGO)[0]),
-        PinPolicy.fromValue(policy[INDEX_PIN_POLICY]),
-        TouchPolicy.fromValue(policy[INDEX_TOUCH_POLICY]),
-        data.get(TAG_METADATA_ORIGIN)[0] == ORIGIN_GENERATED,
-        data.get(TAG_METADATA_PUBLIC_KEY));
+        decodeMetadata(protocol.sendAndReceive(new Apdu(0, INS_GET_METADATA, 0, slot.value, null)));
+    byte algorithm = requireMetadata(data, TAG_METADATA_ALGO, 1, "algorithm")[0];
+    byte[] policy = requireMetadata(data, TAG_METADATA_POLICY, 2, "policy");
+    boolean generated =
+        requireMetadata(data, TAG_METADATA_ORIGIN, 1, "origin")[0] == ORIGIN_GENERATED;
+    byte[] publicKey = requireMetadata(data, TAG_METADATA_PUBLIC_KEY, 1, "public key");
+    try {
+      return new SlotMetadata(
+          KeyType.fromValue(algorithm),
+          PinPolicy.fromValue(policy[INDEX_PIN_POLICY]),
+          TouchPolicy.fromValue(policy[INDEX_TOUCH_POLICY]),
+          generated,
+          publicKey);
+    } catch (IllegalArgumentException e) {
+      throw badMetadata("Unknown value in slot metadata", e);
+    }
   }
 
   /**

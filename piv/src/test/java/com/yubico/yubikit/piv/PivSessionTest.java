@@ -30,9 +30,12 @@ import com.yubico.yubikit.core.smartcard.SmartCardProtocol;
 import com.yubico.yubikit.core.util.Tlv;
 import com.yubico.yubikit.core.util.Tlvs;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.function.ThrowingRunnable;
 
 public class PivSessionTest {
   @Test
@@ -118,7 +121,7 @@ public class PivSessionTest {
 
   @Test
   public void readsBioMetadata() throws Exception {
-    try (PivSession session = openSession(mockBioMetadata(bioMetadata(1, 3, 1)))) {
+    try (PivSession session = openSession(mockMetadata(BIO_SLOT, bioMetadata(1, 3, 1)))) {
       BioMetadata metadata = session.getBioMetadata();
       Assert.assertTrue(metadata.isConfigured());
       Assert.assertEquals(3, metadata.getAttemptsRemaining());
@@ -141,7 +144,7 @@ public class PivSessionTest {
       new byte[0],
     };
     for (byte[] response : responses) {
-      try (PivSession session = openSession(mockBioMetadata(response))) {
+      try (PivSession session = openSession(mockMetadata(BIO_SLOT, response))) {
         IOException e = Assert.assertThrows(IOException.class, session::getBioMetadata);
         Assert.assertTrue(e.getCause() instanceof BadResponseException);
       }
@@ -159,7 +162,7 @@ public class PivSessionTest {
               new Tlv(PivSession.TAG_METADATA_TEMPORARY_PIN, new byte[0]))),
     };
     for (byte[] response : responses) {
-      try (PivSession session = openSession(mockBioMetadata(response))) {
+      try (PivSession session = openSession(mockMetadata(BIO_SLOT, response))) {
         BioMetadata metadata = session.getBioMetadata();
         Assert.assertFalse(metadata.isConfigured());
         Assert.assertEquals(3, metadata.getAttemptsRemaining());
@@ -167,6 +170,131 @@ public class PivSessionTest {
       }
     }
   }
+
+  @Test
+  public void rejectsMalformedPinMetadata() throws Exception {
+    byte[] isDefault = {1};
+    byte[][] responses = {
+      metadata(PivSession.TAG_METADATA_IS_DEFAULT, isDefault),
+      metadata(
+          PivSession.TAG_METADATA_IS_DEFAULT,
+          isDefault,
+          PivSession.TAG_METADATA_RETRIES,
+          new byte[] {3}),
+      metadata(PivSession.TAG_METADATA_RETRIES, new byte[] {3, 3}),
+      {PivSession.TAG_METADATA_RETRIES, 5, 3},
+    };
+    for (byte[] response : responses) {
+      try (PivSession session = openSession(mockMetadata(PivSession.PIN_P2 & 0xFF, response))) {
+        assertBadMetadata(session::getPinMetadata);
+      }
+    }
+  }
+
+  @Test
+  public void rejectsMalformedManagementKeyMetadata() throws Exception {
+    byte[] isDefault = {1};
+    byte[][] responses = {
+      metadata(PivSession.TAG_METADATA_IS_DEFAULT, isDefault),
+      metadata(
+          PivSession.TAG_METADATA_IS_DEFAULT,
+          isDefault,
+          PivSession.TAG_METADATA_POLICY,
+          new byte[] {0}),
+      metadata(
+          PivSession.TAG_METADATA_IS_DEFAULT,
+          isDefault,
+          PivSession.TAG_METADATA_POLICY,
+          new byte[] {0, 9}),
+      metadata(
+          PivSession.TAG_METADATA_ALGO, new byte[0],
+          PivSession.TAG_METADATA_IS_DEFAULT, isDefault,
+          PivSession.TAG_METADATA_POLICY, new byte[] {0, 1}),
+    };
+    for (byte[] response : responses) {
+      // The session reads the management key metadata when it opens
+      assertBadMetadata(() -> openSession(mockMetadata(MANAGEMENT_SLOT, response)));
+    }
+  }
+
+  @Test
+  public void rejectsMalformedSlotMetadata() throws Exception {
+    byte[] algorithm = {KeyType.ECCP256.value};
+    byte[] policy = {1, 1};
+    byte[] origin = {PivSession.ORIGIN_GENERATED};
+    byte[] publicKey = {0x04};
+    byte[][] responses = {
+      metadata(
+          PivSession.TAG_METADATA_POLICY,
+          policy,
+          PivSession.TAG_METADATA_ORIGIN,
+          origin,
+          PivSession.TAG_METADATA_PUBLIC_KEY,
+          publicKey),
+      metadata(
+          PivSession.TAG_METADATA_ALGO,
+          algorithm,
+          PivSession.TAG_METADATA_POLICY,
+          new byte[] {1},
+          PivSession.TAG_METADATA_ORIGIN,
+          origin,
+          PivSession.TAG_METADATA_PUBLIC_KEY,
+          publicKey),
+      metadata(
+          PivSession.TAG_METADATA_ALGO,
+          algorithm,
+          PivSession.TAG_METADATA_POLICY,
+          policy,
+          PivSession.TAG_METADATA_PUBLIC_KEY,
+          publicKey),
+      metadata(
+          PivSession.TAG_METADATA_ALGO,
+          algorithm,
+          PivSession.TAG_METADATA_POLICY,
+          policy,
+          PivSession.TAG_METADATA_ORIGIN,
+          origin),
+      metadata(
+          PivSession.TAG_METADATA_ALGO,
+          algorithm,
+          PivSession.TAG_METADATA_POLICY,
+          policy,
+          PivSession.TAG_METADATA_ORIGIN,
+          origin,
+          PivSession.TAG_METADATA_PUBLIC_KEY,
+          new byte[0]),
+      metadata(
+          PivSession.TAG_METADATA_ALGO,
+          new byte[] {0x7E},
+          PivSession.TAG_METADATA_POLICY,
+          policy,
+          PivSession.TAG_METADATA_ORIGIN,
+          origin,
+          PivSession.TAG_METADATA_PUBLIC_KEY,
+          publicKey),
+    };
+    for (byte[] response : responses) {
+      try (PivSession session = openSession(mockMetadata(Slot.AUTHENTICATION.value, response))) {
+        assertBadMetadata(() -> session.getSlotMetadata(Slot.AUTHENTICATION));
+      }
+    }
+  }
+
+  /** TLVs from alternating tags and values. */
+  private static byte[] metadata(Object... tagsAndValues) {
+    List<Tlv> tlvs = new ArrayList<>();
+    for (int i = 0; i < tagsAndValues.length; i += 2) {
+      tlvs.add(new Tlv((Integer) tagsAndValues[i], (byte[]) tagsAndValues[i + 1]));
+    }
+    return Tlvs.encodeList(tlvs);
+  }
+
+  private static void assertBadMetadata(ThrowingRunnable call) {
+    IOException e = Assert.assertThrows(IOException.class, call);
+    Assert.assertTrue(String.valueOf(e.getCause()), e.getCause() instanceof BadResponseException);
+  }
+
+  private static final int MANAGEMENT_SLOT = 0x9B;
 
   private static byte[] bioMetadata(int configured, int retries, int temporaryPin) {
     return Tlvs.encodeList(
@@ -176,8 +304,8 @@ public class PivSessionTest {
             new Tlv(PivSession.TAG_METADATA_TEMPORARY_PIN, new byte[] {(byte) temporaryPin})));
   }
 
-  /** A 5.7.2 device answering bio metadata with the response, and no other metadata. */
-  private static SmartCardProtocol mockBioMetadata(byte[] response) throws Exception {
+  /** A 5.7.2 device answering metadata for p2 with the response, and no other metadata. */
+  private static SmartCardProtocol mockMetadata(int p2, byte[] response) throws Exception {
     SmartCardProtocol protocolMock = mock(SmartCardProtocol.class);
     when(protocolMock.sendAndReceive(
             argThat(apdu -> apdu != null && apdu.getIns() == PivSession.INS_GET_VERSION)))
@@ -187,7 +315,7 @@ public class PivSessionTest {
         .thenAnswer(
             invocation -> {
               Apdu apdu = invocation.getArgument(0);
-              if ((apdu.getP2() & 0xFF) == BIO_SLOT) {
+              if ((apdu.getP2() & 0xFF) == p2) {
                 return response;
               }
               throw new UnsupportedOperationException();

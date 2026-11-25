@@ -37,6 +37,9 @@
           BadResponseException, instead of an unchecked buffer or index error
   - piv: getBioMetadata() fails with an IOException caused by BadResponseException when
          the retries are missing; a missing configured or temporary PIN flag reads as false
+  - piv: getPinMetadata(), getPukMetadata(), getManagementKeyMetadata() and
+         getSlotMetadata() fail with an IOException caused by BadResponseException when
+         the response is malformed or a required value is missing or unknown
 * Version 3.3.0 (released 2026-10-29)
  ** new:
   - core: PublicKeyValues and PrivateKeyValues variants for the additional key types
