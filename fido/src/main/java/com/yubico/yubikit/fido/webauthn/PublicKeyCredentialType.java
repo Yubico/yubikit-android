@@ -16,6 +16,10 @@
 
 package com.yubico.yubikit.fido.webauthn;
 
+/**
+ * @see <a
+ *     href="https://www.w3.org/TR/2026/REC-webauthn-3-20260825/#enumdef-publickeycredentialtype">PublicKeyCredentialType</a>
+ */
 public class PublicKeyCredentialType {
   public static final String PUBLIC_KEY = "public-key";
 }

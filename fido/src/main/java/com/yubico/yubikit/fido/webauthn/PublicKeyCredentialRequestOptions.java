@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2025 Yubico.
+ * Copyright (C) 2020-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,10 @@ import java.util.Map;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 
+/**
+ * @see <a
+ *     href="https://www.w3.org/TR/2026/REC-webauthn-3-20260825/#dictdef-publickeycredentialrequestoptions">PublicKeyCredentialRequestOptions</a>
+ */
 public class PublicKeyCredentialRequestOptions {
   static final String CHALLENGE = "challenge";
   static final String TIMEOUT = "timeout";
@@ -35,6 +39,7 @@ public class PublicKeyCredentialRequestOptions {
   static final String ALLOW_CREDENTIALS = "allowCredentials";
   static final String USER_VERIFICATION = "userVerification";
   static final String EXTENSIONS = "extensions";
+  static final String HINTS = "hints";
 
   private final byte[] challenge;
   @Nullable private final Long timeout;
@@ -42,6 +47,7 @@ public class PublicKeyCredentialRequestOptions {
   private final List<PublicKeyCredentialDescriptor> allowCredentials;
   private final String userVerification;
   @Nullable private final Extensions extensions;
+  private final List<String> hints;
 
   public PublicKeyCredentialRequestOptions(
       byte[] challenge,
@@ -50,6 +56,20 @@ public class PublicKeyCredentialRequestOptions {
       @Nullable List<PublicKeyCredentialDescriptor> allowCredentials,
       @Nullable String userVerification,
       @Nullable Extensions extensions) {
+    this(challenge, timeout, rpId, allowCredentials, userVerification, extensions, null);
+  }
+
+  /**
+   * @param hints values from {@link PublicKeyCredentialHint}, most preferred first
+   */
+  public PublicKeyCredentialRequestOptions(
+      byte[] challenge,
+      @Nullable Long timeout,
+      @Nullable String rpId,
+      @Nullable List<PublicKeyCredentialDescriptor> allowCredentials,
+      @Nullable String userVerification,
+      @Nullable Extensions extensions,
+      @Nullable List<String> hints) {
     this.challenge = challenge;
     this.timeout = timeout;
     this.rpId = rpId;
@@ -57,6 +77,7 @@ public class PublicKeyCredentialRequestOptions {
     this.userVerification =
         userVerification != null ? userVerification : UserVerificationRequirement.PREFERRED;
     this.extensions = extensions;
+    this.hints = hints != null ? hints : Collections.emptyList();
   }
 
   public byte[] getChallenge() {
@@ -85,6 +106,10 @@ public class PublicKeyCredentialRequestOptions {
     return extensions;
   }
 
+  public List<String> getHints() {
+    return hints;
+  }
+
   public Map<String, ?> toMap(SerializationType serializationType) {
     Map<String, Object> map = new HashMap<>();
     map.put(CHALLENGE, serializeBytes(challenge, serializationType));
@@ -102,6 +127,9 @@ public class PublicKeyCredentialRequestOptions {
     map.put(USER_VERIFICATION, userVerification);
     if (extensions != null) {
       map.put(EXTENSIONS, extensions);
+    }
+    if (!hints.isEmpty()) {
+      map.put(HINTS, hints);
     }
     return map;
   }
@@ -126,7 +154,8 @@ public class PublicKeyCredentialRequestOptions {
         (String) map.get(RP_ID),
         allowCredentials,
         (String) map.get(USER_VERIFICATION),
-        Extensions.fromMap((Map<String, ?>) map.get(EXTENSIONS)));
+        Extensions.fromMap((Map<String, ?>) map.get(EXTENSIONS)),
+        (List<String>) map.get(HINTS));
   }
 
   public static PublicKeyCredentialRequestOptions fromMap(Map<String, ?> map) {
@@ -145,7 +174,8 @@ public class PublicKeyCredentialRequestOptions {
     if (!Objects.equals(rpId, that.rpId)) return false;
     if (!allowCredentials.equals(that.allowCredentials)) return false;
     if (!userVerification.equals(that.userVerification)) return false;
-    return Objects.equals(extensions, that.extensions);
+    if (!Objects.equals(extensions, that.extensions)) return false;
+    return hints.equals(that.hints);
   }
 
   @Override
@@ -156,6 +186,7 @@ public class PublicKeyCredentialRequestOptions {
     result = 31 * result + allowCredentials.hashCode();
     result = 31 * result + userVerification.hashCode();
     result = 31 * result + (extensions != null ? extensions.hashCode() : 0);
+    result = 31 * result + hints.hashCode();
     return result;
   }
 }

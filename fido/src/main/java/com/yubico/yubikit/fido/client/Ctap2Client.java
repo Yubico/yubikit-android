@@ -16,6 +16,8 @@
 
 package com.yubico.yubikit.fido.client;
 
+import static com.yubico.yubikit.fido.client.Utils.checkUserId;
+import static com.yubico.yubikit.fido.client.Utils.getPubKeyCredParams;
 import static com.yubico.yubikit.fido.webauthn.PublicKeyCredentialType.PUBLIC_KEY;
 
 import com.yubico.yubikit.core.application.CommandException;
@@ -143,8 +145,10 @@ public class Ctap2Client implements WebAuthnClient {
    * @param session CTAP session
    * @throws IOException A communication error in the transport layer
    * @throws CommandException A communication in the protocol layer
-   * @see <a href="https://www.w3.org/TR/webauthn-3/#webauthn-client">Webauthn client</a>
-   * @see <a href="https://www.w3.org/TR/webauthn-3/#sctn-extensions">Webauthn extensions</a>
+   * @see <a href="https://www.w3.org/TR/2026/REC-webauthn-3-20260825/#webauthn-client">Webauthn
+   *     client</a>
+   * @see <a href="https://www.w3.org/TR/2026/REC-webauthn-3-20260825/#sctn-extensions">Webauthn
+   *     extensions</a>
    * @see <a
    *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#sctn-defined-extensions">CTAP
    *     extensions</a>
@@ -162,8 +166,10 @@ public class Ctap2Client implements WebAuthnClient {
    * @param extensions List of extensions or null to use default extensions
    * @throws IOException A communication error in the transport layer
    * @throws CommandException A communication in the protocol layer
-   * @see <a href="https://www.w3.org/TR/webauthn-3/#webauthn-client">Webauthn client</a>
-   * @see <a href="https://www.w3.org/TR/webauthn-3/#sctn-extensions">Webauthn extensions</a>
+   * @see <a href="https://www.w3.org/TR/2026/REC-webauthn-3-20260825/#webauthn-client">Webauthn
+   *     client</a>
+   * @see <a href="https://www.w3.org/TR/2026/REC-webauthn-3-20260825/#sctn-extensions">Webauthn
+   *     extensions</a>
    * @see <a
    *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#sctn-defined-extensions">CTAP
    *     extensions</a>
@@ -470,6 +476,7 @@ public class Ctap2Client implements WebAuthnClient {
       throw new ClientError(
           ClientError.Code.BAD_REQUEST, "RP ID is not valid for effective domain");
     }
+    checkUserId(options);
 
     final List<PublicKeyCredentialDescriptor> excludeCredentials = options.getExcludeCredentials();
 
@@ -493,13 +500,7 @@ public class Ctap2Client implements WebAuthnClient {
     AuthenticatorSelectionCriteria authenticatorSelection = options.getAuthenticatorSelection();
     String userVerification =
         authenticatorSelection != null ? authenticatorSelection.getUserVerification() : null;
-    String selectionResidentKey =
-        authenticatorSelection != null
-            ? authenticatorSelection.getResidentKey()
-            : ResidentKeyRequirement.PREFERRED;
-    boolean rk =
-        ResidentKeyRequirement.REQUIRED.equals(selectionResidentKey)
-            || (ResidentKeyRequirement.PREFERRED.equals(selectionResidentKey) && rkSupported);
+    boolean rk = Utils.isResidentKey(authenticatorSelection, rkSupported);
 
     // Validate before getAuthParams (which may trigger user verification) so a required-but-
     // unsupported resident key fails fast instead of prompting for a PIN and then erroring.
@@ -547,7 +548,7 @@ public class Ctap2Client implements WebAuthnClient {
     final Map<String, ?> user = Utils.userForCtap(options.getUser());
 
     List<Map<String, ?>> pubKeyCredParams = new ArrayList<>();
-    for (PublicKeyCredentialParameters param : options.getPubKeyCredParams()) {
+    for (PublicKeyCredentialParameters param : getPubKeyCredParams(options)) {
       if (isPublicKeyCredentialTypeSupported(param.getType())) {
         pubKeyCredParams.add(param.toMap(serializationType));
       }
@@ -583,6 +584,7 @@ public class Ctap2Client implements WebAuthnClient {
             pinUvAuthParam,
             pinUvAuthProtocolVersion,
             validatedEnterpriseAttestation,
+            Utils.attestationFormatsPreference(options, ctap.getCachedInfo()),
             state);
 
     ClientExtensionResults clientExtensionResults = new ClientExtensionResults();
@@ -895,13 +897,13 @@ public class Ctap2Client implements WebAuthnClient {
    * <ul>
    *   <li><b>Return {@code null} — ignore.</b> The extension does not apply and is skipped; the
    *       ceremony continues with the remaining extensions. This is the {@code SHOULD ignore} path
-   *       of <a href="https://www.w3.org/TR/webauthn-3/#sctn-extensions">WebAuthn §9</a> and
-   *       covers: not requested; not supported by the authenticator; nothing to evaluate; an
-   *       extension this client has no handler for (never dispatched, left ignorable for
-   *       forward-compatibility); and malformed <em>authenticator</em> output (the device's fault,
-   *       not the caller's). Note a recognized extension's unrecognized <em>value</em> (e.g. an
-   *       unknown {@code credProtect} policy or {@code largeBlob} support) is a caller error and is
-   *       surfaced, not ignored — see the enum-member rule below.
+   *       of <a href="https://www.w3.org/TR/2026/REC-webauthn-3-20260825/#sctn-extensions">WebAuthn
+   *       §9</a> and covers: not requested; not supported by the authenticator; nothing to
+   *       evaluate; an extension this client has no handler for (never dispatched, left ignorable
+   *       for forward-compatibility); and malformed <em>authenticator</em> output (the device's
+   *       fault, not the caller's). Note a recognized extension's unrecognized <em>value</em> (e.g.
+   *       an unknown {@code credProtect} policy or {@code largeBlob} support) is a caller error and
+   *       is surfaced, not ignored — see the enum-member rule below.
    *   <li><b>Throw — abort.</b> The ceremony fails with a {@link ClientError}. Reserved for a
    *       caller error or an explicitly-requested capability that cannot be satisfied (see below).
    * </ul>
@@ -1211,6 +1213,38 @@ public class Ctap2Client implements WebAuthnClient {
         }
       }
       return result;
+    }
+
+    /**
+     * Returns the RP's attestation statement formats to send as attestationFormatsPreference, or
+     * null if there are none or the authenticator does not report its supported formats.
+     *
+     * @see <a
+     *     href="https://www.w3.org/TR/2026/REC-webauthn-3-20260825/#dom-publickeycredentialcreationoptions-attestationformats">attestationFormats</a>
+     */
+    @Nullable
+    static List<String> attestationFormatsPreference(
+        PublicKeyCredentialCreationOptions options, Ctap2Session.InfoData info) {
+      List<String> formats = options.getAttestationFormats();
+      return formats.isEmpty() || info.getAttestationFormats().isEmpty() ? null : formats;
+    }
+
+    /**
+     * Returns whether to create a discoverable credential. Without authenticatorSelection the
+     * effective requirement is requireResidentKey's default, false.
+     *
+     * @see <a
+     *     href="https://www.w3.org/TR/2026/REC-webauthn-3-20260825/#effective-resident-key-requirement-for-credential-creation">effective
+     *     resident key requirement for credential creation</a>
+     */
+    static boolean isResidentKey(
+        @Nullable AuthenticatorSelectionCriteria selection, boolean rkSupported) {
+      if (selection == null) {
+        return false;
+      }
+      String residentKey = selection.getResidentKey();
+      return ResidentKeyRequirement.REQUIRED.equals(residentKey)
+          || (ResidentKeyRequirement.PREFERRED.equals(residentKey) && rkSupported);
     }
 
     /**

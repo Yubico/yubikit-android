@@ -20,6 +20,10 @@ import java.util.Map;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 
+/**
+ * @see <a
+ *     href="https://www.w3.org/TR/2026/REC-webauthn-3-20260825/#dictdef-authenticationextensionsclientinputs">AuthenticationExtensionsClientInputs</a>
+ */
 public class Extensions {
 
   @Nullable

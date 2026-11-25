@@ -1,4 +1,11 @@
 * Next version (unreleased)
+ ** new:
+  - fido: hints on creation and request options, and attestationFormats on creation
+          options (WebAuthn Level 3)
+  - fido: AuthenticatorData.isBe() and isBs() expose the backup eligibility and backup
+          state flags
+  - fido: makeCredential sends attestationFormats as attestationFormatsPreference to
+          authenticators that report their attestation formats
  ** fixes & improvements:
   - fido: PublicKeyCredentialUserEntity.fromMap() accepts a missing name or displayName,
           which CTAP leaves optional, and returns it as an empty string instead of
@@ -9,6 +16,13 @@
   - fido-ui: the account picker labels a passkey by name, then displayName, then
              "Passkey N", and shows an error instead of "0 available" when user
              information cannot be read
+  - fido: an empty pubKeyCredParams list now requests ES256 and RS256, as WebAuthn
+          requires, instead of being sent empty or rejected over CTAP1
+  - fido: without authenticatorSelection, makeCredential creates a non-discoverable
+          credential, as WebAuthn requires, instead of a discoverable one
+  - fido: makeCredential rejects a user id that is not 1 to 64 bytes long
+  - fido: AuthenticatorAttestationResponse.getTransports() is unique and in
+          lexicographical order
 * Version 3.3.0 (released 2026-10-29)
  ** new:
   - core: PublicKeyValues and PrivateKeyValues variants for the additional key types

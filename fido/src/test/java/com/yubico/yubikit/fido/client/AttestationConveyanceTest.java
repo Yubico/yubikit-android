@@ -36,6 +36,7 @@ import com.yubico.yubikit.fido.webauthn.PublicKeyCredential;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialCreationOptions;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialParameters;
 import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialRpEntity;
+import com.yubico.yubikit.fido.webauthn.PublicKeyCredentialUserEntity;
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.security.KeyPairGenerator;
@@ -170,6 +171,8 @@ public class AttestationConveyanceTest {
         }) {
       PublicKeyCredentialCreationOptions options = mock(PublicKeyCredentialCreationOptions.class);
       when(options.getRp()).thenReturn(new PublicKeyCredentialRpEntity("Example", "example.com"));
+      when(options.getUser())
+          .thenReturn(new PublicKeyCredentialUserEntity("user", new byte[] {1}, "A User"));
       when(options.getPubKeyCredParams())
           .thenReturn(
               Collections.singletonList(new PublicKeyCredentialParameters("public-key", -7)));

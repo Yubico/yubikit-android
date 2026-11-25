@@ -39,7 +39,8 @@ import org.junit.Test;
  * ClientError.Code} the client should report, rather than being silently ignored. Ignorable
  * conditions instead return {@code null}; see the extensions themselves.
  *
- * @see <a href="https://www.w3.org/TR/webauthn-3/#sctn-extensions">WebAuthn Extensions</a>
+ * @see <a href="https://www.w3.org/TR/2026/REC-webauthn-3-20260825/#sctn-extensions">WebAuthn
+ *     Extensions</a>
  */
 public class ExtensionHardFailTest {
 

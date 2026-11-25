@@ -21,6 +21,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * @see <a
+ *     href="https://www.w3.org/TR/2026/REC-webauthn-3-20260825/#dictdef-authenticationextensionsclientoutputs">AuthenticationExtensionsClientOutputs</a>
+ */
 public class ClientExtensionResults {
 
   private final List<ClientExtensionResultProvider> resultProviders = new ArrayList<>();

@@ -16,6 +16,10 @@
 
 package com.yubico.yubikit.fido.webauthn;
 
+/**
+ * @see <a
+ *     href="https://www.w3.org/TR/2026/REC-webauthn-3-20260825/#enumdef-userverificationrequirement">UserVerificationRequirement</a>
+ */
 public class UserVerificationRequirement {
   public static final String REQUIRED = "required";
   public static final String PREFERRED = "preferred";

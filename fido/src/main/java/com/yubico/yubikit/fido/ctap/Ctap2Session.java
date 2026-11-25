@@ -261,10 +261,7 @@ public class Ctap2Session extends Ctap1Session {
       @Nullable Integer enterpriseAttestation,
       @Nullable CommandState state)
       throws IOException, CommandException {
-    logger.debug(
-        "makeCredential for clientDataHash={},rp={},user={},"
-            + "pubKeyCredParams={},excludeList={},extensions={},options={},"
-            + "pinUvAuthParam={},pinUvAuthProtocol={},enterpriseAttestation={},state={}",
+    return makeCredential(
         clientDataHash,
         rp,
         user,
@@ -275,6 +272,49 @@ public class Ctap2Session extends Ctap1Session {
         pinUvAuthParam,
         pinUvAuthProtocol,
         enterpriseAttestation,
+        null,
+        state);
+  }
+
+  /**
+   * Same as {@link #makeCredential(byte[], Map, Map, List, List, Map, Map, byte[], Integer,
+   * Integer, CommandState)}, with a list of preferred attestation statement formats.
+   *
+   * @param attestationFormatsPreference attestation statement format identifiers, most preferred
+   *     first
+   * @see <a
+   *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#authenticatorMakeCredential">authenticatorMakeCredential</a>
+   */
+  public CredentialData makeCredential(
+      byte[] clientDataHash,
+      Map<String, ?> rp,
+      Map<String, ?> user,
+      List<Map<String, ?>> pubKeyCredParams,
+      @Nullable List<Map<String, ?>> excludeList,
+      @Nullable Map<String, ?> extensions,
+      @Nullable Map<String, ?> options,
+      byte @Nullable [] pinUvAuthParam,
+      @Nullable Integer pinUvAuthProtocol,
+      @Nullable Integer enterpriseAttestation,
+      @Nullable List<String> attestationFormatsPreference,
+      @Nullable CommandState state)
+      throws IOException, CommandException {
+    logger.debug(
+        "makeCredential for clientDataHash={},rp={},user={},"
+            + "pubKeyCredParams={},excludeList={},extensions={},options={},"
+            + "pinUvAuthParam={},pinUvAuthProtocol={},enterpriseAttestation={},"
+            + "attestationFormatsPreference={},state={}",
+        clientDataHash,
+        rp,
+        user,
+        pubKeyCredParams,
+        excludeList,
+        extensions,
+        options,
+        pinUvAuthParam,
+        pinUvAuthProtocol,
+        enterpriseAttestation,
+        attestationFormatsPreference,
         state);
 
     final Map<Integer, ?> data =
@@ -290,7 +330,8 @@ public class Ctap2Session extends Ctap1Session {
                 options,
                 pinUvAuthParam,
                 pinUvAuthProtocol,
-                enterpriseAttestation),
+                enterpriseAttestation,
+                attestationFormatsPreference),
             state);
 
     CredentialData credentialData = CredentialData.fromData(data);
@@ -807,6 +848,19 @@ public class Ctap2Session extends Ctap1Session {
       return result;
     }
 
+    /** Returns the text string entries of a CBOR array, dropping entries of any other type. */
+    private static List<String> toStringList(@Nullable Object values) {
+      List<String> result = new ArrayList<>();
+      if (values instanceof List) {
+        for (Object value : (List<?>) values) {
+          if (value instanceof String) {
+            result.add((String) value);
+          }
+        }
+      }
+      return result;
+    }
+
     @SuppressWarnings("unchecked")
     private static InfoData fromData(Map<Integer, ?> data) {
       return new InfoData(
@@ -824,9 +878,7 @@ public class Ctap2Session extends Ctap1Session {
               : Collections.emptyList(),
           (Integer) data.get(RESULT_MAX_CREDS_IN_LIST),
           (Integer) data.get(RESULT_MAX_CRED_ID_LENGTH),
-          data.containsKey(RESULT_TRANSPORTS)
-              ? (List<String>) data.get(RESULT_TRANSPORTS)
-              : Collections.emptyList(),
+          toStringList(data.get(RESULT_TRANSPORTS)),
           data.containsKey(RESULT_ALGORITHMS)
               ? (List<PublicKeyCredentialParameters>) data.get(RESULT_ALGORITHMS)
               : Collections.emptyList(),
@@ -861,9 +913,7 @@ public class Ctap2Session extends Ctap1Session {
               ? (Boolean) data.get(RESULT_LONG_TOUCH_FOR_RESET)
               : false,
           (byte[]) data.get(RESULT_ENC_IDENTIFIER),
-          data.containsKey(RESULT_TRANSPORTS_FOR_RESET)
-              ? (List<String>) data.get(RESULT_TRANSPORTS_FOR_RESET)
-              : Collections.emptyList(),
+          toStringList(data.get(RESULT_TRANSPORTS_FOR_RESET)),
           (Boolean) data.get(RESULT_PIN_COMPLEXITY_POLICY),
           (byte[]) data.get(RESULT_PIN_COMPLEXITY_POLICY_URL),
           data.containsKey(RESULT_MAX_PIN_LENGTH) ? (Integer) data.get(RESULT_MAX_PIN_LENGTH) : 63,
@@ -959,7 +1009,7 @@ public class Ctap2Session extends Ctap1Session {
      *
      * @return list of supported transports
      * @see <a
-     *     href="https://www.w3.org/TR/webauthn/#enumdef-authenticatortransport">AuthenticatorTransport
+     *     href="https://www.w3.org/TR/2026/REC-webauthn-3-20260825/#enumdef-authenticatortransport">AuthenticatorTransport
      *     enum</a>
      */
     public List<String> getTransports() {
@@ -1207,7 +1257,8 @@ public class Ctap2Session extends Ctap1Session {
      *     for reset</a>
      * @see <a
      *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#authenticatorReset">authenticatorReset</a>
-     * @see <a href="https://www.w3.org/TR/webauthn/#enumdef-authenticatortransport">WebAuthn
+     * @see <a
+     *     href="https://www.w3.org/TR/2026/REC-webauthn-3-20260825/#enumdef-authenticatortransport">WebAuthn
      *     Authenticator Transport Enumeration</a>
      */
     public List<String> getTransportsForReset() {
@@ -1423,7 +1474,8 @@ public class Ctap2Session extends Ctap1Session {
      * The AuthenticatorData object.
      *
      * @return the AuthenticatorData
-     * @see <a href="https://www.w3.org/TR/webauthn/#authenticator-data">authenticator-data</a>
+     * @see <a
+     *     href="https://www.w3.org/TR/2026/REC-webauthn-3-20260825/#authenticator-data">authenticator-data</a>
      */
     public byte[] getAuthenticatorData() {
       return authenticatorData;
@@ -1566,7 +1618,8 @@ public class Ctap2Session extends Ctap1Session {
      * The AuthenticatorData object.
      *
      * @return the AuthenticatorData
-     * @see <a href="https://www.w3.org/TR/webauthn/#authenticator-data">authenticator-data</a>
+     * @see <a
+     *     href="https://www.w3.org/TR/2026/REC-webauthn-3-20260825/#authenticator-data">authenticator-data</a>
      */
     public byte[] getAuthenticatorData() {
       return authenticatorData;

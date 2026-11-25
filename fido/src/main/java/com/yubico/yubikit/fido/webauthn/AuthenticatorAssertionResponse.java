@@ -25,6 +25,10 @@ import java.util.Map;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 
+/**
+ * @see <a
+ *     href="https://www.w3.org/TR/2026/REC-webauthn-3-20260825/#iface-authenticatorassertionresponse">AuthenticatorAssertionResponse</a>
+ */
 public class AuthenticatorAssertionResponse extends AuthenticatorResponse {
   public static final String AUTHENTICATOR_DATA = "authenticatorData";
   public static final String SIGNATURE = "signature";

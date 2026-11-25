@@ -29,7 +29,7 @@ import org.jspecify.annotations.Nullable;
  * Implements the Credential Properties (credProps) WebAuthn extension.
  *
  * @see <a
- *     href="https://www.w3.org/TR/webauthn-3/#sctn-authenticator-credential-properties-extension">Credential
+ *     href="https://www.w3.org/TR/2026/REC-webauthn-3-20260825/#sctn-authenticator-credential-properties-extension">Credential
  *     Properties Extension (credProps)</a>
  */
 public class CredPropsExtension extends Extension {

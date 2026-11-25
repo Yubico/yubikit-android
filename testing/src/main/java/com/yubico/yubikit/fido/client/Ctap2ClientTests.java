@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020-2025 Yubico.
+ * Copyright (C) 2020-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,6 +40,7 @@ import com.yubico.yubikit.fido.ctap.CredentialManagement;
 import com.yubico.yubikit.fido.utils.ClientHelper;
 import com.yubico.yubikit.fido.utils.CreationOptionsBuilder;
 import com.yubico.yubikit.fido.utils.TestData;
+import com.yubico.yubikit.fido.webauthn.AttestationConveyancePreference;
 import com.yubico.yubikit.fido.webauthn.AuthenticatorAssertionResponse;
 import com.yubico.yubikit.fido.webauthn.AuthenticatorAttestationResponse;
 import com.yubico.yubikit.fido.webauthn.AuthenticatorSelectionCriteria;
@@ -63,6 +64,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.TreeSet;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -922,5 +924,117 @@ public class Ctap2ClientTests {
       credentialManager.deleteCredential(
           new PublicKeyCredentialDescriptor(PublicKeyCredentialType.PUBLIC_KEY, credId, null));
     }
+  }
+
+  /** Without authenticatorSelection, makeCredential creates a non-discoverable credential. */
+  public static void testMakeCredentialWithoutAuthenticatorSelection(FidoTestState state)
+      throws Throwable {
+    // a dedicated RP ID, so no discoverable credential from another test can answer
+    String rpId = "rk-default." + TestData.RP_ID;
+    state.withCtap2(
+        session -> {
+          Ctap2Client webauthn = new Ctap2Client(session);
+          PublicKeyCredentialCreationOptions options =
+              new PublicKeyCredentialCreationOptions(
+                  new PublicKeyCredentialRpEntity(TestData.RP_NAME, rpId),
+                  TestData.USER,
+                  TestData.CHALLENGE,
+                  Collections.singletonList(TestData.PUB_KEY_CRED_PARAMS_ES256),
+                  (long) 90000,
+                  null,
+                  null,
+                  null,
+                  null);
+          webauthn.makeCredential(
+              TestData.CLIENT_DATA_JSON_CREATE_PROVIDER, options, rpId, TestData.PIN, null, null);
+        });
+
+    state.withCtap2(
+        session -> {
+          Ctap2Client webauthn = new Ctap2Client(session);
+          PublicKeyCredentialRequestOptions request =
+              new PublicKeyCredentialRequestOptions(
+                  TestData.CHALLENGE, (long) 90000, rpId, null, null, null);
+          ClientError clientError =
+              assertThrows(
+                  ClientError.class,
+                  () ->
+                      webauthn.getAssertion(
+                          TestData.CLIENT_DATA_JSON_GET_PROVIDER,
+                          request,
+                          rpId,
+                          TestData.PIN,
+                          null));
+          assertThat(clientError.getCause(), instanceOf(CtapException.class));
+          assertEquals(
+              CtapException.ERR_NO_CREDENTIALS,
+              ((CtapException) clientError.getCause()).getCtapError());
+        });
+  }
+
+  /** The response lists the authenticator's transports once each, in lexicographical order. */
+  public static void testMakeCredentialTransportsAreSortedAndUnique(FidoTestState state)
+      throws Throwable {
+    state.withCtap2(
+        session -> {
+          Ctap2Client webauthn = new Ctap2Client(session);
+          PublicKeyCredentialCreationOptions options =
+              getCreateOptions(
+                  null, false, Collections.singletonList(TestData.PUB_KEY_CRED_PARAMS_ES256), null);
+          PublicKeyCredential credential =
+              webauthn.makeCredential(
+                  TestData.CLIENT_DATA_JSON_CREATE_PROVIDER,
+                  options,
+                  TestData.RP_ID,
+                  TestData.PIN,
+                  null,
+                  null);
+          List<String> transports =
+              ((AuthenticatorAttestationResponse) credential.getResponse()).getTransports();
+          assertEquals(new ArrayList<>(new TreeSet<>(transports)), transports);
+          assertEquals(
+              new TreeSet<>(session.getCachedInfo().getTransports()), new TreeSet<>(transports));
+        });
+  }
+
+  /** An authenticator that reports attestation formats uses the one the RP prefers. */
+  @SuppressWarnings("unchecked")
+  public static void testMakeCredentialAttestationFormats(FidoTestState state) throws Throwable {
+    state.withCtap2(
+        session -> {
+          List<String> formats = session.getCachedInfo().getAttestationFormats();
+          assumeFalse("Authenticator does not report attestation formats", formats.isEmpty());
+          String preferred = formats.get(formats.size() - 1);
+
+          Ctap2Client webauthn = new Ctap2Client(session);
+          PublicKeyCredentialCreationOptions options =
+              new PublicKeyCredentialCreationOptions(
+                  TestData.RP,
+                  TestData.USER,
+                  TestData.CHALLENGE,
+                  Collections.singletonList(TestData.PUB_KEY_CRED_PARAMS_ES256),
+                  (long) 90000,
+                  null,
+                  new AuthenticatorSelectionCriteria(
+                      null, ResidentKeyRequirement.DISCOURAGED, null),
+                  AttestationConveyancePreference.DIRECT,
+                  null,
+                  null,
+                  Collections.singletonList(preferred));
+          PublicKeyCredential credential =
+              webauthn.makeCredential(
+                  TestData.CLIENT_DATA_JSON_CREATE_PROVIDER,
+                  options,
+                  TestData.RP_ID,
+                  TestData.PIN,
+                  null,
+                  null);
+          Map<String, ?> attestationObject =
+              (Map<String, ?>)
+                  Cbor.decode(
+                      ((AuthenticatorAttestationResponse) credential.getResponse())
+                          .getAttestationObject());
+          assertEquals(preferred, attestationObject.get("fmt"));
+        });
   }
 }

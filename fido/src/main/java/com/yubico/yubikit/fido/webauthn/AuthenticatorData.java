@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023-2025 Yubico.
+ * Copyright (C) 2023-2026 Yubico.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,8 +27,9 @@ import org.jspecify.annotations.Nullable;
 /**
  * Webauthn AuthenticatorData class
  *
- * @see <a href="https://www.w3.org/TR/webauthn-3/#sctn-authenticator-data">WebAuthn Authenticator
- *     Data</a>
+ * @see <a
+ *     href="https://www.w3.org/TR/2026/REC-webauthn-3-20260825/#sctn-authenticator-data">WebAuthn
+ *     Authenticator Data</a>
  */
 public class AuthenticatorData {
   @SuppressWarnings("unused")
@@ -36,6 +37,12 @@ public class AuthenticatorData {
 
   @SuppressWarnings("unused")
   public static final int FLAG_UV = 0x02;
+
+  @SuppressWarnings("unused")
+  public static final int FLAG_BE = 0x03;
+
+  @SuppressWarnings("unused")
+  public static final int FLAG_BS = 0x04;
 
   public static final int FLAG_AT = 0x06;
   public static final int FLAG_ED = 0x07;
@@ -140,6 +147,18 @@ public class AuthenticatorData {
   @SuppressWarnings("unused")
   public boolean isUv() {
     return getFlag(flags, FLAG_UV);
+  }
+
+  /** Returns whether the credential is backup eligible (the BE flag). */
+  @SuppressWarnings("unused")
+  public boolean isBe() {
+    return getFlag(flags, FLAG_BE);
+  }
+
+  /** Returns whether the credential is currently backed up (the BS flag). */
+  @SuppressWarnings("unused")
+  public boolean isBs() {
+    return getFlag(flags, FLAG_BS);
   }
 
   @SuppressWarnings("unused")

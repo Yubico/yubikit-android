@@ -18,7 +18,8 @@
  * Data classes used with the WebAuthn API.
  *
  * <p>These data classes are derived from the types defined by the W3C WebAuthn Level 1
- * specification. For details on their usage, please see: https://www.w3.org/TR/webauthn/
+ * specification. For details on their usage, please see:
+ * https://www.w3.org/TR/2026/REC-webauthn-3-20260825/
  */
 @org.jspecify.annotations.NullMarked
 package com.yubico.yubikit.fido.webauthn;

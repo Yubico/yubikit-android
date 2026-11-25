@@ -53,7 +53,8 @@ import org.slf4j.LoggerFactory;
  * <p>The hmac-secret and hmac-secret-mc extensions are not directly available to clients by
  * default, instead the prf extension is used.
  *
- * @see <a href="https://www.w3.org/TR/webauthn-3/#prf-extension">PRF extension</a>
+ * @see <a href="https://www.w3.org/TR/2026/REC-webauthn-3-20260825/#prf-extension">PRF
+ *     extension</a>
  * @see <a
  *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#sctn-hmac-secret-extension">HMAC
  *     secret extension (hmac-secret)</a>
