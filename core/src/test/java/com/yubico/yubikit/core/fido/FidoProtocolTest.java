@@ -16,11 +16,13 @@
 
 package com.yubico.yubikit.core.fido;
 
+import com.yubico.yubikit.core.application.CommandState;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.List;
 import java.util.function.IntUnaryOperator;
@@ -253,5 +255,44 @@ public class FidoProtocolTest {
       Assert.assertTrue(e.getMessage(), e.getMessage().contains("65536"));
     }
     Assert.assertEquals("Nothing may be sent for a rejected request", 1, authenticator.sent.size());
+  }
+
+  @Test
+  public void testKeepAliveStatusIsReadFromTheData() throws IOException {
+    Authenticator authenticator = new Authenticator();
+    FidoProtocol protocol = open(authenticator);
+    authenticator.queue(
+        CHANNEL,
+        FidoProtocol.CTAPHID_KEEPALIVE,
+        new byte[] {CommandState.STATUS_UPNEEDED},
+        seq -> seq);
+    authenticator.queue(new byte[] {0x00});
+    List<Byte> statuses = new ArrayList<>();
+
+    protocol.sendAndReceive(
+        CTAPHID_CBOR,
+        new byte[] {0x04},
+        new CommandState() {
+          @Override
+          public void onKeepAliveStatus(byte status) {
+            statuses.add(status);
+          }
+        });
+
+    Assert.assertEquals(Collections.singletonList(CommandState.STATUS_UPNEEDED), statuses);
+  }
+
+  @Test
+  public void testErrorCodeIsReadFromTheData() throws IOException {
+    Authenticator authenticator = new Authenticator();
+    FidoProtocol protocol = open(authenticator);
+    // ERR_CHANNEL_BUSY
+    authenticator.queue(CHANNEL, FidoProtocol.CTAPHID_ERROR, new byte[] {0x06}, seq -> seq);
+
+    IOException error =
+        Assert.assertThrows(
+            IOException.class,
+            () -> protocol.sendAndReceive(CTAPHID_CBOR, new byte[] {0x04}, null));
+    Assert.assertEquals("CTAPHID error: 06", error.getMessage());
   }
 }

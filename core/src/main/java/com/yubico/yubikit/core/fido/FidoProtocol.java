@@ -157,9 +157,13 @@ public class FidoProtocol implements Closeable {
         if (responseCmd == cmd) {
           response = ByteBuffer.allocate(packet.getShort() & 0xFFFF);
         } else if (responseCmd == CTAPHID_KEEPALIVE) {
+          // KEEPALIVE and ERROR carry BCNT 1 and one DATA byte, see
+          // https://fidoalliance.org/specs/fido-v2.3-ps-20260226/fido-client-to-authenticator-protocol-v2.3-ps-20260226.html#usb-hid-keepalive
+          packet.getShort(); // BCNT
           state.onKeepAliveStatus(packet.get());
           continue;
         } else if (responseCmd == CTAPHID_ERROR) {
+          packet.getShort(); // BCNT
           throw new IOException(String.format("CTAPHID error: %02x", packet.get()));
         } else {
           throw new IOException(
