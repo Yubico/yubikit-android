@@ -27,7 +27,7 @@ import org.jspecify.annotations.Nullable;
  * Implements the Minimum PIN Length (minPinLength) CTAP2 extension.
  *
  * @see <a
- *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#sctn-minpinlength-extension">Minimum
+ *     href="https://fidoalliance.org/specs/fido-v2.3-ps-20260226/fido-client-to-authenticator-protocol-v2.3-ps-20260226.html#sctn-minpinlength-extension">Minimum
  *     PIN Length Extension (minPinLength)</a>
  */
 public class MinPinLengthExtension extends Extension {

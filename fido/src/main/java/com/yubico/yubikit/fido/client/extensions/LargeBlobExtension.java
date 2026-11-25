@@ -45,7 +45,7 @@ import org.slf4j.LoggerFactory;
  *     href="https://www.w3.org/TR/2026/REC-webauthn-3-20260825/#sctn-large-blob-extension">Large
  *     blob extension</a>
  * @see <a
- *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#sctn-largeBlobKey-extension">Large
+ *     href="https://fidoalliance.org/specs/fido-v2.3-ps-20260226/fido-client-to-authenticator-protocol-v2.3-ps-20260226.html#sctn-largeBlobKey-extension">Large
  *     Blob Key (largeBlobKey)</a>
  */
 public class LargeBlobExtension extends Extension {

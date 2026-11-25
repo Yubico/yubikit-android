@@ -150,7 +150,7 @@ public class Ctap2Client implements WebAuthnClient {
    * @see <a href="https://www.w3.org/TR/2026/REC-webauthn-3-20260825/#sctn-extensions">Webauthn
    *     extensions</a>
    * @see <a
-   *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#sctn-defined-extensions">CTAP
+   *     href="https://fidoalliance.org/specs/fido-v2.3-ps-20260226/fido-client-to-authenticator-protocol-v2.3-ps-20260226.html#sctn-defined-extensions">CTAP
    *     extensions</a>
    */
   public Ctap2Client(Ctap2Session session) throws IOException, CommandException {
@@ -171,7 +171,7 @@ public class Ctap2Client implements WebAuthnClient {
    * @see <a href="https://www.w3.org/TR/2026/REC-webauthn-3-20260825/#sctn-extensions">Webauthn
    *     extensions</a>
    * @see <a
-   *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#sctn-defined-extensions">CTAP
+   *     href="https://fidoalliance.org/specs/fido-v2.3-ps-20260226/fido-client-to-authenticator-protocol-v2.3-ps-20260226.html#sctn-defined-extensions">CTAP
    *     extensions</a>
    */
   public Ctap2Client(Ctap2Session session, @Nullable List<Extension> extensions)
@@ -351,7 +351,7 @@ public class Ctap2Client implements WebAuthnClient {
    * @return true if the authenticator is enterprise attestation capable and enterprise attestation
    *     is enabled.
    * @see <a
-   *     href="https://fidoalliance.org/specs/fido-v2.3-rd-20251023/fido-client-to-authenticator-protocol-v2.3-rd-20251023.html#sctn-feature-descriptions-enterp-attstn">Enterprise
+   *     href="https://fidoalliance.org/specs/fido-v2.3-ps-20260226/fido-client-to-authenticator-protocol-v2.3-ps-20260226.html#sctn-feature-descriptions-enterp-attstn">Enterprise
    *     Attestation</a>
    */
   public boolean isEnterpriseAttestationSupported() {
