@@ -46,6 +46,11 @@ public class Ctap2ClientInstrumentedTests {
     }
 
     @Test
+    public void testKeepAliveReportsUserPresenceNeeded() throws Throwable {
+      withDevice(Ctap2ClientTests::testKeepAliveReportsUserPresenceNeeded);
+    }
+
+    @Test
     public void testAttestationConveyance() throws Throwable {
       withDevice(AttestationConveyanceTests::testCtap2);
     }

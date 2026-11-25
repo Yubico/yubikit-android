@@ -211,6 +211,39 @@ public class Ctap2ClientTests {
         });
   }
 
+  /** Over USB, a key waiting for a touch reports STATUS_UPNEEDED in its keepalive messages. */
+  public static void testKeepAliveReportsUserPresenceNeeded(FidoTestState state) throws Throwable {
+    assumeTrue("Test only supported over USB transport", state.isUsbTransport());
+
+    state.withCtap2(
+        session -> {
+          Ctap2Client webauthn = new Ctap2Client(session);
+          List<Byte> statuses = new ArrayList<>();
+          CommandState commandState =
+              new CommandState() {
+                @Override
+                public void onKeepAliveStatus(byte status) {
+                  statuses.add(status);
+                }
+              };
+
+          PublicKeyCredentialCreationOptions options =
+              getCreateOptions(
+                  null, false, Collections.singletonList(TestData.PUB_KEY_CRED_PARAMS_ES256), null);
+          webauthn.makeCredential(
+              TestData.CLIENT_DATA_JSON_CREATE_PROVIDER,
+              options,
+              TestData.RP_ID,
+              TestData.PIN,
+              null,
+              commandState);
+
+          assertTrue(
+              "No STATUS_UPNEEDED keepalive while waiting for touch: " + statuses,
+              statuses.contains(CommandState.STATUS_UPNEEDED));
+        });
+  }
+
   public static void testUvDiscouragedMcGa_withPin(FidoTestState state) throws Throwable {
     state.withCtap2(
         session -> {
