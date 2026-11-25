@@ -7,6 +7,9 @@
   - fido: makeCredential sends attestationFormats as attestationFormatsPreference to
           authenticators that report their attestation formats
  ** fixes & improvements:
+  - core: over USB, the CTAPHID keepalive status and error code are read from the
+          data byte instead of the length field, so a key waiting for touch is reported
+          and errors show their real code
   - fido: PublicKeyCredentialUserEntity.fromMap() accepts a missing name or displayName,
           which CTAP leaves optional, and returns it as an empty string instead of
           throwing; PublicKeyCredentialCreationOptions.fromMap() still requires both
