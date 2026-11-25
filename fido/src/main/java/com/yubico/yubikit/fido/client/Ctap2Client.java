@@ -16,6 +16,8 @@
 
 package com.yubico.yubikit.fido.client;
 
+import static com.yubico.yubikit.fido.client.Utils.checkUserId;
+import static com.yubico.yubikit.fido.client.Utils.getPubKeyCredParams;
 import static com.yubico.yubikit.fido.webauthn.PublicKeyCredentialType.PUBLIC_KEY;
 
 import com.yubico.yubikit.core.application.CommandException;
@@ -474,7 +476,7 @@ public class Ctap2Client implements WebAuthnClient {
       throw new ClientError(
           ClientError.Code.BAD_REQUEST, "RP ID is not valid for effective domain");
     }
-    com.yubico.yubikit.fido.client.Utils.checkUserId(options);
+    checkUserId(options);
 
     final List<PublicKeyCredentialDescriptor> excludeCredentials = options.getExcludeCredentials();
 
@@ -546,8 +548,7 @@ public class Ctap2Client implements WebAuthnClient {
     final Map<String, ?> user = Utils.userForCtap(options.getUser());
 
     List<Map<String, ?>> pubKeyCredParams = new ArrayList<>();
-    for (PublicKeyCredentialParameters param :
-        com.yubico.yubikit.fido.client.Utils.getPubKeyCredParams(options)) {
+    for (PublicKeyCredentialParameters param : getPubKeyCredParams(options)) {
       if (isPublicKeyCredentialTypeSupported(param.getType())) {
         pubKeyCredParams.add(param.toMap(serializationType));
       }
