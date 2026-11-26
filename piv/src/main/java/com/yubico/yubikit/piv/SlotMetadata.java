@@ -64,7 +64,12 @@ public class SlotMetadata {
     return generated;
   }
 
-  /** Returns the public key values corresponding to the key in the slot. */
+  /**
+   * Returns the public key values corresponding to the key in the slot.
+   *
+   * @throws IllegalArgumentException if the encoded public key is malformed; metadata read with
+   *     {@link PivSession#getSlotMetadata(Slot)} has already been checked
+   */
   public PublicKeyValues getPublicKeyValues() {
     return PivSession.parsePublicKeyFromDevice(keyType, publicKeyEncoded);
   }

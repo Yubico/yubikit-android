@@ -1056,16 +1056,25 @@ public class PivSession extends ApplicationSession<PivSession> {
     boolean generated =
         requireMetadata(data, TAG_METADATA_ORIGIN, 1, "origin")[0] == ORIGIN_GENERATED;
     byte[] publicKey = requireMetadata(data, TAG_METADATA_PUBLIC_KEY, 1, "public key");
+    SlotMetadata metadata;
     try {
-      return new SlotMetadata(
-          KeyType.fromValue(algorithm),
-          PinPolicy.fromValue(policy[INDEX_PIN_POLICY]),
-          TouchPolicy.fromValue(policy[INDEX_TOUCH_POLICY]),
-          generated,
-          publicKey);
+      metadata =
+          new SlotMetadata(
+              KeyType.fromValue(algorithm),
+              PinPolicy.fromValue(policy[INDEX_PIN_POLICY]),
+              TouchPolicy.fromValue(policy[INDEX_TOUCH_POLICY]),
+              generated,
+              publicKey);
     } catch (IllegalArgumentException e) {
       throw badMetadata("Unknown value in slot metadata", e);
     }
+    try {
+      // Checked here, as in yubikit (Rust), so getPublicKeyValues() does not fail later
+      parsePublicKeyFromDevice(metadata.getKeyType(), publicKey);
+    } catch (IllegalArgumentException e) {
+      throw badMetadata("Malformed public key in slot metadata", e);
+    }
+    return metadata;
   }
 
   /**
@@ -1083,9 +1092,17 @@ public class PivSession extends ApplicationSession<PivSession> {
     logger.debug("Reading certificate in slot {}", slot);
     byte[] objectData = getObject(slot.objectId);
 
-    Map<Integer, byte[]> certData = Tlvs.decodeMap(objectData);
+    Map<Integer, byte[]> certData;
+    try {
+      certData = Tlvs.decodeMap(objectData);
+    } catch (BufferUnderflowException | IllegalArgumentException e) {
+      throw new BadResponseException("Malformed certificate data object", e);
+    }
     byte[] certInfo = certData.get(TAG_CERT_INFO);
     byte[] cert = certData.get(TAG_CERTIFICATE);
+    if (cert == null) {
+      throw new BadResponseException("Certificate data object has no certificate");
+    }
 
     boolean isCompressed = certInfo != null && certInfo.length > 0 && certInfo[0] != 0;
     if (isCompressed) {
@@ -1208,29 +1225,57 @@ public class PivSession extends ApplicationSession<PivSession> {
   }
 
   /* Parses a PublicKey from data returned from a YubiKey. */
+  /**
+   * Parses a public key as encoded by the YubiKey.
+   *
+   * @throws IllegalArgumentException if the encoding is malformed or does not match the key type
+   */
   static PublicKeyValues parsePublicKeyFromDevice(KeyType keyType, byte[] encoded) {
-    Map<Integer, byte[]> dataObjects = Tlvs.decodeMap(encoded);
+    Map<Integer, byte[]> dataObjects;
+    try {
+      dataObjects = Tlvs.decodeMap(encoded);
+    } catch (BufferUnderflowException e) {
+      throw new IllegalArgumentException("Malformed public key data", e);
+    }
 
     if (keyType.params.algorithm == KeyType.Algorithm.RSA) {
-      BigInteger modulus = new BigInteger(1, dataObjects.get(0x81));
-      BigInteger exponent = new BigInteger(1, dataObjects.get(0x82));
+      BigInteger modulus = new BigInteger(1, requireKeyData(dataObjects, 0x81, "RSA modulus"));
+      BigInteger exponent = new BigInteger(1, requireKeyData(dataObjects, 0x82, "RSA exponent"));
+      if (modulus.bitLength() != keyType.params.bitLength) {
+        throw new IllegalArgumentException("RSA modulus size does not match " + keyType);
+      }
       return new PublicKeyValues.Rsa(modulus, exponent);
     } else if (keyType.params.algorithm == KeyType.Algorithm.MLDSA) {
       return new PublicKeyValues.MlDsa(
           ((KeyType.MlDsaKeyParams) keyType.params).getParameterValues(),
-          Objects.requireNonNull(dataObjects.get(TAG_PUBLIC_KEY_MLDSA), "Missing ML-DSA key"));
+          requireKeyData(dataObjects, TAG_PUBLIC_KEY_MLDSA, "ML-DSA key"));
     } else if (keyType.params.algorithm == KeyType.Algorithm.MLKEM) {
       return new PublicKeyValues.MlKem(
           ((KeyType.MlKemKeyParams) keyType.params).getParameterValues(),
-          Objects.requireNonNull(dataObjects.get(TAG_PUBLIC_KEY_MLKEM), "Missing ML-KEM key"));
+          requireKeyData(dataObjects, TAG_PUBLIC_KEY_MLKEM, "ML-KEM key"));
     } else {
+      EllipticCurveValues curve = ((KeyType.EcKeyParams) keyType.params).getCurveParams();
+      byte[] point = requireKeyData(dataObjects, 0x86, "public key");
+      int coordinateLength = (curve.getBitLength() + 7) / 8;
       if (keyType == KeyType.ED25519 || keyType == KeyType.X25519) {
-        return new PublicKeyValues.Cv25519(
-            ((KeyType.EcKeyParams) keyType.params).getCurveParams(), dataObjects.get(0x86));
+        if (point.length != coordinateLength) {
+          throw new IllegalArgumentException("Invalid " + keyType + " public key length");
+        }
+        return new PublicKeyValues.Cv25519(curve, point);
       }
-      return PublicKeyValues.Ec.fromEncodedPoint(
-          ((KeyType.EcKeyParams) keyType.params).getCurveParams(), dataObjects.get(0x86));
+      if (point.length != 1 + 2 * coordinateLength) {
+        throw new IllegalArgumentException("Invalid " + keyType + " public key length");
+      }
+      return PublicKeyValues.Ec.fromEncodedPoint(curve, point);
     }
+  }
+
+  private static byte[] requireKeyData(Map<Integer, byte[]> dataObjects, int tag, String name) {
+    byte[] value = dataObjects.get(tag);
+    if (value == null || value.length == 0) {
+      throw new IllegalArgumentException("Public key data is missing the " + name);
+    }
+    return value;
   }
 
   /**
@@ -1336,7 +1381,11 @@ public class PivSession extends ApplicationSession<PivSession> {
                 new Tlv((byte) 0xac, Tlvs.encodeMap(tlvs)).getBytes()));
     logger.info("Private key generated in slot {} of type {}", slot, keyType);
     // Tag '7F49' contains data objects for RSA or ECC
-    return parsePublicKeyFromDevice(keyType, Tlvs.unpackValue(0x7F49, response));
+    try {
+      return parsePublicKeyFromDevice(keyType, Tlvs.unpackValue(0x7F49, response));
+    } catch (BufferUnderflowException | IllegalArgumentException e) {
+      throw new BadResponseException("Malformed public key in response", e);
+    }
   }
 
   /**
@@ -1493,7 +1542,11 @@ public class PivSession extends ApplicationSession<PivSession> {
     byte[] requestData = new Tlv(TAG_OBJ_ID, ObjectId.getBytes(objectId)).getBytes();
     byte[] responseData =
         protocol.sendAndReceive(new Apdu(0, INS_GET_DATA, 0x3f, 0xff, requestData));
-    return Tlvs.unpackValue(TAG_OBJ_DATA, responseData);
+    try {
+      return Tlvs.unpackValue(TAG_OBJ_DATA, responseData);
+    } catch (BufferUnderflowException | IllegalArgumentException e) {
+      throw new BadResponseException("Malformed data object", e);
+    }
   }
 
   /**

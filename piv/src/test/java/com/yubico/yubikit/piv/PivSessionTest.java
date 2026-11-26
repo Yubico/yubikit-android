@@ -280,6 +280,123 @@ public class PivSessionTest {
     }
   }
 
+  @Test
+  public void readsSlotMetadataWithValidPublicKey() throws Exception {
+    byte[] response =
+        metadata(
+            PivSession.TAG_METADATA_ALGO,
+            new byte[] {KeyType.ECCP256.value},
+            PivSession.TAG_METADATA_POLICY,
+            new byte[] {1, 1},
+            PivSession.TAG_METADATA_ORIGIN,
+            new byte[] {PivSession.ORIGIN_GENERATED},
+            PivSession.TAG_METADATA_PUBLIC_KEY,
+            new Tlv(0x86, ecPoint(65)).getBytes());
+    try (PivSession session = openSession(mockMetadata(Slot.AUTHENTICATION.value, response))) {
+      SlotMetadata metadata = session.getSlotMetadata(Slot.AUTHENTICATION);
+      Assert.assertEquals(KeyType.ECCP256, metadata.getKeyType());
+      Assert.assertEquals(256, metadata.getPublicKeyValues().getBitLength());
+    }
+  }
+
+  @Test
+  public void rejectsSlotMetadataWithMalformedPublicKey() throws Exception {
+    byte[] response =
+        metadata(
+            PivSession.TAG_METADATA_ALGO,
+            new byte[] {KeyType.ECCP256.value},
+            PivSession.TAG_METADATA_POLICY,
+            new byte[] {1, 1},
+            PivSession.TAG_METADATA_ORIGIN,
+            new byte[] {PivSession.ORIGIN_GENERATED},
+            PivSession.TAG_METADATA_PUBLIC_KEY,
+            new Tlv(0x86, ecPoint(64)).getBytes());
+    try (PivSession session = openSession(mockMetadata(Slot.AUTHENTICATION.value, response))) {
+      assertBadMetadata(() -> session.getSlotMetadata(Slot.AUTHENTICATION));
+    }
+  }
+
+  @Test
+  public void rejectsMalformedDevicePublicKeys() {
+    byte[][] ecCases = {
+      {(byte) 0x86, 0x41, 0x04}, // truncated TLV
+      new byte[0], // no public key
+      new Tlv(0x86, ecPoint(64)).getBytes(), // wrong point length
+    };
+    for (byte[] encoded : ecCases) {
+      Assert.assertThrows(
+          IllegalArgumentException.class,
+          () -> PivSession.parsePublicKeyFromDevice(KeyType.ECCP256, encoded));
+    }
+    Assert.assertThrows(
+        IllegalArgumentException.class,
+        () ->
+            PivSession.parsePublicKeyFromDevice(
+                KeyType.ED25519, new Tlv(0x86, new byte[31]).getBytes()));
+    // A 1024-bit modulus for an RSA2048 key
+    byte[] modulus = new byte[128];
+    modulus[0] = (byte) 0x80;
+    byte[] rsa1024 =
+        Tlvs.encodeList(Arrays.asList(new Tlv(0x81, modulus), new Tlv(0x82, new byte[] {1, 0, 1})));
+    Assert.assertThrows(
+        IllegalArgumentException.class,
+        () -> PivSession.parsePublicKeyFromDevice(KeyType.RSA2048, rsa1024));
+    Assert.assertThrows(
+        IllegalArgumentException.class,
+        () -> PivSession.parsePublicKeyFromDevice(KeyType.MLDSA44, new byte[0]));
+  }
+
+  @Test
+  public void rejectsMalformedGeneratedKey() throws Exception {
+    byte[][] responses = {
+      new Tlv(0x7F49, new Tlv(0x86, ecPoint(64)).getBytes()).getBytes(),
+      new Tlv(0x7F49, new byte[] {(byte) 0x86, 0x41, 0x04}).getBytes(),
+      {0x7F, 0x49, 0x05, 0x01}, // truncated outer TLV
+    };
+    for (byte[] response : responses) {
+      try (PivSession session =
+          openSession(mockResponse(PivSession.INS_GENERATE_ASYMMETRIC, response))) {
+        Assert.assertThrows(
+            BadResponseException.class,
+            () ->
+                session.generateKey(
+                    Slot.AUTHENTICATION, KeyType.ECCP256, PinPolicy.DEFAULT, TouchPolicy.DEFAULT));
+      }
+    }
+  }
+
+  @Test
+  public void rejectsMalformedCertificateObject() throws Exception {
+    byte[][] responses = {
+      new Tlv(PivSession.TAG_OBJ_DATA, new byte[] {0x70, 0x05, 0x01}).getBytes(),
+      new Tlv(PivSession.TAG_OBJ_DATA, new Tlv(PivSession.TAG_CERT_INFO, new byte[] {0}).getBytes())
+          .getBytes(),
+      {0x53, 0x05, 0x01}, // truncated data object
+    };
+    for (byte[] response : responses) {
+      try (PivSession session = openSession(mockResponse(PivSession.INS_GET_DATA, response))) {
+        Assert.assertThrows(
+            BadResponseException.class, () -> session.getCertificate(Slot.AUTHENTICATION));
+      }
+    }
+  }
+
+  /** An uncompressed P-256 point of the given total length. */
+  private static byte[] ecPoint(int length) {
+    byte[] point = new byte[length];
+    point[0] = 0x04;
+    point[1] = 0x01;
+    return point;
+  }
+
+  /** A 5.7.2 device answering the instruction with the response, and no metadata. */
+  private static SmartCardProtocol mockResponse(byte ins, byte[] response) throws Exception {
+    SmartCardProtocol protocolMock = mockProtocol(5, 7, 2);
+    when(protocolMock.sendAndReceive(argThat(apdu -> apdu != null && apdu.getIns() == ins)))
+        .thenReturn(response);
+    return protocolMock;
+  }
+
   /** TLVs from alternating tags and values. */
   private static byte[] metadata(Object... tagsAndValues) {
     List<Tlv> tlvs = new ArrayList<>();

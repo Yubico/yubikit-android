@@ -44,6 +44,9 @@
           document that they are not thread-safe
   - fido-ui: NfcAntennaHint accepts iconBorderColor to draw a border around the antenna
              indicator
+  - piv: getCertificate(), getObject() and generateKey() fail with BadResponseException,
+         and getSlotMetadata() with an IOException caused by it, for malformed certificate
+         or public key data instead of an unchecked exception
 * Version 3.3.0 (released 2026-10-29)
  ** new:
   - core: PublicKeyValues and PrivateKeyValues variants for the additional key types
