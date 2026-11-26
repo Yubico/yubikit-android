@@ -30,6 +30,8 @@
           lexicographical order
   - fido: AuthenticatorAttestationResponse.getPublicKey() returns the public key of
           ML-DSA credentials (COSE key type AKP) when the platform supports ML-DSA
+  - fido: Ctap2Session.InfoData.getAlgorithms() returns PublicKeyCredentialParameters
+          instead of the raw CBOR maps, which failed with ClassCastException when read
 * Version 3.3.0 (released 2026-10-29)
  ** new:
   - core: PublicKeyValues and PrivateKeyValues variants for the additional key types
