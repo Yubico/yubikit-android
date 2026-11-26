@@ -16,8 +16,10 @@
 
 package com.yubico.yubikit.fido.client;
 
+import static com.yubico.yubikit.fido.client.Utils.attestationResponse;
 import static com.yubico.yubikit.fido.client.Utils.hash;
 
+import com.yubico.yubikit.core.application.BadResponseException;
 import com.yubico.yubikit.core.application.CommandState;
 import com.yubico.yubikit.core.fido.CtapException;
 import com.yubico.yubikit.core.smartcard.ApduException;
@@ -169,9 +171,15 @@ public class Ctap1Client implements WebAuthnClient {
 
       AttestationObject attestationObject =
           AttestationConveyance.apply(regData.getAttestation(appParam), options.getAttestation());
-      AuthenticatorAttestationResponse response =
-          new AuthenticatorAttestationResponse(
-              clientData.getClientDataJson(), Collections.emptyList(), attestationObject);
+      AuthenticatorAttestationResponse response;
+      try {
+        response =
+            attestationResponse(
+                clientData.getClientDataJson(), Collections.emptyList(), attestationObject);
+      } catch (BadResponseException e) {
+        // Wrapped in IOException to keep the signature, as SmartCardProtocol does
+        throw new IOException(e);
+      }
       return new PublicKeyCredential(
           regData.getKeyHandle(), response, new ClientExtensionResults());
     } catch (ApduException e) {
